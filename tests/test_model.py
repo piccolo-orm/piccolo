@@ -4,6 +4,8 @@ from unittest import TestCase
 
 import asyncpg
 
+from aragorm.model import Model
+
 
 TEST_CREDENTIALS = {
     'host': 'localhost',
@@ -11,6 +13,10 @@ TEST_CREDENTIALS = {
     'user': 'aragorm',
     'password': 'aragorm'
 }
+
+
+class Pokemon(Model):
+    pass
 
 
 class TestQuery(TestCase):
@@ -48,6 +54,7 @@ class TestQuery(TestCase):
     def test_query(self):
         print('hello there ...')
         asyncio.run(self.insert_rows())
+        response = Pokemon.select().execute()
         breakpoint()
 
     def tearDown(self):

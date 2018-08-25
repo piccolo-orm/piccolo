@@ -1,6 +1,7 @@
 import typing
 
-from fields import Field
+from .fields import Field
+from .query import Query
 
 
 class Database(object):
@@ -12,51 +13,15 @@ class Database(object):
         pass
 
 
-class Value(object):
-    """
-    This needs to have a type, which needs to be compatible with the field
-    type.
-    """
-    pass
-
-
-class Where(object):
-    """
-    Example use case - id = 5
-
-    Can potentially simplify things dramatically here by just accepting
-    postgres where clauses directly, avoiding the need for equal, greater than
-    etc syntax.
-    """
-
-    def __init__(self, field: str, value: Value):
-        self.field = Field
-        self.value = value
-
-
-class Query(object):
-
-    valid_types = ['INSERT', 'UPDATE', 'SELECT']
-
-    where_clauses: [Where] = []
-
-    def __init__(self, type: str):
-        """
-        A query has to be a certain type. Currently:
-        """
-        pass
-
-    async def execute(self):
-        pass
-
-    def where(self):
-        """
-
-        """
-        pass
-
-
 class Model(object):
+
+    def _tablename(cls):
+        tablename = getattr(cls, 'tablename', None)
+        if tablename:
+            return tablename
+        else:
+            # TODO - FooBar -> foo_bar
+            return cls.__name__.lower()
 
     @property
     def fields() -> [Field]:
@@ -80,15 +45,14 @@ class Model(object):
         inspect that the field exists, and what we're trying to map it
         too doesn't already exist.
         """
-        if '*' in field_names:
-            field_names = '*'
+        if field_names == []:
+            fields_str = '*'
+        else:
+            # TODO - make sure the fields passed in are valid
+            fields_str = ', '.join(field_names)
 
-        fields_str = ', '.join(field_names)
-
-        # TODO - make sure the fields passed in are valid
-
-        query = f'SELECT {fields_str} from {cls.tablename}'
-        pass
+        tablename = cls._tablename()
+        return Query(base=f'SELECT {fields_str} from {tablename}')
 
     @classmethod
     async def insert(cls, *row: ["Model"]):
