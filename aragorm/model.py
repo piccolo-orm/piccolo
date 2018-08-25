@@ -22,7 +22,11 @@ class Value(object):
 
 class Where(object):
     """
-    Example use case -
+    Example use case - id = 5
+
+    Can potentially simplify things dramatically here by just accepting
+    postgres where clauses directly, avoiding the need for equal, greater than
+    etc syntax.
     """
 
     def __init__(self, field: str, value: Value):
