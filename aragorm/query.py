@@ -1,3 +1,6 @@
+import asyncpg
+
+
 TEST_CREDENTIALS = {
     'host': 'localhost',
     'database': 'aragorm',
@@ -49,9 +52,9 @@ class Query(object):
         Now ... just execute it from within here for now ...
         """
         conn = await asyncpg.connect(**TEST_CREDENTIALS)
-        results = await conn.query(self.base)
+        results = await conn.fetch(self.base)
         await conn.close()
-        return results
+        return dict(results[0].items())
 
     def where(self):
         """

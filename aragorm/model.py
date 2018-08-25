@@ -15,6 +15,7 @@ class Database(object):
 
 class Model(object):
 
+    @classmethod
     def _tablename(cls):
         tablename = getattr(cls, 'tablename', None)
         if tablename:
@@ -35,7 +36,7 @@ class Model(object):
         """
 
     @classmethod
-    async def select(cls, *field_names: [str]) -> Query:
+    def select(cls, *field_names: [str]) -> Query:
         """
         Needs to be a simple wrapper.
 
@@ -45,14 +46,14 @@ class Model(object):
         inspect that the field exists, and what we're trying to map it
         too doesn't already exist.
         """
-        if field_names == []:
+        if len(field_names) == 0:
             fields_str = '*'
         else:
             # TODO - make sure the fields passed in are valid
             fields_str = ', '.join(field_names)
 
         tablename = cls._tablename()
-        return Query(base=f'SELECT {fields_str} from {tablename}')
+        return Query(type='SELECT', base=f'SELECT {fields_str} from {tablename}')
 
     @classmethod
     async def insert(cls, *row: ["Model"]):

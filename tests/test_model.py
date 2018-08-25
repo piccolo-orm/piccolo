@@ -51,11 +51,14 @@ class TestQuery(TestCase):
     def setUp(self):
         asyncio.run(self.create_table())
 
+    async def get_pokemon(self):
+        return await Pokemon.select().execute()
+
     def test_query(self):
-        print('hello there ...')
         asyncio.run(self.insert_rows())
-        response = Pokemon.select().execute()
-        breakpoint()
+        response = asyncio.run(self.get_pokemon())
+        print(f'response = {response}')
+        # breakpoint()
 
     def tearDown(self):
         asyncio.run(self.drop_table())
