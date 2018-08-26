@@ -110,11 +110,16 @@ class TestQuery(DBTestCase):
         response = asyncio.run(get_pokemon())
         print(f'response = {response}')
 
-        self.assertDictEqual(
+        self.assertEqual(
             response,
             [{'name': 'pikachu'}, {'name': 'raichu'}]
         )
 
-
     def tearDown(self):
         self.drop_table()
+
+
+class TestMetaClass(TestCase):
+
+    def test_tablename(self):
+        self.assertEqual(Pokemon.__tablename__, 'pokemon')

@@ -2,6 +2,7 @@ import typing
 
 from .fields import Field
 from .query import Query
+from .utils import _camel_to_snake
 
 
 class Database(object):
@@ -13,7 +14,27 @@ class Database(object):
         pass
 
 
-class Model(object):
+class ModelMeta(type):
+
+    def __new__(cls, name, bases, namespace, **kwds):
+        """
+        Automatically populate the tablename, and fields.
+        """
+        model = super().__new__(cls, name, bases, namespace)
+
+        tablename = _camel_to_snake(name)
+        model.__tablename__ = tablename
+
+        fields = {}
+        for key, value in namespace.items():
+            if issubclass(type(value), Field):
+                fields[name] = value
+
+        model.__fields__ = fields
+        return model
+
+
+class Model(metaclass=ModelMeta):
 
     @classmethod
     def _tablename(cls):
@@ -53,7 +74,11 @@ class Model(object):
             fields_str = ', '.join(field_names)
 
         tablename = cls._tablename()
-        return Query(type='SELECT', base=f'SELECT {fields_str} from {tablename}')
+        return Query(
+            type='SELECT',
+            model=cls,
+            base=f'SELECT {fields_str} from {tablename}'
+            )
 
     @classmethod
     async def insert(cls, *row: ["Model"]):
