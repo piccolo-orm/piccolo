@@ -4,7 +4,7 @@ from unittest import TestCase
 
 import asyncpg
 
-from aragorm.model import Model
+from example_project.models import Pokemon
 
 
 TEST_CREDENTIALS = {
@@ -15,25 +15,29 @@ TEST_CREDENTIALS = {
 }
 
 
-class Pokemon(Model):
-    pass
+class DBTestCase(TestCase):
+
+    def execute(self, query):
+        async def _execute():
+            connection = await asyncpg.connect(**TEST_CREDENTIALS)
+            await connection.execute(query)
+            await connection.close()
+
+        asyncio.run(_execute())
 
 
-class TestQuery(TestCase):
+class TestQuery(DBTestCase):
 
-    async def create_table(self):
-        conn = await asyncpg.connect(**TEST_CREDENTIALS)
-        await conn.execute('''
+    def create_table(self):
+        self.execute('''
             CREATE TABLE pokemon (
                 name VARCHAR(50),
                 power SMALLINT
             );'''
         )
-        await conn.close()
 
-    async def insert_rows(self):
-        conn = await asyncpg.connect(**TEST_CREDENTIALS)
-        await conn.execute('''
+    def insert_rows(self):
+        self.execute('''
             INSERT INTO pokemon (
                 name,
                 power
@@ -43,22 +47,39 @@ class TestQuery(TestCase):
             );'''
         )
 
-    async def drop_table(self):
-        conn = await asyncpg.connect(**TEST_CREDENTIALS)
-        await conn.execute('DROP TABLE pokemon;')
-        await conn.close()
+    def drop_table(self):
+        self.execute('DROP TABLE pokemon;')
 
     def setUp(self):
-        asyncio.run(self.create_table())
+        self.create_table()
 
-    async def get_pokemon(self):
-        return await Pokemon.select().execute()
+    def test_query_all_columns(self):
+        self.insert_rows()
 
-    def test_query(self):
-        asyncio.run(self.insert_rows())
-        response = asyncio.run(self.get_pokemon())
+        async def get_pokemon():
+            return await Pokemon.select().execute()
+
+        response = asyncio.run(get_pokemon())
         print(f'response = {response}')
-        # breakpoint()
+
+        self.assertDictEqual(
+            response,
+            {'name': 'pikachu', 'power': 1000}
+        )
+
+    def test_query_some_columns(self):
+        self.insert_rows()
+
+        async def get_pokemon():
+            return await Pokemon.select('name').execute()
+
+        response = asyncio.run(get_pokemon())
+        print(f'response = {response}')
+
+        self.assertDictEqual(
+            response,
+            {'name': 'pikachu'}
+        )
 
     def tearDown(self):
-        asyncio.run(self.drop_table())
+        self.drop_table()

@@ -47,13 +47,14 @@ class Query(object):
         # For example select * from my_table
         self.base = base
 
-    async def execute(self) -> str:
+    async def execute(self, as_dict=True) -> str:
         """
         Now ... just execute it from within here for now ...
         """
         conn = await asyncpg.connect(**TEST_CREDENTIALS)
         results = await conn.fetch(self.base)
         await conn.close()
+        # TODO Be able to output it in different formats.
         return dict(results[0].items())
 
     def where(self):
@@ -61,3 +62,6 @@ class Query(object):
         Just appends where clauses ...
         """
         pass
+
+    def __str__(self):
+        return self.base
