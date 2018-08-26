@@ -26,8 +26,6 @@ class Query(object):
 
     valid_types = ['INSERT', 'UPDATE', 'SELECT']
 
-    where_clauses: [Where] = []
-
     def __init__(self, type: str, model: 'Model', base: str):
         """
         A query has to be a certain type.
@@ -35,13 +33,9 @@ class Query(object):
         # For example select * from my_table
         self.base = base
         self.model = model
+        self.where_clauses: [Where] = []
 
     def generate_query(self):
-        """
-        For each where clause ... need to get the name ...
-
-        The query needs a link to the table calling it ...
-        """
         query = self.base
         if self.where_clauses:
             query += ' WHERE '
@@ -51,7 +45,14 @@ class Query(object):
         print(query)
         return query
 
-    async def execute(self, as_dict=True) -> str:
+    def first(self):
+        """
+        LIMIT 1 ... and only return the first row ...
+
+        I want to think about using .limit() too ...
+        """
+
+    async def execute(self, as_dict=True):
         """
         Now ... just execute it from within here for now ...
         """
@@ -59,12 +60,9 @@ class Query(object):
         results = await conn.fetch(self.generate_query())
         await conn.close()
         # TODO Be able to output it in different formats.
-        return dict(results[0].items())
+        return [dict(i.items()) for i in results]
 
     def where(self, where: Where):
-        """
-        Just appends where clauses ...
-        """
         self.where_clauses.append(where)
         return self
 

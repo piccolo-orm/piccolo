@@ -1,7 +1,7 @@
 import typing
 import uuid
 
-from .operators import Operator, In, NotIn, Equal, NotEqual, Like
+from .operators import Operator, In, NotIn, Equal, NotEqual, Like, GreaterThan
 
 
 Iterable = typing.Iterable[typing.Any]
@@ -27,18 +27,13 @@ class Field():
             raise ValueError('% is required for like operators')
         return Where(field=self, value=value, operator=Like)
 
-    def __eq__(self, value) -> 'Where':
-        """
-        The challenge here is ... need the name of the field ...
+    def __gt__(self, value) -> 'Where':
+        return Where(field=self, value=value, operator=GreaterThan)
 
-        I'll have some way on the model to match fields instances to names ...
-        will be fine.
-        """
+    def __eq__(self, value) -> 'Where':
         return Where(field=self, value=value, operator=Equal)
 
     def __ne__(self, value) -> 'Where':
-        # Can either return it ... or just store the where clauses on the
-        # field ...
         return Where(field=self, value=value, operator=NotEqual)
 
 
@@ -50,7 +45,7 @@ class Varchar(Field):
 
 
 class Integer(Field):
-    def __init__(self, default: int = None):
+    def __init__(self, default: int = None, **kwargs):
         self.default = default
         super().__init__(**kwargs)
 

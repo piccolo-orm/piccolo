@@ -65,7 +65,7 @@ class Model(metaclass=ModelMeta):
             type='SELECT',
             model=cls,
             base=f'SELECT {fields_str} from {cls.tablename}'
-            )
+        )
 
     @classmethod
     async def insert(cls, *row: ["Model"]):

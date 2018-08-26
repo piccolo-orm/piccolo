@@ -3,7 +3,7 @@ from unittest import TestCase
 
 import asyncpg
 
-from example_project.models import Pokemon
+from .example_project.models import Pokemon
 
 
 TEST_CREDENTIALS = {
@@ -79,7 +79,7 @@ class TestQuery(DBTestCase):
         print(f'response = {response}')
 
         self.assertDictEqual(
-            response,
+            response[0],
             {'name': 'pikachu', 'power': 1000}
         )
 
@@ -93,7 +93,7 @@ class TestQuery(DBTestCase):
         print(f'response = {response}')
 
         self.assertDictEqual(
-            response,
+            response[0],
             {'name': 'pikachu'}
         )
 
@@ -113,6 +113,24 @@ class TestQuery(DBTestCase):
         self.assertEqual(
             response,
             [{'name': 'pikachu'}, {'name': 'raichu'}]
+        )
+
+    def test_where_greater_than(self):
+        self.insert_rows()
+
+        async def get_pokemon():
+            return await Pokemon.select(
+                'name'
+            ).where(
+                Pokemon.power > 1000
+            ).execute()
+
+        response = asyncio.run(get_pokemon())
+        print(f'response = {response}')
+
+        self.assertEqual(
+            response,
+            [{'name': 'raichu'}]
         )
 
     def tearDown(self):
