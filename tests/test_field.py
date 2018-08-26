@@ -40,4 +40,9 @@ class TestFields(unittest.TestCase):
 
 
 class TestWhere():
-    pass
+
+    def test_and(self):
+        """
+        Need some high level tests ... Extend SQL to to include where clauses ...
+        """
+        pass

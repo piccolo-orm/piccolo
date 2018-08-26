@@ -1,4 +1,3 @@
-# Need a test runner ...
 import asyncio
 from unittest import TestCase
 
@@ -36,7 +35,7 @@ class TestQuery(DBTestCase):
             );'''
         )
 
-    def insert_rows(self):
+    def insert_row(self):
         self.execute('''
             INSERT INTO pokemon (
                 name,
@@ -47,6 +46,23 @@ class TestQuery(DBTestCase):
             );'''
         )
 
+    def insert_rows(self):
+        self.execute('''
+            INSERT INTO pokemon (
+                name,
+                power
+            ) VALUES (
+                'pikachu',
+                1000
+            ),(
+                'raichu',
+                2000
+            ),(
+                'weedle',
+                10
+            );'''
+        )
+
     def drop_table(self):
         self.execute('DROP TABLE pokemon;')
 
@@ -54,7 +70,7 @@ class TestQuery(DBTestCase):
         self.create_table()
 
     def test_query_all_columns(self):
-        self.insert_rows()
+        self.insert_row()
 
         async def get_pokemon():
             return await Pokemon.select().execute()
@@ -68,7 +84,7 @@ class TestQuery(DBTestCase):
         )
 
     def test_query_some_columns(self):
-        self.insert_rows()
+        self.insert_row()
 
         async def get_pokemon():
             return await Pokemon.select('name').execute()
@@ -80,6 +96,25 @@ class TestQuery(DBTestCase):
             response,
             {'name': 'pikachu'}
         )
+
+    def test_where_like(self):
+        self.insert_rows()
+
+        async def get_pokemon():
+            return await Pokemon.select(
+                'name'
+            ).where(
+                Pokemon.name.like('%chu')
+            ).execute()
+
+        response = asyncio.run(get_pokemon())
+        print(f'response = {response}')
+
+        self.assertDictEqual(
+            response,
+            [{'name': 'pikachu'}, {'name': 'raichu'}]
+        )
+
 
     def tearDown(self):
         self.drop_table()

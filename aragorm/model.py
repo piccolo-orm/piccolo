@@ -44,7 +44,7 @@ class Model(object):
         that in the string. For example, 'foo as bar'. I think I'll make
         it more explicit. So you do As('foo', 'bar'). So we can easily
         inspect that the field exists, and what we're trying to map it
-        too doesn't already exist.
+        to doesn't already exist.
         """
         if len(field_names) == 0:
             fields_str = '*'
