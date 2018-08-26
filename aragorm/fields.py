@@ -1,7 +1,18 @@
 import typing
 import uuid
 
-from .operators import Operator, In, NotIn, Equal, NotEqual, Like, GreaterThan
+from .operators import (
+    Equal,
+    GreaterEqualThan,
+    GreaterThan,
+    In,
+    LessEqualThan,
+    LessThan,
+    Like,
+    NotEqual,
+    NotIn,
+    Operator,
+)
 
 
 Iterable = typing.Iterable[typing.Any]
@@ -27,8 +38,17 @@ class Field():
             raise ValueError('% is required for like operators')
         return Where(field=self, value=value, operator=Like)
 
+    def __lt__(self, value) -> 'Where':
+        return Where(field=self, value=value, operator=LessThan)
+
+    def __le__(self, value) -> 'Where':
+        return Where(field=self, value=value, operator=LessEqualThan)
+
     def __gt__(self, value) -> 'Where':
         return Where(field=self, value=value, operator=GreaterThan)
+
+    def __ge__(self, value) -> 'Where':
+        return Where(field=self, value=value, operator=GreaterEqualThan)
 
     def __eq__(self, value) -> 'Where':
         return Where(field=self, value=value, operator=Equal)

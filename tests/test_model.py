@@ -133,6 +133,60 @@ class TestQuery(DBTestCase):
             [{'name': 'raichu'}]
         )
 
+    def test_where_greater_equal_than(self):
+        self.insert_rows()
+
+        async def get_pokemon():
+            return await Pokemon.select(
+                'name'
+            ).where(
+                Pokemon.power >= 1000
+            ).execute()
+
+        response = asyncio.run(get_pokemon())
+        print(f'response = {response}')
+
+        self.assertEqual(
+            response,
+            [{'name': 'pikachu'}, {'name': 'raichu'}]
+        )
+
+    def test_where_less_than(self):
+        self.insert_rows()
+
+        async def get_pokemon():
+            return await Pokemon.select(
+                'name'
+            ).where(
+                Pokemon.power < 1000
+            ).execute()
+
+        response = asyncio.run(get_pokemon())
+        print(f'response = {response}')
+
+        self.assertEqual(
+            response,
+            [{'name': 'weedle'}]
+        )
+
+    def test_where_less_equal_than(self):
+        self.insert_rows()
+
+        async def get_pokemon():
+            return await Pokemon.select(
+                'name'
+            ).where(
+                Pokemon.power <= 1000
+            ).execute()
+
+        response = asyncio.run(get_pokemon())
+        print(f'response = {response}')
+
+        self.assertEqual(
+            response,
+            [{'name': 'pikachu'}, {'name': 'weedle'}]
+        )
+
     def tearDown(self):
         self.drop_table()
 

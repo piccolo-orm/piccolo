@@ -25,3 +25,15 @@ class Like(Operator):
 class GreaterThan(Operator):
     # Add permitted types???
     template = "{name} > {value}"
+
+
+class GreaterEqualThan(Operator):
+    template = "{name} >= {value}"
+
+
+class LessThan(Operator):
+    template = "{name} < {value}"
+
+
+class LessEqualThan(Operator):
+    template = "{name} <= {value}"
