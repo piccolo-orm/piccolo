@@ -1,5 +1,6 @@
-from aragorm.model import Model
+from aragorm import model
+from aragorm import fields
 
 
-class Pokemon(Model):
-    pass
+class Pokemon(model.Model):
+    name = fields.Varchar(length=50)

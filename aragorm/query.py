@@ -1,5 +1,7 @@
 import asyncpg
 
+from .fields import Where
+
 
 TEST_CREDENTIALS = {
     'host': 'localhost',
@@ -15,20 +17,6 @@ class Value(object):
     type.
     """
     pass
-
-
-class Where(object):
-    """
-    Example use case - id = 5
-
-    Can potentially simplify things dramatically here by just accepting
-    postgres where clauses directly, avoiding the need for equal, greater than
-    etc syntax.
-    """
-
-    def __init__(self, field: str, value: Value):
-        self.field = Field
-        self.value = value
 
 
 class Query(object):
