@@ -24,7 +24,7 @@ class TestFields(unittest.TestCase):
         _where = name_field.like('%chu')
         sql = _where.get_sql(name="name")
         print(sql)
-        self.assertEqual(sql, 'name LIKE %chu')
+        self.assertEqual(sql, "name LIKE '%chu'")
 
     def test_is_in(self):
         _where = name_field.is_in(['pikachu', 'raichu'])

@@ -19,4 +19,4 @@ class NotIn(Operator):
 
 
 class Like(Operator):
-    template = '{name} LIKE {value}'
+    template = "{name} LIKE '{value}'"
