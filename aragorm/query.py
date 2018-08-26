@@ -42,7 +42,14 @@ class Query(object):
 
         The query needs a link to the table calling it ...
         """
-        return self.base
+        query = self.base
+        if self.where_clauses:
+            query += ' WHERE '
+            for clause in self.where_clauses:
+                name = self.model.get_field_name(clause.field)
+                query += clause.get_sql(name)
+        print(query)
+        return query
 
     async def execute(self, as_dict=True) -> str:
         """

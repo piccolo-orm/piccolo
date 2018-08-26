@@ -1,4 +1,5 @@
 import typing
+import uuid
 
 from .operators import Operator, In, NotIn, Equal, NotEqual, Like
 
@@ -10,6 +11,10 @@ class Field():
 
     def __init__(self, null: bool = True):
         self.null = null
+        self.uuid = uuid.uuid4()
+
+    def __hash__(self):
+        return hash(self.uuid)
 
     def is_in(self, values: Iterable) -> 'Where':
         return Where(field=self, values=values, operator=In)

@@ -122,4 +122,4 @@ class TestQuery(DBTestCase):
 class TestMetaClass(TestCase):
 
     def test_tablename(self):
-        self.assertEqual(Pokemon.__tablename__, 'pokemon')
+        self.assertEqual(Pokemon.tablename, 'pokemon')

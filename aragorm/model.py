@@ -22,39 +22,27 @@ class ModelMeta(type):
         """
         model = super().__new__(cls, name, bases, namespace)
 
-        tablename = _camel_to_snake(name)
-        model.__tablename__ = tablename
+        tablename = namespace.get('tablename')
+        if not tablename:
+            model.tablename = _camel_to_snake(name)
 
         fields = {}
         for key, value in namespace.items():
             if issubclass(type(value), Field):
-                fields[name] = value
+                fields[value] = key
 
-        model.__fields__ = fields
+        model.fields = fields
         return model
 
 
 class Model(metaclass=ModelMeta):
 
     @classmethod
-    def _tablename(cls):
-        tablename = getattr(cls, 'tablename', None)
-        if tablename:
-            return tablename
-        else:
-            # TODO - FooBar -> foo_bar
-            return cls.__name__.lower()
-
-    @property
-    def fields() -> [Field]:
-        """
-        Needs to inspect the subclass, and return all Fields.
-
-        Also ... needs to be a classproperty, or just stored by the meta
-        class.
-
-        Want this generated once by the meta class, or cached.
-        """
+    def get_field_name(cls, field: Field) -> str:
+        field_name = cls.fields.get(field, None)
+        if not field_name:
+            raise ValueError(f'Unrecognised field')
+        return field_name
 
     @classmethod
     def select(cls, *field_names: [str]) -> Query:
@@ -73,11 +61,10 @@ class Model(metaclass=ModelMeta):
             # TODO - make sure the fields passed in are valid
             fields_str = ', '.join(field_names)
 
-        tablename = cls._tablename()
         return Query(
             type='SELECT',
             model=cls,
-            base=f'SELECT {fields_str} from {tablename}'
+            base=f'SELECT {fields_str} from {cls.tablename}'
             )
 
     @classmethod
