@@ -31,6 +31,14 @@ class Limit():
         return f' LIMIT {self.number}'
 
 
+class OrderBy:
+    def __init__(self, field_name: str):
+        self.field_name = field_name
+
+    def __str__(self):
+        return f' ORDER BY {self.field_name}'
+
+
 class Query(object):
     """
     For now, just make it handle select.
@@ -47,13 +55,7 @@ class Query(object):
         self.model = model
         self.where_clauses: [Combinable] = []
         self._limit: Limit = None
-
-    def first(self):
-        """
-        LIMIT 1 ... and only return the first row ...
-
-        I want to think about using .limit() too ...
-        """
+        self._order_by: OrderBy = None
 
     async def execute(self, as_dict=True):
         """
@@ -80,12 +82,25 @@ class Query(object):
         self._limit = Limit(1)
         return self
 
+    def _is_valid_field_name(self, field_name: str):
+        if field_name.startswith('-'):
+            field_name = field_name[0:]
+        return field_name in [i.name for i in self.model.fields]
+
+    def order_by(self, field_name: str):
+        if not self._is_valid_field_name(field_name):
+            raise ValueError(f"{field_name} isn't a valid field name")
+        self._order_by = OrderBy(field_name)
+        return self
+
     def __str__(self):
         query = self.base
         if self.where_clauses:
             query += ' WHERE '
             for clause in self.where_clauses:
                 query += clause.__str__()
+        if self._order_by:
+            query += self._order_by.__str__()
         if self._limit:
             query += self._limit.__str__()
         print(query)
