@@ -79,11 +79,14 @@ class Integer(Field):
 
 ###############################################################################
 
+combinable = typing.Union['Where', 'And', 'Or']
+
+
 class CombinableMixin(object):
-    def __and__(self, value: typing.Union['Where', 'And', 'Or']) -> 'And':
+    def __and__(self, value: combinable) -> 'And':
         return And(self, value)
 
-    def __or__(self, value: typing.Union['Where', 'And', 'Or']) -> 'Or':
+    def __or__(self, value: combinable) -> 'Or':
         return Or(self, value)
 
 
@@ -91,7 +94,7 @@ class Combination(CombinableMixin):
 
     operator = ''
 
-    def __init__(self, first: 'Where', second: 'Where'):
+    def __init__(self, first: combinable, second: combinable):
         self.first = first
         self.second = second
 
