@@ -205,6 +205,24 @@ class TestQuery(DBTestCase):
             [{'name': 'pikachu'}]
         )
 
+    def test_where_or(self):
+        self.insert_rows()
+
+        async def get_pokemon():
+            return await Pokemon.select(
+                'name'
+            ).where(
+                (Pokemon.name == 'raichu') | (Pokemon.name == 'weedle')
+            ).execute()
+
+        response = asyncio.run(get_pokemon())
+        print(f'response = {response}')
+
+        self.assertEqual(
+            response,
+            [{'name': 'raichu'}, {'name': 'weedle'}]
+        )
+
     def tearDown(self):
         self.drop_table()
 

@@ -1,5 +1,4 @@
 import typing
-import uuid
 
 from .operators import (
     Equal,
@@ -22,10 +21,6 @@ class Field():
 
     def __init__(self, null: bool = True):
         self.null = null
-        self.uuid = uuid.uuid4()
-
-    def __hash__(self):
-        return hash(self.uuid)
 
     def is_in(self, values: Iterable) -> 'Where':
         return Where(field=self, values=values, operator=In)
@@ -37,6 +32,13 @@ class Field():
         if '%' not in value:
             raise ValueError('% is required for like operators')
         return Where(field=self, value=value, operator=Like)
+
+    def format_value(self, value):
+        """
+        Takes the raw Python value and return a string usable in the database
+        query.
+        """
+        return f'{value}'
 
     def __lt__(self, value) -> 'Where':
         return Where(field=self, value=value, operator=LessThan)
@@ -62,6 +64,12 @@ class Varchar(Field):
         self.length = length
         self.default = default
         super().__init__(**kwargs)
+
+    def format_value(self, value):
+        if type(value) != str:
+            raise ValueError('Varchar only accepts strings')
+        # TODO sanitize input
+        return f"'{value}'"
 
 
 class Integer(Field):
@@ -94,11 +102,6 @@ class Or(Combination):
 
 
 class Where(object):
-    """
-    Can potentially simplify things dramatically here by just accepting
-    postgres where clauses directly, avoiding the need for equal, greater than
-    etc syntax.
-    """
 
     def __init__(self, field: Field, value: typing.Any = None,
                  values: Iterable = [], operator: Operator = None):
@@ -120,6 +123,6 @@ class Where(object):
     def __str__(self):
         return self.operator.template.format(
             name=self.field.name,
-            value=self.value,
+            value=self.field.format_value(self.value),
             values=self.values_str,
         )
