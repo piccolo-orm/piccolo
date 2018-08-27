@@ -89,7 +89,7 @@ class Combination(object):
 
     def __str__(self):
         return (
-            f'{self.first.__str__()} {self.operator} {self.second.__str__()}'
+            f'({self.first.__str__()} {self.operator} {self.second.__str__()})'
         )
 
 
