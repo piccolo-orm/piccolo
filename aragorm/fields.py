@@ -118,11 +118,17 @@ class Where(object):
 
     @property
     def values_str(self):
-        return ', '.join([str(v) for v in self.values])
+        return ', '.join(
+            [self.field.format_value(v) for v in self.values]
+        )
 
     def __str__(self):
-        return self.operator.template.format(
-            name=self.field.name,
-            value=self.field.format_value(self.value),
-            values=self.values_str,
-        )
+        kwargs = {
+            'name': self.field.name
+        }
+        if self.value:
+            kwargs['value'] = self.field.format_value(self.value)
+        if self.values:
+            kwargs['values'] = self.values_str
+
+        return self.operator.template.format(**kwargs)

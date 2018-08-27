@@ -14,13 +14,13 @@ class TestFields(unittest.TestCase):
         _where = (name_field == 'pikachu')
         sql = _where.__str__()
         print(sql)
-        self.assertEqual(sql, 'name = pikachu')
+        self.assertEqual(sql, "name = 'pikachu'")
 
     def test_not_equal(self):
         _where = (name_field != 'weedle')
         sql = _where.__str__()
         print(sql)
-        self.assertEqual(sql, 'name != weedle')
+        self.assertEqual(sql, "name != 'weedle'")
 
     def test_like(self):
         _where = name_field.like('%chu')
@@ -32,13 +32,13 @@ class TestFields(unittest.TestCase):
         _where = name_field.is_in(['pikachu', 'raichu'])
         sql = _where.__str__()
         print(sql)
-        self.assertEqual(sql, 'name IN (pikachu, raichu)')
+        self.assertEqual(sql, "name IN ('pikachu', 'raichu')")
 
-    def test_is_in(self):
+    def test_not_in(self):
         _where = name_field.not_in(['weedle'])
         sql = _where.__str__()
         print(sql)
-        self.assertEqual(sql, 'name NOT IN (weedle)')
+        self.assertEqual(sql, "name NOT IN ('weedle')")
 
 
 class TestWhere():
