@@ -72,17 +72,25 @@ class Integer(Field):
 ###############################################################################
 
 class Combination(object):
+
+    operator = ''
+
     def __init__(self, first: 'Where', second: 'Where'):
         self.first = first
         self.second = second
 
+    def __str__(self):
+        return (
+            f'{self.first.__str__()} {self.operator} {self.second.__str__()}'
+        )
+
 
 class And(Combination):
-    pass
+    operator = 'AND'
 
 
 class Or(Combination):
-    pass
+    operator = 'OR'
 
 
 class Where(object):
@@ -100,27 +108,18 @@ class Where(object):
         self.operator = operator
 
     def __and__(self, value: 'Where') -> And:
-        """
-        This is a challenge now ... I think I just have WhereAnd, and WhereOr.
-        """
         return And(self, value)
 
     def __or__(self, value: 'Where') -> Or:
-        """
-        This is a challenge now ... I think I just have WhereAnd, and WhereOr.
-        """
-        return And(self, value)
+        return Or(self, value)
 
     @property
     def values_str(self):
         return ', '.join([str(v) for v in self.values])
 
-    def get_sql(self, name: str):
+    def __str__(self):
         return self.operator.template.format(
-            name=name,
+            name=self.field.name,
             value=self.value,
             values=self.values_str,
         )
-
-    def __str__():
-        return self.operator.template

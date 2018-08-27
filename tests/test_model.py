@@ -187,6 +187,24 @@ class TestQuery(DBTestCase):
             [{'name': 'pikachu'}, {'name': 'weedle'}]
         )
 
+    def test_where_and(self):
+        self.insert_rows()
+
+        async def get_pokemon():
+            return await Pokemon.select(
+                'name'
+            ).where(
+                (Pokemon.power <= 1000) & (Pokemon.name.like('%chu'))
+            ).execute()
+
+        response = asyncio.run(get_pokemon())
+        print(f'response = {response}')
+
+        self.assertEqual(
+            response,
+            [{'name': 'pikachu'}]
+        )
+
     def tearDown(self):
         self.drop_table()
 

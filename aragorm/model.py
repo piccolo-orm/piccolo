@@ -26,23 +26,17 @@ class ModelMeta(type):
         if not tablename:
             model.tablename = _camel_to_snake(name)
 
-        fields = {}
+        fields = []
         for key, value in namespace.items():
             if issubclass(type(value), Field):
-                fields[value] = key
+                fields.append(value)
+                value.name = key
 
         model.fields = fields
         return model
 
 
 class Model(metaclass=ModelMeta):
-
-    @classmethod
-    def get_field_name(cls, field: Field) -> str:
-        field_name = cls.fields.get(field, None)
-        if not field_name:
-            raise ValueError(f'Unrecognised field')
-        return field_name
 
     @classmethod
     def select(cls, *field_names: [str]) -> Query:

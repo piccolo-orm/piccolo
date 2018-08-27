@@ -35,16 +35,6 @@ class Query(object):
         self.model = model
         self.where_clauses: [Where] = []
 
-    def generate_query(self):
-        query = self.base
-        if self.where_clauses:
-            query += ' WHERE '
-            for clause in self.where_clauses:
-                name = self.model.get_field_name(clause.field)
-                query += clause.get_sql(name)
-        print(query)
-        return query
-
     def first(self):
         """
         LIMIT 1 ... and only return the first row ...
@@ -57,7 +47,7 @@ class Query(object):
         Now ... just execute it from within here for now ...
         """
         conn = await asyncpg.connect(**TEST_CREDENTIALS)
-        results = await conn.fetch(self.generate_query())
+        results = await conn.fetch(self.__str__())
         await conn.close()
         # TODO Be able to output it in different formats.
         return [dict(i.items()) for i in results]
@@ -67,4 +57,10 @@ class Query(object):
         return self
 
     def __str__(self):
-        return self.generate_query()
+        query = self.base
+        if self.where_clauses:
+            query += ' WHERE '
+            for clause in self.where_clauses:
+                query += clause.__str__()
+        print(query)
+        return query
