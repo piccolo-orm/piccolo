@@ -1,6 +1,8 @@
 import asyncpg
 
-from .fields import Where
+from .fields import And, Where
+from .types import Combinable
+
 
 
 TEST_CREDENTIALS = {
@@ -33,7 +35,7 @@ class Query(object):
         # For example select * from my_table
         self.base = base
         self.model = model
-        self.where_clauses: [Where] = []
+        self.where_clauses: [Combinable] = []
 
     def first(self):
         """
@@ -52,8 +54,11 @@ class Query(object):
         # TODO Be able to output it in different formats.
         return [dict(i.items()) for i in results]
 
-    def where(self, where: Where):
-        self.where_clauses.append(where)
+    def where(self, where: Combinable):
+        if self.where_clauses:
+            self.where_clauses = And(self.where_clauses[0], where)
+        else:
+            self.where_clauses.append(where)
         return self
 
     def __str__(self):

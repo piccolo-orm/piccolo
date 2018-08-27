@@ -1,5 +1,3 @@
-import typing
-
 from .operators import (
     Equal,
     GreaterEqualThan,
@@ -12,9 +10,7 @@ from .operators import (
     NotIn,
     Operator,
 )
-
-
-Iterable = typing.Iterable[typing.Any]
+from .types import Combinable, Iterable
 
 
 class Field():
@@ -79,14 +75,11 @@ class Integer(Field):
 
 ###############################################################################
 
-combinable = typing.Union['Where', 'And', 'Or']
-
-
 class CombinableMixin(object):
-    def __and__(self, value: combinable) -> 'And':
+    def __and__(self, value: Combinable) -> 'And':
         return And(self, value)
 
-    def __or__(self, value: combinable) -> 'Or':
+    def __or__(self, value: Combinable) -> 'Or':
         return Or(self, value)
 
 
@@ -94,7 +87,7 @@ class Combination(CombinableMixin):
 
     operator = ''
 
-    def __init__(self, first: combinable, second: combinable):
+    def __init__(self, first: Combinable, second: Combinable):
         self.first = first
         self.second = second
 
