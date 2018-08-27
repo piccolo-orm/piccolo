@@ -56,7 +56,7 @@ class Query(object):
 
     def where(self, where: Combinable):
         if self.where_clauses:
-            self.where_clauses = And(self.where_clauses[0], where)
+            self.where_clauses = [And(self.where_clauses[0], where)]
         else:
             self.where_clauses.append(where)
         return self

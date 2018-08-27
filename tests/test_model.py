@@ -232,9 +232,31 @@ class TestQuery(DBTestCase):
 
     def test_multiple_where(self):
         """
-        Test that chaining multiple where clauses works as expected.
+        Test that chaining multiple where clauses works results in an AND.
         """
-        pass
+        self.insert_rows()
+
+        query = Pokemon.select(
+            'name'
+        ).where(
+            Pokemon.name == 'raichu'
+        ).where(
+            Pokemon.trainer == 'sally'
+        )
+
+        async def get_pokemon():
+            return await query.execute()
+
+        response = asyncio.run(get_pokemon())
+        print(f'response = {response}')
+
+        self.assertEqual(
+            response,
+            [{'name': 'raichu'}]
+        )
+        self.assertTrue(
+            'AND' in query.__str__()
+        )
 
     def test_complex_where(self):
         """

@@ -1,3 +1,5 @@
+import typing
+
 from .operators import (
     Equal,
     GreaterEqualThan,
