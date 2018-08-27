@@ -31,6 +31,7 @@ class TestQuery(DBTestCase):
         self.execute('''
             CREATE TABLE pokemon (
                 name VARCHAR(50),
+                trainer VARCHAR(20),
                 power SMALLINT
             );'''
         )
@@ -39,9 +40,11 @@ class TestQuery(DBTestCase):
         self.execute('''
             INSERT INTO pokemon (
                 name,
+                trainer,
                 power
             ) VALUES (
                 'pikachu',
+                'ash',
                 1000
             );'''
         )
@@ -50,15 +53,19 @@ class TestQuery(DBTestCase):
         self.execute('''
             INSERT INTO pokemon (
                 name,
+                trainer,
                 power
             ) VALUES (
                 'pikachu',
+                'ash',
                 1000
             ),(
                 'raichu',
+                'sally',
                 2000
             ),(
                 'weedle',
+                'gordon',
                 10
             );'''
         )
@@ -80,7 +87,7 @@ class TestQuery(DBTestCase):
 
         self.assertDictEqual(
             response[0],
-            {'name': 'pikachu', 'power': 1000}
+            {'name': 'pikachu', 'trainer': 'ash', 'power': 1000}
         )
 
     def test_query_some_columns(self):
@@ -213,6 +220,34 @@ class TestQuery(DBTestCase):
                 'name'
             ).where(
                 (Pokemon.name == 'raichu') | (Pokemon.name == 'weedle')
+            ).execute()
+
+        response = asyncio.run(get_pokemon())
+        print(f'response = {response}')
+
+        self.assertEqual(
+            response,
+            [{'name': 'raichu'}, {'name': 'weedle'}]
+        )
+
+    def test_multiple_where(self):
+        """
+        Test that chaining multiple where clauses works as expected.
+        """
+        pass
+
+    def test_complex_where(self):
+        """
+        Test a complex where clause - combining AND, and OR.
+        """
+        self.insert_rows()
+
+        async def get_pokemon():
+            return await Pokemon.select(
+                'name'
+            ).where(
+                ((Pokemon.power == 2000) & (Pokemon.trainer == 'sally')) |
+                ((Pokemon.power == 10) & (Pokemon.trainer == 'gordon'))
             ).execute()
 
         response = asyncio.run(get_pokemon())
