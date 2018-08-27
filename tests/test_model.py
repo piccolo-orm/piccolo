@@ -280,6 +280,24 @@ class TestQuery(DBTestCase):
             [{'name': 'raichu'}, {'name': 'weedle'}]
         )
 
+    def test_limit(self):
+        self.insert_rows()
+
+        async def get_pokemon():
+            return await Pokemon.select(
+                'name'
+            ).limit(
+                1
+            ).execute()
+
+        response = asyncio.run(get_pokemon())
+        print(f'response = {response}')
+
+        self.assertEqual(
+            response,
+            [{'name': 'pikachu'}]
+        )
+
     def tearDown(self):
         self.drop_table()
 

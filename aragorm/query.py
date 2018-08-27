@@ -21,6 +21,16 @@ class Value(object):
     pass
 
 
+class Limit():
+    def __init__(self, number: int):
+        if type(number) != int:
+            raise TypeError('Limit must be an integer')
+        self.number = number
+
+    def __str__(self):
+        return f' LIMIT {self.number}'
+
+
 class Query(object):
     """
     For now, just make it handle select.
@@ -36,6 +46,7 @@ class Query(object):
         self.base = base
         self.model = model
         self.where_clauses: [Combinable] = []
+        self._limit: Limit = None
 
     def first(self):
         """
@@ -61,11 +72,21 @@ class Query(object):
             self.where_clauses.append(where)
         return self
 
+    def limit(self, number: int):
+        self._limit = Limit(number)
+        return self
+
+    def first(self):
+        self._limit = Limit(1)
+        return self
+
     def __str__(self):
         query = self.base
         if self.where_clauses:
             query += ' WHERE '
             for clause in self.where_clauses:
                 query += clause.__str__()
+        if self._limit:
+            query += self._limit.__str__()
         print(query)
         return query
