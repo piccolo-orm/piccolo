@@ -362,13 +362,19 @@ class TestUpdate(DBTestCase):
         async def update_pokemon():
             return await Pokemon.update(
                 name='kakuna'
+            ).where(
+                Pokemon.name == 'weedle'
             ).execute()
 
         async def check_pokemon():
-            return await Pokemon.select().where(Pokemon.name == 'kakuna')
+            return await Pokemon.select(
+                'name'
+            ).where(
+                Pokemon.name == 'kakuna'
+            ).execute()
 
         asyncio.run(update_pokemon())
-        response = asyncio.run(update_pokemon())
+        response = asyncio.run(check_pokemon())
         print(f'response = {response}')
 
         self.assertEqual(
