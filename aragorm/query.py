@@ -53,10 +53,11 @@ class Query(object):
         # For example select * from my_table
         self.base = base
         self.model = model
-        self.where_clauses: [Combinable] = []
+        self._where: [Combinable] = None
         self._limit: Limit = None
         self._order_by: OrderBy = None
 
+    # TODO - I want sync and async versions of this
     async def execute(self, as_dict=True):
         """
         Now ... just execute it from within here for now ...
@@ -68,10 +69,10 @@ class Query(object):
         return [dict(i.items()) for i in results]
 
     def where(self, where: Combinable):
-        if self.where_clauses:
-            self.where_clauses = [And(self.where_clauses[0], where)]
+        if self._where:
+            self._where = And(self._where, where)
         else:
-            self.where_clauses.append(where)
+            self._where = where
         return self
 
     def limit(self, number: int):
@@ -84,7 +85,7 @@ class Query(object):
 
     def _is_valid_field_name(self, field_name: str):
         if field_name.startswith('-'):
-            field_name = field_name[0:]
+            field_name = field_name[1:]
         return field_name in [i.name for i in self.model.fields]
 
     def order_by(self, field_name: str):
@@ -95,10 +96,8 @@ class Query(object):
 
     def __str__(self):
         query = self.base
-        if self.where_clauses:
-            query += ' WHERE '
-            for clause in self.where_clauses:
-                query += clause.__str__()
+        if self._where:
+            query += f' WHERE {self._where.__str__()}'
         if self._order_by:
             query += self._order_by.__str__()
         if self._limit:
