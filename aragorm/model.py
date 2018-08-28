@@ -62,7 +62,7 @@ class Model(metaclass=ModelMeta):
         )
 
     @classmethod
-    async def insert(cls, *row: ["Model"]):
+    async def insert(cls, *row: ['Model']):
         """
         In typing is it possible to distinguish between a class and a class
         instance?
@@ -72,22 +72,6 @@ class Model(metaclass=ModelMeta):
     @classmethod
     async def update(cls):
         """
-        All I want here is some filtering ... like by id, or name.
-
-        I want to just update certain fields ...
-
-        Need to think about the cleanest API.
-
-        await Pokemon.update('name', 'raichu').where('name', 'pikachu').execute()
-
-        OR:
-        await Pokemon.update(name='raichu').where(name='pikachu').execute()
-
-        await Pokemon.select('name').where(color='yellow').execute()
-
-        OR:
-        await Pokemon.select('name', 'power').where(power='yellow').execute()
-
-        Is there any way to use > symbol???
+        await Pokemon.update(name='raichu').where(Pokemon.name='pikachu').execute()
         """
         pass
