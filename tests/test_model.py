@@ -298,6 +298,43 @@ class TestQuery(DBTestCase):
             [{'name': 'pikachu'}]
         )
 
+    def test_order_by_ascending(self):
+        self.insert_rows()
+
+        async def get_pokemon():
+            return await Pokemon.select(
+                'name'
+            ).order_by(
+                'name'
+            ).limit(1).execute()
+
+        response = asyncio.run(get_pokemon())
+        print(f'response = {response}')
+
+        self.assertEqual(
+            response,
+            [{'name': 'pikachu'}]
+        )
+
+    def test_order_by_decending(self):
+        self.insert_rows()
+
+        async def get_pokemon():
+            return await Pokemon.select(
+                'name'
+            ).order_by(
+                '-name'
+            ).limit(1).execute()
+
+        response = asyncio.run(get_pokemon())
+        print(f'response = {response}')
+
+        self.assertEqual(
+            response,
+            [{'name': 'weedle'}]
+        )
+
+
     def tearDown(self):
         self.drop_table()
 

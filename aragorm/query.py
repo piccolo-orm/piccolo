@@ -32,11 +32,13 @@ class Limit():
 
 
 class OrderBy:
-    def __init__(self, field_name: str):
+    def __init__(self, field_name: str, ascending: bool):
         self.field_name = field_name
+        self.ascending = ascending
 
     def __str__(self):
-        return f' ORDER BY {self.field_name}'
+        order = 'ASC' if self.ascending else 'DESC'
+        return f' ORDER BY {self.field_name} {order}'
 
 
 class Query(object):
@@ -86,12 +88,18 @@ class Query(object):
     def _is_valid_field_name(self, field_name: str):
         if field_name.startswith('-'):
             field_name = field_name[1:]
-        return field_name in [i.name for i in self.model.fields]
+        if not field_name in [i.name for i in self.model.fields]:
+            raise ValueError(f"{field_name} isn't a valid field name")
 
     def order_by(self, field_name: str):
-        if not self._is_valid_field_name(field_name):
-            raise ValueError(f"{field_name} isn't a valid field name")
-        self._order_by = OrderBy(field_name)
+        self._is_valid_field_name(field_name)
+
+        ascending = True
+        if field_name.startswith('-'):
+            ascending = False
+            field_name = field_name[1:]
+
+        self._order_by = OrderBy(field_name, ascending)
         return self
 
     def __str__(self):
