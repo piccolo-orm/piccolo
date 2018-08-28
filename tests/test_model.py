@@ -337,6 +337,22 @@ class TestSelect(DBTestCase):
             [{'name': 'weedle'}]
         )
 
+    def test_count(self):
+        self.insert_rows()
+
+        async def get_pokemon():
+            return await Pokemon.select().where(
+                Pokemon.name == 'pikachu'
+            ).count().execute()
+
+        response = asyncio.run(get_pokemon())
+        print(f'response = {response}')
+
+        self.assertEqual(
+            response,
+            [{'count': 1}]
+        )
+
 
 class TestUpdate(DBTestCase):
 

@@ -86,7 +86,7 @@ class Query(object):
         return self
 
     def count(self):
-        self.base = 'SELECT COUNT(*)'
+        self.base = f'SELECT COUNT(*) FROM {self.model.tablename}'
         return self
 
     def _is_valid_field_name(self, field_name: str):
