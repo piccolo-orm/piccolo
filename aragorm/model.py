@@ -62,7 +62,7 @@ class Model(metaclass=ModelMeta):
         )
 
     @classmethod
-    async def insert(cls, *row: ['Model']):
+    def insert(cls, *instances: ['Model']):
         """
         In typing is it possible to distinguish between a class and a class
         instance?
@@ -70,8 +70,18 @@ class Model(metaclass=ModelMeta):
         pass
 
     @classmethod
-    async def update(cls):
+    def update(cls, **fields):
         """
         await Pokemon.update(name='raichu').where(Pokemon.name='pikachu').execute()
+
+        UPDATE pokemon SET name = 'raichu', power = '1000' where name = 'pikachu'
         """
-        pass
+        fields_str = ','.join([
+            f'{field} = {getattr(cls, field).format_value(value)}' for field, value in fields.items()
+        ])
+
+        return Query(
+            type='UPDATE',
+            model=cls,
+            base=f'UPDATE {cls.tablename} SET {fields_str}'
+        )

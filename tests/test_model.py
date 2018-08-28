@@ -24,9 +24,6 @@ class DBTestCase(TestCase):
 
         asyncio.run(_execute())
 
-
-class TestQuery(DBTestCase):
-
     def create_table(self):
         self.execute('''
             CREATE TABLE pokemon (
@@ -75,6 +72,12 @@ class TestQuery(DBTestCase):
 
     def setUp(self):
         self.create_table()
+
+    def tearDown(self):
+        self.drop_table()
+
+
+class TestSelect(DBTestCase):
 
     def test_query_all_columns(self):
         self.insert_row()
@@ -335,8 +338,27 @@ class TestQuery(DBTestCase):
         )
 
 
-    def tearDown(self):
-        self.drop_table()
+class TestUpdate(DBTestCase):
+
+    def test_update(self):
+        self.insert_rows()
+
+        async def update_pokemon():
+            return await Pokemon.update(
+                name='kakuna'
+            ).execute()
+
+        async def check_pokemon():
+            return await Pokemon.select().where(Pokemon.name == 'kakuna')
+
+        asyncio.run(update_pokemon())
+        response = asyncio.run(update_pokemon())
+        print(f'response = {response}')
+
+        self.assertEqual(
+            response,
+            [{'name': 'kakuna'}]
+        )
 
 
 class TestMetaClass(TestCase):

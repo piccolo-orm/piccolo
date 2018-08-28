@@ -85,6 +85,10 @@ class Query(object):
         self._limit = Limit(1)
         return self
 
+    def count(self):
+        self.base = 'SELECT COUNT(*)'
+        return self
+
     def _is_valid_field_name(self, field_name: str):
         if field_name.startswith('-'):
             field_name = field_name[1:]
