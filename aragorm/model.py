@@ -85,3 +85,16 @@ class Model(metaclass=ModelMeta):
             model=cls,
             base=f'UPDATE {cls.tablename} SET {fields_str}'
         )
+
+    @classmethod
+    def delete(cls, **fields):
+        """
+        await Pokemon.delete().where(Pokemon.name='weedle').execute()
+
+        DELETE FROM pokemon where name = 'weedle'
+        """
+        return Query(
+            type='DELETE',
+            model=cls,
+            base=f'DELETE FROM {cls.tablename}'
+        )
