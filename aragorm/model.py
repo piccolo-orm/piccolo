@@ -66,6 +66,34 @@ class Model(metaclass=ModelMeta):
         """
         In typing is it possible to distinguish between a class and a class
         instance?
+
+        Pokemon.insert(
+            Pokemon(name="jigglypuff", power=500, trainer="florence")
+        )
+
+        Need to allow things like:
+
+        jigglypuff = Pokemon(name="jigglypuff", power=500, trainer="florence")
+
+        Pokemon.insert(jigglypuff)
+
+        jigglypuff.power = 600
+        # this is where save would be useful ...
+        # save could be an alias to self.__cls__.save(self)
+        # it just depends if the instance has an id set yet
+        # if no id, use self.__cls__.insert(self)
+        # if an id, use self.__cls__.update(**self.fields)
+
+        It depends how far wen want to go with ORM style
+        -> need to avoid properties which trigger ORM queries
+        --> dot lookups should just return the id
+        ---> can do Pokemon.get_related('gym')
+        -> makes related queries tricky
+        -> I need to start building apps using aragorm ... so can work out
+        what's required and what isn't.
+        -> need a simple router ...
+        --> sanic or quart
+
         """
         pass
 
