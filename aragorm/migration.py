@@ -20,6 +20,17 @@ import click
 from aragorm.model import Model
 
 
+def create_migrations_folder(directory: str) -> bool:
+    path = os.path.join(directory, 'migrations')
+    if os.path.exists(path):
+        return False
+    else:
+        os.mkdir(path)
+        with open(os.path.join(path, '__init__.py'), 'w'):
+            pass
+        return True
+
+
 @click.command()
 @click.argument('directory')
 def migration(directory):
@@ -36,8 +47,6 @@ def migration(directory):
         'models.py'
     )
 
-    print(models_file)
-
     if not os.path.exists(models_file):
         raise ValueError("Can't find models.py!")
 
@@ -52,6 +61,10 @@ def migration(directory):
             model_classes.append(element)
 
     print(model_classes)
+
+    create_migrations_folder(models_dir)
+    # next ... if empty ... create initial commit ...
+    # Get the class ...
 
 
 if __name__ == '__main__':
