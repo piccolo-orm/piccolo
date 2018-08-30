@@ -1,6 +1,6 @@
 import asyncpg
 
-from .fields import And, Where
+from .columns import And, Where
 from .types import Combinable
 
 
@@ -15,7 +15,7 @@ TEST_CREDENTIALS = {
 
 class Value(object):
     """
-    This needs to have a type, which needs to be compatible with the field
+    This needs to have a type, which needs to be compatible with the column
     type.
     """
     pass
@@ -32,13 +32,13 @@ class Limit():
 
 
 class OrderBy:
-    def __init__(self, field_name: str, ascending: bool):
-        self.field_name = field_name
+    def __init__(self, column_name: str, ascending: bool):
+        self.column_name = column_name
         self.ascending = ascending
 
     def __str__(self):
         order = 'ASC' if self.ascending else 'DESC'
-        return f' ORDER BY {self.field_name} {order}'
+        return f' ORDER BY {self.column_name} {order}'
 
 
 class Query(object):
@@ -89,21 +89,21 @@ class Query(object):
         self.base = f'SELECT COUNT(*) FROM {self.model.tablename}'
         return self
 
-    def _is_valid_field_name(self, field_name: str):
-        if field_name.startswith('-'):
-            field_name = field_name[1:]
-        if not field_name in [i.name for i in self.model.fields]:
-            raise ValueError(f"{field_name} isn't a valid field name")
+    def _is_valid_column_name(self, column_name: str):
+        if column_name.startswith('-'):
+            column_name = column_name[1:]
+        if not column_name in [i.name for i in self.model.columns]:
+            raise ValueError(f"{column_name} isn't a valid column name")
 
-    def order_by(self, field_name: str):
-        self._is_valid_field_name(field_name)
+    def order_by(self, column_name: str):
+        self._is_valid_column_name(column_name)
 
         ascending = True
-        if field_name.startswith('-'):
+        if column_name.startswith('-'):
             ascending = False
-            field_name = field_name[1:]
+            column_name = column_name[1:]
 
-        self._order_by = OrderBy(field_name, ascending)
+        self._order_by = OrderBy(column_name, ascending)
         return self
 
     def __str__(self):

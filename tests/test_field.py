@@ -1,41 +1,41 @@
 import unittest
 
-from aragorm import fields
+from aragorm import columns
 
 
-name_field = fields.Varchar()
+name_column = columns.Varchar()
 # Usually this is handled by the Model MetaClass:
-name_field.name = 'name'
+name_column.name = 'name'
 
 
-class TestFields(unittest.TestCase):
+class TestColumns(unittest.TestCase):
 
     def test_equals(self):
-        _where = (name_field == 'pikachu')
+        _where = (name_column == 'pikachu')
         sql = _where.__str__()
         print(sql)
         self.assertEqual(sql, "name = 'pikachu'")
 
     def test_not_equal(self):
-        _where = (name_field != 'weedle')
+        _where = (name_column != 'weedle')
         sql = _where.__str__()
         print(sql)
         self.assertEqual(sql, "name != 'weedle'")
 
     def test_like(self):
-        _where = name_field.like('%chu')
+        _where = name_column.like('%chu')
         sql = _where.__str__()
         print(sql)
         self.assertEqual(sql, "name LIKE '%chu'")
 
     def test_is_in(self):
-        _where = name_field.is_in(['pikachu', 'raichu'])
+        _where = name_column.is_in(['pikachu', 'raichu'])
         sql = _where.__str__()
         print(sql)
         self.assertEqual(sql, "name IN ('pikachu', 'raichu')")
 
     def test_not_in(self):
-        _where = name_field.not_in(['weedle'])
+        _where = name_column.not_in(['weedle'])
         sql = _where.__str__()
         print(sql)
         self.assertEqual(sql, "name NOT IN ('weedle')")

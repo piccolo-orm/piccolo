@@ -15,21 +15,21 @@ from .operators import (
 from .types import Combinable, Iterable
 
 
-class Field():
+class Column():
 
     def __init__(self, null: bool = True):
         self.null = null
 
     def is_in(self, values: Iterable) -> 'Where':
-        return Where(field=self, values=values, operator=In)
+        return Where(column=self, values=values, operator=In)
 
     def not_in(self, values: Iterable) -> 'Where':
-        return Where(field=self, values=values, operator=NotIn)
+        return Where(column=self, values=values, operator=NotIn)
 
     def like(self, value: str) -> 'Where':
         if '%' not in value:
             raise ValueError('% is required for like operators')
-        return Where(field=self, value=value, operator=Like)
+        return Where(column=self, value=value, operator=Like)
 
     def format_value(self, value):
         """
@@ -39,25 +39,25 @@ class Field():
         return f'{value}'
 
     def __lt__(self, value) -> 'Where':
-        return Where(field=self, value=value, operator=LessThan)
+        return Where(column=self, value=value, operator=LessThan)
 
     def __le__(self, value) -> 'Where':
-        return Where(field=self, value=value, operator=LessEqualThan)
+        return Where(column=self, value=value, operator=LessEqualThan)
 
     def __gt__(self, value) -> 'Where':
-        return Where(field=self, value=value, operator=GreaterThan)
+        return Where(column=self, value=value, operator=GreaterThan)
 
     def __ge__(self, value) -> 'Where':
-        return Where(field=self, value=value, operator=GreaterEqualThan)
+        return Where(column=self, value=value, operator=GreaterEqualThan)
 
     def __eq__(self, value) -> 'Where':
-        return Where(field=self, value=value, operator=Equal)
+        return Where(column=self, value=value, operator=Equal)
 
     def __ne__(self, value) -> 'Where':
-        return Where(field=self, value=value, operator=NotEqual)
+        return Where(column=self, value=value, operator=NotEqual)
 
 
-class Varchar(Field):
+class Varchar(Column):
     def __init__(self, length: int = 255, default: str = None, **kwargs):
         self.length = length
         self.default = default
@@ -70,7 +70,7 @@ class Varchar(Field):
         return f"'{value}'"
 
 
-class Integer(Field):
+class Integer(Column):
     def __init__(self, default: int = None, **kwargs):
         self.default = default
         super().__init__(**kwargs)
@@ -109,9 +109,9 @@ class Or(Combination):
 
 class Where(CombinableMixin):
 
-    def __init__(self, field: Field, value: typing.Any = None,
+    def __init__(self, column: Column, value: typing.Any = None,
                  values: Iterable = [], operator: Operator = None):
-        self.field = field
+        self.column = column
         self.value = value
         self.values = values
         self.operator = operator
@@ -119,15 +119,15 @@ class Where(CombinableMixin):
     @property
     def values_str(self):
         return ', '.join(
-            [self.field.format_value(v) for v in self.values]
+            [self.column.format_value(v) for v in self.values]
         )
 
     def __str__(self):
         kwargs = {
-            'name': self.field.name
+            'name': self.column.name
         }
         if self.value:
-            kwargs['value'] = self.field.format_value(self.value)
+            kwargs['value'] = self.column.format_value(self.value)
         if self.values:
             kwargs['values'] = self.values_str
 
