@@ -56,8 +56,14 @@ class Column():
     def __ne__(self, value) -> 'Where':
         return Where(column=self, value=value, operator=NotEqual)
 
+    def __str__(self):
+        name = getattr(self, 'name', '')
+        column_type = self.__class__.__name__.lower()
+        return f'{name} {column_type}'
+
 
 class Varchar(Column):
+
     def __init__(self, length: int = 255, default: str = None, **kwargs):
         self.length = length
         self.default = default

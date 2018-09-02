@@ -1,7 +1,7 @@
 import typing
 
 from .columns import Column
-from .query import Query
+from .query import Select, Update, Insert, Create, Delete
 from .utils import _camel_to_snake
 
 
@@ -39,7 +39,7 @@ class TableMeta(type):
 class Table(metaclass=TableMeta):
 
     @classmethod
-    def select(cls, *column_names: [str]) -> Query:
+    def select(cls, *column_names: [str]) -> Select:
         """
         Needs to be a simple wrapper.
 
@@ -55,7 +55,7 @@ class Table(metaclass=TableMeta):
             # TODO - make sure the columns passed in are valid
             columns_str = ', '.join(column_names)
 
-        return Query(
+        return Select(
             type='SELECT',
             table=cls,
             base=f'SELECT {columns_str} from {cls.tablename}'
@@ -108,7 +108,7 @@ class Table(metaclass=TableMeta):
             f'{column} = {getattr(cls, column).format_value(value)}' for column, value in columns.items()
         ])
 
-        return Query(
+        return Update(
             type='UPDATE',
             table=cls,
             base=f'UPDATE {cls.tablename} SET {columns_str}'
@@ -121,7 +121,7 @@ class Table(metaclass=TableMeta):
 
         DELETE FROM pokemon where name = 'weedle'
         """
-        return Query(
+        return Delete(
             type='DELETE',
             table=cls,
             base=f'DELETE FROM {cls.tablename}'
@@ -132,8 +132,15 @@ class Table(metaclass=TableMeta):
         """
         await Pokemon.create().execute()
         """
-        return Query(
+        return Create(
             type='CREATE',
             table=cls,
             base=f'CREATE TABLE {cls.tablename}'
         )
+
+    @classmethod
+    def raw(cls):
+        """
+        await Pokemon.raw('select * from foo')
+        """
+        pass

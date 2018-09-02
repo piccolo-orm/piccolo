@@ -40,6 +40,7 @@ class OrderBy:
         order = 'ASC' if self.ascending else 'DESC'
         return f' ORDER BY {self.column_name} {order}'
 
+###############################################################################
 
 class Query(object):
     """
@@ -70,6 +71,16 @@ class Query(object):
         # TODO Be able to output it in different formats.
         return [dict(i.items()) for i in results]
 
+    def _is_valid_column_name(self, column_name: str):
+        if column_name.startswith('-'):
+            column_name = column_name[1:]
+        if not column_name in [i.name for i in self.table.columns]:
+            raise ValueError(f"{column_name} isn't a valid column name")
+
+###############################################################################
+
+class WhereMixin():
+
     def where(self, where: Combinable):
         if self._where:
             self._where = And(self._where, where)
@@ -77,23 +88,8 @@ class Query(object):
             self._where = where
         return self
 
-    def limit(self, number: int):
-        self._limit = Limit(number)
-        return self
 
-    def first(self):
-        self._limit = Limit(1)
-        return self
-
-    def count(self):
-        self.base = f'SELECT COUNT(*) FROM {self.table.tablename}'
-        return self
-
-    def _is_valid_column_name(self, column_name: str):
-        if column_name.startswith('-'):
-            column_name = column_name[1:]
-        if not column_name in [i.name for i in self.table.columns]:
-            raise ValueError(f"{column_name} isn't a valid column name")
+class OrderByMixin():
 
     def order_by(self, column_name: str):
         self._is_valid_column_name(column_name)
@@ -106,6 +102,28 @@ class Query(object):
         self._order_by = OrderBy(column_name, ascending)
         return self
 
+
+class LimitMixin():
+
+    def limit(self, number: int):
+        self._limit = Limit(number)
+        return self
+
+    def first(self):
+        self._limit = Limit(1)
+        return self
+
+
+class CountMixin():
+
+    def count(self):
+        self.base = f'SELECT COUNT(*) FROM {self.table.tablename}'
+        return self
+
+###############################################################################
+
+class Select(Query, WhereMixin, LimitMixin, CountMixin, OrderByMixin):
+
     def __str__(self):
         query = self.base
         if self._where:
@@ -114,5 +132,42 @@ class Query(object):
             query += self._order_by.__str__()
         if self._limit:
             query += self._limit.__str__()
-        print(query)
+        return query
+
+
+class Insert(Query):
+
+    def __str__(self):
+        query = self.base
+        if self._where:
+            query += f' WHERE {self._where.__str__()}'
+        return query
+
+
+class Delete(Query, WhereMixin):
+
+    def __str__(self):
+        query = self.base
+        if self._where:
+            query += f' WHERE {self._where.__str__()}'
+        return query
+
+
+class Create(Query):
+    """
+    Creates a database table.
+    """
+
+    def __str__(self):
+        columns = ', '.join([i.__str__() for i in self.table.columns])
+        query = f'{self.base} ({columns})'
+        return query
+
+
+class Update(Query, WhereMixin):
+
+    def __str__(self):
+        query = self.base
+        if self._where:
+            query += f' WHERE {self._where.__str__()}'
         return query

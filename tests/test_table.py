@@ -408,6 +408,25 @@ class TestDelete(DBTestCase):
         )
 
 
+class TestCreate(TestCase):
+
+    def test_create_table(self):
+
+        async def create_table():
+            return await Pokemon.create().execute()
+
+        async def count_rows():
+            return await Pokemon.select(
+                'name', 'trainer', 'power'
+            ).count().execute()
+
+        asyncio.run(create_table())
+
+        # Just do a count to make sure the table was created ok.
+        response = asyncio.run(count_rows())
+        self.assertEqual(response['count'], 0)
+
+
 class TestMetaClass(TestCase):
 
     def test_tablename(self):
