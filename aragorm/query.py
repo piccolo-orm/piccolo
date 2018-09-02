@@ -48,13 +48,13 @@ class Query(object):
 
     valid_types = ['INSERT', 'UPDATE', 'SELECT']
 
-    def __init__(self, type: str, model: 'Model', base: str):
+    def __init__(self, type: str, table: 'Table', base: str):
         """
         A query has to be a certain type.
         """
         # For example select * from my_table
         self.base = base
-        self.model = model
+        self.table = table
         self._where: [Combinable] = None
         self._limit: Limit = None
         self._order_by: OrderBy = None
@@ -86,13 +86,13 @@ class Query(object):
         return self
 
     def count(self):
-        self.base = f'SELECT COUNT(*) FROM {self.model.tablename}'
+        self.base = f'SELECT COUNT(*) FROM {self.table.tablename}'
         return self
 
     def _is_valid_column_name(self, column_name: str):
         if column_name.startswith('-'):
             column_name = column_name[1:]
-        if not column_name in [i.name for i in self.model.columns]:
+        if not column_name in [i.name for i in self.table.columns]:
             raise ValueError(f"{column_name} isn't a valid column name")
 
     def order_by(self, column_name: str):

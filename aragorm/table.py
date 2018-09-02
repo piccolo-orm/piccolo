@@ -14,17 +14,17 @@ class Database(object):
         pass
 
 
-class ModelMeta(type):
+class TableMeta(type):
 
     def __new__(cls, name, bases, namespace, **kwds):
         """
         Automatically populate the tablename, and columns.
         """
-        model = super().__new__(cls, name, bases, namespace)
+        table = super().__new__(cls, name, bases, namespace)
 
         tablename = namespace.get('tablename')
         if not tablename:
-            model.tablename = _camel_to_snake(name)
+            table.tablename = _camel_to_snake(name)
 
         columns = []
         for key, value in namespace.items():
@@ -32,11 +32,11 @@ class ModelMeta(type):
                 columns.append(value)
                 value.name = key
 
-        model.columns = columns
-        return model
+        table.columns = columns
+        return table
 
 
-class Model(metaclass=ModelMeta):
+class Table(metaclass=TableMeta):
 
     @classmethod
     def select(cls, *column_names: [str]) -> Query:
@@ -57,12 +57,12 @@ class Model(metaclass=ModelMeta):
 
         return Query(
             type='SELECT',
-            model=cls,
+            table=cls,
             base=f'SELECT {columns_str} from {cls.tablename}'
         )
 
     @classmethod
-    def insert(cls, *instances: ['Model']):
+    def insert(cls, *instances: ['Table']):
         """
         In typing is it possible to distinguish between a class and a class
         instance?
@@ -110,7 +110,7 @@ class Model(metaclass=ModelMeta):
 
         return Query(
             type='UPDATE',
-            model=cls,
+            table=cls,
             base=f'UPDATE {cls.tablename} SET {columns_str}'
         )
 
@@ -123,7 +123,7 @@ class Model(metaclass=ModelMeta):
         """
         return Query(
             type='DELETE',
-            model=cls,
+            table=cls,
             base=f'DELETE FROM {cls.tablename}'
         )
 
@@ -134,6 +134,6 @@ class Model(metaclass=ModelMeta):
         """
         return Query(
             type='CREATE',
-            model=cls,
+            table=cls,
             base=f'CREATE TABLE {cls.tablename}'
         )

@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
 # For now ... just get initial sync working ...
-# Need to know which models to observe ...
-# In Django there's a convention for having models in models.py ...
-# assume there's an asjacent models.py file to the migrations folder
+# Need to know which tables to observe ...
+# In Django there's a convention for having tables in tables.py ...
+# assume there's an asjacent tables.py file to the migrations folder
 # when creating migrations ... just specify a folder
 # What happens if a project has multiple migrations in it ...
-# If one migration file imports models from another ... it becomes tricky
+# If one migration file imports tables from another ... it becomes tricky
 # Just have on migration.py folder ... and import the classes you want to
 # manage ...
 # start by creating migrate command ...
@@ -17,7 +17,7 @@ import importlib.util
 
 import click
 
-from aragorm.model import Model
+from aragorm.table import Table
 
 
 def create_migrations_folder(directory: str) -> bool:
@@ -37,32 +37,32 @@ def migration(directory):
     """Make and run migrations"""
     directory = '' if (directory == '.') else directory
 
-    models_dir = os.path.join(
+    tables_dir = os.path.join(
         os.getcwd(),
         directory
     )
 
-    models_file = os.path.join(
-        models_dir,
-        'models.py'
+    tables_file = os.path.join(
+        tables_dir,
+        'tables.py'
     )
 
-    if not os.path.exists(models_file):
-        raise ValueError("Can't find models.py!")
+    if not os.path.exists(tables_file):
+        raise ValueError("Can't find tables.py!")
 
-    spec = importlib.util.spec_from_file_location("models", models_file)
-    models = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(models)
+    spec = importlib.util.spec_from_file_location("tables", tables_file)
+    tables = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(tables)
 
-    model_classes = []
+    table_classes = []
 
-    for name, element in models.__dict__.items():
-        if inspect.isclass(element) and issubclass(element, Model) and (element != Model):
-            model_classes.append(element)
+    for name, element in tables.__dict__.items():
+        if inspect.isclass(element) and issubclass(element, Table) and (element != Table):
+            table_classes.append(element)
 
-    print(model_classes)
+    print(table_classes)
 
-    create_migrations_folder(models_dir)
+    create_migrations_folder(tables_dir)
     # next ... if empty ... create initial commit ...
     # Get the class ... and
 

@@ -3,7 +3,7 @@ from unittest import TestCase
 
 import asyncpg
 
-from .example_project.models import Pokemon
+from .example_project.tables import Pokemon
 
 
 TEST_CREDENTIALS = {

@@ -4,7 +4,7 @@ from aragorm import columns
 
 
 name_column = columns.Varchar()
-# Usually this is handled by the Model MetaClass:
+# Usually this is handled by the Table MetaClass:
 name_column.name = 'name'
 
 
