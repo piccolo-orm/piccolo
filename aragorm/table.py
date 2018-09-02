@@ -22,9 +22,10 @@ class TableMeta(type):
         """
         table = super().__new__(cls, name, bases, namespace)
 
-        tablename = namespace.get('tablename')
+        Meta = namespace.get('Meta')
+        tablename = getattr(Meta, 'tablename', None) if Meta else None
         if not tablename:
-            table.tablename = _camel_to_snake(name)
+            table.Meta.tablename = _camel_to_snake(name)
 
         columns = []
         for key, value in namespace.items():
@@ -37,6 +38,9 @@ class TableMeta(type):
 
 
 class Table(metaclass=TableMeta):
+
+    class Meta:
+        pass
 
     @classmethod
     def select(cls, *column_names: [str]) -> Select:
@@ -58,7 +62,7 @@ class Table(metaclass=TableMeta):
         return Select(
             type='SELECT',
             table=cls,
-            base=f'SELECT {columns_str} from {cls.tablename}'
+            base=f'SELECT {columns_str} from {cls.Meta.tablename}'
         )
 
     @classmethod
@@ -111,7 +115,7 @@ class Table(metaclass=TableMeta):
         return Update(
             type='UPDATE',
             table=cls,
-            base=f'UPDATE {cls.tablename} SET {columns_str}'
+            base=f'UPDATE {cls.Meta.tablename} SET {columns_str}'
         )
 
     @classmethod
@@ -124,7 +128,7 @@ class Table(metaclass=TableMeta):
         return Delete(
             type='DELETE',
             table=cls,
-            base=f'DELETE FROM {cls.tablename}'
+            base=f'DELETE FROM {cls.Meta.tablename}'
         )
 
     @classmethod
@@ -135,7 +139,7 @@ class Table(metaclass=TableMeta):
         return Create(
             type='CREATE',
             table=cls,
-            base=f'CREATE TABLE {cls.tablename}'
+            base=f'CREATE TABLE {cls.Meta.tablename}'
         )
 
     @classmethod

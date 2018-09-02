@@ -117,7 +117,7 @@ class LimitMixin():
 class CountMixin():
 
     def count(self):
-        self.base = f'SELECT COUNT(*) FROM {self.table.tablename}'
+        self.base = f'SELECT COUNT(*) FROM {self.table.Meta.tablename}'
         return self
 
 ###############################################################################
