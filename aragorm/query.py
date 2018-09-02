@@ -52,11 +52,12 @@ class Query(object):
         self._order_by: OrderBy = None
 
     # TODO - I want sync and async versions of this
-    async def execute(self, as_dict=True):
+    async def execute(self, as_dict=True, credentials=None):
         """
         Now ... just execute it from within here for now ...
         """
-        credentials = getattr(self.table.Meta, 'db', None)
+        if not credentials:
+            credentials = getattr(self.table.Meta, 'db', None)
         if not credentials:
             raise ValueError('Table has no db defined in Meta')
         conn = await asyncpg.connect(**credentials)
