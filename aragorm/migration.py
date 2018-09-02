@@ -64,7 +64,7 @@ def migration(directory):
 
     create_migrations_folder(models_dir)
     # next ... if empty ... create initial commit ...
-    # Get the class ...
+    # Get the class ... and
 
 
 if __name__ == '__main__':

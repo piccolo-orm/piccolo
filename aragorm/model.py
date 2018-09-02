@@ -126,3 +126,14 @@ class Model(metaclass=ModelMeta):
             model=cls,
             base=f'DELETE FROM {cls.tablename}'
         )
+
+    @classmethod
+    def create(cls):
+        """
+        await Pokemon.create().execute()
+        """
+        return Query(
+            type='CREATE',
+            model=cls,
+            base=f'CREATE TABLE {cls.tablename}'
+        )

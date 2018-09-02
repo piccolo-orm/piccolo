@@ -15,6 +15,8 @@ Also, the attributes also need to be combinable.
 Rather than them being directly combinable, they just manipulate a schema
 object. Add and delete operations are processed first.
 
+Just make the Schema's combinable.
+
 """
 
 # Consists of a bunch of operators
@@ -23,8 +25,33 @@ object. Add and delete operations are processed first.
 # modify_column (rename, null / not null, max_chars, change type)
 # drop_column
 
+class Schema():
+
+    def __init__(self, column_changes, table_changes):
+        self.column_changes = column_changes
+        self.table_changes = table_changes
+
+    def __add__(self, value: 'Schema') -> 'Schema':
+        """
+        We add schema objects together to get a picture of the schema at
+        a point in time.
+        """
+        self.column_changes += value.column_changes
+        self.table_changes += value.table_changes
+        return self
+
+
+
 
 class CreateTable():
+    def __init__(self):
+        pass
+
+
+class ModifyTable():
+    """
+    Does things like renaming the table.
+    """
     def __init__(self):
         pass
 
