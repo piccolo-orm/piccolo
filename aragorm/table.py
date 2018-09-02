@@ -139,7 +139,7 @@ class Table(metaclass=TableMeta):
         return Create(
             type='CREATE',
             table=cls,
-            base=f'CREATE TABLE {cls.Meta.tablename}'
+            base=f'CREATE TABLE "{cls.Meta.tablename}"'
         )
 
     @classmethod

@@ -17,8 +17,10 @@ from .types import Combinable, Iterable
 
 class Column():
 
-    def __init__(self, null: bool = True):
+    def __init__(self, null: bool = True, primary: bool = False, key: bool = False):
         self.null = null
+        self.primary = primary
+        self.key = key
 
     def is_in(self, values: Iterable) -> 'Where':
         return Where(column=self, values=values, operator=In)
@@ -58,8 +60,17 @@ class Column():
 
     def __str__(self):
         name = getattr(self, 'name', '')
-        column_type = self.__class__.__name__.lower()
-        return f'{name} {column_type}'
+        column_type = getattr(
+            self,
+            'column_type',
+            self.__class__.__name__.lower()
+        )
+        query = f'{name} {column_type}'
+        if self.primary:
+            query += ' PRIMARY'
+        if self.key:
+            query += ' KEY'
+        return query
 
 
 class Varchar(Column):
@@ -77,8 +88,28 @@ class Varchar(Column):
 
 
 class Integer(Column):
+
     def __init__(self, default: int = None, **kwargs):
         self.default = default
+        super().__init__(**kwargs)
+
+
+class Serial(Column):
+
+    def __init__(self, **kwargs):
+        self.default = default
+        super().__init__(**kwargs)
+
+
+class PrimaryKey(Column):
+
+    column_type = 'SERIAL'
+
+    def __init__(self, **kwargs):
+        kwargs.update({
+            'primary': True,
+            'key': True
+        })
         super().__init__(**kwargs)
 
 ###############################################################################
