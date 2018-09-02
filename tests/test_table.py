@@ -6,19 +6,11 @@ import asyncpg
 from .example_project.tables import Pokemon
 
 
-TEST_CREDENTIALS = {
-    'host': 'localhost',
-    'database': 'aragorm',
-    'user': 'aragorm',
-    'password': 'aragorm'
-}
-
-
 class DBTestCase(TestCase):
 
     def execute(self, query):
         async def _execute():
-            connection = await asyncpg.connect(**TEST_CREDENTIALS)
+            connection = await asyncpg.connect(**Pokemon.Meta.db)
             await connection.execute(query)
             await connection.close()
 

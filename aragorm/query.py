@@ -4,15 +4,6 @@ from .columns import And, Where
 from .types import Combinable
 
 
-
-TEST_CREDENTIALS = {
-    'host': 'localhost',
-    'database': 'aragorm',
-    'user': 'aragorm',
-    'password': 'aragorm'
-}
-
-
 class Value(object):
     """
     This needs to have a type, which needs to be compatible with the column
@@ -65,7 +56,10 @@ class Query(object):
         """
         Now ... just execute it from within here for now ...
         """
-        conn = await asyncpg.connect(**TEST_CREDENTIALS)
+        credentials = getattr(self.table.Meta, 'db', None)
+        if not credentials:
+            raise ValueError('Table has no db defined in Meta')
+        conn = await asyncpg.connect(**credentials)
         results = await conn.fetch(self.__str__())
         await conn.close()
         # TODO Be able to output it in different formats.
