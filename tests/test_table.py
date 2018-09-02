@@ -408,10 +408,15 @@ class TestDelete(DBTestCase):
         )
 
 
-class TestCreate(TestCase):
+class TestCreate(DBTestCase):
+
+    def setUp(self):
+        """
+        Need to override, otherwise table will be auto created.
+        """
+        pass
 
     def test_create_table(self):
-
         async def create_table():
             return await Pokemon.create().execute()
 
@@ -424,7 +429,7 @@ class TestCreate(TestCase):
 
         # Just do a count to make sure the table was created ok.
         response = asyncio.run(count_rows())
-        self.assertEqual(response['count'], 0)
+        self.assertEqual(response[0]['count'], 0)
 
 
 class TestMetaClass(TestCase):
