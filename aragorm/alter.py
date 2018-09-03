@@ -19,7 +19,7 @@ class Rename():
 @dataclasses.dataclass
 class Drop():
     """
-    Pokemon.alter().drop(Pokemon.power, ‘rating’)
+    Pokemon.alter().drop('power')
     """
     column: Column
 
