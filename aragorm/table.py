@@ -1,7 +1,15 @@
 import typing
 
+from .alter import Alter
 from .columns import Column
-from .query import Select, Update, Insert, Create, Delete, Drop
+from .query import (
+    Create,
+    Delete,
+    Drop,
+    Insert,
+    Select,
+    Update,
+)
 from .utils import _camel_to_snake
 
 
@@ -102,7 +110,7 @@ class Table(metaclass=TableMeta):
         pass
 
     @classmethod
-    def update(cls, **columns):
+    def update(cls, **columns) -> Update:
         """
         await Pokemon.update(name='raichu').where(Pokemon.name='pikachu').execute()
 
@@ -119,7 +127,7 @@ class Table(metaclass=TableMeta):
         )
 
     @classmethod
-    def delete(cls, **columns):
+    def delete(cls, **columns) -> Delete:
         """
         await Pokemon.delete().where(Pokemon.name='weedle').execute()
 
@@ -132,7 +140,7 @@ class Table(metaclass=TableMeta):
         )
 
     @classmethod
-    def create(cls):
+    def create(cls) -> Create:
         """
         await Pokemon.create().execute()
         """
@@ -143,7 +151,7 @@ class Table(metaclass=TableMeta):
         )
 
     @classmethod
-    def drop(cls):
+    def drop(cls) -> Drop:
         """
         await Pokemon.drop().execute()
         """
@@ -157,5 +165,12 @@ class Table(metaclass=TableMeta):
     def raw(cls):
         """
         await Pokemon.raw('select * from foo')
+        """
+        pass
+
+    @classmethod
+    def alter(cls) -> Alter:
+        """
+        await Pokemon.alter().rename(Pokemon.power, 'rating')
         """
         pass

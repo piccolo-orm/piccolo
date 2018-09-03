@@ -1,6 +1,7 @@
 import asyncpg
+import dataclasses
 
-from .columns import And, Where
+from .columns import And, Where, Column
 from .types import Combinable
 
 
@@ -13,6 +14,7 @@ class Value(object):
 
 
 class Limit():
+
     def __init__(self, number: int):
         if type(number) != int:
             raise TypeError('Limit must be an integer')
@@ -22,10 +24,10 @@ class Limit():
         return f' LIMIT {self.number}'
 
 
-class OrderBy:
-    def __init__(self, column_name: str, ascending: bool):
-        self.column_name = column_name
-        self.ascending = ascending
+@dataclasses.dataclass
+class OrderBy():
+    column_name: str
+    ascending: bool
 
     def __str__(self):
         order = 'ASC' if self.ascending else 'DESC'
