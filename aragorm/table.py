@@ -1,7 +1,7 @@
 import typing
 
 from .columns import Column
-from .query import Select, Update, Insert, Create, Delete
+from .query import Select, Update, Insert, Create, Delete, Drop
 from .utils import _camel_to_snake
 
 
@@ -140,6 +140,17 @@ class Table(metaclass=TableMeta):
             type='CREATE',
             table=cls,
             base=f'CREATE TABLE "{cls.Meta.tablename}"'
+        )
+
+    @classmethod
+    def drop(cls):
+        """
+        await Pokemon.drop().execute()
+        """
+        return Drop(
+            type='DROP',
+            table=cls,
+            base=f'DROP {cls.Meta.tablename}'
         )
 
     @classmethod

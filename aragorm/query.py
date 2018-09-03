@@ -117,6 +117,8 @@ class CountMixin():
 
 ###############################################################################
 
+# TODO I don't like this whole self.base stuff
+
 class Select(Query, WhereMixin, LimitMixin, CountMixin, OrderByMixin):
 
     def __str__(self):
@@ -166,3 +168,9 @@ class Update(Query, WhereMixin):
         if self._where:
             query += f' WHERE {self._where.__str__()}'
         return query
+
+
+class Drop(Query):
+
+    def __str__(self):
+        return self.base
