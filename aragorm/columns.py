@@ -1,3 +1,4 @@
+import datetime
 import typing
 
 from .operators import (
@@ -72,6 +73,7 @@ class Column():
             query += ' KEY'
         return query
 
+###############################################################################
 
 class Varchar(Column):
 
@@ -110,6 +112,13 @@ class PrimaryKey(Column):
             'primary': True,
             'key': True
         })
+        super().__init__(**kwargs)
+
+
+class Timestamp(Column):
+
+    def __init__(self, default: datetime.datetime = None, **kwargs):
+        self.default = default
         super().__init__(**kwargs)
 
 ###############################################################################
