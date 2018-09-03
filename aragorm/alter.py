@@ -42,8 +42,8 @@ class Add():
 
 class Alter(Query):
 
-    def __init__(**kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._add = []
         self._drop = []
         self._rename = []
@@ -67,8 +67,7 @@ class Alter(Query):
 
     def __str__(self):
         query = self.base
-        for r in self._rename:
-            query += r.__str__()
-        for d in self._drop:
-            query += d.__str__()
+        for alterations in [self._add, self._rename, self._drop]:
+            for a in alterations:
+                query += a.__str__()
         return query

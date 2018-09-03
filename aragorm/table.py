@@ -173,4 +173,8 @@ class Table(metaclass=TableMeta):
         """
         await Pokemon.alter().rename(Pokemon.power, 'rating')
         """
-        pass
+        return Alter(
+            type='ALTER',
+            table=cls,
+            base=f'ALTER TABLE "{cls.Meta.tablename}"'
+        )
