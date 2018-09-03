@@ -9,7 +9,7 @@ from .example_project.tables import Pokemon
 
 class TestRename(DBTestCase):
 
-    def test_query_all_columns(self):
+    def test_rename(self):
         self.insert_row()
 
         async def rename_row():
@@ -34,4 +34,25 @@ class TestRename(DBTestCase):
 
 
 class TestDrop(DBTestCase):
-    pass
+
+    def test_drop(self):
+        self.insert_row()
+
+        async def drop_column():
+            query = Pokemon.alter().drop(
+                Pokemon.power,
+            )
+            print(query)
+            return await query.execute()
+
+        async def get_pokemon():
+            return await Pokemon.select().execute()
+
+        asyncio.run(drop_column())
+
+        response = asyncio.run(get_pokemon())
+
+        column_names = response[0].keys()
+        self.assertTrue(
+            'power' not in column_names
+        )
