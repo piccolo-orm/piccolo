@@ -18,7 +18,9 @@ import importlib.util
 import click
 
 from aragorm.table import Table
+from aragorm.migrations.template import TEMPLATE
 
+###############################################################################
 
 def create_migrations_folder(directory: str) -> bool:
     path = os.path.join(directory, 'migrations')
@@ -30,17 +32,28 @@ def create_migrations_folder(directory: str) -> bool:
             pass
         return True
 
+###############################################################################
 
-def create_new_migration():
-    """
-    Creates a new file like migrations/0001_add_user_table.py
-    """
+@click.group()
+def cli():
     pass
 
 
-# commands
-# ./migration.py new
-# ./migration.py run
+@click.command()
+def new():
+    """
+    Creates a new file like migrations/0001_add_user_table.py
+    """
+    print('Creating new migration ...')
+
+
+@click.command()
+def run():
+    """
+    Runs any migrations which haven't been run yet, or up to a specific
+    migration.
+    """
+    print('Running migrations ...')
 
 
 @click.command()
@@ -79,5 +92,9 @@ def migration(directory):
     # Get the class ... and
 
 
+cli.add_command(new)
+cli.add_command(run)
+
+
 if __name__ == '__main__':
-    migration()
+    cli()
