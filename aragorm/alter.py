@@ -13,7 +13,7 @@ class Rename():
     new_name: str
 
     def __str__(self):
-        return f' RENAME {self.column.name} TO {self.new_name}'
+        return f' RENAME "{self.column.name}" TO "{self.new_name}"'
 
 
 @dataclasses.dataclass
@@ -24,7 +24,7 @@ class Drop():
     column: Column
 
     def __str__(self):
-        return f' DROP {self.column.name}'
+        return f' DROP "{self.column.name}"'
 
 
 @dataclasses.dataclass
@@ -52,6 +52,7 @@ class Alter(Query):
         self._add.append(
             Add(name, column)
         )
+        return self
 
     def rename(self, column: Column, new_name: str):
         self._rename.append(
