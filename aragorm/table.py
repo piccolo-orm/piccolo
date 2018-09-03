@@ -158,7 +158,7 @@ class Table(metaclass=TableMeta):
         return Drop(
             type='DROP',
             table=cls,
-            base=f'DROP {cls.Meta.tablename}'
+            base=f'DROP TABLE "{cls.Meta.tablename}"'
         )
 
     @classmethod

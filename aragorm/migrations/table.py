@@ -1,7 +1,7 @@
 from ..table import Table
-from ..columns import Varchar
+from ..columns import Varchar, Timestamp
 
 
 class Migration(Table):
     name = Varchar(length=200)
-    # ran_on = Datetime()
+    ran_on = Timestamp()
