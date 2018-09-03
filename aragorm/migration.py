@@ -31,6 +31,18 @@ def create_migrations_folder(directory: str) -> bool:
         return True
 
 
+def create_new_migration():
+    """
+    Creates a new file like migrations/0001_add_user_table.py
+    """
+    pass
+
+
+# commands
+# ./migration.py new
+# ./migration.py run
+
+
 @click.command()
 @click.argument('directory')
 def migration(directory):
