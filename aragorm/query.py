@@ -15,7 +15,7 @@ class Value(object):
 
 class Limit():
 
-    def __init__(self, number: int):
+    def __init__(self, number: int) -> None:
         if type(number) != int:
             raise TypeError('Limit must be an integer')
         self.number = number
@@ -37,7 +37,7 @@ class OrderBy():
 
 class Query(object):
 
-    def __init__(self, table: 'Table', base: str = ''):
+    def __init__(self, table: 'Table', base: str = '') -> None:
         """
         A query has to be a certain type.
         """

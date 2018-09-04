@@ -5,7 +5,6 @@ import os
 
 import click
 
-from aragorm.table import Table
 from aragorm.migrations.template import TEMPLATE
 
 
@@ -16,7 +15,7 @@ def _create_migrations_folder() -> bool:
     if os.path.exists(MIGRATIONS_FOLDER):
         return False
     else:
-        os.mkdir(path)
+        os.mkdir(MIGRATIONS_FOLDER)
         with open(os.path.join(MIGRATIONS_FOLDER, '__init__.py'), 'w'):
             pass
         return True
