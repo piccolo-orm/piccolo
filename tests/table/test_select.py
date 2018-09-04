@@ -3,8 +3,8 @@ from unittest import TestCase
 
 import asyncpg
 
-from .base import DBTestCase
-from .example_project.tables import Pokemon
+from ..base import DBTestCase
+from ..example_project.tables import Pokemon
 
 
 class TestSelect(DBTestCase):
