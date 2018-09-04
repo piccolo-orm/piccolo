@@ -1,4 +1,6 @@
 TEMPLATE = """
+ID = '{migration_id}'
+
 # async def forwards():
 #     pass
 
