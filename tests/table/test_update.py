@@ -1,7 +1,5 @@
 import asyncio
 
-import asyncpg
-
 from ..base import DBTestCase
 from ..example_project.tables import Pokemon
 

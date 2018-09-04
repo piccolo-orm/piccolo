@@ -1,7 +1,6 @@
 {
     "python.pythonPath": "/Users/dantownsend/.virtualenvs/aragorm/bin/python",
-    "python.linting.pylintEnabled": false,
-    "python.linting.flake8Enabled": false,
+    "python.linting.flake8Enabled": true,
     "python.linting.enabled": true,
     "python.linting.mypyEnabled": true
 }
