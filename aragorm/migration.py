@@ -1,38 +1,33 @@
 #!/usr/bin/env python
 
-# For now ... just get initial sync working ...
-# Need to know which tables to observe ...
-# In Django there's a convention for having tables in tables.py ...
-# assume there's an asjacent tables.py file to the migrations folder
-# when creating migrations ... just specify a folder
-# What happens if a project has multiple migrations in it ...
-# If one migration file imports tables from another ... it becomes tricky
-# Just have on migration.py folder ... and import the classes you want to
-# manage ...
-# start by creating migrate command ...
-
-import inspect
+import datetime
 import os
-import importlib.util
 
 import click
 
 from aragorm.table import Table
 from aragorm.migrations.template import TEMPLATE
 
-###############################################################################
 
-def create_migrations_folder(directory: str) -> bool:
-    path = os.path.join(directory, 'migrations')
-    if os.path.exists(path):
+MIGRATIONS_FOLDER = os.path.join(os.getcwd(), 'migrations')
+
+
+def _create_migrations_folder() -> bool:
+    if os.path.exists(MIGRATIONS_FOLDER):
         return False
     else:
         os.mkdir(path)
-        with open(os.path.join(path, '__init__.py'), 'w'):
+        with open(os.path.join(MIGRATIONS_FOLDER, '__init__.py'), 'w'):
             pass
         return True
 
-###############################################################################
+
+def _create_new_migration():
+    _id = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+    path = os.path.join(MIGRATIONS_FOLDER, f'{_id}.py')
+    with open(path, 'w') as f:
+        f.write(TEMPLATE.format(migration_id=_id))
+
 
 @click.group()
 def cli():
@@ -45,6 +40,8 @@ def new():
     Creates a new file like migrations/0001_add_user_table.py
     """
     print('Creating new migration ...')
+    _create_migrations_folder()
+    _create_new_migration()
 
 
 @click.command()
@@ -54,42 +51,6 @@ def run():
     migration.
     """
     print('Running migrations ...')
-
-
-@click.command()
-@click.argument('directory')
-def migration(directory):
-    """Make and run migrations"""
-    directory = '' if (directory == '.') else directory
-
-    tables_dir = os.path.join(
-        os.getcwd(),
-        directory
-    )
-
-    tables_file = os.path.join(
-        tables_dir,
-        'tables.py'
-    )
-
-    if not os.path.exists(tables_file):
-        raise ValueError("Can't find tables.py!")
-
-    spec = importlib.util.spec_from_file_location("tables", tables_file)
-    tables = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(tables)
-
-    table_classes = []
-
-    for name, element in tables.__dict__.items():
-        if inspect.isclass(element) and issubclass(element, Table) and (element != Table):
-            table_classes.append(element)
-
-    print(table_classes)
-
-    create_migrations_folder(tables_dir)
-    # next ... if empty ... create initial commit ...
-    # Get the class ... and
 
 
 cli.add_command(new)
