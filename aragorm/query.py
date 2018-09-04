@@ -36,13 +36,8 @@ class OrderBy():
 ###############################################################################
 
 class Query(object):
-    """
-    For now, just make it handle select.
-    """
 
-    valid_types = ['INSERT', 'UPDATE', 'SELECT']
-
-    def __init__(self, type: str, table: 'Table', base: str):
+    def __init__(self, table: 'Table', base: str = ''):
         """
         A query has to be a certain type.
         """
@@ -176,3 +171,18 @@ class Drop(Query):
 
     def __str__(self):
         return self.base
+
+
+class Raw(Query):
+
+    def __str__(self):
+        return self.base
+
+
+class Exists(Query, WhereMixin):
+
+    def __str__(self):
+        select = Select(self.table, f'SELECT * FROM {self.table.Meta.tablename}')
+        select._where = self._where
+        subquery = select.__str__()
+        return f'SELECT EXISTS({subquery})'

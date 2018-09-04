@@ -6,7 +6,9 @@ from .query import (
     Create,
     Delete,
     Drop,
+    Exists,
     Insert,
+    Raw,
     Select,
     Update,
 )
@@ -68,7 +70,6 @@ class Table(metaclass=TableMeta):
             columns_str = ', '.join(column_names)
 
         return Select(
-            type='SELECT',
             table=cls,
             base=f'SELECT {columns_str} from {cls.Meta.tablename}'
         )
@@ -121,7 +122,6 @@ class Table(metaclass=TableMeta):
         ])
 
         return Update(
-            type='UPDATE',
             table=cls,
             base=f'UPDATE {cls.Meta.tablename} SET {columns_str}'
         )
@@ -134,7 +134,6 @@ class Table(metaclass=TableMeta):
         DELETE FROM pokemon where name = 'weedle'
         """
         return Delete(
-            type='DELETE',
             table=cls,
             base=f'DELETE FROM {cls.Meta.tablename}'
         )
@@ -145,7 +144,6 @@ class Table(metaclass=TableMeta):
         await Pokemon.create().execute()
         """
         return Create(
-            type='CREATE',
             table=cls,
             base=f'CREATE TABLE "{cls.Meta.tablename}"'
         )
@@ -156,17 +154,19 @@ class Table(metaclass=TableMeta):
         await Pokemon.drop().execute()
         """
         return Drop(
-            type='DROP',
             table=cls,
             base=f'DROP TABLE "{cls.Meta.tablename}"'
         )
 
     @classmethod
-    def raw(cls):
+    def raw(cls, sql: str) -> Raw:
         """
         await Pokemon.raw('select * from foo')
         """
-        pass
+        return Raw(
+            table=cls,
+            base=sql
+        )
 
     @classmethod
     def alter(cls) -> Alter:
@@ -174,7 +174,23 @@ class Table(metaclass=TableMeta):
         await Pokemon.alter().rename(Pokemon.power, 'rating')
         """
         return Alter(
-            type='ALTER',
             table=cls,
             base=f'ALTER TABLE "{cls.Meta.tablename}"'
+        )
+
+    @classmethod
+    def exists(cls):
+        """
+        This is tricky ... use it to check if a row exists ... not if the
+        table exists.
+        """
+        return Exists(
+            table=cls,
+            base=''
+        )
+
+    @classmethod
+    def table_exists(cls):
+        return cls.raw(
+            "SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name = '{cls.Meta.tablename}')"
         )
