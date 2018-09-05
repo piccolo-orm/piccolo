@@ -1,5 +1,3 @@
-import typing
-
 from .alter import Alter
 from .columns import Column
 from .query import (
@@ -7,7 +5,6 @@ from .query import (
     Delete,
     Drop,
     Exists,
-    Insert,
     Raw,
     Select,
     Update,
@@ -192,5 +189,6 @@ class Table(metaclass=TableMeta):
     @classmethod
     def table_exists(cls):
         return cls.raw(
-            "SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name = '{cls.Meta.tablename}')"
+            "SELECT EXISTS(SELECT * FROM information_schema.tables WHERE "
+            f"table_name = '{cls.Meta.tablename}')"
         )

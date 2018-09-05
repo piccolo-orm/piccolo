@@ -18,7 +18,12 @@ from .types import Combinable, Iterable
 
 class Column():
 
-    def __init__(self, null: bool = True, primary: bool = False, key: bool = False):
+    def __init__(
+        self,
+        null: bool = True,
+        primary: bool = False,
+        key: bool = False
+    ) -> None:
         self.null = null
         self.primary = primary
         self.key = key
@@ -73,11 +78,13 @@ class Column():
             query += ' KEY'
         return query
 
+
 ###############################################################################
 
 class Varchar(Column):
 
-    def __init__(self, length: int = 255, default: str = None, **kwargs):
+    def __init__(self, length: int = 255, default: str = None,
+                 **kwargs) -> None:
         self.length = length
         self.default = default
         super().__init__(**kwargs)
@@ -91,15 +98,14 @@ class Varchar(Column):
 
 class Integer(Column):
 
-    def __init__(self, default: int = None, **kwargs):
+    def __init__(self, default: int = None, **kwargs) -> None:
         self.default = default
         super().__init__(**kwargs)
 
 
 class Serial(Column):
 
-    def __init__(self, **kwargs):
-        self.default = default
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
 
@@ -107,7 +113,7 @@ class PrimaryKey(Column):
 
     column_type = 'SERIAL'
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         kwargs.update({
             'primary': True,
             'key': True
@@ -117,9 +123,10 @@ class PrimaryKey(Column):
 
 class Timestamp(Column):
 
-    def __init__(self, default: datetime.datetime = None, **kwargs):
+    def __init__(self, default: datetime.datetime = None, **kwargs) -> None:
         self.default = default
         super().__init__(**kwargs)
+
 
 ###############################################################################
 
@@ -135,7 +142,7 @@ class Combination(CombinableMixin):
 
     operator = ''
 
-    def __init__(self, first: Combinable, second: Combinable):
+    def __init__(self, first: Combinable, second: Combinable) -> None:
         self.first = first
         self.second = second
 
@@ -156,7 +163,7 @@ class Or(Combination):
 class Where(CombinableMixin):
 
     def __init__(self, column: Column, value: typing.Any = None,
-                 values: Iterable = [], operator: Operator = None):
+                 values: Iterable = [], operator: Operator = None) -> None:
         self.column = column
         self.value = value
         self.values = values
