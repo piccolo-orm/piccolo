@@ -10,9 +10,8 @@ class TestTableExists(TestCase):
         asyncio.run(Pokemon.create().execute())
 
     def test_table_exists(self):
-        breakpoint()
         response = asyncio.run(Pokemon.table_exists().execute())
-        self.assertTrue(response is True)
+        self.assertTrue(response[0]['exists'] is True)
 
     def tearDown(self):
         asyncio.run(Pokemon.drop().execute())
