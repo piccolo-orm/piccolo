@@ -18,13 +18,13 @@ class TestMigrationTable(TestCase):
 
     def test_migration_table(self):
         async def create_table():
-            return await MigrationTest.create().execute()
+            return await MigrationTest.create().run()
 
         async def query_table():
-            return await MigrationTest.select().execute()
+            return await MigrationTest.select().run()
 
         async def drop_table():
-            return await MigrationTest.drop().execute()
+            return await MigrationTest.drop().run()
 
         asyncio.run(create_table())
         asyncio.run(query_table())

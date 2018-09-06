@@ -14,12 +14,12 @@ class TestCreate(DBTestCase):
 
     def test_create_table(self):
         async def create_table():
-            return await Pokemon.create().execute()
+            return await Pokemon.create().run()
 
         async def count_rows():
             return await Pokemon.select(
                 'name', 'trainer', 'power'
-            ).count().execute()
+            ).count().run()
 
         asyncio.run(create_table())
 

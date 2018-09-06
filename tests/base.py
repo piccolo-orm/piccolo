@@ -8,16 +8,16 @@ from .example_project.tables import Pokemon
 
 class DBTestCase(TestCase):
 
-    def execute(self, query):
-        async def _execute():
+    def run_sync(self, query):
+        async def _run():
             connection = await asyncpg.connect(**Pokemon.Meta.db)
             await connection.execute(query)
             await connection.close()
 
-        asyncio.run(_execute())
+        asyncio.run(_run())
 
     def create_table(self):
-        self.execute('''
+        self.run_sync('''
             CREATE TABLE pokemon (
                 name VARCHAR(50),
                 trainer VARCHAR(20),
@@ -26,7 +26,7 @@ class DBTestCase(TestCase):
         )
 
     def insert_row(self):
-        self.execute('''
+        self.run_sync('''
             INSERT INTO pokemon (
                 name,
                 trainer,
@@ -39,7 +39,7 @@ class DBTestCase(TestCase):
         )
 
     def insert_rows(self):
-        self.execute('''
+        self.run_sync('''
             INSERT INTO pokemon (
                 name,
                 trainer,
@@ -60,7 +60,7 @@ class DBTestCase(TestCase):
         )
 
     def drop_table(self):
-        self.execute('DROP TABLE pokemon;')
+        self.run_sync('DROP TABLE pokemon;')
 
     def setUp(self):
         self.create_table()

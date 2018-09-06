@@ -1,7 +1,9 @@
-import asyncpg
+import asyncio
 import dataclasses
 
-from .columns import And, Where, Column
+import asyncpg
+
+from .columns import And
 from .types import Combinable
 
 
@@ -48,10 +50,9 @@ class Query(object):
         self._limit: Limit = None
         self._order_by: OrderBy = None
 
-    # TODO - I want sync and async versions of this
-    async def execute(self, as_dict=True, credentials=None):
+    async def run(self, as_dict=True, credentials=None):
         """
-        Now ... just execute it from within here for now ...
+        Should use an engine.
         """
         if not credentials:
             credentials = getattr(self.table.Meta, 'db', None)
@@ -63,6 +64,18 @@ class Query(object):
         # TODO Be able to output it in different formats.
         raw = [dict(i.items()) for i in results]
         return self.response_handler(raw)
+
+    def run_sync(self, *args, **kwargs):
+        """
+        A convenience method for running the coroutine synchronously.
+
+        Might make it more sophisticated in the future, so not creating /
+        tearing down connections, but instead running it in a separate
+        process, and dispatching coroutines to it.
+        """
+        return asyncio.run(
+            self.sync(*args, **kwargs)
+        )
 
     def response_handler(self, response):
         """

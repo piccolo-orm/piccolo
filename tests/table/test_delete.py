@@ -12,12 +12,12 @@ class TestDelete(DBTestCase):
         async def delete_pokemon():
             return await Pokemon.delete().where(
                 Pokemon.name == 'weedle'
-            ).execute()
+            ).run()
 
         async def check_pokemon():
             return await Pokemon.select().where(
                 Pokemon.name == 'weedle'
-            ).count().execute()
+            ).count().run()
 
         asyncio.run(delete_pokemon())
         response = asyncio.run(check_pokemon())

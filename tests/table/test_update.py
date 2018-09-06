@@ -14,14 +14,14 @@ class TestUpdate(DBTestCase):
                 name='kakuna'
             ).where(
                 Pokemon.name == 'weedle'
-            ).execute()
+            ).run()
 
         async def check_pokemon():
             return await Pokemon.select(
                 'name'
             ).where(
                 Pokemon.name == 'kakuna'
-            ).execute()
+            ).run()
 
         asyncio.run(update_pokemon())
         response = asyncio.run(check_pokemon())

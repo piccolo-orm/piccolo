@@ -6,6 +6,7 @@ import os
 import click
 
 from aragorm.migrations.template import TEMPLATE
+from aragorm.migrations.table import Migration
 
 
 MIGRATIONS_FOLDER = os.path.join(os.getcwd(), 'migrations')
@@ -43,6 +44,15 @@ def new():
     _create_new_migration()
 
 
+###############################################################################
+
+def _create_migration_table() -> bool:
+    if not Migration.table_exists().run():
+        Migration.create().run()
+        return True
+    return False
+
+
 @click.command()
 def run():
     """
@@ -50,7 +60,9 @@ def run():
     migration.
     """
     print('Running migrations ...')
+    _create_migration_table()
 
+###############################################################################
 
 cli.add_command(new)
 cli.add_command(run)

@@ -10,7 +10,7 @@ class TestSelect(DBTestCase):
         self.insert_row()
 
         async def get_pokemon():
-            return await Pokemon.select().execute()
+            return await Pokemon.select().run()
 
         response = asyncio.run(get_pokemon())
         print(f'response = {response}')
@@ -24,7 +24,7 @@ class TestSelect(DBTestCase):
         self.insert_row()
 
         async def get_pokemon():
-            return await Pokemon.select('name').execute()
+            return await Pokemon.select('name').run()
 
         response = asyncio.run(get_pokemon())
         print(f'response = {response}')
@@ -42,7 +42,7 @@ class TestSelect(DBTestCase):
                 'name'
             ).where(
                 Pokemon.name.like('%chu')
-            ).execute()
+            ).run()
 
         response = asyncio.run(get_pokemon())
         print(f'response = {response}')
@@ -60,7 +60,7 @@ class TestSelect(DBTestCase):
                 'name'
             ).where(
                 Pokemon.power > 1000
-            ).execute()
+            ).run()
 
         response = asyncio.run(get_pokemon())
         print(f'response = {response}')
@@ -78,7 +78,7 @@ class TestSelect(DBTestCase):
                 'name'
             ).where(
                 Pokemon.power >= 1000
-            ).execute()
+            ).run()
 
         response = asyncio.run(get_pokemon())
         print(f'response = {response}')
@@ -96,7 +96,7 @@ class TestSelect(DBTestCase):
                 'name'
             ).where(
                 Pokemon.power < 1000
-            ).execute()
+            ).run()
 
         response = asyncio.run(get_pokemon())
         print(f'response = {response}')
@@ -114,7 +114,7 @@ class TestSelect(DBTestCase):
                 'name'
             ).where(
                 Pokemon.power <= 1000
-            ).execute()
+            ).run()
 
         response = asyncio.run(get_pokemon())
         print(f'response = {response}')
@@ -132,7 +132,7 @@ class TestSelect(DBTestCase):
                 'name'
             ).where(
                 (Pokemon.power <= 1000) & (Pokemon.name.like('%chu'))
-            ).execute()
+            ).run()
 
         response = asyncio.run(get_pokemon())
         print(f'response = {response}')
@@ -150,7 +150,7 @@ class TestSelect(DBTestCase):
                 'name'
             ).where(
                 (Pokemon.name == 'raichu') | (Pokemon.name == 'weedle')
-            ).execute()
+            ).run()
 
         response = asyncio.run(get_pokemon())
         print(f'response = {response}')
@@ -175,7 +175,7 @@ class TestSelect(DBTestCase):
         )
 
         async def get_pokemon():
-            return await query.execute()
+            return await query.run()
 
         response = asyncio.run(get_pokemon())
         print(f'response = {response}')
@@ -200,7 +200,7 @@ class TestSelect(DBTestCase):
             ).where(
                 ((Pokemon.power == 2000) & (Pokemon.trainer == 'sally')) |
                 ((Pokemon.power == 10) & (Pokemon.trainer == 'gordon'))
-            ).execute()
+            ).run()
 
         response = asyncio.run(get_pokemon())
         print(f'response = {response}')
@@ -218,7 +218,7 @@ class TestSelect(DBTestCase):
                 'name'
             ).limit(
                 1
-            ).execute()
+            ).run()
 
         response = asyncio.run(get_pokemon())
         print(f'response = {response}')
@@ -236,7 +236,7 @@ class TestSelect(DBTestCase):
                 'name'
             ).order_by(
                 'name'
-            ).limit(1).execute()
+            ).limit(1).run()
 
         response = asyncio.run(get_pokemon())
         print(f'response = {response}')
@@ -254,7 +254,7 @@ class TestSelect(DBTestCase):
                 'name'
             ).order_by(
                 '-name'
-            ).limit(1).execute()
+            ).limit(1).run()
 
         response = asyncio.run(get_pokemon())
         print(f'response = {response}')
@@ -270,7 +270,7 @@ class TestSelect(DBTestCase):
         async def get_pokemon():
             return await Pokemon.select().where(
                 Pokemon.name == 'pikachu'
-            ).count().execute()
+            ).count().run()
 
         response = asyncio.run(get_pokemon())
         print(f'response = {response}')

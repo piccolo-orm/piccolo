@@ -19,10 +19,10 @@ class TestRename(DBTestCase):
                 'rating'
             )
             print(query)
-            return await query.execute()
+            return await query.run()
 
         async def get_pokemon():
-            return await Pokemon.select().execute()
+            return await Pokemon.select().run()
 
         asyncio.run(rename_row())
 
@@ -44,10 +44,10 @@ class TestDrop(DBTestCase):
                 Pokemon.power,
             )
             print(query)
-            return await query.execute()
+            return await query.run()
 
         async def get_pokemon():
-            return await Pokemon.select().execute()
+            return await Pokemon.select().run()
 
         asyncio.run(drop_column())
 
@@ -75,10 +75,10 @@ class TestAdd(DBTestCase):
                 Integer(),
             )
             print(query)
-            return await query.execute()
+            return await query.run()
 
         async def get_pokemon():
-            return await Pokemon.select().execute()
+            return await Pokemon.select().run()
 
         asyncio.run(add_column())
 

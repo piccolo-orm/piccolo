@@ -15,7 +15,7 @@ from .utils import _camel_to_snake
 
 class Database(object):
 
-    async def execute(*queries):
+    async def run(*queries):
         """
         Use asyncio.gather here ...
         """
@@ -113,7 +113,7 @@ class Table(metaclass=TableMeta):
         """
         await Pokemon.update(name='raichu').where(
             Pokemon.name='pikachu'
-        ).execute()
+        ).run()
         """
         columns_str = ','.join([
             f'{column} = {getattr(cls, column).format_value(value)}' for (
@@ -127,7 +127,7 @@ class Table(metaclass=TableMeta):
     @classmethod
     def delete(cls, **columns) -> Delete:
         """
-        await Pokemon.delete().where(Pokemon.name='weedle').execute()
+        await Pokemon.delete().where(Pokemon.name='weedle').run()
 
         DELETE FROM pokemon where name = 'weedle'
         """
@@ -139,7 +139,7 @@ class Table(metaclass=TableMeta):
     @classmethod
     def create(cls) -> Create:
         """
-        await Pokemon.create().execute()
+        await Pokemon.create().run()
         """
         return Create(
             table=cls,
@@ -149,7 +149,7 @@ class Table(metaclass=TableMeta):
     @classmethod
     def drop(cls) -> Drop:
         """
-        await Pokemon.drop().execute()
+        await Pokemon.drop().run()
         """
         return Drop(
             table=cls,
