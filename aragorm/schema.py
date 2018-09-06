@@ -25,6 +25,7 @@ Just make the Schema's combinable.
 # modify_column (rename, null / not null, max_chars, change type)
 # drop_column
 
+
 class Schema():
 
     def __init__(self, column_changes, table_changes):
@@ -39,8 +40,6 @@ class Schema():
         self.column_changes += value.column_changes
         self.table_changes += value.table_changes
         return self
-
-
 
 
 class CreateTable():
@@ -67,7 +66,7 @@ class ModifyColumn():
 
 
 class DropColumn():
-    def __init__(self, table_name: str, column_name: str):
+    def __init__(self, table_name: str, column_name: str) -> None:
         self.table_name = table_name
         self.column_name = column_name
 
