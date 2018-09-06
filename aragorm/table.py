@@ -47,10 +47,10 @@ class TableMeta(type):
 class Table(metaclass=TableMeta):
 
     class Meta:
-        pass
+        tablename = None
 
     @classmethod
-    def select(cls, *column_names: [str]) -> Select:
+    def select(cls, *column_names: str) -> Select:
         """
         Needs to be a simple wrapper.
 
@@ -72,7 +72,7 @@ class Table(metaclass=TableMeta):
         )
 
     @classmethod
-    def insert(cls, *instances: ['Table']):
+    def insert(cls, *instances: 'Table'):
         """
         In typing is it possible to distinguish between a class and a class
         instance?
@@ -110,13 +110,13 @@ class Table(metaclass=TableMeta):
     @classmethod
     def update(cls, **columns) -> Update:
         """
-        await Pokemon.update(name='raichu').where(Pokemon.name='pikachu').execute()
-
-        UPDATE pokemon SET name = 'raichu', power = '1000' where name = 'pikachu'
+        await Pokemon.update(name='raichu').where(
+            Pokemon.name='pikachu'
+        ).execute()
         """
         columns_str = ','.join([
-            f'{column} = {getattr(cls, column).format_value(value)}' for column, value in columns.items()
-        ])
+            f'{column} = {getattr(cls, column).format_value(value)}' for (
+                column, value) in columns.items()])
 
         return Update(
             table=cls,
