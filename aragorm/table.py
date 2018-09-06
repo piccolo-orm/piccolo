@@ -7,6 +7,7 @@ from .query import (
     Exists,
     Raw,
     Select,
+    TableExists,
     Update,
 )
 from .utils import _camel_to_snake
@@ -187,8 +188,11 @@ class Table(metaclass=TableMeta):
         )
 
     @classmethod
-    def table_exists(cls):
-        return cls.raw(
-            "SELECT EXISTS(SELECT * FROM information_schema.tables WHERE "
-            f"table_name = '{cls.Meta.tablename}')"
+    def table_exists(cls) -> TableExists:
+        return TableExists(
+            table=cls,
+            base=(
+                "SELECT EXISTS(SELECT * FROM information_schema.tables WHERE "
+                f"table_name = '{cls.Meta.tablename}')"
+            )
         )

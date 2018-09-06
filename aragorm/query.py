@@ -61,7 +61,15 @@ class Query(object):
         results = await conn.fetch(self.__str__())
         await conn.close()
         # TODO Be able to output it in different formats.
-        return [dict(i.items()) for i in results]
+        raw = [dict(i.items()) for i in results]
+        return self.response_handler(raw)
+
+    def response_handler(self, response):
+        """
+        Subclasses can override this to modify the raw response returned by
+        the database driver.
+        """
+        return response
 
     def _is_valid_column_name(self, column_name: str):
         if column_name.startswith('-'):
@@ -167,22 +175,29 @@ class Update(Query, WhereMixin):
         return query
 
 
-class Drop(Query):
-
-    def __str__(self):
-        return self.base
-
-
 class Raw(Query):
 
     def __str__(self):
         return self.base
 
 
+class Drop(Raw):
+    pass
+
+
+class TableExists(Raw):
+
+    def response_handler(self, response):
+        return response[0]['exists']
+
+
 class Exists(Query, WhereMixin):
 
     def __str__(self):
-        select = Select(self.table, f'SELECT * FROM {self.table.Meta.tablename}')
+        select = Select(
+            self.table,
+            f'SELECT * FROM {self.table.Meta.tablename}'
+        )
         select._where = self._where
         subquery = select.__str__()
         return f'SELECT EXISTS({subquery})'
