@@ -74,7 +74,7 @@ class Query(object):
         process, and dispatching coroutines to it.
         """
         return asyncio.run(
-            self.sync(*args, **kwargs)
+            self.run(*args, **kwargs)
         )
 
     def response_handler(self, response):

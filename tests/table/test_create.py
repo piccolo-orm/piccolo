@@ -1,5 +1,3 @@
-import asyncio
-
 from ..base import DBTestCase
 from ..example_project.tables import Pokemon
 
@@ -13,16 +11,11 @@ class TestCreate(DBTestCase):
         pass
 
     def test_create_table(self):
-        async def create_table():
-            return await Pokemon.create().run()
-
-        async def count_rows():
-            return await Pokemon.select(
-                'name', 'trainer', 'power'
-            ).count().run()
-
-        asyncio.run(create_table())
+        Pokemon.create().run_sync()
 
         # Just do a count to make sure the table was created ok.
-        response = asyncio.run(count_rows())
+        response = Pokemon.select(
+            'name', 'trainer', 'power'
+        ).count().run_sync()
+
         self.assertEqual(response[0]['count'], 0)
