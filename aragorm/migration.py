@@ -2,8 +2,8 @@
 
 import datetime
 import os
-
 import click
+from typing import List
 
 from aragorm.migrations.template import TEMPLATE
 from aragorm.migrations.table import Migration
@@ -53,6 +53,20 @@ def _create_migration_table() -> bool:
     return False
 
 
+def _get_migrations_which_ran() -> List[str]:
+    """
+    Returns the names of migrations which have already run.
+    """
+    return Migration.select('name').run_sync()
+
+
+def _get_migrations_on_disk() -> List[str]:
+    """
+    Returns the IDs of migrations on disk.
+    """
+    pass
+
+
 @click.command()
 def run():
     """
@@ -61,6 +75,8 @@ def run():
     """
     print('Running migrations ...')
     _create_migration_table()
+    already_ran = _get_migrations_which_ran()
+    print(already_ran)
 
 
 ###############################################################################
