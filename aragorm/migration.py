@@ -47,8 +47,8 @@ def new():
 ###############################################################################
 
 def _create_migration_table() -> bool:
-    if not Migration.table_exists().run():
-        Migration.create().run()
+    if not Migration.table_exists().run_sync():
+        Migration.create().run_sync()
         return True
     return False
 
@@ -61,6 +61,7 @@ def run():
     """
     print('Running migrations ...')
     _create_migration_table()
+
 
 ###############################################################################
 

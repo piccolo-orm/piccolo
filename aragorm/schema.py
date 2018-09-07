@@ -24,6 +24,7 @@ Just make the Schema's combinable.
 # create_table
 # modify_column (rename, null / not null, max_chars, change type)
 # drop_column
+# We already have alter ...
 
 
 class Schema():

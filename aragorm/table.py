@@ -139,6 +139,8 @@ class Table(metaclass=TableMeta):
     @classmethod
     def create(cls) -> Create:
         """
+        Create table, along with all columns.
+
         await Pokemon.create().run()
         """
         return Create(
@@ -147,8 +149,22 @@ class Table(metaclass=TableMeta):
         )
 
     @classmethod
+    def create_without_columns(cls) -> Raw:
+        """
+        Create the table, but with no columns (useful for migrations).
+
+        await Pokemon.create().run()
+        """
+        return Raw(
+            table=cls,
+            base=f'CREATE TABLE "{cls.Meta.tablename}"()'
+        )
+
+    @classmethod
     def drop(cls) -> Drop:
         """
+        Drops the table.
+
         await Pokemon.drop().run()
         """
         return Drop(
