@@ -202,6 +202,20 @@ class TestSelect(DBTestCase):
             [{'name': 'pikachu'}]
         )
 
+    def test_first(self):
+        self.insert_rows()
+
+        response = Pokemon.select(
+            'name'
+        ).first().run_sync()
+
+        print(f'response = {response}')
+
+        self.assertEqual(
+            response,
+            {'name': 'pikachu'}
+        )
+
     def test_order_by_ascending(self):
         self.insert_rows()
 

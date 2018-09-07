@@ -124,6 +124,7 @@ class LimitMixin():
 
     def first(self):
         self._limit = Limit(1)
+        self.response_handler = lambda response: response[0]
         return self
 
 
