@@ -1,15 +1,20 @@
 #!/usr/bin/env python
 
 import datetime
+import importlib.util
 import os
+import sys
+from typing import List, Dict
+from types import ModuleType
+
 import click
-from typing import List
 
 from aragorm.migrations.template import TEMPLATE
 from aragorm.migrations.table import Migration
 
 
 MIGRATIONS_FOLDER = os.path.join(os.getcwd(), 'migrations')
+MIGRATION_MODULES: Dict[str, ModuleType] = {}
 
 
 def _create_migrations_folder() -> bool:
@@ -17,8 +22,9 @@ def _create_migrations_folder() -> bool:
         return False
     else:
         os.mkdir(MIGRATIONS_FOLDER)
-        with open(os.path.join(MIGRATIONS_FOLDER, '__init__.py'), 'w'):
-            pass
+        for filename in ('__init__.py', 'config.py'):
+            with open(os.path.join(MIGRATIONS_FOLDER, filename), 'w'):
+                pass
         return True
 
 
@@ -60,11 +66,40 @@ def _get_migrations_which_ran() -> List[str]:
     return Migration.select('name').run_sync()
 
 
-def _get_migrations_on_disk() -> List[str]:
+def _get_migration_modules() -> None:
+    folder_contents = os.listdir(MIGRATIONS_FOLDER)
+    excluded = ('__init__.py', 'config.py', '__pycache__')
+    migration_names = [
+        i.split('.py')[0] for i in folder_contents if i not in excluded
+    ]
+    modules = [importlib.import_module(name) for name in migration_names]
+    global MIGRATION_MODULES
+    for m in modules:
+        _id = getattr(m, 'ID', None)
+        if _id:
+            MIGRATION_MODULES[_id] = m
+
+
+def _get_migration_ids() -> List[str]:
+    return list(MIGRATION_MODULES.keys())
+
+
+def _get_config() -> dict:
     """
-    Returns the IDs of migrations on disk.
+    A config file is required for the database credentials.
     """
-    pass
+    sys.path.insert(0, MIGRATIONS_FOLDER)
+
+    config_file = os.path.join(MIGRATIONS_FOLDER, 'config.py')
+    if not os.path.exists(config_file):
+        raise Exception(f"Can't find config.py in {MIGRATIONS_FOLDER}")
+
+    config = importlib.import_module('config')
+
+    db = getattr(config, 'DB', None)
+    if not db:
+        raise Exception('config.py is missing a DB dictionary.')
+    return db
 
 
 @click.command()
@@ -74,9 +109,23 @@ def run():
     migration.
     """
     print('Running migrations ...')
+    sys.path.insert(0, os.getcwd())
+
+    Migration.Meta.db = _get_config()
+
     _create_migration_table()
+
     already_ran = _get_migrations_which_ran()
-    print(already_ran)
+    print(f'Already ran = {already_ran}')
+
+    _get_migration_modules()
+    ids = _get_migration_ids()
+    print(f'Migration ids = {ids}')
+
+    for _id in (set(ids) - set(already_ran)):
+        MIGRATION_MODULES[_id].forwards()
+        print(f'Ran {_id}')
+        # When it has run, update migration DB ...
 
 
 ###############################################################################
