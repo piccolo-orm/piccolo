@@ -162,9 +162,9 @@ class Select(Query, WhereMixin, LimitMixin, CountMixin, OrderByMixin):
 class Insert(Query, AddMixin):
 
     def __str__(self):
-        columns = ', '.join([f'"{i.name}"' for i in self.table.Meta.columns])
-        # INSERT INTO table_name ()
-        query = f'{self.base} ({columns}) VALUES ()'
+        columns = ','.join([f'"{i.name}"' for i in self.table.Meta.columns])
+        values = ','.join(i.__str__() for i in self._add)
+        query = f'{self.base} ({columns}) VALUES {values}'
         return query
 
 

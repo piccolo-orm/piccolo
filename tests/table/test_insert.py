@@ -7,13 +7,18 @@ class TestInsert(DBTestCase):
     def test_insert(self):
         self.insert_rows()
 
-        response = Pokemon.insert().add(
-            Pokemon()
-        ).run_sync()
+        query = Pokemon.insert().add(
+            Pokemon(name='bulbasaur')
+        )
+        print(query)
+
+        query.run_sync()
+
+        response = Pokemon.select('name').run_sync()
 
         print(f'response = {response}')
+        names = [i['name'] for i in response]
 
-        self.assertEqual(
-            response,
-            [{'name': 'kakuna'}]
+        self.assertTrue(
+            'bulbasaur' in names
         )

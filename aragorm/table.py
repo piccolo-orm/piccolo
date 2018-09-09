@@ -146,7 +146,7 @@ class Table(metaclass=TableMeta):
         """
         return Insert(
             table=cls,
-            base='INSERT INTO {cls.Meta.tablename}',
+            base=f'INSERT INTO {cls.Meta.tablename}',
         )
 
     @classmethod
