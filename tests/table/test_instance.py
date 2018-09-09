@@ -9,4 +9,4 @@ class TestInstance(DBTestCase):
 
     def test_insert(self):
         pikachu = Pokemon(name="pikachu")
-        print(pikachu)
+        self.assertEqual(pikachu.__str__(), "('pikachu',null,null)")
