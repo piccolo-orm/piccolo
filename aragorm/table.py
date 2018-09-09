@@ -1,3 +1,5 @@
+
+import inspect
 from typing import Any, List
 
 from .alter import Alter
@@ -55,23 +57,36 @@ class Table(metaclass=TableMeta):
         columns: List[Column] = []
 
     def __init__(self, **kwargs):
-        self.data = kwargs
+        """
+        TODO:
+        Need to know the memory size of each instance ... can't be
+        massive.
+        """
+        for column in self.Meta.columns:
+            value = kwargs.get(column.name, None)
+            if not value:
+                if column.default:
+                    value = column.default() if inspect.isfunction(
+                        column.default
+                    ) else column.default
+                else:
+                    if column.required:
+                        raise ValueError(f"{column.name} wasn't provided")
+            self.value = value
 
     def __setitem__(self, key: str, value: Any):
-        self.data[key] = value
+        setattr(self, key, value)
 
     def __getitem__(self, key: str):
-        return self.data[key]
+        return getattr(self, key)
 
     def __str__(self):
-        """
-        Need to return them in the correct order ...
-        """
-        # If there's no matching attribute on data, get the default from
-        # the column
-        # Put __setattr__ on the columns as well? Either raise exception
-        # Or use it to proxy to data??? Would be pretty awesome ...
-        pass
+        row = ", ".join([
+            column.format_value(
+                self[column.name]
+            ) for column in self.Meta.columns
+        ])
+        return f'({row})'
 
     @classmethod
     def select(cls, *column_names: str) -> Select:
