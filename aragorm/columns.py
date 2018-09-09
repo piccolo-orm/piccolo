@@ -91,9 +91,9 @@ class Varchar(Column):
         super().__init__(**kwargs)
 
     def format_value(self, value):
-        value = value if value else 'null'
-        import ipdb; ipdb.set_trace()
-        if type(value) != str:
+        if not value:
+            return 'null'
+        elif type(value) != str:
             raise ValueError(f'{self.name} - Varchar only accepts strings')
         # TODO sanitize input
         return f"'{value}'"

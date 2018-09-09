@@ -72,7 +72,7 @@ class Table(metaclass=TableMeta):
                 else:
                     if not column.null:
                         raise ValueError(f"{column.name} wasn't provided")
-            self.value = value
+            self[column.name] = value
 
     def __setitem__(self, key: str, value: Any):
         setattr(self, key, value)
@@ -81,7 +81,6 @@ class Table(metaclass=TableMeta):
         return getattr(self, key)
 
     def __str__(self):
-        import ipdb; ipdb.set_trace()
         row = ",".join([
             column.format_value(
                 self[column.name]
