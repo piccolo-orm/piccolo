@@ -63,7 +63,7 @@ def _get_migrations_which_ran() -> List[str]:
     """
     Returns the names of migrations which have already run.
     """
-    return Migration.select('name').run_sync()
+    return [i['name'] for i in Migration.select('name').run_sync()]
 
 
 def _get_migration_modules() -> None:
@@ -125,8 +125,9 @@ def run():
     for _id in (set(ids) - set(already_ran)):
         MIGRATION_MODULES[_id].forwards()
         print(f'Ran {_id}')
-        # When it has run, update migration DB ...
-        # need to flesh out inserts ...
+        Migration.insert().add(
+            Migration(name=_id)
+        ).run_sync()
 
 
 ###############################################################################
