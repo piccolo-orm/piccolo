@@ -49,6 +49,7 @@ class Query(object):
         self._where: [Combinable] = None
         self._limit: Limit = None
         self._order_by: OrderBy = None
+        self._add = []
 
     async def run(self, as_dict=True, credentials=None):
         """
@@ -87,7 +88,7 @@ class Query(object):
     def _is_valid_column_name(self, column_name: str):
         if column_name.startswith('-'):
             column_name = column_name[1:]
-        if not column_name in [i.name for i in self.table.columns]:
+        if not column_name in [i.name for i in self.table.Meta.columns]:
             raise ValueError(f"{column_name} isn't a valid column name")
 
 ###############################################################################
@@ -134,6 +135,13 @@ class CountMixin():
         self.base = f'SELECT COUNT(*) FROM {self.table.Meta.tablename}'
         return self
 
+
+class AddMixin():
+
+    def add(self, *instances: 'Table'):
+        self._add += instances
+        return self
+
 ###############################################################################
 
 # TODO I don't like this whole self.base stuff
@@ -151,12 +159,12 @@ class Select(Query, WhereMixin, LimitMixin, CountMixin, OrderByMixin):
         return query
 
 
-class Insert(Query):
+class Insert(Query, AddMixin):
 
     def __str__(self):
-        query = self.base
-        if self._where:
-            query += f' WHERE {self._where.__str__()}'
+        columns = ', '.join([f'"{i.name}"' for i in self.table.Meta.columns])
+        # INSERT INTO table_name ()
+        query = f'{self.base} ({columns}) VALUES ()'
         return query
 
 
@@ -175,7 +183,7 @@ class Create(Query):
     """
 
     def __str__(self):
-        columns = ', '.join([i.__str__() for i in self.table.columns])
+        columns = ', '.join([i.__str__() for i in self.table.Meta.columns])
         query = f'{self.base} ({columns})'
         return query
 

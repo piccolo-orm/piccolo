@@ -126,6 +126,7 @@ def run():
         MIGRATION_MODULES[_id].forwards()
         print(f'Ran {_id}')
         # When it has run, update migration DB ...
+        # need to flesh out inserts ...
 
 
 ###############################################################################

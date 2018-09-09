@@ -1,3 +1,5 @@
+from typing import Any, List
+
 from .alter import Alter
 from .columns import Column
 from .query import (
@@ -5,6 +7,7 @@ from .query import (
     Delete,
     Drop,
     Exists,
+    Insert,
     Raw,
     Select,
     TableExists,
@@ -41,7 +44,7 @@ class TableMeta(type):
                 columns.append(value)
                 value.name = key
 
-        table.columns = columns
+        table.Meta.columns = columns
         return table
 
 
@@ -49,6 +52,26 @@ class Table(metaclass=TableMeta):
 
     class Meta:
         tablename = None
+        columns: List[Column] = []
+
+    def __init__(self, **kwargs):
+        self.data = kwargs
+
+    def __setitem__(self, key: str, value: Any):
+        self.data[key] = value
+
+    def __getitem__(self, key: str):
+        return self.data[key]
+
+    def __str__(self):
+        """
+        Need to return them in the correct order ...
+        """
+        # If there's no matching attribute on data, get the default from
+        # the column
+        # Put __setattr__ on the columns as well? Either raise exception
+        # Or use it to proxy to data??? Would be pretty awesome ...
+        pass
 
     @classmethod
     def select(cls, *column_names: str) -> Select:
@@ -73,7 +96,7 @@ class Table(metaclass=TableMeta):
         )
 
     @classmethod
-    def insert(cls, *instances: 'Table'):
+    def insert(cls) -> Insert:
         """
         In typing is it possible to distinguish between a class and a class
         instance?
@@ -106,7 +129,10 @@ class Table(metaclass=TableMeta):
         --> sanic or quart
 
         """
-        pass
+        return Insert(
+            table=cls,
+            base='INSERT INTO {cls.Meta.tablename}',
+        )
 
     @classmethod
     def update(cls, **columns) -> Update:
