@@ -63,7 +63,7 @@ class Table(metaclass=TableMeta):
         massive.
         """
         for column in self.Meta.columns:
-            value = kwargs.get(column.name, None)
+            value = kwargs.pop(column.name, None)
             if not value:
                 if column.default:
                     value = column.default() if inspect.isfunction(
@@ -73,6 +73,10 @@ class Table(metaclass=TableMeta):
                     if not column.null:
                         raise ValueError(f"{column.name} wasn't provided")
             self[column.name] = value
+
+        unrecognized = kwargs.keys()
+        if unrecognized:
+            raise ValueError(f'Unrecognized columns - {unrecognized}')
 
     def __setitem__(self, key: str, value: Any):
         setattr(self, key, value)
@@ -87,6 +91,8 @@ class Table(metaclass=TableMeta):
             ) for column in self.Meta.columns
         ])
         return f'({row})'
+
+    ###########################################################################
 
     @classmethod
     def select(cls, *column_names: str) -> Select:
