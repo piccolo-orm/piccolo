@@ -44,6 +44,7 @@ class Column():
         Takes the raw Python value and return a string usable in the database
         query.
         """
+        value = value if value else 'null'
         return f'{value}'
 
     def __lt__(self, value) -> 'Where':
@@ -90,8 +91,10 @@ class Varchar(Column):
         super().__init__(**kwargs)
 
     def format_value(self, value):
+        value = value if value else 'null'
+        import ipdb; ipdb.set_trace()
         if type(value) != str:
-            raise ValueError('Varchar only accepts strings')
+            raise ValueError(f'{self.name} - Varchar only accepts strings')
         # TODO sanitize input
         return f"'{value}'"
 

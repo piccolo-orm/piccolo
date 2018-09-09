@@ -70,7 +70,7 @@ class Table(metaclass=TableMeta):
                         column.default
                     ) else column.default
                 else:
-                    if column.required:
+                    if not column.null:
                         raise ValueError(f"{column.name} wasn't provided")
             self.value = value
 
@@ -81,7 +81,8 @@ class Table(metaclass=TableMeta):
         return getattr(self, key)
 
     def __str__(self):
-        row = ", ".join([
+        import ipdb; ipdb.set_trace()
+        row = ",".join([
             column.format_value(
                 self[column.name]
             ) for column in self.Meta.columns
