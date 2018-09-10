@@ -131,6 +131,13 @@ class Timestamp(Column):
         super().__init__(**kwargs)
 
 
+class Boolean(Column):
+
+    def __init__(self, default: bool = False, **kwargs) -> None:
+        self.default = default
+        super().__init__(**kwargs)
+
+
 ###############################################################################
 
 class CombinableMixin(object):
