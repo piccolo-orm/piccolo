@@ -141,7 +141,7 @@ class AddMixin():
     def add(self, *instances: 'Table'):
         for instance in instances:
             if not isinstance(instance, self.table):
-                raise ValueError('Incompatible type added.')
+                raise TypeError('Incompatible type added.')
         self._add += instances
         return self
 

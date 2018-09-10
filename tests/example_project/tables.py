@@ -17,3 +17,10 @@ class Pokemon(table.Table):
 
     class Meta():
         db = DB
+
+
+class Trainer(table.Table):
+    name = columns.Varchar(length=50)
+
+    class Meta():
+        db = DB
