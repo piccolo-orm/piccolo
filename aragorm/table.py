@@ -94,6 +94,7 @@ class Table(metaclass=TableMeta):
             kwargs = {
                 name: getattr(self, name, None) for name in cls.Meta.columns
             }
+            _id = kwargs.pop('id')
             return cls.update(kwargs).where(
                 cls.id == _id
             )
