@@ -3,7 +3,7 @@ A User model which can be subclassed in projects.
 """
 import hashlib
 import secrets
-from typing import Tuple
+from typing import List
 
 from aragorm.table import Table
 from aragorm.columns import Varchar, PrimaryKey, Boolean
@@ -26,7 +26,12 @@ class User(Table):
         return secrets.token_hex(16)
 
     @classmethod
-    def hash_password(cls, password: str, salt: str = '') -> str:
+    def hash_password(
+        cls,
+        password: str,
+        salt: str = '',
+        iterations: int = 10000
+    ) -> str:
         """
         Hashes the password, ready for storage, and for comparing during
         login.
@@ -37,19 +42,35 @@ class User(Table):
             'sha256',
             bytes(password, encoding="utf-8"),
             bytes(salt, encoding="utf-8"),
-            iterations=100000
+            iterations
         ).decode('utf-8')
 
     @classmethod
-    def split_hashed_password(self, hashed_password: str) -> Tuple[str]:
-        return ('a', 'b', 'c')
+    def split_stored_password(self, password: str) -> List[str]:
+        elements = password.split('$')
+        if len(elements) != 4:
+            raise ValueError('Unable to split hashed password')
+        return elements
 
     @classmethod
     def login(cls, username: str, password: str):
-        hashed_password = cls.select('password').where(
+        password = cls.select('password').where(
             (cls.username == username) &
             (cls.password == cls.hash_password(password))
-        ).first()
+        ).first()['password']
+
+        algorithm, iterations, salt, hashed = cls.split_stored_password(
+            password
+        )
+
+        if algorithm != 'pbkdf2_sha256':
+            raise ValueError('Only pbkdf2_sha256 is currently supported')
+
+        return cls.hash_password(
+            password,
+            salt,
+            int(iterations)
+        ) == hashed
 
 
 # Things to consider ...

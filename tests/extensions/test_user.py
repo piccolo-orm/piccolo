@@ -28,3 +28,11 @@ class TestUser(TestCase):
             raise exception
 
         self.assertFalse(exception)
+
+    def test_hash_password(self):
+        pass
+
+    def test_login(self):
+        username = "bob"
+        password = "Bob123$$$"
+        _User.login(username, password)
