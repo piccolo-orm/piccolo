@@ -84,13 +84,12 @@ class Table(metaclass=TableMeta):
         """
         Just a proxy to an insert or update query.
         """
-        _id = getattr(self, 'id', None)
-        if not _id:
+        if not hasattr(self, 'id'):
             raise ValueError('No id value found')
 
         cls = self.__class__
 
-        if type(_id) == int:
+        if type(self.id) == int:
             # pre-existing row
             kwargs = {
                 name: getattr(self, name, None) for name in cls.Meta.columns
