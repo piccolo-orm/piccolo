@@ -46,13 +46,16 @@ class TableMeta(type):
                 columns.append(value)
                 value.name = key
 
+        if 'id' not in namespace.keys():
+            id_column = PrimaryKey()
+            id_column.name = 'id'
+            columns.insert(0, id_column)
+
         table.Meta.columns = columns
         return table
 
 
 class Table(metaclass=TableMeta):
-
-    id = PrimaryKey()
 
     class Meta:
         tablename = None
@@ -99,7 +102,7 @@ class Table(metaclass=TableMeta):
                 cls.id == _id
             )
         else:
-            return cls.insert(self)
+            return cls.insert().add(self)
 
     def __setitem__(self, key: str, value: Any):
         setattr(self, key, value)

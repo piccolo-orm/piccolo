@@ -22,8 +22,7 @@ class DBTestCase(TestCase):
                 name VARCHAR(50),
                 trainer VARCHAR(20),
                 power SMALLINT
-            );'''
-        )
+            );''')
 
     def insert_row(self):
         self.run_sync('''
@@ -35,8 +34,7 @@ class DBTestCase(TestCase):
                 'pikachu',
                 'ash',
                 1000
-            );'''
-        )
+            );''')
 
     def insert_rows(self):
         self.run_sync('''
@@ -56,8 +54,7 @@ class DBTestCase(TestCase):
                 'weedle',
                 'gordon',
                 10
-            );'''
-        )
+            );''')
 
     def drop_table(self):
         self.run_sync('DROP TABLE pokemon;')

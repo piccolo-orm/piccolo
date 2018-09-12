@@ -121,6 +121,7 @@ class PrimaryKey(Column):
             'primary': True,
             'key': True
         })
+        self.default = 'DEFAULT'
         super().__init__(**kwargs)
 
 
