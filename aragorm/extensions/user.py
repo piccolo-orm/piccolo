@@ -1,6 +1,10 @@
 """
 A User model which can be subclassed in projects.
 """
+import hashlib
+import secrets
+from typing import Tuple
+
 from aragorm.table import Table
 from aragorm.columns import Varchar, PrimaryKey, Boolean
 
@@ -18,19 +22,34 @@ class User(Table):
     active = Boolean(default=False)
 
     @classmethod
-    def hash_password(cls, password: str) -> str:
+    def get_salt(cls):
+        return secrets.token_hex(16)
+
+    @classmethod
+    def hash_password(cls, password: str, salt: str = '') -> str:
         """
         Hashes the password, ready for storage, and for comparing during
         login.
         """
-        return 'secret'
+        if salt == '':
+            salt = cls.get_salt()
+        return hashlib.pbkdf2_hmac(
+            'sha256',
+            bytes(password, encoding="utf-8"),
+            bytes(salt, encoding="utf-8"),
+            iterations=100000
+        ).decode('utf-8')
+
+    @classmethod
+    def split_hashed_password(self, hashed_password: str) -> Tuple[str]:
+        return ('a', 'b', 'c')
 
     @classmethod
     def login(cls, username: str, password: str):
-        return cls.select().where(
+        hashed_password = cls.select('password').where(
             (cls.username == username) &
             (cls.password == cls.hash_password(password))
-        ).exists()
+        ).first()
 
 
 # Things to consider ...
@@ -40,5 +59,8 @@ class User(Table):
 # When people subclass it ... can add the hash???
 # Need to have the ability in a table to transform values during __init__ and
 # __set__.
-# That means I don't need a create_user ...
-# BUT ... I still need a check_password ...
+
+# I don't think you have one salt ... I think it's random each time ...
+# and you use it to hash the password, and then store something like this:
+# encryption_method$iterations$salt$hashed_and_salted_password
+# If you know the salt ... couldn't you just regenerate rainbow tables???
