@@ -3,7 +3,7 @@ import inspect
 from typing import Any, List
 
 from .alter import Alter
-from .columns import Column
+from .columns import Column, PrimaryKey
 from .query import (
     Create,
     Delete,
@@ -52,6 +52,8 @@ class TableMeta(type):
 
 class Table(metaclass=TableMeta):
 
+    id = PrimaryKey()
+
     class Meta:
         tablename = None
         columns: List[Column] = []
@@ -77,6 +79,27 @@ class Table(metaclass=TableMeta):
         unrecognized = kwargs.keys()
         if unrecognized:
             raise ValueError(f'Unrecognized columns - {unrecognized}')
+
+    def save(self):
+        """
+        Just a proxy to an insert or update query.
+        """
+        _id = getattr(self, 'id', None)
+        if not _id:
+            raise ValueError('No id value found')
+
+        cls = self.__class__
+
+        if type(_id) == int:
+            # pre-existing row
+            kwargs = {
+                name: getattr(self, name, None) for name in cls.Meta.columns
+            }
+            return cls.update(kwargs).where(
+                cls.id == _id
+            )
+        else:
+            return cls.insert(self)
 
     def __setitem__(self, key: str, value: Any):
         setattr(self, key, value)
