@@ -1,6 +1,6 @@
 import asyncio
 import dataclasses
-from typing import List, Coroutine
+from typing import List
 
 import asyncpg
 
@@ -45,13 +45,10 @@ class Query(object):
         self.base = base
         self.table = table
 
-        self._run_callbacks: List[Coroutine] = []
-
         self._where: [Combinable] = None
         self._limit: Limit = None
         self._order_by: OrderBy = None
         self._add = []
-        self._returning: List[str] = []
 
     async def run(self, as_dict=True, credentials=None):
         """
@@ -66,8 +63,8 @@ class Query(object):
         results = await conn.fetch(self.__str__())
         await conn.close()
 
-        # if self.callbacks ... await them ...
-        #
+        if hasattr(self, 'run_callback'):
+            self.run_callback(results)
 
         # TODO Be able to output it in different formats.
         raw = [dict(i.items()) for i in results]
@@ -153,13 +150,6 @@ class AddMixin():
         return self
 
 
-class ReturningMixin():
-
-    def returning(self, *fields: str):
-        self._returning += fields
-        return self
-
-
 ###############################################################################
 
 # TODO I don't like this whole self.base stuff
@@ -177,18 +167,16 @@ class Select(Query, WhereMixin, LimitMixin, CountMixin, OrderByMixin):
         return query
 
 
-class Insert(Query, AddMixin, ReturningMixin):
+class Insert(Query, AddMixin):
 
-    def run_callback(self, response):
-        pass
+    def run_callback(self, results):
+        for index, row in enumerate(results):
+            self._add[index].id = results[0]
 
     def __str__(self):
         columns = ','.join(self.table.Meta.columns)
         values = ','.join(i.__str__() for i in self._add)
-        query = f'{self.base} ({columns}) VALUES {values}'
-        if self._returning:
-            _columns = ','.join(self._returning)
-            query += f' RETURNING {_columns}'
+        query = f'{self.base} ({columns}) VALUES {values} RETURNING id'
         return query
 
 
