@@ -189,7 +189,7 @@ class Table(metaclass=TableMeta):
             Pokemon.name='pikachu'
         ).run()
         """
-        columns_str = ','.join([
+        columns_str = ', '.join([
             f'{column} = {getattr(cls, column).format_value(value)}' for (
                 column, value) in columns.items()])
 
