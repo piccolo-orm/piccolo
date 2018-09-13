@@ -50,6 +50,7 @@ class TableMeta(type):
             id_column = PrimaryKey()
             id_column.name = 'id'
             columns.insert(0, id_column)
+            table.id = id_column
 
         table.Meta.columns = columns
         return table
@@ -95,10 +96,10 @@ class Table(metaclass=TableMeta):
         if type(self.id) == int:
             # pre-existing row
             kwargs = {
-                name: getattr(self, name, None) for name in cls.Meta.columns
+                i.name: getattr(self, i.name, None) for i in cls.Meta.columns
             }
             _id = kwargs.pop('id')
-            return cls.update(kwargs).where(
+            return cls.update(**kwargs).where(
                 cls.id == _id
             )
         else:

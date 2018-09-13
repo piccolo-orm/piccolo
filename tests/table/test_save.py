@@ -31,22 +31,10 @@ class TestSave(DBTestCase):
         names = [i['name'] for i in Pokemon.select('name').run_sync()]
         self.assertTrue('squirtle' in names)
 
-        import ipdb; ipdb.set_trace()
-
         squirtle.name = 'blastoise'
         query = squirtle.save()
         print(query)
         self.assertTrue('UPDATE' in query.__str__())
-
-        # There's a problem now ... when doing save ... it needs to add
-        # the primary key value to the object instance ...
-        # Needs to be handled by insert ... it has reference to the instance
-        # when doing an insert ... it doesn't automatically return the id ...
-        # which is a pita ... because querying for it is hard ...
-        # could run it in a transaction ... and before hand query for the
-        # greatest id in that table ...
-        # just put RETURNING "id" at the end of the query ...
-        # I need callbacks which get triggered after save ...
 
         query.run_sync()
         names = [i['name'] for i in Pokemon.select('name').run_sync()]

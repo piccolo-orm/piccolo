@@ -63,11 +63,12 @@ class Query(object):
         results = await conn.fetch(self.__str__())
         await conn.close()
 
-        if hasattr(self, 'run_callback'):
-            self.run_callback(results)
-
         # TODO Be able to output it in different formats.
         raw = [dict(i.items()) for i in results]
+
+        if hasattr(self, 'run_callback'):
+            self.run_callback(raw)
+
         return self.response_handler(raw)
 
     def run_sync(self, *args, **kwargs):
@@ -171,10 +172,10 @@ class Insert(Query, AddMixin):
 
     def run_callback(self, results):
         for index, row in enumerate(results):
-            self._add[index].id = results[0]
+            self._add[index].id = row['id']
 
     def __str__(self):
-        columns = ','.join(self.table.Meta.columns)
+        columns = ','.join([i.name for i in self.table.Meta.columns])
         values = ','.join(i.__str__() for i in self._add)
         query = f'{self.base} ({columns}) VALUES {values} RETURNING id'
         return query
