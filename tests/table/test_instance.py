@@ -9,7 +9,7 @@ class TestInstance(DBTestCase):
 
     def test_insert(self):
         pikachu = Pokemon(name="pikachu")
-        self.assertEqual(pikachu.__str__(), "('pikachu',null,null)")
+        self.assertEqual(pikachu.__str__(), "(DEFAULT,'pikachu',null,null)")
 
     def test_non_existant_column(self):
         with self.assertRaises(ValueError):

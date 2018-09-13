@@ -19,6 +19,7 @@ class DBTestCase(TestCase):
     def create_table(self):
         self.run_sync('''
             CREATE TABLE pokemon (
+                id SERIAL PRIMARY KEY,
                 name VARCHAR(50),
                 trainer VARCHAR(20),
                 power SMALLINT

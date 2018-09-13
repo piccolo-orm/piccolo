@@ -72,7 +72,7 @@ class Column():
             'column_type',
             self.__class__.__name__.upper()
         )
-        query = f'"{name}" {column_type}'
+        query = f'{name} {column_type}'
         if self.primary:
             query += ' PRIMARY'
         if self.key:
