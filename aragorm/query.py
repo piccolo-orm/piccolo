@@ -1,5 +1,6 @@
 import asyncio
 import dataclasses
+from typing import List, Coroutine
 
 import asyncpg
 
@@ -35,21 +36,22 @@ class OrderBy():
         order = 'ASC' if self.ascending else 'DESC'
         return f' ORDER BY {self.column_name} {order}'
 
+
 ###############################################################################
 
 class Query(object):
 
     def __init__(self, table: 'Table', base: str = '') -> None:
-        """
-        A query has to be a certain type.
-        """
-        # For example select * from my_table
         self.base = base
         self.table = table
+
+        self._run_callbacks: List[Coroutine] = []
+
         self._where: [Combinable] = None
         self._limit: Limit = None
         self._order_by: OrderBy = None
         self._add = []
+        self._returning: List[str] = []
 
     async def run(self, as_dict=True, credentials=None):
         """
@@ -59,9 +61,14 @@ class Query(object):
             credentials = getattr(self.table.Meta, 'db', None)
         if not credentials:
             raise ValueError('Table has no db defined in Meta')
+
         conn = await asyncpg.connect(**credentials)
         results = await conn.fetch(self.__str__())
         await conn.close()
+
+        # if self.callbacks ... await them ...
+        #
+
         # TODO Be able to output it in different formats.
         raw = [dict(i.items()) for i in results]
         return self.response_handler(raw)
@@ -88,7 +95,7 @@ class Query(object):
     def _is_valid_column_name(self, column_name: str):
         if column_name.startswith('-'):
             column_name = column_name[1:]
-        if not column_name in [i.name for i in self.table.Meta.columns]:
+        if column_name not in [i.name for i in self.table.Meta.columns]:
             raise ValueError(f"{column_name} isn't a valid column name")
 
 ###############################################################################
@@ -145,6 +152,14 @@ class AddMixin():
         self._add += instances
         return self
 
+
+class ReturningMixin():
+
+    def returning(self, *fields: str):
+        self._returning += fields
+        return self
+
+
 ###############################################################################
 
 # TODO I don't like this whole self.base stuff
@@ -162,12 +177,18 @@ class Select(Query, WhereMixin, LimitMixin, CountMixin, OrderByMixin):
         return query
 
 
-class Insert(Query, AddMixin):
+class Insert(Query, AddMixin, ReturningMixin):
+
+    def run_callback(self, response):
+        pass
 
     def __str__(self):
-        columns = ','.join([f'"{i.name}"' for i in self.table.Meta.columns])
+        columns = ','.join(self.table.Meta.columns)
         values = ','.join(i.__str__() for i in self._add)
         query = f'{self.base} ({columns}) VALUES {values}'
+        if self._returning:
+            _columns = ','.join(self._returning)
+            query += f' RETURNING {_columns}'
         return query
 
 
