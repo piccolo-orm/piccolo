@@ -13,6 +13,7 @@ from .operators import (
     NotIn,
     Operator,
 )
+from .table import Table
 from .types import Combinable, Iterable
 
 
@@ -136,6 +137,18 @@ class Boolean(Column):
 
     def __init__(self, default: bool = False, **kwargs) -> None:
         self.default = default
+        super().__init__(**kwargs)
+
+
+class ForeignKey(Column):
+    """
+    Need to think about how this will work ...
+
+    http://www.postgresqltutorial.com/postgresql-foreign-key/
+
+    """
+
+    def __init__(self, to: Table, **kwargs) -> None:
         super().__init__(**kwargs)
 
 
