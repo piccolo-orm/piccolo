@@ -13,8 +13,9 @@ from .operators import (
     NotIn,
     Operator,
 )
-from .table import Table
 from .types import Combinable, Iterable
+if typing.TYPE_CHECKING:
+    import table
 
 
 class Column():
@@ -148,7 +149,7 @@ class ForeignKey(Column):
 
     """
 
-    def __init__(self, to: Table, **kwargs) -> None:
+    def __init__(self, to: 'table.Table', **kwargs) -> None:
         super().__init__(**kwargs)
 
 
