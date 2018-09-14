@@ -61,10 +61,10 @@ class Column():
     def __ge__(self, value) -> 'Where':
         return Where(column=self, value=value, operator=GreaterEqualThan)
 
-    def __eq__(self, value) -> 'Where':
+    def __eq__(self, value):
         return Where(column=self, value=value, operator=Equal)
 
-    def __ne__(self, value) -> 'Where':
+    def __ne__(self, value):
         return Where(column=self, value=value, operator=NotEqual)
 
     def __str__(self):
@@ -187,8 +187,13 @@ class Or(Combination):
 
 class Where(CombinableMixin):
 
-    def __init__(self, column: Column, value: typing.Any = None,
-                 values: Iterable = [], operator: Operator = None) -> None:
+    def __init__(
+        self,
+        column: Column,
+        value: typing.Any = None,
+        values: Iterable = [],
+        operator: typing.Type[Operator] = None
+    ) -> None:
         self.column = column
         self.value = value
         self.values = values
