@@ -1,3 +1,4 @@
+import asyncio
 from unittest import TestCase
 
 from aragorm.extensions.user import User
@@ -10,9 +11,9 @@ class _User(User):
         db = DB
 
 
-class TestUser(TestCase):
+class TestCreateUserTable(TestCase):
 
-    def test_user(self):
+    def test_create_user_table(self):
         """
         Make sure the table can be created.
         """
@@ -29,10 +30,38 @@ class TestUser(TestCase):
 
         self.assertFalse(exception)
 
+
+class TestHashPassword(TestCase):
+
     def test_hash_password(self):
         pass
+
+
+class TestLogin(TestCase):
+
+    def setUp(self):
+        _User.create().run_sync()
+
+    def tearDown(self):
+        _User.drop().run_sync()
 
     def test_login(self):
         username = "bob"
         password = "Bob123$$$"
-        _User.login(username, password)
+        email = "bob@bob.com"
+
+        _User(
+            username=username,
+            password=password,
+            email=email
+        ).save().run_sync()
+
+        authenticated = asyncio.run(
+            _User.login(username, password)
+        )
+        self.assertTrue(authenticated)
+
+        authenticated = asyncio.run(
+            _User.login(username, 'blablabla')
+        )
+        self.assertTrue(not authenticated)

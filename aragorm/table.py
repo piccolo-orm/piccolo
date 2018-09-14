@@ -33,6 +33,7 @@ class TableMeta(type):
         """
         Automatically populate the tablename, and columns.
         """
+        # TODO super might not be required ...
         table = super().__new__(cls, name, bases, namespace)
 
         Meta = namespace.get('Meta')
@@ -46,17 +47,20 @@ class TableMeta(type):
                 columns.append(value)
                 value.name = key
 
-        if 'id' not in namespace.keys():
-            id_column = PrimaryKey()
-            id_column.name = 'id'
-            columns.insert(0, id_column)
-            table.id = id_column
+        if bases:
+            for base in bases:
+                if hasattr(base, 'Meta'):
+                    _columns = getattr(base.Meta, 'columns', None)
+                    if _columns:
+                        columns = _columns + columns
 
         table.Meta.columns = columns
         return table
 
 
 class Table(metaclass=TableMeta):
+
+    id = PrimaryKey()
 
     class Meta:
         tablename = None
@@ -140,7 +144,7 @@ class Table(metaclass=TableMeta):
 
         return Select(
             table=cls,
-            base=f'SELECT {columns_str} from {cls.Meta.tablename}'
+            base=f'SELECT {columns_str} from "{cls.Meta.tablename}"'
         )
 
     @classmethod
@@ -179,7 +183,7 @@ class Table(metaclass=TableMeta):
         """
         return Insert(
             table=cls,
-            base=f'INSERT INTO {cls.Meta.tablename}',
+            base=f'INSERT INTO "{cls.Meta.tablename}"',
         )
 
     @classmethod

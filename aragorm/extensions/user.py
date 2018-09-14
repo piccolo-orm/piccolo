@@ -6,7 +6,7 @@ import secrets
 from typing import List
 
 from aragorm.table import Table
-from aragorm.columns import Varchar, PrimaryKey, Boolean
+from aragorm.columns import Varchar, Boolean
 
 
 # Might change to BaseUser ... making it clearer that it needs to be
@@ -15,11 +15,19 @@ class User(Table):
     """
     The password needs to be hashed.
     """
-    id = PrimaryKey()
     username = Varchar(length=100)
     password = Varchar(length=255)
     email = Varchar(length=255)
     active = Boolean(default=False)
+
+    def __init__(self, **kwargs):
+        """
+        Generating passwords upfront is expensive, so might need reworking.
+        """
+        password = kwargs.get('password', None)
+        if password:
+            kwargs['password'] = self.__class__.hash_password(password)
+        super().__init__(**kwargs)
 
     @classmethod
     def get_salt(cls):
@@ -38,12 +46,13 @@ class User(Table):
         """
         if salt == '':
             salt = cls.get_salt()
-        return hashlib.pbkdf2_hmac(
+        hashed = hashlib.pbkdf2_hmac(
             'sha256',
             bytes(password, encoding="utf-8"),
             bytes(salt, encoding="utf-8"),
             iterations
-        ).decode('utf-8')
+        ).hex()
+        return f'pbkdf2_sha256${iterations}${salt}${hashed}'
 
     @classmethod
     def split_stored_password(self, password: str) -> List[str]:
@@ -53,24 +62,26 @@ class User(Table):
         return elements
 
     @classmethod
-    def login(cls, username: str, password: str):
-        password = cls.select('password').where(
-            (cls.username == username) &
-            (cls.password == cls.hash_password(password))
-        ).first()['password']
+    async def login(cls, username: str, password: str):
+        response = await cls.select('password').where(
+            (cls.username == username)
+        ).first().run()
+
+        stored_password = response['password']
 
         algorithm, iterations, salt, hashed = cls.split_stored_password(
-            password
+            stored_password
         )
-
-        if algorithm != 'pbkdf2_sha256':
-            raise ValueError('Only pbkdf2_sha256 is currently supported')
 
         return cls.hash_password(
             password,
             salt,
             int(iterations)
-        ) == hashed
+        ) == stored_password
+
+    @classmethod
+    def foo(cls):
+        pass
 
 
 # Things to consider ...
