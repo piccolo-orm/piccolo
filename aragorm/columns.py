@@ -15,7 +15,7 @@ from .operators import (
 )
 from .types import Combinable, Iterable
 if typing.TYPE_CHECKING:
-    import table
+    import table  # noqa
 
 
 class Column():
