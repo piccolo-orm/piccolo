@@ -103,11 +103,9 @@ class Varchar(Column):
         self.default = default
         super().__init__(**kwargs)
 
-    def format_value(self, value):
+    def format_value(self, value: str):
         if not value:
             return 'null'
-        elif type(value) != str:
-            raise ValueError(f'{self.name} - Varchar only accepts strings')
         # TODO sanitize input
         return f"'{value}'"
 
