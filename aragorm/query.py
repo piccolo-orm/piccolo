@@ -46,12 +46,7 @@ class Query(object):
     def __init__(self, table: 'Table', base: str = '') -> None:
         self.base = base
         self.table = table
-
         super().__init__()
-
-        self._limit: t.Optional[Limit] = None
-        self._order_by: t.Optional[OrderBy] = None
-        self._add: t.List['Table'] = []
 
     async def run(self, as_dict=True, credentials=None):
         """
@@ -118,6 +113,10 @@ class WhereMixin():
 
 class OrderByMixin():
 
+    def __init__(self):
+        super().__init__()
+        self._order_by: t.Optional[OrderBy] = None
+
     def order_by(self, column_name: str):
         self._is_valid_column_name(column_name)
 
@@ -131,6 +130,10 @@ class OrderByMixin():
 
 
 class LimitMixin():
+
+    def __init__(self):
+        super().__init__()
+        self._limit: t.Optional[Limit] = None
 
     def limit(self, number: int):
         self._limit = Limit(number)
@@ -159,6 +162,10 @@ class CountMixin():
 
 
 class AddMixin():
+
+    def __init__(self):
+        super().__init__()
+        self._add: t.List['Table'] = []
 
     def add(self, *instances: 'Table'):
         for instance in instances:
