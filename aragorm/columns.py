@@ -200,7 +200,7 @@ class Where(CombinableMixin):
         self.operator = operator
 
     @property
-    def values_str(self):
+    def values_str(self) -> str:
         return ', '.join(
             [self.column.format_value(v) for v in self.values]
         )
