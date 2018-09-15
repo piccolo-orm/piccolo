@@ -47,7 +47,8 @@ class Query(object):
         self.base = base
         self.table = table
 
-        self._where: t.List[Combinable] = []
+        super().__init__()
+
         self._limit: t.Optional[Limit] = None
         self._order_by: t.Optional[OrderBy] = None
         self._add: t.List['Table'] = []
@@ -102,6 +103,10 @@ class Query(object):
 ###############################################################################
 
 class WhereMixin():
+
+    def __init__(self):
+        super().__init__()
+        self._where: t.Optional[Combinable] = []
 
     def where(self, where: Combinable):
         if self._where:
