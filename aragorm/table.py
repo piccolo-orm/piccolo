@@ -148,7 +148,7 @@ class Table(metaclass=TableMeta):
         )
 
     @classmethod
-    def insert(cls) -> Insert:
+    def insert(cls, *rows: 'Table') -> Insert:
         """
         In typing is it possible to distinguish between a class and a class
         instance?
@@ -181,10 +181,13 @@ class Table(metaclass=TableMeta):
         --> sanic or quart
 
         """
-        return Insert(
+        query = Insert(
             table=cls,
             base=f'INSERT INTO "{cls.Meta.tablename}"',
         )
+        if rows:
+            query.add(*rows)
+        return query
 
     @classmethod
     def update(cls, **columns) -> Update:

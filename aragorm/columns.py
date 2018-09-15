@@ -156,6 +156,33 @@ class ForeignKey(Column):
 
     http://www.postgresqltutorial.com/postgresql-foreign-key/
 
+    some_pokemon.trainer
+    >>> 1
+    Pokemon.select('name', 'trainer.name')
+
+    I'm not sure  about explicit joins ... only useful if we want to specify
+    inner and outer joins.
+
+    Join(Pokemon, User)
+
+    To get the actual User object.
+
+    User.object().where(User.id == some_pokemon.trainer)
+
+    OR
+
+    some_pokemon.related_object('trainer')
+    > is just a proxy to the above
+
+    class Pokemon(Table):
+        trainer = ForeignKey(User)
+
+    To change the trainer:
+    some_pokemon.trainer = some_trainer_id
+    some_pokemon.save()
+    Or:
+    some_pokemon.set_related_object('trainer', some_trainer)
+
     """
 
     def __init__(self, to: 'table.Table', **kwargs) -> None:

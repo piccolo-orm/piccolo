@@ -1,11 +1,13 @@
 import asyncio
 import dataclasses
-from typing import List
+import typing as t
 
 import asyncpg
 
 from .columns import And
 from .types import Combinable
+if t.TYPE_CHECKING:
+    from table import Table  # noqa
 
 
 class Value(object):
@@ -45,10 +47,10 @@ class Query(object):
         self.base = base
         self.table = table
 
-        self._where: [Combinable] = None
-        self._limit: Limit = None
-        self._order_by: OrderBy = None
-        self._add = []
+        self._where: t.List[Combinable] = []
+        self._limit: t.Optional[Limit] = None
+        self._order_by: t.Optional[OrderBy] = None
+        self._add: t.List['Table'] = []
 
     async def run(self, as_dict=True, credentials=None):
         """
@@ -96,6 +98,7 @@ class Query(object):
         if column_name not in [i.name for i in self.table.Meta.columns]:
             raise ValueError(f"{column_name} isn't a valid column name")
 
+
 ###############################################################################
 
 class WhereMixin():
@@ -131,6 +134,15 @@ class LimitMixin():
     def first(self):
         self._limit = Limit(1)
         self.response_handler = lambda response: response[0]
+        return self
+
+
+class DistinctMixin():
+
+    def distinct(self):
+        """
+        Replace base with SELECT DISTINCT ... or set distinct = True ...
+        """
         return self
 
 
