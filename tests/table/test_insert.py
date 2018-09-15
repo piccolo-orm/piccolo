@@ -7,16 +7,25 @@ class TestInsert(DBTestCase):
     def test_insert(self):
         self.insert_rows()
 
-        query = Pokemon.insert().add(
+        Pokemon.insert(
             Pokemon(name='bulbasaur')
-        )
-        print(query)
-
-        query.run_sync()
+        ).run_sync()
 
         response = Pokemon.select('name').run_sync()
+        names = [i['name'] for i in response]
 
-        print(f'response = {response}')
+        self.assertTrue(
+            'bulbasaur' in names
+        )
+
+    def test_add(self):
+        self.insert_rows()
+
+        Pokemon.insert().add(
+            Pokemon(name='bulbasaur')
+        ).run_sync()
+
+        response = Pokemon.select('name').run_sync()
         names = [i['name'] for i in response]
 
         self.assertTrue(
@@ -25,7 +34,7 @@ class TestInsert(DBTestCase):
 
     def test_incompatible_type(self):
         """
-        You shouldn'e be able to add instances of a different table.
+        You shouldn't be able to add instances of a different table.
         """
         with self.assertRaises(TypeError):
             Pokemon.insert().add(
