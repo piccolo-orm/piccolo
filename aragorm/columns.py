@@ -84,6 +84,17 @@ class Column():
 
 ###############################################################################
 
+class Constraint():
+    """
+    Base class for Primary Key, Foreign Key, and other contraints.
+    """
+
+    def __str__(self):
+        pass
+
+
+###############################################################################
+
 class Varchar(Column):
 
     def __init__(self, length: int = 255, default: str = None,
