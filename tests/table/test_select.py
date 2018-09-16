@@ -203,6 +203,8 @@ class TestSelect(DBTestCase):
     def test_first(self):
         self.insert_rows()
 
+        import ipdb; ipdb.set_trace()
+
         response = Pokemon.select(
             'name'
         ).first().run_sync()
@@ -259,3 +261,11 @@ class TestSelect(DBTestCase):
             response,
             [{'count': 1}]
         )
+
+    def test_distinct(self):
+        self.insert_rows()
+        self.insert_rows()
+
+        import ipdb; ipdb.set_trace()
+
+        response = Pokemon.select('name').distinct().run_sync()

@@ -1,5 +1,5 @@
-from ..example_project.tables import Pokemon
-from ..base import DBTestCase
+from tests.example_project.tables import Pokemon
+from tests.base import DBTestCase
 
 
 class TestSave(DBTestCase):

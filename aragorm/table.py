@@ -90,7 +90,7 @@ class Table(metaclass=TableMeta):
 
     def save(self):
         """
-        Just a proxy to an insert or update query.
+        A proxy to an insert or update query.
         """
         if not hasattr(self, 'id'):
             raise ValueError('No id value found')
@@ -108,6 +108,16 @@ class Table(metaclass=TableMeta):
             )
         else:
             return cls.insert().add(self)
+
+    def delete(self):
+        """
+        A proxy to a delete query.
+        """
+        if type(self.id) != int:
+            raise ValueError('Can only delete pre-existing rows with an id.')
+        return self.__class__.delete().where(
+            self.__class__.id == self.id
+        )
 
     def __setitem__(self, key: str, value: Any):
         setattr(self, key, value)
@@ -144,7 +154,7 @@ class Table(metaclass=TableMeta):
 
         return Select(
             table=cls,
-            base=f'SELECT {columns_str} from "{cls.Meta.tablename}"'
+            columns_str=columns_str
         )
 
     @classmethod

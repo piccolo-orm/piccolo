@@ -43,7 +43,8 @@ class OrderBy():
 
 class Query(object):
 
-    def __init__(self, table: 'Table', base: str = '') -> None:
+    def __init__(self, table: 'Table', base: str = '', *args,
+                 **kwargs) -> None:
         self.base = base
         self.table = table
         super().__init__()
@@ -147,17 +148,23 @@ class LimitMixin():
 
 class DistinctMixin():
 
+    def __init__(self):
+        super().__init__()
+        self._distinct: bool = False
+
     def distinct(self):
-        """
-        Replace base with SELECT DISTINCT ... or set distinct = True ...
-        """
+        self._distinct = True
         return self
 
 
 class CountMixin():
 
+    def __init__(self):
+        super().__init__()
+        self._count: bool = False
+
     def count(self):
-        self.base = f'SELECT COUNT(*) FROM {self.table.Meta.tablename}'
+        self._count = True
         return self
 
 
@@ -178,17 +185,34 @@ class AddMixin():
 ###############################################################################
 
 # TODO I don't like this whole self.base stuff
+# It really limits what's possible ...
+#
 
-class Select(Query, WhereMixin, LimitMixin, CountMixin, OrderByMixin):
+class Select(
+    Query,
+    CountMixin,
+    DistinctMixin,
+    LimitMixin,
+    OrderByMixin,
+    WhereMixin,
+):
+    def __init__(self, table: 'Table', columns_str: str) -> None:
+        self.columns_str = columns_str
+        super().__init__(table=table, base='')
 
     def __str__(self):
-        query = self.base
+        select = 'SELECT DISTINCT' if self.distinct else 'SELECT'
+        query = f'{select} {self.columns_str} FROM "{self.table.Meta.tablename}"'
+
         if self._where:
             query += f' WHERE {self._where.__str__()}'
         if self._order_by:
             query += self._order_by.__str__()
         if self._limit:
             query += self._limit.__str__()
+        if self._count:
+            query = f'SELECT COUNT(*) FROM ({query}) AS sub_query'
+
         return query
 
 
