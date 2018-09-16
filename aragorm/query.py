@@ -39,6 +39,12 @@ class OrderBy():
         return f' ORDER BY {self.column_name} {order}'
 
 
+@dataclasses.dataclass
+class Output():
+    as_json: bool = False
+    as_list: bool = False
+
+
 ###############################################################################
 
 class Query(object):
@@ -182,6 +188,31 @@ class AddMixin():
         return self
 
 
+class OutputMixin():
+    """
+    Example usage:
+
+    .output(as_list=True)
+    .output(as_json=True)
+    .output(as_json=True, as_list=True)
+    """
+
+    def __init__(self):
+        super().__init__()
+        self._output = Output()
+
+    def output(
+        self,
+        as_list: t.Optional[bool] = None,
+        as_json: t.Optional[bool] = None
+    ):
+        if type(as_list) is bool:
+            self._output.as_list = as_list
+
+        if type(as_json) is bool:
+            self._output.as_json = as_json
+
+
 ###############################################################################
 
 # TODO I don't like this whole self.base stuff
@@ -194,6 +225,7 @@ class Select(
     DistinctMixin,
     LimitMixin,
     OrderByMixin,
+    OutputMixin,
     WhereMixin,
 ):
     def __init__(self, table: 'Table', columns_str: str) -> None:
