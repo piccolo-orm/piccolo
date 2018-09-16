@@ -73,7 +73,6 @@ class Query(object):
         results = await conn.fetch(self.__str__())
         await conn.close()
 
-        # TODO Be able to output it in different formats.
         raw = [dict(i.items()) for i in results]
 
         if hasattr(self, 'run_callback'):
@@ -85,7 +84,7 @@ class Query(object):
         raw = self.response_handler(raw)
 
         output = getattr(self, '_output')
-        if output:
+        if output and type(raw) is list:
             if output.as_list:
                 if len(raw[0].keys()) != 1:
                     raise ValueError(
