@@ -87,14 +87,16 @@ class Query(object):
         output = getattr(self, '_output')
         if output:
             if output.as_list:
-                if output[0].keys().length != 1:
+                if len(raw[0].keys()) != 1:
                     raise ValueError(
                         'Each row returned more than on value'
                     )
                 else:
-                    output = [i for i in itertools.chain(*output.values())]
+                    raw = list(
+                        itertools.chain(*[j.values() for j in raw])
+                    )
             if output.as_json:
-                output = json.dumps(raw)
+                raw = json.dumps(raw)
 
         return raw
 
@@ -233,6 +235,8 @@ class OutputMixin():
 
         if type(as_json) is bool:
             self._output.as_json = as_json
+
+        return self
 
 
 ###############################################################################
