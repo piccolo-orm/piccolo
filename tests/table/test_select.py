@@ -189,6 +189,8 @@ class TestSelect(DBTestCase):
 
         response = Pokemon.select(
             'name'
+        ).order_by(
+            'name'
         ).limit(
             1
         ).run_sync()
@@ -203,9 +205,9 @@ class TestSelect(DBTestCase):
     def test_first(self):
         self.insert_rows()
 
-        import ipdb; ipdb.set_trace()
-
         response = Pokemon.select(
+            'name'
+        ).order_by(
             'name'
         ).first().run_sync()
 
@@ -266,6 +268,8 @@ class TestSelect(DBTestCase):
         self.insert_rows()
         self.insert_rows()
 
-        import ipdb; ipdb.set_trace()
+        response = Pokemon.select('name').where(
+            Pokemon.name == 'pikachu'
+        ).distinct().run_sync()
 
-        response = Pokemon.select('name').distinct().run_sync()
+        self.assertTrue(response == [{'name': 'pikachu'}])

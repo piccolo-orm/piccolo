@@ -83,7 +83,7 @@ class Query(object):
         # Might try and merge them.
         raw = self.response_handler(raw)
 
-        output = getattr(self, '_output')
+        output = getattr(self, '_output', None)
         if output and type(raw) is list:
             if output.as_list:
                 if len(raw[0].keys()) != 1:
