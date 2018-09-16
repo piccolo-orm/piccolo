@@ -48,6 +48,7 @@ class OrderBy():
 class Output():
     as_json: bool = False
     as_list: bool = False
+    as_objects: bool = False
 
 
 ###############################################################################
@@ -290,6 +291,7 @@ class Objects(
 
     def __init__(self, table: 'Table') -> None:
         # TODO - remove base altogether
+        self._output = Output(as_objects=True)
         super().__init__(table=table, base='')
 
     def __str__(self):
