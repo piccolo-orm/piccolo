@@ -242,7 +242,6 @@ class OutputMixin():
 
 # TODO I don't like this whole self.base stuff
 # It really limits what's possible ...
-#
 
 class Select(
     Query,
@@ -253,6 +252,7 @@ class Select(
     OutputMixin,
     WhereMixin,
 ):
+    # columns_str => columns: t.List[str]
     def __init__(self, table: 'Table', columns_str: str) -> None:
         self.columns_str = columns_str
         super().__init__(table=table, base='')
@@ -271,6 +271,29 @@ class Select(
             query = f'SELECT COUNT(*) FROM ({query}) AS sub_query'
 
         return query
+
+
+# TODO try and share as much between Select and Objects as possible ...
+#
+class Objects(
+    Query,
+    LimitMixin,
+    OrderByMixin,
+    WhereMixin,
+):
+    """
+    Almost identical to select, except you have to select all fields, and
+    table instances are returned, rather than just data.
+
+    Inherits almost everything except OutputMixin, Distinct, Count,
+    """
+
+    def __init__(self, table: 'Table') -> None:
+        # TODO - remove base altogether
+        super().__init__(table=table, base='')
+
+    def __str__(self):
+        pass
 
 
 class Insert(Query, AddMixin):

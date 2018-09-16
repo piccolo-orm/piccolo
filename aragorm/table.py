@@ -10,6 +10,7 @@ from .query import (
     Drop,
     Exists,
     Insert,
+    Objects,
     Raw,
     Select,
     TableExists,
@@ -118,6 +119,12 @@ class Table(metaclass=TableMeta):
         return self.__class__.delete().where(
             self.__class__.id == self.id
         )
+
+    def get_related(self):
+        """
+        some_pokemon.related_object('trainer')
+        """
+        raise NotImplemented
 
     def __setitem__(self, key: str, value: Any):
         setattr(self, key, value)
@@ -284,7 +291,11 @@ class Table(metaclass=TableMeta):
         )
 
     @classmethod
-    def exists(cls):
+    def objects(cls) -> Objects:
+        return Objects()
+
+    @classmethod
+    def exists(cls) -> Exists:
         """
         This is tricky ... use it to check if a row exists ... not if the
         table exists.
