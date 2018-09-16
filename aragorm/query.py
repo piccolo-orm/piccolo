@@ -1,8 +1,13 @@
 import asyncio
 import dataclasses
+import itertools
 import typing as t
 
 import asyncpg
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 from .columns import And
 from .types import Combinable
@@ -74,7 +79,24 @@ class Query(object):
         if hasattr(self, 'run_callback'):
             self.run_callback(raw)
 
-        return self.response_handler(raw)
+        # I have multiple ways of modifying the final output
+        # response_handlers, and output ...
+        # Might try and merge them.
+        raw = self.response_handler(raw)
+
+        output = getattr(self, '_output')
+        if output:
+            if output.as_list:
+                if output[0].keys().length != 1:
+                    raise ValueError(
+                        'Each row returned more than on value'
+                    )
+                else:
+                    output = [i for i in itertools.chain(*output.values())]
+            if output.as_json:
+                output = json.dumps(raw)
+
+        return raw
 
     def run_sync(self, *args, **kwargs):
         """
