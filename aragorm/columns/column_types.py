@@ -73,7 +73,7 @@ class Boolean(Column):
         super().__init__(**kwargs)
 
 
-class ForeignKey(Column):
+class ForeignKey(Integer):
     """
     Need to think about how this will work ...
 
@@ -107,6 +107,8 @@ class ForeignKey(Column):
     some_pokemon.set_related_object('trainer', some_trainer)
 
     """
+
+    column_type = 'INTEGER'
 
     def __init__(self, to: 'table.Table', **kwargs) -> None:
         super().__init__(**kwargs)
