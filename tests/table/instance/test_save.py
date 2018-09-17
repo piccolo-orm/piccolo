@@ -12,7 +12,7 @@ class TestSave(DBTestCase):
 
     def test_save_new(self):
         """
-        Make sure that saving a new
+        Make sure that saving a new instance works.
         """
         self.insert_rows()
 
