@@ -44,7 +44,7 @@ Pokemon1 = columns.Alias(Pokemon)
 Pokemon2 = columns.Alias(Pokemon)
 
 
-class Battle(table.Table):
+class Match(table.Table):
     pokemon_1 = columns.ForeignKey(Pokemon1)
     pokemon_2 = columns.ForeignKey(Pokemon2)
     stadium = columns.ForeignKey(Stadium)
