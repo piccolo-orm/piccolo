@@ -41,18 +41,22 @@ class Query(object):
         raw = self.response_handler(raw)
 
         output = getattr(self, '_output', None)
-        if output and type(raw) is list:
-            if output.as_list:
-                if len(raw[0].keys()) != 1:
-                    raise ValueError(
-                        'Each row returned more than on value'
-                    )
-                else:
-                    raw = list(
-                        itertools.chain(*[j.values() for j in raw])
-                    )
-            if output.as_json:
-                raw = json.dumps(raw)
+
+        if output:
+            if output.as_objects:
+                raw = [self.table(**columns) for columns in raw]
+            elif type(raw) is list:
+                if output.as_list:
+                    if len(raw[0].keys()) != 1:
+                        raise ValueError(
+                            'Each row returned more than on value'
+                        )
+                    else:
+                        raw = list(
+                            itertools.chain(*[j.values() for j in raw])
+                        )
+                if output.as_json:
+                    raw = json.dumps(raw)
 
         return raw
 

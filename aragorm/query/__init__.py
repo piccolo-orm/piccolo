@@ -64,6 +64,8 @@ class Objects(
     table instances are returned, rather than just data.
     """
 
+    _output = Output(as_objects=True)
+
     def __str__(self):
         """
         Need to do this without repeating select ...
@@ -73,10 +75,8 @@ class Objects(
             column_names=[]
         )
 
-        for attr in ('_limit', '_where', 'order_by'):
+        for attr in ('_limit', '_where', '_output', 'order_by'):
             setattr(select, attr, getattr(self, attr))
-
-        select._output = Output(as_objects=True)
 
         return select.__str__()
 

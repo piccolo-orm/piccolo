@@ -282,7 +282,9 @@ class Table(metaclass=TableMeta):
 
     @classmethod
     def objects(cls) -> Objects:
-        return Objects()
+        return Objects(
+            table=cls
+        )
 
     @classmethod
     def exists(cls) -> Exists:
