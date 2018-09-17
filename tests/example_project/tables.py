@@ -40,13 +40,9 @@ class Stadium(table.Table):
         db = DB
 
 
-Pokemon1 = columns.Alias(Pokemon)
-Pokemon2 = columns.Alias(Pokemon)
-
-
 class Match(table.Table):
-    pokemon_1 = columns.ForeignKey(Pokemon1)
-    pokemon_2 = columns.ForeignKey(Pokemon2)
+    pokemon_1 = columns.ForeignKey(Pokemon)
+    pokemon_2 = columns.ForeignKey(Pokemon)
     stadium = columns.ForeignKey(Stadium)
 
     class Meta():

@@ -6,16 +6,14 @@ from ..example_project.tables import Pokemon, Stadium, Match
 class TestCreateJoin(TestCase):
 
     def test_create_join(self):
-        try:
-            Pokemon.create().run_sync()
-            Stadium.create().run_sync()
-            Match.create().run_sync()
-        except Exception:
-            pass
-        finally:
-            Match.delete().run_sync()
-            Pokemon.delete().run_sync()
-            Stadium.delete().run_sync()
+
+        # Pokemon.create().run_sync()
+        # Stadium.create().run_sync()
+        Match.create().run_sync()
+
+        Match.delete().run_sync()
+        Pokemon.delete().run_sync()
+        Stadium.delete().run_sync()
 
 
 # TODO - PUT BACK
@@ -60,3 +58,11 @@ class _TestJoin(TestCase):
             ).run_sync()
         except Exception:
             pass
+
+    def test_ref(self):
+        """
+        Match.select().count().where(
+            Match.ref('pokemon1.name') == 'pikachu'
+        )
+        """
+        pass

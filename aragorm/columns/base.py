@@ -1,5 +1,4 @@
-import typing
-import dataclasses
+import typing as t
 
 from ..operators import (
     Equal,
@@ -15,7 +14,7 @@ from ..operators import (
 from ..types import Iterable
 from .combination import Where
 
-if typing.TYPE_CHECKING:
+if t.TYPE_CHECKING:
     from ..table import Table  # noqa
 
 
@@ -30,6 +29,8 @@ class Column():
         self.null = null
         self.primary = primary
         self.key = key
+        # Set by Table metaclass:
+        self.name: t.Optional[str] = None
 
     def is_in(self, values: Iterable) -> Where:
         return Where(column=self, values=values, operator=In)
@@ -80,36 +81,9 @@ class Column():
             query += ' PRIMARY'
         if self.key:
             query += ' KEY'
+
+        references = getattr(self, 'references', None)
+        if references:
+            query += f' REFERENCES {references.Meta.tablename}'
+
         return query
-
-
-@dataclasses.dataclass
-class Alias():
-    """
-    Used in 'where' filters, when a table has multiple columns referring to the
-    same table via foreign keys.
-
-    Trainer = Alias(User)
-    Sponsor = Alias(User)
-
-    class Pokemon():
-        trainer = ForeignKey(Trainer)
-        sponsor = ForeignKey(Sponsor)
-
-    Pokemon.select().where(
-        (Trainer.username == 'ash') &&
-        (Sponsor.username == 'professor oak')
-    )
-
-    Under the hood it uses the name of the alias to name the joined table.
-
-    For example:
-
-    SELECT
-        name,
-        trainer.name
-    FROM pokemon
-    JOIN user AS trainer ON id = trainer.id
-
-    """
-    table: typing.Type['Table']

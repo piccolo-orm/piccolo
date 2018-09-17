@@ -41,12 +41,30 @@ class Select(
         select = 'SELECT DISTINCT' if self.distinct else 'SELECT'
         query = f'{select} {columns_str} FROM "{self.table.Meta.tablename}"'
 
+        #######################################################################
+
+        # JOIN
+        for column_name in self.column_names:
+            if '.' in column_name:
+                local_name, _ = column_name.split('.')
+                table_name = self.table.get_column_by_name(
+                    local_name
+                ).references.Meta.tablename
+                query += (
+                    f' JOIN {table_name} ON {local_name} = {table_name}.id'
+                )
+
+        #######################################################################
+
         if self._where:
             query += f' WHERE {self._where.__str__()}'
+
         if self._order_by:
             query += self._order_by.__str__()
+
         if self._limit:
             query += self._limit.__str__()
+
         if self._count:
             query = f'SELECT COUNT(*) FROM ({query}) AS sub_query'
 

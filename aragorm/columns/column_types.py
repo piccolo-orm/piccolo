@@ -7,17 +7,6 @@ if typing.TYPE_CHECKING:
     import table  # noqa
 
 
-class Constraint():
-    """
-    Base class for Primary Key, Foreign Key, and other contraints.
-    """
-
-    def __str__(self):
-        pass
-
-
-###############################################################################
-
 class Varchar(Column):
 
     def __init__(self, length: int = 255, default: str = None,
@@ -110,5 +99,6 @@ class ForeignKey(Integer):
 
     column_type = 'INTEGER'
 
-    def __init__(self, to: 'table.Table', **kwargs) -> None:
+    def __init__(self, references: 'table.Table', **kwargs) -> None:
         super().__init__(**kwargs)
+        self.references = references

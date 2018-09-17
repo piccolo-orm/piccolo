@@ -1,9 +1,9 @@
-
+import copy
 import inspect
 from typing import Any, List
 
 from .alter import Alter
-from .columns import Column, PrimaryKey
+from .columns import Column, PrimaryKey, ForeignKey
 from .query import (
     Create,
     Delete,
@@ -139,6 +139,44 @@ class Table(metaclass=TableMeta):
             ) for column in self.Meta.columns
         ])
         return f'({row})'
+
+    ###########################################################################
+
+    @classmethod
+    def get_column_by_name(cls, column_name: str):
+        columns = [i for i in cls.Meta.columns if i.name == column_name]
+
+        if len(columns) != 1:
+            raise ValueError(
+                f"Can't find a column called {column_name}."
+            )
+
+        return columns[0]
+
+    @classmethod
+    def ref(
+        cls,
+        column_name: str
+    ) -> Column:
+        """
+        Used to get a copy of a column in a reference table.
+
+        Example: trainer.name
+        """
+        local_column_name, reference_column_name = column_name.split('.')
+
+        local_column = cls.get_column_by_name(local_column_name)
+
+        if not isinstance(local_column, ForeignKey):
+            raise ValueError(f"{local_column_name} isn't a ForeignKey")
+
+        reference_column = local_column.references.get_column_by_name(
+            reference_column_name
+        )
+
+        _reference_column = copy.deepcopy(reference_column)
+        _reference_column.name = f'{local_column_name}.{reference_column_name}'
+        return _reference_column
 
     ###########################################################################
 
