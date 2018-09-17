@@ -1,3 +1,5 @@
+import json
+
 from ..base import DBTestCase
 from ..example_project.tables import Pokemon
 
@@ -27,5 +29,5 @@ class TestOutput(DBTestCase):
         ).run_sync()
 
         self.assertTrue(
-            response == '[{"name":"pikachu"}]'
+            json.loads(response) == [{'name': 'pikachu'}]
         )
