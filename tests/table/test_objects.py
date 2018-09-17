@@ -17,7 +17,6 @@ class TestObjects(DBTestCase):
         self.assertTrue(instance.name == 'pikachu')
 
         # No try changing the value and saving it.
-        instance = response[0]
         instance.name = 'raichu'
         instance.save().run_sync()
 

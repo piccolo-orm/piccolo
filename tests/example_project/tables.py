@@ -24,3 +24,15 @@ class Trainer(table.Table):
 
     class Meta():
         db = DB
+
+
+class Stadium(table.Table):
+    pass
+
+
+# Need Alias already ...
+# will live where???
+# what does Alias even do???
+# lives in column ...
+class Battle(table.Table):
+    pass
