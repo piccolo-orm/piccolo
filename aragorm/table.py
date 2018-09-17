@@ -305,8 +305,4 @@ class Table(metaclass=TableMeta):
     def table_exists(cls) -> TableExists:
         return TableExists(
             table=cls,
-            base=(
-                "SELECT EXISTS(SELECT * FROM information_schema.tables WHERE "
-                f"table_name = '{cls.Meta.tablename}')"
-            )
         )
