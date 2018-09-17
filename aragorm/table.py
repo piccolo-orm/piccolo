@@ -153,15 +153,9 @@ class Table(metaclass=TableMeta):
         inspect that the column exists, and what we're trying to map it
         to doesn't already exist.
         """
-        if len(column_names) == 0:
-            columns_str = '*'
-        else:
-            # TODO - make sure the columns passed in are valid
-            columns_str = ', '.join(column_names)
-
         return Select(
             table=cls,
-            columns_str=columns_str
+            column_names=column_names
         )
 
     @classmethod
@@ -214,7 +208,8 @@ class Table(metaclass=TableMeta):
         """
         columns_str = ', '.join([
             f'{column} = {getattr(cls, column).format_value(value)}' for (
-                column, value) in columns.items()])
+                column, value) in columns.items()
+        ])
 
         return Update(
             table=cls,

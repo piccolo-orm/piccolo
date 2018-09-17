@@ -27,14 +27,19 @@ class Select(
     OutputMixin,
     WhereMixin,
 ):
-    # columns_str => columns: t.List[str]
-    def __init__(self, table: 'Table', columns_str: str) -> None:
-        self.columns_str = columns_str
+    def __init__(self, table: 'Table', column_names: t.List[str]) -> None:
+        self.column_names = column_names
         super().__init__(table=table, base='')
 
     def __str__(self):
+        if len(self.column_names) == 0:
+            columns_str = '*'
+        else:
+            # TODO - make sure the columns passed in are valid
+            columns_str = ', '.join(self.column_names)
+
         select = 'SELECT DISTINCT' if self.distinct else 'SELECT'
-        query = f'{select} {self.columns_str} FROM "{self.table.Meta.tablename}"'
+        query = f'{select} {columns_str} FROM "{self.table.Meta.tablename}"'
 
         if self._where:
             query += f' WHERE {self._where.__str__()}'
@@ -48,8 +53,6 @@ class Select(
         return query
 
 
-# TODO try and share as much between Select and Objects as possible ...
-#
 class Objects(
     Query,
     LimitMixin,
@@ -59,17 +62,23 @@ class Objects(
     """
     Almost identical to select, except you have to select all fields, and
     table instances are returned, rather than just data.
-
-    Inherits almost everything except OutputMixin, Distinct, Count,
     """
 
-    def __init__(self, table: 'Table') -> None:
-        # TODO - remove base altogether
-        self._output = Output(as_objects=True)
-        super().__init__(table=table, base='')
-
     def __str__(self):
-        pass
+        """
+        Need to do this without repeating select ...
+        """
+        select = Select(
+            table=self.table,
+            column_names=[]
+        )
+
+        for attr in ('_limit', '_where', 'order_by'):
+            setattr(select, attr, getattr(self, attr))
+
+        select._output = Output(as_objects=True)
+
+        return select.__str__()
 
 
 class Insert(Query, AddMixin):
