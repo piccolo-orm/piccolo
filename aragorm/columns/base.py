@@ -16,7 +16,7 @@ from ..types import Iterable
 from .combination import Where
 
 if typing.TYPE_CHECKING:
-    from ..table import Table
+    from ..table import Table  # noqa
 
 
 class Column():
@@ -112,4 +112,4 @@ class Alias():
     JOIN user AS trainer ON id = trainer.id
 
     """
-    table: typing.Type[Table]
+    table: typing.Type['Table']
