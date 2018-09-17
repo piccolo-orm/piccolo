@@ -3,21 +3,20 @@ from unittest import TestCase
 from ..example_project.tables import Pokemon, Stadium, Match
 
 
-class TestCreateJoin(TestCase):
+# class TestCreateJoin():
 
-    def test_create_join(self):
+#     def test_create_join(self):
 
-        # Pokemon.create().run_sync()
-        # Stadium.create().run_sync()
-        Match.create().run_sync()
+#         Pokemon.create().run_sync()
+#         Stadium.create().run_sync()
+#         Match.create().run_sync()
 
-        Match.delete().run_sync()
-        Pokemon.delete().run_sync()
-        Stadium.delete().run_sync()
+#         Match.drop().run_sync()
+#         Pokemon.drop().run_sync()
+#         Stadium.drop().run_sync()
 
 
-# TODO - PUT BACK
-class _TestJoin(TestCase):
+class TestJoin(TestCase):
     """
     Test instantiating Table instances
     """
@@ -28,41 +27,42 @@ class _TestJoin(TestCase):
         Match.create().run_sync()
 
     def tearDown(self):
-        Match.delete().run_sync()
-        Pokemon.delete().run_sync()
-        Stadium.delete().run_sync()
+        Match.drop().run_sync()
+        Pokemon.drop().run_sync()
+        Stadium.drop().run_sync()
 
-    def _test_join(self):
-        """
-        Need a good example ...
-        """
-        try:
-            pikachu = Pokemon(name="pikachu")
-            pikachu.save().run_sync()
+    def test_join(self):
+        pikachu = Pokemon(name="pikachu", trainer="ash")
+        pikachu.save().run_sync()
 
-            bulbasaur = Pokemon(name="bulbasaur")
-            bulbasaur.save().run_sync()
+        bulbasaur = Pokemon(name="bulbasaur")
+        bulbasaur.save().run_sync()
 
-            stadium = Stadium(name="fairy garden")
+        stadium = Stadium(name="fairy garden")
+        stadium.save().run_sync()
 
-            Match(
-                pokemon1=pikachu,
-                pokemon2=bulbasaur,
-                stadium=stadium
-            ).save().run_sync()
+        # TODO - make sure you can also do:
+        # pokemon_1=pikachu
+        save_query = Match(
+            pokemon_1=pikachu.id,
+            pokemon_2=bulbasaur.id,
+            stadium=stadium.id
+        ).save()
+        save_query.run_sync()
 
-            response = Match.select(
-                'pokemon1.name',
-                'pokemon2.name',
-                'stadium.name'
-            ).run_sync()
-        except Exception:
-            pass
-
-    def test_ref(self):
-        """
-        Match.select().count().where(
-            Match.ref('pokemon1.name') == 'pikachu'
+        select_query = Match.select(
+            'pokemon_1.name',
+            'pokemon_2.name',
+            'stadium.name',
+            'pokemon_1.trainer'
         )
-        """
-        pass
+        response = select_query.run_sync()
+        import ipdb; ipdb.set_trace()
+
+    # def _test_ref(self):
+    #     """
+    #     Match.select().count().where(
+    #         Match.ref('pokemon1.name') == 'pikachu'
+    #     )
+    #     """
+    #     pass

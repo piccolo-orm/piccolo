@@ -36,7 +36,9 @@ class Select(
             columns_str = '*'
         else:
             # TODO - make sure the columns passed in are valid
-            columns_str = ', '.join(self.column_names)
+            columns_str = ', '.join([
+                i.replace('.', '$.') for i in self.column_names
+            ])
 
         select = 'SELECT DISTINCT' if self.distinct else 'SELECT'
         query = f'{select} {columns_str} FROM "{self.table.Meta.tablename}"'
@@ -44,15 +46,23 @@ class Select(
         #######################################################################
 
         # JOIN
+        joins = []
         for column_name in self.column_names:
             if '.' in column_name:
                 local_name, _ = column_name.split('.')
                 table_name = self.table.get_column_by_name(
                     local_name
                 ).references.Meta.tablename
+
+                alias = f'{local_name}$'
+
+                if alias in joins:
+                    continue
+
                 query += (
-                    f' JOIN {table_name} ON {local_name} = {table_name}.id'
+                    f' JOIN {table_name} {alias} ON {local_name} = {alias}.id'
                 )
+                joins.append(alias)
 
         #######################################################################
 
