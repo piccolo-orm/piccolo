@@ -200,7 +200,6 @@ class Table(metaclass=TableMeta):
         """
         query = Insert(
             table=cls,
-            base=f'INSERT INTO "{cls.Meta.tablename}"',
         )
         if rows:
             query.add(*rows)
@@ -298,7 +297,6 @@ class Table(metaclass=TableMeta):
         """
         return Exists(
             table=cls,
-            base=''
         )
 
     @classmethod
