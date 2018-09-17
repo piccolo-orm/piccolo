@@ -67,7 +67,7 @@ class Alter(Query):
         return self
 
     def __str__(self):
-        query = self.base
+        query = f'ALTER TABLE "{self.table.Meta.tablename}"'
         for alterations in [self._add, self._rename, self._drop]:
             for a in alterations:
                 query += a.__str__()

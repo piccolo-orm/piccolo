@@ -230,8 +230,7 @@ class Table(metaclass=TableMeta):
         DELETE FROM pokemon where name = 'weedle'
         """
         return Delete(
-            table=cls,
-            base=f'DELETE FROM {cls.Meta.tablename}'
+            table=cls
         )
 
     @classmethod
@@ -243,7 +242,6 @@ class Table(metaclass=TableMeta):
         """
         return Create(
             table=cls,
-            base=f'CREATE TABLE "{cls.Meta.tablename}"'
         )
 
     @classmethod
@@ -267,7 +265,6 @@ class Table(metaclass=TableMeta):
         """
         return Drop(
             table=cls,
-            base=f'DROP TABLE "{cls.Meta.tablename}"'
         )
 
     @classmethod
@@ -287,7 +284,6 @@ class Table(metaclass=TableMeta):
         """
         return Alter(
             table=cls,
-            base=f'ALTER TABLE "{cls.Meta.tablename}"'
         )
 
     @classmethod

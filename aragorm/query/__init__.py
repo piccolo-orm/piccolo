@@ -88,7 +88,7 @@ class Insert(Query, AddMixin):
 class Delete(Query, WhereMixin):
 
     def __str__(self):
-        query = self.base
+        query = f'DELETE FROM {self.table.Meta.tablename}'
         if self._where:
             query += f' WHERE {self._where.__str__()}'
         return query
@@ -100,8 +100,9 @@ class Create(Query):
     """
 
     def __str__(self):
+        base = f'CREATE TABLE "{self.table.Meta.tablename}"'
         columns = ', '.join([i.__str__() for i in self.table.Meta.columns])
-        query = f'{self.base} ({columns})'
+        query = f'{base} ({columns})'
         return query
 
 
@@ -120,8 +121,10 @@ class Raw(Query):
         return self.base
 
 
-class Drop(Raw):
-    pass
+class Drop(Query):
+
+    def __str__(self):
+        return f'DROP TABLE "{self.table.Meta.tablename}"'
 
 
 class TableExists(Raw):
