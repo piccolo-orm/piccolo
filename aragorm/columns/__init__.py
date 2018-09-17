@@ -7,5 +7,5 @@ from .column_types import (  # noqa
     Boolean,
     ForeignKey
 )
-from .base import Column  # noqa
+from .base import Column, Alias  # noqa
 from .combination import And, Or, Where  # noqa

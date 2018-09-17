@@ -27,13 +27,13 @@ class Column():
         self.primary = primary
         self.key = key
 
-    def is_in(self, values: Iterable) -> 'Where':
+    def is_in(self, values: Iterable) -> Where:
         return Where(column=self, values=values, operator=In)
 
-    def not_in(self, values: Iterable) -> 'Where':
+    def not_in(self, values: Iterable) -> Where:
         return Where(column=self, values=values, operator=NotIn)
 
-    def like(self, value: str) -> 'Where':
+    def like(self, value: str) -> Where:
         if '%' not in value:
             raise ValueError('% is required for like operators')
         return Where(column=self, value=value, operator=Like)
@@ -46,22 +46,22 @@ class Column():
         value = value if value else 'null'
         return f'{value}'
 
-    def __lt__(self, value) -> 'Where':
+    def __lt__(self, value) -> Where:
         return Where(column=self, value=value, operator=LessThan)
 
-    def __le__(self, value) -> 'Where':
+    def __le__(self, value) -> Where:
         return Where(column=self, value=value, operator=LessEqualThan)
 
-    def __gt__(self, value) -> 'Where':
+    def __gt__(self, value) -> Where:
         return Where(column=self, value=value, operator=GreaterThan)
 
-    def __ge__(self, value) -> 'Where':
+    def __ge__(self, value) -> Where:
         return Where(column=self, value=value, operator=GreaterEqualThan)
 
-    def __eq__(self, value):
+    def __eq__(self, value) -> Where:
         return Where(column=self, value=value, operator=Equal)
 
-    def __ne__(self, value):
+    def __ne__(self, value) -> Where:
         return Where(column=self, value=value, operator=NotEqual)
 
     def __str__(self):
@@ -96,6 +96,16 @@ class Alias():
         (Trainer.username == 'ash') &&
         (Sponsor.username == 'professor oak')
     )
+
+    Under the hood it uses the name of the alias to name the joined table.
+
+    For example:
+
+    SELECT
+        name,
+        trainer.name
+    FROM pokemon
+    JOIN user AS trainer ON id = trainer.id
 
     """
     column: Column
