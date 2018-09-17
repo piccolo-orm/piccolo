@@ -1,3 +1,5 @@
+import dataclasses
+
 from ..operators import (
     Equal,
     GreaterEqualThan,
@@ -75,3 +77,25 @@ class Column():
         if self.key:
             query += ' KEY'
         return query
+
+
+@dataclasses.dataclass
+class Alias():
+    """
+    Used in 'where' filters, when a table has multiple columns referring to the
+    same table via foreign keys.
+
+    Trainer = Alias(User)
+    Sponsor = Alias(User)
+
+    class Pokemon():
+        trainer = ForeignKey(Trainer)
+        sponsor = ForeignKey(Sponsor)
+
+    Pokemon.select().where(
+        (Trainer.username == 'ash') &&
+        (Sponsor.username == 'professor oak')
+    )
+
+    """
+    column: Column
