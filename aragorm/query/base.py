@@ -30,7 +30,14 @@ class Query(object):
         results = await conn.fetch(self.__str__())
         await conn.close()
 
-        raw = [dict(i.items()) for i in results]
+        if results:
+            keys = results[0].keys()
+            keys = [i.replace('$', '.') for i in keys]
+            raw = [dict(zip(keys, i.values())) for i in results]
+        else:
+            raw = []
+
+        # raw = [dict(i.items()) for i in results]
 
         if hasattr(self, 'run_callback'):
             self.run_callback(raw)
