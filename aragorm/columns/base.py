@@ -1,3 +1,4 @@
+import typing
 import dataclasses
 
 from ..operators import (
@@ -13,6 +14,9 @@ from ..operators import (
 )
 from ..types import Iterable
 from .combination import Where
+
+if typing.TYPE_CHECKING:
+    from ..table import Table
 
 
 class Column():
@@ -108,4 +112,4 @@ class Alias():
     JOIN user AS trainer ON id = trainer.id
 
     """
-    column: Column
+    table: typing.Type[Table]

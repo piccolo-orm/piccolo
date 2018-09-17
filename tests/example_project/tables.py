@@ -10,6 +10,9 @@ DB = {
 }
 
 
+###############################################################################
+# Simple example
+
 class Pokemon(table.Table):
     name = columns.Varchar(length=50)
     trainer = columns.Varchar(length=20)
@@ -26,13 +29,25 @@ class Trainer(table.Table):
         db = DB
 
 
+###############################################################################
+# More complex
+
 class Stadium(table.Table):
-    pass
+    name = columns.Varchar(length=100)
+    capacity = columns.Integer()
+
+    class Meta():
+        db = DB
 
 
-# Need Alias already ...
-# will live where???
-# what does Alias even do???
-# lives in column ...
+Pokemon1 = columns.Alias(Pokemon)
+Pokemon2 = columns.Alias(Pokemon)
+
+
 class Battle(table.Table):
-    pass
+    pokemon_1 = columns.ForeignKey(Pokemon1)
+    pokemon_2 = columns.ForeignKey(Pokemon2)
+    stadium = columns.ForeignKey(Stadium)
+
+    class Meta():
+        db = DB
