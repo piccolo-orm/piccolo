@@ -56,8 +56,8 @@ class TestJoin(TestCase):
             'stadium.name',
             'pokemon_1.trainer'
         )
-        import ipdb; ipdb.set_trace()
         response = select_query.run_sync()
+        print(response)
 
 
     # def _test_ref(self):
