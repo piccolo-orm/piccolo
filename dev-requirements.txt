@@ -1,3 +1,4 @@
 ipdb==0.11
 ipython==6.5.0
+Sphinx==1.8.0
 
