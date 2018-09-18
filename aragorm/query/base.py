@@ -37,8 +37,6 @@ class Query(object):
         else:
             raw = []
 
-        # raw = [dict(i.items()) for i in results]
-
         if hasattr(self, 'run_callback'):
             self.run_callback(raw)
 
@@ -51,12 +49,17 @@ class Query(object):
 
         if output:
             if output.as_objects:
-                raw = [self.table(**columns) for columns in raw]
+                # When using .first() we get a single row, not a list
+                # of rows.
+                if type(raw) is list:
+                    raw = [self.table(**columns) for columns in raw]
+                else:
+                    raw = self.table(**raw)
             elif type(raw) is list:
                 if output.as_list:
                     if len(raw[0].keys()) != 1:
                         raise ValueError(
-                            'Each row returned more than on value'
+                            'Each row returned more than one value'
                         )
                     else:
                         raw = list(

@@ -127,10 +127,15 @@ class Table(metaclass=TableMeta):
             self.__class__.id == _id
         )
 
-    def get_related(self):
+    def get_related(self, column_name: str):
         """
-        some_pokemon.related_object('trainer')
+        some_pokemon.get_related('trainer')
         """
+        # TODO WIP!!!
+        cls = self.__class__
+        return cls.objects().where(
+            cls.ref('column_name')
+        )
         raise NotImplemented
 
     def __setitem__(self, key: str, value: Any):
