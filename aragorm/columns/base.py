@@ -63,10 +63,10 @@ class Column():
     def __ge__(self, value) -> Where:
         return Where(column=self, value=value, operator=GreaterEqualThan)
 
-    def __eq__(self, value) -> Where:
+    def __eq__(self, value) -> Where:  # type: ignore
         return Where(column=self, value=value, operator=Equal)
 
-    def __ne__(self, value) -> Where:
+    def __ne__(self, value) -> Where:  # type: ignore
         return Where(column=self, value=value, operator=NotEqual)
 
     def __str__(self):

@@ -27,7 +27,7 @@ class Select(
     OutputMixin,
     WhereMixin,
 ):
-    def __init__(self, table: 'Table', column_names: t.List[str]) -> None:
+    def __init__(self, table: 'Table', column_names: t.Iterable[str]) -> None:
         self.column_names = column_names
         super().__init__(table=table, base='')
 

@@ -3,17 +3,17 @@ from unittest import TestCase
 from ..example_project.tables import Pokemon, Stadium, Match
 
 
-# class TestCreateJoin():
+class TestCreateJoin():
 
-#     def test_create_join(self):
+    def test_create_join(self):
 
-#         Pokemon.create().run_sync()
-#         Stadium.create().run_sync()
-#         Match.create().run_sync()
+        Pokemon.create().run_sync()
+        Stadium.create().run_sync()
+        Match.create().run_sync()
 
-#         Match.drop().run_sync()
-#         Pokemon.drop().run_sync()
-#         Stadium.drop().run_sync()
+        Match.drop().run_sync()
+        Pokemon.drop().run_sync()
+        Stadium.drop().run_sync()
 
 
 class TestJoin(TestCase):
@@ -58,7 +58,6 @@ class TestJoin(TestCase):
         )
         response = select_query.run_sync()
         print(response)
-
 
     # def _test_ref(self):
     #     """

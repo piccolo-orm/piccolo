@@ -24,6 +24,8 @@ class Database(object):
     async def run(*queries):
         """
         Use asyncio.gather here ...
+
+        I think I'll call it Engine instead ...
         """
         pass
 
@@ -110,14 +112,19 @@ class Table(metaclass=TableMeta):
         else:
             return cls.insert().add(self)
 
-    def delete(self):
+    def remove(self):
         """
         A proxy to a delete query.
         """
-        if type(self.id) != int:
+        _id = self.id
+
+        if type(_id) != int:
             raise ValueError('Can only delete pre-existing rows with an id.')
+
+        self.id = None
+
         return self.__class__.delete().where(
-            self.__class__.id == self.id
+            self.__class__.id == _id
         )
 
     def get_related(self):
@@ -255,7 +262,7 @@ class Table(metaclass=TableMeta):
         )
 
     @classmethod
-    def delete(cls, **columns) -> Delete:
+    def delete(cls) -> Delete:
         """
         await Pokemon.delete().where(Pokemon.name='weedle').run()
 
