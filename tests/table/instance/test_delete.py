@@ -19,7 +19,7 @@ class TestDelete(DBTestCase):
         )
 
         squirtle.save().run_sync()
-        squirtle.delete().run_sync()
+        squirtle.remove().run_sync()
 
         # how can I implement 'flat=True'
         # Pokemon.select('name').output(as_list=True).run_sync()

@@ -45,7 +45,7 @@ class Select(
                         f'{alias} AS "{output_alias}"'
                     )
                 else:
-                    column_names.push(column_name)
+                    column_names.append(column_name)
 
             columns_str = ', '.join(column_names)
 
