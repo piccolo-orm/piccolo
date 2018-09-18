@@ -1,0 +1,30 @@
+Design Decisions
+================
+
+As close as possible to SQL
+---------------------------
+
+The classes / methods / functions in Aragorm mirror their SQL counterparts as closely as possible.
+
+For example:
+
+ * In other ORMs, you define models - in Aragorm you define tables.
+ * Rather than using a filter method, you use a where method like in SQL.
+
+Example 1 - select
+------------------
+
+...
+
+
+Get the SQL at any time
+-----------------------
+
+At any time you can access the __str__ method of a query, to see the underlying SQL - making the ORM feel less magic.
+
+.. code-block:: python
+
+    query = Pokemon.select('name').where(Pokemon.power >= 100)
+
+    print(query)
+    'SELECT name from pokemon where power > 100'

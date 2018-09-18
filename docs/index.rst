@@ -5,10 +5,17 @@ Welcome to Aragorm's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   aragorm/introduction
+   aragorm/simple-examples
+   aragorm/design-decisions
+   aragorm/why-use-an-orm
+   aragorm/why-choose-aragorm
+   aragorm/is-async-worthwhile
+   aragorm/migrations
+
 Indices and tables
 ==================
 
-* :ref:`introduction`
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
