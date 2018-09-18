@@ -130,13 +130,17 @@ class Table(metaclass=TableMeta):
     def get_related(self, column_name: str):
         """
         some_pokemon.get_related('trainer')
+
+        Need to get the Trainer class
         """
-        # TODO WIP!!!
         cls = self.__class__
-        return cls.objects().where(
-            cls.ref('column_name')
-        )
-        raise NotImplemented
+
+        foreign_key = cls.get_column_by_name(column_name)
+        references = foreign_key.references
+
+        return references.objects().where(
+            references.get_column_by_name('id') == getattr(self, column_name)
+        ).first()
 
     def __setitem__(self, key: str, value: Any):
         setattr(self, key, value)

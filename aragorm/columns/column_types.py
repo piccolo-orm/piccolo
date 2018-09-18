@@ -1,9 +1,9 @@
 import datetime
-import typing
+import typing as t
 
 from .base import Column
 
-if typing.TYPE_CHECKING:
+if t.TYPE_CHECKING:
     import table  # noqa
 
 
@@ -99,6 +99,6 @@ class ForeignKey(Integer):
 
     column_type = 'INTEGER'
 
-    def __init__(self, references: 'table.Table', **kwargs) -> None:
+    def __init__(self, references: t.Type['table.Table'], **kwargs) -> None:
         super().__init__(**kwargs)
         self.references = references

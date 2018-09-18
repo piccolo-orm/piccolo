@@ -45,7 +45,7 @@ class TestGetRelated(TestCase):
             Match.id == match.id
         ).first().run_sync()
 
-        _stadium = _match.get_related('stadium').run_snyc()
+        _stadium = _match.get_related('stadium').run_sync()
 
         self.assertTrue(
             _stadium.name == 'red stadium'
