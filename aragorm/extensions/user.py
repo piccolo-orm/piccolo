@@ -20,6 +20,9 @@ class User(Table):
     email = Varchar(length=255)
     active = Boolean(default=False)
 
+    class Meta():
+        tablename = 'a_user'
+
     def __init__(self, **kwargs):
         """
         Generating passwords upfront is expensive, so might need reworking.

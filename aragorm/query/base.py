@@ -24,7 +24,9 @@ class Query(object):
         if not credentials:
             credentials = getattr(self.table.Meta, 'db', None)
         if not credentials:
-            raise ValueError('Table has no db defined in Meta')
+            raise ValueError(
+                f'Table {self.table.Meta.tablename} has no db defined in Meta'
+            )
 
         conn = await asyncpg.connect(**credentials)
         results = await conn.fetch(self.__str__())
