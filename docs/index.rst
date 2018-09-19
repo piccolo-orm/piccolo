@@ -15,6 +15,7 @@ Welcome to Aragorm's documentation!
    aragorm/migrations
    aragorm/supported-databases
    aragorm/tests
+   aragorm/tuning-postgres
 
 Indices and tables
 ==================
