@@ -12,6 +12,8 @@ Welcome to Aragorm's documentation!
    aragorm/why-choose-aragorm
    aragorm/articles/is-async-worthwhile
    aragorm/migrations
+   aragorm/supported-databases
+   aragorm/tests
 
 Indices and tables
 ==================
