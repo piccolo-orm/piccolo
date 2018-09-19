@@ -6,6 +6,7 @@ Welcome to Aragorm's documentation!
    :caption: Contents:
 
    aragorm/introduction
+   aragorm/anatomy-of-a-query
    aragorm/simple-examples
    aragorm/design-decisions
    aragorm/why-use-an-orm
