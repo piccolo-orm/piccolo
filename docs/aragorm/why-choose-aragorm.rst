@@ -13,3 +13,7 @@ This is the swiss army knife of ORMs.
 Django
 ------
 ...
+
+Peewee
+------
+...
