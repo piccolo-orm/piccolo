@@ -6,7 +6,7 @@ One of the main motivations for building Aragorm was the lack of options for an 
 
 What is asyncio?
 ----------------
-asyncio is a library added in Python 3, to provide an event loop implementation to the standard library.
+asyncio is a library added in Python 3, to provide an event loop implementation in the standard library.
 
 Prior to this, each framework that implemented non-blocking IO via an event loop had their own event loop implementation, limiting interoperability (Twisted and Tornado being by far the most well known).
 
