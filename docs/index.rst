@@ -10,7 +10,7 @@ Welcome to Aragorm's documentation!
    aragorm/design-decisions
    aragorm/why-use-an-orm
    aragorm/why-choose-aragorm
-   aragorm/is-async-worthwhile
+   aragorm/articles/is-async-worthwhile
    aragorm/migrations
 
 Indices and tables

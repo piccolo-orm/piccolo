@@ -31,7 +31,7 @@ Probably not.
 
 Asyncio helps improve throughput, not raw speed.
 
-However, most frameworks built on top of asyncio have sought to increase performance, but through other means (faster HTTP parsing, Cython-ising slow parts) ...
+However, most frameworks built on top of asyncio have sought to increase performance, but through other means (efficient HTTP parsing, Cython-ising slow parts) ...
 
 How much time does Python spend waiting on a database?
 ------------------------------------------------------
