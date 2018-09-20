@@ -2,10 +2,10 @@ TEMPLATE = """
 ID = '{migration_id}'
 
 
-def forwards():
+async def forwards():
     pass
 
 
-def backwards():
+async def backwards():
     pass
 """

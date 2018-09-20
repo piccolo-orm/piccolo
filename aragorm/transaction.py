@@ -6,6 +6,9 @@ class Transaction():
         transaction.add(Foo.create())
     """
 
+    def __init__(self):
+        pass
+
     async def __aenter__(cls):
         pass
 
