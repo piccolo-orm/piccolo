@@ -1,5 +1,4 @@
 import copy
-import inspect
 import typing as t
 
 from .alter import Alter
@@ -80,9 +79,10 @@ class Table(metaclass=TableMeta):
             value = kwargs.pop(column.name, None)
             if not value:
                 if column.default:
-                    value = column.default() if inspect.isfunction(
-                        column.default
-                    ) else column.default
+                    # Can't use inspect - can't tell that datetime.datetime.now
+                    # is a callable.
+                    is_callable = hasattr(column.default, '__call__')
+                    value = column.default() if is_callable else column.default
                 else:
                     if not column.null:
                         raise ValueError(f"{column.name} wasn't provided")
