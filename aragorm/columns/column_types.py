@@ -50,9 +50,19 @@ class PrimaryKey(Column):
 
 class Timestamp(Column):
 
-    def __init__(self, default: datetime.datetime = None, **kwargs) -> None:
+    def __init__(
+        self,
+        default: t.Optional[datetime.datetime] = None,
+        **kwargs
+    ) -> None:
         self.default = default
         super().__init__(**kwargs)
+
+    def format_value(self, value: t.Optional[datetime.datetime]):
+        if not value:
+            return 'null'
+        dt_string = value.isoformat().replace('T', ' ')
+        return f"'{dt_string}'"
 
 
 class Boolean(Column):
