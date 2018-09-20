@@ -169,6 +169,16 @@ def undo(migration_name: str):
     if _continue == 'y':
         print('Undoing migrations')
         print(migration_name)
+
+        # TODO ... also need to check if the ones on disk have been run or not
+        # A better approach might be to get the list of ids from the db first
+        # ...
+        _sorted = sorted(list(MIGRATION_MODULES.keys()))
+        _sorted = _sorted[_sorted.index(migration_name):]
+        _sorted.reverse()
+
+        for s in _sorted:
+            MIGRATION_MODULES[s].backwards()  # noqa
     else:
         print('Not proceeding.')
 
