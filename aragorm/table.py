@@ -1,6 +1,6 @@
 import copy
 import inspect
-from typing import Any, List
+import typing as t
 
 from .alter import Alter
 from .columns import Column, PrimaryKey, ForeignKey
@@ -67,7 +67,8 @@ class Table(metaclass=TableMeta):
 
     class Meta:
         tablename = None
-        columns: List[Column] = []
+        columns: t.List[Column] = []
+        db: t.Optional[t.Dict[t.Any, t.Any]] = None
 
     def __init__(self, **kwargs):
         """
@@ -142,7 +143,7 @@ class Table(metaclass=TableMeta):
             references.get_column_by_name('id') == getattr(self, column_name)
         ).first()
 
-    def __setitem__(self, key: str, value: Any):
+    def __setitem__(self, key: str, value: t.Any):
         setattr(self, key, value)
 
     def __getitem__(self, key: str):
