@@ -1,6 +1,6 @@
 import typing as t
 
-from ..operators import (
+from .operators import (
     Equal,
     GreaterEqualThan,
     GreaterThan,

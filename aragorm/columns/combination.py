@@ -1,6 +1,6 @@
 import typing
 
-from ..operators import Operator
+from .operators import Operator
 from ..custom_types import Combinable, Iterable
 
 if typing.TYPE_CHECKING:

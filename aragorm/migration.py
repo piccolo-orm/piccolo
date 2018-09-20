@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import asyncio
 import datetime
 import importlib.util
 import os
@@ -8,6 +9,7 @@ from typing import List, Dict
 from types import ModuleType
 
 import click
+import asyncpg
 
 from aragorm.migrations.template import TEMPLATE
 from aragorm.migrations.table import Migration
@@ -113,6 +115,11 @@ def _get_config() -> dict:
     return db
 
 
+async def run_in_transaction(coroutine):
+    # TODO .... wrap in transaction ...
+    await coroutine()
+
+
 @click.command()
 def forwards():
     """
@@ -135,7 +142,12 @@ def forwards():
     print(f'Migration ids = {ids}')
 
     for _id in (set(ids) - set(already_ran)):
-        MIGRATION_MODULES[_id].forwards()
+        asyncio.run(
+            run_in_transaction(
+                MIGRATION_MODULES[_id].forwards()
+            )
+        )
+
         print(f'Ran {_id}')
         Migration.insert().add(
             Migration(name=_id)
