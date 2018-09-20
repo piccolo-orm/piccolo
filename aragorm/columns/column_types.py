@@ -5,6 +5,7 @@ from .base import Column
 
 if t.TYPE_CHECKING:
     import table  # noqa
+    from ..custom_types import Datetime  # noqa
 
 
 class Varchar(Column):
@@ -50,11 +51,7 @@ class PrimaryKey(Column):
 
 class Timestamp(Column):
 
-    def __init__(
-        self,
-        default: t.Optional[datetime.datetime] = None,
-        **kwargs
-    ) -> None:
+    def __init__(self, default: 'Datetime' = None, **kwargs) -> None:
         self.default = default
         super().__init__(**kwargs)
 

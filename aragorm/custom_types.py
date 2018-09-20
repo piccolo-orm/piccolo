@@ -1,3 +1,4 @@
+import datetime
 import typing as t
 
 if t.TYPE_CHECKING:
@@ -5,10 +6,20 @@ if t.TYPE_CHECKING:
 
 
 Combinable = t.Union['Where', 'And', 'Or']
+
+
 Iterable = t.Iterable[t.Any]
+
+
+Datetime = t.Union[
+    datetime.datetime,
+    t.Callable[[], datetime.datetime],
+    None,
+]
 
 
 __all__ = (
     'Combinable',
-    'Iterable'
+    'Iterable',
+    'Datetime'
 )
