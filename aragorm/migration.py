@@ -114,7 +114,7 @@ def _get_config() -> dict:
 
 
 @click.command()
-def run():
+def forwards():
     """
     Runs any migrations which haven't been run yet, or up to a specific
     migration.
@@ -146,7 +146,7 @@ def run():
 
 @click.command()
 @click.argument('migration_name')
-def undo(migration_name: str):
+def backwards(migration_name: str):
     """
     Undo migrations up to a specific migrations.
 
@@ -202,8 +202,8 @@ def cli():
 
 
 cli.add_command(new)
-cli.add_command(run)
-cli.add_command(undo)
+cli.add_command(forwards)
+cli.add_command(backwards)
 
 
 ###############################################################################
