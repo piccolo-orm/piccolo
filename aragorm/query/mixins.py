@@ -2,7 +2,7 @@ import dataclasses
 import typing as t
 
 from ..columns import And
-from ..types import Combinable
+from ..custom_types import Combinable
 
 if t.TYPE_CHECKING:
     from table import Table  # noqa

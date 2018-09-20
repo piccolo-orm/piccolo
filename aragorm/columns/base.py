@@ -11,7 +11,7 @@ from ..operators import (
     NotEqual,
     NotIn,
 )
-from ..types import Iterable
+from ..custom_types import Iterable
 from .combination import Where
 
 if t.TYPE_CHECKING:

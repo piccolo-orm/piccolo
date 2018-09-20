@@ -1,7 +1,7 @@
 import typing
 
 from ..operators import Operator
-from ..types import Combinable, Iterable
+from ..custom_types import Combinable, Iterable
 
 if typing.TYPE_CHECKING:
     from .base import Column  # noqa
