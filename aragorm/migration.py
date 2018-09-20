@@ -57,6 +57,10 @@ def new():
 ###############################################################################
 
 def _create_migration_table() -> bool:
+    """
+    Creates the migration table in the database. Returns True/False depending
+    on whether it was created or not.
+    """
     if not Migration.table_exists().run_sync():
         Migration.create().run_sync()
         return True
@@ -65,12 +69,15 @@ def _create_migration_table() -> bool:
 
 def _get_migrations_which_ran() -> List[str]:
     """
-    Returns the names of migrations which have already run.
+    Returns the names of migrations which have already run, by inspecing the
+    database.
     """
     return [i['name'] for i in Migration.select('name').run_sync()]
 
 
 def _get_migration_modules() -> None:
+    """
+    """
     folder_contents = os.listdir(MIGRATIONS_FOLDER)
     excluded = ('__init__.py', 'config.py', '__pycache__')
     migration_names = [
@@ -122,6 +129,7 @@ def run():
     already_ran = _get_migrations_which_ran()
     print(f'Already ran = {already_ran}')
 
+    # TODO - stop using globals ...
     _get_migration_modules()
     ids = _get_migration_ids()
     print(f'Migration ids = {ids}')
@@ -137,13 +145,32 @@ def run():
 ###############################################################################
 
 @click.command()
-def undo():
+@click.argument('migration_name')
+def undo(migration_name: str):
     """
     Undo migrations up to a specific migrations.
-    """
-    print('Undoing migrations')
 
+    - make sure the migration name is valid
+    - work out which to undo, and in which order
+    - ask for confirmation
+    - apply the undo operations one by one
+    """
+    # Get the list from disk ...
     sys.path.insert(0, os.getcwd())
+    _get_config()  # Just required for path manipulation - needs changing
+    _get_migration_modules()
+
+    migration_ids = _get_migration_ids()
+
+    if migration_name not in migration_ids:
+        print(f'Unrecognized migration name - must be one of {migration_ids}')
+
+    _continue = input('About to undo the migrations - press y to continue.')
+    if _continue == 'y':
+        print('Undoing migrations')
+        print(migration_name)
+    else:
+        print('Not proceeding.')
 
 
 ###############################################################################
