@@ -160,6 +160,10 @@ def undo(migration_name: str):
     _get_config()  # Just required for path manipulation - needs changing
     _get_migration_modules()
 
+    Migration.Meta.db = _get_config()
+
+    _create_migration_table()
+
     migration_ids = _get_migration_ids()
 
     if migration_name not in migration_ids:
@@ -168,17 +172,24 @@ def undo(migration_name: str):
     _continue = input('About to undo the migrations - press y to continue.')
     if _continue == 'y':
         print('Undoing migrations')
-        print(migration_name)
 
-        # TODO ... also need to check if the ones on disk have been run or not
-        # A better approach might be to get the list of ids from the db first
-        # ...
         _sorted = sorted(list(MIGRATION_MODULES.keys()))
         _sorted = _sorted[_sorted.index(migration_name):]
         _sorted.reverse()
 
+        already_ran = _get_migrations_which_ran()
+
         for s in _sorted:
-            MIGRATION_MODULES[s].backwards()  # noqa
+            if s not in already_ran:
+                print(f"Migration {s} hasn't run yet, can't undo!")
+                sys.exit(1)
+
+            print(migration_name)
+            MIGRATION_MODULES[s].backwards()  # type: ignore
+
+            Migration.delete().where(
+                Migration.name == s
+            ).run_sync()
     else:
         print('Not proceeding.')
 
