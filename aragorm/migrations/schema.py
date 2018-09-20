@@ -18,6 +18,7 @@ object. Add and delete operations are processed first.
 Just make the Schema's combinable.
 
 """
+# TODO - not used much yet. Remove???
 
 # Consists of a bunch of operators
 # create_column
