@@ -18,6 +18,10 @@ MIGRATION_MODULES: Dict[str, ModuleType] = {}
 
 
 def _create_migrations_folder() -> bool:
+    """
+    Creates the folder that migrations live in. Returns True/False depending
+    on whether it was created or not.
+    """
     if os.path.exists(MIGRATIONS_FOLDER):
         return False
     else:
@@ -28,17 +32,17 @@ def _create_migrations_folder() -> bool:
         return True
 
 
-def _create_new_migration():
+def _create_new_migration() -> None:
+    """
+    Creates a new migration file on disk.
+    """
     _id = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
     path = os.path.join(MIGRATIONS_FOLDER, f'{_id}.py')
     with open(path, 'w') as f:
         f.write(TEMPLATE.format(migration_id=_id))
 
 
-@click.group()
-def cli():
-    pass
-
+###############################################################################
 
 @click.command()
 def new():
@@ -132,8 +136,29 @@ def run():
 
 ###############################################################################
 
+@click.command()
+def undo():
+    """
+    Undo migrations up to a specific migrations.
+    """
+    print('Undoing migrations')
+
+    sys.path.insert(0, os.getcwd())
+
+
+###############################################################################
+
+@click.group()
+def cli():
+    pass
+
+
 cli.add_command(new)
 cli.add_command(run)
+cli.add_command(undo)
+
+
+###############################################################################
 
 
 if __name__ == '__main__':
