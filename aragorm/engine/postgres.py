@@ -18,8 +18,8 @@ class Transaction():
         self.engine = engine
         self.queries = []
 
-    def add(self, query):
-        self.queries.append(query)
+    def add(self, *query: str):
+        self.queries += list(query)
 
     async def run(self):
         connection = await asyncpg.connect(**self.engine.config)

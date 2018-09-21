@@ -116,11 +116,6 @@ def _get_config() -> dict:
     return db
 
 
-async def run_in_transaction(coroutine):
-    # TODO .... wrap in transaction ...
-    await coroutine()
-
-
 @click.command()
 def forwards():
     """
@@ -144,9 +139,7 @@ def forwards():
 
     for _id in (set(ids) - set(already_ran)):
         asyncio.run(
-            run_in_transaction(
-                MIGRATION_MODULES[_id].forwards()
-            )
+            MIGRATION_MODULES[_id].forwards()
         )
 
         print(f'Ran {_id}')
@@ -198,7 +191,9 @@ def backwards(migration_name: str):
                 sys.exit(1)
 
             print(migration_name)
-            MIGRATION_MODULES[s].backwards()  # type: ignore
+            asyncio.run(
+                MIGRATION_MODULES[s].backwards()  # type: ignore
+            )
 
             Migration.delete().where(
                 Migration.name == s
