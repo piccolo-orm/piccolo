@@ -2,6 +2,7 @@ import copy
 import typing as t
 
 from .alter import Alter
+from .engine import Engine
 from .columns import Column, PrimaryKey, ForeignKey
 from .query import (
     Create,
@@ -16,17 +17,6 @@ from .query import (
     Update,
 )
 from .utils import _camel_to_snake
-
-
-class Database(object):
-
-    async def run(*queries):
-        """
-        Use asyncio.gather here ...
-
-        I think I'll call it Engine instead ...
-        """
-        pass
 
 
 class TableMeta(type):
@@ -67,7 +57,7 @@ class Table(metaclass=TableMeta):
     class Meta:
         tablename = None
         columns: t.List[Column] = []
-        db: t.Optional[t.Dict[t.Any, t.Any]] = None
+        db: t.Optional[Engine] = None
 
     def __init__(self, **kwargs):
         """

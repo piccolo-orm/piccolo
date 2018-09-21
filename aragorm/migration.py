@@ -11,6 +11,7 @@ from types import ModuleType
 import click
 import asyncpg
 
+from aragorm.engine import PostgresEngine
 from aragorm.migrations.template import TEMPLATE
 from aragorm.migrations.table import Migration
 
@@ -129,7 +130,7 @@ def forwards():
     print('Running migrations ...')
     sys.path.insert(0, os.getcwd())
 
-    Migration.Meta.db = _get_config()
+    Migration.Meta.db = PostgresEngine(_get_config())
 
     _create_migration_table()
 
@@ -172,7 +173,7 @@ def backwards(migration_name: str):
     _get_config()  # Just required for path manipulation - needs changing
     _get_migration_modules()
 
-    Migration.Meta.db = _get_config()
+    Migration.Meta.db = PostgresEngine(_get_config())
 
     _create_migration_table()
 

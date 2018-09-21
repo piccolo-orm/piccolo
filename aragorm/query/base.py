@@ -17,20 +17,14 @@ class Query(object):
         self.table = table
         super().__init__()
 
-    async def run(self, as_dict=True, credentials=None):
-        """
-        Should use an engine.
-        """
-        if not credentials:
-            credentials = getattr(self.table.Meta, 'db', None)
-        if not credentials:
+    async def run(self, as_dict=True):
+        engine = getattr(self.table.Meta, 'db', None)
+        if not engine:
             raise ValueError(
                 f'Table {self.table.Meta.tablename} has no db defined in Meta'
             )
 
-        conn = await asyncpg.connect(**credentials)
-        results = await conn.fetch(self.__str__())
-        await conn.close()
+        results = await engine.run(self.__str__())
 
         if results:
             keys = results[0].keys()

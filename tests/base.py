@@ -10,7 +10,7 @@ class DBTestCase(TestCase):
 
     def run_sync(self, query):
         async def _run():
-            connection = await asyncpg.connect(**Pokemon.Meta.db)
+            connection = await asyncpg.connect(**Pokemon.Meta.db.config)
             await connection.execute(query)
             await connection.close()
 

@@ -1,11 +1,12 @@
-import asyncio
 import typing as t
 
 import asyncpg
 from asyncpg.pool import Pool
 
+from .base import Engine
 
-class Engine():
+
+class PostgresEngine(Engine):
     """
     Currently when using run ...  it sets up a connection each time.
 
@@ -14,12 +15,10 @@ class Engine():
     Needs to be a singleton that's shared by all the tables.
     """
 
-    pool: t.Optional[Pool] = None
-
     def __init__(self, config: t.Dict[str, t.Any]) -> None:
         self.config = config
 
-    async def get_pool(self):
+    async def get_pool(self) -> Pool:
         if not self.pool:
             self.pool = await asyncpg.create_pool(
                 **self.config
@@ -29,12 +28,12 @@ class Engine():
     async def run(self, query: str):
         pool = await self.get_pool()
 
-        async with pool.acquire() as connection:
-            response = connection.fetch(query)
+        connection = await pool.acquire()
+        try:
+            response = await connection.fetch(query)
+        except Exception:
+            pass
+        finally:
+            await pool.release(connection)
 
         return response
-
-    def run_sync(self, query: str):
-        return asyncio.run(
-            self.run(query)
-        )

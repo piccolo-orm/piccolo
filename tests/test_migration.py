@@ -1,7 +1,5 @@
-import asyncio
 from unittest import TestCase
 
-import asyncpg
 from aragorm.migrations.table import Migration
 
 from .example_project.tables import DB

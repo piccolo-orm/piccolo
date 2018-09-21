@@ -1,13 +1,14 @@
 from aragorm import table
 from aragorm import columns
+from aragorm.engine import PostgresEngine
 
 
-DB = {
+DB = PostgresEngine({
     'host': 'localhost',
     'database': 'aragorm',
     'user': 'aragorm',
     'password': 'aragorm'
-}
+})
 
 
 ###############################################################################
