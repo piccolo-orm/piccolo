@@ -2,4 +2,7 @@
 Getting started
 ===============
 
+Installation
+============
+
 ...
