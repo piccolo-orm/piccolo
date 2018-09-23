@@ -29,6 +29,9 @@ class Transaction():
             for query in self.queries:
                 await connection.execute(query.__str__())
 
+        # In case the transaction object gets reused:
+        self.queries = []
+
     def run_sync(self):
         return asyncio.run(self.run())
 
