@@ -3,7 +3,7 @@ A User model which can be subclassed in projects.
 """
 import hashlib
 import secrets
-from typing import List
+import typing as t
 
 from aragorm.table import Table
 from aragorm.columns import Varchar, Boolean
@@ -58,15 +58,18 @@ class User(Table):
         return f'pbkdf2_sha256${iterations}${salt}${hashed}'
 
     @classmethod
-    def split_stored_password(self, password: str) -> List[str]:
+    def split_stored_password(self, password: str) -> t.List[str]:
         elements = password.split('$')
         if len(elements) != 4:
             raise ValueError('Unable to split hashed password')
         return elements
 
     @classmethod
-    async def login(cls, username: str, password: str):
-        response = await cls.select('password').where(
+    async def login(cls, username: str, password: str) -> t.Optional[int]:
+        """
+        Returns the user_id if a match is found.
+        """
+        response = await cls.select('id', 'password').where(
             (cls.username == username)
         ).first().run()
 
@@ -76,11 +79,14 @@ class User(Table):
             stored_password
         )
 
-        return cls.hash_password(
+        if cls.hash_password(
             password,
             salt,
             int(iterations)
-        ) == stored_password
+        ) == stored_password:
+            return response['id']
+        else:
+            return None
 
     @classmethod
     def foo(cls):

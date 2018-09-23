@@ -59,7 +59,7 @@ class TestLogin(TestCase):
         authenticated = asyncio.run(
             _User.login(username, password)
         )
-        self.assertTrue(authenticated)
+        self.assertTrue(authenticated is not None)
 
         authenticated = asyncio.run(
             _User.login(username, 'blablabla')
