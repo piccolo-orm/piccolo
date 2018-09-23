@@ -17,6 +17,7 @@ Welcome to Aragorm's documentation!
    aragorm/supported-databases
    aragorm/tests
    aragorm/tuning-postgres
+   aragorm/transactions
 
 Indices and tables
 ==================

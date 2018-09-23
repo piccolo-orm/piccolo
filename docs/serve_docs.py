@@ -5,6 +5,6 @@ from livereload import Server, shell
 server = Server()
 server.watch(
     '**/*.rst',
-    shell('cd .. && make html')
+    shell('make html')
 )
-server.serve(root='../build/html')
+server.serve(root='build/html')
