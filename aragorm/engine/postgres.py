@@ -4,28 +4,30 @@ import typing as t
 import asyncpg
 
 from .base import Engine
+from ..query.base import Query
 
 
 class Transaction():
     """
     Usage:
 
-    with await Transaction() as transaction:
-        transaction.add(Foo.create())
+    transaction = engine.Transaction()
+    transaction.add(Foo.create())
+    transaction.run_sync()
     """
 
     def __init__(self, engine):
         self.engine = engine
         self.queries = []
 
-    def add(self, *query: str):
+    def add(self, *query: Query):
         self.queries += list(query)
 
     async def run(self):
         connection = await asyncpg.connect(**self.engine.config)
         async with connection.transaction():
             for query in self.queries:
-                await connection.execute(query)
+                await connection.execute(query.__str__())
 
     def run_sync(self):
         return asyncio.run(self.run())
