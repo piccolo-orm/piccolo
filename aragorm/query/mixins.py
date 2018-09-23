@@ -78,9 +78,16 @@ class LimitMixin():
         self._limit = Limit(number)
         return self
 
+    @staticmethod
+    def _response_handler(response):
+        if len(response) == 0:
+            raise ValueError('No results found')
+
+        return response[0]
+
     def first(self):
         self._limit = Limit(1)
-        self.response_handler = lambda response: response[0]
+        self.response_handler = self._response_handler
         return self
 
 

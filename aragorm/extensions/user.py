@@ -69,9 +69,13 @@ class User(Table):
         """
         Returns the user_id if a match is found.
         """
-        response = await cls.select('id', 'password').where(
-            (cls.username == username)
-        ).first().run()
+        try:
+            response = await cls.select('id', 'password').where(
+                (cls.username == username)
+            ).first().run()
+        except ValueError:
+            # No match found
+            return None
 
         stored_password = response['password']
 
