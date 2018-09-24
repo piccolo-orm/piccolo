@@ -1,5 +1,6 @@
 from .base import Query
-from .query_types import (
+from .methods import (
+    Alter,
     Select,
     Objects,
     Insert,
@@ -14,6 +15,7 @@ from .query_types import (
 
 
 __all__ = [
+    'Alter',
     'Query',
     'Select',
     'Objects',

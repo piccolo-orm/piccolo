@@ -1,10 +1,10 @@
 import copy
 import typing as t
 
-from .alter import Alter
 from .engine import Engine
 from .columns import Column, PrimaryKey, ForeignKey
 from .query import (
+    Alter,
     Create,
     Delete,
     Drop,
@@ -126,7 +126,7 @@ class Table(metaclass=TableMeta):
         """
         cls = self.__class__
 
-        foreign_key = cls.get_column_by_name(column_name)
+        foreign_key = cls.get_column_by_name(column_name)  # type: ignore
         references = foreign_key.references
 
         return references.objects().where(

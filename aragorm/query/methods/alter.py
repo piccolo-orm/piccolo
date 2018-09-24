@@ -1,7 +1,7 @@
 import dataclasses
 
-from .columns import Column
-from .query import Query
+from aragorm.columns.base import Column
+from ..base import Query
 
 
 @dataclasses.dataclass
