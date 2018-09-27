@@ -5,6 +5,7 @@ import asyncpg
 
 from .base import Engine
 from ..query.base import Query
+from ..utils.sync import run_sync
 
 
 class Transaction():
@@ -33,7 +34,10 @@ class Transaction():
         self.queries = []
 
     def run_sync(self):
-        return asyncio.run(self.run())
+        return run_sync(
+            self.run()
+        )
+        # return asyncio.run(self.run())
 
 
 class PostgresEngine(Engine):

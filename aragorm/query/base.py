@@ -2,8 +2,9 @@ import asyncio
 import itertools
 import typing as t
 
-import asyncpg
 import ujson as json
+
+from ..utils.sync import run_sync
 
 if t.TYPE_CHECKING:
     from table import Table  # noqa
@@ -74,9 +75,12 @@ class Query(object):
         tearing down connections, but instead running it in a separate
         process, and dispatching coroutines to it.
         """
-        return asyncio.run(
+        return run_sync(
             self.run(*args, **kwargs)
         )
+        # return asyncio.run(
+        #     self.run(*args, **kwargs)
+        # )
 
     def response_handler(self, response):
         """
