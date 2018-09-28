@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 Before running the tests, make sure there's a test database created, and run
 migrations.
