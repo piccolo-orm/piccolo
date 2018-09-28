@@ -45,6 +45,7 @@ class TestWhere():
 
     def test_and(self):
         """
-        Need some high level tests ... Extend SQL to to include where clauses ...
+        Need some high level tests ... Extend SQL to to include where
+        clauses ...
         """
         pass

@@ -1,7 +1,9 @@
+
 import asyncio
 import typing as t
 
 import asyncpg
+from asyncpg.pool import Pool
 
 from .base import Engine
 from ..query.base import Query
@@ -24,20 +26,35 @@ class Transaction():
     def add(self, *query: Query):
         self.queries += list(query)
 
-    async def run(self):
-        connection = await asyncpg.connect(**self.engine.config)
+    async def _run_queries(self, connection):
         async with connection.transaction():
             for query in self.queries:
                 await connection.execute(query.__str__())
 
-        # In case the transaction object gets reused:
         self.queries = []
+
+    async def _run_in_pool(self):
+        pool = await self.engine.get_pool()
+        connection = await pool.acquire()
+
+        try:
+            await self._run_queries(connection)
+        except Exception:
+            pass
+        finally:
+            await pool.release(connection)
+
+    async def _run(self):
+        connection = await asyncpg.connect(**self.engine.config)
+        await self._run_queries(connection)
+
+    async def run(self):
+        await self._run_in_pool()
 
     def run_sync(self):
         return run_sync(
-            self.run()
+            self._run()
         )
-        # return asyncio.run(self.run())
 
 
 class PostgresEngine(Engine):
@@ -51,6 +68,30 @@ class PostgresEngine(Engine):
 
     def __init__(self, config: t.Dict[str, t.Any]) -> None:
         self.config = config
+        self.pool = None
+        self.loop = None
+
+    async def get_pool(self) -> Pool:
+        loop = asyncio.get_event_loop()
+        if not self.pool or (self.loop != loop):
+            self.pool = await asyncpg.create_pool(
+                **self.config
+            )
+            self.loop = loop
+        return self.pool
+
+    async def run_in_pool(self, query: str):
+        pool = await self.get_pool()
+
+        connection = await pool.acquire()
+        try:
+            response = await connection.fetch(query)
+        except Exception:
+            pass
+        finally:
+            await pool.release(connection)
+
+        return response
 
     async def run(self, query: str):
         connection = await asyncpg.connect(**self.config)

@@ -17,7 +17,7 @@ class TestTransaction(TestCase):
         )
         try:
             transaction.run_sync()
-        except Exception:
+        except Exception as error:
             pass
         self.assertTrue(
             not Pokemon.table_exists().run_sync()

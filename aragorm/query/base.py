@@ -18,14 +18,17 @@ class Query(object):
         self.table = table
         super().__init__()
 
-    async def run(self, as_dict=True):
+    async def run(self, as_dict=True, in_pool=True):
         engine = getattr(self.table.Meta, 'db', None)
         if not engine:
             raise ValueError(
                 f'Table {self.table.Meta.tablename} has no db defined in Meta'
             )
 
-        results = await engine.run(self.__str__())
+        if in_pool:
+            results = await engine.run_in_pool(self.__str__())
+        else:
+            results = await engine.run(self.__str__())
 
         if results:
             keys = results[0].keys()
@@ -76,11 +79,8 @@ class Query(object):
         process, and dispatching coroutines to it.
         """
         return run_sync(
-            self.run(*args, **kwargs)
+            self.run(*args, **kwargs, in_pool=False)
         )
-        # return asyncio.run(
-        #     self.run(*args, **kwargs)
-        # )
 
     def response_handler(self, response):
         """
