@@ -68,8 +68,8 @@ class PostgresEngine(Engine):
 
     def __init__(self, config: t.Dict[str, t.Any]) -> None:
         self.config = config
-        self.pool = None
-        self.loop = None
+        self.pool: t.Optional[Pool] = None
+        self.loop: t.Optional[asyncio.AbstractEventLoop] = None
 
     async def get_pool(self) -> Pool:
         loop = asyncio.get_event_loop()
