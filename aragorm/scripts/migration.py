@@ -5,11 +5,10 @@ import datetime
 import importlib.util
 import os
 import sys
-from typing import List, Dict
+import typing as t
 from types import ModuleType
 
 import click
-import asyncpg
 
 from aragorm.engine import PostgresEngine
 from aragorm.migrations.template import TEMPLATE
@@ -17,7 +16,7 @@ from aragorm.migrations.table import Migration
 
 
 MIGRATIONS_FOLDER = os.path.join(os.getcwd(), 'migrations')
-MIGRATION_MODULES: Dict[str, ModuleType] = {}
+MIGRATION_MODULES: t.Dict[str, ModuleType] = {}
 
 
 def _create_migrations_folder() -> bool:
@@ -70,7 +69,7 @@ def _create_migration_table() -> bool:
     return False
 
 
-def _get_migrations_which_ran() -> List[str]:
+def _get_migrations_which_ran() -> t.List[str]:
     """
     Returns the names of migrations which have already run, by inspecing the
     database.
@@ -94,7 +93,7 @@ def _get_migration_modules() -> None:
             MIGRATION_MODULES[_id] = m
 
 
-def _get_migration_ids() -> List[str]:
+def _get_migration_ids() -> t.List[str]:
     return list(MIGRATION_MODULES.keys())
 
 
