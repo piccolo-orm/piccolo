@@ -121,8 +121,6 @@ class Table(metaclass=TableMeta):
     def get_related(self, column_name: str):
         """
         some_pokemon.get_related('trainer')
-
-        Need to get the Trainer class
         """
         cls = self.__class__
 
@@ -206,36 +204,9 @@ class Table(metaclass=TableMeta):
     @classmethod
     def insert(cls, *rows: 'Table') -> Insert:
         """
-        In typing is it possible to distinguish between a class and a class
-        instance?
-
-        Pokemon.insert(
+        await Pokemon.insert(
             Pokemon(name="jigglypuff", power=500, trainer="florence")
-        )
-
-        Need to allow things like:
-
-        jigglypuff = Pokemon(name="jigglypuff", power=500, trainer="florence")
-
-        Pokemon.insert(jigglypuff)
-
-        jigglypuff.power = 600
-        # this is where save would be useful ...
-        # save could be an alias to self.__cls__.save(self)
-        # it just depends if the instance has an id set yet
-        # if no id, use self.__cls__.insert(self)
-        # if an id, use self.__cls__.update(**self.columns)
-
-        It depends how far wen want to go with ORM style
-        -> need to avoid properties which trigger ORM queries
-        --> dot lookups should just return the id
-        ---> can do Pokemon.get_related('gym')
-        -> makes related queries tricky
-        -> I need to start building apps using aragorm ... so can work out
-        what's required and what isn't.
-        -> need a simple router ...
-        --> sanic or quart
-
+        ).run()
         """
         query = Insert(
             table=cls,
@@ -264,9 +235,7 @@ class Table(metaclass=TableMeta):
     @classmethod
     def delete(cls) -> Delete:
         """
-        await Pokemon.delete().where(Pokemon.name='weedle').run()
-
-        DELETE FROM pokemon where name = 'weedle'
+        await Pokemon.delete().where(Pokemon.name == 'weedle').run()
         """
         return Delete(
             table=cls
@@ -334,8 +303,7 @@ class Table(metaclass=TableMeta):
     @classmethod
     def exists(cls) -> Exists:
         """
-        This is tricky ... use it to check if a row exists ... not if the
-        table exists.
+        Use it to check if a row exists ... not if the table exists.
         """
         return Exists(
             table=cls,
