@@ -1,6 +1,6 @@
 import unittest
 
-from aragorm import columns
+from piccolo import columns
 
 
 name_column = columns.Varchar()

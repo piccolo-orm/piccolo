@@ -5,8 +5,8 @@ import hashlib
 import secrets
 import typing as t
 
-from aragorm.table import Table
-from aragorm.columns import Varchar, Boolean
+from piccolo.table import Table
+from piccolo.columns import Varchar, Boolean
 
 
 # Might change to BaseUser ... making it clearer that it needs to be

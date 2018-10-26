@@ -10,9 +10,9 @@ from types import ModuleType
 
 import click
 
-from aragorm.engine import PostgresEngine
-from aragorm.migrations.template import TEMPLATE
-from aragorm.migrations.table import Migration
+from piccolo.engine import PostgresEngine
+from piccolo.migrations.template import TEMPLATE
+from piccolo.migrations.table import Migration
 
 
 MIGRATIONS_FOLDER = os.path.join(os.getcwd(), 'migrations')

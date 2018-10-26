@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from aragorm.migrations.table import Migration
+from piccolo.migrations.table import Migration
 
 from .example_project.tables import DB
 

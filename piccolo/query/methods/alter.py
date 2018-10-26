@@ -1,6 +1,6 @@
 import dataclasses
 
-from aragorm.columns.base import Column
+from piccolo.columns.base import Column
 from ..base import Query
 
 

@@ -1,7 +1,7 @@
 import asyncio
 from unittest import TestCase
 
-from aragorm.extensions.user import User
+from piccolo.extensions.user import User
 from ..example_project.tables import DB
 
 

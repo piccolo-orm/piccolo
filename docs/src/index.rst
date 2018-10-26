@@ -5,19 +5,19 @@ Welcome to Aragorm's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   aragorm/introduction
-   aragorm/getting-started
-   aragorm/anatomy-of-a-query
-   aragorm/simple-examples
-   aragorm/design-decisions
-   aragorm/why-use-an-orm
-   aragorm/why-choose-aragorm
-   aragorm/articles/is-async-worthwhile
-   aragorm/migrations
-   aragorm/supported-databases
-   aragorm/tests
-   aragorm/tuning-postgres
-   aragorm/transactions
+   piccolo/introduction
+   piccolo/getting-started
+   piccolo/anatomy-of-a-query
+   piccolo/simple-examples
+   piccolo/design-decisions
+   piccolo/why-use-an-orm
+   piccolo/why-choose-piccolo
+   piccolo/articles/is-async-worthwhile
+   piccolo/migrations
+   piccolo/supported-databases
+   piccolo/tests
+   piccolo/tuning-postgres
+   piccolo/transactions
 
 Indices and tables
 ==================

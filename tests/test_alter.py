@@ -1,4 +1,4 @@
-from aragorm.columns import Integer
+from piccolo.columns import Integer
 
 from .base import DBTestCase
 from .example_project.tables import Pokemon

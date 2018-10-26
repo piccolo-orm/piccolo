@@ -1,13 +1,13 @@
-from aragorm import table
-from aragorm import columns
-from aragorm.engine import PostgresEngine
+from piccolo import table
+from piccolo import columns
+from piccolo.engine import PostgresEngine
 
 
 DB = PostgresEngine({
     'host': 'localhost',
-    'database': 'aragorm',
-    'user': 'aragorm',
-    'password': 'aragorm'
+    'database': 'piccolo',
+    'user': 'piccolo',
+    'password': 'piccolo'
 })
 
 
