@@ -1,8 +1,8 @@
 ===================
-Why choose Aragorm?
+Why choose Piccolo?
 ===================
 
-Aragorm is one of the few ORMs to support asyncio.
+Piccolo is one of the few ORMs to support asyncio.
 
 Ignoring that, here are some comparisons with the most popular Python ORMs.
 

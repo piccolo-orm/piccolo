@@ -2,7 +2,7 @@
 Tuning Postgres
 ===============
 
-One of the aims of Aragorm is to get more queries into the database.
+One of the aims of Piccolo is to get more queries into the database.
 
 So while one request is waiting on a database response, another request can fire off another database request.
 

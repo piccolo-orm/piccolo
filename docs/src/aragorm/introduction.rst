@@ -1,7 +1,7 @@
 Introduction
 ============
 
-Aragorm is a Python ORM.
+Piccolo is a Python ORM.
 
 Benefits:
 

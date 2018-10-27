@@ -19,7 +19,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'Aragorm'
+project = 'Piccolo'
 copyright = '2018, Daniel Townsend'
 author = 'Daniel Townsend'
 
@@ -105,7 +105,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Aragormdoc'
+htmlhelp_basename = 'Piccolodoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -132,7 +132,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'Aragorm.tex', 'Aragorm Documentation',
+    (master_doc, 'Piccolo.tex', 'Piccolo Documentation',
      'Daniel Townsend', 'manual'),
 ]
 
@@ -142,7 +142,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'piccolo', 'Aragorm Documentation',
+    (master_doc, 'piccolo', 'Piccolo Documentation',
      [author], 1)
 ]
 
@@ -153,8 +153,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'Aragorm', 'Aragorm Documentation',
-     author, 'Aragorm', 'One line description of project.',
+    (master_doc, 'Piccolo', 'Piccolo Documentation',
+     author, 'Piccolo', 'One line description of project.',
      'Miscellaneous'),
 ]
 

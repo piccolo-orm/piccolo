@@ -1,4 +1,4 @@
-Welcome to Aragorm's documentation!
+Welcome to Piccolo's documentation!
 ===================================
 
 .. toctree::

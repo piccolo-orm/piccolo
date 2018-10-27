@@ -2,7 +2,7 @@
 Is async worthwhile?
 ====================
 
-One of the main motivations for building Aragorm was the lack of options for an asyncio ORM.
+One of the main motivations for building Piccolo was the lack of options for an asyncio ORM.
 
 What is asyncio?
 ----------------

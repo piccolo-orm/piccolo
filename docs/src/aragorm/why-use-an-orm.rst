@@ -8,7 +8,7 @@ Benefits of an ORM
 Passing around partial queries
 ------------------------------
 
-With Aragorm, you can pass around queries, and keep on chaining methods onto it.
+With Piccolo, you can pass around queries, and keep on chaining methods onto it.
 
 .. code-block:: python
 
@@ -28,7 +28,7 @@ Migrations
 What an ORM shouldn't be
 ========================
 
-The Aragorm ORM covers the most common interactions an app will have to make with a database.
+The Piccolo ORM covers the most common interactions an app will have to make with a database.
 
 In cases where it's not possible, you can just drop down into raw SQL.
 
@@ -50,9 +50,9 @@ When you use an ORM, there is inevitable extra overhead in generating the SQL.
 
 You'll sometimes hear people complain that an ORM generates inefficient SQL. This is usually only for very complex queries.
 
-There's nothing wrong with writing raw SQL, but with Aragorm it means you don't have to write it 90% of the time.
+There's nothing wrong with writing raw SQL, but with Piccolo it means you don't have to write it 90% of the time.
 
-Aragorm also makes it easy to see the SQL being executed - just print any query.
+Piccolo also makes it easy to see the SQL being executed - just print any query.
 
 Can be tedious to learn
 ~~~~~~~~~~~~~~~~~~~~~~~

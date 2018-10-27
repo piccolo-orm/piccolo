@@ -4,11 +4,11 @@ Design Decisions
 As close as possible to SQL
 ---------------------------
 
-The classes / methods / functions in Aragorm mirror their SQL counterparts as closely as possible.
+The classes / methods / functions in Piccolo mirror their SQL counterparts as closely as possible.
 
 For example:
 
- * In other ORMs, you define models - in Aragorm you define tables.
+ * In other ORMs, you define models - in Piccolo you define tables.
  * Rather than using a filter method, you use a where method like in SQL.
 
 Example 1 - select

@@ -17,6 +17,6 @@ Arguably not as relevant with asyncio because there's no network lag.
 
 MySQL
 -----
-Since the supported version of Python is 3.7 and above, and asyncio is also very new, we mostly envisage Aragorm being used on greenfield projects.
+Since the supported version of Python is 3.7 and above, and asyncio is also very new, we mostly envisage Piccolo being used on greenfield projects.
 
 In the author's opinion, MySQL offers little that Postgres doesn't, for the majority of use cases - making the effort to support it seem somewhat wasted, as opposed to offering as good a Postgres experience as possible.
