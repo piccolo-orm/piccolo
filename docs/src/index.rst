@@ -2,7 +2,7 @@ Welcome to Piccolo's documentation!
 ===================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 5
    :caption: Contents:
 
    piccolo/introduction
@@ -10,14 +10,12 @@ Welcome to Piccolo's documentation!
    piccolo/anatomy-of-a-query
    piccolo/simple-examples
    piccolo/design-decisions
-   piccolo/why-use-an-orm
-   piccolo/why-choose-piccolo
-   piccolo/articles/is-async-worthwhile
    piccolo/migrations
    piccolo/supported-databases
    piccolo/tests
    piccolo/tuning-postgres
    piccolo/transactions
+   piccolo/articles/index
 
 Indices and tables
 ==================

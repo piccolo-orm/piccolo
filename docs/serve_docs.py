@@ -4,7 +4,7 @@ from livereload import Server, shell
 
 server = Server()
 server.watch(
-    '**/*.rst',
+    'src/',
     shell('make html')
 )
 server.serve(root='build/html')
