@@ -15,7 +15,6 @@ Welcome to Piccolo's documentation!
    piccolo/tests
    piccolo/tuning-postgres
    piccolo/transactions
-   piccolo/articles/index
 
 Indices and tables
 ==================
