@@ -1,5 +1,5 @@
 from ..base import DBTestCase
-from ..example_project.tables import Pokemon
+from ..example_project.tables import Band
 
 
 class TestUpdate(DBTestCase):
@@ -7,16 +7,16 @@ class TestUpdate(DBTestCase):
     def test_update(self):
         self.insert_rows()
 
-        Pokemon.update(
+        Band.update(
             name='kakuna'
         ).where(
-            Pokemon.name == 'weedle'
+            Band.name == 'weedle'
         ).run_sync()
 
-        response = Pokemon.select(
+        response = Band.select(
             'name'
         ).where(
-            Pokemon.name == 'kakuna'
+            Band.name == 'kakuna'
         ).run_sync()
 
         print(f'response = {response}')

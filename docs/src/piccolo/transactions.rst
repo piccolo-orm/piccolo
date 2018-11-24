@@ -11,7 +11,7 @@ Usage
 
 .. code-block:: python
 
-    transaction = Pokemon.Meta.db.transaction()
+    transaction = Band.Meta.db.transaction()
     transaction.add(Trainer.create())
     transaction.add(Match.create())
     await transaction.run()

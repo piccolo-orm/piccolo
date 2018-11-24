@@ -1,5 +1,5 @@
 from ..base import DBTestCase
-from ..example_project.tables import Pokemon
+from ..example_project.tables import Band
 
 
 class TestCreate(DBTestCase):
@@ -11,10 +11,10 @@ class TestCreate(DBTestCase):
         pass
 
     def test_create_table(self):
-        Pokemon.create().run_sync()
+        Band.create().run_sync()
 
         # Just do a count to make sure the table was created ok.
-        response = Pokemon.select(
+        response = Band.select(
             'name', 'trainer', 'power'
         ).count().run_sync()
 

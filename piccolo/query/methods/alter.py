@@ -7,7 +7,7 @@ from ..base import Query
 @dataclasses.dataclass
 class Rename():
     """
-    Pokemon.alter().rename(Pokemon.power, ‘rating’)
+    Band.alter().rename(Band.power, ‘rating’)
     """
     column: Column
     new_name: str
@@ -19,7 +19,7 @@ class Rename():
 @dataclasses.dataclass
 class Drop():
     """
-    Pokemon.alter().drop('power')
+    Band.alter().drop('power')
     """
     column: Column
 
@@ -30,7 +30,7 @@ class Drop():
 @dataclasses.dataclass
 class Add():
     """
-    Pokemon.alter().add(‘color’, Varchar(length=20))
+    Band.alter().add(‘color’, Varchar(length=20))
     """
     name: str
     column: Column

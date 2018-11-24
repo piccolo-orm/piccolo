@@ -75,32 +75,32 @@ class ForeignKey(Integer):
 
     http://www.postgresqltutorial.com/postgresql-foreign-key/
 
-    some_pokemon.trainer
+    some_band.trainer
     >>> 1
-    Pokemon.select('name', 'trainer.name')
+    Band.select('name', 'trainer.name')
 
     I'm not sure  about explicit joins ... only useful if we want to specify
     inner and outer joins.
 
-    Join(Pokemon, User)
+    Join(Band, User)
 
     To get the actual User object.
 
-    User.object().where(User.id == some_pokemon.trainer)
+    User.object().where(User.id == some_band.trainer)
 
     OR
 
-    some_pokemon.related_object('trainer')
+    some_band.related_object('trainer')
     > is just a proxy to the above
 
-    class Pokemon(Table):
+    class Band(Table):
         trainer = ForeignKey(User)
 
     To change the trainer:
-    some_pokemon.trainer = some_trainer_id
-    some_pokemon.save()
+    some_band.trainer = some_trainer_id
+    some_band.save()
     Or:
-    some_pokemon.set_related_object('trainer', some_trainer)
+    some_band.set_related_object('trainer', some_trainer)
 
     """
 

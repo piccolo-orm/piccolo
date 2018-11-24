@@ -1,5 +1,5 @@
 from ..base import DBTestCase
-from ..example_project.tables import Pokemon
+from ..example_project.tables import Band
 
 
 class TestDelete(DBTestCase):
@@ -7,12 +7,12 @@ class TestDelete(DBTestCase):
     def test_delete(self):
         self.insert_rows()
 
-        Pokemon.delete().where(
-            Pokemon.name == 'weedle'
+        Band.delete().where(
+            Band.name == 'weedle'
         ).run_sync()
 
-        response = Pokemon.select().where(
-            Pokemon.name == 'weedle'
+        response = Band.select().where(
+            Band.name == 'weedle'
         ).count().run_sync()
 
         print(f'response = {response}')

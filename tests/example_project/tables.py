@@ -14,7 +14,7 @@ DB = PostgresEngine({
 ###############################################################################
 # Simple example
 
-class Pokemon(table.Table):
+class Band(table.Table):
     name = columns.Varchar(length=50)
     trainer = columns.Varchar(length=20)
     power = columns.Integer()
@@ -42,8 +42,8 @@ class Stadium(table.Table):
 
 
 class Match(table.Table):
-    pokemon_1 = columns.ForeignKey(Pokemon)
-    pokemon_2 = columns.ForeignKey(Pokemon)
+    band_1 = columns.ForeignKey(Band)
+    band_2 = columns.ForeignKey(Band)
     stadium = columns.ForeignKey(Stadium)
 
     class Meta():

@@ -1,5 +1,5 @@
 from ..base import DBTestCase
-from ..example_project.tables import Pokemon
+from ..example_project.tables import Band
 
 
 class TestSelect(DBTestCase):
@@ -7,7 +7,7 @@ class TestSelect(DBTestCase):
     def test_query_all_columns(self):
         self.insert_row()
 
-        response = Pokemon.select().run_sync()
+        response = Band.select().run_sync()
         print(f'response = {response}')
 
         self.assertDictEqual(
@@ -18,7 +18,7 @@ class TestSelect(DBTestCase):
     def test_query_some_columns(self):
         self.insert_row()
 
-        response = Pokemon.select('name').run_sync()
+        response = Band.select('name').run_sync()
         print(f'response = {response}')
 
         self.assertDictEqual(
@@ -29,10 +29,10 @@ class TestSelect(DBTestCase):
     def test_where_like(self):
         self.insert_rows()
 
-        response = Pokemon.select(
+        response = Band.select(
             'name'
         ).where(
-            Pokemon.name.like('%chu')
+            Band.name.like('%chu')
         ).run_sync()
 
         print(f'response = {response}')
@@ -45,10 +45,10 @@ class TestSelect(DBTestCase):
     def test_where_greater_than(self):
         self.insert_rows()
 
-        response = Pokemon.select(
+        response = Band.select(
             'name'
         ).where(
-            Pokemon.power > 1000
+            Band.power > 1000
         ).run_sync()
 
         print(f'response = {response}')
@@ -61,10 +61,10 @@ class TestSelect(DBTestCase):
     def test_where_greater_equal_than(self):
         self.insert_rows()
 
-        response = Pokemon.select(
+        response = Band.select(
             'name'
         ).where(
-            Pokemon.power >= 1000
+            Band.power >= 1000
         ).run_sync()
 
         print(f'response = {response}')
@@ -77,10 +77,10 @@ class TestSelect(DBTestCase):
     def test_where_less_than(self):
         self.insert_rows()
 
-        response = Pokemon.select(
+        response = Band.select(
             'name'
         ).where(
-            Pokemon.power < 1000
+            Band.power < 1000
         ).run_sync()
 
         print(f'response = {response}')
@@ -93,10 +93,10 @@ class TestSelect(DBTestCase):
     def test_where_less_equal_than(self):
         self.insert_rows()
 
-        response = Pokemon.select(
+        response = Band.select(
             'name'
         ).where(
-            Pokemon.power <= 1000
+            Band.power <= 1000
         ).run_sync()
 
         print(f'response = {response}')
@@ -109,10 +109,10 @@ class TestSelect(DBTestCase):
     def test_where_and(self):
         self.insert_rows()
 
-        response = Pokemon.select(
+        response = Band.select(
             'name'
         ).where(
-            (Pokemon.power <= 1000) & (Pokemon.name.like('%chu'))
+            (Band.power <= 1000) & (Band.name.like('%chu'))
         ).run_sync()
 
         print(f'response = {response}')
@@ -125,10 +125,10 @@ class TestSelect(DBTestCase):
     def test_where_or(self):
         self.insert_rows()
 
-        response = Pokemon.select(
+        response = Band.select(
             'name'
         ).where(
-            (Pokemon.name == 'raichu') | (Pokemon.name == 'weedle')
+            (Band.name == 'raichu') | (Band.name == 'weedle')
         ).run_sync()
 
         print(f'response = {response}')
@@ -144,12 +144,12 @@ class TestSelect(DBTestCase):
         """
         self.insert_rows()
 
-        query = Pokemon.select(
+        query = Band.select(
             'name'
         ).where(
-            Pokemon.name == 'raichu'
+            Band.name == 'raichu'
         ).where(
-            Pokemon.trainer == 'sally'
+            Band.trainer == 'sally'
         )
 
         response = query.run_sync()
@@ -170,11 +170,11 @@ class TestSelect(DBTestCase):
         """
         self.insert_rows()
 
-        response = Pokemon.select(
+        response = Band.select(
             'name'
         ).where(
-            ((Pokemon.power == 2000) & (Pokemon.trainer == 'sally')) |
-            ((Pokemon.power == 10) & (Pokemon.trainer == 'gordon'))
+            ((Band.power == 2000) & (Band.trainer == 'sally')) |
+            ((Band.power == 10) & (Band.trainer == 'gordon'))
         ).run_sync()
 
         print(f'response = {response}')
@@ -187,7 +187,7 @@ class TestSelect(DBTestCase):
     def test_limit(self):
         self.insert_rows()
 
-        response = Pokemon.select(
+        response = Band.select(
             'name'
         ).order_by(
             'name'
@@ -205,7 +205,7 @@ class TestSelect(DBTestCase):
     def test_first(self):
         self.insert_rows()
 
-        response = Pokemon.select(
+        response = Band.select(
             'name'
         ).order_by(
             'name'
@@ -221,7 +221,7 @@ class TestSelect(DBTestCase):
     def test_order_by_ascending(self):
         self.insert_rows()
 
-        response = Pokemon.select(
+        response = Band.select(
             'name'
         ).order_by(
             'name'
@@ -237,7 +237,7 @@ class TestSelect(DBTestCase):
     def test_order_by_decending(self):
         self.insert_rows()
 
-        response = Pokemon.select(
+        response = Band.select(
             'name'
         ).order_by(
             '-name'
@@ -253,8 +253,8 @@ class TestSelect(DBTestCase):
     def test_count(self):
         self.insert_rows()
 
-        response = Pokemon.select().where(
-            Pokemon.name == 'pikachu'
+        response = Band.select().where(
+            Band.name == 'pikachu'
         ).count().run_sync()
 
         print(f'response = {response}')
@@ -268,8 +268,8 @@ class TestSelect(DBTestCase):
         self.insert_rows()
         self.insert_rows()
 
-        response = Pokemon.select('name').where(
-            Pokemon.name == 'pikachu'
+        response = Band.select('name').where(
+            Band.name == 'pikachu'
         ).distinct().run_sync()
 
         self.assertTrue(response == [{'name': 'pikachu'}])

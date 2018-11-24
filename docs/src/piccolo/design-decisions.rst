@@ -24,7 +24,7 @@ At any time you can access the __str__ method of a query, to see the underlying 
 
 .. code-block:: python
 
-    query = Pokemon.select('name').where(Pokemon.power >= 100)
+    query = Band.select('name').where(Band.power >= 100)
 
     print(query)
-    'SELECT name from pokemon where power > 100'
+    'SELECT name from band where power > 100'

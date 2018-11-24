@@ -120,7 +120,7 @@ class Table(metaclass=TableMeta):
 
     def get_related(self, column_name: str):
         """
-        some_pokemon.get_related('trainer')
+        some_band.get_related('trainer')
         """
         cls = self.__class__
 
@@ -204,8 +204,8 @@ class Table(metaclass=TableMeta):
     @classmethod
     def insert(cls, *rows: 'Table') -> Insert:
         """
-        await Pokemon.insert(
-            Pokemon(name="jigglypuff", power=500, trainer="florence")
+        await Band.insert(
+            Band(name="jigglypuff", power=500, trainer="florence")
         ).run()
         """
         query = Insert(
@@ -218,8 +218,8 @@ class Table(metaclass=TableMeta):
     @classmethod
     def update(cls, **columns) -> Update:
         """
-        await Pokemon.update(name='raichu').where(
-            Pokemon.name='pikachu'
+        await Band.update(name='raichu').where(
+            Band.name='pikachu'
         ).run()
         """
         columns_str = ', '.join([
@@ -235,7 +235,7 @@ class Table(metaclass=TableMeta):
     @classmethod
     def delete(cls) -> Delete:
         """
-        await Pokemon.delete().where(Pokemon.name == 'weedle').run()
+        await Band.delete().where(Band.name == 'weedle').run()
         """
         return Delete(
             table=cls
@@ -246,7 +246,7 @@ class Table(metaclass=TableMeta):
         """
         Create table, along with all columns.
 
-        await Pokemon.create().run()
+        await Band.create().run()
         """
         return Create(
             table=cls,
@@ -257,7 +257,7 @@ class Table(metaclass=TableMeta):
         """
         Create the table, but with no columns (useful for migrations).
 
-        await Pokemon.create().run()
+        await Band.create().run()
         """
         return Raw(
             table=cls,
@@ -269,7 +269,7 @@ class Table(metaclass=TableMeta):
         """
         Drops the table.
 
-        await Pokemon.drop().run()
+        await Band.drop().run()
         """
         return Drop(
             table=cls,
@@ -278,7 +278,7 @@ class Table(metaclass=TableMeta):
     @classmethod
     def raw(cls, sql: str) -> Raw:
         """
-        await Pokemon.raw('select * from foo')
+        await Band.raw('select * from foo')
         """
         return Raw(
             table=cls,
@@ -288,7 +288,7 @@ class Table(metaclass=TableMeta):
     @classmethod
     def alter(cls) -> Alter:
         """
-        await Pokemon.alter().rename(Pokemon.power, 'rating')
+        await Band.alter().rename(Band.power, 'rating')
         """
         return Alter(
             table=cls,

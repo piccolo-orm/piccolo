@@ -1,7 +1,7 @@
 from piccolo.columns import Integer
 
 from .base import DBTestCase
-from .example_project.tables import Pokemon
+from .example_project.tables import Band
 
 
 class TestRename(DBTestCase):
@@ -9,12 +9,12 @@ class TestRename(DBTestCase):
     def test_rename(self):
         self.insert_row()
 
-        Pokemon.alter().rename(
-            Pokemon.power,
+        Band.alter().rename(
+            Band.power,
             'rating'
         ).run_sync()
 
-        response = Pokemon.select().run_sync()
+        response = Band.select().run_sync()
 
         column_names = response[0].keys()
         self.assertTrue(
@@ -27,11 +27,11 @@ class TestDrop(DBTestCase):
     def test_drop(self):
         self.insert_row()
 
-        Pokemon.alter().drop(
-            Pokemon.power,
+        Band.alter().drop(
+            Band.power,
         ).run_sync()
 
-        response = Pokemon.select().run_sync()
+        response = Band.select().run_sync()
 
         column_names = response[0].keys()
         self.assertTrue(
@@ -49,12 +49,12 @@ class TestAdd(DBTestCase):
         """
         self.insert_row()
 
-        Pokemon.alter().add(
+        Band.alter().add(
             'weight',
             Integer(),
         ).run_sync()
 
-        response = Pokemon.select().run_sync()
+        response = Band.select().run_sync()
 
         column_names = response[0].keys()
         self.assertTrue('weight' in column_names)

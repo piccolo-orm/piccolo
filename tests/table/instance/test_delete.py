@@ -1,18 +1,18 @@
-from tests.example_project.tables import Pokemon
+from tests.example_project.tables import Band
 from tests.base import DBTestCase
 
 
 class TestDelete(DBTestCase):
 
     def setUp(self):
-        Pokemon.create().run_sync()
+        Band.create().run_sync()
 
     def tearDown(self):
-        Pokemon.drop().run_sync()
+        Band.drop().run_sync()
 
     def test_delete(self):
 
-        squirtle = Pokemon(
+        squirtle = Band(
             name='squirtle',
             trainer='Misty',
             power=300
@@ -22,6 +22,6 @@ class TestDelete(DBTestCase):
         squirtle.remove().run_sync()
 
         # how can I implement 'flat=True'
-        # Pokemon.select('name').output(as_list=True).run_sync()
+        # Band.select('name').output(as_list=True).run_sync()
         #
-        Pokemon.select('name').run_sync()
+        Band.select('name').run_sync()

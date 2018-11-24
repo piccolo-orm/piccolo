@@ -1,5 +1,5 @@
 from ..base import DBTestCase
-from ..example_project.tables import Pokemon, Trainer
+from ..example_project.tables import Band, Trainer
 
 
 class TestInsert(DBTestCase):
@@ -7,11 +7,11 @@ class TestInsert(DBTestCase):
     def test_insert(self):
         self.insert_rows()
 
-        Pokemon.insert(
-            Pokemon(name='bulbasaur')
+        Band.insert(
+            Band(name='bulbasaur')
         ).run_sync()
 
-        response = Pokemon.select('name').run_sync()
+        response = Band.select('name').run_sync()
         names = [i['name'] for i in response]
 
         self.assertTrue(
@@ -21,11 +21,11 @@ class TestInsert(DBTestCase):
     def test_add(self):
         self.insert_rows()
 
-        Pokemon.insert().add(
-            Pokemon(name='bulbasaur')
+        Band.insert().add(
+            Band(name='bulbasaur')
         ).run_sync()
 
-        response = Pokemon.select('name').run_sync()
+        response = Band.select('name').run_sync()
         names = [i['name'] for i in response]
 
         self.assertTrue(
@@ -37,6 +37,6 @@ class TestInsert(DBTestCase):
         You shouldn't be able to add instances of a different table.
         """
         with self.assertRaises(TypeError):
-            Pokemon.insert().add(
+            Band.insert().add(
                 Trainer(name="Ash")
             ).run_sync()

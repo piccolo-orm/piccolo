@@ -1,14 +1,14 @@
-from tests.example_project.tables import Pokemon
+from tests.example_project.tables import Band
 from tests.base import DBTestCase
 
 
 class TestSave(DBTestCase):
 
     def setUp(self):
-        Pokemon.create().run_sync()
+        Band.create().run_sync()
 
     def tearDown(self):
-        Pokemon.drop().run_sync()
+        Band.drop().run_sync()
 
     def test_save_new(self):
         """
@@ -16,7 +16,7 @@ class TestSave(DBTestCase):
         """
         self.insert_rows()
 
-        squirtle = Pokemon(
+        squirtle = Band(
             name='squirtle',
             trainer='Misty',
             power=300
@@ -28,7 +28,7 @@ class TestSave(DBTestCase):
 
         query.run_sync()
 
-        names = [i['name'] for i in Pokemon.select('name').run_sync()]
+        names = [i['name'] for i in Band.select('name').run_sync()]
         self.assertTrue('squirtle' in names)
 
         squirtle.name = 'blastoise'
@@ -37,7 +37,7 @@ class TestSave(DBTestCase):
         self.assertTrue('UPDATE' in query.__str__())
 
         query.run_sync()
-        names = [i['name'] for i in Pokemon.select('name').run_sync()]
+        names = [i['name'] for i in Band.select('name').run_sync()]
         self.assertTrue('blastoise' in names)
         self.assertTrue('squirtle' not in names)
 
@@ -47,6 +47,6 @@ class TestSave(DBTestCase):
         # .run(as_json=True)
         # Generic('some_table').select('name')
         # -> won't work because where requires things like
-        # Pokemon.select().where(Pokemon.id == 1)
+        # Band.select().where(Band.id == 1)
         # So doesn't work as a generic query build without first defining
         # the tables.... this is totally fine though.

@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from ..example_project.tables import Pokemon, Trainer
+from ..example_project.tables import Band, Trainer
 
 
 class TestTransaction(TestCase):
@@ -9,40 +9,40 @@ class TestTransaction(TestCase):
         """
         Make sure queries in a transaction aren't committed if a query fails.
         """
-        transaction = Pokemon.Meta.db.transaction()
+        transaction = Band.Meta.db.transaction()
         transaction.add(
-            Pokemon.create(),
+            Band.create(),
             Trainer.create(),
-            Pokemon.raw('MALFORMED QUERY ... SHOULD ERROR')
+            Band.raw('MALFORMED QUERY ... SHOULD ERROR')
         )
         try:
             transaction.run_sync()
         except Exception as error:
             pass
         self.assertTrue(
-            not Pokemon.table_exists().run_sync()
+            not Band.table_exists().run_sync()
         )
         self.assertTrue(
             not Trainer.table_exists().run_sync()
         )
 
     def test_succeeds(self):
-        transaction = Pokemon.Meta.db.transaction()
+        transaction = Band.Meta.db.transaction()
         transaction.add(
-            Pokemon.create(),
+            Band.create(),
             Trainer.create()
         )
         transaction.run_sync()
 
         self.assertTrue(
-            Pokemon.table_exists().run_sync()
+            Band.table_exists().run_sync()
         )
         self.assertTrue(
             Trainer.table_exists().run_sync()
         )
 
         transaction.add(
-            Pokemon.drop(),
+            Band.drop(),
             Trainer.drop()
         )
         transaction.run_sync()

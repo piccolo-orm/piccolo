@@ -1,30 +1,30 @@
 from unittest import TestCase
 
-from tests.example_project.tables import Pokemon, Stadium, Match
+from tests.example_project.tables import Band, Stadium, Match
 
 
 class TestGetRelated(TestCase):
 
     def setUp(self):
-        Pokemon.create().run_sync()
+        Band.create().run_sync()
         Stadium.create().run_sync()
         Match.create().run_sync()
 
     def tearDown(self):
         Match.drop().run_sync()
-        Pokemon.drop().run_sync()
+        Band.drop().run_sync()
         Stadium.drop().run_sync()
 
     def test_get_related(self):
         """
         Make sure you can get a related object from another object instance.
         """
-        pikachu = Pokemon(
+        pikachu = Band(
             name='pikachu'
         )
         pikachu.save().run_sync()
 
-        squirtle = Pokemon(
+        squirtle = Band(
             name='squirtle'
         )
         squirtle.save().run_sync()
@@ -35,8 +35,8 @@ class TestGetRelated(TestCase):
         stadium.save().run_sync()
 
         match = Match(
-            pokemon_1=pikachu.id,
-            pokemon_2=squirtle.id,
+            band_1=pikachu.id,
+            band_2=squirtle.id,
             stadium=stadium.id
         )
         match.save().run_sync()
