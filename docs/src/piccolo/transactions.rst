@@ -13,5 +13,5 @@ Usage
 
     transaction = Band.Meta.db.transaction()
     transaction.add(Manager.create())
-    transaction.add(Match.create())
+    transaction.add(Concert.create())
     await transaction.run()

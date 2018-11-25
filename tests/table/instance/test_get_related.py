@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from tests.example_project.tables import Band, Stadium, Match
+from tests.example_project.tables import Band, Stadium, Concert
 
 
 class TestGetRelated(TestCase):
@@ -8,10 +8,10 @@ class TestGetRelated(TestCase):
     def setUp(self):
         Band.create().run_sync()
         Stadium.create().run_sync()
-        Match.create().run_sync()
+        Concert.create().run_sync()
 
     def tearDown(self):
-        Match.drop().run_sync()
+        Concert.drop().run_sync()
         Band.drop().run_sync()
         Stadium.drop().run_sync()
 
@@ -34,18 +34,18 @@ class TestGetRelated(TestCase):
         )
         stadium.save().run_sync()
 
-        match = Match(
+        concert = Concert(
             band_1=pikachu.id,
             band_2=squirtle.id,
             stadium=stadium.id
         )
-        match.save().run_sync()
+        concert.save().run_sync()
 
-        _match = Match.objects().where(
-            Match.id == match.id
+        _concert = Concert.objects().where(
+            Concert.id == concert.id
         ).first().run_sync()
 
-        _stadium = _match.get_related('stadium').run_sync()
+        _stadium = _concert.get_related('stadium').run_sync()
 
         self.assertTrue(
             _stadium.name == 'red stadium'

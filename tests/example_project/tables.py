@@ -41,7 +41,7 @@ class Stadium(table.Table):
         db = DB
 
 
-class Match(table.Table):
+class Concert(table.Table):
     band_1 = columns.ForeignKey(Band)
     band_2 = columns.ForeignKey(Band)
     stadium = columns.ForeignKey(Stadium)

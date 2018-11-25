@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from ..example_project.tables import Band, Stadium, Match
+from ..example_project.tables import Band, Stadium, Concert
 
 
 class TestCreateJoin():
@@ -9,9 +9,9 @@ class TestCreateJoin():
 
         Band.create().run_sync()
         Stadium.create().run_sync()
-        Match.create().run_sync()
+        Concert.create().run_sync()
 
-        Match.drop().run_sync()
+        Concert.drop().run_sync()
         Band.drop().run_sync()
         Stadium.drop().run_sync()
 
@@ -24,10 +24,10 @@ class TestJoin(TestCase):
     def setUp(self):
         Band.create().run_sync()
         Stadium.create().run_sync()
-        Match.create().run_sync()
+        Concert.create().run_sync()
 
     def tearDown(self):
-        Match.drop().run_sync()
+        Concert.drop().run_sync()
         Band.drop().run_sync()
         Stadium.drop().run_sync()
 
@@ -43,14 +43,14 @@ class TestJoin(TestCase):
 
         # TODO - make sure you can also do:
         # band_1=pikachu
-        save_query = Match(
+        save_query = Concert(
             band_1=pikachu.id,
             band_2=bulbasaur.id,
             stadium=stadium.id
         ).save()
         save_query.run_sync()
 
-        select_query = Match.select(
+        select_query = Concert.select(
             'band_1.name',
             'band_2.name',
             'stadium.name',
@@ -61,8 +61,8 @@ class TestJoin(TestCase):
 
     # def _test_ref(self):
     #     """
-    #     Match.select().count().where(
-    #         Match.ref('band1.name') == 'pikachu'
+    #     Concert.select().count().where(
+    #         Concert.ref('band1.name') == 'pikachu'
     #     )
     #     """
     #     pass
