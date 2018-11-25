@@ -33,7 +33,7 @@ class Manager(table.Table):
 ###############################################################################
 # More complex
 
-class Stadium(table.Table):
+class Venue(table.Table):
     name = columns.Varchar(length=100)
     capacity = columns.Integer()
 
@@ -44,7 +44,7 @@ class Stadium(table.Table):
 class Concert(table.Table):
     band_1 = columns.ForeignKey(Band)
     band_2 = columns.ForeignKey(Band)
-    stadium = columns.ForeignKey(Stadium)
+    venue = columns.ForeignKey(Venue)
 
     class Meta():
         db = DB
