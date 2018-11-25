@@ -32,8 +32,8 @@ class TestJoin(TestCase):
         Venue.drop().run_sync()
 
     def test_join(self):
-        pikachu = Band(name="pikachu", manager="ash")
-        pikachu.save().run_sync()
+        Pythonistas = Band(name="Pythonistas", manager="ash")
+        Pythonistas.save().run_sync()
 
         bulbasaur = Band(name="bulbasaur")
         bulbasaur.save().run_sync()
@@ -42,9 +42,9 @@ class TestJoin(TestCase):
         venue.save().run_sync()
 
         # TODO - make sure you can also do:
-        # band_1=pikachu
+        # band_1=Pythonistas
         save_query = Concert(
-            band_1=pikachu.id,
+            band_1=Pythonistas.id,
             band_2=bulbasaur.id,
             venue=venue.id
         ).save()
@@ -62,7 +62,7 @@ class TestJoin(TestCase):
     # def _test_ref(self):
     #     """
     #     Concert.select().count().where(
-    #         Concert.ref('band1.name') == 'pikachu'
+    #         Concert.ref('band1.name') == 'Pythonistas'
     #     )
     #     """
     #     pass

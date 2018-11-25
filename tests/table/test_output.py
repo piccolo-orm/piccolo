@@ -16,7 +16,7 @@ class TestOutput(DBTestCase):
         ).run_sync()
 
         self.assertTrue(
-            response == ['pikachu']
+            response == ['Pythonistas']
         )
 
     def test_output_as_json(self):
@@ -29,5 +29,5 @@ class TestOutput(DBTestCase):
         ).run_sync()
 
         self.assertTrue(
-            json.loads(response) == [{'name': 'pikachu'}]
+            json.loads(response) == [{'name': 'Pythonistas'}]
         )

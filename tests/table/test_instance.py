@@ -8,9 +8,9 @@ class TestInstance(DBTestCase):
     """
 
     def test_insert(self):
-        pikachu = Band(name="pikachu")
-        self.assertEqual(pikachu.__str__(), "(DEFAULT,'pikachu',null,null)")
+        Pythonistas = Band(name="Pythonistas")
+        self.assertEqual(Pythonistas.__str__(), "(DEFAULT,'Pythonistas',null,null)")
 
     def test_non_existant_column(self):
         with self.assertRaises(ValueError):
-            Band(name="pikachu", foo="bar")
+            Band(name="Pythonistas", foo="bar")

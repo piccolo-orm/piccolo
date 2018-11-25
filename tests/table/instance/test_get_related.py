@@ -19,10 +19,10 @@ class TestGetRelated(TestCase):
         """
         Make sure you can get a related object from another object instance.
         """
-        pikachu = Band(
-            name='pikachu'
+        Pythonistas = Band(
+            name='Pythonistas'
         )
-        pikachu.save().run_sync()
+        Pythonistas.save().run_sync()
 
         squirtle = Band(
             name='squirtle'
@@ -35,7 +35,7 @@ class TestGetRelated(TestCase):
         venue.save().run_sync()
 
         concert = Concert(
-            band_1=pikachu.id,
+            band_1=Pythonistas.id,
             band_2=squirtle.id,
             venue=venue.id
         )

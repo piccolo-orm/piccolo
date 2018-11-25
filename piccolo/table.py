@@ -219,7 +219,7 @@ class Table(metaclass=TableMeta):
     def update(cls, **columns) -> Update:
         """
         await Band.update(name='raichu').where(
-            Band.name='pikachu'
+            Band.name='Pythonistas'
         ).run()
         """
         columns_str = ', '.join([

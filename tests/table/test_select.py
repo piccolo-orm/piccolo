@@ -12,7 +12,7 @@ class TestSelect(DBTestCase):
 
         self.assertDictEqual(
             response[0],
-            {'id': 1, 'name': 'pikachu', 'manager': 'ash', 'popularity': 1000}
+            {'id': 1, 'name': 'Pythonistas', 'manager': 'ash', 'popularity': 1000}
         )
 
     def test_query_some_columns(self):
@@ -23,7 +23,7 @@ class TestSelect(DBTestCase):
 
         self.assertDictEqual(
             response[0],
-            {'name': 'pikachu'}
+            {'name': 'Pythonistas'}
         )
 
     def test_where_like(self):
@@ -32,14 +32,14 @@ class TestSelect(DBTestCase):
         response = Band.select(
             'name'
         ).where(
-            Band.name.like('%chu')
+            Band.name.like('Python%')
         ).run_sync()
 
         print(f'response = {response}')
 
         self.assertEqual(
             response,
-            [{'name': 'pikachu'}, {'name': 'raichu'}]
+            [{'name': 'Pythonistas'}]
         )
 
     def test_where_greater_than(self):
@@ -71,7 +71,7 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(
             response,
-            [{'name': 'pikachu'}, {'name': 'raichu'}]
+            [{'name': 'Pythonistas'}, {'name': 'raichu'}]
         )
 
     def test_where_less_than(self):
@@ -103,7 +103,7 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(
             response,
-            [{'name': 'pikachu'}, {'name': 'weedle'}]
+            [{'name': 'Pythonistas'}, {'name': 'weedle'}]
         )
 
     def test_where_and(self):
@@ -112,14 +112,14 @@ class TestSelect(DBTestCase):
         response = Band.select(
             'name'
         ).where(
-            (Band.popularity <= 1000) & (Band.name.like('%chu'))
+            (Band.popularity <= 1000) & (Band.name.like('Python%'))
         ).run_sync()
 
         print(f'response = {response}')
 
         self.assertEqual(
             response,
-            [{'name': 'pikachu'}]
+            [{'name': 'Pythonistas'}]
         )
 
     def test_where_or(self):
@@ -199,7 +199,7 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(
             response,
-            [{'name': 'pikachu'}]
+            [{'name': 'Pythonistas'}]
         )
 
     def test_first(self):
@@ -215,7 +215,7 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(
             response,
-            {'name': 'pikachu'}
+            {'name': 'Pythonistas'}
         )
 
     def test_order_by_ascending(self):
@@ -231,7 +231,7 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(
             response,
-            [{'name': 'pikachu'}]
+            [{'name': 'Pythonistas'}]
         )
 
     def test_order_by_decending(self):
@@ -254,7 +254,7 @@ class TestSelect(DBTestCase):
         self.insert_rows()
 
         response = Band.select().where(
-            Band.name == 'pikachu'
+            Band.name == 'Pythonistas'
         ).count().run_sync()
 
         print(f'response = {response}')
@@ -269,7 +269,7 @@ class TestSelect(DBTestCase):
         self.insert_rows()
 
         response = Band.select('name').where(
-            Band.name == 'pikachu'
+            Band.name == 'Pythonistas'
         ).distinct().run_sync()
 
-        self.assertTrue(response == [{'name': 'pikachu'}])
+        self.assertTrue(response == [{'name': 'Pythonistas'}])

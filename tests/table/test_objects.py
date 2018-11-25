@@ -14,7 +14,7 @@ class TestObjects(DBTestCase):
         instance = response[0]
 
         self.assertTrue(isinstance(instance, Band))
-        self.assertTrue(instance.name == 'pikachu')
+        self.assertTrue(instance.name == 'Pythonistas')
 
         # No try changing the value and saving it.
         instance.name = 'raichu'

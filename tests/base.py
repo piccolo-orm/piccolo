@@ -32,7 +32,7 @@ class DBTestCase(TestCase):
                 manager,
                 popularity
             ) VALUES (
-                'pikachu',
+                'Pythonistas',
                 'ash',
                 1000
             );''')
@@ -44,7 +44,7 @@ class DBTestCase(TestCase):
                 manager,
                 popularity
             ) VALUES (
-                'pikachu',
+                'Pythonistas',
                 'ash',
                 1000
             ),(
