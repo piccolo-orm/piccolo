@@ -22,7 +22,7 @@ class DBTestCase(TestCase):
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(50),
                 manager VARCHAR(20),
-                power SMALLINT
+                popularity SMALLINT
             );''')
 
     def insert_row(self):
@@ -30,7 +30,7 @@ class DBTestCase(TestCase):
             INSERT INTO band (
                 name,
                 manager,
-                power
+                popularity
             ) VALUES (
                 'pikachu',
                 'ash',
@@ -42,7 +42,7 @@ class DBTestCase(TestCase):
             INSERT INTO band (
                 name,
                 manager,
-                power
+                popularity
             ) VALUES (
                 'pikachu',
                 'ash',

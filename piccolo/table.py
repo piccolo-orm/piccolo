@@ -205,7 +205,7 @@ class Table(metaclass=TableMeta):
     def insert(cls, *rows: 'Table') -> Insert:
         """
         await Band.insert(
-            Band(name="jigglypuff", power=500, manager="florence")
+            Band(name="jigglypuff", popularity=500, manager="florence")
         ).run()
         """
         query = Insert(
@@ -288,7 +288,7 @@ class Table(metaclass=TableMeta):
     @classmethod
     def alter(cls) -> Alter:
         """
-        await Band.alter().rename(Band.power, 'rating')
+        await Band.alter().rename(Band.popularity, 'rating')
         """
         return Alter(
             table=cls,

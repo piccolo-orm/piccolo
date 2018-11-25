@@ -7,7 +7,7 @@ from ..base import Query
 @dataclasses.dataclass
 class Rename():
     """
-    Band.alter().rename(Band.power, ‘rating’)
+    Band.alter().rename(Band.popularity, ‘rating’)
     """
     column: Column
     new_name: str
@@ -19,7 +19,7 @@ class Rename():
 @dataclasses.dataclass
 class Drop():
     """
-    Band.alter().drop('power')
+    Band.alter().drop('popularity')
     """
     column: Column
 

@@ -19,7 +19,7 @@ class TestSave(DBTestCase):
         squirtle = Band(
             name='squirtle',
             manager='Misty',
-            power=300
+            popularity=300
         )
 
         query = squirtle.save()

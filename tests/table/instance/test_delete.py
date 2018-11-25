@@ -15,7 +15,7 @@ class TestDelete(DBTestCase):
         squirtle = Band(
             name='squirtle',
             manager='Misty',
-            power=300
+            popularity=300
         )
 
         squirtle.save().run_sync()

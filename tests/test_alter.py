@@ -10,7 +10,7 @@ class TestRename(DBTestCase):
         self.insert_row()
 
         Band.alter().rename(
-            Band.power,
+            Band.popularity,
             'rating'
         ).run_sync()
 
@@ -18,7 +18,7 @@ class TestRename(DBTestCase):
 
         column_names = response[0].keys()
         self.assertTrue(
-            ('rating' in column_names) and ('power' not in column_names)
+            ('rating' in column_names) and ('popularity' not in column_names)
         )
 
 
@@ -28,14 +28,14 @@ class TestDrop(DBTestCase):
         self.insert_row()
 
         Band.alter().drop(
-            Band.power,
+            Band.popularity,
         ).run_sync()
 
         response = Band.select().run_sync()
 
         column_names = response[0].keys()
         self.assertTrue(
-            'power' not in column_names
+            'popularity' not in column_names
         )
 
 

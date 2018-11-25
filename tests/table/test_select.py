@@ -12,7 +12,7 @@ class TestSelect(DBTestCase):
 
         self.assertDictEqual(
             response[0],
-            {'id': 1, 'name': 'pikachu', 'manager': 'ash', 'power': 1000}
+            {'id': 1, 'name': 'pikachu', 'manager': 'ash', 'popularity': 1000}
         )
 
     def test_query_some_columns(self):
@@ -48,7 +48,7 @@ class TestSelect(DBTestCase):
         response = Band.select(
             'name'
         ).where(
-            Band.power > 1000
+            Band.popularity > 1000
         ).run_sync()
 
         print(f'response = {response}')
@@ -64,7 +64,7 @@ class TestSelect(DBTestCase):
         response = Band.select(
             'name'
         ).where(
-            Band.power >= 1000
+            Band.popularity >= 1000
         ).run_sync()
 
         print(f'response = {response}')
@@ -80,7 +80,7 @@ class TestSelect(DBTestCase):
         response = Band.select(
             'name'
         ).where(
-            Band.power < 1000
+            Band.popularity < 1000
         ).run_sync()
 
         print(f'response = {response}')
@@ -96,7 +96,7 @@ class TestSelect(DBTestCase):
         response = Band.select(
             'name'
         ).where(
-            Band.power <= 1000
+            Band.popularity <= 1000
         ).run_sync()
 
         print(f'response = {response}')
@@ -112,7 +112,7 @@ class TestSelect(DBTestCase):
         response = Band.select(
             'name'
         ).where(
-            (Band.power <= 1000) & (Band.name.like('%chu'))
+            (Band.popularity <= 1000) & (Band.name.like('%chu'))
         ).run_sync()
 
         print(f'response = {response}')
@@ -173,8 +173,8 @@ class TestSelect(DBTestCase):
         response = Band.select(
             'name'
         ).where(
-            ((Band.power == 2000) & (Band.manager == 'sally')) |
-            ((Band.power == 10) & (Band.manager == 'gordon'))
+            ((Band.popularity == 2000) & (Band.manager == 'sally')) |
+            ((Band.popularity == 10) & (Band.manager == 'gordon'))
         ).run_sync()
 
         print(f'response = {response}')

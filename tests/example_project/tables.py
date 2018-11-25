@@ -17,7 +17,7 @@ DB = PostgresEngine({
 class Band(table.Table):
     name = columns.Varchar(length=50)
     manager = columns.Varchar(length=20)
-    power = columns.Integer()
+    popularity = columns.Integer()
 
     class Meta():
         db = DB
