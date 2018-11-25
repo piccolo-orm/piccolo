@@ -12,7 +12,12 @@ class TestSelect(DBTestCase):
 
         self.assertDictEqual(
             response[0],
-            {'id': 1, 'name': 'Pythonistas', 'manager': 'ash', 'popularity': 1000}
+            {
+                'id': 1,
+                'name': 'Pythonistas',
+                'manager': 'ash',
+                'popularity': 1000
+            }
         )
 
     def test_query_some_columns(self):
