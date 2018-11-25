@@ -16,14 +16,14 @@ DB = PostgresEngine({
 
 class Band(table.Table):
     name = columns.Varchar(length=50)
-    trainer = columns.Varchar(length=20)
+    manager = columns.Varchar(length=20)
     power = columns.Integer()
 
     class Meta():
         db = DB
 
 
-class Trainer(table.Table):
+class Manager(table.Table):
     name = columns.Varchar(length=50)
 
     class Meta():

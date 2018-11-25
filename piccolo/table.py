@@ -120,7 +120,7 @@ class Table(metaclass=TableMeta):
 
     def get_related(self, column_name: str):
         """
-        some_band.get_related('trainer')
+        some_band.get_related('manager')
         """
         cls = self.__class__
 
@@ -166,7 +166,7 @@ class Table(metaclass=TableMeta):
         """
         Used to get a copy of a column in a reference table.
 
-        Example: trainer.name
+        Example: manager.name
         """
         local_column_name, reference_column_name = column_name.split('.')
 
@@ -205,7 +205,7 @@ class Table(metaclass=TableMeta):
     def insert(cls, *rows: 'Table') -> Insert:
         """
         await Band.insert(
-            Band(name="jigglypuff", power=500, trainer="florence")
+            Band(name="jigglypuff", power=500, manager="florence")
         ).run()
         """
         query = Insert(

@@ -1,5 +1,5 @@
 from ..base import DBTestCase
-from ..example_project.tables import Band, Trainer
+from ..example_project.tables import Band, Manager
 
 
 class TestInsert(DBTestCase):
@@ -38,5 +38,5 @@ class TestInsert(DBTestCase):
         """
         with self.assertRaises(TypeError):
             Band.insert().add(
-                Trainer(name="Ash")
+                Manager(name="Ash")
             ).run_sync()

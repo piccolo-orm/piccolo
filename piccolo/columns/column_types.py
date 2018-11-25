@@ -75,9 +75,9 @@ class ForeignKey(Integer):
 
     http://www.postgresqltutorial.com/postgresql-foreign-key/
 
-    some_band.trainer
+    some_band.manager
     >>> 1
-    Band.select('name', 'trainer.name')
+    Band.select('name', 'manager.name')
 
     I'm not sure  about explicit joins ... only useful if we want to specify
     inner and outer joins.
@@ -86,21 +86,21 @@ class ForeignKey(Integer):
 
     To get the actual User object.
 
-    User.object().where(User.id == some_band.trainer)
+    User.object().where(User.id == some_band.manager)
 
     OR
 
-    some_band.related_object('trainer')
+    some_band.related_object('manager')
     > is just a proxy to the above
 
     class Band(Table):
-        trainer = ForeignKey(User)
+        manager = ForeignKey(User)
 
-    To change the trainer:
-    some_band.trainer = some_trainer_id
+    To change the manager:
+    some_band.manager = some_manager_id
     some_band.save()
     Or:
-    some_band.set_related_object('trainer', some_trainer)
+    some_band.set_related_object('manager', some_manager)
 
     """
 

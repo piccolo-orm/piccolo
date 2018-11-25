@@ -32,7 +32,7 @@ class TestJoin(TestCase):
         Stadium.drop().run_sync()
 
     def test_join(self):
-        pikachu = Band(name="pikachu", trainer="ash")
+        pikachu = Band(name="pikachu", manager="ash")
         pikachu.save().run_sync()
 
         bulbasaur = Band(name="bulbasaur")
@@ -54,7 +54,7 @@ class TestJoin(TestCase):
             'band_1.name',
             'band_2.name',
             'stadium.name',
-            'band_1.trainer'
+            'band_1.manager'
         )
         response = select_query.run_sync()
         print(response)

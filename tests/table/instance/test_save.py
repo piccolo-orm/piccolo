@@ -18,7 +18,7 @@ class TestSave(DBTestCase):
 
         squirtle = Band(
             name='squirtle',
-            trainer='Misty',
+            manager='Misty',
             power=300
         )
 

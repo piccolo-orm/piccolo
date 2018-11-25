@@ -21,7 +21,7 @@ class DBTestCase(TestCase):
             CREATE TABLE band (
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(50),
-                trainer VARCHAR(20),
+                manager VARCHAR(20),
                 power SMALLINT
             );''')
 
@@ -29,7 +29,7 @@ class DBTestCase(TestCase):
         self.run_sync('''
             INSERT INTO band (
                 name,
-                trainer,
+                manager,
                 power
             ) VALUES (
                 'pikachu',
@@ -41,7 +41,7 @@ class DBTestCase(TestCase):
         self.run_sync('''
             INSERT INTO band (
                 name,
-                trainer,
+                manager,
                 power
             ) VALUES (
                 'pikachu',

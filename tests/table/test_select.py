@@ -12,7 +12,7 @@ class TestSelect(DBTestCase):
 
         self.assertDictEqual(
             response[0],
-            {'id': 1, 'name': 'pikachu', 'trainer': 'ash', 'power': 1000}
+            {'id': 1, 'name': 'pikachu', 'manager': 'ash', 'power': 1000}
         )
 
     def test_query_some_columns(self):
@@ -149,7 +149,7 @@ class TestSelect(DBTestCase):
         ).where(
             Band.name == 'raichu'
         ).where(
-            Band.trainer == 'sally'
+            Band.manager == 'sally'
         )
 
         response = query.run_sync()
@@ -173,8 +173,8 @@ class TestSelect(DBTestCase):
         response = Band.select(
             'name'
         ).where(
-            ((Band.power == 2000) & (Band.trainer == 'sally')) |
-            ((Band.power == 10) & (Band.trainer == 'gordon'))
+            ((Band.power == 2000) & (Band.manager == 'sally')) |
+            ((Band.power == 10) & (Band.manager == 'gordon'))
         ).run_sync()
 
         print(f'response = {response}')
