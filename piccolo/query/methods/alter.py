@@ -30,7 +30,7 @@ class Drop():
 @dataclasses.dataclass
 class Add():
     """
-    Band.alter().add(‘color’, Varchar(length=20))
+    Band.alter().add(‘members’, Integer())
     """
     name: str
     column: Column

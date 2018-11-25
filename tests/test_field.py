@@ -17,10 +17,10 @@ class TestColumns(unittest.TestCase):
         self.assertEqual(sql, "name = 'Pythonistas'")
 
     def test_not_equal(self):
-        _where = (name_column != 'weedle')
+        _where = (name_column != 'Wizards')
         sql = _where.__str__()
         print(sql)
-        self.assertEqual(sql, "name != 'weedle'")
+        self.assertEqual(sql, "name != 'Wizards'")
 
     def test_like(self):
         _where = name_column.like('Python%')
@@ -29,16 +29,16 @@ class TestColumns(unittest.TestCase):
         self.assertEqual(sql, "name LIKE 'Python%'")
 
     def test_is_in(self):
-        _where = name_column.is_in(['Pythonistas', 'raichu'])
+        _where = name_column.is_in(['Pythonistas', 'Rustaceans'])
         sql = _where.__str__()
         print(sql)
-        self.assertEqual(sql, "name IN ('Pythonistas', 'raichu')")
+        self.assertEqual(sql, "name IN ('Pythonistas', 'Rustaceans')")
 
     def test_not_in(self):
-        _where = name_column.not_in(['weedle'])
+        _where = name_column.not_in(['Wizards'])
         sql = _where.__str__()
         print(sql)
-        self.assertEqual(sql, "name NOT IN ('weedle')")
+        self.assertEqual(sql, "name NOT IN ('Wizards')")
 
 
 class TestWhere():

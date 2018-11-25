@@ -218,8 +218,8 @@ class Table(metaclass=TableMeta):
     @classmethod
     def update(cls, **columns) -> Update:
         """
-        await Band.update(name='raichu').where(
-            Band.name='Pythonistas'
+        await Band.update(name='Pythonistas').where(
+            Band.name='Spamalot'
         ).run()
         """
         columns_str = ', '.join([
@@ -235,7 +235,7 @@ class Table(metaclass=TableMeta):
     @classmethod
     def delete(cls) -> Delete:
         """
-        await Band.delete().where(Band.name == 'weedle').run()
+        await Band.delete().where(Band.name == 'Wizards').run()
         """
         return Delete(
             table=cls

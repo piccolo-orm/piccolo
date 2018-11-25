@@ -33,7 +33,7 @@ class DBTestCase(TestCase):
                 popularity
             ) VALUES (
                 'Pythonistas',
-                'ash',
+                'Ash',
                 1000
             );''')
 
@@ -45,15 +45,15 @@ class DBTestCase(TestCase):
                 popularity
             ) VALUES (
                 'Pythonistas',
-                'ash',
+                'Ash',
                 1000
             ),(
-                'raichu',
-                'sally',
+                'Rustaceans',
+                'Sally',
                 2000
             ),(
-                'weedle',
-                'gordon',
+                'Wizards',
+                'Gordon',
                 10
             );''')
 

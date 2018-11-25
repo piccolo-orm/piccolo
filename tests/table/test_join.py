@@ -32,7 +32,7 @@ class TestJoin(TestCase):
         Venue.drop().run_sync()
 
     def test_join(self):
-        Pythonistas = Band(name="Pythonistas", manager="ash")
+        Pythonistas = Band(name="Pythonistas", manager="Ash")
         Pythonistas.save().run_sync()
 
         bulbasaur = Band(name="bulbasaur")

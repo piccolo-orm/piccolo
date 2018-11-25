@@ -10,7 +10,7 @@ class TestUpdate(DBTestCase):
         Band.update(
             name='kakuna'
         ).where(
-            Band.name == 'weedle'
+            Band.name == 'Wizards'
         ).run_sync()
 
         response = Band.select(

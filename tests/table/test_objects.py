@@ -17,7 +17,7 @@ class TestObjects(DBTestCase):
         self.assertTrue(instance.name == 'Pythonistas')
 
         # No try changing the value and saving it.
-        instance.name = 'raichu'
+        instance.name = 'Rustaceans'
         instance.save().run_sync()
 
         self.assertTrue(
@@ -25,5 +25,5 @@ class TestObjects(DBTestCase):
                 'name'
             ).output(
                 as_list=True
-            ).run_sync()[0] == 'raichu'
+            ).run_sync()[0] == 'Rustaceans'
         )
