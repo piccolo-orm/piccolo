@@ -156,7 +156,7 @@ class TestSelect(DBTestCase):
         ).where(
             Band.name == 'Rustaceans'
         ).where(
-            Band.manager == 'Sally'
+            Band.manager == 'Graydon'
         )
 
         response = query.run_sync()
@@ -180,8 +180,8 @@ class TestSelect(DBTestCase):
         response = Band.select(
             'name'
         ).where(
-            ((Band.popularity == 2000) & (Band.manager == 'Sally')) |
-            ((Band.popularity == 10) & (Band.manager == 'Gordon'))
+            ((Band.popularity == 2000) & (Band.manager == 'Graydon')) |
+            ((Band.popularity == 10) & (Band.manager == 'Mads'))
         ).run_sync()
 
         print(f'response = {response}')

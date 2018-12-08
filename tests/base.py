@@ -49,11 +49,11 @@ class DBTestCase(TestCase):
                 1000
             ),(
                 'Rustaceans',
-                'Sally',
+                'Graydon',
                 2000
             ),(
                 'CSharps',
-                'Gordon',
+                'Mads',
                 10
             );''')
 
