@@ -8,28 +8,28 @@ class TestInsert(DBTestCase):
         self.insert_rows()
 
         Band.insert(
-            Band(name='bulbasaur')
+            Band(name='Rustaceans')
         ).run_sync()
 
         response = Band.select('name').run_sync()
         names = [i['name'] for i in response]
 
         self.assertTrue(
-            'bulbasaur' in names
+            'Rustaceans' in names
         )
 
     def test_add(self):
         self.insert_rows()
 
         Band.insert().add(
-            Band(name='bulbasaur')
+            Band(name='Rustaceans')
         ).run_sync()
 
         response = Band.select('name').run_sync()
         names = [i['name'] for i in response]
 
         self.assertTrue(
-            'bulbasaur' in names
+            'Rustaceans' in names
         )
 
     def test_incompatible_type(self):
@@ -38,5 +38,5 @@ class TestInsert(DBTestCase):
         """
         with self.assertRaises(TypeError):
             Band.insert().add(
-                Manager(name="Ash")
+                Manager(name="Guido")
             ).run_sync()

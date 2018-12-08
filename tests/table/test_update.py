@@ -8,20 +8,20 @@ class TestUpdate(DBTestCase):
         self.insert_rows()
 
         Band.update(
-            name='kakuna'
+            name='Pythonistas3'
         ).where(
-            Band.name == 'Wizards'
+            Band.name == 'Pythonistas'
         ).run_sync()
 
         response = Band.select(
             'name'
         ).where(
-            Band.name == 'kakuna'
+            Band.name == 'Pythonistas3'
         ).run_sync()
 
         print(f'response = {response}')
 
         self.assertEqual(
             response,
-            [{'name': 'kakuna'}]
+            [{'name': 'Pythonistas3'}]
         )

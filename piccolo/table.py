@@ -235,7 +235,7 @@ class Table(metaclass=TableMeta):
     @classmethod
     def delete(cls) -> Delete:
         """
-        await Band.delete().where(Band.name == 'Wizards').run()
+        await Band.delete().where(Band.name == 'CSharps').run()
         """
         return Delete(
             table=cls

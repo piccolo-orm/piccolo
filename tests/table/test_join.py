@@ -32,20 +32,20 @@ class TestJoin(TestCase):
         Venue.drop().run_sync()
 
     def test_join(self):
-        Pythonistas = Band(name="Pythonistas", manager="Ash")
+        Pythonistas = Band(name="Pythonistas", manager="Guido")
         Pythonistas.save().run_sync()
 
-        bulbasaur = Band(name="bulbasaur")
-        bulbasaur.save().run_sync()
+        band = Band(name="Rustaceans")
+        band.save().run_sync()
 
-        venue = Venue(name="fairy garden")
+        venue = Venue(name="Grand Central")
         venue.save().run_sync()
 
         # TODO - make sure you can also do:
         # band_1=Pythonistas
         save_query = Concert(
             band_1=Pythonistas.id,
-            band_2=bulbasaur.id,
+            band_2=band.id,
             venue=venue.id
         ).save()
         save_query.run_sync()

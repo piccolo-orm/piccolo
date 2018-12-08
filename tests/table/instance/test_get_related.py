@@ -24,10 +24,10 @@ class TestGetRelated(TestCase):
         )
         Pythonistas.save().run_sync()
 
-        squirtle = Band(
-            name='squirtle'
+        rubists = Band(
+            name='Rubists'
         )
-        squirtle.save().run_sync()
+        rubists.save().run_sync()
 
         venue = Venue(
             name="red venue"
@@ -36,7 +36,7 @@ class TestGetRelated(TestCase):
 
         concert = Concert(
             band_1=Pythonistas.id,
-            band_2=squirtle.id,
+            band_2=rubists.id,
             venue=venue.id
         )
         concert.save().run_sync()

@@ -15,7 +15,7 @@ class TestSelect(DBTestCase):
             {
                 'id': 1,
                 'name': 'Pythonistas',
-                'manager': 'Ash',
+                'manager': 'Guido',
                 'popularity': 1000
             }
         )
@@ -94,7 +94,7 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(
             response,
-            [{'name': 'Wizards'}]
+            [{'name': 'CSharps'}]
         )
 
     def test_where_less_equal_than(self):
@@ -110,7 +110,7 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(
             response,
-            [{'name': 'Pythonistas'}, {'name': 'Wizards'}]
+            [{'name': 'Pythonistas'}, {'name': 'CSharps'}]
         )
 
     def test_where_and(self):
@@ -135,14 +135,14 @@ class TestSelect(DBTestCase):
         response = Band.select(
             'name'
         ).where(
-            (Band.name == 'Rustaceans') | (Band.name == 'Wizards')
+            (Band.name == 'Rustaceans') | (Band.name == 'CSharps')
         ).run_sync()
 
         print(f'response = {response}')
 
         self.assertEqual(
             response,
-            [{'name': 'Rustaceans'}, {'name': 'Wizards'}]
+            [{'name': 'CSharps'}, {'name': 'Rustaceans'}]
         )
 
     def test_multiple_where(self):
@@ -188,7 +188,7 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(
             response,
-            [{'name': 'Rustaceans'}, {'name': 'Wizards'}]
+            [{'name': 'CSharps'}, {'name': 'Rustaceans'}]
         )
 
     def test_limit(self):
@@ -206,7 +206,7 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(
             response,
-            [{'name': 'Pythonistas'}]
+            [{'name': 'CSharps'}]
         )
 
     def test_first(self):
@@ -222,7 +222,7 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(
             response,
-            {'name': 'Pythonistas'}
+            {'name': 'CSharps'}
         )
 
     def test_order_by_ascending(self):
@@ -238,7 +238,7 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(
             response,
-            [{'name': 'Pythonistas'}]
+            [{'name': 'CSharps'}]
         )
 
     def test_order_by_decending(self):
@@ -254,7 +254,7 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(
             response,
-            [{'name': 'Wizards'}]
+            [{'name': 'Rustaceans'}]
         )
 
     def test_count(self):

@@ -12,14 +12,14 @@ class TestDelete(DBTestCase):
 
     def test_delete(self):
 
-        squirtle = Band(
-            name='squirtle',
-            manager='Misty',
+        band = Band(
+            name='Rubists',
+            manager='Maz',
             popularity=300
         )
 
-        squirtle.save().run_sync()
-        squirtle.remove().run_sync()
+        band.save().run_sync()
+        band.remove().run_sync()
 
         # how can I implement 'flat=True'
         # Band.select('name').output(as_list=True).run_sync()

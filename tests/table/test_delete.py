@@ -8,11 +8,11 @@ class TestDelete(DBTestCase):
         self.insert_rows()
 
         Band.delete().where(
-            Band.name == 'Wizards'
+            Band.name == 'CSharps'
         ).run_sync()
 
         response = Band.select().where(
-            Band.name == 'Wizards'
+            Band.name == 'CSharps'
         ).count().run_sync()
 
         print(f'response = {response}')

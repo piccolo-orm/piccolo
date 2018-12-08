@@ -16,30 +16,30 @@ class TestSave(DBTestCase):
         """
         self.insert_rows()
 
-        squirtle = Band(
-            name='squirtle',
-            manager='Misty',
+        rubists = Band(
+            name='Rubists',
+            manager='Maz',
             popularity=300
         )
 
-        query = squirtle.save()
+        query = rubists.save()
         print(query)
         self.assertTrue('INSERT' in query.__str__())
 
         query.run_sync()
 
         names = [i['name'] for i in Band.select('name').run_sync()]
-        self.assertTrue('squirtle' in names)
+        self.assertTrue('Rubists' in names)
 
-        squirtle.name = 'blastoise'
-        query = squirtle.save()
+        rubists.name = 'Rubists on Rails'
+        query = rubists.save()
         print(query)
         self.assertTrue('UPDATE' in query.__str__())
 
         query.run_sync()
         names = [i['name'] for i in Band.select('name').run_sync()]
-        self.assertTrue('blastoise' in names)
-        self.assertTrue('squirtle' not in names)
+        self.assertTrue('Rubists on Rails' in names)
+        self.assertTrue('Rubists' not in names)
 
         # Make sure it has an id too ...
         # and the next query is an UPDATE ...
