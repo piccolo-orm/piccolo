@@ -1,6 +1,0 @@
-{
-    "python.pythonPath": "/Users/dantownsend/.virtualenvs/piccolo/bin/python",
-    "python.linting.flake8Enabled": true,
-    "python.linting.enabled": true,
-    "python.linting.mypyEnabled": true
-}
