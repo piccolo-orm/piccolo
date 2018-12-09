@@ -6,3 +6,6 @@ docs/_build/
 build/
 .doctrees/
 .vscode/
+piccolo.egg-info/
+build/
+dist/
