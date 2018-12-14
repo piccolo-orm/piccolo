@@ -39,4 +39,9 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
+    entry_points={
+        'console_scripts': [
+            'piccolo = piccolo.main:main',
+        ],
+    },
 )
