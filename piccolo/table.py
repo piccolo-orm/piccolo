@@ -51,6 +51,7 @@ class TableMeta(type):
         return table
 
     ###########################################################################
+    # Class properties
 
     @property
     def delete(cls) -> Delete:
@@ -59,6 +60,70 @@ class TableMeta(type):
         """
         return Delete(
             table=cls
+        )
+
+    @property
+    def create(cls) -> Create:
+        """
+        Create table, along with all columns.
+
+        await Band.create.run()
+        """
+        return Create(
+            table=cls,
+        )
+
+    @property
+    def create_without_columns(cls) -> Raw:
+        """
+        Create the table, but with no columns (useful for migrations).
+
+        await Band.create.run()
+        """
+        return Raw(
+            table=cls,
+            base=f'CREATE TABLE "{cls.Meta.tablename}"()'
+        )
+
+    @property
+    def drop(cls) -> Drop:
+        """
+        Drops the table.
+
+        await Band.drop.run()
+        """
+        return Drop(
+            table=cls,
+        )
+
+    @property
+    def alter(cls) -> Alter:
+        """
+        await Band.alter.rename(Band.popularity, 'rating')
+        """
+        return Alter(
+            table=cls,
+        )
+
+    @property
+    def objects(cls) -> Objects:
+        return Objects(
+            table=cls
+        )
+
+    @property
+    def exists(cls) -> Exists:
+        """
+        Use it to check if a row exists ... not if the table exists.
+        """
+        return Exists(
+            table=cls,
+        )
+
+    @property
+    def table_exists(cls) -> TableExists:
+        return TableExists(
+            table=cls,
         )
 
 
@@ -139,7 +204,7 @@ class Table(metaclass=TableMeta):
         foreign_key = cls.get_column_by_name(column_name)  # type: ignore
         references = foreign_key.references
 
-        return references.objects().where(
+        return references.objects.where(
             references.get_column_by_name('id') == getattr(self, column_name)
         ).first()
 
@@ -245,40 +310,6 @@ class Table(metaclass=TableMeta):
         )
 
     @classmethod
-    def create(cls) -> Create:
-        """
-        Create table, along with all columns.
-
-        await Band.create().run()
-        """
-        return Create(
-            table=cls,
-        )
-
-    @classmethod
-    def create_without_columns(cls) -> Raw:
-        """
-        Create the table, but with no columns (useful for migrations).
-
-        await Band.create().run()
-        """
-        return Raw(
-            table=cls,
-            base=f'CREATE TABLE "{cls.Meta.tablename}"()'
-        )
-
-    @classmethod
-    def drop(cls) -> Drop:
-        """
-        Drops the table.
-
-        await Band.drop().run()
-        """
-        return Drop(
-            table=cls,
-        )
-
-    @classmethod
     def raw(cls, sql: str) -> Raw:
         """
         await Band.raw('select * from foo')
@@ -286,34 +317,4 @@ class Table(metaclass=TableMeta):
         return Raw(
             table=cls,
             base=sql
-        )
-
-    @classmethod
-    def alter(cls) -> Alter:
-        """
-        await Band.alter().rename(Band.popularity, 'rating')
-        """
-        return Alter(
-            table=cls,
-        )
-
-    @classmethod
-    def objects(cls) -> Objects:
-        return Objects(
-            table=cls
-        )
-
-    @classmethod
-    def exists(cls) -> Exists:
-        """
-        Use it to check if a row exists ... not if the table exists.
-        """
-        return Exists(
-            table=cls,
-        )
-
-    @classmethod
-    def table_exists(cls) -> TableExists:
-        return TableExists(
-            table=cls,
         )

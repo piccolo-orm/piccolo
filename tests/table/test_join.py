@@ -7,13 +7,13 @@ class TestCreateJoin():
 
     def test_create_join(self):
 
-        Band.create().run_sync()
-        Venue.create().run_sync()
-        Concert.create().run_sync()
+        Band.create.run_sync()
+        Venue.create.run_sync()
+        Concert.create.run_sync()
 
-        Concert.drop().run_sync()
-        Band.drop().run_sync()
-        Venue.drop().run_sync()
+        Concert.drop.run_sync()
+        Band.drop.run_sync()
+        Venue.drop.run_sync()
 
 
 class TestJoin(TestCase):
@@ -22,14 +22,14 @@ class TestJoin(TestCase):
     """
 
     def setUp(self):
-        Band.create().run_sync()
-        Venue.create().run_sync()
-        Concert.create().run_sync()
+        Band.create.run_sync()
+        Venue.create.run_sync()
+        Concert.create.run_sync()
 
     def tearDown(self):
-        Concert.drop().run_sync()
-        Band.drop().run_sync()
-        Venue.drop().run_sync()
+        Concert.drop.run_sync()
+        Band.drop.run_sync()
+        Venue.drop.run_sync()
 
     def test_join(self):
         Pythonistas = Band(name="Pythonistas", manager="Guido")

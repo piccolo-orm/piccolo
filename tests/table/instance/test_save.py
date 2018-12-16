@@ -5,10 +5,10 @@ from tests.base import DBTestCase
 class TestSave(DBTestCase):
 
     def setUp(self):
-        Band.create().run_sync()
+        Band.create.run_sync()
 
     def tearDown(self):
-        Band.drop().run_sync()
+        Band.drop.run_sync()
 
     def test_save_new(self):
         """

@@ -9,7 +9,7 @@ class TestRename(DBTestCase):
     def test_rename(self):
         self.insert_row()
 
-        Band.alter().rename(
+        Band.alter.rename(
             Band.popularity,
             'rating'
         ).run_sync()
@@ -27,7 +27,7 @@ class TestDrop(DBTestCase):
     def test_drop(self):
         self.insert_row()
 
-        Band.alter().drop(
+        Band.alter.drop(
             Band.popularity,
         ).run_sync()
 
@@ -49,7 +49,7 @@ class TestAdd(DBTestCase):
         """
         self.insert_row()
 
-        Band.alter().add(
+        Band.alter.add(
             'weight',
             Integer(),
         ).run_sync()

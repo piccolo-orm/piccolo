@@ -15,6 +15,6 @@ class MigrationTest(Migration):
 class TestMigrationTable(TestCase):
 
     def test_migration_table(self):
-        MigrationTest.create().run_sync()
+        MigrationTest.create.run_sync()
         MigrationTest.select().run_sync()
-        MigrationTest.drop().run_sync()
+        MigrationTest.drop.run_sync()

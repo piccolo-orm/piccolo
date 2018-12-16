@@ -11,7 +11,7 @@ class TestCreate(DBTestCase):
         pass
 
     def test_create_table(self):
-        Band.create().run_sync()
+        Band.create.run_sync()
 
         # Just do a count to make sure the table was created ok.
         response = Band.select(

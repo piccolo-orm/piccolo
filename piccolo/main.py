@@ -61,8 +61,8 @@ def _create_migration_table() -> bool:
     Creates the migration table in the database. Returns True/False depending
     on whether it was created or not.
     """
-    if not Migration.table_exists().run_sync():
-        Migration.create().run_sync()
+    if not Migration.table_exists.run_sync():
+        Migration.create.run_sync()
         return True
     return False
 

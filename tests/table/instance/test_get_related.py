@@ -6,14 +6,14 @@ from tests.example_project.tables import Band, Venue, Concert
 class TestGetRelated(TestCase):
 
     def setUp(self):
-        Band.create().run_sync()
-        Venue.create().run_sync()
-        Concert.create().run_sync()
+        Band.create.run_sync()
+        Venue.create.run_sync()
+        Concert.create.run_sync()
 
     def tearDown(self):
-        Concert.drop().run_sync()
-        Band.drop().run_sync()
-        Venue.drop().run_sync()
+        Concert.drop.run_sync()
+        Band.drop.run_sync()
+        Venue.drop.run_sync()
 
     def test_get_related(self):
         """
@@ -41,7 +41,7 @@ class TestGetRelated(TestCase):
         )
         concert.save().run_sync()
 
-        _concert = Concert.objects().where(
+        _concert = Concert.objects.where(
             Concert.id == concert.id
         ).first().run_sync()
 

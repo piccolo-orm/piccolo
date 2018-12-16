@@ -19,11 +19,11 @@ class TestCreateUserTable(TestCase):
         """
         exception = None
         try:
-            _User.create().run_sync()
+            _User.create.run_sync()
         except Exception as e:
             exception = e
         else:
-            _User.drop().run_sync()
+            _User.drop.run_sync()
 
         if exception:
             raise exception
@@ -40,10 +40,10 @@ class TestHashPassword(TestCase):
 class TestLogin(TestCase):
 
     def setUp(self):
-        _User.create().run_sync()
+        _User.create.run_sync()
 
     def tearDown(self):
-        _User.drop().run_sync()
+        _User.drop.run_sync()
 
     def test_login(self):
         username = "bob"

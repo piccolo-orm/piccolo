@@ -7,7 +7,7 @@ class TestObjects(DBTestCase):
     def test_get_all(self):
         self.insert_row()
 
-        response = Band.objects().run_sync()
+        response = Band.objects.run_sync()
 
         self.assertTrue(len(response) == 1)
 
