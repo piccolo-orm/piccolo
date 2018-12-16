@@ -70,7 +70,7 @@ class User(Table):
         Returns the user_id if a match is found.
         """
         try:
-            response = await cls.select('id', 'password').where(
+            response = await cls.select.columns(cls.id, cls.password).where(
                 (cls.username == username)
             ).first().run()
         except ValueError:

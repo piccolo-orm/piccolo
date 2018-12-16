@@ -13,8 +13,8 @@ class TestUpdate(DBTestCase):
             Band.name == 'Pythonistas'
         ).run_sync()
 
-        response = Band.select(
-            'name'
+        response = Band.select.columns(
+            Band.name
         ).where(
             Band.name == 'Pythonistas3'
         ).run_sync()

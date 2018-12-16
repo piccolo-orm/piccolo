@@ -14,8 +14,8 @@ class TestCreate(DBTestCase):
         Band.create.run_sync()
 
         # Just do a count to make sure the table was created ok.
-        response = Band.select(
-            'name', 'manager', 'popularity'
+        response = Band.select.columns(
+            Band.name, Band.manager, Band.popularity
         ).count().run_sync()
 
         self.assertEqual(response[0]['count'], 0)

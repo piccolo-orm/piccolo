@@ -126,6 +126,17 @@ class TableMeta(type):
             table=cls,
         )
 
+    @property
+    def select(cls) -> Select:
+        """
+        Get data.
+
+        await Band.select.columns(Band.name).run()
+        """
+        return Select(
+            table=cls,
+        )
+
 
 class Table(metaclass=TableMeta):
 
@@ -261,22 +272,6 @@ class Table(metaclass=TableMeta):
         return _reference_column
 
     ###########################################################################
-
-    @classmethod
-    def select(cls, *column_names: str) -> Select:
-        """
-        Needs to be a simple wrapper.
-
-        One thing I *might* want to do is have an AS string, or just allow
-        that in the string. For example, 'foo as bar'. I think I'll make
-        it more explicit. So you do As('foo', 'bar'). So we can easily
-        inspect that the column exists, and what we're trying to map it
-        to doesn't already exist.
-        """
-        return Select(
-            table=cls,
-            column_names=column_names
-        )
 
     @classmethod
     def insert(cls, *rows: 'Table') -> Insert:

@@ -2,8 +2,8 @@ import typing as t
 
 from ..base import Query
 from ..mixins import (
-    CountMixin, DistinctMixin, LimitMixin, OrderByMixin, OutputMixin,
-    WhereMixin
+    ColumnsMixin, CountMixin, DistinctMixin, LimitMixin, OrderByMixin,
+    OutputMixin, WhereMixin
 )
 if t.TYPE_CHECKING:
     from table import Table  # noqa
@@ -11,6 +11,7 @@ if t.TYPE_CHECKING:
 
 class Select(
     Query,
+    ColumnsMixin,
     CountMixin,
     DistinctMixin,
     LimitMixin,
@@ -18,17 +19,15 @@ class Select(
     OutputMixin,
     WhereMixin,
 ):
-    def __init__(self, table: 'Table', column_names: t.Iterable[str]) -> None:
-        self.column_names = column_names
-        super().__init__(table=table, base='')
-
     def __str__(self):
-        if len(self.column_names) == 0:
+        if len(self.selected_columns) == 0:
             columns_str = '*'
         else:
             # TODO - make sure the columns passed in are valid
             column_names = []
-            for column_name in self.column_names:
+            for column in self.selected_columns:
+                column_name = column.name
+                # TODO - this needs reworking ... not using foo.bar anymore.
                 if '.' in column_name:
                     alias = column_name.replace('.', '$.')
                     output_alias = column_name.replace('.', '$')
@@ -47,22 +46,22 @@ class Select(
 
         # JOIN
         joins = []
-        for column_name in self.column_names:
-            if '.' in column_name:
-                local_name, _ = column_name.split('.')
-                table_name = self.table.get_column_by_name(
-                    local_name
-                ).references.Meta.tablename
+        # for column_name in self.column_names:
+        #     if '.' in column_name:
+        #         local_name, _ = column_name.split('.')
+        #         table_name = self.table.get_column_by_name(
+        #             local_name
+        #         ).references.Meta.tablename
 
-                alias = f'{local_name}$'
+        #         alias = f'{local_name}$'
 
-                if alias in joins:
-                    continue
+        #         if alias in joins:
+        #             continue
 
-                query += (
-                    f' JOIN {table_name} {alias} ON {local_name} = {alias}.id'
-                )
-                joins.append(alias)
+        #         query += (
+        #             f' JOIN {table_name} {alias} ON {local_name} = {alias}.id'
+        #         )
+        #         joins.append(alias)
 
         #######################################################################
 

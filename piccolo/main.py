@@ -72,7 +72,9 @@ def _get_migrations_which_ran() -> t.List[str]:
     Returns the names of migrations which have already run, by inspecing the
     database.
     """
-    return [i['name'] for i in Migration.select('name').run_sync()]
+    return [
+        i['name'] for i in Migration.select.columns(Migration.name).run_sync()
+    ]
 
 
 def _get_migration_modules() -> None:

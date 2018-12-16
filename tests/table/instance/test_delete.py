@@ -22,6 +22,6 @@ class TestDelete(DBTestCase):
         band.remove().run_sync()
 
         # how can I implement 'flat=True'
-        # Band.select('name').output(as_list=True).run_sync()
+        # Band.select.columns(Band.name).output(as_list=True).run_sync()
         #
-        Band.select('name').run_sync()
+        Band.select.columns(Band.name).run_sync()

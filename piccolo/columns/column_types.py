@@ -77,7 +77,7 @@ class ForeignKey(Integer):
 
     some_band.manager
     >>> 1
-    Band.select('name', 'manager.name')
+    Band.select.columns(Band.name, Band.manager.name)
 
     I'm not sure  about explicit joins ... only useful if we want to specify
     inner and outer joins.

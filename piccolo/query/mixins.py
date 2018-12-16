@@ -1,7 +1,7 @@
 import dataclasses
 import typing as t
 
-from ..columns import And
+from ..columns import And, Column
 from ..custom_types import Combinable
 
 if t.TYPE_CHECKING:
@@ -151,4 +151,20 @@ class OutputMixin():
         if type(as_json) is bool:
             self._output.as_json = as_json
 
+        return self
+
+
+class ColumnsMixin():
+    """
+    Example usage:
+
+    .columns(MyTable.column_a, MyTable.column_b)
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.selected_columns: t.List[Column] = []
+
+    def columns(self, *columns: Column):
+        self.selected_columns += columns
         return self

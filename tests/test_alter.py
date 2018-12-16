@@ -14,7 +14,7 @@ class TestRename(DBTestCase):
             'rating'
         ).run_sync()
 
-        response = Band.select().run_sync()
+        response = Band.select.run_sync()
 
         column_names = response[0].keys()
         self.assertTrue(
@@ -31,7 +31,7 @@ class TestDrop(DBTestCase):
             Band.popularity,
         ).run_sync()
 
-        response = Band.select().run_sync()
+        response = Band.select.run_sync()
 
         column_names = response[0].keys()
         self.assertTrue(
@@ -54,7 +54,7 @@ class TestAdd(DBTestCase):
             Integer(),
         ).run_sync()
 
-        response = Band.select().run_sync()
+        response = Band.select.run_sync()
 
         column_names = response[0].keys()
         self.assertTrue('weight' in column_names)

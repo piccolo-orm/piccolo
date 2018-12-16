@@ -28,7 +28,7 @@ class TestSave(DBTestCase):
 
         query.run_sync()
 
-        names = [i['name'] for i in Band.select('name').run_sync()]
+        names = [i['name'] for i in Band.select.columns(Band.name).run_sync()]
         self.assertTrue('Rubists' in names)
 
         rubists.name = 'Rubists on Rails'
@@ -37,7 +37,7 @@ class TestSave(DBTestCase):
         self.assertTrue('UPDATE' in query.__str__())
 
         query.run_sync()
-        names = [i['name'] for i in Band.select('name').run_sync()]
+        names = [i['name'] for i in Band.select.columns(Band.name).run_sync()]
         self.assertTrue('Rubists on Rails' in names)
         self.assertTrue('Rubists' not in names)
 
