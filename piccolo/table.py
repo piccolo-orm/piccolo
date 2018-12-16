@@ -39,6 +39,7 @@ class TableMeta(type):
                 columns.append(value)
                 value.name = key
 
+        # In case super classes also have columns.
         if bases:
             for base in bases:
                 if hasattr(base, 'Meta'):
@@ -48,6 +49,17 @@ class TableMeta(type):
 
         table.Meta.columns = columns
         return table
+
+    ###########################################################################
+
+    @property
+    def delete(cls) -> Delete:
+        """
+        await Band.delete.where(Band.name == 'CSharps').run()
+        """
+        return Delete(
+            table=cls
+        )
 
 
 class Table(metaclass=TableMeta):
@@ -114,7 +126,7 @@ class Table(metaclass=TableMeta):
 
         self.id = None
 
-        return self.__class__.delete().where(
+        return self.__class__.delete.where(
             self.__class__.id == _id
         )
 
@@ -230,15 +242,6 @@ class Table(metaclass=TableMeta):
         return Update(
             table=cls,
             base=f'UPDATE {cls.Meta.tablename} SET {columns_str}'
-        )
-
-    @classmethod
-    def delete(cls) -> Delete:
-        """
-        await Band.delete().where(Band.name == 'CSharps').run()
-        """
-        return Delete(
-            table=cls
         )
 
     @classmethod

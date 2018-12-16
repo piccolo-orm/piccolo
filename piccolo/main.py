@@ -192,7 +192,7 @@ def backwards(migration_name: str):
                 MIGRATION_MODULES[s].backwards()  # type: ignore
             )
 
-            Migration.delete().where(
+            Migration.delete.where(
                 Migration.name == s
             ).run_sync()
     else:
