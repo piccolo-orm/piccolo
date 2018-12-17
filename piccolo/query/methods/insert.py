@@ -11,7 +11,7 @@ class Insert(Query, AddMixin):
     def __str__(self):
         base = f'INSERT INTO "{self.table.Meta.tablename}"'
         columns = ','.join(
-            [i.name for i in self.table.Meta.columns]
+            [i._name for i in self.table.Meta.columns]
         )
         values = ','.join(
             i.__str__() for i in self._add

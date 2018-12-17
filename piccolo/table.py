@@ -37,7 +37,7 @@ class TableMeta(type):
         for key, value in namespace.items():
             if issubclass(type(value), Column):
                 columns.append(value)
-                value.name = key
+                value._name = key
 
         # In case super classes also have columns.
         if bases:
@@ -154,7 +154,7 @@ class Table(metaclass=TableMeta):
         massive.
         """
         for column in self.Meta.columns:
-            value = kwargs.pop(column.name, None)
+            value = kwargs.pop(column._name, None)
             if not value:
                 if column.default:
                     # Can't use inspect - can't tell that datetime.datetime.now
@@ -163,8 +163,8 @@ class Table(metaclass=TableMeta):
                     value = column.default() if is_callable else column.default
                 else:
                     if not column.null:
-                        raise ValueError(f"{column.name} wasn't provided")
-            self[column.name] = value
+                        raise ValueError(f"{column._name} wasn't provided")
+            self[column._name] = value
 
         unrecognized = kwargs.keys()
         if unrecognized:
@@ -182,7 +182,7 @@ class Table(metaclass=TableMeta):
         if type(self.id) == int:
             # pre-existing row
             kwargs = {
-                i.name: getattr(self, i.name, None) for i in cls.Meta.columns
+                i._name: getattr(self, i._name, None) for i in cls.Meta.columns
             }
             _id = kwargs.pop('id')
             return cls.update(**kwargs).where(
@@ -228,7 +228,7 @@ class Table(metaclass=TableMeta):
     def __str__(self):
         row = ",".join([
             column.format_value(
-                self[column.name]
+                self[column._name]
             ) for column in self.Meta.columns
         ])
         return f'({row})'
@@ -237,7 +237,7 @@ class Table(metaclass=TableMeta):
 
     @classmethod
     def get_column_by_name(cls, column_name: str):
-        columns = [i for i in cls.Meta.columns if i.name == column_name]
+        columns = [i for i in cls.Meta.columns if i._name == column_name]
 
         if len(columns) != 1:
             raise ValueError(

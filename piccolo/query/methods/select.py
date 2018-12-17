@@ -26,7 +26,13 @@ class Select(
             # TODO - make sure the columns passed in are valid
             column_names = []
             for column in self.selected_columns:
-                column_name = column.name
+                column_name = column._name
+
+                if column.call_chain:
+                    column_name = '.'.join([
+                        i._name for i in column.call_chain
+                    ]) + f'.{column_name}'
+
                 # TODO - this needs reworking ... not using foo.bar anymore.
                 if '.' in column_name:
                     alias = column_name.replace('.', '$.')

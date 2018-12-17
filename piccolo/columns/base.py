@@ -30,7 +30,9 @@ class Column():
         self.primary = primary
         self.key = key
         # Set by Table metaclass:
-        self.name: t.Optional[str] = None
+        self._name: t.Optional[str] = None
+        # Used by foreign keys:
+        self.call_chain: t.Iterable[Column] = []
 
     def is_in(self, values: Iterable) -> Where:
         return Where(column=self, values=values, operator=In)
@@ -70,7 +72,7 @@ class Column():
         return Where(column=self, value=value, operator=NotEqual)
 
     def __str__(self):
-        name = getattr(self, 'name', '')
+        name = getattr(self, '_name', '')
         column_type = getattr(
             self,
             'column_type',

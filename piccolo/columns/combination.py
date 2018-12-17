@@ -59,7 +59,7 @@ class Where(CombinableMixin):
 
     def __str__(self):
         kwargs = {
-            'name': self.column.name
+            'name': self.column._name
         }
         if self.value:
             kwargs['value'] = self.column.format_value(self.value)

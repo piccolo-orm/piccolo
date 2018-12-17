@@ -5,7 +5,7 @@ from piccolo import columns
 
 name_column = columns.Varchar()
 # Usually this is handled by the Table MetaClass:
-name_column.name = 'name'
+name_column._name = 'name'
 
 
 class TestColumns(unittest.TestCase):

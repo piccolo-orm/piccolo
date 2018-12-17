@@ -1,3 +1,4 @@
+import copy
 import datetime
 import typing as t
 
@@ -109,3 +110,9 @@ class ForeignKey(Integer):
     def __init__(self, references: t.Type['table.Table'], **kwargs) -> None:
         super().__init__(**kwargs)
         self.references = references
+
+        # Allow columns on referenced table to be accessed via auto completion.
+        for column in references.Meta.columns:
+            _column = copy.deepcopy(column)
+            _column.call_chain.append(self)
+            setattr(self, column._name, _column)
