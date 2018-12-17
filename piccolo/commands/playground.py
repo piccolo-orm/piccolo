@@ -52,21 +52,20 @@ class Concert(table.Table):
         db = DB
 
 
-
 def populate():
     """
     Drop then recreate the tables, and populate with data.
     """
     tables = (Manager, Band, Venue, Concert)
-    for table in tables:
+    for _table in reversed(tables):
         try:
-            table.drop.run_sync()
+            _table.drop.run_sync()
         except Exception as e:
             print(e)
 
-    for table in tables:
+    for _table in tables:
         try:
-            table.create.run_sync()
+            _table.create.run_sync()
         except Exception as e:
             print(e)
 
