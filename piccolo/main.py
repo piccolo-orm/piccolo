@@ -8,6 +8,7 @@ from types import ModuleType
 
 import click
 
+from piccolo.commands.playground import playground
 from piccolo.engine import PostgresEngine
 from piccolo.migrations.template import TEMPLATE
 from piccolo.migrations.table import Migration
@@ -211,6 +212,7 @@ def cli():
 cli.add_command(new)
 cli.add_command(forwards)
 cli.add_command(backwards)
+cli.add_command(playground)
 
 
 def main():
