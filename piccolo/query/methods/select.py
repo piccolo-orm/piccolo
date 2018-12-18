@@ -33,8 +33,8 @@ class Select(
 
             for column in self.selected_columns:
                 if column.call_chain:
+                    # TODO: Only works one deep at the moment - needs work.
                     for key in column.call_chain[:1]:
-                        # Only works one deep at the moment - needs work.
                         keys.add(key)
 
             keys = list(keys)
