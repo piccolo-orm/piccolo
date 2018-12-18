@@ -48,7 +48,9 @@ class Select(
                 for index, _key in enumerate(_keys):
                     _index = index + 1
                     _key.index = _index
-                    alias = f'{tablename}{_index}'
+                    # Double underscore is just to prevent the likelihood of a
+                    # name clash.
+                    alias = f'{tablename}__{_index}'
                     _key.alias = alias
                     joins.append(
                         f' JOIN {tablename} {alias} ON {_key._name} = {alias}.id'
