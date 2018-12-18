@@ -71,6 +71,9 @@ class Column():
     def __ne__(self, value) -> Where:  # type: ignore
         return Where(column=self, value=value, operator=NotEqual)
 
+    def __hash__(self):
+        return hash(self._name)
+
     def __str__(self):
         name = getattr(self, '_name', '')
         column_type = getattr(

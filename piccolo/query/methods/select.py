@@ -1,3 +1,4 @@
+from itertools import groupby
 import typing as t
 
 from ..base import Query
@@ -20,54 +21,67 @@ class Select(
     WhereMixin,
 ):
     def __str__(self):
+        joins = []
+
         if len(self.selected_columns) == 0:
             columns_str = '*'
         else:
-            # TODO - make sure the columns passed in are valid
+            ###################################################################
+            # JOIN
+
+            keys = set()
+
+            for column in self.selected_columns:
+                if column.call_chain:
+                    for key in column.call_chain[:1]:
+                        # Only works one deep at the moment - needs work.
+                        keys.add(key)
+
+            keys = list(keys)
+            grouped_keys = groupby(
+                keys,
+                key=lambda k: k.references.Meta.tablename
+            )
+
+            for tablename, __keys in grouped_keys:
+                _keys = [i for i in __keys]
+                for index, _key in enumerate(_keys):
+                    _index = index + 1
+                    _key.index = _index
+                    alias = f'{tablename}{_index}'
+                    _key.alias = alias
+                    joins.append(
+                        f' JOIN {tablename} {alias} ON {_key._name} = {alias}.id'
+                    )
+
+            ###################################################################
+
             column_names = []
             for column in self.selected_columns:
                 column_name = column._name
 
-                if column.call_chain:
-                    column_name = '.'.join([
-                        i._name for i in column.call_chain
-                    ]) + f'.{column_name}'
-
-                # TODO - this needs reworking ... not using foo.bar anymore.
-                if '.' in column_name:
-                    alias = column_name.replace('.', '$.')
-                    output_alias = column_name.replace('.', '$')
-                    column_names.append(
-                        f'{alias} AS "{output_alias}"'
-                    )
-                else:
+                if not column.call_chain:
                     column_names.append(column_name)
+                    continue
+
+                column_name = '$'.join([
+                    i._name for i in column.call_chain
+                ]) + f'${column_name}'
+
+                alias = f'{column.call_chain[0].alias}.{column._name}'
+                column_names.append(
+                    f'{alias} AS "{column_name}"'
+                )
 
             columns_str = ', '.join(column_names)
+
+        #######################################################################
 
         select = 'SELECT DISTINCT' if self.distinct else 'SELECT'
         query = f'{select} {columns_str} FROM "{self.table.Meta.tablename}"'
 
-        #######################################################################
-
-        # JOIN
-        joins = []
-        # for column_name in self.column_names:
-        #     if '.' in column_name:
-        #         local_name, _ = column_name.split('.')
-        #         table_name = self.table.get_column_by_name(
-        #             local_name
-        #         ).references.Meta.tablename
-
-        #         alias = f'{local_name}$'
-
-        #         if alias in joins:
-        #             continue
-
-        #         query += (
-        #             f' JOIN {table_name} {alias} ON {local_name} = {alias}.id'
-        #         )
-        #         joins.append(alias)
+        for join in joins:
+            query += join
 
         #######################################################################
 
