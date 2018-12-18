@@ -112,7 +112,8 @@ def playground():
         import IPython
     except ImportError:
         print(
-            "Install iPython using `pip install ipython` to use this feature."
+            "Install iPython using `pip install ipython==7.1.1` to use this "
+            "feature."
         )
         sys.exit(1)
 
