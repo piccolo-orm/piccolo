@@ -52,6 +52,8 @@ class TableMeta(type):
 
     ###########################################################################
     # Class properties
+    # TODO - might need to rework, tab completion only works in some versions
+    # of iPython.
 
     @property
     def delete(cls) -> Delete:
