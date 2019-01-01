@@ -51,6 +51,29 @@ class TableMeta(type):
         return table
 
     ###########################################################################
+
+    def __str__(cls):
+        """
+        Returns a basic string representation of the table and its columns.
+
+        Used by the playground.
+        """
+        spacer = '\n    '
+        columns = []
+        for col in cls.Meta.columns:
+            if type(col) == ForeignKey:
+                columns.append(
+                    f'{col._name} = ForeignKey({col.references.__name__})'
+                )
+            else:
+                columns.append(f'{col._name} = {col.__class__.__name__}()')
+        columns_string = spacer.join(columns)
+        return (
+            f'class {cls.__name__}(Table):\n'
+            f'    {columns_string}\n'
+        )
+
+    ###########################################################################
     # Class properties
     # TODO - might need to rework, tab completion only works in some versions
     # of iPython.

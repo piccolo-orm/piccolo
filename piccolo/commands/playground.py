@@ -47,18 +47,20 @@ class Concert(table.Table):
         db = DB
 
 
+TABLES = (Manager, Band, Venue, Concert)
+
+
 def populate():
     """
     Drop then recreate the tables, and populate with data.
     """
-    tables = (Manager, Band, Venue, Concert)
-    for _table in reversed(tables):
+    for _table in reversed(TABLES):
         try:
             _table.drop.run_sync()
         except Exception as e:
             print(e)
 
-    for _table in tables:
+    for _table in TABLES:
         try:
             _table.create.run_sync()
         except Exception as e:
@@ -127,6 +129,12 @@ def playground(user, password, database, host, port):
         'password': password,
         'port': port
     }
+
+    print('Tables:\n')
+
+    for _table in TABLES:
+        print(_table)
+        print('\n')
 
     populate()
     IPython.embed()

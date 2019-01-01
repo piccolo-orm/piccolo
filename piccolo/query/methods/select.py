@@ -63,7 +63,9 @@ class Select(
                 column_name = column._name
 
                 if not column.call_chain:
-                    column_names.append(column_name)
+                    column_names.append(
+                        f'{self.table.Meta.tablename}.{column_name}'
+                    )
                     continue
 
                 column_name = '$'.join([
