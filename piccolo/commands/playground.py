@@ -11,12 +11,7 @@ from piccolo import columns
 from piccolo.engine import PostgresEngine
 
 
-DB = PostgresEngine({
-    'host': 'localhost',
-    'database': 'piccolo_playground',
-    'user': 'piccolo',
-    'password': 'piccolo'
-})
+DB = PostgresEngine({})
 
 
 class Manager(table.Table):
@@ -104,7 +99,13 @@ def populate():
 
 
 @click.command(name="playground")
-def playground():
+@click.option('--user', default='piccolo', help='Postgres user')
+@click.option('--password', default='piccolo', help='Postgres password')
+@click.option('--database', default='piccolo_playground',
+              help='Postgres database')
+@click.option('--host', default='localhost', help='Postgres host')
+@click.option('--port', default=5432, help='Postgres port')
+def playground(user, password, database, host, port):
     """
     Creates a test database to play with.
     """
@@ -115,6 +116,16 @@ def playground():
             "Install iPython using `pip install ipython` to use this feature."
         )
         sys.exit(1)
+
+    global DB
+
+    DB.config = {
+        'host': host,
+        'database': database,
+        'user': user,
+        'password': password,
+        'port': port
+    }
 
     populate()
     IPython.embed()
