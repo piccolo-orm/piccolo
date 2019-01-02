@@ -28,7 +28,7 @@ setup(
     author='Daniel Townsend',
     author_email='dan@dantownsend.co.uk',
     python_requires='>=3.7.0',
-    url='https://github.com/telerytech/piccolo',
+    url='https://github.com/piccolo-orm/piccolo',
     packages=find_packages(exclude=('tests',)),
     install_requires=REQUIREMENTS,
     license='MIT',
