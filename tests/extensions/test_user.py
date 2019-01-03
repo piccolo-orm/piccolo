@@ -7,7 +7,7 @@ from ..example_project.tables import DB
 
 class _User(User):
     class Meta():
-        tablename = 'user'
+        tablename = 'a_user'
         db = DB
 
 
