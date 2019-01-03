@@ -9,5 +9,9 @@ before_install:
   - sudo service postgresql stop && sudo service postgresql start $POSTGRESQL_VERSION
 install:
   - pip install -r requirements.txt
+before_script:
+  - psql -c 'CREATE DATABASE piccolo;' -U postgres
+  - psql -c "CREATE USER piccolo PASSWORD 'piccolo';" -U postgres
+  - psql -c "GRANT ALL PRIVILEGES ON piccolo TO piccolo;" -U postgres
 script:
   - pytest
