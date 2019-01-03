@@ -47,6 +47,24 @@ class TestSelect(DBTestCase):
             [{'name': 'Pythonistas'}]
         )
 
+    def test_where_not_like(self):
+        self.insert_rows()
+
+        response = Band.select.columns(
+            Band.name
+        ).where(
+            Band.name.not_like('Python%')
+        ).order_by(
+            Band.name
+        ).run_sync()
+
+        print(f'response = {response}')
+
+        self.assertEqual(
+            response,
+            [{'name': 'CSharps'}, {'name': 'Rustaceans'}]
+        )
+
     def test_where_greater_than(self):
         self.insert_rows()
 

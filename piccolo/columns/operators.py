@@ -22,6 +22,10 @@ class Like(Operator):
     template = "{name} LIKE {value}"
 
 
+class NotLike(Operator):
+    template = "{name} NOT LIKE {value}"
+
+
 class GreaterThan(Operator):
     # Add permitted types???
     template = "{name} > {value}"

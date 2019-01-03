@@ -10,6 +10,7 @@ from .operators import (
     Like,
     NotEqual,
     NotIn,
+    NotLike
 )
 from ..custom_types import Iterable
 from .combination import Where
@@ -44,6 +45,11 @@ class Column():
         if '%' not in value:
             raise ValueError('% is required for like operators')
         return Where(column=self, value=value, operator=Like)
+
+    def not_like(self, value: str) -> Where:
+        if '%' not in value:
+            raise ValueError('% is required for like operators')
+        return Where(column=self, value=value, operator=NotLike)
 
     def format_value(self, value):
         """
