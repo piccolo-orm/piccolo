@@ -1,0 +1,13 @@
+language: python
+python:
+  - '3.7'
+env:
+  - POSTGRESQL_VERSION = 11.1
+  - POSTGRESQL_VERSION = 10.6
+  - POSTGRESQL_VERSION = 9.6
+before_install:
+  - sudo service postgresql stop && sudo service postgresql start $POSTGRESQL_VERSION
+install:
+  - pip install -r requirements.txt
+script:
+  - pytest
