@@ -71,7 +71,7 @@ class TestSelect(DBTestCase):
         ).where(
             Band.popularity >= 1000
         ).order_by(
-            'name'
+            Band.name
         ).run_sync()
 
         print(f'response = {response}')
@@ -136,6 +136,8 @@ class TestSelect(DBTestCase):
             Band.name
         ).where(
             (Band.name == 'Rustaceans') | (Band.name == 'CSharps')
+        ).order_by(
+            Band.name
         ).run_sync()
 
         print(f'response = {response}')
@@ -182,6 +184,8 @@ class TestSelect(DBTestCase):
         ).where(
             ((Band.popularity == 2000) & (Band.manager == 'Graydon')) |
             ((Band.popularity == 10) & (Band.manager == 'Mads'))
+        ).order_by(
+            Band.name
         ).run_sync()
 
         print(f'response = {response}')
@@ -197,7 +201,7 @@ class TestSelect(DBTestCase):
         response = Band.select.columns(
             Band.name
         ).order_by(
-            'name'
+            Band.name
         ).limit(
             1
         ).run_sync()
@@ -215,7 +219,7 @@ class TestSelect(DBTestCase):
         response = Band.select.columns(
             Band.name
         ).order_by(
-            'name'
+            Band.name
         ).first().run_sync()
 
         print(f'response = {response}')
@@ -231,7 +235,7 @@ class TestSelect(DBTestCase):
         response = Band.select.columns(
             Band.name
         ).order_by(
-            'name'
+            Band.name
         ).limit(1).run_sync()
 
         print(f'response = {response}')
@@ -247,7 +251,8 @@ class TestSelect(DBTestCase):
         response = Band.select.columns(
             Band.name
         ).order_by(
-            '-name'
+            Band.name,
+            ascending=False
         ).limit(1).run_sync()
 
         print(f'response = {response}')

@@ -88,9 +88,3 @@ class Query(object):
         the database driver.
         """
         return response
-
-    def _is_valid_column_name(self, column_name: str):
-        if column_name.startswith('-'):
-            column_name = column_name[1:]
-        if column_name not in [i._name for i in self.table.Meta.columns]:
-            raise ValueError(f"{column_name} isn't a valid column name")

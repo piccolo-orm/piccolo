@@ -21,12 +21,13 @@ class Limit():
 
 @dataclasses.dataclass
 class OrderBy():
-    column_name: str
+    columns: t.Tuple[Column]
     ascending: bool
 
     def __str__(self):
         order = 'ASC' if self.ascending else 'DESC'
-        return f' ORDER BY {self.column_name} {order}'
+        columns_names = ', '.join([i._name for i in self.columns])
+        return f' ORDER BY {columns_names} {order}'
 
 
 @dataclasses.dataclass
@@ -56,15 +57,8 @@ class OrderByMixin():
         super().__init__()
         self._order_by: t.Optional[OrderBy] = None
 
-    def order_by(self, column_name: str):
-        self._is_valid_column_name(column_name)
-
-        ascending = True
-        if column_name.startswith('-'):
-            ascending = False
-            column_name = column_name[1:]
-
-        self._order_by = OrderBy(column_name, ascending)
+    def order_by(self, *columns: Column, ascending=True):
+        self._order_by = OrderBy(columns, ascending)
         return self
 
 
