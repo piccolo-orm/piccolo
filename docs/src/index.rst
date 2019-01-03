@@ -5,14 +5,8 @@ Welcome to Piccolo's documentation!
    :maxdepth: 5
    :caption: Contents:
 
-   piccolo/introduction
-   piccolo/getting-started
-   piccolo/anatomy-of-a-query
-   piccolo/simple-examples
    piccolo/design-decisions
-   piccolo/migrations
    piccolo/supported-databases
-   piccolo/tests
    piccolo/tuning-postgres
    piccolo/transactions
 
