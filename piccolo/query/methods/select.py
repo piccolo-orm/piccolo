@@ -33,27 +33,33 @@ class Select(
 
             for column in self.selected_columns:
                 if column.call_chain:
+                    # Work out any joins we need to do.
                     # TODO: Only works one deep at the moment - needs work.
                     for key in column.call_chain[:1]:
                         keys.add(key)
 
+            # Group the foreign keys by tablename
             keys = list(keys)
+            # Groups consecutive items with the same tablename
             grouped_keys = groupby(
-                keys,
+                sorted(
+                    keys,
+                    key=lambda k: k.references.Meta.tablename
+                ),
                 key=lambda k: k.references.Meta.tablename
             )
 
-            for tablename, __keys in grouped_keys:
-                _keys = [i for i in __keys]
-                for index, _key in enumerate(_keys):
+            for tablename, table_keys in grouped_keys:
+                table_keys = [i for i in table_keys]
+                for index, key in enumerate(table_keys):
                     _index = index + 1
-                    _key.index = _index
+                    key.index = _index
                     # Double underscore is just to prevent the likelihood of a
                     # name clash.
                     alias = f'{tablename}__{_index}'
-                    _key.alias = alias
+                    key.alias = alias
                     joins.append(
-                        f' JOIN {tablename} {alias} ON {_key._name} = {alias}.id'
+                        f' JOIN {tablename} {alias} ON {key._name} = {alias}.id'
                     )
 
             ###################################################################
