@@ -34,6 +34,13 @@ class Select(
             for column in self.selected_columns:
                 if column.call_chain:
                     # Work out any joins we need to do.
+
+                    if len(column.call_chain) > 10:
+                        raise Exception(
+                            "Joining more than 10 tables isn't supported - "
+                            "please restructure your query."
+                        )
+
                     # TODO: Only works one deep at the moment - needs work.
                     for key in column.call_chain[:1]:
                         keys.add(key)

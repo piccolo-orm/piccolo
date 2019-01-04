@@ -111,8 +111,19 @@ class ForeignKey(Integer):
         super().__init__(**kwargs)
         self.references = references
 
-        # Allow columns on referenced table to be accessed via auto completion.
+        # Allow columns on the referenced table to be accessed via auto
+        # completion.
         for column in references.Meta.columns:
+            # We have to set limits to the call chain because Table 1 can
+            # reference Table 2, which references Table 1, creating an endless
+            # loop. For now an arbitrary limit is set of 10 levels deep.
+            # When querying a call chain more than 10 levels deep, an error
+            # will be raised. Often there are more effective ways of
+            # structuring a query than joining so many tables anyway.
+            if len(column.call_chain) > 10:
+                continue
+
             _column = copy.deepcopy(column)
             _column.call_chain.append(self)
+
             setattr(self, column._name, _column)
