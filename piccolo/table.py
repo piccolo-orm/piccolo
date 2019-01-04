@@ -25,10 +25,15 @@ class TableMeta(type):
         """
         Automatically populate the tablename, and columns.
         """
-        # TODO super might not be required ...
         table = super().__new__(cls, name, bases, namespace)
 
         Meta = namespace.get('Meta')
+        if (not Meta) or (Meta in [i.Meta for i in bases]):
+            # We're inheritting a Meta from a parent class - give this class
+            # its own Meta
+            Meta = type('Meta', tuple(), {})
+            table.Meta = Meta
+
         tablename = getattr(Meta, 'tablename', None) if Meta else None
         if not tablename:
             table.Meta.tablename = _camel_to_snake(name)

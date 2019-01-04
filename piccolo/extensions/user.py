@@ -92,10 +92,6 @@ class User(Table):
         else:
             return None
 
-    @classmethod
-    def foo(cls):
-        pass
-
 
 # Things to consider ...
 # just have some class methods around it ...
