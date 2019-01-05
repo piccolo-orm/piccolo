@@ -32,7 +32,9 @@ class Select(
         for column in columns:
             _joins: t.List[str] = []
             for index, key in enumerate(column.call_chain, 0):
-                table_alias = f'{key._table.Meta.tablename}${key._name}'
+                table_alias = '$'.join(
+                    [f'{_key._table.Meta.tablename}${_key._name}' for _key in column.call_chain[:index + 1]]
+                )
                 key.table_alias = table_alias
 
                 if index > 0:
