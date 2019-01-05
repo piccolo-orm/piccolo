@@ -1,5 +1,6 @@
 import copy
 import datetime
+import inspect
 import typing as t
 
 from .base import Column
@@ -148,7 +149,7 @@ class ForeignKey(Integer):
                 self.proxy_columns.append(_column)
 
             return new_column
-        elif type(value) == Column:
+        elif issubclass(type(value), Column):
             new_column = copy.deepcopy(value)
             new_column.call_chain = copy.copy(self.call_chain)
             new_column.call_chain.append(self)
