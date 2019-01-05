@@ -38,20 +38,24 @@ class Select(
                 tablename = key.references.Meta.tablename
                 key_name = f'{key._name}'
 
-                prefix = (
-                    keys[0]._table.Meta.tablename + '_' + '_'.join(
-                        [i._name for i in keys]
-                    )
+                # Fix the table alias ... then work out join_right ...
+                # Print it out to see how close we are ...
+                table_alias = (
+                    '__'.join([
+                        f'{key._table.Meta.tablename}__'
+                        f'${key._name}' for i in keys
+                    ]) + f'__{keys[-1].references.Meta.tablename}'
                 )
-                join_left = prefix + f'.{key_name}'
+                join_left = f'{table_alias}.{key_name}'
                 join_right = f'{key_name}.id'
 
                 _joins.append(
-                    f'JOIN {tablename} {prefix} ON {join_left} = {join_right}'
+                    f'JOIN {tablename} {table_alias} '
+                    f'ON {join_left} = {join_right}'
                 )
 
             joins.extend(_joins)
-            column.prefix = prefix
+            column.prefix = table_alias
 
         # loses the order here ...
         return list(OrderedDict.fromkeys(joins))
