@@ -31,31 +31,21 @@ class Select(
         joins: t.List[str] = []
         for column in columns:
             _joins: t.List[str] = []
-            for index, key in enumerate(column.call_chain, 1):
+            for index, key in enumerate(column.call_chain, 0):
+                table_alias = f'{key._table.Meta.tablename}${key._name}'
+                key.table_alias = table_alias
 
-                keys = column.call_chain[:index]
-
-                tablename = key.references.Meta.tablename
-                key_name = f'{key._name}'
-
-                # Fix the table alias ... then work out join_right ...
-                # Print it out to see how close we are ...
-                table_alias = (
-                    '__'.join([
-                        f'{key._table.Meta.tablename}__'
-                        f'${key._name}' for i in keys
-                    ]) + f'__{keys[-1].references.Meta.tablename}'
-                )
-                join_left = f'{table_alias}.{key_name}'
-                join_right = f'{key_name}.id'
+                if index > 0:
+                    left_tablename = column.call_chain[index - 1].table_alias
+                else:
+                    left_tablename = key._table.Meta.tablename
 
                 _joins.append(
-                    f'JOIN {tablename} {table_alias} '
-                    f'ON {join_left} = {join_right}'
+                    f'JOIN {key.references.Meta.tablename} {table_alias} '
+                    f'ON ({left_tablename}.{key._name} = {table_alias}.id)'
                 )
 
             joins.extend(_joins)
-            column.prefix = table_alias
 
         # loses the order here ...
         return list(OrderedDict.fromkeys(joins))
@@ -126,7 +116,7 @@ class Select(
                     i._name for i in column.call_chain
                 ]) + f'${column_name}'
 
-                alias = f'{column.prefix}.{column._name}'
+                alias = f'{column.call_chain[-1].table_alias}.{column._name}'
                 column_names.append(
                     f'{alias} AS "{column_name}"'
                 )
