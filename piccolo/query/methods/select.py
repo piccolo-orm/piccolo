@@ -1,7 +1,9 @@
+from collections import OrderedDict
 from itertools import groupby
 import typing as t
 
 from ..base import Query
+from piccolo.columns import Column, ForeignKey
 from ..mixins import (
     ColumnsMixin, CountMixin, DistinctMixin, LimitMixin, OrderByMixin,
     OutputMixin, WhereMixin
@@ -20,6 +22,51 @@ class Select(
     OutputMixin,
     WhereMixin,
 ):
+
+    def get_joins(self, columns: t.List[Column]):
+        """
+        A call chain is a sequence of foreign keys representing joins which
+        need to be made to retrieve a column in another table.
+        """
+        joins: t.List[str] = []
+        for column in columns:
+            _joins: t.List[str] = []
+            for index, key in enumerate(column.call_chain, 1):
+
+                keys = column.call_chain[:index]
+
+                tablename = key.references.Meta.tablename
+                key_name = f'{key._name}'
+
+                prefix = (
+                    keys[0]._table.Meta.tablename + '_' + '_'.join(
+                        [i._name for i in keys]
+                    )
+                )
+                join_left = prefix + f'.{key_name}'
+                join_right = f'{key_name}.id'
+
+                _joins.append(
+                    f'JOIN {tablename} {prefix} ON {join_left} = {join_right}'
+                )
+
+            joins.extend(_joins)
+            column.prefix = prefix
+
+        # loses the order here ...
+        return list(OrderedDict.fromkeys(joins))
+
+    def check_valid_call_chain(self, keys: t.List[ForeignKey]):
+        for column in keys:
+            if column.call_chain:
+                # Make sure the call_chain isn't too large
+
+                if len(column.call_chain) > 10:
+                    raise Exception(
+                        "Joining more than 10 tables isn't supported - "
+                        "please restructure your query."
+                    )
+
     def __str__(self):
         joins = []
 
@@ -29,45 +76,35 @@ class Select(
             ###################################################################
             # JOIN
 
-            keys = set()
+            # keys = set()
 
-            for column in self.selected_columns:
-                if column.call_chain:
-                    # Work out any joins we need to do.
+            self.check_valid_call_chain(self.selected_columns)
 
-                    if len(column.call_chain) > 10:
-                        raise Exception(
-                            "Joining more than 10 tables isn't supported - "
-                            "please restructure your query."
-                        )
+            joins = self.get_joins(self.selected_columns)
 
-                    # TODO: Only works one deep at the moment - needs work.
-                    for key in column.call_chain[:1]:
-                        keys.add(key)
+            # # Group the foreign keys by tablename
+            # keys = list(keys)
+            # # Groups consecutive items with the same tablename
+            # grouped_keys = groupby(
+            #     sorted(
+            #         keys,
+            #         key=lambda k: k.references.Meta.tablename
+            #     ),
+            #     key=lambda k: k.references.Meta.tablename
+            # )
 
-            # Group the foreign keys by tablename
-            keys = list(keys)
-            # Groups consecutive items with the same tablename
-            grouped_keys = groupby(
-                sorted(
-                    keys,
-                    key=lambda k: k.references.Meta.tablename
-                ),
-                key=lambda k: k.references.Meta.tablename
-            )
-
-            for tablename, table_keys in grouped_keys:
-                table_keys = [i for i in table_keys]
-                for index, key in enumerate(table_keys):
-                    _index = index + 1
-                    key.index = _index
-                    # Double underscore is just to prevent the likelihood of a
-                    # name clash.
-                    alias = f'{tablename}__{_index}'
-                    key.alias = alias
-                    joins.append(
-                        f' JOIN {tablename} {alias} ON {key._name} = {alias}.id'
-                    )
+            # for tablename, table_keys in grouped_keys:
+            #     table_keys = [i for i in table_keys]
+            #     for index, key in enumerate(table_keys):
+            #         _index = index + 1
+            #         key.index = _index
+            #         # Double underscore is just to prevent the likelihood of a
+            #         # name clash.
+            #         alias = f'{tablename}__{_index}'
+            #         key.alias = alias
+            #         joins.append(
+            #             f' JOIN {tablename} {alias} ON {key._name} = {alias}.id'
+            #         )
 
             ###################################################################
 
@@ -85,7 +122,7 @@ class Select(
                     i._name for i in column.call_chain
                 ]) + f'${column_name}'
 
-                alias = f'{column.call_chain[0].alias}.{column._name}'
+                alias = f'{column.prefix}.{column._name}'
                 column_names.append(
                     f'{alias} AS "{column_name}"'
                 )
@@ -98,7 +135,7 @@ class Select(
         query = f'{select} {columns_str} FROM "{self.table.Meta.tablename}"'
 
         for join in joins:
-            query += join
+            query += f' {join}'
 
         #######################################################################
 

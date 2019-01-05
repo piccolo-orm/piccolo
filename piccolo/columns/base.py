@@ -17,6 +17,7 @@ from .combination import Where
 
 if t.TYPE_CHECKING:
     from ..table import Table  # noqa
+    from .column_types import ForeignKey  # noqa
 
 
 class Column():
@@ -33,7 +34,8 @@ class Column():
         # Set by Table metaclass:
         self._name: t.Optional[str] = None
         # Used by foreign keys:
-        self.call_chain: t.Iterable[Column] = []
+        self.call_chain: t.List['ForeignKey'] = []
+        self.prefix = ''
 
     def is_in(self, values: Iterable) -> Where:
         return Where(column=self, values=values, operator=In)

@@ -43,6 +43,7 @@ class TableMeta(type):
             if issubclass(type(value), Column):
                 columns.append(value)
                 value._name = key
+                value._table = table
 
         # In case super classes also have columns.
         if bases:
