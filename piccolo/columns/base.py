@@ -35,7 +35,7 @@ class Column():
         self._name: t.Optional[str] = None
         # Used by foreign keys:
         self.call_chain: t.List['ForeignKey'] = []
-        self.prefix = ''
+        self.table_alias: t.Optional[str] = None
 
     def is_in(self, values: Iterable) -> Where:
         return Where(column=self, values=values, operator=In)
