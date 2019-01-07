@@ -21,7 +21,7 @@ class Varchar(Column):
     def format_value(self, value: str):
         if not value:
             return 'null'
-        # TODO sanitize input
+        # TODO sanitize input - use prepared statements
         return f"'{value}'"
 
 
@@ -73,42 +73,41 @@ class Boolean(Column):
 
 class ForeignKey(Integer):
     """
-    Need to think about how this will work ...
+    Returns an integer, representing the referenced row's ID.
 
-    http://www.postgresqltutorial.com/postgresql-foreign-key/
+        some_band.manager
+        >>> 1
 
-    some_band.manager
-    >>> 1
-    Band.select.columns(Band.name, Band.manager.name)
+    Can also use it to perform joins:
 
-    I'm not sure  about explicit joins ... only useful if we want to specify
-    inner and outer joins.
+        Band.select.columns(Band.manager.name)
 
-    Join(Band, User)
+    To get a referenced row as an object:
 
-    To get the actual User object.
+        User.object.where(User.id == some_band.manager)
 
-    User.object().where(User.id == some_band.manager)
+    Or use this, which is just a proxy to the above:
 
-    OR
-
-    some_band.related_object('manager')
-    > is just a proxy to the above
-
-    class Band(Table):
-        manager = ForeignKey(User)
+        some_band.related_object('manager')
 
     To change the manager:
-    some_band.manager = some_manager_id
-    some_band.save()
+
+        some_band.manager = some_manager_id
+        some_band.save()
+
     Or:
-    some_band.set_related_object('manager', some_manager)
+        some_band.set_related_object('manager', some_manager)
 
     """
 
     column_type = 'INTEGER'
 
     def __getattribute__(self, name):
+        """
+        Returns attributes unmodified unless they're Column instances, in which
+        case a copy is returned with an updated call_chain (which records the
+        joins required).
+        """
         # see if it has an attribute with that name ...
         # if it's asking for a foreign key ... return a copy of self ...
 
@@ -160,7 +159,7 @@ class ForeignKey(Integer):
     def __init__(self, references: t.Type['table.Table'], **kwargs) -> None:
         super().__init__(**kwargs)
         self.references = references
-        self.proxy_columns = []
+        self.proxy_columns: t.List[Column] = []
 
         # Allow columns on the referenced table to be accessed via auto
         # completion.
