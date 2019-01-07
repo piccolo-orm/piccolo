@@ -1,5 +1,5 @@
 from ..base import DBTestCase
-from ..example_project.tables import Band
+from ..example_project.tables import Band, Concert
 
 
 class TestSelect(DBTestCase):
@@ -305,3 +305,20 @@ class TestSelect(DBTestCase):
         ).distinct().run_sync()
 
         self.assertTrue(response == [{'name': 'Pythonistas'}])
+
+    def test_call_chain(self):
+        """
+        Make sure the call chain lengths are the correct size.
+        """
+        self.assertEqual(
+            len(
+                Concert.band_1.name.call_chain
+            ),
+            1
+        )
+        self.assertEqual(
+            len(
+                Concert.band_1.manager.name.call_chain
+            ),
+            2
+        )
