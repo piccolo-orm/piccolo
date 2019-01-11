@@ -1,52 +1,39 @@
 from unittest import TestCase
 
-from tests.example_project.tables import Band, Venue, Concert
+from tests.example_project.tables import Manager, Band
+
+
+TABLES = [Manager, Band]
 
 
 class TestGetRelated(TestCase):
 
     def setUp(self):
-        Band.create.run_sync()
-        Venue.create.run_sync()
-        Concert.create.run_sync()
+        for table in TABLES:
+            table.create.run_sync()
 
     def tearDown(self):
-        Concert.drop.run_sync()
-        Band.drop.run_sync()
-        Venue.drop.run_sync()
+        for table in reversed(TABLES):
+            table.drop.run_sync()
 
     def test_get_related(self):
         """
         Make sure you can get a related object from another object instance.
         """
-        Pythonistas = Band(
-            name='Pythonistas'
+        manager = Manager(
+            name="Guido"
         )
-        Pythonistas.save().run_sync()
+        manager.save().run_sync()
 
-        rubists = Band(
-            name='Rubists'
+        band = Band(
+            name='Pythonistas',
+            manager=manager.id,
+            popularity=100
         )
-        rubists.save().run_sync()
+        band.save().run_sync()
 
-        venue = Venue(
-            name="red venue"
-        )
-        venue.save().run_sync()
-
-        concert = Concert(
-            band_1=Pythonistas.id,
-            band_2=rubists.id,
-            venue=venue.id
-        )
-        concert.save().run_sync()
-
-        _concert = Concert.objects.where(
-            Concert.id == concert.id
-        ).first().run_sync()
-
-        _venue = _concert.get_related('venue').run_sync()
+        _manager = band.get_related('manager').run_sync()
 
         self.assertTrue(
-            _venue.name == 'red venue'
+            _manager.name == 'Guido'
         )

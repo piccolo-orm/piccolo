@@ -15,7 +15,7 @@ class TestSelect(DBTestCase):
             {
                 'id': 1,
                 'name': 'Pythonistas',
-                'manager': 'Guido',
+                'manager': 1,
                 'popularity': 1000
             }
         )
@@ -176,7 +176,7 @@ class TestSelect(DBTestCase):
         ).where(
             Band.name == 'Rustaceans'
         ).where(
-            Band.manager == 'Graydon'
+            Band.manager == 2
         )
 
         response = query.run_sync()
@@ -200,8 +200,8 @@ class TestSelect(DBTestCase):
         response = Band.select.columns(
             Band.name
         ).where(
-            ((Band.popularity == 2000) & (Band.manager == 'Graydon')) |
-            ((Band.popularity == 10) & (Band.manager == 'Mads'))
+            ((Band.popularity == 2000) & (Band.manager == 2)) |
+            ((Band.popularity == 10) & (Band.manager == 3))
         ).order_by(
             Band.name
         ).run_sync()

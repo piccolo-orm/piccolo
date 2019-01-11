@@ -1,19 +1,19 @@
 from unittest import TestCase
 
-from ..example_project.tables import Band, Venue, Concert
+from ..example_project.tables import Band, Manager, Concert, Venue
+
+
+TABLES = [Manager, Band, Venue, Concert]
 
 
 class TestCreateJoin():
 
     def test_create_join(self):
+        for table in TABLES:
+            table.create.run_sync()
 
-        Band.create.run_sync()
-        Venue.create.run_sync()
-        Concert.create.run_sync()
-
-        Concert.drop.run_sync()
-        Band.drop.run_sync()
-        Venue.drop.run_sync()
+        for table in reversed(TABLES):
+            table.drop.run_sync()
 
 
 class TestJoin(TestCase):
@@ -21,22 +21,28 @@ class TestJoin(TestCase):
     Test instantiating Table instances
     """
 
+    tables = [Manager, Band, Venue, Concert]
+
     def setUp(self):
-        Band.create.run_sync()
-        Venue.create.run_sync()
-        Concert.create.run_sync()
+        for table in self.tables:
+            table.create.run_sync()
 
     def tearDown(self):
-        Concert.drop.run_sync()
-        Band.drop.run_sync()
-        Venue.drop.run_sync()
+        for table in reversed(self.tables):
+            table.drop.run_sync()
 
     def test_join(self):
-        Pythonistas = Band(name="Pythonistas", manager="Guido")
-        Pythonistas.save().run_sync()
+        manager_1 = Manager(name="Guido")
+        manager_1.save().run_sync()
 
-        band = Band(name="Rustaceans")
-        band.save().run_sync()
+        band_1 = Band(name="Pythonistas", manager=manager_1.id)
+        band_1.save().run_sync()
+
+        manager_2 = Manager(name="Graydon")
+        manager_2.save().run_sync()
+
+        band_2 = Band(name="Rustaceans", manager=manager_2.id)
+        band_2.save().run_sync()
 
         venue = Venue(name="Grand Central")
         venue.save().run_sync()
@@ -44,8 +50,8 @@ class TestJoin(TestCase):
         # TODO - make sure you can also do:
         # band_1=Pythonistas
         save_query = Concert(
-            band_1=Pythonistas.id,
-            band_2=band.id,
+            band_1=band_1.id,
+            band_2=band_2.id,
             venue=venue.id
         ).save()
         save_query.run_sync()

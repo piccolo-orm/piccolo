@@ -11,8 +11,8 @@ class TestTransaction(TestCase):
         """
         transaction = Band.Meta.db.transaction()
         transaction.add(
-            Band.create,
             Manager.create,
+            Band.create,
             Band.raw('MALFORMED QUERY ... SHOULD ERROR')
         )
         try:
@@ -29,8 +29,8 @@ class TestTransaction(TestCase):
     def test_succeeds(self):
         transaction = Band.Meta.db.transaction()
         transaction.add(
-            Band.create,
-            Manager.create
+            Manager.create,
+            Band.create
         )
         transaction.run_sync()
 

@@ -1,27 +1,25 @@
-from tests.example_project.tables import Band
-from tests.base import DBTestCase
+from unittest import TestCase
+
+from tests.example_project.tables import Manager
 
 
-class TestDelete(DBTestCase):
+class TestDelete(TestCase):
 
     def setUp(self):
-        Band.create.run_sync()
+        Manager.create.run_sync()
 
     def tearDown(self):
-        Band.drop.run_sync()
+        Manager.drop.run_sync()
 
     def test_delete(self):
-
-        band = Band(
-            name='Rubists',
-            manager='Maz',
-            popularity=300
+        manager = Manager(
+            name='Maz'
         )
 
-        band.save().run_sync()
-        band.remove().run_sync()
+        manager.save().run_sync()
+        manager.remove().run_sync()
 
         # how can I implement 'flat=True'
         # Band.select.columns(Band.name).output(as_list=True).run_sync()
         #
-        Band.select.columns(Band.name).run_sync()
+        Manager.select.columns(Manager.name).run_sync()

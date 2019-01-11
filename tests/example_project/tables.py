@@ -14,17 +14,17 @@ DB = PostgresEngine({
 ###############################################################################
 # Simple example
 
-class Band(table.Table):
+class Manager(table.Table):
     name = columns.Varchar(length=50)
-    manager = columns.Varchar(length=20)
-    popularity = columns.Integer()
 
     class Meta():
         db = DB
 
 
-class Manager(table.Table):
+class Band(table.Table):
     name = columns.Varchar(length=50)
+    manager = columns.ForeignKey(Manager)
+    popularity = columns.Integer()
 
     class Meta():
         db = DB

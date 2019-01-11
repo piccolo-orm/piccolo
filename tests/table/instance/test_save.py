@@ -1,45 +1,46 @@
-from tests.example_project.tables import Band
-from tests.base import DBTestCase
+from unittest import TestCase
+
+from tests.example_project.tables import Manager
 
 
-class TestSave(DBTestCase):
+class TestSave(TestCase):
 
     def setUp(self):
-        Band.create.run_sync()
+        Manager.create.run_sync()
 
     def tearDown(self):
-        Band.drop.run_sync()
+        Manager.drop.run_sync()
 
     def test_save_new(self):
         """
         Make sure that saving a new instance works.
         """
-        self.insert_rows()
-
-        rubists = Band(
-            name='Rubists',
-            manager='Maz',
-            popularity=300
+        manager = Manager(
+            name='Maz',
         )
 
-        query = rubists.save()
+        query = manager.save()
         print(query)
         self.assertTrue('INSERT' in query.__str__())
 
         query.run_sync()
 
-        names = [i['name'] for i in Band.select.columns(Band.name).run_sync()]
-        self.assertTrue('Rubists' in names)
+        names = [
+            i['name'] for i in Manager.select.columns(Manager.name).run_sync()
+        ]
+        self.assertTrue('Maz' in names)
 
-        rubists.name = 'Rubists on Rails'
-        query = rubists.save()
+        manager.name = 'Maz2'
+        query = manager.save()
         print(query)
         self.assertTrue('UPDATE' in query.__str__())
 
         query.run_sync()
-        names = [i['name'] for i in Band.select.columns(Band.name).run_sync()]
-        self.assertTrue('Rubists on Rails' in names)
-        self.assertTrue('Rubists' not in names)
+        names = [
+            i['name'] for i in Manager.select.columns(Manager.name).run_sync()
+        ]
+        self.assertTrue('Maz2' in names)
+        self.assertTrue('Maz' not in names)
 
         # Make sure it has an id too ...
         # and the next query is an UPDATE ...
