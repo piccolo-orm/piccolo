@@ -80,12 +80,12 @@ class PostgresEngine(Engine):
             self.loop = loop
         return self.pool
 
-    async def run_in_pool(self, query: str):
+    async def run_in_pool(self, query: str, args: t.List[t.Any] = []):
         pool = await self.get_pool()
 
         connection = await pool.acquire()
         try:
-            response = await connection.fetch(query)
+            response = await connection.fetch(query, *args)
         except Exception:
             pass
         finally:
@@ -93,9 +93,9 @@ class PostgresEngine(Engine):
 
         return response
 
-    async def run(self, query: str):
+    async def run(self, query: str, args: t.List[t.Any] = []):
         connection = await asyncpg.connect(**self.config)
-        results = await connection.fetch(query)
+        results = await connection.fetch(query, *args)
         await connection.close()
         return results
 
