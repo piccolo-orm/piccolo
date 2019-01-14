@@ -3,11 +3,12 @@ import datetime
 import inspect
 import typing as t
 
-from .base import Column
+from piccolo.columns.base import Column
+from piccolo.querystring import Unquoted
 
 if t.TYPE_CHECKING:
     import table  # noqa
-    from ..custom_types import Datetime  # noqa
+    from piccolo.custom_types import Datetime  # noqa
 
 
 class Varchar(Column):
@@ -17,12 +18,6 @@ class Varchar(Column):
         self.length = length
         self.default = default
         super().__init__(**kwargs)
-
-    def format_value(self, value: str):
-        if not value:
-            return 'null'
-        # TODO sanitize input - use prepared statements
-        return f"'{value}'"
 
 
 class Integer(Column):
@@ -47,7 +42,7 @@ class PrimaryKey(Column):
             'primary': True,
             'key': True
         })
-        self.default = 'DEFAULT'
+        self.default = Unquoted('DEFAULT')
         super().__init__(**kwargs)
 
 
@@ -56,12 +51,6 @@ class Timestamp(Column):
     def __init__(self, default: 'Datetime' = None, **kwargs) -> None:
         self.default = default
         super().__init__(**kwargs)
-
-    def format_value(self, value: t.Optional[datetime.datetime]):
-        if not value:
-            return 'null'
-        dt_string = value.isoformat().replace('T', ' ')
-        return f"'{dt_string}'"
 
 
 class Boolean(Column):

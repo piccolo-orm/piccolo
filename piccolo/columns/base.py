@@ -12,8 +12,9 @@ from .operators import (
     NotIn,
     NotLike
 )
-from ..custom_types import Iterable
 from .combination import Where
+from ..custom_types import Iterable
+from ..querystring import QueryString
 
 if t.TYPE_CHECKING:
     from ..table import Table  # noqa
@@ -53,14 +54,6 @@ class Column():
             raise ValueError('% is required for like operators')
         return Where(column=self, value=value, operator=NotLike)
 
-    def format_value(self, value):
-        """
-        Takes the raw Python value and return a string usable in the database
-        query.
-        """
-        value = value if value else 'null'
-        return f'{value}'
-
     def __lt__(self, value) -> Where:
         return Where(column=self, value=value, operator=LessThan)
 
@@ -82,7 +75,8 @@ class Column():
     def __hash__(self):
         return hash(self._name)
 
-    def __str__(self):
+    @property
+    def querystring(self) -> QueryString:
         name = getattr(self, '_name', '')
         column_type = getattr(
             self,
@@ -99,4 +93,7 @@ class Column():
         if references:
             query += f' REFERENCES {references.Meta.tablename}'
 
-        return query
+        return QueryString(query)
+
+    def __str__(self):
+        return self.querystring.__str__()

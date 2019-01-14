@@ -1,9 +1,9 @@
 import copy
 import typing as t
 
-from .engine import Engine
-from .columns import Column, PrimaryKey, ForeignKey
-from .query import (
+from piccolo.engine import Engine
+from piccolo.columns import Column, PrimaryKey, ForeignKey
+from piccolo.query import (
     Alter,
     Create,
     Delete,
@@ -16,7 +16,8 @@ from .query import (
     TableExists,
     Update,
 )
-from .utils import _camel_to_snake
+from piccolo.querystring import QueryString, Unquoted
+from piccolo.utils import _camel_to_snake
 
 
 class TableMeta(type):
@@ -256,18 +257,41 @@ class Table(metaclass=TableMeta):
     def __getitem__(self, key: str):
         return getattr(self, key)
 
-    def __str__(self):
-        row = ",".join([
-            column.format_value(
-                self[column._name]
-            ) for column in self.Meta.columns
+    ###########################################################################
+
+    @property
+    def querystring(self) -> QueryString:
+        args_dict = {
+            column._name: self[column._name] for column in self.Meta.columns
+        }
+
+        is_unquoted = (lambda arg: type(arg) == Unquoted)
+
+        # Strip out any args which are unquoted.
+        # TODO Not the cleanest place to have it (would rather have it handled
+        # in the Querystring bundle logic) - might need refactoring.
+        filtered_args = [
+            i for i in args_dict.values() if not is_unquoted(i)
+        ]
+
+        # If unquoted, dump it straight into the query.
+        query = ",".join([
+            args_dict[column._name].value if is_unquoted(
+                args_dict[column._name]
+            ) else '{}' for column in self.Meta.columns
         ])
-        return f'({row})'
+        return QueryString(
+            f'({query})',
+            *filtered_args
+        )
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
 
     ###########################################################################
 
     @classmethod
-    def get_column_by_name(cls, column_name: str):
+    def get_column_by_name(cls, column_name: str) -> Column:
         columns = [i for i in cls.Meta.columns if i._name == column_name]
 
         if len(columns) != 1:
@@ -305,10 +329,11 @@ class Table(metaclass=TableMeta):
     ###########################################################################
 
     @classmethod
+    # TODO - needs refactoring into Band.insert.rows(some_table_instance)
     def insert(cls, *rows: 'Table') -> Insert:
         """
         await Band.insert(
-            Band(name="jigglypuff", popularity=500, manager="florence")
+            Band(name="Pythonistas", popularity=500, manager=1)
         ).run()
         """
         query = Insert(
@@ -318,21 +343,28 @@ class Table(metaclass=TableMeta):
             query.add(*rows)
         return query
 
+    # TODO - needs refactoring into Band.update.columns()
     @classmethod
     def update(cls, **columns) -> Update:
         """
-        await Band.update(name='Pythonistas').where(
-            Band.name='Spamalot'
+        await Band.update(name='Spamalot').where(
+            Band.name='Pythonistas'
         ).run()
         """
         columns_str = ', '.join([
-            f'{column} = {getattr(cls, column).format_value(value)}' for (
-                column, value) in columns.items()
+            f'{column_name} = {{}}' for column_name in columns.keys()
         ])
+
+        query = f'UPDATE {cls.Meta.tablename} SET ' + columns_str
+
+        querystring = QueryString(
+            query,
+            *columns.values()
+        )
 
         return Update(
             table=cls,
-            base=f'UPDATE {cls.Meta.tablename} SET {columns_str}'
+            base=querystring
         )
 
     @classmethod
@@ -342,5 +374,5 @@ class Table(metaclass=TableMeta):
         """
         return Raw(
             table=cls,
-            base=sql
+            base=QueryString(sql)
         )

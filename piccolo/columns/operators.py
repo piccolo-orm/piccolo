@@ -1,5 +1,5 @@
 class Operator():
-    pass
+    template = ''
 
 
 class Equal(Operator):

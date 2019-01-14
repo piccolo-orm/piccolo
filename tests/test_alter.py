@@ -9,12 +9,15 @@ class TestRename(DBTestCase):
     def test_rename(self):
         self.insert_row()
 
-        Band.alter.rename(
+        rename_query = Band.alter.rename(
             Band.popularity,
             'rating'
-        ).run_sync()
+        )
 
-        response = Band.select.run_sync()
+        rename_query.run_sync()
+
+        select_query = Band.select
+        response = select_query.run_sync()
 
         column_names = response[0].keys()
         self.assertTrue(
@@ -49,12 +52,14 @@ class TestAdd(DBTestCase):
         """
         self.insert_row()
 
-        Band.alter.add(
+        add_query = Band.alter.add(
             'weight',
             Integer(),
-        ).run_sync()
+        )
+        add_query.run_sync()
 
-        response = Band.select.run_sync()
+        select_query = Band.select
+        response = select_query.run_sync()
 
         column_names = response[0].keys()
         self.assertTrue('weight' in column_names)

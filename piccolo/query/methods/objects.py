@@ -1,5 +1,6 @@
-from ..base import Query
-from ..mixins import LimitMixin, OrderByMixin, WhereMixin, Output
+from piccolo.query.base import Query
+from piccolo.query.mixins import LimitMixin, OrderByMixin, WhereMixin, Output
+from piccolo.querystring import QueryString
 from .select import Select
 
 
@@ -16,10 +17,8 @@ class Objects(
 
     _output = Output(as_objects=True)
 
-    def __str__(self):
-        """
-        Need to do this without repeating select ...
-        """
+    @property
+    def querystring(self) -> QueryString:
         select = Select(
             table=self.table,
             column_names=[]
@@ -28,4 +27,7 @@ class Objects(
         for attr in ('_limit', '_where', '_output', 'order_by'):
             setattr(select, attr, getattr(self, attr))
 
-        return select.__str__()
+        return select.querystring
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()

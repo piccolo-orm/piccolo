@@ -1,9 +1,10 @@
-import typing
+import typing as t
 
 from .operators import Operator
 from ..custom_types import Combinable, Iterable
+from piccolo.querystring import QueryString
 
-if typing.TYPE_CHECKING:
+if t.TYPE_CHECKING:
     from .base import Column  # noqa
 
 
@@ -23,10 +24,16 @@ class Combination(CombinableMixin):
         self.first = first
         self.second = second
 
-    def __str__(self):
-        return (
-            f'({self.first.__str__()} {self.operator} {self.second.__str__()})'
+    @property
+    def querystring(self):
+        return QueryString(
+            '({} ' + self.operator + ' {})',
+            self.first.querystring,
+            self.second.querystring
         )
+
+    def __str__(self):
+        self.querystring.__str__()
 
 
 class And(Combination):
@@ -42,9 +49,9 @@ class Where(CombinableMixin):
     def __init__(
         self,
         column: 'Column',
-        value: typing.Any = None,
+        value: t.Any = None,
         values: Iterable = [],
-        operator: typing.Type[Operator] = None
+        operator: t.Type[Operator] = Operator
     ) -> None:
         self.column = column
         self.value = value
@@ -52,18 +59,32 @@ class Where(CombinableMixin):
         self.operator = operator
 
     @property
-    def values_str(self) -> str:
-        return ', '.join(
-            [self.column.format_value(v) for v in self.values]
+    def values_querystring(self) -> QueryString:
+        template = ', '.join(['{}' for i in self.values])
+        return QueryString(
+            template,
+            *self.values
+        )
+
+    @property
+    def querystring(self) -> QueryString:
+        args: t.List[t.Any] = []
+        if self.value:
+            args.append(self.value)
+        if self.values:
+            args.append(self.values_querystring)
+
+        # TODO Want something cleaner than this.
+        template = self.operator.template.format(
+            name=self.column._name,
+            value='{}',
+            values='{}'
+        )
+
+        return QueryString(
+            template,
+            *args
         )
 
     def __str__(self):
-        kwargs = {
-            'name': self.column._name
-        }
-        if self.value:
-            kwargs['value'] = self.column.format_value(self.value)
-        if self.values:
-            kwargs['values'] = self.values_str
-
-        return self.operator.template.format(**kwargs)
+        return self.querystring.__str__()

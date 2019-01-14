@@ -50,11 +50,13 @@ class TestLogin(TestCase):
         password = "Bob123$$$"
         email = "bob@bob.com"
 
-        _User(
+        save_query = _User(
             username=username,
             password=password,
             email=email
-        ).save().run_sync()
+        ).save()
+
+        save_query.run_sync()
 
         authenticated = asyncio.run(
             _User.login(username, password)

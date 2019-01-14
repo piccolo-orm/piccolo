@@ -1,7 +1,17 @@
 from copy import copy
+import datetime
 from dataclasses import dataclass
 from string import Formatter
 import typing as t
+
+
+@dataclass
+class Unquoted():
+    """
+    Used when we want the value to be unquoted because it's a Postgres
+    keyword - for example DEFAULT.
+    """
+    value: str
 
 
 @dataclass
@@ -21,6 +31,10 @@ class QueryString():
         self.args = args
 
     def __str__(self):
+        """
+        The SQL returned by the __str__ method isn't used directly in queries
+        - it's just a usability feature.
+        """
         _, bundled, combined_args = self.bundle(
             start_index=1,
             bundled=[],
@@ -29,7 +43,22 @@ class QueryString():
         template = ''.join([
             fragment.prefix + ('' if fragment.no_arg else '{}') for fragment in bundled
         ])
-        return template.format(*combined_args)
+
+        # Do some basic type conversion here.
+        converted_args = []
+        for arg in combined_args:
+            _type = type(arg)
+            if _type == str:
+                converted_args.append(f"'{arg}'")
+            elif _type == datetime:
+                dt_string = arg.isoformat().replace('T', ' ')
+                converted_args.append(f"'{dt_string}'")
+            elif arg == None:
+                converted_args.append('null')
+            else:
+                converted_args.append(arg)
+
+        return template.format(*converted_args)
 
     def bundle(self, start_index=1, bundled=[], combined_args=[]):
         # Split up the string, separating by {}.
@@ -62,7 +91,7 @@ class QueryString():
 
         return (start_index, bundled, combined_args)
 
-    def compile_string(self):
+    def compile_string(self) -> t.Tuple[str, t.List[t.Any]]:
         """
         Compiles the template ready for Postgres - keeping the arguments
         separate from the template.

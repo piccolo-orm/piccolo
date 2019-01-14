@@ -1,25 +1,17 @@
 from unittest import TestCase
 
-from piccolo.query.querystring import QueryString
+from piccolo.querystring import QueryString
 
 from ..example_project.tables import Band
 
 
+# TODO - add more extensive tests (increased nesting and argument count).
 class TestQuerystring(TestCase):
 
-    # This is kind of an artificial example - you wouldn't use parameters
-    # for table names and columns.
     qs = QueryString(
-        'SELECT {} FROM {} {}',
+        'SELECT id FROM band {}',
         QueryString(
-            '{}, {}',
-            'id',
-            'name'
-        ),
-        'band',
-        QueryString(
-            "WHERE {} = '{}'",
-            'name',
+            "WHERE name = {}",
             'Pythonistas'
         )
     )
@@ -29,21 +21,29 @@ class TestQuerystring(TestCase):
 
         self.assertEqual(
             compiled_string,
-            "SELECT $1, $2 FROM $3 WHERE $4 = '$5'"
+            "SELECT id FROM band WHERE name = $1"
         )
 
         self.assertEqual(
             args,
-            ['id', 'name', 'band', 'name', 'Pythonistas']
+            ['Pythonistas']
         )
 
     def test_string(self):
         string = self.qs.__str__()
         self.assertEqual(
             string,
-            "SELECT id, name FROM band WHERE name = 'Pythonistas'"
+            "SELECT id FROM band WHERE name = 'Pythonistas'"
         )
 
+    def test_querystring_with_no_args(self):
+        qs = QueryString(
+            'SELECT name FROM band',
+        )
+        self.assertEqual(
+            qs.compile_string(),
+            ('SELECT name FROM band', [])
+        )
 
 # class TestExecuteQuerystring(TestCase):
 

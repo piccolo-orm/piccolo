@@ -1,8 +1,9 @@
 import dataclasses
 import typing as t
 
-from ..columns import And, Column
-from ..custom_types import Combinable
+from piccolo.columns import And, Column
+from piccolo.custom_types import Combinable
+from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:
     from table import Table  # noqa
@@ -15,8 +16,14 @@ class Limit():
             raise TypeError('Limit must be an integer')
         self.number = number
 
-    def __str__(self):
-        return f' LIMIT {self.number}'
+    @property
+    def querystring(self) -> QueryString:
+        return QueryString(
+            f' LIMIT {self.number}'
+        )
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
 
 
 @dataclasses.dataclass
@@ -24,10 +31,16 @@ class OrderBy():
     columns: t.Tuple[Column]
     ascending: bool
 
-    def __str__(self):
+    @property
+    def querystring(self) -> QueryString:
         order = 'ASC' if self.ascending else 'DESC'
         columns_names = ', '.join([i._name for i in self.columns])
-        return f' ORDER BY {columns_names} {order}'
+        return QueryString(
+            f' ORDER BY {columns_names} {order}'
+        )
+
+    def __str__(self):
+        return self.querystring.__str__()
 
 
 @dataclasses.dataclass

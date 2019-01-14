@@ -1,4 +1,5 @@
-from ..base import Query
+from piccolo.query.base import Query
+from piccolo.querystring import QueryString
 
 
 class Create(Query):
@@ -6,8 +7,15 @@ class Create(Query):
     Creates a database table.
     """
 
-    def __str__(self):
-        base = f'CREATE TABLE "{self.table.Meta.tablename}"'
-        columns = ', '.join([i.__str__() for i in self.table.Meta.columns])
+    @property
+    def querystring(self) -> QueryString:
+        base = f'CREATE TABLE {self.table.Meta.tablename}'
+        columns = ', '.join(['{}' for i in self.table.Meta.columns])
         query = f'{base} ({columns})'
-        return query
+        return QueryString(
+            query,
+            *[i.querystring for i in self.table.Meta.columns]
+        )
+
+    def __str__(self):
+        return self.querystring.__str__()

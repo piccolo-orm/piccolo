@@ -2,9 +2,9 @@ from collections import OrderedDict
 from itertools import groupby
 import typing as t
 
-from ..base import Query
+from piccolo.query.base import Query
 from piccolo.columns import Column, ForeignKey
-from ..mixins import (
+from piccolo.query.mixins import (
     ColumnsMixin,
     CountMixin,
     DistinctMixin,
@@ -13,6 +13,7 @@ from ..mixins import (
     OutputMixin,
     WhereMixin,
 )
+from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:
     from table import Table  # noqa
@@ -28,7 +29,7 @@ class Select(
     OutputMixin,
     WhereMixin,
 ):
-    def get_joins(self, columns: t.List[Column]):
+    def get_joins(self, columns: t.List[Column]) -> t.List[str]:
         """
         A call chain is a sequence of foreign keys representing joins which
         need to be made to retrieve a column in another table.
@@ -60,7 +61,7 @@ class Select(
         # Remove duplicates
         return list(OrderedDict.fromkeys(joins))
 
-    def check_valid_call_chain(self, keys: t.List[ForeignKey]):
+    def check_valid_call_chain(self, keys: t.List[Column]) -> bool:
         for column in keys:
             if column.call_chain:
                 # Make sure the call_chain isn't too large to discourage
@@ -71,9 +72,11 @@ class Select(
                         "Joining more than 10 tables isn't supported - "
                         "please restructure your query."
                     )
+        return True
 
-    def __str__(self):
-        joins = []
+    @property
+    def querystring(self) -> QueryString:
+        joins: t.List[str] = []
 
         if len(self.selected_columns) == 0:
             columns_str = "*"
@@ -87,7 +90,7 @@ class Select(
 
             ###################################################################
 
-            column_names = []
+            column_names: t.List[str] = []
             for column in self.selected_columns:
                 column_name = column._name
 
@@ -110,23 +113,36 @@ class Select(
         #######################################################################
 
         select = "SELECT DISTINCT" if self.distinct else "SELECT"
-        query = f'{select} {columns_str} FROM "{self.table.Meta.tablename}"'
+        query = f'{select} {columns_str} FROM {self.table.Meta.tablename}'
 
         for join in joins:
             query += f" {join}"
 
         #######################################################################
 
+        args: t.List[t.Any] = []
+
         if self._where:
-            query += f" WHERE {self._where.__str__()}"
+            query += " WHERE {}"
+            args.append(self._where.querystring)
 
         if self._order_by:
-            query += self._order_by.__str__()
+            query += " {}"
+            args.append(self._order_by.querystring)
 
         if self._limit:
-            query += self._limit.__str__()
+            query += " {}"
+            args.append(self._limit.querystring)
+
+        querystring = QueryString(query, *args)
 
         if self._count:
-            query = f"SELECT COUNT(*) FROM ({query}) AS sub_query"
+            querystring = QueryString(
+                "SELECT COUNT(*) FROM ({}) AS sub_query",
+                querystring
+            )
 
-        return query
+        return querystring
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()

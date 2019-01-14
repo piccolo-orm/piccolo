@@ -4,7 +4,8 @@ import typing as t
 
 import ujson as json
 
-from ..utils.sync import run_sync
+from piccolo.querystring import QueryString
+from piccolo.utils.sync import run_sync
 
 if t.TYPE_CHECKING:
     from table import Table  # noqa
@@ -12,8 +13,13 @@ if t.TYPE_CHECKING:
 
 class Query(object):
 
-    def __init__(self, table: 'Table', base: str = '', *args,
-                 **kwargs) -> None:
+    def __init__(
+        self,
+        table: 'Table',
+        base: QueryString = QueryString(''),
+        *args,
+        **kwargs
+    ) -> None:
         self.base = base
         self.table = table
         super().__init__()
@@ -26,9 +32,13 @@ class Query(object):
             )
 
         if in_pool:
-            results = await engine.run_in_pool(self.__str__())
+            results = await engine.run_in_pool(
+                *self.querystring.compile_string()
+            )
         else:
-            results = await engine.run(self.__str__())
+            results = await engine.run(
+                *self.querystring.compile_string()
+            )
 
         if results:
             keys = results[0].keys()
@@ -40,7 +50,7 @@ class Query(object):
         if hasattr(self, 'run_callback'):
             self.run_callback(raw)
 
-        # I have multiple ways of modifying the final output
+        # TODO - I have multiple ways of modifying the final output
         # response_handlers, and output ...
         # Might try and merge them.
         raw = self.response_handler(raw)
@@ -88,3 +98,10 @@ class Query(object):
         the database driver.
         """
         return response
+
+    @property
+    def querystring(self):
+        """
+        Subclasses need to override and return a QueryString object.
+        """
+        raise NotImplementedError()
