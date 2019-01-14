@@ -1,3 +1,4 @@
+from __future__ import annotations
 import dataclasses
 import itertools
 
@@ -69,19 +70,19 @@ class Alter(Query):
         self._drop: t.List[Drop] = []
         self._rename: t.List[Rename] = []
 
-    def add(self, name: str, column: Column) -> 'Alter':
+    def add(self, name: str, column: Column) -> Alter:
         self._add.append(
             Add(name, column)
         )
         return self
 
-    def rename(self, column: Column, new_name: str) -> 'Alter':
+    def rename(self, column: Column, new_name: str) -> Alter:
         self._rename.append(
             Rename(column, new_name)
         )
         return self
 
-    def drop(self, column: Column) -> 'Alter':
+    def drop(self, column: Column) -> Alter:
         self._drop.append(
             Drop(column)
         )

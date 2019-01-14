@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from piccolo.query.base import Query
 from piccolo.query.mixins import WhereMixin
 from piccolo.querystring import QueryString

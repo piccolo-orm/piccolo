@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 
@@ -17,5 +19,5 @@ class Create(Query):
             *[i.querystring for i in self.table.Meta.columns]
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.querystring.__str__()

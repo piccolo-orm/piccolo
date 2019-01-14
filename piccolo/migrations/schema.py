@@ -18,6 +18,7 @@ object. Add and delete operations are processed first.
 Just make the Schema's combinable.
 
 """
+from __future__ import annotations
 # TODO - not used much yet. Remove???
 
 # Consists of a bunch of operators
@@ -34,7 +35,7 @@ class Schema():
         self.column_changes = column_changes
         self.table_changes = table_changes
 
-    def __add__(self, value: 'Schema') -> 'Schema':
+    def __add__(self, value: Schema) -> Schema:
         """
         We add schema objects together to get a picture of the schema at
         a point in time.

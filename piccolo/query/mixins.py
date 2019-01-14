@@ -1,3 +1,4 @@
+from __future__ import annotations
 import dataclasses
 import typing as t
 
@@ -124,9 +125,9 @@ class AddMixin():
 
     def __init__(self):
         super().__init__()
-        self._add: t.List['Table'] = []
+        self._add: t.List[Table] = []
 
-    def add(self, *instances: 'Table'):
+    def add(self, *instances: Table):
         for instance in instances:
             if not isinstance(instance, self.table):
                 raise TypeError('Incompatible type added.')

@@ -1,3 +1,4 @@
+from __future__ import annotations
 import typing as t
 
 from .operators import Operator
@@ -9,10 +10,10 @@ if t.TYPE_CHECKING:
 
 
 class CombinableMixin(object):
-    def __and__(self, value: Combinable) -> 'And':
+    def __and__(self, value: Combinable) -> And:
         return And(self, value)
 
-    def __or__(self, value: Combinable) -> 'Or':
+    def __or__(self, value: Combinable) -> Or:
         return Or(self, value)
 
 

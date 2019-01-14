@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from piccolo.query.base import Query
 from piccolo.query.mixins import WhereMixin
 from piccolo.querystring import QueryString
@@ -10,7 +12,7 @@ class Exists(Query, WhereMixin):
     def querystring(self) -> QueryString:
         select = Select(
             self.table,
-            f'SELECT * FROM {self.table.Meta.tablename}'
+            QueryString(f'SELECT * FROM {self.table.Meta.tablename}')
         )
         select._where = self._where
         return QueryString('SELECT EXISTS({})', select.querystring)

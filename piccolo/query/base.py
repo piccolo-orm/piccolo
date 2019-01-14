@@ -1,3 +1,4 @@
+from __future__ import annotations
 import asyncio
 import itertools
 import typing as t
@@ -15,7 +16,7 @@ class Query(object):
 
     def __init__(
         self,
-        table: 'Table',
+        table: Table,
         base: QueryString = QueryString(''),
         *args,
         **kwargs
