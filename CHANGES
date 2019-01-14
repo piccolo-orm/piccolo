@@ -1,7 +1,12 @@
-v0.1.2
-======
+0.2
+===
+Using QueryString internally to represent queries, instead of raw strings, to
+harden against SQL injection.
+
+0.1.2
+=====
 Allowing joins across multiple tables.
 
-v0.1.1
-======
+0.1.1
+=====
 Added playground.
