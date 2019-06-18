@@ -21,37 +21,35 @@ class SQLiteEngine(Engine):
     def __init__(self, path: str = 'piccolo.sqlite') -> None:
         self.path = path
 
-    async def run_in_pool(self, query: str, args: t.List[t.Any] = []):
+    async def run_in_pool(
+        self,
+        query: str,
+        args: t.List[t.Any] = [],
+        query_type: str = 'generic'
+    ):
         raise NotImplementedError
 
-    async def run(self, query: str, args: t.List[t.Any] = []):
+    async def run(
+        self,
+        query: str,
+        args: t.List[t.Any] = [],
+        query_type: str = 'generic'
+    ):
         async with aiosqlite.connect(self.path) as connection:
             connection.row_factory = dict_factory
             async with connection.execute(query, args) as cursor:
                 cursor.row_factory = dict_factory
                 await connection.commit()
                 response = await cursor.fetchall()
-                print(cursor.lastrowid)
                 print(query)
                 print(args)
                 print(response)
-                return response
 
-    async def _run(self, query: str, args: t.List[t.Any] = []):
-        connection = sqlite3.connect(self.path)
-        connection.row_factory = dict_factory
-        cursor = connection.execute(query, args)
-        cursor.row_factory = dict_factory
-        connection.commit()
-        response = cursor.fetchall()
-        cursor.close()
-        connection.close()
-        print(cursor.lastrowid)
-        print(query)
-        print(args)
-        print(response)
-        import ipdb; ipdb.set_trace()
-        return response
+                print(query_type)
+                if query_type == 'insert':
+                    return [{'id': cursor.lastrowid}]
+                else:
+                    return response
 
     async def run_querystring(
         self,
@@ -60,11 +58,13 @@ class SQLiteEngine(Engine):
     ):
         if in_pool:
             return await self.run_in_pool(
-                *querystring.compile_string(engine_type=self.engine_type)
+                *querystring.compile_string(engine_type=self.engine_type),
+                query_type=querystring.query_type
             )
         else:
             return await self.run(
-                *querystring.compile_string(engine_type=self.engine_type)
+                *querystring.compile_string(engine_type=self.engine_type),
+                query_type=querystring.query_type
             )
 
     def transaction(self):

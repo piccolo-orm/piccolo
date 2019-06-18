@@ -23,12 +23,16 @@ class Fragment():
 
 class QueryString():
 
-    def __init__(self, template: str, *args: t.Any) -> None:
+    def __init__(self, template: str, *args: t.Any, query_type: str = 'generic') -> None:
         """
         Example template: "WHERE {} = {}"
+
+        The query type is sometimes used by the engine to modify how the query
+        is run.
         """
         self.template = template
         self.args = args
+        self.query_type = query_type
 
     def __str__(self):
         """
