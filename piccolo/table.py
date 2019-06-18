@@ -270,7 +270,7 @@ class Table(metaclass=TableMeta):
         Used when inserting rows.
         """
         args_dict = {
-            col._name: self[col._name] for col in self.Meta.non_default_columns
+            col._name: self[col._name] for col in self.Meta.columns
         }
 
         is_unquoted = (lambda arg: type(arg) == Unquoted)
@@ -286,7 +286,7 @@ class Table(metaclass=TableMeta):
         query = ",".join([
             args_dict[column._name].value if is_unquoted(
                 args_dict[column._name]
-            ) else '{}' for column in self.Meta.non_default_columns
+            ) else '{}' for column in self.Meta.columns
         ])
         return QueryString(
             f'({query})',

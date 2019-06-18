@@ -67,6 +67,8 @@ class PostgresEngine(Engine):
     Needs to be a singleton that's shared by all the tables.
     """
 
+    engine_type = 'postgres'
+
     def __init__(self, config: t.Dict[str, t.Any]) -> None:
         self.config = config
         self.pool: t.Optional[Pool] = None
@@ -107,11 +109,11 @@ class PostgresEngine(Engine):
     ):
         if in_pool:
             return await self.run_in_pool(
-                *querystring.compile_string(engine_type='postgres')
+                *querystring.compile_string(engine_type=self.engine_type)
             )
         else:
             return await self.run(
-                *querystring.compile_string(engine_type='postgres')
+                *querystring.compile_string(engine_type=self.engine_type)
             )
 
     def transaction(self):

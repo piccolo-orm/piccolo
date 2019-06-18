@@ -24,6 +24,10 @@ class Query(object):
         self.table = table
         super().__init__()
 
+    @property
+    def engine_type(self) -> str:
+        return self.table.Meta.db.engine_type
+
     async def run(self, as_dict=True, in_pool=False):
         engine = getattr(self.table.Meta, 'db', None)
         if not engine:
@@ -95,9 +99,42 @@ class Query(object):
         """
         return response
 
+    ###########################################################################
+
+    @property
+    def sqlite_querystring(self) -> QueryString:
+        raise NotImplementedError
+
+    @property
+    def postgres_querystring(self) -> QueryString:
+        raise NotImplementedError
+
+    @property
+    def default_querystring(self) -> QueryString:
+        raise NotImplementedError
+
     @property
     def querystring(self) -> QueryString:
         """
-        Subclasses need to override and return a QueryString object.
+        Calls the correct underlying method, depending on the current engine.
         """
-        raise NotImplementedError()
+        engine_type = self.engine_type
+        if engine_type == 'postgres':
+            try:
+                return self.postgres_querystring
+            except NotImplementedError:
+                return self.default_querystring
+        elif engine_type == 'sqlite':
+            try:
+                return self.sqlite_querystring
+            except NotImplementedError:
+                return self.default_querystring
+        else:
+            raise Exception(
+                f'No querystring found for the {engine_type} engine.'
+            )
+
+    ###########################################################################
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()

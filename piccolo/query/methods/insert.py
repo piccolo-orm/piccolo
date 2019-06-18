@@ -12,21 +12,31 @@ class Insert(Query, AddMixin):
             self._add[index].id = row['id']
 
     @property
-    def querystring(self) -> QueryString:
-        # To make this work, can just omit the primary key field for now?
+    def sqlite_querystring(self) -> QueryString:
         base = f'INSERT INTO {self.table.Meta.tablename}'
         columns = ','.join(
-            [i._name for i in self.table.Meta.non_default_columns]
+            [i._name for i in self.table.Meta.columns]
         )
         values = ','.join([
             '{}' for i in self._add
         ])
-        # query = f'{base} ({columns}) VALUES {values} RETURNING id'
         query = f'{base} ({columns}) VALUES {values}'
         return QueryString(
             query,
             *[i.querystring for i in self._add]
         )
 
-    def __str__(self) -> str:
-        return self.querystring.__str__()
+    @property
+    def postgres_querystring(self) -> QueryString:
+        base = f'INSERT INTO {self.table.Meta.tablename}'
+        columns = ','.join(
+            [i._name for i in self.table.Meta.columns]
+        )
+        values = ','.join([
+            '{}' for i in self._add
+        ])
+        query = f'{base} ({columns}) VALUES {values} RETURNING id'
+        return QueryString(
+            query,
+            *[i.querystring for i in self._add]
+        )

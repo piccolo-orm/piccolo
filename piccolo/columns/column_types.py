@@ -32,18 +32,19 @@ class Serial(Column):
 
 
 DEFAULT = Unquoted('DEFAULT')
-
+NULL = Unquoted('null')
 
 class PrimaryKey(Column):
-
-    column_type = 'SERIAL'
+    # Was column_type = 'SERIAL' for Postgres
+    column_type = 'INTEGER'
 
     def __init__(self, **kwargs) -> None:
         kwargs.update({
             'primary': True,
             'key': True
         })
-        self.default = DEFAULT
+        # self.default = DEFAULT for Postgres
+        self.default = NULL
         super().__init__(**kwargs)
 
 
