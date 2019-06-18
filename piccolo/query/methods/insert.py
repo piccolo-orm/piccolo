@@ -13,14 +13,16 @@ class Insert(Query, AddMixin):
 
     @property
     def querystring(self) -> QueryString:
+        # To make this work, can just omit the primary key field for now?
         base = f'INSERT INTO {self.table.Meta.tablename}'
         columns = ','.join(
-            [i._name for i in self.table.Meta.columns]
+            [i._name for i in self.table.Meta.non_default_columns]
         )
         values = ','.join([
             '{}' for i in self._add
         ])
-        query = f'{base} ({columns}) VALUES {values} RETURNING id'
+        # query = f'{base} ({columns}) VALUES {values} RETURNING id'
+        query = f'{base} ({columns}) VALUES {values}'
         return QueryString(
             query,
             *[i.querystring for i in self._add]

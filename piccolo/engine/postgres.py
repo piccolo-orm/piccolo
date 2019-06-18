@@ -5,9 +5,10 @@ import typing as t
 import asyncpg
 from asyncpg.pool import Pool
 
-from .base import Engine
-from ..query.base import Query
-from ..utils.sync import run_sync
+from piccolo.engine.base import Engine
+from piccolo.query.base import Query
+from piccolo.querystring import QueryString
+from piccolo.utils.sync import run_sync
 
 
 class Transaction():
@@ -98,6 +99,20 @@ class PostgresEngine(Engine):
         results = await connection.fetch(query, *args)
         await connection.close()
         return results
+
+    async def run_querystring(
+        self,
+        querystring: QueryString,
+        in_pool: bool = False
+    ):
+        if in_pool:
+            return await self.run_in_pool(
+                *querystring.compile_string(engine_type='postgres')
+            )
+        else:
+            return await self.run(
+                *querystring.compile_string(engine_type='postgres')
+            )
 
     def transaction(self):
         return Transaction(engine=self)

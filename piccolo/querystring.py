@@ -1,5 +1,4 @@
 from __future__ import annotations
-from copy import copy
 import datetime
 from dataclasses import dataclass
 from string import Formatter
@@ -92,7 +91,10 @@ class QueryString():
 
         return (start_index, bundled, combined_args)
 
-    def compile_string(self) -> t.Tuple[str, t.List[t.Any]]:
+    def compile_string(
+        self,
+        engine_type: str = 'postgres'
+    ) -> t.Tuple[str, t.List[t.Any]]:
         """
         Compiles the template ready for Postgres - keeping the arguments
         separate from the template.
@@ -102,7 +104,15 @@ class QueryString():
             bundled=[],
             combined_args=[]
         )
-        string = ''.join([
-            fragment.prefix + ('' if fragment.no_arg else f'${fragment.index}') for fragment in bundled
-        ])
+        if engine_type == 'postgres':
+            string = ''.join([
+                fragment.prefix + ('' if fragment.no_arg else f'${fragment.index}') for fragment in bundled
+            ])
+        elif engine_type == 'sqlite':
+            string = ''.join([
+                fragment.prefix + ('' if fragment.no_arg else '?') for fragment in bundled
+            ])
+        else:
+            raise Exception('Engine type not recognised')
+
         return (string, combined_args)

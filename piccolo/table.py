@@ -56,6 +56,9 @@ class TableMeta(type):
                         columns = _columns + columns
 
         table.Meta.columns = columns
+        table.Meta.non_default_columns = [
+            i for i in columns if type(i) != PrimaryKey
+        ]
         return table
 
     ###########################################################################
@@ -178,6 +181,7 @@ class Table(metaclass=TableMeta):
     class Meta:
         tablename = None
         columns: t.List[Column] = []
+        non_default_columns: t.List[Column] = []
         db: t.Optional[Engine] = None
 
     def __init__(self, **kwargs):
@@ -262,8 +266,11 @@ class Table(metaclass=TableMeta):
 
     @property
     def querystring(self) -> QueryString:
+        """
+        Used when inserting rows.
+        """
         args_dict = {
-            column._name: self[column._name] for column in self.Meta.columns
+            col._name: self[col._name] for col in self.Meta.non_default_columns
         }
 
         is_unquoted = (lambda arg: type(arg) == Unquoted)
@@ -279,7 +286,7 @@ class Table(metaclass=TableMeta):
         query = ",".join([
             args_dict[column._name].value if is_unquoted(
                 args_dict[column._name]
-            ) else '{}' for column in self.Meta.columns
+            ) else '{}' for column in self.Meta.non_default_columns
         ])
         return QueryString(
             f'({query})',

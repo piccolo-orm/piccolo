@@ -8,10 +8,11 @@ import click
 
 from piccolo import table
 from piccolo import columns
-from piccolo.engine import PostgresEngine
+from piccolo.engine import SQLiteEngine
 
 
-DB = PostgresEngine({})
+# DB = PostgresEngine({})
+DB = SQLiteEngine()
 
 
 class Manager(table.Table):

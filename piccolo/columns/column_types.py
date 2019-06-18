@@ -1,6 +1,4 @@
 import copy
-import datetime
-import inspect
 import typing as t
 
 from piccolo.columns.base import Column
@@ -33,6 +31,9 @@ class Serial(Column):
         super().__init__(**kwargs)
 
 
+DEFAULT = Unquoted('DEFAULT')
+
+
 class PrimaryKey(Column):
 
     column_type = 'SERIAL'
@@ -42,7 +43,7 @@ class PrimaryKey(Column):
             'primary': True,
             'key': True
         })
-        self.default = Unquoted('DEFAULT')
+        self.default = DEFAULT
         super().__init__(**kwargs)
 
 
