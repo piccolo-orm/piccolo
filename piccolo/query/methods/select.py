@@ -80,12 +80,12 @@ class Select(
         joins: t.List[str] = []
 
         if len(self.selected_columns) == 0:
-            columns_str = "*"
-        else:
-            column_names: t.List[str] = [
-                c.get_full_name() for c in self.selected_columns
-            ]
-            columns_str = ", ".join(column_names)
+            self.selected_columns = self.table.Meta.columns
+
+        column_names: t.List[str] = [
+            c.get_full_name() for c in self.selected_columns
+        ]
+        columns_str = ", ".join(column_names)
 
         #######################################################################
         # JOIN

@@ -82,7 +82,7 @@ class Column():
         column_name = self._name
 
         if not self.call_chain:
-            return f"{self.table.Meta.tablename}.{column_name}"
+            return f"{self._table.Meta.tablename}.{column_name}"
 
         column_name = (
             "$".join([i._name for i in self.call_chain])

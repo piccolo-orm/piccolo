@@ -41,11 +41,6 @@ class TableMeta(type):
             table.Meta.tablename = _camel_to_snake(name)
 
         columns = []
-        for key, value in namespace.items():
-            if issubclass(type(value), Column):
-                columns.append(value)
-                value._name = key
-                value._table = table
 
         # In case super classes also have columns.
         if bases:
@@ -54,6 +49,15 @@ class TableMeta(type):
                     _columns = getattr(base.Meta, 'columns', None)
                     if _columns:
                         columns = _columns + columns
+
+            if 'id' not in namespace.keys():
+                namespace['id'] = PrimaryKey()
+
+        for key, value in namespace.items():
+            if issubclass(type(value), Column):
+                columns.append(value)
+                value._name = key
+                value._table = table
 
         table.Meta.columns = columns
         table.Meta.non_default_columns = [
@@ -175,8 +179,6 @@ class TableMeta(type):
 
 
 class Table(metaclass=TableMeta):
-
-    id = PrimaryKey()
 
     class Meta:
         tablename = None
