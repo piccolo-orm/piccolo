@@ -75,8 +75,31 @@ class Column():
     def __hash__(self):
         return hash(self._name)
 
+    def get_full_name(self, just_alias=False) -> str:
+        """
+        Returns the full column name, taking into account joins.
+        """
+        column_name = self._name
+
+        if not self.call_chain:
+            return f"{self.table.Meta.tablename}.{column_name}"
+
+        column_name = (
+            "$".join([i._name for i in self.call_chain])
+            + f"${column_name}"
+        )
+
+        alias = f"{self.call_chain[-1].table_alias}.{self._name}"
+        if just_alias:
+            return alias
+        else:
+            return f'{alias} AS "{column_name}"'
+
     @property
     def querystring(self) -> QueryString:
+        """
+        Used when creating tables.
+        """
         name = getattr(self, '_name', '')
         column_type = getattr(
             self,

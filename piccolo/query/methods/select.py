@@ -82,34 +82,21 @@ class Select(
         if len(self.selected_columns) == 0:
             columns_str = "*"
         else:
-            ###################################################################
-            # JOIN
-
-            self.check_valid_call_chain(self.selected_columns)
-
-            joins = self.get_joins(self.selected_columns)
-
-            ###################################################################
-
-            column_names: t.List[str] = []
-            for column in self.selected_columns:
-                column_name = column._name
-
-                if not column.call_chain:
-                    column_names.append(
-                        f"{self.table.Meta.tablename}.{column_name}"
-                    )
-                    continue
-
-                column_name = (
-                    "$".join([i._name for i in column.call_chain])
-                    + f"${column_name}"
-                )
-
-                alias = f"{column.call_chain[-1].table_alias}.{column._name}"
-                column_names.append(f'{alias} AS "{column_name}"')
-
+            column_names: t.List[str] = [
+                c.get_full_name() for c in self.selected_columns
+            ]
             columns_str = ", ".join(column_names)
+
+        #######################################################################
+        # JOIN
+
+        self.check_valid_call_chain(self.selected_columns)
+
+        select_joins = self.get_joins(self.selected_columns)
+        where_joins = self.get_joins(self.get_where_columns())
+
+        # Combine all joins, and remove duplicates
+        joins = list(OrderedDict.fromkeys(select_joins + where_joins))
 
         #######################################################################
 

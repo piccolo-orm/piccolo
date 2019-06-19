@@ -77,7 +77,7 @@ class Where(CombinableMixin):
 
         # TODO Want something cleaner than this.
         template = self.operator.template.format(
-            name=self.column._name,
+            name=self.column.get_full_name(just_alias=True),
             value='{}',
             values='{}'
         )

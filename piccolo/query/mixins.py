@@ -2,7 +2,7 @@ from __future__ import annotations
 import dataclasses
 import typing as t
 
-from piccolo.columns import And, Column
+from piccolo.columns import And, Column, Where, Or
 from piccolo.custom_types import Combinable
 from piccolo.querystring import QueryString
 
@@ -56,6 +56,23 @@ class WhereMixin():
     def __init__(self):
         super().__init__()
         self._where: t.Optional[Combinable] = []
+        self._where_columns: t.List[Column] = []
+
+    def get_where_columns(self):
+        """
+        Retrieves all columns used in the where clause - in case joins are
+        needed.
+        """
+        self._where_columns = []
+        self.extract_columns(self._where)
+        return self._where_columns
+
+    def extract_columns(self, combinable: Combinable):
+        if isinstance(combinable, Where):
+            self._where_columns.append(combinable.column)
+        elif isinstance(combinable, And) or isinstance(combinable, Or):
+            self.extract_columns(combinable.first)
+            self.extract_columns(combinable.second)
 
     def where(self, where: Combinable):
         if self._where:
