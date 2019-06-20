@@ -16,6 +16,8 @@ class TestRename(DBTestCase):
 
         rename_query.run_sync()
 
+        # The problem now is select * has changed
+        # Need to use a raw select query instead ...
         select_query = Band.select
         response = select_query.run_sync()
 

@@ -34,17 +34,24 @@ class Serial(Column):
 DEFAULT = Unquoted('DEFAULT')
 NULL = Unquoted('null')
 
+
 class PrimaryKey(Column):
     # Was column_type = 'SERIAL' for Postgres
     column_type = 'INTEGER'
+
+    def default(self, engine_type: str = 'postgres'):
+        if engine_type == 'postgres':
+            return DEFAULT
+        elif engine_type == 'sqlite':
+            return NULL
+        else:
+            raise Exception('Unrecognized engine type')
 
     def __init__(self, **kwargs) -> None:
         kwargs.update({
             'primary': True,
             'key': True
         })
-        # self.default = DEFAULT for Postgres
-        self.default = NULL
         super().__init__(**kwargs)
 
 
