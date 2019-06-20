@@ -16,9 +16,7 @@ class TestRename(DBTestCase):
 
         rename_query.run_sync()
 
-        # The problem now is select * has changed
-        # Need to use a raw select query instead ...
-        select_query = Band.select
+        select_query = Band.raw('SELECT * FROM band')
         response = select_query.run_sync()
 
         column_names = response[0].keys()
@@ -36,7 +34,7 @@ class TestDrop(DBTestCase):
             Band.popularity,
         ).run_sync()
 
-        response = Band.select.run_sync()
+        response = Band.raw('SELECT * FROM band').run_sync()
 
         column_names = response[0].keys()
         self.assertTrue(
@@ -60,8 +58,7 @@ class TestAdd(DBTestCase):
         )
         add_query.run_sync()
 
-        select_query = Band.select
-        response = select_query.run_sync()
+        response = Band.raw('SELECT * FROM band').run_sync()
 
         column_names = response[0].keys()
         self.assertTrue('weight' in column_names)

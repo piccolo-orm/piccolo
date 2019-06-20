@@ -1,44 +1,44 @@
 import unittest
 
 from piccolo import columns
+from piccolo.table import Table
 
 
-name_column = columns.Varchar()
-# Usually this is handled by the Table MetaClass:
-name_column._name = 'name'
+class TestTable(Table):
+    name = columns.Varchar()
 
 
 class TestColumns(unittest.TestCase):
 
     def test_equals(self):
-        _where = (name_column == 'Pythonistas')
+        _where = (TestTable.name == 'Pythonistas')
         sql = _where.__str__()
         print(sql)
-        self.assertEqual(sql, "name = 'Pythonistas'")
+        self.assertEqual(sql, "test_table.name = 'Pythonistas'")
 
     def test_not_equal(self):
-        _where = (name_column != 'CSharps')
+        _where = (TestTable.name != 'CSharps')
         sql = _where.__str__()
         print(sql)
-        self.assertEqual(sql, "name != 'CSharps'")
+        self.assertEqual(sql, "test_table.name != 'CSharps'")
 
     def test_like(self):
-        _where = name_column.like('Python%')
+        _where = TestTable.name.like('Python%')
         sql = _where.__str__()
         print(sql)
-        self.assertEqual(sql, "name LIKE 'Python%'")
+        self.assertEqual(sql, "test_table.name LIKE 'Python%'")
 
     def test_is_in(self):
-        _where = name_column.is_in(['Pythonistas', 'Rustaceans'])
+        _where = TestTable.name.is_in(['Pythonistas', 'Rustaceans'])
         sql = _where.__str__()
         print(sql)
-        self.assertEqual(sql, "name IN ('Pythonistas', 'Rustaceans')")
+        self.assertEqual(sql, "test_table.name IN ('Pythonistas', 'Rustaceans')")
 
     def test_not_in(self):
-        _where = name_column.not_in(['CSharps'])
+        _where = TestTable.name.not_in(['CSharps'])
         sql = _where.__str__()
         print(sql)
-        self.assertEqual(sql, "name NOT IN ('CSharps')")
+        self.assertEqual(sql, "test_table.name NOT IN ('CSharps')")
 
 
 class TestWhere():
