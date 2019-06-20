@@ -94,9 +94,14 @@ class Select(
 
         select_joins = self.get_joins(self.selected_columns)
         where_joins = self.get_joins(self.get_where_columns())
+        order_by_joins = self.get_joins(self.get_order_by_columns())
 
         # Combine all joins, and remove duplicates
-        joins = list(OrderedDict.fromkeys(select_joins + where_joins))
+        joins = list(
+            OrderedDict.fromkeys(
+                select_joins + where_joins + order_by_joins
+            )
+        )
 
         #######################################################################
 

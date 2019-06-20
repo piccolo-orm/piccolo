@@ -35,7 +35,9 @@ class OrderBy():
     @property
     def querystring(self) -> QueryString:
         order = 'ASC' if self.ascending else 'DESC'
-        columns_names = ', '.join([i._name for i in self.columns])
+        columns_names = ', '.join(
+            [i.get_full_name(just_alias=True) for i in self.columns]
+        )
         return QueryString(
             f' ORDER BY {columns_names} {order}'
         )
@@ -64,15 +66,15 @@ class WhereMixin():
         needed.
         """
         self._where_columns = []
-        self.extract_columns(self._where)
+        self._extract_columns(self._where)
         return self._where_columns
 
-    def extract_columns(self, combinable: Combinable):
+    def _extract_columns(self, combinable: Combinable):
         if isinstance(combinable, Where):
             self._where_columns.append(combinable.column)
         elif isinstance(combinable, And) or isinstance(combinable, Or):
-            self.extract_columns(combinable.first)
-            self.extract_columns(combinable.second)
+            self._extract_columns(combinable.first)
+            self._extract_columns(combinable.second)
 
     def where(self, where: Combinable):
         if self._where:
@@ -87,6 +89,9 @@ class OrderByMixin():
     def __init__(self):
         super().__init__()
         self._order_by: t.Optional[OrderBy] = None
+
+    def get_order_by_columns(self) -> t.List[Column]:
+        return list(self._order_by.columns) if self._order_by else []
 
     def order_by(self, *columns: Column, ascending=True):
         self._order_by = OrderBy(columns, ascending)
