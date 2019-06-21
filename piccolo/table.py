@@ -177,6 +177,19 @@ class TableMeta(type):
             table=cls,
         )
 
+    @property
+    def update(cls) -> Update:
+        """
+        Update rows.
+
+        await Band.update.values(
+            {Band.name: "Spamalot"}
+        ).where(Band.name=="Pythonistas")
+        """
+        return Update(
+            table=cls,
+        )
+
 
 class Table(metaclass=TableMeta):
 
@@ -354,30 +367,6 @@ class Table(metaclass=TableMeta):
         if rows:
             query.add(*rows)
         return query
-
-    # TODO - needs refactoring into Band.update.columns()
-    @classmethod
-    def update(cls, **columns) -> Update:
-        """
-        await Band.update(name='Spamalot').where(
-            Band.name='Pythonistas'
-        ).run()
-        """
-        columns_str = ', '.join([
-            f'{column_name} = {{}}' for column_name in columns.keys()
-        ])
-
-        query = f'UPDATE {cls.Meta.tablename} SET ' + columns_str
-
-        querystring = QueryString(
-            query,
-            *columns.values()
-        )
-
-        return Update(
-            table=cls,
-            base=querystring
-        )
 
     @classmethod
     def raw(cls, sql: str) -> Raw:

@@ -198,3 +198,21 @@ class ColumnsMixin():
     def columns(self, *columns: Column):
         self.selected_columns += columns
         return self
+
+
+class ValuesMixin():
+    """
+    Used to specify new column values - primarily used in update queries.
+
+    Example usage:
+
+    .values({MyTable.column_a: 1})
+    """
+
+    def __init__(self):
+        super().__init__()
+        self._values: t.Dict[Column, t.Any] = {}
+
+    def values(self, values: t.Dict[Column, t.Any]):
+        self._values.update(values)
+        return self

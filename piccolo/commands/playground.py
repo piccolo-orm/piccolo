@@ -8,7 +8,7 @@ import click
 
 from piccolo import table
 from piccolo import columns
-from piccolo.engine import SQLiteEngine
+from piccolo.engine import SQLiteEngine, PostgresEngine
 
 
 # DB = PostgresEngine({})
