@@ -1,2 +1,2 @@
 class Engine():
-    pass
+    engine_type = 'engine'

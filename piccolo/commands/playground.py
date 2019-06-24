@@ -11,7 +11,6 @@ from piccolo import columns
 from piccolo.engine import SQLiteEngine, PostgresEngine
 
 
-# DB = PostgresEngine({})
 DB = SQLiteEngine()
 
 
@@ -102,13 +101,38 @@ def populate():
 
 
 @click.command(name="playground")
-@click.option('--user', default='piccolo', help='Postgres user')
-@click.option('--password', default='piccolo', help='Postgres password')
-@click.option('--database', default='piccolo_playground',
-              help='Postgres database')
-@click.option('--host', default='localhost', help='Postgres host')
-@click.option('--port', default=5432, help='Postgres port')
-def playground(user, password, database, host, port):
+@click.option(
+    '--engine',
+    default='sqlite',
+    help='Which database engine to use',
+    type=click.Choice(['sqlite', 'postgres'])
+)
+@click.option(
+    '--user',
+    default='piccolo',
+    help='Postgres user'
+)
+@click.option(
+    '--password',
+    default='piccolo',
+    help='Postgres password'
+)
+@click.option(
+    '--database',
+    default='piccolo_playground',
+    help='Postgres database'
+)
+@click.option(
+    '--host',
+    default='localhost',
+    help='Postgres host'
+)
+@click.option(
+    '--port',
+    default=5432,
+    help='Postgres port'
+)
+def playground(engine, user, password, database, host, port):
     """
     Creates a test database to play with.
     """
@@ -121,15 +145,16 @@ def playground(user, password, database, host, port):
         )
         sys.exit(1)
 
-    global DB
-
-    DB.config = {
-        'host': host,
-        'database': database,
-        'user': user,
-        'password': password,
-        'port': port
-    }
+    if engine.upper() == 'POSTGRES':
+        db = PostgresEngine({
+            'host': host,
+            'database': database,
+            'user': user,
+            'password': password,
+            'port': port
+        })
+        for _table in TABLES:
+            _table.Meta.db = db
 
     print('Tables:\n')
 
