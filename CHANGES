@@ -1,3 +1,8 @@
+0.3
+===
+Tweaked API to support more auto completion. Join support in where clause.
+Basic SQLite support - mostly for playground.
+
 0.2
 ===
 Using QueryString internally to represent queries, instead of raw strings, to
