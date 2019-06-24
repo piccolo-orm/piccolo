@@ -115,6 +115,7 @@ class LimitMixin():
 
         return response[0]
 
+    @property
     def first(self):
         self._limit = Limit(1)
         self.response_handler = self._response_handler

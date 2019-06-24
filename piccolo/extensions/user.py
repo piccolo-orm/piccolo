@@ -72,7 +72,7 @@ class User(Table):
         try:
             response = await cls.select.columns(cls.id, cls.password).where(
                 (cls.username == username)
-            ).first().run()
+            ).first.run()
         except ValueError:
             # No match found
             return None

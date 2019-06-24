@@ -274,7 +274,7 @@ class Table(metaclass=TableMeta):
 
         return references.objects.where(
             references.get_column_by_name('id') == getattr(self, column_name)
-        ).first()
+        ).first
 
     def __setitem__(self, key: str, value: t.Any):
         setattr(self, key, value)

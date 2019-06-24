@@ -238,7 +238,7 @@ class TestSelect(DBTestCase):
             Band.name
         ).order_by(
             Band.name
-        ).first().run_sync()
+        ).first.run_sync()
 
         print(f'response = {response}')
 
