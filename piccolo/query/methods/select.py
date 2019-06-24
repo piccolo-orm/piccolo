@@ -1,10 +1,9 @@
 from __future__ import annotations
 from collections import OrderedDict
-from itertools import groupby
 import typing as t
 
 from piccolo.query.base import Query
-from piccolo.columns import Column, ForeignKey
+from piccolo.columns import Column
 from piccolo.query.mixins import (
     ColumnsMixin,
     CountMixin,
@@ -77,7 +76,21 @@ class Select(
 
     @property
     def querystring(self) -> QueryString:
-        joins: t.List[str] = []
+        # JOIN
+        self.check_valid_call_chain(self.selected_columns)
+
+        select_joins = self.get_joins(self.selected_columns)
+        where_joins = self.get_joins(self.get_where_columns())
+        order_by_joins = self.get_joins(self.get_order_by_columns())
+
+        # Combine all joins, and remove duplicates
+        joins: t.List[str] = list(
+            OrderedDict.fromkeys(
+                select_joins + where_joins + order_by_joins
+            )
+        )
+
+        #######################################################################
 
         if len(self.selected_columns) == 0:
             self.selected_columns = self.table.Meta.columns
@@ -86,22 +99,6 @@ class Select(
             c.get_full_name() for c in self.selected_columns
         ]
         columns_str = ", ".join(column_names)
-
-        #######################################################################
-        # JOIN
-
-        self.check_valid_call_chain(self.selected_columns)
-
-        select_joins = self.get_joins(self.selected_columns)
-        where_joins = self.get_joins(self.get_where_columns())
-        order_by_joins = self.get_joins(self.get_order_by_columns())
-
-        # Combine all joins, and remove duplicates
-        joins = list(
-            OrderedDict.fromkeys(
-                select_joins + where_joins + order_by_joins
-            )
-        )
 
         #######################################################################
 

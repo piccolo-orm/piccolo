@@ -16,7 +16,7 @@ class TestObjects(DBTestCase):
         self.assertTrue(isinstance(instance, Band))
         self.assertTrue(instance.name == 'Pythonistas')
 
-        # No try changing the value and saving it.
+        # Now try changing the value and saving it.
         instance.name = 'Rustaceans'
         save_query = instance.save()
         save_query.run_sync()

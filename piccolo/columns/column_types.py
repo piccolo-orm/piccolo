@@ -36,8 +36,15 @@ NULL = Unquoted('null')
 
 
 class PrimaryKey(Column):
-    # Was column_type = 'SERIAL' for Postgres
-    column_type = 'INTEGER'
+
+    @property
+    def column_type(self):
+        engine_type = self._table.Meta.db.engine_type
+        if engine_type == 'postgres':
+            return 'SERIAL'
+        elif engine_type == 'sqlite':
+            return 'INTEGER'
+        raise Exception('Unrecognized engine type')
 
     def default(self, engine_type: str = 'postgres'):
         if engine_type == 'postgres':

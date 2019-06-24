@@ -88,7 +88,6 @@ class Column():
             "$".join([i._name for i in self.call_chain])
             + f"${column_name}"
         )
-
         alias = f"{self.call_chain[-1].table_alias}.{self._name}"
         if just_alias:
             return alias

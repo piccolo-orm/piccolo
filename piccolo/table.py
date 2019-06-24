@@ -48,10 +48,13 @@ class TableMeta(type):
                 if hasattr(base, 'Meta'):
                     _columns = getattr(base.Meta, 'columns', None)
                     if _columns:
-                        columns = _columns + columns
+                        # Don't copy over the primary key.
+                        columns = [i for i in _columns if not
+                                   isinstance(i, PrimaryKey)] + columns
 
-            if 'id' not in namespace.keys():
-                namespace['id'] = PrimaryKey()
+        primary_key = PrimaryKey()
+        namespace['id'] = primary_key
+        table.id = primary_key
 
         for key, value in namespace.items():
             if issubclass(type(value), Column):
@@ -236,10 +239,10 @@ class Table(metaclass=TableMeta):
         if type(self.id) == int:
             # pre-existing row
             kwargs = {
-                i._name: getattr(self, i._name, None) for i in cls.Meta.columns
+                i: getattr(self, i._name, None) for i in cls.Meta.columns
             }
             _id = kwargs.pop('id')
-            return cls.update(**kwargs).where(
+            return cls.update.values(kwargs).where(
                 cls.id == _id
             )
         else:

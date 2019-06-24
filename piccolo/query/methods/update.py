@@ -28,14 +28,14 @@ class Update(Query, ValuesMixin, WhereMixin):
         self.validate()
 
         columns_str = ', '.join([
-            f'{column_name} = {{}}' for column_name, _ in self._values.items()
+            f'{col._name} = {{}}' for col, _ in self._values.items()
         ])
 
         query = f'UPDATE {self.table.Meta.tablename} SET ' + columns_str
 
         querystring = QueryString(
             query,
-            self._values.values()
+            *self._values.values()
         )
 
         # TODO - need to support joins
