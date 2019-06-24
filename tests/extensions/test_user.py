@@ -54,7 +54,7 @@ class TestLogin(TestCase):
             username=username,
             password=password,
             email=email
-        ).save()
+        ).save
 
         save_query.run_sync()
 

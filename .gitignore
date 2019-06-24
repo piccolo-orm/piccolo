@@ -9,3 +9,4 @@ build/
 piccolo.egg-info/
 build/
 dist/
+piccolo.sqlite

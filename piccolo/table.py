@@ -227,6 +227,7 @@ class Table(metaclass=TableMeta):
         if unrecognized:
             raise ValueError(f'Unrecognized columns - {unrecognized}')
 
+    @property
     def save(self):
         """
         A proxy to an insert or update query.
@@ -248,6 +249,7 @@ class Table(metaclass=TableMeta):
         else:
             return cls.insert().add(self)
 
+    @property
     def remove(self):
         """
         A proxy to a delete query.

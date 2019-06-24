@@ -68,37 +68,37 @@ def populate():
             print(e)
 
     guido = Manager(name="Guido")
-    guido.save().run_sync()
+    guido.save.run_sync()
 
     pythonistas = Band(
         name="Pythonistas",
         manager=guido.id,
         popularity=1000
     )
-    pythonistas.save().run_sync()
+    pythonistas.save.run_sync()
 
     graydon = Manager(name="Graydon")
-    graydon.save().run_sync()
+    graydon.save.run_sync()
 
     rustaceans = Band(
         name="Rustaceans",
         manager=graydon.id,
         popularity=500
     )
-    rustaceans.save().run_sync()
+    rustaceans.save.run_sync()
 
     venue = Venue(
         name="Amazing Venue",
         capacity=5000
     )
-    venue.save().run_sync()
+    venue.save.run_sync()
 
     concert = Concert(
         band_1=pythonistas.id,
         band_2=rustaceans.id,
         venue=venue.id
     )
-    concert.save().run_sync()
+    concert.save.run_sync()
 
 
 @click.command(name="playground")

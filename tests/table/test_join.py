@@ -33,19 +33,19 @@ class TestJoin(TestCase):
 
     def test_join(self):
         manager_1 = Manager(name="Guido")
-        manager_1.save().run_sync()
+        manager_1.save.run_sync()
 
         band_1 = Band(name="Pythonistas", manager=manager_1.id)
-        band_1.save().run_sync()
+        band_1.save.run_sync()
 
         manager_2 = Manager(name="Graydon")
-        manager_2.save().run_sync()
+        manager_2.save.run_sync()
 
         band_2 = Band(name="Rustaceans", manager=manager_2.id)
-        band_2.save().run_sync()
+        band_2.save.run_sync()
 
         venue = Venue(name="Grand Central")
-        venue.save().run_sync()
+        venue.save.run_sync()
 
         # TODO - make sure you can also do:
         # band_1=Pythonistas
@@ -53,7 +53,7 @@ class TestJoin(TestCase):
             band_1=band_1.id,
             band_2=band_2.id,
             venue=venue.id
-        ).save()
+        ).save
         save_query.run_sync()
 
         select_query = Concert.select.columns(
