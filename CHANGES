@@ -1,3 +1,7 @@
+0.3.1
+=====
+Update click version.
+
 0.3
 ===
 Tweaked API to support more auto completion. Join support in where clause.
