@@ -46,13 +46,13 @@ class PrimaryKey(Column):
             return 'INTEGER'
         raise Exception('Unrecognized engine type')
 
-    def default(self, engine_type: str = 'postgres'):
+    def default(self):
+        engine_type = self._table.Meta.db.engine_type
         if engine_type == 'postgres':
             return DEFAULT
         elif engine_type == 'sqlite':
             return NULL
-        else:
-            raise Exception('Unrecognized engine type')
+        raise Exception('Unrecognized engine type')
 
     def __init__(self, **kwargs) -> None:
         kwargs.update({

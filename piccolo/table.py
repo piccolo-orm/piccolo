@@ -215,9 +215,7 @@ class Table(metaclass=TableMeta):
                     # Can't use inspect - can't tell that datetime.datetime.now
                     # is a callable.
                     is_callable = hasattr(column.default, '__call__')
-                    value = column.default(
-                        engine_type=self.Meta.db.engine_type
-                    ) if is_callable else column.default
+                    value = column.default() if is_callable else column.default
                 else:
                     if not column.null:
                         raise ValueError(f"{column._name} wasn't provided")
