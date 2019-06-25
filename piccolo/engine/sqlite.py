@@ -41,11 +41,11 @@ class SQLiteEngine(Engine):
                 cursor.row_factory = dict_factory
                 await connection.commit()
                 response = await cursor.fetchall()
-                print(query)
-                print(args)
-                print(response)
+                # print(query)
+                # print(args)
+                # print(response)
 
-                print(query_type)
+                # print(query_type)
                 if query_type == 'insert':
                     return [{'id': cursor.lastrowid}]
                 else:
