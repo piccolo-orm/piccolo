@@ -23,6 +23,8 @@ if t.TYPE_CHECKING:
 
 class Column():
 
+    value_type = int
+
     def __init__(
         self,
         null: bool = True,

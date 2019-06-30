@@ -1,3 +1,7 @@
+0.3.3
+=====
+Added value types to columns.
+
 0.3.2
 =====
 Default values infer the engine type.

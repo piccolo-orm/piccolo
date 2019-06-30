@@ -1,4 +1,5 @@
 import copy
+from datetime import datetime
 import typing as t
 
 from piccolo.columns.base import Column
@@ -10,6 +11,8 @@ if t.TYPE_CHECKING:
 
 
 class Varchar(Column):
+
+    value_type = str
 
     def __init__(self, length: int = 255, default: str = None,
                  **kwargs) -> None:
@@ -64,12 +67,16 @@ class PrimaryKey(Column):
 
 class Timestamp(Column):
 
+    value_type = datetime
+
     def __init__(self, default: 'Datetime' = None, **kwargs) -> None:
         self.default = default
         super().__init__(**kwargs)
 
 
 class Boolean(Column):
+
+    value_type = bool
 
     def __init__(self, default: bool = False, **kwargs) -> None:
         self.default = default
