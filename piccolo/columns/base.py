@@ -23,7 +23,7 @@ if t.TYPE_CHECKING:
 
 class Column():
 
-    value_type = int
+    value_type: t.Type = int
 
     def __init__(
         self,
