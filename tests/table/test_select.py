@@ -47,6 +47,22 @@ class TestSelect(DBTestCase):
             [{'name': 'Pythonistas'}]
         )
 
+    def test_where_ilike(self):
+        self.insert_rows()
+
+        response = Band.select.columns(
+            Band.name
+        ).where(
+            Band.name.ilike('python%')
+        ).run_sync()
+
+        print(f'response = {response}')
+
+        self.assertEqual(
+            response,
+            [{'name': 'Pythonistas'}]
+        )
+
     def test_where_not_like(self):
         self.insert_rows()
 

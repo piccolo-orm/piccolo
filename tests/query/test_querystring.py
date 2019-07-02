@@ -2,8 +2,6 @@ from unittest import TestCase
 
 from piccolo.querystring import QueryString
 
-from ..example_project.tables import Band
-
 
 # TODO - add more extensive tests (increased nesting and argument count).
 class TestQuerystring(TestCase):

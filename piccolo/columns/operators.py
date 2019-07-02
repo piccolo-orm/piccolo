@@ -22,6 +22,10 @@ class Like(Operator):
     template = "{name} LIKE {value}"
 
 
+class ILike(Operator):
+    template = "{name} ILIKE {value}"
+
+
 class NotLike(Operator):
     template = "{name} NOT LIKE {value}"
 

@@ -8,6 +8,7 @@ from .operators import (
     LessEqualThan,
     LessThan,
     Like,
+    ILike,
     NotEqual,
     NotIn,
     NotLike
@@ -50,6 +51,11 @@ class Column():
         if '%' not in value:
             raise ValueError('% is required for like operators')
         return Where(column=self, value=value, operator=Like)
+
+    def ilike(self, value: str) -> Where:
+        if '%' not in value:
+            raise ValueError('% is required for ilike operators')
+        return Where(column=self, value=value, operator=ILike)
 
     def not_like(self, value: str) -> Where:
         if '%' not in value:
