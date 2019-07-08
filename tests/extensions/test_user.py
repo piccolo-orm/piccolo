@@ -1,11 +1,11 @@
 import asyncio
 from unittest import TestCase
 
-from piccolo.extensions.user import User
+from piccolo.extensions.user import BaseUser
 from ..example_project.tables import DB
 
 
-class _User(User):
+class User(BaseUser):
     class Meta():
         tablename = 'a_user'
         db = DB
@@ -19,11 +19,11 @@ class TestCreateUserTable(TestCase):
         """
         exception = None
         try:
-            _User.create.run_sync()
+            User.create.run_sync()
         except Exception as e:
             exception = e
         else:
-            _User.drop.run_sync()
+            User.drop.run_sync()
 
         if exception:
             raise exception
@@ -40,17 +40,17 @@ class TestHashPassword(TestCase):
 class TestLogin(TestCase):
 
     def setUp(self):
-        _User.create.run_sync()
+        User.create.run_sync()
 
     def tearDown(self):
-        _User.drop.run_sync()
+        User.drop.run_sync()
 
     def test_login(self):
         username = "bob"
         password = "Bob123$$$"
         email = "bob@bob.com"
 
-        save_query = _User(
+        save_query = User(
             username=username,
             password=password,
             email=email
@@ -59,11 +59,11 @@ class TestLogin(TestCase):
         save_query.run_sync()
 
         authenticated = asyncio.run(
-            _User.login(username, password)
+            User.login(username, password)
         )
         self.assertTrue(authenticated is not None)
 
         authenticated = asyncio.run(
-            _User.login(username, 'blablabla')
+            User.login(username, 'blablabla')
         )
         self.assertTrue(not authenticated)

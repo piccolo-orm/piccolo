@@ -1,5 +1,5 @@
 """
-A User model which can be subclassed in projects.
+A User model, used for authentication.
 """
 import hashlib
 import secrets
@@ -9,18 +9,19 @@ from piccolo.table import Table
 from piccolo.columns import Varchar, Boolean
 
 
-# Might change to BaseUser ... making it clearer that it needs to be
-# subclassed ...
-class User(Table):
+class BaseUser(Table):
     """
-    The password needs to be hashed.
+    Subclass this table in your own project, so Meta.db can be defined.
     """
     username = Varchar(length=100)
     password = Varchar(length=255)
     email = Varchar(length=255)
     active = Boolean(default=False)
+    admin = Boolean(default=False)
 
     class Meta():
+        # This is required because 'user' is a reserved keyword in SQL, so
+        # using it as a tablename causes issues.
         tablename = 'a_user'
 
     def __init__(self, **kwargs):
@@ -91,17 +92,3 @@ class User(Table):
             return response['id']
         else:
             return None
-
-
-# Things to consider ...
-# just have some class methods around it ...
-# or some methods ...
-# One problem is ... need to define a secret key to salt the hash
-# When people subclass it ... can add the hash???
-# Need to have the ability in a table to transform values during __init__ and
-# __set__.
-
-# I don't think you have one salt ... I think it's random each time ...
-# and you use it to hash the password, and then store something like this:
-# encryption_method$iterations$salt$hashed_and_salted_password
-# If you know the salt ... couldn't you just regenerate rainbow tables???
