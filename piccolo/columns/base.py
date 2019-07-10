@@ -1,4 +1,5 @@
 import typing as t
+import warning
 
 from .operators import (
     Equal,
@@ -11,7 +12,8 @@ from .operators import (
     ILike,
     NotEqual,
     NotIn,
-    NotLike
+    NotLike,
+    Operator
 )
 from .combination import Where
 from ..custom_types import Iterable
@@ -55,7 +57,14 @@ class Column():
     def ilike(self, value: str) -> Where:
         if '%' not in value:
             raise ValueError('% is required for ilike operators')
-        return Where(column=self, value=value, operator=ILike)
+        if self._table.Meta.db.engine_type == 'postgres':
+            operator: t.Type[Operator] = ILike
+        else:
+            warning.warn(
+                "SQLite doesn't support ILIKE currently, falling back to LIKE."
+            )
+            operator = Like
+        return Where(column=self, value=value, operator=operator)
 
     def not_like(self, value: str) -> Where:
         if '%' not in value:
