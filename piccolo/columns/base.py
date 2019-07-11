@@ -1,5 +1,5 @@
 import typing as t
-import warning
+import warnings
 
 from .operators import (
     Equal,
@@ -60,7 +60,7 @@ class Column():
         if self._table.Meta.db.engine_type == 'postgres':
             operator: t.Type[Operator] = ILike
         else:
-            warning.warn(
+            warnings.warn(
                 "SQLite doesn't support ILIKE currently, falling back to LIKE."
             )
             operator = Like
