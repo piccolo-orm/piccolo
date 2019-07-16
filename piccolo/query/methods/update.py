@@ -7,10 +7,6 @@ from piccolo.querystring import QueryString
 
 class Update(Query, ValuesMixin, WhereMixin):
 
-    @property
-    def sqlite_querystring(self) -> QueryString:
-        raise NotImplementedError()
-
     def validate(self):
         if len(self._values) == 0:
             raise ValueError(
@@ -24,7 +20,7 @@ class Update(Query, ValuesMixin, WhereMixin):
                 )
 
     @property
-    def postgres_querystring(self) -> QueryString:
+    def default_querystring(self) -> QueryString:
         self.validate()
 
         columns_str = ', '.join([
@@ -38,11 +34,6 @@ class Update(Query, ValuesMixin, WhereMixin):
             *self._values.values()
         )
 
-        # TODO - need to support joins
-        # UPDATE band SET name='bob' FROM manager WHERE band.manager = manager.id AND manager.name = 'Guido';
-        # I think the joins should work differently from select i.e. no need
-        # to shared underlying code.
-
         if self._where:
             where_querystring = QueryString(
                 '{} WHERE {}',
@@ -52,4 +43,3 @@ class Update(Query, ValuesMixin, WhereMixin):
             return where_querystring
         else:
             return querystring
-
