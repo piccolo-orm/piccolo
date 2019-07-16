@@ -1,3 +1,7 @@
+0.3.7
+=====
+Allowing Update queries in SQLite
+
 0.3.6
 =====
 Falling back to LIKE instead of ILIKE for SQLite
