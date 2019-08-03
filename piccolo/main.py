@@ -84,7 +84,10 @@ def _get_migration_modules() -> None:
     folder_contents = os.listdir(MIGRATIONS_FOLDER)
     excluded = ('__init__.py', 'config.py', '__pycache__')
     migration_names = [
-        i.split('.py')[0] for i in folder_contents if i not in excluded
+        i.split('.py')[0] for i in folder_contents if (
+            (i not in excluded) and
+            (not i.startswith('.'))
+        )
     ]
     modules = [importlib.import_module(name) for name in migration_names]
     global MIGRATION_MODULES
