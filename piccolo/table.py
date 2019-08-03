@@ -126,7 +126,6 @@ class Table(metaclass=TableMeta):
         if unrecognized:
             raise ValueError(f'Unrecognized columns - {unrecognized}')
 
-    @property
     def save(self) -> t.Union[Insert, Update]:
         """
         A proxy to an insert or update query.

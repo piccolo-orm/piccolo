@@ -105,7 +105,7 @@ class ForeignKey(Integer):
     To change the manager:
 
         some_band.manager = some_manager_id
-        some_band.save
+        some_band.save()
 
     Or:
         some_band.set_related_object('manager', some_manager)

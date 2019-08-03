@@ -16,7 +16,7 @@ class TestDelete(TestCase):
             name='Maz'
         )
 
-        manager.save.run_sync()
+        manager.save().run_sync()
         manager.remove.run_sync()
 
         # how can I implement 'flat=True'

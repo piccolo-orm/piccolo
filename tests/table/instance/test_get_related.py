@@ -23,14 +23,14 @@ class TestGetRelated(TestCase):
         manager = Manager(
             name="Guido"
         )
-        manager.save.run_sync()
+        manager.save().run_sync()
 
         band = Band(
             name='Pythonistas',
             manager=manager.id,
             popularity=100
         )
-        band.save.run_sync()
+        band.save().run_sync()
 
         _manager = band.get_related('manager').run_sync()
 

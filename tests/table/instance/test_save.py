@@ -19,7 +19,7 @@ class TestSave(TestCase):
             name='Maz',
         )
 
-        query = manager.save
+        query = manager.save()
         print(query)
         self.assertTrue('INSERT' in query.__str__())
 
@@ -31,7 +31,7 @@ class TestSave(TestCase):
         self.assertTrue('Maz' in names)
 
         manager.name = 'Maz2'
-        query = manager.save
+        query = manager.save()
         print(query)
         self.assertTrue('UPDATE' in query.__str__())
 

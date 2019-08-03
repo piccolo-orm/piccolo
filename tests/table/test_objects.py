@@ -18,7 +18,7 @@ class TestObjects(DBTestCase):
 
         # Now try changing the value and saving it.
         instance.name = 'Rustaceans'
-        save_query = instance.save
+        save_query = instance.save()
         save_query.run_sync()
 
         self.assertTrue(
