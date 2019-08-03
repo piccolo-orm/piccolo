@@ -10,11 +10,11 @@ class TestGetRelated(TestCase):
 
     def setUp(self):
         for table in TABLES:
-            table.create.run_sync()
+            table.create().run_sync()
 
     def tearDown(self):
         for table in reversed(TABLES):
-            table.drop.run_sync()
+            table.drop().run_sync()
 
     def test_get_related(self):
         """

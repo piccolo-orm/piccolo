@@ -46,10 +46,10 @@ class TestQuerystring(TestCase):
 # class TestExecuteQuerystring(TestCase):
 
 #     def setUp():
-#         Band.create.run_sync()
+#         Band.create().run_sync()
 
 #     def tearDown():
-#         Band.drop.run_sync()
+#         Band.drop().run_sync()
 
 #     def test_raw_query(self):
 #         Band.Meta.db.run()

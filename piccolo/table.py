@@ -1,6 +1,7 @@
 from __future__ import annotations
 import copy
 import typing as t
+from functools import wraps
 
 from piccolo.engine import Engine
 from piccolo.columns import Column, PrimaryKey, ForeignKey
@@ -12,6 +13,7 @@ from piccolo.query import (
     Exists,
     Insert,
     Objects,
+    Query,
     Raw,
     Select,
     TableExists,
@@ -48,9 +50,10 @@ class TableMeta(type):
                 if hasattr(base, 'Meta'):
                     _columns = getattr(base.Meta, 'columns', None)
                     if _columns:
-                        # Don't copy over the primary key.
-                        columns = [i for i in _columns if not
-                                   isinstance(i, PrimaryKey)] + columns
+                        for _col in _columns:
+                            if not isinstance(_col, PrimaryKey):
+                                _col._table = table
+                                columns.append(_col)
 
         primary_key = PrimaryKey()
         namespace['id'] = primary_key
@@ -89,108 +92,6 @@ class TableMeta(type):
         return (
             f'class {cls.__name__}(Table):\n'
             f'    {columns_string}\n'
-        )
-
-    ###########################################################################
-    # Class properties
-    # TODO - might need to rework, tab completion only works in some versions
-    # of iPython.
-
-    @property
-    def delete(cls) -> Delete:
-        """
-        await Band.delete.where(Band.name == 'CSharps').run()
-        """
-        return Delete(
-            table=cls
-        )
-
-    @property
-    def create(cls) -> Create:
-        """
-        Create table, along with all columns.
-
-        await Band.create.run()
-        """
-        return Create(
-            table=cls,
-        )
-
-    @property
-    def create_without_columns(cls) -> Raw:
-        """
-        Create the table, but with no columns (useful for migrations).
-
-        await Band.create.run()
-        """
-        return Raw(
-            table=cls,
-            base=f'CREATE TABLE "{cls.Meta.tablename}"()'
-        )
-
-    @property
-    def drop(cls) -> Drop:
-        """
-        Drops the table.
-
-        await Band.drop.run()
-        """
-        return Drop(
-            table=cls,
-        )
-
-    @property
-    def alter(cls) -> Alter:
-        """
-        await Band.alter.rename(Band.popularity, 'rating')
-        """
-        return Alter(
-            table=cls,
-        )
-
-    @property
-    def objects(cls) -> Objects:
-        return Objects(
-            table=cls
-        )
-
-    @property
-    def exists(cls) -> Exists:
-        """
-        Use it to check if a row exists ... not if the table exists.
-        """
-        return Exists(
-            table=cls,
-        )
-
-    @property
-    def table_exists(cls) -> TableExists:
-        return TableExists(
-            table=cls,
-        )
-
-    @property
-    def select(cls) -> Select:
-        """
-        Get data.
-
-        await Band.select.columns(Band.name).run()
-        """
-        return Select(
-            table=cls,
-        )
-
-    @property
-    def update(cls) -> Update:
-        """
-        Update rows.
-
-        await Band.update.values(
-            {Band.name: "Spamalot"}
-        ).where(Band.name=="Pythonistas")
-        """
-        return Update(
-            table=cls,
         )
 
 
@@ -241,14 +142,14 @@ class Table(metaclass=TableMeta):
                 i: getattr(self, i._name, None) for i in cls.Meta.columns
             }
             _id = kwargs.pop('id')
-            return cls.update.values(kwargs).where(
+            return cls.update().values(kwargs).where(
                 cls.id == _id
             )
         else:
             return cls.insert().add(self)
 
     @property
-    def remove(self):
+    def remove(self) -> Delete:
         """
         A proxy to a delete query.
         """
@@ -259,22 +160,22 @@ class Table(metaclass=TableMeta):
 
         self.id = None
 
-        return self.__class__.delete.where(
+        return self.__class__.delete().where(
             self.__class__.id == _id
         )
 
-    def get_related(self, column_name: str):
+    def get_related(self, column_name: str) -> Objects:
         """
         some_band.get_related('manager')
         """
         cls = self.__class__
 
-        foreign_key = cls.get_column_by_name(column_name)  # type: ignore
-        references = foreign_key.references
+        foreign_key: ForeignKey = cls.get_column_by_name(column_name)  # type: ignore
+        references: t.Type[Table] = foreign_key.references
 
-        return references.objects.where(
+        return references.objects().where(
             references.get_column_by_name('id') == getattr(self, column_name)
-        ).first
+        ).first()
 
     def __setitem__(self, key: str, value: t.Any):
         setattr(self, key, value)
@@ -355,6 +256,7 @@ class Table(metaclass=TableMeta):
         return _reference_column
 
     ###########################################################################
+    # Classmethods
 
     @classmethod
     # TODO - needs refactoring into Band.insert.rows(some_table_instance)
@@ -379,4 +281,101 @@ class Table(metaclass=TableMeta):
         return Raw(
             table=cls,
             base=QueryString(sql)
+        )
+
+    @classmethod
+    def select(cls) -> Select:
+        """
+        Get data.
+
+        await Band.select().columns(Band.name).run()
+        """
+        return Select(
+            table=cls,
+        )
+
+    @classmethod
+    def delete(cls) -> Delete:
+        """
+        await Band.delete().where(Band.name == 'CSharps').run()
+        """
+        return Delete(
+            table=cls
+        )
+
+    @classmethod
+    def create(cls) -> Create:
+        """
+        Create table, along with all columns.
+
+        await Band.create().run()
+        """
+        return Create(
+            table=cls,
+        )
+
+    @classmethod
+    def create_without_columns(cls) -> Raw:
+        """
+        Create the table, but with no columns (useful for migrations).
+
+        await Band.create().run()
+        """
+        return Raw(
+            table=cls,
+            base=f'CREATE TABLE "{cls.Meta.tablename}"()'
+        )
+
+    @classmethod
+    def drop(cls) -> Drop:
+        """
+        Drops the table.
+
+        await Band.drop().run()
+        """
+        return Drop(
+            table=cls,
+        )
+
+    @classmethod
+    def alter(cls) -> Alter:
+        """
+        await Band.alter().rename(Band.popularity, 'rating')
+        """
+        return Alter(
+            table=cls,
+        )
+
+    @classmethod
+    def objects(cls) -> Objects:
+        return Objects(
+            table=cls
+        )
+
+    @classmethod
+    def exists(cls) -> Exists:
+        """
+        Use it to check if a row exists ... not if the table exists.
+        """
+        return Exists(
+            table=cls,
+        )
+
+    @classmethod
+    def table_exists(cls) -> TableExists:
+        return TableExists(
+            table=cls,
+        )
+
+    @classmethod
+    def update(cls) -> Update:
+        """
+        Update rows.
+
+        await Band.update().values(
+            {Band.name: "Spamalot"}
+        ).where(Band.name=="Pythonistas")
+        """
+        return Update(
+            table=cls,
         )

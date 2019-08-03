@@ -6,10 +6,10 @@ from tests.example_project.tables import Manager
 class TestSave(TestCase):
 
     def setUp(self):
-        Manager.create.run_sync()
+        Manager.create().run_sync()
 
     def tearDown(self):
-        Manager.drop.run_sync()
+        Manager.drop().run_sync()
 
     def test_save_new(self):
         """
@@ -26,7 +26,7 @@ class TestSave(TestCase):
         query.run_sync()
 
         names = [
-            i['name'] for i in Manager.select.columns(Manager.name).run_sync()
+            i['name'] for i in Manager.select().columns(Manager.name).run_sync()
         ]
         self.assertTrue('Maz' in names)
 
@@ -37,17 +37,7 @@ class TestSave(TestCase):
 
         query.run_sync()
         names = [
-            i['name'] for i in Manager.select.columns(Manager.name).run_sync()
+            i['name'] for i in Manager.select().columns(Manager.name).run_sync()
         ]
         self.assertTrue('Maz2' in names)
         self.assertTrue('Maz' not in names)
-
-        # Make sure it has an id too ...
-        # and the next query is an UPDATE ...
-        # .run(objects=True)
-        # .run(as_json=True)
-        # Generic('some_table').select('name')
-        # -> won't work because where requires things like
-        # Band.select().where(Band.id == 1)
-        # So doesn't work as a generic query build without first defining
-        # the tables.... this is totally fine though.

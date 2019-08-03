@@ -24,7 +24,7 @@ At any time you can access the __str__ method of a query, to see the underlying 
 
 .. code-block:: python
 
-    query = Band.select.columns(Band.name).where(Band.popularity >= 100)
+    query = Band.select().columns(Band.name).where(Band.popularity >= 100)
 
     print(query)
     'SELECT name from band where popularity > 100'

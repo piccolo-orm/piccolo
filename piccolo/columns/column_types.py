@@ -92,7 +92,7 @@ class ForeignKey(Integer):
 
     Can also use it to perform joins:
 
-        Band.select.columns(Band.manager.name)
+        Band.select().columns(Band.manager.name)
 
     To get a referenced row as an object:
 

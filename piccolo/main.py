@@ -62,8 +62,8 @@ def _create_migration_table() -> bool:
     Creates the migration table in the database. Returns True/False depending
     on whether it was created or not.
     """
-    if not Migration.table_exists.run_sync():
-        Migration.create.run_sync()
+    if not Migration.table_exists().run_sync():
+        Migration.create().run_sync()
         return True
     return False
 
@@ -74,7 +74,7 @@ def _get_migrations_which_ran() -> t.List[str]:
     database.
     """
     return [
-        i['name'] for i in Migration.select.columns(Migration.name).run_sync()
+        i['name'] for i in Migration.select().columns(Migration.name).run_sync()
     ]
 
 
@@ -195,7 +195,7 @@ def backwards(migration_name: str):
                 MIGRATION_MODULES[s].backwards()  # type: ignore
             )
 
-            Migration.delete.where(
+            Migration.delete().where(
                 Migration.name == s
             ).run_sync()
     else:

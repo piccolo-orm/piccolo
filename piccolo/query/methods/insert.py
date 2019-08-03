@@ -1,22 +1,33 @@
 from __future__ import annotations
+import typing as t
 
 from piccolo.query.base import Query
-from piccolo.query.mixins import AddMixin
+from piccolo.query.mixins import AddDelegate
 from piccolo.querystring import QueryString
 
+if t.TYPE_CHECKING:
+    from piccolo.table import Table
 
-class Insert(Query, AddMixin):
+
+class Insert(Query):
+
+    def setup_delegates(self):
+        self.add_delegate = AddDelegate()
+
+    def add(self, *instances: Table) -> Insert:
+        self.add_delegate.add(*instances, table_class=self.table)
+        return self
 
     def run_callback(self, results):
         """
         Assign the ids of the created rows to the model instances.
         """
         for index, row in enumerate(results):
-            self._add[index].id = row['id']
+            self.add_delegate._add[index].id = row['id']
 
     @property
     def sqlite_querystring(self) -> QueryString:
-        if len(self._add) > 1:
+        if len(self.add_delegate._add) > 1:
             raise Exception(
                 "The SQLite engine is unable to insert more than one row at a "
                 "time."
@@ -27,12 +38,12 @@ class Insert(Query, AddMixin):
             [i._name for i in self.table.Meta.columns]
         )
         values = ','.join([
-            '{}' for i in self._add
+            '{}' for i in self.add_delegate._add
         ])
         query = f'{base} ({columns}) VALUES {values}'
         return QueryString(
             query,
-            *[i.querystring for i in self._add],
+            *[i.querystring for i in self.add_delegate._add],
             query_type='insert'
         )
 
@@ -43,11 +54,11 @@ class Insert(Query, AddMixin):
             [i._name for i in self.table.Meta.columns]
         )
         values = ','.join([
-            '{}' for i in self._add
+            '{}' for i in self.add_delegate._add
         ])
         query = f'{base} ({columns}) VALUES {values} RETURNING id'
         return QueryString(
             query,
-            *[i.querystring for i in self._add],
+            *[i.querystring for i in self.add_delegate._add],
             query_type='insert'
         )

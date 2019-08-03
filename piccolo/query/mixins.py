@@ -1,5 +1,5 @@
 from __future__ import annotations
-import dataclasses
+from dataclasses import dataclass, field
 import typing as t
 
 from piccolo.columns import And, Column, Where, Or
@@ -8,14 +8,16 @@ from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:
     from table import Table  # noqa
+    from piccolo.query import Query, Select
 
 
+@dataclass
 class Limit():
+    number: int
 
-    def __init__(self, number: int) -> None:
-        if type(number) != int:
+    def __post_init__(self):
+        if type(self.number) != int:
             raise TypeError('Limit must be an integer')
-        self.number = number
 
     @property
     def querystring(self) -> QueryString:
@@ -27,9 +29,9 @@ class Limit():
         return self.querystring.__str__()
 
 
-@dataclasses.dataclass
+@dataclass
 class OrderBy():
-    columns: t.Tuple[Column]
+    columns: t.Sequence[Column]
     ascending: bool
 
     @property
@@ -46,19 +48,17 @@ class OrderBy():
         return self.querystring.__str__()
 
 
-@dataclasses.dataclass
+@dataclass
 class Output():
     as_json: bool = False
     as_list: bool = False
     as_objects: bool = False
 
 
-class WhereMixin():
-
-    def __init__(self):
-        super().__init__()
-        self._where: t.Optional[Combinable] = []
-        self._where_columns: t.List[Column] = []
+@dataclass
+class WhereDelegate():
+    _where: t.Optional[Combinable] = field(default_factory=list)
+    _where_columns: t.List[Column] = field(default_factory=list)
 
     def get_where_columns(self):
         """
@@ -81,84 +81,61 @@ class WhereMixin():
             self._where = And(self._where, where)
         else:
             self._where = where
-        return self
 
 
-class OrderByMixin():
-
-    def __init__(self):
-        super().__init__()
-        self._order_by: t.Optional[OrderBy] = None
+@dataclass
+class OrderByDelegate():
+    _order_by: t.Optional[OrderBy] = None
 
     def get_order_by_columns(self) -> t.List[Column]:
         return list(self._order_by.columns) if self._order_by else []
 
     def order_by(self, *columns: Column, ascending=True):
         self._order_by = OrderBy(columns, ascending)
-        return self
 
 
-class LimitMixin():
-
-    def __init__(self):
-        super().__init__()
-        self._limit: t.Optional[Limit] = None
+@dataclass
+class LimitDelegate():
+    _limit: t.Optional[Limit] = None
+    _first = False
 
     def limit(self, number: int):
         self._limit = Limit(number)
-        return self
 
-    @staticmethod
-    def _response_handler(response):
-        if len(response) == 0:
-            raise ValueError('No results found')
-
-        return response[0]
-
-    @property
     def first(self):
-        self._limit = Limit(1)
-        self.response_handler = self._response_handler
-        return self
+        self.limit(1)
+        self._first = True
 
 
-class DistinctMixin():
-
-    def __init__(self):
-        super().__init__()
-        self._distinct: bool = False
+@dataclass
+class DistinctDelegate():
+    _distinct: bool = False
 
     def distinct(self):
         self._distinct = True
-        return self
 
 
-class CountMixin():
-
-    def __init__(self):
-        super().__init__()
-        self._count: bool = False
+@dataclass
+class CountDelegate():
+    _count: bool = False
 
     def count(self):
         self._count = True
-        return self
 
 
-class AddMixin():
+@dataclass
+class AddDelegate():
+    _add: t.List[Table] = field(default_factory=list)
 
-    def __init__(self):
-        super().__init__()
-        self._add: t.List[Table] = []
-
-    def add(self, *instances: Table):
+    def add(self, *instances: Table, table_class: t.Type[Table]):
         for instance in instances:
-            if not isinstance(instance, self.table):
+            if not isinstance(instance, table_class):
                 raise TypeError('Incompatible type added.')
         self._add += instances
-        return self
 
 
-class OutputMixin():
+@dataclass
+class OutputDelegate():
     """
     Example usage:
 
@@ -166,42 +143,35 @@ class OutputMixin():
     .output(as_json=True)
     .output(as_json=True, as_list=True)
     """
-
-    def __init__(self):
-        super().__init__()
-        self._output = Output()
+    _output: Output = field(default_factory=Output)
 
     def output(
         self,
         as_list: t.Optional[bool] = None,
         as_json: t.Optional[bool] = None
     ):
-        if type(as_list) is bool:
-            self._output.as_list = as_list
+        if as_list != None:
+            self._output.as_list = bool(as_list)
 
         if type(as_json) is bool:
-            self._output.as_json = as_json
-
-        return self
+            self._output.as_json = bool(as_json)
 
 
-class ColumnsMixin():
+@dataclass
+class ColumnsDelegate():
     """
     Example usage:
 
     .columns(MyTable.column_a, MyTable.column_b)
     """
-
-    def __init__(self):
-        super().__init__()
-        self.selected_columns: t.List[Column] = []
+    selected_columns: t.List[Column] = field(default_factory=list)
 
     def columns(self, *columns: Column):
         self.selected_columns += columns
-        return self
 
 
-class ValuesMixin():
+@dataclass
+class ValuesDelegate():
     """
     Used to specify new column values - primarily used in update queries.
 
@@ -209,11 +179,7 @@ class ValuesMixin():
 
     .values({MyTable.column_a: 1})
     """
-
-    def __init__(self):
-        super().__init__()
-        self._values: t.Dict[Column, t.Any] = {}
+    _values: t.Dict[Column, t.Any] = field(default_factory=dict)
 
     def values(self, values: t.Dict[Column, t.Any]):
         self._values.update(values)
-        return self

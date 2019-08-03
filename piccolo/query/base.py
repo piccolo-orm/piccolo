@@ -22,7 +22,11 @@ class Query(object):
     ) -> None:
         self.base = base
         self.table = table
+        self.setup_delegates()
         super().__init__()
+
+    def setup_delegates(self):
+        pass
 
     @property
     def engine_type(self) -> str:
@@ -55,10 +59,10 @@ class Query(object):
         # Might try and merge them.
         raw = self.response_handler(raw)
 
-        output = getattr(self, '_output', None)
+        output = getattr(self, 'output_delegate', None)
 
         if output:
-            if output.as_objects:
+            if output._output.as_objects:
                 # When using .first() we get a single row, not a list
                 # of rows.
                 if type(raw) is list:
@@ -66,7 +70,7 @@ class Query(object):
                 else:
                     raw = self.table(**raw)
             elif type(raw) is list:
-                if output.as_list:
+                if output._output.as_list:
                     if len(raw[0].keys()) != 1:
                         raise ValueError(
                             'Each row returned more than one value'
@@ -75,7 +79,7 @@ class Query(object):
                         raw = list(
                             itertools.chain(*[j.values() for j in raw])
                         )
-                if output.as_json:
+                if output._output.as_json:
                     raw = json.dumps(raw)
 
         return raw

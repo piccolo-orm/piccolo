@@ -7,11 +7,11 @@ class TestDelete(DBTestCase):
     def test_delete(self):
         self.insert_rows()
 
-        Band.delete.where(
+        Band.delete().where(
             Band.name == 'CSharps'
         ).run_sync()
 
-        response = Band.select.where(
+        response = Band.select().where(
             Band.name == 'CSharps'
         ).count().run_sync()
 

@@ -10,7 +10,7 @@ from piccolo.querystring import QueryString
 @dataclasses.dataclass
 class Rename():
     """
-    Band.alter.rename(Band.popularity, ‘rating’)
+    Band.alter().rename(Band.popularity, ‘rating’)
     """
     column: Column
     new_name: str
@@ -28,7 +28,7 @@ class Rename():
 @dataclasses.dataclass
 class Drop():
     """
-    Band.alter.drop('popularity')
+    Band.alter().drop('popularity')
     """
     column: Column
 
@@ -45,7 +45,7 @@ class Drop():
 @dataclasses.dataclass
 class Add():
     """
-    Band.alter.add(‘members’, Integer())
+    Band.alter().add(‘members’, Integer())
     """
     name: str
     column: Column

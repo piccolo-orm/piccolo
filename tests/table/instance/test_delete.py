@@ -6,10 +6,10 @@ from tests.example_project.tables import Manager
 class TestDelete(TestCase):
 
     def setUp(self):
-        Manager.create.run_sync()
+        Manager.create().run_sync()
 
     def tearDown(self):
-        Manager.drop.run_sync()
+        Manager.drop().run_sync()
 
     def test_delete(self):
         manager = Manager(
@@ -20,6 +20,6 @@ class TestDelete(TestCase):
         manager.remove.run_sync()
 
         # how can I implement 'flat=True'
-        # Band.select.columns(Band.name).output(as_list=True).run_sync()
+        # Band.select().columns(Band.name).output(as_list=True).run_sync()
         #
-        Manager.select.columns(Manager.name).run_sync()
+        Manager.select().columns(Manager.name).run_sync()

@@ -22,7 +22,7 @@ class BaseUser(Table):
     class Meta():
         # This is required because 'user' is a reserved keyword in SQL, so
         # using it as a tablename causes issues.
-        tablename = 'a_user'
+        tablename = 'piccolo_user'
 
     def __init__(self, **kwargs):
         """
@@ -70,10 +70,11 @@ class BaseUser(Table):
         """
         Returns the user_id if a match is found.
         """
+        query = cls.select().columns(cls.id, cls.password).where(
+            (cls.username == username)
+        ).first()
         try:
-            response = await cls.select.columns(cls.id, cls.password).where(
-                (cls.username == username)
-            ).first.run()
+            response = await query.run()
         except ValueError:
             # No match found
             return None

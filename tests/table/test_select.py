@@ -7,7 +7,7 @@ class TestSelect(DBTestCase):
     def test_query_all_columns(self):
         self.insert_row()
 
-        response = Band.select.run_sync()
+        response = Band.select().run_sync()
         print(f'response = {response}')
 
         self.assertDictEqual(
@@ -23,7 +23,7 @@ class TestSelect(DBTestCase):
     def test_query_some_columns(self):
         self.insert_row()
 
-        response = Band.select.columns(Band.name).run_sync()
+        response = Band.select().columns(Band.name).run_sync()
         print(f'response = {response}')
 
         self.assertDictEqual(
@@ -34,7 +34,7 @@ class TestSelect(DBTestCase):
     def test_where_like(self):
         self.insert_rows()
 
-        response = Band.select.columns(
+        response = Band.select().columns(
             Band.name
         ).where(
             Band.name.like('Python%')
@@ -50,7 +50,7 @@ class TestSelect(DBTestCase):
     def test_where_ilike(self):
         self.insert_rows()
 
-        response = Band.select.columns(
+        response = Band.select().columns(
             Band.name
         ).where(
             Band.name.ilike('python%')
@@ -66,7 +66,7 @@ class TestSelect(DBTestCase):
     def test_where_not_like(self):
         self.insert_rows()
 
-        response = Band.select.columns(
+        response = Band.select().columns(
             Band.name
         ).where(
             Band.name.not_like('Python%')
@@ -84,7 +84,7 @@ class TestSelect(DBTestCase):
     def test_where_greater_than(self):
         self.insert_rows()
 
-        response = Band.select.columns(
+        response = Band.select().columns(
             Band.name
         ).where(
             Band.popularity > 1000
@@ -100,7 +100,7 @@ class TestSelect(DBTestCase):
     def test_where_greater_equal_than(self):
         self.insert_rows()
 
-        response = Band.select.columns(
+        response = Band.select().columns(
             Band.name
         ).where(
             Band.popularity >= 1000
@@ -118,7 +118,7 @@ class TestSelect(DBTestCase):
     def test_where_less_than(self):
         self.insert_rows()
 
-        response = Band.select.columns(
+        response = Band.select().columns(
             Band.name
         ).where(
             Band.popularity < 1000
@@ -134,7 +134,7 @@ class TestSelect(DBTestCase):
     def test_where_less_equal_than(self):
         self.insert_rows()
 
-        response = Band.select.columns(
+        response = Band.select().columns(
             Band.name
         ).where(
             Band.popularity <= 1000
@@ -150,7 +150,7 @@ class TestSelect(DBTestCase):
     def test_where_and(self):
         self.insert_rows()
 
-        response = Band.select.columns(
+        response = Band.select().columns(
             Band.name
         ).where(
             (Band.popularity <= 1000) & (Band.name.like('Python%'))
@@ -166,7 +166,7 @@ class TestSelect(DBTestCase):
     def test_where_or(self):
         self.insert_rows()
 
-        response = Band.select.columns(
+        response = Band.select().columns(
             Band.name
         ).where(
             (Band.name == 'Rustaceans') | (Band.name == 'CSharps')
@@ -187,7 +187,7 @@ class TestSelect(DBTestCase):
         """
         self.insert_rows()
 
-        query = Band.select.columns(
+        query = Band.select().columns(
             Band.name
         ).where(
             Band.name == 'Rustaceans'
@@ -213,14 +213,16 @@ class TestSelect(DBTestCase):
         """
         self.insert_rows()
 
-        response = Band.select.columns(
+        query = Band.select().columns(
             Band.name
         ).where(
             ((Band.popularity == 2000) & (Band.manager == 2)) |
             ((Band.popularity == 10) & (Band.manager == 3))
         ).order_by(
             Band.name
-        ).run_sync()
+        )
+
+        response = query.run_sync()
 
         print(f'response = {response}')
 
@@ -232,7 +234,7 @@ class TestSelect(DBTestCase):
     def test_limit(self):
         self.insert_rows()
 
-        response = Band.select.columns(
+        response = Band.select().columns(
             Band.name
         ).order_by(
             Band.name
@@ -250,11 +252,11 @@ class TestSelect(DBTestCase):
     def test_first(self):
         self.insert_rows()
 
-        response = Band.select.columns(
+        response = Band.select().columns(
             Band.name
         ).order_by(
             Band.name
-        ).first.run_sync()
+        ).first().run_sync()
 
         print(f'response = {response}')
 
@@ -266,7 +268,7 @@ class TestSelect(DBTestCase):
     def test_order_by_ascending(self):
         self.insert_rows()
 
-        response = Band.select.columns(
+        response = Band.select().columns(
             Band.name
         ).order_by(
             Band.name
@@ -282,7 +284,7 @@ class TestSelect(DBTestCase):
     def test_order_by_decending(self):
         self.insert_rows()
 
-        response = Band.select.columns(
+        response = Band.select().columns(
             Band.name
         ).order_by(
             Band.name,
@@ -299,7 +301,7 @@ class TestSelect(DBTestCase):
     def test_count(self):
         self.insert_rows()
 
-        response = Band.select.where(
+        response = Band.select().where(
             Band.name == 'Pythonistas'
         ).count().run_sync()
 
@@ -314,7 +316,7 @@ class TestSelect(DBTestCase):
         self.insert_rows()
         self.insert_rows()
 
-        response = Band.select.columns(
+        response = Band.select().columns(
             Band.name
         ).where(
             Band.name == 'Pythonistas'

@@ -11,8 +11,8 @@ class TestTransaction(TestCase):
         """
         transaction = Band.Meta.db.transaction()
         transaction.add(
-            Manager.create,
-            Band.create,
+            Manager.create(),
+            Band.create(),
             Band.raw('MALFORMED QUERY ... SHOULD ERROR')
         )
         try:
@@ -20,29 +20,29 @@ class TestTransaction(TestCase):
         except Exception:
             pass
         self.assertTrue(
-            not Band.table_exists.run_sync()
+            not Band.table_exists().run_sync()
         )
         self.assertTrue(
-            not Manager.table_exists.run_sync()
+            not Manager.table_exists().run_sync()
         )
 
     def test_succeeds(self):
         transaction = Band.Meta.db.transaction()
         transaction.add(
-            Manager.create,
-            Band.create
+            Manager.create(),
+            Band.create()
         )
         transaction.run_sync()
 
         self.assertTrue(
-            Band.table_exists.run_sync()
+            Band.table_exists().run_sync()
         )
         self.assertTrue(
-            Manager.table_exists.run_sync()
+            Manager.table_exists().run_sync()
         )
 
         transaction.add(
-            Band.drop,
-            Manager.drop
+            Band.drop(),
+            Manager.drop()
         )
         transaction.run_sync()

@@ -5,30 +5,75 @@ import typing as t
 from piccolo.query.base import Query
 from piccolo.columns import Column
 from piccolo.query.mixins import (
-    ColumnsMixin,
-    CountMixin,
-    DistinctMixin,
-    LimitMixin,
-    OrderByMixin,
-    OutputMixin,
-    WhereMixin,
+    ColumnsDelegate,
+    CountDelegate,
+    DistinctDelegate,
+    LimitDelegate,
+    OrderByDelegate,
+    OutputDelegate,
+    WhereDelegate,
 )
 from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:
     from table import Table  # noqa
+    from piccolo.custom_types import Combinable
 
 
-class Select(
-    Query,
-    ColumnsMixin,
-    CountMixin,
-    DistinctMixin,
-    LimitMixin,
-    OrderByMixin,
-    OutputMixin,
-    WhereMixin,
-):
+class Select(Query):
+
+    def setup_delegates(self):
+        self.columns_delegate = ColumnsDelegate()
+        self.count_delegate = CountDelegate()
+        self.distinct_delegate = DistinctDelegate()
+        self.limit_delegate = LimitDelegate()
+        self.order_by_delegate = OrderByDelegate()
+        self.output_delegate = OutputDelegate()
+        self.where_delegate = WhereDelegate()
+
+    def columns(self, *columns: Column) -> Select:
+        self.columns_delegate.columns(*columns)
+        return self
+
+    def count(self) -> Select:
+        self.count_delegate.count()
+        return self
+
+    def distinct(self) -> Select:
+        self.distinct_delegate.distinct()
+        return self
+
+    def limit(self, number: int) -> Select:
+        self.limit_delegate.limit(number)
+        return self
+
+    def first(self) -> Select:
+        self.limit_delegate.first()
+        return self
+
+    def response_handler(self, response):
+        if self.limit_delegate._first:
+            if len(response) == 0:
+                raise ValueError('No results found')
+            else:
+                return response[0]
+        else:
+            return response
+
+    def order_by(self, *columns: Column, ascending=True) -> Select:
+        self.order_by_delegate.order_by(*columns, ascending=ascending)
+        return self
+
+    def output(self, **kwargs) -> Select:
+        self.output_delegate.output(**kwargs)
+        return self
+
+    def where(self, where: Combinable) -> Select:
+        self.where_delegate.where(where)
+        return self
+
+    ###########################################################################
+
     def get_joins(self, columns: t.List[Column]) -> t.List[str]:
         """
         A call chain is a sequence of foreign keys representing joins which
@@ -77,11 +122,13 @@ class Select(
     @property
     def querystring(self) -> QueryString:
         # JOIN
-        self.check_valid_call_chain(self.selected_columns)
+        self.check_valid_call_chain(self.columns_delegate.selected_columns)
 
-        select_joins = self.get_joins(self.selected_columns)
-        where_joins = self.get_joins(self.get_where_columns())
-        order_by_joins = self.get_joins(self.get_order_by_columns())
+        select_joins = self.get_joins(self.columns_delegate.selected_columns)
+        where_joins = self.get_joins(self.where_delegate.get_where_columns())
+        order_by_joins = self.get_joins(
+            self.order_by_delegate.get_order_by_columns()
+        )
 
         # Combine all joins, and remove duplicates
         joins: t.List[str] = list(
@@ -92,11 +139,11 @@ class Select(
 
         #######################################################################
 
-        if len(self.selected_columns) == 0:
-            self.selected_columns = self.table.Meta.columns
+        if len(self.columns_delegate.selected_columns) == 0:
+            self.columns_delegate.selected_columns = self.table.Meta.columns
 
         column_names: t.List[str] = [
-            c.get_full_name() for c in self.selected_columns
+            c.get_full_name() for c in self.columns_delegate.selected_columns
         ]
         columns_str = ", ".join(column_names)
 
@@ -112,21 +159,21 @@ class Select(
 
         args: t.List[t.Any] = []
 
-        if self._where:
+        if self.where_delegate._where:
             query += " WHERE {}"
-            args.append(self._where.querystring)
+            args.append(self.where_delegate._where.querystring)
 
-        if self._order_by:
+        if self.order_by_delegate._order_by:
             query += " {}"
-            args.append(self._order_by.querystring)
+            args.append(self.order_by_delegate._order_by.querystring)
 
-        if self._limit:
+        if self.limit_delegate._limit:
             query += " {}"
-            args.append(self._limit.querystring)
+            args.append(self.limit_delegate._limit.querystring)
 
         querystring = QueryString(query, *args)
 
-        if self._count:
+        if self.count_delegate._count:
             querystring = QueryString(
                 "SELECT COUNT(*) FROM ({}) AS sub_query",
                 querystring

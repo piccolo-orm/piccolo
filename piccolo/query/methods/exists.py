@@ -1,12 +1,20 @@
 from __future__ import annotations
 
+from piccolo.custom_types import Combinable
 from piccolo.query.base import Query
-from piccolo.query.mixins import WhereMixin
+from piccolo.query.mixins import WhereDelegate
 from piccolo.querystring import QueryString
 from .select import Select
 
 
-class Exists(Query, WhereMixin):
+class Exists(Query):
+
+    def setup_delegates(self):
+        self.where_delegate = WhereDelegate()
+
+    def where(self, where: Combinable) -> Exists:
+        self.where_delegate.where(where)
+        return self
 
     @property
     def querystring(self) -> QueryString:
@@ -14,7 +22,7 @@ class Exists(Query, WhereMixin):
             self.table,
             QueryString(f'SELECT * FROM {self.table.Meta.tablename}')
         )
-        select._where = self._where
+        select.where_delegate._where = self.where_delegate._where
         return QueryString('SELECT EXISTS({})', select.querystring)
 
     def __str__(self) -> str:

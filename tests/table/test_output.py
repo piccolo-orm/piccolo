@@ -9,7 +9,7 @@ class TestOutput(DBTestCase):
     def test_output_as_list(self):
         self.insert_row()
 
-        response = Band.select.columns(
+        response = Band.select().columns(
             Band.name
         ).output(
             as_list=True
@@ -22,7 +22,7 @@ class TestOutput(DBTestCase):
     def test_output_as_json(self):
         self.insert_row()
 
-        response = Band.select.columns(
+        response = Band.select().columns(
             Band.name
         ).output(
             as_json=True

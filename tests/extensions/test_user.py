@@ -7,8 +7,8 @@ from ..example_project.tables import DB
 
 class User(BaseUser):
     class Meta():
-        tablename = 'a_user'
         db = DB
+        tablename = 'custom_user'
 
 
 class TestCreateUserTable(TestCase):
@@ -19,11 +19,11 @@ class TestCreateUserTable(TestCase):
         """
         exception = None
         try:
-            User.create.run_sync()
+            User.create().run_sync()
         except Exception as e:
             exception = e
         else:
-            User.drop.run_sync()
+            User.drop().run_sync()
 
         if exception:
             raise exception
@@ -40,10 +40,10 @@ class TestHashPassword(TestCase):
 class TestLogin(TestCase):
 
     def setUp(self):
-        User.create.run_sync()
+        User.create().run_sync()
 
     def tearDown(self):
-        User.drop.run_sync()
+        User.drop().run_sync()
 
     def test_login(self):
         username = "bob"

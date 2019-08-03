@@ -10,10 +10,10 @@ class TestCreateJoin():
 
     def test_create_join(self):
         for table in TABLES:
-            table.create.run_sync()
+            table.create().run_sync()
 
         for table in reversed(TABLES):
-            table.drop.run_sync()
+            table.drop().run_sync()
 
 
 class TestJoin(TestCase):
@@ -25,11 +25,11 @@ class TestJoin(TestCase):
 
     def setUp(self):
         for table in self.tables:
-            table.create.run_sync()
+            table.create().run_sync()
 
     def tearDown(self):
         for table in reversed(self.tables):
-            table.drop.run_sync()
+            table.drop().run_sync()
 
     def test_join(self):
         manager_1 = Manager(name="Guido")
@@ -56,7 +56,7 @@ class TestJoin(TestCase):
         ).save
         save_query.run_sync()
 
-        select_query = Concert.select.columns(
+        select_query = Concert.select().columns(
             Concert.band_1.name,
             Concert.band_2.name,
             Concert.venue.name,

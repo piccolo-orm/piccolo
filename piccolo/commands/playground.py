@@ -56,13 +56,13 @@ def populate():
     """
     for _table in reversed(TABLES):
         try:
-            _table.drop.run_sync()
+            _table.drop().run_sync()
         except Exception as e:
             print(e)
 
     for _table in TABLES:
         try:
-            _table.create.run_sync()
+            _table.create().run_sync()
         except Exception as e:
             print(e)
 

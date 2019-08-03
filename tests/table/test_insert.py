@@ -11,7 +11,7 @@ class TestInsert(DBTestCase):
             Band(name='Rustaceans')
         ).run_sync()
 
-        response = Band.select.columns(Band.name).run_sync()
+        response = Band.select().columns(Band.name).run_sync()
         names = [i['name'] for i in response]
 
         self.assertTrue(
@@ -25,7 +25,7 @@ class TestInsert(DBTestCase):
             Band(name='Rustaceans')
         ).run_sync()
 
-        response = Band.select.columns(Band.name).run_sync()
+        response = Band.select().columns(Band.name).run_sync()
         names = [i['name'] for i in response]
 
         self.assertTrue(
