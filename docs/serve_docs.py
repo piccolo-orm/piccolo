@@ -7,4 +7,8 @@ server.watch(
     'src/',
     shell('make html')
 )
+server.watch(
+    '../piccolo',
+    shell('make html')
+)
 server.serve(root='build/html')
