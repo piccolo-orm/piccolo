@@ -82,7 +82,7 @@ Usage is the same as ``like`` excepts it excludes matching rows.
 Complex queries - and / or
 ---------------------------
 
-You can make complex where queries using ``&`` for AND, and ``|`` for OR.
+You can make complex ``where`` queries using ``&`` for AND, and ``|`` for OR.
 
 .. code-block:: python
 
