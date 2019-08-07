@@ -42,8 +42,7 @@ You can use the ``<, >, <=, >=`` operators, which work as you expect.
 
     b = Band
     b.select().where(
-        b.popularity >= 100,
-        b.popularity < 1000
+        b.popularity >= 100
     ).run_sync()
 
 like / ilike
@@ -78,4 +77,37 @@ Usage is the same as ``like`` excepts it excludes matching rows.
     b = Band
     b.select().where(
         b.name.not_like('Py%')
+    ).run_sync()
+
+Complex queries - and / or
+---------------------------
+
+You can make complex where queries using ``&`` for AND, and ``|`` for OR.
+
+.. code-block:: python
+
+    b = Band
+    b.select().where(
+        (b.popularity >= 100) & (b.popularity < 1000)
+    ).run_sync()
+
+    b.select().where(
+        (b.popularity >= 100) | (b.name ==  'Pythonistas')
+    ).run_sync()
+
+Using multiple ``where`` clauses is equivalent to an AND.
+
+.. code-block:: python
+
+    b = Band
+
+    # These are equivalent:
+    b.select().where(
+        (b.popularity >= 100) & (b.popularity < 1000)
+    ).run_sync()
+
+    b.select().where(
+        b.popularity >= 100
+    ).where(
+        b.popularity < 1000
     ).run_sync()
