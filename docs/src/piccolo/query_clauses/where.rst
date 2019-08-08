@@ -13,7 +13,7 @@ You can use ``where`` clauses with the following queries:
 
 It allows powerful filtering of your data.
 
-Equal
+Equal / Not Equal
 -----
 
 .. code-block:: python
@@ -22,9 +22,6 @@ Equal
     b.select().where(
         b.name == 'Pythonistas'
     ).run_sync()
-
-Not Equal
----------
 
 .. code-block:: python
 
@@ -79,6 +76,23 @@ Usage is the same as ``like`` excepts it excludes matching rows.
         b.name.not_like('Py%')
     ).run_sync()
 
+is_in / not_in
+--------------
+
+.. code-block:: python
+
+    b = Band
+    b.select().where(
+        b.name.is_in(['Pythonistas'])
+    ).run_sync()
+
+.. code-block:: python
+
+    b = Band
+    b.select().where(
+        b.name.not_in(['Rustaceans'])
+    ).run_sync()
+
 Complex queries - and / or
 ---------------------------
 
@@ -94,6 +108,13 @@ You can make complex ``where`` queries using ``&`` for AND, and ``|`` for OR.
     b.select().where(
         (b.popularity >= 100) | (b.name ==  'Pythonistas')
     ).run_sync()
+
+You can make really complex ``where`` clauses if you so choose - just be
+careful to include brackets in the correct place.
+
+.. code-block:: python
+
+    ((b.popularity >= 100) & (b.manager.name ==  'Guido')) | (b.popularity > 1000)
 
 Using multiple ``where`` clauses is equivalent to an AND.
 
