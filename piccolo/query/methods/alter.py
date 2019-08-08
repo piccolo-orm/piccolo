@@ -9,9 +9,6 @@ from piccolo.querystring import QueryString
 
 @dataclasses.dataclass
 class Rename():
-    """
-    Band.alter().rename(Band.popularity, ‘rating’)
-    """
     column: Column
     new_name: str
 
@@ -27,9 +24,6 @@ class Rename():
 
 @dataclasses.dataclass
 class Drop():
-    """
-    Band.alter().drop('popularity')
-    """
     column: Column
 
     @property
@@ -44,9 +38,6 @@ class Drop():
 
 @dataclasses.dataclass
 class Add():
-    """
-    Band.alter().add(‘members’, Integer())
-    """
     name: str
     column: Column
 
@@ -71,18 +62,27 @@ class Alter(Query):
         self._rename: t.List[Rename] = []
 
     def add(self, name: str, column: Column) -> Alter:
+        """
+        Band.alter().add(‘members’, Integer())
+        """
         self._add.append(
             Add(name, column)
         )
         return self
 
     def rename(self, column: Column, new_name: str) -> Alter:
+        """
+        Band.alter().rename(Band.popularity, ‘rating’)
+        """
         self._rename.append(
             Rename(column, new_name)
         )
         return self
 
     def drop(self, column: Column) -> Alter:
+        """
+        Band.alter().drop('popularity')
+        """
         self._drop.append(
             Drop(column)
         )
