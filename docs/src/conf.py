@@ -22,10 +22,10 @@ project = 'Piccolo'
 copyright = '2019, Daniel Townsend'
 author = 'Daniel Townsend'
 
-# The short X.Y version
-version = '1.0'
-# The full version, including alpha/beta/rc tags
-release = '0.1'
+
+import piccolo
+version = '.'.join(piccolo.__VERSION__.split('.')[:2])
+release = piccolo.__VERSION__
 
 # -- General configuration ---------------------------------------------------
 
