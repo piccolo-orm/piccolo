@@ -339,7 +339,7 @@ class Table(metaclass=TableMeta):
     @classmethod
     def alter(cls) -> Alter:
         """
-        await Band.alter().rename(Band.popularity, 'rating')
+        await Band.alter().rename_column(Band.popularity, 'rating')
         """
         return Alter(
             table=cls,

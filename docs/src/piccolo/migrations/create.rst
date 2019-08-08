@@ -47,7 +47,7 @@ forwards and backwards functions.
         transaction.add(
             Band.create_without_columns(),
 
-            Band.alter().add(
+            Band.alter().add_column(
                 'name',
                 Varchar(length=100)
             ),

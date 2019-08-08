@@ -61,27 +61,27 @@ class Alter(Query):
         self._drop: t.List[Drop] = []
         self._rename: t.List[Rename] = []
 
-    def add(self, name: str, column: Column) -> Alter:
+    def add_column(self, name: str, column: Column) -> Alter:
         """
-        Band.alter().add(‘members’, Integer())
+        Band.alter().add_column(‘members’, Integer())
         """
         self._add.append(
             Add(name, column)
         )
         return self
 
-    def rename(self, column: Column, new_name: str) -> Alter:
+    def rename_column(self, column: Column, new_name: str) -> Alter:
         """
-        Band.alter().rename(Band.popularity, ‘rating’)
+        Band.alter().rename_column(Band.popularity, ‘rating’)
         """
         self._rename.append(
             Rename(column, new_name)
         )
         return self
 
-    def drop(self, column: Column) -> Alter:
+    def drop_column(self, column: Column) -> Alter:
         """
-        Band.alter().drop('popularity')
+        Band.alter().drop_column('popularity')
         """
         self._drop.append(
             Drop(column)
