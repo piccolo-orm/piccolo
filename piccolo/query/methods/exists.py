@@ -16,6 +16,9 @@ class Exists(Query):
         self.where_delegate.where(where)
         return self
 
+    def response_handler(self, response) -> bool:
+        return response[0]['exists']
+
     @property
     def querystring(self) -> QueryString:
         select = Select(

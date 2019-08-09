@@ -60,7 +60,6 @@ class Unique():
 
     @property
     def querystring(self) -> QueryString:
-
         if self.boolean:
             return QueryString(
                 f'ADD UNIQUE ({self.column._name})'
@@ -75,6 +74,26 @@ class Unique():
         return self.querystring.__str__()
 
 
+@dataclasses.dataclass
+class Null():
+    column: Column
+    boolean: bool
+
+    @property
+    def querystring(self) -> QueryString:
+        if self.boolean:
+            return QueryString(
+                f'{self.column._name} DROP NOT NULL'
+            )
+        else:
+            return QueryString(
+                f'{self.column._name} SET NOT NULL'
+            )
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
+
+
 class Alter(Query):
 
     def __init__(self, *args, **kwargs):
@@ -83,6 +102,7 @@ class Alter(Query):
         self._drop: t.List[Drop] = []
         self._rename: t.List[Rename] = []
         self._unique: t.List[Unique] = []
+        self._null: t.List[Null] = []
 
     def add_column(self, name: str, column: Column) -> Alter:
         """
@@ -111,11 +131,20 @@ class Alter(Query):
         )
         return self
 
-    def set_unique(self, column: Column, boolean: bool) -> Alter:
+    def set_unique(self, column: Column, boolean: bool = True) -> Alter:
         """
         Band.alter().set_unique(True)
         """
         self._unique.append(
+            Unique(column, boolean)
+        )
+        return self
+
+    def set_null(self, column: Column, boolean: bool = True) -> Alter:
+        """
+        Band.alter().set_null(True)
+        """
+        self._null.append(
             Unique(column, boolean)
         )
         return self
@@ -129,7 +158,8 @@ class Alter(Query):
                 self._add,
                 self._rename,
                 self._drop,
-                self._unique
+                self._unique,
+                self._null
             )
         ]
 

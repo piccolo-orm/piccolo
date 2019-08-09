@@ -1,7 +1,7 @@
 from piccolo.columns import Integer
 
-from .base import DBTestCase
-from .example_project.tables import Band, Manager
+from ..base import DBTestCase
+from ..example_project.tables import Band, Manager
 
 
 class TestRename(DBTestCase):
@@ -91,6 +91,12 @@ class TestUnique(DBTestCase):
 
         response = Manager.select().run_sync()
         self.assertTrue(len(response), 2)
+
+
+class TestNull(DBTestCase):
+
+    def test_null(self):
+        pass
 
 
 class TestMultiple(DBTestCase):
