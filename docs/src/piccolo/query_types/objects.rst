@@ -41,7 +41,12 @@ Objects have a save method, which is convenient for updating values:
     pythonistas.popularity = 100000
     pythonistas.save().run_sync()
 
-Where clauses
--------------
+order_by
+--------
+
+See  :ref:`order_by`.
+
+where
+-----
 
 See :ref:`Where` .

@@ -2,7 +2,6 @@ Schema
 ======
 
 .. toctree::
-
     :maxdepth: 1
 
     ./defining

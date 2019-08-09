@@ -7,4 +7,5 @@ Query Clauses
     :maxdepth: 0
 
     ./first
+    ./order_by
     ./where

@@ -31,13 +31,22 @@ Or making an alias to make it shorter:
 
 .. hint:: All of these examples also work with async by using .run() inside coroutines - see :ref:`SyncAndAsync`.
 
-Output
+output
 ------
 
 By default, the data is returned as a list of dictionaries (where each
 dictionary represents a row). This can be altered using the ``output`` method.
 
-Columns
+To return the data as a JSON string:
+
+.. code-block:: python
+
+    >>> b = Band
+    >>> b.select().output(as_json=True).run_sync()
+    '[{"name":"Pythonistas","manager":1,"popularity":1000,"id":1},{"name":"Rustaceans","manager":2,"popularity":500,"id":2}]'
+
+
+columns
 -------
 
 By default all columns are returned from the queried table.
@@ -91,39 +100,12 @@ The joins can go several layers deep.
         c.band_1.manager.name
     ).run_sync()
 
-Order by
+order_by
 --------
 
-To order the results by a certain column (ascending):
+See  :ref:`order_by`.
 
-.. code-block:: python
+where
+-----
 
-    b = Band
-    b.select().order_by(
-        b.name
-    ).run_sync()
-
-To order by descending:
-
-.. code-block:: python
-
-    b = Band
-    b.select().order_by(
-        b.name,
-        ascending=False
-    ).run_sync()
-
-You can order by multiple columns, and even use joins:
-
-.. code-block:: python
-
-    b = Band
-    b.select().order_by(
-        b.name,
-        b.manager.name
-    ).run_sync()
-
-Where clauses
--------------
-
-See  :ref:`Where`.
+See  :ref:`where`.
