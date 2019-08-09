@@ -2,3 +2,4 @@ click==7.0
 asyncpg==0.17.0
 ujson==1.35
 aiosqlite==0.10.0
+asgiref==3.2.1

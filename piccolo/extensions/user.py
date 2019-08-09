@@ -4,6 +4,7 @@ A User model, used for authentication.
 import hashlib
 import secrets
 import typing as t
+from asgiref.sync import async_to_sync
 
 from piccolo.table import Table
 from piccolo.columns import Varchar, Boolean
@@ -64,6 +65,13 @@ class BaseUser(Table):
         if len(elements) != 4:
             raise ValueError('Unable to split hashed password')
         return elements
+
+    @classmethod
+    def login_sync(cls, username: str, password: str) -> t.Optional[int]:
+        """
+        Returns the user_id if a match is found.
+        """
+        return async_to_sync(cls.login)(username, password)
 
     @classmethod
     async def login(cls, username: str, password: str) -> t.Optional[int]:
