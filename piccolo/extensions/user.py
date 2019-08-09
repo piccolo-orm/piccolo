@@ -59,8 +59,18 @@ class BaseUser(Table):
         ).hex()
         return f'pbkdf2_sha256${iterations}${salt}${hashed}'
 
+    def __setattr__(self, name: str, value: t.Any):
+        """
+        Make sure that if the password is set, it's stored in a hashed form.
+        """
+        if name == 'password':
+            if not value.startswith('pbkdf2_sha256'):
+                value = self.__class__.hash_password(value)
+
+        super().__setattr__(name, value)
+
     @classmethod
-    def split_stored_password(self, password: str) -> t.List[str]:
+    def split_stored_password(cls, password: str) -> t.List[str]:
         elements = password.split('$')
         if len(elements) != 4:
             raise ValueError('Unable to split hashed password')

@@ -50,11 +50,13 @@ class TestLogin(TestCase):
         password = "Bob123$$$"
         email = "bob@bob.com"
 
-        save_query = User(
+        user = User(
             username=username,
             password=password,
             email=email
-        ).save()
+        )
+
+        save_query = user.save()
 
         save_query.run_sync()
 
