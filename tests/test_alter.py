@@ -1,7 +1,7 @@
 from piccolo.columns import Integer
 
 from .base import DBTestCase
-from .example_project.tables import Band
+from .example_project.tables import Band, Manager
 
 
 class TestRename(DBTestCase):
@@ -64,6 +64,33 @@ class TestAdd(DBTestCase):
         self.assertTrue('weight' in column_names)
 
         self.assertEqual(response[0]['weight'], None)
+
+
+class TestUnique(DBTestCase):
+
+    def test_unique(self):
+        unique_query = Manager.alter().set_unique(Manager.name, True)
+        unique_query.run_sync()
+
+        Manager(name="Bob").save().run_sync()
+
+        # Make sure non-unique names work:
+        Manager(name="Sally").save().run_sync()
+
+        # Check there's a unique row error ...
+        with self.assertRaises(Exception):
+            Manager(name="Bob").save().run_sync()
+
+        response = Manager.select().run_sync()
+        self.assertTrue(len(response) == 2)
+
+        # Now remove the constraint, and add a row.
+        not_unique_query = Manager.alter().set_unique(Manager.name, False)
+        not_unique_query.run_sync()
+        Manager(name="Bob").save().run_sync()
+
+        response = Manager.select().run_sync()
+        self.assertTrue(len(response), 2)
 
 
 class TestMultiple(DBTestCase):

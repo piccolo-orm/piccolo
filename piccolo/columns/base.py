@@ -32,11 +32,13 @@ class Column():
         self,
         null: bool = True,
         primary: bool = False,
-        key: bool = False
+        key: bool = False,
+        unique: bool = False
     ) -> None:
         self.null = null
         self.primary = primary
         self.key = key
+        self.unique = unique
         # Set by Table metaclass:
         self._name: t.Optional[str] = None
         # Used by foreign keys:
@@ -127,6 +129,8 @@ class Column():
             query += ' PRIMARY'
         if self.key:
             query += ' KEY'
+        if self.unique:
+            query += ' UNIQUE'
 
         references = getattr(self, 'references', None)
         if references:

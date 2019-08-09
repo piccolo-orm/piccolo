@@ -53,6 +53,28 @@ class Add():
         return self.querystring.__str__()
 
 
+@dataclasses.dataclass
+class Unique():
+    column: Column
+    boolean: bool
+
+    @property
+    def querystring(self) -> QueryString:
+
+        if self.boolean:
+            return QueryString(
+                f'ADD UNIQUE ({self.column._name})'
+            )
+        else:
+            key = f'{self.column._table.Meta.tablename}_{self.column._name}_key'
+            return QueryString(
+                f'DROP CONSTRAINT "{key}"'
+            )
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
+
+
 class Alter(Query):
 
     def __init__(self, *args, **kwargs):
@@ -60,6 +82,7 @@ class Alter(Query):
         self._add: t.List[Add] = []
         self._drop: t.List[Drop] = []
         self._rename: t.List[Rename] = []
+        self._unique: t.List[Unique] = []
 
     def add_column(self, name: str, column: Column) -> Alter:
         """
@@ -88,6 +111,15 @@ class Alter(Query):
         )
         return self
 
+    def set_unique(self, column: Column, boolean: bool) -> Alter:
+        """
+        Band.alter().set_unique(True)
+        """
+        self._unique.append(
+            Unique(column, boolean)
+        )
+        return self
+
     @property
     def querystring(self) -> QueryString:
         query = f'ALTER TABLE {self.table.Meta.tablename}'
@@ -96,7 +128,8 @@ class Alter(Query):
             i.querystring for i in itertools.chain(
                 self._add,
                 self._rename,
-                self._drop
+                self._drop,
+                self._unique
             )
         ]
 

@@ -32,4 +32,17 @@ Used to rename an existing column.
 
 .. code-block:: python
 
-        Band.alter().rename_column(Band.popularity, ‘rating’).run_sync()
+    Band.alter().rename_column(Band.popularity, ‘rating’).run_sync()
+
+set_unique
+----------
+
+Used to change whether a column is unique or not.
+
+.. code-block:: python
+
+    # To make a row unique:
+    Band.alter().set_unique(Band.name, True).run_sync()
+
+    # To stop a row being unique:
+    Band.alter().set_unique(Band.name, False).run_sync()

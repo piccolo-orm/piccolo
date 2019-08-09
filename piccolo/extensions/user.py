@@ -14,9 +14,9 @@ class BaseUser(Table):
     """
     Subclass this table in your own project, so Meta.db can be defined.
     """
-    username = Varchar(length=100)
+    username = Varchar(length=100, unique=True)
     password = Varchar(length=255)
-    email = Varchar(length=255)
+    email = Varchar(length=255, unique=True)
     active = Boolean(default=False)
     admin = Boolean(default=False)
 
