@@ -38,6 +38,37 @@ class BaseUser(Table):
     def get_salt(cls):
         return secrets.token_hex(16)
 
+    ###########################################################################
+
+    @classmethod
+    def update_password_sync(cls, user: t.Union[str, int], password: str):
+        return async_to_sync(cls.update_password)(user, password)
+
+    @classmethod
+    async def update_password(cls, user: t.Union[str, int], password: str):
+        """
+        The password is the raw password string e.g. password123.
+        The user can be a user ID, or a username.
+        """
+        if type(user) == str:
+            clause = (cls.username == user)
+        elif type(user) == int:
+            clause = (cls.id == user)  # type: ignore
+        else:
+            raise ValueError(
+                'The `user` arg must be a user id, or a username.'
+            )
+
+        password = cls.hash_password(password)
+        await cls.update(
+        ).values({
+            cls.password: password
+        }).where(
+            clause
+        ).run()
+
+    ###########################################################################
+
     @classmethod
     def hash_password(
         cls,

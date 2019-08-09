@@ -34,3 +34,19 @@ To login a user, do the following:
 
 If the login is successful, the user's id is returned, otherwise ``None`` is
 returned.
+
+update_password / update_password_sync
+--------------------------------------
+
+To change a user's password:
+
+.. code-block:: python
+
+    # From within a coroutine:
+    await User.update_password(username="bob", password="abc123")
+
+    # When not in an event loop:
+    User.update_password_sync(username="bob", password="abc123")
+
+.. warning:: Don't use bulk updates for passwords - use ``update_password`` /
+   ``update_password_sync``, and they'll correctly hash the password.

@@ -69,3 +69,23 @@ class TestLogin(TestCase):
             User.login(username, 'blablabla')
         )
         self.assertTrue(not authenticated)
+
+    def test_update_password(self):
+        username = "bob"
+        password = "Bob123$$$"
+        email = "bob@bob.com"
+
+        user = User(
+            username=username,
+            password=password,
+            email=email
+        )
+        user.save().run_sync()
+
+        authenticated = User.login_sync(username, password)
+        self.assertTrue(authenticated is not None)
+
+        new_password = "XXX111"
+        User.update_password_sync(username, new_password)
+        authenticated = User.login_sync(username, new_password)
+        self.assertTrue(authenticated is not None)
