@@ -26,7 +26,7 @@ class Exists(Query):
             QueryString(f'SELECT * FROM {self.table.Meta.tablename}')
         )
         select.where_delegate._where = self.where_delegate._where
-        return QueryString('SELECT EXISTS({})', select.querystring)
+        return QueryString('SELECT EXISTS({}) AS "exists"', select.querystring)
 
     def __str__(self) -> str:
         return self.querystring.__str__()
