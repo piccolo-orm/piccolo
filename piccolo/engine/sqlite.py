@@ -35,7 +35,10 @@ class SQLiteEngine(Engine):
         args: t.List[t.Any] = [],
         query_type: str = 'generic'
     ):
-        async with aiosqlite.connect(self.path) as connection:
+        async with aiosqlite.connect(
+            self.path,
+            detect_types=sqlite3.PARSE_DECLTYPES
+        ) as connection:
             connection.row_factory = dict_factory
             async with connection.execute(query, args) as cursor:
                 cursor.row_factory = dict_factory
