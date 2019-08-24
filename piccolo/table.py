@@ -3,7 +3,7 @@ import copy
 import typing as t
 from functools import wraps
 
-from piccolo.engine import Engine
+from piccolo.engine import Engine, engine_finder
 from piccolo.columns import Column, PrimaryKey, ForeignKey
 from piccolo.query import (
     Alter,
@@ -24,21 +24,20 @@ from piccolo.utils import _camel_to_snake
 
 
 class TableMeta(type):
-
     def __new__(cls, name, bases, namespace, **kwds):
         """
         Automatically populate the tablename, and columns.
         """
         table = super().__new__(cls, name, bases, namespace)
 
-        Meta = namespace.get('Meta')
+        Meta = namespace.get("Meta")
         if (not Meta) or (Meta in [i.Meta for i in bases]):
             # We're inheritting a Meta from a parent class - give this class
             # its own Meta
-            Meta = type('Meta', tuple(), {})
+            Meta = type("Meta", tuple(), {})
             table.Meta = Meta
 
-        tablename = getattr(Meta, 'tablename', None) if Meta else None
+        tablename = getattr(Meta, "tablename", None) if Meta else None
         if not tablename:
             table.Meta.tablename = _camel_to_snake(name)
 
@@ -47,8 +46,8 @@ class TableMeta(type):
         # In case super classes also have columns.
         if bases:
             for base in bases:
-                if hasattr(base, 'Meta'):
-                    _columns = getattr(base.Meta, 'columns', None)
+                if hasattr(base, "Meta"):
+                    _columns = getattr(base.Meta, "columns", None)
                     if _columns:
                         for _col in _columns:
                             if not isinstance(_col, PrimaryKey):
@@ -56,7 +55,7 @@ class TableMeta(type):
                                 columns.append(_col)
 
         primary_key = PrimaryKey()
-        namespace['id'] = primary_key
+        namespace["id"] = primary_key
         table.id = primary_key
 
         for key, value in namespace.items():
@@ -79,29 +78,25 @@ class TableMeta(type):
 
         Used by the playground.
         """
-        spacer = '\n    '
+        spacer = "\n    "
         columns = []
         for col in cls.Meta.columns:
             if type(col) == ForeignKey:
                 columns.append(
-                    f'{col._name} = ForeignKey({col.references.__name__})'
+                    f"{col._name} = ForeignKey({col.references.__name__})"
                 )
             else:
-                columns.append(f'{col._name} = {col.__class__.__name__}()')
+                columns.append(f"{col._name} = {col.__class__.__name__}()")
         columns_string = spacer.join(columns)
-        return (
-            f'class {cls.__name__}(Table):\n'
-            f'    {columns_string}\n'
-        )
+        return f"class {cls.__name__}(Table):\n" f"    {columns_string}\n"
 
 
 class Table(metaclass=TableMeta):
-
     class Meta:
         tablename = None
         columns: t.List[Column] = []
         non_default_columns: t.List[Column] = []
-        db: t.Optional[Engine] = None
+        db: t.Optional[Engine] = engine_finder()
 
     def __init__(self, **kwargs):
         """
@@ -115,7 +110,7 @@ class Table(metaclass=TableMeta):
                 if column.default:
                     # Can't use inspect - can't tell that datetime.datetime.now
                     # is a callable.
-                    is_callable = hasattr(column.default, '__call__')
+                    is_callable = hasattr(column.default, "__call__")
                     value = column.default() if is_callable else column.default
                 else:
                     if not column.null:
@@ -124,26 +119,22 @@ class Table(metaclass=TableMeta):
 
         unrecognized = kwargs.keys()
         if unrecognized:
-            raise ValueError(f'Unrecognized columns - {unrecognized}')
+            raise ValueError(f"Unrecognized columns - {unrecognized}")
 
     def save(self) -> t.Union[Insert, Update]:
         """
         A proxy to an insert or update query.
         """
-        if not hasattr(self, 'id'):
-            raise ValueError('No id value found')
+        if not hasattr(self, "id"):
+            raise ValueError("No id value found")
 
         cls = self.__class__
 
         if type(self.id) == int:
             # pre-existing row
-            kwargs = {
-                i: getattr(self, i._name, None) for i in cls.Meta.columns
-            }
-            _id = kwargs.pop('id')
-            return cls.update().values(kwargs).where(
-                cls.id == _id
-            )
+            kwargs = {i: getattr(self, i._name, None) for i in cls.Meta.columns}
+            _id = kwargs.pop("id")
+            return cls.update().values(kwargs).where(cls.id == _id)
         else:
             return cls.insert().add(self)
 
@@ -155,13 +146,11 @@ class Table(metaclass=TableMeta):
         _id = self.id
 
         if type(_id) != int:
-            raise ValueError('Can only delete pre-existing rows with an id.')
+            raise ValueError("Can only delete pre-existing rows with an id.")
 
         self.id = None
 
-        return self.__class__.delete().where(
-            self.__class__.id == _id
-        )
+        return self.__class__.delete().where(self.__class__.id == _id)
 
     def get_related(self, column_name: str) -> Objects:
         """
@@ -169,12 +158,19 @@ class Table(metaclass=TableMeta):
         """
         cls = self.__class__
 
-        foreign_key: ForeignKey = cls.get_column_by_name(column_name)  # type: ignore
+        foreign_key: ForeignKey = cls.get_column_by_name(
+            column_name
+        )  # type: ignore
         references: t.Type[Table] = foreign_key.references
 
-        return references.objects().where(
-            references.get_column_by_name('id') == getattr(self, column_name)
-        ).first()
+        return (
+            references.objects()
+            .where(
+                references.get_column_by_name("id")
+                == getattr(self, column_name)
+            )
+            .first()
+        )
 
     def __setitem__(self, key: str, value: t.Any):
         setattr(self, key, value)
@@ -189,29 +185,25 @@ class Table(metaclass=TableMeta):
         """
         Used when inserting rows.
         """
-        args_dict = {
-            col._name: self[col._name] for col in self.Meta.columns
-        }
+        args_dict = {col._name: self[col._name] for col in self.Meta.columns}
 
-        is_unquoted = (lambda arg: type(arg) == Unquoted)
+        is_unquoted = lambda arg: type(arg) == Unquoted
 
         # Strip out any args which are unquoted.
         # TODO Not the cleanest place to have it (would rather have it handled
         # in the Querystring bundle logic) - might need refactoring.
-        filtered_args = [
-            i for i in args_dict.values() if not is_unquoted(i)
-        ]
+        filtered_args = [i for i in args_dict.values() if not is_unquoted(i)]
 
         # If unquoted, dump it straight into the query.
-        query = ",".join([
-            args_dict[column._name].value if is_unquoted(
-                args_dict[column._name]
-            ) else '{}' for column in self.Meta.columns
-        ])
-        return QueryString(
-            f'({query})',
-            *filtered_args
+        query = ",".join(
+            [
+                args_dict[column._name].value
+                if is_unquoted(args_dict[column._name])
+                else "{}"
+                for column in self.Meta.columns
+            ]
         )
+        return QueryString(f"({query})", *filtered_args)
 
     def __str__(self) -> str:
         return self.querystring.__str__()
@@ -223,23 +215,18 @@ class Table(metaclass=TableMeta):
         columns = [i for i in cls.Meta.columns if i._name == column_name]
 
         if len(columns) != 1:
-            raise ValueError(
-                f"Can't find a column called {column_name}."
-            )
+            raise ValueError(f"Can't find a column called {column_name}.")
 
         return columns[0]
 
     @classmethod
-    def ref(
-        cls,
-        column_name: str
-    ) -> Column:
+    def ref(cls, column_name: str) -> Column:
         """
         Used to get a copy of a column in a reference table.
 
         Example: manager.name
         """
-        local_column_name, reference_column_name = column_name.split('.')
+        local_column_name, reference_column_name = column_name.split(".")
 
         local_column = cls.get_column_by_name(local_column_name)
 
@@ -251,7 +238,7 @@ class Table(metaclass=TableMeta):
         )
 
         _reference_column = copy.deepcopy(reference_column)
-        _reference_column.name = f'{local_column_name}.{reference_column_name}'
+        _reference_column.name = f"{local_column_name}.{reference_column_name}"
         return _reference_column
 
     ###########################################################################
@@ -259,15 +246,13 @@ class Table(metaclass=TableMeta):
 
     @classmethod
     # TODO - needs refactoring into Band.insert.rows(some_table_instance)
-    def insert(cls, *rows: 'Table') -> Insert:
+    def insert(cls, *rows: "Table") -> Insert:
         """
         await Band.insert(
             Band(name="Pythonistas", popularity=500, manager=1)
         ).run()
         """
-        query = Insert(
-            table=cls,
-        )
+        query = Insert(table=cls)
         if rows:
             query.add(*rows)
         return query
@@ -277,10 +262,7 @@ class Table(metaclass=TableMeta):
         """
         await Band.raw('select * from foo')
         """
-        return Raw(
-            table=cls,
-            base=QueryString(sql)
-        )
+        return Raw(table=cls, base=QueryString(sql))
 
     @classmethod
     def select(cls) -> Select:
@@ -289,18 +271,14 @@ class Table(metaclass=TableMeta):
 
         await Band.select().columns(Band.name).run()
         """
-        return Select(
-            table=cls,
-        )
+        return Select(table=cls)
 
     @classmethod
     def delete(cls) -> Delete:
         """
         await Band.delete().where(Band.name == 'CSharps').run()
         """
-        return Delete(
-            table=cls
-        )
+        return Delete(table=cls)
 
     @classmethod
     def create(cls) -> Create:
@@ -309,9 +287,7 @@ class Table(metaclass=TableMeta):
 
         await Band.create().run()
         """
-        return Create(
-            table=cls,
-        )
+        return Create(table=cls)
 
     @classmethod
     def create_without_columns(cls) -> Raw:
@@ -320,10 +296,7 @@ class Table(metaclass=TableMeta):
 
         await Band.create().run()
         """
-        return Raw(
-            table=cls,
-            base=f'CREATE TABLE "{cls.Meta.tablename}"()'
-        )
+        return Raw(table=cls, base=f'CREATE TABLE "{cls.Meta.tablename}"()')
 
     @classmethod
     def drop(cls) -> Drop:
@@ -332,39 +305,29 @@ class Table(metaclass=TableMeta):
 
         await Band.drop().run()
         """
-        return Drop(
-            table=cls,
-        )
+        return Drop(table=cls)
 
     @classmethod
     def alter(cls) -> Alter:
         """
         await Band.alter().rename_column(Band.popularity, 'rating')
         """
-        return Alter(
-            table=cls,
-        )
+        return Alter(table=cls)
 
     @classmethod
     def objects(cls) -> Objects:
-        return Objects(
-            table=cls
-        )
+        return Objects(table=cls)
 
     @classmethod
     def exists(cls) -> Exists:
         """
         Use it to check if a row exists ... not if the table exists.
         """
-        return Exists(
-            table=cls,
-        )
+        return Exists(table=cls)
 
     @classmethod
     def table_exists(cls) -> TableExists:
-        return TableExists(
-            table=cls,
-        )
+        return TableExists(table=cls)
 
     @classmethod
     def update(cls) -> Update:
@@ -375,6 +338,5 @@ class Table(metaclass=TableMeta):
             {Band.name: "Spamalot"}
         ).where(Band.name=="Pythonistas")
         """
-        return Update(
-            table=cls,
-        )
+        return Update(table=cls)
+

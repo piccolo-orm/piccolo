@@ -28,20 +28,5 @@ Meta
 Connecting to the database
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In order to create the tables in the database you need to provide Piccolo with
-your connection details.
-
-You do this by creating an Engine instance, and providing it to your Table's
-Meta.
-
-.. code-block:: python
-
-    from piccolo.engine.postgres import PostgresEngine
-
-    # Replace these with your local DB credentials.
-    DB = PostgresEngine({
-        'host': 'localhost',
-        'database': 'piccolo_tutorial',
-        'user': 'postgres',
-        'password': ''
-    })
+In order to create the table and query the database, you need to provide
+Piccolo with your connection details. See :ref:`Engines`.
