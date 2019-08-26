@@ -4,7 +4,7 @@ Engines
 =======
 
 Engines are what execute the SQL queries. Each supported backend has its own
-engine.
+engine (see  :ref:`EngineTypes`).
 
 Meta.db
 -------
@@ -44,9 +44,9 @@ defined.
 
 .. code-block:: python
 
+    from piccolo.columns import Varchar
     from piccolo.engine.finder import engine_finder
     from piccolo.tables import Table
-    from piccolo.columns import Varchar
 
 
     class MyTable(Table):
@@ -66,8 +66,8 @@ Here's an example config file:
 
     DB = SQLiteEngine(path='my_db.sqlite')
 
-.. hint:: Put your config files at the root of your project, where the
-    Python interpreter will be launched.
+.. hint:: A good place for your config files is at the root of your project,
+    where the Python interpreter will be launched.
 
 PICCOLO_CONF environment variable
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -103,6 +103,8 @@ variable accordingly.
 
     DB = SQLiteEngine(path='my_test_db.sqlite')
 
+.. _EngineTypes:
+
 Engine types
 ------------
 
@@ -112,6 +114,7 @@ SQLiteEngine
 .. code-block:: python
 
     from piccolo.engine.sqlite import SQLiteEngine
+
 
     DB = SQLiteEngine(path='my_app.sqlite')
 
@@ -123,9 +126,63 @@ PostgresEngine
 
     from piccolo.engine.postgres import PostgresEngine
 
+
     DB = PostgresEngine({
         'host': 'localhost',
         'database': 'my_app',
         'user': 'postgres',
         'password': ''
     })
+
+Connection pool
+---------------
+
+.. warning:: This is currently only available for Postgres.
+
+
+To use a connection pool, you need to first initialise it. The best place to do
+this is in the startup event handler of whichever web framework you are using.
+
+Here's an example using Starlette. Notice that we also close the connection
+pool in the shutdown event handler.
+
+.. code-block:: python
+
+    from piccolo.engine import from starlette.applications import Starlette
+    from starlette.applications import Starlette
+
+
+    app = Starlette()
+
+
+    @app.on_event('startup')
+    async def open_database_connection_pool():
+        engine = engine_finder()
+        await engine.start_connnection_pool()
+
+
+    @app.on_event('shutdown')
+    async def close_database_connection_pool():
+        engine = engine_finder()
+        await engine.close_connnection_pool()
+
+.. hint:: Using a connection pool helps with performance, since connections
+    are reused instead of being created for each query.
+
+Once a connection pool has been started, the engine will use it for making
+queries.
+
+.. hint:: If you're running several instances of an app on the same server,
+    you may prefer an external connection pooler - like pgbouncer.
+
+Configuration
+~~~~~~~~~~~~~
+
+The connection pool uses the same configuration as your engine. You can also
+pass in additional parameters, which are passed to the underlying database
+adapter. Here's an example:
+
+.. code-block:: python
+
+    # To increase the number of connections available:
+    await engine.start_connnection_pool(max_size=20)

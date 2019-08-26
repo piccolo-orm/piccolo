@@ -1,6 +1,7 @@
-
+from __future__ import annotations
 import asyncio
 import typing as t
+import warnings
 
 import asyncpg
 from asyncpg.pool import Pool
@@ -11,7 +12,7 @@ from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
 
 
-class Transaction():
+class Transaction:
     """
     Usage:
 
@@ -20,9 +21,9 @@ class Transaction():
     transaction.run_sync()
     """
 
-    def __init__(self, engine):
+    def __init__(self, engine: PostgresEngine):
         self.engine = engine
-        self.queries = []
+        self.queries: t.List[Query] = []
 
     def add(self, *query: Query):
         self.queries += list(query)
@@ -30,7 +31,10 @@ class Transaction():
     async def _run_queries(self, connection):
         async with connection.transaction():
             for query in self.queries:
-                await connection.execute(query.__str__())
+                _query, args = query.querystring.compile_string(
+                    engine_type=self.engine.engine_type
+                )
+                await connection.execute(_query, *args)
 
         self.queries = []
 
@@ -49,50 +53,51 @@ class Transaction():
         connection = await asyncpg.connect(**self.engine.config)
         await self._run_queries(connection)
 
-    async def run(self):
-        await self._run_in_pool()
+    async def run(self, in_pool=True):
+        if in_pool and self.engine.pool:
+            await self._run_in_pool()
+        else:
+            await self._run()
 
     def run_sync(self):
-        return run_sync(
-            self._run()
-        )
+        return run_sync(self._run())
 
 
 class PostgresEngine(Engine):
-    """
-    Currently when using run ...  it sets up a connection each time.
 
-    When instantiated ... create the connection pool ...
-
-    Needs to be a singleton that's shared by all the tables.
-    """
-
-    engine_type = 'postgres'
+    engine_type = "postgres"
 
     def __init__(self, config: t.Dict[str, t.Any]) -> None:
         self.config = config
         self.pool: t.Optional[Pool] = None
-        self.loop: t.Optional[asyncio.AbstractEventLoop] = None
 
-    async def get_pool(self) -> Pool:
-        loop = asyncio.get_event_loop()
-        if not self.pool or (self.loop != loop):
-            self.pool = await asyncpg.create_pool(
-                **self.config
+    async def start_connnection_pool(self, **kwargs) -> None:
+        if self.pool:
+            warnings.warn(
+                "A pool already exists - close it first if you want to create a new pool."
             )
-            self.loop = loop
-        return self.pool
+        else:
+            config = dict(self.config)
+            config.update(**kwargs)
+            self.pool = await asyncpg.create_pool(**config)
+
+    async def close_connnection_pool(self) -> None:
+        if self.pool:
+            await self.pool.close()
+        else:
+            warnings.warn("No pool is running.")
 
     async def run_in_pool(self, query: str, args: t.List[t.Any] = []):
-        pool = await self.get_pool()
+        if not self.pool:
+            raise ValueError("A pool isn't currently running.")
 
-        connection = await pool.acquire()
+        connection = self.pool.acquire()
         try:
             response = await connection.fetch(query, *args)
         except Exception:
             pass
         finally:
-            await pool.release(connection)
+            await self.pool.release(connection)
 
         return response
 
@@ -103,18 +108,13 @@ class PostgresEngine(Engine):
         return results
 
     async def run_querystring(
-        self,
-        querystring: QueryString,
-        in_pool: bool = False
+        self, querystring: QueryString, in_pool: bool = True
     ):
-        if in_pool:
-            return await self.run_in_pool(
-                *querystring.compile_string(engine_type=self.engine_type)
-            )
+        query, args = querystring.compile_string(engine_type=self.engine_type)
+        if in_pool and self.pool:
+            return await self.run_in_pool(query, args)
         else:
-            return await self.run(
-                *querystring.compile_string(engine_type=self.engine_type)
-            )
+            return await self.run(query, args)
 
-    def transaction(self):
+    def transaction(self) -> Transaction:
         return Transaction(engine=self)

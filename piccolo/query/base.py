@@ -12,13 +12,8 @@ if t.TYPE_CHECKING:
 
 
 class Query(object):
-
     def __init__(
-        self,
-        table: Table,
-        base: QueryString = QueryString(''),
-        *args,
-        **kwargs
+        self, table: Table, base: QueryString = QueryString(""), *args, **kwargs
     ) -> None:
         self.base = base
         self.table = table
@@ -32,26 +27,25 @@ class Query(object):
     def engine_type(self) -> str:
         return self.table.Meta.db.engine_type
 
-    async def run(self, as_dict=True, in_pool=False):
-        engine = getattr(self.table.Meta, 'db', None)
+    async def run(self, in_pool=True):
+        engine = getattr(self.table.Meta, "db", None)
         if not engine:
             raise ValueError(
-                f'Table {self.table.Meta.tablename} has no db defined in Meta'
+                f"Table {self.table.Meta.tablename} has no db defined in Meta"
             )
 
         results = await engine.run_querystring(
-            self.querystring,
-            in_pool=in_pool
+            self.querystring, in_pool=in_pool
         )
 
         if results:
             keys = results[0].keys()
-            keys = [i.replace('$', '.') for i in keys]
+            keys = [i.replace("$", ".") for i in keys]
             raw = [dict(zip(keys, i.values())) for i in results]
         else:
             raw = []
 
-        if hasattr(self, 'run_callback'):
+        if hasattr(self, "run_callback"):
             self.run_callback(raw)
 
         # TODO - I have multiple ways of modifying the final output
@@ -59,7 +53,7 @@ class Query(object):
         # Might try and merge them.
         raw = self.response_handler(raw)
 
-        output = getattr(self, 'output_delegate', None)
+        output = getattr(self, "output_delegate", None)
 
         if output:
             if output._output.as_objects:
@@ -73,12 +67,10 @@ class Query(object):
                 if output._output.as_list:
                     if len(raw[0].keys()) != 1:
                         raise ValueError(
-                            'Each row returned more than one value'
+                            "Each row returned more than one value"
                         )
                     else:
-                        raw = list(
-                            itertools.chain(*[j.values() for j in raw])
-                        )
+                        raw = list(itertools.chain(*[j.values() for j in raw]))
                 if output._output.as_json:
                     raw = json.dumps(raw)
 
@@ -92,9 +84,7 @@ class Query(object):
         tearing down connections, but instead running it in a separate
         process, and dispatching coroutines to it.
         """
-        return run_sync(
-            self.run(*args, **kwargs, in_pool=False)
-        )
+        return run_sync(self.run(*args, **kwargs, in_pool=False))
 
     def response_handler(self, response):
         """
@@ -123,19 +113,19 @@ class Query(object):
         Calls the correct underlying method, depending on the current engine.
         """
         engine_type = self.engine_type
-        if engine_type == 'postgres':
+        if engine_type == "postgres":
             try:
                 return self.postgres_querystring
             except NotImplementedError:
                 return self.default_querystring
-        elif engine_type == 'sqlite':
+        elif engine_type == "sqlite":
             try:
                 return self.sqlite_querystring
             except NotImplementedError:
                 return self.default_querystring
         else:
             raise Exception(
-                f'No querystring found for the {engine_type} engine.'
+                f"No querystring found for the {engine_type} engine."
             )
 
     ###########################################################################
