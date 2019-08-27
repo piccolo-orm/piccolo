@@ -84,6 +84,7 @@ class PostgresEngine(Engine):
     async def close_connnection_pool(self) -> None:
         if self.pool:
             await self.pool.close()
+            self.pool = None
         else:
             warnings.warn("No pool is running.")
 
@@ -91,13 +92,8 @@ class PostgresEngine(Engine):
         if not self.pool:
             raise ValueError("A pool isn't currently running.")
 
-        connection = self.pool.acquire()
-        try:
+        async with self.pool.acquire() as connection:
             response = await connection.fetch(query, *args)
-        except Exception:
-            pass
-        finally:
-            await self.pool.release(connection)
 
         return response
 
