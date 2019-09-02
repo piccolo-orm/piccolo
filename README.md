@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.com/piccolo-orm/piccolo.svg?branch=master)](https://travis-ci.com/piccolo-orm/piccolo)
 
+[![Coverage Status](https://coveralls.io/repos/github/piccolo-orm/piccolo/badge.svg)](https://coveralls.io/github/piccolo-orm/piccolo)
+
 A fast, user friendly ORM which supports asyncio.
 
 Not production ready yet, but progressing quickly.
