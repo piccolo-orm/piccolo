@@ -21,7 +21,6 @@ if t.TYPE_CHECKING:
 
 
 class Select(Query):
-
     def setup_delegates(self):
         self.columns_delegate = ColumnsDelegate()
         self.count_delegate = CountDelegate()
@@ -54,9 +53,11 @@ class Select(Query):
     def response_handler(self, response):
         if self.limit_delegate._first:
             if len(response) == 0:
-                raise ValueError('No results found')
+                raise ValueError("No results found")
             else:
                 return response[0]
+        elif self.count_delegate._count:
+            return response[0]["count"]
         else:
             return response
 
@@ -132,9 +133,7 @@ class Select(Query):
 
         # Combine all joins, and remove duplicates
         joins: t.List[str] = list(
-            OrderedDict.fromkeys(
-                select_joins + where_joins + order_by_joins
-            )
+            OrderedDict.fromkeys(select_joins + where_joins + order_by_joins)
         )
 
         #######################################################################
@@ -150,7 +149,7 @@ class Select(Query):
         #######################################################################
 
         select = "SELECT DISTINCT" if self.distinct else "SELECT"
-        query = f'{select} {columns_str} FROM {self.table.Meta.tablename}'
+        query = f"{select} {columns_str} FROM {self.table.Meta.tablename}"
 
         for join in joins:
             query += f" {join}"
@@ -175,8 +174,7 @@ class Select(Query):
 
         if self.count_delegate._count:
             querystring = QueryString(
-                "SELECT COUNT(*) FROM ({}) AS sub_query",
-                querystring
+                "SELECT COUNT(*) FROM ({}) AS sub_query", querystring
             )
 
         return querystring

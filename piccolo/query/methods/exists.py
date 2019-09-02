@@ -4,6 +4,7 @@ from piccolo.custom_types import Combinable
 from piccolo.query.base import Query
 from piccolo.query.mixins import WhereDelegate
 from piccolo.querystring import QueryString
+
 from .select import Select
 
 
