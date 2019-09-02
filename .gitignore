@@ -11,3 +11,4 @@ build/
 dist/
 piccolo.sqlite
 _build/
+.coverage

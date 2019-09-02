@@ -1,7 +1,7 @@
 dist: xenial
 language: python
 python:
-  - '3.7'
+  - "3.7"
 env:
   - POSTGRESQL_VERSION = 11.1
   - POSTGRESQL_VERSION = 10.6
@@ -10,9 +10,12 @@ before_install:
   - sudo service postgresql stop && sudo service postgresql start $POSTGRESQL_VERSION
 install:
   - pip install -r requirements.txt
+  - pip install -r tests/test-requirements.txt
 before_script:
   - psql -c 'CREATE DATABASE piccolo;' -U postgres
   - psql -c "CREATE USER piccolo PASSWORD 'piccolo';" -U postgres
   - psql -c "GRANT ALL PRIVILEGES ON DATABASE piccolo TO piccolo;" -U postgres
 script:
-  - pytest
+  - cd tests && ./run-tests.sh
+after_success:
+  - coveralls
