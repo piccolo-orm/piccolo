@@ -4,7 +4,9 @@ Query Types
 .. toctree::
     :maxdepth: 0
 
+    ./select
     ./alter
+    ./count
     ./create
     ./delete
     ./drop
@@ -12,6 +14,5 @@ Query Types
     ./insert
     ./objects
     ./raw
-    ./select
     ./transactions
     ./update

@@ -6,8 +6,7 @@ from ..example_project.tables import Band, Manager, Concert, Venue
 TABLES = [Manager, Band, Venue, Concert]
 
 
-class TestCreateJoin():
-
+class TestCreateJoin:
     def test_create_join(self):
         for table in TABLES:
             table.create().run_sync()
@@ -50,9 +49,7 @@ class TestJoin(TestCase):
         # TODO - make sure you can also do:
         # band_1=Pythonistas
         save_query = Concert(
-            band_1=band_1.id,
-            band_2=band_2.id,
-            venue=venue.id
+            band_1=band_1.id, band_2=band_2.id, venue=venue.id
         ).save()
         save_query.run_sync()
 
@@ -60,14 +57,14 @@ class TestJoin(TestCase):
             Concert.band_1.name,
             Concert.band_2.name,
             Concert.venue.name,
-            Concert.band_1.manager
+            Concert.band_1.manager,
         )
         response = select_query.run_sync()
         print(response)
 
     # def _test_ref(self):
     #     """
-    #     Concert.select().count().where(
+    #     Concert.count().where(
     #         Concert.ref('band1.name') == 'Pythonistas'
     #     )
     #     """

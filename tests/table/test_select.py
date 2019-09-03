@@ -266,9 +266,7 @@ class TestSelect(DBTestCase):
     def test_count(self):
         self.insert_rows()
 
-        response = (
-            Band.select().where(Band.name == "Pythonistas").count().run_sync()
-        )
+        response = Band.count().where(Band.name == "Pythonistas").run_sync()
 
         print(f"response = {response}")
 

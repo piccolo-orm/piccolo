@@ -23,7 +23,6 @@ if t.TYPE_CHECKING:
 class Select(Query):
     def setup_delegates(self):
         self.columns_delegate = ColumnsDelegate()
-        self.count_delegate = CountDelegate()
         self.distinct_delegate = DistinctDelegate()
         self.limit_delegate = LimitDelegate()
         self.order_by_delegate = OrderByDelegate()
@@ -32,10 +31,6 @@ class Select(Query):
 
     def columns(self, *columns: Column) -> Select:
         self.columns_delegate.columns(*columns)
-        return self
-
-    def count(self) -> Select:
-        self.count_delegate.count()
         return self
 
     def distinct(self) -> Select:
@@ -56,8 +51,6 @@ class Select(Query):
                 raise ValueError("No results found")
             else:
                 return response[0]
-        elif self.count_delegate._count:
-            return response[0]["count"]
         else:
             return response
 
@@ -171,11 +164,6 @@ class Select(Query):
             args.append(self.limit_delegate._limit.querystring)
 
         querystring = QueryString(query, *args)
-
-        if self.count_delegate._count:
-            querystring = QueryString(
-                "SELECT COUNT(*) FROM ({}) AS sub_query", querystring
-            )
 
         return querystring
 

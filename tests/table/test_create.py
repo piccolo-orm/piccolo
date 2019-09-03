@@ -7,7 +7,7 @@ class TestCreate(TestCase):
         Manager.create().run_sync()
 
         # Just do a count to make sure the table was created ok.
-        count_query = Manager.select().count()
+        count_query = Manager.count()
         response = count_query.run_sync()
 
         self.assertEqual(response, 0)

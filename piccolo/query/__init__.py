@@ -11,20 +11,5 @@ from .methods import (
     Drop,
     TableExists,
     Exists,
+    Count,
 )
-
-
-__all__ = [
-    'Alter',
-    'Query',
-    'Select',
-    'Objects',
-    'Insert',
-    'Delete',
-    'Create',
-    'Update',
-    'Raw',
-    'Drop',
-    'TableExists',
-    'Exists',
-]

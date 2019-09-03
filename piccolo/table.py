@@ -8,6 +8,7 @@ from piccolo.columns import Column, PrimaryKey, ForeignKey
 from piccolo.query import (
     Alter,
     Create,
+    Count,
     Delete,
     Drop,
     Exists,
@@ -319,9 +320,16 @@ class Table(metaclass=TableMeta):
         return Objects(table=cls)
 
     @classmethod
+    def count(cls) -> Count:
+        """
+        Count the number of matching rows.
+        """
+        return Count(table=cls)
+
+    @classmethod
     def exists(cls) -> Exists:
         """
-        Use it to check if a row exists ... not if the table exists.
+        Use it to check if a row exists, not if the table exists.
         """
         return Exists(table=cls)
 
