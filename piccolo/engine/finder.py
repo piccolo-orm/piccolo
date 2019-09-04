@@ -4,7 +4,7 @@ from types import ModuleType
 import typing as t
 import warnings
 
-from .base import Engine
+from piccolo.engine.base import Engine
 
 
 DEFAULT_MODULE_NAME = "piccolo_conf"

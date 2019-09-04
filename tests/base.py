@@ -1,10 +1,24 @@
 import asyncio
 from unittest import TestCase
 
+import pytest
+
 from piccolo.engine.finder import engine_finder
+from piccolo.engine.postgres import PostgresEngine
+from piccolo.engine.sqlite import SQLiteEngine
 
 
 ENGINE = engine_finder()
+
+
+postgres_only = pytest.mark.skipif(
+    not isinstance(ENGINE, PostgresEngine), reason="Only running for Postgres"
+)
+
+
+sqlite_only = pytest.mark.skipif(
+    not isinstance(ENGINE, SQLiteEngine), reason="Only running for SQLite"
+)
 
 
 class DBTestCase(TestCase):

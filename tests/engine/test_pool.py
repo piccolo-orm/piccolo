@@ -2,10 +2,11 @@ import asyncio
 
 from unittest import TestCase
 
-from ..base import DBTestCase
+from ..base import DBTestCase, postgres_only
 from ..example_project.tables import Manager
 
 
+@postgres_only
 class TestPool(DBTestCase):
     async def create_pool(self):
         await Manager.Meta.db.start_connnection_pool()
