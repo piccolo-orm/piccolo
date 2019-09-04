@@ -1,9 +1,10 @@
 import asyncio
 from unittest import TestCase
 
-import asyncpg
+from piccolo.engine.finder import engine_finder
 
-from .example_project.tables import Band
+
+ENGINE = engine_finder()
 
 
 class DBTestCase(TestCase):
@@ -12,36 +13,38 @@ class DBTestCase(TestCase):
     """
 
     def run_sync(self, query):
-        async def _run():
-            connection = await asyncpg.connect(**Band.Meta.db.config)
-            await connection.execute(query)
-            await connection.close()
-
-        asyncio.run(_run())
+        asyncio.run(ENGINE.run(query))
 
     def create_table(self):
-        self.run_sync('''
+        self.run_sync(
+            """
             CREATE TABLE manager (
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(50)
-            );''')
+            );"""
+        )
 
-        self.run_sync('''
+        self.run_sync(
+            """
             CREATE TABLE band (
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(50),
                 manager INTEGER REFERENCES manager,
                 popularity SMALLINT
-            );''')
+            );"""
+        )
 
     def insert_row(self):
-        self.run_sync('''
+        self.run_sync(
+            """
             INSERT INTO manager (
                 name
             ) VALUES (
                 'Guido'
-            );''')
-        self.run_sync('''
+            );"""
+        )
+        self.run_sync(
+            """
             INSERT INTO band (
                 name,
                 manager,
@@ -50,10 +53,12 @@ class DBTestCase(TestCase):
                 'Pythonistas',
                 1,
                 1000
-            );''')
+            );"""
+        )
 
     def insert_rows(self):
-        self.run_sync('''
+        self.run_sync(
+            """
             INSERT INTO manager (
                 name
             ) VALUES (
@@ -62,8 +67,10 @@ class DBTestCase(TestCase):
                 'Graydon'
             ),(
                 'Mads'
-            );''')
-        self.run_sync('''
+            );"""
+        )
+        self.run_sync(
+            """
             INSERT INTO band (
                 name,
                 manager,
@@ -80,11 +87,12 @@ class DBTestCase(TestCase):
                 'CSharps',
                 3,
                 10
-            );''')
+            );"""
+        )
 
     def drop_table(self):
-        self.run_sync('DROP TABLE band;')
-        self.run_sync('DROP TABLE manager;')
+        self.run_sync("DROP TABLE band;")
+        self.run_sync("DROP TABLE manager;")
 
     def setUp(self):
         self.create_table()

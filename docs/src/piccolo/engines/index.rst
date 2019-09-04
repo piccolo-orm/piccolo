@@ -103,6 +103,8 @@ variable accordingly.
 
     DB = SQLiteEngine(path='my_test_db.sqlite')
 
+.. hint:: You can also specify sub modules, like `my_module.piccolo_conf`.
+
 .. _EngineTypes:
 
 Engine types

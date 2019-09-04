@@ -46,7 +46,8 @@ def engine_finder(module_name: t.Optional[str] = None) -> t.Optional[Engine]:
             )
         elif not isinstance(engine, Engine):
             warnings.warn(
-                f"{module_name} contains a {ENGINE_VAR} variable of the wrong type - it should be an Engine subclass."
+                f"{module_name} contains a {ENGINE_VAR} variable of the wrong "
+                "type - it should be an Engine subclass."
             )
 
     return engine

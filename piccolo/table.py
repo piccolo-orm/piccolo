@@ -1,7 +1,6 @@
 from __future__ import annotations
 import copy
 import typing as t
-from functools import wraps
 
 from piccolo.engine import Engine, engine_finder
 from piccolo.columns import Column, PrimaryKey, ForeignKey
@@ -14,7 +13,6 @@ from piccolo.query import (
     Exists,
     Insert,
     Objects,
-    Query,
     Raw,
     Select,
     TableExists,
@@ -41,6 +39,10 @@ class TableMeta(type):
         tablename = getattr(Meta, "tablename", None) if Meta else None
         if not tablename:
             table.Meta.tablename = _camel_to_snake(name)
+
+        db = getattr(Meta, "db", None) if Meta else None
+        if not db:
+            table.Meta.db = engine_finder()
 
         columns = []
 
@@ -133,7 +135,9 @@ class Table(metaclass=TableMeta):
 
         if type(self.id) == int:
             # pre-existing row
-            kwargs = {i: getattr(self, i._name, None) for i in cls.Meta.columns}
+            kwargs = {
+                i: getattr(self, i._name, None) for i in cls.Meta.columns
+            }
             _id = kwargs.pop("id")
             return cls.update().values(kwargs).where(cls.id == _id)
         else:

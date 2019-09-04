@@ -13,7 +13,11 @@ if t.TYPE_CHECKING:
 
 class Query(object):
     def __init__(
-        self, table: Table, base: QueryString = QueryString(""), *args, **kwargs
+        self,
+        table: Table,
+        base: QueryString = QueryString(""),
+        *args,
+        **kwargs,
     ) -> None:
         self.base = base
         self.table = table
