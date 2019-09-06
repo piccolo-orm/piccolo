@@ -1,10 +1,18 @@
 import sqlite3
 import typing as t
+import warnings
 
 import aiosqlite
+import colorama
 
 from piccolo.engine.base import Engine
 from piccolo.querystring import QueryString
+
+
+MIN_VERSION_NUMBER = 3.25
+
+
+colorama.init()
 
 
 def dict_factory(cursor, row):
@@ -19,7 +27,23 @@ class SQLiteEngine(Engine):
     engine_type = "sqlite"
 
     def __init__(self, path: str = "piccolo.sqlite") -> None:
+        self.check_version()
         self.path = path
+
+    def check_version(self):
+        """
+        Warn if the version of SQLite isn't supported.
+        """
+        major, minor, _ = sqlite3.sqlite_version.split(".")
+        version_number = float(f"{major}.{minor}")
+        if version_number < MIN_VERSION_NUMBER:
+            message = (
+                colorama.Fore.RED + "This version of SQLite isn't supported - "
+                "some features might "
+                "not be available. For instructions on installing SQLite, "
+                "see the Piccolo docs." + colorama.Fore.RESET
+            )
+            warnings.warn(message)
 
     async def run_in_pool(
         self, query: str, args: t.List[t.Any] = [], query_type: str = "generic"
@@ -52,7 +76,7 @@ class SQLiteEngine(Engine):
     ):
         return await self.run(
             *querystring.compile_string(engine_type=self.engine_type),
-            query_type=querystring.query_type
+            query_type=querystring.query_type,
         )
 
     def transaction(self):

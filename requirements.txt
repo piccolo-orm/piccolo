@@ -3,3 +3,4 @@ asyncpg==0.17.0
 ujson==1.35
 aiosqlite==0.10.0
 asgiref==3.2.1
+colorama==0.4.1
