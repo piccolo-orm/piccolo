@@ -2,9 +2,9 @@ from importlib import import_module
 import os
 from types import ModuleType
 import typing as t
-import warnings
 
 from piccolo.engine.base import Engine
+from piccolo.utils.warnings import colored_warning
 
 
 DEFAULT_MODULE_NAME = "piccolo_conf"
@@ -35,17 +35,17 @@ def engine_finder(module_name: t.Optional[str] = None) -> t.Optional[Engine]:
     try:
         module = import_module(module_name)
     except ModuleNotFoundError:
-        warnings.warn(f"{module_name} doesn't exist.")
+        colored_warning(f"{module_name} doesn't exist.")
     else:
         engine = getattr(module, ENGINE_VAR, None)
 
     if module:
         if not engine:
-            warnings.warn(
+            colored_warning(
                 f"{module_name} doesn't define a {ENGINE_VAR} variable."
             )
         elif not isinstance(engine, Engine):
-            warnings.warn(
+            colored_warning(
                 f"{module_name} contains a {ENGINE_VAR} variable of the wrong "
                 "type - it should be an Engine subclass."
             )

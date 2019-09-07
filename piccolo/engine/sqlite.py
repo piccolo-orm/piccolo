@@ -1,18 +1,14 @@
 import sqlite3
 import typing as t
-import warnings
 
 import aiosqlite
-import colorama
 
 from piccolo.engine.base import Engine
 from piccolo.querystring import QueryString
+from piccolo.utils.warnings import colored_warning
 
 
 MIN_VERSION_NUMBER = 3.25
-
-
-colorama.init()
 
 
 def dict_factory(cursor, row):
@@ -38,12 +34,12 @@ class SQLiteEngine(Engine):
         version_number = float(f"{major}.{minor}")
         if version_number < MIN_VERSION_NUMBER:
             message = (
-                colorama.Fore.RED + "This version of SQLite isn't supported - "
-                "some features might "
-                "not be available. For instructions on installing SQLite, "
-                "see the Piccolo docs." + colorama.Fore.RESET
+                "This version of SQLite isn't supported "
+                f"(< {MIN_VERSION_NUMBER}) - some features might not be "
+                "available. For instructions on installing SQLite, see the "
+                "Piccolo docs."
             )
-            warnings.warn(message)
+            colored_warning(message, stacklevel=3)
 
     async def run_in_pool(
         self, query: str, args: t.List[t.Any] = [], query_type: str = "generic"
