@@ -135,7 +135,7 @@ class Select(Query):
             self.columns_delegate.selected_columns = self.table.Meta.columns
 
         column_names: t.List[str] = [
-            c.get_full_name() for c in self.columns_delegate.selected_columns
+            c._get_full_name() for c in self.columns_delegate.selected_columns
         ]
         columns_str = ", ".join(column_names)
 

@@ -7,56 +7,51 @@ from piccolo.custom_types import Combinable
 from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:
-    from table import Table  # noqa
-    from piccolo.query import Query, Select
+    from piccolo.table import Table  # noqa
 
 
 @dataclass
-class Limit():
+class Limit:
     number: int
 
     def __post_init__(self):
         if type(self.number) != int:
-            raise TypeError('Limit must be an integer')
+            raise TypeError("Limit must be an integer")
 
     @property
     def querystring(self) -> QueryString:
-        return QueryString(
-            f' LIMIT {self.number}'
-        )
+        return QueryString(f" LIMIT {self.number}")
 
     def __str__(self) -> str:
         return self.querystring.__str__()
 
 
 @dataclass
-class OrderBy():
+class OrderBy:
     columns: t.Sequence[Column]
     ascending: bool
 
     @property
     def querystring(self) -> QueryString:
-        order = 'ASC' if self.ascending else 'DESC'
-        columns_names = ', '.join(
-            [i.get_full_name(just_alias=True) for i in self.columns]
+        order = "ASC" if self.ascending else "DESC"
+        columns_names = ", ".join(
+            [i._get_full_name(just_alias=True) for i in self.columns]
         )
-        return QueryString(
-            f' ORDER BY {columns_names} {order}'
-        )
+        return QueryString(f" ORDER BY {columns_names} {order}")
 
     def __str__(self):
         return self.querystring.__str__()
 
 
 @dataclass
-class Output():
+class Output:
     as_json: bool = False
     as_list: bool = False
     as_objects: bool = False
 
 
 @dataclass
-class WhereDelegate():
+class WhereDelegate:
     _where: t.Optional[Combinable] = field(default_factory=list)
     _where_columns: t.List[Column] = field(default_factory=list)
 
@@ -84,7 +79,7 @@ class WhereDelegate():
 
 
 @dataclass
-class OrderByDelegate():
+class OrderByDelegate:
     _order_by: t.Optional[OrderBy] = None
 
     def get_order_by_columns(self) -> t.List[Column]:
@@ -95,7 +90,7 @@ class OrderByDelegate():
 
 
 @dataclass
-class LimitDelegate():
+class LimitDelegate:
     _limit: t.Optional[Limit] = None
     _first = False
 
@@ -108,7 +103,7 @@ class LimitDelegate():
 
 
 @dataclass
-class DistinctDelegate():
+class DistinctDelegate:
     _distinct: bool = False
 
     def distinct(self):
@@ -116,7 +111,7 @@ class DistinctDelegate():
 
 
 @dataclass
-class CountDelegate():
+class CountDelegate:
     _count: bool = False
 
     def count(self):
@@ -124,18 +119,18 @@ class CountDelegate():
 
 
 @dataclass
-class AddDelegate():
+class AddDelegate:
     _add: t.List[Table] = field(default_factory=list)
 
     def add(self, *instances: Table, table_class: t.Type[Table]):
         for instance in instances:
             if not isinstance(instance, table_class):
-                raise TypeError('Incompatible type added.')
+                raise TypeError("Incompatible type added.")
         self._add += instances
 
 
 @dataclass
-class OutputDelegate():
+class OutputDelegate:
     """
     Example usage:
 
@@ -143,12 +138,13 @@ class OutputDelegate():
     .output(as_json=True)
     .output(as_json=True, as_list=True)
     """
+
     _output: Output = field(default_factory=Output)
 
     def output(
         self,
         as_list: t.Optional[bool] = None,
-        as_json: t.Optional[bool] = None
+        as_json: t.Optional[bool] = None,
     ):
         if as_list != None:
             self._output.as_list = bool(as_list)
@@ -158,12 +154,13 @@ class OutputDelegate():
 
 
 @dataclass
-class ColumnsDelegate():
+class ColumnsDelegate:
     """
     Example usage:
 
     .columns(MyTable.column_a, MyTable.column_b)
     """
+
     selected_columns: t.List[Column] = field(default_factory=list)
 
     def columns(self, *columns: Column):
@@ -171,7 +168,7 @@ class ColumnsDelegate():
 
 
 @dataclass
-class ValuesDelegate():
+class ValuesDelegate:
     """
     Used to specify new column values - primarily used in update queries.
 
@@ -179,6 +176,7 @@ class ValuesDelegate():
 
     .values({MyTable.column_a: 1})
     """
+
     _values: t.Dict[Column, t.Any] = field(default_factory=dict)
 
     def values(self, values: t.Dict[Column, t.Any]):

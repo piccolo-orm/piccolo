@@ -8,7 +8,7 @@ from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
 
 if t.TYPE_CHECKING:
-    from table import Table  # noqa
+    from piccolo.table import Table  # noqa
 
 
 class Query(object):
@@ -29,7 +29,11 @@ class Query(object):
 
     @property
     def engine_type(self) -> str:
-        return self.table.Meta.db.engine_type
+        engine = self.table.Meta.db
+        if engine:
+            return engine.engine_type
+        else:
+            raise ValueError("Engine isn't defined.")
 
     async def run(self, in_pool=True):
         engine = getattr(self.table.Meta, "db", None)

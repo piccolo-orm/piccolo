@@ -1,15 +1,16 @@
 from __future__ import annotations
-import asyncio
 import typing as t
 import warnings
 
 import asyncpg
 from asyncpg.pool import Pool
+from asgiref.sync import async_to_sync
 
 from piccolo.engine.base import Engine
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
+from piccolo.utils.warnings import colored_warning
 
 
 class Transaction:
@@ -66,10 +67,19 @@ class Transaction:
 class PostgresEngine(Engine):
 
     engine_type = "postgres"
+    min_version_number = 9.6
 
     def __init__(self, config: t.Dict[str, t.Any]) -> None:
         self.config = config
         self.pool: t.Optional[Pool] = None
+        super().__init__()
+
+    def get_version(self) -> float:
+        response = async_to_sync(self.run)("SHOW server_version")
+        server_version = response[0]["server_version"]
+        major, minor, _ = server_version.split(".")
+        version = float(f"{major}.{minor}")
+        return version
 
     async def start_connnection_pool(self, **kwargs) -> None:
         if self.pool:

@@ -11,14 +11,8 @@ from piccolo import columns
 from piccolo.engine import SQLiteEngine, PostgresEngine
 
 
-DB = SQLiteEngine()
-
-
 class Manager(table.Table):
     name = columns.Varchar(length=50)
-
-    class Meta():
-        db = DB
 
 
 class Band(table.Table):
@@ -26,25 +20,16 @@ class Band(table.Table):
     manager = columns.ForeignKey(references=Manager)
     popularity = columns.Integer()
 
-    class Meta():
-        db = DB
-
 
 class Venue(table.Table):
     name = columns.Varchar(length=100)
     capacity = columns.Integer()
-
-    class Meta():
-        db = DB
 
 
 class Concert(table.Table):
     band_1 = columns.ForeignKey(Band)
     band_2 = columns.ForeignKey(Band)
     venue = columns.ForeignKey(Venue)
-
-    class Meta():
-        db = DB
 
 
 TABLES = (Manager, Band, Venue, Concert)
@@ -69,69 +54,38 @@ def populate():
     guido = Manager(name="Guido")
     guido.save().run_sync()
 
-    pythonistas = Band(
-        name="Pythonistas",
-        manager=guido.id,
-        popularity=1000
-    )
+    pythonistas = Band(name="Pythonistas", manager=guido.id, popularity=1000)
     pythonistas.save().run_sync()
 
     graydon = Manager(name="Graydon")
     graydon.save().run_sync()
 
-    rustaceans = Band(
-        name="Rustaceans",
-        manager=graydon.id,
-        popularity=500
-    )
+    rustaceans = Band(name="Rustaceans", manager=graydon.id, popularity=500)
     rustaceans.save().run_sync()
 
-    venue = Venue(
-        name="Amazing Venue",
-        capacity=5000
-    )
+    venue = Venue(name="Amazing Venue", capacity=5000)
     venue.save().run_sync()
 
     concert = Concert(
-        band_1=pythonistas.id,
-        band_2=rustaceans.id,
-        venue=venue.id
+        band_1=pythonistas.id, band_2=rustaceans.id, venue=venue.id
     )
     concert.save().run_sync()
 
 
 @click.command(name="playground")
 @click.option(
-    '--engine',
-    default='sqlite',
-    help='Which database engine to use',
-    type=click.Choice(['sqlite', 'postgres'])
+    "--engine",
+    default="sqlite",
+    help="Which database engine to use",
+    type=click.Choice(["sqlite", "postgres"]),
 )
+@click.option("--user", default="piccolo", help="Postgres user")
+@click.option("--password", default="piccolo", help="Postgres password")
 @click.option(
-    '--user',
-    default='piccolo',
-    help='Postgres user'
+    "--database", default="piccolo_playground", help="Postgres database"
 )
-@click.option(
-    '--password',
-    default='piccolo',
-    help='Postgres password'
-)
-@click.option(
-    '--database',
-    default='piccolo_playground',
-    help='Postgres database'
-)
-@click.option(
-    '--host',
-    default='localhost',
-    help='Postgres host'
-)
-@click.option(
-    '--port',
-    default=5432,
-    help='Postgres port'
-)
+@click.option("--host", default="localhost", help="Postgres host")
+@click.option("--port", default=5432, help="Postgres port")
 def playground(engine, user, password, database, host, port):
     """
     Creates a test database to play with.
@@ -145,22 +99,28 @@ def playground(engine, user, password, database, host, port):
         )
         sys.exit(1)
 
-    if engine.upper() == 'POSTGRES':
-        db = PostgresEngine({
-            'host': host,
-            'database': database,
-            'user': user,
-            'password': password,
-            'port': port
-        })
+    if engine.upper() == "POSTGRES":
+        db = PostgresEngine(
+            {
+                "host": host,
+                "database": database,
+                "user": user,
+                "password": password,
+                "port": port,
+            }
+        )
+        for _table in TABLES:
+            _table.Meta.db = db
+    else:
+        db = SQLiteEngine()
         for _table in TABLES:
             _table.Meta.db = db
 
-    print('Tables:\n')
+    print("Tables:\n")
 
     for _table in TABLES:
         print(_table)
-        print('\n')
+        print("\n")
 
     populate()
     IPython.embed()

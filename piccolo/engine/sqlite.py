@@ -8,9 +8,6 @@ from piccolo.querystring import QueryString
 from piccolo.utils.warnings import colored_warning
 
 
-MIN_VERSION_NUMBER = 3.25
-
-
 def dict_factory(cursor, row):
     d = {}
     for idx, col in enumerate(cursor.description):
@@ -21,25 +18,18 @@ def dict_factory(cursor, row):
 class SQLiteEngine(Engine):
 
     engine_type = "sqlite"
+    min_version_number = 3.25
 
     def __init__(self, path: str = "piccolo.sqlite") -> None:
-        self.check_version()
         self.path = path
+        super().__init__()
 
-    def check_version(self):
+    def get_version(self) -> float:
         """
         Warn if the version of SQLite isn't supported.
         """
         major, minor, _ = sqlite3.sqlite_version.split(".")
-        version_number = float(f"{major}.{minor}")
-        if version_number < MIN_VERSION_NUMBER:
-            message = (
-                "This version of SQLite isn't supported "
-                f"(< {MIN_VERSION_NUMBER}) - some features might not be "
-                "available. For instructions on installing SQLite, see the "
-                "Piccolo docs."
-            )
-            colored_warning(message, stacklevel=3)
+        return float(f"{major}.{minor}")
 
     async def run_in_pool(
         self, query: str, args: t.List[t.Any] = [], query_type: str = "generic"

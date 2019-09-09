@@ -1,3 +1,4 @@
+from __future__ import annotations
 import copy
 from datetime import datetime
 import typing as t
@@ -6,7 +7,7 @@ from piccolo.columns.base import Column
 from piccolo.querystring import Unquoted
 
 if t.TYPE_CHECKING:
-    import table  # noqa
+    from piccolo.table import Table  # noqa
     from piccolo.custom_types import Datetime  # noqa
 
 
@@ -14,54 +15,49 @@ class Varchar(Column):
 
     value_type = str
 
-    def __init__(self, length: int = 255, default: str = None,
-                 **kwargs) -> None:
+    def __init__(
+        self, length: int = 255, default: str = None, **kwargs
+    ) -> None:
         self.length = length
         self.default = default
         super().__init__(**kwargs)
 
 
 class Integer(Column):
-
     def __init__(self, default: int = None, **kwargs) -> None:
         self.default = default
         super().__init__(**kwargs)
 
 
 class Serial(Column):
-
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
 
-DEFAULT = Unquoted('DEFAULT')
-NULL = Unquoted('null')
+DEFAULT = Unquoted("DEFAULT")
+NULL = Unquoted("null")
 
 
 class PrimaryKey(Column):
-
     @property
     def column_type(self):
         engine_type = self._table.Meta.db.engine_type
-        if engine_type == 'postgres':
-            return 'SERIAL'
-        elif engine_type == 'sqlite':
-            return 'INTEGER'
-        raise Exception('Unrecognized engine type')
+        if engine_type == "postgres":
+            return "SERIAL"
+        elif engine_type == "sqlite":
+            return "INTEGER"
+        raise Exception("Unrecognized engine type")
 
     def default(self):
         engine_type = self._table.Meta.db.engine_type
-        if engine_type == 'postgres':
+        if engine_type == "postgres":
             return DEFAULT
-        elif engine_type == 'sqlite':
+        elif engine_type == "sqlite":
             return NULL
-        raise Exception('Unrecognized engine type')
+        raise Exception("Unrecognized engine type")
 
     def __init__(self, **kwargs) -> None:
-        kwargs.update({
-            'primary': True,
-            'key': True
-        })
+        kwargs.update({"primary": True, "key": True})
         super().__init__(**kwargs)
 
 
@@ -69,7 +65,7 @@ class Timestamp(Column):
 
     value_type = datetime
 
-    def __init__(self, default: 'Datetime' = None, **kwargs) -> None:
+    def __init__(self, default: "Datetime" = None, **kwargs) -> None:
         self.default = default
         super().__init__(**kwargs)
 
@@ -112,9 +108,9 @@ class ForeignKey(Integer):
 
     """
 
-    column_type = 'INTEGER'
+    column_type = "INTEGER"
 
-    def __getattribute__(self, name):
+    def __getattribute__(self, name: str):
         """
         Returns attributes unmodified unless they're Column instances, in which
         case a copy is returned with an updated call_chain (which records the
@@ -128,7 +124,7 @@ class ForeignKey(Integer):
         except AttributeError:
             raise AttributeError
 
-        foreignkey_class = object.__getattribute__(self, '__class__')
+        foreignkey_class = object.__getattribute__(self, "__class__")
 
         if type(value) == foreignkey_class:  # i.e. a ForeignKey
             new_column = copy.deepcopy(value)
@@ -142,11 +138,11 @@ class ForeignKey(Integer):
             # will be raised. Often there are more effective ways of
             # structuring a query than joining so many tables anyway.
             if len(new_column.call_chain) > 10:
-                raise Exception('Call chain too long!')
+                raise Exception("Call chain too long!")
 
             for proxy_column in self.proxy_columns:
                 try:
-                    delattr(new_column, proxy_column._name)
+                    delattr(new_column, proxy_column.name)
                 except Exception:
                     pass
 
@@ -154,9 +150,9 @@ class ForeignKey(Integer):
                 _column = copy.deepcopy(column)
                 _column.call_chain = copy.copy(new_column.call_chain)
                 _column.call_chain.append(new_column)
-                if _column._name == 'id':
+                if _column._name == "id":
                     continue
-                setattr(new_column, _column._name, _column)
+                setattr(new_column, _column.name, _column)
                 self.proxy_columns.append(_column)
 
             return new_column
@@ -168,7 +164,7 @@ class ForeignKey(Integer):
         else:
             return value
 
-    def __init__(self, references: t.Type['table.Table'], **kwargs) -> None:
+    def __init__(self, references: t.Type[Table], **kwargs) -> None:
         super().__init__(**kwargs)
         self.references = references
         self.proxy_columns: t.List[Column] = []
@@ -177,5 +173,5 @@ class ForeignKey(Integer):
         # completion.
         for column in references.Meta.columns:
             _column = copy.deepcopy(column)
-            setattr(self, column._name, _column)
+            setattr(self, _column.name, _column)
             self.proxy_columns.append(_column)
