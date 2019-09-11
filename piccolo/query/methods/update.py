@@ -11,7 +11,6 @@ if t.TYPE_CHECKING:
 
 
 class Update(Query):
-
     def setup_delegates(self):
         self.values_delegate = ValuesDelegate()
         self.where_delegate = WhereDelegate()
@@ -31,7 +30,7 @@ class Update(Query):
             )
 
         for column, value in self.values_delegate._values.items():
-            if len(column.call_chain) > 0:
+            if len(column._meta.call_chain) > 0:
                 raise ValueError(
                     "Related values can't be updated via an update"
                 )
@@ -40,22 +39,24 @@ class Update(Query):
     def default_querystring(self) -> QueryString:
         self.validate()
 
-        columns_str = ', '.join([
-            f'{col._name} = {{}}' for col, _ in self.values_delegate._values.items()
-        ])
+        columns_str = ", ".join(
+            [
+                f"{col._meta.name} = {{}}"
+                for col, _ in self.values_delegate._values.items()
+            ]
+        )
 
-        query = f'UPDATE {self.table.Meta.tablename} SET ' + columns_str
+        query = f"UPDATE {self.table.Meta.tablename} SET " + columns_str
 
         querystring = QueryString(
-            query,
-            *self.values_delegate._values.values()
+            query, *self.values_delegate._values.values()
         )
 
         if self.where_delegate._where:
             where_querystring = QueryString(
-                '{} WHERE {}',
+                "{} WHERE {}",
                 querystring,
-                self.where_delegate._where.querystring
+                self.where_delegate._where.querystring,
             )
             return where_querystring
         else:

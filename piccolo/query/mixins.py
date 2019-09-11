@@ -35,7 +35,7 @@ class OrderBy:
     def querystring(self) -> QueryString:
         order = "ASC" if self.ascending else "DESC"
         columns_names = ", ".join(
-            [i._get_full_name(just_alias=True) for i in self.columns]
+            [i._meta.get_full_name(just_alias=True) for i in self.columns]
         )
         return QueryString(f" ORDER BY {columns_names} {order}")
 
@@ -52,7 +52,7 @@ class Output:
 
 @dataclass
 class WhereDelegate:
-    _where: t.Optional[Combinable] = field(default_factory=list)
+    _where: t.Optional[Combinable] = None
     _where_columns: t.List[Column] = field(default_factory=list)
 
     def get_where_columns(self):

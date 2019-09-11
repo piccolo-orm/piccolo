@@ -10,7 +10,6 @@ if t.TYPE_CHECKING:
 
 
 class Insert(Query):
-
     def setup_delegates(self):
         self.add_delegate = AddDelegate()
 
@@ -23,7 +22,7 @@ class Insert(Query):
         Assign the ids of the created rows to the model instances.
         """
         for index, row in enumerate(results):
-            self.add_delegate._add[index].id = row['id']
+            self.add_delegate._add[index].id = row["id"]
 
     @property
     def sqlite_querystring(self) -> QueryString:
@@ -33,32 +32,24 @@ class Insert(Query):
                 "time."
             )
 
-        base = f'INSERT INTO {self.table.Meta.tablename}'
-        columns = ','.join(
-            [i._name for i in self.table.Meta.columns]
-        )
-        values = ','.join([
-            '{}' for i in self.add_delegate._add
-        ])
-        query = f'{base} ({columns}) VALUES {values}'
+        base = f"INSERT INTO {self.table.Meta.tablename}"
+        columns = ",".join([i._meta.name for i in self.table.Meta.columns])
+        values = ",".join(["{}" for i in self.add_delegate._add])
+        query = f"{base} ({columns}) VALUES {values}"
         return QueryString(
             query,
             *[i.querystring for i in self.add_delegate._add],
-            query_type='insert'
+            query_type="insert",
         )
 
     @property
     def postgres_querystring(self) -> QueryString:
-        base = f'INSERT INTO {self.table.Meta.tablename}'
-        columns = ','.join(
-            [i._name for i in self.table.Meta.columns]
-        )
-        values = ','.join([
-            '{}' for i in self.add_delegate._add
-        ])
-        query = f'{base} ({columns}) VALUES {values} RETURNING id'
+        base = f"INSERT INTO {self.table.Meta.tablename}"
+        columns = ",".join([i._meta.name for i in self.table.Meta.columns])
+        values = ",".join(["{}" for i in self.add_delegate._add])
+        query = f"{base} ({columns}) VALUES {values} RETURNING id"
         return QueryString(
             query,
             *[i.querystring for i in self.add_delegate._add],
-            query_type='insert'
+            query_type="insert",
         )

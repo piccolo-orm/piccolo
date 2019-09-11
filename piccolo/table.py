@@ -54,7 +54,7 @@ class TableMeta(type):
                     if _columns:
                         for _col in _columns:
                             if not isinstance(_col, PrimaryKey):
-                                _col._table = table
+                                _col._meta.table = table
                                 columns.append(_col)
 
         primary_key = PrimaryKey()
@@ -63,9 +63,10 @@ class TableMeta(type):
 
         for key, value in namespace.items():
             if issubclass(type(value), Column):
-                columns.append(value)
-                value._name = key
-                value._table = table
+                column: Column = value
+                columns.append(column)
+                column._meta._name = key
+                value._meta._table = table
 
         table.Meta.columns = columns
         table.Meta.non_default_columns = [
@@ -86,10 +87,12 @@ class TableMeta(type):
         for col in cls.Meta.columns:
             if type(col) == ForeignKey:
                 columns.append(
-                    f"{col._name} = ForeignKey({col.references.__name__})"
+                    f"{col._meta.name} = ForeignKey({col._foreign_key_meta.references.__name__})"
                 )
             else:
-                columns.append(f"{col._name} = {col.__class__.__name__}()")
+                columns.append(
+                    f"{col._meta.name} = {col.__class__.__name__}()"
+                )
         columns_string = spacer.join(columns)
         return f"class {cls.__name__}(Table):\n" f"    {columns_string}\n"
 
@@ -108,7 +111,7 @@ class Table(metaclass=TableMeta):
         massive.
         """
         for column in self.Meta.columns:
-            value = kwargs.pop(column._name, None)
+            value = kwargs.pop(column._meta.name, None)
             if not value:
                 if column.default:
                     # Can't use inspect - can't tell that datetime.datetime.now
@@ -117,8 +120,10 @@ class Table(metaclass=TableMeta):
                     value = column.default() if is_callable else column.default
                 else:
                     if not column.null:
-                        raise ValueError(f"{column._name} wasn't provided")
-            self[column._name] = value
+                        raise ValueError(
+                            f"{column._meta.name} wasn't provided"
+                        )
+            self[column._meta.name] = value
 
         unrecognized = kwargs.keys()
         if unrecognized:
@@ -136,7 +141,7 @@ class Table(metaclass=TableMeta):
         if type(self.id) == int:
             # pre-existing row
             kwargs = {
-                i: getattr(self, i._name, None) for i in cls.Meta.columns
+                i: getattr(self, i._meta.name, None) for i in cls.Meta.columns
             }
             _id = kwargs.pop("id")
             return cls.update().values(kwargs).where(cls.id == _id)
@@ -163,19 +168,23 @@ class Table(metaclass=TableMeta):
         """
         cls = self.__class__
 
-        foreign_key: ForeignKey = cls.get_column_by_name(
-            column_name
-        )  # type: ignore
-        references: t.Type[Table] = foreign_key.references
+        foreign_key = cls.get_column_by_name(column_name)
 
-        return (
-            references.objects()
-            .where(
-                references.get_column_by_name("id")
-                == getattr(self, column_name)
+        if isinstance(foreign_key, ForeignKey):
+            references: t.Type[
+                Table
+            ] = foreign_key._foreign_key_meta.references
+
+            return (
+                references.objects()
+                .where(
+                    references.get_column_by_name("id")
+                    == getattr(self, column_name)
+                )
+                .first()
             )
-            .first()
-        )
+        else:
+            raise ValueError(f"{column_name} isn't a ForeignKey")
 
     def __setitem__(self, key: str, value: t.Any):
         setattr(self, key, value)
@@ -190,7 +199,9 @@ class Table(metaclass=TableMeta):
         """
         Used when inserting rows.
         """
-        args_dict = {col._name: self[col._name] for col in self.Meta.columns}
+        args_dict = {
+            col._meta.name: self[col._meta.name] for col in self.Meta.columns
+        }
 
         is_unquoted = lambda arg: type(arg) == Unquoted
 
@@ -202,8 +213,8 @@ class Table(metaclass=TableMeta):
         # If unquoted, dump it straight into the query.
         query = ",".join(
             [
-                args_dict[column._name].value
-                if is_unquoted(args_dict[column._name])
+                args_dict[column._meta.name].value
+                if is_unquoted(args_dict[column._meta.name])
                 else "{}"
                 for column in self.Meta.columns
             ]
@@ -217,7 +228,7 @@ class Table(metaclass=TableMeta):
 
     @classmethod
     def get_column_by_name(cls, column_name: str) -> Column:
-        columns = [i for i in cls.Meta.columns if i._name == column_name]
+        columns = [i for i in cls.Meta.columns if i._meta.name == column_name]
 
         if len(columns) != 1:
             raise ValueError(f"Can't find a column called {column_name}.")

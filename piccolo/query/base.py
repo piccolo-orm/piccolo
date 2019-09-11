@@ -14,7 +14,7 @@ if t.TYPE_CHECKING:
 class Query(object):
     def __init__(
         self,
-        table: Table,
+        table: t.Type[Table],
         base: QueryString = QueryString(""),
         *args,
         **kwargs,

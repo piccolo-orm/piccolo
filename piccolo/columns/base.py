@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import dataclass, field
 import typing as t
 
 from piccolo.columns.operators import (
@@ -25,13 +26,67 @@ if t.TYPE_CHECKING:
     from .column_types import ForeignKey  # noqa
 
 
+@dataclass
+class ColumnMeta:
+    # Set by the Table Metaclass:
+    _name: t.Optional[str] = None
+    _table: t.Optional[Table] = None
+
+    # Used by Foreign Keys:
+    call_chain: t.List["ForeignKey"] = field(default_factory=lambda: [])
+    table_alias: t.Optional[str] = None
+
+    @property
+    def name(self) -> str:
+        if not self._name:
+            raise ValueError(
+                "`_name` isn't defined - the Table Metaclass should set it."
+            )
+        return self._name
+
+    @name.setter
+    def name(self, value: str):
+        self._name = value
+
+    @property
+    def table(self) -> Table:
+        if not self._table:
+            raise ValueError(
+                "`_table` isn't defined - the Table Metaclass should set it."
+            )
+        return self._table
+
+    @property
+    def engine_type(self) -> str:
+        engine = self.table.Meta.db
+        if engine:
+            return engine.engine_type
+        else:
+            raise ValueError("The table has no engine defined.")
+
+    def get_full_name(self, just_alias=False) -> str:
+        """
+        Returns the full column name, taking into account joins.
+        """
+        column_name = self.name
+
+        if not self.call_chain:
+            return f"{self.table.Meta.tablename}.{column_name}"
+
+        column_name = (
+            "$".join([i._meta.name for i in self.call_chain])
+            + f"${column_name}"
+        )
+        alias = f"{self.call_chain[-1]._meta.table_alias}.{self.name}"
+        if just_alias:
+            return alias
+        else:
+            return f'{alias} AS "{column_name}"'
+
+
 class Column:
 
     value_type: t.Type = int
-
-    # Set by Table metaclass:
-    _name: t.Optional[str] = None
-    _table: t.Optional[Table] = None
 
     def __init__(
         self,
@@ -44,9 +99,7 @@ class Column:
         self.primary = primary
         self.key = key
         self.unique = unique
-        # Used by foreign keys:
-        self.call_chain: t.List["ForeignKey"] = []
-        self.table_alias: t.Optional[str] = None
+        self._meta = ColumnMeta()
 
     def is_in(self, values: Iterable) -> Where:
         return Where(column=self, values=values, operator=In)
@@ -62,7 +115,7 @@ class Column:
     def ilike(self, value: str) -> Where:
         if "%" not in value:
             raise ValueError("% is required for ilike operators")
-        if self.engine_type == "postgres":
+        if self._meta.engine_type == "postgres":
             operator: t.Type[Operator] = ILike
         else:
             colored_warning(
@@ -95,64 +148,17 @@ class Column:
         return Where(column=self, value=value, operator=NotEqual)
 
     def __hash__(self):
-        return hash(self.name)
-
-    @property
-    def name(self) -> str:
-        if not self._name:
-            raise ValueError(
-                "`_name` isn't defined - the Table Metaclass should set it."
-            )
-        return self._name
-
-    @name.setter
-    def name(self, value: str):
-        self._name = value
-
-    @property
-    def table(self) -> Table:
-        if not self._table:
-            raise ValueError(
-                "`_table` isn't defined - the Table Metaclass should set it."
-            )
-        return self._table
-
-    @property
-    def engine_type(self) -> str:
-        engine = self.table.Meta.db
-        if engine:
-            return engine.engine_type
-        else:
-            raise ValueError("The table has no engine defined.")
-
-    def _get_full_name(self, just_alias=False) -> str:
-        """
-        Returns the full column name, taking into account joins.
-        """
-        column_name = self.name
-
-        if not self.call_chain:
-            return f"{self.table.Meta.tablename}.{column_name}"
-
-        column_name = (
-            "$".join([i.name for i in self.call_chain]) + f"${column_name}"
-        )
-        alias = f"{self.call_chain[-1].table_alias}.{self.name}"
-        if just_alias:
-            return alias
-        else:
-            return f'{alias} AS "{column_name}"'
+        return hash(self._meta.name)
 
     @property
     def querystring(self) -> QueryString:
         """
         Used when creating tables.
         """
-        name = getattr(self, "_name", "")
         column_type = getattr(
             self, "column_type", self.__class__.__name__.upper()
         )
-        query = f"{name} {column_type}"
+        query = f"{self._meta.name} {column_type}"
         if self.primary:
             query += " PRIMARY"
         if self.key:
@@ -160,8 +166,9 @@ class Column:
         if self.unique:
             query += " UNIQUE"
 
-        references = getattr(self, "references", None)
-        if references:
+        foreign_key_meta = getattr(self, "foreign_key_meta", None)
+        if foreign_key_meta:
+            references = foreign_key_meta.references
             query += f" REFERENCES {references.Meta.tablename}"
 
         return QueryString(query)

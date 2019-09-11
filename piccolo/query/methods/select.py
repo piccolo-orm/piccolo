@@ -3,7 +3,7 @@ from collections import OrderedDict
 import typing as t
 
 from piccolo.query.base import Query
-from piccolo.columns import Column
+from piccolo.columns import Column, ForeignKey
 from piccolo.query.mixins import (
     ColumnsDelegate,
     CountDelegate,
@@ -76,23 +76,26 @@ class Select(Query):
         joins: t.List[str] = []
         for column in columns:
             _joins: t.List[str] = []
-            for index, key in enumerate(column.call_chain, 0):
+            for index, key in enumerate(column._meta.call_chain, 0):
                 table_alias = "$".join(
                     [
-                        f"{_key._table.Meta.tablename}${_key._name}"
-                        for _key in column.call_chain[: index + 1]
+                        f"{_key._meta.table.Meta.tablename}${_key._meta.name}"
+                        for _key in column._meta.call_chain[: index + 1]
                     ]
                 )
-                key.table_alias = table_alias
+                key._meta.table_alias = table_alias
 
                 if index > 0:
-                    left_tablename = column.call_chain[index - 1].table_alias
+                    left_tablename = column._meta.call_chain[
+                        index - 1
+                    ].table_alias
                 else:
-                    left_tablename = key._table.Meta.tablename
+                    left_tablename = key._meta.table.Meta.tablename
 
                 _joins.append(
-                    f"JOIN {key.references.Meta.tablename} {table_alias} "
-                    f"ON ({left_tablename}.{key._name} = {table_alias}.id)"
+                    f"JOIN {key._foreign_key_meta.references.Meta.tablename} {table_alias}"
+                    " ON "
+                    f"({left_tablename}.{key._meta.name} = {table_alias}.id)"
                 )
 
             joins.extend(_joins)
@@ -102,11 +105,11 @@ class Select(Query):
 
     def check_valid_call_chain(self, keys: t.List[Column]) -> bool:
         for column in keys:
-            if column.call_chain:
+            if column._meta.call_chain:
                 # Make sure the call_chain isn't too large to discourage
                 # very inefficient queries.
 
-                if len(column.call_chain) > 10:
+                if len(column._meta.call_chain) > 10:
                     raise Exception(
                         "Joining more than 10 tables isn't supported - "
                         "please restructure your query."
@@ -135,7 +138,8 @@ class Select(Query):
             self.columns_delegate.selected_columns = self.table.Meta.columns
 
         column_names: t.List[str] = [
-            c._get_full_name() for c in self.columns_delegate.selected_columns
+            c._meta.get_full_name()
+            for c in self.columns_delegate.selected_columns
         ]
         columns_str = ", ".join(column_names)
 

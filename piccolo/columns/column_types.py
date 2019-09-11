@@ -1,5 +1,6 @@
 from __future__ import annotations
 import copy
+from dataclasses import dataclass, field
 from datetime import datetime
 import typing as t
 
@@ -41,7 +42,7 @@ NULL = Unquoted("null")
 class PrimaryKey(Column):
     @property
     def column_type(self):
-        engine_type = self._table.Meta.db.engine_type
+        engine_type = self._meta.table.Meta.db.engine_type
         if engine_type == "postgres":
             return "SERIAL"
         elif engine_type == "sqlite":
@@ -49,7 +50,7 @@ class PrimaryKey(Column):
         raise Exception("Unrecognized engine type")
 
     def default(self):
-        engine_type = self._table.Meta.db.engine_type
+        engine_type = self._meta.table.Meta.db.engine_type
         if engine_type == "postgres":
             return DEFAULT
         elif engine_type == "sqlite":
@@ -77,6 +78,12 @@ class Boolean(Column):
     def __init__(self, default: bool = False, **kwargs) -> None:
         self.default = default
         super().__init__(**kwargs)
+
+
+@dataclass
+class ForeignKeyMeta:
+    references: t.Type[Table]
+    proxy_columns: t.List[Column] = field(default_factory=list)
 
 
 class ForeignKey(Integer):
@@ -110,6 +117,17 @@ class ForeignKey(Integer):
 
     column_type = "INTEGER"
 
+    def __init__(self, references: t.Type[Table], **kwargs) -> None:
+        super().__init__(**kwargs)
+        self._foreign_key_meta = ForeignKeyMeta(references=references)
+
+        # Allow columns on the referenced table to be accessed via auto
+        # completion.
+        for column in references.Meta.columns:
+            _column: Column = copy.deepcopy(column)
+            setattr(self, _column._meta.name, _column)
+            self._foreign_key_meta.proxy_columns.append(_column)
+
     def __getattribute__(self, name: str):
         """
         Returns attributes unmodified unless they're Column instances, in which
@@ -128,8 +146,8 @@ class ForeignKey(Integer):
 
         if type(value) == foreignkey_class:  # i.e. a ForeignKey
             new_column = copy.deepcopy(value)
-            new_column.call_chain = copy.copy(self.call_chain)
-            new_column.call_chain.append(self)
+            new_column._meta.call_chain = copy.copy(self._meta.call_chain)
+            new_column._meta.call_chain.append(self)
 
             # We have to set limits to the call chain because Table 1 can
             # reference Table 2, which references Table 1, creating an endless
@@ -137,41 +155,31 @@ class ForeignKey(Integer):
             # When querying a call chain more than 10 levels deep, an error
             # will be raised. Often there are more effective ways of
             # structuring a query than joining so many tables anyway.
-            if len(new_column.call_chain) > 10:
+            if len(new_column._meta.call_chain) > 10:
                 raise Exception("Call chain too long!")
 
-            for proxy_column in self.proxy_columns:
+            for proxy_column in self._foreign_key_meta.proxy_columns:
                 try:
-                    delattr(new_column, proxy_column.name)
+                    delattr(new_column, proxy_column._meta.name)
                 except Exception:
                     pass
 
-            for column in value.references.Meta.columns:
-                _column = copy.deepcopy(column)
-                _column.call_chain = copy.copy(new_column.call_chain)
-                _column.call_chain.append(new_column)
-                if _column._name == "id":
+            for column in value._foreign_key_meta.references.Meta.columns:
+                _column: Column = copy.deepcopy(column)
+                _column._meta.call_chain = copy.copy(
+                    new_column._meta.call_chain
+                )
+                _column._meta.call_chain.append(new_column)
+                if _column._meta.name == "id":
                     continue
-                setattr(new_column, _column.name, _column)
-                self.proxy_columns.append(_column)
+                setattr(new_column, _column._meta.name, _column)
+                self._foreign_key_meta.proxy_columns.append(_column)
 
             return new_column
         elif issubclass(type(value), Column):
             new_column = copy.deepcopy(value)
-            new_column.call_chain = copy.copy(self.call_chain)
-            new_column.call_chain.append(self)
+            new_column._meta.call_chain = copy.copy(self._meta.call_chain)
+            new_column._meta.call_chain.append(self)
             return new_column
         else:
             return value
-
-    def __init__(self, references: t.Type[Table], **kwargs) -> None:
-        super().__init__(**kwargs)
-        self.references = references
-        self.proxy_columns: t.List[Column] = []
-
-        # Allow columns on the referenced table to be accessed via auto
-        # completion.
-        for column in references.Meta.columns:
-            _column = copy.deepcopy(column)
-            setattr(self, _column.name, _column)
-            self.proxy_columns.append(_column)

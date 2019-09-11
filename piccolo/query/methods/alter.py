@@ -1,6 +1,7 @@
 from __future__ import annotations
 import dataclasses
 import itertools
+import typing as t
 
 from piccolo.columns.base import Column
 from piccolo.query.base import Query
@@ -8,75 +9,69 @@ from piccolo.querystring import QueryString
 
 
 @dataclasses.dataclass
-class Rename:
+class AlterStatement:
     column: Column
+
+    def querystring(self) -> QueryString:
+        raise NotImplementedError()
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
+
+
+@dataclasses.dataclass
+class Rename(AlterStatement):
     new_name: str
 
     @property
     def querystring(self) -> QueryString:
-        return QueryString(f"RENAME {self.column.name} TO {self.new_name}")
-
-    def __str__(self) -> str:
-        return self.querystring.__str__()
+        return QueryString(
+            f"RENAME {self.column._meta.name} TO {self.new_name}"
+        )
 
 
 @dataclasses.dataclass
-class Drop:
-    column: Column
-
+class Drop(AlterStatement):
     @property
     def querystring(self) -> QueryString:
-        return QueryString(f"DROP {self.column._name}")
-
-    def __str__(self) -> str:
-        return self.querystring.__str__()
+        return QueryString(f"DROP {self.column._meta.name}")
 
 
 @dataclasses.dataclass
-class Add:
+class Add(AlterStatement):
     name: str
-    column: Column
 
     @property
     def querystring(self) -> QueryString:
-        self.column._name = self.name
+        self.column._meta.name = self.name
         return QueryString("ADD {}", self.column.querystring)
 
-    def __str__(self) -> str:
-        return self.querystring.__str__()
-
 
 @dataclasses.dataclass
-class Unique:
-    column: Column
+class Unique(AlterStatement):
     boolean: bool
 
     @property
     def querystring(self) -> QueryString:
         if self.boolean:
-            return QueryString(f"ADD UNIQUE ({self.column._name})")
+            return QueryString(f"ADD UNIQUE ({self.column._meta.name})")
         else:
-            key = f"{self.column.table.Meta.tablename}_{self.column._name}_key"
+            tablename = self.column._meta.table.Meta.tablename
+            column_name = self.column._meta.name
+            key = f"{tablename}_{column_name}_key"
             return QueryString(f'DROP CONSTRAINT "{key}"')
 
-    def __str__(self) -> str:
-        return self.querystring.__str__()
-
 
 @dataclasses.dataclass
-class Null:
-    column: Column
+class Null(AlterStatement):
     boolean: bool
 
     @property
     def querystring(self) -> QueryString:
         if self.boolean:
-            return QueryString(f"{self.column._name} DROP NOT NULL")
+            return QueryString(f"{self.column._meta.name} DROP NOT NULL")
         else:
-            return QueryString(f"{self.column._name} SET NOT NULL")
-
-    def __str__(self) -> str:
-        return self.querystring.__str__()
+            return QueryString(f"{self.column._meta.name} SET NOT NULL")
 
 
 class Alter(Query):
@@ -92,7 +87,7 @@ class Alter(Query):
         """
         Band.alter().add_column(‘members’, Integer())
         """
-        self._add.append(Add(name, column))
+        self._add.append(Add(column, name))
         return self
 
     def rename_column(self, column: Column, new_name: str) -> Alter:
@@ -120,7 +115,7 @@ class Alter(Query):
         """
         Band.alter().set_null(True)
         """
-        self._null.append(Unique(column, boolean))
+        self._null.append(Null(column, boolean))
         return self
 
     @property
