@@ -90,9 +90,7 @@ class TableMeta(type):
                     f"{col._meta.name} = ForeignKey({col._foreign_key_meta.references.__name__})"
                 )
             else:
-                columns.append(
-                    f"{col._meta.name} = {col.__class__.__name__}()"
-                )
+                columns.append(f"{col._meta.name} = {col.__class__.__name__}()")
         columns_string = spacer.join(columns)
         return f"class {cls.__name__}(Table):\n" f"    {columns_string}\n"
 
@@ -119,10 +117,8 @@ class Table(metaclass=TableMeta):
                     is_callable = hasattr(column.default, "__call__")
                     value = column.default() if is_callable else column.default
                 else:
-                    if not column.null:
-                        raise ValueError(
-                            f"{column._meta.name} wasn't provided"
-                        )
+                    if not column._meta.null:
+                        raise ValueError(f"{column._meta.name} wasn't provided")
             self[column._meta.name] = value
 
         unrecognized = kwargs.keys()
@@ -171,9 +167,7 @@ class Table(metaclass=TableMeta):
         foreign_key = cls.get_column_by_name(column_name)
 
         if isinstance(foreign_key, ForeignKey):
-            references: t.Type[
-                Table
-            ] = foreign_key._foreign_key_meta.references
+            references: t.Type[Table] = foreign_key._foreign_key_meta.references
 
             return (
                 references.objects()

@@ -28,6 +28,12 @@ if t.TYPE_CHECKING:
 
 @dataclass
 class ColumnMeta:
+    # General attributes:
+    null: bool = True
+    primary: bool = False
+    key: bool = False
+    unique: bool = False
+
     # Set by the Table Metaclass:
     _name: t.Optional[str] = None
     _table: t.Optional[Table] = None
@@ -95,11 +101,9 @@ class Column:
         key: bool = False,
         unique: bool = False,
     ) -> None:
-        self.null = null
-        self.primary = primary
-        self.key = key
-        self.unique = unique
-        self._meta = ColumnMeta()
+        self._meta = ColumnMeta(
+            null=null, primary=primary, key=key, unique=unique
+        )
 
     def is_in(self, values: Iterable) -> Where:
         return Where(column=self, values=values, operator=In)
@@ -159,11 +163,11 @@ class Column:
             self, "column_type", self.__class__.__name__.upper()
         )
         query = f"{self._meta.name} {column_type}"
-        if self.primary:
+        if self._meta.primary:
             query += " PRIMARY"
-        if self.key:
+        if self._meta.key:
             query += " KEY"
-        if self.unique:
+        if self._meta.unique:
             query += " UNIQUE"
 
         foreign_key_meta = getattr(self, "foreign_key_meta", None)
