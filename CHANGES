@@ -1,3 +1,9 @@
+0.5.0
+=====
+Refactored the Table Metaclass - much simpler now. Scoped more of the
+attributes on Column to avoid name clashes. Added engine_finder to make
+database configuration easier.
+
 0.4.1
 =====
 SQLite is now returning datetime objects for timestamp fields.
