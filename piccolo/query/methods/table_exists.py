@@ -5,12 +5,18 @@ from piccolo.querystring import QueryString
 
 
 class TableExists(Query):
-
     def response_handler(self, response):
-        return response[0]['exists']
+        return bool(response[0]["exists"])
 
     @property
-    def querystring(self) -> QueryString:
+    def sqlite_querystring(self) -> QueryString:
+        return QueryString(
+            "SELECT EXISTS(SELECT * FROM sqlite_master WHERE "
+            f"name = '{self.table._meta.tablename}') AS 'exists'"
+        )
+
+    @property
+    def postgres_querystring(self) -> QueryString:
         return QueryString(
             "SELECT EXISTS(SELECT * FROM information_schema.tables WHERE "
             f"table_name = '{self.table._meta.tablename}')"
