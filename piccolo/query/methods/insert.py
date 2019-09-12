@@ -32,8 +32,8 @@ class Insert(Query):
                 "time."
             )
 
-        base = f"INSERT INTO {self.table.Meta.tablename}"
-        columns = ",".join([i._meta.name for i in self.table.Meta.columns])
+        base = f"INSERT INTO {self.table._meta.tablename}"
+        columns = ",".join([i._meta.name for i in self.table._meta.columns])
         values = ",".join(["{}" for i in self.add_delegate._add])
         query = f"{base} ({columns}) VALUES {values}"
         return QueryString(
@@ -44,8 +44,8 @@ class Insert(Query):
 
     @property
     def postgres_querystring(self) -> QueryString:
-        base = f"INSERT INTO {self.table.Meta.tablename}"
-        columns = ",".join([i._meta.name for i in self.table.Meta.columns])
+        base = f"INSERT INTO {self.table._meta.tablename}"
+        columns = ",".join([i._meta.name for i in self.table._meta.columns])
         values = ",".join(["{}" for i in self.add_delegate._add])
         query = f"{base} ({columns}) VALUES {values} RETURNING id"
         return QueryString(

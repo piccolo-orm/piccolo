@@ -13,7 +13,7 @@ class TableExists(Query):
     def querystring(self) -> QueryString:
         return QueryString(
             "SELECT EXISTS(SELECT * FROM information_schema.tables WHERE "
-            f"table_name = '{self.table.Meta.tablename}')"
+            f"table_name = '{self.table._meta.tablename}')"
         )
 
     def __str__(self) -> str:

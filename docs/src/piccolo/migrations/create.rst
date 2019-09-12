@@ -42,7 +42,7 @@ forwards and backwards functions.
 
 
     async def forwards():
-        transaction = Band.Meta.db.transaction()
+        transaction = Band._meta.db.transaction()
 
         transaction.add(
             Band.create_without_columns(),

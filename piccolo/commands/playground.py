@@ -110,11 +110,11 @@ def playground(engine, user, password, database, host, port):
             }
         )
         for _table in TABLES:
-            _table.Meta.db = db
+            _table._meta.db = db
     else:
         db = SQLiteEngine()
         for _table in TABLES:
-            _table.Meta.db = db
+            _table._meta.db = db
 
     print("Tables:\n")
 

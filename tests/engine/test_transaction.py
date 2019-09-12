@@ -10,7 +10,7 @@ class TestTransaction(TestCase):
         """
         Make sure queries in a transaction aren't committed if a query fails.
         """
-        transaction = Band.Meta.db.transaction()
+        transaction = Band._meta.db.transaction()
         transaction.add(
             Manager.create(),
             Band.create(),
@@ -24,7 +24,7 @@ class TestTransaction(TestCase):
         self.assertTrue(not Manager.table_exists().run_sync())
 
     def test_succeeds(self):
-        transaction = Band.Meta.db.transaction()
+        transaction = Band._meta.db.transaction()
         transaction.add(Manager.create(), Band.create())
         transaction.run_sync()
 

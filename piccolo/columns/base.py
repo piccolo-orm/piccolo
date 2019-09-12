@@ -28,6 +28,11 @@ if t.TYPE_CHECKING:
 
 @dataclass
 class ColumnMeta:
+    """
+    We store as many attributes in ColumnMeta as possible, to help avoid name
+    clashes with user defined attributes.
+    """
+
     # General attributes:
     null: bool = True
     primary: bool = False
@@ -64,7 +69,7 @@ class ColumnMeta:
 
     @property
     def engine_type(self) -> str:
-        engine = self.table.Meta.db
+        engine = self.table._meta.db
         if engine:
             return engine.engine_type
         else:
@@ -77,7 +82,7 @@ class ColumnMeta:
         column_name = self.name
 
         if not self.call_chain:
-            return f"{self.table.Meta.tablename}.{column_name}"
+            return f"{self.table._meta.tablename}.{column_name}"
 
         column_name = (
             "$".join([i._meta.name for i in self.call_chain])
@@ -173,7 +178,7 @@ class Column:
         foreign_key_meta = getattr(self, "foreign_key_meta", None)
         if foreign_key_meta:
             references = foreign_key_meta.references
-            query += f" REFERENCES {references.Meta.tablename}"
+            query += f" REFERENCES {references._meta.tablename}"
 
         return QueryString(query)
 

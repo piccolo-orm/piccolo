@@ -9,17 +9,17 @@ from ..example_project.tables import Manager
 @postgres_only
 class TestPool(DBTestCase):
     async def create_pool(self):
-        await Manager.Meta.db.start_connnection_pool()
-        await Manager.Meta.db.close_connnection_pool()
+        await Manager._meta.db.start_connnection_pool()
+        await Manager._meta.db.close_connnection_pool()
 
     async def make_queries(self):
-        await Manager.Meta.db.start_connnection_pool()
+        await Manager._meta.db.start_connnection_pool()
 
         await Manager(name="Bob").save().run()
         response = await Manager.select().run()
         self.assertTrue("Bob" in [i["name"] for i in response])
 
-        await Manager.Meta.db.close_connnection_pool()
+        await Manager._meta.db.close_connnection_pool()
 
     def test_creation(self):
         """

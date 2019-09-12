@@ -52,4 +52,4 @@ class TestQuerystring(TestCase):
 #         Band.drop().run_sync()
 
 #     def test_raw_query(self):
-#         Band.Meta.db.run()
+#         Band._meta.db.run()

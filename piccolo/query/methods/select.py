@@ -79,7 +79,7 @@ class Select(Query):
             for index, key in enumerate(column._meta.call_chain, 0):
                 table_alias = "$".join(
                     [
-                        f"{_key._meta.table.Meta.tablename}${_key._meta.name}"
+                        f"{_key._meta.table._meta.tablename}${_key._meta.name}"
                         for _key in column._meta.call_chain[: index + 1]
                     ]
                 )
@@ -90,10 +90,10 @@ class Select(Query):
                         index - 1
                     ].table_alias
                 else:
-                    left_tablename = key._meta.table.Meta.tablename
+                    left_tablename = key._meta.table._meta.tablename
 
                 _joins.append(
-                    f"JOIN {key._foreign_key_meta.references.Meta.tablename} {table_alias}"
+                    f"JOIN {key._foreign_key_meta.references._meta.tablename} {table_alias}"
                     " ON "
                     f"({left_tablename}.{key._meta.name} = {table_alias}.id)"
                 )
@@ -135,7 +135,7 @@ class Select(Query):
         #######################################################################
 
         if len(self.columns_delegate.selected_columns) == 0:
-            self.columns_delegate.selected_columns = self.table.Meta.columns
+            self.columns_delegate.selected_columns = self.table._meta.columns
 
         column_names: t.List[str] = [
             c._meta.get_full_name()
@@ -146,7 +146,7 @@ class Select(Query):
         #######################################################################
 
         select = "SELECT DISTINCT" if self.distinct else "SELECT"
-        query = f"{select} {columns_str} FROM {self.table.Meta.tablename}"
+        query = f"{select} {columns_str} FROM {self.table._meta.tablename}"
 
         for join in joins:
             query += f" {join}"

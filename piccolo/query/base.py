@@ -29,17 +29,17 @@ class Query(object):
 
     @property
     def engine_type(self) -> str:
-        engine = self.table.Meta.db
+        engine = self.table._meta.db
         if engine:
             return engine.engine_type
         else:
             raise ValueError("Engine isn't defined.")
 
     async def run(self, in_pool=True):
-        engine = getattr(self.table.Meta, "db", None)
+        engine = getattr(self.table._meta, "db", None)
         if not engine:
             raise ValueError(
-                f"Table {self.table.Meta.tablename} has no db defined in Meta"
+                f"Table {self.table._meta.tablename} has no db defined in _meta"
             )
 
         results = await engine.run_querystring(

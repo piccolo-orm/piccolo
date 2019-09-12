@@ -9,7 +9,7 @@ class Drop(Query):
     @property
     def querystring(self) -> QueryString:
         return QueryString(
-            f'DROP TABLE "{self.table.Meta.tablename}"'
+            f'DROP TABLE "{self.table._meta.tablename}"'
         )
 
     def __str__(self) -> str:

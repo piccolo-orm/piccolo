@@ -42,7 +42,7 @@ NULL = Unquoted("null")
 class PrimaryKey(Column):
     @property
     def column_type(self):
-        engine_type = self._meta.table.Meta.db.engine_type
+        engine_type = self._meta.table._meta.db.engine_type
         if engine_type == "postgres":
             return "SERIAL"
         elif engine_type == "sqlite":
@@ -50,7 +50,7 @@ class PrimaryKey(Column):
         raise Exception("Unrecognized engine type")
 
     def default(self):
-        engine_type = self._meta.table.Meta.db.engine_type
+        engine_type = self._meta.table._meta.db.engine_type
         if engine_type == "postgres":
             return DEFAULT
         elif engine_type == "sqlite":
@@ -123,7 +123,7 @@ class ForeignKey(Integer):
 
         # Allow columns on the referenced table to be accessed via auto
         # completion.
-        for column in references.Meta.columns:
+        for column in references._meta.columns:
             _column: Column = copy.deepcopy(column)
             setattr(self, _column._meta.name, _column)
             self._foreign_key_meta.proxy_columns.append(_column)
@@ -164,7 +164,7 @@ class ForeignKey(Integer):
                 except Exception:
                     pass
 
-            for column in value._foreign_key_meta.references.Meta.columns:
+            for column in value._foreign_key_meta.references._meta.columns:
                 _column: Column = copy.deepcopy(column)
                 _column._meta.call_chain = copy.copy(
                     new_column._meta.call_chain

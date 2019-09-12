@@ -10,9 +10,10 @@ from piccolo.table import Table
 from piccolo.columns import Varchar, Boolean
 
 
-class BaseUser(Table):
+class BaseUser(Table, tablename="piccolo_user"):
     """
-    Subclass this table in your own project, so Meta.db can be defined.
+    Provides a basic user, with authentication support. Use as is, or subclass,
+    in your own projects.
     """
 
     username = Varchar(length=100, unique=True)
@@ -20,11 +21,6 @@ class BaseUser(Table):
     email = Varchar(length=255, unique=True)
     active = Boolean(default=False)
     admin = Boolean(default=False)
-
-    class Meta:
-        # This is required because 'user' is a reserved keyword in SQL, so
-        # using it as a tablename causes issues.
-        tablename = "piccolo_user"
 
     def __init__(self, **kwargs):
         """
@@ -56,9 +52,7 @@ class BaseUser(Table):
         elif type(user) == int:
             clause = cls.id == user  # type: ignore
         else:
-            raise ValueError(
-                "The `user` arg must be a user id, or a username."
-            )
+            raise ValueError("The `user` arg must be a user id, or a username.")
 
         password = cls.hash_password(password)
         await cls.update().values({cls.password: password}).where(clause).run()

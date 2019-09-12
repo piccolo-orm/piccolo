@@ -46,7 +46,7 @@ class Update(Query):
             ]
         )
 
-        query = f"UPDATE {self.table.Meta.tablename} SET " + columns_str
+        query = f"UPDATE {self.table._meta.tablename} SET " + columns_str
 
         querystring = QueryString(
             query, *self.values_delegate._values.values()

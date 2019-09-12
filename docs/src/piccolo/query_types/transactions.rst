@@ -13,7 +13,7 @@ Usage
 
 .. code-block:: python
 
-    transaction = Band.Meta.db.transaction()
+    transaction = Band._meta.db.transaction()
     transaction.add(Manager.create())
     transaction.add(Concert.create())
     await transaction.run()

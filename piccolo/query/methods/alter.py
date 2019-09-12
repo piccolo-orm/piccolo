@@ -56,7 +56,7 @@ class Unique(AlterStatement):
         if self.boolean:
             return QueryString(f"ADD UNIQUE ({self.column._meta.name})")
         else:
-            tablename = self.column._meta.table.Meta.tablename
+            tablename = self.column._meta.table._meta.tablename
             column_name = self.column._meta.name
             key = f"{tablename}_{column_name}_key"
             return QueryString(f'DROP CONSTRAINT "{key}"')
@@ -120,7 +120,7 @@ class Alter(Query):
 
     @property
     def querystring(self) -> QueryString:
-        query = f"ALTER TABLE {self.table.Meta.tablename}"
+        query = f"ALTER TABLE {self.table._meta.tablename}"
 
         alterations = [
             i.querystring

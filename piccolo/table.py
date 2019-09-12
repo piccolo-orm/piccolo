@@ -1,5 +1,6 @@
 from __future__ import annotations
 import copy
+from dataclasses import dataclass, field
 import typing as t
 
 from piccolo.engine import Engine, engine_finder
@@ -22,60 +23,19 @@ from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
 
 
-class TableMeta(type):
-    def __new__(cls, name, bases, namespace, **kwds):
-        """
-        Automatically populate the tablename, and columns.
-        """
-        table = super().__new__(cls, name, bases, namespace)
+@dataclass
+class TableMeta:
+    """
+    This is used to store info about the table.
+    """
 
-        Meta = namespace.get("Meta")
-        if (not Meta) or (Meta in [i.Meta for i in bases]):
-            # We're inheritting a Meta from a parent class - give this class
-            # its own Meta
-            Meta = type("Meta", tuple(), {})
-            table.Meta = Meta
+    tablename: str = ""
+    columns: t.List[Column] = field(default_factory=list)
+    non_default_columns: t.List[Column] = field(default_factory=list)
+    db: t.Optional[Engine] = engine_finder()
 
-        tablename = getattr(Meta, "tablename", None) if Meta else None
-        if not tablename:
-            table.Meta.tablename = _camel_to_snake(name)
 
-        db = getattr(Meta, "db", None) if Meta else None
-        if not db:
-            table.Meta.db = engine_finder()
-
-        columns = []
-
-        # In case super classes also have columns.
-        if bases:
-            for base in bases:
-                if hasattr(base, "Meta"):
-                    _columns = getattr(base.Meta, "columns", None)
-                    if _columns:
-                        for _col in _columns:
-                            if not isinstance(_col, PrimaryKey):
-                                _col._meta.table = table
-                                columns.append(_col)
-
-        primary_key = PrimaryKey()
-        namespace["id"] = primary_key
-        table.id = primary_key
-
-        for key, value in namespace.items():
-            if issubclass(type(value), Column):
-                column: Column = value
-                columns.append(column)
-                column._meta._name = key
-                value._meta._table = table
-
-        table.Meta.columns = columns
-        table.Meta.non_default_columns = [
-            i for i in columns if type(i) != PrimaryKey
-        ]
-        return table
-
-    ###########################################################################
-
+class TableMetaclass(type):
     def __str__(cls):
         """
         Returns a basic string representation of the table and its columns.
@@ -84,7 +44,7 @@ class TableMeta(type):
         """
         spacer = "\n    "
         columns = []
-        for col in cls.Meta.columns:
+        for col in cls._meta.columns:
             if type(col) == ForeignKey:
                 columns.append(
                     f"{col._meta.name} = ForeignKey({col._foreign_key_meta.references.__name__})"
@@ -95,20 +55,52 @@ class TableMeta(type):
         return f"class {cls.__name__}(Table):\n" f"    {columns_string}\n"
 
 
-class Table(metaclass=TableMeta):
-    class Meta:
-        tablename = None
+class Table(metaclass=TableMetaclass):
+
+    # These are just placeholder values, so type inference isn't confused - the
+    # actual values are set in __init_subclass__.
+    _meta = TableMeta()
+    id = PrimaryKey()
+
+    def __init_subclass__(
+        cls, tablename: t.Optional[str] = None, db: t.Optional[Engine] = None
+    ):
+        """
+        Automatically populate the _meta, which includes the tablename, and
+        columns.
+        """
+        cls.id = PrimaryKey()
+
+        tablename = tablename if tablename else _camel_to_snake(cls.__name__)
+
+        attribute_names = [i for i in dir(cls) if not i.startswith("_")]
+
         columns: t.List[Column] = []
         non_default_columns: t.List[Column] = []
-        db: t.Optional[Engine] = engine_finder()
+
+        for attribute_name in attribute_names:
+            attribute = getattr(cls, attribute_name)
+            if isinstance(attribute, Column):
+                column = attribute
+                columns.append(column)
+
+                if not isinstance(column, PrimaryKey):
+                    non_default_columns.append(column)
+
+                column._meta._name = attribute_name
+                column._meta._table = cls
+
+        db = db if db else engine_finder()
+
+        cls._meta = TableMeta(
+            tablename=tablename, columns=columns, non_default_columns=[], db=db
+        )
 
     def __init__(self, **kwargs):
         """
-        TODO:
-        Need to know the memory size of each instance ... can't be
-        massive.
+        Assigns any default column values to the class.
         """
-        for column in self.Meta.columns:
+        for column in self._meta.columns:
             value = kwargs.pop(column._meta.name, None)
             if not value:
                 if column.default:
@@ -137,7 +129,7 @@ class Table(metaclass=TableMeta):
         if type(self.id) == int:
             # pre-existing row
             kwargs = {
-                i: getattr(self, i._meta.name, None) for i in cls.Meta.columns
+                i: getattr(self, i._meta.name, None) for i in cls._meta.columns
             }
             _id = kwargs.pop("id")
             return cls.update().values(kwargs).where(cls.id == _id)
@@ -194,7 +186,7 @@ class Table(metaclass=TableMeta):
         Used when inserting rows.
         """
         args_dict = {
-            col._meta.name: self[col._meta.name] for col in self.Meta.columns
+            col._meta.name: self[col._meta.name] for col in self._meta.columns
         }
 
         is_unquoted = lambda arg: type(arg) == Unquoted
@@ -210,7 +202,7 @@ class Table(metaclass=TableMeta):
                 args_dict[column._meta.name].value
                 if is_unquoted(args_dict[column._meta.name])
                 else "{}"
-                for column in self.Meta.columns
+                for column in self._meta.columns
             ]
         )
         return QueryString(f"({query})", *filtered_args)
@@ -222,7 +214,7 @@ class Table(metaclass=TableMeta):
 
     @classmethod
     def get_column_by_name(cls, column_name: str) -> Column:
-        columns = [i for i in cls.Meta.columns if i._meta.name == column_name]
+        columns = [i for i in cls._meta.columns if i._meta.name == column_name]
 
         if len(columns) != 1:
             raise ValueError(f"Can't find a column called {column_name}.")
@@ -306,7 +298,7 @@ class Table(metaclass=TableMeta):
 
         await Band.create().run()
         """
-        return Raw(table=cls, base=f'CREATE TABLE "{cls.Meta.tablename}"()')
+        return Raw(table=cls, base=f'CREATE TABLE "{cls._meta.tablename}"()')
 
     @classmethod
     def drop(cls) -> Drop:

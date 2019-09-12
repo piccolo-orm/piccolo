@@ -17,7 +17,7 @@ class Delete(Query):
 
     @property
     def querystring(self) -> QueryString:
-        query = f'DELETE FROM {self.table.Meta.tablename}'
+        query = f'DELETE FROM {self.table._meta.tablename}'
         if self.where_delegate._where:
             query += ' WHERE {}'
             return QueryString(
@@ -28,7 +28,7 @@ class Delete(Query):
             return QueryString(query)
 
     def __str__(self) -> str:
-        query = f'DELETE FROM {self.table.Meta.tablename}'
+        query = f'DELETE FROM {self.table._meta.tablename}'
         if self.where_delegate._where:
             query += f' WHERE {self.where_delegate._where.__str__()}'
         return query
