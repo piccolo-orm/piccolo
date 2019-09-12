@@ -55,6 +55,22 @@ Similarly, we can delete objects, using the `remove` method.
 
     pythonistas.remove().run_sync()
 
+get_related
+-----------
+
+If you have an object with a foreign key, and you want to fetch the related
+object, you can do so using ``get_related``.
+
+.. code-block:: python
+
+    pythonistas = Band.objects().where(
+        Band.name == 'Pythonistas'
+    ).first().run_sync()
+
+    manager = pythonistas.get_related(Band.manager).run_sync()
+    >>> print(manager.name)
+    'Guido'
+
 order_by
 --------
 

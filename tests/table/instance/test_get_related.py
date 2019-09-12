@@ -7,7 +7,6 @@ TABLES = [Manager, Band]
 
 
 class TestGetRelated(TestCase):
-
     def setUp(self):
         for table in TABLES:
             table.create().run_sync()
@@ -20,20 +19,12 @@ class TestGetRelated(TestCase):
         """
         Make sure you can get a related object from another object instance.
         """
-        manager = Manager(
-            name="Guido"
-        )
+        manager = Manager(name="Guido")
         manager.save().run_sync()
 
-        band = Band(
-            name='Pythonistas',
-            manager=manager.id,
-            popularity=100
-        )
+        band = Band(name="Pythonistas", manager=manager.id, popularity=100)
         band.save().run_sync()
 
-        _manager = band.get_related('manager').run_sync()
+        _manager = band.get_related(Band.manager).run_sync()
 
-        self.assertTrue(
-            _manager.name == 'Guido'
-        )
+        self.assertTrue(_manager.name == "Guido")

@@ -163,15 +163,24 @@ class Table(metaclass=TableMetaclass):
 
         return self.__class__.delete().where(self.__class__.id == _id)
 
-    def get_related(self, column_name: str) -> Objects:
+    def get_related(self, foreign_key: ForeignKey) -> Objects:
         """
-        some_band.get_related('manager')
+        Used to fetch a Table instance, for the target of a foreign key.
+
+        band = await Band.objects().first().run()
+        manager = await band.get_related(Band.name).run()
+        >>> print(manager.name)
+        'Guido'
+
+        It can only follow foreign keys one level currently.
+        i.e. Band.manager, but not Band.manager.x.y.z
+
         """
         cls = self.__class__
 
-        foreign_key = cls._meta.get_column_by_name(column_name)
-
         if isinstance(foreign_key, ForeignKey):
+            column_name = foreign_key._meta.name
+
             references: t.Type[
                 Table
             ] = foreign_key._foreign_key_meta.references
