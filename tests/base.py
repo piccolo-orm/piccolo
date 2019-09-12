@@ -30,23 +30,42 @@ class DBTestCase(TestCase):
         asyncio.run(ENGINE.run(query))
 
     def create_table(self):
-        self.run_sync(
-            """
-            CREATE TABLE manager (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(50)
-            );"""
-        )
-
-        self.run_sync(
-            """
-            CREATE TABLE band (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(50),
-                manager INTEGER REFERENCES manager,
-                popularity SMALLINT
-            );"""
-        )
+        if ENGINE.engine_type == "postgres":
+            self.run_sync(
+                """
+                CREATE TABLE manager (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(50)
+                );"""
+            )
+            self.run_sync(
+                """
+                CREATE TABLE band (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(50),
+                    manager INTEGER REFERENCES manager,
+                    popularity SMALLINT
+                );"""
+            )
+        elif ENGINE.engine_type == "sqlite":
+            self.run_sync(
+                """
+                CREATE TABLE manager (
+                    id INTEGER PRIMARY KEY,
+                    name VARCHAR(50)
+                );"""
+            )
+            self.run_sync(
+                """
+                CREATE TABLE band (
+                    id INTEGER PRIMARY KEY,
+                    name VARCHAR(50),
+                    manager INTEGER REFERENCES manager,
+                    popularity SMALLINT
+                );"""
+            )
+        else:
+            raise Exception("Unrecognised engine")
 
     def insert_row(self):
         self.run_sync(
