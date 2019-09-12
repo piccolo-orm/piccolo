@@ -9,7 +9,6 @@ class TestRename(DBTestCase):
         self.insert_row()
 
         rename_query = Band.alter().rename_column(Band.popularity, "rating")
-
         rename_query.run_sync()
 
         select_query = Band.raw("SELECT * FROM band")

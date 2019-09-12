@@ -26,7 +26,7 @@ class Rename(AlterStatement):
     @property
     def querystring(self) -> QueryString:
         return QueryString(
-            f"RENAME {self.column._meta.name} TO {self.new_name}"
+            f"RENAME COLUMN {self.column._meta.name} TO {self.new_name}"
         )
 
 

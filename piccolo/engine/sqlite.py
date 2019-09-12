@@ -28,7 +28,7 @@ class SQLiteEngine(Engine):
         """
         Warn if the version of SQLite isn't supported.
         """
-        major, minor, _ = sqlite3.sqlite_version.split(".")
+        major, minor, _ = sqlite3.sqlite_version_info
         return float(f"{major}.{minor}")
 
     async def run_in_pool(
