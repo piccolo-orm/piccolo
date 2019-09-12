@@ -71,12 +71,25 @@ object, you can do so using ``get_related``.
     >>> print(manager.name)
     'Guido'
 
+Query clauses
+-------------
+
+limit
+~~~~~
+
+See  :ref:`limit`.
+
+first
+~~~~~
+
+See  :ref:`first`.
+
 order_by
---------
+~~~~~~~~
 
 See  :ref:`order_by`.
 
 where
------
+~~~~~
 
 See :ref:`Where` .

@@ -100,12 +100,26 @@ The joins can go several layers deep.
         c.band_1.manager.name
     ).run_sync()
 
+
+Query clauses
+-------------
+
+first
+~~~~~
+
+See  :ref:`first`.
+
+limit
+~~~~~
+
+See  :ref:`limit`.
+
 order_by
---------
+~~~~~~~~
 
 See  :ref:`order_by`.
 
 where
------
+~~~~~
 
 See  :ref:`where`.

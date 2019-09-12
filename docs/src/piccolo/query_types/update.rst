@@ -14,7 +14,10 @@ This is used to update any rows in the table which match the criteria.
     >>> ).run_sync()
     []
 
-Where
------
+Query clauses
+-------------
+
+where
+~~~~~
 
 See :ref:`Where`.

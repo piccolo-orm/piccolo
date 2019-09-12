@@ -10,7 +10,10 @@ This deletes any matching rows from the table.
     >>> Band.delete().where(Band.name == 'Rustaceans').run_sync()
     []
 
-Where
------
+Query clauses
+-------------
+
+where
+~~~~~
 
 See :ref:`Where`

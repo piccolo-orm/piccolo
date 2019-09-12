@@ -17,5 +17,5 @@ focus on `select`, `insert` and `update`.
     ./insert
     ./objects
     ./raw
-    ./transactions
     ./update
+    ./transactions

@@ -10,7 +10,10 @@ Returns the number of rows which match the query.
     >>> Band.count().where(Band.name == 'Pythonistas').run_sync()
     1
 
-Where
------
+Query clauses
+-------------
+
+where
+~~~~~
 
 See :ref:`where`.
