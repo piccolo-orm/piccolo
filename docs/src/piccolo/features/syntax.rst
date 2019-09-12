@@ -1,5 +1,5 @@
-Design Decisions
-================
+Syntax
+======
 
 As close as possible to SQL
 ---------------------------

@@ -6,24 +6,33 @@ import typing as t
 
 
 @dataclass
-class Unquoted():
+class Unquoted:
     """
     Used when we want the value to be unquoted because it's a Postgres
     keyword - for example DEFAULT.
     """
+
     value: str
 
 
 @dataclass
-class Fragment():
+class Fragment:
     prefix: str
     index: int = 0
     no_arg: bool = False
 
 
-class QueryString():
+class QueryString:
+    """
+    When we're composing complex queries, we're combining QueryStrings, rather
+    than concatenating strings directly. The reason for this is QueryStrings
+    keep the parameters separate, so we can pass parameterised queries to the
+    engine - which helps prevent SQL Injection attacks.
+    """
 
-    def __init__(self, template: str, *args: t.Any, query_type: str = 'generic') -> None:
+    def __init__(
+        self, template: str, *args: t.Any, query_type: str = "generic"
+    ) -> None:
         """
         Example template: "WHERE {} = {}"
 
@@ -40,13 +49,14 @@ class QueryString():
         - it's just a usability feature.
         """
         _, bundled, combined_args = self.bundle(
-            start_index=1,
-            bundled=[],
-            combined_args=[]
+            start_index=1, bundled=[], combined_args=[]
         )
-        template = ''.join([
-            fragment.prefix + ('' if fragment.no_arg else '{}') for fragment in bundled
-        ])
+        template = "".join(
+            [
+                fragment.prefix + ("" if fragment.no_arg else "{}")
+                for fragment in bundled
+            ]
+        )
 
         # Do some basic type conversion here.
         converted_args = []
@@ -55,10 +65,10 @@ class QueryString():
             if _type == str:
                 converted_args.append(f"'{arg}'")
             elif _type == datetime:
-                dt_string = arg.isoformat().replace('T', ' ')
+                dt_string = arg.isoformat().replace("T", " ")
                 converted_args.append(f"'{dt_string}'")
             elif arg == None:
-                converted_args.append('null')
+                converted_args.append("null")
             else:
                 converted_args.append(arg)
 
@@ -96,27 +106,31 @@ class QueryString():
         return (start_index, bundled, combined_args)
 
     def compile_string(
-        self,
-        engine_type: str = 'postgres'
+        self, engine_type: str = "postgres"
     ) -> t.Tuple[str, t.List[t.Any]]:
         """
-        Compiles the template ready for Postgres - keeping the arguments
+        Compiles the template ready for the engine - keeping the arguments
         separate from the template.
         """
         _, bundled, combined_args = self.bundle(
-            start_index=1,
-            bundled=[],
-            combined_args=[]
+            start_index=1, bundled=[], combined_args=[]
         )
-        if engine_type == 'postgres':
-            string = ''.join([
-                fragment.prefix + ('' if fragment.no_arg else f'${fragment.index}') for fragment in bundled
-            ])
-        elif engine_type == 'sqlite':
-            string = ''.join([
-                fragment.prefix + ('' if fragment.no_arg else '?') for fragment in bundled
-            ])
+        if engine_type == "postgres":
+            string = "".join(
+                [
+                    fragment.prefix
+                    + ("" if fragment.no_arg else f"${fragment.index}")
+                    for fragment in bundled
+                ]
+            )
+        elif engine_type == "sqlite":
+            string = "".join(
+                [
+                    fragment.prefix + ("" if fragment.no_arg else "?")
+                    for fragment in bundled
+                ]
+            )
         else:
-            raise Exception('Engine type not recognised')
+            raise Exception("Engine type not recognised")
 
         return (string, combined_args)

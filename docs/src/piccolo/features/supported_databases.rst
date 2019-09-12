@@ -8,4 +8,5 @@ will be using in production.
 
 SQLite
 ------
-SQLite support is not as complete as Postgres, but it is available.
+SQLite support is not as complete as Postgres, but it is available - mostly
+because it's easy to setup.

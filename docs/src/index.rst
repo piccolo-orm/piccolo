@@ -2,7 +2,7 @@ Welcome to Piccolo's documentation!
 ===================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
    piccolo/getting_started/index
@@ -14,8 +14,8 @@ Welcome to Piccolo's documentation!
    piccolo/authentication/index
    piccolo/features/index
    piccolo/playground/index
-   piccolo/articles/index
    piccolo/ecosystem/index
+   piccolo/contributing/index
 
 Indices and tables
 ==================

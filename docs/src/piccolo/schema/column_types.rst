@@ -23,7 +23,12 @@ default
 null
 ~~~~
 
-...
+Whether the column is nullable.
+
+.. code-block:: python
+
+    class Band(Table):
+        name = Varchar(default="hello", null=False)
 
 Varchar
 -------
@@ -35,6 +40,8 @@ Varchar
 
 ForeignKey
 ----------
+
+`ForeignKey` takes a `Table` argument.
 
 .. code-block:: python
 

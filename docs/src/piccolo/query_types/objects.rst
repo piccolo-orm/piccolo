@@ -29,7 +29,7 @@ columns.
 Saving objects
 --------------
 
-Objects have a save method, which is convenient for updating values:
+Objects have a `save` method, which is convenient for updating values:
 
 .. code-block:: python
 
@@ -40,6 +40,20 @@ Objects have a save method, which is convenient for updating values:
 
     pythonistas.popularity = 100000
     pythonistas.save().run_sync()
+
+Deleting objects
+----------------
+
+Similarly, we can delete objects, using the `remove` method.
+
+.. code-block:: python
+
+    # To get certain rows:
+    pythonistas = Band.objects().where(
+        Band.name == 'Pythonistas'
+    ).first().run_sync()
+
+    pythonistas.remove().run_sync()
 
 order_by
 --------

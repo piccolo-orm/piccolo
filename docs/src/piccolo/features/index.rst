@@ -6,3 +6,5 @@ Features
 
     ./tab_completion
     ./supported_databases
+    ./security
+    ./syntax

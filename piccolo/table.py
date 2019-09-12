@@ -208,7 +208,7 @@ class Table(metaclass=TableMetaclass):
 
         # Strip out any args which are unquoted.
         # TODO Not the cleanest place to have it (would rather have it handled
-        # in the Querystring bundle logic) - might need refactoring.
+        # in the QueryString bundle logic) - might need refactoring.
         filtered_args = [i for i in args_dict.values() if not is_unquoted(i)]
 
         # If unquoted, dump it straight into the query.
