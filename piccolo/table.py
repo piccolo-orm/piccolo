@@ -128,6 +128,8 @@ class Table(metaclass=TableMetaclass):
         if unrecognized:
             raise ValueError(f"Unrecognized columns - {unrecognized}")
 
+    ###########################################################################
+
     def save(self) -> t.Union[Insert, Update]:
         """
         A proxy to an insert or update query.
@@ -148,7 +150,6 @@ class Table(metaclass=TableMetaclass):
         else:
             return cls.insert().add(self)
 
-    @property
     def remove(self) -> Delete:
         """
         A proxy to a delete query.
@@ -168,7 +169,7 @@ class Table(metaclass=TableMetaclass):
         """
         cls = self.__class__
 
-        foreign_key = cls.get_column_by_name(column_name)
+        foreign_key = cls._meta.get_column_by_name(column_name)
 
         if isinstance(foreign_key, ForeignKey):
             references: t.Type[
@@ -178,7 +179,7 @@ class Table(metaclass=TableMetaclass):
             return (
                 references.objects()
                 .where(
-                    references.get_column_by_name("id")
+                    references._meta.get_column_by_name("id")
                     == getattr(self, column_name)
                 )
                 .first()
@@ -225,15 +226,7 @@ class Table(metaclass=TableMetaclass):
         return self.querystring.__str__()
 
     ###########################################################################
-
-    @classmethod
-    def get_column_by_name(cls, column_name: str) -> Column:
-        columns = [i for i in cls._meta.columns if i._meta.name == column_name]
-
-        if len(columns) != 1:
-            raise ValueError(f"Can't find a column called {column_name}.")
-
-        return columns[0]
+    # Classmethods
 
     @classmethod
     def ref(cls, column_name: str) -> Column:
@@ -244,12 +237,12 @@ class Table(metaclass=TableMetaclass):
         """
         local_column_name, reference_column_name = column_name.split(".")
 
-        local_column = cls.get_column_by_name(local_column_name)
+        local_column = cls._meta.get_column_by_name(local_column_name)
 
         if not isinstance(local_column, ForeignKey):
             raise ValueError(f"{local_column_name} isn't a ForeignKey")
 
-        reference_column = local_column.references.get_column_by_name(
+        reference_column = local_column.references._meta.get_column_by_name(
             reference_column_name
         )
 
@@ -257,11 +250,7 @@ class Table(metaclass=TableMetaclass):
         _reference_column.name = f"{local_column_name}.{reference_column_name}"
         return _reference_column
 
-    ###########################################################################
-    # Classmethods
-
     @classmethod
-    # TODO - needs refactoring into Band.insert.rows(some_table_instance)
     def insert(cls, *rows: "Table") -> Insert:
         """
         await Band.insert(
@@ -276,6 +265,8 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def raw(cls, sql: str) -> Raw:
         """
+        Execute raw SQL queries on the underlying engine - use with caution!
+
         await Band.raw('select * from foo')
         """
         return Raw(table=cls, base=QueryString(sql))
@@ -283,7 +274,8 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def select(cls) -> Select:
         """
-        Get data.
+        Get data in the form of a list of dictionaries, with each dictionary
+        representing a row.
 
         await Band.select().columns(Band.name).run()
         """
@@ -292,7 +284,7 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def delete(cls) -> Delete:
         """
-        await Band.delete().where(Band.name == 'CSharps').run()
+        await Band.delete().where(Band.name == 'Pythonistas').run()
         """
         return Delete(table=cls)
 
@@ -310,7 +302,7 @@ class Table(metaclass=TableMetaclass):
         """
         Create the table, but with no columns (useful for migrations).
 
-        await Band.create().run()
+        await Band.create_without_columns().run()
         """
         return Raw(
             table=cls,
@@ -329,18 +321,37 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def alter(cls) -> Alter:
         """
+        Used to modify existing tables and columns.
+
         await Band.alter().rename_column(Band.popularity, 'rating')
         """
         return Alter(table=cls)
 
     @classmethod
     def objects(cls) -> Objects:
+        """
+        Returns a list of table instances (each representing a row), which you
+        can modify and then call 'save' on, or can delete by calling 'remove'.
+
+        pythonistas = await Band.objects().where(
+            Band.name == 'Pythonistas'
+        ).first().run()
+
+        pythonistas.name = 'Pythonistas Reborn'
+
+        await pythonistas.save().run()
+
+        # Or to remove it from the database:
+        await pythonistas.remove()
+        """
         return Objects(table=cls)
 
     @classmethod
     def count(cls) -> Count:
         """
         Count the number of matching rows.
+
+        await Band.count().where(Band.popularity > 1000).run()
         """
         return Count(table=cls)
 
@@ -348,11 +359,18 @@ class Table(metaclass=TableMetaclass):
     def exists(cls) -> Exists:
         """
         Use it to check if a row exists, not if the table exists.
+
+        await Band.exists().where(Band.name == 'Pythonistas').run()
         """
         return Exists(table=cls)
 
     @classmethod
     def table_exists(cls) -> TableExists:
+        """
+        Check if the table exists in the database.
+
+        await Band.table_exists().run()
+        """
         return TableExists(table=cls)
 
     @classmethod
@@ -365,4 +383,3 @@ class Table(metaclass=TableMetaclass):
         ).where(Band.name=="Pythonistas")
         """
         return Update(table=cls)
-
