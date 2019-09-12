@@ -34,6 +34,12 @@ class TableMeta:
     non_default_columns: t.List[Column] = field(default_factory=list)
     db: t.Optional[Engine] = engine_finder()
 
+    def get_column_by_name(self, name: str) -> Column:
+        column = [i for i in self.columns if i._meta.name == name]
+        if len(column) != 1:
+            raise ValueError(f"No matching column found with name == {name}")
+        return column[0]
+
 
 class TableMetaclass(type):
     def __str__(cls):
@@ -50,7 +56,9 @@ class TableMetaclass(type):
                     f"{col._meta.name} = ForeignKey({col._foreign_key_meta.references.__name__})"
                 )
             else:
-                columns.append(f"{col._meta.name} = {col.__class__.__name__}()")
+                columns.append(
+                    f"{col._meta.name} = {col.__class__.__name__}()"
+                )
         columns_string = spacer.join(columns)
         return f"class {cls.__name__}(Table):\n" f"    {columns_string}\n"
 
@@ -88,7 +96,8 @@ class Table(metaclass=TableMetaclass):
                     non_default_columns.append(column)
 
                 column._meta._name = attribute_name
-                column._meta._table = cls
+                # Mypy wrongly thinks cls is a Table instance:
+                column._meta._table = cls  # type: ignore
 
         db = db if db else engine_finder()
 
@@ -110,7 +119,9 @@ class Table(metaclass=TableMetaclass):
                     value = column.default() if is_callable else column.default
                 else:
                     if not column._meta.null:
-                        raise ValueError(f"{column._meta.name} wasn't provided")
+                        raise ValueError(
+                            f"{column._meta.name} wasn't provided"
+                        )
             self[column._meta.name] = value
 
         unrecognized = kwargs.keys()
@@ -128,11 +139,12 @@ class Table(metaclass=TableMetaclass):
 
         if type(self.id) == int:
             # pre-existing row
-            kwargs = {
-                i: getattr(self, i._meta.name, None) for i in cls._meta.columns
+            kwargs: t.Dict[Column, t.Any] = {
+                i: getattr(self, i._meta.name, None)
+                for i in cls._meta.columns
+                if i._meta.name != "id"
             }
-            _id = kwargs.pop("id")
-            return cls.update().values(kwargs).where(cls.id == _id)
+            return cls.update().values(kwargs).where(cls.id == self.id)
         else:
             return cls.insert().add(self)
 
@@ -146,7 +158,7 @@ class Table(metaclass=TableMetaclass):
         if type(_id) != int:
             raise ValueError("Can only delete pre-existing rows with an id.")
 
-        self.id = None
+        self.id = None  # type: ignore
 
         return self.__class__.delete().where(self.__class__.id == _id)
 
@@ -159,7 +171,9 @@ class Table(metaclass=TableMetaclass):
         foreign_key = cls.get_column_by_name(column_name)
 
         if isinstance(foreign_key, ForeignKey):
-            references: t.Type[Table] = foreign_key._foreign_key_meta.references
+            references: t.Type[
+                Table
+            ] = foreign_key._foreign_key_meta.references
 
             return (
                 references.objects()
@@ -298,7 +312,10 @@ class Table(metaclass=TableMetaclass):
 
         await Band.create().run()
         """
-        return Raw(table=cls, base=f'CREATE TABLE "{cls._meta.tablename}"()')
+        return Raw(
+            table=cls,
+            base=QueryString(f'CREATE TABLE "{cls._meta.tablename}"()'),
+        )
 
     @classmethod
     def drop(cls) -> Drop:

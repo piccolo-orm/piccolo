@@ -16,7 +16,7 @@ from piccolo.query.mixins import (
 from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:
-    from table import Table  # noqa
+    from piccolo.table import Table  # noqa
     from piccolo.custom_types import Combinable
 
 
