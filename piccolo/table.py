@@ -51,7 +51,7 @@ class TableMetaclass(type):
         spacer = "\n    "
         columns = []
         for col in cls._meta.columns:
-            if type(col) == ForeignKey:
+            if isinstance(col, ForeignKey):
                 columns.append(
                     f"{col._meta.name} = ForeignKey({col._foreign_key_meta.references.__name__})"
                 )

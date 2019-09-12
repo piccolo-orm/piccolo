@@ -6,12 +6,9 @@ Engines
 Engines are what execute the SQL queries. Each supported backend has its own
 engine (see  :ref:`EngineTypes`).
 
-Meta.db
--------
-
-It's important that each ``Table`` class knows which engine to use. This is set
-via the ``Meta.db`` attribute. There are two ways of doing this - setting it
-explicitly, or using ``engine_finder``.
+It's important that each ``Table`` class knows which engine to use. There are
+two ways of doing this - setting it explicitly via the ``db`` argument, or
+letting Piccolo find it using ``engine_finder``.
 
 Explicit
 --------
@@ -26,35 +23,17 @@ Explicit
     DB = SQLiteEngine(path='my_db.sqlite')
 
 
-    class MyTable(Table):
+    # Here we explicitly reference an engine:
+    class MyTable(Table, db=DB):
         name = Varchar()
-
-        class Meta:
-            # Here we explicitly reference an engine
-            db = DB
 
 
 engine_finder
 -------------
 
-By using ``engine_finder``, Piccolo will look for a file called
+By default Piccolo uses ``engine_finder``. Piccolo will look for a file called
 ``piccolo_conf.py`` on the path, and will try and import a ``DB`` variable,
-which defines the engine. This is the default behavior, if no ``Meta`` class is
-defined.
-
-.. code-block:: python
-
-    from piccolo.columns import Varchar
-    from piccolo.engine.finder import engine_finder
-    from piccolo.tables import Table
-
-
-    class MyTable(Table):
-        name = Varchar()
-
-        class Meta:
-            # Let Piccolo import the engine from a config file:
-            db = engine_finder()
+which defines the engine.
 
 Here's an example config file:
 

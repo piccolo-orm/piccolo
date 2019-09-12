@@ -47,7 +47,7 @@ A lot of the time, using the sync version works perfectly fine. Many of the
 examples use the sync version.
 
 Using the async version is useful for web applications which require high
-throughput, based on `ASGI frameworks </blog/introduction-to-asgi>`_.
+throughput, based on `ASGI frameworks <https://piccolo-orm.com/blog/introduction-to-asgi>`_.
 
 Explicit
 --------

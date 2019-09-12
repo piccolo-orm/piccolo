@@ -26,12 +26,6 @@ class Insert(Query):
 
     @property
     def sqlite_querystring(self) -> QueryString:
-        if len(self.add_delegate._add) > 1:
-            raise Exception(
-                "The SQLite engine is unable to insert more than one row at a "
-                "time."
-            )
-
         base = f"INSERT INTO {self.table._meta.tablename}"
         columns = ",".join([i._meta.name for i in self.table._meta.columns])
         values = ",".join(["{}" for i in self.add_delegate._add])

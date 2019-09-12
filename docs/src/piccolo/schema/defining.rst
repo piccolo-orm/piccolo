@@ -22,11 +22,8 @@ columns.
 
 For a full list of columns, see :ref:`ColumnTypes`.
 
-Meta
-----
-
 Connecting to the database
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------
 
 In order to create the table and query the database, you need to provide
 Piccolo with your connection details. See :ref:`Engines`.
