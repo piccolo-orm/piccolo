@@ -21,7 +21,7 @@ class AsyncBatch(Batch):
 
     connection: Connection
     query: Query
-    batch_size: int = 9
+    batch_size: int
 
     # Set internally
     _transaction = None
