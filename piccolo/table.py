@@ -272,13 +272,17 @@ class Table(metaclass=TableMetaclass):
         return query
 
     @classmethod
-    def raw(cls, sql: str) -> Raw:
+    def raw(cls, sql: str, *args: t.Any) -> Raw:
         """
         Execute raw SQL queries on the underlying engine - use with caution!
 
-        await Band.raw('select * from foo')
+        await Band.raw('select * from band')
+
+        Or passing in parameters:
+
+        await Band.raw("select * from band where name = {}", 'Pythonistas')
         """
-        return Raw(table=cls, base=QueryString(sql))
+        return Raw(table=cls, base=QueryString(sql, *args))
 
     @classmethod
     def select(cls) -> Select:

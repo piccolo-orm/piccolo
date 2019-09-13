@@ -134,6 +134,8 @@ class Select(Query):
 
         #######################################################################
 
+        # If no columns have been specified for selection, select all columns
+        # on the table:
         if len(self.columns_delegate.selected_columns) == 0:
             self.columns_delegate.selected_columns = self.table._meta.columns
 
