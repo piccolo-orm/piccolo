@@ -1,16 +1,66 @@
 from __future__ import annotations
+from dataclasses import dataclass
 import typing as t
 import warnings
 
 import asyncpg
+from asyncpg.connection import Connection
+from asyncpg.cursor import Cursor
 from asyncpg.pool import Pool
 from asgiref.sync import async_to_sync
 
-from piccolo.engine.base import Engine
+from piccolo.engine.base import Batch, Engine
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import colored_warning
+
+
+@dataclass
+class AsyncBatch(Batch):
+
+    connection: Connection
+    query: Query
+    batch_size: int = 9
+
+    # Set internally
+    _transaction = None
+    _cursor: t.Optional[Cursor] = None
+
+    @property
+    def cursor(self) -> Cursor:
+        if not self._cursor:
+            raise ValueError("_cursor not set")
+        return self._cursor
+
+    async def next(self) -> t.List[t.Dict]:
+        data = await self.cursor.fetch(self.batch_size)
+        return self.query._process_results(data)
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        response = await self.next()
+        if response == []:
+            raise StopAsyncIteration()
+        return response
+
+    async def __aenter__(self):
+        self._transaction = self.connection.transaction()
+        await self._transaction.start()
+        template, template_args = self.query.querystring.compile_string()
+
+        self._cursor = await self.connection.cursor(template, *template_args)
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        print("waiting to exit")
+        await self._transaction.commit()
+        await self.connection.close()
+
+
+###############################################################################
 
 
 class Transaction:
@@ -64,6 +114,7 @@ class Transaction:
         return run_sync(self._run())
 
 
+###############################################################################
 class PostgresEngine(Engine):
 
     engine_type = "postgres"
@@ -75,11 +126,16 @@ class PostgresEngine(Engine):
         super().__init__()
 
     def get_version(self) -> float:
+        """
+        Returns the version of Postgres being run.
+        """
         response = async_to_sync(self.run)("SHOW server_version")
         server_version = response[0]["server_version"]
         major, minor, _ = server_version.split(".")
         version = float(f"{major}.{minor}")
         return version
+
+    ###########################################################################
 
     async def start_connnection_pool(self, **kwargs) -> None:
         if self.pool:
@@ -98,6 +154,21 @@ class PostgresEngine(Engine):
         else:
             warnings.warn("No pool is running.")
 
+    ###########################################################################
+
+    async def get_connection(self) -> Connection:
+        return await asyncpg.connect(**self.config)
+
+    ###########################################################################
+
+    async def batch(self, query: Query, batch_size=100) -> AsyncBatch:
+        connection = await self.get_connection()
+        return AsyncBatch(
+            connection=connection, query=query, batch_size=batch_size
+        )
+
+    ###########################################################################
+
     async def run_in_pool(self, query: str, args: t.List[t.Any] = []):
         if not self.pool:
             raise ValueError("A pool isn't currently running.")
@@ -108,7 +179,7 @@ class PostgresEngine(Engine):
         return response
 
     async def run(self, query: str, args: t.List[t.Any] = []):
-        connection = await asyncpg.connect(**self.config)
+        connection = await self.get_connection()
         results = await connection.fetch(query, *args)
         await connection.close()
         return results

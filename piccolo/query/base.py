@@ -35,17 +35,7 @@ class Query(object):
         else:
             raise ValueError("Engine isn't defined.")
 
-    async def run(self, in_pool=True):
-        engine = getattr(self.table._meta, "db", None)
-        if not engine:
-            raise ValueError(
-                f"Table {self.table._meta.tablename} has no db defined in _meta"
-            )
-
-        results = await engine.run_querystring(
-            self.querystring, in_pool=in_pool
-        )
-
+    def _process_results(self, results):
         if results:
             keys = results[0].keys()
             keys = [i.replace("$", ".") for i in keys]
@@ -84,13 +74,22 @@ class Query(object):
 
         return raw
 
+    async def run(self, in_pool=True):
+        engine = getattr(self.table._meta, "db", None)
+        if not engine:
+            raise ValueError(
+                f"Table {self.table._meta.tablename} has no db defined in _meta"
+            )
+
+        results = await engine.run_querystring(
+            self.querystring, in_pool=in_pool
+        )
+
+        return self._process_results(results)
+
     def run_sync(self, *args, **kwargs):
         """
         A convenience method for running the coroutine synchronously.
-
-        Might make it more sophisticated in the future, so not creating /
-        tearing down connections, but instead running it in a separate
-        process, and dispatching coroutines to it.
         """
         return run_sync(self.run(*args, **kwargs, in_pool=False))
 

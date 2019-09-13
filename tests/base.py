@@ -123,6 +123,14 @@ class DBTestCase(TestCase):
             );"""
         )
 
+    def insert_many_rows(self, row_count=10000):
+        """
+        Insert lots of data - for testing retrieval of large numbers of rows.
+        """
+        values = ["('name_{}')".format(i) for i in range(row_count)]
+        values_string = ",".join(values)
+        self.run_sync(f"INSERT INTO manager (name) VALUES {values_string};")
+
     def drop_table(self):
         self.run_sync("DROP TABLE band;")
         self.run_sync("DROP TABLE manager;")

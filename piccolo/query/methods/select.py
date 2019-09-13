@@ -2,8 +2,9 @@ from __future__ import annotations
 from collections import OrderedDict
 import typing as t
 
-from piccolo.query.base import Query
 from piccolo.columns import Column, ForeignKey
+from piccolo.engine.base import Batch
+from piccolo.query.base import Query
 from piccolo.query.mixins import (
     ColumnsDelegate,
     CountDelegate,
@@ -66,9 +67,19 @@ class Select(Query):
         self.where_delegate.where(where)
         return self
 
+    async def batch(
+        self, batch_size: t.Optional[int] = None, **kwargs
+    ) -> Batch:
+        if batch_size:
+            kwargs.update(batch_size=batch_size)
+        return await self.table._meta.db.batch(self, **kwargs)
+
+    def batch_sync(self):
+        pass
+
     ###########################################################################
 
-    def get_joins(self, columns: t.List[Column]) -> t.List[str]:
+    def _get_joins(self, columns: t.List[Column]) -> t.List[str]:
         """
         A call chain is a sequence of foreign keys representing joins which
         need to be made to retrieve a column in another table.
@@ -103,7 +114,7 @@ class Select(Query):
         # Remove duplicates
         return list(OrderedDict.fromkeys(joins))
 
-    def check_valid_call_chain(self, keys: t.List[Column]) -> bool:
+    def _check_valid_call_chain(self, keys: t.List[Column]) -> bool:
         for column in keys:
             if column._meta.call_chain:
                 # Make sure the call_chain isn't too large to discourage
@@ -119,11 +130,11 @@ class Select(Query):
     @property
     def querystring(self) -> QueryString:
         # JOIN
-        self.check_valid_call_chain(self.columns_delegate.selected_columns)
+        self._check_valid_call_chain(self.columns_delegate.selected_columns)
 
-        select_joins = self.get_joins(self.columns_delegate.selected_columns)
-        where_joins = self.get_joins(self.where_delegate.get_where_columns())
-        order_by_joins = self.get_joins(
+        select_joins = self._get_joins(self.columns_delegate.selected_columns)
+        where_joins = self._get_joins(self.where_delegate.get_where_columns())
+        order_by_joins = self._get_joins(
             self.order_by_delegate.get_order_by_columns()
         )
 
@@ -172,6 +183,3 @@ class Select(Query):
         querystring = QueryString(query, *args)
 
         return querystring
-
-    def __str__(self) -> str:
-        return self.querystring.__str__()

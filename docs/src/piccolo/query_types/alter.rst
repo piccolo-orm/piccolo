@@ -14,7 +14,7 @@ Used to add a column to an existing table.
 
 .. code-block:: python
 
-        Band.alter().add_column(‘members’, Integer()).run_sync()
+    Band.alter().add_column(‘members’, Integer()).run_sync()
 
 drop_column
 -----------

@@ -3,6 +3,10 @@ from abc import abstractmethod, ABCMeta
 from piccolo.utils.warnings import colored_warning
 
 
+class Batch:
+    pass
+
+
 class Engine(metaclass=ABCMeta):
     def __init__(self):
         self.check_version()

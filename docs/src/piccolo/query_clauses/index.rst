@@ -10,3 +10,4 @@ Query Clauses
     ./limit
     ./order_by
     ./where
+    ./batch
