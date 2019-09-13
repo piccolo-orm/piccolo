@@ -19,6 +19,8 @@ class CombinableMixin(object):
 
 class Combination(CombinableMixin):
 
+    __slots__ = ("first", "second")
+
     operator = ""
 
     def __init__(self, first: Combinable, second: Combinable) -> None:
@@ -46,6 +48,9 @@ class Or(Combination):
 
 
 class Where(CombinableMixin):
+
+    __slots__ = ("column", "value", "values", "operator")
+
     def __init__(
         self,
         column: "Column",

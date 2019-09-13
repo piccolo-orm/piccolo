@@ -22,6 +22,16 @@ if t.TYPE_CHECKING:
 
 
 class Select(Query):
+
+    __slots__ = (
+        "columns_delegate",
+        "distinct_delegate",
+        "limit_delegate",
+        "order_by_delegate",
+        "output_delegate",
+        "where_delegate",
+    )
+
     def setup_delegates(self):
         self.columns_delegate = ColumnsDelegate()
         self.distinct_delegate = DistinctDelegate()
@@ -73,9 +83,6 @@ class Select(Query):
         if batch_size:
             kwargs.update(batch_size=batch_size)
         return await self.table._meta.db.batch(self, **kwargs)
-
-    def batch_sync(self):
-        pass
 
     ###########################################################################
 

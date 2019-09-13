@@ -9,6 +9,8 @@ from .select import Select
 
 
 class Exists(Query):
+    __slots__ = ("where_delegate",)
+
     def setup_delegates(self):
         self.where_delegate = WhereDelegate()
 

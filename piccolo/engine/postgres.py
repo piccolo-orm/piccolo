@@ -72,6 +72,8 @@ class Transaction:
     transaction.run_sync()
     """
 
+    __slots__ = ("engine", "queries")
+
     def __init__(self, engine: PostgresEngine):
         self.engine = engine
         self.queries: t.List[Query] = []
@@ -116,6 +118,8 @@ class Transaction:
 
 ###############################################################################
 class PostgresEngine(Engine):
+
+    __slots__ = ("config", "pool")
 
     engine_type = "postgres"
     min_version_number = 9.6

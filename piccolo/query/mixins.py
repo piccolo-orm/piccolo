@@ -12,6 +12,8 @@ if t.TYPE_CHECKING:
 
 @dataclass
 class Limit:
+    __slots__ = ("number",)
+
     number: int
 
     def __post_init__(self):
@@ -28,6 +30,8 @@ class Limit:
 
 @dataclass
 class OrderBy:
+    __slots__ = ("columns", "ascending")
+
     columns: t.Sequence[Column]
     ascending: bool
 
@@ -45,6 +49,7 @@ class OrderBy:
 
 @dataclass
 class Output:
+
     as_json: bool = False
     as_list: bool = False
     as_objects: bool = False
@@ -52,6 +57,7 @@ class Output:
 
 @dataclass
 class WhereDelegate:
+
     _where: t.Optional[Combinable] = None
     _where_columns: t.List[Column] = field(default_factory=list)
 
@@ -80,6 +86,7 @@ class WhereDelegate:
 
 @dataclass
 class OrderByDelegate:
+
     _order_by: t.Optional[OrderBy] = None
 
     def get_order_by_columns(self) -> t.List[Column]:
@@ -91,6 +98,7 @@ class OrderByDelegate:
 
 @dataclass
 class LimitDelegate:
+
     _limit: t.Optional[Limit] = None
     _first = False
 
@@ -104,6 +112,7 @@ class LimitDelegate:
 
 @dataclass
 class DistinctDelegate:
+
     _distinct: bool = False
 
     def distinct(self):
@@ -112,6 +121,7 @@ class DistinctDelegate:
 
 @dataclass
 class CountDelegate:
+
     _count: bool = False
 
     def count(self):
@@ -120,6 +130,7 @@ class CountDelegate:
 
 @dataclass
 class AddDelegate:
+
     _add: t.List[Table] = field(default_factory=list)
 
     def add(self, *instances: Table, table_class: t.Type[Table]):

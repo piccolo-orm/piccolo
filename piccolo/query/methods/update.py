@@ -11,6 +11,9 @@ if t.TYPE_CHECKING:
 
 
 class Update(Query):
+
+    __slots__ = ("values_delegate", "where_delegate")
+
     def setup_delegates(self):
         self.values_delegate = ValuesDelegate()
         self.where_delegate = WhereDelegate()

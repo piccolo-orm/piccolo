@@ -10,6 +10,8 @@ from piccolo.querystring import QueryString
 
 @dataclasses.dataclass
 class AlterStatement:
+    __slots__ = ("column",)
+
     column: Column
 
     def querystring(self) -> QueryString:
@@ -21,6 +23,8 @@ class AlterStatement:
 
 @dataclasses.dataclass
 class Rename(AlterStatement):
+    __slots__ = ("new_name",)
+
     new_name: str
 
     @property
@@ -39,6 +43,8 @@ class Drop(AlterStatement):
 
 @dataclasses.dataclass
 class Add(AlterStatement):
+    __slots__ = ("name",)
+
     name: str
 
     @property
@@ -49,6 +55,8 @@ class Add(AlterStatement):
 
 @dataclasses.dataclass
 class Unique(AlterStatement):
+    __slots__ = ("boolean",)
+
     boolean: bool
 
     @property
@@ -64,6 +72,8 @@ class Unique(AlterStatement):
 
 @dataclasses.dataclass
 class Null(AlterStatement):
+    __slots__ = ("boolean",)
+
     boolean: bool
 
     @property
@@ -75,6 +85,8 @@ class Null(AlterStatement):
 
 
 class Alter(Query):
+    __slots__ = ("_add", "_drop", "_rename", "_unique", "_null")
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._add: t.List[Add] = []

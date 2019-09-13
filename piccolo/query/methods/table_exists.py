@@ -1,10 +1,14 @@
 from __future__ import annotations
+import typing as t
 
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 
 
 class TableExists(Query):
+
+    __slots__: t.Tuple = tuple()
+
     def response_handler(self, response):
         return bool(response[0]["exists"])
 

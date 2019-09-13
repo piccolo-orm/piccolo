@@ -12,6 +12,8 @@ class Unquoted:
     keyword - for example DEFAULT.
     """
 
+    __slots__ = ("value",)
+
     value: str
 
 
@@ -29,6 +31,8 @@ class QueryString:
     keep the parameters separate, so we can pass parameterised queries to the
     engine - which helps prevent SQL Injection attacks.
     """
+
+    __slots__ = ("template", "args", "query_type")
 
     def __init__(
         self, template: str, *args: t.Any, query_type: str = "generic"

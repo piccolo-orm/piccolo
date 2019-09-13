@@ -17,6 +17,8 @@ def dict_factory(cursor, row):
 
 class SQLiteEngine(Engine):
 
+    __slots__ = ("path",)
+
     engine_type = "sqlite"
     min_version_number = 3.25
 

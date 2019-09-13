@@ -4,7 +4,11 @@ import typing as t
 from piccolo.custom_types import Combinable
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
-    LimitDelegate, OrderByDelegate, WhereDelegate, OutputDelegate, Output
+    LimitDelegate,
+    OrderByDelegate,
+    WhereDelegate,
+    OutputDelegate,
+    Output,
 )
 from piccolo.querystring import QueryString
 from .select import Select
@@ -19,12 +23,19 @@ class Objects(Query):
     table instances are returned, rather than just data.
     """
 
+    __slots__ = (
+        "limit_delegate",
+        "order_by_delegate",
+        "output_delegate",
+        "where_delegate",
+    )
+
     def setup_delegates(self):
         self.limit_delegate = LimitDelegate()
         self.order_by_delegate = OrderByDelegate()
-        self.where_delegate = WhereDelegate()
         self.output_delegate = OutputDelegate()
         self.output_delegate._output.as_objects = True
+        self.where_delegate = WhereDelegate()
 
     def limit(self, number: int) -> Objects:
         self.limit_delegate.limit(number)
@@ -45,7 +56,7 @@ class Objects(Query):
     def response_handler(self, response):
         if self.limit_delegate._first:
             if len(response) == 0:
-                raise ValueError('No results found')
+                raise ValueError("No results found")
             else:
                 return response[0]
         else:
@@ -53,13 +64,14 @@ class Objects(Query):
 
     @property
     def querystring(self) -> QueryString:
-        select = Select(
-            table=self.table,
-            column_names=[]
-        )
+        select = Select(table=self.table, column_names=[])
 
-        for attr in ('limit_delegate', 'where_delegate', 'output_delegate',
-                     'order_by_delegate'):
+        for attr in (
+            "limit_delegate",
+            "where_delegate",
+            "output_delegate",
+            "order_by_delegate",
+        ):
             setattr(select, attr, getattr(self, attr))
 
         return select.querystring

@@ -8,6 +8,8 @@ from piccolo.querystring import QueryString
 
 class Delete(Query):
 
+    __slots__ = ("where_delegate",)
+
     def setup_delegates(self):
         self.where_delegate = WhereDelegate()
 
@@ -17,18 +19,15 @@ class Delete(Query):
 
     @property
     def querystring(self) -> QueryString:
-        query = f'DELETE FROM {self.table._meta.tablename}'
+        query = f"DELETE FROM {self.table._meta.tablename}"
         if self.where_delegate._where:
-            query += ' WHERE {}'
-            return QueryString(
-                query,
-                self.where_delegate._where.querystring
-            )
+            query += " WHERE {}"
+            return QueryString(query, self.where_delegate._where.querystring)
         else:
             return QueryString(query)
 
     def __str__(self) -> str:
-        query = f'DELETE FROM {self.table._meta.tablename}'
+        query = f"DELETE FROM {self.table._meta.tablename}"
         if self.where_delegate._where:
-            query += f' WHERE {self.where_delegate._where.__str__()}'
+            query += f" WHERE {self.where_delegate._where.__str__()}"
         return query
