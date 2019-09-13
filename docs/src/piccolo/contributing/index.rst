@@ -27,3 +27,28 @@ The docs are written using Sphinx. To get them running locally:
  * Do an initial build of the docs: ``make html``
  * Serve the docs: ``python serve_docs.py``
  * The docs will auto rebuild as you make changes.
+
+Code style
+----------
+
+Piccolo uses `Black <https://black.readthedocs.io/en/stable/>`_  for
+formatting, preferably with a max line length of 79, to keep it consistent
+with `PEP8 <python.org/dev/peps/pep-0008/>`_ .
+
+You can configure `VSCode <https://code.visualstudio.com/>`_ by modifying
+``settings.json`` as follows:
+
+.. code-block:: json
+
+    {
+        "python.linting.enabled": true,
+        "python.linting.mypyEnabled": true,
+        "python.formatting.provider": "black",
+        "python.formatting.blackArgs": [
+            "--line-length",
+            "79"
+        ],
+        "editor.formatOnSave": true
+    }
+
+Type hints are used throughout the project.
