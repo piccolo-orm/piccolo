@@ -34,6 +34,20 @@ Used to rename an existing column.
 
     Band.alter().rename_column(Band.popularity, ‘rating’).run_sync()
 
+set_null
+--------
+
+Set whether a column is nullable or not.
+
+.. code-block:: python
+
+    # To make a row nullable:
+    Band.alter().set_null(Band.name, True).run_sync()
+
+    # To stop a row being nullable:
+    Band.alter().set_null(Band.name, False).run_sync()
+
+
 set_unique
 ----------
 

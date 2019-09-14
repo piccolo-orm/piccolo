@@ -102,13 +102,6 @@ class Alter(Query):
         self._add.append(Add(column, name))
         return self
 
-    def rename_column(self, column: Column, new_name: str) -> Alter:
-        """
-        Band.alter().rename_column(Band.popularity, ‘rating’)
-        """
-        self._rename.append(Rename(column, new_name))
-        return self
-
     def drop_column(self, column: Column) -> Alter:
         """
         Band.alter().drop_column('popularity')
@@ -116,11 +109,11 @@ class Alter(Query):
         self._drop.append(Drop(column))
         return self
 
-    def set_unique(self, column: Column, boolean: bool = True) -> Alter:
+    def rename_column(self, column: Column, new_name: str) -> Alter:
         """
-        Band.alter().set_unique(True)
+        Band.alter().rename_column(Band.popularity, ‘rating’)
         """
-        self._unique.append(Unique(column, boolean))
+        self._rename.append(Rename(column, new_name))
         return self
 
     def set_null(self, column: Column, boolean: bool = True) -> Alter:
@@ -128,6 +121,13 @@ class Alter(Query):
         Band.alter().set_null(True)
         """
         self._null.append(Null(column, boolean))
+        return self
+
+    def set_unique(self, column: Column, boolean: bool = True) -> Alter:
+        """
+        Band.alter().set_unique(True)
+        """
+        self._unique.append(Unique(column, boolean))
         return self
 
     @property
