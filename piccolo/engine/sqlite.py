@@ -1,11 +1,58 @@
+from dataclasses import dataclass
 import sqlite3
 import typing as t
 
 import aiosqlite
+from aiosqlite import Cursor, Connection
 
-from piccolo.engine.base import Engine
+from piccolo.engine.base import Batch, Engine
+from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 from piccolo.utils.warnings import colored_warning
+
+
+@dataclass
+class AsyncBatch(Batch):
+
+    connection: Connection
+    query: Query
+    batch_size: int
+
+    # Set internally
+    _cursor: t.Optional[Cursor] = None
+
+    @property
+    def cursor(self) -> Cursor:
+        if not self._cursor:
+            raise ValueError("_cursor not set")
+        return self._cursor
+
+    async def next(self) -> t.List[t.Dict]:
+        data = await self.cursor.fetchmany(self.batch_size)
+        return self.query._process_results(data)
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        response = await self.next()
+        if response == []:
+            raise StopAsyncIteration()
+        return response
+
+    async def __aenter__(self):
+        template, template_args = self.query.querystring.compile_string()
+
+        self._cursor = await self.connection.execute(template, *template_args)
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        print("waiting to exit")
+        await self._cursor.close()
+        await self.connection.close()
+
+
+###############################################################################
 
 
 def dict_factory(cursor, row):
@@ -33,10 +80,24 @@ class SQLiteEngine(Engine):
         major, minor, _ = sqlite3.sqlite_version_info
         return float(f"{major}.{minor}")
 
-    async def run_in_pool(
-        self, query: str, args: t.List[t.Any] = [], query_type: str = "generic"
-    ):
-        raise NotImplementedError
+    ###########################################################################
+
+    async def batch(self, query: Query, batch_size=100) -> AsyncBatch:
+        connection = await self.get_connection()
+        return AsyncBatch(
+            connection=connection, query=query, batch_size=batch_size
+        )
+
+    ###########################################################################
+
+    async def get_connection(self) -> Connection:
+        connection = await aiosqlite.connect(
+            self.path, detect_types=sqlite3.PARSE_DECLTYPES
+        )
+        connection.row_factory = dict_factory
+        return connection
+
+    ###########################################################################
 
     async def run(
         self, query: str, args: t.List[t.Any] = [], query_type: str = "generic"
@@ -44,6 +105,7 @@ class SQLiteEngine(Engine):
         async with aiosqlite.connect(
             self.path, detect_types=sqlite3.PARSE_DECLTYPES
         ) as connection:
+
             connection.row_factory = dict_factory
             async with connection.execute(query, args) as cursor:
                 cursor.row_factory = dict_factory
