@@ -2,6 +2,7 @@ from __future__ import annotations
 import typing as t
 
 from piccolo.custom_types import Combinable
+from piccolo.engine.base import Batch
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
     LimitDelegate,
@@ -52,6 +53,13 @@ class Objects(Query):
     def where(self, where: Combinable) -> Objects:
         self.where_delegate.where(where)
         return self
+
+    async def batch(
+        self, batch_size: t.Optional[int] = None, **kwargs
+    ) -> Batch:
+        if batch_size:
+            kwargs.update(batch_size=batch_size)
+        return await self.table._meta.db.batch(self, **kwargs)
 
     def response_handler(self, response):
         if self.limit_delegate._first:

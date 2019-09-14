@@ -74,6 +74,11 @@ object, you can do so using ``get_related``.
 Query clauses
 -------------
 
+batch
+~~~~~~~
+
+See :ref:`batch`.
+
 limit
 ~~~~~
 
