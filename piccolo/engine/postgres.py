@@ -1,4 +1,6 @@
 from __future__ import annotations
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 import typing as t
 import warnings
@@ -133,7 +135,13 @@ class PostgresEngine(Engine):
         """
         Returns the version of Postgres being run.
         """
-        response = async_to_sync(self.run)("SHOW server_version")
+        loop = asyncio.new_event_loop()
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(
+                loop.run_until_complete, self.run("SHOW server_version")
+            )
+
+        response: t.Array[t.Dict] = future.result()
         server_version = response[0]["server_version"]
         major, minor, _ = server_version.split(".")
         version = float(f"{major}.{minor}")

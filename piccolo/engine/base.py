@@ -30,6 +30,7 @@ class Engine(metaclass=ABCMeta):
         Warn if the database version isn't supported.
         """
         version_number = self.get_version()
+        print(f"Running version {version_number}")
         if version_number < self.min_version_number:
             message = (
                 f"This version of {self.engine_type} isn't supported "
