@@ -41,7 +41,8 @@ def populate():
     """
     for _table in reversed(TABLES):
         try:
-            _table.drop().run_sync()
+            if _table.table_exists().run_sync():
+                _table.drop().run_sync()
         except Exception as e:
             print(e)
 

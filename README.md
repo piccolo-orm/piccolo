@@ -4,7 +4,7 @@
 
 [![Coverage Status](https://coveralls.io/repos/github/piccolo-orm/piccolo/badge.svg)](https://coveralls.io/github/piccolo-orm/piccolo)
 
-A fast, user friendly ORM which supports asyncio.
+A fast, user friendly ORM and query builder which supports asyncio.
 
 Not production ready yet, but progressing quickly.
 
