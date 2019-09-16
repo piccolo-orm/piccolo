@@ -6,9 +6,17 @@ from piccolo.query.mixins import WhereDelegate
 from piccolo.querystring import QueryString
 
 
+class DeletionError(Exception):
+    pass
+
+
 class Delete(Query):
 
-    __slots__ = ("where_delegate",)
+    __slots__ = ("where_delegate", "force")
+
+    def __init__(self, force=False, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.force = force
 
     def setup_delegates(self):
         self.where_delegate = WhereDelegate()
@@ -16,6 +24,18 @@ class Delete(Query):
     def where(self, where: Combinable) -> Delete:
         self.where_delegate.where(where)
         return self
+
+    def _validate(self):
+        """
+        Don't let a deletion happen unless it has a where clause, or is
+        explicitly forced.
+        """
+        if (not self.where_delegate._where) and (not self.force):
+            raise DeletionError(
+                "Warning - do you really want to delete all the data from "
+                f"{self.table._meta.tablename}? If so, use "
+                "MyTable.delete(force=True), or add a where clause."
+            )
 
     @property
     def querystring(self) -> QueryString:

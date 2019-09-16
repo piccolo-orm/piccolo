@@ -295,11 +295,16 @@ class Table(metaclass=TableMetaclass):
         return Select(table=cls)
 
     @classmethod
-    def delete(cls) -> Delete:
+    def delete(cls, force=False) -> Delete:
         """
+        Delete rows from the table.
+
         await Band.delete().where(Band.name == 'Pythonistas').run()
+
+        Unless 'force' is set to True, deletions aren't allowed without a
+        'where' clause, to prevent accidental mass deletions.
         """
-        return Delete(table=cls)
+        return Delete(table=cls, force=force)
 
     @classmethod
     def create(cls) -> Create:

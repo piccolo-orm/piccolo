@@ -74,7 +74,17 @@ class Query(object):
 
         return raw
 
+    def _validate(self):
+        """
+        Override in any subclasses if validation needs to be run before
+        executing a query - for example, warning a user if they're about to
+        delete all the data from a table.
+        """
+        pass
+
     async def run(self, in_pool=True):
+        self._validate()
+
         engine = getattr(self.table._meta, "db", None)
         if not engine:
             raise ValueError(
