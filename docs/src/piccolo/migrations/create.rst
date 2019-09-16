@@ -1,7 +1,7 @@
 Creating migrations
 ===================
 
-Migrations are used to create the tables in the database.
+Migrations are used to create and modify tables in the database.
 
 .. code-block:: bash
 
@@ -36,6 +36,39 @@ forwards and backwards functions.
 
 .. code-block:: python
 
+    from piccolo.columns import Varchar
+    from piccolo.tables import Table
+
+
+    ID = '2018-09-04T19:44:09'
+
+
+    class Band(Table):
+        name = Varchar(length=100)
+
+
+    async def forwards():
+        transaction = Band._meta.db.transaction()
+
+        transaction.add(
+            Band.create(),
+        )
+
+        await transaction.run()
+
+
+    async def backwards():
+        await Band.alter().drop_table().run()
+
+The golden rule
+~~~~~~~~~~~~~~~
+
+Never import your tables directly into a migration, and run methods on them.
+
+This is a **bad example**:
+
+.. code-block:: python
+
     from ..tables import Band
 
     ID = '2018-09-04T19:44:09'
@@ -45,12 +78,7 @@ forwards and backwards functions.
         transaction = Band._meta.db.transaction()
 
         transaction.add(
-            Band.create_without_columns(),
-
-            Band.alter().add_column(
-                'name',
-                Varchar(length=100)
-            ),
+            Band.create(),
         )
 
         await transaction.run()
@@ -58,6 +86,11 @@ forwards and backwards functions.
 
     async def backwards():
         await Band.alter().drop_table().run()
+
+The reason you don't want to do this, is your tables will change over time. If
+someone runs your migrations in the future, they will get different results.
+Make your migrations completely independent of other code, so they're
+self contained and repeatable.
 
 Running migrations
 ------------------
@@ -83,3 +116,37 @@ This executes the backwards function.
 
 You can try going forwards and backwards a few times to make sure it works as
 expected.
+
+Altering tables
+---------------
+
+To alter tables, you'll use mostly use alter queries (see :ref:`alter`), and
+occassionally raw queries (see :ref:`raw`).
+
+Auto populating migrations
+--------------------------
+
+Instead of manually populating your migrations each time, Piccolo has helpers
+for common use cases.
+
+Creating tables
+~~~~~~~~~~~~~~~
+
+Rather than having to copy in your table definitions manually, you can ask
+Piccolo to do it for you using the ``-c`` flag and passing in the import path
+for the table. Multiple ``-c`` flags can be used.
+
+.. code-block:: bash
+
+    piccolo new -c ..tables.Band -c ..tables.Manager
+
+Piccolo needs to be able to import these files using ``importlib``, so make
+sure the paths are correct.
+
+Piccolo will then add the table definitions the migration.
+
+To create all tables in a particular file, you can use a placeholder:
+
+.. code-block:: bash
+
+    piccolo new -c ..tables.*
