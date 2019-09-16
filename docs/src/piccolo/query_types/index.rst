@@ -12,7 +12,6 @@ focus on `select`, `insert` and `update`.
     ./count
     ./create
     ./delete
-    ./drop
     ./exists
     ./insert
     ./objects

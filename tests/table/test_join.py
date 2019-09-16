@@ -12,7 +12,7 @@ class TestCreateJoin:
             table.create().run_sync()
 
         for table in reversed(TABLES):
-            table.drop().run_sync()
+            table.alter().drop_table().run_sync()
 
 
 class TestJoin(TestCase):
@@ -28,7 +28,7 @@ class TestJoin(TestCase):
 
     def tearDown(self):
         for table in reversed(self.tables):
-            table.drop().run_sync()
+            table.alter().drop_table().run_sync()
 
     def test_join(self):
         manager_1 = Manager(name="Guido")

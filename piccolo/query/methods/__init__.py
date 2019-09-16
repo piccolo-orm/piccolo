@@ -2,7 +2,6 @@ from .alter import Alter
 from .count import Count
 from .create import Create
 from .delete import Delete
-from .drop import Drop
 from .exists import Exists
 from .insert import Insert
 from .objects import Objects

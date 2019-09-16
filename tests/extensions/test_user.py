@@ -15,7 +15,7 @@ class TestCreateUserTable(TestCase):
         except Exception as e:
             exception = e
         else:
-            BaseUser.drop().run_sync()
+            BaseUser.alter().drop_table().run_sync()
 
         if exception:
             raise exception
@@ -33,7 +33,7 @@ class TestLogin(TestCase):
         BaseUser.create().run_sync()
 
     def tearDown(self):
-        BaseUser.drop().run_sync()
+        BaseUser.alter().drop_table().run_sync()
 
     def test_login(self):
         username = "bob"

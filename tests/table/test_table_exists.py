@@ -13,4 +13,4 @@ class TestTableExists(TestCase):
         self.assertTrue(response is True)
 
     def tearDown(self):
-        Manager.drop().run_sync()
+        Manager.alter().drop_table().run_sync()

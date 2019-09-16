@@ -13,7 +13,7 @@ class TestGetRelated(TestCase):
 
     def tearDown(self):
         for table in reversed(TABLES):
-            table.drop().run_sync()
+            table.alter().drop_table().run_sync()
 
     def test_get_related(self):
         """

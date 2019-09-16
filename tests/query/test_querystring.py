@@ -36,7 +36,7 @@ class TestQueryString(TestCase):
 #         Band.create().run_sync()
 
 #     def tearDown():
-#         Band.drop().run_sync()
+#         Band.alter().drop_table().run_sync()
 
 #     def test_raw_query(self):
 #         Band._meta.db.run()

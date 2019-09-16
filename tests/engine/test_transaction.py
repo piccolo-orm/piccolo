@@ -31,5 +31,5 @@ class TestTransaction(TestCase):
         self.assertTrue(Band.table_exists().run_sync())
         self.assertTrue(Manager.table_exists().run_sync())
 
-        transaction.add(Band.drop(), Manager.drop())
+        transaction.add(Band.alter().drop_table(), Manager.alter().drop_table())
         transaction.run_sync()

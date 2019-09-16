@@ -42,7 +42,7 @@ def populate():
     for _table in reversed(TABLES):
         try:
             if _table.table_exists().run_sync():
-                _table.drop().run_sync()
+                _table.alter().drop_table().run_sync()
         except Exception as e:
             print(e)
 

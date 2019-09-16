@@ -57,7 +57,7 @@ forwards and backwards functions.
 
 
     async def backwards():
-        await Band.drop().run()
+        await Band.alter().drop_table().run()
 
 Running migrations
 ------------------

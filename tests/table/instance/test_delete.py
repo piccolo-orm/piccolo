@@ -8,7 +8,7 @@ class TestDelete(TestCase):
         Manager.create().run_sync()
 
     def tearDown(self):
-        Manager.drop().run_sync()
+        Manager.alter().drop_table().run_sync()
 
     def test_delete(self):
         manager = Manager(name="Maz")

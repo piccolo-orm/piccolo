@@ -85,7 +85,8 @@ class Null(AlterStatement):
 
 
 class Alter(Query):
-    __slots__ = ("_add", "_drop", "_rename", "_unique", "_null")
+
+    __slots__ = ("_add", "_drop", "_rename", "_unique", "_null", "_drop_table")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -94,6 +95,7 @@ class Alter(Query):
         self._rename: t.List[Rename] = []
         self._unique: t.List[Unique] = []
         self._null: t.List[Null] = []
+        self._drop_table = False
 
     def add_column(self, name: str, column: Column) -> Alter:
         """
@@ -107,6 +109,13 @@ class Alter(Query):
         Band.alter().drop_column('popularity')
         """
         self._drop.append(Drop(column))
+        return self
+
+    def drop_table(self) -> Alter:
+        """
+        Band.alter().drop_table()
+        """
+        self._drop_table = True
         return self
 
     def rename_column(self, column: Column, new_name: str) -> Alter:
@@ -132,6 +141,9 @@ class Alter(Query):
 
     @property
     def querystring(self) -> QueryString:
+        if self._drop_table:
+            return QueryString(f'DROP TABLE "{self.table._meta.tablename}"')
+
         query = f"ALTER TABLE {self.table._meta.tablename}"
 
         alterations = [

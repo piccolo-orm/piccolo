@@ -10,7 +10,6 @@ from piccolo.query import (
     Create,
     Count,
     Delete,
-    Drop,
     Exists,
     Insert,
     Objects,
@@ -326,15 +325,6 @@ class Table(metaclass=TableMetaclass):
             table=cls,
             base=QueryString(f'CREATE TABLE "{cls._meta.tablename}"()'),
         )
-
-    @classmethod
-    def drop(cls) -> Drop:
-        """
-        Drops the table.
-
-        await Band.drop().run()
-        """
-        return Drop(table=cls)
 
     @classmethod
     def alter(cls) -> Alter:

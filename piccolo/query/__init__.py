@@ -8,7 +8,6 @@ from .methods import (
     Create,
     Update,
     Raw,
-    Drop,
     TableExists,
     Exists,
     Count,

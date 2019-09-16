@@ -9,7 +9,7 @@ class TestSave(TestCase):
         Manager.create().run_sync()
 
     def tearDown(self):
-        Manager.drop().run_sync()
+        Manager.alter().drop_table().run_sync()
 
     def test_save_new(self):
         """

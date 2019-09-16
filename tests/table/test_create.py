@@ -12,4 +12,4 @@ class TestCreate(TestCase):
 
         self.assertEqual(response, 0)
 
-        Manager.drop().run_sync()
+        Manager.alter().drop_table().run_sync()

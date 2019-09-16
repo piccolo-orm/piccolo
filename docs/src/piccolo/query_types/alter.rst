@@ -7,6 +7,7 @@ This is used to modify an existing table.
 
 .. hint:: It is typically used in conjunction with migrations - see :ref:`Migrations`.
 
+
 add_column
 ----------
 
@@ -14,7 +15,8 @@ Used to add a column to an existing table.
 
 .. code-block:: python
 
-    Band.alter().add_column(‘members’, Integer()).run_sync()
+    Band.alter().add_column('members', Integer()).run_sync()
+
 
 drop_column
 -----------
@@ -23,7 +25,18 @@ Used to drop an existing column.
 
 .. code-block:: python
 
-    Band.alter().drop_column('popularity')
+    Band.alter().drop_column('popularity').run_sync()
+
+
+drop_table
+----------
+
+Used to drop the table - use with caution!
+
+.. code-block:: python
+
+    Band.alter().drop_table().run_sync()
+
 
 rename_column
 -------------
@@ -32,7 +45,8 @@ Used to rename an existing column.
 
 .. code-block:: python
 
-    Band.alter().rename_column(Band.popularity, ‘rating’).run_sync()
+    Band.alter().rename_column(Band.popularity, 'rating').run_sync()
+
 
 set_null
 --------
