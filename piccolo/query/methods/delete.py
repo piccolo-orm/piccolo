@@ -31,10 +31,10 @@ class Delete(Query):
         explicitly forced.
         """
         if (not self.where_delegate._where) and (not self.force):
+            classname = self.table.__name__
             raise DeletionError(
-                "Warning - do you really want to delete all the data from "
-                f"{self.table._meta.tablename}? If so, use "
-                "MyTable.delete(force=True), or add a where clause."
+                "Do you really want to delete all the data from "
+                f"{classname}? If so, use {classname}.delete(force=True)."
             )
 
     @property
