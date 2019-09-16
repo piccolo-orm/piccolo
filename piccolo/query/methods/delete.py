@@ -18,7 +18,7 @@ class Delete(Query):
         super().__init__(*args, **kwargs)
         self.force = force
 
-    def setup_delegates(self):
+    def _setup_delegates(self):
         self.where_delegate = WhereDelegate()
 
     def where(self, where: Combinable) -> Delete:

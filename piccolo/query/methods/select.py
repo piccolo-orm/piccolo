@@ -32,7 +32,7 @@ class Select(Query):
         "where_delegate",
     )
 
-    def setup_delegates(self):
+    def _setup_delegates(self):
         self.columns_delegate = ColumnsDelegate()
         self.distinct_delegate = DistinctDelegate()
         self.limit_delegate = LimitDelegate()

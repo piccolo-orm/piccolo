@@ -21,10 +21,10 @@ class Query(object):
     ) -> None:
         self.base = base
         self.table = table
-        self.setup_delegates()
+        self._setup_delegates()
         super().__init__()
 
-    def setup_delegates(self):
+    def _setup_delegates(self):
         pass
 
     @property

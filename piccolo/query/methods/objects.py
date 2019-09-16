@@ -31,7 +31,7 @@ class Objects(Query):
         "where_delegate",
     )
 
-    def setup_delegates(self):
+    def _setup_delegates(self):
         self.limit_delegate = LimitDelegate()
         self.order_by_delegate = OrderByDelegate()
         self.output_delegate = OutputDelegate()

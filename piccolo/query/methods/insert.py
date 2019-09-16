@@ -12,7 +12,7 @@ if t.TYPE_CHECKING:
 class Insert(Query):
     __slots__ = ("add_delegate",)
 
-    def setup_delegates(self):
+    def _setup_delegates(self):
         self.add_delegate = AddDelegate()
 
     def add(self, *instances: Table) -> Insert:
