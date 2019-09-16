@@ -22,7 +22,6 @@ class Query(object):
         self.base = base
         self.table = table
         self._setup_delegates()
-        super().__init__()
 
     def _setup_delegates(self):
         pass

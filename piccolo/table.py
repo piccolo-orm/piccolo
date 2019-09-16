@@ -285,14 +285,14 @@ class Table(metaclass=TableMetaclass):
         return Raw(table=cls, base=QueryString(sql, *args))
 
     @classmethod
-    def select(cls) -> Select:
+    def select(cls, *columns: Column) -> Select:
         """
         Get data in the form of a list of dictionaries, with each dictionary
         representing a row.
 
         await Band.select().columns(Band.name).run()
         """
-        return Select(table=cls)
+        return Select(table=cls, columns=columns)
 
     @classmethod
     def delete(cls, force=False) -> Delete:

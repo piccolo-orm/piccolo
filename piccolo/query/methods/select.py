@@ -32,6 +32,15 @@ class Select(Query):
         "where_delegate",
     )
 
+    def __init__(
+        self,
+        table: t.Type[Table],
+        base: QueryString = QueryString(""),
+        columns: t.List[Column] = [],
+    ):
+        super().__init__(table=table, base=base)
+        self.columns(*columns)
+
     def _setup_delegates(self):
         self.columns_delegate = ColumnsDelegate()
         self.distinct_delegate = DistinctDelegate()

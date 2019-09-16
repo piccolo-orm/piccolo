@@ -24,8 +24,8 @@ class Exists(Query):
     @property
     def querystring(self) -> QueryString:
         select = Select(
-            self.table,
-            QueryString(f"SELECT * FROM {self.table._meta.tablename}"),
+            table=self.table,
+            base=QueryString(f"SELECT * FROM {self.table._meta.tablename}"),
         )
         select.where_delegate._where = self.where_delegate._where
         return QueryString('SELECT EXISTS({}) AS "exists"', select.querystring)

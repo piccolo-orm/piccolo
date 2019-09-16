@@ -72,7 +72,7 @@ class Objects(Query):
 
     @property
     def querystring(self) -> QueryString:
-        select = Select(table=self.table, column_names=[])
+        select = Select(table=self.table)
 
         for attr in (
             "limit_delegate",

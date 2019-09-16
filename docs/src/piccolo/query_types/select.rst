@@ -17,7 +17,7 @@ To get certain rows:
 
 .. code-block:: python
 
-    >>> Band.select().columns(Band.name).run_sync()
+    >>> Band.select(Band.name).run_sync()
     [{'name': 'Rustaceans'}, {'name': 'Pythonistas'}]
 
 Or making an alias to make it shorter:
@@ -25,7 +25,7 @@ Or making an alias to make it shorter:
 .. code-block:: python
 
     >>> b = Band
-    >>> b.select().columns(b.name).run_sync()
+    >>> b.select(b.name).run_sync()
     [{'id': 1, 'name': 'Pythonistas', 'manager': 1, 'popularity': 1000},
      {'id': 2, 'name': 'Rustaceans', 'manager': 2, 'popularity': 500}]
 
@@ -39,7 +39,7 @@ One of the most powerful things about select is it's support for joins.
 .. code-block:: python
 
     b = Band
-    b.select().columns(
+    b.select(
         b.name,
         b.manager.name
     ).run_sync()
@@ -50,7 +50,7 @@ The joins can go several layers deep.
 .. code-block:: python
 
     c = Concert
-    c.select().columns(
+    c.select(
         c.id,
         c.band_1.manager.name
     ).run_sync()
@@ -74,7 +74,8 @@ By default all columns are returned from the queried table.
     # Equivalent to SELECT * from band
     b.select().run_sync()
 
-To restrict the returned columns, used the `columns` method.
+To restrict the returned columns, either pass in the columns into the
+``select`` method, or use the `columns` method.
 
 .. code-block:: python
 
