@@ -39,6 +39,8 @@ class ColumnMeta:
     key: bool = False
     unique: bool = False
 
+    params: t.Dict[str, t.Any] = field(default_factory=dict)
+
     # Set by the Table Metaclass:
     _name: t.Optional[str] = None
     _table: t.Optional[Table] = None
@@ -105,9 +107,15 @@ class Column:
         primary: bool = False,
         key: bool = False,
         unique: bool = False,
+        **kwargs,
     ) -> None:
+        # Used for migrations:
+        kwargs.update(
+            {"null": null, "primary": primary, "key": key, "unique": unique}
+        )
+
         self._meta = ColumnMeta(
-            null=null, primary=primary, key=key, unique=unique
+            null=null, primary=primary, key=key, unique=unique, params=kwargs
         )
 
     def is_in(self, values: Iterable) -> Where:

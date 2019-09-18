@@ -45,7 +45,7 @@ class TableMetaclass(type):
         """
         Returns a basic string representation of the table and its columns.
 
-        Used by the playground.
+        Used by the playground, and migrations.
         """
         spacer = "\n    "
         columns = []

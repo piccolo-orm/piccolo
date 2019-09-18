@@ -144,9 +144,3 @@ Piccolo needs to be able to import these files using ``importlib``, so make
 sure the paths are correct.
 
 Piccolo will then add the table definitions the migration.
-
-To create all tables in a particular file, you can use a placeholder:
-
-.. code-block:: bash
-
-    piccolo new -c ..tables.*

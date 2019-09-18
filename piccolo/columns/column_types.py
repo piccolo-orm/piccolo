@@ -21,12 +21,21 @@ class Varchar(Column):
     ) -> None:
         self.length = length
         self.default = default
+        kwargs.update({"length": length, "default": default})
         super().__init__(**kwargs)
+
+    @property
+    def column_type(self):
+        if self.length:
+            return f"VARCHAR({self.length})"
+        else:
+            return "VARCHAR"
 
 
 class Integer(Column):
     def __init__(self, default: int = None, **kwargs) -> None:
         self.default = default
+        kwargs.update({"default": default})
         super().__init__(**kwargs)
 
 
@@ -68,6 +77,7 @@ class Timestamp(Column):
 
     def __init__(self, default: "Datetime" = None, **kwargs) -> None:
         self.default = default
+        kwargs.update({"default": default})
         super().__init__(**kwargs)
 
 
@@ -77,6 +87,7 @@ class Boolean(Column):
 
     def __init__(self, default: bool = False, **kwargs) -> None:
         self.default = default
+        kwargs.update({"default": default})
         super().__init__(**kwargs)
 
 
@@ -118,6 +129,7 @@ class ForeignKey(Integer):
     column_type = "INTEGER"
 
     def __init__(self, references: t.Type[Table], **kwargs) -> None:
+        kwargs.update({"references": references})
         super().__init__(**kwargs)
         self._foreign_key_meta = ForeignKeyMeta(references=references)
 
