@@ -9,6 +9,16 @@ class MyTable(Table):
 
 
 class TestVarchar(TestCase):
-    def test_length(self):
+    def setUp(self):
         MyTable.create().run_sync()
 
+    def tearDown(self):
+        MyTable.alter().drop_table().run_sync()
+
+    def test_length(self):
+        row = MyTable(name="bob")
+        row.save().run_sync()
+
+        with self.assertRaises(Exception):
+            row.name = "bob123456789"
+            row.save().run_sync()
