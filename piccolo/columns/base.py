@@ -39,6 +39,7 @@ class ColumnMeta:
     key: bool = False
     unique: bool = False
 
+    # Used for representing the table in migrations and the playground.
     params: t.Dict[str, t.Any] = field(default_factory=dict)
 
     # Set by the Table Metaclass:

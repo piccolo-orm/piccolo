@@ -120,7 +120,7 @@ def playground(engine, user, password, database, host, port):
     print("Tables:\n")
 
     for _table in TABLES:
-        print(_table)
+        print(_table._table_str(abbreviated=True))
         print("\n")
 
     populate()

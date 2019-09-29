@@ -1,6 +1,7 @@
 from __future__ import annotations
 import copy
 from dataclasses import dataclass, field
+import inspect
 import typing as t
 
 from piccolo.engine import Engine, engine_finder
@@ -42,24 +43,7 @@ class TableMeta:
 
 class TableMetaclass(type):
     def __str__(cls):
-        """
-        Returns a basic string representation of the table and its columns.
-
-        Used by the playground, and migrations.
-        """
-        spacer = "\n    "
-        columns = []
-        for col in cls._meta.columns:
-            if isinstance(col, ForeignKey):
-                columns.append(
-                    f"{col._meta.name} = ForeignKey({col._foreign_key_meta.references.__name__})"
-                )
-            else:
-                columns.append(
-                    f"{col._meta.name} = {col.__class__.__name__}()"
-                )
-        columns_string = spacer.join(columns)
-        return f"class {cls.__name__}(Table):\n" f"    {columns_string}\n"
+        return cls._table_str()
 
 
 class Table(metaclass=TableMetaclass):
@@ -391,3 +375,47 @@ class Table(metaclass=TableMetaclass):
         ).where(Band.name=="Pythonistas")
         """
         return Update(table=cls)
+
+    ###########################################################################
+
+    @classmethod
+    def _table_str(cls, abbreviated=False):
+        """
+        Returns a basic string representation of the table and its columns.
+
+        Used by the playground, and migrations.
+
+        If abbreviated, we just return a very high level representation.
+        """
+        spacer = "\n    "
+        columns = []
+        for col in cls._meta.columns:
+            params: t.List[str] = []
+            for key, value in col._meta.params.items():
+                _value: str = ""
+                if inspect.isclass(value):
+                    _value = value.__name__
+                    params.append(f"{key}={_value}")
+                else:
+                    _value = repr(value)
+                    if not abbreviated:
+                        params.append(f"{key}={_value}")
+            params_string = ", ".join(params)
+            columns.append(
+                f"{col._meta.name} = {col.__class__.__name__}({params_string})"
+            )
+        columns_string = spacer.join(columns)
+        tablename = repr(cls._meta.tablename)
+
+        parent_class_name = cls.mro()[1].__name__
+
+        class_args = (
+            parent_class_name
+            if abbreviated
+            else f"{parent_class_name}, tablename={tablename}"
+        )
+
+        return (
+            f"class {cls.__name__}({class_args}):\n" f"    {columns_string}\n"
+        )
+
