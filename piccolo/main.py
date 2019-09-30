@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import importlib
 import importlib.util
 import os
 import sys
@@ -12,9 +13,10 @@ from piccolo.commands.playground import playground
 from piccolo.engine import PostgresEngine
 from piccolo.migrations.template import TEMPLATE
 from piccolo.migrations.table import Migration
+from piccolo.table import Table
 
 
-MIGRATIONS_FOLDER = os.path.join(os.getcwd(), 'migrations')
+MIGRATIONS_FOLDER = os.path.join(os.getcwd(), "migrations")
 MIGRATION_MODULES: t.Dict[str, ModuleType] = {}
 
 
@@ -27,8 +29,8 @@ def _create_migrations_folder() -> bool:
         return False
     else:
         os.mkdir(MIGRATIONS_FOLDER)
-        for filename in ('__init__.py', 'config.py'):
-            with open(os.path.join(MIGRATIONS_FOLDER, filename), 'w'):
+        for filename in ("__init__.py", "config.py"):
+            with open(os.path.join(MIGRATIONS_FOLDER, filename), "w"):
                 pass
         return True
 
@@ -37,25 +39,45 @@ def _create_new_migration() -> None:
     """
     Creates a new migration file on disk.
     """
-    _id = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-    path = os.path.join(MIGRATIONS_FOLDER, f'{_id}.py')
-    with open(path, 'w') as f:
+    _id = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    path = os.path.join(MIGRATIONS_FOLDER, f"{_id}.py")
+    with open(path, "w") as f:
         f.write(TEMPLATE.format(migration_id=_id))
 
 
 ###############################################################################
 
+
+@click.option(
+    "-c",
+    "--create",
+    multiple=True,
+    help="Path to a table class which you want to create, e.g. tables.Band",
+)
 @click.command()
-def new():
+def new(create: t.Tuple[str]):
     """
-    Creates a new file like migrations/0001_add_user_table.py
+    Creates a new file like migrations/2018-09-04T19:44:09.py
     """
-    print('Creating new migration ...')
-    _create_migrations_folder()
-    _create_new_migration()
+    print("Creating new migration ...")
+
+    for path in create:
+        module_path, table_name = path.rsplit(".", maxsplit=1)
+        module = importlib.import_module(module_path)
+        try:
+            table_class: Table = getattr(module, table_name)
+        except AttributeError:
+            print(f"Unable to find {path} - aborting")
+            sys.exit(1)
+
+        print(table_class._table_str())
+
+    # _create_migrations_folder()
+    # _create_new_migration()
 
 
 ###############################################################################
+
 
 def _create_migration_table() -> bool:
     """
@@ -74,7 +96,8 @@ def _get_migrations_which_ran() -> t.List[str]:
     database.
     """
     return [
-        i['name'] for i in Migration.select().columns(Migration.name).run_sync()
+        i["name"]
+        for i in Migration.select().columns(Migration.name).run_sync()
     ]
 
 
@@ -82,17 +105,16 @@ def _get_migration_modules() -> None:
     """
     """
     folder_contents = os.listdir(MIGRATIONS_FOLDER)
-    excluded = ('__init__.py', 'config.py', '__pycache__')
+    excluded = ("__init__.py", "config.py", "__pycache__")
     migration_names = [
-        i.split('.py')[0] for i in folder_contents if (
-            (i not in excluded) and
-            (not i.startswith('.'))
-        )
+        i.split(".py")[0]
+        for i in folder_contents
+        if ((i not in excluded) and (not i.startswith(".")))
     ]
     modules = [importlib.import_module(name) for name in migration_names]
     global MIGRATION_MODULES
     for m in modules:
-        _id = getattr(m, 'ID', None)
+        _id = getattr(m, "ID", None)
         if _id:
             MIGRATION_MODULES[_id] = m
 
@@ -107,15 +129,15 @@ def _get_config() -> dict:
     """
     sys.path.insert(0, MIGRATIONS_FOLDER)
 
-    config_file = os.path.join(MIGRATIONS_FOLDER, 'config.py')
+    config_file = os.path.join(MIGRATIONS_FOLDER, "config.py")
     if not os.path.exists(config_file):
         raise Exception(f"Can't find config.py in {MIGRATIONS_FOLDER}")
 
-    config = importlib.import_module('config')
+    config = importlib.import_module("config")
 
-    db = getattr(config, 'DB', None)
+    db = getattr(config, "DB", None)
     if not db:
-        raise Exception('config.py is missing a DB dictionary.')
+        raise Exception("config.py is missing a DB dictionary.")
     return db
 
 
@@ -125,7 +147,7 @@ def forwards():
     Runs any migrations which haven't been run yet, or up to a specific
     migration.
     """
-    print('Running migrations ...')
+    print("Running migrations ...")
     sys.path.insert(0, os.getcwd())
 
     Migration._meta.db = PostgresEngine(_get_config())
@@ -133,28 +155,24 @@ def forwards():
     _create_migration_table()
 
     already_ran = _get_migrations_which_ran()
-    print(f'Already ran = {already_ran}')
+    print(f"Already ran = {already_ran}")
 
-    # TODO - stop using globals ...
     _get_migration_modules()
     ids = _get_migration_ids()
-    print(f'Migration ids = {ids}')
+    print(f"Migration ids = {ids}")
 
-    for _id in (set(ids) - set(already_ran)):
-        asyncio.run(
-            MIGRATION_MODULES[_id].forwards()
-        )
+    for _id in set(ids) - set(already_ran):
+        asyncio.run(MIGRATION_MODULES[_id].forwards())
 
-        print(f'Ran {_id}')
-        Migration.insert().add(
-            Migration(name=_id)
-        ).run_sync()
+        print(f"Ran {_id}")
+        Migration.insert().add(Migration(name=_id)).run_sync()
 
 
 ###############################################################################
 
+
 @click.command()
-@click.argument('migration_name')
+@click.argument("migration_name")
 def backwards(migration_name: str):
     """
     Undo migrations up to a specific migrations.
@@ -176,14 +194,14 @@ def backwards(migration_name: str):
     migration_ids = _get_migration_ids()
 
     if migration_name not in migration_ids:
-        print(f'Unrecognized migration name - must be one of {migration_ids}')
+        print(f"Unrecognized migration name - must be one of {migration_ids}")
 
-    _continue = input('About to undo the migrations - press y to continue.')
-    if _continue == 'y':
-        print('Undoing migrations')
+    _continue = input("About to undo the migrations - press y to continue.")
+    if _continue == "y":
+        print("Undoing migrations")
 
         _sorted = sorted(list(MIGRATION_MODULES.keys()))
-        _sorted = _sorted[_sorted.index(migration_name):]
+        _sorted = _sorted[_sorted.index(migration_name) :]
         _sorted.reverse()
 
         already_ran = _get_migrations_which_ran()
@@ -194,20 +212,17 @@ def backwards(migration_name: str):
                 sys.exit(1)
 
             print(migration_name)
-            asyncio.run(
-                MIGRATION_MODULES[s].backwards()  # type: ignore
-            )
+            asyncio.run(MIGRATION_MODULES[s].backwards())  # type: ignore
 
-            Migration.delete().where(
-                Migration.name == s
-            ).run_sync()
+            Migration.delete().where(Migration.name == s).run_sync()
     else:
-        print('Not proceeding.')
+        print("Not proceeding.")
 
 
 ###############################################################################
 
-@click.group('migration')
+
+@click.group("migration")
 def cli():
     pass
 
@@ -225,5 +240,5 @@ def main():
 ###############################################################################
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

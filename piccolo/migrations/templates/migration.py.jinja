@@ -1,0 +1,42 @@
+from piccolo.engine import engine_finder
+from piccolo.table import Table
+
+
+ID = '{{ migration_id }}'
+
+
+ENGINE = engine_finder()
+
+
+{% for table in dependent_tables %}
+{{ table._table_str }}
+{% endfor %}
+
+
+{% for table in tables %}
+{{ table._table_str }}
+{% endfor %}
+
+
+async def forwards():
+    transaction = ENGINE.transaction()
+
+    transaction.add(
+        {% for table in tables %}
+        {{ table.__name__ }}.create(),
+        {% endfor %}
+    )
+
+    await transaction.run()
+
+
+async def backwards():
+    transaction = ENGINE.transaction()
+
+    transaction.add(
+        {% for table in tables %}
+        {{ table.__name__ }}.alter().drop_table(),
+        {% endfor %}
+    )
+
+    await transaction.run()

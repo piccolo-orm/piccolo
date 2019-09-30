@@ -1,0 +1,31 @@
+from piccolo.engine import engine_finder
+from piccolo.table import Table
+
+
+ID = '{{ migration_id }}'
+
+
+ENGINE = engine_finder()
+
+
+async def forwards():
+    transaction = ENGINE.transaction()
+
+    transaction.add(
+        {% for table in tables %}
+        {{ table.__name__ }}.create(),
+        {% endfor %}
+    )
+
+    await transaction.run()
+
+
+async def backwards():
+    transaction = ENGINE.transaction()
+
+    transaction.add(
+        # Insert changes here, for example:
+        # MyTable.alter().rename_column()
+    )
+
+    await transaction.run()
