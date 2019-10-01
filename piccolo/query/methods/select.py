@@ -36,7 +36,7 @@ class Select(Query):
         self,
         table: t.Type[Table],
         base: QueryString = QueryString(""),
-        columns: t.List[Column] = [],
+        columns: t.Iterable[Column] = [],
     ):
         super().__init__(table=table, base=base)
         self.columns(*columns)

@@ -106,7 +106,7 @@ class Alter(Query):
 
     def drop_column(self, column: Column) -> Alter:
         """
-        Band.alter().drop_column('popularity')
+        Band.alter().drop_column(Band.popularity)
         """
         self._drop.append(Drop(column))
         return self
