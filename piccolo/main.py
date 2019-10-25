@@ -1,7 +1,9 @@
 import click
 
 from piccolo.commands.playground import playground
-from piccolo.commands.migration import new, forwards, backwards
+from piccolo.commands.migration.new import new
+from piccolo.commands.migration.backwards import backwards
+from piccolo.commands.migration.forwards import forwards
 
 
 @click.group("migration")
