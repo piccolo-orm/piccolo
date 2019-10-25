@@ -9,7 +9,6 @@ from types import ModuleType
 
 import click
 
-from piccolo.commands.playground import playground
 from piccolo.engine import PostgresEngine
 from piccolo.migrations.template import TEMPLATE
 from piccolo.migrations.table import Migration
@@ -96,7 +95,8 @@ def _get_migrations_which_ran() -> t.List[str]:
     database.
     """
     return [
-        i["name"] for i in Migration.select().columns(Migration.name).run_sync()
+        i["name"]
+        for i in Migration.select().columns(Migration.name).run_sync()
     ]
 
 
