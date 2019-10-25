@@ -184,7 +184,7 @@ class Column:
         if self._meta.unique:
             query += " UNIQUE"
 
-        foreign_key_meta = getattr(self, "foreign_key_meta", None)
+        foreign_key_meta = getattr(self, "_foreign_key_meta", None)
         if foreign_key_meta:
             references = foreign_key_meta.references
             query += f" REFERENCES {references._meta.tablename}"
