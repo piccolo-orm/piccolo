@@ -5,7 +5,7 @@ Migrations are used to create and modify tables in the database.
 
 .. code-block:: bash
 
-    piccolo new
+    piccolo migration new
 
 This creates a migrations folder, along with a migration file.
 
@@ -99,7 +99,7 @@ When the migration is run, the forwards function is executed. To do this:
 
 .. code-block:: bash
 
-    piccolo forwards
+    piccolo migration forwards
 
 Inspect your database, and a ``band`` table should now exist.
 
@@ -110,7 +110,7 @@ To reverse the migration, run this:
 
 .. code-block:: bash
 
-    piccolo backwards 2018-09-04T19:44:09
+    piccolo migration backwards 2018-09-04T19:44:09
 
 This executes the backwards function.
 
@@ -138,7 +138,7 @@ for the table. Multiple ``-c`` flags can be used.
 
 .. code-block:: bash
 
-    piccolo new -c ..tables.Band -c ..tables.Manager
+    piccolo migration new -c ..tables.Band -c ..tables.Manager
 
 Piccolo needs to be able to import these files using ``importlib``, so make
 sure the paths are correct.
