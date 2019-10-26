@@ -6,14 +6,20 @@ from piccolo.commands.migration.backwards import backwards
 from piccolo.commands.migration.forwards import forwards
 
 
-@click.group("migration")
+@click.group()
 def cli():
     pass
 
 
-cli.add_command(new)
-cli.add_command(forwards)
-cli.add_command(backwards)
+@cli.group("migration")
+def migration():
+    pass
+
+
+migration.add_command(new)
+migration.add_command(forwards)
+migration.add_command(backwards)
+
 cli.add_command(playground)
 
 
