@@ -42,3 +42,5 @@ await Band.update().values({Band.members: 5}).where(
     Band.name == 'Pythonistas'
 ).run()
 ```
+
+[Get started](https://piccolo-orm.readthedocs.io/en/latest/piccolo/getting_started/index.html).
