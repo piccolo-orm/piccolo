@@ -6,8 +6,41 @@
 
 [![Documentation Status](https://readthedocs.org/projects/piccolo-orm/badge/?version=latest)](https://piccolo-orm.readthedocs.io/en/latest/?badge=latest)
 
-A fast, user friendly ORM and query builder which supports asyncio.
+A fast, user friendly ORM and query builder which supports asyncio. [Read the docs](https://piccolo-orm.readthedocs.io/en/latest/).
 
-Not production ready yet, but progressing quickly.
+Some of it’s stand out features are:
 
-[Read the docs](https://piccolo-orm.readthedocs.io/en/latest/).
+ * Support for sync and async.
+ * A builtin playground, which makes learning a breeze.
+ * Tab completion support - works great with iPython and VSCode.
+ * Batteries included - a User model, authentication, migrations, an admin, and more.
+ * Modern Python - fully type annotated.
+
+The syntax is clean and expressive.
+
+```python
+# Select:
+await Band.select().columns(
+    Band.name
+).where(
+    Band.popularity > 100
+).run()
+
+# Join:
+await Band.select().columns(
+    Band.name,
+    Band.manager.name
+).run()
+
+# Delete:
+await Band.delete().where(
+    (Band.band_members == 0) | (Band.manager.status == 'disabled')
+).run()
+
+# Update:
+await Band.update().values({Band.members: 5}).where(
+    Band.name == 'Pythonistas'
+).run()
+```
+
+[Get started](https://piccolo-orm.readthedocs.io/en/latest/piccolo/getting_started/index.html).

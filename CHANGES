@@ -1,3 +1,7 @@
+0.5.2
+=====
+Moved drop table under alter - to help prevent accidental drops.
+
 0.5.1
 =====
 Added 'batch' support.

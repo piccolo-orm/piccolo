@@ -85,7 +85,10 @@ class Table(metaclass=TableMetaclass):
         db = db if db else engine_finder()
 
         cls._meta = TableMeta(
-            tablename=tablename, columns=columns, non_default_columns=[], db=db
+            tablename=tablename,
+            columns=columns,
+            non_default_columns=non_default_columns,
+            db=db
         )
 
     def __init__(self, **kwargs):
