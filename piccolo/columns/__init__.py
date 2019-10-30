@@ -4,6 +4,7 @@ from .column_types import (  # noqa
     Serial,
     PrimaryKey,
     Timestamp,
+    Text,
     Boolean,
     ForeignKey
 )
