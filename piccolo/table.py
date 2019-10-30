@@ -104,7 +104,7 @@ class Table(metaclass=TableMetaclass):
             tablename=tablename,
             columns=columns,
             non_default_columns=non_default_columns,
-            db=db
+            db=db,
         )
 
     def __init__(self, **kwargs):
@@ -114,16 +114,15 @@ class Table(metaclass=TableMetaclass):
         for column in self._meta.columns:
             value = kwargs.pop(column._meta.name, None)
             if not value:
-                if column.default:
+                default = getattr(column, "default", None)
+                if default != None:
                     # Can't use inspect - can't tell that datetime.datetime.now
                     # is a callable.
-                    is_callable = hasattr(column.default, "__call__")
-                    value = column.default() if is_callable else column.default
+                    is_callable = hasattr(default, "__call__")
+                    value = default() if is_callable else default
                 else:
                     if not column._meta.null:
-                        raise ValueError(
-                            f"{column._meta.name} wasn't provided"
-                        )
+                        raise ValueError(f"{column._meta.name} wasn't provided")
             self[column._meta.name] = value
 
         unrecognized = kwargs.keys()
@@ -183,9 +182,7 @@ class Table(metaclass=TableMetaclass):
         if isinstance(foreign_key, ForeignKey):
             column_name = foreign_key._meta.name
 
-            references: t.Type[
-                Table
-            ] = foreign_key._foreign_key_meta.references
+            references: t.Type[Table] = foreign_key._foreign_key_meta.references
 
             return (
                 references.objects()
