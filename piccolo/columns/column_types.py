@@ -13,6 +13,9 @@ if t.TYPE_CHECKING:
 
 
 class Varchar(Column):
+    """
+    Used for text when you want to import character length limits.
+    """
 
     value_type = str
 
@@ -20,6 +23,18 @@ class Varchar(Column):
         self, length: int = 255, default: str = None, **kwargs
     ) -> None:
         self.length = length
+        self.default = default
+        super().__init__(**kwargs)
+
+
+class Text(Column):
+    """
+    Used for text when you don't want any character length limits.
+    """
+
+    foreign_key = str
+
+    def __init__(self, default: str = None, **kwargs) -> None:
         self.default = default
         super().__init__(**kwargs)
 
