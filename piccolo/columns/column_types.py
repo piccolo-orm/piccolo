@@ -32,7 +32,7 @@ class Text(Column):
     Used for text when you don't want any character length limits.
     """
 
-    foreign_key = str
+    value_type = str
 
     def __init__(self, default: str = None, **kwargs) -> None:
         self.default = default
