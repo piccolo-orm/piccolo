@@ -89,9 +89,12 @@ class Table(metaclass=TableMetaclass):
             attribute = getattr(cls, attribute_name)
             if isinstance(attribute, Column):
                 column = attribute
-                columns.append(column)
 
-                if not isinstance(column, PrimaryKey):
+                if isinstance(column, PrimaryKey):
+                    # We want it at the start.
+                    columns = [column] + columns
+                else:
+                    columns.append(column)
                     non_default_columns.append(column)
 
                 column._meta._name = attribute_name
@@ -122,7 +125,9 @@ class Table(metaclass=TableMetaclass):
                     value = default() if is_callable else default
                 else:
                     if not column._meta.null:
-                        raise ValueError(f"{column._meta.name} wasn't provided")
+                        raise ValueError(
+                            f"{column._meta.name} wasn't provided"
+                        )
             self[column._meta.name] = value
 
         unrecognized = kwargs.keys()
@@ -182,7 +187,9 @@ class Table(metaclass=TableMetaclass):
         if isinstance(foreign_key, ForeignKey):
             column_name = foreign_key._meta.name
 
-            references: t.Type[Table] = foreign_key._foreign_key_meta.references
+            references: t.Type[
+                Table
+            ] = foreign_key._foreign_key_meta.references
 
             return (
                 references.objects()
