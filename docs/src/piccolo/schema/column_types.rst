@@ -33,10 +33,22 @@ Whether the column is nullable.
 Varchar
 -------
 
+Use when you want to impose a limit to string size.
+
 .. code-block:: python
 
     class Band(Table):
-        name = Varchar()
+        name = Varchar(length=100)
+
+Text
+----
+
+Use when you want to don't want to limit string size.
+
+.. code-block:: python
+
+    class Band(Table):
+        name = Text()
 
 ForeignKey
 ----------
