@@ -1,44 +1,21 @@
 import asyncio
-import importlib
-import importlib.util
 import os
 import sys
-import typing as t
-from types import ModuleType
 
 import click
 
 from piccolo.migrations.table import Migration
+from piccolo.commands.migration.utils import (
+    get_migration_modules,
+    get_migration_ids,
+    ModuleDict,
+)
 
 
 class ForwardsMigrationManager:
-    def __init__(self, migration_name: str):
+    def __init__(self):
         self.migrations_folder = os.path.join(os.getcwd(), "migrations")
-        self.migration_modules: t.Dict[str, ModuleType] = {}
-        self.migration_name = migration_name
-
-    def modify_path(self):
-        sys.path.insert(0, self.migrations_folder)
-
-    def _get_migration_ids(self) -> t.List[str]:
-        return list(self.migration_modules.keys())
-
-    def _get_migration_modules(self) -> None:
-        """
-        Import the migration modules and store them in a dictionary.
-        """
-        folder_contents = os.listdir(self.migrations_folder)
-        excluded = ("__init__.py", "__pycache__")
-        migration_names = [
-            i.split(".py")[0]
-            for i in folder_contents
-            if ((i not in excluded) and (not i.startswith(".")))
-        ]
-        modules = [importlib.import_module(name) for name in migration_names]
-        for m in modules:
-            _id = getattr(m, "ID", None)
-            if _id:
-                self.migration_modules[_id] = m
+        self.migration_modules: ModuleDict = {}
 
     def _create_migration_table(self) -> bool:
         """
@@ -59,8 +36,10 @@ class ForwardsMigrationManager:
         already_ran = Migration.get_migrations_which_ran()
         print(f"Already ran = {already_ran}")
 
-        self._get_migration_modules()
-        ids = self._get_migration_ids()
+        self.migration_modules = get_migration_modules(
+            self.migrations_folder, recursive=True
+        )
+        ids = get_migration_ids(self.migration_modules)
         print(f"Migration ids = {ids}")
 
         for _id in set(ids) - set(already_ran):

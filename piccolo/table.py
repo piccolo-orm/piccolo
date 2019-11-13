@@ -32,7 +32,13 @@ class TableMeta:
     tablename: str = ""
     columns: t.List[Column] = field(default_factory=list)
     non_default_columns: t.List[Column] = field(default_factory=list)
-    db: t.Optional[Engine] = engine_finder()
+    _db: t.Optional[Engine] = None
+
+    @property
+    def db(self) -> t.Optional[Engine]:
+        if not self._db:
+            self._db = engine_finder()
+        return self._db
 
     def get_column_by_name(self, name: str) -> Column:
         column = [i for i in self.columns if i._meta.name == name]
@@ -85,13 +91,11 @@ class Table(metaclass=TableMetaclass):
                 # Mypy wrongly thinks cls is a Table instance:
                 column._meta._table = cls  # type: ignore
 
-        db = db if db else engine_finder()
-
         cls._meta = TableMeta(
             tablename=tablename,
             columns=columns,
             non_default_columns=non_default_columns,
-            db=db,
+            _db=db,
         )
 
     def __init__(self, **kwargs):
