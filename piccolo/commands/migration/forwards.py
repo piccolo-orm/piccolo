@@ -42,11 +42,15 @@ class ForwardsMigrationManager:
         ids = get_migration_ids(self.migration_modules)
         print(f"Migration ids = {ids}")
 
-        for _id in set(ids) - set(already_ran):
-            asyncio.run(self.migration_modules[_id].forwards())
+        havent_run = sorted(set(ids) - set(already_ran))
+        for _id in havent_run:
+            migration_module = self.migration_modules[_id]
+            asyncio.run(migration_module.forwards())
 
             print(f"Ran {_id}")
-            Migration.insert().add(Migration(name=_id)).run_sync()
+            Migration.insert().add(
+                Migration(name=_id, app_name=migration_module.app_name)
+            ).run_sync()
 
 
 @click.command()

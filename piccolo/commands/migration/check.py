@@ -17,8 +17,6 @@ def check():
     """
     print("Listing migrations ...")
 
-    sys.path.insert(0, MIGRATIONS_FOLDER)
-
     migration_modules = get_migration_modules(
         MIGRATIONS_FOLDER, recursive=True
     )

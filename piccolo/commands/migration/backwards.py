@@ -36,22 +36,27 @@ class BackwardsMigrationManager:
             print("Undoing migrations")
 
             _sorted = sorted(list(self.migration_modules.keys()))
-            _sorted = _sorted[_sorted.index(self.migration_name)]
+            _sorted = _sorted[_sorted.index(self.migration_name) :]
             _sorted.reverse()
 
             already_ran = Migration.get_migrations_which_ran()
 
-            for s in _sorted:
-                if s not in already_ran:
-                    print(f"Migration {s} hasn't run yet, can't undo!")
+            for migration_name in _sorted:
+                if migration_name not in already_ran:
+                    print(
+                        f"Migration {migration_name} hasn't run yet, can't "
+                        "undo!"
+                    )
                     sys.exit(1)
 
-                print(self.migration_name)
+                print(f"Reversing {migration_name}")
                 asyncio.run(
-                    self.migration_modules[s].backwards()
+                    self.migration_modules[migration_name].backwards()
                 )  # type: ignore
 
-                Migration.delete().where(Migration.name == s).run_sync()
+                Migration.delete().where(
+                    Migration.name == migration_name
+                ).run_sync()
         else:
             print("Not proceeding.")
 

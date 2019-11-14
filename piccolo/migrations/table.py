@@ -7,6 +7,7 @@ from ..columns import Varchar, Timestamp
 
 class Migration(Table):
     name = Varchar(length=200)
+    app_name = Varchar(length=200)
     ran_on = Timestamp(default=datetime.datetime.now)
 
     @classmethod
