@@ -7,7 +7,7 @@ Inherit from ``BaseUser`` to create your own User table.
 
 .. code-block:: python
 
-    from piccolo.extensions.user import BaseUser
+    from piccolo.extensions.user.tables import BaseUser
 
 
     class User(BaseUser, tablename="custom_user"):
