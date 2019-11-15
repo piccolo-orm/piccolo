@@ -61,7 +61,6 @@ def new(create: t.Tuple[str], path: str):
     Creates a new file like migrations/2018-09-04T19:44:09.py
     """
     print("Creating new migration ...")
-    breakpoint()
 
     root_dir = path if path else os.getcwd()
     migrations_path = os.path.join(root_dir, "migrations")
