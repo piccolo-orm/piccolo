@@ -1,3 +1,7 @@
+0.6.0
+=====
+Moved BaseUser. Migration refactor.
+
 0.5.2
 =====
 Moved drop table under alter - to help prevent accidental drops.
