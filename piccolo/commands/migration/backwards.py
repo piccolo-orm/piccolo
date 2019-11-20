@@ -1,28 +1,31 @@
 import asyncio
 import os
 import sys
-import typing as t
-from types import ModuleType
 
 import click
 
 from piccolo.migrations.table import Migration
-from piccolo.commands.migration.utils import (
-    get_migration_modules,
-    get_migration_ids,
-)
+from .base import BaseMigrationManager
 
 
-class BackwardsMigrationManager:
-    def __init__(self, migration_name: str):
-        self.migrations_folder = os.path.join(os.getcwd(), "migrations")
-        self.migration_modules: t.Dict[str, ModuleType] = {}
+class BackwardsMigrationManager(BaseMigrationManager):
+    def __init__(self, app_name: str, migration_name: str):
         self.migration_name = migration_name
+        self.app_name = app_name
 
     def run(self):
-        self.migration_modules = get_migration_modules(self.migrations_folder)
+        config_modules = self.get_config_modules()
 
-        migration_ids = get_migration_ids(self.migration_modules)
+        migration_modules = []
+
+        for config_module in config_modules:
+            if self.get_app_name(config_module) == self.app_name:
+                migration_modules = self.get_migration_modules(
+                    os.path.dirname(config_module.__file__)
+                )
+                break
+
+        migration_ids = self.get_migration_ids(migration_modules)
 
         if self.migration_name not in migration_ids:
             print(
@@ -35,13 +38,14 @@ class BackwardsMigrationManager:
         if _continue == "y":
             print("Undoing migrations")
 
-            _sorted = sorted(list(self.migration_modules.keys()))
-            _sorted = _sorted[_sorted.index(self.migration_name) :]
-            _sorted.reverse()
+            _sorted_migration_ids = migration_ids[
+                migration_ids.index(self.migration_name) :
+            ]
+            _sorted_migration_ids.reverse()
 
             already_ran = Migration.get_migrations_which_ran()
 
-            for migration_name in _sorted:
+            for migration_name in _sorted_migration_ids:
                 if migration_name not in already_ran:
                     print(
                         f"Migration {migration_name} hasn't run yet, can't "
@@ -51,7 +55,7 @@ class BackwardsMigrationManager:
 
                 print(f"Reversing {migration_name}")
                 asyncio.run(
-                    self.migration_modules[migration_name].backwards()
+                    migration_modules[migration_name].backwards()
                 )  # type: ignore
 
                 Migration.delete().where(
@@ -62,8 +66,9 @@ class BackwardsMigrationManager:
 
 
 @click.command()
+@click.argument("app_name")
 @click.argument("migration_name")
-def backwards(migration_name: str):
+def backwards(migration_name: str, app_name: str):
     """
     Undo migrations up to a specific migrations.
 
@@ -72,5 +77,7 @@ def backwards(migration_name: str):
     - ask for confirmation
     - apply the undo operations one by one
     """
-    manager = BackwardsMigrationManager(migration_name=migration_name)
+    manager = BackwardsMigrationManager(
+        app_name=app_name, migration_name=migration_name
+    )
     manager.run()
