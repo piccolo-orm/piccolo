@@ -17,8 +17,6 @@ def check():
     """
     print("Listing migrations ...")
 
-    migration_modules = get_migration_modules(
-        MIGRATIONS_FOLDER, recursive=True
-    )
+    migration_modules = get_migration_modules(MIGRATIONS_FOLDER)
 
     pprint.pprint(list(migration_modules.keys()), indent=4)

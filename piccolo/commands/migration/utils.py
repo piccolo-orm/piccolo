@@ -10,7 +10,7 @@ ModuleDict = t.Dict[str, ModuleType]
 
 
 def get_migration_modules(
-    folder_path: str, recursive=False, migration_modules: ModuleDict = {}
+    folder_path: str, migration_modules: ModuleDict = {}
 ) -> ModuleDict:
     """
     Import the migration modules and store them in a dictionary.
@@ -30,39 +30,11 @@ def get_migration_modules(
         if ((i not in excluded) and (not i.startswith(".")))
     ]
 
-    app_name = ""
-    if "config.py" in folder_contents:
-        if "config" in sys.modules:
-            del sys.modules["config"]
-        config_module = importlib.import_module("config")
-        app_name = getattr(config_module, "NAME", "")
-
     modules = [importlib.import_module(name) for name in migration_names]
     for m in modules:
         _id = getattr(m, "ID", None)
         if _id:
-            m.app_name = app_name
             migration_modules[_id] = m
-
-    if recursive:
-        dependencies: t.Optional[t.Sequence[str]] = getattr(
-            config_module, "DEPENDENCIES", None
-        )
-        if dependencies:
-            for dependency_name in dependencies:
-                # if dependency_name in sys.modules:
-                #     del sys.modules[dependency_name]
-                try:
-                    config_module = importlib.import_module(dependency_name)
-                except ModuleNotFoundError as e:
-                    print(f"Can't import {dependency_name}")
-                    raise (e)
-                else:
-                    migration_modules = get_migration_modules(
-                        folder_path=os.path.dirname(config_module.__file__),
-                        recursive=True,
-                        migration_modules=migration_modules,
-                    )
 
     return migration_modules
 
