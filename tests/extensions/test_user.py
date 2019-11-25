@@ -11,7 +11,7 @@ class TestCreateUserTable(TestCase):
         """
         exception = None
         try:
-            BaseUser.create().run_sync()
+            BaseUser.create_table().run_sync()
         except Exception as e:
             exception = e
         else:
@@ -30,7 +30,7 @@ class TestHashPassword(TestCase):
 
 class TestLogin(TestCase):
     def setUp(self):
-        BaseUser.create().run_sync()
+        BaseUser.create_table().run_sync()
 
     def tearDown(self):
         BaseUser.alter().drop_table().run_sync()

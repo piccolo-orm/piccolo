@@ -23,7 +23,7 @@ async def forwards():
 
     transaction.add(
         {% for table in tables %}
-        {{ table.__name__ }}.create(),
+        {{ table.__name__ }}.create_table(),
         {% endfor %}
     )
 

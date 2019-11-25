@@ -51,7 +51,7 @@ forwards and backwards functions.
         transaction = Band._meta.db.transaction()
 
         transaction.add(
-            Band.create(),
+            Band.create_table(),
         )
 
         await transaction.run()
@@ -78,7 +78,7 @@ This is a **bad example**:
         transaction = Band._meta.db.transaction()
 
         transaction.add(
-            Band.create(),
+            Band.create_table(),
         )
 
         await transaction.run()

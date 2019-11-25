@@ -9,7 +9,7 @@ TABLES = [Manager, Band]
 class TestGetRelated(TestCase):
     def setUp(self):
         for table in TABLES:
-            table.create().run_sync()
+            table.create_table().run_sync()
 
     def tearDown(self):
         for table in reversed(TABLES):

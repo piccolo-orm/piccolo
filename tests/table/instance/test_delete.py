@@ -5,7 +5,7 @@ from tests.example_project.tables import Manager
 
 class TestDelete(TestCase):
     def setUp(self):
-        Manager.create().run_sync()
+        Manager.create_table().run_sync()
 
     def tearDown(self):
         Manager.alter().drop_table().run_sync()

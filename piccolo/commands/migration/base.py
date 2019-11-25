@@ -18,7 +18,7 @@ class BaseMigrationManager:
         depending on whether it was created or not.
         """
         if not Migration.table_exists().run_sync():
-            Migration.create().run_sync()
+            Migration.create_table().run_sync()
             return True
         return False
 

@@ -9,7 +9,7 @@ TABLES = [Manager, Band, Venue, Concert]
 class TestCreateJoin:
     def test_create_join(self):
         for table in TABLES:
-            table.create().run_sync()
+            table.create_table().run_sync()
 
         for table in reversed(TABLES):
             table.alter().drop_table().run_sync()
@@ -24,7 +24,7 @@ class TestJoin(TestCase):
 
     def setUp(self):
         for table in self.tables:
-            table.create().run_sync()
+            table.create_table().run_sync()
 
     def tearDown(self):
         for table in reversed(self.tables):

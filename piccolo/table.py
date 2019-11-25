@@ -113,9 +113,7 @@ class Table(metaclass=TableMetaclass):
                     value = default() if is_callable else default
                 else:
                     if not column._meta.null:
-                        raise ValueError(
-                            f"{column._meta.name} wasn't provided"
-                        )
+                        raise ValueError(f"{column._meta.name} wasn't provided")
             self[column._meta.name] = value
 
         unrecognized = kwargs.keys()
@@ -173,9 +171,7 @@ class Table(metaclass=TableMetaclass):
         if isinstance(foreign_key, ForeignKey):
             column_name = foreign_key._meta.name
 
-            references: t.Type[
-                Table
-            ] = foreign_key._foreign_key_meta.references
+            references: t.Type[Table] = foreign_key._foreign_key_meta.references
 
             return (
                 references.objects()
@@ -299,20 +295,20 @@ class Table(metaclass=TableMetaclass):
         return Delete(table=cls, force=force)
 
     @classmethod
-    def create(cls) -> Create:
+    def create_table(cls) -> Create:
         """
         Create table, along with all columns.
 
-        await Band.create().run()
+        await Band.create_table().run()
         """
         return Create(table=cls)
 
     @classmethod
-    def create_without_columns(cls) -> Raw:
+    def create_table_without_columns(cls) -> Raw:
         """
         Create the table, but with no columns (useful for migrations).
 
-        await Band.create_without_columns().run()
+        await Band.create_table_without_columns().run()
         """
         return Raw(
             table=cls,

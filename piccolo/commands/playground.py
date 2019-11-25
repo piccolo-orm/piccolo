@@ -48,7 +48,7 @@ def populate():
 
     for _table in TABLES:
         try:
-            _table.create().run_sync()
+            _table.create_table().run_sync()
         except Exception as e:
             print(e)
 

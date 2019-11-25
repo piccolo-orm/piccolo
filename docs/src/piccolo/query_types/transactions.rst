@@ -14,6 +14,6 @@ Usage
 .. code-block:: python
 
     transaction = Band._meta.db.transaction()
-    transaction.add(Manager.create())
-    transaction.add(Concert.create())
+    transaction.add(Manager.create_table())
+    transaction.add(Concert.create_table())
     await transaction.run()

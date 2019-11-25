@@ -14,7 +14,7 @@ class BaseUser(Table, tablename="piccolo_user"):
 
 
 async def forwards():
-    await BaseUser.create().run()
+    await BaseUser.create_table().run()
 
 
 async def backwards():

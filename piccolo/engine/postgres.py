@@ -70,7 +70,7 @@ class Transaction:
     Usage:
 
     transaction = engine.Transaction()
-    transaction.add(Foo.create())
+    transaction.add(Foo.create_table())
     transaction.run_sync()
     """
 

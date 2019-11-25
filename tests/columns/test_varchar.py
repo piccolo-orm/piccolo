@@ -10,7 +10,7 @@ class MyTable(Table):
 
 class TestVarchar(TestCase):
     def setUp(self):
-        MyTable.create().run_sync()
+        MyTable.create_table().run_sync()
 
     def tearDown(self):
         MyTable.alter().drop_table().run_sync()

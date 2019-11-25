@@ -33,7 +33,7 @@ class TestQueryString(TestCase):
 # class TestExecuteQueryString(TestCase):
 
 #     def setUp():
-#         Band.create().run_sync()
+#         Band.create_table().run_sync()
 
 #     def tearDown():
 #         Band.alter().drop_table().run_sync()

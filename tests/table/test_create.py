@@ -4,7 +4,7 @@ from ..example_project.tables import Manager
 
 class TestCreate(TestCase):
     def test_create_table(self):
-        Manager.create().run_sync()
+        Manager.create_table().run_sync()
 
         # Just do a count to make sure the table was created ok.
         count_query = Manager.count()
