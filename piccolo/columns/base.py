@@ -1,4 +1,5 @@
 from __future__ import annotations
+from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field
 import typing as t
 
@@ -98,7 +99,18 @@ class ColumnMeta:
             return f'{alias} AS "{column_name}"'
 
 
-class Column:
+class Selectable(metaclass=ABCMeta):
+    @abstractmethod
+    def get_select_string(self, engine_type: str, just_alias=False) -> str:
+        """
+        In a query, what to output after the select statement - could be a
+        column name, a sub query, a function etc. For a column it will be the
+        column name.
+        """
+        pass
+
+
+class Column(Selectable):
 
     value_type: t.Type = int
 
@@ -167,6 +179,9 @@ class Column:
 
     def __hash__(self):
         return hash(self._meta.name)
+
+    def get_select_string(self, engine_type: str, just_alias=False) -> str:
+        return self._meta.get_full_name(just_alias=just_alias)
 
     @property
     def querystring(self) -> QueryString:

@@ -5,7 +5,8 @@ import inspect
 import typing as t
 
 from piccolo.engine import Engine, engine_finder
-from piccolo.columns import Column, PrimaryKey, ForeignKey
+from piccolo.columns import Column, Selectable, PrimaryKey, ForeignKey
+from piccolo.columns.readable import Readable
 from piccolo.query import (
     Alter,
     Create,
@@ -192,6 +193,15 @@ class Table(metaclass=TableMetaclass):
 
     ###########################################################################
 
+    @classmethod
+    def get_readable(cls) -> Readable:
+        """
+        Creates a readable representation of the row.
+        """
+        return Readable(template="%s", columns=[cls.id])
+
+    ###########################################################################
+
     @property
     def querystring(self) -> QueryString:
         """
@@ -273,7 +283,7 @@ class Table(metaclass=TableMetaclass):
         return Raw(table=cls, base=QueryString(sql, *args))
 
     @classmethod
-    def select(cls, *columns: Column) -> Select:
+    def select(cls, *columns: Selectable) -> Select:
         """
         Get data in the form of a list of dictionaries, with each dictionary
         representing a row.

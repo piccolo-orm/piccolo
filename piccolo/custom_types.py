@@ -7,11 +7,7 @@ if t.TYPE_CHECKING:
 
 
 Combinable = t.Union["Where", "And", "Or"]
-
-
 Iterable = t.Iterable[t.Any]
-
-
 Datetime = t.Union[datetime.datetime, t.Callable[[], datetime.datetime], None]
 
 

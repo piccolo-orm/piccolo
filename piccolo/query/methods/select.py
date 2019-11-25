@@ -2,7 +2,7 @@ from __future__ import annotations
 from collections import OrderedDict
 import typing as t
 
-from piccolo.columns import Column, ForeignKey
+from piccolo.columns import Column, Selectable, ForeignKey
 from piccolo.engine.base import Batch
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
@@ -36,7 +36,7 @@ class Select(Query):
         self,
         table: t.Type[Table],
         base: QueryString = QueryString(""),
-        columns: t.Iterable[Column] = [],
+        columns: t.Iterable[Selectable] = [],
     ):
         super().__init__(table=table, base=base)
         self.columns(*columns)
@@ -102,6 +102,9 @@ class Select(Query):
         """
         joins: t.List[str] = []
         for column in columns:
+            if not isinstance(column, Column):
+                continue
+
             _joins: t.List[str] = []
             for index, key in enumerate(column._meta.call_chain, 0):
                 table_alias = "$".join(
@@ -130,8 +133,10 @@ class Select(Query):
         # Remove duplicates
         return list(OrderedDict.fromkeys(joins))
 
-    def _check_valid_call_chain(self, keys: t.List[Column]) -> bool:
+    def _check_valid_call_chain(self, keys: t.List[Selectable]) -> bool:
         for column in keys:
+            if not isinstance(column, Column):
+                continue
             if column._meta.call_chain:
                 # Make sure the call_chain isn't too large to discourage
                 # very inefficient queries.
@@ -166,11 +171,13 @@ class Select(Query):
         if len(self.columns_delegate.selected_columns) == 0:
             self.columns_delegate.selected_columns = self.table._meta.columns
 
-        column_names: t.List[str] = [
-            c._meta.get_full_name()
+        engine_type = self.table._meta.db.engine_type
+
+        select_strings: t.List[str] = [
+            c.get_select_string(engine_type=engine_type)
             for c in self.columns_delegate.selected_columns
         ]
-        columns_str = ", ".join(column_names)
+        columns_str = ", ".join(select_strings)
 
         #######################################################################
 

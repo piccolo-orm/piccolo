@@ -8,6 +8,7 @@ from asgiref.sync import async_to_sync
 
 from piccolo.table import Table
 from piccolo.columns import Varchar, Boolean
+from piccolo.columns.readable import Readable
 
 
 class BaseUser(Table, tablename="piccolo_user"):
@@ -34,6 +35,10 @@ class BaseUser(Table, tablename="piccolo_user"):
     @classmethod
     def get_salt(cls):
         return secrets.token_hex(16)
+
+    @classmethod
+    def get_readable(cls) -> Readable:
+        return Readable(template="%s", columns=[cls.username])
 
     ###########################################################################
 

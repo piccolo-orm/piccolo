@@ -6,7 +6,7 @@ from .column_types import (  # noqa
     Timestamp,
     Text,
     Boolean,
-    ForeignKey
+    ForeignKey,
 )
-from .base import Column  # noqa
+from .base import Column, Selectable  # noqa
 from .combination import And, Or, Where  # noqa
