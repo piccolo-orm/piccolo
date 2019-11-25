@@ -170,8 +170,6 @@ class Table(metaclass=TableMetaclass):
         i.e. Band.manager, but not Band.manager.x.y.z
 
         """
-        cls = self.__class__
-
         if isinstance(foreign_key, ForeignKey):
             column_name = foreign_key._meta.name
 

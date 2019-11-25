@@ -1,3 +1,5 @@
+import importlib
+
 import click
 
 from piccolo.commands.playground import playground
@@ -30,4 +32,17 @@ def main():
 
 
 if __name__ == "__main__":
+    try:
+        import piccolo_conf
+    except ImportError:
+        print("Can't import piccolo_conf - some commands may be missing.")
+
+    COMMANDS = getattr(piccolo_conf, "COMMANDS", [])
+
+    for command in COMMANDS:
+        command_name = command.split(".")[-1]
+        command_module = importlib.import_module(command)
+        command_func = getattr(command_module, "command")
+        cli.add_command(click.command(name=command_name)(command_func))
+
     main()
