@@ -1,4 +1,6 @@
 import importlib
+import os
+import sys
 
 import click
 
@@ -28,21 +30,24 @@ cli.add_command(playground)
 
 
 def main():
-    cli()
+    # In case it's run from an entrypoint:
+    sys.path.insert(0, os.getcwd())
 
-
-if __name__ == "__main__":
     try:
         import piccolo_conf
     except ImportError:
         print("Can't import piccolo_conf - some commands may be missing.")
+    else:
+        COMMANDS = getattr(piccolo_conf, "COMMANDS", [])
 
-    COMMANDS = getattr(piccolo_conf, "COMMANDS", [])
+        for command in COMMANDS:
+            command_name = command.split(".")[-1]
+            command_module = importlib.import_module(command)
+            command_func = getattr(command_module, "command")
+            cli.add_command(click.command(name=command_name)(command_func))
 
-    for command in COMMANDS:
-        command_name = command.split(".")[-1]
-        command_module = importlib.import_module(command)
-        command_func = getattr(command_module, "command")
-        cli.add_command(click.command(name=command_name)(command_func))
+    cli()
 
+
+if __name__ == "__main__":
     main()
