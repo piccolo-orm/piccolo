@@ -13,14 +13,18 @@ if t.TYPE_CHECKING:
 class Readable(Selectable):
     template: str
     columns: t.Sequence[Column]
+    output_name: str = "readable"
 
     @property
     def _columns_string(self) -> str:
-        return ", ".join([i._meta.name for i in self.columns])
+        return ", ".join([
+            i._meta.get_full_name(just_alias=True) for i in self.columns
+        ])
 
     def _get_string(self, operator: str):
         return (
-            f"{operator}('{self.template}', {self._columns_string}) AS readable"
+            f"{operator}('{self.template}', {self._columns_string}) AS "
+            f"{self.output_name}"
         )
 
     @property

@@ -38,6 +38,9 @@ class BaseUser(Table, tablename="piccolo_user"):
 
     @classmethod
     def get_readable(cls) -> Readable:
+        """
+        Used to get a readable string, representing a table row.
+        """
         return Readable(template="%s", columns=[cls.username])
 
     ###########################################################################
@@ -57,7 +60,9 @@ class BaseUser(Table, tablename="piccolo_user"):
         elif type(user) == int:
             clause = cls.id == user  # type: ignore
         else:
-            raise ValueError("The `user` arg must be a user id, or a username.")
+            raise ValueError(
+                "The `user` arg must be a user id, or a username."
+            )
 
         password = cls.hash_password(password)
         await cls.update().values({cls.password: password}).where(clause).run()

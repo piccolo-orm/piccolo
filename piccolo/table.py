@@ -33,6 +33,7 @@ class TableMeta:
     tablename: str = ""
     columns: t.List[Column] = field(default_factory=list)
     non_default_columns: t.List[Column] = field(default_factory=list)
+    foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
     _db: t.Optional[Engine] = None
 
     @property
@@ -92,10 +93,13 @@ class Table(metaclass=TableMetaclass):
                 # Mypy wrongly thinks cls is a Table instance:
                 column._meta._table = cls  # type: ignore
 
+        foreign_key_columns = [i for i in columns if isinstance(i, ForeignKey)]
+
         cls._meta = TableMeta(
             tablename=tablename,
             columns=columns,
             non_default_columns=non_default_columns,
+            foreign_key_columns=foreign_key_columns,
             _db=db,
         )
 
@@ -114,7 +118,9 @@ class Table(metaclass=TableMetaclass):
                     value = default() if is_callable else default
                 else:
                     if not column._meta.null:
-                        raise ValueError(f"{column._meta.name} wasn't provided")
+                        raise ValueError(
+                            f"{column._meta.name} wasn't provided"
+                        )
             self[column._meta.name] = value
 
         unrecognized = kwargs.keys()
@@ -172,7 +178,9 @@ class Table(metaclass=TableMetaclass):
         if isinstance(foreign_key, ForeignKey):
             column_name = foreign_key._meta.name
 
-            references: t.Type[Table] = foreign_key._foreign_key_meta.references
+            references: t.Type[
+                Table
+            ] = foreign_key._foreign_key_meta.references
 
             return (
                 references.objects()
@@ -192,6 +200,24 @@ class Table(metaclass=TableMetaclass):
         return getattr(self, key)
 
     ###########################################################################
+
+    @classmethod
+    def _get_related_readable(cls, column: ForeignKey) -> Readable:
+        """
+        Used for getting a readable from a foreign key.
+        """
+        readable: Readable = column._foreign_key_meta.references.get_readable()
+
+        columns = [getattr(column, i._meta.name) for i in readable.columns]
+
+        output_name = f"{column._meta.name}_readable"
+
+        new_readable = Readable(
+            template=readable.template,
+            columns=columns,
+            output_name=output_name,
+        )
+        return new_readable
 
     @classmethod
     def get_readable(cls) -> Readable:

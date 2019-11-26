@@ -2,12 +2,12 @@ from __future__ import annotations
 from collections import OrderedDict
 import typing as t
 
-from piccolo.columns import Column, Selectable, ForeignKey
+from piccolo.columns import Column, Selectable
+from piccolo.columns.readable import Readable
 from piccolo.engine.base import Batch
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
     ColumnsDelegate,
-    CountDelegate,
     DistinctDelegate,
     LimitDelegate,
     OrderByDelegate,
@@ -95,12 +95,17 @@ class Select(Query):
 
     ###########################################################################
 
-    def _get_joins(self, columns: t.List[Column]) -> t.List[str]:
+    def _get_joins(self, columns: t.List[Selectable]) -> t.List[str]:
         """
         A call chain is a sequence of foreign keys representing joins which
         need to be made to retrieve a column in another table.
         """
         joins: t.List[str] = []
+
+        readables = [i for i in columns if isinstance(i, Readable)]
+        for readable in readables:
+            columns += readable.columns
+
         for column in columns:
             if not isinstance(column, Column):
                 continue
