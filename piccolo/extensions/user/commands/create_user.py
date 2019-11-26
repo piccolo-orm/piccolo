@@ -8,7 +8,7 @@ def command():
     """
     A convenient way to create new users.
     """
-    username = input("Enter Username:\n")
+    username = input("Enter username:\n")
     email = input("Enter email:\n")
 
     password = getpass("Enter password:\n")
