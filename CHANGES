@@ -1,3 +1,7 @@
+0.7.1
+=====
+Added remove_db_file method to SQLiteEngine - makes testing easier.
+
 0.7.0
 =====
 Renamed `create` to `create_table`, and can register commands via

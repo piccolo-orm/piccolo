@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import os
 import sqlite3
 import typing as t
 
@@ -8,7 +9,6 @@ from aiosqlite import Cursor, Connection
 from piccolo.engine.base import Batch, Engine
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
-from piccolo.utils.warnings import colored_warning
 
 
 @dataclass
@@ -73,6 +73,14 @@ class SQLiteEngine(Engine):
         self.path = path
         super().__init__()
 
+    def remove_db_file(self):
+        """
+        Use with caution - removes the sqlite file. Useful for testing
+        purposes.
+        """
+        if os.path.exists(self.path):
+            os.unlink(self.path)
+
     def get_version(self) -> float:
         """
         Warn if the version of SQLite isn't supported.
@@ -111,11 +119,7 @@ class SQLiteEngine(Engine):
                 cursor.row_factory = dict_factory
                 await connection.commit()
                 response = await cursor.fetchall()
-                # print(query)
-                # print(args)
-                # print(response)
 
-                # print(query_type)
                 if query_type == "insert":
                     return [{"id": cursor.lastrowid}]
                 else:
