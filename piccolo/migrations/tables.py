@@ -1,8 +1,8 @@
 import datetime
 import typing as t
 
-from ..table import Table
-from ..columns import Varchar, Timestamp
+from piccolo.table import Table
+from piccolo.columns import Varchar, Timestamp
 
 
 class Migration(Table):

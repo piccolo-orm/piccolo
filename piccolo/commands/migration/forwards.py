@@ -4,7 +4,7 @@ import pprint
 
 import click
 
-from piccolo.migrations.table import Migration
+from piccolo.migrations.tables import Migration
 from .base import BaseMigrationManager, ModuleList
 
 

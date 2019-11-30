@@ -4,7 +4,7 @@ import sys
 
 import click
 
-from piccolo.migrations.table import Migration
+from piccolo.migrations.tables import Migration
 from .base import BaseMigrationManager
 
 
@@ -32,9 +32,7 @@ class BackwardsMigrationManager(BaseMigrationManager):
                 f"Unrecognized migration name - must be one of {migration_ids}"
             )
 
-        _continue = input(
-            "About to undo the migrations - press y to continue."
-        )
+        _continue = input("About to undo the migrations - press y to continue.")
         if _continue == "y":
             print("Undoing migrations")
 

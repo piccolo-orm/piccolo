@@ -118,14 +118,13 @@ class Table(metaclass=TableMetaclass):
                     value = default() if is_callable else default
                 else:
                     if not column._meta.null:
-                        raise ValueError(
-                            f"{column._meta.name} wasn't provided"
-                        )
+                        raise ValueError(f"{column._meta.name} wasn't provided")
             self[column._meta.name] = value
 
         unrecognized = kwargs.keys()
         if unrecognized:
-            raise ValueError(f"Unrecognized columns - {unrecognized}")
+            unrecognised_list = [i for i in unrecognized]
+            raise ValueError(f"Unrecognized columns - {unrecognised_list}")
 
     ###########################################################################
 
@@ -178,9 +177,7 @@ class Table(metaclass=TableMetaclass):
         if isinstance(foreign_key, ForeignKey):
             column_name = foreign_key._meta.name
 
-            references: t.Type[
-                Table
-            ] = foreign_key._foreign_key_meta.references
+            references: t.Type[Table] = foreign_key._foreign_key_meta.references
 
             return (
                 references.objects()
@@ -213,9 +210,7 @@ class Table(metaclass=TableMetaclass):
         output_name = f"{column._meta.name}_readable"
 
         new_readable = Readable(
-            template=readable.template,
-            columns=columns,
-            output_name=output_name,
+            template=readable.template, columns=columns, output_name=output_name
         )
         return new_readable
 

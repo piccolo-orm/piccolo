@@ -3,7 +3,7 @@ import os
 import click
 
 from .base import BaseMigrationManager
-from piccolo.migrations.table import Migration
+from piccolo.migrations.tables import Migration
 
 
 class CheckMigrationManager(BaseMigrationManager):

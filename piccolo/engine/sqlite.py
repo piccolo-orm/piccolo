@@ -73,6 +73,15 @@ class SQLiteEngine(Engine):
         self.path = path
         super().__init__()
 
+    def get_version(self) -> float:
+        """
+        Warn if the version of SQLite isn't supported.
+        """
+        major, minor, _ = sqlite3.sqlite_version_info
+        return float(f"{major}.{minor}")
+
+    ###########################################################################
+
     def remove_db_file(self):
         """
         Use with caution - removes the sqlite file. Useful for testing
@@ -81,12 +90,22 @@ class SQLiteEngine(Engine):
         if os.path.exists(self.path):
             os.unlink(self.path)
 
-    def get_version(self) -> float:
+    def create_db(self, migrate=False):
         """
-        Warn if the version of SQLite isn't supported.
+        Create the database file, with the option to run migrations. Useful
+        for testing purposes.
         """
-        major, minor, _ = sqlite3.sqlite_version_info
-        return float(f"{major}.{minor}")
+        if not os.path.exists(self.path):
+            with open(self.path, "w") as _:
+                pass
+        else:
+            raise Exception(f"Database at {self.path} already exists")
+        if migrate:
+            from piccolo.commands.migration.forwards import (
+                ForwardsMigrationManager,
+            )
+
+            ForwardsMigrationManager().run()
 
     ###########################################################################
 

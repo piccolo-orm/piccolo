@@ -4,7 +4,7 @@ import sys
 from types import ModuleType
 import typing as t
 
-from piccolo.migrations.table import Migration
+from piccolo.migrations.tables import Migration
 
 
 ModuleList = t.List[ModuleType]

@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from piccolo.migrations.table import Migration
+from piccolo.migrations.tables import Migration
 
 
 class TestMigrationTable(TestCase):
