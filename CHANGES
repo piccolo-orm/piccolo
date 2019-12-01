@@ -1,3 +1,7 @@
+0.7.2
+=====
+Changed migration import paths.
+
 0.7.1
 =====
 Added remove_db_file method to SQLiteEngine - makes testing easier.
