@@ -1,3 +1,7 @@
+0.7.4
+=====
+Bug fixes and dependency updates.
+
 0.7.3
 =====
 Adding missing __int__.py file.

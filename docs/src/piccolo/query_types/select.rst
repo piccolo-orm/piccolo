@@ -55,6 +55,20 @@ The joins can go several layers deep.
         c.band_1.manager.name
     ).run_sync()
 
+String syntax
+-------------
+
+Alternatively, you can specify the column names using a string. The
+disadvantage is you won't have tab completion, but sometimes it's more
+convenient.
+
+.. code-block:: python
+
+    Band.select('name').run_sync()
+
+    # For joins:
+    Band.select('manager.name').run_sync()
+
 Query clauses
 -------------
 

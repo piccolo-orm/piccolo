@@ -43,10 +43,28 @@ class TableMeta:
         return self._db
 
     def get_column_by_name(self, name: str) -> Column:
-        column = [i for i in self.columns if i._meta.name == name]
+        """
+        Returns a column which matches the given name. It will try and follow
+        foreign keys too, for example if the name is 'foo.bar', where foo is
+        a foreign key, and bar is a column on the referenced table.
+        """
+        components = name.split(".")
+        column_name = components[0]
+        column = [i for i in self.columns if i._meta.name == column_name]
         if len(column) != 1:
             raise ValueError(f"No matching column found with name == {name}")
-        return column[0]
+        column_object = column[0]
+
+        if len(components) > 1:
+            for reference_name in components[1:]:
+                try:
+                    column_object = getattr(column_object, reference_name)
+                except AttributeError:
+                    raise ValueError(
+                        f"Unable to find column - {reference_name}"
+                    )
+
+        return column_object
 
 
 class TableMetaclass(type):
@@ -118,7 +136,9 @@ class Table(metaclass=TableMetaclass):
                     value = default() if is_callable else default
                 else:
                     if not column._meta.null:
-                        raise ValueError(f"{column._meta.name} wasn't provided")
+                        raise ValueError(
+                            f"{column._meta.name} wasn't provided"
+                        )
             self[column._meta.name] = value
 
         unrecognized = kwargs.keys()
@@ -177,7 +197,9 @@ class Table(metaclass=TableMetaclass):
         if isinstance(foreign_key, ForeignKey):
             column_name = foreign_key._meta.name
 
-            references: t.Type[Table] = foreign_key._foreign_key_meta.references
+            references: t.Type[
+                Table
+            ] = foreign_key._foreign_key_meta.references
 
             return (
                 references.objects()
@@ -210,7 +232,9 @@ class Table(metaclass=TableMetaclass):
         output_name = f"{column._meta.name}_readable"
 
         new_readable = Readable(
-            template=readable.template, columns=columns, output_name=output_name
+            template=readable.template,
+            columns=columns,
+            output_name=output_name,
         )
         return new_readable
 
@@ -304,13 +328,34 @@ class Table(metaclass=TableMetaclass):
         return Raw(table=cls, base=QueryString(sql, *args))
 
     @classmethod
-    def select(cls, *columns: Selectable) -> Select:
+    def _process_column_args(
+        cls, *columns: t.Union[Selectable, str]
+    ) -> t.Sequence[Selectable]:
+        """
+        Users can specify some column arguments as either Column instances, or
+        as strings representing the column name, for convenience.
+        Convert any string arguments to column instances.
+        """
+        return [
+            cls._meta.get_column_by_name(column)
+            if (type(column) == str)
+            else column
+            for column in columns
+        ]
+
+    @classmethod
+    def select(cls, *columns: t.Union[Selectable, str]) -> Select:
         """
         Get data in the form of a list of dictionaries, with each dictionary
         representing a row.
 
+        These are all equivalent:
+
         await Band.select().columns(Band.name).run()
+        await Band.select(Band.name).run()
+        await Band.select('name').run()
         """
+        columns = cls._process_column_args(*columns)
         return Select(table=cls, columns=columns)
 
     @classmethod

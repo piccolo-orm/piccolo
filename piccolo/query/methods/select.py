@@ -49,7 +49,8 @@ class Select(Query):
         self.output_delegate = OutputDelegate()
         self.where_delegate = WhereDelegate()
 
-    def columns(self, *columns: Column) -> Select:
+    def columns(self, *columns: t.Union[Column, str]) -> Select:
+        columns = self.table._process_column_args(*columns)
         self.columns_delegate.columns(*columns)
         return self
 
@@ -75,6 +76,7 @@ class Select(Query):
             return response
 
     def order_by(self, *columns: Column, ascending=True) -> Select:
+        columns = self.table._process_column_args(*columns)
         self.order_by_delegate.order_by(*columns, ascending=ascending)
         return self
 
