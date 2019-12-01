@@ -9,13 +9,11 @@ import asyncpg
 from asyncpg.connection import Connection
 from asyncpg.cursor import Cursor
 from asyncpg.pool import Pool
-from asgiref.sync import async_to_sync
 
 from piccolo.engine.base import Batch, Engine
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
-from piccolo.utils.warnings import colored_warning
 
 
 @dataclass
@@ -136,12 +134,14 @@ class PostgresEngine(Engine):
         Returns the version of Postgres being run.
         """
         loop = asyncio.new_event_loop()
+
         with ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(
                 loop.run_until_complete, self.run("SHOW server_version")
             )
 
         response: t.Array[t.Dict] = future.result()
+
         server_version = response[0]["server_version"]
         major, minor, _ = server_version.split(".")
         version = float(f"{major}.{minor}")

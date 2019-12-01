@@ -1,6 +1,6 @@
 from abc import abstractmethod, ABCMeta
 
-from piccolo.utils.warnings import colored_warning
+from piccolo.utils.warnings import colored_warning, Level
 
 
 class Batch:
@@ -29,7 +29,15 @@ class Engine(metaclass=ABCMeta):
         """
         Warn if the database version isn't supported.
         """
-        version_number = self.get_version()
+        try:
+            version_number = self.get_version()
+        except Exception as exception:
+            colored_warning(
+                f"Unable to fetch server version: {exception}",
+                level=Level.high,
+            )
+            return
+
         print(f"Running version {version_number}")
         if version_number < self.min_version_number:
             message = (
