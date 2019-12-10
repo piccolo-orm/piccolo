@@ -1,7 +1,7 @@
 aiosqlite==0.10.0
-asgiref==3.2.1
-asyncpg>=0.20.0
+asgiref==3.2.3
+asyncpg==0.20.0
 click==7.0
 colorama==0.4.1
 ujson==1.35
-Jinja2>=2.10
+Jinja2==2.10.3

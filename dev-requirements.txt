@@ -1,4 +1,5 @@
-ipdb==0.11
+ipdb==0.12.2
 ipython==7.8.0
 twine==3.1.1
 mypy==0.750
+pip-upgrader==1.4.15

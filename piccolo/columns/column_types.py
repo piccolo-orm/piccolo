@@ -3,6 +3,7 @@ import copy
 from dataclasses import dataclass, field
 from datetime import datetime
 import typing as t
+import uuid
 
 from piccolo.columns.base import Column
 from piccolo.querystring import Unquoted
@@ -45,6 +46,26 @@ class Text(Column):
     def __init__(self, default: str = None, **kwargs) -> None:
         self.default = default
         super().__init__(**kwargs)
+
+
+class UUID(Column):
+    """
+    Represented in Postgres as a UUID field, and a Varchar field in SQLite.
+    """
+
+    value_type = str
+
+    def default(self) -> str:
+        return str(uuid.uuid4())
+
+    @property
+    def column_type(self):
+        engine_type = self._meta.table._meta.db.engine_type
+        if engine_type == "postgres":
+            return "UUID"
+        elif engine_type == "sqlite":
+            return "VARCHAR"
+        raise Exception("Unrecognized engine type")
 
 
 class Integer(Column):

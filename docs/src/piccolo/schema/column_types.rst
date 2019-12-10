@@ -83,3 +83,11 @@ Boolean
 
     class Band(Table):
         has_drummer = Boolean()
+
+UUID
+----
+
+.. code-block:: python
+
+    class Band(Table):
+        uuid = UUID()
