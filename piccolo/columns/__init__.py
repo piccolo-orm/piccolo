@@ -7,6 +7,7 @@ from .column_types import (  # noqa
     Text,
     Boolean,
     ForeignKey,
+    UUID,
 )
 from .base import Column, Selectable  # noqa
 from .combination import And, Or, Where  # noqa
