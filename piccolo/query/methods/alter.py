@@ -7,12 +7,24 @@ from piccolo.columns.base import Column
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 
+if t.TYPE_CHECKING:
+    from piccolo.table import Table
+
 
 @dataclasses.dataclass
 class AlterStatement:
     __slots__ = ("column",)
 
-    column: Column
+    column: t.Union[Column, str]
+
+    @property
+    def column_name(self) -> str:
+        if type(self.column) == str:
+            return self.column
+        elif isinstance(self.column, Column):
+            return self.column._meta.name
+        else:
+            raise ValueError("Unrecognised column type")
 
     def querystring(self) -> QueryString:
         raise NotImplementedError()
@@ -30,7 +42,7 @@ class Rename(AlterStatement):
     @property
     def querystring(self) -> QueryString:
         return QueryString(
-            f"RENAME COLUMN {self.column._meta.name} TO {self.new_name}"
+            f"RENAME COLUMN {self.column_name} TO {self.new_name}"
         )
 
 
@@ -38,13 +50,14 @@ class Rename(AlterStatement):
 class Drop(AlterStatement):
     @property
     def querystring(self) -> QueryString:
-        return QueryString(f"DROP {self.column._meta.name}")
+        return QueryString(f"DROP {self.column_name}")
 
 
 @dataclasses.dataclass
 class Add(AlterStatement):
     __slots__ = ("name",)
 
+    column: Column
     name: str
 
     @property
@@ -62,10 +75,10 @@ class Unique(AlterStatement):
     @property
     def querystring(self) -> QueryString:
         if self.boolean:
-            return QueryString(f"ADD UNIQUE ({self.column._meta.name})")
+            return QueryString(f"ADD UNIQUE ({self.column_name})")
         else:
             tablename = self.column._meta.table._meta.tablename
-            column_name = self.column._meta.name
+            column_name = self.column_name
             key = f"{tablename}_{column_name}_key"
             return QueryString(f'DROP CONSTRAINT "{key}"')
 
@@ -79,9 +92,9 @@ class Null(AlterStatement):
     @property
     def querystring(self) -> QueryString:
         if self.boolean:
-            return QueryString(f"{self.column._meta.name} DROP NOT NULL")
+            return QueryString(f"{self.column_name} DROP NOT NULL")
         else:
-            return QueryString(f"{self.column._meta.name} SET NOT NULL")
+            return QueryString(f"{self.column_name} SET NOT NULL")
 
 
 class Alter(Query):
@@ -101,10 +114,11 @@ class Alter(Query):
         """
         Band.alter().add_column(‘members’, Integer())
         """
+        column._meta._table = self.table
         self._add.append(Add(column, name))
         return self
 
-    def drop_column(self, column: Column) -> Alter:
+    def drop_column(self, column: t.Union[str, Column]) -> Alter:
         """
         Band.alter().drop_column(Band.popularity)
         """
@@ -118,23 +132,32 @@ class Alter(Query):
         self._drop_table = True
         return self
 
-    def rename_column(self, column: Column, new_name: str) -> Alter:
+    def rename_column(
+        self, column: t.Union[str, Column], new_name: str
+    ) -> Alter:
         """
         Band.alter().rename_column(Band.popularity, ‘rating’)
+        Band.alter().rename_column('popularity', ‘rating’)
         """
         self._rename.append(Rename(column, new_name))
         return self
 
-    def set_null(self, column: Column, boolean: bool = True) -> Alter:
+    def set_null(
+        self, column: t.Union[str, Column], boolean: bool = True
+    ) -> Alter:
         """
-        Band.alter().set_null(True)
+        Band.alter().set_null(Band.name, True)
+        Band.alter().set_null('name', True)
         """
         self._null.append(Null(column, boolean))
         return self
 
-    def set_unique(self, column: Column, boolean: bool = True) -> Alter:
+    def set_unique(
+        self, column: t.Union[str, Column], boolean: bool = True
+    ) -> Alter:
         """
-        Band.alter().set_unique(True)
+        Band.alter().set_unique(Band.name, True)
+        Band.alter().set_unique('name', True)
         """
         self._unique.append(Unique(column, boolean))
         return self

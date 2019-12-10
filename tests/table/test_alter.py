@@ -5,10 +5,10 @@ from ..example_project.tables import Band, Manager
 
 
 class TestRename(DBTestCase):
-    def test_rename(self):
+    def _test_rename(self, column):
         self.insert_row()
 
-        rename_query = Band.alter().rename_column(Band.popularity, "rating")
+        rename_query = Band.alter().rename_column(column, "rating")
         rename_query.run_sync()
 
         select_query = Band.raw("SELECT * FROM band")
@@ -19,17 +19,29 @@ class TestRename(DBTestCase):
             ("rating" in column_names) and ("popularity" not in column_names)
         )
 
+    def test_rename_string(self):
+        self._test_rename(Band.popularity)
+
+    def test_rename_column(self):
+        self._test_rename("popularity")
+
 
 class TestDrop(DBTestCase):
-    def test_drop(self):
+    def _test_drop(self, column):
         self.insert_row()
 
-        Band.alter().drop_column(Band.popularity).run_sync()
+        Band.alter().drop_column(column).run_sync()
 
         response = Band.raw("SELECT * FROM band").run_sync()
 
         column_names = response[0].keys()
         self.assertTrue("popularity" not in column_names)
+
+    def test_drop_string(self):
+        self._test_drop(Band.popularity)
+
+    def test_drop_column(self):
+        self._test_drop("popularity")
 
 
 class TestAdd(DBTestCase):
