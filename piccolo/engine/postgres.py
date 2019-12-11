@@ -35,7 +35,7 @@ class AsyncBatch(Batch):
 
     async def next(self) -> t.List[t.Dict]:
         data = await self.cursor.fetch(self.batch_size)
-        return self.query._process_results(data)
+        return await self.query._process_results(data)
 
     def __aiter__(self):
         return self

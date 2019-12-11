@@ -180,6 +180,20 @@ class Column(Selectable):
     def __hash__(self):
         return hash(self._meta.name)
 
+    def get_default_value(self) -> t.Any:
+        """
+        If the column has a default attribute, return it. If it's callable,
+        return the response instead.
+        """
+        default = getattr(self, "default", None)
+        if default != None:
+            # Can't use inspect - can't tell that datetime.datetime.now
+            # is a callable.
+            is_callable = hasattr(default, "__call__")
+            value = default() if is_callable else default
+            return value
+        return None
+
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         return self._meta.get_full_name(just_alias=just_alias)
 

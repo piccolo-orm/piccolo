@@ -18,7 +18,7 @@ class Exists(Query):
         self.where_delegate.where(where)
         return self
 
-    def response_handler(self, response) -> bool:
+    async def response_handler(self, response) -> bool:
         return response[0]["exists"]
 
     @property

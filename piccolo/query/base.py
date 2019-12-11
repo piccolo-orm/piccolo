@@ -34,7 +34,7 @@ class Query(object):
         else:
             raise ValueError("Engine isn't defined.")
 
-    def _process_results(self, results):
+    async def _process_results(self, results):
         if results:
             keys = results[0].keys()
             keys = [i.replace("$", ".") for i in keys]
@@ -48,7 +48,7 @@ class Query(object):
         # TODO - I have multiple ways of modifying the final output
         # response_handlers, and output ...
         # Might try and merge them.
-        raw = self.response_handler(raw)
+        raw = await self.response_handler(raw)
 
         output = getattr(self, "output_delegate", None)
 
@@ -94,7 +94,7 @@ class Query(object):
             self.querystring, in_pool=in_pool
         )
 
-        return self._process_results(results)
+        return await self._process_results(results)
 
     def run_sync(self, *args, **kwargs):
         """
@@ -102,7 +102,7 @@ class Query(object):
         """
         return run_sync(self.run(*args, **kwargs, in_pool=False))
 
-    def response_handler(self, response):
+    async def response_handler(self, response):
         """
         Subclasses can override this to modify the raw response returned by
         the database driver.

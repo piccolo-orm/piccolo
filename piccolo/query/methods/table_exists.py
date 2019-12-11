@@ -9,7 +9,7 @@ class TableExists(Query):
 
     __slots__: t.Tuple = tuple()
 
-    def response_handler(self, response):
+    async def response_handler(self, response):
         return bool(response[0]["exists"])
 
     @property

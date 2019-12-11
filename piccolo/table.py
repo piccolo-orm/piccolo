@@ -128,17 +128,10 @@ class Table(metaclass=TableMetaclass):
         for column in self._meta.columns:
             value = kwargs.pop(column._meta.name, None)
             if not value:
-                default = getattr(column, "default", None)
-                if default != None:
-                    # Can't use inspect - can't tell that datetime.datetime.now
-                    # is a callable.
-                    is_callable = hasattr(default, "__call__")
-                    value = default() if is_callable else default
-                else:
-                    if not column._meta.null:
-                        raise ValueError(
-                            f"{column._meta.name} wasn't provided"
-                        )
+                value = column.get_default_value()
+                if (not value) and (not column._meta.null):
+                    raise ValueError(f"{column._meta.name} wasn't provided")
+
             self[column._meta.name] = value
 
         unrecognized = kwargs.keys()
