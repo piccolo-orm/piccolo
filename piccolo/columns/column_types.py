@@ -20,9 +20,7 @@ class Varchar(Column):
 
     value_type = str
 
-    def __init__(
-        self, length: int = 255, default: str = None, **kwargs
-    ) -> None:
+    def __init__(self, length: int = 255, default: str = "", **kwargs) -> None:
         self.length = length
         self.default = default
         kwargs.update({"length": length, "default": default})
@@ -43,7 +41,7 @@ class Text(Column):
 
     value_type = str
 
-    def __init__(self, default: str = None, **kwargs) -> None:
+    def __init__(self, default: str = "", **kwargs) -> None:
         self.default = default
         super().__init__(**kwargs)
 
