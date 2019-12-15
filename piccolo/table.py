@@ -129,7 +129,7 @@ class Table(metaclass=TableMetaclass):
             value = kwargs.pop(column._meta.name, None)
             if not value:
                 value = column.get_default_value()
-                if (not value) and (not column._meta.null):
+                if (value is None) and (not column._meta.null):
                     raise ValueError(f"{column._meta.name} wasn't provided")
 
             self[column._meta.name] = value

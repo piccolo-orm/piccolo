@@ -51,7 +51,7 @@ class UUID(Column):
     Represented in Postgres as a UUID field, and a Varchar field in SQLite.
     """
 
-    value_type = str
+    value_type = t.Union[str, uuid.UUID]
 
     def default(self) -> str:
         return str(uuid.uuid4())
