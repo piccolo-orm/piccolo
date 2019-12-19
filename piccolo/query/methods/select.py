@@ -130,7 +130,7 @@ class Select(Query):
                     left_tablename = key._meta.table._meta.tablename
 
                 _joins.append(
-                    f"JOIN {key._foreign_key_meta.references._meta.tablename} {table_alias}"
+                    f"LEFT JOIN {key._foreign_key_meta.references._meta.tablename} {table_alias}"
                     " ON "
                     f"({left_tablename}.{key._meta.name} = {table_alias}.id)"
                 )
