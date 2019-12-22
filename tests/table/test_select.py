@@ -218,6 +218,23 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(response, [{"name": "CSharps"}])
 
+    def test_offset(self):
+        self.insert_rows()
+
+        response = (
+            Band.select()
+            .columns(Band.name)
+            .order_by(Band.name)
+            .offset(1)
+            .run_sync()
+        )
+
+        print(f"response = {response}")
+
+        self.assertEqual(
+            response, [{"name": "Pythonistas"}, {"name": "Rustaceans"}]
+        )
+
     def test_first(self):
         self.insert_rows()
 

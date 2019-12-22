@@ -10,6 +10,7 @@ from piccolo.query.mixins import (
     ColumnsDelegate,
     DistinctDelegate,
     LimitDelegate,
+    OffsetDelegate,
     OrderByDelegate,
     OutputDelegate,
     WhereDelegate,
@@ -27,6 +28,7 @@ class Select(Query):
         "columns_delegate",
         "distinct_delegate",
         "limit_delegate",
+        "offset_delegate",
         "order_by_delegate",
         "output_delegate",
         "where_delegate",
@@ -45,6 +47,7 @@ class Select(Query):
         self.columns_delegate = ColumnsDelegate()
         self.distinct_delegate = DistinctDelegate()
         self.limit_delegate = LimitDelegate()
+        self.offset_delegate = OffsetDelegate()
         self.order_by_delegate = OrderByDelegate()
         self.output_delegate = OutputDelegate()
         self.where_delegate = WhereDelegate()
@@ -64,6 +67,10 @@ class Select(Query):
 
     def first(self) -> Select:
         self.limit_delegate.first()
+        return self
+
+    def offset(self, number: int) -> Select:
+        self.offset_delegate.offset(number)
         return self
 
     async def response_handler(self, response):
@@ -209,6 +216,10 @@ class Select(Query):
         if self.limit_delegate._limit:
             query += " {}"
             args.append(self.limit_delegate._limit.querystring)
+
+        if self.offset_delegate._offset:
+            query += " {}"
+            args.append(self.offset_delegate._offset.querystring)
 
         querystring = QueryString(query, *args)
 

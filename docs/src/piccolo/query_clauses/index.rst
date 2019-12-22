@@ -8,6 +8,7 @@ Query Clauses
 
     ./first
     ./limit
+    ./offset
     ./order_by
     ./where
     ./batch

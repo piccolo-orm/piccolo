@@ -29,6 +29,24 @@ class Limit:
 
 
 @dataclass
+class Offset:
+    __slots__ = ("number",)
+
+    number: int
+
+    def __post_init__(self):
+        if type(self.number) != int:
+            raise TypeError("Limit must be an integer")
+
+    @property
+    def querystring(self) -> QueryString:
+        return QueryString(f" OFFSET {self.number}")
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
+
+
+@dataclass
 class OrderBy:
     __slots__ = ("columns", "ascending")
 
@@ -192,3 +210,21 @@ class ValuesDelegate:
 
     def values(self, values: t.Dict[Column, t.Any]):
         self._values.update(values)
+
+
+@dataclass
+class OffsetDelegate:
+    """
+    Used to offset the results - for example, to return row 100 and onward.
+
+    Typically used in conjunction with order_by and limit.
+
+    Example usage:
+
+    .offset(100)
+    """
+
+    _offset: t.Optional[Offset] = None
+
+    def offset(self, number: int = 0):
+        self._offset = Offset(number)

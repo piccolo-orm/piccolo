@@ -6,6 +6,7 @@ from piccolo.engine.base import Batch
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
     LimitDelegate,
+    OffsetDelegate,
     OrderByDelegate,
     WhereDelegate,
     OutputDelegate,
@@ -26,6 +27,7 @@ class Objects(Query):
 
     __slots__ = (
         "limit_delegate",
+        "offset_delegate",
         "order_by_delegate",
         "output_delegate",
         "where_delegate",
@@ -33,6 +35,7 @@ class Objects(Query):
 
     def _setup_delegates(self):
         self.limit_delegate = LimitDelegate()
+        self.offset_delegate = OffsetDelegate()
         self.order_by_delegate = OrderByDelegate()
         self.output_delegate = OutputDelegate()
         self.output_delegate._output.as_objects = True
@@ -44,6 +47,10 @@ class Objects(Query):
 
     def first(self) -> Objects:
         self.limit_delegate.first()
+        return self
+
+    def offset(self, number: int) -> Objects:
+        self.offset_delegate.offset(number)
         return self
 
     def order_by(self, *columns: Column, ascending=True) -> Objects:
@@ -77,6 +84,7 @@ class Objects(Query):
         for attr in (
             "limit_delegate",
             "where_delegate",
+            "offset_delegate",
             "output_delegate",
             "order_by_delegate",
         ):

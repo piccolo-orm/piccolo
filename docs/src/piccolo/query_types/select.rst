@@ -119,6 +119,11 @@ limit
 
 See  :ref:`limit`.
 
+offset
+~~~~~~
+
+See  :ref:`offset`.
+
 order_by
 ~~~~~~~~
 

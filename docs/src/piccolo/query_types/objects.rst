@@ -84,6 +84,11 @@ limit
 
 See  :ref:`limit`.
 
+offset
+~~~~~~
+
+See  :ref:`offset`.
+
 first
 ~~~~~
 
