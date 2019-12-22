@@ -12,6 +12,7 @@ from piccolo.columns.operators import (
     LessThan,
     Like,
     ILike,
+    IsNull,
     NotEqual,
     NotIn,
     NotLike,
@@ -35,7 +36,7 @@ class ColumnMeta:
     """
 
     # General attributes:
-    null: bool = True
+    null: bool = False
     primary: bool = False
     key: bool = False
     unique: bool = False
@@ -116,7 +117,7 @@ class Column(Selectable):
 
     def __init__(
         self,
-        null: bool = True,
+        null: bool = False,
         primary: bool = False,
         key: bool = False,
         unique: bool = False,
@@ -172,7 +173,10 @@ class Column(Selectable):
         return Where(column=self, value=value, operator=GreaterEqualThan)
 
     def __eq__(self, value) -> Where:  # type: ignore
-        return Where(column=self, value=value, operator=Equal)
+        if value is None:
+            return Where(column=self, operator=IsNull)
+        else:
+            return Where(column=self, value=value, operator=Equal)
 
     def __ne__(self, value) -> Where:  # type: ignore
         return Where(column=self, value=value, operator=NotEqual)
@@ -212,6 +216,8 @@ class Column(Selectable):
             query += " KEY"
         if self._meta.unique:
             query += " UNIQUE"
+        if not self._meta.null:
+            query += " NOT NULL"
 
         foreign_key_meta = getattr(self, "_foreign_key_meta", None)
         if foreign_key_meta:

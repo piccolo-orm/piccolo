@@ -17,13 +17,13 @@ class Manager(table.Table):
 
 class Band(table.Table):
     name = columns.Varchar(length=50)
-    manager = columns.ForeignKey(references=Manager)
+    manager = columns.ForeignKey(references=Manager, null=True)
     popularity = columns.Integer()
 
 
 class Venue(table.Table):
     name = columns.Varchar(length=100)
-    capacity = columns.Integer()
+    capacity = columns.Integer(default=0)
 
 
 class Concert(table.Table):

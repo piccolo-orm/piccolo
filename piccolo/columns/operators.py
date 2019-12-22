@@ -1,21 +1,25 @@
-class Operator():
-    template = ''
+class Operator:
+    template = ""
+
+
+class IsNull(Operator):
+    template = "{name} IS NULL"
 
 
 class Equal(Operator):
-    template = '{name} = {value}'
+    template = "{name} = {value}"
 
 
 class NotEqual(Operator):
-    template = '{name} != {value}'
+    template = "{name} != {value}"
 
 
 class In(Operator):
-    template = '{name} IN ({values})'
+    template = "{name} IN ({values})"
 
 
 class NotIn(Operator):
-    template = '{name} NOT IN ({values})'
+    template = "{name} NOT IN ({values})"
 
 
 class Like(Operator):

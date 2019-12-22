@@ -121,7 +121,7 @@ class Table(metaclass=TableMetaclass):
             _db=db,
         )
 
-    def __init__(self, **kwargs):
+    def __init__(self, ignore_missing: bool = False, **kwargs):
         """
         Assigns any default column values to the class.
         """
@@ -129,7 +129,11 @@ class Table(metaclass=TableMetaclass):
             value = kwargs.pop(column._meta.name, None)
             if not value:
                 value = column.get_default_value()
-                if (value is None) and (not column._meta.null):
+                if (
+                    (value is None)
+                    and (not column._meta.null)
+                    and not ignore_missing
+                ):
                     raise ValueError(f"{column._meta.name} wasn't provided")
 
             self[column._meta.name] = value

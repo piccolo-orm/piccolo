@@ -54,8 +54,8 @@ class Where(CombinableMixin):
     def __init__(
         self,
         column: "Column",
-        value: t.Any = None,
-        values: Iterable = [],
+        value: t.Any = ...,
+        values: Iterable = ...,
         operator: t.Type[Operator] = Operator,
     ) -> None:
         self.column = column
@@ -71,12 +71,11 @@ class Where(CombinableMixin):
     @property
     def querystring(self) -> QueryString:
         args: t.List[t.Any] = []
-        if self.value:
+        if self.value != ...:
             args.append(self.value)
-        if self.values:
+        if self.values != ...:
             args.append(self.values_querystring)
 
-        # TODO Want something cleaner than this.
         template = self.operator.template.format(
             name=self.column._meta.get_full_name(just_alias=True),
             value="{}",

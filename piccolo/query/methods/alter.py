@@ -89,9 +89,11 @@ class Null(AlterStatement):
     @property
     def querystring(self) -> QueryString:
         if self.boolean:
-            return QueryString(f"{self.column_name} DROP NOT NULL")
+            return QueryString(
+                f"ALTER COLUMN {self.column_name} DROP NOT NULL"
+            )
         else:
-            return QueryString(f"{self.column_name} SET NOT NULL")
+            return QueryString(f"ALTER COLUMN {self.column_name} SET NOT NULL")
 
 
 class Alter(Query):
