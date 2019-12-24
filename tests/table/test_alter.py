@@ -90,10 +90,28 @@ class TestUnique(DBTestCase):
         self.assertTrue(len(response), 2)
 
 
+class TestMultiple(DBTestCase):
+    """
+    Make sure multiple alter statements work correctly.
+    """
+
+    def test_multiple(self):
+        self.insert_row()
+
+        query = (
+            Manager.alter()
+            .add_column("column_a", Integer(default=0, null=True))
+            .add_column("column_b", Integer(default=0, null=True))
+        )
+        query.run_sync()
+
+        response = Band.raw("SELECT * FROM manager").run_sync()
+
+        column_names = response[0].keys()
+        self.assertTrue("column_a" in column_names)
+        self.assertTrue("column_b" in column_names)
+
+
 class TestNull(DBTestCase):
     def test_null(self):
         pass
-
-
-class TestMultiple(DBTestCase):
-    pass

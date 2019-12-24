@@ -60,7 +60,7 @@ class Add(AlterStatement):
     @property
     def querystring(self) -> QueryString:
         self.column._meta.name = self.name
-        return QueryString("ADD {}", self.column.querystring)
+        return QueryString("ADD COLUMN {}", self.column.querystring)
 
 
 @dataclasses.dataclass
@@ -218,8 +218,7 @@ class Alter(Query):
             )
         ]
 
-        for a in alterations:
-            query += " {}"
+        query += ",".join([" {}" for i in alterations])
 
         return QueryString(query, *alterations)
 
