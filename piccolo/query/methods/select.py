@@ -163,7 +163,7 @@ class Select(Query):
         return True
 
     @property
-    def querystring(self) -> t.Sequence[QueryString]:
+    def querystrings(self) -> t.Sequence[QueryString]:
         # JOIN
         self._check_valid_call_chain(self.columns_delegate.selected_columns)
 

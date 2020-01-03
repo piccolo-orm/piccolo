@@ -13,7 +13,7 @@ class TableExists(Query):
         return bool(response[0]["exists"])
 
     @property
-    def sqlite_querystring(self) -> t.Sequence[QueryString]:
+    def sqlite_querystrings(self) -> t.Sequence[QueryString]:
         return [
             QueryString(
                 "SELECT EXISTS(SELECT * FROM sqlite_master WHERE "
@@ -22,7 +22,7 @@ class TableExists(Query):
         ]
 
     @property
-    def postgres_querystring(self) -> t.Sequence[QueryString]:
+    def postgres_querystrings(self) -> t.Sequence[QueryString]:
         return [
             QueryString(
                 "SELECT EXISTS(SELECT * FROM information_schema.tables WHERE "

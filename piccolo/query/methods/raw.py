@@ -9,5 +9,5 @@ class Raw(Query):
     __slots__: t.Tuple = tuple()
 
     @property
-    def querystring(self) -> t.Sequence[QueryString]:
+    def querystrings(self) -> t.Sequence[QueryString]:
         return [self.base]

@@ -1,4 +1,6 @@
+from __future__ import annotations
 from dataclasses import dataclass
+import logging
 import os
 import sqlite3
 import typing as t
@@ -9,6 +11,9 @@ from aiosqlite import Cursor, Connection
 from piccolo.engine.base import Batch, Engine
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
+
+
+logger = logging.getLogger(__file__)
 
 
 @dataclass
@@ -41,7 +46,7 @@ class AsyncBatch(Batch):
         return response
 
     async def __aenter__(self):
-        querystring = self.query.querystring[0]
+        querystring = self.query.querystrings[0]
         template, template_args = querystring.compile_string()
 
         self._cursor = await self.connection.execute(template, *template_args)
@@ -51,6 +56,52 @@ class AsyncBatch(Batch):
         print("waiting to exit")
         await self._cursor.close()
         await self.connection.close()
+
+
+###############################################################################
+
+
+class Transaction:
+    """
+    Usage:
+
+    transaction = engine.transaction()
+    transaction.add(Foo.create_table())
+
+    # Either:
+    transaction.run_sync()
+    await transaction.run()
+    """
+
+    __slots__ = ("engine", "queries")
+
+    def __init__(self, engine: SQLiteEngine):
+        self.engine = engine
+        self.queries: t.List[Query] = []
+
+    def add(self, *query: Query):
+        self.queries += list(query)
+
+    async def run(self):
+        for query in self.queries:
+            await self.engine.run("BEGIN")
+            try:
+                for querystring in query.querystrings:
+                    await self.engine.run(
+                        *querystring.compile_string(
+                            engine_type=self.engine_type
+                        ),
+                        query_type=querystring.query_type,
+                    )
+            except Exception as exception:
+                logger.error(exception)
+                await self.engine.run("ROLLBACK")
+            else:
+                await self.engine.run("COMMIT")
+        self.queries = []
+
+    def run_sync(self):
+        return run_sync(self._run())
 
 
 ###############################################################################
@@ -120,7 +171,9 @@ class SQLiteEngine(Engine):
 
     async def get_connection(self) -> Connection:
         connection = await aiosqlite.connect(
-            self.path, detect_types=sqlite3.PARSE_DECLTYPES
+            self.path,
+            detect_types=sqlite3.PARSE_DECLTYPES,
+            isolation_level=None,
         )
         connection.row_factory = dict_factory
         return connection

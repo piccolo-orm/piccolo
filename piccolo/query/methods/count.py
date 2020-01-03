@@ -23,12 +23,12 @@ class Count(Query):
         return response[0]["count"]
 
     @property
-    def querystring(self) -> t.Sequence[QueryString]:
+    def querystrings(self) -> t.Sequence[QueryString]:
         select = Select(self.table)
         select.where_delegate._where = self.where_delegate._where
         return [
             QueryString(
                 'SELECT COUNT(*) AS "count" FROM ({}) AS "subquery"',
-                select.querystring[0],
+                select.querystrings[0],
             )
         ]

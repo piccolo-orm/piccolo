@@ -296,7 +296,7 @@ class Alter(Query):
         return response
 
     @property
-    def querystring(self) -> t.Sequence[QueryString]:
+    def querystrings(self) -> t.Sequence[QueryString]:
         if self._drop_table:
             return [QueryString(f'DROP TABLE "{self.table._meta.tablename}"')]
 
@@ -318,6 +318,3 @@ class Alter(Query):
         query += ",".join([" {}" for i in alterations])
 
         return [QueryString(query, *alterations)]
-
-    def __str__(self) -> str:
-        return self.querystring.__str__()

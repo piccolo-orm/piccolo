@@ -13,7 +13,7 @@ class Create(Query):
     __slots__: t.Tuple = tuple()
 
     @property
-    def querystring(self) -> t.Sequence[QueryString]:
+    def querystrings(self) -> t.Sequence[QueryString]:
         base = f"CREATE TABLE {self.table._meta.tablename}"
         columns = ", ".join(["{}" for i in self.table._meta.columns])
         query = f"{base} ({columns})"

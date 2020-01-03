@@ -90,9 +90,9 @@ class Query(object):
                 f"Table {self.table._meta.tablename} has no db defined in _meta"
             )
 
-        if len(self.querystring) == 1:
+        if len(self.querystrings) == 1:
             results = await engine.run_querystring(
-                self.querystring[0], in_pool=in_pool
+                self.querystrings[0], in_pool=in_pool
             )
             return await self._process_results(results)
         else:
@@ -121,33 +121,33 @@ class Query(object):
     ###########################################################################
 
     @property
-    def sqlite_querystring(self) -> t.Sequence[QueryString]:
+    def sqlite_querystrings(self) -> t.Sequence[QueryString]:
         raise NotImplementedError
 
     @property
-    def postgres_querystring(self) -> t.Sequence[QueryString]:
+    def postgres_querystrings(self) -> t.Sequence[QueryString]:
         raise NotImplementedError
 
     @property
-    def default_querystring(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> t.Sequence[QueryString]:
         raise NotImplementedError
 
     @property
-    def querystring(self) -> t.Sequence[QueryString]:
+    def querystrings(self) -> t.Sequence[QueryString]:
         """
         Calls the correct underlying method, depending on the current engine.
         """
         engine_type = self.engine_type
         if engine_type == "postgres":
             try:
-                return self.postgres_querystring
+                return self.postgres_querystrings
             except NotImplementedError:
-                return self.default_querystring
+                return self.default_querystrings
         elif engine_type == "sqlite":
             try:
-                return self.sqlite_querystring
+                return self.sqlite_querystrings
             except NotImplementedError:
-                return self.default_querystring
+                return self.default_querystrings
         else:
             raise Exception(
                 f"No querystring found for the {engine_type} engine."
@@ -156,4 +156,4 @@ class Query(object):
     ###########################################################################
 
     def __str__(self) -> str:
-        return "; ".join([i.__str__() for i in self.querystring])
+        return "; ".join([i.__str__() for i in self.querystrings])

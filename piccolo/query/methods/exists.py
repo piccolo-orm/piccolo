@@ -23,12 +23,12 @@ class Exists(Query):
         return response[0]["exists"]
 
     @property
-    def querystring(self) -> t.Sequence[QueryString]:
+    def querystrings(self) -> t.Sequence[QueryString]:
         select = Select(
             table=self.table,
             base=QueryString(f"SELECT * FROM {self.table._meta.tablename}"),
         )
         select.where_delegate._where = self.where_delegate._where
         return [
-            QueryString('SELECT EXISTS({}) AS "exists"', select.querystring[0])
+            QueryString('SELECT EXISTS({}) AS "exists"', select.querystrings[0])
         ]

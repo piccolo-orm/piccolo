@@ -49,7 +49,7 @@ class AsyncBatch(Batch):
     async def __aenter__(self):
         self._transaction = self.connection.transaction()
         await self._transaction.start()
-        querystring = self.query.querystring[0]
+        querystring = self.query.querystrings[0]
         template, template_args = querystring.compile_string()
 
         self._cursor = await self.connection.cursor(template, *template_args)
@@ -68,9 +68,12 @@ class Transaction:
     """
     Usage:
 
-    transaction = engine.Transaction()
+    transaction = engine.transaction()
     transaction.add(Foo.create_table())
+
+    # Either:
     transaction.run_sync()
+    await transaction.run()
     """
 
     __slots__ = ("engine", "queries")
@@ -85,7 +88,7 @@ class Transaction:
     async def _run_queries(self, connection):
         async with connection.transaction():
             for query in self.queries:
-                for querystring in query.querystring:
+                for querystring in query.querystrings:
                     _query, args = querystring.compile_string(
                         engine_type=self.engine.engine_type
                     )

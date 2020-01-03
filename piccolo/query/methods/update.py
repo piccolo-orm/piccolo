@@ -39,7 +39,7 @@ class Update(Query):
                 )
 
     @property
-    def default_querystring(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> t.Sequence[QueryString]:
         self.validate()
 
         columns_str = ", ".join(
