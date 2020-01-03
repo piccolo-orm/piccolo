@@ -44,6 +44,7 @@ OnUpdate = OnDelete
 class ForeignKeyMeta:
     references: t.Type[Table]
     on_delete: OnDelete
+    on_update: OnUpdate
     proxy_columns: t.List[Column] = field(default_factory=list)
 
 
@@ -244,7 +245,12 @@ class Column(Selectable):
         if foreign_key_meta:
             tablename = foreign_key_meta.references._meta.tablename
             on_delete = foreign_key_meta.on_delete.value
-            query += f" REFERENCES {tablename} ON DELETE {on_delete}"
+            on_update = foreign_key_meta.on_update.value
+            query += (
+                f" REFERENCES {tablename} "
+                f"ON DELETE {on_delete} "
+                f"ON UPDATE {on_update}"
+            )
 
         return QueryString(query)
 

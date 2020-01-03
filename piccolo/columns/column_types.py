@@ -5,7 +5,7 @@ from datetime import datetime
 import typing as t
 import uuid
 
-from piccolo.columns.base import Column, ForeignKeyMeta, OnDelete
+from piccolo.columns.base import Column, ForeignKeyMeta, OnDelete, OnUpdate
 from piccolo.querystring import Unquoted
 
 if t.TYPE_CHECKING:
@@ -160,12 +160,13 @@ class ForeignKey(Integer):
         self,
         references: t.Type[Table],
         on_delete: OnDelete = OnDelete.cascade,
+        on_update: OnUpdate = OnUpdate.cascade,
         **kwargs,
     ) -> None:
         kwargs.update({"references": references})
         super().__init__(**kwargs)
         self._foreign_key_meta = ForeignKeyMeta(
-            references=references, on_delete=on_delete
+            references=references, on_delete=on_delete, on_update=on_update
         )
 
         # Allow columns on the referenced table to be accessed via auto
