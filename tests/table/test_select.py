@@ -1,4 +1,4 @@
-from ..base import DBTestCase
+from ..base import DBTestCase, postgres_only, sqlite_only
 from ..example_project.tables import Band, Concert
 
 
@@ -218,7 +218,8 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(response, [{"name": "CSharps"}])
 
-    def test_offset(self):
+    @postgres_only
+    def test_offset_postgres(self):
         self.insert_rows()
 
         response = (
@@ -228,6 +229,27 @@ class TestSelect(DBTestCase):
             .offset(1)
             .run_sync()
         )
+
+        print(f"response = {response}")
+
+        self.assertEqual(
+            response, [{"name": "Pythonistas"}, {"name": "Rustaceans"}]
+        )
+
+    @sqlite_only
+    def test_offset_sqlite(self):
+        """
+        SQLite requires a limit clause for offset to work.
+        """
+        self.insert_rows()
+
+        query = Band.select().columns(Band.name).order_by(Band.name).offset(1)
+
+        with self.assertRaises(ValueError):
+            query.run_sync()
+
+        query = query.limit(5)
+        response = query.run_sync()
 
         print(f"response = {response}")
 

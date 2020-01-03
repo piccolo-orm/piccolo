@@ -1,4 +1,4 @@
-from ..base import DBTestCase
+from ..base import DBTestCase, postgres_only, sqlite_only
 from ..example_project.tables import Band
 
 
@@ -25,10 +25,34 @@ class TestObjects(DBTestCase):
             == "Rustaceans"
         )
 
-    def test_offset(self):
+    @postgres_only
+    def test_offset_postgres(self):
+        """
+        Postgres can do an offset without a limit clause.
+        """
         self.insert_rows()
-
         response = Band.objects().order_by(Band.name).offset(1).run_sync()
+
+        print(f"response = {response}")
+
+        self.assertEqual(
+            [i.name for i in response], ["Pythonistas", "Rustaceans"]
+        )
+
+    @sqlite_only
+    def test_offset_sqlite(self):
+        """
+        SQLite requires a limit clause for offset to work.
+        """
+        self.insert_rows()
+        query = Band.objects().order_by(Band.name).offset(1)
+
+        with self.assertRaises(ValueError):
+            query.run_sync()
+
+        query = query.limit(5)
+
+        response = query.run_sync()
 
         print(f"response = {response}")
 

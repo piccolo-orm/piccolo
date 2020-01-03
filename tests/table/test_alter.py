@@ -1,6 +1,6 @@
 from piccolo.columns import Integer
 
-from ..base import DBTestCase
+from ..base import DBTestCase, postgres_only
 from ..example_project.tables import Band, Manager
 
 
@@ -26,8 +26,14 @@ class TestRename(DBTestCase):
         self._test_rename("popularity")
 
 
-class TestDrop(DBTestCase):
-    def _test_drop(self, column):
+@postgres_only
+class TestDropColumn(DBTestCase):
+    """
+    Unfortunately this only works with Postgres at the moment.
+
+    SQLite has very limited support for ALTER statements.
+    """
+    def _test_drop(self, column: str):
         self.insert_row()
 
         Band.alter().drop_column(column).run_sync()
@@ -64,6 +70,7 @@ class TestAdd(DBTestCase):
         self.assertEqual(response[0]["weight"], None)
 
 
+@postgres_only
 class TestUnique(DBTestCase):
     def test_unique(self):
         unique_query = Manager.alter().set_unique(Manager.name, True)
@@ -90,6 +97,8 @@ class TestUnique(DBTestCase):
         self.assertTrue(len(response), 2)
 
 
+# TODO - make it work for SQLite. Should work.
+@postgres_only
 class TestMultiple(DBTestCase):
     """
     Make sure multiple alter statements work correctly.

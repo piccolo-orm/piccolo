@@ -98,7 +98,7 @@ class Query(object):
         else:
             responses = []
             # TODO - run in a transaction
-            for querystring in self.querystring:
+            for querystring in self.querystrings:
                 results = await engine.run_querystring(
                     querystring, in_pool=in_pool
                 )

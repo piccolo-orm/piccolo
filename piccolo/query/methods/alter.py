@@ -51,7 +51,7 @@ class RenameColumn(AlterColumnStatement):
 class DropColumn(AlterColumnStatement):
     @property
     def querystring(self) -> QueryString:
-        return QueryString(f"DROP {self.column_name}")
+        return QueryString(f"DROP COLUMN {self.column_name}")
 
 
 @dataclasses.dataclass

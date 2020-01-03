@@ -213,6 +213,16 @@ class Select(Query):
             query += " {}"
             args.append(self.order_by_delegate._order_by.querystring)
 
+        if (
+            engine_type == "sqlite"
+            and self.offset_delegate._offset
+            and not self.limit_delegate._limit
+        ):
+            raise ValueError(
+                "A limit clause must be provided when doing an offset with "
+                "SQLite."
+            )
+
         if self.limit_delegate._limit:
             query += " {}"
             args.append(self.limit_delegate._limit.querystring)
