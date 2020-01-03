@@ -2,11 +2,10 @@ from __future__ import annotations
 import copy
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
 import typing as t
 import uuid
 
-from piccolo.columns.base import Column
+from piccolo.columns.base import Column, ForeignKeyMeta, OnDelete
 from piccolo.querystring import Unquoted
 
 if t.TYPE_CHECKING:
@@ -126,18 +125,6 @@ class Boolean(Column):
         super().__init__(**kwargs)
 
 
-@dataclass
-class ForeignKeyMeta:
-    references: t.Type[Table]
-    proxy_columns: t.List[Column] = field(default_factory=list)
-
-
-class OnDelete(str, Enum):
-    cascade = "CASCADE"
-    restrict = "RESTRICT"
-    no_action = "NO ACTION"
-
-
 class ForeignKey(Integer):
     """
     Returns an integer, representing the referenced row's ID.
@@ -169,10 +156,17 @@ class ForeignKey(Integer):
 
     column_type = "INTEGER"
 
-    def __init__(self, references: t.Type[Table], **kwargs) -> None:
+    def __init__(
+        self,
+        references: t.Type[Table],
+        on_delete: OnDelete = OnDelete.cascade,
+        **kwargs,
+    ) -> None:
         kwargs.update({"references": references})
         super().__init__(**kwargs)
-        self._foreign_key_meta = ForeignKeyMeta(references=references)
+        self._foreign_key_meta = ForeignKeyMeta(
+            references=references, on_delete=on_delete
+        )
 
         # Allow columns on the referenced table to be accessed via auto
         # completion.

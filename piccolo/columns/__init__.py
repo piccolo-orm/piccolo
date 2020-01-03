@@ -9,5 +9,5 @@ from .column_types import (  # noqa
     ForeignKey,
     UUID,
 )
-from .base import Column, Selectable  # noqa
+from .base import Column, Selectable, OnDelete  # noqa
 from .combination import And, Or, Where  # noqa

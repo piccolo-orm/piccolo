@@ -28,7 +28,7 @@ class Combination(CombinableMixin):
         self.second = second
 
     @property
-    def querystring(self):
+    def querystring(self) -> QueryString:
         return QueryString(
             "({} " + self.operator + " {})",
             self.first.querystring,

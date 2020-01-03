@@ -49,7 +49,8 @@ class AsyncBatch(Batch):
     async def __aenter__(self):
         self._transaction = self.connection.transaction()
         await self._transaction.start()
-        template, template_args = self.query.querystring.compile_string()
+        querystring = self.query.querystring[0]
+        template, template_args = querystring.compile_string()
 
         self._cursor = await self.connection.cursor(template, *template_args)
         return self
@@ -84,10 +85,11 @@ class Transaction:
     async def _run_queries(self, connection):
         async with connection.transaction():
             for query in self.queries:
-                _query, args = query.querystring.compile_string(
-                    engine_type=self.engine.engine_type
-                )
-                await connection.execute(_query, *args)
+                for querystring in query.querystring:
+                    _query, args = querystring.compile_string(
+                        engine_type=self.engine.engine_type
+                    )
+                    await connection.execute(_query, *args)
 
         self.queries = []
 

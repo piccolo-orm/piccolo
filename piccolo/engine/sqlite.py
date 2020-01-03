@@ -41,7 +41,8 @@ class AsyncBatch(Batch):
         return response
 
     async def __aenter__(self):
-        template, template_args = self.query.querystring.compile_string()
+        querystring = self.query.querystring[0]
+        template, template_args = querystring.compile_string()
 
         self._cursor = await self.connection.execute(template, *template_args)
         return self

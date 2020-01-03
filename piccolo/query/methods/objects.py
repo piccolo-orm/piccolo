@@ -78,7 +78,7 @@ class Objects(Query):
             return response
 
     @property
-    def querystring(self) -> QueryString:
+    def querystring(self) -> t.Sequence[QueryString]:
         select = Select(table=self.table)
 
         for attr in (
@@ -91,6 +91,3 @@ class Objects(Query):
             setattr(select, attr, getattr(self, attr))
 
         return select.querystring
-
-    def __str__(self) -> str:
-        return self.querystring.__str__()

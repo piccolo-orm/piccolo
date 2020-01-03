@@ -3,26 +3,14 @@ import dataclasses
 import itertools
 import typing as t
 
-from piccolo.columns.base import Column
+from piccolo.columns.base import Column, OnDelete, OnUpdate
+from piccolo.columns.column_types import ForeignKey
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 
 
 @dataclasses.dataclass
 class AlterStatement:
-    __slots__ = ("column",)
-
-    column: t.Union[Column, str]
-
-    @property
-    def column_name(self) -> str:
-        if type(self.column) == str:
-            return self.column
-        elif isinstance(self.column, Column):
-            return self.column._meta.name
-        else:
-            raise ValueError("Unrecognised column type")
-
     def querystring(self) -> QueryString:
         raise NotImplementedError()
 
@@ -31,7 +19,23 @@ class AlterStatement:
 
 
 @dataclasses.dataclass
-class Rename(AlterStatement):
+class AlterColumnStatement(AlterStatement):
+    __slots__ = ("column",)
+
+    column: t.Union[Column, str]
+
+    @property
+    def column_name(self) -> str:
+        if isinstance(self.column, str):
+            return self.column
+        elif isinstance(self.column, Column):
+            return self.column._meta.name
+        else:
+            raise ValueError("Unrecognised column type")
+
+
+@dataclasses.dataclass
+class RenameColumn(AlterColumnStatement):
     __slots__ = ("new_name",)
 
     new_name: str
@@ -44,14 +48,14 @@ class Rename(AlterStatement):
 
 
 @dataclasses.dataclass
-class Drop(AlterStatement):
+class DropColumn(AlterColumnStatement):
     @property
     def querystring(self) -> QueryString:
         return QueryString(f"DROP {self.column_name}")
 
 
 @dataclasses.dataclass
-class Add(AlterStatement):
+class AddColumn(AlterColumnStatement):
     __slots__ = ("name",)
 
     column: Column
@@ -64,7 +68,7 @@ class Add(AlterStatement):
 
 
 @dataclasses.dataclass
-class Unique(AlterStatement):
+class Unique(AlterColumnStatement):
     __slots__ = ("boolean",)
 
     boolean: bool
@@ -81,7 +85,7 @@ class Unique(AlterStatement):
 
 
 @dataclasses.dataclass
-class Null(AlterStatement):
+class Null(AlterColumnStatement):
     __slots__ = ("boolean",)
 
     boolean: bool
@@ -89,11 +93,46 @@ class Null(AlterStatement):
     @property
     def querystring(self) -> QueryString:
         if self.boolean:
-            return QueryString(
-                f"ALTER COLUMN {self.column_name} DROP NOT NULL"
-            )
+            return QueryString(f"ALTER COLUMN {self.column_name} DROP NOT NULL")
         else:
             return QueryString(f"ALTER COLUMN {self.column_name} SET NOT NULL")
+
+
+@dataclasses.dataclass
+class DropConstraint(AlterStatement):
+    __slots__ = ("constraint_name",)
+
+    constraint_name: str
+
+    @property
+    def querystring(self) -> QueryString:
+        return QueryString(f"DROP CONSTRAINT IF EXISTS {self.constraint_name}")
+
+
+@dataclasses.dataclass
+class AddForeignKeyConstraint(AlterStatement):
+    __slots__ = ("constraint_name",)
+
+    constraint_name: str
+    foreign_key_column_name: str
+    referenced_table_name: str
+    on_delete: t.Optional[OnDelete]
+    on_update: t.Optional[OnUpdate]
+    referenced_column_name: str = "id"
+
+    @property
+    def querystring(self) -> QueryString:
+        query = (
+            f"ADD CONSTRAINT {self.constraint_name} FOREIGN KEY "
+            f"({self.foreign_key_column_name}) REFERENCES "
+            f"{self.referenced_table_name} ({self.referenced_column_name}) "
+            "MATCH SIMPLE"
+        )
+        if self.on_delete:
+            query += f" ON DELETE {self.on_delete.value}"
+        if self.on_update:
+            query += f" ON UPDATE {self.on_update.value}"
+        return QueryString(query)
 
 
 class Alter(Query):
@@ -102,26 +141,28 @@ class Alter(Query):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._add: t.List[Add] = []
-        self._drop: t.List[Drop] = []
-        self._rename: t.List[Rename] = []
+        self._add: t.List[AddColumn] = []
+        self._drop: t.List[DropColumn] = []
+        self._rename: t.List[RenameColumn] = []
         self._unique: t.List[Unique] = []
         self._null: t.List[Null] = []
         self._drop_table = False
+        self._drop_contraint: t.List[DropConstraint] = []
+        self._add_foreign_key_constraint: t.List[AddForeignKeyConstraint] = []
 
     def add_column(self, name: str, column: Column) -> Alter:
         """
         Band.alter().add_column(‘members’, Integer())
         """
         column._meta._table = self.table
-        self._add.append(Add(column, name))
+        self._add.append(AddColumn(column, name))
         return self
 
     def drop_column(self, column: t.Union[str, Column]) -> Alter:
         """
         Band.alter().drop_column(Band.popularity)
         """
-        self._drop.append(Drop(column))
+        self._drop.append(DropColumn(column))
         return self
 
     def drop_table(self) -> Alter:
@@ -138,7 +179,7 @@ class Alter(Query):
         Band.alter().rename_column(Band.popularity, ‘rating’)
         Band.alter().rename_column('popularity', ‘rating’)
         """
-        self._rename.append(Rename(column, new_name))
+        self._rename.append(RenameColumn(column, new_name))
         return self
 
     def set_null(
@@ -159,6 +200,56 @@ class Alter(Query):
         Band.alter().set_unique('name', True)
         """
         self._unique.append(Unique(column, boolean))
+        return self
+
+    def _get_constraint_name(self, column: t.Union[str, ForeignKey]) -> str:
+        column_name = AlterColumnStatement(column=column).column_name
+        tablename = self.table._meta.tablename
+        constraint_name = f"{tablename}_{column_name}_fk"
+        return constraint_name
+
+    def drop_constraint(self, constraint_name: str) -> Alter:
+        self._drop_contraint.append(
+            DropConstraint(constraint_name=constraint_name)
+        )
+        return self
+
+    def drop_foreign_key_constraint(
+        self, column: t.Union[str, ForeignKey]
+    ) -> Alter:
+        constraint_name = self._get_constraint_name(column=column)
+        return self.drop_constraint(constraint_name=constraint_name)
+
+    def add_foreign_key_constraint(
+        self,
+        column: t.Union[str, ForeignKey],
+        referenced_table_name: str,
+        on_delete: t.Optional[OnDelete] = None,
+        on_update: t.Optional[OnUpdate] = None,
+        referenced_column_name: str = "id",
+    ) -> Alter:
+        """
+        This will add a new foreign key constraint.
+
+        Band.alter().add_foreign_key_constraint(
+            Band.manager,
+            referenced_table_name='manager',
+            on_delete=OnDelete.cascade
+        )
+        """
+        constraint_name = self._get_constraint_name(column=column)
+        column_name = AlterColumnStatement(column=column).column_name
+
+        self._add_foreign_key_constraint.append(
+            AddForeignKeyConstraint(
+                constraint_name=constraint_name,
+                foreign_key_column_name=column_name,
+                referenced_table_name=referenced_table_name,
+                on_delete=on_delete,
+                on_update=on_update,
+                referenced_column_name=referenced_column_name,
+            )
+        )
         return self
 
     async def response_handler(self, response):
@@ -205,9 +296,9 @@ class Alter(Query):
         return response
 
     @property
-    def querystring(self) -> QueryString:
+    def querystring(self) -> t.Sequence[QueryString]:
         if self._drop_table:
-            return QueryString(f'DROP TABLE "{self.table._meta.tablename}"')
+            return [QueryString(f'DROP TABLE "{self.table._meta.tablename}"')]
 
         query = f"ALTER TABLE {self.table._meta.tablename}"
 
@@ -218,9 +309,15 @@ class Alter(Query):
             )
         ]
 
+        if self.engine_type == "sqlite":
+            # Can only perform one alter statement at a time.
+            query += " {}"
+            return [QueryString(query, i) for i in alterations]
+
+        # Postgres can perform them all at once:
         query += ",".join([" {}" for i in alterations])
 
-        return QueryString(query, *alterations)
+        return [QueryString(query, *alterations)]
 
     def __str__(self) -> str:
         return self.querystring.__str__()

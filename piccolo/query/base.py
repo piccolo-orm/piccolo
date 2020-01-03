@@ -90,11 +90,20 @@ class Query(object):
                 f"Table {self.table._meta.tablename} has no db defined in _meta"
             )
 
-        results = await engine.run_querystring(
-            self.querystring, in_pool=in_pool
-        )
-
-        return await self._process_results(results)
+        if len(self.querystring) == 1:
+            results = await engine.run_querystring(
+                self.querystring[0], in_pool=in_pool
+            )
+            return await self._process_results(results)
+        else:
+            responses = []
+            # TODO - run in a transaction
+            for querystring in self.querystring:
+                results = await engine.run_querystring(
+                    querystring, in_pool=in_pool
+                )
+                responses.append(await self._process_results(results))
+            return responses
 
     def run_sync(self, *args, **kwargs):
         """
@@ -112,19 +121,19 @@ class Query(object):
     ###########################################################################
 
     @property
-    def sqlite_querystring(self) -> QueryString:
+    def sqlite_querystring(self) -> t.Sequence[QueryString]:
         raise NotImplementedError
 
     @property
-    def postgres_querystring(self) -> QueryString:
+    def postgres_querystring(self) -> t.Sequence[QueryString]:
         raise NotImplementedError
 
     @property
-    def default_querystring(self) -> QueryString:
+    def default_querystring(self) -> t.Sequence[QueryString]:
         raise NotImplementedError
 
     @property
-    def querystring(self) -> QueryString:
+    def querystring(self) -> t.Sequence[QueryString]:
         """
         Calls the correct underlying method, depending on the current engine.
         """
@@ -147,4 +156,4 @@ class Query(object):
     ###########################################################################
 
     def __str__(self) -> str:
-        return self.querystring.__str__()
+        return "; ".join([i.__str__() for i in self.querystring])

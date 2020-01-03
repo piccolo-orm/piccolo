@@ -1,6 +1,7 @@
 from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field
+from enum import Enum
 import typing as t
 
 from piccolo.columns.operators import (
@@ -28,6 +29,24 @@ if t.TYPE_CHECKING:
     from .column_types import ForeignKey  # noqa
 
 
+class OnDelete(str, Enum):
+    cascade = "CASCADE"
+    restrict = "RESTRICT"
+    no_action = "NO ACTION"
+    set_null = "SET NULL"
+    set_default = "SET DEFAULT"
+
+
+OnUpdate = OnDelete
+
+
+@dataclass
+class ForeignKeyMeta:
+    references: t.Type[Table]
+    on_delete: OnDelete
+    proxy_columns: t.List[Column] = field(default_factory=list)
+
+
 @dataclass
 class ColumnMeta:
     """
@@ -46,7 +65,7 @@ class ColumnMeta:
 
     # Set by the Table Metaclass:
     _name: t.Optional[str] = None
-    _table: t.Optional[Table] = None
+    _table: t.Optional[t.Type[Table]] = None
 
     # Used by Foreign Keys:
     call_chain: t.List["ForeignKey"] = field(default_factory=lambda: [])
@@ -219,10 +238,13 @@ class Column(Selectable):
         if not self._meta.null:
             query += " NOT NULL"
 
-        foreign_key_meta = getattr(self, "_foreign_key_meta", None)
+        foreign_key_meta: t.Optional[ForeignKeyMeta] = getattr(
+            self, "_foreign_key_meta", None
+        )
         if foreign_key_meta:
-            references = foreign_key_meta.references
-            query += f" REFERENCES {references._meta.tablename}"
+            tablename = foreign_key_meta.references._meta.tablename
+            on_delete = foreign_key_meta.on_delete.value
+            query += f" REFERENCES {tablename} ON DELETE {on_delete}"
 
         return QueryString(query)
 

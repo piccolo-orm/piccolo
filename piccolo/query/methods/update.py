@@ -39,7 +39,7 @@ class Update(Query):
                 )
 
     @property
-    def default_querystring(self) -> QueryString:
+    def default_querystring(self) -> t.Sequence[QueryString]:
         self.validate()
 
         columns_str = ", ".join(
@@ -51,9 +51,7 @@ class Update(Query):
 
         query = f"UPDATE {self.table._meta.tablename} SET " + columns_str
 
-        querystring = QueryString(
-            query, *self.values_delegate._values.values()
-        )
+        querystring = QueryString(query, *self.values_delegate._values.values())
 
         if self.where_delegate._where:
             where_querystring = QueryString(
@@ -61,6 +59,6 @@ class Update(Query):
                 querystring,
                 self.where_delegate._where.querystring,
             )
-            return where_querystring
+            return [where_querystring]
         else:
-            return querystring
+            return [querystring]

@@ -1,4 +1,5 @@
 from __future__ import annotations
+import typing as t
 
 from piccolo.custom_types import Combinable
 from piccolo.query.base import Query
@@ -22,13 +23,12 @@ class Exists(Query):
         return response[0]["exists"]
 
     @property
-    def querystring(self) -> QueryString:
+    def querystring(self) -> t.Sequence[QueryString]:
         select = Select(
             table=self.table,
             base=QueryString(f"SELECT * FROM {self.table._meta.tablename}"),
         )
         select.where_delegate._where = self.where_delegate._where
-        return QueryString('SELECT EXISTS({}) AS "exists"', select.querystring)
-
-    def __str__(self) -> str:
-        return self.querystring.__str__()
+        return [
+            QueryString('SELECT EXISTS({}) AS "exists"', select.querystring[0])
+        ]

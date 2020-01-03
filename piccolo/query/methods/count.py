@@ -1,4 +1,5 @@
 from __future__ import annotations
+import typing as t
 
 from piccolo.custom_types import Combinable
 from piccolo.query.base import Query
@@ -22,10 +23,12 @@ class Count(Query):
         return response[0]["count"]
 
     @property
-    def querystring(self) -> QueryString:
+    def querystring(self) -> t.Sequence[QueryString]:
         select = Select(self.table)
         select.where_delegate._where = self.where_delegate._where
-        return QueryString(
-            'SELECT COUNT(*) AS "count" FROM ({}) AS "subquery"',
-            select.querystring,
-        )
+        return [
+            QueryString(
+                'SELECT COUNT(*) AS "count" FROM ({}) AS "subquery"',
+                select.querystring[0],
+            )
+        ]

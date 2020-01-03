@@ -1,4 +1,5 @@
 from __future__ import annotations
+import typing as t
 
 from piccolo.custom_types import Combinable
 from piccolo.query.base import Query
@@ -38,16 +39,10 @@ class Delete(Query):
             )
 
     @property
-    def querystring(self) -> QueryString:
+    def querystring(self) -> t.Sequence[QueryString]:
         query = f"DELETE FROM {self.table._meta.tablename}"
         if self.where_delegate._where:
             query += " WHERE {}"
-            return QueryString(query, self.where_delegate._where.querystring)
+            return [QueryString(query, self.where_delegate._where.querystring)]
         else:
-            return QueryString(query)
-
-    def __str__(self) -> str:
-        query = f"DELETE FROM {self.table._meta.tablename}"
-        if self.where_delegate._where:
-            query += f" WHERE {self.where_delegate._where.__str__()}"
-        return query
+            return [QueryString(query)]
