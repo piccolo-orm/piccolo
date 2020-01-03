@@ -2,6 +2,7 @@ from __future__ import annotations
 import copy
 from dataclasses import dataclass, field
 from datetime import datetime
+from enum import Enum
 import typing as t
 import uuid
 
@@ -129,6 +130,12 @@ class Boolean(Column):
 class ForeignKeyMeta:
     references: t.Type[Table]
     proxy_columns: t.List[Column] = field(default_factory=list)
+
+
+class OnDelete(str, Enum):
+    cascade = "CASCADE"
+    restrict = "RESTRICT"
+    no_action = "NO ACTION"
 
 
 class ForeignKey(Integer):
