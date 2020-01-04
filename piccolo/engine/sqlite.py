@@ -176,6 +176,7 @@ class SQLiteEngine(Engine):
             isolation_level=None,
         )
         connection.row_factory = dict_factory
+        await connection.execute("PRAGMA foreign_keys = 1")
         return connection
 
     ###########################################################################
@@ -184,8 +185,12 @@ class SQLiteEngine(Engine):
         self, query: str, args: t.List[t.Any] = [], query_type: str = "generic"
     ):
         async with aiosqlite.connect(
-            self.path, detect_types=sqlite3.PARSE_DECLTYPES
+            self.path,
+            detect_types=sqlite3.PARSE_DECLTYPES,
+            isolation_level=None,
         ) as connection:
+
+            await connection.execute("PRAGMA foreign_keys = 1")
 
             connection.row_factory = dict_factory
             async with connection.execute(query, args) as cursor:
@@ -206,5 +211,5 @@ class SQLiteEngine(Engine):
             query_type=querystring.query_type,
         )
 
-    def transaction(self):
-        raise NotImplementedError
+    def transaction(self) -> Transaction:
+        return Transaction(engine=self)
