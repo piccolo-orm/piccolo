@@ -1,3 +1,8 @@
+0.7.6
+=====
+Supporting ON DELETE and ON UPDATE for foreign keys. Recording reverse foreign
+key relationships.
+
 0.7.5
 =====
 Make response_handler async. Made it easier to rename columns.
