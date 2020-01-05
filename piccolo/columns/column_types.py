@@ -169,6 +169,9 @@ class ForeignKey(Integer):
             references=references, on_delete=on_delete, on_update=on_update
         )
 
+        # Record the reverse relationship on the target table.
+        references._meta.foreign_key_references.append(self)
+
         # Allow columns on the referenced table to be accessed via auto
         # completion.
         for column in references._meta.columns:

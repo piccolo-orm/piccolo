@@ -5,7 +5,11 @@ import inspect
 import typing as t
 
 from piccolo.engine import Engine, engine_finder
-from piccolo.columns import Column, Selectable, PrimaryKey, ForeignKey
+from piccolo.columns import Column, Selectable
+from piccolo.columns.column_types import (
+    ForeignKey,
+    PrimaryKey,
+)
 from piccolo.columns.readable import Readable
 from piccolo.query import (
     Alter,
@@ -35,6 +39,10 @@ class TableMeta:
     non_default_columns: t.List[Column] = field(default_factory=list)
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
     _db: t.Optional[Engine] = None
+
+    # Records reverse foreign key relationships - i.e. when the current table
+    # is the target of a foreign key.
+    foreign_key_references: t.List[ForeignKey] = field(default_factory=list)
 
     @property
     def db(self) -> t.Optional[Engine]:
@@ -111,7 +119,9 @@ class Table(metaclass=TableMetaclass):
                 # Mypy wrongly thinks cls is a Table instance:
                 column._meta._table = cls  # type: ignore
 
-        foreign_key_columns = [i for i in columns if isinstance(i, ForeignKey)]
+        foreign_key_columns: t.List[ForeignKey] = [
+            i for i in columns if isinstance(i, ForeignKey)
+        ]
 
         cls._meta = TableMeta(
             tablename=tablename,

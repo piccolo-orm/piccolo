@@ -93,7 +93,9 @@ class Null(AlterColumnStatement):
     @property
     def querystring(self) -> QueryString:
         if self.boolean:
-            return QueryString(f"ALTER COLUMN {self.column_name} DROP NOT NULL")
+            return QueryString(
+                f"ALTER COLUMN {self.column_name} DROP NOT NULL"
+            )
         else:
             return QueryString(f"ALTER COLUMN {self.column_name} SET NOT NULL")
 
@@ -125,8 +127,7 @@ class AddForeignKeyConstraint(AlterStatement):
         query = (
             f"ADD CONSTRAINT {self.constraint_name} FOREIGN KEY "
             f"({self.foreign_key_column_name}) REFERENCES "
-            f"{self.referenced_table_name} ({self.referenced_column_name}) "
-            "MATCH SIMPLE"
+            f"{self.referenced_table_name} ({self.referenced_column_name})"
         )
         if self.on_delete:
             query += f" ON DELETE {self.on_delete.value}"

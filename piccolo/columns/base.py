@@ -60,6 +60,7 @@ class ColumnMeta:
     primary: bool = False
     key: bool = False
     unique: bool = False
+    index: bool = False
 
     # Used for representing the table in migrations and the playground.
     params: t.Dict[str, t.Any] = field(default_factory=dict)
@@ -141,15 +142,27 @@ class Column(Selectable):
         primary: bool = False,
         key: bool = False,
         unique: bool = False,
+        index: bool = False,
         **kwargs,
     ) -> None:
         # Used for migrations:
         kwargs.update(
-            {"null": null, "primary": primary, "key": key, "unique": unique}
+            {
+                "null": null,
+                "primary": primary,
+                "key": key,
+                "unique": unique,
+                "index": index,
+            }
         )
 
         self._meta = ColumnMeta(
-            null=null, primary=primary, key=key, unique=unique, params=kwargs
+            null=null,
+            primary=primary,
+            key=key,
+            unique=unique,
+            index=index,
+            params=kwargs,
         )
 
     def is_in(self, values: Iterable) -> Where:
@@ -247,7 +260,7 @@ class Column(Selectable):
             on_delete = foreign_key_meta.on_delete.value
             on_update = foreign_key_meta.on_update.value
             query += (
-                f" REFERENCES {tablename} "
+                f" REFERENCES {tablename} (id) "
                 f"ON DELETE {on_delete} "
                 f"ON UPDATE {on_update}"
             )
