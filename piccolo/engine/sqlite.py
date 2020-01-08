@@ -116,14 +116,42 @@ def dict_factory(cursor, row):
 
 class SQLiteEngine(Engine):
 
-    __slots__ = ("path",)
+    __slots__ = ("connection_kwargs",)
 
     engine_type = "sqlite"
     min_version_number = 3.25
 
-    def __init__(self, path: str = "piccolo.sqlite") -> None:
-        self.path = path
+    def __init__(
+        self,
+        path: str = "piccolo.sqlite",
+        detect_types=sqlite3.PARSE_DECLTYPES,
+        isolation_level=None,
+        **connection_kwargs,
+    ) -> None:
+        """
+        Any connection kwargs are passed into the database adapter.
+
+        See here for more info:
+        https://docs.python.org/3/library/sqlite3.html#sqlite3.connect
+
+        """
+        connection_kwargs.update(
+            {
+                "database": path,
+                "detect_types": detect_types,
+                "isolation_level": isolation_level,
+            }
+        )
+        self.connection_kwargs = connection_kwargs
         super().__init__()
+
+    @property
+    def path(self):
+        return self.connection_kwargs["database"]
+
+    @path.setter
+    def path(self, value: str):
+        self.connection_kwargs["database"] = value
 
     def get_version(self) -> float:
         """
@@ -170,11 +198,7 @@ class SQLiteEngine(Engine):
     ###########################################################################
 
     async def get_connection(self) -> Connection:
-        connection = await aiosqlite.connect(
-            self.path,
-            detect_types=sqlite3.PARSE_DECLTYPES,
-            isolation_level=None,
-        )
+        connection = await aiosqlite.connect(**self.connection_kwargs)
         connection.row_factory = dict_factory
         await connection.execute("PRAGMA foreign_keys = 1")
         return connection
@@ -184,12 +208,7 @@ class SQLiteEngine(Engine):
     async def run(
         self, query: str, args: t.List[t.Any] = [], query_type: str = "generic"
     ):
-        async with aiosqlite.connect(
-            self.path,
-            detect_types=sqlite3.PARSE_DECLTYPES,
-            isolation_level=None,
-        ) as connection:
-
+        async with aiosqlite.connect(**self.connection_kwargs) as connection:
             await connection.execute("PRAGMA foreign_keys = 1")
 
             connection.row_factory = dict_factory
