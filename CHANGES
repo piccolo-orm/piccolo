@@ -1,3 +1,7 @@
+0.7.7
+=====
+Column sequencing matches the definition order.
+
 0.7.6
 =====
 Supporting ON DELETE and ON UPDATE for foreign keys. Recording reverse foreign
