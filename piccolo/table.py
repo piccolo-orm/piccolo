@@ -2,6 +2,7 @@ from __future__ import annotations
 import copy
 from dataclasses import dataclass, field
 import inspect
+import itertools
 import typing as t
 
 from piccolo.engine import Engine, engine_finder
@@ -98,12 +99,18 @@ class Table(metaclass=TableMetaclass):
 
         tablename = tablename if tablename else _camel_to_snake(cls.__name__)
 
-        attribute_names = [i for i in dir(cls) if not i.startswith("_")]
+        attribute_names = itertools.chain(
+            *[i.__dict__.keys() for i in reversed(cls.__mro__)]
+        )
+        unique_attribute_names = list(dict.fromkeys(attribute_names))
 
         columns: t.List[Column] = []
         non_default_columns: t.List[Column] = []
 
-        for attribute_name in attribute_names:
+        for attribute_name in unique_attribute_names:
+            if attribute_name.startswith("_"):
+                continue
+
             attribute = getattr(cls, attribute_name)
             if isinstance(attribute, Column):
                 column = attribute
