@@ -71,18 +71,26 @@ class QueryString:
             elif _type == datetime:
                 dt_string = arg.isoformat().replace("T", " ")
                 converted_args.append(f"'{dt_string}'")
-            elif arg == None:
+            elif arg is None:
                 converted_args.append("null")
             else:
                 converted_args.append(arg)
 
         return template.format(*converted_args)
 
-    def bundle(self, start_index=1, bundled=[], combined_args=[]):
+    def bundle(
+        self,
+        start_index: int = 1,
+        bundled: t.Optional[t.List] = None,
+        combined_args: t.Optional[t.List] = None,
+    ):
         # Split up the string, separating by {}.
         fragments = [
             Fragment(prefix=i[0]) for i in Formatter().parse(self.template)
         ]
+
+        bundled = [] if bundled is None else bundled
+        combined_args = [] if combined_args is None else combined_args
 
         for index, fragment in enumerate(fragments):
             try:

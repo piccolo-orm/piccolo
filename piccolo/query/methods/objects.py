@@ -10,7 +10,6 @@ from piccolo.query.mixins import (
     OrderByDelegate,
     WhereDelegate,
     OutputDelegate,
-    Output,
 )
 from piccolo.querystring import QueryString
 from .select import Select
