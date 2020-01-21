@@ -385,7 +385,7 @@ class Table(metaclass=TableMetaclass):
         return Delete(table=cls, force=force)
 
     @classmethod
-    def create_table(cls) -> Create:
+    def create_table(cls, if_not_exists=False) -> Create:
         """
         Create table, along with all columns.
 

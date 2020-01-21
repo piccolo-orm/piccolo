@@ -10,11 +10,19 @@ class Create(Query):
     Creates a database table.
     """
 
-    __slots__: t.Tuple = tuple()
+    __slots__ = ("if_not_exists",)
+
+    def __init__(self, if_not_exists=False, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.if_not_exists = if_not_exists
 
     @property
     def querystrings(self) -> t.Sequence[QueryString]:
-        base = f"CREATE TABLE {self.table._meta.tablename}"
+        prefix = "CREATE TABLE"
+        if self.if_not_exists:
+            prefix += "IF NOT EXISTS"
+
+        base = f"{prefix} {self.table._meta.tablename}"
         columns = ", ".join(["{}" for i in self.table._meta.columns])
         query = f"{base} ({columns})"
         return [
