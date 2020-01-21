@@ -1,2 +1,2 @@
 #!/bin/bash
-./run-tests.sh --cov-report html
+./run-tests.sh --cov-report html $@
