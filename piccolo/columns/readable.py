@@ -11,15 +11,21 @@ if t.TYPE_CHECKING:
 
 @dataclass
 class Readable(Selectable):
+    """
+    This allows a table to specify a 'readable' representation, which can be
+    used instead of the primary key in GUIs. See the 'get_readable' Table
+    method.
+    """
+
     template: str
     columns: t.Sequence[Column]
     output_name: str = "readable"
 
     @property
     def _columns_string(self) -> str:
-        return ", ".join([
-            i._meta.get_full_name(just_alias=True) for i in self.columns
-        ])
+        return ", ".join(
+            [i._meta.get_full_name(just_alias=True) for i in self.columns]
+        )
 
     def _get_string(self, operator: str):
         return (

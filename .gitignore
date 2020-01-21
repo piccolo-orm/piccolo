@@ -13,3 +13,4 @@ piccolo.sqlite
 _build/
 .coverage
 *.sqlite
+htmlcov/
