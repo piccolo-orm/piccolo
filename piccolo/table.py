@@ -385,13 +385,13 @@ class Table(metaclass=TableMetaclass):
         return Delete(table=cls, force=force)
 
     @classmethod
-    def create_table(cls) -> Create:
+    def create_table(cls, if_not_exists=False) -> Create:
         """
         Create table, along with all columns.
 
         await Band.create_table().run()
         """
-        return Create(table=cls)
+        return Create(table=cls, if_not_exists=if_not_exists)
 
     @classmethod
     def create_table_without_columns(cls) -> Raw:
@@ -461,7 +461,7 @@ class Table(metaclass=TableMetaclass):
         return TableExists(table=cls)
 
     @classmethod
-    def update(cls) -> Update:
+    def update(cls, values: t.Dict[Column, t.Any] = {}) -> Update:
         """
         Update rows.
 
@@ -469,7 +469,7 @@ class Table(metaclass=TableMetaclass):
             {Band.name: "Spamalot"}
         ).where(Band.name=="Pythonistas")
         """
-        return Update(table=cls)
+        return Update(table=cls).values(values)
 
     ###########################################################################
 

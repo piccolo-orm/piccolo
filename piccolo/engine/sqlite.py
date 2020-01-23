@@ -11,6 +11,7 @@ from aiosqlite import Cursor, Connection
 from piccolo.engine.base import Batch, Engine
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
+from piccolo.utils.sync import run_sync
 
 
 logger = logging.getLogger(__file__)

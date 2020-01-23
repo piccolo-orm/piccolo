@@ -46,8 +46,6 @@ class TestJoin(TestCase):
         venue = Venue(name="Grand Central")
         venue.save().run_sync()
 
-        # TODO - make sure you can also do:
-        # band_1=Pythonistas
         save_query = Concert(
             band_1=band_1.id, band_2=band_2.id, venue=venue.id
         ).save()
@@ -60,7 +58,22 @@ class TestJoin(TestCase):
             Concert.band_1.manager,
         )
         response = select_query.run_sync()
-        print(response)
+        self.assertEqual(
+            response,
+            [
+                {
+                    "band_1.name": "Pythonistas",
+                    "band_2.name": "Rustaceans",
+                    "venue.name": "Grand Central",
+                    "band_1.manager": 1,
+                }
+            ],
+        )
+
+        # Now make sure that even deeper joins work:
+        select_query = Concert.select().columns(Concert.band_1.manager.name)
+        response = select_query.run_sync()
+        self.assertEqual(response, [{"band_1.manager.name": "Guido"}])
 
     # def _test_ref(self):
     #     """

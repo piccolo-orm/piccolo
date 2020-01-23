@@ -312,6 +312,9 @@ class TestSelect(DBTestCase):
         self.assertEqual(response, 1)
 
     def test_distinct(self):
+        """
+        Make sure the distinct clause works.
+        """
         self.insert_rows()
         self.insert_rows()
 
@@ -331,4 +334,3 @@ class TestSelect(DBTestCase):
         """
         self.assertEqual(len(Concert.band_1.name._meta.call_chain), 1)
         self.assertEqual(len(Concert.band_1.manager.name._meta.call_chain), 2)
-

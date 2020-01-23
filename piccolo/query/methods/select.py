@@ -132,7 +132,7 @@ class Select(Query):
                 if index > 0:
                     left_tablename = column._meta.call_chain[
                         index - 1
-                    ].table_alias
+                    ]._meta.table_alias
                 else:
                     left_tablename = key._meta.table._meta.tablename
 
