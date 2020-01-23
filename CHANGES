@@ -1,3 +1,8 @@
+0.8.0
+=====
+Fixing bug when joining across several tables. Can pass values directly into
+the Table.update method. Added 'if_not_exists' option when creating a table.
+
 0.7.7
 =====
 Column sequencing matches the definition order.
