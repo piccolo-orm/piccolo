@@ -1,20 +1,20 @@
 # Piccolo
 
 [![Build Status](https://travis-ci.com/piccolo-orm/piccolo.svg?branch=master)](https://travis-ci.com/piccolo-orm/piccolo)
-
 [![Coverage Status](https://coveralls.io/repos/github/piccolo-orm/piccolo/badge.svg)](https://coveralls.io/github/piccolo-orm/piccolo)
-
 [![Documentation Status](https://readthedocs.org/projects/piccolo-orm/badge/?version=latest)](https://piccolo-orm.readthedocs.io/en/latest/?badge=latest)
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/piccolo-orm/piccolo.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/piccolo-orm/piccolo/context:python)
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/piccolo-orm/piccolo.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/piccolo-orm/piccolo/alerts/)
 
 A fast, user friendly ORM and query builder which supports asyncio. [Read the docs](https://piccolo-orm.readthedocs.io/en/latest/).
 
 Some of it’s stand out features are:
 
- * Support for sync and async.
- * A builtin playground, which makes learning a breeze.
- * Tab completion support - works great with iPython and VSCode.
- * Batteries included - a User model, authentication, migrations, an admin, and more.
- * Modern Python - fully type annotated.
+- Support for sync and async.
+- A builtin playground, which makes learning a breeze.
+- Tab completion support - works great with iPython and VSCode.
+- Batteries included - a User model, authentication, migrations, an admin, and more.
+- Modern Python - fully type annotated.
 
 The syntax is clean and expressive.
 
