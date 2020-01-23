@@ -20,7 +20,7 @@ class Create(Query):
     def querystrings(self) -> t.Sequence[QueryString]:
         prefix = "CREATE TABLE"
         if self.if_not_exists:
-            prefix += "IF NOT EXISTS"
+            prefix += " IF NOT EXISTS"
 
         base = f"{prefix} {self.table._meta.tablename}"
         columns = ", ".join(["{}" for i in self.table._meta.columns])

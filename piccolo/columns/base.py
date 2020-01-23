@@ -223,7 +223,7 @@ class Column(Selectable):
         return the response instead.
         """
         default = getattr(self, "default", None)
-        if default != None:
+        if default is not None:
             # Can't use inspect - can't tell that datetime.datetime.now
             # is a callable.
             is_callable = hasattr(default, "__call__")
@@ -232,6 +232,9 @@ class Column(Selectable):
         return None
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
+        """
+        How to refer to this column in a SQL query.
+        """
         return self._meta.get_full_name(just_alias=just_alias)
 
     @property
