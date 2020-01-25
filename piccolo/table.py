@@ -513,4 +513,3 @@ class Table(metaclass=TableMetaclass):
         return (
             f"class {cls.__name__}({class_args}):\n" f"    {columns_string}\n"
         )
-

@@ -1,0 +1,38 @@
+from unittest import TestCase
+
+from piccolo.table import Table
+from piccolo.columns.column_types import SmallInt
+
+from ..base import postgres_only
+
+
+class MyTable(Table):
+    value = SmallInt()
+
+
+@postgres_only
+class TestSmallIntPostgres(TestCase):
+    """
+    Make sure a SmallInt column in Postgres can only store small numbers.
+    """
+
+    def setUp(self):
+        MyTable.create_table().run_sync()
+
+    def tearDown(self):
+        MyTable.alter().drop_table().run_sync()
+
+    def test_length(self):
+        # Can store 2 bytes, but split between positive and negative values.
+        max_value = int(2 ** 16 / 2) - 1
+        min_value = max_value * -1
+
+        row = MyTable(value=max_value)
+        row.save().run_sync()
+
+        row.value = min_value
+        row.save().run_sync()
+
+        with self.assertRaises(Exception):
+            row.value = max_value + 100
+            row.save().run_sync()

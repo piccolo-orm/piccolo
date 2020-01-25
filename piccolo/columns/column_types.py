@@ -72,6 +72,36 @@ class Integer(Column):
         super().__init__(**kwargs)
 
 
+###############################################################################
+# BigInt and SmallInt only exist on Postgres. SQLite treats them the same as
+# Integer columns.
+
+
+class BigInt(Integer):
+    @property
+    def column_type(self):
+        engine_type = self._meta.table._meta.db.engine_type
+        if engine_type == "postgres":
+            return "BIGINT"
+        elif engine_type == "sqlite":
+            return "INTEGER"
+        raise Exception("Unrecognized engine type")
+
+
+class SmallInt(Integer):
+    @property
+    def column_type(self):
+        engine_type = self._meta.table._meta.db.engine_type
+        if engine_type == "postgres":
+            return "SMALLINT"
+        elif engine_type == "sqlite":
+            return "INTEGER"
+        raise Exception("Unrecognized engine type")
+
+
+###############################################################################
+
+
 class Serial(Column):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
