@@ -27,12 +27,15 @@ class TestBigIntPostgres(TestCase):
         max_value = int(2 ** 64 / 2) - 1
         min_value = max_value * -1
 
+        print("Testing max value")
         row = MyTable(value=max_value)
         row.save().run_sync()
 
+        print("Testing min value")
         row.value = min_value
         row.save().run_sync()
 
+        print("Test exceeding max value")
         with self.assertRaises(Exception):
             row.value = max_value + 100
             row.save().run_sync()
