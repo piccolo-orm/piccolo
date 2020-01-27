@@ -7,10 +7,7 @@ import typing as t
 
 from piccolo.engine import Engine, engine_finder
 from piccolo.columns import Column, Selectable
-from piccolo.columns.column_types import (
-    ForeignKey,
-    PrimaryKey,
-)
+from piccolo.columns.column_types import ForeignKey, PrimaryKey
 from piccolo.columns.readable import Readable
 from piccolo.query import (
     Alter,
@@ -27,6 +24,9 @@ from piccolo.query import (
 )
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
+
+
+PROTECTED_TABLENAMES = ("user",)
 
 
 @dataclass
@@ -98,6 +98,12 @@ class Table(metaclass=TableMetaclass):
         cls.id = PrimaryKey()
 
         tablename = tablename if tablename else _camel_to_snake(cls.__name__)
+
+        if tablename in PROTECTED_TABLENAMES:
+            raise ValueError(
+                f"{tablename} is a protected name, please give your table a "
+                "different name."
+            )
 
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]
@@ -211,9 +217,7 @@ class Table(metaclass=TableMetaclass):
         if isinstance(foreign_key, ForeignKey):
             column_name = foreign_key._meta.name
 
-            references: t.Type[
-                Table
-            ] = foreign_key._foreign_key_meta.references
+            references: t.Type[Table] = foreign_key._foreign_key_meta.references
 
             return (
                 references.objects()
@@ -246,9 +250,7 @@ class Table(metaclass=TableMetaclass):
         output_name = f"{column._meta.name}_readable"
 
         new_readable = Readable(
-            template=readable.template,
-            columns=columns,
-            output_name=output_name,
+            template=readable.template, columns=columns, output_name=output_name
         )
         return new_readable
 
