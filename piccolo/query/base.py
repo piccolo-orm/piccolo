@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import dataclass, field
 import itertools
 from time import time
 import typing as t
@@ -21,20 +22,11 @@ class Timer:
         print(f"Duration: {self.end - self.start}s")
 
 
+@dataclass
 class Query(object):
-    def __init__(
-        self,
-        table: t.Type[Table],
-        base: QueryString = QueryString(""),
-        *args,
-        **kwargs,
-    ) -> None:
-        self.base = base
-        self.table = table
-        self._setup_delegates()
 
-    def _setup_delegates(self):
-        pass
+    table: t.Type[Table]
+    base: QueryString = field(default_factory=lambda: QueryString(""))
 
     @property
     def engine_type(self) -> str:

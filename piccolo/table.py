@@ -372,7 +372,7 @@ class Table(metaclass=TableMetaclass):
         await Band.select('name').run()
         """
         columns = cls._process_column_args(*columns)
-        return Select(table=cls, columns=columns)
+        return Select(table=cls, columns_list=columns)
 
     @classmethod
     def delete(cls, force=False) -> Delete:

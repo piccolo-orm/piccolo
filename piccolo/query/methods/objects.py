@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import dataclass
 import typing as t
 
 from piccolo.custom_types import Combinable
@@ -18,6 +19,7 @@ if t.TYPE_CHECKING:
     from piccolo.columns import Column
 
 
+@dataclass
 class Objects(Query):
     """
     Almost identical to select, except you have to select all fields, and
@@ -32,7 +34,7 @@ class Objects(Query):
         "where_delegate",
     )
 
-    def _setup_delegates(self):
+    def __post_init__(self):
         self.limit_delegate = LimitDelegate()
         self.offset_delegate = OffsetDelegate()
         self.order_by_delegate = OrderByDelegate()

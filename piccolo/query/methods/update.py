@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import dataclass
 import typing as t
 
 from piccolo.custom_types import Combinable
@@ -10,11 +11,12 @@ if t.TYPE_CHECKING:
     from piccolo.columns import Column
 
 
+@dataclass
 class Update(Query):
 
     __slots__ = ("values_delegate", "where_delegate")
 
-    def _setup_delegates(self):
+    def __post_init__(self):
         self.values_delegate = ValuesDelegate()
         self.where_delegate = WhereDelegate()
 

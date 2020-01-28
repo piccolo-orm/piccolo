@@ -1,5 +1,6 @@
 from __future__ import annotations
 from collections import OrderedDict
+from dataclasses import dataclass, field
 import typing as t
 
 from piccolo.columns import Column, Selectable
@@ -22,6 +23,7 @@ if t.TYPE_CHECKING:
     from piccolo.custom_types import Combinable
 
 
+@dataclass
 class Select(Query):
 
     __slots__ = (
@@ -34,16 +36,9 @@ class Select(Query):
         "where_delegate",
     )
 
-    def __init__(
-        self,
-        table: t.Type[Table],
-        base: QueryString = QueryString(""),
-        columns: t.Iterable[Selectable] = [],
-    ):
-        super().__init__(table=table, base=base)
-        self.columns(*columns)
+    columns_list: t.Iterable[Selectable] = field(default_factory=list)
 
-    def _setup_delegates(self):
+    def __post_init__(self):
         self.columns_delegate = ColumnsDelegate()
         self.distinct_delegate = DistinctDelegate()
         self.limit_delegate = LimitDelegate()
@@ -51,6 +46,8 @@ class Select(Query):
         self.order_by_delegate = OrderByDelegate()
         self.output_delegate = OutputDelegate()
         self.where_delegate = WhereDelegate()
+
+        self.columns(*self.columns_list)
 
     def columns(self, *columns: t.Union[Column, str]) -> Select:
         columns = self.table._process_column_args(*columns)

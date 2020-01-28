@@ -1,20 +1,20 @@
 from __future__ import annotations
+from dataclasses import dataclass
 import typing as t
 
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 
 
+@dataclass
 class Create(Query):
     """
     Creates a database table.
     """
 
-    __slots__ = ("if_not_exists",)
+    __slots__ = tuple()
 
-    def __init__(self, if_not_exists=False, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.if_not_exists = if_not_exists
+    if_not_exists: bool = False
 
     @property
     def querystrings(self) -> t.Sequence[QueryString]:
