@@ -1,5 +1,6 @@
 from __future__ import annotations
 import itertools
+from time import time
 import typing as t
 
 import ujson as json
@@ -9,6 +10,15 @@ from piccolo.utils.sync import run_sync
 
 if t.TYPE_CHECKING:
     from piccolo.table import Table  # noqa
+
+
+class Timer:
+    def __enter__(self):
+        self.start = time()
+
+    def __exit__(self, type, value, traceback):
+        self.end = time()
+        print(f"Duration: {self.end - self.start}s")
 
 
 class Query(object):
@@ -105,11 +115,17 @@ class Query(object):
                 responses.append(await self._process_results(results))
             return responses
 
-    def run_sync(self, *args, **kwargs):
+    def run_sync(self, timed=False, *args, **kwargs):
         """
         A convenience method for running the coroutine synchronously.
         """
-        return run_sync(self.run(*args, **kwargs, in_pool=False))
+        coroutine = self.run(*args, **kwargs, in_pool=False)
+
+        if timed:
+            with Timer():
+                return run_sync(coroutine)
+        else:
+            return run_sync(coroutine)
 
     async def response_handler(self, response):
         """
