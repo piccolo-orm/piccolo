@@ -26,7 +26,6 @@ class Timer:
 class Query(object):
 
     table: t.Type[Table]
-    base: QueryString = field(default_factory=lambda: QueryString(""))
 
     @property
     def engine_type(self) -> str:

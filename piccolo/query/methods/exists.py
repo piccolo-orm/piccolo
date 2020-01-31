@@ -4,10 +4,9 @@ import typing as t
 
 from piccolo.custom_types import Combinable
 from piccolo.query.base import Query
+from piccolo.query.methods.select import Select
 from piccolo.query.mixins import WhereDelegate
 from piccolo.querystring import QueryString
-
-from .select import Select
 
 
 @dataclass
@@ -26,10 +25,7 @@ class Exists(Query):
 
     @property
     def querystrings(self) -> t.Sequence[QueryString]:
-        select = Select(
-            table=self.table,
-            base=QueryString(f"SELECT * FROM {self.table._meta.tablename}"),
-        )
+        select = Select(table=self.table)
         select.where_delegate._where = self.where_delegate._where
         return [
             QueryString('SELECT EXISTS({}) AS "exists"', select.querystrings[0])

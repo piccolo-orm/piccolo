@@ -341,7 +341,7 @@ class Table(metaclass=TableMetaclass):
 
         await Band.raw("select * from band where name = {}", 'Pythonistas')
         """
-        return Raw(table=cls, base=QueryString(sql, *args))
+        return Raw(table=cls, querystring=QueryString(sql, *args))
 
     @classmethod
     def _process_column_args(

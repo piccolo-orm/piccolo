@@ -15,7 +15,7 @@ class DeletionError(Exception):
 @dataclass
 class Delete(Query):
 
-    __slots__ = tuple()
+    __slots__ = ("where_delegate",)
 
     force: bool = False
 

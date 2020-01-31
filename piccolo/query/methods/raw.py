@@ -8,8 +8,10 @@ from piccolo.querystring import QueryString
 
 @dataclass
 class Raw(Query):
-    __slots__: t.Tuple = tuple()
+    __slots__ = tuple()
+
+    querystring: QueryString
 
     @property
     def querystrings(self) -> t.Sequence[QueryString]:
-        return [self.base]
+        return [self.querystring]
