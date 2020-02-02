@@ -1,5 +1,4 @@
 from __future__ import annotations
-from dataclasses import dataclass
 import typing as t
 
 from piccolo.custom_types import Combinable
@@ -12,14 +11,13 @@ class DeletionError(Exception):
     pass
 
 
-@dataclass
 class Delete(Query):
 
-    __slots__ = ("where_delegate",)
+    __slots__ = ("force", "where_delegate")
 
-    force: bool = False
-
-    def __post_init__(self):
+    def __init__(self, table: t.Type[Table], force: bool = False):
+        self.table = table
+        self.force = force
         self.where_delegate = WhereDelegate()
 
     def where(self, where: Combinable) -> Delete:

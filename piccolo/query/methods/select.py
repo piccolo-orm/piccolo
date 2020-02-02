@@ -1,6 +1,5 @@
 from __future__ import annotations
 from collections import OrderedDict
-from dataclasses import dataclass, field
 import typing as t
 
 from piccolo.columns import Column, Selectable
@@ -23,10 +22,10 @@ if t.TYPE_CHECKING:
     from piccolo.custom_types import Combinable
 
 
-@dataclass
 class Select(Query):
 
     __slots__ = (
+        "columns_list",
         "columns_delegate",
         "distinct_delegate",
         "limit_delegate",
@@ -36,9 +35,11 @@ class Select(Query):
         "where_delegate",
     )
 
-    columns_list: t.Iterable[Selectable] = field(default_factory=list)
+    def __init__(
+        self, table: t.Type[Table], columns_list: t.Iterable[Selectable] = []
+    ):
+        self.table = table
 
-    def __post_init__(self):
         self.columns_delegate = ColumnsDelegate()
         self.distinct_delegate = DistinctDelegate()
         self.limit_delegate = LimitDelegate()
@@ -47,7 +48,7 @@ class Select(Query):
         self.output_delegate = OutputDelegate()
         self.where_delegate = WhereDelegate()
 
-        self.columns(*self.columns_list)
+        self.columns(*columns_list)
 
     def columns(self, *columns: t.Union[Column, str]) -> Select:
         columns = self.table._process_column_args(*columns)
@@ -133,8 +134,12 @@ class Select(Query):
                 else:
                     left_tablename = key._meta.table._meta.tablename
 
+                right_tablename = (
+                    key._foreign_key_meta.references._meta.tablename
+                )
+
                 _joins.append(
-                    f"LEFT JOIN {key._foreign_key_meta.references._meta.tablename} {table_alias}"
+                    f"LEFT JOIN {right_tablename} {table_alias}"
                     " ON "
                     f"({left_tablename}.{key._meta.name} = {table_alias}.id)"
                 )

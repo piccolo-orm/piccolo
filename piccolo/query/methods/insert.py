@@ -14,8 +14,10 @@ if t.TYPE_CHECKING:
 class Insert(Query):
     __slots__ = ("add_delegate",)
 
-    def __post_init__(self):
+    def __init__(self, table: t.Type[Table], *instances: Table):
+        self.table = table
         self.add_delegate = AddDelegate()
+        self.add(*instances)
 
     def add(self, *instances: Table) -> Insert:
         self.add_delegate.add(*instances, table_class=self.table)

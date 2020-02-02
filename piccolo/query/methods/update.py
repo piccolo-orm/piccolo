@@ -16,7 +16,8 @@ class Update(Query):
 
     __slots__ = ("values_delegate", "where_delegate")
 
-    def __post_init__(self):
+    def __init__(self, table: t.Type[Table]):
+        self.table = table
         self.values_delegate = ValuesDelegate()
         self.where_delegate = WhereDelegate()
 
@@ -53,7 +54,9 @@ class Update(Query):
 
         query = f"UPDATE {self.table._meta.tablename} SET " + columns_str
 
-        querystring = QueryString(query, *self.values_delegate._values.values())
+        querystring = QueryString(
+            query, *self.values_delegate._values.values()
+        )
 
         if self.where_delegate._where:
             where_querystring = QueryString(

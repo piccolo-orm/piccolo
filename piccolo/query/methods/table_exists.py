@@ -1,12 +1,10 @@
 from __future__ import annotations
-from dataclasses import dataclass
 import typing as t
 
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 
 
-@dataclass
 class TableExists(Query):
 
     __slots__: t.Tuple = tuple()

@@ -8,9 +8,14 @@ from piccolo.columns.column_types import ForeignKey
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 
+if t.TYPE_CHECKING:
+    from piccolo.table import Table
+
 
 @dataclass
 class AlterStatement:
+    __slots__ = tuple()
+
     def querystring(self) -> QueryString:
         raise NotImplementedError()
 
@@ -93,7 +98,9 @@ class Null(AlterColumnStatement):
     @property
     def querystring(self) -> QueryString:
         if self.boolean:
-            return QueryString(f"ALTER COLUMN {self.column_name} DROP NOT NULL")
+            return QueryString(
+                f"ALTER COLUMN {self.column_name} DROP NOT NULL"
+            )
         else:
             return QueryString(f"ALTER COLUMN {self.column_name} SET NOT NULL")
 
@@ -134,12 +141,22 @@ class AddForeignKeyConstraint(AlterStatement):
         return QueryString(query)
 
 
-@dataclass
 class Alter(Query):
 
-    __slots__ = ("_add", "_drop", "_rename", "_unique", "_null", "_drop_table")
+    __slots__ = (
+        "table",
+        "_add",
+        "_drop",
+        "_rename",
+        "_unique",
+        "_null",
+        "_drop_table",
+        "_drop_contraint",
+        "_add_foreign_key_constraint",
+    )
 
-    def __post_init__(self):
+    def __init__(self, table: t.Type[Table]):
+        self.table = table
         self._add: t.List[AddColumn] = []
         self._drop: t.List[DropColumn] = []
         self._rename: t.List[RenameColumn] = []
@@ -287,7 +304,11 @@ class Alter(Query):
                 for _id in ids:
                     for column in columns:
                         await self.table.raw(
-                            f"UPDATE {tablename} SET {column._meta.name} = {{}} WHERE id = {{}}",
+                            (
+                                f"UPDATE {tablename} "
+                                f"SET {column._meta.name} = "
+                                "{} WHERE id = {}"
+                            ),
                             column.get_default_value(),
                             _id,
                         ).run()

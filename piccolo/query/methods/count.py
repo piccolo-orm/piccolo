@@ -1,5 +1,4 @@
 from __future__ import annotations
-from dataclasses import dataclass
 import typing as t
 
 from piccolo.custom_types import Combinable
@@ -10,11 +9,11 @@ from piccolo.querystring import QueryString
 from .select import Select
 
 
-@dataclass
 class Count(Query):
     __slots__ = ("where_delegate",)
 
-    def __post_init__(self):
+    def __init__(self, table: t.Type[Table]):
+        self.table = table
         self.where_delegate = WhereDelegate()
 
     def where(self, where: Combinable) -> Count:

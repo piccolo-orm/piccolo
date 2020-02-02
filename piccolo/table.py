@@ -201,12 +201,12 @@ class Table(metaclass=TableMetaclass):
 
         return self.__class__.delete().where(self.__class__.id == _id)
 
-    def get_related(self, foreign_key: ForeignKey) -> Objects:
+    def get_related(self, foreign_key: t.Union[ForeignKey, str]) -> Objects:
         """
         Used to fetch a Table instance, for the target of a foreign key.
 
         band = await Band.objects().first().run()
-        manager = await band.get_related(Band.name).run()
+        manager = await band.get_related(Band.manager).run()
         >>> print(manager.name)
         'Guido'
 
@@ -214,21 +214,27 @@ class Table(metaclass=TableMetaclass):
         i.e. Band.manager, but not Band.manager.x.y.z
 
         """
-        if isinstance(foreign_key, ForeignKey):
-            column_name = foreign_key._meta.name
+        if isinstance(foreign_key, str):
+            foreign_key = self._meta.get_column_by_name(foreign_key)
 
-            references: t.Type[Table] = foreign_key._foreign_key_meta.references
-
-            return (
-                references.objects()
-                .where(
-                    references._meta.get_column_by_name("id")
-                    == getattr(self, column_name)
-                )
-                .first()
+        if not isinstance(foreign_key, ForeignKey):
+            raise ValueError(
+                "foreign_key isn't a ForeignKey instance,  or the name of a "
+                "ForeignKey column."
             )
-        else:
-            raise ValueError(f"{column_name} isn't a ForeignKey")
+
+        column_name = foreign_key._meta.name
+
+        references: t.Type[Table] = foreign_key._foreign_key_meta.references
+
+        return (
+            references.objects()
+            .where(
+                references._meta.get_column_by_name("id")
+                == getattr(self, column_name)
+            )
+            .first()
+        )
 
     def __setitem__(self, key: str, value: t.Any):
         setattr(self, key, value)
@@ -250,7 +256,9 @@ class Table(metaclass=TableMetaclass):
         output_name = f"{column._meta.name}_readable"
 
         new_readable = Readable(
-            template=readable.template, columns=columns, output_name=output_name
+            template=readable.template,
+            columns=columns,
+            output_name=output_name,
         )
         return new_readable
 

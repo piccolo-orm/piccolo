@@ -8,9 +8,13 @@ from piccolo.querystring import QueryString
 
 @dataclass
 class Raw(Query):
-    __slots__ = tuple()
+    __slots__ = ("querystring",)
 
-    querystring: QueryString
+    def __init__(
+        self, table: t.Type[Table], querystring: QueryString = QueryString("")
+    ):
+        self.table = table
+        self.querystring = querystring
 
     @property
     def querystrings(self) -> t.Sequence[QueryString]:

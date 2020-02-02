@@ -206,11 +206,13 @@ class PostgresEngine(Engine):
     async def run_querystring(
         self, querystring: QueryString, in_pool: bool = True
     ):
-        query, args = querystring.compile_string(engine_type=self.engine_type)
+        query, query_args = querystring.compile_string(
+            engine_type=self.engine_type
+        )
         if in_pool and self.pool:
-            return await self.run_in_pool(query, args)
+            return await self.run_in_pool(query, query_args)
         else:
-            return await self.run(query, args)
+            return await self.run(query, query_args)
 
     def transaction(self) -> Transaction:
         return Transaction(engine=self)

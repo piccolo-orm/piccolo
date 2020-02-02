@@ -13,7 +13,8 @@ from piccolo.querystring import QueryString
 class Exists(Query):
     __slots__ = ("where_delegate",)
 
-    def __post_init__(self):
+    def __init__(self, table: t.Type[Table]):
+        self.table = table
         self.where_delegate = WhereDelegate()
 
     def where(self, where: Combinable) -> Exists:
@@ -28,5 +29,7 @@ class Exists(Query):
         select = Select(table=self.table)
         select.where_delegate._where = self.where_delegate._where
         return [
-            QueryString('SELECT EXISTS({}) AS "exists"', select.querystrings[0])
+            QueryString(
+                'SELECT EXISTS({}) AS "exists"', select.querystrings[0]
+            )
         ]

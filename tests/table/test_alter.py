@@ -33,6 +33,7 @@ class TestDropColumn(DBTestCase):
 
     SQLite has very limited support for ALTER statements.
     """
+
     def _test_drop(self, column: str):
         self.insert_row()
 

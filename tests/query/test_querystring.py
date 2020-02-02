@@ -13,9 +13,7 @@ class TestQueryString(TestCase):
     def test_compile_string(self):
         compiled_string, args = self.qs.compile_string()
 
-        self.assertEqual(
-            compiled_string, "SELECT id FROM band WHERE name = $1"
-        )
+        self.assertEqual(compiled_string, "SELECT id FROM band WHERE name = $1")
 
         self.assertEqual(args, ["Pythonistas"])
 
@@ -28,15 +26,3 @@ class TestQueryString(TestCase):
     def test_querystring_with_no_args(self):
         qs = QueryString("SELECT name FROM band")
         self.assertEqual(qs.compile_string(), ("SELECT name FROM band", []))
-
-
-# class TestExecuteQueryString(TestCase):
-
-#     def setUp():
-#         Band.create_table().run_sync()
-
-#     def tearDown():
-#         Band.alter().drop_table().run_sync()
-
-#     def test_raw_query(self):
-#         Band._meta.db.run()
