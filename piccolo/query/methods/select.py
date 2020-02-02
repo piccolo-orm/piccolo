@@ -25,6 +25,7 @@ if t.TYPE_CHECKING:
 class Select(Query):
 
     __slots__ = (
+        "columns_list",
         "columns_delegate",
         "distinct_delegate",
         "limit_delegate",
@@ -35,15 +36,10 @@ class Select(Query):
     )
 
     def __init__(
-        self,
-        table: t.Type[Table],
-        base: QueryString = QueryString(""),
-        columns: t.Iterable[Selectable] = [],
+        self, table: t.Type[Table], columns_list: t.Iterable[Selectable] = []
     ):
-        super().__init__(table=table, base=base)
-        self.columns(*columns)
+        super().__init__(table)
 
-    def _setup_delegates(self):
         self.columns_delegate = ColumnsDelegate()
         self.distinct_delegate = DistinctDelegate()
         self.limit_delegate = LimitDelegate()
@@ -51,6 +47,8 @@ class Select(Query):
         self.order_by_delegate = OrderByDelegate()
         self.output_delegate = OutputDelegate()
         self.where_delegate = WhereDelegate()
+
+        self.columns(*columns_list)
 
     def columns(self, *columns: t.Union[Column, str]) -> Select:
         columns = self.table._process_column_args(*columns)
@@ -136,8 +134,12 @@ class Select(Query):
                 else:
                     left_tablename = key._meta.table._meta.tablename
 
+                right_tablename = (
+                    key._foreign_key_meta.references._meta.tablename
+                )
+
                 _joins.append(
-                    f"LEFT JOIN {key._foreign_key_meta.references._meta.tablename} {table_alias}"
+                    f"LEFT JOIN {right_tablename} {table_alias}"
                     " ON "
                     f"({left_tablename}.{key._meta.name} = {table_alias}.id)"
                 )

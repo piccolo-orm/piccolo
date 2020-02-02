@@ -13,13 +13,11 @@ class DeletionError(Exception):
 
 class Delete(Query):
 
-    __slots__ = ("where_delegate", "force")
+    __slots__ = ("force", "where_delegate")
 
-    def __init__(self, force=False, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, table: t.Type[Table], force: bool = False):
+        super().__init__(table)
         self.force = force
-
-    def _setup_delegates(self):
         self.where_delegate = WhereDelegate()
 
     def where(self, where: Combinable) -> Delete:

@@ -12,8 +12,8 @@ class Create(Query):
 
     __slots__ = ("if_not_exists",)
 
-    def __init__(self, if_not_exists=False, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, table: t.Type[Table], if_not_exists: bool = False):
+        super().__init__(table)
         self.if_not_exists = if_not_exists
 
     @property

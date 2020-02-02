@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import dataclass
 import typing as t
 
 from piccolo.query.base import Query
@@ -9,11 +10,14 @@ if t.TYPE_CHECKING:
     from piccolo.table import Table
 
 
+@dataclass
 class Insert(Query):
     __slots__ = ("add_delegate",)
 
-    def _setup_delegates(self):
+    def __init__(self, table: t.Type[Table], *instances: Table):
+        super().__init__(table)
         self.add_delegate = AddDelegate()
+        self.add(*instances)
 
     def add(self, *instances: Table) -> Insert:
         self.add_delegate.add(*instances, table_class=self.table)

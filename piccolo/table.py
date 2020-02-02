@@ -201,12 +201,12 @@ class Table(metaclass=TableMetaclass):
 
         return self.__class__.delete().where(self.__class__.id == _id)
 
-    def get_related(self, foreign_key: ForeignKey) -> Objects:
+    def get_related(self, foreign_key: t.Union[ForeignKey, str]) -> Objects:
         """
         Used to fetch a Table instance, for the target of a foreign key.
 
         band = await Band.objects().first().run()
-        manager = await band.get_related(Band.name).run()
+        manager = await band.get_related(Band.manager).run()
         >>> print(manager.name)
         'Guido'
 
@@ -214,21 +214,27 @@ class Table(metaclass=TableMetaclass):
         i.e. Band.manager, but not Band.manager.x.y.z
 
         """
-        if isinstance(foreign_key, ForeignKey):
-            column_name = foreign_key._meta.name
+        if isinstance(foreign_key, str):
+            foreign_key = self._meta.get_column_by_name(foreign_key)
 
-            references: t.Type[Table] = foreign_key._foreign_key_meta.references
-
-            return (
-                references.objects()
-                .where(
-                    references._meta.get_column_by_name("id")
-                    == getattr(self, column_name)
-                )
-                .first()
+        if not isinstance(foreign_key, ForeignKey):
+            raise ValueError(
+                "foreign_key isn't a ForeignKey instance,  or the name of a "
+                "ForeignKey column."
             )
-        else:
-            raise ValueError(f"{column_name} isn't a ForeignKey")
+
+        column_name = foreign_key._meta.name
+
+        references: t.Type[Table] = foreign_key._foreign_key_meta.references
+
+        return (
+            references.objects()
+            .where(
+                references._meta.get_column_by_name("id")
+                == getattr(self, column_name)
+            )
+            .first()
+        )
 
     def __setitem__(self, key: str, value: t.Any):
         setattr(self, key, value)
@@ -250,7 +256,9 @@ class Table(metaclass=TableMetaclass):
         output_name = f"{column._meta.name}_readable"
 
         new_readable = Readable(
-            template=readable.template, columns=columns, output_name=output_name
+            template=readable.template,
+            columns=columns,
+            output_name=output_name,
         )
         return new_readable
 
@@ -341,7 +349,7 @@ class Table(metaclass=TableMetaclass):
 
         await Band.raw("select * from band where name = {}", 'Pythonistas')
         """
-        return Raw(table=cls, base=QueryString(sql, *args))
+        return Raw(table=cls, querystring=QueryString(sql, *args))
 
     @classmethod
     def _process_column_args(
@@ -372,7 +380,7 @@ class Table(metaclass=TableMetaclass):
         await Band.select('name').run()
         """
         columns = cls._process_column_args(*columns)
-        return Select(table=cls, columns=columns)
+        return Select(table=cls, columns_list=columns)
 
     @classmethod
     def delete(cls, force=False) -> Delete:
@@ -404,7 +412,7 @@ class Table(metaclass=TableMetaclass):
         """
         return Raw(
             table=cls,
-            base=QueryString(f'CREATE TABLE "{cls._meta.tablename}"()'),
+            querystring=QueryString(f'CREATE TABLE "{cls._meta.tablename}"()'),
         )
 
     @classmethod

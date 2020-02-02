@@ -1,5 +1,5 @@
 from __future__ import annotations
-import dataclasses
+from dataclasses import dataclass
 import itertools
 import typing as t
 
@@ -8,9 +8,14 @@ from piccolo.columns.column_types import ForeignKey
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 
+if t.TYPE_CHECKING:
+    from piccolo.table import Table
 
-@dataclasses.dataclass
+
+@dataclass
 class AlterStatement:
+    __slots__ = tuple()
+
     def querystring(self) -> QueryString:
         raise NotImplementedError()
 
@@ -18,7 +23,7 @@ class AlterStatement:
         return self.querystring.__str__()
 
 
-@dataclasses.dataclass
+@dataclass
 class AlterColumnStatement(AlterStatement):
     __slots__ = ("column",)
 
@@ -34,7 +39,7 @@ class AlterColumnStatement(AlterStatement):
             raise ValueError("Unrecognised column type")
 
 
-@dataclasses.dataclass
+@dataclass
 class RenameColumn(AlterColumnStatement):
     __slots__ = ("new_name",)
 
@@ -47,14 +52,14 @@ class RenameColumn(AlterColumnStatement):
         )
 
 
-@dataclasses.dataclass
+@dataclass
 class DropColumn(AlterColumnStatement):
     @property
     def querystring(self) -> QueryString:
         return QueryString(f"DROP COLUMN {self.column_name}")
 
 
-@dataclasses.dataclass
+@dataclass
 class AddColumn(AlterColumnStatement):
     __slots__ = ("name",)
 
@@ -67,7 +72,7 @@ class AddColumn(AlterColumnStatement):
         return QueryString("ADD COLUMN {}", self.column.querystring)
 
 
-@dataclasses.dataclass
+@dataclass
 class Unique(AlterColumnStatement):
     __slots__ = ("boolean",)
 
@@ -84,7 +89,7 @@ class Unique(AlterColumnStatement):
             return QueryString(f'DROP CONSTRAINT "{key}"')
 
 
-@dataclasses.dataclass
+@dataclass
 class Null(AlterColumnStatement):
     __slots__ = ("boolean",)
 
@@ -100,7 +105,7 @@ class Null(AlterColumnStatement):
             return QueryString(f"ALTER COLUMN {self.column_name} SET NOT NULL")
 
 
-@dataclasses.dataclass
+@dataclass
 class DropConstraint(AlterStatement):
     __slots__ = ("constraint_name",)
 
@@ -111,7 +116,7 @@ class DropConstraint(AlterStatement):
         return QueryString(f"DROP CONSTRAINT IF EXISTS {self.constraint_name}")
 
 
-@dataclasses.dataclass
+@dataclass
 class AddForeignKeyConstraint(AlterStatement):
     __slots__ = ("constraint_name",)
 
@@ -138,10 +143,19 @@ class AddForeignKeyConstraint(AlterStatement):
 
 class Alter(Query):
 
-    __slots__ = ("_add", "_drop", "_rename", "_unique", "_null", "_drop_table")
+    __slots__ = (
+        "_add",
+        "_drop",
+        "_rename",
+        "_unique",
+        "_null",
+        "_drop_table",
+        "_drop_contraint",
+        "_add_foreign_key_constraint",
+    )
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, table: t.Type[Table]):
+        super().__init__(table)
         self._add: t.List[AddColumn] = []
         self._drop: t.List[DropColumn] = []
         self._rename: t.List[RenameColumn] = []
@@ -289,7 +303,11 @@ class Alter(Query):
                 for _id in ids:
                     for column in columns:
                         await self.table.raw(
-                            f"UPDATE {tablename} SET {column._meta.name} = {{}} WHERE id = {{}}",
+                            (
+                                f"UPDATE {tablename} "
+                                f"SET {column._meta.name} = "
+                                "{} WHERE id = {}"
+                            ),
                             column.get_default_value(),
                             _id,
                         ).run()

@@ -21,20 +21,12 @@ class Timer:
         print(f"Duration: {self.end - self.start}s")
 
 
-class Query(object):
-    def __init__(
-        self,
-        table: t.Type[Table],
-        base: QueryString = QueryString(""),
-        *args,
-        **kwargs,
-    ) -> None:
-        self.base = base
-        self.table = table
-        self._setup_delegates()
+class Query:
 
-    def _setup_delegates(self):
-        pass
+    __slots__ = ("table",)
+
+    def __init__(self, table: t.Type[Table]):
+        self.table = table
 
     @property
     def engine_type(self) -> str:
