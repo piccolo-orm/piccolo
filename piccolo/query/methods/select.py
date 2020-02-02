@@ -38,7 +38,7 @@ class Select(Query):
     def __init__(
         self, table: t.Type[Table], columns_list: t.Iterable[Selectable] = []
     ):
-        self.table = table
+        super().__init__(table)
 
         self.columns_delegate = ColumnsDelegate()
         self.distinct_delegate = DistinctDelegate()

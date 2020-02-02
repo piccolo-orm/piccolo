@@ -412,7 +412,7 @@ class Table(metaclass=TableMetaclass):
         """
         return Raw(
             table=cls,
-            base=QueryString(f'CREATE TABLE "{cls._meta.tablename}"()'),
+            querystring=QueryString(f'CREATE TABLE "{cls._meta.tablename}"()'),
         )
 
     @classmethod

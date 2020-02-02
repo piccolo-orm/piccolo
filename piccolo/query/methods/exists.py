@@ -14,7 +14,7 @@ class Exists(Query):
     __slots__ = ("where_delegate",)
 
     def __init__(self, table: t.Type[Table]):
-        self.table = table
+        super().__init__(table)
         self.where_delegate = WhereDelegate()
 
     def where(self, where: Combinable) -> Exists:

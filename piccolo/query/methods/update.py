@@ -17,7 +17,7 @@ class Update(Query):
     __slots__ = ("values_delegate", "where_delegate")
 
     def __init__(self, table: t.Type[Table]):
-        self.table = table
+        super().__init__(table)
         self.values_delegate = ValuesDelegate()
         self.where_delegate = WhereDelegate()
 

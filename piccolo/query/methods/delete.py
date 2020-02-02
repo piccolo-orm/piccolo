@@ -16,7 +16,7 @@ class Delete(Query):
     __slots__ = ("force", "where_delegate")
 
     def __init__(self, table: t.Type[Table], force: bool = False):
-        self.table = table
+        super().__init__(table)
         self.force = force
         self.where_delegate = WhereDelegate()
 

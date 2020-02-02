@@ -144,7 +144,6 @@ class AddForeignKeyConstraint(AlterStatement):
 class Alter(Query):
 
     __slots__ = (
-        "table",
         "_add",
         "_drop",
         "_rename",
@@ -156,7 +155,7 @@ class Alter(Query):
     )
 
     def __init__(self, table: t.Type[Table]):
-        self.table = table
+        super().__init__(table)
         self._add: t.List[AddColumn] = []
         self._drop: t.List[DropColumn] = []
         self._rename: t.List[RenameColumn] = []

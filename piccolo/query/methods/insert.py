@@ -15,7 +15,7 @@ class Insert(Query):
     __slots__ = ("add_delegate",)
 
     def __init__(self, table: t.Type[Table], *instances: Table):
-        self.table = table
+        super().__init__(table)
         self.add_delegate = AddDelegate()
         self.add(*instances)
 

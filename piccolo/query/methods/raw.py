@@ -13,7 +13,7 @@ class Raw(Query):
     def __init__(
         self, table: t.Type[Table], querystring: QueryString = QueryString("")
     ):
-        self.table = table
+        super().__init__(table)
         self.querystring = querystring
 
     @property

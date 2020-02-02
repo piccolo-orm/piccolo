@@ -13,7 +13,7 @@ class Create(Query):
     __slots__ = ("if_not_exists",)
 
     def __init__(self, table: t.Type[Table], if_not_exists: bool = False):
-        self.table = table
+        super().__init__(table)
         self.if_not_exists = if_not_exists
 
     @property

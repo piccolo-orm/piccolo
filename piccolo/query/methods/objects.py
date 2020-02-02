@@ -35,7 +35,7 @@ class Objects(Query):
     )
 
     def __init__(self, table: t.Type[Table]):
-        self.table = table
+        super().__init__(table)
         self.limit_delegate = LimitDelegate()
         self.offset_delegate = OffsetDelegate()
         self.order_by_delegate = OrderByDelegate()
