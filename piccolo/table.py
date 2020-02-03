@@ -6,7 +6,7 @@ import itertools
 import typing as t
 
 from piccolo.engine import Engine, engine_finder
-from piccolo.columns import Column, Selectable
+from piccolo.columns import Column, ForeignKeyMeta, Selectable
 from piccolo.columns.column_types import ForeignKey, PrimaryKey
 from piccolo.columns.readable import Readable
 from piccolo.query import (
@@ -112,6 +112,7 @@ class Table(metaclass=TableMetaclass):
 
         columns: t.List[Column] = []
         non_default_columns: t.List[Column] = []
+        foreign_key_columns: t.List[ForeignKey] = []
 
         for attribute_name in unique_attribute_names:
             if attribute_name.startswith("_"):
@@ -132,9 +133,8 @@ class Table(metaclass=TableMetaclass):
                 # Mypy wrongly thinks cls is a Table instance:
                 column._meta._table = cls  # type: ignore
 
-        foreign_key_columns: t.List[ForeignKey] = [
-            i for i in columns if isinstance(i, ForeignKey)
-        ]
+            if isinstance(column, ForeignKey):
+                foreign_key_columns.append(column)
 
         cls._meta = TableMeta(
             tablename=tablename,
@@ -143,6 +143,32 @@ class Table(metaclass=TableMetaclass):
             foreign_key_columns=foreign_key_columns,
             _db=db,
         )
+
+        for column in foreign_key_columns:
+            params = column._meta.params
+            references = params["references"]
+            if references == "self":
+                references = cls
+
+            column._foreign_key_meta = ForeignKeyMeta(
+                references=references,
+                on_delete=params["on_delete"],
+                on_update=params["on_update"],
+            )
+
+            # Record the reverse relationship on the target table.
+            references._meta.foreign_key_references.append(column)
+
+        for foreign_key_column in foreign_key_columns:
+            # Allow columns on the referenced table to be accessed via
+            # auto completion.
+            references = foreign_key_column._foreign_key_meta.references
+            for column in references._meta.columns:
+                _column: Column = copy.deepcopy(column)
+                setattr(foreign_key_column, _column._meta.name, _column)
+                foreign_key_column._foreign_key_meta.proxy_columns.append(
+                    _column
+                )
 
     def __init__(self, ignore_missing: bool = False, **kwargs):
         """
@@ -280,7 +306,8 @@ class Table(metaclass=TableMetaclass):
             col._meta.name: self[col._meta.name] for col in self._meta.columns
         }
 
-        is_unquoted = lambda arg: type(arg) == Unquoted
+        def is_unquoted(arg):
+            return type(arg) == Unquoted
 
         # Strip out any args which are unquoted.
         # TODO Not the cleanest place to have it (would rather have it handled
@@ -412,7 +439,7 @@ class Table(metaclass=TableMetaclass):
         """
         return Raw(
             table=cls,
-            querystring=QueryString(f'CREATE TABLE "{cls._meta.tablename}"()'),
+            querystring=QueryString("CREATE TABLE {}()", cls._meta.tablename),
         )
 
     @classmethod

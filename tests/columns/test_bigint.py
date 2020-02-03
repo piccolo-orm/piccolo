@@ -36,7 +36,7 @@ class TestBigIntPostgres(TestCase):
         row.value = min_value
         row.save().run_sync()
 
-        if not "TRAVIS" in os.environ:
+        if "TRAVIS" not in os.environ:
             # This stalls out on Travis - not sure why.
             print("Test exceeding max value")
             with self.assertRaises(Exception):

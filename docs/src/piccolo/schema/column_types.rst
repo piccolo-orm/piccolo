@@ -60,6 +60,14 @@ ForeignKey
     class Band(Table):
         manager = ForeignKey(Manager)
 
+A table can have a reference to itself, if you pass a table argument of 'self'.
+
+.. code-block:: python
+
+    class Employee(Table):
+        name = Varchar(max_length=100)
+        manager = ForeignKey('self')
+
 Integer
 -------
 
