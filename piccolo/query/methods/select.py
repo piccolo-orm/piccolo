@@ -25,6 +25,8 @@ if t.TYPE_CHECKING:
 class Select(Query):
 
     __slots__ = (
+        "columns_list",
+        "exclude_secrets",
         "columns_delegate",
         "distinct_delegate",
         "limit_delegate",
@@ -37,13 +39,12 @@ class Select(Query):
     def __init__(
         self,
         table: t.Type[Table],
-        base: QueryString = QueryString(""),
-        columns: t.Iterable[Selectable] = [],
+        columns_list: t.Sequence[Selectable] = [],
+        exclude_secrets: bool = False,
     ):
-        super().__init__(table=table, base=base)
-        self.columns(*columns)
+        super().__init__(table)
+        self.exclude_secrets = exclude_secrets
 
-    def _setup_delegates(self):
         self.columns_delegate = ColumnsDelegate()
         self.distinct_delegate = DistinctDelegate()
         self.limit_delegate = LimitDelegate()
@@ -51,6 +52,8 @@ class Select(Query):
         self.order_by_delegate = OrderByDelegate()
         self.output_delegate = OutputDelegate()
         self.where_delegate = WhereDelegate()
+
+        self.columns(*columns_list)
 
     def columns(self, *columns: t.Union[Column, str]) -> Select:
         columns = self.table._process_column_args(*columns)
@@ -136,8 +139,12 @@ class Select(Query):
                 else:
                     left_tablename = key._meta.table._meta.tablename
 
+                right_tablename = (
+                    key._foreign_key_meta.references._meta.tablename
+                )
+
                 _joins.append(
-                    f"LEFT JOIN {key._foreign_key_meta.references._meta.tablename} {table_alias}"
+                    f"LEFT JOIN {right_tablename} {table_alias}"
                     " ON "
                     f"({left_tablename}.{key._meta.name} = {table_alias}.id)"
                 )
@@ -184,6 +191,10 @@ class Select(Query):
         # on the table:
         if len(self.columns_delegate.selected_columns) == 0:
             self.columns_delegate.selected_columns = self.table._meta.columns
+
+        # If secret fields need to be omitted, remove them from the list.
+        if self.exclude_secrets:
+            self.columns_delegate.remove_secret_columns()
 
         engine_type = self.table._meta.db.engine_type
 

@@ -74,11 +74,3 @@ class TestJoin(TestCase):
         select_query = Concert.select().columns(Concert.band_1.manager.name)
         response = select_query.run_sync()
         self.assertEqual(response, [{"band_1.manager.name": "Guido"}])
-
-    # def _test_ref(self):
-    #     """
-    #     Concert.count().where(
-    #         Concert.ref('band1.name') == 'Pythonistas'
-    #     )
-    #     """
-    #     pass

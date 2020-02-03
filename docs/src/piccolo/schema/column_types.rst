@@ -60,6 +60,14 @@ ForeignKey
     class Band(Table):
         manager = ForeignKey(Manager)
 
+A table can have a reference to itself, if you pass a table argument of 'self'.
+
+.. code-block:: python
+
+    class Employee(Table):
+        name = Varchar(max_length=100)
+        manager = ForeignKey('self')
+
 Integer
 -------
 
@@ -67,6 +75,30 @@ Integer
 
     class Band(Table):
         popularity = Integer()
+
+BigInt
+------
+
+In Postgres, this column supports large integers. In SQLite, it's an alias to
+an Integer column, which already supports large integers.
+
+.. code-block:: python
+
+    class Band(Table):
+        value = BigInt()
+
+
+SmallInt
+--------
+
+In Postgres, this column supports small integers. In SQLite, it's an alias to
+an Integer column.
+
+.. code-block:: python
+
+    class Band(Table):
+        value = SmallInt()
+
 
 Timestamp
 ---------

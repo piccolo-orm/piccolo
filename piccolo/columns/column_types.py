@@ -4,7 +4,7 @@ from datetime import datetime
 import typing as t
 import uuid
 
-from piccolo.columns.base import Column, ForeignKeyMeta, OnDelete, OnUpdate
+from piccolo.columns.base import Column, OnDelete, OnUpdate
 from piccolo.querystring import Unquoted
 
 if t.TYPE_CHECKING:
@@ -14,7 +14,7 @@ if t.TYPE_CHECKING:
 
 class Varchar(Column):
     """
-    Used for text when you want to import character length limits.
+    Used for text when you want to enforce character length limits.
     """
 
     value_type = str
@@ -31,6 +31,17 @@ class Varchar(Column):
             return f"VARCHAR({self.length})"
         else:
             return "VARCHAR"
+
+
+class Secret(Varchar):
+    """
+    The database treats it the same as a Varchar, but Piccolo may treat it
+    differently internally - for example, allowing a user to automatically
+    omit any secret fields when doing a select query, to help prevent
+    inadvertant leakage. A common use for a Secret field is a password.
+    """
+
+    pass
 
 
 class Text(Column):
@@ -72,7 +83,41 @@ class Integer(Column):
         super().__init__(**kwargs)
 
 
+###############################################################################
+# BigInt and SmallInt only exist on Postgres. SQLite treats them the same as
+# Integer columns.
+
+
+class BigInt(Integer):
+    @property
+    def column_type(self):
+        engine_type = self._meta.table._meta.db.engine_type
+        if engine_type == "postgres":
+            return "BIGINT"
+        elif engine_type == "sqlite":
+            return "INTEGER"
+        raise Exception("Unrecognized engine type")
+
+
+class SmallInt(Integer):
+    @property
+    def column_type(self):
+        engine_type = self._meta.table._meta.db.engine_type
+        if engine_type == "postgres":
+            return "SMALLINT"
+        elif engine_type == "sqlite":
+            return "INTEGER"
+        raise Exception("Unrecognized engine type")
+
+
+###############################################################################
+
+
 class Serial(Column):
+    """
+    An alias to an autoincremenring integer column in Postgres.
+    """
+
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
@@ -133,23 +178,21 @@ class ForeignKey(Integer):
 
     Can also use it to perform joins:
 
-        Band.select().columns(Band.manager.name)
+        await Band.select(Band.manager.name).run()
 
     To get a referenced row as an object:
 
-        User.object.where(User.id == some_band.manager)
+        await Manager.objects().where(Manager.id == some_band.manager).run()
 
-    Or use this, which is just a proxy to the above:
+    Or use either of the following, which are just a proxy to the above:
 
-        some_band.related_object('manager')
+        await some_band.get_related('manager').run()
+        await some_band.get_related(Band.manager).run()
 
     To change the manager:
 
         some_band.manager = some_manager_id
-        some_band.save()
-
-    Or:
-        some_band.set_related_object('manager', some_manager)
+        await some_band.save().run()
 
     """
 
@@ -157,26 +200,26 @@ class ForeignKey(Integer):
 
     def __init__(
         self,
-        references: t.Type[Table],
+        references: t.Union[t.Type[Table], str],
         on_delete: OnDelete = OnDelete.cascade,
         on_update: OnUpdate = OnUpdate.cascade,
         **kwargs,
     ) -> None:
-        kwargs.update({"references": references})
-        super().__init__(**kwargs)
-        self._foreign_key_meta = ForeignKeyMeta(
-            references=references, on_delete=on_delete, on_update=on_update
+        if isinstance(references, str):
+            if references != "self":
+                raise ValueError(
+                    "String values for 'references' currently only supports "
+                    "'self', which is a reference to the current table."
+                )
+
+        kwargs.update(
+            {
+                "references": references,
+                "on_delete": on_delete,
+                "on_update": on_update,
+            }
         )
-
-        # Record the reverse relationship on the target table.
-        references._meta.foreign_key_references.append(self)
-
-        # Allow columns on the referenced table to be accessed via auto
-        # completion.
-        for column in references._meta.columns:
-            _column: Column = copy.deepcopy(column)
-            setattr(self, _column._meta.name, _column)
-            self._foreign_key_meta.proxy_columns.append(_column)
+        super().__init__(**kwargs)
 
     def __getattribute__(self, name: str):
         """
@@ -194,7 +237,7 @@ class ForeignKey(Integer):
 
         foreignkey_class = object.__getattribute__(self, "__class__")
 
-        if type(value) == foreignkey_class:  # i.e. a ForeignKey
+        if isinstance(value, foreignkey_class):  # i.e. a ForeignKey
             new_column = copy.deepcopy(value)
             new_column._meta.call_chain = copy.copy(self._meta.call_chain)
             new_column._meta.call_chain.append(self)

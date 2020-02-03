@@ -12,7 +12,8 @@ from .select import Select
 class Count(Query):
     __slots__ = ("where_delegate",)
 
-    def _setup_delegates(self):
+    def __init__(self, table: t.Type[Table]):
+        super().__init__(table)
         self.where_delegate = WhereDelegate()
 
     def where(self, where: Combinable) -> Count:

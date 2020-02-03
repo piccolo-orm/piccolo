@@ -6,11 +6,8 @@ import itertools
 import typing as t
 
 from piccolo.engine import Engine, engine_finder
-from piccolo.columns import Column, Selectable
-from piccolo.columns.column_types import (
-    ForeignKey,
-    PrimaryKey,
-)
+from piccolo.columns import Column, ForeignKeyMeta, Selectable
+from piccolo.columns.column_types import ForeignKey, PrimaryKey
 from piccolo.columns.readable import Readable
 from piccolo.query import (
     Alter,
@@ -27,6 +24,9 @@ from piccolo.query import (
 )
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
+
+
+PROTECTED_TABLENAMES = ("user",)
 
 
 @dataclass
@@ -99,6 +99,12 @@ class Table(metaclass=TableMetaclass):
 
         tablename = tablename if tablename else _camel_to_snake(cls.__name__)
 
+        if tablename in PROTECTED_TABLENAMES:
+            raise ValueError(
+                f"{tablename} is a protected name, please give your table a "
+                "different name."
+            )
+
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]
         )
@@ -106,6 +112,7 @@ class Table(metaclass=TableMetaclass):
 
         columns: t.List[Column] = []
         non_default_columns: t.List[Column] = []
+        foreign_key_columns: t.List[ForeignKey] = []
 
         for attribute_name in unique_attribute_names:
             if attribute_name.startswith("_"):
@@ -126,9 +133,8 @@ class Table(metaclass=TableMetaclass):
                 # Mypy wrongly thinks cls is a Table instance:
                 column._meta._table = cls  # type: ignore
 
-        foreign_key_columns: t.List[ForeignKey] = [
-            i for i in columns if isinstance(i, ForeignKey)
-        ]
+            if isinstance(column, ForeignKey):
+                foreign_key_columns.append(column)
 
         cls._meta = TableMeta(
             tablename=tablename,
@@ -137,6 +143,32 @@ class Table(metaclass=TableMetaclass):
             foreign_key_columns=foreign_key_columns,
             _db=db,
         )
+
+        for column in foreign_key_columns:
+            params = column._meta.params
+            references = params["references"]
+            if references == "self":
+                references = cls
+
+            column._foreign_key_meta = ForeignKeyMeta(
+                references=references,
+                on_delete=params["on_delete"],
+                on_update=params["on_update"],
+            )
+
+            # Record the reverse relationship on the target table.
+            references._meta.foreign_key_references.append(column)
+
+        for foreign_key_column in foreign_key_columns:
+            # Allow columns on the referenced table to be accessed via
+            # auto completion.
+            references = foreign_key_column._foreign_key_meta.references
+            for column in references._meta.columns:
+                _column: Column = copy.deepcopy(column)
+                setattr(foreign_key_column, _column._meta.name, _column)
+                foreign_key_column._foreign_key_meta.proxy_columns.append(
+                    _column
+                )
 
     def __init__(self, ignore_missing: bool = False, **kwargs):
         """
@@ -195,12 +227,12 @@ class Table(metaclass=TableMetaclass):
 
         return self.__class__.delete().where(self.__class__.id == _id)
 
-    def get_related(self, foreign_key: ForeignKey) -> Objects:
+    def get_related(self, foreign_key: t.Union[ForeignKey, str]) -> Objects:
         """
         Used to fetch a Table instance, for the target of a foreign key.
 
         band = await Band.objects().first().run()
-        manager = await band.get_related(Band.name).run()
+        manager = await band.get_related(Band.manager).run()
         >>> print(manager.name)
         'Guido'
 
@@ -208,23 +240,27 @@ class Table(metaclass=TableMetaclass):
         i.e. Band.manager, but not Band.manager.x.y.z
 
         """
-        if isinstance(foreign_key, ForeignKey):
-            column_name = foreign_key._meta.name
+        if isinstance(foreign_key, str):
+            foreign_key = self._meta.get_column_by_name(foreign_key)
 
-            references: t.Type[
-                Table
-            ] = foreign_key._foreign_key_meta.references
-
-            return (
-                references.objects()
-                .where(
-                    references._meta.get_column_by_name("id")
-                    == getattr(self, column_name)
-                )
-                .first()
+        if not isinstance(foreign_key, ForeignKey):
+            raise ValueError(
+                "foreign_key isn't a ForeignKey instance,  or the name of a "
+                "ForeignKey column."
             )
-        else:
-            raise ValueError(f"{column_name} isn't a ForeignKey")
+
+        column_name = foreign_key._meta.name
+
+        references: t.Type[Table] = foreign_key._foreign_key_meta.references
+
+        return (
+            references.objects()
+            .where(
+                references._meta.get_column_by_name("id")
+                == getattr(self, column_name)
+            )
+            .first()
+        )
 
     def __setitem__(self, key: str, value: t.Any):
         setattr(self, key, value)
@@ -270,7 +306,8 @@ class Table(metaclass=TableMetaclass):
             col._meta.name: self[col._meta.name] for col in self._meta.columns
         }
 
-        is_unquoted = lambda arg: type(arg) == Unquoted
+        def is_unquoted(arg):
+            return type(arg) == Unquoted
 
         # Strip out any args which are unquoted.
         # TODO Not the cleanest place to have it (would rather have it handled
@@ -339,7 +376,7 @@ class Table(metaclass=TableMetaclass):
 
         await Band.raw("select * from band where name = {}", 'Pythonistas')
         """
-        return Raw(table=cls, base=QueryString(sql, *args))
+        return Raw(table=cls, querystring=QueryString(sql, *args))
 
     @classmethod
     def _process_column_args(
@@ -358,7 +395,9 @@ class Table(metaclass=TableMetaclass):
         ]
 
     @classmethod
-    def select(cls, *columns: t.Union[Selectable, str]) -> Select:
+    def select(
+        cls, *columns: t.Union[Selectable, str], exclude_secrets=False
+    ) -> Select:
         """
         Get data in the form of a list of dictionaries, with each dictionary
         representing a row.
@@ -368,9 +407,15 @@ class Table(metaclass=TableMetaclass):
         await Band.select().columns(Band.name).run()
         await Band.select(Band.name).run()
         await Band.select('name').run()
+
+        :param exclude_secrets: If True, any password fields are omitted from
+        the response. Even though passwords are hashed, you still don't want
+        them being passed over the network if avoidable.
         """
         columns = cls._process_column_args(*columns)
-        return Select(table=cls, columns=columns)
+        return Select(
+            table=cls, columns_list=columns, exclude_secrets=exclude_secrets
+        )
 
     @classmethod
     def delete(cls, force=False) -> Delete:
@@ -402,7 +447,7 @@ class Table(metaclass=TableMetaclass):
         """
         return Raw(
             table=cls,
-            base=QueryString(f'CREATE TABLE "{cls._meta.tablename}"()'),
+            querystring=QueryString("CREATE TABLE {}()", cls._meta.tablename),
         )
 
     @classmethod
@@ -513,4 +558,3 @@ class Table(metaclass=TableMetaclass):
         return (
             f"class {cls.__name__}({class_args}):\n" f"    {columns_string}\n"
         )
-
