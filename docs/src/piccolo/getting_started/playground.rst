@@ -48,8 +48,8 @@ Give these queries a go:
 
     Band.select().run_sync()
     Band.objects().run_sync()
-    Band.select().columns(Band.name).run_sync()
-    Band.select().columns(Band.name, Band.manager.name).run_sync()
+    Band.select(Band.name).run_sync()
+    Band.select(Band.name, Band.manager.name).run_sync()
 
 Tab completion is your friend
 -----------------------------

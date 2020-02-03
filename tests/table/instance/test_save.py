@@ -4,7 +4,6 @@ from tests.example_project.tables import Manager
 
 
 class TestSave(TestCase):
-
     def setUp(self):
         Manager.create_table().run_sync()
 
@@ -15,29 +14,23 @@ class TestSave(TestCase):
         """
         Make sure that saving a new instance works.
         """
-        manager = Manager(
-            name='Maz',
-        )
+        manager = Manager(name="Maz")
 
         query = manager.save()
         print(query)
-        self.assertTrue('INSERT' in query.__str__())
+        self.assertTrue("INSERT" in query.__str__())
 
         query.run_sync()
 
-        names = [
-            i['name'] for i in Manager.select().columns(Manager.name).run_sync()
-        ]
-        self.assertTrue('Maz' in names)
+        names = [i["name"] for i in Manager.select(Manager.name).run_sync()]
+        self.assertTrue("Maz" in names)
 
-        manager.name = 'Maz2'
+        manager.name = "Maz2"
         query = manager.save()
         print(query)
-        self.assertTrue('UPDATE' in query.__str__())
+        self.assertTrue("UPDATE" in query.__str__())
 
         query.run_sync()
-        names = [
-            i['name'] for i in Manager.select().columns(Manager.name).run_sync()
-        ]
-        self.assertTrue('Maz2' in names)
-        self.assertTrue('Maz' not in names)
+        names = [i["name"] for i in Manager.select(Manager.name).run_sync()]
+        self.assertTrue("Maz2" in names)
+        self.assertTrue("Maz" not in names)

@@ -17,6 +17,6 @@ class TestDelete(TestCase):
         manager.remove().run_sync()
 
         # how can I implement 'flat=True'
-        # Band.select().columns(Band.name).output(as_list=True).run_sync()
+        # Band.select(Band.name).output(as_list=True).run_sync()
         #
-        Manager.select().columns(Manager.name).run_sync()
+        Manager.select(Manager.name).run_sync()

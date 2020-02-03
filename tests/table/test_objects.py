@@ -21,7 +21,7 @@ class TestObjects(DBTestCase):
         save_query.run_sync()
 
         self.assertTrue(
-            Band.select().columns(Band.name).output(as_list=True).run_sync()[0]
+            Band.select(Band.name).output(as_list=True).run_sync()[0]
             == "Rustaceans"
         )
 

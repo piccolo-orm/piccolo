@@ -16,4 +16,4 @@ class Migration(Table):
         Returns the names of migrations which have already run, by inspecting
         the database.
         """
-        return [i["name"] for i in cls.select().columns(cls.name).run_sync()]
+        return [i["name"] for i in cls.select(cls.name).run_sync()]
