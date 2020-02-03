@@ -8,7 +8,7 @@ import typing as t
 from asgiref.sync import async_to_sync
 
 from piccolo.table import Table
-from piccolo.columns import Varchar, Boolean
+from piccolo.columns import Varchar, Boolean, Secret
 from piccolo.columns.readable import Readable
 
 
@@ -19,7 +19,7 @@ class BaseUser(Table, tablename="piccolo_user"):
     """
 
     username = Varchar(length=100, unique=True)
-    password = Varchar(length=255)
+    password = Secret(length=255)
     email = Varchar(length=255, unique=True)
     active = Boolean(default=False)
     admin = Boolean(default=False)
@@ -61,7 +61,9 @@ class BaseUser(Table, tablename="piccolo_user"):
         elif type(user) == int:
             clause = cls.id == user  # type: ignore
         else:
-            raise ValueError("The `user` arg must be a user id, or a username.")
+            raise ValueError(
+                "The `user` arg must be a user id, or a username."
+            )
 
         password = cls.hash_password(password)
         await cls.update().values({cls.password: password}).where(clause).run()

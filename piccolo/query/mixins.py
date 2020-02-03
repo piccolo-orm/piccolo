@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import typing as t
 
-from piccolo.columns import And, Column, Where, Or
+from piccolo.columns import And, Column, Secret, Where, Or
 from piccolo.custom_types import Combinable
 from piccolo.querystring import QueryString
 
@@ -194,6 +194,11 @@ class ColumnsDelegate:
 
     def columns(self, *columns: Column):
         self.selected_columns += columns
+
+    def remove_secret_columns(self):
+        self.selected_columns = [
+            i for i in self.selected_columns if not isinstance(i, Secret)
+        ]
 
 
 @dataclass

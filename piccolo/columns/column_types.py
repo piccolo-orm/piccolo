@@ -33,6 +33,17 @@ class Varchar(Column):
             return "VARCHAR"
 
 
+class Secret(Varchar):
+    """
+    The database treats it the same as a Varchar, but Piccolo may treat it
+    differently internally - for example, allowing a user to automatically
+    omit any secret fields when doing a select query, to help prevent
+    inadvertant leakage. A common use for a Secret field is a password.
+    """
+
+    pass
+
+
 class Text(Column):
     """
     Used for text when you don't want any character length limits.

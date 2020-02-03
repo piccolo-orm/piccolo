@@ -1,13 +1,14 @@
 from .column_types import (  # noqa
-    Varchar,
-    Integer,
-    Serial,
-    PrimaryKey,
-    Timestamp,
-    Text,
     Boolean,
     ForeignKey,
+    Integer,
+    PrimaryKey,
+    Secret,
+    Serial,
+    Text,
+    Timestamp,
     UUID,
+    Varchar,
 )
 from .base import Column, ForeignKeyMeta, Selectable, OnDelete  # noqa
 from .combination import And, Or, Where  # noqa

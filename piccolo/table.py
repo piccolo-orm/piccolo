@@ -395,7 +395,9 @@ class Table(metaclass=TableMetaclass):
         ]
 
     @classmethod
-    def select(cls, *columns: t.Union[Selectable, str]) -> Select:
+    def select(
+        cls, *columns: t.Union[Selectable, str], exclude_secrets=False
+    ) -> Select:
         """
         Get data in the form of a list of dictionaries, with each dictionary
         representing a row.
@@ -405,9 +407,15 @@ class Table(metaclass=TableMetaclass):
         await Band.select().columns(Band.name).run()
         await Band.select(Band.name).run()
         await Band.select('name').run()
+
+        :param exclude_secrets: If True, any password fields are omitted from
+        the response. Even though passwords are hashed, you still don't want
+        them being passed over the network if avoidable.
         """
         columns = cls._process_column_args(*columns)
-        return Select(table=cls, columns_list=columns)
+        return Select(
+            table=cls, columns_list=columns, exclude_secrets=exclude_secrets
+        )
 
     @classmethod
     def delete(cls, force=False) -> Delete:

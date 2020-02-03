@@ -26,6 +26,7 @@ class Select(Query):
 
     __slots__ = (
         "columns_list",
+        "exclude_secrets",
         "columns_delegate",
         "distinct_delegate",
         "limit_delegate",
@@ -36,9 +37,13 @@ class Select(Query):
     )
 
     def __init__(
-        self, table: t.Type[Table], columns_list: t.Iterable[Selectable] = []
+        self,
+        table: t.Type[Table],
+        columns_list: t.Sequence[Selectable] = [],
+        exclude_secrets: bool = False,
     ):
         super().__init__(table)
+        self.exclude_secrets = exclude_secrets
 
         self.columns_delegate = ColumnsDelegate()
         self.distinct_delegate = DistinctDelegate()
@@ -186,6 +191,10 @@ class Select(Query):
         # on the table:
         if len(self.columns_delegate.selected_columns) == 0:
             self.columns_delegate.selected_columns = self.table._meta.columns
+
+        # If secret fields need to be omitted, remove them from the list.
+        if self.exclude_secrets:
+            self.columns_delegate.remove_secret_columns()
 
         engine_type = self.table._meta.db.engine_type
 

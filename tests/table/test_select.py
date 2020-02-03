@@ -1,3 +1,7 @@
+from unittest import TestCase
+
+from piccolo.extensions.user.tables import BaseUser
+
 from ..base import DBTestCase, postgres_only, sqlite_only
 from ..example_project.tables import Band, Concert
 
@@ -333,3 +337,22 @@ class TestSelect(DBTestCase):
         """
         # self.assertEqual(len(Concert.band_1.name._meta.call_chain), 1)
         self.assertEqual(len(Concert.band_1.manager.name._meta.call_chain), 2)
+
+
+class TestSelectSecret(TestCase):
+    def setUp(self):
+        BaseUser.create_table().run_sync()
+
+    def tearDown(self):
+        BaseUser.alter().drop_table().run_sync()
+
+    def test_secret(self):
+        """
+        Make sure that secret fields are omitted from the response when
+        requested.
+        """
+        user = BaseUser(username="piccolo", password="piccolo123")
+        user.save().run_sync()
+
+        user_dict = BaseUser.select(exclude_secrets=True).first().run_sync()
+        self.assertTrue("password" not in user_dict.keys())
