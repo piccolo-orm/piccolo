@@ -198,12 +198,6 @@ class ForeignKey(Integer):
 
     column_type = "INTEGER"
 
-    # This is here just for type inference - the actual value is set by the
-    # Table metaclass.
-    _foreign_key_meta = ForeignKeyMeta(
-        Table, OnDelete.cascade, OnUpdate.cascade
-    )
-
     def __init__(
         self,
         references: t.Union[t.Type[Table], str],
@@ -226,6 +220,15 @@ class ForeignKey(Integer):
             }
         )
         super().__init__(**kwargs)
+
+        if t.TYPE_CHECKING:
+            # This is here just for type inference - the actual value is set by
+            # the Table metaclass.
+            from piccolo.table import Table
+
+            self._foreign_key_meta = ForeignKeyMeta(
+                Table, OnDelete.cascade, OnUpdate.cascade
+            )
 
     def __getattribute__(self, name: str):
         """
