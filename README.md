@@ -20,14 +20,14 @@ The syntax is clean and expressive.
 
 ```python
 # Select:
-await Band.select().columns(
+await Band.select(
     Band.name
 ).where(
     Band.popularity > 100
 ).run()
 
 # Join:
-await Band.select().columns(
+await Band.select(
     Band.name,
     Band.manager.name
 ).run()
@@ -38,7 +38,7 @@ await Band.delete().where(
 ).run()
 
 # Update:
-await Band.update().values({Band.members: 5}).where(
+await Band.update({Band.members: 5}).where(
     Band.name == 'Pythonistas'
 ).run()
 ```
