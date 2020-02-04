@@ -4,7 +4,7 @@ from datetime import datetime
 import typing as t
 import uuid
 
-from piccolo.columns.base import Column, OnDelete, OnUpdate
+from piccolo.columns.base import Column, OnDelete, OnUpdate, ForeignKeyMeta
 from piccolo.querystring import Unquoted
 
 if t.TYPE_CHECKING:
@@ -197,6 +197,12 @@ class ForeignKey(Integer):
     """
 
     column_type = "INTEGER"
+
+    # This is here just for type inference - the actual value is set by the
+    # Table metaclass.
+    _foreign_key_meta = ForeignKeyMeta(
+        Table, OnDelete.cascade, OnUpdate.cascade
+    )
 
     def __init__(
         self,
