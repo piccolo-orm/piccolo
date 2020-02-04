@@ -7,7 +7,7 @@ This is used to update any rows in the table which match the criteria.
 
 .. code-block:: python
 
-    >>> Band.update().values({
+    >>> Band.update({
     >>>     Band.name: 'Pythonistas 2'
     >>> }).where(
     >>>     Band.name == 'Pythonistas'

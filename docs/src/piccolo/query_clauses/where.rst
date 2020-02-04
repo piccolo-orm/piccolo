@@ -14,7 +14,7 @@ You can use ``where`` clauses with the following queries:
 It allows powerful filtering of your data.
 
 Equal / Not Equal
------
+-----------------
 
 .. code-block:: python
 
@@ -131,4 +131,23 @@ Using multiple ``where`` clauses is equivalent to an AND.
         b.popularity >= 100
     ).where(
         b.popularity < 1000
+    ).run_sync()
+
+Using And / Or directly
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Rather than using the ``|`` and ``&`` characters, you can use the ``And`` and
+``Or`` classes, which are what's used under the hood.
+
+.. code-block:: python
+
+    from piccolo.columns.combination import And, Or
+
+    b = Band
+
+    b.select().where(
+        Or(
+            And(b.popularity >= 100, b.popularity < 1000),
+            b.name == 'Pythonistas'
+        )
     ).run_sync()

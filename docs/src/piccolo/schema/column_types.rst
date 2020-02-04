@@ -3,7 +3,8 @@
 Column Types
 ============
 
-.. hint:: You'll notice that all of the column names match their SQL equivalents.
+.. hint:: You'll notice that the column names tend to match their SQL
+    equivalents.
 
 Column
 ------
@@ -123,3 +124,16 @@ UUID
 
     class Band(Table):
         uuid = UUID()
+
+Secret
+------
+
+The database treats it the same as a Varchar, but Piccolo may treat it
+differently internally - for example, allowing a user to automatically omit any
+secret fields when doing a select query, to help prevent inadvertant leakage.
+A common use for a Secret field is a password.
+
+.. code-block:: python
+
+    class Band(Table):
+        password = Secret(length=100)

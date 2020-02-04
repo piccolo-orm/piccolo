@@ -121,26 +121,4 @@ Altering tables
 ---------------
 
 To alter tables, you'll use mostly use alter queries (see :ref:`alter`), and
-occassionally raw queries (see :ref:`raw`).
-
-Auto populating migrations
---------------------------
-
-Instead of manually populating your migrations each time, Piccolo has helpers
-for common use cases.
-
-Creating tables
-~~~~~~~~~~~~~~~
-
-Rather than having to copy in your table definitions manually, you can ask
-Piccolo to do it for you using the ``-c`` flag and passing in the import path
-for the table. Multiple ``-c`` flags can be used.
-
-.. code-block:: bash
-
-    piccolo migration new -c ..tables.Band -c ..tables.Manager
-
-Piccolo needs to be able to import these files using ``importlib``, so make
-sure the paths are correct.
-
-Piccolo will then add the table definitions the migration.
+occasionally raw queries (see :ref:`raw`).

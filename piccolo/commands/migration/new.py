@@ -1,16 +1,12 @@
 from __future__ import annotations
 import datetime
-import importlib
-import importlib.util
 import os
-import sys
 import typing as t
 from types import ModuleType
 
 import click
 
 from piccolo.migrations.template import TEMPLATE
-from piccolo.table import Table
 
 
 MIGRATION_MODULES: t.Dict[str, ModuleType] = {}
@@ -45,12 +41,6 @@ def _create_new_migration(migrations_path) -> None:
 
 
 @click.option(
-    "-c",
-    "--create",
-    multiple=True,
-    help="Path to a table class which you want to create, e.g. tables.Band",
-)
-@click.option(
     "-p",
     "--path",
     multiple=False,
@@ -65,18 +55,6 @@ def new(create: t.Tuple[str], path: str):
 
     root_dir = path if path else os.getcwd()
     migrations_path = os.path.join(root_dir, "migrations")
-
-    # TODO - might remove this. Does nothing currently.
-    for path in create:
-        module_path, table_name = path.rsplit(".", maxsplit=1)
-        module = importlib.import_module(module_path)
-        try:
-            table_class: Table = getattr(module, table_name)
-        except AttributeError:
-            print(f"Unable to find {path} - aborting")
-            sys.exit(1)
-
-        print(table_class._table_str())
 
     _create_migrations_folder(migrations_path)
     _create_new_migration(migrations_path)

@@ -20,7 +20,7 @@ underlying SQL - making the ORM feel less magic.
 
 .. code-block:: python
 
-    query = Band.select().columns(Band.name).where(Band.popularity >= 100)
+    query = Band.select(Band.name).where(Band.popularity >= 100)
 
     print(query)
     'SELECT name from band where popularity > 100'

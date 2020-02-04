@@ -8,8 +8,8 @@ You can use ``limit`` clauses with the following queries:
 * :ref:`Objects`
 * :ref:`Select`
 
-Rather than returning a list of results, it will only return the number you ask
-for.
+Rather than returning all of the matching results, it will only return the
+number you ask for.
 
 .. code-block:: python
 
