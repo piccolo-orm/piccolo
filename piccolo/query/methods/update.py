@@ -9,6 +9,7 @@ from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:
     from piccolo.columns import Column
+    from piccolo.table import Table
 
 
 @dataclass

@@ -6,6 +6,9 @@ from piccolo.query.base import Query
 from piccolo.query.mixins import WhereDelegate
 from piccolo.querystring import QueryString
 
+if t.TYPE_CHECKING:
+    from piccolo.table import Table
+
 
 class DeletionError(Exception):
     pass

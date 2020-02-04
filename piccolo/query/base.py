@@ -89,7 +89,8 @@ class Query:
         engine = self.table._meta.db
         if not engine:
             raise ValueError(
-                f"Table {self.table._meta.tablename} has no db defined in _meta"
+                f"Table {self.table._meta.tablename} has no db defined in "
+                "_meta"
             )
 
         if len(self.querystrings) == 1:

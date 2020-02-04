@@ -8,6 +8,9 @@ from piccolo.querystring import QueryString
 
 from .select import Select
 
+if t.TYPE_CHECKING:
+    from piccolo.table import Table
+
 
 class Count(Query):
     __slots__ = ("where_delegate",)

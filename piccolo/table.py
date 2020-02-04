@@ -46,9 +46,13 @@ class TableMeta:
     foreign_key_references: t.List[ForeignKey] = field(default_factory=list)
 
     @property
-    def db(self) -> t.Optional[Engine]:
+    def db(self) -> Engine:
         if not self._db:
-            self._db = engine_finder()
+            db = engine_finder()
+            if not db:
+                raise Exception("Unable to find the engine")
+            self._db = db
+
         return self._db
 
     def get_column_by_name(self, name: str) -> Column:
@@ -203,7 +207,7 @@ class Table(metaclass=TableMetaclass):
 
         cls = self.__class__
 
-        if type(self.id) == int:
+        if isinstance(self.id, int):
             # pre-existing row
             kwargs: t.Dict[Column, t.Any] = {
                 i: getattr(self, i._meta.name, None)
@@ -220,7 +224,7 @@ class Table(metaclass=TableMetaclass):
         """
         _id = self.id
 
-        if type(_id) != int:
+        if not isinstance(_id, int):
             raise ValueError("Can only delete pre-existing rows with an id.")
 
         self.id = None  # type: ignore
@@ -389,7 +393,7 @@ class Table(metaclass=TableMetaclass):
         """
         return [
             cls._meta.get_column_by_name(column)
-            if (type(column) == str)
+            if (isinstance(column, str))
             else column
             for column in columns
         ]

@@ -83,6 +83,11 @@ class Unique(AlterColumnStatement):
         if self.boolean:
             return QueryString(f"ADD UNIQUE ({self.column_name})")
         else:
+            if isinstance(self.column, str):
+                raise ValueError(
+                    "Removing a unique constraint requires a Column instance "
+                    "to be passed as the column arg instead of a string."
+                )
             tablename = self.column._meta.table._meta.tablename
             column_name = self.column_name
             key = f"{tablename}_{column_name}_key"

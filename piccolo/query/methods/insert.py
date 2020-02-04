@@ -59,4 +59,3 @@ class Insert(Query):
                 query_type="insert",
             )
         ]
-

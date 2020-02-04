@@ -1,3 +1,4 @@
+from __future__ import annotations
 from importlib import import_module
 import os
 from types import ModuleType

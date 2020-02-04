@@ -1,22 +1,31 @@
+from __future__ import annotations
 import asyncio
 import os
 import pprint
+import typing as t
 
 import click
 
 from piccolo.migrations.tables import Migration
-from .base import BaseMigrationManager, ModuleList
+from piccolo.commands.migration.base import (
+    BaseMigrationManager,
+    MigrationModule,
+    ConfigModule,
+)
 
 
 class ForwardsMigrationManager(BaseMigrationManager):
-    def run_migrations(self, config_modules: ModuleList) -> None:
+    def run_migrations(self, config_modules: t.List[ConfigModule]) -> None:
         already_ran = Migration.get_migrations_which_ran()
         print(f"Already ran:\n{already_ran}\n")
 
         for config_module in config_modules:
             migrations_folder = os.path.dirname(config_module.__file__)
 
-            migration_modules = self.get_migration_modules(migrations_folder)
+            migration_modules: t.Dict[
+                str, MigrationModule
+            ] = self.get_migration_modules(migrations_folder)
+
             ids = self.get_migration_ids(migration_modules)
             print(f"Migration ids = {ids}")
 

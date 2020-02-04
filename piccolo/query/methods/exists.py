@@ -8,6 +8,9 @@ from piccolo.query.methods.select import Select
 from piccolo.query.mixins import WhereDelegate
 from piccolo.querystring import QueryString
 
+if t.TYPE_CHECKING:
+    from piccolo.table import Table
+
 
 @dataclass
 class Exists(Query):

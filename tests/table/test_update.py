@@ -18,4 +18,3 @@ class TestUpdate(DBTestCase):
         print(f"response = {response}")
 
         self.assertEqual(response, [{"name": "Pythonistas3"}])
-

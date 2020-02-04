@@ -147,7 +147,7 @@ class PostgresEngine(Engine):
                 loop.run_until_complete, self.run("SHOW server_version")
             )
 
-        response: t.Array[t.Dict] = future.result()
+        response: t.Sequence[t.Dict] = future.result()
 
         server_version = response[0]["server_version"]
         major, minor, _ = server_version.split(".")
@@ -159,7 +159,8 @@ class PostgresEngine(Engine):
     async def start_connnection_pool(self, **kwargs) -> None:
         if self.pool:
             warnings.warn(
-                "A pool already exists - close it first if you want to create a new pool."
+                "A pool already exists - close it first if you want to create "
+                "a new pool."
             )
         else:
             config = dict(self.config)
@@ -180,7 +181,7 @@ class PostgresEngine(Engine):
 
     ###########################################################################
 
-    async def batch(self, query: Query, batch_size=100) -> AsyncBatch:
+    async def batch(self, query: Query, batch_size: int = 100) -> AsyncBatch:
         connection = await self.get_connection()
         return AsyncBatch(
             connection=connection, query=query, batch_size=batch_size
@@ -188,7 +189,7 @@ class PostgresEngine(Engine):
 
     ###########################################################################
 
-    async def run_in_pool(self, query: str, args: t.List[t.Any] = []):
+    async def run_in_pool(self, query: str, args: t.Sequence[t.Any] = []):
         if not self.pool:
             raise ValueError("A pool isn't currently running.")
 
@@ -197,7 +198,7 @@ class PostgresEngine(Engine):
 
         return response
 
-    async def run(self, query: str, args: t.List[t.Any] = []):
+    async def run(self, query: str, args: t.Sequence[t.Any] = []):
         connection = await self.get_connection()
         results = await connection.fetch(query, *args)
         await connection.close()

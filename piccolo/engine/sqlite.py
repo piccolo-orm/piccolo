@@ -177,7 +177,7 @@ class SQLiteEngine(Engine):
         for testing purposes.
         """
         if not os.path.exists(self.path):
-            with open(self.path, "w") as _:
+            with open(self.path, "w"):
                 pass
         else:
             raise Exception(f"Database at {self.path} already exists")
@@ -190,7 +190,7 @@ class SQLiteEngine(Engine):
 
     ###########################################################################
 
-    async def batch(self, query: Query, batch_size=100) -> AsyncBatch:
+    async def batch(self, query: Query, batch_size: int = 100) -> AsyncBatch:
         connection = await self.get_connection()
         return AsyncBatch(
             connection=connection, query=query, batch_size=batch_size

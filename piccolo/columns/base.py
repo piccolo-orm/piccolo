@@ -86,7 +86,7 @@ class ColumnMeta:
         self._name = value
 
     @property
-    def table(self) -> Table:
+    def table(self) -> t.Type[Table]:
         if not self._table:
             raise ValueError(
                 "`_table` isn't defined - the Table Metaclass should set it."

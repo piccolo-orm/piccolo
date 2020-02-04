@@ -1,6 +1,11 @@
+from __future__ import annotations
 from abc import abstractmethod, ABCMeta
+import typing as t
 
 from piccolo.utils.warnings import colored_warning, Level
+
+if t.TYPE_CHECKING:
+    from piccolo.query.base import Query
 
 
 class Batch:
@@ -23,6 +28,10 @@ class Engine(metaclass=ABCMeta):
 
     @abstractmethod
     def get_version(self) -> float:
+        pass
+
+    @abstractmethod
+    async def batch(self, query: Query, batch_size: int = 100) -> Batch:
         pass
 
     def check_version(self):

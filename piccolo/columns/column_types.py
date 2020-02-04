@@ -178,7 +178,7 @@ class ForeignKey(Integer):
 
     Can also use it to perform joins:
 
-        await Band.select(Band.manager.name).run()
+        await Band.select(Band.name, Band.manager.name).run()
 
     To get a referenced row as an object:
 

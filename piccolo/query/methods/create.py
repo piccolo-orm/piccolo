@@ -4,6 +4,9 @@ import typing as t
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 
+if t.TYPE_CHECKING:
+    from piccolo.table import Table
+
 
 class Create(Query):
     """

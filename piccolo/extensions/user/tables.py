@@ -1,6 +1,7 @@
 """
 A User model, used for authentication.
 """
+from __future__ import annotations
 import hashlib
 import secrets
 import typing as t
@@ -56,9 +57,9 @@ class BaseUser(Table, tablename="piccolo_user"):
         The password is the raw password string e.g. password123.
         The user can be a user ID, or a username.
         """
-        if type(user) == str:
+        if isinstance(user, str):
             clause = cls.username == user
-        elif type(user) == int:
+        elif isinstance(user, int):
             clause = cls.id == user  # type: ignore
         else:
             raise ValueError(

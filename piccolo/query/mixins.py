@@ -175,7 +175,7 @@ class OutputDelegate:
         as_list: t.Optional[bool] = None,
         as_json: t.Optional[bool] = None,
     ):
-        if as_list != None:
+        if as_list is not None:
             self._output.as_list = bool(as_list)
 
         if type(as_json) is bool:

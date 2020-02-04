@@ -17,6 +17,7 @@ from .select import Select
 
 if t.TYPE_CHECKING:
     from piccolo.columns import Column
+    from piccolo.table import Table
 
 
 @dataclass

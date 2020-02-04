@@ -47,6 +47,13 @@ class Or(Combination):
     operator = "OR"
 
 
+class Undefined:
+    pass
+
+
+UNDEFINED = Undefined()
+
+
 class Where(CombinableMixin):
 
     __slots__ = ("column", "value", "values", "operator")
@@ -54,10 +61,14 @@ class Where(CombinableMixin):
     def __init__(
         self,
         column: "Column",
-        value: t.Any = ...,
-        values: Iterable = ...,
+        value: t.Any = UNDEFINED,
+        values: t.Union[Iterable, Undefined] = UNDEFINED,
         operator: t.Type[Operator] = Operator,
     ) -> None:
+        """
+        We use the UNDEFINED value to show the value was deliberately
+        omitted, vs None, which is a valid value for a where clause.
+        """
         self.column = column
         self.value = value
         self.values = values
@@ -65,15 +76,18 @@ class Where(CombinableMixin):
 
     @property
     def values_querystring(self) -> QueryString:
+        if isinstance(self.values, Undefined):
+            raise ValueError("values is undefined")
+
         template = ", ".join(["{}" for i in self.values])
         return QueryString(template, *self.values)
 
     @property
     def querystring(self) -> QueryString:
         args: t.List[t.Any] = []
-        if self.value != ...:
+        if self.value != UNDEFINED:
             args.append(self.value)
-        if self.values != ...:
+        if self.values != UNDEFINED:
             args.append(self.values_querystring)
 
         template = self.operator.template.format(

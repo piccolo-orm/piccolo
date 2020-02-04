@@ -56,8 +56,8 @@ class Select(Query):
         self.columns(*columns_list)
 
     def columns(self, *columns: t.Union[Column, str]) -> Select:
-        columns = self.table._process_column_args(*columns)
-        self.columns_delegate.columns(*columns)
+        _columns = self.table._process_column_args(*columns)
+        self.columns_delegate.columns(*_columns)
         return self
 
     def distinct(self) -> Select:
@@ -107,7 +107,7 @@ class Select(Query):
 
     ###########################################################################
 
-    def _get_joins(self, columns: t.List[Selectable]) -> t.List[str]:
+    def _get_joins(self, columns: t.Sequence[Selectable]) -> t.List[str]:
         """
         A call chain is a sequence of foreign keys representing joins which
         need to be made to retrieve a column in another table.
@@ -154,7 +154,7 @@ class Select(Query):
         # Remove duplicates
         return list(OrderedDict.fromkeys(joins))
 
-    def _check_valid_call_chain(self, keys: t.List[Selectable]) -> bool:
+    def _check_valid_call_chain(self, keys: t.Sequence[Selectable]) -> bool:
         for column in keys:
             if not isinstance(column, Column):
                 continue
