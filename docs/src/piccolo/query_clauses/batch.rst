@@ -8,7 +8,7 @@ You can use ``batch`` clauses with the following queries:
 * :ref:`Objects`
 * :ref:`Select`
 
-By default, a query will returns as many rows as you ask it for. The problem is
+By default, a query will return as many rows as you ask it for. The problem is
 when you have a table containing millions of rows - you might not want to
 load them all into memory at once. To get around this, you can batch the
 responses.
