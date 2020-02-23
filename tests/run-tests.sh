@@ -9,5 +9,5 @@ cd ..
 export PICCOLO_CONF="tests.postgres_conf"
 python -m pytest --cov=piccolo -s $@
 
-# export PICCOLO_CONF="tests.sqlite_conf"
-# python -m pytest --cov=piccolo -s $@
+export PICCOLO_CONF="tests.sqlite_conf"
+python -m pytest --cov=piccolo -s $@
