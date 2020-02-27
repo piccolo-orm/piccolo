@@ -27,7 +27,7 @@ class DBTestCase(TestCase):
     """
 
     def run_sync(self, query):
-        asyncio.run(ENGINE.run(query))
+        asyncio.run(ENGINE._run_in_new_connection(query))
 
     def create_table(self):
         if ENGINE.engine_type == "postgres":

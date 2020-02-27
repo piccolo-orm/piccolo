@@ -8,7 +8,7 @@ ENGINE = engine_finder()
 
 async def drop_tables():
     for table in ["venue", "concert", "band", "manager", "migration"]:
-        await ENGINE.run(f"DROP TABLE IF EXISTS {table}")
+        await ENGINE._run_in_new_connection(f"DROP TABLE IF EXISTS {table}")
 
 
 def pytest_sessionstart(session):

@@ -16,7 +16,7 @@ class Timer:
     def __enter__(self):
         self.start = time()
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exception_type, exception, traceback):
         self.end = time()
         print(f"Duration: {self.end - self.start}s")
 

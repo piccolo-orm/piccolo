@@ -1,6 +1,6 @@
 from __future__ import annotations
+import contextvars
 from dataclasses import dataclass
-import logging
 import os
 import sqlite3
 import typing as t
@@ -9,12 +9,10 @@ import aiosqlite
 from aiosqlite import Cursor, Connection
 
 from piccolo.engine.base import Batch, Engine
+from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
-
-
-logger = logging.getLogger(__file__)
 
 
 @dataclass
@@ -53,20 +51,20 @@ class AsyncBatch(Batch):
         self._cursor = await self.connection.execute(template, *template_args)
         return self
 
-    async def __aexit__(self, exc_type, exc, tb):
-        print("waiting to exit")
+    async def __aexit__(self, exception_type, exception, traceback):
         await self._cursor.close()
         await self.connection.close()
+        return exception is not None
 
 
 ###############################################################################
 
 
-class Transaction:
+class Atomic:
     """
     Usage:
 
-    transaction = engine.transaction()
+    transaction = engine.atomic()
     transaction.add(Foo.create_table())
 
     # Either:
@@ -84,25 +82,72 @@ class Transaction:
         self.queries += list(query)
 
     async def run(self):
-        for query in self.queries:
-            await self.engine.run("BEGIN")
-            try:
+        connection = await self.engine.get_connection()
+        await connection.execute("BEGIN")
+
+        try:
+            for query in self.queries:
                 for querystring in query.querystrings:
-                    await self.engine.run(
+                    await connection.execute(
                         *querystring.compile_string(
-                            engine_type=self.engine_type
-                        ),
-                        query_type=querystring.query_type,
+                            engine_type=self.engine.engine_type
+                        )
                     )
-            except Exception as exception:
-                logger.error(exception)
-                await self.engine.run("ROLLBACK")
-            else:
-                await self.engine.run("COMMIT")
-        self.queries = []
+        except Exception as exception:
+            await connection.execute("ROLLBACK")
+            await connection.close()
+            self.queries = []
+            raise exception
+        else:
+            await connection.execute("COMMIT")
+            await connection.close()
+            self.queries = []
 
     def run_sync(self):
-        return run_sync(self._run())
+        return run_sync(self.run())
+
+
+###############################################################################
+
+
+class Transaction:
+    """
+    Used for wrapping queries in a transaction, using a context manager.
+    Currently it's async only.
+
+    Usage:
+
+    async with engine.transaction():
+        # Run some queries:
+        await Band.select().run()
+
+    """
+
+    __slots__ = ("engine", "context", "connection")
+
+    def __init__(self, engine: SQLiteEngine):
+        self.engine = engine
+        if self.engine.transaction_connection.get():
+            raise TransactionError(
+                "A transaction is already active - nested transactions aren't "
+                "currently supported."
+            )
+
+    async def __aenter__(self):
+        self.connection = await self.engine.get_connection()
+        await self.connection.execute("BEGIN")
+        self.context = self.engine.transaction_connection.set(self.connection)
+
+    async def __aexit__(self, exception_type, exception, traceback):
+        if exception:
+            await self.connection.execute("ROLLBACK")
+        else:
+            await self.connection.execute("COMMIT")
+
+        await self.connection.close()
+        self.engine.transaction_connection.reset(self.context)
+
+        return exception is None
 
 
 ###############################################################################
@@ -144,6 +189,11 @@ class SQLiteEngine(Engine):
             }
         )
         self.connection_kwargs = connection_kwargs
+
+        self.transaction_connection = contextvars.ContextVar(
+            f"sqlite_transaction_connection_{path}", default=None
+        )
+
         super().__init__()
 
     @property
@@ -206,7 +256,7 @@ class SQLiteEngine(Engine):
 
     ###########################################################################
 
-    async def run(
+    async def _run_in_new_connection(
         self, query: str, args: t.List[t.Any] = [], query_type: str = "generic"
     ):
         async with aiosqlite.connect(**self.connection_kwargs) as connection:
@@ -214,7 +264,6 @@ class SQLiteEngine(Engine):
 
             connection.row_factory = dict_factory
             async with connection.execute(query, args) as cursor:
-                cursor.row_factory = dict_factory
                 await connection.commit()
                 response = await cursor.fetchall()
 
@@ -223,13 +272,54 @@ class SQLiteEngine(Engine):
                 else:
                     return response
 
+    async def _run_in_existing_connection(
+        self,
+        connection,
+        query: str,
+        args: t.List[t.Any] = [],
+        query_type: str = "generic",
+    ):
+        """
+        This is used when a transaction is currently active.
+        """
+        await connection.execute("PRAGMA foreign_keys = 1")
+
+        connection.row_factory = dict_factory
+        async with connection.execute(query, args) as cursor:
+            response = await cursor.fetchall()
+
+            if query_type == "insert":
+                return [{"id": cursor.lastrowid}]
+            else:
+                return response
+
     async def run_querystring(
         self, querystring: QueryString, in_pool: bool = False
     ):
-        return await self.run(
-            *querystring.compile_string(engine_type=self.engine_type),
-            query_type=querystring.query_type,
+        """
+        Connection pools aren't currently supported - the argument is there
+        for consistency with other engines.
+        """
+        query, query_args = querystring.compile_string(
+            engine_type=self.engine_type
         )
+
+        # If running inside a transaction:
+        connection = self.transaction_connection.get()
+        if connection:
+            return await self._run_in_existing_connection(
+                connection=connection,
+                query=query,
+                args=query_args,
+                query_type=querystring.query_type,
+            )
+
+        return await self._run_in_new_connection(
+            query=query, args=query_args, query_type=querystring.query_type
+        )
+
+    def atomic(self) -> Atomic:
+        return Atomic(engine=self)
 
     def transaction(self) -> Transaction:
         return Transaction(engine=self)

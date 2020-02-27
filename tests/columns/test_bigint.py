@@ -23,7 +23,7 @@ class TestBigIntPostgres(TestCase):
     def tearDown(self):
         MyTable.alter().drop_table().run_sync()
 
-    def test_length(self):
+    def _test_length(self):
         # Can store 8 bytes, but split between positive and negative values.
         max_value = int(2 ** 64 / 2) - 1
         min_value = max_value * -1
