@@ -14,11 +14,6 @@ from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
 
 
-sqlite_transaction_connection = contextvars.ContextVar(
-    "sqlite_transaction_connection", default=None
-)
-
-
 @dataclass
 class AsyncBatch(Batch):
 
@@ -135,7 +130,7 @@ class Transaction:
     async def __aenter__(self):
         self.connection = await self.engine.get_connection()
         await self.connection.execute("BEGIN")
-        self.context = sqlite_transaction_connection.set(self.connection)
+        self.context = self.engine.transaction_connection.set(self.connection)
 
     async def __aexit__(self, exception_type, exception, traceback):
         if exception:
@@ -144,7 +139,9 @@ class Transaction:
             await self.connection.execute("COMMIT")
 
         await self.connection.close()
-        return exception is not None
+        self.engine.transaction_connection.reset(self.context)
+
+        return exception is None
 
 
 ###############################################################################
@@ -186,6 +183,11 @@ class SQLiteEngine(Engine):
             }
         )
         self.connection_kwargs = connection_kwargs
+
+        self.transaction_connection = contextvars.ContextVar(
+            f"sqlite_transaction_connection_{path}", default=None
+        )
+
         super().__init__()
 
     @property
@@ -297,7 +299,7 @@ class SQLiteEngine(Engine):
         )
 
         # If running inside a transaction:
-        connection = sqlite_transaction_connection.get()
+        connection = self.transaction_connection.get()
         if connection:
             return await self._run_in_existing_connection(
                 connection=connection,
@@ -307,7 +309,7 @@ class SQLiteEngine(Engine):
             )
 
         return await self._run_in_new_connection(
-            query=query, args=query_args, query_type=querystring.query_type,
+            query=query, args=query_args, query_type=querystring.query_type
         )
 
     def atomic(self) -> Atomic:

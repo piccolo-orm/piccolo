@@ -17,11 +17,6 @@ from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
 
 
-pg_transaction_connection = contextvars.ContextVar(
-    "pg_transaction_connection", default=None
-)
-
-
 @dataclass
 class AsyncBatch(Batch):
 
@@ -136,6 +131,8 @@ class Atomic:
 
 
 ###############################################################################
+
+
 class Transaction:
     """
     Used for wrapping queries in a transaction, using a context manager.
@@ -162,7 +159,7 @@ class Transaction:
 
         self.transaction = self.connection.transaction()
         await self.transaction.start()
-        self.context = pg_transaction_connection.set(self.connection)
+        self.context = self.engine.transaction_connection.set(self.connection)
 
     async def commit(self):
         await self.transaction.commit()
@@ -181,9 +178,9 @@ class Transaction:
         else:
             self.connection.close()
 
-        pg_transaction_connection.reset(self.context)
+        self.engine.transaction_connection.reset(self.context)
 
-        return exception is not None
+        return exception is None
 
 
 ###############################################################################
@@ -199,6 +196,10 @@ class PostgresEngine(Engine):
     def __init__(self, config: t.Dict[str, t.Any]) -> None:
         self.config = config
         self.pool: t.Optional[Pool] = None
+        database_name = config.get("database", "Unknown")
+        self.transaction_connection = contextvars.ContextVar(
+            f"pg_transaction_connection_{database_name}", default=None
+        )
         super().__init__()
 
     def get_version(self) -> float:
@@ -283,7 +284,7 @@ class PostgresEngine(Engine):
         )
 
         # If running inside a transaction:
-        connection = pg_transaction_connection.get()
+        connection = self.transaction_connection.get()
         if connection:
             return await connection.fetch(query, *query_args)
         elif in_pool and self.pool:

@@ -1,8 +1,10 @@
 import asyncio
 from unittest import TestCase
 
+from piccolo.engine.sqlite import SQLiteEngine
+
 from ..example_project.tables import Band, Manager
-from ..base import postgres_only
+from ..base import postgres_only, sqlite_only
 
 
 class TestAtomic(TestCase):
