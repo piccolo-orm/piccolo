@@ -12,6 +12,7 @@ from asyncpg.cursor import Cursor
 from asyncpg.pool import Pool
 
 from piccolo.engine.base import Batch, Engine
+from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
@@ -150,6 +151,11 @@ class Transaction:
 
     def __init__(self, engine: PostgresEngine):
         self.engine = engine
+        if self.engine.transaction_connection.get():
+            raise TransactionError(
+                "A transaction is already active - nested transactions aren't "
+                "currently supported."
+            )
 
     async def __aenter__(self):
         if self.engine.pool:

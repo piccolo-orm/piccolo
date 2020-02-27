@@ -2,10 +2,12 @@ import asyncio
 from unittest import TestCase
 
 from piccolo.columns.column_types import Varchar
+from piccolo.engine.exceptions import TransactionError
 from piccolo.engine.sqlite import SQLiteEngine
 from piccolo.table import Table
 
-from ..base import sqlite_only
+from ..base import sqlite_only, DBTestCase
+from ..example_project.tables import Manager
 
 
 ENGINE_1 = SQLiteEngine(path="engine1.sqlite")
@@ -21,7 +23,7 @@ class Roadie(Table, db=ENGINE_2):
 
 
 @sqlite_only
-class TestNestedTransaction(TestCase):
+class TestDifferentDB(TestCase):
     def setUp(self):
         ENGINE_1.remove_db_file()
         ENGINE_2.remove_db_file()
@@ -50,6 +52,22 @@ class TestNestedTransaction(TestCase):
         self.assertTrue(await Roadie.table_exists().run())
         roadie = await Roadie.select("name").first().run()
         self.assertTrue(roadie["name"] == "Dave")
+
+    def test_nested(self):
+        asyncio.run(self.run_nested())
+
+
+class TestSameDB(DBTestCase):
+    async def run_nested(self):
+        """
+        Nested transactions currently aren't permitted in a connection.
+        """
+        with self.assertRaises(TransactionError):
+            async with Manager._meta.db.transaction():
+                await Manager(name="Bob").save().run()
+
+                async with Manager._meta.db.transaction():
+                    await Manager(name="Dave").save().run()
 
     def test_nested(self):
         asyncio.run(self.run_nested())
