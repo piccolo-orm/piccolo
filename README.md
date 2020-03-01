@@ -13,7 +13,7 @@ Some of it’s stand out features are:
 - Support for sync and async.
 - A builtin playground, which makes learning a breeze.
 - Tab completion support - works great with iPython and VSCode.
-- Batteries included - a User model, authentication, migrations, an admin, and more.
+- Batteries included - a User model, authentication, migrations, an [admin GUI](https://github.com/piccolo-orm/piccolo_admin), and more.
 - Modern Python - fully type annotated.
 
 The syntax is clean and expressive.

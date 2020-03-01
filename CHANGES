@@ -1,3 +1,8 @@
+0.8.1
+=====
+Improved transaction support - can now use a context manager. Added Secret,
+table.
+
 0.8.0
 =====
 Fixing bug when joining across several tables. Can pass values directly into
