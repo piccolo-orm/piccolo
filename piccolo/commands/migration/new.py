@@ -47,7 +47,7 @@ def _create_new_migration(migrations_path) -> None:
     help="The parent of the migrations folder e.g. ./my_app",
 )
 @click.command()
-def new(create: t.Tuple[str], path: str):
+def new(path: str):
     """
     Creates a new file like migrations/2018-09-04T19:44:09.py
     """
