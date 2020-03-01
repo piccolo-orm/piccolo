@@ -1,6 +1,7 @@
 0.8.1
 =====
 Improved transaction support - can now use a context manager. Added Secret,
+BigInt and SmallInt column types. Foreign keys can now reference the parent
 table.
 
 0.8.0
