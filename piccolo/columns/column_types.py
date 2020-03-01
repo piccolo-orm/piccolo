@@ -5,7 +5,7 @@ import typing as t
 import uuid
 
 from piccolo.columns.base import Column, OnDelete, OnUpdate, ForeignKeyMeta
-from piccolo.querystring import Unquoted
+from piccolo.querystring import Unquoted, QueryString
 
 if t.TYPE_CHECKING:
     from piccolo.table import Table  # noqa
@@ -81,6 +81,49 @@ class Integer(Column):
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
+
+    def _get_querystring(self, operator: str, value: int, reverse=False):
+        """
+        Used in update queries - for example:
+
+        await Band.update({Band.popularity: Band.popularity + 100}).run()
+        """
+        if not isinstance(value, (int, float)):
+            raise ValueError("Only integers and floats can be added.")
+        if reverse:
+            return QueryString(f"{{}} {operator} {self._meta.name} ", value)
+        else:
+            return QueryString(f"{self._meta.name} {operator} {{}}", value)
+
+    def __add__(self, value: int):
+        return self._get_querystring("+", value)
+
+    def __radd__(self, value: int):
+        return self._get_querystring("+", value, reverse=True)
+
+    def __sub__(self, value: int):
+        return self._get_querystring("-", value)
+
+    def __rsub__(self, value: int):
+        return self._get_querystring("-", value, reverse=True)
+
+    def __mul__(self, value: int):
+        return self._get_querystring("*", value)
+
+    def __rmul__(self, value: int):
+        return self._get_querystring("*", value, reverse=True)
+
+    def __truediv__(self, value: int):
+        return self._get_querystring("/", value)
+
+    def __rtruediv__(self, value: int):
+        return self._get_querystring("/", value, reverse=True)
+
+    def __floordiv__(self, value: int):
+        return self._get_querystring("/", value)
+
+    def __rfloordiv__(self, value: int):
+        return self._get_querystring("/", value, reverse=True)
 
 
 ###############################################################################
