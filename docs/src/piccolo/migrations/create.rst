@@ -48,17 +48,23 @@ forwards and backwards functions.
 
 
     async def forwards():
-        transaction = Band._meta.db.transaction()
-
-        transaction.add(
-            Band.create_table(),
-        )
-
-        await transaction.run()
+        await Band.create_table().run()
 
 
     async def backwards():
         await Band.alter().drop_table().run()
+
+If making multiple changes to the database in a single migration, be sure to
+wrap it in a transaction.
+
+.. code-block:: python
+
+    async def forwards():
+        async with Band._meta.db.transaction:
+            await Band.create_table().run()
+            await Manager.create_table().run()
+
+See :ref:`Transactions`.
 
 The golden rule
 ~~~~~~~~~~~~~~~
@@ -75,13 +81,7 @@ This is a **bad example**:
 
 
     async def forwards():
-        transaction = Band._meta.db.transaction()
-
-        transaction.add(
-            Band.create_table(),
-        )
-
-        await transaction.run()
+        await Band.create_table().run()
 
 
     async def backwards():
