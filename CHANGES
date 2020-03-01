@@ -1,3 +1,7 @@
+0.8.3
+=====
+Can use operators in update queries, and fixing 'new' migration command.
+
 0.8.2
 =====
 Fixing release issue.
