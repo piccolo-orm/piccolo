@@ -44,10 +44,6 @@ class DiffableTable:
         return hash(self.class_name + self.tablename)
 
 
-def default_dict_factory():
-    return defaultdict(list)
-
-
 @dataclass
 class MigrationManager:
     """
@@ -57,14 +53,16 @@ class MigrationManager:
 
     add_tables: t.List[DiffableTable] = field(default_factory=list)
     drop_tables: t.List[DiffableTable] = field(default_factory=list)
-    add_columns: t.Dict[str, t.List] = field(
-        default_factory=default_dict_factory
+    add_columns: t.Dict[str, t.List[Column]] = field(
+        default_factory=lambda: defaultdict(list)
     )
-    drop_columns: t.Dict[str, t.List] = field(
-        default_factory=default_dict_factory
+    drop_columns: t.Dict[str, t.List[str]] = field(
+        default_factory=lambda: defaultdict(list)
     )
-    alter_columns: t.Dict[str, t.Dict[str, t.List]] = field(
-        default_factory=default_dict_factory
+    alter_columns: t.Dict[str, t.Dict[str, t.Dict[str, t.Any]]] = field(
+        default_factory=lambda: defaultdict(
+            lambda: defaultdict(lambda: defaultdict(dict))
+        )
     )
 
     def add_table(self, class_name: str, tablename: str):
@@ -98,11 +96,15 @@ class MigrationManager:
         All possible alterations aren't currently supported.
         """
         if length is not None:
-            pass
+            self.alter_columns[table_class_name][column_name][
+                "length"
+            ] = length
         if null is not None:
-            pass
+            self.alter_columns[table_class_name][column_name]["null"] = null
         if unique is not None:
-            pass
+            self.alter_columns[table_class_name][column_name][
+                "unique"
+            ] = unique
 
     def apply(self):
         """
@@ -125,10 +127,20 @@ class SchemaSnapshot:
 
     @property
     def _add_tables(self) -> t.Set[DiffableTable]:
+        """
+        :returns:
+            A mapping of table class name to a list of columns which have been
+            added.
+        """
         return set(chain(*[manager.add_tables for manager in self.managers]))
 
     @property
     def _drop_tables(self) -> t.Set[DiffableTable]:
+        """
+        :returns:
+            A mapping of table class name to a list of columns which have been
+            added.
+        """
         return set(chain(*[manager.drop_tables for manager in self.managers]))
 
     @property
@@ -139,6 +151,11 @@ class SchemaSnapshot:
 
     @property
     def _add_columns(self) -> t.Dict[str, t.List]:
+        """
+        :returns:
+            A mapping of table class name to a list of columns which have been
+            added.
+        """
         return {
             i.class_name: list(
                 chain(
@@ -153,6 +170,11 @@ class SchemaSnapshot:
 
     @property
     def _drop_columns(self) -> t.Dict[str, t.List]:
+        """
+        :returns:
+            A mapping of table class name to a list of columns which have been
+            dropped.
+        """
         return {
             i.class_name: list(
                 chain(
@@ -166,11 +188,41 @@ class SchemaSnapshot:
         }
 
     @property
-    def remaining_columns(self) -> t.Dict[str, t.List]:
+    def remaining_columns(self) -> t.Dict[str, t.List[Column]]:
+        """
+        :returns:
+            A mapping of the table class name to a list of remaining
+            columns.
+        """
         return {
             i: list(set(self._add_columns[i]) - set(self._drop_columns[i]))
             for i in self._add_columns.keys()
         }
+
+    ###########################################################################
+
+    @property
+    def remaining_alter_columns(
+        self,
+    ) -> t.Dict[str, t.Dict[str, t.Dict[str, t.Any]]]:
+        """
+        :returns:
+            A mapping of table class name to a list of column kwargs.
+        """
+        # table -> column -> kwargs
+        output: t.Dict[str, t.Dict[str, t.Dict[str, t.Any]]] = defaultdict(
+            lambda: defaultdict(lambda: defaultdict())
+        )
+
+        # We want to update the dict
+        for table_class_name, columns in self.remaining_columns.items():
+            for manager in self.managers:
+                for column_name, kwargs in manager.alter_columns[
+                    table_class_name
+                ].items():
+                    output[table_class_name][column_name].update(kwargs)
+
+        return output
 
     ###########################################################################
 
@@ -183,6 +235,11 @@ class SchemaSnapshot:
         for table in remaining_tables:
             table.columns = self.remaining_columns[table.class_name]
 
-        # Step 3 - apply any alterations to columns
+            for column in table.columns:
+                # Step 3 - apply any alterations to columns
+                for key, value in self.remaining_alter_columns[
+                    table.class_name
+                ][column._meta.name].items():
+                    setattr(column._meta, key, value)
 
         return remaining_tables
