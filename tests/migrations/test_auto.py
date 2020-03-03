@@ -1,10 +1,14 @@
 from unittest import TestCase
 
+from piccolo.columns.column_types import Varchar
 from piccolo.migrations.auto import SchemaSnapshot, MigrationManager
 
 
 class TestSchemaSnaphot(TestCase):
     def test_snapshot_add(self):
+        """
+        Test adding tables.
+        """
         manager_1 = MigrationManager()
         manager_1.add_table(class_name="Manager", tablename="manager")
 
@@ -21,6 +25,9 @@ class TestSchemaSnaphot(TestCase):
         self.assertTrue("Manager" in class_names)
 
     def test_snapshot_remove(self):
+        """
+        Test adding and removing tables.
+        """
         manager_1 = MigrationManager()
         manager_1.add_table(class_name="Manager", tablename="manager")
         manager_1.add_table(class_name="Band", tablename="band")
@@ -35,3 +42,21 @@ class TestSchemaSnaphot(TestCase):
 
         class_names = [i.class_name for i in snapshot]
         self.assertTrue("Manager" in class_names)
+
+    def test_add_columns(self):
+        """
+        Test adding and removing tables.
+        """
+        manager_1 = MigrationManager()
+        manager_1.add_table(class_name="Manager", tablename="manager")
+        manager_1.add_column(
+            table_class_name="Manager",
+            column_name="name",
+            column=Varchar(length=100),
+        )
+
+        schema_snapshot = SchemaSnapshot(managers=[manager_1])
+        snapshot = schema_snapshot.get_snapshot()
+
+        self.assertTrue(len(snapshot) == 1)
+        self.assertTrue(len(snapshot[0].columns) == 1)

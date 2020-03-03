@@ -1,4 +1,5 @@
 from __future__ import annotations
+from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass, field
 from itertools import chain
@@ -43,6 +44,10 @@ class DiffableTable:
         return hash(self.class_name + self.tablename)
 
 
+def default_dict_factory():
+    return defaultdict(list)
+
+
 @dataclass
 class MigrationManager:
     """
@@ -52,8 +57,15 @@ class MigrationManager:
 
     add_tables: t.List[DiffableTable] = field(default_factory=list)
     drop_tables: t.List[DiffableTable] = field(default_factory=list)
-    add_columns: t.List[Column] = field(default_factory=list)
-    drop_columns: t.List[Column] = field(default_factory=list)
+    add_columns: t.Dict[str, t.List] = field(
+        default_factory=default_dict_factory
+    )
+    drop_columns: t.Dict[str, t.List] = field(
+        default_factory=default_dict_factory
+    )
+    alter_columns: t.Dict[str, t.Dict[str, t.List]] = field(
+        default_factory=default_dict_factory
+    )
 
     def add_table(self, class_name: str, tablename: str):
         self.add_tables.append(
@@ -65,14 +77,32 @@ class MigrationManager:
             DiffableTable(class_name=class_name, tablename=tablename)
         )
 
-    def add_column(self, column):
-        self.add_columns.append(column)
+    def add_column(
+        self, table_class_name: str, column_name: str, column: Column
+    ):
+        column._meta.name = column_name
+        self.add_columns[table_class_name].append(column)
 
-    def drop_column(self):
-        self.drop_columns.append(column)
+    def drop_column(self, table_class_name: str, column_name: str):
+        self.drop_columns[table_class_name].append(column_name)
 
-    def alter_column(self):
-        pass
+    def alter_column(
+        self,
+        table_class_name: str,
+        column_name: str,
+        length: t.Optional[int] = None,
+        null: t.Optional[bool] = None,
+        unique: t.Optional[bool] = None,
+    ):
+        """
+        All possible alterations aren't currently supported.
+        """
+        if length is not None:
+            pass
+        if null is not None:
+            pass
+        if unique is not None:
+            pass
 
     def apply(self):
         """
@@ -94,30 +124,53 @@ class SchemaSnapshot:
     ###########################################################################
 
     @property
-    def _add_tables(self):
+    def _add_tables(self) -> t.Set[DiffableTable]:
         return set(chain(*[manager.add_tables for manager in self.managers]))
 
     @property
-    def _drop_tables(self):
+    def _drop_tables(self) -> t.Set[DiffableTable]:
         return set(chain(*[manager.drop_tables for manager in self.managers]))
 
     @property
-    def remaining_tables(self):
+    def remaining_tables(self) -> t.List[DiffableTable]:
         return list(self._add_tables - self._drop_tables)
 
     ###########################################################################
 
     @property
-    def _add_columns(self):
-        return set(chain(*[manager.add_columns for manager in self.managers]))
+    def _add_columns(self) -> t.Dict[str, t.List]:
+        return {
+            i.class_name: list(
+                chain(
+                    *[
+                        manager.add_columns[i.class_name]
+                        for manager in self.managers
+                    ]
+                )
+            )
+            for i in self.remaining_tables
+        }
 
     @property
-    def _drop_columns(self):
-        return set(chain(*[manager.drop_columns for manager in self.managers]))
+    def _drop_columns(self) -> t.Dict[str, t.List]:
+        return {
+            i.class_name: list(
+                chain(
+                    *[
+                        manager.drop_columns[i.class_name]
+                        for manager in self.managers
+                    ]
+                )
+            )
+            for i in self.remaining_tables
+        }
 
     @property
-    def remaining_columns(self):
-        return list(self._add_columns - self._drop_columns)
+    def remaining_columns(self) -> t.Dict[str, t.List]:
+        return {
+            i: list(set(self._add_columns[i]) - set(self._drop_columns[i]))
+            for i in self._add_columns.keys()
+        }
 
     ###########################################################################
 
@@ -128,8 +181,7 @@ class SchemaSnapshot:
 
         # Step 2 - add and remove columns from the remaining tables.
         for table in remaining_tables:
-            # TODO - filter columns so they're for the correct table.
-            table.columns = self.remaining_columns
+            table.columns = self.remaining_columns[table.class_name]
 
         # Step 3 - apply any alterations to columns
 
