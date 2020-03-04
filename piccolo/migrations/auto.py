@@ -43,6 +43,19 @@ class DiffableTable:
         """
         return hash(self.class_name + self.tablename)
 
+    def __eq__(self, value) -> bool:
+        """
+        This is used by sets for uniqueness checks.
+        """
+        if not isinstance(value, DiffableTable):
+            return False
+        return (self.class_name == value.class_name) and (
+            self.tablename == value.tablename
+        )
+
+    def __str__(self):
+        return f"{self.class_name} - {self.tablename}"
+
 
 @dataclass
 class SchemaDiffer:
@@ -55,11 +68,32 @@ class SchemaDiffer:
     schema: t.List[DiffableTable]
     schema_snapshot: t.List[DiffableTable]
 
+    @property
+    def create_tables(self):
+        new_tables: t.List[DiffableTable] = list(
+            set(self.schema) - set(self.schema_snapshot)
+        )
+        return [
+            f"manager.add_table('{i.class_name}', tablename='{i.tablename}')"
+            for i in new_tables
+        ]
+
+    @property
+    def drop_tables(self):
+        drop_tables: t.List[DiffableTable] = list(
+            set(self.schema_snapshot) - set(self.schema)
+        )
+        return [
+            f"manager.drop_table(tablename='{i.tablename}')"
+            for i in drop_tables
+        ]
+
     def get_alter_statements(self):
         """
         Call to execute the necessary alter commands on the database.
         """
-        pass
+        # TODO - check for renames
+        return chain(self.create_tables, self.drop_tables)
 
 
 @dataclass

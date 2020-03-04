@@ -14,7 +14,7 @@ from piccolo.migrations.auto import (
     DiffableTable,
     SchemaDiffer,
 )
-from piccolo.migrations.template import TEMPLATE
+from piccolo.migrations.template import render_template
 from piccolo.table import TABLE_REGISTRY
 
 
@@ -46,12 +46,14 @@ def _create_new_migration(migrations_path: str, auto=False) -> None:
         if auto:
             alter_statements = AutoMigrationManager().get_alter_statements()
             f.write(
-                TEMPLATE.format(
-                    migration_id=_id, auto=True, alter_statements=[]
+                render_template(
+                    migration_id=_id,
+                    auto=True,
+                    alter_statements=alter_statements,
                 )
             )
         else:
-            f.write(TEMPLATE.format(migration_id=_id, auto=False))
+            f.write(render_template(migration_id=_id, auto=False))
 
 
 ###############################################################################
@@ -62,6 +64,8 @@ class AutoMigrationManager(BaseMigrationManager):
         """
         Works out which alter statements are required.
         """
+        alter_statements: t.List[str] = []
+
         for config_module in self.get_config_modules():
             migrations_folder = os.path.dirname(config_module.__file__)
 
@@ -71,18 +75,18 @@ class AutoMigrationManager(BaseMigrationManager):
 
             migration_managers: t.List[MigrationManager] = []
 
-            for migration_module in migration_modules:
+            for _, migration_module in migration_modules.items():
                 response = asyncio.run(migration_module.forwards())
                 if isinstance(response, MigrationManager):
                     migration_managers.append(response)
 
-            schema_snapshot = SchemaSnapshot(*migration_managers)
+            schema_snapshot = SchemaSnapshot(migration_managers)
             snapshot = schema_snapshot.get_snapshot()
 
             # Now get the current schema:
             current_diffable_tables = [
                 DiffableTable(
-                    class_name=i.__class__,
+                    class_name=i.__name__,
                     tablename=i._meta.tablename,
                     columns=i._meta.columns,
                 )
@@ -93,6 +97,9 @@ class AutoMigrationManager(BaseMigrationManager):
             differ = SchemaDiffer(
                 schema=current_diffable_tables, schema_snapshot=snapshot
             )
+            alter_statements = differ.get_alter_statements()
+
+        return alter_statements
 
 
 ###############################################################################
@@ -105,7 +112,7 @@ class AutoMigrationManager(BaseMigrationManager):
     help="The parent of the migrations folder e.g. ./my_app",
 )
 @click.option(
-    "--auto", is_flag=True, help="Auto create the migration contents.",
+    "--auto", is_flag=True, help="Auto create the migration contents."
 )
 @click.command()
 def new(path: str, auto: bool):
