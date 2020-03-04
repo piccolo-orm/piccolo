@@ -5,7 +5,7 @@ from piccolo.migrations.auto import SchemaSnapshot, MigrationManager
 
 
 class TestSchemaSnaphot(TestCase):
-    def _test_snapshot_add(self):
+    def test_snapshot_add(self):
         """
         Test adding tables.
         """
@@ -24,7 +24,7 @@ class TestSchemaSnaphot(TestCase):
         self.assertTrue("Band" in class_names)
         self.assertTrue("Manager" in class_names)
 
-    def _test_snapshot_remove(self):
+    def test_snapshot_remove(self):
         """
         Test adding and removing tables.
         """
@@ -43,7 +43,7 @@ class TestSchemaSnaphot(TestCase):
         class_names = [i.class_name for i in snapshot]
         self.assertTrue("Manager" in class_names)
 
-    def _test_add_columns(self):
+    def test_add_columns(self):
         """
         Test adding and removing tables.
         """

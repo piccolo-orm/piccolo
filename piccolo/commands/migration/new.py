@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 import datetime
 import os
 import typing as t
@@ -6,7 +7,15 @@ from types import ModuleType
 
 import click
 
+from piccolo.commands.migration.base import BaseMigrationManager
+from piccolo.migrations.auto import (
+    SchemaSnapshot,
+    MigrationManager,
+    DiffableTable,
+    SchemaDiffer,
+)
 from piccolo.migrations.template import TEMPLATE
+from piccolo.table import TABLE_REGISTRY
 
 
 MIGRATION_MODULES: t.Dict[str, ModuleType] = {}
@@ -27,14 +36,63 @@ def _create_migrations_folder(migrations_path: str) -> bool:
         return True
 
 
-def _create_new_migration(migrations_path) -> None:
+def _create_new_migration(migrations_path: str, auto=False) -> None:
     """
     Creates a new migration file on disk.
     """
     _id = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     path = os.path.join(migrations_path, f"{_id}.py")
     with open(path, "w") as f:
-        f.write(TEMPLATE.format(migration_id=_id))
+        if auto:
+            alter_statements = AutoMigrationManager().get_alter_statements()
+            f.write(
+                TEMPLATE.format(
+                    migration_id=_id, auto=True, alter_statements=[]
+                )
+            )
+        else:
+            f.write(TEMPLATE.format(migration_id=_id, auto=False))
+
+
+###############################################################################
+
+
+class AutoMigrationManager(BaseMigrationManager):
+    def get_alter_statements(self):
+        """
+        Works out which alter statements are required.
+        """
+        for config_module in self.get_config_modules():
+            migrations_folder = os.path.dirname(config_module.__file__)
+
+            migration_modules: t.Dict[
+                str, MigrationModule
+            ] = self.get_migration_modules(migrations_folder)
+
+            migration_managers: t.List[MigrationManager] = []
+
+            for migration_module in migration_modules:
+                response = asyncio.run(migration_module.forwards())
+                if isinstance(response, MigrationManager):
+                    migration_managers.append(response)
+
+            schema_snapshot = SchemaSnapshot(*migration_managers)
+            snapshot = schema_snapshot.get_snapshot()
+
+            # Now get the current schema:
+            current_diffable_tables = [
+                DiffableTable(
+                    class_name=i.__class__,
+                    tablename=i._meta.tablename,
+                    columns=i._meta.columns,
+                )
+                for i in TABLE_REGISTRY
+            ]
+
+            # Compare the current schema with the snapshot
+            differ = SchemaDiffer(
+                schema=current_diffable_tables, schema_snapshot=snapshot
+            )
 
 
 ###############################################################################
@@ -46,8 +104,11 @@ def _create_new_migration(migrations_path) -> None:
     multiple=False,
     help="The parent of the migrations folder e.g. ./my_app",
 )
+@click.option(
+    "--auto", is_flag=True, help="Auto create the migration contents.",
+)
 @click.command()
-def new(path: str):
+def new(path: str, auto: bool):
     """
     Creates a new file like migrations/2018-09-04T19:44:09.py
     """
@@ -57,4 +118,4 @@ def new(path: str):
     migrations_path = os.path.join(root_dir, "migrations")
 
     _create_migrations_folder(migrations_path)
-    _create_new_migration(migrations_path)
+    _create_new_migration(migrations_path, auto=auto)

@@ -85,6 +85,9 @@ class TableMetaclass(type):
         return cls._table_str()
 
 
+TABLE_REGISTRY: t.List[t.Type[Table]] = []
+
+
 class Table(metaclass=TableMetaclass):
 
     # These are just placeholder values, so type inference isn't confused - the
@@ -99,8 +102,6 @@ class Table(metaclass=TableMetaclass):
         Automatically populate the _meta, which includes the tablename, and
         columns.
         """
-        cls.id = PrimaryKey()
-
         tablename = tablename if tablename else _camel_to_snake(cls.__name__)
 
         if tablename in PROTECTED_TABLENAMES:
@@ -108,6 +109,10 @@ class Table(metaclass=TableMetaclass):
                 f"{tablename} is a protected name, please give your table a "
                 "different name."
             )
+
+        TABLE_REGISTRY.append(cls)
+
+        cls.id = PrimaryKey()
 
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]

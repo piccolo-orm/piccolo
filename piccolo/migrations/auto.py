@@ -45,6 +45,24 @@ class DiffableTable:
 
 
 @dataclass
+class SchemaDiffer:
+    """
+    Compares two lists of DiffableTables, and returns the list of alter
+    statements required to make them match. Asks for user input when it isn't
+    sure - for example, whether a column was renamed.
+    """
+
+    schema: t.List[DiffableTable]
+    schema_snapshot: t.List[DiffableTable]
+
+    def get_alter_statements(self):
+        """
+        Call to execute the necessary alter commands on the database.
+        """
+        pass
+
+
+@dataclass
 class MigrationManager:
     """
     Each auto generated migration returns a MigrationManager. It contains
@@ -105,12 +123,6 @@ class MigrationManager:
             self.alter_columns[table_class_name][column_name][
                 "unique"
             ] = unique
-
-    def apply(self):
-        """
-        Call to execute the necessary alter commands on the database.
-        """
-        pass
 
 
 @dataclass

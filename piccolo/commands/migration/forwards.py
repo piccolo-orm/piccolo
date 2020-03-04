@@ -6,12 +6,12 @@ import typing as t
 
 import click
 
-from piccolo.migrations.tables import Migration
 from piccolo.commands.migration.base import (
     BaseMigrationManager,
     MigrationModule,
     ConfigModule,
 )
+from piccolo.migrations.tables import Migration
 
 
 class ForwardsMigrationManager(BaseMigrationManager):
