@@ -85,9 +85,6 @@ class TableMetaclass(type):
         return cls._table_str()
 
 
-TABLE_REGISTRY: t.List[t.Type[Table]] = []
-
-
 class Table(metaclass=TableMetaclass):
 
     # These are just placeholder values, so type inference isn't confused - the
@@ -109,8 +106,6 @@ class Table(metaclass=TableMetaclass):
                 f"{tablename} is a protected name, please give your table a "
                 "different name."
             )
-
-        TABLE_REGISTRY.append(cls)
 
         cls.id = PrimaryKey()
 

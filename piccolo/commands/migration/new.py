@@ -15,7 +15,6 @@ from piccolo.migrations.auto import (
     SchemaDiffer,
 )
 from piccolo.migrations.template import render_template
-from piccolo.table import TABLE_REGISTRY
 
 
 MIGRATION_MODULES: t.Dict[str, ModuleType] = {}

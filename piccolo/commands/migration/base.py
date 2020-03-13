@@ -40,6 +40,7 @@ class BaseMigrationManager:
         """
         Remove all duplicates - just leaving the first instance.
         """
+        # Deduplicate, but preserve order - which is why set() isn't used.
         return list(dict([(c, None) for c in config_modules]).keys())
 
     def import_config_modules(
@@ -116,5 +117,6 @@ class BaseMigrationManager:
         return sorted(list(migration_module_dict.keys()))
 
     def get_app_name(self, config_module: ConfigModule) -> str:
+        # TODO - default to package name instead.
         app_name = getattr(config_module, "NAME", "").strip()
         return app_name
