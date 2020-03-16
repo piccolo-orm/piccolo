@@ -1,0 +1,9 @@
+import os
+
+CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
+
+TABLES_MODULE = os.path.join(CURRENT_DIRECTORY, 'tables.py')
+
+MIGRATIONS_FOLDER = os.path.join(CURRENT_DIRECTORY, 'piccolo_migrations')
+
+MIGRATION_DEPENDENCIES = []

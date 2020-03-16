@@ -1,0 +1,22 @@
+from piccolo.conf.app import AppConfig
+
+{% if engine_name == 'postgres' %}
+from piccolo.engine.postgres import PostgresEngine
+
+
+DB = PostgresEngine(config={})
+{% endif %}
+{% if engine_name == 'sqlite' %}
+from piccolo.engine.sqlite import SQLiteEngine
+
+
+DB = SQLiteEngine(path='project.sqlite')
+{% endif %}
+
+
+MIGRATIONS = []
+
+
+# A list of paths to piccolo apps, which are basically just Python packages
+# containing a piccolo_app.py file.
+APPS = AppConfig()

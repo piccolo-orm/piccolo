@@ -5,6 +5,7 @@ import sys
 import click
 
 from piccolo.commands.app.new import new as new_app
+from piccolo.commands.conf.new import new as new_conf
 from piccolo.commands.playground import playground
 from piccolo.commands.migration.new import new
 from piccolo.commands.migration.backwards import backwards
@@ -18,8 +19,7 @@ def cli():
 
 
 ###############################################################################
-
-
+# Migrations
 @cli.group("migration")
 def migration():
     pass
@@ -31,18 +31,26 @@ migration.add_command(forwards)
 migration.add_command(backwards)
 
 ###############################################################################
-
+# Playground
 cli.add_command(playground)
 
 ###############################################################################
-
-
+# App
 @cli.group("app")
 def app():
     pass
 
 
 app.add_command(new_app)
+
+###############################################################################
+# Conf
+@cli.group("conf")
+def conf():
+    pass
+
+
+conf.add_command(new_conf)
 
 ###############################################################################
 

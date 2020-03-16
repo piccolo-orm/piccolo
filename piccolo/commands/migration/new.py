@@ -2,6 +2,7 @@ from __future__ import annotations
 import asyncio
 import datetime
 import os
+import sys
 import typing as t
 from types import ModuleType
 
@@ -105,22 +106,31 @@ class AutoMigrationManager(BaseMigrationManager):
 
 
 @click.option(
-    "-p",
-    "--path",
-    multiple=False,
-    help="The parent of the migrations folder e.g. ./my_app",
+    "--app", multiple=False, help="The app which the migration belongs to.",
 )
 @click.option(
     "--auto", is_flag=True, help="Auto create the migration contents."
 )
 @click.command()
-def new(path: str, auto: bool):
+def new(app: str, auto: bool):
     """
-    Creates a new file like migrations/2018-09-04T19:44:09.py
+    Creates a new file like piccolo_migrations/2018-09-04T19:44:09.py
     """
     print("Creating new migration ...")
 
-    root_dir = path if path else os.getcwd()
+    try:
+        import piccolo_conf
+    except ImportError:
+        print("Can't find piccolo_conf")
+        sys.exit(1)
+
+    try:
+        app_package = piccolo_conf.APPS.get(app)
+    except AttributeError:
+        print("APPS isn't defined in piccolo_conf")
+        sys.exit(1)
+
+    root_dir = os.path.dirname(app_package.__file__)
     migrations_path = os.path.join(root_dir, "migrations")
 
     _create_migrations_folder(migrations_path)
