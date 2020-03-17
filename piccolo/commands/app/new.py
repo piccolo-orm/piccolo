@@ -27,7 +27,7 @@ def new_app(app_name: str):
         pass
 
     templates: t.Dict[str, t.Any] = {
-        "piccolo_app.py": {},
+        "piccolo_app.py": {"app_name": app_name},
         "tables.py": {},
     }
 

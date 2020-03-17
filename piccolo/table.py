@@ -93,7 +93,10 @@ class Table(metaclass=TableMetaclass):
     id = PrimaryKey()
 
     def __init_subclass__(
-        cls, tablename: t.Optional[str] = None, db: t.Optional[Engine] = None
+        cls,
+        tablename: t.Optional[str] = None,
+        db: t.Optional[Engine] = None,
+        app: t.Optional[str] = None,
     ):
         """
         Automatically populate the _meta, which includes the tablename, and

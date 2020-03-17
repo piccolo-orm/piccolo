@@ -1,8 +1,10 @@
 import os
 
+APP_NAME = '{{ app_name }}'
+
 CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
-TABLES_MODULE = os.path.join(CURRENT_DIRECTORY, 'tables.py')
+TABLES_MODULE = 'tables'
 
 MIGRATIONS_FOLDER = os.path.join(CURRENT_DIRECTORY, 'piccolo_migrations')
 
