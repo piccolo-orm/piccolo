@@ -2,10 +2,14 @@ from __future__ import annotations
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass, field
+from enum import Enum
+from inspect import isclass
 from itertools import chain
 import typing as t
 
 from piccolo.columns import Column
+from piccolo.columns import column_types
+from piccolo.table import Table
 
 
 @dataclass
@@ -69,17 +73,18 @@ class SchemaDiffer:
     schema_snapshot: t.List[DiffableTable]
 
     @property
-    def create_tables(self):
+    def create_tables(self) -> t.List[str]:
         new_tables: t.List[DiffableTable] = list(
             set(self.schema) - set(self.schema_snapshot)
         )
+
         return [
             f"manager.add_table('{i.class_name}', tablename='{i.tablename}')"
             for i in new_tables
         ]
 
     @property
-    def drop_tables(self):
+    def drop_tables(self) -> t.List[str]:
         drop_tables: t.List[DiffableTable] = list(
             set(self.schema_snapshot) - set(self.schema)
         )
@@ -88,12 +93,46 @@ class SchemaDiffer:
             for i in drop_tables
         ]
 
-    def get_alter_statements(self):
+    @property
+    def add_columns(self) -> t.List[str]:
+        new_tables: t.List[DiffableTable] = list(
+            set(self.schema) - set(self.schema_snapshot)
+        )
+        output = []
+        for table in new_tables:
+            for column in table.columns:
+                # In case we cause subtle bugs:
+                params = deepcopy(column._meta.params)
+
+                # We currently don't support defaults which are functions.
+                default = params.get("default", None)
+                if hasattr(default, "__call__"):
+                    params.pop("default")
+
+                for key, value in params.items():
+                    # Convert enums into plain values
+                    if isinstance(value, Enum):
+                        params[key] = value.value
+
+                    # Replace any Table class values into class names
+                    if isclass(value) and issubclass(value, Table):
+                        params[key] = value.__name__
+
+                output.append(
+                    f"manager.add_column(table_class_name='{table.class_name}', column_name='{column._meta.name}', column_class_name='{column.__class__.__name__}', params={str(params)})"  # noqa
+                )
+        return output
+
+    @property
+    def drop_columns(self) -> t.List[str]:
+        pass
+
+    def get_alter_statements(self) -> t.Iterable[str]:
         """
         Call to execute the necessary alter commands on the database.
         """
         # TODO - check for renames
-        return chain(self.create_tables, self.drop_tables)
+        return chain(self.create_tables, self.drop_tables, self.add_columns)
 
 
 @dataclass
@@ -117,9 +156,13 @@ class MigrationManager:
         )
     )
 
-    def add_table(self, class_name: str, tablename: str):
+    def add_table(
+        self, class_name: str, tablename: str, columns: t.List[Column] = []
+    ):
         self.add_tables.append(
-            DiffableTable(class_name=class_name, tablename=tablename)
+            DiffableTable(
+                class_name=class_name, tablename=tablename, columns=columns
+            )
         )
 
     def drop_table(self, class_name: str, tablename: str):
@@ -128,8 +171,14 @@ class MigrationManager:
         )
 
     def add_column(
-        self, table_class_name: str, column_name: str, column: Column
+        self,
+        table_class_name: str,
+        column_name: str,
+        column_class_name: str,
+        params: t.Dict[str, t.Any] = {},
     ):
+        column_class = getattr(column_types, column_class_name)
+        column = column_class(**params)
         column._meta.name = column_name
         self.add_columns[table_class_name].append(column)
 
@@ -157,6 +206,9 @@ class MigrationManager:
             self.alter_columns[table_class_name][column_name][
                 "unique"
             ] = unique
+
+    async def run(self):
+        print("Running MigrationManager ...")
 
 
 @dataclass

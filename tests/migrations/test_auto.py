@@ -52,7 +52,8 @@ class TestSchemaSnaphot(TestCase):
         manager_1.add_column(
             table_class_name="Manager",
             column_name="name",
-            column=Varchar(length=100),
+            column_class_name="Varchar",
+            params={"length": 100},
         )
 
         schema_snapshot = SchemaSnapshot(managers=[manager_1])
@@ -70,7 +71,8 @@ class TestSchemaSnaphot(TestCase):
         manager_1.add_column(
             table_class_name="Manager",
             column_name="name",
-            column=Varchar(length=100),
+            column_class_name="Varchar",
+            params={"length": 100},
         )
 
         manager_2 = MigrationManager()

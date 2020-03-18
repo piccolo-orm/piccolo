@@ -5,6 +5,7 @@ import sys
 from types import ModuleType
 import typing as t
 
+from piccolo.conf.apps import AppConfig, AppRegistry
 from piccolo.migrations.tables import Migration
 
 
@@ -18,9 +19,8 @@ class MigrationModule(ModuleType):
         pass
 
 
-class ConfigModule(ModuleType):
-    NAME: str
-    DEPENDENCIES: t.List[str]
+class PiccoloAppModule(ModuleType):
+    APP_CONFIG: AppConfig
 
 
 class BaseMigrationManager:
@@ -35,52 +35,53 @@ class BaseMigrationManager:
         return False
 
     def _deduplicate(
-        self, config_modules: t.List[ConfigModule]
-    ) -> t.List[ConfigModule]:
+        self, config_modules: t.List[PiccoloAppModule]
+    ) -> t.List[PiccoloAppModule]:
         """
         Remove all duplicates - just leaving the first instance.
         """
         # Deduplicate, but preserve order - which is why set() isn't used.
         return list(dict([(c, None) for c in config_modules]).keys())
 
-    def import_config_modules(
-        self, migrations: t.List[str]
-    ) -> t.List[ConfigModule]:
+    def _import_app_modules(
+        self, config_module_paths: t.List[str]
+    ) -> t.List[PiccoloAppModule]:
         """
-        Import all config modules, and all dependencies.
+        Import all piccolo_app.py modules, and all dependencies.
         """
         config_modules = []
 
-        for config_module_path in migrations:
+        for config_module_path in config_module_paths:
             try:
                 config_module = t.cast(
-                    ConfigModule, importlib.import_module(config_module_path)
+                    PiccoloAppModule,
+                    importlib.import_module(config_module_path),
                 )
             except ImportError:
                 raise Exception(f"Unable to import {config_module_path}")
-            DEPENDENCIES = getattr(config_module, "DEPENDENCIES", [])
-            dependency_config_modules = self.import_config_modules(
-                DEPENDENCIES
+            app_config: AppConfig = getattr(config_module, "APP_CONFIG")
+            dependency_config_modules = self._import_app_modules(
+                app_config.migration_dependencies
             )
             config_modules.extend(dependency_config_modules + [config_module])
 
         return config_modules
 
-    def get_config_modules(self) -> t.List[ConfigModule]:
+    def get_app_modules(self) -> t.List[PiccoloAppModule]:
         try:
-            from piccolo_conf import MIGRATIONS
+            from piccolo_conf import APP_REGISTRY
         except ImportError:
             raise Exception(
-                "Unable to import MIGRATIONS from piccolo_conf - make sure "
+                "Unable to import APP_REGISTRY from piccolo_conf - make sure "
                 "it's in your path."
             )
 
-        config_modules = self.import_config_modules(MIGRATIONS)
+        app_modules = self._import_app_modules(APP_REGISTRY.apps)
 
         # Now deduplicate any dependencies
-        config_modules = self._deduplicate(config_modules)
+        app_modules = self._deduplicate(app_modules)
 
-        return config_modules
+        return app_modules
 
     def get_migration_modules(
         self, folder_path: str
@@ -93,7 +94,7 @@ class BaseMigrationManager:
         sys.path.insert(0, folder_path)
 
         folder_contents = os.listdir(folder_path)
-        excluded = ("__init__.py", "__pycache__", "config.py")
+        excluded = ("__init__.py", "__pycache__")
         migration_names = [
             i.split(".py")[0]
             for i in folder_contents
@@ -116,7 +117,7 @@ class BaseMigrationManager:
     ) -> t.List[str]:
         return sorted(list(migration_module_dict.keys()))
 
-    def get_app_name(self, config_module: ConfigModule) -> str:
+    def get_app_name(self, config_module: PiccoloAppModule) -> str:
         # TODO - default to package name instead.
         app_name = getattr(config_module, "NAME", "").strip()
         return app_name

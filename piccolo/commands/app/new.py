@@ -3,6 +3,7 @@ import os
 import sys
 import typing as t
 
+import black
 import click
 import jinja2
 
@@ -34,8 +35,11 @@ def new_app(app_name: str):
     for filename, context in templates.items():
         with open(os.path.join(app_name, filename), "w") as f:
             template = JINJA_ENV.get_template(filename + ".jinja")
-            rendered = template.render(**context)
-            f.write(rendered)
+            file_contents = template.render(**context)
+            file_contents = black.format_str(
+                file_contents, mode=black.FileMode(line_length=82)
+            )
+            f.write(file_contents)
 
     migrations_folder_path = os.path.join(app_name, "piccolo_migrations")
     os.mkdir(migrations_folder_path)

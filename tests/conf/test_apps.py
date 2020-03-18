@@ -1,8 +1,8 @@
 from unittest import TestCase
 
-from piccolo.conf.apps import AppConfig
+from piccolo.conf.apps import AppRegistry
 
 
-class TestAppConfig(TestCase):
+class TestAppRegistry(TestCase):
     def test_init(self):
-        AppConfig()
+        AppRegistry()

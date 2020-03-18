@@ -2,6 +2,7 @@ from __future__ import annotations
 import os
 import sys
 
+import black
 import click
 import jinja2
 
@@ -26,8 +27,12 @@ def new_piccolo_conf(engine_name: str, force: bool = False):
 
     with open("piccolo_conf.py", "w") as f:
         template = JINJA_ENV.get_template("piccolo_conf.py.jinja")
-        rendered = template.render(engine_name=engine_name)
-        f.write(rendered)
+        file_contents = template.render(engine_name=engine_name)
+        file_contents = black.format_str(
+            file_contents, mode=black.FileMode(line_length=82)
+        )
+
+        f.write(file_contents)
 
 
 @click.option(

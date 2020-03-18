@@ -1,5 +1,3 @@
-import os
-
 import click
 
 from .base import BaseMigrationManager
@@ -18,14 +16,17 @@ class CheckMigrationManager(BaseMigrationManager):
     def run(self):
         print("Listing migrations ...")
 
-        config_modules = self.get_config_modules()
+        app_modules = self.get_app_modules()
 
-        for config_module in config_modules:
-            app_name = self.get_app_name(config_module)
+        for app_module in app_modules:
+            app_config = app_module.APP_CONFIG
+
+            app_name = app_config.app_name
             fixed_length_app_name = self.get_fixed_length_string(app_name)
 
-            path = os.path.dirname(config_module.__file__)
-            migration_modules = self.get_migration_modules(path)
+            migration_modules = self.get_migration_modules(
+                app_config.migrations_folder_path
+            )
             ids = self.get_migration_ids(migration_modules)
             for _id in ids:
                 has_ran = (

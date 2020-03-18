@@ -6,9 +6,14 @@ import sys
 import typing as t
 from types import ModuleType
 
+import black
 import click
 
-from piccolo.commands.migration.base import BaseMigrationManager
+from piccolo.commands.migration.base import (
+    BaseMigrationManager,
+    MigrationModule,
+)
+from piccolo.conf.apps import AppConfig, AppRegistry
 from piccolo.migrations.auto import (
     SchemaSnapshot,
     MigrationManager,
@@ -36,38 +41,45 @@ def _create_migrations_folder(migrations_path: str) -> bool:
         return True
 
 
-def _create_new_migration(migrations_path: str, auto=False) -> None:
+def _create_new_migration(app_config: AppConfig, auto=False) -> None:
     """
     Creates a new migration file on disk.
     """
     _id = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    path = os.path.join(migrations_path, f"{_id}.py")
+    path = os.path.join(app_config.migrations_folder_path, f"{_id}.py")
     with open(path, "w") as f:
         if auto:
-            alter_statements = AutoMigrationManager().get_alter_statements()
-            f.write(
-                render_template(
-                    migration_id=_id,
-                    auto=True,
-                    alter_statements=alter_statements,
-                )
+            alter_statements = AutoMigrationManager().get_alter_statements(
+                app_config=app_config
+            )
+            file_contents = render_template(
+                migration_id=_id, auto=True, alter_statements=alter_statements,
             )
         else:
-            f.write(render_template(migration_id=_id, auto=False))
+            file_contents = f.write(
+                render_template(migration_id=_id, auto=False)
+            )
+
+        # Beautify the file contents a bit.
+        file_contents = black.format_str(
+            file_contents, mode=black.FileMode(line_length=82)
+        )
+
+        f.write(file_contents)
 
 
 ###############################################################################
 
 
 class AutoMigrationManager(BaseMigrationManager):
-    def get_alter_statements(self):
+    def get_alter_statements(self, app_config: AppConfig):
         """
         Works out which alter statements are required.
         """
         alter_statements: t.List[str] = []
 
-        for config_module in self.get_config_modules():
-            migrations_folder = os.path.dirname(config_module.__file__)
+        for config_module in self.get_app_modules():
+            migrations_folder = config_module.APP_CONFIG.migrations_folder_path
 
             migration_modules: t.Dict[
                 str, MigrationModule
@@ -90,7 +102,7 @@ class AutoMigrationManager(BaseMigrationManager):
                     tablename=i._meta.tablename,
                     columns=i._meta.columns,
                 )
-                for i in TABLE_REGISTRY
+                for i in app_config.table_classes
             ]
 
             # Compare the current schema with the snapshot
@@ -105,14 +117,12 @@ class AutoMigrationManager(BaseMigrationManager):
 ###############################################################################
 
 
-@click.option(
-    "--app", multiple=False, help="The app which the migration belongs to.",
-)
+@click.argument("app_name")
 @click.option(
     "--auto", is_flag=True, help="Auto create the migration contents."
 )
 @click.command()
-def new(app: str, auto: bool):
+def new(app_name: str, auto: bool):
     """
     Creates a new file like piccolo_migrations/2018-09-04T19:44:09.py
     """
@@ -125,13 +135,12 @@ def new(app: str, auto: bool):
         sys.exit(1)
 
     try:
-        app_package = piccolo_conf.APPS.get(app)
+        app_registry: AppRegistry = piccolo_conf.APP_REGISTRY
     except AttributeError:
-        print("APPS isn't defined in piccolo_conf")
+        print("APP_REGISTRY isn't defined in piccolo_conf")
         sys.exit(1)
 
-    root_dir = os.path.dirname(app_package.__file__)
-    migrations_path = os.path.join(root_dir, "migrations")
+    app_config: AppConfig = app_registry.get_app_config(app_name)
 
-    _create_migrations_folder(migrations_path)
-    _create_new_migration(migrations_path, auto=auto)
+    _create_migrations_folder(app_config.migrations_folder_path)
+    _create_new_migration(app_config=app_config, auto=auto)

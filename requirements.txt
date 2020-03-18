@@ -1,6 +1,7 @@
 aiosqlite==0.11.0
 asgiref==3.2.3
 asyncpg==0.20.1
+black==19.10b0
 click==7.0
 colorama==0.4.3
 ujson==1.35

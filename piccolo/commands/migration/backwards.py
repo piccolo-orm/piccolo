@@ -1,5 +1,4 @@
 import asyncio
-import os
 import sys
 
 import click
@@ -14,18 +13,22 @@ class BackwardsMigrationManager(BaseMigrationManager):
         self.app_name = app_name
 
     def run(self):
-        config_modules = self.get_config_modules()
+        app_modules = self.get_app_modules()
 
         migration_modules = []
 
-        for config_module in config_modules:
-            if self.get_app_name(config_module) == self.app_name:
+        for app_module in app_modules:
+            app_config = getattr(app_module, "APP_CONFIG")
+            if app_config.app_name == self.app_name:
                 migration_modules = self.get_migration_modules(
-                    os.path.dirname(config_module.__file__)
+                    app_config.migrations_folder_path
                 )
                 break
 
         migration_ids = self.get_migration_ids(migration_modules)
+
+        if self.migration_name == "all":
+            self.migration_name = migration_ids[0]
 
         if self.migration_name not in migration_ids:
             print(
@@ -70,7 +73,8 @@ class BackwardsMigrationManager(BaseMigrationManager):
 @click.argument("migration_name")
 def backwards(migration_name: str, app_name: str):
     """
-    Undo migrations up to a specific migrations.
+    Undo migrations up to a specific migrations. Specify a migration_name of
+    'all' to undo all of the migrations.
 
     - make sure the migration name is valid
     - work out which to undo, and in which order
