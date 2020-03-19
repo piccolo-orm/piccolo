@@ -47,24 +47,28 @@ def _create_new_migration(app_config: AppConfig, auto=False) -> None:
     """
     _id = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     path = os.path.join(app_config.migrations_folder_path, f"{_id}.py")
-    with open(path, "w") as f:
-        if auto:
-            alter_statements = AutoMigrationManager().get_alter_statements(
-                app_config=app_config
-            )
-            file_contents = render_template(
-                migration_id=_id, auto=True, alter_statements=alter_statements,
-            )
-        else:
-            file_contents = f.write(
-                render_template(migration_id=_id, auto=False)
-            )
 
-        # Beautify the file contents a bit.
-        file_contents = black.format_str(
-            file_contents, mode=black.FileMode(line_length=82)
+    if auto:
+        alter_statements = AutoMigrationManager().get_alter_statements(
+            app_config=app_config
         )
 
+        if len(alter_statements) == 0:
+            print("No changes detected - exiting.")
+            sys.exit(1)
+
+        file_contents = render_template(
+            migration_id=_id, auto=True, alter_statements=alter_statements,
+        )
+    else:
+        file_contents = render_template(migration_id=_id, auto=False)
+
+    # Beautify the file contents a bit.
+    file_contents = black.format_str(
+        file_contents, mode=black.FileMode(line_length=82)
+    )
+
+    with open(path, "w") as f:
         f.write(file_contents)
 
 

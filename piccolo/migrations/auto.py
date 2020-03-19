@@ -83,6 +83,7 @@ class DiffableTable:
     class_name: str
     tablename: str
     columns: t.List[Column] = field(default_factory=list)
+    previous_class_name: t.Optional[str] = None
 
     def __post_init__(self):
         self.columns_map: t.Dict[str, Column] = {
@@ -336,20 +337,7 @@ class MigrationManager:
         """
         All possible alterations aren't currently supported.
         """
-        length = params.get("length")
-        null = params.get("null")
-        unique = params.get("unique")
-
-        if length is not None:
-            self.alter_columns[table_class_name][column_name][
-                "length"
-            ] = length
-        if null is not None:
-            self.alter_columns[table_class_name][column_name]["null"] = null
-        if unique is not None:
-            self.alter_columns[table_class_name][column_name][
-                "unique"
-            ] = unique
+        self.alter_columns[table_class_name][column_name].update(params)
 
     async def run(self):
         print("Running MigrationManager ...")
@@ -483,5 +471,6 @@ class SchemaSnapshot:
                     table.class_name
                 ][column._meta.name].items():
                     setattr(column._meta, key, value)
+                    column._meta.params.update({key: value})
 
         return remaining_tables
