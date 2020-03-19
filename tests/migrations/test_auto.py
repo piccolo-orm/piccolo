@@ -1,7 +1,18 @@
 from unittest import TestCase
 
-from piccolo.columns.column_types import Varchar
-from piccolo.migrations.auto import SchemaSnapshot, MigrationManager
+from piccolo.migrations.auto import (
+    SchemaSnapshot,
+    MigrationManager,
+    compare_dicts,
+)
+
+
+class TestCompareDicts(TestCase):
+    def test_compare_dicts(self):
+        dict_1 = {"a": 1, "b": 2}
+        dict_2 = {"a": 1, "b": 3}
+        response = compare_dicts(dict_1, dict_2)
+        self.assertEqual(response, {"b": 2})
 
 
 class TestSchemaSnaphot(TestCase):
@@ -77,7 +88,9 @@ class TestSchemaSnaphot(TestCase):
 
         manager_2 = MigrationManager()
         manager_2.alter_column(
-            table_class_name="Manager", column_name="name", unique=True
+            table_class_name="Manager",
+            column_name="name",
+            params={"unique": True},
         )
 
         schema_snapshot = SchemaSnapshot(managers=[manager_1, manager_2])

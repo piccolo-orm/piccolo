@@ -13,15 +13,64 @@ from piccolo.table import Table
 
 
 @dataclass
+class AlterColumn:
+    table_class_name: str
+    column_name: str
+    params: t.Dict[str, t.Any]
+
+
+@dataclass
+class DropColumn:
+    table_class_name: str
+    column_name: str
+
+
+@dataclass
+class AddColumn:
+    table_class_name: str
+    column_name: str
+    params: t.Dict[str, t.Any]
+
+
+@dataclass
 class TableDelta:
-    columns_to_remove: t.List[str] = field(default_factory=list)
-    columns_to_add: t.List[Column] = field(default_factory=list)
+    add_columns: t.List[AddColumn] = field(default_factory=list)
+    drop_columns: t.List[DropColumn] = field(default_factory=list)
+    alter_columns: t.List[AlterColumn] = field(default_factory=list)
 
     def __eq__(self, value: TableDelta) -> bool:  # type: ignore
         """
         This is mostly for testing purposes.
         """
         return True
+
+
+def compare_dicts(dict_1, dict_2) -> t.Dict[str, t.Any]:
+    """
+    Returns a new dictionary which only contains key, value pairs which are in
+    the first dictionary and not the second.
+    """
+    return dict(set(dict_1.items()) - set(dict_2.items()))
+
+
+def clean_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+    params = deepcopy(params)
+
+    # We currently don't support defaults which are functions.
+    default = params.get("default", None)
+    if hasattr(default, "__call__"):
+        params.pop("default")
+
+    for key, value in params.items():
+        # Convert enums into plain values
+        if isinstance(value, Enum):
+            params[key] = value.value
+
+        # Replace any Table class values into class names
+        if isclass(value) and issubclass(value, Table):
+            params[key] = value.__name__
+
+    return params
 
 
 @dataclass
@@ -35,11 +84,57 @@ class DiffableTable:
     tablename: str
     columns: t.List[Column] = field(default_factory=list)
 
+    def __post_init__(self):
+        self.columns_map: t.Dict[str, Column] = {
+            i._meta.name: i for i in self.columns
+        }
+
     def __sub__(self, value: DiffableTable) -> TableDelta:
         if not isinstance(value, DiffableTable):
             raise Exception("Can only diff with other DiffableTable instances")
 
-        return TableDelta()
+        add_columns = [
+            AddColumn(
+                table_class_name=self.class_name,
+                column_name=i._meta.name,
+                params=i._meta.params,
+            )
+            for i in (set(self.columns) - set(value.columns))
+        ]
+
+        drop_columns = [
+            DropColumn(
+                table_class_name=self.class_name, column_name=i._meta.name,
+            )
+            for i in (set(value.columns) - set(self.columns))
+        ]
+
+        alter_columns: t.List[AlterColumn] = []
+
+        for column in value.columns:
+            # need to compare the params ...
+            existing_column = self.columns_map.get(column._meta.name)
+            if not existing_column:
+                # This is a new column - already captured above.
+                continue
+            delta = compare_dicts(
+                clean_params(existing_column._meta.params),
+                clean_params(column._meta.params),
+            )
+            if delta:
+                alter_columns.append(
+                    AlterColumn(
+                        table_class_name=self.class_name,
+                        column_name=column._meta.name,
+                        params=delta,
+                    )
+                )
+
+        return TableDelta(
+            add_columns=add_columns,
+            drop_columns=drop_columns,
+            alter_columns=alter_columns,
+        )
 
     def __hash__(self) -> int:
         """
@@ -61,6 +156,9 @@ class DiffableTable:
         return f"{self.class_name} - {self.tablename}"
 
 
+###############################################################################
+
+
 @dataclass
 class SchemaDiffer:
     """
@@ -71,6 +169,11 @@ class SchemaDiffer:
 
     schema: t.List[DiffableTable]
     schema_snapshot: t.List[DiffableTable]
+
+    def __post_init__(self):
+        self.schema_snapshot_map = {
+            i.class_name: i for i in self.schema_snapshot
+        }
 
     @property
     def create_tables(self) -> t.List[str]:
@@ -94,45 +197,84 @@ class SchemaDiffer:
         ]
 
     @property
+    def alter_columns(self) -> t.List[str]:
+        response = []
+        for table in self.schema:
+            snapshot_table = self.schema_snapshot_map.get(
+                table.class_name, None
+            )
+            if not snapshot_table:
+                continue
+            delta: TableDelta = table - snapshot_table
+            for i in delta.alter_columns:
+                response.append(
+                    f"manager.alter_column(table_class_name='{table.class_name}', column_name='{i.column_name}', params={str(i.params)})"  # noqa
+                )
+        return response
+
+    @property
+    def drop_columns(self) -> t.List[str]:
+        response = []
+        for table in self.schema:
+            snapshot_table = self.schema_snapshot_map.get(
+                table.class_name, None
+            )
+            if not snapshot_table:
+                continue
+            delta: TableDelta = table - snapshot_table
+            for i in delta.drop_columns:
+                response.append(
+                    f"manager.alter_column(tablename='{table.tablename}', column_name='{i.column_name}')"  # noqa
+                )
+        return response
+
+    @property
     def add_columns(self) -> t.List[str]:
+        response = []
+        for table in self.schema:
+            snapshot_table = self.schema_snapshot_map.get(
+                table.class_name, None
+            )
+            if not snapshot_table:
+                continue
+            delta: TableDelta = table - snapshot_table
+            for i in delta.add_columns:
+                response.append(f"manager.add_column('TODO')")  # noqa
+        return response
+
+    @property
+    def new_table_columns(self) -> t.List[str]:
         new_tables: t.List[DiffableTable] = list(
             set(self.schema) - set(self.schema_snapshot)
         )
+
         output = []
         for table in new_tables:
             for column in table.columns:
                 # In case we cause subtle bugs:
                 params = deepcopy(column._meta.params)
-
-                # We currently don't support defaults which are functions.
-                default = params.get("default", None)
-                if hasattr(default, "__call__"):
-                    params.pop("default")
-
-                for key, value in params.items():
-                    # Convert enums into plain values
-                    if isinstance(value, Enum):
-                        params[key] = value.value
-
-                    # Replace any Table class values into class names
-                    if isclass(value) and issubclass(value, Table):
-                        params[key] = value.__name__
+                cleaned_params = clean_params(params)
 
                 output.append(
-                    f"manager.add_column(table_class_name='{table.class_name}', column_name='{column._meta.name}', column_class_name='{column.__class__.__name__}', params={str(params)})"  # noqa
+                    f"manager.add_column(table_class_name='{table.class_name}', column_name='{column._meta.name}', column_class_name='{column.__class__.__name__}', params={str(cleaned_params)})"  # noqa
                 )
         return output
 
-    @property
-    def drop_columns(self) -> t.List[str]:
-        pass
-
-    def get_alter_statements(self) -> t.Iterable[str]:
+    def get_alter_statements(self) -> t.List[str]:
         """
         Call to execute the necessary alter commands on the database.
         """
         # TODO - check for renames
-        return chain(self.create_tables, self.drop_tables, self.add_columns)
+        return list(
+            chain(
+                self.create_tables,
+                self.drop_tables,
+                self.new_table_columns,
+                self.drop_columns,
+                self.add_columns,
+                self.alter_columns,
+            )
+        )
 
 
 @dataclass
@@ -189,13 +331,15 @@ class MigrationManager:
         self,
         table_class_name: str,
         column_name: str,
-        length: t.Optional[int] = None,
-        null: t.Optional[bool] = None,
-        unique: t.Optional[bool] = None,
+        params: t.Dict[str, t.Any],
     ):
         """
         All possible alterations aren't currently supported.
         """
+        length = params.get("length")
+        null = params.get("null")
+        unique = params.get("unique")
+
         if length is not None:
             self.alter_columns[table_class_name][column_name][
                 "length"

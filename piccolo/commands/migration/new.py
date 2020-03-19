@@ -72,7 +72,7 @@ def _create_new_migration(app_config: AppConfig, auto=False) -> None:
 
 
 class AutoMigrationManager(BaseMigrationManager):
-    def get_alter_statements(self, app_config: AppConfig):
+    def get_alter_statements(self, app_config: AppConfig) -> t.List[str]:
         """
         Works out which alter statements are required.
         """
