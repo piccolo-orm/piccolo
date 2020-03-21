@@ -37,7 +37,12 @@ class OnDelete(str, Enum):
     set_default = "SET DEFAULT"
 
 
-OnUpdate = OnDelete
+class OnUpdate(str, Enum):
+    cascade = "CASCADE"
+    restrict = "RESTRICT"
+    no_action = "NO ACTION"
+    set_null = "SET NULL"
+    set_default = "SET DEFAULT"
 
 
 @dataclass

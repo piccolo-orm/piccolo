@@ -196,7 +196,7 @@ class Timestamp(Column):
 
     value_type = datetime
 
-    def __init__(self, default: "Datetime" = None, **kwargs) -> None:
+    def __init__(self, default: Datetime = None, **kwargs) -> None:
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)

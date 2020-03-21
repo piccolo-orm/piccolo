@@ -2,6 +2,7 @@ from __future__ import annotations
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass, field
+import datetime
 from enum import Enum
 from inspect import isclass
 from itertools import chain
@@ -9,6 +10,7 @@ import typing as t
 
 from piccolo.columns import Column, OnDelete, OnUpdate
 from piccolo.columns import column_types
+from piccolo.custom_types import DatetimeDefault
 from piccolo.engine import engine_finder
 from piccolo.table import Table
 
@@ -64,16 +66,22 @@ def serialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     # We currently don't support defaults which are functions.
     default = params.get("default", None)
     if hasattr(default, "__call__"):
-        params.pop("default")
+        raise ValueError(
+            "Default arguments which are functions are not currently supported"
+        )
 
     for key, value in params.items():
         # Convert enums into plain values
         if isinstance(value, Enum):
-            params[key] = value.name
+            params[key] = f"{value.__class__.__name__}.{value.name}"
 
         # Replace any Table class values into class names
         if isclass(value) and issubclass(value, Table):
             params[key] = value.__name__
+
+        # Convert any datetime values into isoformat strings
+        if isinstance(value, datetime.datetime):
+            params[key] = value.isoformat()
 
     return params
 
@@ -94,15 +102,26 @@ def deserialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
 
     on_delete = params.get("on_delete")
     if on_delete:
-        _on_delete = getattr(OnDelete, on_delete)
-        params["on_delete"] = _on_delete
+        enum_name, item_name = on_delete.split(".")
+        if enum_name == "OnDelete":
+            params["on_delete"] = getattr(OnDelete, item_name)
 
     on_update = params.get("on_update")
     if on_update:
-        _on_update = getattr(OnUpdate, on_update)
-        params["on_update"] = _on_update
+        enum_name, item_name = on_update.split(".")
+        if enum_name == "OnUpdate":
+            params["on_update"] = getattr(OnUpdate, item_name)
 
-    # TODO - sort out defaults
+    default = params.get("default")
+    if isinstance(default, str):
+        if default.startswith("DatetimeDefault"):
+            _, item_name = default.split(".")
+            params["default"] = getattr(DatetimeDefault, item_name)
+        else:
+            try:
+                params["default"] = datetime.datetime.fromisoformat(default)
+            except ValueError:
+                pass
 
     return params
 

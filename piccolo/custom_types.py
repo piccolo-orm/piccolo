@@ -1,3 +1,4 @@
+from enum import Enum
 import datetime
 import typing as t
 
@@ -8,7 +9,13 @@ if t.TYPE_CHECKING:
 
 Combinable = t.Union["Where", "And", "Or"]
 Iterable = t.Iterable[t.Any]
-Datetime = t.Union[datetime.datetime, t.Callable[[], datetime.datetime], None]
+
+
+class DatetimeDefault(Enum):
+    now = datetime.datetime.now
+
+
+Datetime = t.Union[datetime.datetime, DatetimeDefault, None]
 
 
 __all__ = ("Combinable", "Iterable", "Datetime")
