@@ -104,7 +104,7 @@ class AutoMigrationManager(BaseMigrationManager):
                 DiffableTable(
                     class_name=i.__name__,
                     tablename=i._meta.tablename,
-                    columns=i._meta.columns,
+                    columns=i._meta.non_default_columns,
                 )
                 for i in app_config.table_classes
             ]

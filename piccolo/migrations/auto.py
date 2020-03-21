@@ -9,6 +9,7 @@ import typing as t
 
 from piccolo.columns import Column
 from piccolo.columns import column_types
+from piccolo.engine import engine_finder
 from piccolo.table import Table
 
 
@@ -341,6 +342,38 @@ class MigrationManager:
 
     async def run(self):
         print("Running MigrationManager ...")
+
+        engine = engine_finder()
+
+        if not engine:
+            raise Exception("Can't find engine")
+
+        async with engine.transaction():
+            for table in self.add_tables:
+                _Table: t.Type[Table] = type(table.class_name, (Table,), {})
+                _Table._meta.tablename = table.tablename
+
+                await _Table.create_table().run()
+
+            for diffable_table in self.drop_tables:
+                # diffable_table.tablename
+                pass
+
+            for table_class_name, columns in self.add_columns.items():
+                _Table: t.Type[Table] = type(table_class_name, (Table,), {})
+                # TODO - I need the tablename
+
+                for column in columns:
+                    await _Table.alter().add_column(
+                        name=column._meta.name, column=column
+                    ).run()
+
+            for table_class_name, column_names in self.drop_columns.values():
+                _Table: t.Type[Table] = type(table_class_name, (Table,), {})
+                # TODO - I need the tablename
+
+                for column_name in column_names:
+                    await _Table.alter().drop_column(column=column_name).run()
 
 
 @dataclass
