@@ -346,6 +346,7 @@ class MigrationManager:
     drop_columns: t.Dict[str, t.List[str]] = field(
         default_factory=lambda: defaultdict(list)
     )
+    # Maps table_class_name -> column_name -> params
     alter_columns: t.Dict[str, t.Dict[str, t.Dict[str, t.Any]]] = field(
         default_factory=lambda: defaultdict(
             lambda: defaultdict(lambda: defaultdict(dict))
@@ -402,6 +403,9 @@ class MigrationManager:
             raise Exception("Can't find engine")
 
         async with engine.transaction():
+
+            # Add tables
+
             for table in self.add_tables:
                 columns = self.add_columns[table.class_name]
                 _Table: t.Type[Table] = type(
@@ -413,25 +417,67 @@ class MigrationManager:
 
                 await _Table.create_table().run()
 
-            for diffable_table in self.drop_tables:
-                # diffable_table.tablename
-                pass
+            ###################################################################
+            # Drop tables
 
-            # for table_class_name, columns in self.add_columns.items():
-            #     _Table: t.Type[Table] = type(table_class_name, (Table,), {})
-            #     # TODO - I need the tablename
+            for table in self.drop_tables:
+                _Table: t.Type[Table] = type(
+                    table.class_name, (Table,), {},
+                )
+                await _Table.alter().drop_table().run()
 
-            #     for column in columns:
-            #         await _Table.alter().add_column(
-            #             name=column._meta.name, column=column
-            #         ).run()
+            ###################################################################
+            # Add columns, which belong to existing tables
+
+            new_table_class_names = [i.class_name for i in self.add_tables]
+
+            for table_class_name, columns in self.add_columns.items():
+                if table_class_name in new_table_class_names:
+                    continue
+
+                # TODO - I need the tablename:
+                _Table: t.Type[Table] = type(table_class_name, (Table,), {})
+
+                for column in columns:
+                    await _Table.alter().add_column(
+                        name=column._meta.name, column=column
+                    ).run()
+
+            ###################################################################
+            # Drop columns
 
             for table_class_name, column_names in self.drop_columns.values():
+                # TODO - I need the tablename:
                 _Table: t.Type[Table] = type(table_class_name, (Table,), {})
-                # TODO - I need the tablename
 
                 for column_name in column_names:
                     await _Table.alter().drop_column(column=column_name).run()
+
+            ###################################################################
+            # Alter columns
+
+            for table_class_name, row_map in self.alter_columns.items():
+                # TODO - I need the tablename:
+                _Table: t.Type[Table] = type(table_class_name, (Table,), {})
+
+                for row_name, params in row_map.items():
+                    null = params.get("null")
+                    if null is not None:
+                        await _Table.alter().set_null(
+                            column=row_name, boolean=null
+                        ).run()
+
+                    length = params.get("length")
+                    if length is not None:
+                        await _Table.alter().set_length(
+                            column=row_name, length=length
+                        ).run()
+
+                    unique = params.get("unique")
+                    if unique is not None:
+                        await _Table.alter().set_unique(
+                            column=row_name, boolean=unique
+                        ).run()
 
 
 @dataclass
