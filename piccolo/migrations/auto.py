@@ -7,7 +7,7 @@ from inspect import isclass
 from itertools import chain
 import typing as t
 
-from piccolo.columns import Column
+from piccolo.columns import Column, OnDelete, OnUpdate
 from piccolo.columns import column_types
 from piccolo.engine import engine_finder
 from piccolo.table import Table
@@ -54,7 +54,11 @@ def compare_dicts(dict_1, dict_2) -> t.Dict[str, t.Any]:
     return dict(set(dict_1.items()) - set(dict_2.items()))
 
 
-def clean_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+def serialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+    """
+    When writing column params to a migration file, we need to serialise some
+    of the values.
+    """
     params = deepcopy(params)
 
     # We currently don't support defaults which are functions.
@@ -65,11 +69,40 @@ def clean_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     for key, value in params.items():
         # Convert enums into plain values
         if isinstance(value, Enum):
-            params[key] = value.value
+            params[key] = value.name
 
         # Replace any Table class values into class names
         if isclass(value) and issubclass(value, Table):
             params[key] = value.__name__
+
+    return params
+
+
+def deserialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+    """
+    When reading column params from a migration file, we need to convert them
+    from their serialised form.
+    """
+    params = deepcopy(params)
+
+    references = params.get("references")
+    if references:
+        _Table: t.Type[Table] = type(
+            references, (Table,), {},
+        )
+        params["references"] = _Table
+
+    on_delete = params.get("on_delete")
+    if on_delete:
+        _on_delete = getattr(OnDelete, on_delete)
+        params["on_delete"] = _on_delete
+
+    on_update = params.get("on_update")
+    if on_update:
+        _on_update = getattr(OnUpdate, on_update)
+        params["on_update"] = _on_update
+
+    # TODO - sort out defaults
 
     return params
 
@@ -120,8 +153,8 @@ class DiffableTable:
                 # This is a new column - already captured above.
                 continue
             delta = compare_dicts(
-                clean_params(existing_column._meta.params),
-                clean_params(column._meta.params),
+                serialise_params(existing_column._meta.params),
+                serialise_params(column._meta.params),
             )
             if delta:
                 alter_columns.append(
@@ -255,7 +288,7 @@ class SchemaDiffer:
             for column in table.columns:
                 # In case we cause subtle bugs:
                 params = deepcopy(column._meta.params)
-                cleaned_params = clean_params(params)
+                cleaned_params = serialise_params(params)
 
                 output.append(
                     f"manager.add_column(table_class_name='{table.class_name}', column_name='{column._meta.name}', column_class_name='{column.__class__.__name__}', params={str(cleaned_params)})"  # noqa
@@ -322,7 +355,8 @@ class MigrationManager:
         params: t.Dict[str, t.Any] = {},
     ):
         column_class = getattr(column_types, column_class_name)
-        column = column_class(**params)
+        cleaned_params = deserialise_params(params)
+        column = column_class(**cleaned_params)
         column._meta.name = column_name
         self.add_columns[table_class_name].append(column)
 
@@ -350,7 +384,12 @@ class MigrationManager:
 
         async with engine.transaction():
             for table in self.add_tables:
-                _Table: t.Type[Table] = type(table.class_name, (Table,), {})
+                columns = self.add_columns[table.class_name]
+                _Table: t.Type[Table] = type(
+                    table.class_name,
+                    (Table,),
+                    {column._meta.name: column for column in columns},
+                )
                 _Table._meta.tablename = table.tablename
 
                 await _Table.create_table().run()
@@ -359,14 +398,14 @@ class MigrationManager:
                 # diffable_table.tablename
                 pass
 
-            for table_class_name, columns in self.add_columns.items():
-                _Table: t.Type[Table] = type(table_class_name, (Table,), {})
-                # TODO - I need the tablename
+            # for table_class_name, columns in self.add_columns.items():
+            #     _Table: t.Type[Table] = type(table_class_name, (Table,), {})
+            #     # TODO - I need the tablename
 
-                for column in columns:
-                    await _Table.alter().add_column(
-                        name=column._meta.name, column=column
-                    ).run()
+            #     for column in columns:
+            #         await _Table.alter().add_column(
+            #             name=column._meta.name, column=column
+            #         ).run()
 
             for table_class_name, column_names in self.drop_columns.values():
                 _Table: t.Type[Table] = type(table_class_name, (Table,), {})
