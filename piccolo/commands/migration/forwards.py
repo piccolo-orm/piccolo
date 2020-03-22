@@ -16,8 +16,9 @@ from piccolo.migrations.auto import MigrationManager
 
 
 class ForwardsMigrationManager(BaseMigrationManager):
-    def __init__(self, app_name: str, *args, **kwargs):
+    def __init__(self, app_name: str, fake: bool = False, *args, **kwargs):
         self.app_name = app_name
+        self.fake = fake
 
     def run_migrations(self, app_modules: t.List[PiccoloAppModule]) -> None:
         already_ran = Migration.get_migrations_which_ran()
@@ -35,13 +36,17 @@ class ForwardsMigrationManager(BaseMigrationManager):
 
             havent_run = sorted(set(ids) - set(already_ran))
             for _id in havent_run:
-                migration_module = migration_modules[_id]
-                response = asyncio.run(migration_module.forwards())
+                if self.fake:
+                    print(f"Faked {_id}")
+                else:
+                    migration_module = migration_modules[_id]
+                    response = asyncio.run(migration_module.forwards())
 
-                if isinstance(response, MigrationManager):
-                    asyncio.run(response.run())
+                    if isinstance(response, MigrationManager):
+                        asyncio.run(response.run())
 
-                print(f"Ran {_id}")
+                    print(f"Ran {_id}")
+
                 Migration.insert().add(
                     Migration(name=_id, app_name=self.app_name)
                 ).run_sync()
@@ -61,10 +66,19 @@ class ForwardsMigrationManager(BaseMigrationManager):
 
 @click.command()
 @click.argument("app_name")
-def forwards(app_name: str):
+@click.option(
+    "--fake",
+    is_flag=True,
+    default=False,
+    help=(
+        "Will record the migrations as being run without actually running "
+        "them."
+    ),
+)
+def forwards(app_name: str, fake: bool):
     """
     Runs any migrations which haven't been run yet, or up to a specific
     migration.
     """
-    manager = ForwardsMigrationManager(app_name=app_name)
+    manager = ForwardsMigrationManager(app_name=app_name, fake=fake)
     manager.run()
