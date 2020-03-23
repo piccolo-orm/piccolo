@@ -182,7 +182,7 @@ class Transaction:
         if self.engine.pool:
             await self.engine.pool.release(self.connection)
         else:
-            self.connection.close()
+            await self.connection.close()
 
         self.engine.transaction_connection.reset(self.context)
 

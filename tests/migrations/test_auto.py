@@ -133,7 +133,7 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(schema_differ.rename_tables) == 1)
         self.assertEqual(
             schema_differ.rename_tables[0],
-            "manager.rename_table(old_class_name='Band', tablename='act')",
+            "manager.rename_table(old_class_name='Band', new_tablename='act')",
         )
 
         self.assertEqual(schema_differ.create_tables, [])

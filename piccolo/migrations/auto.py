@@ -363,7 +363,7 @@ class SchemaDiffer:
     @property
     def rename_tables(self) -> t.List[str]:
         return [
-            f"manager.rename_table(old_class_name='{renamed_table.old_class_name}', tablename='{renamed_table.new_tablename}')"  # noqa
+            f"manager.rename_table(old_class_name='{renamed_table.old_class_name}', new_tablename='{renamed_table.new_tablename}')"  # noqa
             for renamed_table in self.renamed_tables_collection.renamed_tables
         ]
 
@@ -421,6 +421,12 @@ class SchemaDiffer:
 
         output = []
         for table in new_tables:
+            if (
+                table.class_name
+                in self.renamed_tables_collection.new_class_names
+            ):
+                continue
+
             for column in table.columns:
                 # In case we cause subtle bugs:
                 params = deepcopy(column._meta.params)
@@ -482,6 +488,10 @@ class AddColumnCollection:
             if i.table_class_name == table_class_name
         ]
 
+    @property
+    def table_class_names(self) -> t.List[str]:
+        return list(set([i.table_class_name for i in self.add_columns]))
+
 
 @dataclass
 class DropColumnCollection:
@@ -499,7 +509,7 @@ class DropColumnCollection:
 
     @property
     def table_class_names(self) -> t.List[str]:
-        return list(set([i.column_name for i in self.drop_columns]))
+        return list(set([i.table_class_name for i in self.drop_columns]))
 
 
 @dataclass
@@ -625,7 +635,9 @@ class MigrationManager:
             # Add tables
 
             for table in self.add_tables:
-                columns = self.add_columns[table.class_name]
+                columns = self.add_columns.columns_for_table_class_name(
+                    table.class_name
+                )
                 _Table: t.Type[Table] = type(
                     table.class_name,
                     (Table,),
@@ -660,16 +672,21 @@ class MigrationManager:
 
             new_table_class_names = [i.class_name for i in self.add_tables]
 
-            for new_column in self.add_columns.new_columns:
-                if new_column.table_class_name in new_table_class_names:
+            for table_class_name in self.add_columns.table_class_names:
+                if table_class_name in new_table_class_names:
                     continue
 
-                _Table: t.Type[Table] = type(
-                    new_column.table_class_name, (Table,), {}
-                )
-                _Table._meta.tablename = new_column.tablename
+                add_columns: t.List[
+                    AddColumnClass
+                ] = self.add_columns.for_table_class_name(table_class_name)
 
-                for column in columns:
+                _Table: t.Type[Table] = type(
+                    add_columns[0].table_class_name, (Table,), {}
+                )
+                _Table._meta.tablename = add_columns[0].tablename
+
+                for add_column in add_columns:
+                    column = add_column.column
                     await _Table.alter().add_column(
                         name=column._meta.name, column=column
                     ).run()
