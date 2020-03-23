@@ -4,7 +4,7 @@ from ..base import DBTestCase, postgres_only
 from ..example_project.tables import Band, Manager
 
 
-class TestRename(DBTestCase):
+class TestRenameColumn(DBTestCase):
     def _test_rename(self, column):
         self.insert_row()
 
@@ -24,6 +24,16 @@ class TestRename(DBTestCase):
 
     def test_rename_column(self):
         self._test_rename("popularity")
+
+
+class TestRenameTable(DBTestCase):
+    def test_rename(self):
+        Band.alter().rename_table("act").run_sync()
+        self.assertEqual(Band.raw("SELECT * FROM act").run_sync(), [])
+
+    def tearDown(self):
+        super().tearDown()
+        self.run_sync("DROP TABLE IF EXISTS act")
 
 
 @postgres_only

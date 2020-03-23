@@ -1,10 +1,15 @@
 from unittest import TestCase
 
+from piccolo.columns.column_types import Varchar
 from piccolo.migrations.auto import (
+    DiffableTable,
+    SchemaDiffer,
     SchemaSnapshot,
     MigrationManager,
     compare_dicts,
 )
+
+import typing as t
 
 
 class TestCompareDicts(TestCase):
@@ -62,6 +67,7 @@ class TestSchemaSnaphot(TestCase):
         manager_1.add_table(class_name="Manager", tablename="manager")
         manager_1.add_column(
             table_class_name="Manager",
+            tablename="manager",
             column_name="name",
             column_class_name="Varchar",
             params={"length": 100},
@@ -81,6 +87,7 @@ class TestSchemaSnaphot(TestCase):
         manager_1.add_table(class_name="Manager", tablename="manager")
         manager_1.add_column(
             table_class_name="Manager",
+            tablename="manager",
             column_name="name",
             column_class_name="Varchar",
             params={"length": 100},
@@ -89,6 +96,7 @@ class TestSchemaSnaphot(TestCase):
         manager_2 = MigrationManager()
         manager_2.alter_column(
             table_class_name="Manager",
+            tablename="manager",
             column_name="name",
             params={"unique": True},
         )
@@ -97,3 +105,36 @@ class TestSchemaSnaphot(TestCase):
         snapshot = schema_snapshot.get_snapshot()
 
         self.assertTrue(snapshot[0].columns[0]._meta.unique)
+
+
+class TestSchemaDiffer(TestCase):
+    def test_rename_table(self):
+        """
+        Test renaming a table.
+        """
+        name_column = Varchar()
+        name_column._meta.name = "name"
+
+        schema: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Act", tablename="act", columns=[name_column]
+            )
+        ]
+        schema_snapshot: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Band", tablename="band", columns=[name_column]
+            )
+        ]
+
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
+        )
+
+        self.assertTrue(len(schema_differ.rename_tables) == 1)
+        self.assertEqual(
+            schema_differ.rename_tables[0],
+            "manager.rename_table(old_class_name='Band', tablename='act')",
+        )
+
+        self.assertEqual(schema_differ.create_tables, [])
+        self.assertEqual(schema_differ.drop_tables, [])

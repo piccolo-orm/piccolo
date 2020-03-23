@@ -19,6 +19,7 @@ from piccolo.table import Table
 class AlterColumn:
     table_class_name: str
     column_name: str
+    tablename: str
     params: t.Dict[str, t.Any]
 
 
@@ -145,7 +146,14 @@ class DiffableTable:
 
     def __sub__(self, value: DiffableTable) -> TableDelta:
         if not isinstance(value, DiffableTable):
-            raise Exception("Can only diff with other DiffableTable instances")
+            raise ValueError(
+                "Can only diff with other DiffableTable instances"
+            )
+
+        if value.class_name != self.class_name:
+            raise ValueError(
+                "The two tables don't appear to have the same name."
+            )
 
         add_columns = [
             AddColumn(
@@ -179,6 +187,7 @@ class DiffableTable:
                 alter_columns.append(
                     AlterColumn(
                         table_class_name=self.class_name,
+                        tablename=self.tablename,
                         column_name=column._meta.name,
                         params=delta,
                     )
@@ -214,6 +223,29 @@ class DiffableTable:
 
 
 @dataclass
+class RenamedTable:
+    old_class_name: str
+    new_class_name: str
+    new_tablename: str
+
+
+@dataclass
+class RenamedTableCollection:
+    renamed_tables: t.List[RenamedTable] = field(default_factory=list)
+
+    def append(self, renamed_table: RenamedTable):
+        self.renamed_tables.append(renamed_table)
+
+    @property
+    def old_class_names(self):
+        return [i.old_class_name for i in self.renamed_tables]
+
+    @property
+    def new_class_names(self):
+        return [i.new_class_name for i in self.renamed_tables]
+
+
+@dataclass
 class SchemaDiffer:
     """
     Compares two lists of DiffableTables, and returns the list of alter
@@ -224,16 +256,85 @@ class SchemaDiffer:
     schema: t.List[DiffableTable]
     schema_snapshot: t.List[DiffableTable]
 
+    # Sometimes the SchemaDiffer requires input from a user - for example,
+    # asking if a table was renamed or not. When running in non-interactive
+    # mode (like in a unittest), we can set a default to be used instead, like
+    # 'y'.
+    auto_input: t.Optional[str] = None
+
+    ###########################################################################
+
     def __post_init__(self):
         self.schema_snapshot_map = {
             i.class_name: i for i in self.schema_snapshot
         }
+        self.renamed_tables_collection = self.check_renamed_tables()
+
+    def check_renamed_tables(self) -> RenamedTableCollection:
+        """
+        Work out whether any of the tables were renamed.
+        """
+        drop_tables: t.List[DiffableTable] = list(
+            set(self.schema_snapshot) - set(self.schema)
+        )
+
+        new_tables: t.List[DiffableTable] = list(
+            set(self.schema) - set(self.schema_snapshot)
+        )
+
+        # A mapping of the old table name (i.e. dropped table) to the new
+        # table name.
+        renamed_tables_collection = RenamedTableCollection()
+
+        if len(drop_tables) == 0 or len(new_tables) == 0:
+            # There needs to be at least one dropped table and one created
+            # table for a rename to make sense.
+            return renamed_tables_collection
+
+        # A renamed table should have at least one column remaining with the
+        # same name.
+        for new_table in new_tables:
+            new_column_names = [i._meta.name for i in new_table.columns]
+            for drop_table in drop_tables:
+                drop_column_names = [i._meta.name for i in new_table.columns]
+                same_column_names = set(new_column_names).intersection(
+                    drop_column_names
+                )
+                if len(same_column_names) > 0:
+                    user_response = (
+                        self.auto_input
+                        if self.auto_input
+                        else input(
+                            f"Did you rename {drop_table.class_name} to "
+                            f"{new_table.class_name}? (y/N)"
+                        )
+                    )
+                    if user_response.lower() == "y":
+                        renamed_tables_collection.append(
+                            RenamedTable(
+                                old_class_name=drop_table.class_name,
+                                new_class_name=new_table.class_name,
+                                new_tablename=new_table.tablename,
+                            )
+                        )
+
+        return renamed_tables_collection
+
+    ###########################################################################
 
     @property
     def create_tables(self) -> t.List[str]:
         new_tables: t.List[DiffableTable] = list(
             set(self.schema) - set(self.schema_snapshot)
         )
+
+        # Remove any which are renames
+        new_tables = [
+            i
+            for i in new_tables
+            if i.class_name
+            not in self.renamed_tables_collection.new_class_names
+        ]
 
         return [
             f"manager.add_table('{i.class_name}', tablename='{i.tablename}')"
@@ -245,9 +346,25 @@ class SchemaDiffer:
         drop_tables: t.List[DiffableTable] = list(
             set(self.schema_snapshot) - set(self.schema)
         )
+
+        # Remove any which are renames
+        drop_tables = [
+            i
+            for i in drop_tables
+            if i.class_name
+            not in self.renamed_tables_collection.old_class_names
+        ]
+
         return [
             f"manager.drop_table(tablename='{i.tablename}')"
             for i in drop_tables
+        ]
+
+    @property
+    def rename_tables(self) -> t.List[str]:
+        return [
+            f"manager.rename_table(old_class_name='{renamed_table.old_class_name}', tablename='{renamed_table.new_tablename}')"  # noqa
+            for renamed_table in self.renamed_tables_collection.renamed_tables
         ]
 
     @property
@@ -262,7 +379,7 @@ class SchemaDiffer:
             delta: TableDelta = table - snapshot_table
             for i in delta.alter_columns:
                 response.append(
-                    f"manager.alter_column(table_class_name='{table.class_name}', column_name='{i.column_name}', params={str(i.params)})"  # noqa
+                    f"manager.alter_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{i.column_name}', params={str(i.params)})"  # noqa
                 )
         return response
 
@@ -310,7 +427,7 @@ class SchemaDiffer:
                 cleaned_params = serialise_params(params)
 
                 output.append(
-                    f"manager.add_column(table_class_name='{table.class_name}', column_name='{column._meta.name}', column_class_name='{column.__class__.__name__}', params={str(cleaned_params)})"  # noqa
+                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column._meta.name}', column_class_name='{column.__class__.__name__}', params={str(cleaned_params)})"  # noqa
                 )
         return output
 
@@ -318,17 +435,92 @@ class SchemaDiffer:
         """
         Call to execute the necessary alter commands on the database.
         """
-        # TODO - check for renames
+        # TODO - check for renamed columns
+
         return list(
             chain(
                 self.create_tables,
                 self.drop_tables,
+                self.rename_tables,
                 self.new_table_columns,
                 self.drop_columns,
                 self.add_columns,
                 self.alter_columns,
             )
         )
+
+
+@dataclass
+class AddColumnClass:
+    column: Column
+    table_class_name: str
+    tablename: str
+
+
+@dataclass
+class AddColumnCollection:
+    add_columns: t.List[AddColumnClass] = field(default_factory=list)
+
+    def append(self, add_column: AddColumnClass):
+        self.add_columns.append(add_column)
+
+    def for_table_class_name(
+        self, table_class_name: str
+    ) -> t.List[AddColumnClass]:
+        return [
+            i
+            for i in self.add_columns
+            if i.table_class_name == table_class_name
+        ]
+
+    def columns_for_table_class_name(
+        self, table_class_name: str
+    ) -> t.List[Column]:
+        return [
+            i.column
+            for i in self.add_columns
+            if i.table_class_name == table_class_name
+        ]
+
+
+@dataclass
+class DropColumnCollection:
+    drop_columns: t.List[DropColumn] = field(default_factory=list)
+
+    def append(self, drop_column: DropColumn):
+        self.drop_columns.append(drop_column)
+
+    def for_table_class_name(self, table_class_name: str) -> t.List[str]:
+        return [
+            i.column_name
+            for i in self.drop_columns
+            if i.table_class_name == table_class_name
+        ]
+
+    @property
+    def table_class_names(self) -> t.List[str]:
+        return list(set([i.column_name for i in self.drop_columns]))
+
+
+@dataclass
+class AlterColumnCollection:
+    alter_columns: t.List[AlterColumn] = field(default_factory=list)
+
+    def append(self, alter_column: AlterColumn):
+        self.alter_columns.append(alter_column)
+
+    def for_table_class_name(
+        self, table_class_name: str
+    ) -> t.List[AlterColumn]:
+        return [
+            i
+            for i in self.alter_columns
+            if i.table_class_name == table_class_name
+        ]
+
+    @property
+    def table_class_names(self) -> t.List[str]:
+        return list(set([i.column_name for i in self.alter_columns]))
 
 
 @dataclass
@@ -340,17 +532,15 @@ class MigrationManager:
 
     add_tables: t.List[DiffableTable] = field(default_factory=list)
     drop_tables: t.List[DiffableTable] = field(default_factory=list)
-    add_columns: t.Dict[str, t.List[Column]] = field(
-        default_factory=lambda: defaultdict(list)
+    rename_tables: t.List[RenamedTable] = field(default_factory=list)
+    add_columns: AddColumnCollection = field(
+        default_factory=AddColumnCollection
     )
-    drop_columns: t.Dict[str, t.List[str]] = field(
-        default_factory=lambda: defaultdict(list)
+    drop_columns: DropColumnCollection = field(
+        default_factory=DropColumnCollection
     )
-    # Maps table_class_name -> column_name -> params
-    alter_columns: t.Dict[str, t.Dict[str, t.Dict[str, t.Any]]] = field(
-        default_factory=lambda: defaultdict(
-            lambda: defaultdict(lambda: defaultdict(dict))
-        )
+    alter_columns: AlterColumnCollection = field(
+        default_factory=AlterColumnCollection
     )
 
     def add_table(
@@ -367,9 +557,19 @@ class MigrationManager:
             DiffableTable(class_name=class_name, tablename=tablename)
         )
 
+    def rename_table(self, old_class_name: str, new_tablename: str):
+        self.rename_tables.append(
+            RenamedTable(
+                old_class_name=old_class_name,
+                new_class_name="",
+                new_tablename=new_tablename,
+            )
+        )
+
     def add_column(
         self,
         table_class_name: str,
+        tablename: str,
         column_name: str,
         column_class_name: str,
         params: t.Dict[str, t.Any] = {},
@@ -378,21 +578,39 @@ class MigrationManager:
         cleaned_params = deserialise_params(params)
         column = column_class(**cleaned_params)
         column._meta.name = column_name
-        self.add_columns[table_class_name].append(column)
+        self.add_columns.append(
+            AddColumnClass(
+                column=column,
+                tablename=tablename,
+                table_class_name=table_class_name,
+            )
+        )
 
     def drop_column(self, table_class_name: str, column_name: str):
-        self.drop_columns[table_class_name].append(column_name)
+        self.drop_columns.append(
+            DropColumn(
+                table_class_name=table_class_name, column_name=column_name
+            )
+        )
 
     def alter_column(
         self,
         table_class_name: str,
+        tablename: str,
         column_name: str,
         params: t.Dict[str, t.Any],
     ):
         """
         All possible alterations aren't currently supported.
         """
-        self.alter_columns[table_class_name][column_name].update(params)
+        self.alter_columns.append(
+            AlterColumn(
+                table_class_name=table_class_name,
+                tablename=tablename,
+                column_name=column_name,
+                params=params,
+            )
+        )
 
     async def run(self):
         print("Running MigrationManager ...")
@@ -427,16 +645,29 @@ class MigrationManager:
                 await _Table.alter().drop_table().run()
 
             ###################################################################
+            # Rename tables
+
+            for rename_table in self.rename_tables:
+                _Table: t.Type[Table] = type(
+                    rename_table.old_class_name, (Table,), {}
+                )
+                await _Table.alter().rename_table(
+                    new_name=rename_table.new_tablename
+                ).run()
+
+            ###################################################################
             # Add columns, which belong to existing tables
 
             new_table_class_names = [i.class_name for i in self.add_tables]
 
-            for table_class_name, columns in self.add_columns.items():
-                if table_class_name in new_table_class_names:
+            for new_column in self.add_columns.new_columns:
+                if new_column.table_class_name in new_table_class_names:
                     continue
 
-                # TODO - I need the tablename:
-                _Table: t.Type[Table] = type(table_class_name, (Table,), {})
+                _Table: t.Type[Table] = type(
+                    new_column.table_class_name, (Table,), {}
+                )
+                _Table._meta.tablename = new_column.tablename
 
                 for column in columns:
                     await _Table.alter().add_column(
@@ -446,21 +677,40 @@ class MigrationManager:
             ###################################################################
             # Drop columns
 
-            for table_class_name, column_names in self.drop_columns.values():
-                # TODO - I need the tablename:
-                _Table: t.Type[Table] = type(table_class_name, (Table,), {})
+            for table_class_name in self.drop_columns.table_class_names:
+                columns = self.drop_columns.for_table_class_name(
+                    table_class_name
+                )
 
-                for column_name in column_names:
-                    await _Table.alter().drop_column(column=column_name).run()
+                if not columns:
+                    continue
+
+                _Table: t.Type[Table] = type(table_class_name, (Table,), {})
+                _Table._meta.tablename = columns[0].tablename
+
+                for column in columns:
+                    await _Table.alter().drop_column(
+                        column=column.column_name
+                    ).run()
 
             ###################################################################
             # Alter columns
 
-            for table_class_name, row_map in self.alter_columns.items():
-                # TODO - I need the tablename:
-                _Table: t.Type[Table] = type(table_class_name, (Table,), {})
+            for table_class_name in self.alter_columns.table_class_names:
+                alter_columns = self.alter_columns.for_table_class_name(
+                    table_class_name
+                )
 
-                for row_name, params in row_map.items():
+                if not alter_columns:
+                    continue
+
+                _Table: t.Type[Table] = type(table_class_name, (Table,), {})
+                _Table._meta.tablename = alter_columns[0].tablename
+
+                for column in alter_columns:
+                    params = column.params
+                    row_name = column.row_name
+
                     null = params.get("null")
                     if null is not None:
                         await _Table.alter().set_null(
@@ -527,7 +777,9 @@ class SchemaSnapshot:
             i.class_name: list(
                 chain(
                     *[
-                        manager.add_columns[i.class_name]
+                        manager.add_columns.columns_for_table_class_name(
+                            i.class_name
+                        )
                         for manager in self.managers
                     ]
                 )
@@ -546,7 +798,7 @@ class SchemaSnapshot:
             i.class_name: list(
                 chain(
                     *[
-                        manager.drop_columns[i.class_name]
+                        manager.drop_columns.for_table_class_name(i.class_name)
                         for manager in self.managers
                     ]
                 )
@@ -584,10 +836,12 @@ class SchemaSnapshot:
         # We want to update the dict
         for table_class_name, columns in self.remaining_columns.items():
             for manager in self.managers:
-                for column_name, kwargs in manager.alter_columns[
+                for alter_column in manager.alter_columns.for_table_class_name(
                     table_class_name
-                ].items():
-                    output[table_class_name][column_name].update(kwargs)
+                ):
+                    output[table_class_name][alter_column.column_name].update(
+                        alter_column.params
+                    )
 
         return output
 

@@ -15,13 +15,24 @@ if t.TYPE_CHECKING:
 
 @dataclass
 class AlterStatement:
-    __slots__ = tuple()
+    __slots__ = tuple()  # type: ignore
 
     def querystring(self) -> QueryString:
         raise NotImplementedError()
 
     def __str__(self) -> str:
         return self.querystring.__str__()
+
+
+@dataclass
+class RenameTable(AlterStatement):
+    __slots__ = ("new_name",)
+
+    new_name: str
+
+    @property
+    def querystring(self) -> QueryString:
+        return QueryString(f"RENAME TO {self.new_name}")
 
 
 @dataclass
@@ -105,10 +116,12 @@ class Null(AlterColumnStatement):
     def querystring(self) -> QueryString:
         if self.boolean:
             return QueryString(
-                f"ALTER COLUMN {self.column_name} DROP NOT NULL"
+                "ALTER COLUMN {} DROP NOT NULL", self.column_name
             )
         else:
-            return QueryString(f"ALTER COLUMN {self.column_name} SET NOT NULL")
+            return QueryString(
+                "ALTER COLUMN {} SET NOT NULL", self.column_name
+            )
 
 
 @dataclass
@@ -121,7 +134,7 @@ class SetLength(AlterColumnStatement):
     @property
     def querystring(self) -> QueryString:
         return QueryString(
-            f"ALTER COLUMN {self.column_name} TYPE VARCHAR({self.length})"
+            "ALTER COLUMN {} TYPE VARCHAR({})", self.column_name, self.length
         )
 
 
@@ -133,7 +146,9 @@ class DropConstraint(AlterStatement):
 
     @property
     def querystring(self) -> QueryString:
-        return QueryString(f"DROP CONSTRAINT IF EXISTS {self.constraint_name}")
+        return QueryString(
+            "DROP CONSTRAINT IF EXISTS {}", self.constraint_name
+        )
 
 
 @dataclass
@@ -170,7 +185,8 @@ class Alter(Query):
         "_drop_table",
         "_drop",
         "_null",
-        "_rename",
+        "_rename_columns",
+        "_rename_table",
         "_set_length",
         "_unique",
     )
@@ -183,7 +199,8 @@ class Alter(Query):
         self._drop_table = False
         self._drop: t.List[DropColumn] = []
         self._null: t.List[Null] = []
-        self._rename: t.List[RenameColumn] = []
+        self._rename_columns: t.List[RenameColumn] = []
+        self._rename_table: t.List[RenameTable] = []
         self._set_length: t.List[SetLength] = []
         self._unique: t.List[Unique] = []
 
@@ -209,6 +226,14 @@ class Alter(Query):
         self._drop_table = True
         return self
 
+    def rename_table(self, new_name: str) -> Alter:
+        """
+        Band.alter().rename_table('musical_group')
+        """
+        # We override the existing one rather than appending.
+        self._rename_table = [RenameTable(new_name=new_name)]
+        return self
+
     def rename_column(
         self, column: t.Union[str, Column], new_name: str
     ) -> Alter:
@@ -216,7 +241,7 @@ class Alter(Query):
         Band.alter().rename_column(Band.popularity, ‘rating’)
         Band.alter().rename_column('popularity', ‘rating’)
         """
-        self._rename.append(RenameColumn(column, new_name))
+        self._rename_columns.append(RenameColumn(column, new_name))
         return self
 
     def set_null(
@@ -374,7 +399,8 @@ class Alter(Query):
             i.querystring
             for i in itertools.chain(
                 self._add,
-                self._rename,
+                self._rename_columns,
+                self._rename_table,
                 self._drop,
                 self._unique,
                 self._null,

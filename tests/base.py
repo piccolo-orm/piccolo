@@ -132,8 +132,8 @@ class DBTestCase(TestCase):
         self.run_sync(f"INSERT INTO manager (name) VALUES {values_string};")
 
     def drop_table(self):
-        self.run_sync("DROP TABLE band;")
-        self.run_sync("DROP TABLE manager;")
+        self.run_sync("DROP TABLE IF EXISTS band CASCADE;")
+        self.run_sync("DROP TABLE IF EXISTS manager CASCADE;")
 
     def setUp(self):
         self.create_table()
