@@ -33,6 +33,7 @@ class DropColumn:
 class AddColumn:
     table_class_name: str
     column_name: str
+    column_class_name: str
     params: t.Dict[str, t.Any]
 
 
@@ -159,6 +160,7 @@ class DiffableTable:
             AddColumn(
                 table_class_name=self.class_name,
                 column_name=i._meta.name,
+                column_class_name=i.__class__.__name__,
                 params=i._meta.params,
             )
             for i in (set(self.columns) - set(value.columns))
@@ -363,7 +365,7 @@ class SchemaDiffer:
     @property
     def rename_tables(self) -> t.List[str]:
         return [
-            f"manager.rename_table(old_class_name='{renamed_table.old_class_name}', new_tablename='{renamed_table.new_tablename}')"  # noqa
+            f"manager.rename_table(old_class_name='{renamed_table.old_class_name}', new_class_name='{renamed_table.new_class_name}', new_tablename='{renamed_table.new_tablename}')"  # noqa
             for renamed_table in self.renamed_tables_collection.renamed_tables
         ]
 
@@ -409,8 +411,10 @@ class SchemaDiffer:
             if not snapshot_table:
                 continue
             delta: TableDelta = table - snapshot_table
-            for i in delta.add_columns:
-                response.append(f"manager.add_column('TODO')")  # noqa
+            for column in delta.add_columns:
+                response.append(
+                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column.column_name}', column_class_name='{column.column_class_name}', params={str(column.params)})"  # noqa
+                )
         return response
 
     @property
@@ -419,7 +423,7 @@ class SchemaDiffer:
             set(self.schema) - set(self.schema_snapshot)
         )
 
-        output = []
+        response = []
         for table in new_tables:
             if (
                 table.class_name
@@ -432,10 +436,10 @@ class SchemaDiffer:
                 params = deepcopy(column._meta.params)
                 cleaned_params = serialise_params(params)
 
-                output.append(
+                response.append(
                     f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column._meta.name}', column_class_name='{column.__class__.__name__}', params={str(cleaned_params)})"  # noqa
                 )
-        return output
+        return response
 
     def get_alter_statements(self) -> t.List[str]:
         """
@@ -567,11 +571,13 @@ class MigrationManager:
             DiffableTable(class_name=class_name, tablename=tablename)
         )
 
-    def rename_table(self, old_class_name: str, new_tablename: str):
+    def rename_table(
+        self, old_class_name: str, new_class_name: str, new_tablename: str
+    ):
         self.rename_tables.append(
             RenamedTable(
                 old_class_name=old_class_name,
-                new_class_name="",
+                new_class_name=new_class_name,
                 new_tablename=new_tablename,
             )
         )
@@ -778,8 +784,28 @@ class SchemaSnapshot:
         return set(chain(*[manager.drop_tables for manager in self.managers]))
 
     @property
+    def _renamed_tables(self) -> t.List[RenamedTable]:
+        return list(
+            chain(*[manager.rename_tables for manager in self.managers])
+        )
+
+    @property
     def remaining_tables(self) -> t.List[DiffableTable]:
-        return list(self._add_tables - self._drop_tables)
+        remaining: t.List[DiffableTable] = list(
+            self._add_tables - self._drop_tables
+        )
+
+        for renamed_table in self._renamed_tables:
+            tables = [
+                i
+                for i in remaining
+                if i.class_name == renamed_table.old_class_name
+            ]
+            for table in tables:
+                table.class_name = renamed_table.new_class_name
+                table.tablename = renamed_table.new_tablename
+
+        return remaining
 
     ###########################################################################
 
