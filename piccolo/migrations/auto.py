@@ -27,6 +27,7 @@ class AlterColumn:
 class DropColumn:
     table_class_name: str
     column_name: str
+    tablename: str
 
 
 @dataclass
@@ -168,7 +169,9 @@ class DiffableTable:
 
         drop_columns = [
             DropColumn(
-                table_class_name=self.class_name, column_name=i._meta.name,
+                table_class_name=self.class_name,
+                column_name=i._meta.name,
+                tablename=value.tablename,
             )
             for i in (set(value.columns) - set(self.columns))
         ]
@@ -397,7 +400,7 @@ class SchemaDiffer:
             delta: TableDelta = table - snapshot_table
             for i in delta.drop_columns:
                 response.append(
-                    f"manager.alter_column(tablename='{table.tablename}', column_name='{i.column_name}')"  # noqa
+                    f"manager.drop_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{i.column_name}')"  # noqa
                 )
         return response
 
@@ -602,10 +605,14 @@ class MigrationManager:
             )
         )
 
-    def drop_column(self, table_class_name: str, column_name: str):
+    def drop_column(
+        self, table_class_name: str, tablename: str, column_name: str
+    ):
         self.drop_columns.append(
             DropColumn(
-                table_class_name=table_class_name, column_name=column_name
+                table_class_name=table_class_name,
+                column_name=column_name,
+                tablename=tablename,
             )
         )
 
@@ -791,8 +798,8 @@ class SchemaSnapshot:
 
     @property
     def remaining_tables(self) -> t.List[DiffableTable]:
-        remaining: t.List[DiffableTable] = list(
-            self._add_tables - self._drop_tables
+        remaining: t.List[DiffableTable] = deepcopy(
+            list(self._add_tables - self._drop_tables)
         )
 
         for renamed_table in self._renamed_tables:
@@ -810,24 +817,33 @@ class SchemaSnapshot:
     ###########################################################################
 
     @property
-    def _add_columns(self) -> t.Dict[str, t.List]:
+    def _all_table_class_names(self) -> t.List[str]:
+        """
+        :returns:
+            All table class names - ones which have been added, and also
+            renamed.
+        """
+        return [i.class_name for i in self._add_tables] + [
+            i.new_class_name for i in self._renamed_tables
+        ]
+
+    @property
+    def _add_columns(self) -> t.Dict[str, t.List[Column]]:
         """
         :returns:
             A mapping of table class name to a list of columns which have been
             added.
         """
         return {
-            i.class_name: list(
+            i: list(
                 chain(
                     *[
-                        manager.add_columns.columns_for_table_class_name(
-                            i.class_name
-                        )
+                        manager.add_columns.columns_for_table_class_name(i)
                         for manager in self.managers
                     ]
                 )
             )
-            for i in self.remaining_tables
+            for i in self._all_table_class_names
         }
 
     @property
@@ -838,15 +854,15 @@ class SchemaSnapshot:
             dropped.
         """
         return {
-            i.class_name: list(
+            i: list(
                 chain(
                     *[
-                        manager.drop_columns.for_table_class_name(i.class_name)
+                        manager.drop_columns.for_table_class_name(i)
                         for manager in self.managers
                     ]
                 )
             )
-            for i in self.remaining_tables
+            for i in self._all_table_class_names
         }
 
     @property
@@ -856,10 +872,19 @@ class SchemaSnapshot:
             A mapping of the table class name to a list of remaining
             columns.
         """
-        return {
+        remaining = {
             i: list(set(self._add_columns[i]) - set(self._drop_columns[i]))
-            for i in self._add_columns.keys()
+            for i in self._all_table_class_names
         }
+
+        for renamed_table in self._renamed_tables:
+            columns = remaining.pop(renamed_table.old_class_name, None)
+            if columns:
+                _columns = remaining.get(renamed_table.new_class_name, [])
+                _columns.extend(columns)
+                remaining[renamed_table.new_class_name] = _columns
+
+        return remaining
 
     ###########################################################################
 
