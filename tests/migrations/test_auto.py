@@ -8,8 +8,8 @@ from piccolo.migrations.auto import (
     SchemaDiffer,
     SchemaSnapshot,
     MigrationManager,
-    compare_dicts,
 )
+from piccolo.migrations.auto.diffable_table import compare_dicts
 
 from ..base import DBTestCase
 
