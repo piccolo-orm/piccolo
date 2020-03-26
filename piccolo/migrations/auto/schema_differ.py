@@ -8,7 +8,7 @@ from piccolo.migrations.auto.diffable_table import (
     DiffableTable,
     TableDelta,
 )
-from piccolo.migrations.auto.operations import RenameTable
+from piccolo.migrations.auto.operations import RenameTable, RenameColumn
 
 
 @dataclass
@@ -25,6 +25,23 @@ class RenameTableCollection:
     @property
     def new_class_names(self):
         return [i.new_class_name for i in self.rename_tables]
+
+
+@dataclass
+class RenameColumnCollection:
+    rename_columns: t.List[RenameColumn] = field(default_factory=list)
+
+    def append(self, rename_column: RenameColumn):
+        self.rename_columns.append(rename_column)
+
+    def for_table_class_name(
+        self, table_class_name: str
+    ) -> t.List[RenameColumn]:
+        return [
+            i
+            for i in self.rename_columns
+            if i.table_class_name == table_class_name
+        ]
 
 
 @dataclass
@@ -51,6 +68,7 @@ class SchemaDiffer:
             i.class_name: i for i in self.schema_snapshot
         }
         self.rename_tables_collection = self.check_rename_tables()
+        self.rename_columns_collection = self.check_renamed_columns()
 
     def check_rename_tables(self) -> RenameTableCollection:
         """
@@ -66,12 +84,12 @@ class SchemaDiffer:
 
         # A mapping of the old table name (i.e. dropped table) to the new
         # table name.
-        rename_tables_collection = RenameTableCollection()
+        collection = RenameTableCollection()
 
         if len(drop_tables) == 0 or len(new_tables) == 0:
             # There needs to be at least one dropped table and one created
             # table for a rename to make sense.
-            return rename_tables_collection
+            return collection
 
         # A renamed table should have at least one column remaining with the
         # same name.
@@ -92,7 +110,7 @@ class SchemaDiffer:
                         )
                     )
                     if user_response.lower() == "y":
-                        rename_tables_collection.append(
+                        collection.append(
                             RenameTable(
                                 old_class_name=drop_table.class_name,
                                 new_class_name=new_table.class_name,
@@ -100,12 +118,14 @@ class SchemaDiffer:
                             )
                         )
 
-        return rename_tables_collection
+        return collection
 
-    def check_renamed_columns(self):
+    def check_renamed_columns(self) -> RenameColumnCollection:
         """
         Work out whether any of the columns were renamed.
         """
+        collection = RenameColumnCollection()
+
         for table in self.schema:
             snapshot_table = self.schema_snapshot_map.get(
                 table.class_name, None
@@ -117,9 +137,33 @@ class SchemaDiffer:
             if (not delta.add_columns) and (not delta.drop_columns):
                 continue
 
+            # Detecting renamed columns is really tricky.
+            # Even if a rename is detected, the column could also have changed
+            # type. For now, each time a column is added and removed from a
+            # table, ask if it's a rename.
+
             for add_column in delta.add_columns:
                 for drop_column in delta.drop_columns:
-                    pass
+                    user_response = (
+                        self.auto_input
+                        if self.auto_input
+                        else input(
+                            f"Did you rename the `{drop_column.column_name}` "
+                            f"column to `{add_column.column_name}` on the "
+                            f"`{ add_column.table_class_name }` table? (y/N)"
+                        )
+                    )
+                    if user_response.lower() == "y":
+                        collection.append(
+                            RenameColumn(
+                                table_class_name=add_column.table_class_name,
+                                tablename=drop_column.tablename,
+                                old_column_name=drop_column.column_name,
+                                new_column_name=add_column.column_name,
+                            )
+                        )
+
+        return collection
 
     ###########################################################################
 
