@@ -11,7 +11,7 @@ from piccolo.migrations.auto.operations import (
     DropColumn,
     RenameColumn,
     AlterColumn,
-    RenamedTable,
+    RenameTable,
 )
 from piccolo.table import Table
 
@@ -164,7 +164,7 @@ class MigrationManager:
     migration_id: str = ""
     add_tables: t.List[DiffableTable] = field(default_factory=list)
     drop_tables: t.List[DiffableTable] = field(default_factory=list)
-    rename_tables: t.List[RenamedTable] = field(default_factory=list)
+    rename_tables: t.List[RenameTable] = field(default_factory=list)
     add_columns: AddColumnCollection = field(
         default_factory=AddColumnCollection
     )
@@ -196,7 +196,7 @@ class MigrationManager:
         self, old_class_name: str, new_class_name: str, new_tablename: str
     ):
         self.rename_tables.append(
-            RenamedTable(
+            RenameTable(
                 old_class_name=old_class_name,
                 new_class_name=new_class_name,
                 new_tablename=new_tablename,

@@ -5,9 +5,9 @@ from unittest import TestCase
 from piccolo.columns.column_types import Varchar
 from piccolo.migrations.auto import (
     DiffableTable,
-    SchemaDiffer,
     SchemaSnapshot,
     MigrationManager,
+    SchemaDiffer,
 )
 from piccolo.migrations.auto.diffable_table import compare_dicts
 

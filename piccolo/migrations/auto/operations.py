@@ -3,7 +3,7 @@ import typing as t
 
 
 @dataclass
-class RenamedTable:
+class RenameTable:
     old_class_name: str
     new_class_name: str
     new_tablename: str
