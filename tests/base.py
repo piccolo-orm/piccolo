@@ -6,6 +6,7 @@ import pytest
 from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
+from piccolo.table import Table
 
 
 ENGINE = engine_finder()
@@ -27,7 +28,8 @@ class DBTestCase(TestCase):
     """
 
     def run_sync(self, query):
-        asyncio.run(ENGINE._run_in_new_connection(query))
+        _Table = type("_Table", (Table,), {})
+        return _Table.raw(query).run_sync()
 
     def create_table(self):
         if ENGINE.engine_type == "postgres":

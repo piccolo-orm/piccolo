@@ -5,7 +5,7 @@ import sys
 from types import ModuleType
 import typing as t
 
-from piccolo.conf.apps import AppConfig, AppRegistry
+from piccolo.conf.apps import AppConfig
 from piccolo.migrations.tables import Migration
 
 
@@ -116,8 +116,3 @@ class BaseMigrationManager:
         self, migration_module_dict: t.Dict[str, MigrationModule]
     ) -> t.List[str]:
         return sorted(list(migration_module_dict.keys()))
-
-    def get_app_name(self, config_module: PiccoloAppModule) -> str:
-        # TODO - default to package name instead.
-        app_name = getattr(config_module, "NAME", "").strip()
-        return app_name

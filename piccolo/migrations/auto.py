@@ -448,8 +448,6 @@ class SchemaDiffer:
         """
         Call to execute the necessary alter commands on the database.
         """
-        # TODO - check for renamed columns
-
         return list(
             chain(
                 self.create_tables,
@@ -520,6 +518,35 @@ class DropColumnCollection:
 
 
 @dataclass
+class RenameColumn:
+    table_class_name: str
+    tablename: str
+    old_column_name: str
+    new_column_name: str
+
+
+@dataclass
+class RenameColumnCollection:
+    rename_columns: t.List[RenameColumn] = field(default_factory=list)
+
+    def append(self, rename_column: RenameColumn):
+        self.rename_columns.append(rename_column)
+
+    def for_table_class_name(
+        self, table_class_name: str
+    ) -> t.List[RenameColumn]:
+        return [
+            i
+            for i in self.rename_columns
+            if i.table_class_name == table_class_name
+        ]
+
+    @property
+    def table_class_names(self) -> t.List[str]:
+        return list(set([i.table_class_name for i in self.rename_columns]))
+
+
+@dataclass
 class AlterColumnCollection:
     alter_columns: t.List[AlterColumn] = field(default_factory=list)
 
@@ -556,6 +583,9 @@ class MigrationManager:
     )
     drop_columns: DropColumnCollection = field(
         default_factory=DropColumnCollection
+    )
+    rename_columns: RenameColumnCollection = field(
+        default_factory=RenameColumnCollection
     )
     alter_columns: AlterColumnCollection = field(
         default_factory=AlterColumnCollection
@@ -614,6 +644,22 @@ class MigrationManager:
                 table_class_name=table_class_name,
                 column_name=column_name,
                 tablename=tablename,
+            )
+        )
+
+    def rename_column(
+        self,
+        table_class_name: str,
+        tablename: str,
+        old_column_name: str,
+        new_column_name: str,
+    ):
+        self.rename_columns.append(
+            RenameColumn(
+                table_class_name=table_class_name,
+                tablename=tablename,
+                old_column_name=old_column_name,
+                new_column_name=new_column_name,
             )
         )
 
@@ -725,6 +771,26 @@ class MigrationManager:
                     ).run()
 
             ###################################################################
+            # Rename columns
+
+            for table_class_name in self.rename_columns.table_class_names:
+                columns = self.rename_columns.for_table_class_name(
+                    table_class_name
+                )
+
+                if not columns:
+                    continue
+
+                _Table: t.Type[Table] = type(table_class_name, (Table,), {})
+                _Table._meta.tablename = columns[0].tablename
+
+                for column in columns:
+                    await _Table.alter().rename_column(
+                        column=column.old_column_name,
+                        new_name=column.new_column_name,
+                    ).run()
+
+            ###################################################################
             # Alter columns
 
             for table_class_name in self.alter_columns.table_class_names:
@@ -759,6 +825,17 @@ class MigrationManager:
                         await _Table.alter().set_unique(
                             column=row_name, boolean=unique
                         ).run()
+
+
+def get_table_from_snaphot(migration_id: str):
+    """
+    This will generate a SchemaSnapshot up to the given migration ID, and
+    will return a Table class from that snapshot. This is useful if you want to
+    manipulate the data inside your database within a migration, without using
+    raw SQL.
+    """
+    # TODO - tie into commands/migration/new.py code which imports migrations.
+    raise NotImplementedError()
 
 
 @dataclass
@@ -848,7 +925,7 @@ class SchemaSnapshot:
         }
 
     @property
-    def _drop_columns(self) -> t.Dict[str, t.List]:
+    def _drop_columns(self) -> t.Dict[str, t.List[DropColumn]]:
         """
         :returns:
             A mapping of table class name to a list of columns which have been
@@ -867,19 +944,47 @@ class SchemaSnapshot:
         }
 
     @property
+    def _rename_columns(self) -> t.Dict[str, t.List[RenameColumn]]:
+        """
+        :returns:
+            A mapping of table class name to a list of RenameColumn.
+        """
+        return {
+            i: list(
+                chain(
+                    *[
+                        manager.rename_columns.for_table_class_name(i)
+                        for manager in self.managers
+                    ]
+                )
+            )
+            for i in self._all_table_class_names
+        }
+
+    @property
     def remaining_columns(self) -> t.Dict[str, t.List[Column]]:
         """
         :returns:
             A mapping of the table class name to a list of remaining
             columns.
         """
-        remaining = {
+        remaining: t.Dict[str, t.List[Column]] = {
             i: list(set(self._add_columns[i]) - set(self._drop_columns[i]))
             for i in self._all_table_class_names
         }
 
+        for table_class_name, rename_columns in self._rename_columns.items():
+            for rename_column in rename_columns:
+                columns = [
+                    i
+                    for i in remaining[table_class_name]
+                    if i._meta.name == rename_column.old_column_name
+                ]
+                if columns:
+                    columns[0]._meta.name = rename_column.new_column_name
+
         for renamed_table in self._renamed_tables:
-            columns = remaining.pop(renamed_table.old_class_name, None)
+            columns = remaining.pop(renamed_table.old_class_name, [])
             if columns:
                 _columns = remaining.get(renamed_table.new_class_name, [])
                 _columns.extend(columns)
