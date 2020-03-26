@@ -325,6 +325,25 @@ class SchemaDiffer:
 
         return renamed_tables_collection
 
+    def check_renamed_columns(self):
+        """
+        Work out whether any of the columns were renamed.
+        """
+        for table in self.schema:
+            snapshot_table = self.schema_snapshot_map.get(
+                table.class_name, None
+            )
+            if not snapshot_table:
+                continue
+            delta: TableDelta = table - snapshot_table
+
+            if (not delta.add_columns) and (not delta.drop_columns):
+                continue
+
+            for add_column in delta.add_columns:
+                for drop_column in delta.drop_columns:
+                    pass
+
     ###########################################################################
 
     @property
