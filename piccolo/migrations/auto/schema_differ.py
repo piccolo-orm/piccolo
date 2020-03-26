@@ -142,7 +142,12 @@ class SchemaDiffer:
             # type. For now, each time a column is added and removed from a
             # table, ask if it's a rename.
 
+            renamed_column_names: t.List[str] = []
+
             for add_column in delta.add_columns:
+                if add_column.table_class_name in renamed_column_names:
+                    continue
+
                 for drop_column in delta.drop_columns:
                     user_response = (
                         self.auto_input
@@ -154,6 +159,9 @@ class SchemaDiffer:
                         )
                     )
                     if user_response.lower() == "y":
+                        renamed_column_names.append(
+                            add_column.table_class_name
+                        )
                         collection.append(
                             RenameColumn(
                                 table_class_name=add_column.table_class_name,
