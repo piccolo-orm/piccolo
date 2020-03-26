@@ -7,30 +7,12 @@ from inspect import isclass
 import typing as t
 
 from piccolo.columns.base import Column
+from piccolo.migrations.auto.operations import (
+    AddColumn,
+    DropColumn,
+    AlterColumn,
+)
 from piccolo.table import Table
-
-
-@dataclass
-class AlterColumn:
-    table_class_name: str
-    column_name: str
-    tablename: str
-    params: t.Dict[str, t.Any]
-
-
-@dataclass
-class DropColumn:
-    table_class_name: str
-    column_name: str
-    tablename: str
-
-
-@dataclass
-class AddColumn:
-    table_class_name: str
-    column_name: str
-    column_class_name: str
-    params: t.Dict[str, t.Any]
 
 
 def compare_dicts(dict_1, dict_2) -> t.Dict[str, t.Any]:
