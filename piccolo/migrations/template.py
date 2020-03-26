@@ -12,7 +12,7 @@ ID = '{{ migration_id }}'
 
 async def forwards():
     {% if auto %}
-    manager = MigrationManager()
+    manager = MigrationManager(migration_id=ID)
     {% for alter_statement in alter_statements %}
     {{ alter_statement }}
     {% endfor %}

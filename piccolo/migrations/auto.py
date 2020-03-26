@@ -547,6 +547,7 @@ class MigrationManager:
     all of the schema changes that migration wants to make.
     """
 
+    migration_id: str = ""
     add_tables: t.List[DiffableTable] = field(default_factory=list)
     drop_tables: t.List[DiffableTable] = field(default_factory=list)
     rename_tables: t.List[RenamedTable] = field(default_factory=list)
