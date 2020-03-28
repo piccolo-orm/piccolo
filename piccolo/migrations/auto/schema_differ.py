@@ -85,7 +85,7 @@ class SchemaDiffer:
     ###########################################################################
 
     def __post_init__(self):
-        self.schema_snapshot_map = {
+        self.schema_snapshot_map: t.Dict[str, DiffableTable] = {
             i.class_name: i for i in self.schema_snapshot
         }
         self.rename_tables_collection = self.check_rename_tables()
@@ -241,16 +241,38 @@ class SchemaDiffer:
             for renamed_table in self.rename_tables_collection.rename_tables
         ]
 
+    ###########################################################################
+
+    def _get_snapshot_table(
+        self, table_class_name: str
+    ) -> t.Optional[DiffableTable]:
+        snapshot_table = self.schema_snapshot_map.get(table_class_name, None)
+        if snapshot_table:
+            return snapshot_table
+        else:
+            if (
+                table_class_name
+                in self.rename_tables_collection.new_class_names
+            ):
+                class_name = self.rename_tables_collection.renamed_from(
+                    table_class_name
+                )
+                snapshot_table = self.schema_snapshot_map.get(class_name)
+                if snapshot_table:
+                    snapshot_table.class_name = table_class_name
+                    return snapshot_table
+        return None
+
     @property
     def alter_columns(self) -> t.List[str]:
         response = []
         for table in self.schema:
-            snapshot_table = self.schema_snapshot_map.get(
-                table.class_name, None
-            )
-            if not snapshot_table:
+            snapshot_table = self._get_snapshot_table(table.class_name)
+            if snapshot_table:
+                delta: TableDelta = table - snapshot_table
+            else:
                 continue
-            delta: TableDelta = table - snapshot_table
+
             for i in delta.alter_columns:
                 response.append(
                     f"manager.alter_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{i.column_name}', params={str(i.params)})"  # noqa
@@ -261,12 +283,12 @@ class SchemaDiffer:
     def drop_columns(self) -> t.List[str]:
         response = []
         for table in self.schema:
-            snapshot_table = self.schema_snapshot_map.get(
-                table.class_name, None
-            )
-            if not snapshot_table:
+            snapshot_table = self._get_snapshot_table(table.class_name)
+            if snapshot_table:
+                delta: TableDelta = table - snapshot_table
+            else:
                 continue
-            delta: TableDelta = table - snapshot_table
+
             for column in delta.drop_columns:
                 if (
                     column.column_name
@@ -283,26 +305,11 @@ class SchemaDiffer:
     def add_columns(self) -> t.List[str]:
         response = []
         for table in self.schema:
-            snapshot_table = self.schema_snapshot_map.get(
-                table.class_name, None
-            )
+            snapshot_table = self._get_snapshot_table(table.class_name)
             if snapshot_table:
                 delta: TableDelta = table - snapshot_table
             else:
-                # This is either a new table, or a renamed table.
-                # New tables are handled by the 'new_table_columns' property.
-                if (
-                    table.class_name
-                    in self.rename_tables_collection.new_class_names
-                ):
-                    class_name = self.rename_tables_collection.renamed_from(
-                        table.class_name
-                    )
-                    snapshot_table = self.schema_snapshot_map.get(class_name)
-                    snapshot_table.class_name = table.class_name
-                    delta = table - snapshot_table
-                else:
-                    continue
+                continue
 
             for column in delta.add_columns:
                 if (
@@ -322,6 +329,8 @@ class SchemaDiffer:
             f"manager.rename_column(table_class_name='{i.table_class_name}', tablename='{i.tablename}', old_column_name='{i.old_column_name}', new_column_name='{i.new_column_name}')"  # noqa
             for i in self.rename_columns_collection.rename_columns
         ]
+
+    ###########################################################################
 
     @property
     def new_table_columns(self) -> t.List[str]:
@@ -346,6 +355,8 @@ class SchemaDiffer:
                     f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column._meta.name}', column_class_name='{column.__class__.__name__}', params={str(cleaned_params)})"  # noqa
                 )
         return response
+
+    ###########################################################################
 
     def get_alter_statements(self) -> t.List[str]:
         """
