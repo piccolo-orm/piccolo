@@ -2,17 +2,10 @@ import click
 
 from .base import BaseMigrationManager
 from piccolo.migrations.tables import Migration
+from piccolo.utils.printing import get_fixed_length_string
 
 
 class CheckMigrationManager(BaseMigrationManager):
-    def get_fixed_length_string(self, string: str, length=20) -> str:
-        """
-        Add spacing to the end of the string so it's a fixed length.
-        """
-        spacing = "".join([" " for i in range(20 - len(string))])
-        fixed_length_string = f"{string}{spacing}"
-        return fixed_length_string
-
     def run(self):
         print("Listing migrations ...")
 
@@ -22,7 +15,7 @@ class CheckMigrationManager(BaseMigrationManager):
             app_config = app_module.APP_CONFIG
 
             app_name = app_config.app_name
-            fixed_length_app_name = self.get_fixed_length_string(app_name)
+            fixed_length_app_name = get_fixed_length_string(app_name)
 
             migration_modules = self.get_migration_modules(
                 app_config.migrations_folder_path

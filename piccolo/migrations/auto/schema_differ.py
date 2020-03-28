@@ -9,6 +9,7 @@ from piccolo.migrations.auto.diffable_table import (
     TableDelta,
 )
 from piccolo.migrations.auto.operations import RenameTable, RenameColumn
+from piccolo.utils.printing import get_fixed_length_string
 
 
 @dataclass
@@ -323,15 +324,20 @@ class SchemaDiffer:
         """
         Call to execute the necessary alter commands on the database.
         """
-        return list(
-            chain(
-                self.create_tables,
-                self.drop_tables,
-                self.rename_tables,
-                self.new_table_columns,
-                self.drop_columns,
-                self.add_columns,
-                self.rename_columns,
-                self.alter_columns,
-            )
-        )
+        alter_statements: t.Dict[str, t.List[str]] = {
+            "Created tables": self.create_tables,
+            "Dropped tables": self.drop_tables,
+            "Renamed tables": self.rename_tables,
+            "Created table columns": self.new_table_columns,
+            "Dropped columns": self.drop_columns,
+            "Columns added to existing tables": self.add_columns,
+            "Renamed columns": self.rename_columns,
+            "Altered columns": self.alter_columns,
+        }
+
+        for message, statements in alter_statements.items():
+            _message = get_fixed_length_string(message, length=40)
+            count = len(statements)
+            print(f"{_message} {count}")
+
+        return list(chain(*alter_statements.values()))
