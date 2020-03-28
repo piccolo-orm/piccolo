@@ -277,3 +277,6 @@ class Column(Selectable):
 
     def __str__(self):
         return self.querystring.__str__()
+
+    def __repr__(self):
+        return f"{self._meta.name} - {self.__class__.__name__}"

@@ -179,8 +179,14 @@ class MigrationManager:
     )
 
     def add_table(
-        self, class_name: str, tablename: str, columns: t.List[Column] = []
+        self,
+        class_name: str,
+        tablename: str,
+        columns: t.Optional[t.List[Column]] = None,
     ):
+        if not columns:
+            columns = []
+
         self.add_tables.append(
             DiffableTable(
                 class_name=class_name, tablename=tablename, columns=columns

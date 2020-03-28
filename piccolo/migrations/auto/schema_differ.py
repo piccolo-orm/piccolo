@@ -43,6 +43,14 @@ class RenameColumnCollection:
             if i.table_class_name == table_class_name
         ]
 
+    @property
+    def old_column_names(self):
+        return [i.old_column_name for i in self.rename_columns]
+
+    @property
+    def new_column_names(self):
+        return [i.new_column_name for i in self.rename_columns]
+
 
 @dataclass
 class SchemaDiffer:
@@ -246,9 +254,15 @@ class SchemaDiffer:
             if not snapshot_table:
                 continue
             delta: TableDelta = table - snapshot_table
-            for i in delta.drop_columns:
+            for column in delta.drop_columns:
+                if (
+                    column.column_name
+                    in self.rename_columns_collection.old_column_names
+                ):
+                    continue
+
                 response.append(
-                    f"manager.drop_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{i.column_name}')"  # noqa
+                    f"manager.drop_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column.column_name}')"  # noqa
                 )
         return response
 
@@ -263,10 +277,23 @@ class SchemaDiffer:
                 continue
             delta: TableDelta = table - snapshot_table
             for column in delta.add_columns:
+                if (
+                    column.column_name
+                    in self.rename_columns_collection.new_column_names
+                ):
+                    continue
+
                 response.append(
                     f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column.column_name}', column_class_name='{column.column_class_name}', params={str(column.params)})"  # noqa
                 )
         return response
+
+    @property
+    def rename_columns(self) -> t.List[str]:
+        return [
+            f"manager.rename_column(table_class_name='{i.table_class_name}', tablename='{i.tablename}', old_column_name='{i.old_column_name}', new_column_name='{i.new_column_name}')"  # noqa
+            for i in self.rename_columns_collection.rename_columns
+        ]
 
     @property
     def new_table_columns(self) -> t.List[str]:
@@ -304,6 +331,7 @@ class SchemaDiffer:
                 self.new_table_columns,
                 self.drop_columns,
                 self.add_columns,
+                self.rename_columns,
                 self.alter_columns,
             )
         )
