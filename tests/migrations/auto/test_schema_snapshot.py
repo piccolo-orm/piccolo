@@ -1,25 +1,6 @@
-import asyncio
-import typing as t
 from unittest import TestCase
 
-from piccolo.columns.column_types import Varchar
-from piccolo.migrations.auto import (
-    DiffableTable,
-    SchemaSnapshot,
-    MigrationManager,
-    SchemaDiffer,
-)
-from piccolo.migrations.auto.diffable_table import compare_dicts
-
-from ..base import DBTestCase
-
-
-class TestCompareDicts(TestCase):
-    def test_compare_dicts(self):
-        dict_1 = {"a": 1, "b": 2}
-        dict_2 = {"a": 1, "b": 3}
-        response = compare_dicts(dict_1, dict_2)
-        self.assertEqual(response, {"b": 2})
+from piccolo.migrations.auto import SchemaSnapshot, MigrationManager
 
 
 class TestSchemaSnaphot(TestCase):
@@ -148,58 +129,3 @@ class TestSchemaSnaphot(TestCase):
         snapshot = schema_snapshot.get_snapshot()
 
         self.assertTrue(snapshot[0].columns[0]._meta.unique)
-
-
-class TestSchemaDiffer(TestCase):
-    def test_rename_table(self):
-        """
-        Test renaming a table.
-        """
-        name_column = Varchar()
-        name_column._meta.name = "name"
-
-        schema: t.List[DiffableTable] = [
-            DiffableTable(
-                class_name="Act", tablename="act", columns=[name_column]
-            )
-        ]
-        schema_snapshot: t.List[DiffableTable] = [
-            DiffableTable(
-                class_name="Band", tablename="band", columns=[name_column]
-            )
-        ]
-
-        schema_differ = SchemaDiffer(
-            schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
-        )
-
-        self.assertTrue(len(schema_differ.rename_tables) == 1)
-        self.assertEqual(
-            schema_differ.rename_tables[0],
-            "manager.rename_table(old_class_name='Band', new_class_name='Act', new_tablename='act')",  # noqa
-        )
-
-        self.assertEqual(schema_differ.create_tables, [])
-        self.assertEqual(schema_differ.drop_tables, [])
-
-
-class TestMigrationManager(DBTestCase):
-    def test_rename_column(self):
-        """
-        Test running a MigrationManager which contains a column rename
-        operation.
-        """
-        self.insert_row()
-
-        manager = MigrationManager()
-        manager.rename_column(
-            table_class_name="Band",
-            tablename="band",
-            old_column_name="name",
-            new_column_name="title",
-        )
-        asyncio.run(manager.run())
-
-        response = self.run_sync("SELECT * FROM band;")
-        self.assertTrue("title" in response[0].keys())
-        self.assertTrue("name" not in response[0].keys())
