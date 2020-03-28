@@ -27,6 +27,18 @@ class RenameTableCollection:
     def new_class_names(self):
         return [i.new_class_name for i in self.rename_tables]
 
+    def renamed_from(self, new_class_name: str) -> t.Optional[str]:
+        """
+        Returns the old class name, if it exists.
+        """
+        rename = [
+            i for i in self.rename_tables if i.new_class_name == new_class_name
+        ]
+        if len(rename) > 0:
+            return rename[0].old_class_name
+        else:
+            return None
+
 
 @dataclass
 class RenameColumnCollection:
@@ -274,9 +286,24 @@ class SchemaDiffer:
             snapshot_table = self.schema_snapshot_map.get(
                 table.class_name, None
             )
-            if not snapshot_table:
-                continue
-            delta: TableDelta = table - snapshot_table
+            if snapshot_table:
+                delta: TableDelta = table - snapshot_table
+            else:
+                # This is either a new table, or a renamed table.
+                # New tables are handled by the 'new_table_columns' property.
+                if (
+                    table.class_name
+                    in self.rename_tables_collection.new_class_names
+                ):
+                    class_name = self.rename_tables_collection.renamed_from(
+                        table.class_name
+                    )
+                    snapshot_table = self.schema_snapshot_map.get(class_name)
+                    snapshot_table.class_name = table.class_name
+                    delta = table - snapshot_table
+                else:
+                    continue
+
             for column in delta.add_columns:
                 if (
                     column.column_name
