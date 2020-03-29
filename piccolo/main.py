@@ -4,8 +4,9 @@ import sys
 
 import click
 
+from piccolo.commands.app.list import list_apps
 from piccolo.commands.app.new import new as new_app
-from piccolo.commands.conf.new import new as new_conf
+from piccolo.commands.project.new import new as new_project
 from piccolo.commands.playground import playground
 from piccolo.commands.migration.new import new
 from piccolo.commands.migration.backwards import backwards
@@ -41,16 +42,17 @@ def app():
     pass
 
 
+app.add_command(list_apps)
 app.add_command(new_app)
 
 ###############################################################################
 # Conf
-@cli.group("conf")
-def conf():
+@cli.group("project")
+def project():
     pass
 
 
-conf.add_command(new_conf)
+project.add_command(new_project)
 
 ###############################################################################
 

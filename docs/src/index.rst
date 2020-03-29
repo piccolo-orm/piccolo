@@ -9,6 +9,7 @@ Welcome to Piccolo's documentation!
    piccolo/query_types/index
    piccolo/query_clauses/index
    piccolo/schema/index
+   piccolo/projects_and_apps/index
    piccolo/engines/index
    piccolo/migrations/index
    piccolo/authentication/index

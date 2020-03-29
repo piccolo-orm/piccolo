@@ -5,6 +5,7 @@ Getting Started
     :caption: Contents:
 
     ./what_is_piccolo
+    ./database_support
     ./installing_piccolo
     ./playground
     ./installing_postgres

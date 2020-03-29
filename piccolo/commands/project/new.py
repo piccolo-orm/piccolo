@@ -50,9 +50,9 @@ def new_piccolo_conf(engine_name: str, force: bool = False):
         "exists."
     ),
 )
-@click.command()
+@click.command(name="new")
 def new(engine, force):
     """
-    Creates a new Piccolo app.
+    Creates a new Piccolo project.
     """
     new_piccolo_conf(engine_name=engine, force=force)
