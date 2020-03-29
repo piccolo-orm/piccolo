@@ -232,11 +232,12 @@ class SQLiteEngine(Engine):
         else:
             raise Exception(f"Database at {self.path} already exists")
         if migrate:
-            from piccolo.commands.migration.forwards import (
-                ForwardsMigrationManager,
-            )
+            # from piccolo.commands.migration.forwards import (
+            #     ForwardsMigrationManager,
+            # )
 
-            ForwardsMigrationManager().run()
+            # ForwardsMigrationManager().run()
+            pass
 
     ###########################################################################
 
