@@ -48,7 +48,8 @@ class Engine(metaclass=ABCMeta):
             )
             return
 
-        print(f"Running version {version_number}")
+        engine_type = self.engine_type.capitalize()
+        print(f"Running {engine_type} version {version_number}")
         if version_number < self.min_version_number:
             message = (
                 f"This version of {self.engine_type} isn't supported "

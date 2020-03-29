@@ -9,6 +9,11 @@ class CheckMigrationManager(BaseMigrationManager):
     def run(self):
         print("Listing migrations ...")
 
+        print(
+            f'{get_fixed_length_string("APP NAME")} | '
+            f'{get_fixed_length_string("MIGRATION_ID")} | RAN'
+        )
+
         app_modules = self.get_app_modules()
 
         for app_module in app_modules:
@@ -30,7 +35,10 @@ class CheckMigrationManager(BaseMigrationManager):
                     )
                     .run_sync()
                 )
-                print(f"{fixed_length_app_name} | {_id} | {has_ran}")
+                fixed_length_id = get_fixed_length_string(_id)
+                print(
+                    f"{fixed_length_app_name} | {fixed_length_id} | {has_ran}"
+                )
 
 
 @click.command()

@@ -14,8 +14,9 @@ class AppConfig:
     table_classes: t.List[t.Type[Table]] = field(default_factory=list)
     migration_dependencies: t.List[str] = field(default_factory=list)
 
-    def register_table(self, table_classes: t.List[t.Type[Table]]):
-        self.table_classes.extend(table_classes)
+    def register_table(self, table_class: t.Type[Table]):
+        self.table_classes.append(table_class)
+        return table_class
 
 
 @dataclass
