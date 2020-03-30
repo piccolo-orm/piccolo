@@ -196,7 +196,7 @@ class Timestamp(Column):
 
     value_type = datetime
 
-    def __init__(self, default: "Datetime" = None, **kwargs) -> None:
+    def __init__(self, default: Datetime = None, **kwargs) -> None:
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
@@ -249,11 +249,12 @@ class ForeignKey(Integer):
         **kwargs,
     ) -> None:
         if isinstance(references, str):
-            if references != "self":
-                raise ValueError(
-                    "String values for 'references' currently only supports "
-                    "'self', which is a reference to the current table."
-                )
+            # if references != "self":
+            #     raise ValueError(
+            #         "String values for 'references' currently only supports "
+            #         "'self', which is a reference to the current table."
+            #     )
+            pass
 
         kwargs.update(
             {

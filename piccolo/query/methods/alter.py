@@ -4,9 +4,10 @@ import itertools
 import typing as t
 
 from piccolo.columns.base import Column, OnDelete, OnUpdate
-from piccolo.columns.column_types import ForeignKey
+from piccolo.columns.column_types import ForeignKey, Varchar
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
+from piccolo.utils.warnings import colored_warning, Level
 
 if t.TYPE_CHECKING:
     from piccolo.table import Table
@@ -14,13 +15,24 @@ if t.TYPE_CHECKING:
 
 @dataclass
 class AlterStatement:
-    __slots__ = tuple()
+    __slots__ = tuple()  # type: ignore
 
     def querystring(self) -> QueryString:
         raise NotImplementedError()
 
     def __str__(self) -> str:
         return self.querystring.__str__()
+
+
+@dataclass
+class RenameTable(AlterStatement):
+    __slots__ = ("new_name",)
+
+    new_name: str
+
+    @property
+    def querystring(self) -> QueryString:
+        return QueryString(f"RENAME TO {self.new_name}")
 
 
 @dataclass
@@ -104,10 +116,26 @@ class Null(AlterColumnStatement):
     def querystring(self) -> QueryString:
         if self.boolean:
             return QueryString(
-                f"ALTER COLUMN {self.column_name} DROP NOT NULL"
+                "ALTER COLUMN {} DROP NOT NULL", self.column_name
             )
         else:
-            return QueryString(f"ALTER COLUMN {self.column_name} SET NOT NULL")
+            return QueryString(
+                "ALTER COLUMN {} SET NOT NULL", self.column_name
+            )
+
+
+@dataclass
+class SetLength(AlterColumnStatement):
+
+    __slots__ = ("length",)
+
+    length: int
+
+    @property
+    def querystring(self) -> QueryString:
+        return QueryString(
+            "ALTER COLUMN {} TYPE VARCHAR({})", self.column_name, self.length
+        )
 
 
 @dataclass
@@ -118,7 +146,9 @@ class DropConstraint(AlterStatement):
 
     @property
     def querystring(self) -> QueryString:
-        return QueryString(f"DROP CONSTRAINT IF EXISTS {self.constraint_name}")
+        return QueryString(
+            "DROP CONSTRAINT IF EXISTS {}", self.constraint_name
+        )
 
 
 @dataclass
@@ -149,26 +179,30 @@ class AddForeignKeyConstraint(AlterStatement):
 class Alter(Query):
 
     __slots__ = (
-        "_add",
-        "_drop",
-        "_rename",
-        "_unique",
-        "_null",
-        "_drop_table",
-        "_drop_contraint",
         "_add_foreign_key_constraint",
+        "_add",
+        "_drop_contraint",
+        "_drop_table",
+        "_drop",
+        "_null",
+        "_rename_columns",
+        "_rename_table",
+        "_set_length",
+        "_unique",
     )
 
     def __init__(self, table: t.Type[Table]):
         super().__init__(table)
-        self._add: t.List[AddColumn] = []
-        self._drop: t.List[DropColumn] = []
-        self._rename: t.List[RenameColumn] = []
-        self._unique: t.List[Unique] = []
-        self._null: t.List[Null] = []
-        self._drop_table = False
-        self._drop_contraint: t.List[DropConstraint] = []
         self._add_foreign_key_constraint: t.List[AddForeignKeyConstraint] = []
+        self._add: t.List[AddColumn] = []
+        self._drop_contraint: t.List[DropConstraint] = []
+        self._drop_table = False
+        self._drop: t.List[DropColumn] = []
+        self._null: t.List[Null] = []
+        self._rename_columns: t.List[RenameColumn] = []
+        self._rename_table: t.List[RenameTable] = []
+        self._set_length: t.List[SetLength] = []
+        self._unique: t.List[Unique] = []
 
     def add_column(self, name: str, column: Column) -> Alter:
         """
@@ -192,6 +226,14 @@ class Alter(Query):
         self._drop_table = True
         return self
 
+    def rename_table(self, new_name: str) -> Alter:
+        """
+        Band.alter().rename_table('musical_group')
+        """
+        # We override the existing one rather than appending.
+        self._rename_table = [RenameTable(new_name=new_name)]
+        return self
+
     def rename_column(
         self, column: t.Union[str, Column], new_name: str
     ) -> Alter:
@@ -199,7 +241,7 @@ class Alter(Query):
         Band.alter().rename_column(Band.popularity, ‘rating’)
         Band.alter().rename_column('popularity', ‘rating’)
         """
-        self._rename.append(RenameColumn(column, new_name))
+        self._rename_columns.append(RenameColumn(column, new_name))
         return self
 
     def set_null(
@@ -220,6 +262,33 @@ class Alter(Query):
         Band.alter().set_unique('name', True)
         """
         self._unique.append(Unique(column, boolean))
+        return self
+
+    def set_length(self, column: t.Union[str, Varchar], length: int):
+        """
+        Change the max length of a varchar column. Unfortunately, this isn't
+        supported by SQLite, but SQLite also doesn't enforce any length limits
+        on varchar columns anyway.
+
+        Band.alter().set_length('name', 512)
+        """
+        if self.engine_type == "sqlite":
+            colored_warning(
+                (
+                    "SQLITE doesn't support changes in length. It also "
+                    "doesn't enforce any length limits, so your code will "
+                    "still work as expected. Skipping."
+                ),
+                level=Level.medium,
+            )
+            return self
+
+        if not isinstance(column, (str, Varchar)):
+            raise ValueError(
+                "Only Varchar columns can have their length changed."
+            )
+
+        self._set_length.append(SetLength(column, length))
         return self
 
     def _get_constraint_name(self, column: t.Union[str, ForeignKey]) -> str:
@@ -329,7 +398,13 @@ class Alter(Query):
         alterations = [
             i.querystring
             for i in itertools.chain(
-                self._add, self._rename, self._drop, self._unique, self._null
+                self._add,
+                self._rename_columns,
+                self._rename_table,
+                self._drop,
+                self._unique,
+                self._null,
+                self._set_length,
             )
         ]
 

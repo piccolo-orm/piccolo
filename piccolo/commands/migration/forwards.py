@@ -1,64 +1,84 @@
 from __future__ import annotations
 import asyncio
-import os
 import pprint
 import typing as t
 
 import click
 
-from piccolo.migrations.tables import Migration
 from piccolo.commands.migration.base import (
     BaseMigrationManager,
     MigrationModule,
-    ConfigModule,
+    PiccoloAppModule,
 )
+from piccolo.conf.apps import AppConfig
+from piccolo.migrations.tables import Migration
+from piccolo.migrations.auto import MigrationManager
 
 
 class ForwardsMigrationManager(BaseMigrationManager):
-    def run_migrations(self, config_modules: t.List[ConfigModule]) -> None:
+    def __init__(self, app_name: str, fake: bool = False, *args, **kwargs):
+        self.app_name = app_name
+        self.fake = fake
+
+    def run_migrations(self, app_modules: t.List[PiccoloAppModule]) -> None:
         already_ran = Migration.get_migrations_which_ran()
         print(f"Already ran:\n{already_ran}\n")
 
-        for config_module in config_modules:
-            migrations_folder = os.path.dirname(config_module.__file__)
+        for app_module in app_modules:
+            app_config: AppConfig = getattr(app_module, "APP_CONFIG")
 
             migration_modules: t.Dict[
                 str, MigrationModule
-            ] = self.get_migration_modules(migrations_folder)
+            ] = self.get_migration_modules(app_config.migrations_folder_path)
 
             ids = self.get_migration_ids(migration_modules)
             print(f"Migration ids = {ids}")
 
-            app_name = self.get_app_name(config_module)
-
             havent_run = sorted(set(ids) - set(already_ran))
             for _id in havent_run:
-                migration_module = migration_modules[_id]
-                asyncio.run(migration_module.forwards())
+                if self.fake:
+                    print(f"Faked {_id}")
+                else:
+                    migration_module = migration_modules[_id]
+                    response = asyncio.run(migration_module.forwards())
 
-                print(f"Ran {_id}")
+                    if isinstance(response, MigrationManager):
+                        asyncio.run(response.run())
+
+                    print(f"Ran {_id}")
+
                 Migration.insert().add(
-                    Migration(name=_id, app_name=app_name)
+                    Migration(name=_id, app_name=self.app_name)
                 ).run_sync()
 
     def run(self):
         print("Running migrations ...")
         self.create_migration_table()
 
-        config_modules = self.get_config_modules()
+        app_modules = self.get_app_modules()
 
         print("Config Modules:")
-        pprint.pprint(config_modules)
+        pprint.pprint(app_modules)
         print("\n")
 
-        self.run_migrations(config_modules)
+        self.run_migrations(app_modules)
 
 
 @click.command()
-def forwards():
+@click.argument("app_name")
+@click.option(
+    "--fake",
+    is_flag=True,
+    default=False,
+    help=(
+        "Will record the migrations as being run without actually running "
+        "them."
+    ),
+)
+def forwards(app_name: str, fake: bool):
     """
     Runs any migrations which haven't been run yet, or up to a specific
     migration.
     """
-    manager = ForwardsMigrationManager()
+    manager = ForwardsMigrationManager(app_name=app_name, fake=fake)
     manager.run()

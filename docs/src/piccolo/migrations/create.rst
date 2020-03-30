@@ -1,22 +1,25 @@
 Creating migrations
 ===================
 
-Migrations are used to create and modify tables in the database.
+Migrations are Python files which are used to modify the database schema in a
+controlled way. Each migration belongs to a Piccolo app (see :ref:`PiccoloApps`).
+
+You can either manually populate migrations, or allow Piccolo to do it for you
+automatically. To create an empty migration:
 
 .. code-block:: bash
 
-    piccolo migration new
+    piccolo migration new my_app
 
-This creates a migrations folder, along with a migration file.
-
-The migration filename is a timestamp, which also serves as the migration ID.
+This creates a new migration file in the migrations folder of the app. The
+migration filename is a timestamp, which also serves as the migration ID.
 
 .. code-block:: bash
 
-    migrations/
+    piccolo_migrations/
         2018-09-04T19:44:09.py
 
-The contents of the migration file look like this:
+The contents of an empty migration file looks like this:
 
 .. code-block:: python
 
@@ -28,43 +31,26 @@ The contents of the migration file look like this:
     async def backwards():
         pass
 
-Populating the migration
-------------------------
+Populating an empty migration
+-----------------------------
 
 At the moment, this migration does nothing when run - we need to populate the
 forwards and backwards functions.
 
 .. code-block:: python
 
-    from piccolo.columns import Varchar
-    from piccolo.tables import Table
-
-
     ID = '2018-09-04T19:44:09'
 
 
-    class Band(Table):
-        name = Varchar(length=100)
-
-
     async def forwards():
-        await Band.create_table().run()
+        await run_some_sql()
 
 
     async def backwards():
-        await Band.alter().drop_table().run()
+        await run_some_other_sql()
 
 If making multiple changes to the database in a single migration, be sure to
-wrap it in a transaction.
-
-.. code-block:: python
-
-    async def forwards():
-        async with Band._meta.db.transaction:
-            await Band.create_table().run()
-            await Manager.create_table().run()
-
-See :ref:`Transactions`.
+wrap it in a transaction. See :ref:`Transactions`.
 
 The golden rule
 ~~~~~~~~~~~~~~~
@@ -92,33 +78,28 @@ someone runs your migrations in the future, they will get different results.
 Make your migrations completely independent of other code, so they're
 self contained and repeatable.
 
-Running migrations
-------------------
-
-When the migration is run, the forwards function is executed. To do this:
-
-.. code-block:: bash
-
-    piccolo migration forwards
-
-Inspect your database, and a ``band`` table should now exist.
-
-Reversing migrations
---------------------
-
-To reverse the migration, run this:
-
-.. code-block:: bash
-
-    piccolo migration backwards 2018-09-04T19:44:09
-
-This executes the backwards function.
-
-You can try going forwards and backwards a few times to make sure it works as
-expected.
-
-Altering tables
+Auto migrations
 ---------------
 
-To alter tables, you'll use mostly use alter queries (see :ref:`alter`), and
-occasionally raw queries (see :ref:`raw`).
+Manually writing your migrations gives you a good level of control, but Piccolo
+supports `auto migrations` which can save a great deal of time.
+
+Piccolo will work out what tables to add by comparing previous auto migrations,
+and your current tables. In order for this to work, you have to register
+your app's tables with the `AppConfig` in the piccolo_app.py file at the root
+of your app (see :ref:`PiccoloApps`).
+
+Creating an auto migration:
+
+.. code-block:: bash
+
+    piccolo migration new my_app --auto
+
+.. hint:: Auto migrations are the preferred way to create migrations with
+    Piccolo. We recommend using `empty migrations` for special circumstances which
+    aren't support by auto migrations, or to modify the data held in tables, as
+    opposed to changing the tables themselves.
+
+.. warning:: Auto migrations aren't supported in SQLite, because of SQLite's
+    extremely limited support for SQL Alter statements. This might change in
+    the future.

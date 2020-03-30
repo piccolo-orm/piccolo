@@ -6,6 +6,7 @@ import pytest
 from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
+from piccolo.table import Table
 
 
 ENGINE = engine_finder()
@@ -27,7 +28,8 @@ class DBTestCase(TestCase):
     """
 
     def run_sync(self, query):
-        asyncio.run(ENGINE._run_in_new_connection(query))
+        _Table = type("_Table", (Table,), {})
+        return _Table.raw(query).run_sync()
 
     def create_table(self):
         if ENGINE.engine_type == "postgres":
@@ -132,8 +134,8 @@ class DBTestCase(TestCase):
         self.run_sync(f"INSERT INTO manager (name) VALUES {values_string};")
 
     def drop_table(self):
-        self.run_sync("DROP TABLE band;")
-        self.run_sync("DROP TABLE manager;")
+        self.run_sync("DROP TABLE IF EXISTS band CASCADE;")
+        self.run_sync("DROP TABLE IF EXISTS manager CASCADE;")
 
     def setUp(self):
         self.create_table()

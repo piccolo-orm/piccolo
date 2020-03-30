@@ -1,4 +1,4 @@
-.. _Migrations:
+.. _migrations:
 
 Migrations
 ==========
@@ -7,3 +7,4 @@ Migrations
     :maxdepth: 1
 
     ./create
+    ./running

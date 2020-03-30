@@ -1,12 +1,26 @@
 from __future__ import annotations
+import asyncio
 import datetime
 import os
+import sys
 import typing as t
 from types import ModuleType
 
+import black
 import click
 
-from piccolo.migrations.template import TEMPLATE
+from piccolo.commands.migration.base import (
+    BaseMigrationManager,
+    MigrationModule,
+)
+from piccolo.conf.apps import AppConfig, AppRegistry
+from piccolo.migrations.auto import (
+    SchemaSnapshot,
+    MigrationManager,
+    DiffableTable,
+    SchemaDiffer,
+)
+from piccolo.migrations.template import render_template
 
 
 MIGRATION_MODULES: t.Dict[str, ModuleType] = {}
@@ -27,34 +41,114 @@ def _create_migrations_folder(migrations_path: str) -> bool:
         return True
 
 
-def _create_new_migration(migrations_path) -> None:
+def _create_new_migration(app_config: AppConfig, auto=False) -> None:
     """
     Creates a new migration file on disk.
     """
     _id = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    path = os.path.join(migrations_path, f"{_id}.py")
+    path = os.path.join(app_config.migrations_folder_path, f"{_id}.py")
+
+    if auto:
+        alter_statements = AutoMigrationManager().get_alter_statements(
+            app_config=app_config
+        )
+
+        if len(alter_statements) == 0:
+            print("No changes detected - exiting.")
+            sys.exit(1)
+
+        file_contents = render_template(
+            migration_id=_id, auto=True, alter_statements=alter_statements,
+        )
+    else:
+        file_contents = render_template(migration_id=_id, auto=False)
+
+    # Beautify the file contents a bit.
+    file_contents = black.format_str(
+        file_contents, mode=black.FileMode(line_length=82)
+    )
+
     with open(path, "w") as f:
-        f.write(TEMPLATE.format(migration_id=_id))
+        f.write(file_contents)
 
 
 ###############################################################################
 
 
+class AutoMigrationManager(BaseMigrationManager):
+    def get_alter_statements(self, app_config: AppConfig) -> t.List[str]:
+        """
+        Works out which alter statements are required.
+        """
+        alter_statements: t.List[str] = []
+
+        for config_module in self.get_app_modules():
+
+            if config_module.APP_CONFIG.app_name != app_config.app_name:
+                continue
+
+            migrations_folder = config_module.APP_CONFIG.migrations_folder_path
+
+            migration_modules: t.Dict[
+                str, MigrationModule
+            ] = self.get_migration_modules(migrations_folder)
+
+            migration_managers: t.List[MigrationManager] = []
+
+            for _, migration_module in migration_modules.items():
+                response = asyncio.run(migration_module.forwards())
+                if isinstance(response, MigrationManager):
+                    migration_managers.append(response)
+
+            schema_snapshot = SchemaSnapshot(migration_managers)
+            snapshot = schema_snapshot.get_snapshot()
+
+            # Now get the current schema:
+            current_diffable_tables = [
+                DiffableTable(
+                    class_name=i.__name__,
+                    tablename=i._meta.tablename,
+                    columns=i._meta.non_default_columns,
+                )
+                for i in app_config.table_classes
+            ]
+
+            # Compare the current schema with the snapshot
+            differ = SchemaDiffer(
+                schema=current_diffable_tables, schema_snapshot=snapshot
+            )
+            alter_statements = differ.get_alter_statements()
+
+        return alter_statements
+
+
+###############################################################################
+
+
+@click.argument("app_name")
 @click.option(
-    "-p",
-    "--path",
-    multiple=False,
-    help="The parent of the migrations folder e.g. ./my_app",
+    "--auto", is_flag=True, help="Auto create the migration contents."
 )
 @click.command()
-def new(path: str):
+def new(app_name: str, auto: bool):
     """
-    Creates a new file like migrations/2018-09-04T19:44:09.py
+    Creates a new file like piccolo_migrations/2018-09-04T19:44:09.py
     """
     print("Creating new migration ...")
 
-    root_dir = path if path else os.getcwd()
-    migrations_path = os.path.join(root_dir, "migrations")
+    try:
+        import piccolo_conf
+    except ImportError:
+        print("Can't find piccolo_conf")
+        sys.exit(1)
 
-    _create_migrations_folder(migrations_path)
-    _create_new_migration(migrations_path)
+    try:
+        app_registry: AppRegistry = piccolo_conf.APP_REGISTRY
+    except AttributeError:
+        print("APP_REGISTRY isn't defined in piccolo_conf")
+        sys.exit(1)
+
+    app_config: AppConfig = app_registry.get_app_config(app_name)
+
+    _create_migrations_folder(app_config.migrations_folder_path)
+    _create_new_migration(app_config=app_config, auto=auto)

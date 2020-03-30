@@ -37,6 +37,7 @@ class TableMeta:
 
     tablename: str = ""
     columns: t.List[Column] = field(default_factory=list)
+    default_columns: t.List[Column] = field(default_factory=list)
     non_default_columns: t.List[Column] = field(default_factory=list)
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
     _db: t.Optional[Engine] = None
@@ -93,14 +94,15 @@ class Table(metaclass=TableMetaclass):
     id = PrimaryKey()
 
     def __init_subclass__(
-        cls, tablename: t.Optional[str] = None, db: t.Optional[Engine] = None
+        cls,
+        tablename: t.Optional[str] = None,
+        db: t.Optional[Engine] = None,
+        app: t.Optional[str] = None,
     ):
         """
         Automatically populate the _meta, which includes the tablename, and
         columns.
         """
-        cls.id = PrimaryKey()
-
         tablename = tablename if tablename else _camel_to_snake(cls.__name__)
 
         if tablename in PROTECTED_TABLENAMES:
@@ -109,14 +111,17 @@ class Table(metaclass=TableMetaclass):
                 "different name."
             )
 
+        columns: t.List[Column] = []
+        default_columns: t.List[Column] = []
+        non_default_columns: t.List[Column] = []
+        foreign_key_columns: t.List[ForeignKey] = []
+
+        cls.id = PrimaryKey()
+
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]
         )
         unique_attribute_names = list(dict.fromkeys(attribute_names))
-
-        columns: t.List[Column] = []
-        non_default_columns: t.List[Column] = []
-        foreign_key_columns: t.List[ForeignKey] = []
 
         for attribute_name in unique_attribute_names:
             if attribute_name.startswith("_"):
@@ -129,6 +134,7 @@ class Table(metaclass=TableMetaclass):
                 if isinstance(column, PrimaryKey):
                     # We want it at the start.
                     columns = [column] + columns
+                    default_columns.append(column)
                 else:
                     columns.append(column)
                     non_default_columns.append(column)
@@ -143,6 +149,7 @@ class Table(metaclass=TableMetaclass):
         cls._meta = TableMeta(
             tablename=tablename,
             columns=columns,
+            default_columns=default_columns,
             non_default_columns=non_default_columns,
             foreign_key_columns=foreign_key_columns,
             _db=db,
@@ -434,24 +441,18 @@ class Table(metaclass=TableMetaclass):
         return Delete(table=cls, force=force)
 
     @classmethod
-    def create_table(cls, if_not_exists=False) -> Create:
+    def create_table(
+        cls, if_not_exists=False, only_default_columns=False
+    ) -> Create:
         """
         Create table, along with all columns.
 
         await Band.create_table().run()
         """
-        return Create(table=cls, if_not_exists=if_not_exists)
-
-    @classmethod
-    def create_table_without_columns(cls) -> Raw:
-        """
-        Create the table, but with no columns (useful for migrations).
-
-        await Band.create_table_without_columns().run()
-        """
-        return Raw(
+        return Create(
             table=cls,
-            querystring=QueryString("CREATE TABLE {}()", cls._meta.tablename),
+            if_not_exists=if_not_exists,
+            only_default_columns=only_default_columns,
         )
 
     @classmethod
