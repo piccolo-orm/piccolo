@@ -33,9 +33,10 @@ def serialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     # We currently don't support defaults which are functions.
     default = params.get("default", None)
     if hasattr(default, "__call__"):
-        raise ValueError(
+        print(
             "Default arguments which are functions are not currently supported"
         )
+        params["default"] = None
 
     for key, value in params.items():
         # Convert enums into plain values

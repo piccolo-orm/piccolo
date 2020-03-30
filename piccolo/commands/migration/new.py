@@ -83,6 +83,10 @@ class AutoMigrationManager(BaseMigrationManager):
         alter_statements: t.List[str] = []
 
         for config_module in self.get_app_modules():
+
+            if config_module.APP_CONFIG.app_name != app_config.app_name:
+                continue
+
             migrations_folder = config_module.APP_CONFIG.migrations_folder_path
 
             migration_modules: t.Dict[
