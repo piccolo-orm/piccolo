@@ -23,34 +23,28 @@ The contents of an empty migration file looks like this:
 
 .. code-block:: python
 
-    ID = '2018-09-04T19:44:09'
+    from piccolo.migrations.auto import MigrationManager
 
-    async def forwards():
-        pass
-
-    async def backwards():
-        pass
-
-Populating an empty migration
------------------------------
-
-At the moment, this migration does nothing when run - we need to populate the
-forwards and backwards functions.
-
-.. code-block:: python
 
     ID = '2018-09-04T19:44:09'
 
 
     async def forwards():
-        await run_some_sql()
+        manager = MigrationManager(migration_id=ID)
+
+        def run():
+            print(f"running {ID}")
+
+        manager.add_raw(run)
+        return manager
 
 
     async def backwards():
-        await run_some_other_sql()
+        pass
 
-If making multiple changes to the database in a single migration, be sure to
-wrap it in a transaction. See :ref:`Transactions`.
+Replace the `run` function with whatever you want the migration to do -
+typically running some SQL. It can be a function or a coroutine.
+
 
 The golden rule
 ~~~~~~~~~~~~~~~
@@ -67,11 +61,13 @@ This is a **bad example**:
 
 
     async def forwards():
-        await Band.create_table().run()
+        manager = MigrationManager(migration_id=ID)
 
+        async def run():
+            await Band.create_table().run()
 
-    async def backwards():
-        await Band.alter().drop_table().run()
+        manager.add_raw(run)
+        return manager
 
 The reason you don't want to do this, is your tables will change over time. If
 someone runs your migrations in the future, they will get different results.

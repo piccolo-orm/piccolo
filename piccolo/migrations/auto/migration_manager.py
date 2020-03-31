@@ -1,6 +1,7 @@
 from copy import deepcopy
 from dataclasses import dataclass, field
 import datetime
+import inspect
 import typing as t
 
 from piccolo.columns import Column, OnDelete, OnUpdate, column_types
@@ -177,6 +178,7 @@ class MigrationManager:
     alter_columns: AlterColumnCollection = field(
         default_factory=AlterColumnCollection
     )
+    raw: t.List[t.Union[t.Callable, t.Coroutine]] = field(default_factory=list)
 
     def add_table(
         self,
@@ -275,6 +277,13 @@ class MigrationManager:
             )
         )
 
+    def add_raw(self, raw: t.Union[t.Callable, t.Coroutine]):
+        """
+        A migration manager can execute arbitrary functions or coroutines when
+        run. This is useful if you want to execute raw SQL.
+        """
+        self.raw.append(raw)
+
     async def run(self):
         print("Running MigrationManager ...")
 
@@ -285,6 +294,13 @@ class MigrationManager:
 
         async with engine.transaction():
 
+            for raw in self.raw:
+                if inspect.iscoroutine(raw):
+                    await raw()
+                else:
+                    raw()
+
+            ###################################################################
             # Add tables
 
             for table in self.add_tables:
