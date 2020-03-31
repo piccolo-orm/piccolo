@@ -1,3 +1,7 @@
+0.9.0
+=====
+Added support for auto migrations.
+
 0.8.3
 =====
 Can use operators in update queries, and fixing 'new' migration command.
