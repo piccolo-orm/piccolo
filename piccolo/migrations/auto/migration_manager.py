@@ -295,7 +295,7 @@ class MigrationManager:
         async with engine.transaction():
 
             for raw in self.raw:
-                if inspect.iscoroutine(raw):
+                if inspect.iscoroutinefunction(raw):
                     await raw()
                 else:
                     raw()
