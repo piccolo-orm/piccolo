@@ -82,42 +82,28 @@ class AutoMigrationManager(BaseMigrationManager):
         """
         alter_statements: t.List[str] = []
 
-        for config_module in self.get_app_modules():
+        migration_managers = self.get_migration_managers(
+            app_name=app_config.app_name
+        )
 
-            if config_module.APP_CONFIG.app_name != app_config.app_name:
-                continue
+        schema_snapshot = SchemaSnapshot(migration_managers)
+        snapshot = schema_snapshot.get_snapshot()
 
-            migrations_folder = config_module.APP_CONFIG.migrations_folder_path
-
-            migration_modules: t.Dict[
-                str, MigrationModule
-            ] = self.get_migration_modules(migrations_folder)
-
-            migration_managers: t.List[MigrationManager] = []
-
-            for _, migration_module in migration_modules.items():
-                response = asyncio.run(migration_module.forwards())
-                if isinstance(response, MigrationManager):
-                    migration_managers.append(response)
-
-            schema_snapshot = SchemaSnapshot(migration_managers)
-            snapshot = schema_snapshot.get_snapshot()
-
-            # Now get the current schema:
-            current_diffable_tables = [
-                DiffableTable(
-                    class_name=i.__name__,
-                    tablename=i._meta.tablename,
-                    columns=i._meta.non_default_columns,
-                )
-                for i in app_config.table_classes
-            ]
-
-            # Compare the current schema with the snapshot
-            differ = SchemaDiffer(
-                schema=current_diffable_tables, schema_snapshot=snapshot
+        # Now get the current schema:
+        current_diffable_tables = [
+            DiffableTable(
+                class_name=i.__name__,
+                tablename=i._meta.tablename,
+                columns=i._meta.non_default_columns,
             )
-            alter_statements = differ.get_alter_statements()
+            for i in app_config.table_classes
+        ]
+
+        # Compare the current schema with the snapshot
+        differ = SchemaDiffer(
+            schema=current_diffable_tables, schema_snapshot=snapshot
+        )
+        alter_statements = differ.get_alter_statements()
 
         return alter_statements
 
@@ -148,7 +134,10 @@ def new(app_name: str, auto: bool):
         print("APP_REGISTRY isn't defined in piccolo_conf")
         sys.exit(1)
 
-    app_config: AppConfig = app_registry.get_app_config(app_name)
+    app_config = app_registry.get_app_config(app_name)
+
+    if not app_config:
+        raise ValueError(f"Unrecognised app_name: {app_name}")
 
     _create_migrations_folder(app_config.migrations_folder_path)
     _create_new_migration(app_config=app_config, auto=auto)

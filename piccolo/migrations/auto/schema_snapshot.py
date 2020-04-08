@@ -6,17 +6,6 @@ from piccolo.migrations.auto.diffable_table import DiffableTable
 from piccolo.migrations.auto.migration_manager import MigrationManager
 
 
-def get_table_from_snaphot(migration_id: str):
-    """
-    This will generate a SchemaSnapshot up to the given migration ID, and
-    will return a Table class from that snapshot. This is useful if you want to
-    manipulate the data inside your database within a migration, without using
-    raw SQL.
-    """
-    # TODO - tie into commands/migration/new.py code which imports migrations.
-    raise NotImplementedError()
-
-
 @dataclass
 class SchemaSnapshot:
     """
@@ -26,6 +15,15 @@ class SchemaSnapshot:
 
     # In ascending order of date created.
     managers: t.List[MigrationManager] = field(default_factory=list)
+
+    ###########################################################################
+
+    def get_table_from_snapshot(self, table_class_name: str) -> DiffableTable:
+        snapshot = self.get_snapshot()
+        filtered = [i for i in snapshot if i.class_name == table_class_name]
+        if len(filtered) == 0:
+            raise ValueError(f"No match was found for {table_class_name}")
+        return filtered[0]
 
     ###########################################################################
 

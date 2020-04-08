@@ -30,7 +30,7 @@ class AppRegistry:
             app_config: AppConfig = getattr(app_conf_module, "APP_CONFIG")
             self.app_configs[app_config.app_name] = app_config
 
-    def get_app_config(self, app_name: str):
+    def get_app_config(self, app_name: str) -> t.Optional[AppConfig]:
         return self.app_configs.get(app_name)
 
     def get_table_classes(self, app_name: str):
@@ -38,4 +38,6 @@ class AppRegistry:
         Returns each Table subclass defined in the given app.
         """
         app_config = self.get_app_config(app_name=app_name)
+        if not app_config:
+            raise ValueError(f"Unrecognised app_name: {app_name}")
         return app_config.table_classes

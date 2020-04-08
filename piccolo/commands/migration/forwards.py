@@ -20,48 +20,43 @@ class ForwardsMigrationManager(BaseMigrationManager):
         self.app_name = app_name
         self.fake = fake
 
-    def run_migrations(self, app_modules: t.List[PiccoloAppModule]) -> None:
+    def run_migrations(self, app_config: AppConfig) -> None:
         already_ran = Migration.get_migrations_which_ran()
         print(f"Already ran:\n{already_ran}\n")
 
-        for app_module in app_modules:
-            app_config: AppConfig = getattr(app_module, "APP_CONFIG")
+        migration_modules: t.Dict[
+            str, MigrationModule
+        ] = self.get_migration_modules(app_config.migrations_folder_path)
 
-            migration_modules: t.Dict[
-                str, MigrationModule
-            ] = self.get_migration_modules(app_config.migrations_folder_path)
+        ids = self.get_migration_ids(migration_modules)
+        print(f"Migration ids = {ids}")
 
-            ids = self.get_migration_ids(migration_modules)
-            print(f"Migration ids = {ids}")
+        havent_run = sorted(set(ids) - set(already_ran))
+        print(f"Haven't run = {havent_run}")
 
-            havent_run = sorted(set(ids) - set(already_ran))
-            for _id in havent_run:
-                if self.fake:
-                    print(f"Faked {_id}")
-                else:
-                    migration_module = migration_modules[_id]
-                    response = asyncio.run(migration_module.forwards())
+        for _id in havent_run:
+            if self.fake:
+                print(f"Faked {_id}")
+            else:
+                migration_module = migration_modules[_id]
+                response = asyncio.run(migration_module.forwards())
 
-                    if isinstance(response, MigrationManager):
-                        asyncio.run(response.run())
+                if isinstance(response, MigrationManager):
+                    asyncio.run(response.run())
 
-                    print(f"Ran {_id}")
+                print(f"Ran {_id}")
 
-                Migration.insert().add(
-                    Migration(name=_id, app_name=self.app_name)
-                ).run_sync()
+            Migration.insert().add(
+                Migration(name=_id, app_name=self.app_name)
+            ).run_sync()
 
     def run(self):
         print("Running migrations ...")
         self.create_migration_table()
 
-        app_modules = self.get_app_modules()
+        app_config = self.get_app_config(app_name=self.app_name)
 
-        print("Config Modules:")
-        pprint.pprint(app_modules)
-        print("\n")
-
-        self.run_migrations(app_modules)
+        self.run_migrations(app_config)
 
 
 @click.command()

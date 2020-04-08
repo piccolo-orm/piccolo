@@ -9,6 +9,9 @@ class CheckMigrationManager(BaseMigrationManager):
     def run(self):
         print("Listing migrations ...")
 
+        # Make sure the migration table exists, otherwise we'll get an error.
+        self.create_migration_table()
+
         print(
             f'{get_fixed_length_string("APP NAME")} | '
             f'{get_fixed_length_string("MIGRATION_ID")} | RAN'

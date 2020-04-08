@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 import importlib
 import os
 import sys
@@ -6,6 +7,9 @@ from types import ModuleType
 import typing as t
 
 from piccolo.conf.apps import AppConfig
+from piccolo.migrations.auto.migration_manager import MigrationManager
+from piccolo.migrations.auto.diffable_table import DiffableTable
+from piccolo.migrations.auto.schema_snapshot import SchemaSnapshot
 from piccolo.migrations.tables import Migration
 
 
@@ -83,6 +87,14 @@ class BaseMigrationManager:
 
         return app_modules
 
+    def get_app_config(self, app_name: str) -> AppConfig:
+        modules = self.get_app_modules()
+        for module in modules:
+            app_config = module.APP_CONFIG
+            if app_config.app_name == app_name:
+                return app_config
+        raise ValueError(f"No app found with name {app_name}")
+
     def get_migration_modules(
         self, folder_path: str
     ) -> t.Dict[str, MigrationModule]:
@@ -116,3 +128,53 @@ class BaseMigrationManager:
         self, migration_module_dict: t.Dict[str, MigrationModule]
     ) -> t.List[str]:
         return sorted(list(migration_module_dict.keys()))
+
+    def get_migration_managers(
+        self, app_name: str, max_migration_id: t.Optional[str] = None
+    ) -> t.List[MigrationManager]:
+        """
+        :param max_migration_id:
+            If set, only MigrationManagers up to and including the given
+            migration ID will be returned.
+        """
+        migration_managers: t.List[MigrationManager] = []
+
+        app_config = self.get_app_config(app_name=app_name)
+
+        migrations_folder = app_config.migrations_folder_path
+
+        migration_modules: t.Dict[
+            str, MigrationModule
+        ] = self.get_migration_modules(migrations_folder)
+
+        for _, migration_module in migration_modules.items():
+            response = asyncio.run(migration_module.forwards())
+            if isinstance(response, MigrationManager):
+                if max_migration_id:
+                    if response.migration_id == max_migration_id:
+                        break
+                    else:
+                        migration_managers.append(response)
+                else:
+                    migration_managers.append(response)
+
+        return migration_managers
+
+    def get_table_from_snaphot(
+        self,
+        app_name: str,
+        table_class_name: str,
+        max_migration_id: t.Optional[str] = None,
+    ) -> DiffableTable:
+        """
+        This will generate a SchemaSnapshot up to the given migration ID, and
+        will return a DiffableTable class from that snapshot.
+        """
+        migration_managers = self.get_migration_managers(
+            app_name=app_name, max_migration_id=max_migration_id
+        )
+        schema_snapshot = SchemaSnapshot(managers=migration_managers)
+
+        return schema_snapshot.get_table_from_snapshot(
+            table_class_name=table_class_name
+        )

@@ -45,7 +45,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
 
         # Replace any Table class values into class names
         if isclass(value) and issubclass(value, Table):
-            params[key] = value.__name__
+            params[key] = f"{value.__name__}.{value._meta.tablename}"
 
         # Convert any datetime values into isoformat strings
         if isinstance(value, datetime.datetime):
@@ -160,3 +160,15 @@ class DiffableTable:
 
     def __str__(self):
         return f"{self.class_name} - {self.tablename}"
+
+    def to_table_class(self) -> t.Type[Table]:
+        """
+        Converts the DiffableTable into a Table subclass.
+        """
+        _Table: t.Type[Table] = type(
+            self.class_name,
+            (Table,),
+            {column._meta.name: column for column in self.columns},
+        )
+        _Table._meta.tablename = self.tablename
+        return _Table

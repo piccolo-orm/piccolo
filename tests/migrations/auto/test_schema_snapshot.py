@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from piccolo.migrations.auto import SchemaSnapshot, MigrationManager
+from piccolo.migrations.auto.schema_snapshot import get_table_from_snaphot
 
 
 class TestSchemaSnaphot(TestCase):
@@ -129,3 +130,16 @@ class TestSchemaSnaphot(TestCase):
         snapshot = schema_snapshot.get_snapshot()
 
         self.assertTrue(snapshot[0].columns[0]._meta.unique)
+
+    def test_get_table_from_snapshot(self):
+        manager_1 = MigrationManager()
+        manager_1.add_table(class_name="Manager", tablename="manager")
+        manager_1.add_table(class_name="Band", tablename="band")
+
+        schema_snapshot = SchemaSnapshot(managers=[manager_1])
+        table = schema_snapshot.get_table_from_snapshot("Manager")
+
+        self.assertTrue(table.class_name == "Manager")
+
+        with self.assertRaises(ValueError):
+            schema_snapshot.get_table_from_snapshot("Foo")
