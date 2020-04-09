@@ -258,7 +258,7 @@ class MigrationManager:
 
         references = params.get("references")
         if references:
-            components = references.split(".")
+            components = references.split("|")
             if len(components) == 1:
                 class_name = components[0]
                 tablename = None
@@ -267,7 +267,7 @@ class MigrationManager:
             else:
                 raise ValueError(
                     "Unrecognised Table serialisation - should either be "
-                    "`SomeClassName` or `SomeClassName.some_table_name`."
+                    "`SomeClassName` or `SomeClassName|some_table_name`."
                 )
 
             _Table: t.Type[Table] = type(

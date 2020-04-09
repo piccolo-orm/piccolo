@@ -45,7 +45,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
 
         # Replace any Table class values into class names
         if isclass(value) and issubclass(value, Table):
-            params[key] = f"{value.__name__}.{value._meta.tablename}"
+            params[key] = f"{value.__name__}|{value._meta.tablename}"
 
         # Convert any datetime values into isoformat strings
         if isinstance(value, datetime.datetime):
