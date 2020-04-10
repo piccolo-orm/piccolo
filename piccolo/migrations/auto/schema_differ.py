@@ -318,8 +318,10 @@ class SchemaDiffer:
                 ):
                     continue
 
+                cleaned_params = serialise_params(column.params)
+
                 response.append(
-                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column.column_name}', column_class_name='{column.column_class_name}', params={str(column.params)})"  # noqa
+                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column.column_name}', column_class_name='{column.column_class_name}', params={str(cleaned_params)})"  # noqa
                 )
         return response
 
