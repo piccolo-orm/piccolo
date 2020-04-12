@@ -124,9 +124,8 @@ class BaseUser(Table, tablename="piccolo_user"):
             .where((cls.username == username))
             .first()
         )
-        try:
-            response = await query.run()
-        except ValueError:
+        response = await query.run()
+        if not response:
             # No match found
             return None
 

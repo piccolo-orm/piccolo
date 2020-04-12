@@ -47,9 +47,6 @@ class Query:
         if hasattr(self, "run_callback"):
             self.run_callback(raw)
 
-        # TODO - I have multiple ways of modifying the final output
-        # response_handlers, and output ...
-        # Might try and merge them.
         raw = await self.response_handler(raw)
 
         output = getattr(self, "output_delegate", None)
@@ -60,6 +57,8 @@ class Query:
                 # of rows.
                 if type(raw) is list:
                     raw = [self.table(**columns) for columns in raw]
+                elif raw is None:
+                    pass
                 else:
                     raw = self.table(**raw)
             elif type(raw) is list:
