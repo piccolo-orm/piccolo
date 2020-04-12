@@ -21,3 +21,5 @@ Likewise, with objects:
 
     >>> Band.objects().first().run_sync()
     <Band at 0x10fdef1d0>
+
+If no match is found, then `None` is returned instead.
