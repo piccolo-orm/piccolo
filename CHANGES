@@ -1,3 +1,8 @@
+0.9.1
+=====
+Auto migration fixes, and .first() method now returns None is no match is
+found.
+
 0.9.0
 =====
 Added support for auto migrations.
