@@ -1,3 +1,7 @@
+0.9.2
+=====
+.first() bug fix.
+
 0.9.1
 =====
 Auto migration fixes, and .first() method now returns None is no match is

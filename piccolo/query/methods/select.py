@@ -79,7 +79,7 @@ class Select(Query):
     async def response_handler(self, response):
         if self.limit_delegate._first:
             if len(response) == 0:
-                raise ValueError("No results found")
+                return None
             else:
                 return response[0]
         else:
