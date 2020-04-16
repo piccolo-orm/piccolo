@@ -1,3 +1,8 @@
+0.9.3
+=====
+Suppressing exceptions when trying to find the Postgres version, to avoid
+an ImportError when importing piccolo_conf.py.
+
 0.9.2
 =====
 .first() bug fix.
