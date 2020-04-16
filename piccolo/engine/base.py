@@ -15,7 +15,6 @@ class Batch:
 class Engine(metaclass=ABCMeta):
     def __init__(self):
         self.check_version()
-        self.tables = []
 
     @property
     @abstractmethod
