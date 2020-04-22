@@ -43,10 +43,11 @@ AppConfig
 ---------
 
 Inside the `piccolo_app.py` file is an AppConfig instance. This is how you
-customise how your app's settings.
+customise your app's settings.
 
 .. code-block:: python
 
+    # piccolo_app.py
     import os
 
     from piccolo.conf.apps import AppConfig
@@ -79,3 +80,65 @@ migration_dependencies
 
 Used to specify other Piccolo apps whose migrations need to be run before the
 current app's migrations.
+
+commands
+~~~~~~~~
+
+You can register functions and coroutines, which are automatically added to
+the `piccolo` CLI.
+
+The `targ <http://targ.readthedocs.io/>`_ library is used under the hood. It
+makes it really easy to write command lines tools - just use type annotations
+and docstrings. Here's an example:
+
+.. code-block:: python
+
+    def say_hello(name: str):
+        """
+        Say hello.
+
+        :param name:
+            The person to greet.
+
+        """
+        print(name)
+
+We then register it with the `AppConfig`.
+
+.. code-block:: python
+
+    # piccolo_app.py
+
+    APP_CONFIG = AppConfig(
+        # ...
+        commands=[say_hello]
+    )
+
+And from the command line:
+
+.. code-block:: bash
+
+    >>> piccolo my_app say_hello bob
+    bob
+
+By convention, store the command definitions in a `commands` folder in your
+app.
+
+.. code-block:: bash
+
+    my_app/
+        __init__.py
+        piccolo_app.py
+        commands/
+            __init__.py
+            say_hello.py
+
+Piccolo itself is bundled with several apps - have a look at the source code
+for inspiration.
+
+Sharing Apps
+------------
+
+By breaking up your project into apps, the project becomes more maintainable.
+You can also share these apps between projects, and they can even be installed
+using pip.

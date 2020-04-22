@@ -9,7 +9,7 @@ automatically. To create an empty migration:
 
 .. code-block:: bash
 
-    piccolo migration new my_app
+    piccolo migrations new my_app
 
 This creates a new migration file in the migrations folder of the app. The
 migration filename is a timestamp, which also serves as the migration ID.
@@ -89,7 +89,7 @@ Creating an auto migration:
 
 .. code-block:: bash
 
-    piccolo migration new my_app --auto
+    piccolo migrations new my_app --auto
 
 .. hint:: Auto migrations are the preferred way to create migrations with
     Piccolo. We recommend using `empty migrations` for special circumstances which
