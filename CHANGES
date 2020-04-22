@@ -1,3 +1,7 @@
+0.10.0
+======
+Using targ for the CLI. Refactored some core code into apps.
+
 0.9.3
 =====
 Suppressing exceptions when trying to find the Postgres version, to avoid
