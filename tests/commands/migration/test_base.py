@@ -2,7 +2,7 @@ import os
 from unittest import TestCase
 from unittest.mock import patch
 
-from piccolo.commands.migration.base import (
+from piccolo.apps.migrations.commands.base import (
     BaseMigrationManager,
     Migration,
     AppConfig,

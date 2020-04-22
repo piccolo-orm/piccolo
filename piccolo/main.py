@@ -1,80 +1,60 @@
-import importlib
 import os
 import sys
 
-import click
+from targ import CLI
 
-from piccolo.commands.app.list import list_apps
-from piccolo.commands.app.new import new as new_app
-from piccolo.commands.project.new import new as new_project
-from piccolo.commands.playground import playground
-from piccolo.commands.migration.new import new
-from piccolo.commands.migration.backwards import backwards
-from piccolo.commands.migration.forwards import forwards
-from piccolo.commands.migration.check import check
-
-
-@click.group()
-def cli():
-    pass
-
-
-###############################################################################
-# Migrations
-@cli.group("migration")
-def migration():
-    pass
-
-
-migration.add_command(check)
-migration.add_command(new)
-migration.add_command(forwards)
-migration.add_command(backwards)
-
-###############################################################################
-# Playground
-cli.add_command(playground)
-
-###############################################################################
-# App
-@cli.group("app")
-def app():
-    pass
-
-
-app.add_command(list_apps)
-app.add_command(new_app)
-
-###############################################################################
-# Conf
-@cli.group("project")
-def project():
-    pass
-
-
-project.add_command(new_project)
-
-###############################################################################
+from piccolo.conf.apps import AppRegistry
+from piccolo.apps.migrations.piccolo_app import APP_CONFIG as migrations_config
+from piccolo.apps.app.piccolo_app import APP_CONFIG as app_config
+from piccolo.apps.playground.piccolo_app import APP_CONFIG as playground_config
+from piccolo.apps.project.piccolo_app import APP_CONFIG as project_config
+from piccolo.apps.user.piccolo_app import APP_CONFIG as user_config
 
 
 def main():
     # In case it's run from an entrypoint:
     sys.path.insert(0, os.getcwd())
 
+    cli = CLI(description="Piccolo CLI")
+
+    ###########################################################################
+    # Register the base apps.
+
+    for _app_config in [
+        migrations_config,
+        app_config,
+        playground_config,
+        project_config,
+        user_config,
+    ]:
+        for command in _app_config.commands:
+            cli.register(command, group_name=_app_config.app_name)
+
+    ###########################################################################
+    # Get user defined apps.
+
     try:
         import piccolo_conf
     except ImportError:
         print("Can't import piccolo_conf - some commands may be missing.")
     else:
-        COMMANDS = getattr(piccolo_conf, "COMMANDS", [])
+        try:
+            APP_REGISTRY: AppRegistry = getattr(piccolo_conf, "APP_REGISTRY")
+        except Exception:
+            print("Unable to find APP_REGISTRY in piccolo_conf.")
 
-        for command in COMMANDS:
-            command_name = command.split(".")[-1]
-            command_module = importlib.import_module(command)
-            command_func = getattr(command_module, "command")
-            cli.add_command(click.command(name=command_name)(command_func))
+        for app_name, _app_config in APP_REGISTRY.app_configs.items():
+            for command in _app_config.commands:
+                if cli.command_exists(
+                    group_name=app_name, command_name=command.__name__
+                ):
+                    # Skipping - already registered.
+                    continue
+                cli.register(command, group_name=app_name)
 
-    cli()
+    ###########################################################################
+
+    cli.run()
 
 
 if __name__ == "__main__":

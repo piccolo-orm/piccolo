@@ -66,6 +66,7 @@ customise how your app's settings.
         migrations_folder_path=os.path.join(CURRENT_DIRECTORY, 'piccolo_migrations'),
         table_classes=[Author, Post, Category, CategoryToPost],
         migration_dependencies=[],
+        commands=[]
     )
 
 table_classes

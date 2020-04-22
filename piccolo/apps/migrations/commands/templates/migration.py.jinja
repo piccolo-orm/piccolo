@@ -1,0 +1,23 @@
+from piccolo.apps.migrations.auto import MigrationManager
+
+
+ID = '{{ migration_id }}'
+
+
+async def forwards():
+    manager = MigrationManager(migration_id=ID)
+    {% if auto %}
+    {% for alter_statement in alter_statements %}
+    {{ alter_statement }}
+    {% endfor %}
+    {% else %}
+    def run():
+        print(f"running {ID}")
+
+    manager.add_raw(run)
+    {% endif %}
+    return manager
+
+
+async def backwards():
+    pass

@@ -1,4 +1,4 @@
-from piccolo.migrations.auto import MigrationManager
+from piccolo.apps.migrations.auto import MigrationManager
 
 
 ID = "2020-03-31T20:38:22"

@@ -1,6 +1,6 @@
 import asyncio
 
-from piccolo.migrations.auto import MigrationManager
+from piccolo.apps.migrations.auto import MigrationManager
 
 from tests.base import DBTestCase
 

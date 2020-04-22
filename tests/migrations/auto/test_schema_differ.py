@@ -2,7 +2,7 @@ import typing as t
 from unittest import TestCase
 
 from piccolo.columns.column_types import Varchar
-from piccolo.migrations.auto import (
+from piccolo.apps.migrations.auto import (
     DiffableTable,
     SchemaDiffer,
 )

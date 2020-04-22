@@ -1,7 +1,7 @@
 
 from unittest import TestCase
 
-from piccolo.migrations.auto.diffable_table import compare_dicts
+from piccolo.apps.migrations.auto.diffable_table import compare_dicts
 
 
 class TestCompareDicts(TestCase):

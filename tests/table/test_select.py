@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from piccolo.extensions.user.tables import BaseUser
+from piccolo.apps.user.tables import BaseUser
 
 from ..base import DBTestCase, postgres_only, sqlite_only
 from ..example_project.tables import Band, Concert

@@ -1,7 +1,7 @@
 import asyncio
 from unittest import TestCase
 
-from piccolo.extensions.user.tables import BaseUser
+from piccolo.apps.user.tables import BaseUser
 
 
 class TestCreateUserTable(TestCase):

@@ -23,7 +23,7 @@ The contents of an empty migration file looks like this:
 
 .. code-block:: python
 
-    from piccolo.migrations.auto import MigrationManager
+    from piccolo.apps.migrations.auto import MigrationManager
 
 
     ID = '2018-09-04T19:44:09'
