@@ -229,6 +229,7 @@ class Column(Selectable):
         """
         default = getattr(self, "default", None)
         if default is not None:
+            default = default.value if isinstance(default, Enum) else default
             # Can't use inspect - can't tell that datetime.datetime.now
             # is a callable.
             is_callable = hasattr(default, "__call__")
