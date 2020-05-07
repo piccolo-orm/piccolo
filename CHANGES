@@ -1,3 +1,7 @@
+0.10.1
+======
+Fixing bug with enum default values.
+
 0.10.0
 ======
 Using targ for the CLI. Refactored some core code into apps.
