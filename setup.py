@@ -30,7 +30,7 @@ setup(
     python_requires=">=3.7.0",
     url="https://github.com/piccolo-orm/piccolo",
     packages=find_packages(exclude=("tests",)),
-    package_data={"piccolo": ["py.typed"]},
+    package_data={"": ["templates/"], "piccolo": ["py.typed"]},
     install_requires=REQUIREMENTS,
     license="MIT",
     classifiers=[
