@@ -42,15 +42,15 @@ def main():
             APP_REGISTRY: AppRegistry = getattr(piccolo_conf, "APP_REGISTRY")
         except Exception:
             print("Unable to find APP_REGISTRY in piccolo_conf.")
-
-        for app_name, _app_config in APP_REGISTRY.app_configs.items():
-            for command in _app_config.commands:
-                if cli.command_exists(
-                    group_name=app_name, command_name=command.__name__
-                ):
-                    # Skipping - already registered.
-                    continue
-                cli.register(command, group_name=app_name)
+        else:
+            for app_name, _app_config in APP_REGISTRY.app_configs.items():
+                for command in _app_config.commands:
+                    if cli.command_exists(
+                        group_name=app_name, command_name=command.__name__
+                    ):
+                        # Skipping - already registered.
+                        continue
+                    cli.register(command, group_name=app_name)
 
     ###########################################################################
 

@@ -1,3 +1,7 @@
+0.10.2
+======
+Fixing a bug when using 'piccolo project new' in a new project.
+
 0.10.1
 ======
 Fixing bug with enum default values.
