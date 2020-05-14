@@ -5,4 +5,4 @@ black==19.10b0
 colorama==0.4.3
 ujson==2.0.3
 Jinja2==2.11.2
-targ==0.1.3
+targ==0.1.5
