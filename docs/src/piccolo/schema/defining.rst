@@ -13,7 +13,7 @@ columns.
     """
     tables.py
     """
-    from piccolo.tables import Table
+    from piccolo.table import Table
     from piccolo.columns import Varchar
 
 

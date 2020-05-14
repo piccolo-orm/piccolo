@@ -1,3 +1,8 @@
+0.10.4
+======
+Fixing some typos with Table imports. Showing a traceback when piccolo_conf
+can't be found by engine_finder.
+
 0.10.3
 ======
 Adding missing jinja templates to setup.py.

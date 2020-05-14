@@ -1,6 +1,7 @@
 from __future__ import annotations
 from importlib import import_module
 import os
+import traceback
 from types import ModuleType
 import typing as t
 
@@ -36,7 +37,14 @@ def engine_finder(module_name: t.Optional[str] = None) -> t.Optional[Engine]:
     try:
         module = import_module(module_name)
     except ModuleNotFoundError:
-        colored_warning(f"{module_name} doesn't exist.", level=Level.high)
+        colored_warning(
+            (
+                f"{module_name} either doesn't exist or the import failed. "
+                "Traceback:"
+            ),
+            level=Level.high,
+        )
+        print(traceback.format_exc())
     else:
         engine = getattr(module, ENGINE_VAR, None)
 

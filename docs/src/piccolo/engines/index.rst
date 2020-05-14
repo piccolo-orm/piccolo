@@ -16,7 +16,7 @@ Explicit
 .. code-block:: python
 
     from piccolo.engine.sqlite import SQLiteEngine
-    from piccolo.tables import Table
+    from piccolo.table import Table
     from piccolo.columns import Varchar
 
 
