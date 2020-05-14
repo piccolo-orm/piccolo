@@ -3,7 +3,7 @@
 Select
 ======
 
-.. hint:: Follow along by installing Piccolo and running `piccolo playground` - see :ref:`Playground`
+.. hint:: Follow along by installing Piccolo and running `piccolo playground run` - see :ref:`Playground`
 
 To get all rows:
 

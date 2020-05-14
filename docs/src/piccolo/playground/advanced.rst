@@ -33,7 +33,7 @@ credentials:
 You can create a database using `pgAdmin <https://www.pgadmin.org/>`_.
 
 If you want to use different credentials, you can pass them into the playground
-command (use ``piccolo playground --help`` for details).
+command (use ``piccolo playground run --help`` for details).
 
 Connecting
 ~~~~~~~~~~
@@ -42,4 +42,4 @@ When you have the database setup, you can connect to it as follows:
 
 .. code-block:: bash
 
-    piccolo playground --engine=postgres
+    piccolo playground run --engine=postgres

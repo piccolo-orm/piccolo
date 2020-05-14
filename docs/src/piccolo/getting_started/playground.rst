@@ -8,7 +8,7 @@ to learn the basics.
 
 .. code-block:: bash
 
-    piccolo playground
+    piccolo playground run
 
 It will create an example schema for you (see :ref:`ExampleSchema`) , populates it with data, and launches an `iPython <https://ipython.org/>`_ shell.
 
