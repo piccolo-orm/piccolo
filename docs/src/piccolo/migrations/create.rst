@@ -93,7 +93,7 @@ Creating an auto migration:
 
 .. hint:: Auto migrations are the preferred way to create migrations with
     Piccolo. We recommend using `empty migrations` for special circumstances which
-    aren't support by auto migrations, or to modify the data held in tables, as
+    aren't supported by auto migrations, or to modify the data held in tables, as
     opposed to changing the tables themselves.
 
 .. warning:: Auto migrations aren't supported in SQLite, because of SQLite's
