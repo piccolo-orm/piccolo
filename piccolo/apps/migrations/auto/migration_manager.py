@@ -5,7 +5,6 @@ import inspect
 import typing as t
 
 from piccolo.columns import Column, OnDelete, OnUpdate, column_types
-
 from piccolo.custom_types import DatetimeDefault
 from piccolo.engine import engine_finder
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
@@ -113,7 +112,7 @@ class AlterColumnCollection:
 
     @property
     def table_class_names(self) -> t.List[str]:
-        return list(set([i.column_name for i in self.alter_columns]))
+        return list(set([i.table_class_name for i in self.alter_columns]))
 
 
 @dataclass
@@ -337,24 +336,29 @@ class MigrationManager:
 
             for column in alter_columns:
                 params = column.old_params if backwards else column.params
-                row_name = column.row_name
+                column_name = column.column_name
 
                 null = params.get("null")
                 if null is not None:
                     await _Table.alter().set_null(
-                        column=row_name, boolean=null
+                        column=column_name, boolean=null
                     ).run()
 
                 length = params.get("length")
                 if length is not None:
                     await _Table.alter().set_length(
-                        column=row_name, length=length
+                        column=column_name, length=length
                     ).run()
 
                 unique = params.get("unique")
                 if unique is not None:
+                    # When modifying unique contraints, we need to pass in
+                    # a column type, and not just the column name.
+                    column = Column()
+                    column._meta._table = _Table
+                    column._meta._name = column_name
                     await _Table.alter().set_unique(
-                        column=row_name, boolean=unique
+                        column=column, boolean=unique
                     ).run()
 
     async def _run_drop_tables(self, backwards=False):

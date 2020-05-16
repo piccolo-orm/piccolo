@@ -1,9 +1,11 @@
 import asyncio
 
+from asyncpg.exceptions import UniqueViolationError
 from piccolo.apps.migrations.auto import MigrationManager
 from piccolo.columns import Varchar
 
 from tests.base import DBTestCase
+from tests.base import postgres_only
 
 
 class TestMigrationManager(DBTestCase):
@@ -27,7 +29,7 @@ class TestMigrationManager(DBTestCase):
         self.assertTrue("title" in response[0].keys())
         self.assertTrue("name" not in response[0].keys())
 
-        # Now reverse it
+        # Reverse
         asyncio.run(manager.run_backwards())
         response = self.run_sync("SELECT * FROM band;")
         self.assertTrue("title" not in response[0].keys())
@@ -161,3 +163,33 @@ class TestMigrationManager(DBTestCase):
         asyncio.run(manager.run_backwards())
         response = self.run_sync("SELECT * FROM manager;")
         self.assertEqual(response, [{"id": 1, "name": "Dave"}])
+
+    @postgres_only
+    def test_alter_column(self):
+        """
+        Test altering a column with MigrationManager.
+        """
+        manager = MigrationManager()
+
+        manager.alter_column(
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="name",
+            params={"unique": True},
+            old_params={"unique": False},
+        )
+
+        asyncio.run(manager.run())
+
+        with self.assertRaises(UniqueViolationError):
+            self.run_sync(
+                "INSERT INTO manager VALUES (default, 'Dave'), (default, 'Dave');"
+            )
+
+        # Reverse
+        asyncio.run(manager.run_backwards())
+        self.run_sync(
+            "INSERT INTO manager VALUES (default, 'Dave'), (default, 'Dave');"
+        )
+        response = self.run_sync("SELECT name FROM manager;")
+        self.assertEqual(response, [{"name": "Dave"}, {"name": "Dave"}])
