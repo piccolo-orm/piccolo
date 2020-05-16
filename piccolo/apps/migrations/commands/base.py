@@ -18,10 +18,6 @@ class MigrationModule(ModuleType):
     async def forwards() -> None:
         pass
 
-    @staticmethod
-    async def backwards() -> None:
-        pass
-
 
 class PiccoloAppModule(ModuleType):
     APP_CONFIG: AppConfig

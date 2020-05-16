@@ -134,6 +134,7 @@ class SchemaDiffer:
                         collection.append(
                             RenameTable(
                                 old_class_name=drop_table.class_name,
+                                old_tablename=drop_table.tablename,
                                 new_class_name=new_table.class_name,
                                 new_tablename=new_table.tablename,
                             )
@@ -237,7 +238,7 @@ class SchemaDiffer:
     @property
     def rename_tables(self) -> t.List[str]:
         return [
-            f"manager.rename_table(old_class_name='{renamed_table.old_class_name}', new_class_name='{renamed_table.new_class_name}', new_tablename='{renamed_table.new_tablename}')"  # noqa
+            f"manager.rename_table(old_class_name='{renamed_table.old_class_name}', old_tablename='{renamed_table.old_tablename}', new_class_name='{renamed_table.new_class_name}', new_tablename='{renamed_table.new_tablename}')"  # noqa
             for renamed_table in self.rename_tables_collection.rename_tables
         ]
 

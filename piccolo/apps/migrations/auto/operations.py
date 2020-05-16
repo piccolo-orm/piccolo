@@ -5,6 +5,7 @@ import typing as t
 @dataclass
 class RenameTable:
     old_class_name: str
+    old_tablename: str
     new_class_name: str
     new_tablename: str
 

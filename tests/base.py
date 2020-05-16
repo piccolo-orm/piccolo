@@ -1,5 +1,5 @@
-import asyncio
 from unittest import TestCase
+import typing as t
 
 import pytest
 
@@ -30,6 +30,10 @@ class DBTestCase(TestCase):
     def run_sync(self, query):
         _Table = type("_Table", (Table,), {})
         return _Table.raw(query).run_sync()
+
+    def table_exists(self, tablename: str):
+        _Table: t.Type[Table] = type(tablename.upper(), (Table,), {})
+        return _Table.table_exists().run_sync()
 
     def create_table(self):
         if ENGINE.engine_type == "postgres":

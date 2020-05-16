@@ -24,7 +24,3 @@ async def forwards():
     )
 
     return manager
-
-
-async def backwards():
-    pass

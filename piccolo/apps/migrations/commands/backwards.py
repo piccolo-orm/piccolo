@@ -57,11 +57,11 @@ class BackwardsMigrationManager(BaseMigrationManager):
                 print(f"Reversing {migration_name}")
                 migration_module = migration_modules[migration_name]
                 response = asyncio.run(
-                    migration_module.backwards()
+                    migration_module.forwards()
                 )  # type: ignore
 
                 if isinstance(response, MigrationManager):
-                    asyncio.run(response.run())
+                    asyncio.run(response.run_backwards())
 
                 Migration.delete().where(
                     Migration.name == migration_name
