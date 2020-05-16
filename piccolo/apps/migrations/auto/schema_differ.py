@@ -276,7 +276,7 @@ class SchemaDiffer:
 
             for i in delta.alter_columns:
                 response.append(
-                    f"manager.alter_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{i.column_name}', params={str(i.params)})"  # noqa
+                    f"manager.alter_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{i.column_name}', params={str(i.params)}, old_params={str(i.old_params)})"  # noqa
                 )
         return response
 

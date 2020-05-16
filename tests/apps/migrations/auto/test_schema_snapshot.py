@@ -123,6 +123,7 @@ class TestSchemaSnaphot(TestCase):
             tablename="manager",
             column_name="name",
             params={"unique": True},
+            old_params={"unique": False},
         )
 
         schema_snapshot = SchemaSnapshot(managers=[manager_1, manager_2])

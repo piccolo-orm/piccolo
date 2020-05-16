@@ -233,6 +233,7 @@ class MigrationManager:
         tablename: str,
         column_name: str,
         params: t.Dict[str, t.Any],
+        old_params: t.Dict[str, t.Any],
     ):
         """
         All possible alterations aren't currently supported.
@@ -243,6 +244,7 @@ class MigrationManager:
                 tablename=tablename,
                 column_name=column_name,
                 params=params,
+                old_params=old_params,
             )
         )
 
@@ -321,25 +323,123 @@ class MigrationManager:
 
     ###########################################################################
 
-    async def run(self):
-        print("Running MigrationManager ...")
+    async def _run_alter_columns(self, backwards=False):
+        for table_class_name in self.alter_columns.table_class_names:
+            alter_columns = self.alter_columns.for_table_class_name(
+                table_class_name
+            )
 
-        engine = engine_finder()
+            if not alter_columns:
+                continue
 
-        if not engine:
-            raise Exception("Can't find engine")
+            _Table: t.Type[Table] = type(table_class_name, (Table,), {})
+            _Table._meta.tablename = alter_columns[0].tablename
 
-        async with engine.transaction():
+            for column in alter_columns:
+                params = column.old_params if backwards else column.params
+                row_name = column.row_name
 
-            for raw in self.raw:
-                if inspect.iscoroutinefunction(raw):
-                    await raw()
-                else:
-                    raw()
+                null = params.get("null")
+                if null is not None:
+                    await _Table.alter().set_null(
+                        column=row_name, boolean=null
+                    ).run()
 
-            ###################################################################
-            # Add tables
+                length = params.get("length")
+                if length is not None:
+                    await _Table.alter().set_length(
+                        column=row_name, length=length
+                    ).run()
 
+                unique = params.get("unique")
+                if unique is not None:
+                    await _Table.alter().set_unique(
+                        column=row_name, boolean=unique
+                    ).run()
+
+    async def _run_drop_tables(self, backwards=False):
+        if backwards:
+            print("Dropped tables can't currently be reversed.")
+        else:
+            for table in self.drop_tables:
+                await table.to_table_class().alter().drop_table().run()
+
+    async def _run_drop_columns(self, backwards=False):
+        if backwards:
+            print("Dropped columns can't currently be reversed.")
+        else:
+            for table_class_name in self.drop_columns.table_class_names:
+                columns = self.drop_columns.for_table_class_name(
+                    table_class_name
+                )
+
+                if not columns:
+                    continue
+
+                _Table: t.Type[Table] = type(table_class_name, (Table,), {})
+                _Table._meta.tablename = columns[0].tablename
+
+                for column in columns:
+                    await _Table.alter().drop_column(
+                        column=column.column_name
+                    ).run()
+
+    async def _run_rename_tables(self, backwards=False):
+        for rename_table in self.rename_tables:
+            class_name = (
+                rename_table.new_class_name
+                if backwards
+                else rename_table.old_class_name
+            )
+            tablename = (
+                rename_table.new_tablename
+                if backwards
+                else rename_table.old_tablename
+            )
+            new_tablename = (
+                rename_table.old_tablename
+                if backwards
+                else rename_table.new_tablename
+            )
+
+            _Table: t.Type[Table] = type(class_name, (Table,), {})
+            _Table._meta.tablename = tablename
+
+            await _Table.alter().rename_table(new_name=new_tablename).run()
+
+    async def _run_rename_columns(self, backwards=False):
+        for table_class_name in self.rename_columns.table_class_names:
+            columns = self.rename_columns.for_table_class_name(
+                table_class_name
+            )
+
+            if not columns:
+                continue
+
+            _Table: t.Type[Table] = type(table_class_name, (Table,), {})
+            _Table._meta.tablename = columns[0].tablename
+
+            for rename_column in columns:
+                column = (
+                    rename_column.new_column_name
+                    if backwards
+                    else rename_column.old_column_name
+                )
+                new_name = (
+                    rename_column.old_column_name
+                    if backwards
+                    else rename_column.new_column_name
+                )
+
+                await _Table.alter().rename_column(
+                    column=column, new_name=new_name,
+                ).run()
+
+    async def _run_add_tables(self, backwards=False):
+        if backwards:
+            for add_table in self.add_tables:
+                await add_table.to_table_class().alter().drop_table().run()
+        else:
             for add_table in self.add_tables:
                 columns = (
                     self.add_columns.columns_for_table_class_name(
@@ -356,27 +456,19 @@ class MigrationManager:
 
                 await _Table.create_table().run()
 
-            ###################################################################
-            # Drop tables
-
-            for table in self.drop_tables:
-                await table.to_table_class().alter().drop_table().run()
-
-            ###################################################################
-            # Rename tables
-
-            for rename_table in self.rename_tables:
+    async def _run_add_columns(self, backwards=False):
+        """
+        Add columns, which belong to existing tables
+        """
+        if backwards:
+            for add_column in self.add_columns.add_columns:
                 _Table: t.Type[Table] = type(
-                    rename_table.old_class_name, (Table,), {}
+                    add_column.table_class_name, (Table,), {}
                 )
-                _Table._meta.tablename = rename_table.old_tablename
-                await _Table.alter().rename_table(
-                    new_name=rename_table.new_tablename
-                ).run()
+                _Table._meta.tablename = add_column.tablename
 
-            ###################################################################
-            # Add columns, which belong to existing tables
-
+                await _Table.alter().drop_column(add_column.column).run()
+        else:
             new_table_class_names = [i.class_name for i in self.add_tables]
 
             for table_class_name in self.add_columns.table_class_names:
@@ -398,82 +490,29 @@ class MigrationManager:
                         name=column._meta.name, column=column
                     ).run()
 
-            ###################################################################
-            # Drop columns
+    async def run(self):
+        print("Running MigrationManager ...")
 
-            for table_class_name in self.drop_columns.table_class_names:
-                columns = self.drop_columns.for_table_class_name(
-                    table_class_name
-                )
+        engine = engine_finder()
 
-                if not columns:
-                    continue
+        if not engine:
+            raise Exception("Can't find engine")
 
-                _Table: t.Type[Table] = type(table_class_name, (Table,), {})
-                _Table._meta.tablename = columns[0].tablename
+        async with engine.transaction():
 
-                for column in columns:
-                    await _Table.alter().drop_column(
-                        column=column.column_name
-                    ).run()
+            for raw in self.raw:
+                if inspect.iscoroutinefunction(raw):
+                    await raw()
+                else:
+                    raw()
 
-            ###################################################################
-            # Rename columns
-
-            for table_class_name in self.rename_columns.table_class_names:
-                columns = self.rename_columns.for_table_class_name(
-                    table_class_name
-                )
-
-                if not columns:
-                    continue
-
-                _Table: t.Type[Table] = type(table_class_name, (Table,), {})
-                _Table._meta.tablename = columns[0].tablename
-
-                for column in columns:
-                    await _Table.alter().rename_column(
-                        column=column.old_column_name,
-                        new_name=column.new_column_name,
-                    ).run()
-
-            ###################################################################
-            # Alter columns
-
-            for table_class_name in self.alter_columns.table_class_names:
-                alter_columns = self.alter_columns.for_table_class_name(
-                    table_class_name
-                )
-
-                if not alter_columns:
-                    continue
-
-                _Table: t.Type[Table] = type(table_class_name, (Table,), {})
-                _Table._meta.tablename = alter_columns[0].tablename
-
-                for column in alter_columns:
-                    params = column.params
-                    row_name = column.row_name
-
-                    null = params.get("null")
-                    if null is not None:
-                        await _Table.alter().set_null(
-                            column=row_name, boolean=null
-                        ).run()
-
-                    length = params.get("length")
-                    if length is not None:
-                        await _Table.alter().set_length(
-                            column=row_name, length=length
-                        ).run()
-
-                    unique = params.get("unique")
-                    if unique is not None:
-                        await _Table.alter().set_unique(
-                            column=row_name, boolean=unique
-                        ).run()
-
-    ###########################################################################
+            await self._run_add_tables()
+            await self._run_add_columns()
+            await self._run_drop_tables()
+            await self._run_rename_tables()
+            await self._run_drop_columns()
+            await self._run_rename_columns()
+            await self._run_alter_columns()
 
     async def run_backwards(self):
         print("Reversing MigrationManager ...")
@@ -491,89 +530,10 @@ class MigrationManager:
                 else:
                     raw()
 
-            ###################################################################
-            # Reverse add tables
-
-            for add_table in self.add_tables:
-                await add_table.to_table_class().alter().drop_table().run()
-
-            ###################################################################
-            # Reverse drop tables
-
-            if self.drop_tables:
-                print("Dropped tables can't currently be reversed.")
-
-            ###################################################################
-            # Reverse rename tables
-
-            for rename_table in self.rename_tables:
-                _Table: t.Type[Table] = type(
-                    rename_table.new_class_name, (Table,), {}
-                )
-                _Table._meta.tablename = rename_table.new_tablename
-
-                await _Table.alter().rename_table(
-                    new_name=rename_table.old_tablename
-                ).run()
-
-            ###################################################################
-            # Reverse add columns
-
-            for add_column in self.add_columns.add_columns:
-                _Table: t.Type[Table] = type(
-                    add_column.table_class_name, (Table,), {}
-                )
-                _Table._meta.tablename = add_column.tablename
-
-                await _Table.alter().drop_column(add_column.column).run()
-
-            ###################################################################
-            # Reverse drop columns
-
-            if self.drop_columns:
-                print("Dropped columns can't currently be reversed.")
-
-            ###################################################################
-            # Reverse rename columns
-
-            for rename_column in self.rename_columns.rename_columns:
-                _Table: t.Type[Table] = type(
-                    rename_column.table_class_name, (Table,), {}
-                )
-                _Table._meta.tablename = rename_column.tablename
-
-                await _Table.alter().rename_column(
-                    column=rename_column.new_column_name,
-                    new_name=rename_column.old_column_name,
-                ).run()
-
-            ###################################################################
-            # Alter columns
-
-            # TODO - need to find what the old values are.
-            # for alter_column in self.alter_columns.alter_columns:
-            #     _Table: t.Type[Table] = type(
-            #         alter_column.table_class_name, (Table,), {}
-            #     )
-            #     _Table._meta.tablename = alter_column.tablename
-
-            #     params = alter_column.params
-            #     row_name = alter_column.row_name
-
-            #     null = params.get("null")
-            #     if null is not None:
-            #         await _Table.alter().set_null(
-            #             column=row_name, boolean=null
-            #         ).run()
-
-            #     length = params.get("length")
-            #     if length is not None:
-            #         await _Table.alter().set_length(
-            #             column=row_name, length=length
-            #         ).run()
-
-            #     unique = params.get("unique")
-            #     if unique is not None:
-            #         await _Table.alter().set_unique(
-            #             column=row_name, boolean=unique
-            #         ).run()
+            await self._run_add_tables(backwards=True)
+            await self._run_add_columns(backwards=True)
+            await self._run_drop_tables(backwards=True)
+            await self._run_rename_tables(backwards=True)
+            await self._run_drop_columns(backwards=True)
+            await self._run_rename_columns(backwards=True)
+            await self._run_alter_columns(backwards=True)

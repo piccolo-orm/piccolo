@@ -24,6 +24,7 @@ class AlterColumn:
     column_name: str
     tablename: str
     params: t.Dict[str, t.Any]
+    old_params: t.Dict[str, t.Any]
 
 
 @dataclass
