@@ -18,11 +18,6 @@ class TestBaseMigrationManager(TestCase):
 
 
 class TestGetMigrationModules(TestCase):
-    """
-    This is tricky, because we need to have some example migrations on disk.
-    Just create them.
-    """
-
     @patch.object(BaseMigrationManager, "get_app_config")
     def test_get_migration_modules(self, get_app_config):
         get_app_config.return_value = AppConfig(
