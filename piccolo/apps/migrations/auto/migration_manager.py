@@ -322,6 +322,40 @@ class MigrationManager:
 
     ###########################################################################
 
+    def get_table_from_snaphot(
+        self,
+        app_name: str,
+        table_class_name: str,
+        offset: int = 0,
+        migration_id: t.Optional[str] = None,
+    ) -> t.Type[Table]:
+        """
+        Returns a Table subclass which can be used for modifying data within
+        a migration.
+
+        :param offset:
+            Lets you get a table as it appeared in an older migration. If the
+            offset is -1, the table will come from the previous migration.
+
+        """
+        from piccolo.apps.migrations.commands.base import BaseMigrationManager
+
+        if migration_id is None:
+            migration_id = self.migration_id
+
+        return (
+            BaseMigrationManager()
+            .get_table_from_snaphot(
+                app_name=app_name,
+                table_class_name=table_class_name,
+                max_migration_id=migration_id,
+                offset=offset,
+            )
+            .to_table_class()
+        )
+
+    ###########################################################################
+
     async def _run_alter_columns(self, backwards=False):
         for table_class_name in self.alter_columns.table_class_names:
             alter_columns = self.alter_columns.for_table_class_name(

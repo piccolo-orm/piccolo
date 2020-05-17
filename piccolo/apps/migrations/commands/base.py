@@ -126,7 +126,10 @@ class BaseMigrationManager:
         return sorted(list(migration_module_dict.keys()))
 
     def get_migration_managers(
-        self, app_name: str, max_migration_id: t.Optional[str] = None
+        self,
+        app_name: str,
+        max_migration_id: t.Optional[str] = None,
+        offset: int = 0,
     ) -> t.List[MigrationManager]:
         """
         :param max_migration_id:
@@ -154,20 +157,28 @@ class BaseMigrationManager:
                 else:
                     migration_managers.append(response)
 
-        return migration_managers
+        if offset > 0:
+            raise Exception(
+                "Positive offset values aren't currently supported"
+            )
+        elif offset < 0:
+            return migration_managers[0:offset]
+        else:
+            return migration_managers
 
     def get_table_from_snaphot(
         self,
         app_name: str,
         table_class_name: str,
         max_migration_id: t.Optional[str] = None,
+        offset: int = 0,
     ) -> DiffableTable:
         """
         This will generate a SchemaSnapshot up to the given migration ID, and
         will return a DiffableTable class from that snapshot.
         """
         migration_managers = self.get_migration_managers(
-            app_name=app_name, max_migration_id=max_migration_id
+            app_name=app_name, max_migration_id=max_migration_id, offset=offset
         )
         schema_snapshot = SchemaSnapshot(managers=migration_managers)
 
