@@ -123,6 +123,7 @@ class MigrationManager:
     """
 
     migration_id: str = ""
+    app_name: str = ""
     add_tables: t.List[DiffableTable] = field(default_factory=list)
     drop_tables: t.List[DiffableTable] = field(default_factory=list)
     rename_tables: t.List[RenameTable] = field(default_factory=list)
@@ -324,8 +325,8 @@ class MigrationManager:
 
     def get_table_from_snaphot(
         self,
-        app_name: str,
         table_class_name: str,
+        app_name: t.Optional[str],
         offset: int = 0,
         migration_id: t.Optional[str] = None,
     ) -> t.Type[Table]:
@@ -342,6 +343,9 @@ class MigrationManager:
 
         if migration_id is None:
             migration_id = self.migration_id
+
+        if app_name is None:
+            app_name = self.app_name
 
         return (
             BaseMigrationManager()
@@ -397,14 +401,31 @@ class MigrationManager:
 
     async def _run_drop_tables(self, backwards=False):
         if backwards:
-            print("Dropped tables can't currently be reversed.")
+            for diffable_table in self.drop_tables:
+                _Table = self.get_table_from_snaphot(
+                    table_class_name=diffable_table.class_name,
+                    app_name=self.app_name,
+                    offset=-1,
+                )
+                await _Table.create_table().run()
         else:
-            for table in self.drop_tables:
-                await table.to_table_class().alter().drop_table().run()
+            for diffable_table in self.drop_tables:
+                await diffable_table.to_table_class().alter().drop_table().run()
 
     async def _run_drop_columns(self, backwards=False):
         if backwards:
-            print("Dropped columns can't currently be reversed.")
+            for drop_column in self.drop_columns.drop_columns:
+                _Table = self.get_table_from_snaphot(
+                    table_class_name=drop_column.table_class_name,
+                    app_name=self.app_name,
+                    offset=-1,
+                )
+                column_to_restore = _Table._meta.get_column_by_name(
+                    drop_column.column_name
+                )
+                await _Table.alter().add_column(
+                    name=drop_column.column_name, column=column_to_restore
+                ).run()
         else:
             for table_class_name in self.drop_columns.table_class_names:
                 columns = self.drop_columns.for_table_class_name(

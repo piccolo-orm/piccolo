@@ -1,7 +1,9 @@
 import asyncio
+from unittest.mock import patch, MagicMock
 
 from asyncpg.exceptions import UniqueViolationError
 from piccolo.apps.migrations.auto import MigrationManager
+from piccolo.apps.migrations.commands.base import BaseMigrationManager
 from piccolo.columns import Varchar
 
 from tests.base import DBTestCase
@@ -193,3 +195,33 @@ class TestMigrationManager(DBTestCase):
         )
         response = self.run_sync("SELECT name FROM manager;")
         self.assertEqual(response, [{"name": "Dave"}, {"name": "Dave"}])
+
+    @patch.object(BaseMigrationManager, "get_migration_managers")
+    def test_drop_table(self, get_migration_managers: MagicMock):
+        self.run_sync("DROP TABLE IF EXISTS musician;")
+
+        name_column = Varchar()
+        name_column._meta.name = "name"
+
+        manager_1 = MigrationManager(migration_id="1", app_name="music")
+        manager_1.add_table(
+            class_name="Musician", tablename="musician", columns=[name_column]
+        )
+        asyncio.run(manager_1.run())
+
+        manager_2 = MigrationManager(migration_id="2", app_name="music")
+        manager_2.drop_table(class_name="Musician", tablename="musician")
+        asyncio.run(manager_2.run())
+
+        get_migration_managers.return_value = [manager_1]
+
+        self.assertTrue(not self.table_exists("musician"))
+
+        asyncio.run(manager_2.run_backwards())
+
+        get_migration_managers.assert_called_with(
+            app_name="music", max_migration_id="2", offset=-1
+        )
+        self.assertTrue(self.table_exists("musician"))
+
+        self.run_sync("DROP TABLE IF EXISTS musician;")

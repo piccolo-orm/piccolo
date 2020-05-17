@@ -33,6 +33,7 @@ class DBTestCase(TestCase):
 
     def table_exists(self, tablename: str):
         _Table: t.Type[Table] = type(tablename.upper(), (Table,), {})
+        _Table._meta.tablename = tablename
         return _Table.table_exists().run_sync()
 
     def create_table(self):

@@ -66,7 +66,10 @@ def _create_new_migration(app_config: AppConfig, auto=False) -> None:
             sys.exit(1)
 
         file_contents = render_template(
-            migration_id=_id, auto=True, alter_statements=alter_statements,
+            migration_id=_id,
+            auto=True,
+            alter_statements=alter_statements,
+            app_name=app_config.app_name,
         )
     else:
         file_contents = render_template(migration_id=_id, auto=False)
