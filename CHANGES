@@ -1,3 +1,7 @@
+0.10.5
+======
+Auto migrations can now run backwards.
+
 0.10.4
 ======
 Fixing some typos with Table imports. Showing a traceback when piccolo_conf
