@@ -1,3 +1,7 @@
+0.10.6
+======
+Sorting out packaging issue - old files were appearing in release.
+
 0.10.5
 ======
 Auto migrations can now run backwards.
