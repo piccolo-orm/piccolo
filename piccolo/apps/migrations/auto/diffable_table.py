@@ -117,14 +117,19 @@ class DiffableTable:
         alter_columns: t.List[AlterColumn] = []
 
         for column in value.columns:
-            # need to compare the params ...
             existing_column = self.columns_map.get(column._meta.name)
             if not existing_column:
                 # This is a new column - already captured above.
                 continue
             delta = compare_dicts(
-                serialise_params(existing_column._meta.params),
                 serialise_params(column._meta.params),
+                serialise_params(existing_column._meta.params),
+            )
+            old_params = serialise_params(
+                {
+                    key: existing_column._meta.params.get(key)
+                    for key, _ in delta.items()
+                }
             )
             if delta:
                 alter_columns.append(
@@ -133,6 +138,7 @@ class DiffableTable:
                         tablename=self.tablename,
                         column_name=column._meta.name,
                         params=delta,
+                        old_params=old_params,
                     )
                 )
 
