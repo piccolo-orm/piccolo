@@ -1,3 +1,7 @@
+0.10.8
+======
+Fixing a bug where Postgres versions without a patch number couldn't be parsed.
+
 0.10.7
 ======
 Improving release script.
