@@ -231,7 +231,7 @@ class PostgresEngine(Engine):
             return 0.0
         else:
             server_version = response[0]["server_version"]
-            major, minor, _ = server_version.split(".")
+            major, minor = server_version.split(".")[:2]
             version = float(f"{major}.{minor}")
             return version
 
