@@ -46,6 +46,17 @@ class TestUpdateOperators(DBTestCase):
 
         self.assertEqual(response["popularity"], 1010)
 
+    def test_add_column(self):
+        self.insert_row()
+
+        Band.update(
+            {Band.popularity: Band.popularity + Band.popularity}
+        ).run_sync()
+
+        response = Band.select(Band.popularity).first().run_sync()
+
+        self.assertEqual(response["popularity"], 2000)
+
     def test_radd(self):
         self.insert_row()
 

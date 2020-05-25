@@ -88,12 +88,31 @@ class Integer(Column):
 
         await Band.update({Band.popularity: Band.popularity + 100}).run()
         """
-        if not isinstance(value, (int, float)):
-            raise ValueError("Only integers and floats can be added.")
-        if reverse:
-            return QueryString(f"{{}} {operator} {self._meta.name} ", value)
+        if isinstance(value, Integer):
+            column: Integer = value
+            if len(column._meta.call_chain) > 0:
+                raise ValueError(
+                    "Adding values across joins isn't currently supported."
+                )
+            column_name = column._meta.name
+            if reverse:
+                return QueryString(
+                    f"{column_name} {operator} {self._meta.name}"
+                )
+            else:
+                return QueryString(
+                    f"{self._meta.name} {operator} {column_name}"
+                )
+        elif isinstance(value, (int, float)):
+            if reverse:
+                return QueryString(f"{{}} {operator} {self._meta.name}", value)
+            else:
+                return QueryString(f"{self._meta.name} {operator} {{}}", value)
         else:
-            return QueryString(f"{self._meta.name} {operator} {{}}", value)
+            raise ValueError(
+                "Only integers, floats, and other Integer columns can be "
+                "added."
+            )
 
     def __add__(self, value: int):
         return self._get_querystring("+", value)
