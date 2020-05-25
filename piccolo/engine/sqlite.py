@@ -1,6 +1,7 @@
 from __future__ import annotations
 import contextvars
 from dataclasses import dataclass
+from decimal import Decimal
 import os
 import sqlite3
 import typing as t
@@ -13,6 +14,31 @@ from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
+
+###############################################################################
+
+# We need to register some adapters so sqlite returns types which are more
+# consistent with the Postgres engine.
+
+
+def convert_numeric_out(value: bytes):
+    """
+    Converts the value coming from sqlite.
+    """
+    return Decimal(value.decode("ascii"))
+
+
+def convert_numeric_in(value):
+    """
+    Converts the value being passed into sqlite.
+    """
+    return value if isinstance(value, float) else float(value)
+
+
+sqlite3.register_converter("Numeric", convert_numeric_out)
+sqlite3.register_adapter(Decimal, convert_numeric_in)
+
+###############################################################################
 
 
 @dataclass

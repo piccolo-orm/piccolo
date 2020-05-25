@@ -1,6 +1,7 @@
 from __future__ import annotations
 import copy
 from datetime import datetime
+import decimal
 import typing as t
 import uuid
 
@@ -229,6 +230,78 @@ class Boolean(Column):
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
+
+
+###############################################################################
+
+
+class Numeric(Column):
+    """
+    Used to represent values precisely. The value is returned as a Decimal.
+    """
+
+    value_type = decimal.Decimal
+
+    @property
+    def column_type(self):
+        if self.precision and self.scale:
+            return f"NUMERIC({self.precision}, {self.scale})"
+        else:
+            return "NUMERIC"
+
+    def __init__(
+        self,
+        precision: t.Optional[int] = None,
+        scale: t.Optional[int] = None,
+        default: decimal.Decimal = decimal.Decimal(0.0),
+        **kwargs,
+    ) -> None:
+        if (precision, scale).count(None) == 1:
+            raise ValueError(
+                "The precision and scale args should either both be None, or "
+                "neither be None."
+            )
+
+        self.default = default
+        self.precision = precision
+        self.scale = scale
+        kwargs.update(
+            {"default": default, "precision": precision, "scale": scale}
+        )
+        super().__init__(**kwargs)
+
+
+class Decimal(Numeric):
+    """
+    An alias for Numeric.
+    """
+
+    pass
+
+
+class Real(Column):
+    """
+    Can be used instead of Numeric when precision isn't as important. The value
+    is returned as a float.
+    """
+
+    value_type = float
+
+    def __init__(self, default: float = 0.0, **kwargs) -> None:
+        self.default = default
+        kwargs.update({"default": default})
+        super().__init__(**kwargs)
+
+
+class Float(Real):
+    """
+    An alias for Real.
+    """
+
+    pass
+
+
+###############################################################################
 
 
 class ForeignKey(Integer):
