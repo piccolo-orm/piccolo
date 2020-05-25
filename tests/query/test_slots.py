@@ -37,8 +37,6 @@ class TestSlots(TestCase):
         ):
             class_name = query_class.__name__
 
-            kwargs = None
-
             with self.assertRaises(
                 AttributeError, msg=f"{class_name} didn't raised an error"
             ):
