@@ -4,7 +4,7 @@ import itertools
 import typing as t
 
 from piccolo.columns.base import Column, OnDelete, OnUpdate
-from piccolo.columns.column_types import ForeignKey, Varchar
+from piccolo.columns.column_types import ForeignKey, Varchar, Numeric
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 from piccolo.utils.warnings import colored_warning, Level
@@ -73,7 +73,10 @@ class DropColumn(AlterColumnStatement):
 
 @dataclass
 class AddColumn(AlterColumnStatement):
-    __slots__ = ("name",)
+    __slots__ = (
+        "column",
+        "name",
+    )
 
     column: Column
     name: str
@@ -153,7 +156,13 @@ class DropConstraint(AlterStatement):
 
 @dataclass
 class AddForeignKeyConstraint(AlterStatement):
-    __slots__ = ("constraint_name",)
+    __slots__ = (
+        "constraint_name",
+        "foreign_key_column_name",
+        "referenced_table_name",
+        "on_delete",
+        "on_update",
+    )
 
     constraint_name: str
     foreign_key_column_name: str
@@ -176,6 +185,25 @@ class AddForeignKeyConstraint(AlterStatement):
         return QueryString(query)
 
 
+@dataclass
+class SetPrecision(AlterColumnStatement):
+
+    __slots__ = ("precision", "scale")
+
+    precision: int
+    scale: int
+    column_type: str = "NUMERIC"
+
+    @property
+    def querystring(self) -> QueryString:
+        return QueryString(
+            f"ALTER COLUMN {{}} TYPE {self.column_type}({{}}, {{}})",
+            self.column_name,
+            self.precision,
+            self.scale,
+        )
+
+
 class Alter(Query):
 
     __slots__ = (
@@ -189,6 +217,7 @@ class Alter(Query):
         "_rename_table",
         "_set_length",
         "_unique",
+        "_set_precision",
     )
 
     def __init__(self, table: t.Type[Table]):
@@ -203,6 +232,7 @@ class Alter(Query):
         self._rename_table: t.List[RenameTable] = []
         self._set_length: t.List[SetLength] = []
         self._unique: t.List[Unique] = []
+        self._set_precision: t.List[SetPrecision] = []
 
     def add_column(self, name: str, column: Column) -> Alter:
         """
@@ -340,6 +370,17 @@ class Alter(Query):
             )
         )
         return self
+
+    def set_precision(
+        self,
+        column: t.Union[str, Numeric],
+        precision: t.Optional[int],
+        scale: t.Optional[int],
+    ):
+        kwargs: t.Dict[str, t.Any] = {"precision": precision, "scale": scale}
+        if isinstance(column, Numeric):
+            kwargs["column_type"] = column.__class__.__name__.upper()
+        self._set_precision.append(SetPrecision(**kwargs))
 
     async def response_handler(self, response):
         """
