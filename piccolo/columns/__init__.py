@@ -1,8 +1,12 @@
 from .column_types import (  # noqa
     Boolean,
+    Decimal,
+    Float,
     ForeignKey,
     Integer,
+    Numeric,
     PrimaryKey,
+    Real,
     Secret,
     Serial,
     Text,

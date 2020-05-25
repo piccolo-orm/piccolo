@@ -188,20 +188,23 @@ class AddForeignKeyConstraint(AlterStatement):
 @dataclass
 class SetPrecision(AlterColumnStatement):
 
-    __slots__ = ("precision", "scale")
+    __slots__ = ("precision", "scale", "column_type")
 
-    precision: int
-    scale: int
-    column_type: str = "NUMERIC"
+    precision: t.Optional[int]
+    scale: t.Optional[int]
+    column_type: str
 
     @property
     def querystring(self) -> QueryString:
-        return QueryString(
-            f"ALTER COLUMN {{}} TYPE {self.column_type}({{}}, {{}})",
-            self.column_name,
-            self.precision,
-            self.scale,
-        )
+        if self.precision and self.scale:
+            return QueryString(
+                f"ALTER COLUMN {self.column_name} TYPE "
+                f"{self.column_type}({self.precision}, {self.scale})"
+            )
+        else:
+            return QueryString(
+                f"ALTER COLUMN {self.column_name} TYPE {self.column_type}",
+            )
 
 
 class Alter(Query):
@@ -377,10 +380,20 @@ class Alter(Query):
         precision: t.Optional[int],
         scale: t.Optional[int],
     ):
-        kwargs: t.Dict[str, t.Any] = {"precision": precision, "scale": scale}
-        if isinstance(column, Numeric):
-            kwargs["column_type"] = column.__class__.__name__.upper()
-        self._set_precision.append(SetPrecision(**kwargs))
+        column_type = (
+            column.__class__.__name__.upper()
+            if isinstance(column, Numeric)
+            else "NUMERIC"
+        )
+        self._set_precision.append(
+            SetPrecision(
+                precision=precision,
+                scale=scale,
+                column=column,
+                column_type=column_type,
+            )
+        )
+        return self
 
     async def response_handler(self, response):
         """
@@ -446,6 +459,7 @@ class Alter(Query):
                 self._unique,
                 self._null,
                 self._set_length,
+                self._set_precision,
             )
         ]
 
