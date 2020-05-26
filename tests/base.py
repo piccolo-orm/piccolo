@@ -54,6 +54,13 @@ class DBTestCase(TestCase):
                     popularity SMALLINT
                 );"""
             )
+            self.run_sync(
+                """
+                CREATE TABLE ticket (
+                    id SERIAL PRIMARY KEY,
+                    price NUMERIC(5,2)
+                );"""
+            )
         elif ENGINE.engine_type == "sqlite":
             self.run_sync(
                 """
@@ -69,6 +76,13 @@ class DBTestCase(TestCase):
                     name VARCHAR(50),
                     manager INTEGER REFERENCES manager,
                     popularity SMALLINT
+                );"""
+            )
+            self.run_sync(
+                """
+                CREATE TABLE ticket (
+                    id SERIAL PRIMARY KEY,
+                    price NUMERIC(5,2)
                 );"""
             )
         else:
@@ -141,6 +155,7 @@ class DBTestCase(TestCase):
     def drop_table(self):
         self.run_sync("DROP TABLE IF EXISTS band CASCADE;")
         self.run_sync("DROP TABLE IF EXISTS manager CASCADE;")
+        self.run_sync("DROP TABLE IF EXISTS ticket CASCADE;")
 
     def setUp(self):
         self.create_table()

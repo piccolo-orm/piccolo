@@ -7,7 +7,14 @@ ENGINE = engine_finder()
 
 
 async def drop_tables():
-    for table in ["venue", "concert", "band", "manager", "migration"]:
+    for table in [
+        "venue",
+        "concert",
+        "band",
+        "manager",
+        "ticket",
+        "migration",
+    ]:
         await ENGINE._run_in_new_connection(f"DROP TABLE IF EXISTS {table}")
 
 

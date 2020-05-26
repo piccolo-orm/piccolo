@@ -244,30 +244,41 @@ class Numeric(Column):
 
     @property
     def column_type(self):
-        if self.precision and self.scale:
+        if self.digits:
             return f"NUMERIC({self.precision}, {self.scale})"
         else:
             return "NUMERIC"
 
+    @property
+    def precision(self):
+        """
+        The total number of digits allowed.
+        """
+        return self.digits[0]
+
+    @property
+    def scale(self):
+        """
+        The number of digits after the decimal point.
+        """
+        return self.digits[1]
+
     def __init__(
         self,
-        precision: t.Optional[int] = None,
-        scale: t.Optional[int] = None,
+        digits: t.Optional[t.Tuple[int, int]] = None,
         default: decimal.Decimal = decimal.Decimal(0.0),
         **kwargs,
     ) -> None:
-        if (precision, scale).count(None) == 1:
+        if isinstance(digits, tuple) and len(digits) != 2:
             raise ValueError(
-                "The precision and scale args should either both be None, or "
-                "neither be None."
+                "The `digits` argument should be a tuple of length 2, with "
+                "the first value being the precision, and the second value "
+                "being the scale."
             )
 
         self.default = default
-        self.precision = precision
-        self.scale = scale
-        kwargs.update(
-            {"default": default, "precision": precision, "scale": scale}
-        )
+        self.digits = digits
+        kwargs.update({"default": default, "digits": digits})
         super().__init__(**kwargs)
 
 

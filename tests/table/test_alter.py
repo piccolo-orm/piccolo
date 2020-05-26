@@ -145,20 +145,20 @@ class TestNull(DBTestCase):
 
 
 class Ticket(Table):
-    price = Numeric(precision=5, scale=2)
+    price = Numeric(digits=(5, 2))
 
 
 @postgres_only
-class TestSetPrecision(TestCase):
+class TestSetDigits(TestCase):
     def setUp(self):
         Ticket.create_table().run_sync()
 
     def tearDown(self):
         Ticket.alter().drop_table().run_sync()
 
-    def test_set_precision(self):
-        Ticket.alter().set_precision(
-            column=Ticket.price, precision=6, scale=2
+    def test_set_digits(self):
+        Ticket.alter().set_digits(
+            column=Ticket.price, digits=(6, 2)
         ).run_sync()
 
         Ticket.insert(Ticket(price=decimal.Decimal("9999.00"))).run_sync()

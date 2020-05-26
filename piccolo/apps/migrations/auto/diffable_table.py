@@ -131,6 +131,7 @@ class DiffableTable:
                     for key, _ in delta.items()
                 }
             )
+
             if delta:
                 alter_columns.append(
                     AlterColumn(

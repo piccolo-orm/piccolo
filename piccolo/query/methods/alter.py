@@ -186,20 +186,21 @@ class AddForeignKeyConstraint(AlterStatement):
 
 
 @dataclass
-class SetPrecision(AlterColumnStatement):
+class SetDigits(AlterColumnStatement):
 
-    __slots__ = ("precision", "scale", "column_type")
+    __slots__ = ("digits", "column_type")
 
-    precision: t.Optional[int]
-    scale: t.Optional[int]
+    digits: t.Optional[t.Tuple[int, int]]
     column_type: str
 
     @property
     def querystring(self) -> QueryString:
-        if self.precision and self.scale:
+        if self.digits is not None:
+            precision = self.digits[0]
+            scale = self.digits[1]
             return QueryString(
                 f"ALTER COLUMN {self.column_name} TYPE "
-                f"{self.column_type}({self.precision}, {self.scale})"
+                f"{self.column_type}({precision}, {scale})"
             )
         else:
             return QueryString(
@@ -220,7 +221,7 @@ class Alter(Query):
         "_rename_table",
         "_set_length",
         "_unique",
-        "_set_precision",
+        "_set_digits",
     )
 
     def __init__(self, table: t.Type[Table]):
@@ -235,7 +236,7 @@ class Alter(Query):
         self._rename_table: t.List[RenameTable] = []
         self._set_length: t.List[SetLength] = []
         self._unique: t.List[Unique] = []
-        self._set_precision: t.List[SetPrecision] = []
+        self._set_digits: t.List[SetDigits] = []
 
     def add_column(self, name: str, column: Column) -> Alter:
         """
@@ -374,24 +375,18 @@ class Alter(Query):
         )
         return self
 
-    def set_precision(
+    def set_digits(
         self,
         column: t.Union[str, Numeric],
-        precision: t.Optional[int],
-        scale: t.Optional[int],
+        digits: t.Optional[t.Tuple[int, int]],
     ):
         column_type = (
             column.__class__.__name__.upper()
             if isinstance(column, Numeric)
             else "NUMERIC"
         )
-        self._set_precision.append(
-            SetPrecision(
-                precision=precision,
-                scale=scale,
-                column=column,
-                column_type=column_type,
-            )
+        self._set_digits.append(
+            SetDigits(digits=digits, column=column, column_type=column_type,)
         )
         return self
 
@@ -459,7 +454,7 @@ class Alter(Query):
                 self._unique,
                 self._null,
                 self._set_length,
-                self._set_precision,
+                self._set_digits,
             )
         ]
 

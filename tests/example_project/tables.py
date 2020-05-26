@@ -1,5 +1,5 @@
 from piccolo.table import Table
-from piccolo.columns import Varchar, ForeignKey, Integer
+from piccolo.columns import Varchar, ForeignKey, Integer, Numeric
 
 
 ###############################################################################
@@ -29,3 +29,7 @@ class Concert(Table):
     band_1 = ForeignKey(Band)
     band_2 = ForeignKey(Band)
     venue = ForeignKey(Venue)
+
+
+class Ticket(Table):
+    price = Numeric(digits=(5, 2))

@@ -7,7 +7,7 @@ from piccolo.columns.column_types import Numeric
 
 class MyTable(Table):
     column_a = Numeric()
-    column_b = Numeric(precision=3, scale=2)
+    column_b = Numeric(digits=(3, 2))
 
 
 class TestNumeric(TestCase):

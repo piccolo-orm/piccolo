@@ -167,9 +167,9 @@ class TestMigrationManager(DBTestCase):
         self.assertEqual(response, [{"id": 1, "name": "Dave"}])
 
     @postgres_only
-    def test_alter_column(self):
+    def test_alter_column_unique(self):
         """
-        Test altering a column with MigrationManager.
+        Test altering a column uniqueness with MigrationManager.
         """
         manager = MigrationManager()
 
@@ -185,7 +185,8 @@ class TestMigrationManager(DBTestCase):
 
         with self.assertRaises(UniqueViolationError):
             self.run_sync(
-                "INSERT INTO manager VALUES (default, 'Dave'), (default, 'Dave');"
+                "INSERT INTO manager VALUES "
+                "(default, 'Dave'), (default, 'Dave');"
             )
 
         # Reverse
@@ -195,6 +196,41 @@ class TestMigrationManager(DBTestCase):
         )
         response = self.run_sync("SELECT name FROM manager;")
         self.assertEqual(response, [{"name": "Dave"}, {"name": "Dave"}])
+
+    def _get_precision_and_scale(self):
+        return self.run_sync(
+            "SELECT numeric_precision, numeric_scale "
+            "FROM information_schema.COLUMNS "
+            "WHERE TABLE_NAME = 'ticket' AND column_name = 'price';"
+        )
+
+    @postgres_only
+    def test_alter_column_digits(self):
+        """
+        Test altering a column digits with MigrationManager.
+        """
+        manager = MigrationManager()
+
+        manager.alter_column(
+            table_class_name="Ticket",
+            tablename="ticket",
+            column_name="price",
+            params={"digits": (6, 2)},
+            old_params={"digits": (5, 2)},
+        )
+
+        asyncio.run(manager.run())
+
+        self.assertEqual(
+            self._get_precision_and_scale(),
+            [{"numeric_precision": 6, "numeric_scale": 2}],
+        )
+
+        asyncio.run(manager.run_backwards())
+        self.assertEqual(
+            self._get_precision_and_scale(),
+            [{"numeric_precision": 5, "numeric_scale": 2}],
+        )
 
     @patch.object(BaseMigrationManager, "get_migration_managers")
     def test_drop_table(self, get_migration_managers: MagicMock):

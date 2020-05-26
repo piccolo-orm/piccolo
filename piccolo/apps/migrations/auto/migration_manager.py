@@ -399,6 +399,13 @@ class MigrationManager:
                         column=column, boolean=unique
                     ).run()
 
+                # None is a valid value, so retrieve ellipsis if not found.
+                digits = params.get("digits", ...)
+                if digits is not ...:
+                    await _Table.alter().set_digits(
+                        column=column.column_name, digits=digits,
+                    ).run()
+
     async def _run_drop_tables(self, backwards=False):
         if backwards:
             for diffable_table in self.drop_tables:
@@ -410,7 +417,9 @@ class MigrationManager:
                 await _Table.create_table().run()
         else:
             for diffable_table in self.drop_tables:
-                await diffable_table.to_table_class().alter().drop_table().run()
+                await (
+                    diffable_table.to_table_class().alter().drop_table().run()
+                )
 
     async def _run_drop_columns(self, backwards=False):
         if backwards:

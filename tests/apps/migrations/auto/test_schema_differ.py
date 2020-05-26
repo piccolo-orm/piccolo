@@ -1,7 +1,7 @@
 import typing as t
 from unittest import TestCase
 
-from piccolo.columns.column_types import Varchar
+from piccolo.columns.column_types import Varchar, Numeric
 from piccolo.apps.migrations.auto import (
     DiffableTable,
     SchemaDiffer,
@@ -147,4 +147,32 @@ class TestSchemaDiffer(TestCase):
         self.assertEqual(
             schema_differ.rename_columns[0],
             "manager.rename_column(table_class_name='Band', tablename='band', old_column_name='title', new_column_name='name')",  # noqa
+        )
+
+    def test_alter_column_precision(self):
+        price_1 = Numeric(digits=(4, 2))
+        price_1._meta.name = "price"
+
+        price_2 = Numeric(digits=(5, 2))
+        price_2._meta.name = "price"
+
+        schema: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Ticket", tablename="ticket", columns=[price_1],
+            )
+        ]
+        schema_snapshot: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Ticket", tablename="ticket", columns=[price_2],
+            )
+        ]
+
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
+        )
+
+        self.assertTrue(len(schema_differ.alter_columns) == 1)
+        self.assertEqual(
+            schema_differ.alter_columns[0],
+            "manager.alter_column(table_class_name='Ticket', tablename='ticket', column_name='price', params={'digits': (5, 2)}, old_params={'digits': (4, 2)})",  # noqa
         )
