@@ -137,3 +137,49 @@ A common use for a Secret field is a password.
 
     class Band(Table):
         password = Secret(length=100)
+
+Numeric
+-------
+
+Used for storing decimal numbers, when precision is important. An example
+use case is storing financial data.
+
+When creating the column, you specify how many digits are allowed using a
+tuple. The first value is the `precision`, which is the total number of digits
+allowed. The second value is the `range`, which specifies how many of those
+digits are after the decimal point. For example, to store monetary values up
+to £999.99, the digits argument is `(5,2)`.
+
+.. code-block:: python
+
+    class Ticket(Table):
+        price = Numeric(digits=(5,2))
+
+Piccolo uses Python `Decimal` numbers to represent numeric values.
+
+.. code-block:: python
+
+    from decimal import Decimal
+
+    ticket = Ticket(price=Decimal('50.0'))
+
+.. hint:: There is also a Decimal column type, which is an alias for Numeric.
+
+
+Real
+----
+
+Used for storing numbers, when the precision isn't important.
+
+.. code-block:: python
+
+    class Concert(Table):
+        rating = Real()
+
+Piccolo uses floats to represent real values.
+
+.. code-block:: python
+
+    concert = Concert(rating=7.8)
+
+.. hint:: There is also a Float column type, which is an alias for Real.
