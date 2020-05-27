@@ -2,36 +2,42 @@
 Populates a database with an example schema and data, and launches a shell
 for interacting with the data using Piccolo.
 """
+from decimal import Decimal
 import sys
 
-from piccolo import table
-from piccolo import columns
+from piccolo.table import Table
+from piccolo.columns import Varchar, ForeignKey, Integer, Numeric
 from piccolo.engine.base import Engine
 from piccolo.engine import SQLiteEngine, PostgresEngine
 
 
-class Manager(table.Table):
-    name = columns.Varchar(length=50)
+class Manager(Table):
+    name = Varchar(length=50)
 
 
-class Band(table.Table):
-    name = columns.Varchar(length=50)
-    manager = columns.ForeignKey(references=Manager, null=True)
-    popularity = columns.Integer()
+class Band(Table):
+    name = Varchar(length=50)
+    manager = ForeignKey(references=Manager, null=True)
+    popularity = Integer()
 
 
-class Venue(table.Table):
-    name = columns.Varchar(length=100)
-    capacity = columns.Integer(default=0)
+class Venue(Table):
+    name = Varchar(length=100)
+    capacity = Integer(default=0)
 
 
-class Concert(table.Table):
-    band_1 = columns.ForeignKey(Band)
-    band_2 = columns.ForeignKey(Band)
-    venue = columns.ForeignKey(Venue)
+class Concert(Table):
+    band_1 = ForeignKey(Band)
+    band_2 = ForeignKey(Band)
+    venue = ForeignKey(Venue)
 
 
-TABLES = (Manager, Band, Venue, Concert)
+class Ticket(Table):
+    concert = ForeignKey(Concert)
+    price = Numeric(digits=(5, 2))
+
+
+TABLES = (Manager, Band, Venue, Concert, Ticket)
 
 
 def populate():
@@ -70,6 +76,9 @@ def populate():
         band_1=pythonistas.id, band_2=rustaceans.id, venue=venue.id
     )
     concert.save().run_sync()
+
+    ticket = Ticket(concert=concert.id, price=Decimal("50.0"))
+    ticket.save().run_sync()
 
 
 def run(
