@@ -5,7 +5,7 @@ Alter
 
 This is used to modify an existing table.
 
-.. hint:: It is typically used in conjunction with migrations - see :ref:`Migrations`.
+.. hint:: You can use migrations instead of manually altering the schema - see :ref:`Migrations`.
 
 
 add_column

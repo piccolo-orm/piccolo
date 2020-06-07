@@ -13,6 +13,9 @@ letting Piccolo find it using ``engine_finder``.
 Explicit
 --------
 
+This can be useful when writing a simple script which needs to use Piccolo to
+connect to a database.
+
 .. code-block:: python
 
     from piccolo.engine.sqlite import SQLiteEngine
@@ -35,7 +38,14 @@ By default Piccolo uses ``engine_finder``. Piccolo will look for a file called
 ``piccolo_conf.py`` on the path, and will try and import a ``DB`` variable,
 which defines the engine.
 
-Here's an example config file:
+You can ask Piccolo to create the ``piccolo_conf.py`` file for you, using the
+following command:
+
+.. code-block:: bash
+
+    piccolo project new
+
+Here's an example ``piccolo_conf.py`` file:
 
 .. code-block:: python
 
@@ -45,8 +55,8 @@ Here's an example config file:
 
     DB = SQLiteEngine(path='my_db.sqlite')
 
-.. hint:: A good place for your config files is at the root of your project,
-    where the Python interpreter will be launched.
+.. hint:: A good place for your piccolo_conf file is at the root of your
+    project, where the Python interpreter will be launched.
 
 PICCOLO_CONF environment variable
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -89,11 +99,16 @@ variable accordingly.
 Engine types
 ------------
 
+.. hint:: Postgres is the preferred database to use, especially in
+ production. It is the most feature complete.
+
+
 SQLiteEngine
 ~~~~~~~~~~~~
 
 .. code-block:: python
 
+    # piccolo_conf.py
     from piccolo.engine.sqlite import SQLiteEngine
 
 
@@ -105,6 +120,7 @@ PostgresEngine
 
 .. code-block:: python
 
+    # piccolo_conf.py
     from piccolo.engine.postgres import PostgresEngine
 
 

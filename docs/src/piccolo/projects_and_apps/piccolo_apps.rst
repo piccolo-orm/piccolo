@@ -3,8 +3,11 @@
 Piccolo Apps
 ============
 
-By leveraging Piccolo apps you can unlock some useful functionality like auto
-migrations.
+By leveraging Piccolo apps you can:
+
+ * Modularise your code.
+ * Share your apps with other Piccolo users.
+ * Unlock some useful functionality like auto migrations.
 
 Creating an app
 ---------------
@@ -28,7 +31,8 @@ This will create a folder like this:
         tables.py
 
 
-It's important to register this app with your `piccolo_conf.py` app.
+It's important to register your new app with the ``APP_REGISTRY`` in
+`piccolo_conf.py`.
 
 .. code-block:: python
 
@@ -37,13 +41,13 @@ It's important to register this app with your `piccolo_conf.py` app.
 
 
 Anytime you invoke the `piccolo` command, you will now be able to perform
-operations on your app, the most important of which is :ref:`Migrations`.
+operations on your app, such as :ref:`Migrations`.
 
 AppConfig
 ---------
 
-Inside the `piccolo_app.py` file is an AppConfig instance. This is how you
-customise your app's settings.
+Inside your app's `piccolo_app.py` file is an ``AppConfig`` instance. This is
+how you customise your app's settings.
 
 .. code-block:: python
 
@@ -69,6 +73,21 @@ customise your app's settings.
         migration_dependencies=[],
         commands=[]
     )
+
+app_name
+~~~~~~~~
+
+This is used to identify your app, when using the `piccolo` CLI, for example:
+
+.. code-block:: bash
+
+    piccolo migrations forwards blog
+
+migrations_folder_path
+~~~~~~~~~~~~~~~~~~~~~~
+
+Specifies where your app's migrations are stored. By default, a folder called
+`piccolo_migrations` is used.
 
 table_classes
 ~~~~~~~~~~~~~

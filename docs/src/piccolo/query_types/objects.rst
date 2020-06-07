@@ -9,7 +9,7 @@ dictionaries (where each dictionary represents a row).
 This is useful in a lot of situations, but it's also useful to get objects
 back instead.
 
-In Piccolo, an instance of a Table represents a row. Lets do an
+In Piccolo, an instance of a Table represents a row. Let's do an
 example.
 
 .. code-block:: python
