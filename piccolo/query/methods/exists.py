@@ -25,7 +25,8 @@ class Exists(Query):
         return self
 
     async def response_handler(self, response) -> bool:
-        return response[0]["exists"]
+        # Convert to a bool - postgres returns True, and sqlite return 1.
+        return bool(response[0]["exists"])
 
     @property
     def querystrings(self) -> t.Sequence[QueryString]:
