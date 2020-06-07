@@ -153,9 +153,14 @@ class DBTestCase(TestCase):
         self.run_sync(f"INSERT INTO manager (name) VALUES {values_string};")
 
     def drop_table(self):
-        self.run_sync("DROP TABLE IF EXISTS band CASCADE;")
-        self.run_sync("DROP TABLE IF EXISTS manager CASCADE;")
-        self.run_sync("DROP TABLE IF EXISTS ticket CASCADE;")
+        if ENGINE.engine_type == "postgres":
+            self.run_sync("DROP TABLE IF EXISTS band CASCADE;")
+            self.run_sync("DROP TABLE IF EXISTS manager CASCADE;")
+            self.run_sync("DROP TABLE IF EXISTS ticket CASCADE;")
+        elif ENGINE.engine_type == "sqlite":
+            self.run_sync("DROP TABLE IF EXISTS band;")
+            self.run_sync("DROP TABLE IF EXISTS manager;")
+            self.run_sync("DROP TABLE IF EXISTS ticket;")
 
     def setUp(self):
         self.create_table()
