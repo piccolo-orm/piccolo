@@ -11,6 +11,7 @@ from tests.base import postgres_only
 
 
 class TestMigrationManager(DBTestCase):
+    @postgres_only
     def test_rename_column(self):
         """
         Test running a MigrationManager which contains a column rename
@@ -81,6 +82,7 @@ class TestMigrationManager(DBTestCase):
         with self.assertRaises(HasRun):
             asyncio.run(manager.run_backwards())
 
+    @postgres_only
     def test_add_table(self):
         """
         Test adding a table to a MigrationManager.
@@ -105,6 +107,7 @@ class TestMigrationManager(DBTestCase):
         self.assertEqual(self.table_exists("musician"), False)
         self.run_sync("DROP TABLE IF EXISTS musician;")
 
+    @postgres_only
     def test_add_column(self):
         """
         Test adding a column to a MigrationManager.
@@ -141,6 +144,7 @@ class TestMigrationManager(DBTestCase):
         response = self.run_sync("SELECT * FROM manager;")
         self.assertEqual(response, [{"id": 1, "name": "Dave"}])
 
+    @postgres_only
     def test_rename_table(self):
         """
         Test renaming a table with MigrationManager.
@@ -232,6 +236,7 @@ class TestMigrationManager(DBTestCase):
             [{"numeric_precision": 5, "numeric_scale": 2}],
         )
 
+    @postgres_only
     @patch.object(BaseMigrationManager, "get_migration_managers")
     def test_drop_table(self, get_migration_managers: MagicMock):
         self.run_sync("DROP TABLE IF EXISTS musician;")
