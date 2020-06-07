@@ -298,7 +298,7 @@ class Alter(Query):
         self._unique.append(Unique(column, boolean))
         return self
 
-    def set_length(self, column: t.Union[str, Varchar], length: int):
+    def set_length(self, column: t.Union[str, Varchar], length: int) -> Alter:
         """
         Change the max length of a varchar column. Unfortunately, this isn't
         supported by SQLite, but SQLite also doesn't enforce any length limits
@@ -379,7 +379,10 @@ class Alter(Query):
         self,
         column: t.Union[str, Numeric],
         digits: t.Optional[t.Tuple[int, int]],
-    ):
+    ) -> Alter:
+        """
+        Alter the precision and scale for a Numeric column.
+        """
         column_type = (
             column.__class__.__name__.upper()
             if isinstance(column, Numeric)
