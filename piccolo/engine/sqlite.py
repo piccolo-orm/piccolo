@@ -35,7 +35,15 @@ def convert_numeric_in(value):
     return value if isinstance(value, float) else float(value)
 
 
+def convert_int_out(value: bytes):
+    """
+    Converts the value coming from sqlite.
+    """
+    return int(float(value))
+
+
 sqlite3.register_converter("Numeric", convert_numeric_out)
+sqlite3.register_converter("Integer", convert_int_out)
 sqlite3.register_adapter(Decimal, convert_numeric_in)
 
 ###############################################################################
