@@ -2,11 +2,12 @@
 Populates a database with an example schema and data, and launches a shell
 for interacting with the data using Piccolo.
 """
+import datetime
 from decimal import Decimal
 import sys
 
 from piccolo.table import Table
-from piccolo.columns import Varchar, ForeignKey, Integer, Numeric
+from piccolo.columns import Varchar, ForeignKey, Integer, Numeric, Timestamp
 from piccolo.engine.base import Engine
 from piccolo.engine import SQLiteEngine, PostgresEngine
 
@@ -30,6 +31,7 @@ class Concert(Table):
     band_1 = ForeignKey(Band)
     band_2 = ForeignKey(Band)
     venue = ForeignKey(Venue)
+    starts = Timestamp()
 
 
 class Ticket(Table):
@@ -73,7 +75,10 @@ def populate():
     venue.save().run_sync()
 
     concert = Concert(
-        band_1=pythonistas.id, band_2=rustaceans.id, venue=venue.id
+        band_1=pythonistas.id,
+        band_2=rustaceans.id,
+        venue=venue.id,
+        starts=datetime.datetime.now() + datetime.timedelta(days=7),
     )
     concert.save().run_sync()
 
