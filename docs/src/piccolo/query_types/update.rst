@@ -14,7 +14,17 @@ This is used to update any rows in the table which match the criteria.
     >>> ).run_sync()
     []
 
-You can also add / subtract / multiply / divide values:
+As well as replacing values with new ones, you can also modify existing values, for
+instance by adding to an integer.
+
+
+Modifying values
+----------------
+
+Integer columns
+~~~~~~~~~~~~~~~
+
+You can add / subtract / multiply / divide values:
 
 .. code-block:: python
 
@@ -42,6 +52,31 @@ You can also add / subtract / multiply / divide values:
     Band.update({
         Band.popularity: 2000 - Band.popularity
     }).run_sync()
+
+Varchar / Text columns
+~~~~~~~~~~~~~~~~~~~~~~
+
+You can concatenate values:
+
+.. code-block:: python
+
+    # Append "!!!" to each band name.
+    Band.update({
+        Band.name: Band.name + "!!!"
+    }).run_sync()
+
+    # Concatenate the values in each column:
+    Band.update({
+        Band.name: Band.name + Band.name
+    }).run_sync()
+
+    # Prepend "!!!" to each band name.
+    Band.update({
+        Band.popularity: "!!!" + Band.popularity
+    }).run_sync()
+
+
+You can currently only combine two values together at a time.
 
 
 Query clauses
