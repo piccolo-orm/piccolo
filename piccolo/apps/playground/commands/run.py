@@ -5,9 +5,17 @@ for interacting with the data using Piccolo.
 import datetime
 from decimal import Decimal
 import sys
+import uuid
 
 from piccolo.table import Table
-from piccolo.columns import Varchar, ForeignKey, Integer, Numeric, Timestamp
+from piccolo.columns import (
+    Varchar,
+    ForeignKey,
+    Integer,
+    Numeric,
+    Timestamp,
+    UUID,
+)
 from piccolo.engine.base import Engine
 from piccolo.engine import SQLiteEngine, PostgresEngine
 
@@ -39,7 +47,11 @@ class Ticket(Table):
     price = Numeric(digits=(5, 2))
 
 
-TABLES = (Manager, Band, Venue, Concert, Ticket)
+class DiscountCode(Table):
+    code = UUID()
+
+
+TABLES = (Manager, Band, Venue, Concert, Ticket, DiscountCode)
 
 
 def populate():
@@ -84,6 +96,9 @@ def populate():
 
     ticket = Ticket(concert=concert.id, price=Decimal("50.0"))
     ticket.save().run_sync()
+
+    discount_code = DiscountCode(code=uuid.uuid4())
+    discount_code.save().run_sync()
 
 
 def run(
