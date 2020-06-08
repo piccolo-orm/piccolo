@@ -1,5 +1,5 @@
 from ..base import DBTestCase
-from ..example_project.tables import Band
+from ..example_project.tables import Band, Poster
 
 
 class TestUpdate(DBTestCase):
@@ -36,7 +36,7 @@ class TestUpdate(DBTestCase):
         self.assertEqual(response, [{"name": "Pythonistas3"}])
 
 
-class TestUpdateOperators(DBTestCase):
+class TestIntUpdateOperators(DBTestCase):
     def test_add(self):
         self.insert_row()
 
@@ -119,3 +119,71 @@ class TestUpdateOperators(DBTestCase):
         response = Band.select(Band.popularity).first().run_sync()
 
         self.assertEqual(response["popularity"], 1)
+
+
+class TestVarcharUpdateOperators(DBTestCase):
+    def test_add(self):
+        self.insert_row()
+
+        Band.update({Band.name: Band.name + "!!!"}).run_sync()
+
+        response = Band.select(Band.name).first().run_sync()
+
+        self.assertEqual(response["name"], "Pythonistas!!!")
+
+    def test_add_column(self):
+        self.insert_row()
+
+        Band.update({Band.name: Band.name + Band.name}).run_sync()
+
+        response = Band.select(Band.name).first().run_sync()
+
+        self.assertEqual(response["name"], "PythonistasPythonistas")
+
+    def test_radd(self):
+        self.insert_row()
+
+        Band.update({Band.name: "!!!" + Band.name}).run_sync()
+
+        response = Band.select(Band.name).first().run_sync()
+
+        self.assertEqual(response["name"], "!!!Pythonistas")
+
+
+class TestTextUpdateOperators(DBTestCase):
+    def setUp(self):
+        super().setUp()
+        Poster(content="Join us for this amazing show").save().run_sync()
+
+    def test_add(self):
+        Poster.update({Poster.content: Poster.content + "!!!"}).run_sync()
+
+        response = Poster.select(Poster.content).first().run_sync()
+
+        self.assertEqual(
+            response["content"], "Join us for this amazing show!!!"
+        )
+
+    def test_add_column(self):
+        self.insert_row()
+
+        Poster.update(
+            {Poster.content: Poster.content + Poster.content}
+        ).run_sync()
+
+        response = Poster.select(Poster.content).first().run_sync()
+
+        self.assertEqual(
+            response["content"], "Join us for this amazing show" * 2,
+        )
+
+    def test_radd(self):
+        self.insert_row()
+
+        Poster.update({Poster.content: "!!!" + Poster.content}).run_sync()
+
+        response = Poster.select(Poster.content).first().run_sync()
+
+        self.assertEqual(
+            response["content"], "!!!Join us for this amazing show"
+        )

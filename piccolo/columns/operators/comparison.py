@@ -1,51 +1,54 @@
-class Operator:
+from .base import Operator
+
+
+class ComparisonOperator(Operator):
     template = ""
 
 
-class IsNull(Operator):
+class IsNull(ComparisonOperator):
     template = "{name} IS NULL"
 
 
-class Equal(Operator):
+class Equal(ComparisonOperator):
     template = "{name} = {value}"
 
 
-class NotEqual(Operator):
+class NotEqual(ComparisonOperator):
     template = "{name} != {value}"
 
 
-class In(Operator):
+class In(ComparisonOperator):
     template = "{name} IN ({values})"
 
 
-class NotIn(Operator):
+class NotIn(ComparisonOperator):
     template = "{name} NOT IN ({values})"
 
 
-class Like(Operator):
+class Like(ComparisonOperator):
     template = "{name} LIKE {value}"
 
 
-class ILike(Operator):
+class ILike(ComparisonOperator):
     template = "{name} ILIKE {value}"
 
 
-class NotLike(Operator):
+class NotLike(ComparisonOperator):
     template = "{name} NOT LIKE {value}"
 
 
-class GreaterThan(Operator):
+class GreaterThan(ComparisonOperator):
     # Add permitted types???
     template = "{name} > {value}"
 
 
-class GreaterEqualThan(Operator):
+class GreaterEqualThan(ComparisonOperator):
     template = "{name} >= {value}"
 
 
-class LessThan(Operator):
+class LessThan(ComparisonOperator):
     template = "{name} < {value}"
 
 
-class LessEqualThan(Operator):
+class LessEqualThan(ComparisonOperator):
     template = "{name} <= {value}"

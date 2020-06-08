@@ -4,20 +4,20 @@ from dataclasses import dataclass, field
 from enum import Enum
 import typing as t
 
-from piccolo.columns.operators import (
+from piccolo.columns.operators.comparison import (
+    ComparisonOperator,
     Equal,
     GreaterEqualThan,
     GreaterThan,
+    ILike,
     In,
+    IsNull,
     LessEqualThan,
     LessThan,
     Like,
-    ILike,
-    IsNull,
     NotEqual,
     NotIn,
     NotLike,
-    Operator,
 )
 from piccolo.columns.combination import Where
 from piccolo.custom_types import Iterable
@@ -185,7 +185,7 @@ class Column(Selectable):
         if "%" not in value:
             raise ValueError("% is required for ilike operators")
         if self._meta.engine_type == "postgres":
-            operator: t.Type[Operator] = ILike
+            operator: t.Type[ComparisonOperator] = ILike
         else:
             colored_warning(
                 "SQLite doesn't support ILIKE currently, falling back to LIKE."

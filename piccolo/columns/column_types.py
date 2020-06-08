@@ -6,11 +6,109 @@ import typing as t
 import uuid
 
 from piccolo.columns.base import Column, OnDelete, OnUpdate, ForeignKeyMeta
+from piccolo.columns.operators.string import ConcatPostgres, ConcatSQLite
 from piccolo.querystring import Unquoted, QueryString
 
 if t.TYPE_CHECKING:
     from piccolo.table import Table  # noqa
     from piccolo.custom_types import Datetime  # noqa
+
+
+###############################################################################
+
+
+class ConcatDelegate:
+    """
+    Used in update queries to concatenate two strings - for example:
+
+    await Band.update({Band.name: Band.name + 'abc'}).run()
+    """
+
+    def get_querystring(
+        self,
+        column_name: str,
+        value: t.Union[str, Varchar, Text],
+        engine_type: str,
+        reverse=False,
+    ):
+        Concat = ConcatPostgres if engine_type == "postgres" else ConcatSQLite
+
+        if isinstance(value, (Varchar, Text)):
+            column: Column = value
+            if len(column._meta.call_chain) > 0:
+                raise ValueError(
+                    "Adding values across joins isn't currently supported."
+                )
+            other_column_name = column._meta.name
+            if reverse:
+                return QueryString(
+                    Concat.template.format(
+                        value_1=other_column_name, value_2=column_name
+                    )
+                )
+            else:
+                return QueryString(
+                    Concat.template.format(
+                        value_1=column_name, value_2=other_column_name
+                    )
+                )
+        elif isinstance(value, str):
+            if reverse:
+                value_1 = QueryString("CAST({} AS text)", value)
+                return QueryString(
+                    Concat.template.format(value_1="{}", value_2=column_name),
+                    value_1,
+                )
+            else:
+                value_2 = QueryString("CAST({} AS text)", value)
+                return QueryString(
+                    Concat.template.format(value_1=column_name, value_2="{}"),
+                    value_2,
+                )
+        else:
+            raise ValueError(
+                "Only str, Varchar columns, and Text columns can be added."
+            )
+
+
+class MathDelegate:
+    """
+    Used in update queries to perform math operations on columns, for example:
+
+    await Band.update({Band.popularity: Band.popularity + 100}).run()
+    """
+
+    def get_querystring(
+        self,
+        column_name: str,
+        operator: str,
+        value: t.Union[int, float, Integer],
+        reverse=False,
+    ):
+        if isinstance(value, Integer):
+            column: Integer = value
+            if len(column._meta.call_chain) > 0:
+                raise ValueError(
+                    "Adding values across joins isn't currently supported."
+                )
+            column_name = column._meta.name
+            if reverse:
+                return QueryString(f"{column_name} {operator} {column_name}")
+            else:
+                return QueryString(f"{column_name} {operator} {column_name}")
+        elif isinstance(value, (int, float)):
+            if reverse:
+                return QueryString(f"{{}} {operator} {column_name}", value)
+            else:
+                return QueryString(f"{column_name} {operator} {{}}", value)
+        else:
+            raise ValueError(
+                "Only integers, floats, and other Integer columns can be "
+                "added."
+            )
+
+
+###############################################################################
 
 
 class Varchar(Column):
@@ -19,6 +117,7 @@ class Varchar(Column):
     """
 
     value_type = str
+    concat_delegate: ConcatDelegate = ConcatDelegate()
 
     def __init__(self, length: int = 255, default: str = "", **kwargs) -> None:
         self.length = length
@@ -32,6 +131,21 @@ class Varchar(Column):
             return f"VARCHAR({self.length})"
         else:
             return "VARCHAR"
+
+    def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
+        engine_type = self._meta.table._meta.db.engine_type
+        return self.concat_delegate.get_querystring(
+            column_name=self._meta.name, value=value, engine_type=engine_type,
+        )
+
+    def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
+        engine_type = self._meta.table._meta.db.engine_type
+        return self.concat_delegate.get_querystring(
+            column_name=self._meta.name,
+            value=value,
+            engine_type=engine_type,
+            reverse=True,
+        )
 
 
 class Secret(Varchar):
@@ -51,10 +165,26 @@ class Text(Column):
     """
 
     value_type = str
+    concat_delegate: ConcatDelegate = ConcatDelegate()
 
     def __init__(self, default: str = "", **kwargs) -> None:
         self.default = default
         super().__init__(**kwargs)
+
+    def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
+        engine_type = self._meta.table._meta.db.engine_type
+        return self.concat_delegate.get_querystring(
+            column_name=self._meta.name, value=value, engine_type=engine_type
+        )
+
+    def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
+        engine_type = self._meta.table._meta.db.engine_type
+        return self.concat_delegate.get_querystring(
+            column_name=self._meta.name,
+            value=value,
+            engine_type=engine_type,
+            reverse=True,
+        )
 
 
 class UUID(Column):
@@ -78,72 +208,80 @@ class UUID(Column):
 
 
 class Integer(Column):
+
+    math_delegate = MathDelegate()
+
     def __init__(self, default: int = None, **kwargs) -> None:
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
-    def _get_querystring(self, operator: str, value: int, reverse=False):
-        """
-        Used in update queries - for example:
+    def __add__(self, value: t.Union[int, float, Integer]) -> QueryString:
+        return self.math_delegate.get_querystring(
+            column_name=self._meta.name, operator="+", value=value
+        )
 
-        await Band.update({Band.popularity: Band.popularity + 100}).run()
-        """
-        if isinstance(value, Integer):
-            column: Integer = value
-            if len(column._meta.call_chain) > 0:
-                raise ValueError(
-                    "Adding values across joins isn't currently supported."
-                )
-            column_name = column._meta.name
-            if reverse:
-                return QueryString(
-                    f"{column_name} {operator} {self._meta.name}"
-                )
-            else:
-                return QueryString(
-                    f"{self._meta.name} {operator} {column_name}"
-                )
-        elif isinstance(value, (int, float)):
-            if reverse:
-                return QueryString(f"{{}} {operator} {self._meta.name}", value)
-            else:
-                return QueryString(f"{self._meta.name} {operator} {{}}", value)
-        else:
-            raise ValueError(
-                "Only integers, floats, and other Integer columns can be "
-                "added."
-            )
+    def __radd__(self, value: t.Union[int, float, Integer]) -> QueryString:
+        return self.math_delegate.get_querystring(
+            column_name=self._meta.name,
+            operator="+",
+            value=value,
+            reverse=True,
+        )
 
-    def __add__(self, value: int):
-        return self._get_querystring("+", value)
+    def __sub__(self, value: t.Union[int, float, Integer]) -> QueryString:
+        return self.math_delegate.get_querystring(
+            column_name=self._meta.name, operator="-", value=value
+        )
 
-    def __radd__(self, value: int):
-        return self._get_querystring("+", value, reverse=True)
+    def __rsub__(self, value: t.Union[int, float, Integer]) -> QueryString:
+        return self.math_delegate.get_querystring(
+            column_name=self._meta.name,
+            operator="-",
+            value=value,
+            reverse=True,
+        )
 
-    def __sub__(self, value: int):
-        return self._get_querystring("-", value)
+    def __mul__(self, value: t.Union[int, float, Integer]) -> QueryString:
+        return self.math_delegate.get_querystring(
+            column_name=self._meta.name, operator="*", value=value
+        )
 
-    def __rsub__(self, value: int):
-        return self._get_querystring("-", value, reverse=True)
+    def __rmul__(self, value: t.Union[int, float, Integer]) -> QueryString:
+        return self.math_delegate.get_querystring(
+            column_name=self._meta.name,
+            operator="*",
+            value=value,
+            reverse=True,
+        )
 
-    def __mul__(self, value: int):
-        return self._get_querystring("*", value)
+    def __truediv__(self, value: t.Union[int, float, Integer]) -> QueryString:
+        return self.math_delegate.get_querystring(
+            column_name=self._meta.name, operator="/", value=value
+        )
 
-    def __rmul__(self, value: int):
-        return self._get_querystring("*", value, reverse=True)
+    def __rtruediv__(self, value: t.Union[int, float, Integer]) -> QueryString:
+        return self.math_delegate.get_querystring(
+            column_name=self._meta.name,
+            operator="/",
+            value=value,
+            reverse=True,
+        )
 
-    def __truediv__(self, value: int):
-        return self._get_querystring("/", value)
+    def __floordiv__(self, value: t.Union[int, float, Integer]) -> QueryString:
+        return self.math_delegate.get_querystring(
+            column_name=self._meta.name, operator="/", value=value
+        )
 
-    def __rtruediv__(self, value: int):
-        return self._get_querystring("/", value, reverse=True)
-
-    def __floordiv__(self, value: int):
-        return self._get_querystring("/", value)
-
-    def __rfloordiv__(self, value: int):
-        return self._get_querystring("/", value, reverse=True)
+    def __rfloordiv__(
+        self, value: t.Union[int, float, Integer]
+    ) -> QueryString:
+        return self.math_delegate.get_querystring(
+            column_name=self._meta.name,
+            operator="/",
+            value=value,
+            reverse=True,
+        )
 
 
 ###############################################################################

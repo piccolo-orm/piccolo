@@ -1,7 +1,7 @@
 from __future__ import annotations
 import typing as t
 
-from piccolo.columns.operators import Operator
+from piccolo.columns.operators.comparison import ComparisonOperator
 from piccolo.custom_types import Combinable, Iterable
 from piccolo.querystring import QueryString
 
@@ -63,7 +63,7 @@ class Where(CombinableMixin):
         column: "Column",
         value: t.Any = UNDEFINED,
         values: t.Union[Iterable, Undefined] = UNDEFINED,
-        operator: t.Type[Operator] = Operator,
+        operator: t.Type[ComparisonOperator] = ComparisonOperator,
     ) -> None:
         """
         We use the UNDEFINED value to show the value was deliberately

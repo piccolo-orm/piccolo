@@ -24,7 +24,8 @@ sqlite_only = pytest.mark.skipif(
 
 class DBTestCase(TestCase):
     """
-    Using raw SQL, otherwise tests are too reliant on other Piccolo code.
+    Using raw SQL where possible, otherwise the tests are too reliant on other
+    Piccolo code.
     """
 
     def run_sync(self, query):
@@ -36,7 +37,7 @@ class DBTestCase(TestCase):
         _Table._meta.tablename = tablename
         return _Table.table_exists().run_sync()
 
-    def create_table(self):
+    def create_tables(self):
         if ENGINE.engine_type == "postgres":
             self.run_sync(
                 """
@@ -61,6 +62,13 @@ class DBTestCase(TestCase):
                     price NUMERIC(5,2)
                 );"""
             )
+            self.run_sync(
+                """
+                CREATE TABLE poster (
+                    id SERIAL PRIMARY KEY,
+                    content TEXT
+                );"""
+            )
         elif ENGINE.engine_type == "sqlite":
             self.run_sync(
                 """
@@ -83,6 +91,13 @@ class DBTestCase(TestCase):
                 CREATE TABLE ticket (
                     id SERIAL PRIMARY KEY,
                     price NUMERIC(5,2)
+                );"""
+            )
+            self.run_sync(
+                """
+                CREATE TABLE poster (
+                    id SERIAL PRIMARY KEY,
+                    content TEXT
                 );"""
             )
         else:
@@ -152,18 +167,20 @@ class DBTestCase(TestCase):
         values_string = ",".join(values)
         self.run_sync(f"INSERT INTO manager (name) VALUES {values_string};")
 
-    def drop_table(self):
+    def drop_tables(self):
         if ENGINE.engine_type == "postgres":
             self.run_sync("DROP TABLE IF EXISTS band CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS manager CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS ticket CASCADE;")
+            self.run_sync("DROP TABLE IF EXISTS poster CASCADE;")
         elif ENGINE.engine_type == "sqlite":
             self.run_sync("DROP TABLE IF EXISTS band;")
             self.run_sync("DROP TABLE IF EXISTS manager;")
             self.run_sync("DROP TABLE IF EXISTS ticket;")
+            self.run_sync("DROP TABLE IF EXISTS poster;")
 
     def setUp(self):
-        self.create_table()
+        self.create_tables()
 
     def tearDown(self):
-        self.drop_table()
+        self.drop_tables()
