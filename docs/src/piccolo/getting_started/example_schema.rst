@@ -12,11 +12,11 @@ This is the schema used by the example queries throughout the docs.
 
 
     class Manager(Table):
-        name = Varchar(max_length=100)
+        name = Varchar(length=100)
 
 
     class Band(Table):
-        name = Varchar(max_length=100)
-        manager = Varchar(max_length=100)
+        name = Varchar(length=100)
+        manager = Varchar(length=100)
 
 To understand more about defining your own schemas, see :ref:`DefiningSchema`.
