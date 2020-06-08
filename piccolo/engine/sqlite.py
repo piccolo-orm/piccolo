@@ -5,6 +5,7 @@ from decimal import Decimal
 import os
 import sqlite3
 import typing as t
+import uuid
 
 import aiosqlite
 from aiosqlite import Cursor, Connection
@@ -21,30 +22,56 @@ from piccolo.utils.sync import run_sync
 # consistent with the Postgres engine.
 
 
+def convert_numeric_in(value):
+    """
+    Convert any Decimal values into floats.
+    """
+    return float(value)
+
+
+def convert_uuid_in(value):
+    """
+    Converts the UUID value being passed into sqlite.
+    """
+    return str(value)
+
+
 def convert_numeric_out(value: bytes):
     """
-    Converts the value coming from sqlite.
+    Convert float values into Decimals.
     """
     return Decimal(value.decode("ascii"))
 
 
-def convert_numeric_in(value):
-    """
-    Converts the value being passed into sqlite.
-    """
-    return value if isinstance(value, float) else float(value)
-
-
 def convert_int_out(value: bytes):
     """
-    Converts the value coming from sqlite.
+    Make sure Integer values are actually of type int.
     """
     return int(float(value))
 
 
+def convert_uuid_out(value: bytes):
+    """
+    If the value is a uuid, convert it to a UUID instance.
+
+    Performance wise, this isn't great, but SQLite isn't the preferred solution
+    in production, so it's acceptable.
+    """
+    decoded = value.decode("utf8")
+    try:
+        _uuid = uuid.UUID(decoded)
+    except ValueError:
+        return decoded
+    else:
+        return _uuid
+
+
 sqlite3.register_converter("Numeric", convert_numeric_out)
 sqlite3.register_converter("Integer", convert_int_out)
+sqlite3.register_converter("Varchar", convert_uuid_out)
+
 sqlite3.register_adapter(Decimal, convert_numeric_in)
+sqlite3.register_adapter(uuid.UUID, convert_uuid_in)
 
 ###############################################################################
 
