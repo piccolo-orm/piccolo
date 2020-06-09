@@ -15,6 +15,7 @@ from piccolo.apps.migrations.auto import (
     DiffableTable,
     SchemaDiffer,
 )
+from piccolo.engine import SQLiteEngine
 
 
 TEMPLATE_DIRECTORY = os.path.join(
@@ -138,6 +139,10 @@ def new(app_name: str, auto: bool = False):
         import piccolo_conf
     except ImportError:
         print("Can't find piccolo_conf")
+        sys.exit(1)
+
+    if auto and isinstance(getattr(piccolo_conf, "DB"), SQLiteEngine):
+        print("Auto migrations aren't currently supported by SQLite.")
         sys.exit(1)
 
     try:
