@@ -1,6 +1,14 @@
 Changes
 =======
 
+0.11.1
+------
+ * Added ``table_finder``, for use in ``AppConfig``.
+ * Added support for concatenating strings using an update query.
+ * Added more tables to the playground, with more column types.
+ * Improved consistency between SQLite and Postgres with ``UUID`` columns,
+   ``Integer`` columns, and ``exists`` queries.
+
 0.11.0
 ------
 Added Numeric and Real column types.
