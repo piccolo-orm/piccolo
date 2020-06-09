@@ -17,6 +17,8 @@ Welcome to Piccolo's documentation!
    piccolo/playground/index
    piccolo/ecosystem/index
    piccolo/contributing/index
+   piccolo/changes/index
+
 
 Indices and tables
 ==================

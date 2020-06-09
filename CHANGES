@@ -1,187 +1,190 @@
+Changes
+=======
+
 0.11.0
-======
+------
 Added Numeric and Real column types.
 
 0.10.8
-======
+------
 Fixing a bug where Postgres versions without a patch number couldn't be parsed.
 
 0.10.7
-======
+------
 Improving release script.
 
 0.10.6
-======
+------
 Sorting out packaging issue - old files were appearing in release.
 
 0.10.5
-======
+------
 Auto migrations can now run backwards.
 
 0.10.4
-======
+------
 Fixing some typos with Table imports. Showing a traceback when piccolo_conf
 can't be found by engine_finder.
 
 0.10.3
-======
+------
 Adding missing jinja templates to setup.py.
 
 0.10.2
-======
+------
 Fixing a bug when using 'piccolo project new' in a new project.
 
 0.10.1
-======
+------
 Fixing bug with enum default values.
 
 0.10.0
-======
+------
 Using targ for the CLI. Refactored some core code into apps.
 
 0.9.3
-=====
+-----
 Suppressing exceptions when trying to find the Postgres version, to avoid
 an ImportError when importing piccolo_conf.py.
 
 0.9.2
-=====
+-----
 .first() bug fix.
 
 0.9.1
-=====
+-----
 Auto migration fixes, and .first() method now returns None is no match is
 found.
 
 0.9.0
-=====
+-----
 Added support for auto migrations.
 
 0.8.3
-=====
+-----
 Can use operators in update queries, and fixing 'new' migration command.
 
 0.8.2
-=====
+-----
 Fixing release issue.
 
 0.8.1
-=====
+-----
 Improved transaction support - can now use a context manager. Added Secret,
 BigInt and SmallInt column types. Foreign keys can now reference the parent
 table.
 
 0.8.0
-=====
+-----
 Fixing bug when joining across several tables. Can pass values directly into
 the Table.update method. Added 'if_not_exists' option when creating a table.
 
 0.7.7
-=====
+-----
 Column sequencing matches the definition order.
 
 0.7.6
-=====
+-----
 Supporting ON DELETE and ON UPDATE for foreign keys. Recording reverse foreign
 key relationships.
 
 0.7.5
-=====
+-----
 Make response_handler async. Made it easier to rename columns.
 
 0.7.4
-=====
+-----
 Bug fixes and dependency updates.
 
 0.7.3
-=====
+-----
 Adding missing __int__.py file.
 
 0.7.2
-=====
+-----
 Changed migration import paths.
 
 0.7.1
-=====
+-----
 Added remove_db_file method to SQLiteEngine - makes testing easier.
 
 0.7.0
-=====
+-----
 Renamed `create` to `create_table`, and can register commands via
 `piccolo_conf`.
 
 0.6.1
-=====
+-----
 Adding missing __init__.py files.
 
 0.6.0
-=====
+-----
 Moved BaseUser. Migration refactor.
 
 0.5.2
-=====
+-----
 Moved drop table under alter - to help prevent accidental drops.
 
 0.5.1
-=====
+-----
 Added 'batch' support.
 
 0.5.0
-=====
+-----
 Refactored the Table Metaclass - much simpler now. Scoped more of the
 attributes on Column to avoid name clashes. Added engine_finder to make
 database configuration easier.
 
 0.4.1
-=====
+-----
 SQLite is now returning datetime objects for timestamp fields.
 
 0.4.0
-=====
+-----
 Refactored to improve code completion, along with bug fixes.
 
 0.3.7
-=====
+-----
 Allowing Update queries in SQLite
 
 0.3.6
-=====
+-----
 Falling back to LIKE instead of ILIKE for SQLite
 
 0.3.5
-=====
+-----
 Renamed User to BaseUser.
 
 0.3.4
-=====
+-----
 Added ilike.
 
 0.3.3
-=====
+-----
 Added value types to columns.
 
 0.3.2
-=====
+-----
 Default values infer the engine type.
 
 0.3.1
-=====
+-----
 Update click version.
 
 0.3
-===
+---
 Tweaked API to support more auto completion. Join support in where clause.
 Basic SQLite support - mostly for playground.
 
 0.2
-===
+---
 Using QueryString internally to represent queries, instead of raw strings, to
 harden against SQL injection.
 
 0.1.2
-=====
+-----
 Allowing joins across multiple tables.
 
 0.1.1
-=====
+-----
 Added playground.
