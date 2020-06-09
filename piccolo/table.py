@@ -103,6 +103,17 @@ class Table(metaclass=TableMetaclass):
         """
         Automatically populate the _meta, which includes the tablename, and
         columns.
+
+        :param tablename:
+            Specify a custom tablename. By default the classname is converted
+            to snakecase.
+        :param db:
+            Manually specify an engine to use for connecting to the database.
+            Useful when writing simple scripts. If not set, the engine is
+            imported from piccolo_conf.py using ``engine_finder``.
+        :param tags:
+            Used for filtering, for example by ``table_finder``.
+
         """
         tablename = tablename if tablename else _camel_to_snake(cls.__name__)
 

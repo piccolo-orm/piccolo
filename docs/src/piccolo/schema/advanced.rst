@@ -47,3 +47,18 @@ Here is an example of a more complex ``Readable``.
 
 As you can see, the template can include multiple columns, and can contain your
 own text.
+
+-------------------------------------------------------------------------------
+
+.. _TableTags:
+
+Table Tags
+----------
+
+``Table`` subclasses can be given tags. The tags can be used for filtering,
+for example with ``table_finder`` (see :ref:`TableFinder`).
+
+.. code-block:: python
+
+    class Band(Table, tags=["music"]):
+        name = Varchar(length=100)

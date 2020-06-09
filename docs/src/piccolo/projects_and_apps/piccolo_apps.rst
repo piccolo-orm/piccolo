@@ -105,6 +105,8 @@ auto migrations (see :ref:`Migrations`).
 You can register them manually, see the example above, or can use
 ``table_finder``.
 
+.. _TableFinder:
+
 table_finder
 ------------
 
@@ -126,6 +128,8 @@ list of modules.
 
 The module path should be from the root of the project (the same directory as
 your ``piccolo_conf.py`` file, rather than a relative path).
+
+You can filter the ``Table`` subclasses returned using tags (see :ref:`TableTags`).
 
 .. currentmodule:: piccolo.conf.apps
 
@@ -160,7 +164,7 @@ and docstrings. Here's an example:
         """
         print(name)
 
-We then register it with the `AppConfig`.
+We then register it with the ``AppConfig``.
 
 .. code-block:: python
 
