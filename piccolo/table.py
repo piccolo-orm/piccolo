@@ -40,6 +40,7 @@ class TableMeta:
     default_columns: t.List[Column] = field(default_factory=list)
     non_default_columns: t.List[Column] = field(default_factory=list)
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
+    tags: t.List[str] = field(default_factory=list)
     _db: t.Optional[Engine] = None
 
     # Records reverse foreign key relationships - i.e. when the current table
@@ -97,7 +98,7 @@ class Table(metaclass=TableMetaclass):
         cls,
         tablename: t.Optional[str] = None,
         db: t.Optional[Engine] = None,
-        app: t.Optional[str] = None,
+        tags: t.List[str] = [],
     ):
         """
         Automatically populate the _meta, which includes the tablename, and
@@ -133,7 +134,7 @@ class Table(metaclass=TableMetaclass):
 
                 if isinstance(column, PrimaryKey):
                     # We want it at the start.
-                    columns = [column] + columns
+                    columns = [column] + columns  # type: ignore
                     default_columns.append(column)
                 else:
                     columns.append(column)
@@ -152,6 +153,7 @@ class Table(metaclass=TableMetaclass):
             default_columns=default_columns,
             non_default_columns=non_default_columns,
             foreign_key_columns=foreign_key_columns,
+            tags=tags,
             _db=db,
         )
 

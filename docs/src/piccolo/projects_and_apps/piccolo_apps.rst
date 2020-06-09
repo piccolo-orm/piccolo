@@ -1,16 +1,20 @@
 .. _PiccoloApps:
 
+############
 Piccolo Apps
-============
+############
 
 By leveraging Piccolo apps you can:
 
- * Modularise your code.
- * Share your apps with other Piccolo users.
- * Unlock some useful functionality like auto migrations.
+* Modularise your code.
+* Share your apps with other Piccolo users.
+* Unlock some useful functionality like auto migrations.
 
+-------------------------------------------------------------------------------
+
+***************
 Creating an app
----------------
+***************
 
 Run the following command within your project:
 
@@ -19,7 +23,7 @@ Run the following command within your project:
     piccolo app new my_app
 
 
-This will create a folder like this:
+Where `my_app` is your new app's name. This will create a folder like this:
 
 .. code-block:: bash
 
@@ -43,8 +47,11 @@ It's important to register your new app with the ``APP_REGISTRY`` in
 Anytime you invoke the `piccolo` command, you will now be able to perform
 operations on your app, such as :ref:`Migrations`.
 
+-------------------------------------------------------------------------------
+
+*********
 AppConfig
----------
+*********
 
 Inside your app's `piccolo_app.py` file is an ``AppConfig`` instance. This is
 how you customise your app's settings.
@@ -75,7 +82,7 @@ how you customise your app's settings.
     )
 
 app_name
-~~~~~~~~
+========
 
 This is used to identify your app, when using the `piccolo` CLI, for example:
 
@@ -84,24 +91,55 @@ This is used to identify your app, when using the `piccolo` CLI, for example:
     piccolo migrations forwards blog
 
 migrations_folder_path
-~~~~~~~~~~~~~~~~~~~~~~
+======================
 
 Specifies where your app's migrations are stored. By default, a folder called
 `piccolo_migrations` is used.
 
 table_classes
-~~~~~~~~~~~~~
+=============
 
-Use this to register your app's tables. This is important for auto migrations (see :ref:`Migrations`).
+Use this to register your app's ``Table`` subclasses. This is important for
+auto migrations (see :ref:`Migrations`).
+
+You can register them manually, see the example above, or can use
+``table_finder``.
+
+table_finder
+------------
+
+Instead of manually registering ``Table`` subclasses, you can use
+``table_finder`` to automatically import any ``Table`` subclasses from a given
+list of modules.
+
+.. code-block:: python
+
+    from piccolo.conf.apps import table_finder
+
+    APP_CONFIG = AppConfig(
+        app_name='blog',
+        migrations_folder_path=os.path.join(CURRENT_DIRECTORY, 'piccolo_migrations'),
+        table_classes=table_finder(modules=['blog.tables']),
+        migration_dependencies=[],
+        commands=[]
+    )
+
+The module path should be from the root of the project (the same directory as
+your ``piccolo_conf.py`` file, rather than a relative path).
+
+.. currentmodule:: piccolo.conf.apps
+
+.. autofunction:: table_finder
+
 
 migration_dependencies
-~~~~~~~~~~~~~~~~~~~~~~
+======================
 
 Used to specify other Piccolo apps whose migrations need to be run before the
 current app's migrations.
 
 commands
-~~~~~~~~
+========
 
 You can register functions and coroutines, which are automatically added to
 the `piccolo` CLI.
@@ -155,8 +193,11 @@ app.
 Piccolo itself is bundled with several apps - have a look at the source code
 for inspiration.
 
+-------------------------------------------------------------------------------
+
+************
 Sharing Apps
-------------
+************
 
 By breaking up your project into apps, the project becomes more maintainable.
 You can also share these apps between projects, and they can even be installed

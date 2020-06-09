@@ -35,5 +35,9 @@ class Ticket(Table):
     price = Numeric(digits=(5, 2))
 
 
-class Poster(Table):
+class Poster(Table, tags=["special"]):
+    """
+    Has tags for tests which need it.
+    """
+
     content = Text()

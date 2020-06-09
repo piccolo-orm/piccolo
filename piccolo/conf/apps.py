@@ -3,8 +3,58 @@ from dataclasses import dataclass, field
 from importlib import import_module
 import typing as t
 
-if t.TYPE_CHECKING:
-    from piccolo.table import Table
+from piccolo.table import Table
+
+
+def table_finder(
+    modules: t.Sequence[str],
+    include_tags: t.Sequence[str] = ["__all__"],
+    exclude_tags: t.Sequence[str] = [],
+) -> t.List[t.Type[Table]]:
+    """
+    Rather than explicitly importing and registering table classes with the
+    AppConfig, ``table_finder`` can be used instead. It imports any ``Table``
+    subclasses in the given modules. Tags can be used to limit which ``Table``
+    subclasses are imported.
+
+    :param modules:
+        The module paths to check for ``Table`` subclasses. For example,
+        ['blog.tables']. The path should be from the root of your project,
+        not a relative path.
+    :param include_tags:
+        If the ``Table`` subclass has one of these tags, it will be
+        imported. The special tag '__all__' will import all ``Table``
+        subclasses found.
+    :param exclude_tags:
+        If the ``Table`` subclass has any of these tags, it won't be
+        imported. `exclude_tags` overrides `include_tags`.
+
+    """
+    table_subclasses: t.List[t.Type[Table]] = []
+
+    for module_path in modules:
+        try:
+            module = import_module(module_path)
+        except ImportError as exception:
+            print(f"Unable to import {module_path}")
+            raise exception
+
+        object_names = [i for i in dir(module) if not i.startswith("_")]
+
+        for object_name in object_names:
+            _object = getattr(module, object_name)
+            if issubclass(_object, Table) and _object is not Table:
+                table: Table = _object
+                if exclude_tags and set(table._meta.tags).intersection(
+                    set(exclude_tags)
+                ):
+                    continue
+                elif "__all__" in include_tags:
+                    table_subclasses.append(_object)
+                elif set(table._meta.tags).intersection(set(include_tags)):
+                    table_subclasses.append(_object)
+
+    return table_subclasses
 
 
 @dataclass

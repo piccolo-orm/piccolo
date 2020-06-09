@@ -390,7 +390,7 @@ Example
 Type
 ====
 
-``UUID`` uses the ``UUID`` Python type for values.
+``UUID`` uses the ``UUID`` type for values.
 
 .. code-block:: python
 
