@@ -4,9 +4,9 @@ python:
   - "3.7"
   - "3.8"
 env:
-  - POSTGRESQL_VERSION = 11.1
-  - POSTGRESQL_VERSION = 10.6
-  - POSTGRESQL_VERSION = 9.6
+  - POSTGRESQL_VERSION=11.1
+  - POSTGRESQL_VERSION=10.6
+  - POSTGRESQL_VERSION=9.6
 before_install:
   - sudo service postgresql stop && sudo service postgresql start $POSTGRESQL_VERSION
 install:
@@ -17,6 +17,6 @@ before_script:
   - psql -c "CREATE USER piccolo PASSWORD 'piccolo';" -U postgres
   - psql -c "GRANT ALL PRIVILEGES ON DATABASE piccolo TO piccolo;" -U postgres
 script:
-  - cd tests && ./run-tests.sh
+  - cd tests && ./travis.sh
 after_success:
   - cd .. && coveralls
