@@ -1,0 +1,26 @@
+{% if engine == 'postgres' %}
+from piccolo.engine.postgres import PostgresEngine
+{% else %}
+from piccolo.engine.sqlite import SQLiteEngine
+{% endif %}
+
+from piccolo.conf.apps import AppRegistry
+
+
+{% if engine == 'postgres' %}
+DB = PostgresEngine(
+    config={
+        "database": "piccolo_project",
+        "user": "postgres",
+        "password": "",
+        "host": "localhost",
+        "port": 5432,
+    }
+)
+{% else %}
+DB = SQLiteEngine(path="piccolo_project.sqlite")
+{% endif %}
+
+APP_REGISTRY = AppRegistry(
+    apps=["home.piccolo_app", "piccolo_admin.piccolo_app"]
+)

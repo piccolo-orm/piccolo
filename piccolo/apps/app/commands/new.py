@@ -36,7 +36,7 @@ def new_app(app_name: str):
             template = JINJA_ENV.get_template(filename + ".jinja")
             file_contents = template.render(**context)
             file_contents = black.format_str(
-                file_contents, mode=black.FileMode(line_length=82)
+                file_contents, mode=black.FileMode(line_length=80)
             )
             f.write(file_contents)
 

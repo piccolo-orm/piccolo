@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base.html.jinja" %}
 
 {% block content %}
     <h1>{{ content }}</h1>

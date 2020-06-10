@@ -16,7 +16,7 @@ app = Starlette(
     ],
 )
 
-
+{% if engine == 'postgres' %}
 @app.on_event("startup")
 async def open_database_connection_pool():
     engine = engine_finder()
@@ -27,9 +27,15 @@ async def open_database_connection_pool():
 async def close_database_connection_pool():
     engine = engine_finder()
     await engine.close_connnection_pool()
-
+{% endif %}
 
 if __name__ == "__main__":
+    {% if server == 'uvicorn' %}
     import uvicorn
 
     uvicorn.run(app)
+    {% elif server == 'Hypercorn' %}
+    from hypercorn.asyncio import serve
+
+    serve(app)
+    {% endif %}
