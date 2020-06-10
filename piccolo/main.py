@@ -4,8 +4,9 @@ import sys
 from targ import CLI
 
 from piccolo.conf.apps import AppRegistry
-from piccolo.apps.migrations.piccolo_app import APP_CONFIG as migrations_config
 from piccolo.apps.app.piccolo_app import APP_CONFIG as app_config
+from piccolo.apps.asgi.piccolo_app import APP_CONFIG as asgi_config
+from piccolo.apps.migrations.piccolo_app import APP_CONFIG as migrations_config
 from piccolo.apps.playground.piccolo_app import APP_CONFIG as playground_config
 from piccolo.apps.project.piccolo_app import APP_CONFIG as project_config
 from piccolo.apps.user.piccolo_app import APP_CONFIG as user_config
@@ -21,8 +22,9 @@ def main():
     # Register the base apps.
 
     for _app_config in [
-        migrations_config,
         app_config,
+        asgi_config,
+        migrations_config,
         playground_config,
         project_config,
         user_config,
