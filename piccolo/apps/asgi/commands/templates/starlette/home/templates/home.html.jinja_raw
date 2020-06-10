@@ -1,5 +1,36 @@
 {% extends "base.html.jinja" %}
 
 {% block content %}
-    <h1>{{ content }}</h1>
+    <div class="hero">
+        <h1>{{ title }}</h1>
+    </div>
+    <div class="content">
+        <section>
+            <h2>Postgres</h2>
+            <p>If using Postgres, make sure to create the database.</p>
+        </section>
+
+        <section>
+            <h2>Migrations</h2>
+            <p>To use the admin, first run the migrations.</p>
+            <p class="code">
+                <span>piccolo migrations forwards session_auth</span>
+                <span>piccolo migrations forwards user</span>
+            </p>
+            <p>Then create a new user, making sure they're an admin.</p>
+            <p class="code">
+                <span>piccolo user create</span>
+            </p>
+        </section>
+
+        <section>
+            <h2>Next Steps</h2>
+            <p>Add some tables to <em>tables.py</em>.</p>
+            <p>When you're ready to create migrations:</p>
+            <p class="code">
+                <span>piccolo migrations new home --auto</span>
+                <span>piccolo migrations forwards home</span>
+            </p>
+        </section>
+    </div>
 {% endblock content %}

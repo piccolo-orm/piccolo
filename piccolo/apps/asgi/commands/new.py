@@ -97,3 +97,8 @@ def new():
                     os.path.join(dir_path, file_name),
                     os.path.join(output_dir_path, output_file_name),
                 )
+
+    print(
+        "Run `pip install -r requirements.txt` and `python app.py` to get "
+        "started."
+    )
