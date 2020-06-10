@@ -36,7 +36,7 @@ def new_piccolo_conf(engine_name: str, force: bool = False):
 
 def new(engine: str = "postgres", force: bool = False):
     """
-    Creates a new Piccolo project.
+    Creates a new Piccolo project file (piccolo_conf.py).
 
     :param engine:
         Which database backend you plan on using - options are sqlite or

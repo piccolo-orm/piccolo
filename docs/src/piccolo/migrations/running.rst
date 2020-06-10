@@ -24,12 +24,10 @@ This executes the backwards function.
 You can try going forwards and backwards a few times to make sure it works as
 expected.
 
-.. warning:: Auto migrations don't currently support going backwards.
-
 Checking migrations
 -------------------
 
-You can easily check which migrations have amd haven't ran using the following:
+You can easily check which migrations have and haven't ran using the following:
 
 .. code-block:: bash
 
