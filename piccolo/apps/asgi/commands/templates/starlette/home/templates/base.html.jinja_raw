@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ASGI</title>
     <link rel="icon" href="/static/favicon.ico" />
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 
     <style>
     body, html {
@@ -13,7 +14,7 @@
     }
     body {
         background-color: #f0f0f0;
-        font-family: sans-serif;
+        font-family: 'Open Sans', sans-serif;
     }
     div.hero {
         background-color: #4C89C8;
@@ -22,10 +23,11 @@
     }
     div.hero h1 {
         color: white;
+        font-weight: normal;
         text-align: center;
     }
     section {
-        padding-bottom: 1rem;
+        padding-bottom: 2rem;
     }
     div.content {
         background-color: white;
@@ -35,6 +37,10 @@
         max-width: 50rem;
         padding: 2rem;
         transform: translateY(-4rem);
+    }
+    div.content h2 {
+        font-weight: normal;
+        border-bottom: 4px solid #f0f0f0;
     }
     p.code {
         background-color: #2b2b2b;
