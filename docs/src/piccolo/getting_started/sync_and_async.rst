@@ -48,6 +48,7 @@ examples use the sync version.
 
 Using the async version is useful for web applications which require high
 throughput, based on `ASGI frameworks <https://piccolo-orm.com/blog/introduction-to-asgi>`_.
+Piccolo makes building an ASGI web app really simple - see :ref:`ASGICommand`.
 
 Explicit
 --------

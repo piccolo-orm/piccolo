@@ -20,10 +20,27 @@ Welcome to Piccolo's documentation!
    piccolo/contributing/index
    piccolo/changes/index
 
+-------------------------------------------------------------------------------
 
-Indices and tables
-==================
+TLDR
+----
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+Install Piccolo:
+
+.. code-block:: bash
+
+   pip install piccolo
+
+
+Experiment with queries:
+
+.. code-block:: bash
+
+   piccolo playground run
+
+
+Give me an ASGI web app!
+
+.. code-block:: bash
+
+   piccolo asgi new
