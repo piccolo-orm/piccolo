@@ -102,11 +102,11 @@ class BaseMigrationManager:
         sys.path.insert(0, folder_path)
 
         folder_contents = os.listdir(folder_path)
-        excluded = ("__init__.py", "__pycache__")
+        excluded = ("__init__.py",)
         migration_names = [
             i.split(".py")[0]
             for i in folder_contents
-            if ((i not in excluded) and (not i.startswith(".")))
+            if ((i not in excluded) and i.endswith(".py"))
         ]
 
         modules: t.List[MigrationModule] = [
