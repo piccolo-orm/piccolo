@@ -13,6 +13,7 @@ Welcome to Piccolo's documentation!
    piccolo/engines/index
    piccolo/migrations/index
    piccolo/authentication/index
+   piccolo/asgi/index
    piccolo/features/index
    piccolo/playground/index
    piccolo/ecosystem/index
