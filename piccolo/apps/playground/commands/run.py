@@ -157,5 +157,12 @@ def run(
         print(_table._table_str(abbreviated=True))
         print("\n")
 
+    print("Try out some queries:\n")
+    print("Band.select().run_sync()")
+    print("Band.objects().run_sync()")
+    print("Band.select(Band.name).run_sync()")
+    print("Band.select(Band.name, Band.manager.name).run_sync()")
+    print("\n")
+
     populate()
     IPython.embed()
