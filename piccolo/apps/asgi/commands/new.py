@@ -47,6 +47,9 @@ def new():
         )
 
         if not os.path.exists(output_dir_path):
+            folder_name = output_dir_path.split("/")[-1]
+            if folder_name.startswith("_") or folder_name.startswith("."):
+                continue
             os.mkdir(dir_path)
 
         for sub_dir_name in sub_dir_names:
@@ -58,6 +61,9 @@ def new():
                 os.mkdir(sub_dir_path)
 
         for file_name in file_names:
+            if file_name.startswith("_"):
+                continue
+
             extension = file_name.rsplit(".")[0]
             if extension in ("pyc",):
                 continue

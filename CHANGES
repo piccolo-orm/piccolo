@@ -5,7 +5,8 @@ Changes
 ------
  * Showing a warning if trying auto migrations with SQLite.
  * Added a command for creating a new ASGI app - ``piccolo asgi new``.
- * Added a meta app for printing out piccolo version - ``piccol meta version``.
+ * Added a meta app for printing out the Piccolo version -
+   ``piccolo meta version``.
  * Added example queries to the playground.
 
 0.11.1
@@ -18,7 +19,7 @@ Changes
 
 0.11.0
 ------
-Added Numeric and Real column types.
+Added ``Numeric`` and ``Real`` column types.
 
 0.10.8
 ------
@@ -38,7 +39,7 @@ Auto migrations can now run backwards.
 
 0.10.4
 ------
-Fixing some typos with Table imports. Showing a traceback when piccolo_conf
+Fixing some typos with ``Table`` imports. Showing a traceback when piccolo_conf
 can't be found by engine_finder.
 
 0.10.3
