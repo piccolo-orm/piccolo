@@ -31,7 +31,12 @@ setup(
     url="https://github.com/piccolo-orm/piccolo",
     packages=find_packages(exclude=("tests",)),
     package_data={
-        "": ["templates/**/*", "templates/**/**/*", "templates/**/**/**/*"],
+        "": [
+            "templates/*",
+            "templates/**/*",
+            "templates/**/**/*",
+            "templates/**/**/**/*",
+        ],
         "piccolo": ["py.typed"],
     },
     install_requires=REQUIREMENTS,

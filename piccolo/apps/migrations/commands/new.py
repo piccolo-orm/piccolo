@@ -44,9 +44,8 @@ def _create_migrations_folder(migrations_path: str) -> bool:
         return False
     else:
         os.mkdir(migrations_path)
-        for filename in ("__init__.py", "config.py"):
-            with open(os.path.join(migrations_path, filename), "w"):
-                pass
+        with open(os.path.join(migrations_path, "__init__.py"), "w"):
+            pass
         return True
 
 
