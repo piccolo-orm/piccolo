@@ -6,6 +6,7 @@ from targ import CLI
 from piccolo.conf.apps import AppRegistry
 from piccolo.apps.app.piccolo_app import APP_CONFIG as app_config
 from piccolo.apps.asgi.piccolo_app import APP_CONFIG as asgi_config
+from piccolo.apps.meta.piccolo_app import APP_CONFIG as meta_config
 from piccolo.apps.migrations.piccolo_app import APP_CONFIG as migrations_config
 from piccolo.apps.playground.piccolo_app import APP_CONFIG as playground_config
 from piccolo.apps.project.piccolo_app import APP_CONFIG as project_config
@@ -24,6 +25,7 @@ def main():
     for _app_config in [
         app_config,
         asgi_config,
+        meta_config,
         migrations_config,
         playground_config,
         project_config,
