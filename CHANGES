@@ -1,6 +1,13 @@
 Changes
 =======
 
+0.11.2
+------
+ * Showing a warning if trying auto migrations with SQLite.
+ * Added a command for creating a new ASGI app - ``piccolo asgi new``.
+ * Added a meta app for printing out piccolo version - ``piccol meta version``.
+ * Added example queries to the playground.
+
 0.11.1
 ------
  * Added ``table_finder``, for use in ``AppConfig``.
