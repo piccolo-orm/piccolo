@@ -15,12 +15,13 @@ from piccolo.columns.readable import Readable
 
 class BaseUser(Table, tablename="piccolo_user"):
     """
-    Provides a basic user, with authentication support. Use as is, or subclass,
-    in your own projects.
+    Provides a basic user, with authentication support.
     """
 
     username = Varchar(length=100, unique=True)
     password = Secret(length=255)
+    first_name = Varchar()
+    last_name = Varchar()
     email = Varchar(length=255, unique=True)
     active = Boolean(default=False)
     admin = Boolean(default=False)
