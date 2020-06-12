@@ -72,6 +72,14 @@ class AppConfig:
 
 @dataclass
 class AppRegistry:
+    """
+    Records all of the Piccolo apps in your project.
+
+    :param apps:
+        A list of paths to Piccolo apps, e.g. ['blog.piccolo_app']
+
+    """
+
     apps: t.List[str] = field(default_factory=list)
 
     def __post_init__(self):
