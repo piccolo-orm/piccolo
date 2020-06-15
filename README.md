@@ -43,4 +43,20 @@ await Band.update({Band.members: 5}).where(
 ).run()
 ```
 
-[Get started](https://piccolo-orm.readthedocs.io/en/latest/piccolo/getting_started/index.html).
+## Installation
+
+```
+pip install piccolo
+```
+
+## Building a web app?
+
+Let Piccolo scaffold you an ASGI web app, using Piccolo as the ORM:
+
+```
+piccolo asgi new
+```
+
+## Documentation
+
+See [Read the docs](https://piccolo-orm.readthedocs.io/en/latest/piccolo/getting_started/index.html).
