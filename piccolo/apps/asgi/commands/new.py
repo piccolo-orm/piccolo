@@ -13,9 +13,6 @@ ENGINES = ["postgres", "sqlite"]
 ROUTERS = ["starlette", "fastapi"]
 
 
-ENVIRONMENT = Environment(loader=FileSystemLoader(searchpath=TEMPLATE_DIR))
-
-
 def print_instruction(message: str):
     print(f"{colorama.Fore.CYAN}{message}{colorama.Fore.RESET}")
 
@@ -78,13 +75,10 @@ def new():
 
             if file_name.endswith(".jinja"):
                 output_file_name = file_name.replace(".jinja", "")
-
-                with open(os.path.join(dir_path, file_name)) as f:
-                    file_contents = f.read()
-
                 template = Environment(
-                    loader=FileSystemLoader("./templates/starlette/")
-                ).from_string(file_contents)
+                    loader=FileSystemLoader(searchpath=dir_path)
+                ).get_template(file_name)
+
                 output_contents = template.render(**template_context)
 
                 if output_file_name.endswith(".py"):
