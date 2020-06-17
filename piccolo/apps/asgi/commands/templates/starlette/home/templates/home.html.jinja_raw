@@ -8,7 +8,7 @@
         <section>
             <h2>Postgres</h2>
             <p>If using Postgres, make sure to create the database.</p>
-            <p>See piccolo_conf.py for the database settings.</p>
+            <p>See <em>piccolo_conf.py</em> for the database settings.</p>
         </section>
 
         <section>
