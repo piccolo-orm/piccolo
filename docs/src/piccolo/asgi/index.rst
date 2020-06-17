@@ -12,15 +12,28 @@ async Python libraries to interoperate. It's the equivalent of WSGI in the
 synchronous world.
 
 By using the ``piccolo asgi new`` command, Piccolo will scaffold an ASGI web
-app for you, which includes everything you need to get started.
+app for you, which includes everything you need to get started. The command
+will ask for your preferences on which libraries to use.
 
-Currently, `Starlette <https://www.starlette.io/>`_  is used as the routing framework, and is a great choice.
+Routing frameworks
+******************
+
+Currently, `Starlette <https://www.starlette.io/>`_ and `FastAPI <https://fastapi.tiangolo.com/>`_
+are supported.
 
 Other great ASGI routing frameworks exist, and may be supported in the future
 (`Quart <https://pgjones.gitlab.io/quart/>`_ ,
-`FastAPI <https://fastapi.tiangolo.com/>`_ ,
 `Sanic <https://sanic.readthedocs.io/en/latest/>`_ ,
 `Django <https://www.djangoproject.com/>`_  etc).
+
+Which to use?
+=============
+
+Both are great choices. FastAPI is built on top of Starlette, so they're
+very similar. FastAPI is useful if you want to document a REST API.
+
+Web servers
+************
 
 `Hypercorn <https://pgjones.gitlab.io/hypercorn/>`_ and
 `Uvicorn <https://www.uvicorn.org/>`_  are available as ASGI servers.
