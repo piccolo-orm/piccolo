@@ -1,0 +1,18 @@
+if __name__ == "__main__":
+    {% if server == 'uvicorn' %}
+    import uvicorn
+
+    uvicorn.run('app:app', reload=True)
+    {% elif server == 'Hypercorn' %}
+    import asyncio
+
+    from hypercorn.asyncio import serve
+    from hypercorn.config import Config
+
+    class CustomConfig(Config):
+        use_reloader = True
+
+    asyncio.run(serve(APP, CustomConfig()))
+
+    serve(app)
+    {% endif %}

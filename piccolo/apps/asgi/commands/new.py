@@ -1,15 +1,19 @@
 import colorama
+from jinja2 import Environment, FileSystemLoader
 import os
 import shutil
 import typing as t
 
 import black
-import jinja2
 
 
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates/starlette/")
 SERVERS = ["uvicorn", "Hypercorn"]
 ENGINES = ["postgres", "sqlite"]
+ROUTERS = ["starlette", "fastapi"]
+
+
+ENVIRONMENT = Environment(loader=FileSystemLoader(searchpath=TEMPLATE_DIR))
 
 
 def print_instruction(message: str):
@@ -28,6 +32,9 @@ def new():
     """
     tree = os.walk(TEMPLATE_DIR)
 
+    print_instruction("Which routing framework?")
+    router = input(f"{get_options_string(ROUTERS)}\n") or 0
+
     print_instruction("Which server?")
     server = input(f"{get_options_string(SERVERS)}\n") or 0
 
@@ -37,6 +44,7 @@ def new():
     template_context = {
         "server": SERVERS[int(server)],
         "engine": ENGINES[int(engine)],
+        "router": ROUTERS[int(router)],
     }
 
     for directory in tree:
@@ -74,7 +82,9 @@ def new():
                 with open(os.path.join(dir_path, file_name)) as f:
                     file_contents = f.read()
 
-                template = jinja2.Template(file_contents)
+                template = Environment(
+                    loader=FileSystemLoader("./templates/starlette/")
+                ).from_string(file_contents)
                 output_contents = template.render(**template_context)
 
                 if output_file_name.endswith(".py"):
@@ -105,6 +115,6 @@ def new():
                 )
 
     print(
-        "Run `pip install -r requirements.txt` and `python app.py` to get "
+        "Run `pip install -r requirements.txt` and `python main.py` to get "
         "started."
     )
