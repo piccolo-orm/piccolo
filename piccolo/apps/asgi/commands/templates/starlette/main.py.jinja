@@ -9,10 +9,13 @@ if __name__ == "__main__":
     from hypercorn.asyncio import serve
     from hypercorn.config import Config
 
+    from app import app
+
+
     class CustomConfig(Config):
         use_reloader = True
 
-    asyncio.run(serve(APP, CustomConfig()))
+    asyncio.run(serve(app, CustomConfig()))
 
     serve(app)
     {% endif %}

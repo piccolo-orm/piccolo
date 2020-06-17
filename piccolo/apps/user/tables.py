@@ -20,8 +20,8 @@ class BaseUser(Table, tablename="piccolo_user"):
 
     username = Varchar(length=100, unique=True)
     password = Secret(length=255)
-    first_name = Varchar()
-    last_name = Varchar()
+    first_name = Varchar(null=True)
+    last_name = Varchar(null=True)
     email = Varchar(length=255, unique=True)
     active = Boolean(default=False)
     admin = Boolean(default=False)

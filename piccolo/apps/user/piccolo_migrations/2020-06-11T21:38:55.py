@@ -15,7 +15,7 @@ async def forwards():
         params={
             "length": 255,
             "default": "",
-            "null": False,
+            "null": True,
             "primary": False,
             "key": False,
             "unique": False,
@@ -31,7 +31,7 @@ async def forwards():
         params={
             "length": 255,
             "default": "",
-            "null": False,
+            "null": True,
             "primary": False,
             "key": False,
             "unique": False,
