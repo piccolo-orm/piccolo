@@ -33,7 +33,7 @@ def convert_uuid_in(value):
     """
     Converts the UUID value being passed into sqlite.
     """
-    return str(value)
+    return "uuid:" + str(value)
 
 
 def convert_numeric_out(value: bytes):
@@ -58,12 +58,16 @@ def convert_uuid_out(value: bytes):
     in production, so it's acceptable.
     """
     decoded = value.decode("utf8")
-    try:
-        _uuid = uuid.UUID(decoded)
-    except ValueError:
-        return decoded
+    if decoded.startswith("uuid:"):
+        uuid_string = decoded.split("uuid:", 1)[1]
+        try:
+            _uuid = uuid.UUID(uuid_string)
+        except ValueError:
+            return decoded
+        else:
+            return _uuid
     else:
-        return _uuid
+        return decoded
 
 
 sqlite3.register_converter("Numeric", convert_numeric_out)
