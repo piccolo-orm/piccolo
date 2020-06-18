@@ -1,6 +1,13 @@
 Changes
 =======
 
+0.11.7
+------
+ * Improved ``UUID`` columns in SQLite - prepending 'uuid:' to the stored value
+   to make the type more explicit for the engine.
+ * Removed SQLite as an option for ``piccolo asgi new`` until auto migrations
+   are supported.
+
 0.11.6
 ------
 Added support for FastAPI to ``piccolo asgi new``.
