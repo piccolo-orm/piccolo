@@ -9,7 +9,6 @@ import black
 
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates/starlette/")
 SERVERS = ["uvicorn", "Hypercorn"]
-ENGINES = ["postgres", "sqlite"]
 ROUTERS = ["starlette", "fastapi"]
 
 
@@ -35,12 +34,8 @@ def new():
     print_instruction("Which server?")
     server = input(f"{get_options_string(SERVERS)}\n") or 0
 
-    print_instruction("Which engine?")
-    engine = input(f"{get_options_string(ENGINES)}\n") or 0
-
     template_context = {
         "server": SERVERS[int(server)],
-        "engine": ENGINES[int(engine)],
         "router": ROUTERS[int(router)],
     }
 

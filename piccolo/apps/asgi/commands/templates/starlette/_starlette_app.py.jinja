@@ -16,7 +16,7 @@ app = Starlette(
     ],
 )
 
-{% if engine == 'postgres' %}
+
 @app.on_event("startup")
 async def open_database_connection_pool():
     engine = engine_finder()
@@ -27,4 +27,3 @@ async def open_database_connection_pool():
 async def close_database_connection_pool():
     engine = engine_finder()
     await engine.close_connnection_pool()
-{% endif %}

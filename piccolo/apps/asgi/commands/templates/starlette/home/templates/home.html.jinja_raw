@@ -7,7 +7,7 @@
     <div class="content">
         <section>
             <h2>Postgres</h2>
-            <p>If using Postgres, make sure to create the database.</p>
+            <p>Make sure you create the database. See the <a href="https://piccolo-orm.readthedocs.io/en/latest/piccolo/getting_started/setup_postgres.html">docs</a> for guidance.</p>
             <p>See <em>piccolo_conf.py</em> for the database settings.</p>
         </section>
 
