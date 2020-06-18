@@ -8,6 +8,6 @@ Getting Started
     ./database_support
     ./installing_piccolo
     ./playground
-    ./installing_postgres
+    ./setup_postgres
     ./sync_and_async
     ./example_schema
