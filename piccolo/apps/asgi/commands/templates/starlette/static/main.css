@@ -14,6 +14,10 @@ div.hero {
     padding: 5rem;
 }
 
+a {
+    color: #4C89C8;
+}
+
 div.hero h1 {
     color: white;
     font-weight: normal;
