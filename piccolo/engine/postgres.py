@@ -253,7 +253,7 @@ class PostgresEngine(Engine):
             print(
                 "Unable to create uuid-ossp extension - UUID columns might "
                 "not behave as expected. Make sure your database user has "
-                "permission to create extensions."
+                "permission to create extensions, or add it manually."
             )
 
     ###########################################################################

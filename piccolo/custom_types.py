@@ -13,6 +13,9 @@ Combinable = t.Union["Where", "And", "Or"]
 Iterable = t.Iterable[t.Any]
 
 
+###############################################################################
+
+
 @dataclass
 class Default:
     python: t.Callable
@@ -28,22 +31,29 @@ class DatetimeDefault(Enum):
     )
 
 
+class DateDefault(Enum):
+    now = Default(
+        python=lambda: datetime.datetime.now().date(),
+        postgres="current_date",
+        sqlite="current_date",
+    )
+
+
+class TimeDefault(Enum):
+    now = Default(
+        python=lambda: datetime.datetime.now().time(),
+        postgres="current_time",
+        sqlite="current_time",
+    )
+
+
 class UUIDDefault(Enum):
     uuid4 = Default(
         python=uuid.uuid4, postgres="uuid_generate_v4()", sqlite="''"
     )
 
 
-UUID_ = t.Union[UUIDDefault, uuid.UUID]
-Datetime = t.Union[datetime.datetime, DatetimeDefault, None]
-
-
-__all__ = (
-    "Combinable",
-    "Iterable",
-    "Datetime",
-    "DatetimeDefault",
-    "Default",
-    "UUID_",
-    "UUIDDefault",
-)
+UUIDArg = t.Union[UUIDDefault, uuid.UUID]
+DatetimeArg = t.Union[datetime.datetime, DatetimeDefault, None]
+DateArg = t.Union[datetime.date, DateDefault, None]
+TimeArg = t.Union[datetime.time, TimeDefault, None]

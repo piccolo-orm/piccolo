@@ -1,6 +1,7 @@
 from __future__ import annotations
 import contextvars
 from dataclasses import dataclass
+import datetime
 from decimal import Decimal
 import os
 import sqlite3
@@ -33,49 +34,65 @@ def convert_uuid_in(value):
     """
     Converts the UUID value being passed into sqlite.
     """
-    return "uuid:" + str(value)
+    return str(value)
 
 
-def convert_numeric_out(value: bytes):
+def convert_time_in(value):
+    """
+    Converts the time value being passed into sqlite.
+    """
+    return value.isoformat()
+
+
+def convert_date_in(value):
+    """
+    Converts the date value being passed into sqlite.
+    """
+    return value.isoformat()
+
+
+def convert_numeric_out(value: bytes) -> Decimal:
     """
     Convert float values into Decimals.
     """
     return Decimal(value.decode("ascii"))
 
 
-def convert_int_out(value: bytes):
+def convert_int_out(value: bytes) -> int:
     """
     Make sure Integer values are actually of type int.
     """
     return int(float(value))
 
 
-def convert_uuid_out(value: bytes):
+def convert_uuid_out(value: bytes) -> uuid.UUID:
     """
     If the value is a uuid, convert it to a UUID instance.
-
-    Performance wise, this isn't great, but SQLite isn't the preferred solution
-    in production, so it's acceptable.
     """
-    decoded = value.decode("utf8")
-    if decoded.startswith("uuid:"):
-        uuid_string = decoded.split("uuid:", 1)[1]
-        try:
-            _uuid = uuid.UUID(uuid_string)
-        except ValueError:
-            return decoded
-        else:
-            return _uuid
-    else:
-        return decoded
+    return uuid.UUID(value.decode("utf8"))
+
+
+def convert_date_out(value: bytes) -> datetime.date:
+    return datetime.date.fromisoformat(value.decode("utf8"))
+
+
+def convert_time_out(value: bytes) -> datetime.time:
+    """
+    If the value is a uuid, convert it to a UUID instance.
+    """
+    return datetime.time.fromisoformat(value.decode("utf8"))
 
 
 sqlite3.register_converter("Numeric", convert_numeric_out)
 sqlite3.register_converter("Integer", convert_int_out)
-sqlite3.register_converter("Varchar", convert_uuid_out)
+sqlite3.register_converter("UUID", convert_uuid_out)
+sqlite3.register_converter("Date", convert_date_out)
+sqlite3.register_converter("Time", convert_time_out)
 
 sqlite3.register_adapter(Decimal, convert_numeric_in)
 sqlite3.register_adapter(uuid.UUID, convert_uuid_in)
+sqlite3.register_adapter(datetime.time, convert_time_in)
+sqlite3.register_adapter(datetime.date, convert_date_in)
 
 ###############################################################################
 

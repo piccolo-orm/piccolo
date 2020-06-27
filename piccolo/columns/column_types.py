@@ -1,18 +1,18 @@
 from __future__ import annotations
 import copy
-from datetime import datetime
+from datetime import datetime, date, time
 import decimal
 import typing as t
 import uuid
 
 from piccolo.columns.base import Column, OnDelete, OnUpdate, ForeignKeyMeta
 from piccolo.columns.operators.string import ConcatPostgres, ConcatSQLite
-from piccolo.custom_types import Datetime, UUIDDefault
+from piccolo.custom_types import UUIDDefault
 from piccolo.querystring import Unquoted, QueryString
 
 if t.TYPE_CHECKING:
-    from piccolo.table import Table  # noqa
-    from piccolo.custom_types import Datetime, UUID_
+    from piccolo.table import Table
+    from piccolo.custom_types import DatetimeArg, UUIDArg, TimeArg, DateArg
 
 
 ###############################################################################
@@ -195,19 +195,10 @@ class UUID(Column):
 
     value_type = uuid.UUID
 
-    def __init__(self, default: UUID_ = UUIDDefault.uuid4, **kwargs) -> None:
+    def __init__(self, default: UUIDArg = UUIDDefault.uuid4, **kwargs) -> None:
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
-
-    @property
-    def column_type(self):
-        engine_type = self._meta.table._meta.db.engine_type
-        if engine_type == "postgres":
-            return "UUID"
-        elif engine_type == "sqlite":
-            return "VARCHAR"
-        raise Exception("Unrecognized engine type")
 
 
 class Integer(Column):
@@ -353,14 +344,38 @@ class PrimaryKey(Column):
         super().__init__(**kwargs)
 
 
+###############################################################################
+
+
 class Timestamp(Column):
 
     value_type = datetime
 
-    def __init__(self, default: Datetime = None, **kwargs) -> None:
+    def __init__(self, default: DatetimeArg = None, **kwargs) -> None:
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
+
+
+class Date(Column):
+    value_type = date
+
+    def __init__(self, default: DatetimeArg = None, **kwargs) -> None:
+        self.default = default
+        kwargs.update({"default": default})
+        super().__init__(**kwargs)
+
+
+class Time(Column):
+    value_type = time
+
+    def __init__(self, default: TimeArg = None, **kwargs) -> None:
+        self.default = default
+        kwargs.update({"default": default})
+        super().__init__(**kwargs)
+
+
+###############################################################################
 
 
 class Boolean(Column):

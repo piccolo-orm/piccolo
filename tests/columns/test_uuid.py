@@ -16,7 +16,7 @@ class TestUUID(TestCase):
     def tearDown(self):
         MyTable.alter().drop_table().run_sync()
 
-    def test_creation(self):
+    def test_return_type(self):
         row = MyTable()
         row.save().run_sync()
 
