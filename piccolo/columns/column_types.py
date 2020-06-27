@@ -7,11 +7,12 @@ import uuid
 
 from piccolo.columns.base import Column, OnDelete, OnUpdate, ForeignKeyMeta
 from piccolo.columns.operators.string import ConcatPostgres, ConcatSQLite
+from piccolo.custom_types import Datetime, UUIDDefault
 from piccolo.querystring import Unquoted, QueryString
 
 if t.TYPE_CHECKING:
     from piccolo.table import Table  # noqa
-    from piccolo.custom_types import Datetime  # noqa
+    from piccolo.custom_types import Datetime, UUID_
 
 
 ###############################################################################
@@ -192,10 +193,12 @@ class UUID(Column):
     Represented in Postgres as a UUID field, and a Varchar field in SQLite.
     """
 
-    value_type = t.Union[str, uuid.UUID]
+    value_type = uuid.UUID
 
-    def default(self) -> str:
-        return str(uuid.uuid4())
+    def __init__(self, default: UUID_ = UUIDDefault.uuid4, **kwargs) -> None:
+        self.default = default
+        kwargs.update({"default": default})
+        super().__init__(**kwargs)
 
     @property
     def column_type(self):

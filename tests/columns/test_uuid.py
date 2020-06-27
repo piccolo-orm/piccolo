@@ -1,4 +1,5 @@
 from unittest import TestCase
+import uuid
 
 from piccolo.table import Table
 from piccolo.columns.column_types import UUID
@@ -8,7 +9,7 @@ class MyTable(Table):
     uuid = UUID()
 
 
-class TestVarchar(TestCase):
+class TestUUID(TestCase):
     def setUp(self):
         MyTable.create_table().run_sync()
 
@@ -19,4 +20,4 @@ class TestVarchar(TestCase):
         row = MyTable()
         row.save().run_sync()
 
-        self.assertEqual(len(row.uuid), 36)
+        self.assertIsInstance(row.uuid, uuid.UUID)

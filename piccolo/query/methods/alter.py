@@ -73,10 +73,7 @@ class DropColumn(AlterColumnStatement):
 
 @dataclass
 class AddColumn(AlterColumnStatement):
-    __slots__ = (
-        "column",
-        "name",
-    )
+    __slots__ = ("column", "name")
 
     column: Column
     name: str
@@ -85,6 +82,13 @@ class AddColumn(AlterColumnStatement):
     def querystring(self) -> QueryString:
         self.column._meta.name = self.name
         return QueryString("ADD COLUMN {}", self.column.querystring)
+
+
+@dataclass
+class DropDefault(AlterColumnStatement):
+    @property
+    def querystring(self) -> QueryString:
+        return QueryString("DROP DEFAULT {}", self.column_name)
 
 
 @dataclass
@@ -214,6 +218,7 @@ class Alter(Query):
         "_add_foreign_key_constraint",
         "_add",
         "_drop_contraint",
+        "_drop_default",
         "_drop_table",
         "_drop",
         "_null",
@@ -229,6 +234,7 @@ class Alter(Query):
         self._add_foreign_key_constraint: t.List[AddForeignKeyConstraint] = []
         self._add: t.List[AddColumn] = []
         self._drop_contraint: t.List[DropConstraint] = []
+        self._drop_default: t.List[DropDefault] = []
         self._drop_table = False
         self._drop: t.List[DropColumn] = []
         self._null: t.List[Null] = []

@@ -1,6 +1,8 @@
 from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field
+import datetime
+import decimal
 from enum import Enum
 import typing as t
 
@@ -20,7 +22,7 @@ from piccolo.columns.operators.comparison import (
     NotLike,
 )
 from piccolo.columns.combination import Where
-from piccolo.custom_types import Iterable
+from piccolo.custom_types import Iterable, Default
 from piccolo.querystring import QueryString
 from piccolo.utils.warnings import colored_warning
 
@@ -227,8 +229,8 @@ class Column(Selectable):
         If the column has a default attribute, return it. If it's callable,
         return the response instead.
         """
-        default = getattr(self, "default", None)
-        if default is not None:
+        default = getattr(self, "default", ...)
+        if default is not ...:
             default = default.value if isinstance(default, Enum) else default
             # Can't use inspect - can't tell that datetime.datetime.now
             # is a callable.
@@ -269,10 +271,29 @@ class Column(Selectable):
             on_delete = foreign_key_meta.on_delete.value
             on_update = foreign_key_meta.on_update.value
             query += (
-                f" REFERENCES {tablename} (id) "
-                f"ON DELETE {on_delete} "
-                f"ON UPDATE {on_update}"
+                f" REFERENCES {tablename} (id)"
+                f" ON DELETE {on_delete}"
+                f" ON UPDATE {on_update}"
             )
+
+        if not self._meta.primary:
+            default = self.get_default_value()
+            if isinstance(default, Default):
+                default_value = getattr(default, self._meta.engine_type)
+            elif default is None:
+                default_value = "null"
+            elif isinstance(default, (float, decimal.Decimal)):
+                default_value = str(default)
+            elif isinstance(default, str):
+                default_value = f"'{default}'"
+            elif isinstance(default, bool):
+                default_value = str(default).lower()
+            elif isinstance(default, datetime.datetime):
+                default_value = f"'{default.isoformat().replace('T', '')}'"
+            else:
+                default_value = default
+
+            query += f" DEFAULT {default_value}"
 
         return QueryString(query)
 

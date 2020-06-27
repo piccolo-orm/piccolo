@@ -9,6 +9,7 @@ from piccolo.engine import Engine, engine_finder
 from piccolo.columns import Column, ForeignKeyMeta, Selectable
 from piccolo.columns.column_types import ForeignKey, PrimaryKey
 from piccolo.columns.readable import Readable
+from piccolo.custom_types import Default
 from piccolo.query import (
     Alter,
     Create,
@@ -202,6 +203,10 @@ class Table(metaclass=TableMetaclass):
             value = kwargs.pop(column._meta.name, None)
             if not value:
                 value = column.get_default_value()
+
+                if isinstance(value, Default):
+                    value = value.python()
+
                 if (
                     (value is None)
                     and (not column._meta.null)

@@ -276,6 +276,9 @@ class SQLiteEngine(Engine):
         major, minor, _ = sqlite3.sqlite_version_info
         return float(f"{major}.{minor}")
 
+    def prep_database(self):
+        pass
+
     ###########################################################################
 
     def remove_db_file(self):

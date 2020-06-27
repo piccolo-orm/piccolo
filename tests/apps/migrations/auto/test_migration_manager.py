@@ -145,6 +145,33 @@ class TestMigrationManager(DBTestCase):
         self.assertEqual(response, [{"id": 1, "name": "Dave"}])
 
     @postgres_only
+    def test_add_non_nullable_column(self):
+        """
+        Test adding a non nullable column to a MigrationManager.
+
+        Need to handle it gracefully if rows already exist.
+        """
+        self.run_sync("INSERT INTO manager VALUES (default, 'Dave');")
+
+        manager = MigrationManager()
+        manager.add_column(
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="email",
+            column_class_name="Varchar",
+            params={
+                "length": 100,
+                "default": "",
+                "null": False,
+                "primary": False,
+                "key": False,
+                "unique": True,
+                "index": False,
+            },
+        )
+        asyncio.run(manager.run())
+
+    @postgres_only
     def test_rename_table(self):
         """
         Test renaming a table with MigrationManager.

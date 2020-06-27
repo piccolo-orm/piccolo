@@ -235,6 +235,19 @@ class PostgresEngine(Engine):
             version = float(f"{major}.{minor}")
             return version
 
+    def prep_database(self):
+        loop = asyncio.new_event_loop()
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(
+                loop.run_until_complete,
+                self._run_in_new_connection(
+                    'CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'
+                ),
+            )
+
+        future.result()
+
     ###########################################################################
 
     async def start_connnection_pool(self, **kwargs) -> None:

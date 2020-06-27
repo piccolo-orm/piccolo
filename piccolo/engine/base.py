@@ -15,6 +15,7 @@ class Batch:
 class Engine(metaclass=ABCMeta):
     def __init__(self):
         self.check_version()
+        self.prep_database()
 
     @property
     @abstractmethod
@@ -28,6 +29,10 @@ class Engine(metaclass=ABCMeta):
 
     @abstractmethod
     def get_version(self) -> float:
+        pass
+
+    @abstractmethod
+    def prep_database(self):
         pass
 
     @abstractmethod
