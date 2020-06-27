@@ -9,6 +9,7 @@ import warnings
 import asyncpg
 from asyncpg.connection import Connection
 from asyncpg.cursor import Cursor
+from asyncpg.exceptions import InsufficientPrivilegeError
 from asyncpg.pool import Pool
 
 from piccolo.engine.base import Batch, Engine
@@ -246,7 +247,14 @@ class PostgresEngine(Engine):
                 ),
             )
 
-        future.result()
+        try:
+            future.result()
+        except InsufficientPrivilegeError:
+            print(
+                "Unable to create uuid-ossp extension - UUID columns might "
+                "not behave as expected. Make sure your database user has "
+                "permission to create extensions."
+            )
 
     ###########################################################################
 

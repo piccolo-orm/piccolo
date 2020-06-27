@@ -16,6 +16,7 @@ before_script:
   - psql -c 'CREATE DATABASE piccolo;' -U postgres
   - psql -c "CREATE USER piccolo PASSWORD 'piccolo';" -U postgres
   - psql -c "GRANT ALL PRIVILEGES ON DATABASE piccolo TO piccolo;" -U postgres
+  - psql -c "CREATE EXTENSION IF NOT EXISTS "uuid-ossp";" -U postgres
 script:
   - cd tests && ./travis.sh
 after_success:
