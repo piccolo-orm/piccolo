@@ -23,12 +23,16 @@ class Default:
     sqlite: str
 
 
-class DatetimeDefault(Enum):
+class TimestampDefault(Enum):
     now = Default(
         python=datetime.datetime.now,
         postgres="current_timestamp",
         sqlite="current_timestamp",
     )
+
+
+# To preserve backwards compatibility:
+DatetimeDefault = TimestampDefault
 
 
 class DateDefault(Enum):
@@ -54,6 +58,6 @@ class UUIDDefault(Enum):
 
 
 UUIDArg = t.Union[UUIDDefault, uuid.UUID]
-DatetimeArg = t.Union[datetime.datetime, DatetimeDefault, None]
+TimestampArg = t.Union[datetime.datetime, TimestampDefault, None]
 DateArg = t.Union[datetime.date, DateDefault, None]
 TimeArg = t.Union[datetime.time, TimeDefault, None]

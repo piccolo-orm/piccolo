@@ -317,11 +317,11 @@ a default of `now` is as follows:
 
 .. code-block:: python
 
-    from piccolo.custom_types import DatetimeDefault
+    from piccolo.custom_types import TimestampDefault
 
 
     class Concert(Table):
-        starts = Timestamp(default=DatetimeDefault.now)
+        starts = Timestamp(default=TimestampDefault.now)
 
 
 Type

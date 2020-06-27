@@ -12,7 +12,7 @@ from piccolo.querystring import Unquoted, QueryString
 
 if t.TYPE_CHECKING:
     from piccolo.table import Table
-    from piccolo.custom_types import DatetimeArg, UUIDArg, TimeArg, DateArg
+    from piccolo.custom_types import TimestampArg, UUIDArg, TimeArg, DateArg
 
 
 ###############################################################################
@@ -351,7 +351,7 @@ class Timestamp(Column):
 
     value_type = datetime
 
-    def __init__(self, default: DatetimeArg = None, **kwargs) -> None:
+    def __init__(self, default: TimestampArg = None, **kwargs) -> None:
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
@@ -360,7 +360,7 @@ class Timestamp(Column):
 class Date(Column):
     value_type = date
 
-    def __init__(self, default: DatetimeArg = None, **kwargs) -> None:
+    def __init__(self, default: DateArg = None, **kwargs) -> None:
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)

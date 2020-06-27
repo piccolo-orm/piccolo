@@ -5,7 +5,7 @@ import inspect
 import typing as t
 
 from piccolo.columns import Column, OnDelete, OnUpdate, column_types
-from piccolo.custom_types import DatetimeDefault
+from piccolo.custom_types import TimestampDefault
 from piccolo.engine import engine_finder
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
 from piccolo.apps.migrations.auto.operations import (
@@ -308,9 +308,9 @@ class MigrationManager:
 
         default = params.get("default")
         if isinstance(default, str):
-            if default.startswith("DatetimeDefault"):
+            if default.startswith("TimestampDefault"):
                 _, item_name = default.split(".")
-                params["default"] = getattr(DatetimeDefault, item_name)
+                params["default"] = getattr(TimestampDefault, item_name)
             else:
                 try:
                     params["default"] = datetime.datetime.fromisoformat(
