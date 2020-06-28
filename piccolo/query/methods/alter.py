@@ -92,6 +92,21 @@ class DropDefault(AlterColumnStatement):
 
 
 @dataclass
+class SetDefault(AlterColumnStatement):
+    __slots__ = ("column", "value")
+
+    column: Column
+    value: t.Any
+
+    @property
+    def querystring(self) -> QueryString:
+        sql_value = self.column.get_sql_value(self.value)
+        return QueryString(
+            f"ALTER COLUMN {self.column_name} SET DEFAULT {sql_value}"
+        )
+
+
+@dataclass
 class Unique(AlterColumnStatement):
     __slots__ = ("boolean",)
 
@@ -224,9 +239,10 @@ class Alter(Query):
         "_null",
         "_rename_columns",
         "_rename_table",
+        "_set_default",
+        "_set_digits",
         "_set_length",
         "_unique",
-        "_set_digits",
     )
 
     def __init__(self, table: t.Type[Table]):
@@ -240,9 +256,10 @@ class Alter(Query):
         self._null: t.List[Null] = []
         self._rename_columns: t.List[RenameColumn] = []
         self._rename_table: t.List[RenameTable] = []
+        self._set_default: t.List[SetDefault] = []
+        self._set_digits: t.List[SetDigits] = []
         self._set_length: t.List[SetLength] = []
         self._unique: t.List[Unique] = []
-        self._set_digits: t.List[SetDigits] = []
 
     def add_column(self, name: str, column: Column) -> Alter:
         """
@@ -282,6 +299,15 @@ class Alter(Query):
         Band.alter().rename_column('popularity', ‘rating’)
         """
         self._rename_columns.append(RenameColumn(column, new_name))
+        return self
+
+    def set_default(self, column: Column, value: t.Any) -> Alter:
+        """
+        Set the default for a column.
+
+        Band.alter().set_default(Band.popularity, 0)
+        """
+        self._set_default.append(SetDefault(column=column, value=value))
         return self
 
     def set_null(
@@ -463,6 +489,7 @@ class Alter(Query):
                 self._unique,
                 self._null,
                 self._set_length,
+                self._set_default,
                 self._set_digits,
             )
         ]

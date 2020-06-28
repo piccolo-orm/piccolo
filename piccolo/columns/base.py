@@ -245,6 +245,37 @@ class Column(Selectable):
         """
         return self._meta.get_full_name(just_alias=just_alias)
 
+    def get_sql_value(self, value: t.Any) -> str:
+        """
+        When using DDL statements, we can't parameterise the values. An example
+        is when setting the default for a column. So we have to convert from
+        the Python type to a string representation which we can include in our
+        DDL statements.
+
+        :param value:
+            The Python value to convert to a string usable in a DDL statement
+            e.g. 1.
+        :returns:
+            The string usable in the DDL statement e.g. '1'.
+
+        """
+        if isinstance(value, Default):
+            output = getattr(value, self._meta.engine_type)
+        elif value is None:
+            output = "null"
+        elif isinstance(value, (float, decimal.Decimal)):
+            output = str(value)
+        elif isinstance(value, str):
+            output = f"'{value}'"
+        elif isinstance(value, bool):
+            output = str(value).lower()
+        elif isinstance(value, datetime.datetime):
+            output = f"'{value.isoformat().replace('T', '')}'"
+        else:
+            output = value
+
+        return output
+
     @property
     def querystring(self) -> QueryString:
         """
@@ -278,22 +309,8 @@ class Column(Selectable):
 
         if not self._meta.primary:
             default = self.get_default_value()
-            if isinstance(default, Default):
-                default_value = getattr(default, self._meta.engine_type)
-            elif default is None:
-                default_value = "null"
-            elif isinstance(default, (float, decimal.Decimal)):
-                default_value = str(default)
-            elif isinstance(default, str):
-                default_value = f"'{default}'"
-            elif isinstance(default, bool):
-                default_value = str(default).lower()
-            elif isinstance(default, datetime.datetime):
-                default_value = f"'{default.isoformat().replace('T', '')}'"
-            else:
-                default_value = default
-
-            query += f" DEFAULT {default_value}"
+            sql_value = self.get_sql_value(value=default)
+            query += f" DEFAULT {sql_value}"
 
         return QueryString(query)
 

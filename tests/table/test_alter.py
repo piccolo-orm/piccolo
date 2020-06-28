@@ -141,6 +141,20 @@ class TestNull(DBTestCase):
         pass
 
 
+@postgres_only
+class TestSetDefault(DBTestCase):
+    def test_set_default(self):
+        Manager.alter().set_default(Manager.name, "Pending").run_sync()
+
+        # Bypassing the ORM to make sure the database default is present.
+        Band.raw(
+            "INSERT INTO manager (id, name) VALUES (DEFAULT, DEFAULT);"
+        ).run_sync()
+
+        manager = Manager.objects().first().run_sync()
+        self.assertTrue(manager.name == "Pending")
+
+
 ###############################################################################
 
 
