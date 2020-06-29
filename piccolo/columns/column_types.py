@@ -8,16 +8,19 @@ import uuid
 from piccolo.columns.base import Column, OnDelete, OnUpdate, ForeignKeyMeta
 from piccolo.columns.operators.string import ConcatPostgres, ConcatSQLite
 from piccolo.custom_types import (
+    DateArg,
     DateDefault,
+    TimeArg,
     TimeDefault,
+    TimestampArg,
     TimestampDefault,
+    UUIDArg,
     UUIDDefault,
 )
 from piccolo.querystring import Unquoted, QueryString
 
 if t.TYPE_CHECKING:
     from piccolo.table import Table
-    from piccolo.custom_types import TimestampArg, UUIDArg, TimeArg, DateArg
 
 
 ###############################################################################
@@ -128,6 +131,7 @@ class Varchar(Column):
     def __init__(
         self, length: int = 255, default: t.Union[str, None] = "", **kwargs
     ) -> None:
+        self._validate_default(default, (str, None))
         self.length = length
         self.default = default
         kwargs.update({"length": length, "default": default})
@@ -176,7 +180,9 @@ class Text(Column):
     concat_delegate: ConcatDelegate = ConcatDelegate()
 
     def __init__(self, default: t.Union[str, None] = "", **kwargs) -> None:
+        self._validate_default(default, (str, None))
         self.default = default
+        kwargs.update({"default": default})
         super().__init__(**kwargs)
 
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
@@ -203,6 +209,7 @@ class UUID(Column):
     value_type = uuid.UUID
 
     def __init__(self, default: UUIDArg = UUIDDefault.uuid4, **kwargs) -> None:
+        self._validate_default(default, UUIDArg.__args__)
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
@@ -212,7 +219,8 @@ class Integer(Column):
 
     math_delegate = MathDelegate()
 
-    def __init__(self, default: t.Union[str, None] = 0, **kwargs) -> None:
+    def __init__(self, default: t.Union[int, None] = 0, **kwargs) -> None:
+        self._validate_default(default, (int, None))
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
@@ -361,6 +369,7 @@ class Timestamp(Column):
     def __init__(
         self, default: TimestampArg = TimestampDefault.now, **kwargs
     ) -> None:
+        self._validate_default(default, TimestampArg.__args__)
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
@@ -370,6 +379,7 @@ class Date(Column):
     value_type = date
 
     def __init__(self, default: DateArg = DateDefault.now, **kwargs) -> None:
+        self._validate_default(default, DateArg.__args__)
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
@@ -379,6 +389,7 @@ class Time(Column):
     value_type = time
 
     def __init__(self, default: TimeArg = TimeDefault.now, **kwargs) -> None:
+        self._validate_default(default, TimeArg.__args__)
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
@@ -391,7 +402,8 @@ class Boolean(Column):
 
     value_type = bool
 
-    def __init__(self, default: bool = False, **kwargs) -> None:
+    def __init__(self, default: t.Union[bool, None] = False, **kwargs) -> None:
+        self._validate_default(default, (bool, None))
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
@@ -431,7 +443,7 @@ class Numeric(Column):
     def __init__(
         self,
         digits: t.Optional[t.Tuple[int, int]] = None,
-        default: decimal.Decimal = decimal.Decimal(0.0),
+        default: t.Union[decimal.Decimal, None] = decimal.Decimal(0.0),
         **kwargs,
     ) -> None:
         if isinstance(digits, tuple) and len(digits) != 2:
@@ -440,6 +452,8 @@ class Numeric(Column):
                 "the first value being the precision, and the second value "
                 "being the scale."
             )
+
+        self._validate_default(default, (decimal.Decimal, None))
 
         self.default = default
         self.digits = digits
@@ -463,7 +477,8 @@ class Real(Column):
 
     value_type = float
 
-    def __init__(self, default: float = 0.0, **kwargs) -> None:
+    def __init__(self, default: t.Union[float, None] = 0.0, **kwargs) -> None:
+        self._validate_default(default, (float, None))
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
@@ -518,6 +533,8 @@ class ForeignKey(Integer):
         on_update: OnUpdate = OnUpdate.cascade,
         **kwargs,
     ) -> None:
+        self._validate_default(default, (int, None))
+
         if isinstance(references, str):
             # if references != "self":
             #     raise ValueError(
