@@ -399,13 +399,13 @@ class MigrationManager:
                         column=column, boolean=unique
                     ).run()
 
-                if "default" in params.keys():
-                    # Don't compare to None or ..., as both as valid values.
-                    default = params.get("default")
+                # None is a valid value, so retrieve ellipsis if not found.
+                default = params.get("default", ...)
+                if default is not ...:
                     column = Column()
                     column._meta._table = _Table
                     column._meta._name = column_name
-                    if default is ...:
+                    if default is None:
                         await _Table.alter().drop_default(column=column).run()
                     else:
                         await _Table.alter().set_default(
