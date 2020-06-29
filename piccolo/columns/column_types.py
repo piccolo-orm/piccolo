@@ -7,7 +7,12 @@ import uuid
 
 from piccolo.columns.base import Column, OnDelete, OnUpdate, ForeignKeyMeta
 from piccolo.columns.operators.string import ConcatPostgres, ConcatSQLite
-from piccolo.custom_types import UUIDDefault
+from piccolo.custom_types import (
+    DateDefault,
+    TimeDefault,
+    TimestampDefault,
+    UUIDDefault,
+)
 from piccolo.querystring import Unquoted, QueryString
 
 if t.TYPE_CHECKING:
@@ -120,7 +125,9 @@ class Varchar(Column):
     value_type = str
     concat_delegate: ConcatDelegate = ConcatDelegate()
 
-    def __init__(self, length: int = 255, default: str = "", **kwargs) -> None:
+    def __init__(
+        self, length: int = 255, default: t.Union[str, None] = "", **kwargs
+    ) -> None:
         self.length = length
         self.default = default
         kwargs.update({"length": length, "default": default})
@@ -168,7 +175,7 @@ class Text(Column):
     value_type = str
     concat_delegate: ConcatDelegate = ConcatDelegate()
 
-    def __init__(self, default: str = "", **kwargs) -> None:
+    def __init__(self, default: t.Union[str, None] = "", **kwargs) -> None:
         self.default = default
         super().__init__(**kwargs)
 
@@ -205,7 +212,7 @@ class Integer(Column):
 
     math_delegate = MathDelegate()
 
-    def __init__(self, default: int = None, **kwargs) -> None:
+    def __init__(self, default: t.Union[str, None] = 0, **kwargs) -> None:
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
@@ -351,7 +358,9 @@ class Timestamp(Column):
 
     value_type = datetime
 
-    def __init__(self, default: TimestampArg = None, **kwargs) -> None:
+    def __init__(
+        self, default: TimestampArg = TimestampDefault.now, **kwargs
+    ) -> None:
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
@@ -360,7 +369,7 @@ class Timestamp(Column):
 class Date(Column):
     value_type = date
 
-    def __init__(self, default: DateArg = None, **kwargs) -> None:
+    def __init__(self, default: DateArg = DateDefault.now, **kwargs) -> None:
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
@@ -369,7 +378,7 @@ class Date(Column):
 class Time(Column):
     value_type = time
 
-    def __init__(self, default: TimeArg = None, **kwargs) -> None:
+    def __init__(self, default: TimeArg = TimeDefault.now, **kwargs) -> None:
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
@@ -503,6 +512,8 @@ class ForeignKey(Integer):
     def __init__(
         self,
         references: t.Union[t.Type[Table], str],
+        default: t.Union[int, None] = None,
+        null: bool = True,
         on_delete: OnDelete = OnDelete.cascade,
         on_update: OnUpdate = OnUpdate.cascade,
         **kwargs,
@@ -522,7 +533,7 @@ class ForeignKey(Integer):
                 "on_update": on_update,
             }
         )
-        super().__init__(**kwargs)
+        super().__init__(default=default, null=null, **kwargs)
 
         if t.TYPE_CHECKING:
             # This is here just for type inference - the actual value is set by

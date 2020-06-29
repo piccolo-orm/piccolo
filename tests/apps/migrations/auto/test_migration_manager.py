@@ -228,11 +228,22 @@ class TestMigrationManager(DBTestCase):
         response = self.run_sync("SELECT name FROM manager;")
         self.assertEqual(response, [{"name": "Dave"}, {"name": "Dave"}])
 
-    def _get_precision_and_scale(self):
+    def _get_column_precision_and_scale(
+        self, tablename="ticket", column_name="price"
+    ):
         return self.run_sync(
             "SELECT numeric_precision, numeric_scale "
             "FROM information_schema.COLUMNS "
-            "WHERE TABLE_NAME = 'ticket' AND column_name = 'price';"
+            f"WHERE table_name = '{tablename}' AND "
+            f"column_name = '{column_name}';"
+        )
+
+    def _get_column_default(self, tablename="manager", column_name="name"):
+        return self.run_sync(
+            "SELECT column_default "
+            "FROM information_schema.COLUMNS "
+            f"WHERE table_name = '{tablename}' "
+            f"AND column_name = '{column_name}';"
         )
 
     @postgres_only
@@ -251,16 +262,42 @@ class TestMigrationManager(DBTestCase):
         )
 
         asyncio.run(manager.run())
-
         self.assertEqual(
-            self._get_precision_and_scale(),
+            self._get_column_precision_and_scale(),
             [{"numeric_precision": 6, "numeric_scale": 2}],
         )
 
         asyncio.run(manager.run_backwards())
         self.assertEqual(
-            self._get_precision_and_scale(),
+            self._get_column_precision_and_scale(),
             [{"numeric_precision": 5, "numeric_scale": 2}],
+        )
+
+    @postgres_only
+    def test_alter_column_set_default(self):
+        """
+        Test altering a column default with MigrationManager.
+        """
+        manager = MigrationManager()
+
+        manager.alter_column(
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="name",
+            params={"default": "Unknown"},
+            old_params={"default": ""},
+        )
+
+        asyncio.run(manager.run())
+        self.assertEqual(
+            self._get_column_default(),
+            [{"column_default": "'Unknown'::character varying"}],
+        )
+
+        asyncio.run(manager.run_backwards())
+        self.assertEqual(
+            self._get_column_default(),
+            [{"column_default": "''::character varying"}],
         )
 
     @postgres_only

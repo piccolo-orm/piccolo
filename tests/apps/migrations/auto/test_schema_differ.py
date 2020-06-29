@@ -176,3 +176,6 @@ class TestSchemaDiffer(TestCase):
             schema_differ.alter_columns[0],
             "manager.alter_column(table_class_name='Ticket', tablename='ticket', column_name='price', params={'digits': (5, 2)}, old_params={'digits': (4, 2)})",  # noqa
         )
+
+    def test_alter_default(self):
+        pass

@@ -172,6 +172,24 @@ class Column(Selectable):
             params=kwargs,
         )
 
+    def _validate_arguments(
+        default: t.Any, allowed_types: t.Tuple[t.Type[t.Any]], null: bool
+    ) -> bool:
+        """
+        Make sure that the default values are of the allowed types. Also
+        make sure that a value of None isn't the default if the column is not
+        nullable.
+        """
+        if default is None:
+            if not null:
+                raise ValueError(
+                    "A default value of None isn't allowed if the column is "
+                    "null = False."
+                )
+            return None in allowed_types
+        else:
+            return type(default) in allowed_types
+
     def is_in(self, values: Iterable) -> Where:
         return Where(column=self, values=values, operator=In)
 

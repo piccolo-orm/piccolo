@@ -276,6 +276,13 @@ class Alter(Query):
         self._drop.append(DropColumn(column))
         return self
 
+    def drop_default(self, column: t.Union[str, Column]) -> Alter:
+        """
+        Band.alter().drop_default(Band.popularity)
+        """
+        self._drop_default.append(DropDefault(column=column))
+        return self
+
     def drop_table(self) -> Alter:
         """
         Band.alter().drop_table()
@@ -486,6 +493,7 @@ class Alter(Query):
                 self._rename_columns,
                 self._rename_table,
                 self._drop,
+                self._drop_default,
                 self._unique,
                 self._null,
                 self._set_length,

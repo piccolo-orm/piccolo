@@ -74,7 +74,9 @@ class TestAdd(DBTestCase):
         """
         self.insert_row()
 
-        add_query = Band.alter().add_column("weight", Integer(null=True))
+        add_query = Band.alter().add_column(
+            "weight", Integer(null=True, default=None)
+        )
         add_query.run_sync()
 
         response = Band.raw("SELECT * FROM band").run_sync()
