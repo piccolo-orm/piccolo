@@ -19,8 +19,6 @@ To reverse the migration, run this:
 
     piccolo migrations backwards 2018-09-04T19:44:09
 
-This executes the backwards function.
-
 You can try going forwards and backwards a few times to make sure it works as
 expected.
 

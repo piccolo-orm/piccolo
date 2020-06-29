@@ -76,7 +76,7 @@ Auto migrations
 Manually writing your migrations gives you a good level of control, but Piccolo
 supports `auto migrations` which can save a great deal of time.
 
-Piccolo will work out what tables to add by comparing previous auto migrations,
+Piccolo will work out which tables to add by comparing previous auto migrations,
 and your current tables. In order for this to work, you have to register
 your app's tables with the `AppConfig` in the piccolo_app.py file at the root
 of your app (see :ref:`PiccoloApps`).
