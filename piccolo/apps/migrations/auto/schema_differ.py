@@ -4,11 +4,11 @@ from itertools import chain
 import typing as t
 
 from piccolo.apps.migrations.auto.diffable_table import (
-    serialise_params,
     DiffableTable,
     TableDelta,
 )
 from piccolo.apps.migrations.auto.operations import RenameTable, RenameColumn
+from piccolo.apps.migrations.auto.serialisation import serialise_params
 from piccolo.utils.printing import get_fixed_length_string
 
 

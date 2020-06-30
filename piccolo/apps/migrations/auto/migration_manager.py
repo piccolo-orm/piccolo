@@ -1,11 +1,8 @@
-from copy import deepcopy
 from dataclasses import dataclass, field
-import datetime
 import inspect
 import typing as t
 
-from piccolo.columns import Column, OnDelete, OnUpdate, column_types
-from piccolo.custom_types import TimestampDefault
+from piccolo.columns import Column, column_types
 from piccolo.engine import engine_finder
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
 from piccolo.apps.migrations.auto.operations import (
@@ -14,6 +11,7 @@ from piccolo.apps.migrations.auto.operations import (
     AlterColumn,
     RenameTable,
 )
+from piccolo.apps.migrations.auto.serialisation import deserialise_params
 from piccolo.table import Table
 
 
@@ -189,7 +187,9 @@ class MigrationManager:
         params: t.Dict[str, t.Any] = {},
     ):
         column_class = getattr(column_types, column_class_name)
-        cleaned_params = self.deserialise_params(params)
+        cleaned_params = deserialise_params(
+            column_class_name=column_class_name, params=params
+        )
         column = column_class(**cleaned_params)
         column._meta.name = column_name
         self.add_columns.append(
@@ -261,65 +261,6 @@ class MigrationManager:
         clean up.
         """
         self.raw_backwards.append(raw)
-
-    ###########################################################################
-
-    def deserialise_params(
-        self, params: t.Dict[str, t.Any]
-    ) -> t.Dict[str, t.Any]:
-        """
-        When reading column params from a migration file, we need to convert
-        them from their serialised form.
-        """
-        params = deepcopy(params)
-
-        references = params.get("references")
-        if references:
-            components = references.split("|")
-            if len(components) == 1:
-                class_name = components[0]
-                tablename = None
-            elif len(components) == 2:
-                class_name, tablename = components
-            else:
-                raise ValueError(
-                    "Unrecognised Table serialisation - should either be "
-                    "`SomeClassName` or `SomeClassName|some_table_name`."
-                )
-
-            _Table: t.Type[Table] = type(
-                references, (Table,), {},
-            )
-            if tablename:
-                _Table._meta.tablename = tablename
-            params["references"] = _Table
-
-        on_delete = params.get("on_delete")
-        if on_delete:
-            enum_name, item_name = on_delete.split(".")
-            if enum_name == "OnDelete":
-                params["on_delete"] = getattr(OnDelete, item_name)
-
-        on_update = params.get("on_update")
-        if on_update:
-            enum_name, item_name = on_update.split(".")
-            if enum_name == "OnUpdate":
-                params["on_update"] = getattr(OnUpdate, item_name)
-
-        default = params.get("default")
-        if isinstance(default, str):
-            if default.startswith("TimestampDefault"):
-                _, item_name = default.split(".")
-                params["default"] = getattr(TimestampDefault, item_name)
-            else:
-                try:
-                    params["default"] = datetime.datetime.fromisoformat(
-                        default
-                    )
-                except ValueError:
-                    pass
-
-        return params
 
     ###########################################################################
 

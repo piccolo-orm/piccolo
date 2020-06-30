@@ -1,9 +1,5 @@
 from __future__ import annotations
-from copy import deepcopy
 from dataclasses import dataclass, field
-import datetime
-from enum import Enum
-from inspect import isclass
 import typing as t
 
 from piccolo.columns.base import Column
@@ -12,6 +8,7 @@ from piccolo.apps.migrations.auto.operations import (
     DropColumn,
     AlterColumn,
 )
+from piccolo.apps.migrations.auto.serialisation import serialise_params
 from piccolo.table import Table
 
 
@@ -21,37 +18,6 @@ def compare_dicts(dict_1, dict_2) -> t.Dict[str, t.Any]:
     the first dictionary and not the second.
     """
     return dict(set(dict_1.items()) - set(dict_2.items()))
-
-
-def serialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
-    """
-    When writing column params to a migration file, we need to serialise some
-    of the values.
-    """
-    params = deepcopy(params)
-
-    # We currently don't support defaults which are functions.
-    default = params.get("default", None)
-    if hasattr(default, "__call__"):
-        print(
-            "Default arguments which are functions are not currently supported"
-        )
-        params["default"] = None
-
-    for key, value in params.items():
-        # Convert enums into plain values
-        if isinstance(value, Enum):
-            params[key] = f"{value.__class__.__name__}.{value.name}"
-
-        # Replace any Table class values into class names
-        if isclass(value) and issubclass(value, Table):
-            params[key] = f"{value.__name__}|{value._meta.tablename}"
-
-        # Convert any datetime values into isoformat strings
-        if isinstance(value, datetime.datetime):
-            params[key] = value.isoformat()
-
-    return params
 
 
 @dataclass
