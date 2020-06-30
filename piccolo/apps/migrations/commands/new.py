@@ -9,6 +9,7 @@ import black
 import jinja2
 
 from .base import BaseMigrationManager
+from piccolo import __VERSION__
 from piccolo.conf.apps import AppConfig, AppRegistry
 from piccolo.apps.migrations.auto import (
     SchemaSnapshot,
@@ -32,7 +33,7 @@ MIGRATION_MODULES: t.Dict[str, ModuleType] = {}
 
 def render_template(**kwargs):
     template = JINJA_ENV.get_template("migration.py.jinja")
-    return template.render(**kwargs)
+    return template.render(version=__VERSION__, **kwargs)
 
 
 def _create_migrations_folder(migrations_path: str) -> bool:
