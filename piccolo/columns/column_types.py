@@ -209,7 +209,7 @@ class UUID(Column):
     value_type = uuid.UUID
 
     def __init__(self, default: UUIDArg = UUIDDefault.uuid4, **kwargs) -> None:
-        self._validate_default(default, UUIDArg.__args__)
+        self._validate_default(default, UUIDArg.__args__)  # type: ignore
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
@@ -369,7 +369,7 @@ class Timestamp(Column):
     def __init__(
         self, default: TimestampArg = TimestampDefault.now, **kwargs
     ) -> None:
-        self._validate_default(default, TimestampArg.__args__)
+        self._validate_default(default, TimestampArg.__args__)  # type: ignore
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
@@ -379,7 +379,7 @@ class Date(Column):
     value_type = date
 
     def __init__(self, default: DateArg = DateDefault.now, **kwargs) -> None:
-        self._validate_default(default, DateArg.__args__)
+        self._validate_default(default, DateArg.__args__)  # type: ignore
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
@@ -389,7 +389,7 @@ class Time(Column):
     value_type = time
 
     def __init__(self, default: TimeArg = TimeDefault.now, **kwargs) -> None:
-        self._validate_default(default, TimeArg.__args__)
+        self._validate_default(default, TimeArg.__args__)  # type: ignore
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
