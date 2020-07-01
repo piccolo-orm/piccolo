@@ -58,6 +58,8 @@ class UUIDDefault(Enum):
 
 
 UUIDArg = t.Union[UUIDDefault, uuid.UUID, None]
-TimestampArg = t.Union[datetime.datetime, TimestampDefault, None]
-DateArg = t.Union[datetime.date, DateDefault, None]
-TimeArg = t.Union[datetime.time, TimeDefault, None]
+TimestampArg = t.Union[
+    datetime.datetime, TimestampDefault, DatetimeDefault, None,
+]
+DateArg = t.Union[datetime.date, datetime.timedelta, DateDefault, None]
+TimeArg = t.Union[datetime.time, datetime.timedelta, TimeDefault, None]

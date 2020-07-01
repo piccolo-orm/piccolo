@@ -178,9 +178,10 @@ class Column(Selectable):
             params=kwargs,
         )
 
-    @staticmethod
     def _validate_default(
-        default: t.Any, allowed_types: t.Iterable[t.Union[None, t.Type[t.Any]]]
+        self,
+        default: t.Any,
+        allowed_types: t.Iterable[t.Union[None, t.Type[t.Any]]],
     ) -> bool:
         """
         Make sure that the default value is of the allowed types.
@@ -193,7 +194,7 @@ class Column(Selectable):
             return True
         else:
             raise ValueError(
-                "The default isn't one of the permitted types - "
+                f"The default {default} isn't one of the permitted types - "
                 f"{allowed_types}"
             )
 

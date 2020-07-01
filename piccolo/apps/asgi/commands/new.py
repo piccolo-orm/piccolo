@@ -48,7 +48,7 @@ def new():
 
         if not os.path.exists(output_dir_path):
             folder_name = output_dir_path.split("/")[-1]
-            if folder_name.startswith("_") or folder_name.startswith("."):
+            if folder_name.startswith(("_", ".")):
                 continue
             os.mkdir(dir_path)
 

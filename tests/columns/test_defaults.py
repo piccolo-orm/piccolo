@@ -25,10 +25,11 @@ from piccolo.table import Table
 
 
 class TestDefaults(TestCase):
-    def test_defaults(self):
-        """
-        Columns check the type of the default argument.
-        """
+    """
+    Columns check the type of the default argument.
+    """
+
+    def test_int(self):
         for _type in (Integer, BigInt, SmallInt):
             _type(default=0)
             _type(default=None, null=True)
@@ -37,6 +38,7 @@ class TestDefaults(TestCase):
             with self.assertRaises(ValueError):
                 _type(default=None, null=False)
 
+    def test_text(self):
         for _type in (Text, Varchar):
             _type(default="")
             _type(default=None, null=True)
@@ -45,6 +47,7 @@ class TestDefaults(TestCase):
             with self.assertRaises(ValueError):
                 _type(default=None, null=False)
 
+    def test_real(self):
         Real(default=0.0)
         Real(default=None, null=True)
         with self.assertRaises(ValueError):
@@ -52,6 +55,7 @@ class TestDefaults(TestCase):
         with self.assertRaises(ValueError):
             Real(default=None, null=False)
 
+    def test_numeric(self):
         Numeric(default=decimal.Decimal(1.0))
         Numeric(default=None, null=True)
         with self.assertRaises(ValueError):
@@ -59,6 +63,7 @@ class TestDefaults(TestCase):
         with self.assertRaises(ValueError):
             Numeric(default=None, null=False)
 
+    def test_uuid(self):
         UUID(default=None, null=True)
         UUID(default=UUIDDefault.uuid4)
         UUID(default=uuid.uuid4())
@@ -67,6 +72,7 @@ class TestDefaults(TestCase):
         with self.assertRaises(ValueError):
             UUID(default=None, null=False)
 
+    def test_time(self):
         Time(default=None, null=True)
         Time(default=TimeDefault.now)
         Time(default=datetime.datetime.now().time())
@@ -75,6 +81,7 @@ class TestDefaults(TestCase):
         with self.assertRaises(ValueError):
             Time(default=None, null=False)
 
+    def test_date(self):
         Date(default=None, null=True)
         Date(default=DateDefault.now)
         Date(default=datetime.datetime.now().date())
@@ -83,6 +90,7 @@ class TestDefaults(TestCase):
         with self.assertRaises(ValueError):
             Date(default=None, null=False)
 
+    def test_timestamp(self):
         Timestamp(default=None, null=True)
         Timestamp(default=TimestampDefault.now)
         Timestamp(default=datetime.datetime.now())
@@ -91,6 +99,7 @@ class TestDefaults(TestCase):
         with self.assertRaises(ValueError):
             Timestamp(default=None, null=False)
 
+    def test_foreignkey(self):
         ForeignKey(references=Table(), default=None, null=True)
         ForeignKey(references=Table(), default=1)
         with self.assertRaises(ValueError):

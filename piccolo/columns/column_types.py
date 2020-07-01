@@ -376,6 +376,7 @@ class Timestamp(Column):
 
 
 class Date(Column):
+
     value_type = date
 
     def __init__(self, default: DateArg = DateDefault.now, **kwargs) -> None:
@@ -386,6 +387,7 @@ class Date(Column):
 
 
 class Time(Column):
+
     value_type = time
 
     def __init__(self, default: TimeArg = TimeDefault.now, **kwargs) -> None:

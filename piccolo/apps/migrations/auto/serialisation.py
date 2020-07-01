@@ -35,7 +35,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     for key, value in params.items():
         # Convert enums into plain values
         if isinstance(value, Enum):
-            params[key] = f"{value.__class__.__name__}.{value.name}"
+            params[key] = str(value)
 
         # Replace any Table class values into class names
         if isclass(value) and issubclass(value, Table):
@@ -99,7 +99,7 @@ def deserialise_params(
     default = params.get("default")
     if isinstance(default, str):
         if column_class_name == "Timestamp":
-            if default.startswith("TimestampDefault"):
+            if default.startswith(("TimestampDefault", "DatetimeDefault")):
                 _, item_name = default.split(".")
                 params["default"] = getattr(TimestampDefault, item_name)
             else:
