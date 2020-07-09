@@ -1,7 +1,7 @@
 from __future__ import annotations
 import typing as t
 
-from piccolo.custom_types import TimestampDefault
+from piccolo.columns.defaults.timestamp import TimestampNow
 from piccolo.table import Table
 from piccolo.columns import Varchar, Timestamp
 
@@ -9,7 +9,7 @@ from piccolo.columns import Varchar, Timestamp
 class Migration(Table):
     name = Varchar(length=200)
     app_name = Varchar(length=200)
-    ran_on = Timestamp(default=TimestampDefault.now)
+    ran_on = Timestamp(default=TimestampNow())
 
     @classmethod
     def get_migrations_which_ran(cls) -> t.List[str]:

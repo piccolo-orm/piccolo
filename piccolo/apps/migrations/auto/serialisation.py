@@ -1,57 +1,159 @@
 from __future__ import annotations
 from copy import deepcopy
+from dataclasses import dataclass
 import datetime
 from enum import Enum
-from inspect import isclass
+import inspect
 import typing as t
 import uuid
 
-from piccolo.columns import OnDelete, OnUpdate
-from piccolo.custom_types import (
-    DateDefault,
-    TimeDefault,
-    TimestampDefault,
-    UUIDDefault,
-)
-
+from piccolo.columns.defaults.base import Default
 from piccolo.table import Table
 
+###############################################################################
 
-def serialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+
+@dataclass
+class TableReference:
+    table_class_name: str
+    table_name: str
+
+    def deserialise(self) -> t.Type[Table]:
+        _Table: t.Type[Table] = type(
+            self.table_class_name, (Table,), {},
+        )
+        _Table._meta.tablename = self.table_name
+        return _Table
+
+
+@dataclass
+class SerialisedClass:
+    instance: object
+
+    def __repr__(self):
+        args = ", ".join(
+            ["{key}={value}" for key, value in self.instance.__dict__.items()]
+        )
+        return f"{self.instance.__class__.__name__}({args})"
+
+
+@dataclass
+class SerialisedUUID:
+    instance: uuid.UUID
+
+    def __repr__(self):
+        return f"UUID({str(self.instance)})"
+
+
+###############################################################################
+
+
+@dataclass
+class Import:
+    module: str
+    target: str
+
+    def __str__(self):
+        return f"from {self.module} import {self.target}"
+
+    def __hash__(self):
+        return hash(f"{self.module}-{self.target}")
+
+    def __lt__(self, other):
+        return str(self) < str(other)
+
+
+@dataclass
+class SerialisedParams:
+    params: t.Dict[str, t.Any]
+    extra_imports: t.List[Import]
+
+
+###############################################################################
+
+
+def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
     """
     When writing column params to a migration file, we need to serialise some
     of the values.
     """
     params = deepcopy(params)
-
-    # We currently don't support defaults which are functions.
-    default = params.get("default", None)
-    if hasattr(default, "__call__"):
-        print(
-            "Default arguments which are functions are not currently supported"
-        )
-        params["default"] = None
+    extra_imports: t.List[Import] = []
 
     for key, value in params.items():
-        # Convert enums into plain values
-        if isinstance(value, Enum):
-            params[key] = str(value)
 
-        # Replace any Table class values into class names
-        if isclass(value) and issubclass(value, Table):
-            params[key] = f"{value.__name__}|{value._meta.tablename}"
+        # Class instances
+        if isinstance(value, (Default,)):
+            params[key] = SerialisedClass(instance=value)
+            extra_imports.append(
+                Import(
+                    module=value.__class__.__module__,
+                    target=value.__class__.__name__,
+                )
+            )
+            continue
 
-        # Convert any datetime, date, or time values into isoformat strings
         if isinstance(
-            value, (datetime.datetime, datetime.date, datetime.time)
+            value, (datetime.time, datetime.datetime, datetime.date)
         ):
-            params[key] = value.isoformat()
+            # Already have a good __repr__.
+            extra_imports.append(
+                Import(
+                    module=value.__class__.__module__,
+                    target=value.__class__.__name__,
+                )
+            )
+            continue
 
-        # Convert any UUIDs into strings
+        # UUIDs
         if isinstance(value, uuid.UUID):
-            params[key] = str(value)
+            params[key] = SerialisedUUID(instance=value)
+            extra_imports.append(Import(module="uuid", target="UUID"))
+            continue
 
-    return params
+        # Enums
+        if isinstance(value, Enum):
+            # Enums already have a good __repr__.
+            extra_imports.append(
+                Import(
+                    module=value.__module__, target=value.__class__.__name__,
+                )
+            )
+            continue
+
+        # Functions
+        if inspect.isfunction(value):
+            if value.__name__ == "<lambda>":
+                raise ValueError("Lambdas can't be serialised")
+
+            params[key] = value.__name__
+            extra_imports.append(
+                Import(module=value.__module__, target=value.__name__)
+            )
+            continue
+
+        # Methods
+        # if inspect.ismethod(value):
+        #     params[key] = type
+
+        # Replace any Table class values into class and table names
+        if inspect.isclass(value) and issubclass(value, Table):
+            params[key] = TableReference(
+                table_class_name=value.__name__,
+                table_name=value._meta.tablename,
+            )
+            extra_imports.append(
+                Import(
+                    module=TableReference.__module__, target="TableReference"
+                )
+            )
+            continue
+
+        # All other types can remain as is.
+
+    return SerialisedParams(
+        params=params, extra_imports=[i for i in set(extra_imports)]
+    )
 
 
 def deserialise_params(
@@ -63,78 +165,12 @@ def deserialise_params(
     """
     params = deepcopy(params)
 
-    references = params.get("references")
-    if references:
-        components = references.split("|")
-        if len(components) == 1:
-            class_name = components[0]
-            tablename = None
-        elif len(components) == 2:
-            class_name, tablename = components
-        else:
-            raise ValueError(
-                "Unrecognised Table serialisation - should either be "
-                "`SomeClassName` or `SomeClassName|some_table_name`."
+    for key, value in params.items():
+        if isinstance(value, TableReference):
+            _Table: t.Type[Table] = type(
+                value.table_class_name, (Table,), {},
             )
-
-        _Table: t.Type[Table] = type(
-            references, (Table,), {},
-        )
-        if tablename:
-            _Table._meta.tablename = tablename
-        params["references"] = _Table
-
-    on_delete = params.get("on_delete")
-    if on_delete:
-        enum_name, item_name = on_delete.split(".")
-        if enum_name == "OnDelete":
-            params["on_delete"] = getattr(OnDelete, item_name)
-
-    on_update = params.get("on_update")
-    if on_update:
-        enum_name, item_name = on_update.split(".")
-        if enum_name == "OnUpdate":
-            params["on_update"] = getattr(OnUpdate, item_name)
-
-    default = params.get("default")
-    if isinstance(default, str):
-        if column_class_name == "Timestamp":
-            if default.startswith(("TimestampDefault", "DatetimeDefault")):
-                _, item_name = default.split(".")
-                params["default"] = getattr(TimestampDefault, item_name)
-            else:
-                try:
-                    params["default"] = datetime.datetime.fromisoformat(
-                        default
-                    )
-                except ValueError:
-                    pass
-        elif column_class_name == "Date":
-            if default.startswith("DateDefault"):
-                _, item_name = default.split(".")
-                params["default"] = getattr(DateDefault, item_name)
-            else:
-                try:
-                    params["default"] = datetime.date.fromisoformat(default)
-                except ValueError:
-                    pass
-        elif column_class_name == "Time":
-            if default.startswith("TimeDefault"):
-                _, item_name = default.split(".")
-                params["default"] = getattr(TimeDefault, item_name)
-            else:
-                try:
-                    params["default"] = datetime.time.fromisoformat(default)
-                except ValueError:
-                    pass
-        elif column_class_name == "UUID":
-            if default.startswith("UUIDDefault"):
-                _, item_name = default.split(".")
-                params["default"] = getattr(UUIDDefault, item_name)
-            else:
-                try:
-                    params["default"] = uuid.UUID(default)
-                except ValueError:
-                    pass
+            _Table._meta.tablename = value.table_name
+            params[key] = _Table
 
     return params

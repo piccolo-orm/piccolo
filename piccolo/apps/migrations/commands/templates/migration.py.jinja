@@ -1,4 +1,7 @@
 from piccolo.apps.migrations.auto import MigrationManager
+{% for extra_import in extra_imports -%}
+{{ extra_import }}
+{% endfor %}
 
 
 ID = '{{ migration_id }}'

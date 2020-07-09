@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from piccolo.table import Table
 from piccolo.columns.column_types import Timestamp
-from piccolo.custom_types import TimestampDefault
+from piccolo.columns.defaults.timestamp import TimestampNow
 
 
 class MyTable(Table):
@@ -11,7 +11,7 @@ class MyTable(Table):
 
 
 class MyTableDefault(Table):
-    created_on = Timestamp(default=TimestampDefault.now)
+    created_on = Timestamp(default=TimestampNow())
 
 
 class TestTimestamp(TestCase):

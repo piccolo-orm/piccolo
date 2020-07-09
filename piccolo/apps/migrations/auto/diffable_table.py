@@ -88,15 +88,15 @@ class DiffableTable:
                 # This is a new column - already captured above.
                 continue
             delta = compare_dicts(
-                serialise_params(column._meta.params),
-                serialise_params(existing_column._meta.params),
+                serialise_params(column._meta.params).params,
+                serialise_params(existing_column._meta.params).params,
             )
             old_params = serialise_params(
                 {
                     key: existing_column._meta.params.get(key)
                     for key, _ in delta.items()
                 }
-            )
+            ).params
 
             if delta:
                 alter_columns.append(

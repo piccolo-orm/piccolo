@@ -4,7 +4,7 @@ from unittest import TestCase
 
 from piccolo.table import Table
 from piccolo.columns.column_types import Time
-from piccolo.custom_types import TimeDefault
+from piccolo.columns.defaults.time import TimeNow
 
 
 class MyTable(Table):
@@ -12,7 +12,7 @@ class MyTable(Table):
 
 
 class MyTableDefault(Table):
-    created_on = Time(default=TimeDefault.now)
+    created_on = Time(default=TimeNow())
 
 
 class TestTime(TestCase):

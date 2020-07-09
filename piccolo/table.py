@@ -9,7 +9,7 @@ from piccolo.engine import Engine, engine_finder
 from piccolo.columns import Column, ForeignKeyMeta, Selectable
 from piccolo.columns.column_types import ForeignKey, PrimaryKey
 from piccolo.columns.readable import Readable
-from piccolo.custom_types import Default
+from piccolo.columns.defaults.base import Default
 from piccolo.query import (
     Alter,
     Create,

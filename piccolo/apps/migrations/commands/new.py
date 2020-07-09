@@ -1,5 +1,6 @@
 from __future__ import annotations
 import datetime
+from itertools import chain
 import os
 import sys
 import typing as t
@@ -12,6 +13,7 @@ from .base import BaseMigrationManager
 from piccolo import __VERSION__
 from piccolo.conf.apps import AppConfig, AppRegistry
 from piccolo.apps.migrations.auto import (
+    AlterStatements,
     SchemaSnapshot,
     DiffableTable,
     SchemaDiffer,
@@ -62,6 +64,13 @@ def _create_new_migration(app_config: AppConfig, auto=False) -> None:
             app_config=app_config
         )
 
+        _alter_statements = list(
+            chain(*[i.statements for i in alter_statements])
+        )
+        extra_imports = sorted(
+            list(set(chain(*[i.extra_imports for i in alter_statements])))
+        )
+
         if len(alter_statements) == 0:
             print("No changes detected - exiting.")
             sys.exit(1)
@@ -69,7 +78,8 @@ def _create_new_migration(app_config: AppConfig, auto=False) -> None:
         file_contents = render_template(
             migration_id=_id,
             auto=True,
-            alter_statements=alter_statements,
+            alter_statements=_alter_statements,
+            extra_imports=extra_imports,
             app_name=app_config.app_name,
         )
     else:
@@ -88,12 +98,12 @@ def _create_new_migration(app_config: AppConfig, auto=False) -> None:
 
 
 class AutoMigrationManager(BaseMigrationManager):
-    def get_alter_statements(self, app_config: AppConfig) -> t.List[str]:
+    def get_alter_statements(
+        self, app_config: AppConfig
+    ) -> t.List[AlterStatements]:
         """
         Works out which alter statements are required.
         """
-        alter_statements: t.List[str] = []
-
         migration_managers = self.get_migration_managers(
             app_name=app_config.app_name
         )

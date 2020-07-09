@@ -7,16 +7,14 @@ import uuid
 
 from piccolo.columns.base import Column, OnDelete, OnUpdate, ForeignKeyMeta
 from piccolo.columns.operators.string import ConcatPostgres, ConcatSQLite
-from piccolo.custom_types import (
-    DateArg,
-    DateDefault,
-    TimeArg,
-    TimeDefault,
+from piccolo.columns.defaults.date import DateArg, DateNow, DateCustom
+from piccolo.columns.defaults.time import TimeArg, TimeNow, TimeCustom
+from piccolo.columns.defaults.timestamp import (
     TimestampArg,
-    TimestampDefault,
-    UUIDArg,
-    UUIDDefault,
+    TimestampNow,
+    TimestampCustom,
 )
+from piccolo.columns.defaults.uuid import UUIDArg, UUID4
 from piccolo.querystring import Unquoted, QueryString
 
 if t.TYPE_CHECKING:
@@ -208,8 +206,12 @@ class UUID(Column):
 
     value_type = uuid.UUID
 
-    def __init__(self, default: UUIDArg = UUIDDefault.uuid4, **kwargs) -> None:
+    def __init__(self, default: UUIDArg = UUID4(), **kwargs) -> None:
         self._validate_default(default, UUIDArg.__args__)  # type: ignore
+
+        if default == uuid.uuid4:
+            default = UUID4()
+
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
@@ -367,9 +369,16 @@ class Timestamp(Column):
     value_type = datetime
 
     def __init__(
-        self, default: TimestampArg = TimestampDefault.now, **kwargs
+        self, default: TimestampArg = TimestampNow(), **kwargs
     ) -> None:
         self._validate_default(default, TimestampArg.__args__)  # type: ignore
+
+        if isinstance(default, datetime):
+            default = TimestampCustom.from_datetime(default)
+
+        if default == datetime.now:
+            default = TimestampNow()
+
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
@@ -379,8 +388,12 @@ class Date(Column):
 
     value_type = date
 
-    def __init__(self, default: DateArg = DateDefault.now, **kwargs) -> None:
+    def __init__(self, default: DateArg = DateNow(), **kwargs) -> None:
         self._validate_default(default, DateArg.__args__)  # type: ignore
+
+        if isinstance(default, date):
+            default = DateCustom.from_date(default)
+
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
@@ -390,8 +403,12 @@ class Time(Column):
 
     value_type = time
 
-    def __init__(self, default: TimeArg = TimeDefault.now, **kwargs) -> None:
+    def __init__(self, default: TimeArg = TimeNow(), **kwargs) -> None:
         self._validate_default(default, TimeArg.__args__)  # type: ignore
+
+        if isinstance(default, time):
+            default = TimeCustom.from_time(default)
+
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)

@@ -6,7 +6,7 @@ import uuid
 from piccolo.columns.column_types import (
     BigInt,
     Date,
-    DateDefault,
+    DateNow,
     ForeignKey,
     Integer,
     Numeric,
@@ -14,11 +14,11 @@ from piccolo.columns.column_types import (
     SmallInt,
     Text,
     Time,
-    TimeDefault,
+    TimeNow,
     Timestamp,
-    TimestampDefault,
+    TimestampNow,
     UUID,
-    UUIDDefault,
+    UUID4,
     Varchar,
 )
 from piccolo.table import Table
@@ -65,7 +65,7 @@ class TestDefaults(TestCase):
 
     def test_uuid(self):
         UUID(default=None, null=True)
-        UUID(default=UUIDDefault.uuid4)
+        UUID(default=UUID4())
         UUID(default=uuid.uuid4())
         with self.assertRaises(ValueError):
             UUID(default="hello world")
@@ -74,7 +74,7 @@ class TestDefaults(TestCase):
 
     def test_time(self):
         Time(default=None, null=True)
-        Time(default=TimeDefault.now)
+        Time(default=TimeNow())
         Time(default=datetime.datetime.now().time())
         with self.assertRaises(ValueError):
             Time(default="hello world")
@@ -83,7 +83,7 @@ class TestDefaults(TestCase):
 
     def test_date(self):
         Date(default=None, null=True)
-        Date(default=DateDefault.now)
+        Date(default=DateNow())
         Date(default=datetime.datetime.now().date())
         with self.assertRaises(ValueError):
             Date(default="hello world")
@@ -92,7 +92,7 @@ class TestDefaults(TestCase):
 
     def test_timestamp(self):
         Timestamp(default=None, null=True)
-        Timestamp(default=TimestampDefault.now)
+        Timestamp(default=TimestampNow())
         Timestamp(default=datetime.datetime.now())
         with self.assertRaises(ValueError):
             Timestamp(default="hello world")

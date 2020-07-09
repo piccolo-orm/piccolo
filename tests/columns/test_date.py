@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from piccolo.table import Table
 from piccolo.columns.column_types import Date
-from piccolo.custom_types import DateDefault
+from piccolo.columns.defaults.date import DateNow
 
 
 class MyTable(Table):
@@ -11,7 +11,7 @@ class MyTable(Table):
 
 
 class MyTableDefault(Table):
-    created_on = Date(default=DateDefault.now)
+    created_on = Date(default=DateNow())
 
 
 class TestDate(TestCase):

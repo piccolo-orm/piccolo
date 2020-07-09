@@ -43,14 +43,14 @@ class TestSchemaDiffer(TestCase):
             schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
         )
 
-        self.assertTrue(len(schema_differ.rename_tables) == 1)
+        self.assertTrue(len(schema_differ.rename_tables.statements) == 1)
         self.assertEqual(
-            schema_differ.rename_tables[0],
+            schema_differ.rename_tables.statements[0],
             "manager.rename_table(old_class_name='Band', old_tablename='band', new_class_name='Act', new_tablename='act')",  # noqa
         )
 
-        self.assertEqual(schema_differ.create_tables, [])
-        self.assertEqual(schema_differ.drop_tables, [])
+        self.assertEqual(schema_differ.create_tables.statements, [])
+        self.assertEqual(schema_differ.drop_tables.statements, [])
 
     def test_add_column(self):
         """
@@ -79,9 +79,9 @@ class TestSchemaDiffer(TestCase):
             schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
         )
 
-        self.assertTrue(len(schema_differ.add_columns) == 1)
+        self.assertTrue(len(schema_differ.add_columns.statements) == 1)
         self.assertEqual(
-            schema_differ.add_columns[0],
+            schema_differ.add_columns.statements[0],
             "manager.add_column(table_class_name='Band', tablename='band', column_name='genre', column_class_name='Varchar', params={'length': 255, 'default': '', 'null': False, 'primary': False, 'key': False, 'unique': False, 'index': False})",  # noqa
         )
 
@@ -112,9 +112,9 @@ class TestSchemaDiffer(TestCase):
             schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
         )
 
-        self.assertTrue(len(schema_differ.drop_columns) == 1)
+        self.assertTrue(len(schema_differ.drop_columns.statements) == 1)
         self.assertEqual(
-            schema_differ.drop_columns[0],
+            schema_differ.drop_columns.statements[0],
             "manager.drop_column(table_class_name='Band', tablename='band', column_name='genre')",  # noqa
         )
 
@@ -143,9 +143,9 @@ class TestSchemaDiffer(TestCase):
             schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
         )
 
-        self.assertTrue(len(schema_differ.rename_columns) == 1)
+        self.assertTrue(len(schema_differ.rename_columns.statements) == 1)
         self.assertEqual(
-            schema_differ.rename_columns[0],
+            schema_differ.rename_columns.statements[0],
             "manager.rename_column(table_class_name='Band', tablename='band', old_column_name='title', new_column_name='name')",  # noqa
         )
 
@@ -171,9 +171,9 @@ class TestSchemaDiffer(TestCase):
             schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
         )
 
-        self.assertTrue(len(schema_differ.alter_columns) == 1)
+        self.assertTrue(len(schema_differ.alter_columns.statements) == 1)
         self.assertEqual(
-            schema_differ.alter_columns[0],
+            schema_differ.alter_columns.statements[0],
             "manager.alter_column(table_class_name='Ticket', tablename='ticket', column_name='price', params={'digits': (5, 2)}, old_params={'digits': (4, 2)})",  # noqa
         )
 

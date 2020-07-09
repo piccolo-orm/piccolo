@@ -7,8 +7,8 @@ from piccolo.apps.migrations.auto.diffable_table import (
     DiffableTable,
     TableDelta,
 )
+from piccolo.apps.migrations.auto.serialisation import Import, serialise_params
 from piccolo.apps.migrations.auto.operations import RenameTable, RenameColumn
-from piccolo.apps.migrations.auto.serialisation import serialise_params
 from piccolo.utils.printing import get_fixed_length_string
 
 
@@ -63,6 +63,12 @@ class RenameColumnCollection:
     @property
     def new_column_names(self):
         return [i.new_column_name for i in self.rename_columns]
+
+
+@dataclass
+class AlterStatements:
+    statements: t.List[str]
+    extra_imports: t.List[Import] = field(default_factory=list)
 
 
 @dataclass
@@ -198,7 +204,7 @@ class SchemaDiffer:
     ###########################################################################
 
     @property
-    def create_tables(self) -> t.List[str]:
+    def create_tables(self) -> AlterStatements:
         new_tables: t.List[DiffableTable] = list(
             set(self.schema) - set(self.schema_snapshot)
         )
@@ -211,13 +217,15 @@ class SchemaDiffer:
             not in self.rename_tables_collection.new_class_names
         ]
 
-        return [
-            f"manager.add_table('{i.class_name}', tablename='{i.tablename}')"
-            for i in new_tables
-        ]
+        return AlterStatements(
+            statements=[
+                f"manager.add_table('{i.class_name}', tablename='{i.tablename}')"
+                for i in new_tables
+            ]
+        )
 
     @property
-    def drop_tables(self) -> t.List[str]:
+    def drop_tables(self) -> AlterStatements:
         drop_tables: t.List[DiffableTable] = list(
             set(self.schema_snapshot) - set(self.schema)
         )
@@ -230,17 +238,21 @@ class SchemaDiffer:
             not in self.rename_tables_collection.old_class_names
         ]
 
-        return [
-            f"manager.drop_table(tablename='{i.tablename}')"
-            for i in drop_tables
-        ]
+        return AlterStatements(
+            statements=[
+                f"manager.drop_table(tablename='{i.tablename}')"
+                for i in drop_tables
+            ]
+        )
 
     @property
-    def rename_tables(self) -> t.List[str]:
-        return [
-            f"manager.rename_table(old_class_name='{renamed_table.old_class_name}', old_tablename='{renamed_table.old_tablename}', new_class_name='{renamed_table.new_class_name}', new_tablename='{renamed_table.new_tablename}')"  # noqa
-            for renamed_table in self.rename_tables_collection.rename_tables
-        ]
+    def rename_tables(self) -> AlterStatements:
+        return AlterStatements(
+            statements=[
+                f"manager.rename_table(old_class_name='{renamed_table.old_class_name}', old_tablename='{renamed_table.old_tablename}', new_class_name='{renamed_table.new_class_name}', new_tablename='{renamed_table.new_tablename}')"  # noqa
+                for renamed_table in self.rename_tables_collection.rename_tables
+            ]
+        )
 
     ###########################################################################
 
@@ -265,7 +277,7 @@ class SchemaDiffer:
         return None
 
     @property
-    def alter_columns(self) -> t.List[str]:
+    def alter_columns(self) -> AlterStatements:
         response = []
         for table in self.schema:
             snapshot_table = self._get_snapshot_table(table.class_name)
@@ -278,10 +290,10 @@ class SchemaDiffer:
                 response.append(
                     f"manager.alter_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{i.column_name}', params={str(i.params)}, old_params={str(i.old_params)})"  # noqa
                 )
-        return response
+        return AlterStatements(statements=response)
 
     @property
-    def drop_columns(self) -> t.List[str]:
+    def drop_columns(self) -> AlterStatements:
         response = []
         for table in self.schema:
             snapshot_table = self._get_snapshot_table(table.class_name)
@@ -300,11 +312,12 @@ class SchemaDiffer:
                 response.append(
                     f"manager.drop_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column.column_name}')"  # noqa
                 )
-        return response
+        return AlterStatements(statements=response)
 
     @property
-    def add_columns(self) -> t.List[str]:
+    def add_columns(self) -> AlterStatements:
         response = []
+        extra_imports = []
         for table in self.schema:
             snapshot_table = self._get_snapshot_table(table.class_name)
             if snapshot_table:
@@ -319,29 +332,36 @@ class SchemaDiffer:
                 ):
                     continue
 
-                cleaned_params = serialise_params(column.params)
+                params = serialise_params(column.params)
+                cleaned_params = params.params
+                extra_imports.extend(params.extra_imports)
 
                 response.append(
                     f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column.column_name}', column_class_name='{column.column_class_name}', params={str(cleaned_params)})"  # noqa
                 )
-        return response
+        return AlterStatements(
+            statements=response, extra_imports=extra_imports
+        )
 
     @property
-    def rename_columns(self) -> t.List[str]:
-        return [
-            f"manager.rename_column(table_class_name='{i.table_class_name}', tablename='{i.tablename}', old_column_name='{i.old_column_name}', new_column_name='{i.new_column_name}')"  # noqa
-            for i in self.rename_columns_collection.rename_columns
-        ]
+    def rename_columns(self) -> AlterStatements:
+        return AlterStatements(
+            statements=[
+                f"manager.rename_column(table_class_name='{i.table_class_name}', tablename='{i.tablename}', old_column_name='{i.old_column_name}', new_column_name='{i.new_column_name}')"  # noqa
+                for i in self.rename_columns_collection.rename_columns
+            ]
+        )
 
     ###########################################################################
 
     @property
-    def new_table_columns(self) -> t.List[str]:
+    def new_table_columns(self) -> AlterStatements:
         new_tables: t.List[DiffableTable] = list(
             set(self.schema) - set(self.schema_snapshot)
         )
 
         response = []
+        extra_imports = []
         for table in new_tables:
             if (
                 table.class_name
@@ -352,20 +372,24 @@ class SchemaDiffer:
             for column in table.columns:
                 # In case we cause subtle bugs:
                 params = deepcopy(column._meta.params)
-                cleaned_params = serialise_params(params)
+                _params = serialise_params(params)
+                cleaned_params = _params.params
+                extra_imports.extend(_params.extra_imports)
 
                 response.append(
                     f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column._meta.name}', column_class_name='{column.__class__.__name__}', params={str(cleaned_params)})"  # noqa
                 )
-        return response
+        return AlterStatements(
+            statements=response, extra_imports=extra_imports
+        )
 
     ###########################################################################
 
-    def get_alter_statements(self) -> t.List[str]:
+    def get_alter_statements(self) -> t.List[AlterStatements]:
         """
         Call to execute the necessary alter commands on the database.
         """
-        alter_statements: t.Dict[str, t.List[str]] = {
+        alter_statements: t.Dict[str, AlterStatements] = {
             "Created tables": self.create_tables,
             "Dropped tables": self.drop_tables,
             "Renamed tables": self.rename_tables,
@@ -378,7 +402,7 @@ class SchemaDiffer:
 
         for message, statements in alter_statements.items():
             _message = get_fixed_length_string(message, length=40)
-            count = len(statements)
+            count = len(statements.statements)
             print(f"{_message} {count}")
 
-        return list(chain(*alter_statements.values()))
+        return [i for i in alter_statements.values()]

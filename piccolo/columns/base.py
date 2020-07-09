@@ -22,7 +22,8 @@ from piccolo.columns.operators.comparison import (
     NotLike,
 )
 from piccolo.columns.combination import Where
-from piccolo.custom_types import Iterable, Default
+from piccolo.columns.defaults.base import Default
+from piccolo.custom_types import Iterable
 from piccolo.querystring import QueryString
 from piccolo.utils.warnings import colored_warning
 
@@ -38,6 +39,12 @@ class OnDelete(str, Enum):
     set_null = "SET NULL"
     set_default = "SET DEFAULT"
 
+    def __str__(self):
+        return f"{self.__class__.__name__}.{self.name}"
+
+    def __repr__(self):
+        return self.__str__()
+
 
 class OnUpdate(str, Enum):
     cascade = "CASCADE"
@@ -45,6 +52,12 @@ class OnUpdate(str, Enum):
     no_action = "NO ACTION"
     set_null = "SET NULL"
     set_default = "SET DEFAULT"
+
+    def __str__(self):
+        return f"{self.__class__.__name__}.{self.name}"
+
+    def __repr__(self):
+        return self.__str__()
 
 
 @dataclass
@@ -191,6 +204,8 @@ class Column(Selectable):
             and None in allowed_types
             or type(default) in allowed_types
         ):
+            return True
+        elif callable(default):
             return True
         else:
             raise ValueError(

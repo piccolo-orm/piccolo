@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from importlib import import_module
+import inspect
 import typing as t
 
 from piccolo.table import Table
@@ -43,7 +44,11 @@ def table_finder(
 
         for object_name in object_names:
             _object = getattr(module, object_name)
-            if issubclass(_object, Table) and _object is not Table:
+            if (
+                inspect.isclass(_object)
+                and issubclass(_object, Table)
+                and _object is not Table
+            ):
                 table: Table = _object
                 if exclude_tags and set(table._meta.tags).intersection(
                     set(exclude_tags)
