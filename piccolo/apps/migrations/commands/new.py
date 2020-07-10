@@ -71,7 +71,7 @@ def _create_new_migration(app_config: AppConfig, auto=False) -> None:
             list(set(chain(*[i.extra_imports for i in alter_statements])))
         )
 
-        if len(alter_statements) == 0:
+        if sum([len(i.statements) for i in alter_statements]) == 0:
             print("No changes detected - exiting.")
             sys.exit(1)
 

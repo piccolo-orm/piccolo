@@ -18,6 +18,12 @@ class TableReference:
     table_class_name: str
     table_name: str
 
+    def __hash__(self):
+        return hash(f"{self.table_class_name}-{self.table_name}")
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
     def deserialise(self) -> t.Type[Table]:
         _Table: t.Type[Table] = type(
             self.table_class_name, (Table,), {},
@@ -30,9 +36,15 @@ class TableReference:
 class SerialisedClass:
     instance: object
 
+    def __hash__(self):
+        return self.instance.__hash__()
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
     def __repr__(self):
         args = ", ".join(
-            ["{key}={value}" for key, value in self.instance.__dict__.items()]
+            [f"{key}={value}" for key, value in self.instance.__dict__.items()]
         )
         return f"{self.instance.__class__.__name__}({args})"
 
@@ -83,7 +95,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
     for key, value in params.items():
 
         # Class instances
-        if isinstance(value, (Default,)):
+        if isinstance(value, Default):
             params[key] = SerialisedClass(instance=value)
             extra_imports.append(
                 Import(
@@ -96,7 +108,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
         if isinstance(
             value, (datetime.time, datetime.datetime, datetime.date)
         ):
-            # Already have a good __repr__.
+            # Already has a good __repr__.
             extra_imports.append(
                 Import(
                     module=value.__class__.__module__,
@@ -156,9 +168,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
     )
 
 
-def deserialise_params(
-    column_class_name: str, params: t.Dict[str, t.Any]
-) -> t.Dict[str, t.Any]:
+def deserialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     """
     When reading column params from a migration file, we need to convert
     them from their serialised form.
@@ -167,10 +177,8 @@ def deserialise_params(
 
     for key, value in params.items():
         if isinstance(value, TableReference):
-            _Table: t.Type[Table] = type(
-                value.table_class_name, (Table,), {},
-            )
-            _Table._meta.tablename = value.table_name
-            params[key] = _Table
+            params[key] = value.deserialise()
+        elif isinstance(value, SerialisedClass):
+            params[key] = value.instance
 
     return params

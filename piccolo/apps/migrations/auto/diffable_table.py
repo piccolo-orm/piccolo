@@ -8,7 +8,10 @@ from piccolo.apps.migrations.auto.operations import (
     DropColumn,
     AlterColumn,
 )
-from piccolo.apps.migrations.auto.serialisation import serialise_params
+from piccolo.apps.migrations.auto.serialisation import (
+    serialise_params,
+    deserialise_params,
+)
 from piccolo.table import Table
 
 
@@ -87,16 +90,15 @@ class DiffableTable:
             if not existing_column:
                 # This is a new column - already captured above.
                 continue
+
             delta = compare_dicts(
                 serialise_params(column._meta.params).params,
                 serialise_params(existing_column._meta.params).params,
             )
-            old_params = serialise_params(
-                {
-                    key: existing_column._meta.params.get(key)
-                    for key, _ in delta.items()
-                }
-            ).params
+            old_params = {
+                key: existing_column._meta.params.get(key)
+                for key, _ in delta.items()
+            }
 
             if delta:
                 alter_columns.append(
@@ -104,7 +106,7 @@ class DiffableTable:
                         table_class_name=self.class_name,
                         tablename=self.tablename,
                         column_name=column._meta.name,
-                        params=delta,
+                        params=deserialise_params(delta),
                         old_params=old_params,
                     )
                 )

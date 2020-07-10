@@ -279,6 +279,7 @@ class SchemaDiffer:
     @property
     def alter_columns(self) -> AlterStatements:
         response = []
+        extra_imports = []
         for table in self.schema:
             snapshot_table = self._get_snapshot_table(table.class_name)
             if snapshot_table:
@@ -287,10 +288,19 @@ class SchemaDiffer:
                 continue
 
             for i in delta.alter_columns:
+                new_params = serialise_params(i.params)
+                extra_imports.extend(new_params.extra_imports)
+
+                old_params = serialise_params(i.old_params)
+                extra_imports.extend(old_params.extra_imports)
+
                 response.append(
-                    f"manager.alter_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{i.column_name}', params={str(i.params)}, old_params={str(i.old_params)})"  # noqa
+                    f"manager.alter_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{i.column_name}', params={new_params.params}, old_params={old_params.params})"  # noqa
                 )
-        return AlterStatements(statements=response)
+
+        return AlterStatements(
+            statements=response, extra_imports=extra_imports
+        )
 
     @property
     def drop_columns(self) -> AlterStatements:

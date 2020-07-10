@@ -187,9 +187,7 @@ class MigrationManager:
         params: t.Dict[str, t.Any] = {},
     ):
         column_class = getattr(column_types, column_class_name)
-        cleaned_params = deserialise_params(
-            column_class_name=column_class_name, params=params
-        )
+        cleaned_params = deserialise_params(params=params)
         column = column_class(**cleaned_params)
         column._meta.name = column_name
         self.add_columns.append(
@@ -460,7 +458,9 @@ class MigrationManager:
     async def _run_add_tables(self, backwards=False):
         if backwards:
             for add_table in self.add_tables:
-                await add_table.to_table_class().alter().drop_table().run()
+                await add_table.to_table_class().alter().drop_table(
+                    cascade=True
+                ).run()
         else:
             for add_table in self.add_tables:
                 columns = (

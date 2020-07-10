@@ -227,6 +227,19 @@ class SetDigits(AlterColumnStatement):
             )
 
 
+@dataclass
+class DropTable:
+    tablename: str
+    cascade: bool
+
+    @property
+    def querystring(self) -> QueryString:
+        query = f'DROP TABLE "{self.tablename}"'
+        if self.cascade:
+            query += " CASCADE"
+        return QueryString(query)
+
+
 class Alter(Query):
 
     __slots__ = (
@@ -251,7 +264,7 @@ class Alter(Query):
         self._add: t.List[AddColumn] = []
         self._drop_contraint: t.List[DropConstraint] = []
         self._drop_default: t.List[DropDefault] = []
-        self._drop_table = False
+        self._drop_table: t.Optional[DropTable] = None
         self._drop: t.List[DropColumn] = []
         self._null: t.List[Null] = []
         self._rename_columns: t.List[RenameColumn] = []
@@ -283,11 +296,13 @@ class Alter(Query):
         self._drop_default.append(DropDefault(column=column))
         return self
 
-    def drop_table(self) -> Alter:
+    def drop_table(self, cascade: bool = False) -> Alter:
         """
         Band.alter().drop_table()
         """
-        self._drop_table = True
+        self._drop_table = DropTable(
+            tablename=self.table._meta.tablename, cascade=cascade
+        )
         return self
 
     def rename_table(self, new_name: str) -> Alter:
@@ -481,8 +496,8 @@ class Alter(Query):
 
     @property
     def querystrings(self) -> t.Sequence[QueryString]:
-        if self._drop_table:
-            return [QueryString(f'DROP TABLE "{self.table._meta.tablename}"')]
+        if self._drop_table is not None:
+            return [self._drop_table.querystring]
 
         query = f"ALTER TABLE {self.table._meta.tablename}"
 

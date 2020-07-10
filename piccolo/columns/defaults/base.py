@@ -56,5 +56,11 @@ class Default(ABC):
         )
         return f"{self.__class__.__name__}({args_str})"
 
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
+    def __hash__(self):
+        return hash(self.__str__())
+
 
 __all__ = ["Default"]
