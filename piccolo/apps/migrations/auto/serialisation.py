@@ -51,8 +51,28 @@ class SerialisedClass:
 
 
 @dataclass
+class SerialisedFunction:
+    function: t.Callable
+
+    def __hash__(self):
+        return hash(self.function.__name__)
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
+    def __repr__(self):
+        return self.function.__name__
+
+
+@dataclass
 class SerialisedUUID:
     instance: uuid.UUID
+
+    def __hash__(self):
+        return self.instance.int
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
 
     def __repr__(self):
         return f"UUID({str(self.instance)})"
@@ -139,7 +159,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
             if value.__name__ == "<lambda>":
                 raise ValueError("Lambdas can't be serialised")
 
-            params[key] = value.__name__
+            params[key] = SerialisedFunction(function=value)
             extra_imports.append(
                 Import(module=value.__module__, target=value.__name__)
             )
@@ -179,7 +199,7 @@ def deserialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
             params[key] = value.instance
         else:
             # This is purely for backwards compatibility.
-            if isinstance(value, str):
+            if isinstance(value, str) and not isinstance(value, Enum):
                 params[key] = deserialise_legacy_params(name=key, value=value)
 
     return params
