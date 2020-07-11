@@ -1,5 +1,6 @@
 from __future__ import annotations
 import asyncio
+import sys
 import typing as t
 
 from .base import (
@@ -18,7 +19,6 @@ class ForwardsMigrationManager(BaseMigrationManager):
 
     def run_migrations(self, app_config: AppConfig) -> None:
         already_ran = Migration.get_migrations_which_ran()
-        print(f"Already ran:\n{already_ran}\n")
 
         migration_modules: t.Dict[
             str, MigrationModule
@@ -29,6 +29,9 @@ class ForwardsMigrationManager(BaseMigrationManager):
 
         havent_run = sorted(set(ids) - set(already_ran))
         print(f"Haven't run = {havent_run}")
+
+        if len(havent_run) == 0:
+            sys.exit("No migrations left to run!")
 
         for _id in havent_run:
             if self.fake:

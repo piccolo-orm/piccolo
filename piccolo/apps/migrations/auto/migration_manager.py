@@ -484,6 +484,13 @@ class MigrationManager:
         """
         if backwards:
             for add_column in self.add_columns.add_columns:
+                if add_column.table_class_name in [
+                    i.class_name for i in self.add_tables
+                ]:
+                    # Don't reverse the add column as the table is going to
+                    # be deleted.
+                    continue
+
                 _Table: t.Type[Table] = type(
                     add_column.table_class_name, (Table,), {}
                 )

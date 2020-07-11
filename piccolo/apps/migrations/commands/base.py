@@ -123,6 +123,9 @@ class BaseMigrationManager:
     def get_migration_ids(
         self, migration_module_dict: t.Dict[str, MigrationModule]
     ) -> t.List[str]:
+        """
+        Returns a list of migration IDs, from the Python migration files.
+        """
         return sorted(list(migration_module_dict.keys()))
 
     def get_migration_managers(
