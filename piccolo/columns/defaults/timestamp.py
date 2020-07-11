@@ -85,8 +85,23 @@ class TimestampCustom(Default):
         )
 
 
+###############################################################################
+# For backwards compatibility:
+
+
+class DatetimeDefault:
+    now = TimestampNow()
+
+
+###############################################################################
+
 TimestampArg = t.Union[
-    TimestampCustom, TimestampNow, TimestampOffset, None, datetime.datetime
+    TimestampCustom,
+    TimestampNow,
+    TimestampOffset,
+    None,
+    datetime.datetime,
+    DatetimeDefault,
 ]
 
 

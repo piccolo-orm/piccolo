@@ -9,6 +9,7 @@ import uuid
 
 from piccolo.columns.defaults.base import Default
 from piccolo.table import Table
+from .serialisation_legacy import deserialise_legacy_params
 
 ###############################################################################
 
@@ -144,10 +145,6 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
             )
             continue
 
-        # Methods
-        # if inspect.ismethod(value):
-        #     params[key] = type
-
         # Replace any Table class values into class and table names
         if inspect.isclass(value) and issubclass(value, Table):
             params[key] = TableReference(
@@ -180,5 +177,9 @@ def deserialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
             params[key] = value.deserialise()
         elif isinstance(value, SerialisedClass):
             params[key] = value.instance
+        else:
+            # This is purely for backwards compatibility.
+            if isinstance(value, str):
+                params[key] = deserialise_legacy_params(name=key, value=value)
 
     return params
