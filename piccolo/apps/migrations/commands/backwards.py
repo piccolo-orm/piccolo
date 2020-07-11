@@ -34,6 +34,8 @@ class BackwardsMigrationManager(BaseMigrationManager):
 
         if self.migration_id == "all":
             earliest_migration_id = ran_migration_ids[0]
+        elif self.migration_id == "1":
+            earliest_migration_id = ran_migration_ids[-1]
         else:
             earliest_migration_id = self.migration_id
 
@@ -80,15 +82,16 @@ class BackwardsMigrationManager(BaseMigrationManager):
             print("Not proceeding.")
 
 
-def backwards(app_name: str, migration_id: str):
+def backwards(app_name: str, migration_id: str = "1"):
     """
     Undo migrations up to a specific migration.
 
     :param app_name:
         The app to reverse migrations for.
     :param migration_id:
-        Migrations will be reversed up to this migration. Specify a value of
-        'all' to undo all of the migrations.
+        Migrations will be reversed up to and including this migration_id.
+        Specify a value of 'all' to undo all of the migrations. Specify a
+        value of '1' to undo the most recent migration.
     """
     manager = BackwardsMigrationManager(
         app_name=app_name, migration_id=migration_id
