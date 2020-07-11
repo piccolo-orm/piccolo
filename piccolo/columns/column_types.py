@@ -555,12 +555,11 @@ class ForeignKey(Integer):
         self._validate_default(default, (int, None))
 
         if isinstance(references, str):
-            # if references != "self":
-            #     raise ValueError(
-            #         "String values for 'references' currently only supports "
-            #         "'self', which is a reference to the current table."
-            #     )
-            pass
+            if references != "self":
+                raise ValueError(
+                    "String values for 'references' currently only supports "
+                    "'self', which is a reference to the current table."
+                )
 
         kwargs.update(
             {
