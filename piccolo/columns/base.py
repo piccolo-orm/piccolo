@@ -199,13 +199,19 @@ class Column(Selectable):
         """
         Make sure that the default value is of the allowed types.
         """
-        if (
+        if getattr(self, "validated", None):
+            # If it has previously been validated by a subclass, don't
+            # validated again.
+            return True
+        elif (
             default is None
             and None in allowed_types
             or type(default) in allowed_types
         ):
+            self.validated = True
             return True
         elif callable(default):
+            self.validated = True
             return True
         else:
             raise ValueError(
