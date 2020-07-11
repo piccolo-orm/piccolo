@@ -1,5 +1,4 @@
 import asyncio
-import sys
 
 from piccolo.apps.migrations.auto import MigrationManager
 from piccolo.apps.migrations.tables import Migration
@@ -28,7 +27,8 @@ class BackwardsMigrationManager(BaseMigrationManager):
             app_name=self.app_name
         )
         if len(ran_migration_ids) == 0:
-            sys.exit("No migrations to reverse!")
+            print("No migrations to reverse!")
+            return
 
         #######################################################################
 
@@ -87,13 +87,32 @@ def backwards(app_name: str, migration_id: str = "1"):
     Undo migrations up to a specific migration.
 
     :param app_name:
-        The app to reverse migrations for.
+        The app to reverse migrations for. Specify a value of 'all' to reverse
+        migrations for all apps.
     :param migration_id:
         Migrations will be reversed up to and including this migration_id.
         Specify a value of 'all' to undo all of the migrations. Specify a
         value of '1' to undo the most recent migration.
     """
-    manager = BackwardsMigrationManager(
-        app_name=app_name, migration_id=migration_id
-    )
-    manager.run()
+    if app_name == "all":
+        sorted_app_names = BaseMigrationManager().get_sorted_app_names()
+        sorted_app_names.reverse()
+
+        _continue = input(
+            "You're about to undo the migrations for the following apps:\n"
+            f"{sorted_app_names}\n"
+            "Are you sure you want to continue?\n"
+            "Enter y to continue.\n"
+        )
+        if _continue == "y":
+            for _app_name in sorted_app_names:
+                print(f"Undoing {_app_name}")
+                manager = BackwardsMigrationManager(
+                    app_name=_app_name, migration_id="all"
+                )
+                manager.run()
+    else:
+        manager = BackwardsMigrationManager(
+            app_name=app_name, migration_id=migration_id
+        )
+        manager.run()

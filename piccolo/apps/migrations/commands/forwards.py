@@ -3,13 +3,11 @@ import asyncio
 import sys
 import typing as t
 
-from .base import (
-    BaseMigrationManager,
-    MigrationModule,
-)
+from .base import BaseMigrationManager
 from piccolo.conf.apps import AppConfig
 from piccolo.apps.migrations.tables import Migration
 from piccolo.apps.migrations.auto import MigrationManager
+from piccolo.conf.apps import MigrationModule
 
 
 class ForwardsMigrationManager(BaseMigrationManager):
@@ -41,7 +39,8 @@ class ForwardsMigrationManager(BaseMigrationManager):
         print(f"Haven't run = {havent_run}")
 
         if len(havent_run) == 0:
-            sys.exit("No migrations left to run!")
+            print("No migrations left to run!")
+            return
 
         if self.migration_id == "all":
             subset = havent_run
@@ -85,7 +84,8 @@ def forwards(app_name: str, migration_id: str = "all", fake: bool = False):
     Runs any migrations which haven't been run yet.
 
     :param app_name:
-        The name of the app to migrate.
+        The name of the app to migrate. Specify a value of 'all' to run
+        migrations for all apps.
     :param migration_id:
         Migrations will be ran up to and including this migration_id.
         Specify a value of 'all' to run all of the migrations. Specify a
@@ -94,7 +94,16 @@ def forwards(app_name: str, migration_id: str = "all", fake: bool = False):
         If set, will record the migrations as being run without actually
         running them.
     """
-    manager = ForwardsMigrationManager(
-        app_name=app_name, migration_id=migration_id, fake=fake
-    )
-    manager.run()
+    if app_name == "all":
+        sorted_app_names = BaseMigrationManager().get_sorted_app_names()
+        for _app_name in sorted_app_names:
+            print(f"Migrating {_app_name}")
+            manager = ForwardsMigrationManager(
+                app_name=_app_name, migration_id="all", fake=fake
+            )
+            manager.run()
+    else:
+        manager = ForwardsMigrationManager(
+            app_name=app_name, migration_id=migration_id, fake=fake
+        )
+        manager.run()

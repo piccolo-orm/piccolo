@@ -2,9 +2,20 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from importlib import import_module
 import inspect
+from types import ModuleType
 import typing as t
 
 from piccolo.table import Table
+
+
+class MigrationModule(ModuleType):
+    @staticmethod
+    async def forwards() -> None:
+        pass
+
+
+class PiccoloAppModule(ModuleType):
+    APP_CONFIG: AppConfig
 
 
 def table_finder(
@@ -73,6 +84,14 @@ class AppConfig:
     def register_table(self, table_class: t.Type[Table]):
         self.table_classes.append(table_class)
         return table_class
+
+    @property
+    def migration_dependency_app_configs(self) -> t.List[AppConfig]:
+        modules: t.List[PiccoloAppModule] = [
+            t.cast(PiccoloAppModule, import_module(module_path))
+            for module_path in self.migration_dependencies
+        ]
+        return [i.APP_CONFIG for i in modules]
 
 
 @dataclass

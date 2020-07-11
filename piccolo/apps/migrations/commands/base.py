@@ -1,26 +1,16 @@
 from __future__ import annotations
 import asyncio
+import functools
 import importlib
 import os
 import sys
-from types import ModuleType
 import typing as t
 
-from piccolo.conf.apps import AppConfig
+from piccolo.conf.apps import AppConfig, MigrationModule, PiccoloAppModule
 from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
 from piccolo.apps.migrations.auto.schema_snapshot import SchemaSnapshot
 from piccolo.apps.migrations.tables import Migration
-
-
-class MigrationModule(ModuleType):
-    @staticmethod
-    async def forwards() -> None:
-        pass
-
-
-class PiccoloAppModule(ModuleType):
-    APP_CONFIG: AppConfig
 
 
 class BaseMigrationManager:
@@ -68,6 +58,9 @@ class BaseMigrationManager:
         return config_modules
 
     def get_app_modules(self) -> t.List[PiccoloAppModule]:
+        """
+        Returns the piccolo_app.py modules for each registered Piccolo app.
+        """
         try:
             from piccolo_conf import APP_REGISTRY
         except ImportError:
@@ -83,7 +76,28 @@ class BaseMigrationManager:
 
         return app_modules
 
+    def get_sorted_app_names(self) -> t.List[str]:
+        """
+        Sorts the app names using the migration dependencies, so dependencies
+        are before dependents in the list.
+        """
+        modules = self.get_app_modules()
+        configs: t.List[AppConfig] = [module.APP_CONFIG for module in modules]
+
+        def sort_app_configs(app_config_1: AppConfig, app_config_2: AppConfig):
+            return (
+                app_config_1 in app_config_2.migration_dependency_app_configs
+            )
+
+        sorted_configs = sorted(
+            configs, key=functools.cmp_to_key(sort_app_configs)
+        )
+        return [i.app_name for i in sorted_configs]
+
     def get_app_config(self, app_name: str) -> AppConfig:
+        """
+        Returns an `AppConfig` for the given app name.
+        """
         modules = self.get_app_modules()
         for module in modules:
             app_config = module.APP_CONFIG

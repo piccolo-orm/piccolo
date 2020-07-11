@@ -130,6 +130,7 @@ class Varchar(Column):
         self, length: int = 255, default: t.Union[str, None] = "", **kwargs
     ) -> None:
         self._validate_default(default, (str, None))
+
         self.length = length
         self.default = default
         kwargs.update({"length": length, "default": default})
