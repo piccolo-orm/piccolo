@@ -4,6 +4,9 @@ from piccolo.utils.printing import get_fixed_length_string
 
 
 class CheckMigrationManager(BaseMigrationManager):
+    def __init__(self, app_name: str):
+        self.app_name = app_name
+
     def run(self):
         print("Listing migrations ...")
 
@@ -21,6 +24,10 @@ class CheckMigrationManager(BaseMigrationManager):
             app_config = app_module.APP_CONFIG
 
             app_name = app_config.app_name
+
+            if (self.app_name != "all") and (self.app_name != app_name):
+                continue
+
             fixed_length_app_name = get_fixed_length_string(app_name)
 
             migration_modules = self.get_migration_modules(
@@ -42,8 +49,12 @@ class CheckMigrationManager(BaseMigrationManager):
                 )
 
 
-def check():
+def check(app_name: str = "all"):
     """
     Lists all migrations which have and haven't ran.
+
+    :param app_name:
+        The name of the app to check. Specify a value of 'all' to check
+        the migrations for all apps.
     """
-    CheckMigrationManager().run()
+    CheckMigrationManager(app_name=app_name).run()
