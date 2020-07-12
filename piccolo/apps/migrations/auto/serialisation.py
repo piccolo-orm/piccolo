@@ -2,6 +2,7 @@ from __future__ import annotations
 from copy import deepcopy
 from dataclasses import dataclass
 import datetime
+import decimal
 from enum import Enum
 import inspect
 import typing as t
@@ -126,6 +127,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
             )
             continue
 
+        # Dates and times
         if isinstance(
             value, (datetime.time, datetime.datetime, datetime.date)
         ):
@@ -142,6 +144,12 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
         if isinstance(value, uuid.UUID):
             params[key] = SerialisedUUID(instance=value)
             extra_imports.append(Import(module="uuid", target="UUID"))
+            continue
+
+        # Decimals
+        if isinstance(value, decimal.Decimal):
+            # Already has a good __repr__.
+            extra_imports.append(Import(module="decimal", target="Decimal"))
             continue
 
         # Enums
