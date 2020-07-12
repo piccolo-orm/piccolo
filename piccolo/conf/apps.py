@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from importlib import import_module
 import inspect
+import itertools
 from types import ModuleType
 import typing as t
 
@@ -108,10 +109,32 @@ class AppRegistry:
 
     def __post_init__(self):
         self.app_configs: t.Dict[str, AppConfig] = {}
+        app_names = []
+
         for app in self.apps:
             app_conf_module = import_module(app)
             app_config: AppConfig = getattr(app_conf_module, "APP_CONFIG")
             self.app_configs[app_config.app_name] = app_config
+            app_names.append(app_config.app_name)
+
+        self._validate_app_names(app_names)
+
+    @staticmethod
+    def _validate_app_names(app_names: t.List[str]):
+        """
+        Raise a ValueError if an app_name is repeated.
+        """
+        app_names.sort()
+        grouped = itertools.groupby(app_names)
+        for key, value in grouped:
+            count = len([i for i in value])
+            if count > 1:
+                raise ValueError(
+                    f"There are {count} apps with the name `{key}`. This can "
+                    "cause unexpected behavior. Make sure each app has a "
+                    "unique name, and you haven't registered the same app "
+                    "multiple times."
+                )
 
     def get_app_config(self, app_name: str) -> t.Optional[AppConfig]:
         return self.app_configs.get(app_name)

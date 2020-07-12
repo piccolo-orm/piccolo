@@ -223,7 +223,7 @@ class PostgresEngine(Engine):
             )
 
         try:
-            response: t.Sequence[t.Dict] = future.result()
+            response: t.Sequence[t.Dict] = future.result()  # type: ignore
         except ConnectionRefusedError as exception:
             # Suppressing the exception, otherwise importing piccolo_conf.py
             # containing an engine will raise an ImportError.

@@ -9,6 +9,18 @@ class TestAppRegistry(TestCase):
         app_config = app_registry.get_app_config(app_name="user")
         self.assertTrue(isinstance(app_config, AppConfig))
 
+    def test_duplicate_app_names(self):
+        """
+        An exception should be if apps with duplicate names are registered.
+        """
+        with self.assertRaises(ValueError):
+            AppRegistry(
+                apps=[
+                    "piccolo.apps.user.piccolo_app",
+                    "piccolo.apps.user.piccolo_app",
+                ]
+            )
+
 
 class TestTableFinder(TestCase):
     def test_table_finder(self):
