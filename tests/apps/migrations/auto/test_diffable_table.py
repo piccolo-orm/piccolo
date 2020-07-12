@@ -1,9 +1,8 @@
-
 from unittest import TestCase
 
 from piccolo.apps.migrations.auto.diffable_table import (
     compare_dicts,
-    DiffableTable
+    DiffableTable,
 )
 from piccolo.columns import Varchar
 
@@ -18,30 +17,17 @@ class TestCompareDicts(TestCase):
 
 class TestDiffableTable(TestCase):
     def test_subtract(self):
-        kwargs = {
-            'class_name': "Manager",
-            'tablename': 'manager'
-        }
+        kwargs = {"class_name": "Manager", "tablename": "manager"}
 
         name_column_1 = Varchar(unique=False)
         name_column_1._meta.name = "name"
-        table_1 = DiffableTable(
-            **kwargs,
-            columns=[name_column_1]
-        )
+        table_1 = DiffableTable(**kwargs, columns=[name_column_1])
 
         name_column_2 = Varchar(unique=True)
         name_column_2._meta.name = "name"
-        table_2 = DiffableTable(
-            **kwargs,
-            columns=[name_column_2]
-        )
+        table_2 = DiffableTable(**kwargs, columns=[name_column_2])
 
-        delta = table_1 - table_2
+        delta = table_2 - table_1
 
-        self.assertEqual(
-            delta.alter_columns[0].params, {'unique': True}
-        )
-        self.assertEqual(
-            delta.alter_columns[0].old_params, {'unique': False}
-        )
+        self.assertEqual(delta.alter_columns[0].params, {"unique": True})
+        self.assertEqual(delta.alter_columns[0].old_params, {"unique": False})

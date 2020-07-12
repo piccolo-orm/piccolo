@@ -1,2 +1,2 @@
 #!/bin/bash
-./run-tests.sh --cov-report html $@
+./test-postgres.sh --cov-report html $@
