@@ -85,9 +85,9 @@ class DiffableTable:
 
         alter_columns: t.List[AlterColumn] = []
 
-        for column in value.columns:
-            existing_column = self.columns_map.get(column._meta.name)
-            if not existing_column:
+        for existing_column in value.columns:
+            column = self.columns_map.get(existing_column._meta.name)
+            if not column:
                 # This is a new column - already captured above.
                 continue
 
@@ -95,6 +95,7 @@ class DiffableTable:
                 serialise_params(column._meta.params).params,
                 serialise_params(existing_column._meta.params).params,
             )
+
             old_params = {
                 key: existing_column._meta.params.get(key)
                 for key, _ in delta.items()
