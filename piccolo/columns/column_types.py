@@ -466,12 +466,16 @@ class Numeric(Column):
         default: t.Union[decimal.Decimal, None] = decimal.Decimal(0.0),
         **kwargs,
     ) -> None:
-        if isinstance(digits, tuple) and len(digits) != 2:
-            raise ValueError(
-                "The `digits` argument should be a tuple of length 2, with "
-                "the first value being the precision, and the second value "
-                "being the scale."
-            )
+        if isinstance(digits, tuple):
+            if len(digits) != 2:
+                raise ValueError(
+                    "The `digits` argument should be a tuple of length 2, "
+                    "with the first value being the precision, and the second "
+                    "value being the scale."
+                )
+        else:
+            if digits is not None:
+                raise ValueError("The digits argument should be a tuple.")
 
         self._validate_default(default, (decimal.Decimal, None))
 
