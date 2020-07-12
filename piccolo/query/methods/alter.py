@@ -138,12 +138,10 @@ class Null(AlterColumnStatement):
     def querystring(self) -> QueryString:
         if self.boolean:
             return QueryString(
-                "ALTER COLUMN {} DROP NOT NULL", self.column_name
+                f"ALTER COLUMN {self.column_name} DROP NOT NULL"
             )
         else:
-            return QueryString(
-                "ALTER COLUMN {} SET NOT NULL", self.column_name
-            )
+            return QueryString(f"ALTER COLUMN {self.column_name} SET NOT NULL")
 
 
 @dataclass
@@ -156,7 +154,7 @@ class SetLength(AlterColumnStatement):
     @property
     def querystring(self) -> QueryString:
         return QueryString(
-            "ALTER COLUMN {} TYPE VARCHAR({})", self.column_name, self.length
+            f"ALTER COLUMN {self.column_name} TYPE VARCHAR({self.length})"
         )
 
 
@@ -169,7 +167,7 @@ class DropConstraint(AlterStatement):
     @property
     def querystring(self) -> QueryString:
         return QueryString(
-            "DROP CONSTRAINT IF EXISTS {}", self.constraint_name
+            f"DROP CONSTRAINT IF EXISTS {self.constraint_name}",
         )
 
 
