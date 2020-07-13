@@ -203,10 +203,22 @@ class TestSetDigits(TestCase):
         Ticket.alter().drop_table().run_sync()
 
     def test_set_digits(self):
+        query = """
+            SELECT numeric_precision, numeric_scale
+            FROM information_schema.columns
+            WHERE table_name = 'ticket'
+            AND table_catalog = 'piccolo'
+            AND column_name = 'price'
+            """
+
         Ticket.alter().set_digits(
             column=Ticket.price, digits=(6, 2)
         ).run_sync()
+        response = Ticket.raw(query).run_sync()
+        self.assertTrue(response[0]["numeric_precision"] == 6)
+        self.assertTrue(response[0]["numeric_scale"] == 2)
 
-        Ticket.insert(Ticket(price=decimal.Decimal("9999.00"))).run_sync()
-        ticket = Ticket.objects().first().run_sync()
-        self.assertTrue(ticket.price == decimal.Decimal("9999.00"))
+        Ticket.alter().set_digits(column=Ticket.price, digits=None).run_sync()
+        response = Ticket.raw(query).run_sync()
+        self.assertTrue(response[0]["numeric_precision"] == None)
+        self.assertTrue(response[0]["numeric_scale"] == None)
