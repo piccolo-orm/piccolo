@@ -139,8 +139,8 @@ class TestMultiple(DBTestCase):
 
 
 @postgres_only
-class TestNull(DBTestCase):
-    def test_null(self):
+class TestSetNull(DBTestCase):
+    def test_set_null(self):
         query = """
             SELECT is_nullable FROM information_schema.columns
             WHERE table_name = 'band'
@@ -155,6 +155,22 @@ class TestNull(DBTestCase):
         Band.alter().set_null(Band.popularity, boolean=False).run_sync()
         response = Band.raw(query).run_sync()
         self.assertTrue(response[0]["is_nullable"] == "NO")
+
+
+@postgres_only
+class TestSetLength(DBTestCase):
+    def test_set_length(self):
+        query = """
+            SELECT character_maximum_length FROM information_schema.columns
+            WHERE table_name = 'band'
+            AND table_catalog = 'piccolo'
+            AND column_name = 'name'
+            """
+
+        for length in (5, 20, 50):
+            Band.alter().set_length(Band.name, length=length).run_sync()
+            response = Band.raw(query).run_sync()
+            self.assertTrue(response[0]["character_maximum_length"] == length)
 
 
 @postgres_only
