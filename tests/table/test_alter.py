@@ -138,9 +138,23 @@ class TestMultiple(DBTestCase):
         self.assertTrue("column_b" in column_names)
 
 
+@postgres_only
 class TestNull(DBTestCase):
     def test_null(self):
-        pass
+        query = """
+            SELECT is_nullable FROM information_schema.columns
+            WHERE table_name = 'band'
+            AND table_catalog = 'piccolo'
+            AND column_name = 'popularity'
+            """
+
+        Band.alter().set_null(Band.popularity, boolean=True).run_sync()
+        response = Band.raw(query).run_sync()
+        self.assertTrue(response[0]["is_nullable"] == "YES")
+
+        Band.alter().set_null(Band.popularity, boolean=False).run_sync()
+        response = Band.raw(query).run_sync()
+        self.assertTrue(response[0]["is_nullable"] == "NO")
 
 
 @postgres_only
