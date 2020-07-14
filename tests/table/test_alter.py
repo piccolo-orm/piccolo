@@ -220,5 +220,5 @@ class TestSetDigits(TestCase):
 
         Ticket.alter().set_digits(column=Ticket.price, digits=None).run_sync()
         response = Ticket.raw(query).run_sync()
-        self.assertTrue(response[0]["numeric_precision"] == None)
-        self.assertTrue(response[0]["numeric_scale"] == None)
+        self.assertTrue(response[0]["numeric_precision"] is None)
+        self.assertTrue(response[0]["numeric_scale"] is None)
