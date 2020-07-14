@@ -1,4 +1,4 @@
-.. _Exists:
+.. _Count:
 
 Count
 =====
