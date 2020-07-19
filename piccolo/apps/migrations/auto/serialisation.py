@@ -1,6 +1,6 @@
 from __future__ import annotations
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import datetime
 import decimal
 from enum import Enum
@@ -13,25 +13,6 @@ from piccolo.table import Table
 from .serialisation_legacy import deserialise_legacy_params
 
 ###############################################################################
-
-
-@dataclass
-class TableReference:
-    table_class_name: str
-    table_name: str
-
-    def __hash__(self):
-        return hash(f"{self.table_class_name}-{self.table_name}")
-
-    def __eq__(self, other):
-        return self.__hash__() == other.__hash__()
-
-    def deserialise(self) -> t.Type[Table]:
-        _Table: t.Type[Table] = type(
-            self.table_class_name, (Table,), {},
-        )
-        _Table._meta.tablename = self.table_name
-        return _Table
 
 
 @dataclass
@@ -52,17 +33,35 @@ class SerialisedClass:
 
 
 @dataclass
-class SerialisedFunction:
-    function: t.Callable
+class SerialisedTableType:
+    table_type: t.Type[Table]
 
     def __hash__(self):
-        return hash(self.function.__name__)
+        return hash(
+            f"{self.table_type._meta.tablename}-{self.table_type.__name__}"
+        )
 
     def __eq__(self, other):
         return self.__hash__() == other.__hash__()
 
     def __repr__(self):
-        return self.function.__name__
+        tablename = self.table_type._meta.tablename
+        class_name = self.table_type.__name__
+        return f'class {class_name}(Table, tablename="{tablename}"): pass'
+
+
+@dataclass
+class SerialisedCallable:
+    callable_: t.Callable
+
+    def __hash__(self):
+        return hash(self.callable_.__name__)
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
+    def __repr__(self):
+        return self.callable_.__name__
 
 
 @dataclass
@@ -101,6 +100,7 @@ class Import:
 class SerialisedParams:
     params: t.Dict[str, t.Any]
     extra_imports: t.List[Import]
+    extra_definitions: t.List[str] = field(default_factory=list)
 
 
 ###############################################################################
@@ -113,6 +113,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
     """
     params = deepcopy(params)
     extra_imports: t.List[Import] = []
+    extra_definitions: t.List[t.Any] = []
 
     for key, value in params.items():
 
@@ -167,7 +168,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
             if value.__name__ == "<lambda>":
                 raise ValueError("Lambdas can't be serialised")
 
-            params[key] = SerialisedFunction(function=value)
+            params[key] = SerialisedCallable(callable_=value)
             extra_imports.append(
                 Import(module=value.__module__, target=value.__name__)
             )
@@ -175,21 +176,19 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
 
         # Replace any Table class values into class and table names
         if inspect.isclass(value) and issubclass(value, Table):
-            params[key] = TableReference(
-                table_class_name=value.__name__,
-                table_name=value._meta.tablename,
-            )
+            params[key] = SerialisedCallable(callable_=value)
+            extra_definitions.append(SerialisedTableType(table_type=value))
             extra_imports.append(
-                Import(
-                    module=TableReference.__module__, target="TableReference"
-                )
+                Import(module=Table.__module__, target="Table")
             )
             continue
 
         # All other types can remain as is.
 
     return SerialisedParams(
-        params=params, extra_imports=[i for i in set(extra_imports)]
+        params=params,
+        extra_imports=[i for i in set(extra_imports)],
+        extra_definitions=[i for i in set(extra_definitions)],
     )
 
 
@@ -201,13 +200,8 @@ def deserialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     params = deepcopy(params)
 
     for key, value in params.items():
-        if isinstance(value, TableReference):
-            params[key] = value.deserialise()
-        elif isinstance(value, SerialisedClass):
-            params[key] = value.instance
-        else:
-            # This is purely for backwards compatibility.
-            if isinstance(value, str) and not isinstance(value, Enum):
-                params[key] = deserialise_legacy_params(name=key, value=value)
+        # This is purely for backwards compatibility.
+        if isinstance(value, str) and not isinstance(value, Enum):
+            params[key] = deserialise_legacy_params(name=key, value=value)
 
     return params

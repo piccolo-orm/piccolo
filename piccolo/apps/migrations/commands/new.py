@@ -70,6 +70,9 @@ def _create_new_migration(app_config: AppConfig, auto=False) -> None:
         extra_imports = sorted(
             list(set(chain(*[i.extra_imports for i in alter_statements])))
         )
+        extra_definitions = sorted(
+            list(set(chain(*[i.extra_definitions for i in alter_statements])))
+        )
 
         if sum([len(i.statements) for i in alter_statements]) == 0:
             print("No changes detected - exiting.")
@@ -80,6 +83,7 @@ def _create_new_migration(app_config: AppConfig, auto=False) -> None:
             auto=True,
             alter_statements=_alter_statements,
             extra_imports=extra_imports,
+            extra_definitions=extra_definitions,
             app_name=app_config.app_name,
         )
     else:

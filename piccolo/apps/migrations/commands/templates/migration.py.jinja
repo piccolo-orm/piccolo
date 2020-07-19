@@ -4,6 +4,11 @@ from piccolo.apps.migrations.auto import MigrationManager
 {% endfor %}
 
 
+{% for extra_definition in extra_definitions -%}
+{{ extra_definition }}
+{% endfor %}
+
+
 ID = '{{ migration_id }}'
 VERSION = '{{ version }}'
 
