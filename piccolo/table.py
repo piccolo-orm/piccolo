@@ -12,9 +12,10 @@ from piccolo.columns.readable import Readable
 from piccolo.columns.defaults.base import Default
 from piccolo.query import (
     Alter,
-    Create,
     Count,
+    Create,
     Delete,
+    DropIndex,
     Exists,
     Insert,
     Objects,
@@ -23,6 +24,7 @@ from piccolo.query import (
     TableExists,
     Update,
 )
+from piccolo.query.methods.create_index import CreateIndex, IndexMethod
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
 
@@ -399,7 +401,7 @@ class Table(metaclass=TableMetaclass):
         """
         Execute raw SQL queries on the underlying engine - use with caution!
 
-        await Band.raw('select * from band')
+        await Band.raw('select * from band').run()
 
         Or passing in parameters:
 
@@ -478,7 +480,7 @@ class Table(metaclass=TableMetaclass):
         """
         Used to modify existing tables and columns.
 
-        await Band.alter().rename_column(Band.popularity, 'rating')
+        await Band.alter().rename_column(Band.popularity, 'rating').run()
         """
         return Alter(table=cls)
 
@@ -535,9 +537,31 @@ class Table(metaclass=TableMetaclass):
 
         await Band.update().values(
             {Band.name: "Spamalot"}
-        ).where(Band.name=="Pythonistas")
+        ).where(
+            Band.name=="Pythonistas"
+        ).run()
         """
         return Update(table=cls).values(values)
+
+    @classmethod
+    def create_index(
+        cls, column: Column, method: IndexMethod = IndexMethod.btree,
+    ) -> CreateIndex:
+        """
+        Create a table index.
+
+        await Band.create_index(Band.name).run()
+        """
+        return CreateIndex(table=cls, column=column, method=method)
+
+    @classmethod
+    def drop_index(cls, column: Column) -> DropIndex:
+        """
+        Drop a table index.
+
+        await Band.drop_index(Band.name).run()
+        """
+        return DropIndex(table=cls, column=column)
 
     ###########################################################################
 

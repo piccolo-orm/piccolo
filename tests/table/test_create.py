@@ -1,4 +1,5 @@
 from unittest import TestCase
+
 from ..example_project.tables import Manager
 
 

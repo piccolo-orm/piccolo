@@ -1,9 +1,6 @@
 import asyncio
 import math
 
-from piccolo.engine.postgres import AsyncBatch, PostgresEngine
-from piccolo.querystring import QueryString
-
 from ..base import DBTestCase
 from ..example_project.tables import Manager
 

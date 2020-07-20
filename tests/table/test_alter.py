@@ -1,4 +1,3 @@
-import decimal
 from unittest import TestCase
 
 from piccolo.columns import Integer, Numeric

@@ -1,4 +1,4 @@
-from .base import Query
+from .base import Query  # noqa
 from .methods import (
     Alter,
     Select,
@@ -11,4 +11,6 @@ from .methods import (
     TableExists,
     Exists,
     Count,
+    CreateIndex,
+    DropIndex,
 )

@@ -1,11 +1,13 @@
-from .alter import Alter
-from .count import Count
-from .create import Create
-from .delete import Delete
-from .exists import Exists
-from .insert import Insert
-from .objects import Objects
-from .raw import Raw
-from .select import Select
-from .table_exists import TableExists
-from .update import Update
+from .alter import Alter  # noqa
+from .count import Count  # noqa
+from .create import Create  # noqa
+from .create_index import CreateIndex  # noqa
+from .delete import Delete  # noqa
+from .drop_index import DropIndex  # noqa
+from .exists import Exists  # noqa
+from .insert import Insert  # noqa
+from .objects import Objects  # noqa
+from .raw import Raw  # noqa
+from .select import Select  # noqa
+from .table_exists import TableExists  # noqa
+from .update import Update  # noqa

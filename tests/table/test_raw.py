@@ -1,5 +1,5 @@
 from ..base import DBTestCase
-from ..example_project.tables import Band, Concert
+from ..example_project.tables import Band
 
 
 class TestRaw(DBTestCase):
