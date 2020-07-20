@@ -35,7 +35,7 @@ class CreateIndex(Query):
         ]
 
     @property
-    def querystrings(self) -> t.Sequence[QueryString]:
+    def postgres_querystrings(self) -> t.Sequence[QueryString]:
         column_names = self.column_names
         index_name = self.table._get_index_name(column_names)
         tablename = self.table._meta.tablename
@@ -45,5 +45,23 @@ class CreateIndex(Query):
             QueryString(
                 f"CREATE INDEX {index_name} ON {tablename} USING {method_name}"
                 f" ({column_names_str})"
+            )
+        ]
+
+    @property
+    def sqlite_querystrings(self) -> t.Sequence[QueryString]:
+        column_names = self.column_names
+        index_name = self.table._get_index_name(column_names)
+        tablename = self.table._meta.tablename
+
+        method_name = self.method.value
+        if method_name != "btree":
+            raise ValueError("SQLite only support btree indexes.")
+
+        column_names_str = ", ".join(column_names)
+        return [
+            QueryString(
+                f"CREATE INDEX {index_name} ON {tablename} "
+                f"({column_names_str})"
             )
         ]
