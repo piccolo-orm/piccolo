@@ -545,23 +545,36 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def create_index(
-        cls, column: Column, method: IndexMethod = IndexMethod.btree,
+        cls,
+        columns: t.Sequence[Column, str],
+        method: IndexMethod = IndexMethod.btree,
     ) -> CreateIndex:
         """
-        Create a table index.
+        Create a table index. If multiple columns are specified, this refers
+        to a multicolumn index, rather than multiple single column indexes.
 
-        await Band.create_index(Band.name).run()
+        await Band.create_index([Band.name]).run()
         """
-        return CreateIndex(table=cls, column=column, method=method)
+        return CreateIndex(table=cls, columns=columns, method=method)
 
     @classmethod
-    def drop_index(cls, column: Column) -> DropIndex:
+    def drop_index(cls, columns: t.Sequence[Column, str]) -> DropIndex:
         """
-        Drop a table index.
+        Drop a table index. If multiple columns are specified, this refers
+        to a multicolumn index, rather than multiple single column indexes.
 
-        await Band.drop_index(Band.name).run()
+        await Band.drop_index([Band.name]).run()
         """
-        return DropIndex(table=cls, column=column)
+        return DropIndex(table=cls, columns=columns)
+
+    ###########################################################################
+
+    @classmethod
+    def _get_index_name(cls, column_names: t.List[str]) -> str:
+        """
+        Generates an index name from the table name and column names.
+        """
+        return "_".join([cls._meta.tablename] + column_names)
 
     ###########################################################################
 

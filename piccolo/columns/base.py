@@ -121,13 +121,6 @@ class ColumnMeta:
         else:
             raise ValueError("The table has no engine defined.")
 
-    @property
-    def index_name(self) -> str:
-        """
-        If an index is added for this column, this is the name which is used.
-        """
-        return f"{self.table._meta.tablename}_{self.name}"
-
     def get_full_name(self, just_alias=False) -> str:
         """
         Returns the full column name, taking into account joins.

@@ -21,21 +21,29 @@ class CreateIndex(Query):
     def __init__(
         self,
         table: t.Type[Table],
-        column: Column,
+        columns: t.List[t.Union[Column, str]],
         method: IndexMethod = IndexMethod.btree,
     ):
-        self.column = column
+        self.columns = columns
         self.method = method
         super().__init__(table)
 
     @property
+    def column_names(self) -> t.List[str]:
+        return [
+            i._meta.name if isinstance(i, Column) else i for i in self.columns
+        ]
+
+    @property
     def querystrings(self) -> t.Sequence[QueryString]:
-        index_name = self.column._meta.index_name
+        column_names = self.column_names
+        index_name = self.table._get_index_name(column_names)
         tablename = self.table._meta.tablename
         method_name = self.method.value
+        column_names_str = ", ".join(column_names)
         return [
             QueryString(
                 f"CREATE INDEX {index_name} ON {tablename} USING {method_name}"
-                f" ({self.column._meta.name})"
+                f" ({column_names_str})"
             )
         ]
