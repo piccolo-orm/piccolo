@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.12.1
+------
+ * Fixed typos.
+ * Bumped requirements.
+
 0.12.0
 ------
  * Added ``Date`` and ``Time`` columns.
