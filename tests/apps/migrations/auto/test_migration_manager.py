@@ -6,6 +6,7 @@ from piccolo.apps.migrations.auto import MigrationManager
 from piccolo.apps.migrations.commands.base import BaseMigrationManager
 from piccolo.columns import Varchar
 
+from tests.example_project.tables import Manager
 from tests.base import DBTestCase
 from tests.base import postgres_only
 
@@ -298,6 +299,32 @@ class TestMigrationManager(DBTestCase):
         self.assertEqual(
             self._get_column_default(),
             [{"column_default": "''::character varying"}],
+        )
+
+    @postgres_only
+    def test_alter_column_add_index(self):
+        """
+        Test altering a column to add an index with MigrationManager.
+        """
+        manager = MigrationManager()
+
+        manager.alter_column(
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="name",
+            params={"index": True},
+            old_params={"index": False},
+        )
+
+        asyncio.run(manager.run())
+        self.assertTrue(
+            Manager._get_index_name(["name"]) in Manager.indexes().run_sync()
+        )
+
+        asyncio.run(manager.run_backwards())
+        self.assertTrue(
+            Manager._get_index_name(["name"])
+            not in Manager.indexes().run_sync()
         )
 
     @postgres_only
