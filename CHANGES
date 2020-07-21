@@ -1,6 +1,15 @@
 Changes
 =======
 
+0.12.0
+------
+ * Added ``Date`` and ``Time`` columns.
+ * Improved support for column default values.
+ * Auto migrations can now serialise more Python types.
+ * Added ``Table.indexes`` method for listing table indexes.
+ * Auto migrations can handle adding / removing indexes.
+ * Improved ASGI template for FastAPI.
+
 0.11.8
 ------
 ASGI template fix.
