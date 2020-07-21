@@ -120,7 +120,26 @@ class MathDelegate:
 
 class Varchar(Column):
     """
-    Used for text when you want to enforce character length limits.
+    Used for storing text when you want to enforce character length limits.
+    Uses the ``str`` type for values.
+
+    **Example**
+
+    .. code-block:: python
+
+        class Band(Table):
+            name = Varchar(length=100)
+
+        # Create
+        >>> Band(name='Pythonistas').save().run_sync()
+
+        # Query
+        >>> Band.select(Band.name).run_sync()
+        {'name': 'Pythonistas'}
+
+    :param length:
+        The maximum number of characters allowed.
+
     """
 
     value_type = str
@@ -161,10 +180,27 @@ class Varchar(Column):
 
 class Secret(Varchar):
     """
-    The database treats it the same as a Varchar, but Piccolo may treat it
+    The database treats it the same as a ``Varchar``, but Piccolo may treat it
     differently internally - for example, allowing a user to automatically
     omit any secret fields when doing a select query, to help prevent
-    inadvertant leakage. A common use for a Secret field is a password.
+    inadvertant leakage. A common use for a ``Secret`` field is a password.
+
+    Uses the ``str`` type for values.
+
+    **Example**
+
+    .. code-block:: python
+
+        class Door(Table):
+            code = Secret(length=100)
+
+        # Create
+        >>> Door(code='123abc').save().run_sync()
+
+        # Query
+        >>> Door.select(Door.code).run_sync()
+        {'code': '123abc'}
+
     """
 
     pass
@@ -172,7 +208,23 @@ class Secret(Varchar):
 
 class Text(Column):
     """
-    Used for text when you don't want any character length limits.
+    Use when you want to store large strings, and don't want to limit the
+    string size. Uses the ``str`` type for values.
+
+    **Example**
+
+    .. code-block:: python
+
+        class Band(Table):
+            name = Text()
+
+        # Create
+        >>> Band(name='Pythonistas').save().run_sync()
+
+        # Query
+        >>> Band.select(Band.name).run_sync()
+        {'name': 'Pythonistas'}
+
     """
 
     value_type = str
@@ -202,7 +254,25 @@ class Text(Column):
 
 class UUID(Column):
     """
-    Represented in Postgres as a UUID field, and a Varchar field in SQLite.
+    Used for storing UUIDs - in Postgres a UUID column type is used, and in
+    SQLite it's just a Varchar. Uses the ``uuid.UUID`` type for values.
+
+    **Example**
+
+    .. code-block:: python
+
+        import uuid
+
+        class Band(Table):
+            uuid = UUID()
+
+        # Create
+        >>> DiscountCode(code=uuid.uuid4()).save().run_sync()
+
+        # Query
+        >>> DiscountCode.select(DiscountCode.code).run_sync()
+        {'code': UUID('09c4c17d-af68-4ce7-9955-73dcd892e462')}
+
     """
 
     value_type = uuid.UUID
@@ -219,6 +289,24 @@ class UUID(Column):
 
 
 class Integer(Column):
+    """
+    Used for storing whole numbers. Uses the ``int`` type for values.
+
+    **Example**
+
+    .. code-block:: python
+
+        class Band(Table):
+            popularity = Integer()
+
+        # Create
+        >>> Band(popularity=1000).save().run_sync()
+
+        # Query
+        >>> Band.select(Band.popularity).run_sync()
+        {'popularity': 1000}
+
+    """
 
     math_delegate = MathDelegate()
 
@@ -302,6 +390,27 @@ class Integer(Column):
 
 
 class BigInt(Integer):
+    """
+    In Postgres, this column supports large integers. In SQLite, it's an alias
+    to an Integer column, which already supports large integers. Uses the
+    ``int`` type for values.
+
+    **Example**
+
+    .. code-block:: python
+
+        class Band(Table):
+            value = BigInt()
+
+        # Create
+        >>> Band(popularity=1000000).save().run_sync()
+
+        # Query
+        >>> Band.select(Band.popularity).run_sync()
+        {'popularity': 1000000}
+
+    """
+
     @property
     def column_type(self):
         engine_type = self._meta.table._meta.db.engine_type
@@ -313,6 +422,26 @@ class BigInt(Integer):
 
 
 class SmallInt(Integer):
+    """
+    In Postgres, this column supports small integers. In SQLite, it's an alias
+    to an Integer column. Uses the ``int`` type for values.
+
+    **Example**
+
+    .. code-block:: python
+
+        class Band(Table):
+            value = SmallInt()
+
+        # Create
+        >>> Band(popularity=1000).save().run_sync()
+
+        # Query
+        >>> Band.select(Band.popularity).run_sync()
+        {'popularity': 1000}
+
+    """
+
     @property
     def column_type(self):
         engine_type = self._meta.table._meta.db.engine_type
@@ -368,6 +497,26 @@ class PrimaryKey(Column):
 
 
 class Timestamp(Column):
+    """
+    Used for storing datetimes. Uses the ``datetime`` type for values.
+
+    **Example**
+
+    .. code-block:: python
+
+        import datetime
+
+        class Concert(Table):
+            starts = Timestamp()
+
+        # Create
+        >>> Concert(starts=datetime.datetime(year=2050, month=1, day=1)).save().run_sync()
+
+        # Query
+        >>> Concert.select(Concert.starts).run_sync()
+        {'starts': datetime.datetime(2050, 1, 1, 0, 0)}
+
+    """
 
     value_type = datetime
 
@@ -388,6 +537,28 @@ class Timestamp(Column):
 
 
 class Date(Column):
+    """
+    Used for storing dates. Uses the ``date`` type for values.
+
+    **Example**
+
+    .. code-block:: python
+
+        import datetime
+
+        class Concert(Table):
+            starts = Date()
+
+        # Create
+        >>> Concert(
+        >>>     starts=datetime.date(year=2020, month=1, day=1)
+        >>> ).save().run_sync()
+
+        # Query
+        >>> Concert.select(Concert.starts).run_sync()
+        {'starts': datetime.date(2020, 1, 1)}
+
+    """
 
     value_type = date
 
@@ -403,6 +574,26 @@ class Date(Column):
 
 
 class Time(Column):
+    """
+    Used for storing times. Uses the ``time`` type for values.
+
+    **Example**
+
+    .. code-block:: python
+
+        import datetime
+
+        class Concert(Table):
+            starts = Time()
+
+        # Create
+        >>> Concert(starts=datetime.time(hour=20, minute=0, second=0)).save().run_sync()
+
+        # Query
+        >>> Concert.select(Concert.starts).run_sync()
+        {'starts': datetime.time(20, 0, 0)}
+
+    """
 
     value_type = time
 
@@ -421,6 +612,24 @@ class Time(Column):
 
 
 class Boolean(Column):
+    """
+    Used for storing True / False values. Uses the ``bool`` type for values.
+
+    **Example**
+
+    .. code-block:: python
+
+        class Band(Table):
+            has_drummer = Boolean()
+
+        # Create
+        >>> Band(has_drummer=True).save().run_sync()
+
+        # Query
+        >>> Band.select(Band.has_drummer).run_sync()
+        {'has_drummer': True}
+
+    """
 
     value_type = bool
 
@@ -436,7 +645,33 @@ class Boolean(Column):
 
 class Numeric(Column):
     """
-    Used to represent values precisely. The value is returned as a Decimal.
+    Used for storing decimal numbers, when precision is important. An example
+    use case is storing financial data. The value is returned as a ``Decimal``.
+
+    **Example**
+
+    .. code-block:: python
+
+        from decimal import Decimal
+
+        class Ticket(Table):
+            price = Numeric(digits=(5,2))
+
+        # Create
+        >>> Ticket(price=Decimal('50.0')).save().run_sync()
+
+        # Query
+        >>> Ticket.select(Ticket.price).run_sync()
+        {'price': Decimal('50.0')}
+
+    :arg digits:
+        When creating the column, you specify how many digits are allowed
+        using a tuple. The first value is the `precision`, which is the
+        total number of digits allowed. The second value is the `range`,
+        which specifies how many of those digits are after the decimal
+        point. For example, to store monetary values up to £999.99, the
+        digits argument is `(5,2)`.
+
     """
 
     value_type = decimal.Decimal
@@ -497,8 +732,23 @@ class Decimal(Numeric):
 
 class Real(Column):
     """
-    Can be used instead of Numeric when precision isn't as important. The value
-    is returned as a float.
+    Can be used instead of ``Numeric`` for storing numbers, when precision
+    isn't as important. The ``float`` type is used for values.
+
+    **Example**
+
+    .. code-block:: python
+
+        class Concert(Table):
+            rating = Real()
+
+        # Create
+        >>> Concert(rating=7.8).save().run_sync()
+
+        # Query
+        >>> Concert.select(Concert.rating).run_sync()
+        {'rating': 7.8}
+
     """
 
     value_type = float
@@ -523,28 +773,114 @@ class Float(Real):
 
 class ForeignKey(Integer):
     """
-    Returns an integer, representing the referenced row's ID.
+    Used to reference another table. Uses the ``int`` type for values.
 
-        some_band.manager
-        >>> 1
+    **Example**
+
+    .. code-block:: python
+
+        class Band(Table):
+            manager = ForeignKey(references=Manager)
+
+        # Create
+        >>> Band(manager=1).save().run_sync()
+
+        # Query
+        >>> Band.select(Band.manager).run_sync()
+        {'manager': 1}
+
+        # Query object
+        >>> band = await Band.objects().first().run()
+        >>> band.manager
+        1
+
+    **Joins**
 
     Can also use it to perform joins:
 
-        await Band.select(Band.name, Band.manager.name).run()
+    .. code-block:: python
+
+        >>> await Band.select(Band.name, Band.manager.name).first().run()
+        {'name': 'Pythonistas', 'manager.name': 'Guido'}
 
     To get a referenced row as an object:
 
-        await Manager.objects().where(Manager.id == some_band.manager).run()
+    .. code-block:: python
+
+        manager = await Manager.objects().where(
+            Manager.id == some_band.manager
+        ).run()
 
     Or use either of the following, which are just a proxy to the above:
 
-        await some_band.get_related('manager').run()
-        await some_band.get_related(Band.manager).run()
+    .. code-block:: python
+
+        manager = await band.get_related('manager').run()
+        manager = await band.get_related(Band.manager).run()
 
     To change the manager:
 
-        some_band.manager = some_manager_id
-        await some_band.save().run()
+    .. code-block:: python
+
+        band.manager = some_manager_id
+        await band.save().run()
+
+    :param references:
+        The ``Table`` being referenced.
+
+        A table can have a reference to itself, if you pass a ``references``
+        argument of ``'self'``.
+
+        .. code-block:: python
+
+            class Musician(Table):
+                name = Varchar(length=100)
+                instructor = ForeignKey(references='self')
+
+    :param on_delete:
+        Determines what the database should do when a row is deleted with
+        foreign keys referencing it. If set to ``OnDelete.cascade``, any rows
+        referencing the deleted row are also deleted.
+
+        Options:
+
+            * ``OnDelete.cascade`` (default)
+            * ``OnDelete.restrict``
+            * ``OnDelete.no_action``
+            * ``OnDelete.set_null``
+            * ``OnDelete.set_default``
+
+        To learn more about the different options, see the `Postgres docs <https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-FK>`_.
+
+        .. code-block:: python
+
+            from piccolo.columns import OnDelete
+
+            class Band(Table):
+                name = ForeignKey(references=Manager, on_delete=OnDelete.cascade)
+
+    :param on_update:
+        Determines what the database should do when a row has it's primary key
+        updated. If set to ``OnDelete.cascade``, any rows referencing the
+        updated row will have their references updated to point to the new
+        primary key.
+
+        Options:
+
+            * ``OnUpdate.cascade`` (default)
+            * ``OnUpdate.restrict``
+            * ``OnUpdate.no_action``
+            * ``OnUpdate.set_null``
+            * ``OnUpdate.set_default``
+
+        To learn more about the different options, see the `Postgres docs <https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-FK>`_.
+
+        .. code-block:: python
+
+            from piccolo.columns import OnDelete
+
+            class Band(Table):
+                name = ForeignKey(references=Manager, on_update=OnUpdate.cascade)
 
     """
 

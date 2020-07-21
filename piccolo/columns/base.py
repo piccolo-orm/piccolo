@@ -153,6 +153,31 @@ class Selectable(metaclass=ABCMeta):
 
 
 class Column(Selectable):
+    """
+    All other columns inherit from ``Column``. Don't use it directly.
+
+    The following arguments apply to all column types:
+
+    :param null:
+        Whether the column is nullable.
+
+    :param primary:
+        If set, the column is used as a primary key.
+
+    :param key:
+        If set, the column is treated as a primary key.
+
+    :param default:
+        The column value to use if not specified by the user.
+
+    :param unique:
+        If set, a unique contraint will be added to the column.
+
+    :param index:
+        If set, the an index is created for the column, which can improve
+        the speed of selects, but can slow down inserts.
+
+    """
 
     value_type: t.Type = int
 

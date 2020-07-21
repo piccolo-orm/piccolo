@@ -21,6 +21,8 @@ columns. Here's a very simple schema:
 
 For a full list of columns, see :ref:`ColumnTypes`.
 
+-------------------------------------------------------------------------------
+
 Tablename
 ---------
 
@@ -35,6 +37,7 @@ You can specify a custom tablename to use instead.
     class Band(Table, tablename="music_band"):
         name = Varchar(length=100)
 
+-------------------------------------------------------------------------------
 
 Connecting to the database
 --------------------------
