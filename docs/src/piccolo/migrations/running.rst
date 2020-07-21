@@ -1,6 +1,9 @@
 Running migrations
 ==================
 
+.. hint:: To see all available options for these commands, use the ``--help``
+    flag, for example ``piccolo migrations forwards --help``.
+
 Forwards
 --------
 
@@ -9,6 +12,8 @@ When the migration is run, the forwards function is executed. To do this:
 .. code-block:: bash
 
     piccolo migrations forwards my_app
+
+-------------------------------------------------------------------------------
 
 Reversing migrations
 --------------------
@@ -21,6 +26,8 @@ To reverse the migration, run this:
 
 You can try going forwards and backwards a few times to make sure it works as
 expected.
+
+-------------------------------------------------------------------------------
 
 Checking migrations
 -------------------
