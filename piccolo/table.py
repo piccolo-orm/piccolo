@@ -568,14 +568,16 @@ class Table(metaclass=TableMetaclass):
         return CreateIndex(table=cls, columns=columns, method=method)
 
     @classmethod
-    def drop_index(cls, columns: t.Sequence[Column, str]) -> DropIndex:
+    def drop_index(
+        cls, columns: t.Sequence[Column, str], if_exists: bool = True
+    ) -> DropIndex:
         """
         Drop a table index. If multiple columns are specified, this refers
         to a multicolumn index, rather than multiple single column indexes.
 
         await Band.drop_index([Band.name]).run()
         """
-        return DropIndex(table=cls, columns=columns)
+        return DropIndex(table=cls, columns=columns, if_exists=if_exists)
 
     ###########################################################################
 

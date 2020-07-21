@@ -11,9 +11,13 @@ if t.TYPE_CHECKING:
 
 class DropIndex(Query):
     def __init__(
-        self, table: t.Type[Table], columns: t.List[t.Union[Column, str]]
+        self,
+        table: t.Type[Table],
+        columns: t.List[t.Union[Column, str]],
+        if_exists: bool = True,
     ):
         self.columns = columns
+        self.if_exists = True
         super().__init__(table)
 
     @property
@@ -26,4 +30,7 @@ class DropIndex(Query):
     def querystrings(self) -> t.Sequence[QueryString]:
         column_names = self.column_names
         index_name = self.table._get_index_name(column_names)
-        return [QueryString(f"DROP INDEX {index_name}")]
+        query = "DROP INDEX"
+        if self.if_exists:
+            query += " IF EXISTS"
+        return [QueryString(f"{query} {index_name}")]
