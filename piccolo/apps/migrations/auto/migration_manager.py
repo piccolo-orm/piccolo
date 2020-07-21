@@ -338,6 +338,16 @@ class MigrationManager:
                         column=column, boolean=unique
                     ).run()
 
+                index = params.get("index")
+                if index is not None:
+                    column = Column()
+                    column._meta._table = _Table
+                    column._meta._name = column_name
+                    if index:
+                        await _Table.create_index([column]).run()
+                    else:
+                        await _Table.drop_index([column]).run()
+
                 # None is a valid value, so retrieve ellipsis if not found.
                 default = params.get("default", ...)
                 if default is not ...:
@@ -518,6 +528,8 @@ class MigrationManager:
                     await _Table.alter().add_column(
                         name=column._meta.name, column=column
                     ).run()
+                    if add_column.column._meta.index:
+                        await _Table.create_index([add_column.column]).run()
 
     async def run(self):
         print("Running MigrationManager ...")
