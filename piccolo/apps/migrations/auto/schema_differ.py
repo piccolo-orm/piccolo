@@ -1,6 +1,6 @@
+from __future__ import annotations
 from copy import deepcopy
 from dataclasses import dataclass, field
-from itertools import chain
 import typing as t
 
 from piccolo.apps.migrations.auto.diffable_table import (

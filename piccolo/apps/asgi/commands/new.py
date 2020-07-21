@@ -1,3 +1,4 @@
+from __future__ import annotations
 import colorama
 from jinja2 import Environment, FileSystemLoader
 import os
