@@ -49,6 +49,9 @@ class SerialisedTableType:
         class_name = self.table_type.__name__
         return f'class {class_name}(Table, tablename="{tablename}"): pass'
 
+    def __lt__(self, other):
+        return repr(self) < repr(other)
+
 
 @dataclass
 class SerialisedCallable:
@@ -86,14 +89,14 @@ class Import:
     module: str
     target: str
 
-    def __str__(self):
+    def __repr__(self):
         return f"from {self.module} import {self.target}"
 
     def __hash__(self):
         return hash(f"{self.module}-{self.target}")
 
     def __lt__(self, other):
-        return str(self) < str(other)
+        return repr(self) < repr(other)
 
 
 @dataclass
