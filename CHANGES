@@ -1,6 +1,10 @@
 Changes
 =======
 
+0.12.2
+------
+Fixing bug when sorting 'extra_definitions' in auto migrations.
+
 0.12.1
 ------
  * Fixed typos.
