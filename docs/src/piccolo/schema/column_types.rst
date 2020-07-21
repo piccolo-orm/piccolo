@@ -297,6 +297,70 @@ Type
 
 -------------------------------------------------------------------------------
 
+****
+Date
+****
+
+Used for storing dates.
+
+Example
+=======
+
+.. code-block:: python
+
+    class Concert(Table):
+        starts = Date()
+
+Type
+====
+
+``Date`` uses the ``date`` type for values.
+
+.. code-block:: python
+
+    import datetime
+
+    # Create
+    >>> Concert(starts=datetime.date(year=2020, month=1, day=1)).save().run_sync()
+
+    # Query
+    >>> Concert.select(Concert.starts).run_sync()
+    {'starts': datetime.date(2020, 1, 1)}
+
+-------------------------------------------------------------------------------
+
+****
+Time
+****
+
+Used for storing times.
+
+Example
+=======
+
+.. code-block:: python
+
+    class Concert(Table):
+        starts = Time()
+
+Type
+====
+
+``Time`` uses the ``time`` type for values.
+
+.. code-block:: python
+
+    import datetime
+
+    # Create
+    >>> Concert(starts=datetime.time(hour=20, minute=0, second=0)).save().run_sync()
+
+    # Query
+    >>> Concert.select(Concert.starts).run_sync()
+    {'starts': datetime.time(20, 0, 0)}
+
+-------------------------------------------------------------------------------
+
 *********
 Timestamp
 *********
@@ -310,19 +374,6 @@ Example
 
     class Concert(Table):
         starts = Timestamp()
-
-It's common to want a default for a timestamp column. Having functions as
-defaults can cause issues for migrations, so the recommended way to have
-a default of `now` is as follows:
-
-.. code-block:: python
-
-    from piccolo.columsn.defaults.timestamp import TimestampNow
-
-
-    class Concert(Table):
-        starts = Timestamp(default=TimestampNow())
-
 
 Type
 ====
