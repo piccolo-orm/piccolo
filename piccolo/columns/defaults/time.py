@@ -20,7 +20,7 @@ class TimeOffset(Default):
 
     @property
     def sqlite(self):
-        interval_string = self.self.get_sqlite_interval_string(
+        interval_string = self.get_sqlite_interval_string(
             ["hours", "minutes", "seconds"]
         )
         return f"(time(CURRENT_TIME, {interval_string}))"

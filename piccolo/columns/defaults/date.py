@@ -16,7 +16,7 @@ class DateOffset(Default):
 
     @property
     def sqlite(self):
-        interval_string = self.self.get_sqlite_interval_string(["days"])
+        interval_string = self.get_sqlite_interval_string(["days"])
         return f"(datetime(CURRENT_TIMESTAMP, {interval_string}))"
 
     def python(self):

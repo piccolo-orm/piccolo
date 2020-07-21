@@ -23,7 +23,7 @@ class TimestampOffset(Default):
 
     @property
     def sqlite(self):
-        interval_string = self.self.get_sqlite_interval_string(
+        interval_string = self.get_sqlite_interval_string(
             ["days", "hours", "minutes", "seconds"]
         )
         return f"(datetime(CURRENT_TIMESTAMP, {interval_string}))"
