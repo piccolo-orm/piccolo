@@ -3,6 +3,7 @@ import typing as t
 
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
+from piccolo.query.methods.create_index import CreateIndex
 
 if t.TYPE_CHECKING:
     from piccolo.table import Table
@@ -39,4 +40,15 @@ class Create(Query):
         base = f"{prefix} {self.table._meta.tablename}"
         columns_sql = ", ".join(["{}" for i in columns])
         query = f"{base} ({columns_sql})"
-        return [QueryString(query, *[i.querystring for i in columns])]
+        create_table = QueryString(query, *[i.querystring for i in columns])
+
+        create_indexes = []
+        for column in columns:
+            if column._meta.index:
+                create_indexes.extend(
+                    CreateIndex(
+                        table=self.table, columns=[column]
+                    ).querystrings
+                )
+
+        return [create_table] + create_indexes

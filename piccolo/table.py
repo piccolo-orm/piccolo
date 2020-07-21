@@ -24,6 +24,7 @@ from piccolo.query import (
     TableExists,
     Update,
 )
+from piccolo.query.methods.indexes import Indexes
 from piccolo.query.methods.create_index import CreateIndex, IndexMethod
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
@@ -542,6 +543,15 @@ class Table(metaclass=TableMetaclass):
         ).run()
         """
         return Update(table=cls).values(values)
+
+    @classmethod
+    def indexes(cls) -> Indexes:
+        """
+        Returns a list of the indexes for this tables.
+
+        await Band.indexes().run()
+        """
+        return Indexes(table=cls)
 
     @classmethod
     def create_index(

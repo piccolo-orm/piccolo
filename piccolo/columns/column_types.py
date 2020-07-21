@@ -358,7 +358,9 @@ class PrimaryKey(Column):
         raise Exception("Unrecognized engine type")
 
     def __init__(self, **kwargs) -> None:
-        kwargs.update({"primary": True, "key": True})
+        # Set the index to False, as a database should automatically create
+        # an index for a PrimaryKey column.
+        kwargs.update({"primary": True, "key": True, "index": False})
         super().__init__(**kwargs)
 
 
