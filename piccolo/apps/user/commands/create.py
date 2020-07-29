@@ -1,5 +1,5 @@
 import sys
-from getpass import getpass
+from getpass import getpass, getuser
 
 from piccolo.apps.user.tables import BaseUser
 
@@ -8,7 +8,10 @@ def create():
     """
     Create a new user.
     """
-    username = input("Enter username:\n")
+    default_username = getuser()
+    username = input(f"Enter username ({default_username}):\n")
+    username = default_username if not username else username
+
     email = input("Enter email:\n")
 
     password = getpass("Enter password:\n")
@@ -16,6 +19,10 @@ def create():
 
     if not password == confirmed_password:
         print("Passwords don't match!")
+        sys.exit(1)
+
+    if len(password) < 4:
+        print("The password is too short")
         sys.exit(1)
 
     while True:
