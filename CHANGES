@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.12.3
+------
+Improved `piccolo user create` command - defaults the username to the current
+system user.
+
 0.12.2
 ------
 Fixing bug when sorting 'extra_definitions' in auto migrations.
