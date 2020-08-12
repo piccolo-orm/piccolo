@@ -3,7 +3,8 @@ import itertools
 from time import time
 import typing as t
 
-import ujson as json
+from asyncpg.pgproto.pgproto import UUID
+import orjson as json
 
 from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
@@ -19,6 +20,15 @@ class Timer:
     def __exit__(self, exception_type, exception, traceback):
         self.end = time()
         print(f"Duration: {self.end - self.start}s")
+
+
+def default(obj):
+    """
+    Used for handling edge cases which orjson can't serialise out of the box.
+    """
+    if isinstance(obj, UUID):
+        return str(obj)
+    raise TypeError
 
 
 class Query:
@@ -70,7 +80,7 @@ class Query:
                     else:
                         raw = list(itertools.chain(*[j.values() for j in raw]))
                 if output._output.as_json:
-                    raw = json.dumps(raw)
+                    raw = json.dumps(raw, default=default)
 
         return raw
 

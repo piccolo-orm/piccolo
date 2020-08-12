@@ -143,6 +143,8 @@ To return the data as a JSON string:
     >>> b.select().output(as_json=True).run_sync()
     '[{"name":"Pythonistas","manager":1,"popularity":1000,"id":1},{"name":"Rustaceans","manager":2,"popularity":500,"id":2}]'
 
+Piccolo uses `orjson <https://github.com/ijl/orjson>`_ for JSON serialisation, which is blazing fast, and can handle most Python types, including dates, datetimes, and UUIDs.
+
 where
 ~~~~~
 
