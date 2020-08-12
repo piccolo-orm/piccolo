@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.12.4
+------
+Using orjson for JSON serialisation when using the output(as_json=True) clause.
+It supports more Python types than ujson.
+
 0.12.3
 ------
 Improved `piccolo user create` command - defaults the username to the current
