@@ -202,6 +202,23 @@ class PostgresEngine(Engine):
     min_version_number = 9.6
 
     def __init__(self, config: t.Dict[str, t.Any]) -> None:
+        """
+        The config dictionary is passed to the underlying database adapter,
+        asyncpg. Common arguments you're likely to need are:
+
+            * host
+            * port
+            * user
+            * password
+            * database
+
+        For example, ``{'host': 'localhost', 'port': 5432}``.
+
+        To see all available options:
+
+            * https://magicstack.github.io/asyncpg/current/api/index.html#connection
+
+        """
         self.config = config
         self.pool: t.Optional[Pool] = None
         database_name = config.get("database", "Unknown")
