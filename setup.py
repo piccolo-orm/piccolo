@@ -48,7 +48,9 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: Implementation :: CPython",
-        "Typing :: Typed"
+        "Framework :: AsyncIO",
+        "Typing :: Typed",
+        "Topic :: Database",
     ],
     entry_points={"console_scripts": ["piccolo = piccolo.main:main"]},
 )
