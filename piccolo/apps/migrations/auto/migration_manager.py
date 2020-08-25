@@ -549,9 +549,9 @@ class MigrationManager:
                     raw()
 
             await self._run_add_tables()
+            await self._run_rename_tables()
             await self._run_add_columns()
             await self._run_drop_tables()
-            await self._run_rename_tables()
             await self._run_drop_columns()
             await self._run_rename_columns()
             await self._run_alter_columns()
