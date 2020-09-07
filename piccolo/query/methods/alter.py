@@ -445,53 +445,6 @@ class Alter(Query):
         )
         return self
 
-    async def response_handler(self, response):
-        """
-        We don't want to modify the response, but we need to add default values
-        to any tables which have had columns added.
-        """
-        if self._add:
-            # If the defaults are just static values then update all of the
-            # rows in one go - otherwise we need to update each row at a time.
-            # For example, with a UUID field, we need each row to get its
-            # own unique value.
-
-            columns = [i.column for i in self._add]
-
-            defaults = [getattr(column, "default", None) for column in columns]
-
-            just_static_defaults = all(
-                [hasattr(default, "__call__") for default in defaults]
-            )
-
-            tablename = self.table._meta.tablename
-
-            if just_static_defaults:
-                for column in columns:
-                    await self.table.raw(
-                        f"UPDATE {tablename} SET {column._meta.name} = {{}}",
-                        column.get_default_value(),
-                    ).run()
-            else:
-                response = await self.table.raw(
-                    f"SELECT id from {tablename}"
-                ).run()
-                ids = [i["id"] for i in response]
-
-                for _id in ids:
-                    for column in columns:
-                        await self.table.raw(
-                            (
-                                f"UPDATE {tablename} "
-                                f"SET {column._meta.name} = "
-                                "{} WHERE id = {}"
-                            ),
-                            column.get_default_value(),
-                            _id,
-                        ).run()
-
-        return response
-
     @property
     def querystrings(self) -> t.Sequence[QueryString]:
         if self._drop_table is not None:
