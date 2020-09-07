@@ -358,8 +358,9 @@ class MigrationManager:
                     if default is None:
                         await _Table.alter().drop_default(column=column).run()
                     else:
+                        column.default = default
                         await _Table.alter().set_default(
-                            column=column, value=default
+                            column=column, value=column.get_default_value()
                         ).run()
 
                 # None is a valid value, so retrieve ellipsis if not found.
