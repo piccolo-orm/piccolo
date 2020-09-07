@@ -1,6 +1,14 @@
 Changes
 =======
 
+0.12.5
+------
+ * Improved `PostgresEngine` docstring.
+ * Resolving rename migrations before adding columns.
+ * Fixed bug serialising `TimestampCustom`.
+ * Fixed bug with altering column defaults to be non-static values.
+ * Removed `response_handler` from `Alter` query.
+
 0.12.4
 ------
 Using orjson for JSON serialisation when using the output(as_json=True) clause.
