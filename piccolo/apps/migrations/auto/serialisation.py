@@ -206,5 +206,13 @@ def deserialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
         # This is purely for backwards compatibility.
         if isinstance(value, str) and not isinstance(value, Enum):
             params[key] = deserialise_legacy_params(name=key, value=value)
+        elif isinstance(value, SerialisedClass):
+            params[key] = value.instance
+        elif isinstance(value, SerialisedUUID):
+            params[key] = value.instance
+        elif isinstance(value, SerialisedCallable):
+            params[key] = value.callable_
+        elif isinstance(value, SerialisedTableType):
+            params[key] = value.table_type
 
     return params
