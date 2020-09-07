@@ -1,13 +1,19 @@
 Changes
 =======
 
+0.12.6
+------
+ * Fixing a typo in ``TimestampCustom`` arguments.
+ * Fixing bug in ``TimestampCustom`` SQL representation.
+ * Added more extensive deserialisation for migrations.
+
 0.12.5
 ------
- * Improved `PostgresEngine` docstring.
+ * Improved ``PostgresEngine`` docstring.
  * Resolving rename migrations before adding columns.
- * Fixed bug serialising `TimestampCustom`.
+ * Fixed bug serialising ``TimestampCustom``.
  * Fixed bug with altering column defaults to be non-static values.
- * Removed `response_handler` from `Alter` query.
+ * Removed ``response_handler`` from ``Alter`` query.
 
 0.12.4
 ------
