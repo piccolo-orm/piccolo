@@ -80,11 +80,11 @@ class TimestampCustom(Default):
 
     @property
     def postgres(self):
-        return self.datetime.isostring().replace("T", " ")
+        return "'{}'".format(self.datetime.isoformat().replace("T", " "))
 
     @property
     def sqlite(self):
-        return self.datetime.isostring().replace("T", " ")
+        return "'{}'".format(self.datetime.isoformat().replace("T", " "))
 
     def python(self):
         return self.datetime
