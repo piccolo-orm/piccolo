@@ -58,14 +58,14 @@ class TimestampCustom(Default):
         day: int,
         hour: int,
         second: int,
-        microseconds: int,
+        microsecond: int,
     ):
         self.year = year
         self.month = month
         self.day = day
         self.hour = hour
         self.second = second
-        self.microseconds = microseconds
+        self.microsecond = microsecond
 
     @property
     def datetime(self):
@@ -97,7 +97,7 @@ class TimestampCustom(Default):
             day=instance.month,
             hour=instance.hour,
             second=instance.second,
-            microseconds=instance.microsecond,
+            microsecond=instance.microsecond,
         )
 
 
