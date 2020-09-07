@@ -60,7 +60,23 @@ class TimestampCustom(Default):
         second: int,
         microseconds: int,
     ):
-        self.datetime = datetime.datetime(year=year, month=month, day=day)
+        self.year = year
+        self.month = month
+        self.day = day
+        self.hour = hour
+        self.second = second
+        self.microseconds = microseconds
+
+    @property
+    def datetime(self):
+        return datetime.datetime(
+            year=self.year,
+            month=self.month,
+            day=self.day,
+            hour=self.hour,
+            second=self.second,
+            microsecond=self.microsecond,
+        )
 
     @property
     def postgres(self):
