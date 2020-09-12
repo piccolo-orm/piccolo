@@ -9,6 +9,7 @@ from piccolo.query.base import Query
 from piccolo.query.mixins import (
     ColumnsDelegate,
     DistinctDelegate,
+    GroupByDelegate,
     LimitDelegate,
     OffsetDelegate,
     OrderByDelegate,
@@ -22,6 +23,28 @@ if t.TYPE_CHECKING:
     from piccolo.custom_types import Combinable
 
 
+class Count(Selectable):
+    """
+    Used in conjunction with the ``group_by`` clause in ``Select`` queries.
+
+    If a column is specified, the count is for non-null values in that
+    column. If no column is specified, the count is for all rows, whether
+    they have null values or not.
+    """
+
+    def __init__(self, column: t.Optional[Column] = None):
+        self.column = column
+
+    def get_select_string(self, engine_type: str, just_alias=False) -> str:
+        if self.column is None:
+            column_name = "*"
+        else:
+            column_name = self.column._meta.get_full_name(
+                just_alias=just_alias
+            )
+        return f"COUNT({column_name}) AS count"
+
+
 class Select(Query):
 
     __slots__ = (
@@ -29,6 +52,7 @@ class Select(Query):
         "exclude_secrets",
         "columns_delegate",
         "distinct_delegate",
+        "group_by_delegate",
         "limit_delegate",
         "offset_delegate",
         "order_by_delegate",
@@ -47,6 +71,7 @@ class Select(Query):
 
         self.columns_delegate = ColumnsDelegate()
         self.distinct_delegate = DistinctDelegate()
+        self.group_by_delegate = GroupByDelegate()
         self.limit_delegate = LimitDelegate()
         self.offset_delegate = OffsetDelegate()
         self.order_by_delegate = OrderByDelegate()
@@ -62,6 +87,11 @@ class Select(Query):
 
     def distinct(self) -> Select:
         self.distinct_delegate.distinct()
+        return self
+
+    def group_by(self, *columns: Column) -> Select:
+        columns = self.table._process_column_args(*columns)
+        self.group_by_delegate.group_by(*columns)
         return self
 
     def limit(self, number: int) -> Select:
@@ -219,6 +249,10 @@ class Select(Query):
         if self.where_delegate._where:
             query += " WHERE {}"
             args.append(self.where_delegate._where.querystring)
+
+        if self.group_by_delegate._group_by:
+            query += " {}"
+            args.append(self.group_by_delegate._group_by.querystring)
 
         if self.order_by_delegate._order_by:
             query += " {}"

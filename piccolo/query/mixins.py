@@ -233,3 +233,34 @@ class OffsetDelegate:
 
     def offset(self, number: int = 0):
         self._offset = Offset(number)
+
+
+@dataclass
+class GroupBy:
+    __slots__ = ("columns",)
+
+    columns: t.Sequence[Column]
+
+    @property
+    def querystring(self) -> QueryString:
+        columns_names = ", ".join(
+            [i._meta.get_full_name(just_alias=True) for i in self.columns]
+        )
+        return QueryString(f" GROUP BY {columns_names}")
+
+    def __str__(self):
+        return self.querystring.__str__()
+
+
+@dataclass
+class GroupByDelegate:
+    """
+    Used to group results - needed when doing aggregation.
+
+    .group_by(Band.name)
+    """
+
+    _group_by: t.Optional[GroupBy] = None
+
+    def group_by(self, *columns: Column):
+        self._group_by = GroupBy(columns=columns)

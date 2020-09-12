@@ -236,7 +236,7 @@ class Column(Selectable):
         """
         if getattr(self, "validated", None):
             # If it has previously been validated by a subclass, don't
-            # validated again.
+            # validate again.
             return True
         elif (
             default is None

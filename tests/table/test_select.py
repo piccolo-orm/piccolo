@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from piccolo.apps.user.tables import BaseUser
+from piccolo.query.methods.select import Count
 
 from ..base import DBTestCase, postgres_only, sqlite_only
 from ..example_project.tables import Band, Concert
@@ -292,6 +293,91 @@ class TestSelect(DBTestCase):
         )
 
         self.assertTrue(response == [{"name": "Pythonistas"}])
+
+    def test_count_group_by(self):
+        """
+        Test grouping and counting all rows.
+        """
+        self.insert_rows()
+        self.insert_rows()
+
+        response = (
+            Band.select(Band.name, Count())
+            .group_by(Band.name)
+            .order_by(Band.name)
+            .run_sync()
+        )
+
+        self.assertTrue(
+            response
+            == [
+                {"name": "CSharps", "count": 2},
+                {"name": "Pythonistas", "count": 2},
+                {"name": "Rustaceans", "count": 2},
+            ]
+        )
+
+    def test_count_column_group_by(self):
+        """
+        Test grouping and counting a specific column. Any null values in the
+        specified column will be omitted from the count.
+        """
+        self.insert_rows()
+        self.insert_rows()
+        self.run_sync(
+            """
+            INSERT INTO band (
+                name,
+                manager,
+                popularity
+            ) VALUES (
+                'SomeBand',
+                null,
+                1000
+            );"""
+        )
+
+        response = (
+            Band.select(Band.manager.name, Count(Band.manager))
+            .group_by(Band.manager.name)
+            .order_by(Band.manager.name)
+            .run_sync()
+        )
+
+        # We need to sort them, because SQLite and Postgres treat Null
+        # differently when sorting.
+        response = sorted(response, key=lambda x: x["manager.name"] or "")
+
+        self.assertTrue(
+            response
+            == [
+                {"manager.name": None, "count": 0},
+                {"manager.name": "Graydon", "count": 2},
+                {"manager.name": "Guido", "count": 2},
+                {"manager.name": "Mads", "count": 2},
+            ]
+        )
+
+        # This time the nulls should be counted, as we omit the column argument
+        # from Count:
+        response = (
+            Band.select(Band.manager.name, Count())
+            .group_by(Band.manager.name)
+            .order_by(Band.manager.name)
+            .run_sync()
+        )
+
+        response = sorted(response, key=lambda x: x["manager.name"] or "")
+
+        self.assertTrue(
+            response
+            == [
+                {"manager.name": None, "count": 1},
+                {"manager.name": "Graydon", "count": 2},
+                {"manager.name": "Guido", "count": 2},
+                {"manager.name": "Mads", "count": 2},
+            ]
+        )
 
     def test_columns(self):
         """

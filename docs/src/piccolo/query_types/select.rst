@@ -114,6 +114,11 @@ first
 
 See  :ref:`first`.
 
+group_by
+~~~~~~~~
+
+See  :ref:`group_by`.
+
 limit
 ~~~~~
 

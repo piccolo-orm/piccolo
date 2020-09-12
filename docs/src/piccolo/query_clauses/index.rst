@@ -10,6 +10,7 @@ by modifying the return values.
     :maxdepth: 0
 
     ./first
+    ./group_by
     ./limit
     ./offset
     ./order_by
