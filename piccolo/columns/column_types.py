@@ -510,7 +510,9 @@ class Timestamp(Column):
             starts = Timestamp()
 
         # Create
-        >>> Concert(starts=datetime.datetime(year=2050, month=1, day=1)).save().run_sync()
+        >>> Concert(
+        >>>    starts=datetime.datetime(year=2050, month=1, day=1)
+        >>> ).save().run_sync()
 
         # Query
         >>> Concert.select(Concert.starts).run_sync()
@@ -587,7 +589,9 @@ class Time(Column):
             starts = Time()
 
         # Create
-        >>> Concert(starts=datetime.time(hour=20, minute=0, second=0)).save().run_sync()
+        >>> Concert(
+        >>>    starts=datetime.time(hour=20, minute=0, second=0)
+        >>> ).save().run_sync()
 
         # Query
         >>> Concert.select(Concert.starts).run_sync()
@@ -857,7 +861,10 @@ class ForeignKey(Integer):
             from piccolo.columns import OnDelete
 
             class Band(Table):
-                name = ForeignKey(references=Manager, on_delete=OnDelete.cascade)
+                name = ForeignKey(
+                    references=Manager,
+                    on_delete=OnDelete.cascade
+                )
 
     :param on_update:
         Determines what the database should do when a row has it's primary key
@@ -880,7 +887,10 @@ class ForeignKey(Integer):
             from piccolo.columns import OnDelete
 
             class Band(Table):
-                name = ForeignKey(references=Manager, on_update=OnUpdate.cascade)
+                name = ForeignKey(
+                    references=Manager,
+                    on_update=OnUpdate.cascade
+                )
 
     """
 
