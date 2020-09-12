@@ -81,6 +81,7 @@ class ColumnMeta:
     key: bool = False
     unique: bool = False
     index: bool = False
+    required: bool = False
 
     # Used for representing the table in migrations and the playground.
     params: t.Dict[str, t.Any] = field(default_factory=dict)
@@ -165,7 +166,7 @@ class Column(Selectable):
         If set, the column is used as a primary key.
 
     :param key:
-        If set, the column is treated as a primary key.
+        If set, the column is treated as a key.
 
     :param default:
         The column value to use if not specified by the user.
@@ -176,6 +177,11 @@ class Column(Selectable):
     :param index:
         If set, the an index is created for the column, which can improve
         the speed of selects, but can slow down inserts.
+
+    :param required:
+        This isn't used by the database - it's to indicate to other tools that
+        the user must provide this value. Example uses are in serialisers for
+        API endpoints, and form fields.
 
     """
 
@@ -188,9 +194,12 @@ class Column(Selectable):
         key: bool = False,
         unique: bool = False,
         index: bool = False,
+        required: bool = False,
         **kwargs,
     ) -> None:
-        # Used for migrations:
+        # Used for migrations.
+        # We deliberately omit 'required' as it doesn't effect the actual
+        # schema.
         kwargs.update(
             {
                 "null": null,
@@ -214,6 +223,7 @@ class Column(Selectable):
             unique=unique,
             index=index,
             params=kwargs,
+            required=required,
         )
 
     def _validate_default(
