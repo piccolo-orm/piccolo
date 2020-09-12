@@ -1,6 +1,12 @@
 Changes
 =======
 
+0.13.0
+------
+Added `required` argument to ``Column``. This allows the user to indicate which
+fields must be provided by the user. Other tools can use this value when
+generating forms and serialisers.
+
 0.12.6
 ------
  * Fixing a typo in ``TimestampCustom`` arguments.
