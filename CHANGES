@@ -1,6 +1,10 @@
 Changes
 =======
 
+0.13.1
+------
+Added support for ``group_by`` and ``Count`` for aggregate queries.
+
 0.13.0
 ------
 Added `required` argument to ``Column``. This allows the user to indicate which
