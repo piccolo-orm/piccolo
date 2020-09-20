@@ -17,14 +17,16 @@ JINJA_ENV = jinja2.Environment(
 )
 
 
-def new_piccolo_conf(engine_name: str, force: bool = False):
-    print(f"Creating new piccolo_conf file ...")
+def new_piccolo_conf(engine_name: str, force: bool = False, root: str = ""):
+    print("Creating new piccolo_conf file ...")
 
-    if os.path.exists("piccolo_conf.py") and not force:
+    file_path = os.path.join(root, "piccolo_conf.py")
+
+    if os.path.exists(file_path) and not force:
         print("The file already exists - exiting.")
         sys.exit(1)
 
-    with open("piccolo_conf.py", "w") as f:
+    with open(file_path, "w") as f:
         template = JINJA_ENV.get_template("piccolo_conf.py.jinja")
         file_contents = template.render(engine_name=engine_name)
         file_contents = black.format_str(
@@ -34,7 +36,7 @@ def new_piccolo_conf(engine_name: str, force: bool = False):
         f.write(file_contents)
 
 
-def new(engine: str = "postgres", force: bool = False):
+def new(engine: str = "postgres", force: bool = False, root: str = ""):
     """
     Creates a new Piccolo project file (piccolo_conf.py).
 
@@ -44,6 +46,9 @@ def new(engine: str = "postgres", force: bool = False):
     :param force:
         If True, it will override the piccolo_conf.py file if it already
         exists.
+    :param root:
+        Where to create the app e.g. /my/folder. By default it creates the
+        app in the current directory.
 
     """
-    new_piccolo_conf(engine_name=engine, force=force)
+    new_piccolo_conf(engine_name=engine, force=force, root=root)
