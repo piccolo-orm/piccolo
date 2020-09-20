@@ -15,6 +15,8 @@ async def drop_tables():
         "ticket",
         "poster",
         "migration",
+        "musician",
+        "my_table",
     ]:
         await ENGINE._run_in_new_connection(f"DROP TABLE IF EXISTS {table}")
 
