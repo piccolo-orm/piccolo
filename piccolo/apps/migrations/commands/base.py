@@ -6,7 +6,12 @@ import os
 import sys
 import typing as t
 
-from piccolo.conf.apps import AppConfig, MigrationModule, PiccoloAppModule
+from piccolo.conf.apps import (
+    AppConfig,
+    MigrationModule,
+    PiccoloAppModule,
+    AppRegistry,
+)
 from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
 from piccolo.apps.migrations.auto.schema_snapshot import SchemaSnapshot
@@ -57,10 +62,7 @@ class BaseMigrationManager:
 
         return config_modules
 
-    def get_app_modules(self) -> t.List[PiccoloAppModule]:
-        """
-        Returns the piccolo_app.py modules for each registered Piccolo app.
-        """
+    def get_app_registry(self) -> AppRegistry:
         try:
             from piccolo_conf import APP_REGISTRY
         except ImportError:
@@ -68,8 +70,14 @@ class BaseMigrationManager:
                 "Unable to import APP_REGISTRY from piccolo_conf - make sure "
                 "it's in your path."
             )
+        return APP_REGISTRY
 
-        app_modules = self._import_app_modules(APP_REGISTRY.apps)
+    def get_app_modules(self) -> t.List[PiccoloAppModule]:
+        """
+        Returns the piccolo_app.py modules for each registered Piccolo app.
+        """
+        app_registry = self.get_app_registry()
+        app_modules = self._import_app_modules(app_registry.apps)
 
         # Now deduplicate any dependencies
         app_modules = self._deduplicate(app_modules)

@@ -1,4 +1,4 @@
-from .base import BaseMigrationManager
+from piccolo.apps.migrations.commands.base import BaseMigrationManager
 from piccolo.apps.migrations.tables import Migration
 from piccolo.utils.printing import get_fixed_length_string
 
