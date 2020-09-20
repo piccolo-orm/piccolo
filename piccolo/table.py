@@ -594,10 +594,11 @@ class Table(metaclass=TableMetaclass):
     def _table_str(cls, abbreviated=False):
         """
         Returns a basic string representation of the table and its columns.
+        Used by the playground.
 
-        Used by the playground, and migrations.
+        :param abbreviated:
+            If True, a very high level representation is printed out.
 
-        If abbreviated, we just return a very high level representation.
         """
         spacer = "\n    "
         columns = []
