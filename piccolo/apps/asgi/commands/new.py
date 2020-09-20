@@ -1,11 +1,11 @@
 from __future__ import annotations
-import colorama
-from jinja2 import Environment, FileSystemLoader
 import os
 import shutil
 import typing as t
 
 import black
+import colorama
+from jinja2 import Environment, FileSystemLoader
 
 
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates/starlette/")
@@ -23,29 +23,38 @@ def get_options_string(options: t.List[str]):
     )
 
 
-def new():
+def get_routing_framework() -> str:
+    print_instruction("Which routing framework?")
+    router = input(f"{get_options_string(ROUTERS)}\n") or 0
+    return ROUTERS[int(router)]
+
+
+def get_server() -> str:
+    print_instruction("Which server?")
+    server = input(f"{get_options_string(SERVERS)}\n") or 0
+    return SERVERS[int(server)]
+
+
+def new(root: str = ""):
     """
     Create a basic ASGI app, including Piccolo, routing, and an admin.
+
+    :param root:
+        Where to create the app e.g. /my/folder. By default it creates the
+        app in the current directory.
+
     """
     tree = os.walk(TEMPLATE_DIR)
 
-    print_instruction("Which routing framework?")
-    router = input(f"{get_options_string(ROUTERS)}\n") or 0
-
-    print_instruction("Which server?")
-    server = input(f"{get_options_string(SERVERS)}\n") or 0
-
     template_context = {
-        "server": SERVERS[int(server)],
-        "router": ROUTERS[int(router)],
+        "router": get_routing_framework(),
+        "server": get_server(),
     }
 
     for directory in tree:
         dir_path, sub_dir_names, file_names = directory  # type: ignore
 
-        output_dir_path = os.path.join(
-            os.getcwd(), dir_path.split(TEMPLATE_DIR)[-1]
-        )
+        output_dir_path = os.path.join(root, dir_path.split(TEMPLATE_DIR)[-1])
 
         if not os.path.exists(output_dir_path):
             folder_name = output_dir_path.split("/")[-1]

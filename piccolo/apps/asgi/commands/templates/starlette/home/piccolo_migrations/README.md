@@ -1,1 +1,1 @@
-Add migrations using `piccolo migrations new blog --auto`.
+Add migrations using `piccolo migrations new home --auto`.
