@@ -16,14 +16,17 @@ JINJA_ENV = jinja2.Environment(
 )
 
 
-def new_app(app_name: str):
+def new_app(app_name: str, root: str = ""):
     print(f"Creating {app_name} app ...")
-    if os.path.exists(app_name):
+
+    app_root = os.path.join(root, app_name)
+
+    if os.path.exists(app_root):
         print("Folder already exists - exiting.")
         sys.exit(1)
-    os.mkdir(app_name)
+    os.mkdir(app_root)
 
-    with open(os.path.join(app_name, "__init__.py"), "w"):
+    with open(os.path.join(app_root, "__init__.py"), "w"):
         pass
 
     templates: t.Dict[str, t.Any] = {
@@ -32,7 +35,7 @@ def new_app(app_name: str):
     }
 
     for filename, context in templates.items():
-        with open(os.path.join(app_name, filename), "w") as f:
+        with open(os.path.join(app_root, filename), "w") as f:
             template = JINJA_ENV.get_template(filename + ".jinja")
             file_contents = template.render(**context)
             file_contents = black.format_str(
@@ -40,18 +43,22 @@ def new_app(app_name: str):
             )
             f.write(file_contents)
 
-    migrations_folder_path = os.path.join(app_name, "piccolo_migrations")
+    migrations_folder_path = os.path.join(app_root, "piccolo_migrations")
     os.mkdir(migrations_folder_path)
 
     with open(os.path.join(migrations_folder_path, "__init__.py"), "w"):
         pass
 
 
-def new(app_name: str):
+def new(app_name: str, root: str = ""):
     """
     Creates a new Piccolo app.
 
     :param app_name:
         The name of the new app.
+    :param root:
+        Where to create the app e.g. /my/folder. By default it creates the
+        app in the current directory.
+
     """
-    new_app(app_name)
+    new_app(app_name=app_name, root=root)
