@@ -4,18 +4,43 @@ from getpass import getpass, getuser
 from piccolo.apps.user.tables import BaseUser
 
 
+def get_username() -> str:
+    default_username = getuser()
+    username = input(f"Enter username ({default_username}):\n")
+    return default_username if not username else username
+
+
+def get_email() -> str:
+    return input("Enter email:\n")
+
+
+def get_password() -> str:
+    return getpass("Enter password:\n")
+
+
+def get_confirmed_password() -> str:
+    return getpass("Confirm password:\n")
+
+
+def get_is_admin() -> bool:
+    while True:
+        admin = input("Admin user? Enter y or n:\n")
+        if admin in ("y", "n"):
+            break
+        else:
+            print("Unrecognised option")
+
+    return admin == "y"
+
+
 def create():
     """
     Create a new user.
     """
-    default_username = getuser()
-    username = input(f"Enter username ({default_username}):\n")
-    username = default_username if not username else username
-
-    email = input("Enter email:\n")
-
-    password = getpass("Enter password:\n")
-    confirmed_password = getpass("Confirm password:\n")
+    username = get_username()
+    email = get_email()
+    password = get_password()
+    confirmed_password = get_confirmed_password()
 
     if not password == confirmed_password:
         print("Passwords don't match!")
@@ -25,14 +50,7 @@ def create():
         print("The password is too short")
         sys.exit(1)
 
-    while True:
-        admin = input("Admin user? Enter y or n:\n")
-        if admin in ("y", "n"):
-            break
-        else:
-            print("Unrecognised option")
-
-    is_admin = admin == "y"
+    is_admin = get_is_admin()
 
     user = BaseUser(
         username=username,
