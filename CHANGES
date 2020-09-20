@@ -1,6 +1,12 @@
 Changes
 =======
 
+0.13.2
+------
+ * Fixing bug with auto migrations when dropping columns.
+ * Added a ``root`` argument to ``piccolo asgi new``, ``piccolo app new`` and
+   ``piccolo project new`` commands, to override where the files are placed.
+
 0.13.1
 ------
 Added support for ``group_by`` and ``Count`` for aggregate queries.
