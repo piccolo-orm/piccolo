@@ -173,6 +173,41 @@ class TestMigrationManager(DBTestCase):
         asyncio.run(manager.run())
 
     @postgres_only
+    @patch.object(BaseMigrationManager, "get_migration_managers")
+    def test_drop_column(self, get_migration_managers: MagicMock):
+        """
+        Test dropping a column with MigrationManager.
+        """
+        manager_1 = MigrationManager()
+        name_column = Varchar()
+        name_column._meta.name = "name"
+        manager_1.add_table(
+            class_name="Musician", tablename="musician", columns=[name_column]
+        )
+        asyncio.run(manager_1.run())
+
+        self.run_sync("INSERT INTO musician VALUES (default, 'Dave');")
+        response = self.run_sync("SELECT * FROM musician;")
+        self.assertEqual(response, [{"id": 1, "name": "Dave"}])
+
+        manager_2 = MigrationManager()
+        manager_2.drop_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="name",
+        )
+        asyncio.run(manager_2.run())
+
+        response = self.run_sync("SELECT * FROM musician;")
+        self.assertEqual(response, [{"id": 1}])
+
+        # Reverse
+        get_migration_managers.return_value = [manager_1]
+        asyncio.run(manager_2.run_backwards())
+        response = self.run_sync("SELECT * FROM musician;")
+        self.assertEqual(response, [{"id": 1, "name": ""}])
+
+    @postgres_only
     def test_rename_table(self):
         """
         Test renaming a table with MigrationManager.

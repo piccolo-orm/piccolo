@@ -60,9 +60,11 @@ class DropColumnCollection:
     def append(self, drop_column: DropColumn):
         self.drop_columns.append(drop_column)
 
-    def for_table_class_name(self, table_class_name: str) -> t.List[str]:
+    def for_table_class_name(
+        self, table_class_name: str
+    ) -> t.List[DropColumn]:
         return [
-            i.column_name
+            i
             for i in self.drop_columns
             if i.table_class_name == table_class_name
         ]
