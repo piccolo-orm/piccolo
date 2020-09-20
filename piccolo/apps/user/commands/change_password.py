@@ -1,17 +1,20 @@
 import sys
-from getpass import getpass
 
 from piccolo.apps.user.tables import BaseUser
+from piccolo.apps.user.commands.create import (
+    get_username,
+    get_password,
+    get_confirmed_password,
+)
 
 
 def change_password():
     """
     Change a user's password.
     """
-    username = input("Enter username:\n")
-
-    password = getpass("Enter password:\n")
-    confirmed_password = getpass("Confirm password:\n")
+    username = get_username()
+    password = get_password()
+    confirmed_password = get_confirmed_password()
 
     if not password == confirmed_password:
         print("Passwords don't match!")
