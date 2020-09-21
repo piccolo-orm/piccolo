@@ -1,6 +1,10 @@
 Changes
 =======
 
+0.13.3
+------
+Added ``piccolo shell run`` command for running adhoc queries using Piccolo.
+
 0.13.2
 ------
  * Fixing bug with auto migrations when dropping columns.
