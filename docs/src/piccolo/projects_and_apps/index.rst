@@ -11,3 +11,4 @@ application.
 
     ./piccolo_projects
     ./piccolo_apps
+    ./included_apps

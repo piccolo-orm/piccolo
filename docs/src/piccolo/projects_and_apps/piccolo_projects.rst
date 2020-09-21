@@ -61,6 +61,8 @@ The DB setting is an ``Engine`` instance. To learn more Engines, see
 
 -------------------------------------------------------------------------------
 
+.. _AppRegistry:
+
 APP_REGISTRY
 ------------
 
