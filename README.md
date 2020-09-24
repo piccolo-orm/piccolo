@@ -36,11 +36,11 @@ await Band.select(
 
 # Delete:
 await Band.delete().where(
-    (Band.band_members == 0) | (Band.manager.status == 'disabled')
+    Band.popularity < 1000
 ).run()
 
 # Update:
-await Band.update({Band.members: 5}).where(
+await Band.update({Band.popularity: 10000}).where(
     Band.name == 'Pythonistas'
 ).run()
 ```
