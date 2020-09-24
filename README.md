@@ -18,6 +18,8 @@ Some of it’s stand out features are:
 
 The syntax is clean and expressive.
 
+You can use it as a query builder:
+
 ```python
 # Select:
 await Band.select(
@@ -41,6 +43,22 @@ await Band.delete().where(
 await Band.update({Band.members: 5}).where(
     Band.name == 'Pythonistas'
 ).run()
+```
+
+Or like a typical ORM:
+
+```python
+# To create a new object:
+b = Band(name='C-Sharps', popularity=100)
+await b.save().run()
+
+# To fetch an object from the database, and update it:
+b = await Band.objects().where(Band.name == 'Pythonistas').first().run()
+b.popularity = 10000
+await b.save().run()
+
+# To delete:
+await b.remove().run()
 ```
 
 ## Installation
