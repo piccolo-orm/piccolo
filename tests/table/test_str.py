@@ -4,7 +4,7 @@ from ..example_project.tables import Manager
 
 
 class TestTableStr(TestCase):
-    def test_table_exists(self):
+    def test_str(self):
         self.assertEqual(
             Manager._table_str(),
             (

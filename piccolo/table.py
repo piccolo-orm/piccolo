@@ -360,6 +360,10 @@ class Table(metaclass=TableMetaclass):
     def __str__(self) -> str:
         return self.querystring.__str__()
 
+    def __repr__(self) -> str:
+        _id = self.id if isinstance(self.id, int) else None
+        return f"<{self.__class__.__name__}: {_id}>"
+
     ###########################################################################
     # Classmethods
 
