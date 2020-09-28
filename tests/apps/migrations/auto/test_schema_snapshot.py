@@ -42,6 +42,27 @@ class TestSchemaSnaphot(TestCase):
         class_names = [i.class_name for i in snapshot]
         self.assertTrue("Manager" in class_names)
 
+    def test_rename_table(self):
+        """
+        Test renaming tables.
+        """
+        manager_1 = MigrationManager()
+        manager_1.add_table(class_name="Band", tablename="band")
+
+        manager_2 = MigrationManager()
+        manager_2.rename_table(
+            old_class_name="Band",
+            old_tablename="band",
+            new_class_name="Performer",
+            new_tablename="performer",
+        )
+
+        schema_snapshot = SchemaSnapshot(managers=[manager_1, manager_2])
+        snapshot = schema_snapshot.get_snapshot()
+
+        self.assertTrue(snapshot[0].class_name == "Performer")
+        self.assertTrue(snapshot[0].tablename == "performer")
+
     def test_add_column(self):
         """
         Test adding columns.
