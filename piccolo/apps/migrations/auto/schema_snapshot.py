@@ -62,7 +62,9 @@ class SchemaSnapshot:
                 )
                 for drop_column in drop_columns:
                     table.columns = [
-                        i for i in table.columns if i._meta.name != drop_column
+                        i
+                        for i in table.columns
+                        if i._meta.name != drop_column.column_name
                     ]
 
                 ###############################################################

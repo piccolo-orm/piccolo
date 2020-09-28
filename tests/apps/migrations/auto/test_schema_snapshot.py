@@ -103,6 +103,29 @@ class TestSchemaSnaphot(TestCase):
         snapshot = schema_snapshot.get_snapshot()
         self.assertTrue(snapshot[0].columns[0]._meta.name == "label")
 
+    def test_drop_column(self):
+        """
+        Test dropping columns.
+        """
+        manager_1 = MigrationManager()
+        manager_1.add_table(class_name="Manager", tablename="manager")
+        manager_1.add_column(
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="name",
+            column_class_name="Varchar",
+            params={"length": 100},
+        )
+
+        manager_2 = MigrationManager()
+        manager_2.drop_column(
+            table_class_name="Manager", tablename="manager", column_name="name"
+        )
+
+        schema_snapshot = SchemaSnapshot(managers=[manager_1, manager_2])
+        snapshot = schema_snapshot.get_snapshot()
+        self.assertEqual(len(snapshot[0].columns), 0)
+
     def test_alter_column(self):
         """
         Test altering columns.
