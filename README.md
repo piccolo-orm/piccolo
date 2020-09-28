@@ -8,6 +8,8 @@
 
 A fast, user friendly ORM and query builder which supports asyncio. [Read the docs](https://piccolo-orm.readthedocs.io/en/latest/).
 
+## Features
+
 Some of it’s stand out features are:
 
 - Support for sync and async.
@@ -15,6 +17,8 @@ Some of it’s stand out features are:
 - Tab completion support - works great with iPython and VSCode.
 - Batteries included - a User model, authentication, migrations, an [admin GUI](https://github.com/piccolo-orm/piccolo_admin), and more.
 - Modern Python - fully type annotated.
+
+## Syntax
 
 The syntax is clean and expressive.
 
@@ -76,6 +80,10 @@ piccolo asgi new
 ```
 
 [Starlette](https://www.starlette.io/) and [FastAPI](https://fastapi.tiangolo.com/) are currently supported.
+
+## Are you a Django user?
+
+We have a handy page which shows the equivalent of [common Django queries in Piccolo](https://piccolo-orm.readthedocs.io/en/latest/piccolo/query_types/django_comparison.html).
 
 ## Documentation
 
