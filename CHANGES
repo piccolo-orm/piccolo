@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.13.4
+------
+ * Fixed bug with ``SchemaSnapshot`` when dropping columns.
+ * Added custom ``__repr__`` method to ``Table``.
+
 0.13.3
 ------
 Added ``piccolo shell run`` command for running adhoc queries using Piccolo.
