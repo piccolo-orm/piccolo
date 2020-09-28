@@ -4,36 +4,55 @@ Objects
 =======
 
 When doing :ref:`Select`  queries, you get data back in the form of a list of
-dictionaries (where each dictionary represents a row).
+dictionaries (where each dictionary represents a row). This is useful in a lot
+of situations, but it's sometimes preferable to get objects back instead, as we
+can manipulate them, and save the changes back to the database.
 
-This is useful in a lot of situations, but it's also useful to get objects
-back instead.
+In Piccolo, an instance of a ``Table`` class represents a row. Let's do some
+examples.
 
-In Piccolo, an instance of a Table represents a row. Let's do an
-example.
+Fetching objects
+----------------
+
+To get all objects:
 
 .. code-block:: python
 
-    # To get all objects:
-    Band.objects().run_sync()
+    >>> Band.objects().run_sync()
+    [<Band: 1>, <Band: 2>]
 
-    # To get certain rows:
-    Band.objects().where(Band.name == 'Pythonistas').run_sync()
+To get certain rows:
 
-    # Get the first row
-    Band.objects().first().run_sync()
+.. code-block:: python
 
-You'll notice that the API is similar to `select` - except it returns all
+    >>> Band.objects().where(Band.name == 'Pythonistas').run_sync()
+    [<Band: 1>]
+
+To get the first row:
+
+.. code-block:: python
+
+    >>> Band.objects().first().run_sync()
+    <Band: 1>
+
+You'll notice that the API is similar to :ref:`Select` - except it returns all
 columns.
 
-Saving objects
---------------
-
-Objects have a `save` method, which is convenient for updating values:
+Creating objects
+----------------
 
 .. code-block:: python
 
-    # To get certain rows:
+    >>> band = Band(name="C-Sharps", popularity=100)
+    >>> band.save().run_sync()
+
+Updating objects
+----------------
+
+Objects have a ``save`` method, which is convenient for updating values:
+
+.. code-block:: python
+
     pythonistas = Band.objects().where(
         Band.name == 'Pythonistas'
     ).first().run_sync()
@@ -44,11 +63,10 @@ Objects have a `save` method, which is convenient for updating values:
 Deleting objects
 ----------------
 
-Similarly, we can delete objects, using the `remove` method.
+Similarly, we can delete objects, using the ``remove`` method.
 
 .. code-block:: python
 
-    # To get certain rows:
     pythonistas = Band.objects().where(
         Band.name == 'Pythonistas'
     ).first().run_sync()

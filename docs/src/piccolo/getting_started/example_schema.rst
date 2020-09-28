@@ -8,7 +8,7 @@ This is the schema used by the example queries throughout the docs.
 .. code-block:: python
 
     from piccolo.table import Table
-    from piccolo.columns import ForeignKey, Varchar
+    from piccolo.columns import ForeignKey, Integer, Varchar
 
 
     class Manager(Table):
@@ -18,5 +18,6 @@ This is the schema used by the example queries throughout the docs.
     class Band(Table):
         name = Varchar(length=100)
         manager = Varchar(length=100)
+        popularity = Integer()
 
 To understand more about defining your own schemas, see :ref:`DefiningSchema`.

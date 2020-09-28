@@ -1,7 +1,7 @@
 .. _Create:
 
-Create
-======
+Create Table
+============
 
 This creates the table and columns in the database.
 
