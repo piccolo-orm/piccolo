@@ -17,3 +17,9 @@ Lets you create a powerful web GUI for your tables in two minutes. View the
 project on `Github <https://github.com/piccolo-orm/piccolo_admin>`_.
 
 .. image:: https://raw.githubusercontent.com/piccolo-orm/piccolo_admin/master/docs/images/screenshot.png
+
+Piccolo Examples
+----------------
+
+A `repository <https://github.com/piccolo-orm/piccolo_examples>`_ containing
+example projects built with Piccolo, as well as links to community projects.
