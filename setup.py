@@ -22,7 +22,9 @@ with open(os.path.join(directory, "README.md")) as f:
 setup(
     name="piccolo",
     version=VERSION,
-    description="A fast, user friendly ORM which supports asyncio.",
+    description=(
+        "A fast, user friendly ORM and query builder which supports asyncio."
+    ),
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
     author="Daniel Townsend",
