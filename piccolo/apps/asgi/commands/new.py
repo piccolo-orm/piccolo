@@ -35,7 +35,7 @@ def get_server() -> str:
     return SERVERS[int(server)]
 
 
-def new(root: str = ""):
+def new(root: str = "."):
     """
     Create a basic ASGI app, including Piccolo, routing, and an admin.
 

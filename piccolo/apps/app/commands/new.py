@@ -16,7 +16,7 @@ JINJA_ENV = jinja2.Environment(
 )
 
 
-def new_app(app_name: str, root: str = ""):
+def new_app(app_name: str, root: str = "."):
     print(f"Creating {app_name} app ...")
 
     app_root = os.path.join(root, app_name)
@@ -50,7 +50,7 @@ def new_app(app_name: str, root: str = ""):
         pass
 
 
-def new(app_name: str, root: str = ""):
+def new(app_name: str, root: str = "."):
     """
     Creates a new Piccolo app.
 

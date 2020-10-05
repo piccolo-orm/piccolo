@@ -17,7 +17,7 @@ JINJA_ENV = jinja2.Environment(
 )
 
 
-def new_piccolo_conf(engine_name: str, force: bool = False, root: str = ""):
+def new_piccolo_conf(engine_name: str, force: bool = False, root: str = "."):
     print("Creating new piccolo_conf file ...")
 
     file_path = os.path.join(root, "piccolo_conf.py")
@@ -36,7 +36,7 @@ def new_piccolo_conf(engine_name: str, force: bool = False, root: str = ""):
         f.write(file_contents)
 
 
-def new(engine: str = "postgres", force: bool = False, root: str = ""):
+def new(engine: str = "postgres", force: bool = False, root: str = "."):
     """
     Creates a new Piccolo project file (piccolo_conf.py).
 
