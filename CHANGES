@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.13.5
+------
+ * Added ``allowed_hosts`` to ``create_admin`` in ASGI template.
+ * Fixing bug with default ``root`` argument in some piccolo commands.
+
 0.13.4
 ------
  * Fixed bug with ``SchemaSnapshot`` when dropping columns.
