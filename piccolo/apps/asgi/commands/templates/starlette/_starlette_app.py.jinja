@@ -13,7 +13,14 @@ from home.tables import Task
 app = Starlette(
     routes=[
         Route("/", HomeEndpoint),
-        Mount("/admin/", create_admin(tables=APP_CONFIG.table_classes)),
+        Mount(
+            "/admin/",
+            create_admin(
+                tables=APP_CONFIG.table_classes,
+                # Required when running under HTTPS:
+                # allowed_hosts=['my_site.com']
+            )
+        ),
         Mount("/static/", StaticFiles(directory="static")),
         Mount("/tasks/", PiccoloCRUD(table=Task))
     ],

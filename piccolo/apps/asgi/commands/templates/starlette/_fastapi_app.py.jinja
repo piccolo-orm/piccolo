@@ -16,7 +16,14 @@ from home.piccolo_app import APP_CONFIG
 app = FastAPI(
     routes=[
         Route("/", HomeEndpoint),
-        Mount("/admin/", create_admin(tables=APP_CONFIG.table_classes)),
+        Mount(
+            "/admin/",
+            create_admin(
+                tables=APP_CONFIG.table_classes,
+                # Required when running under HTTPS:
+                # allowed_hosts=['my_site.com']
+            )
+        ),
         Mount("/static/", StaticFiles(directory="static")),
     ],
 )
