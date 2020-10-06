@@ -5,7 +5,7 @@ import typing as t
 from .base import Default
 
 
-class IntervalCustom(Default):
+class IntervalCustom(Default):  # lgtm [py/missing-equals]
     def __init__(
         self,
         weeks: int = 0,

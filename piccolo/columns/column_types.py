@@ -613,7 +613,7 @@ class Time(Column):
         super().__init__(**kwargs)
 
 
-class Interval(Column):
+class Interval(Column):  # lgtm [py/missing-equals]
     """
     Used for storing timedeltas. Uses the ``timedelta`` type for values.
 
