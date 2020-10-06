@@ -11,6 +11,7 @@ import uuid
 import aiosqlite
 from aiosqlite import Cursor, Connection
 
+from piccolo.columns.defaults.interval import IntervalCustom
 from piccolo.engine.base import Batch, Engine
 from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import Query
@@ -51,6 +52,15 @@ def convert_date_in(value):
     return value.isoformat()
 
 
+def convert_timedelta_in(value):
+    """
+    Converts the timedelta value being passed into sqlite.
+    """
+    return IntervalCustom.from_timedelta(instance=value).sqlite.replace(
+        "'", ""
+    )
+
+
 def convert_numeric_out(value: bytes) -> Decimal:
     """
     Convert float values into Decimals.
@@ -78,9 +88,23 @@ def convert_date_out(value: bytes) -> datetime.date:
 
 def convert_time_out(value: bytes) -> datetime.time:
     """
-    If the value is a uuid, convert it to a UUID instance.
+    If the value is a time, convert it to a UUID instance.
     """
     return datetime.time.fromisoformat(value.decode("utf8"))
+
+
+def convert_interval_out(value: bytes) -> datetime.timedelta:
+    """
+    If the value is an interval, convert it to a timedelta instance.
+    """
+    unit_value_strings = [i.strip() for i in value.decode("utf8").split(",")]
+    kwargs = {}
+
+    for unit_value_string in unit_value_strings:
+        value, key = unit_value_string.split(" ")
+        kwargs[key] = int(value)
+
+    return datetime.timedelta(**kwargs)
 
 
 sqlite3.register_converter("Numeric", convert_numeric_out)
@@ -88,11 +112,13 @@ sqlite3.register_converter("Integer", convert_int_out)
 sqlite3.register_converter("UUID", convert_uuid_out)
 sqlite3.register_converter("Date", convert_date_out)
 sqlite3.register_converter("Time", convert_time_out)
+sqlite3.register_converter("Interval", convert_interval_out)
 
 sqlite3.register_adapter(Decimal, convert_numeric_in)
 sqlite3.register_adapter(uuid.UUID, convert_uuid_in)
 sqlite3.register_adapter(datetime.time, convert_time_in)
 sqlite3.register_adapter(datetime.date, convert_date_in)
+sqlite3.register_adapter(datetime.timedelta, convert_timedelta_in)
 
 ###############################################################################
 

@@ -117,6 +117,12 @@ Date
 
 .. autoclass:: Date
 
+========
+Interval
+========
+
+.. autoclass:: Interval
+
 ====
 Time
 ====
