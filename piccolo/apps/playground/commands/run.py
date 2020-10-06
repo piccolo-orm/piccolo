@@ -12,6 +12,7 @@ from piccolo.columns import (
     Varchar,
     ForeignKey,
     Integer,
+    Interval,
     Numeric,
     Timestamp,
     UUID,
@@ -40,6 +41,7 @@ class Concert(Table):
     band_2 = ForeignKey(Band)
     venue = ForeignKey(Venue)
     starts = Timestamp()
+    duration = Interval()
 
 
 class Ticket(Table):
@@ -91,6 +93,7 @@ def populate():
         band_2=rustaceans.id,
         venue=venue.id,
         starts=datetime.datetime.now() + datetime.timedelta(days=7),
+        duration=datetime.timedelta(hours=2),
     )
     concert.save().run_sync()
 
