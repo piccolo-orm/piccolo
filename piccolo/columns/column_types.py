@@ -651,6 +651,18 @@ class Interval(Column):  # lgtm [py/missing-equals]
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
+    @property
+    def column_type(self):
+        engine_type = self._meta.table._meta.db.engine_type
+        if engine_type == "postgres":
+            return "INTERVAL"
+        elif engine_type == "sqlite":
+            # We can't use 'INTERVAL' because the type affinity in SQLite would
+            # make it an integer - but we need a numeric field.
+            # https://sqlite.org/datatype3.html#determination_of_column_affinity
+            return "SECONDS"
+        raise Exception("Unrecognized engine type")
+
 
 ###############################################################################
 

@@ -11,7 +11,6 @@ import uuid
 import aiosqlite
 from aiosqlite import Cursor, Connection
 
-from piccolo.columns.defaults.interval import IntervalCustom
 from piccolo.engine.base import Batch, Engine
 from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import Query
@@ -56,9 +55,7 @@ def convert_timedelta_in(value):
     """
     Converts the timedelta value being passed into sqlite.
     """
-    return IntervalCustom.from_timedelta(instance=value).sqlite.replace(
-        "'", ""
-    )
+    return value.total_seconds()
 
 
 def convert_numeric_out(value: bytes) -> Decimal:
@@ -93,18 +90,11 @@ def convert_time_out(value: bytes) -> datetime.time:
     return datetime.time.fromisoformat(value.decode("utf8"))
 
 
-def convert_interval_out(value: bytes) -> datetime.timedelta:
+def convert_seconds_out(value: bytes) -> datetime.timedelta:
     """
-    If the value is an interval, convert it to a timedelta instance.
+    If the value is from a seconds column, convert it to a timedelta instance.
     """
-    unit_value_strings = [i.strip() for i in value.decode("utf8").split(",")]
-    kwargs = {}
-
-    for unit_value_string in unit_value_strings:
-        value, key = unit_value_string.split(" ")
-        kwargs[key] = int(value)
-
-    return datetime.timedelta(**kwargs)
+    return datetime.timedelta(seconds=float(value.decode("utf8")))
 
 
 sqlite3.register_converter("Numeric", convert_numeric_out)
@@ -112,7 +102,7 @@ sqlite3.register_converter("Integer", convert_int_out)
 sqlite3.register_converter("UUID", convert_uuid_out)
 sqlite3.register_converter("Date", convert_date_out)
 sqlite3.register_converter("Time", convert_time_out)
-sqlite3.register_converter("Interval", convert_interval_out)
+sqlite3.register_converter("Seconds", convert_seconds_out)
 
 sqlite3.register_adapter(Decimal, convert_numeric_in)
 sqlite3.register_adapter(uuid.UUID, convert_uuid_in)
@@ -343,6 +333,8 @@ class SQLiteEngine(Engine):
         else:
             raise Exception(f"Database at {self.path} already exists")
         if migrate:
+            # Commented out for now, as migrations for SQLite aren't as
+            # well supported as Postgres.
             # from piccolo.commands.migration.forwards import (
             #     ForwardsMigrationManager,
             # )

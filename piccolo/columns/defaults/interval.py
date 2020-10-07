@@ -53,18 +53,7 @@ class IntervalCustom(Default):  # lgtm [py/missing-equals]
 
     @property
     def sqlite(self):
-        value = self.get_sqlite_interval_string(
-            attributes=[
-                "weeks",
-                "days",
-                "hours",
-                "minutes",
-                "seconds",
-                "milliseconds",
-                "microseconds",
-            ]
-        ).replace("'", "")
-        return f"'{value}'"
+        return self.timedelta.total_seconds()
 
     def python(self):
         return self.timedelta
