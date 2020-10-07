@@ -4,7 +4,7 @@ from ..base import DBTestCase
 from ..example_project.tables import Band
 
 
-class TestOutput(DBTestCase):
+class TestOutputList(DBTestCase):
     def test_output_as_list(self):
         self.insert_row()
 
@@ -12,6 +12,8 @@ class TestOutput(DBTestCase):
 
         self.assertTrue(response == ["Pythonistas"])
 
+
+class TestOutputJSON(DBTestCase):
     def test_output_as_json(self):
         self.insert_row()
 

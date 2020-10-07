@@ -1,6 +1,6 @@
 from __future__ import annotations
 import copy
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
 import decimal
 import typing as t
 import uuid
@@ -9,6 +9,7 @@ from piccolo.columns.base import Column, OnDelete, OnUpdate, ForeignKeyMeta
 from piccolo.columns.operators.string import ConcatPostgres, ConcatSQLite
 from piccolo.columns.defaults.date import DateArg, DateNow, DateCustom
 from piccolo.columns.defaults.time import TimeArg, TimeNow, TimeCustom
+from piccolo.columns.defaults.interval import IntervalArg, IntervalCustom
 from piccolo.columns.defaults.timestamp import (
     TimestampArg,
     TimestampNow,
@@ -610,6 +611,57 @@ class Time(Column):
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
+
+
+class Interval(Column):  # lgtm [py/missing-equals]
+    """
+    Used for storing timedeltas. Uses the ``timedelta`` type for values.
+
+    **Example**
+
+    .. code-block:: python
+
+        from datetime import timedelta
+
+        class Concert(Table):
+            duration = Interval()
+
+        # Create
+        >>> Concert(
+        >>>    duration=timedelta(hours=2)
+        >>> ).save().run_sync()
+
+        # Query
+        >>> Concert.select(Concert.duration).run_sync()
+        {'duration': datetime.timedelta(seconds=7200)}
+
+    """
+
+    value_type = timedelta
+
+    def __init__(
+        self, default: IntervalArg = IntervalCustom(), **kwargs
+    ) -> None:
+        self._validate_default(default, IntervalArg.__args__)  # type: ignore
+
+        if isinstance(default, timedelta):
+            default = IntervalCustom.from_timedelta(default)
+
+        self.default = default
+        kwargs.update({"default": default})
+        super().__init__(**kwargs)
+
+    @property
+    def column_type(self):
+        engine_type = self._meta.table._meta.db.engine_type
+        if engine_type == "postgres":
+            return "INTERVAL"
+        elif engine_type == "sqlite":
+            # We can't use 'INTERVAL' because the type affinity in SQLite would
+            # make it an integer - but we need a numeric field.
+            # https://sqlite.org/datatype3.html#determination_of_column_affinity
+            return "SECONDS"
+        raise Exception("Unrecognized engine type")
 
 
 ###############################################################################

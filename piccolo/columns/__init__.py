@@ -4,6 +4,7 @@ from .column_types import (  # noqa
     Float,
     ForeignKey,
     Integer,
+    Interval,
     Numeric,
     PrimaryKey,
     Real,
