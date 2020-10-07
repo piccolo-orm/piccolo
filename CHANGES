@@ -1,6 +1,10 @@
 Changes
 =======
 
+0.14.0
+------
+Added ``Interval`` column type.
+
 0.13.5
 ------
  * Added ``allowed_hosts`` to ``create_admin`` in ASGI template.
