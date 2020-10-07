@@ -1,4 +1,5 @@
 from __future__ import annotations
+import datetime
 import itertools
 from time import time
 import typing as t
@@ -26,7 +27,9 @@ def default(obj):
     """
     Used for handling edge cases which orjson can't serialise out of the box.
     """
-    if isinstance(obj, UUID):
+    # This is the asyncpg UUID, not the builtin Python UUID, which orjon can
+    # serialise out of the box.
+    if isinstance(obj, (UUID, datetime.timedelta)):
         return str(obj)
     raise TypeError
 
