@@ -3,6 +3,6 @@ asgiref==3.2.10
 asyncpg==0.21.0
 black==19.10b0
 colorama==0.4.3
-orjson==3.3.1
+orjson==3.4.0
 Jinja2==2.11.2
 targ==0.1.*
