@@ -22,6 +22,7 @@ class ForwardsMigrationManager(BaseMigrationManager):
         self.app_name = app_name
         self.migration_id = migration_id
         self.fake = fake
+        super().__init__()
 
     def run_migrations(self, app_config: AppConfig) -> None:
         already_ran = Migration.get_migrations_which_ran(

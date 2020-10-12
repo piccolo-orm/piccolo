@@ -6,6 +6,7 @@ from piccolo.utils.printing import get_fixed_length_string
 class CheckMigrationManager(BaseMigrationManager):
     def __init__(self, app_name: str):
         self.app_name = app_name
+        super().__init__()
 
     def run(self):
         print("Listing migrations ...")
