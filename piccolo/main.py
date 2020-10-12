@@ -22,6 +22,9 @@ def get_diagnose_flag() -> bool:
 
 
 def main():
+    """
+    The entrypoint to the Piccolo CLI.
+    """
     # In case it's run from an entrypoint:
     sys.path.insert(0, os.getcwd())
 
