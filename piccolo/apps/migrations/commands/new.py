@@ -11,7 +11,7 @@ import jinja2
 
 from .base import BaseMigrationManager
 from piccolo import __VERSION__
-from piccolo.conf.apps import AppConfig, AppRegistry
+from piccolo.conf.apps import AppConfig, Finder
 from piccolo.apps.migrations.auto import (
     AlterStatements,
     SchemaSnapshot,
@@ -149,26 +149,12 @@ def new(app_name: str, auto: bool = False):
     """
     print("Creating new migration ...")
 
-    try:
-        import piccolo_conf
-    except ImportError:
-        print("Can't find piccolo_conf")
-        sys.exit(1)
-
-    if auto and isinstance(getattr(piccolo_conf, "DB"), SQLiteEngine):
+    engine = Finder().get_engine()
+    if auto and isinstance(engine, SQLiteEngine):
         print("Auto migrations aren't currently supported by SQLite.")
         sys.exit(1)
 
-    try:
-        app_registry: AppRegistry = piccolo_conf.APP_REGISTRY
-    except AttributeError:
-        print("APP_REGISTRY isn't defined in piccolo_conf")
-        sys.exit(1)
-
-    app_config = app_registry.get_app_config(app_name)
-
-    if not app_config:
-        raise ValueError(f"Unrecognised app_name: {app_name}")
+    app_config = Finder().get_app_config(app_name=app_name)
 
     _create_migrations_folder(app_config.migrations_folder_path)
     _create_new_migration(app_config=app_config, auto=auto)

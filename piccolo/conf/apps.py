@@ -295,7 +295,9 @@ class Finder:
         app_registry = getattr(piccolo_conf_module, "APP_REGISTRY")
         return app_registry
 
-    def get_engine(self, module_name: t.Optional[str]) -> t.Optional[Engine]:
+    def get_engine(
+        self, module_name: t.Optional[str] = None
+    ) -> t.Optional[Engine]:
         piccolo_conf = self.get_piccolo_conf_module(module_name=module_name)
         engine: t.Optional[Engine] = None
         engine = getattr(piccolo_conf, ENGINE_VAR, None)
