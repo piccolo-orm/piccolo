@@ -1,7 +1,7 @@
 import sys
 import typing as t
 
-from piccolo.conf.apps import AppRegistry, AppConfig
+from piccolo.conf.apps import AppRegistry, AppConfig, Finder
 from piccolo.table import Table
 
 

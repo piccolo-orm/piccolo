@@ -1,4 +1,5 @@
 from piccolo.engine.postgres import PostgresEngine
+from piccolo.conf.apps import AppRegistry
 
 
 DB = PostgresEngine(
@@ -9,3 +10,6 @@ DB = PostgresEngine(
         "password": "piccolo",
     }
 )
+
+
+APP_REGISTRY = AppRegistry()

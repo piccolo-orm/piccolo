@@ -1,13 +1,11 @@
+from piccolo.conf.apps import Finder
+
+
 def show_all():
     """
     Lists all registered Piccolo apps.
     """
-    try:
-        import piccolo_conf
-    except ImportError:
-        print("Unable to import piccolo_conf")
-
-    app_registry = getattr(piccolo_conf, "APP_REGISTRY")
+    app_registry = Finder().get_app_registry()
 
     print("Registered apps:")
 
