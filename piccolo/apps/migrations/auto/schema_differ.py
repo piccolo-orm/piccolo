@@ -241,7 +241,7 @@ class SchemaDiffer:
 
         return AlterStatements(
             statements=[
-                f"manager.drop_table(tablename='{i.tablename}')"
+                f"manager.drop_table(class_name='{i.class_name}', tablename='{i.tablename}')"  # noqa
                 for i in drop_tables
             ]
         )

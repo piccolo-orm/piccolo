@@ -20,7 +20,19 @@ class TestSchemaDiffer(TestCase):
         """
         Test dropping an existing table.
         """
-        pass
+        schema: t.List[DiffableTable] = []
+        schema_snapshot: t.List[DiffableTable] = [
+            DiffableTable(class_name="Band", tablename="band", columns=[])
+        ]
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
+        )
+
+        self.assertTrue(len(schema_differ.drop_tables.statements) == 1)
+        self.assertEqual(
+            schema_differ.drop_tables.statements[0],
+            "manager.drop_table(class_name='Band', tablename='band')",
+        )
 
     def test_rename_table(self):
         """
