@@ -41,9 +41,8 @@ The contents of an empty migration file looks like this:
 Replace the `run` function with whatever you want the migration to do -
 typically running some SQL. It can be a function or a coroutine.
 
-
 The golden rule
-~~~~~~~~~~~~~~~
+---------------
 
 Never import your tables directly into a migration, and run methods on them.
 
@@ -95,3 +94,11 @@ Creating an auto migration:
 .. warning:: Auto migrations aren't supported in SQLite, because of SQLite's
     extremely limited support for SQL Alter statements. This might change in
     the future.
+
+Troubleshooting
+~~~~~~~~~~~~~~~
+
+Auto migrations can accomodate most schema changes. There may be some rare edge
+cases where a single migration is trying to do too much in one go, and fails.
+To avoid these situations, create auto migrations frequently, and keep them
+fairly small.
