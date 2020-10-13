@@ -98,7 +98,7 @@ Creating an auto migration:
 Troubleshooting
 ~~~~~~~~~~~~~~~
 
-Auto migrations can accomodate most schema changes. There may be some rare edge
+Auto migrations can accommodate most schema changes. There may be some rare edge
 cases where a single migration is trying to do too much in one go, and fails.
 To avoid these situations, create auto migrations frequently, and keep them
 fairly small.

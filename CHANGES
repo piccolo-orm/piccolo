@@ -1,6 +1,10 @@
 Changes
 =======
 
+0.14.1
+------
+Fixing a bug with dropping tables in auto migrations.
+
 0.14.0
 ------
 Added ``Interval`` column type.
