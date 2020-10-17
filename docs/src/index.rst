@@ -16,6 +16,7 @@ Welcome to Piccolo's documentation!
    piccolo/asgi/index
    piccolo/features/index
    piccolo/playground/index
+   piccolo/deployment/index
    piccolo/ecosystem/index
    piccolo/contributing/index
    piccolo/changes/index
