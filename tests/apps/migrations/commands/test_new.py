@@ -2,7 +2,7 @@ import os
 import shutil
 from unittest import TestCase
 
-from piccolo.apps.migrations.commands.base import AppConfig
+from piccolo.conf.apps import AppConfig
 from piccolo.apps.migrations.commands.new import (
     _create_new_migration,
     BaseMigrationManager,

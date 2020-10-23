@@ -1,13 +1,24 @@
 from unittest import TestCase
 
+from piccolo.apps.user.tables import BaseUser
 from piccolo.conf.apps import AppRegistry, AppConfig, table_finder
+
+from ..example_project.tables import Manager
 
 
 class TestAppRegistry(TestCase):
-    def test_init(self):
+    def test_get_app_config(self):
         app_registry = AppRegistry(apps=["piccolo.apps.user.piccolo_app"])
         app_config = app_registry.get_app_config(app_name="user")
         self.assertTrue(isinstance(app_config, AppConfig))
+
+    def test_get_table_classes(self):
+        app_registry = AppRegistry(apps=["piccolo.apps.user.piccolo_app"])
+        table_classes = app_registry.get_table_classes(app_name="user")
+        self.assertTrue(BaseUser in table_classes)
+
+        with self.assertRaises(ValueError):
+            app_registry.get_table_classes(app_name="Foo")
 
     def test_duplicate_app_names(self):
         """
@@ -20,6 +31,26 @@ class TestAppRegistry(TestCase):
                     "piccolo.apps.user.piccolo_app",
                 ]
             )
+
+    def test_get_table_with_name(self):
+        app_registry = AppRegistry(apps=["piccolo.apps.user.piccolo_app"])
+        table = app_registry.get_table_with_name(
+            app_name="user", table_class_name="BaseUser"
+        )
+        self.assertEqual(table, BaseUser)
+
+
+class TestAppConfig(TestCase):
+    def test_get_table_with_name(self):
+        """
+        Register a table, then test retrieving it.
+        """
+        config = AppConfig(app_name="Music", migrations_folder_path="")
+        config.register_table(table_class=Manager)
+        self.assertEqual(config.get_table_with_name("Manager"), Manager)
+
+        with self.assertRaises(ValueError):
+            config.get_table_with_name("Foo")
 
 
 class TestTableFinder(TestCase):
@@ -36,6 +67,9 @@ class TestTableFinder(TestCase):
             table_class_names,
             ["Band", "Concert", "Manager", "Poster", "Ticket", "Venue"],
         )
+
+        with self.assertRaises(ImportError):
+            table_finder(modules=["foo.bar.baz"])
 
     def test_include_tags(self):
         """

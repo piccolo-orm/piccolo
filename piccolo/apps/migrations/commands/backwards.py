@@ -9,6 +9,7 @@ class BackwardsMigrationManager(BaseMigrationManager):
     def __init__(self, app_name: str, migration_id: str):
         self.migration_id = migration_id
         self.app_name = app_name
+        super().__init__()
 
     def run(self):
         app_modules = self.get_app_modules()

@@ -1,16 +1,13 @@
 from __future__ import annotations
 import asyncio
-import functools
 import importlib
 import os
 import sys
 import typing as t
 
 from piccolo.conf.apps import (
-    AppConfig,
     MigrationModule,
-    PiccoloAppModule,
-    AppRegistry,
+    Finder,
 )
 from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
@@ -18,7 +15,7 @@ from piccolo.apps.migrations.auto.schema_snapshot import SchemaSnapshot
 from piccolo.apps.migrations.tables import Migration
 
 
-class BaseMigrationManager:
+class BaseMigrationManager(Finder):
     def create_migration_table(self) -> bool:
         """
         Creates the migration table in the database. Returns True/False
@@ -28,90 +25,6 @@ class BaseMigrationManager:
             Migration.create_table().run_sync()
             return True
         return False
-
-    def _deduplicate(
-        self, config_modules: t.List[PiccoloAppModule]
-    ) -> t.List[PiccoloAppModule]:
-        """
-        Remove all duplicates - just leaving the first instance.
-        """
-        # Deduplicate, but preserve order - which is why set() isn't used.
-        return list(dict([(c, None) for c in config_modules]).keys())
-
-    def _import_app_modules(
-        self, config_module_paths: t.List[str]
-    ) -> t.List[PiccoloAppModule]:
-        """
-        Import all piccolo_app.py modules, and all dependencies.
-        """
-        config_modules = []
-
-        for config_module_path in config_module_paths:
-            try:
-                config_module = t.cast(
-                    PiccoloAppModule,
-                    importlib.import_module(config_module_path),
-                )
-            except ImportError:
-                raise Exception(f"Unable to import {config_module_path}")
-            app_config: AppConfig = getattr(config_module, "APP_CONFIG")
-            dependency_config_modules = self._import_app_modules(
-                app_config.migration_dependencies
-            )
-            config_modules.extend(dependency_config_modules + [config_module])
-
-        return config_modules
-
-    def get_app_registry(self) -> AppRegistry:
-        try:
-            from piccolo_conf import APP_REGISTRY
-        except ImportError:
-            raise Exception(
-                "Unable to import APP_REGISTRY from piccolo_conf - make sure "
-                "it's in your path."
-            )
-        return APP_REGISTRY
-
-    def get_app_modules(self) -> t.List[PiccoloAppModule]:
-        """
-        Returns the piccolo_app.py modules for each registered Piccolo app.
-        """
-        app_registry = self.get_app_registry()
-        app_modules = self._import_app_modules(app_registry.apps)
-
-        # Now deduplicate any dependencies
-        app_modules = self._deduplicate(app_modules)
-
-        return app_modules
-
-    def get_sorted_app_names(self) -> t.List[str]:
-        """
-        Sorts the app names using the migration dependencies, so dependencies
-        are before dependents in the list.
-        """
-        modules = self.get_app_modules()
-        configs: t.List[AppConfig] = [module.APP_CONFIG for module in modules]
-
-        def sort_app_configs(app_config_1: AppConfig, app_config_2: AppConfig):
-            return (
-                app_config_1 in app_config_2.migration_dependency_app_configs
-            )
-
-        sorted_configs = sorted(
-            configs, key=functools.cmp_to_key(sort_app_configs)
-        )
-        return [i.app_name for i in sorted_configs]
-
-    def get_app_config(self, app_name: str) -> AppConfig:
-        """
-        Returns an `AppConfig` for the given app name.
-        """
-        modules = self.get_app_modules()
-        for module in modules:
-            app_config = module.APP_CONFIG
-            if app_config.app_name == app_name:
-                return app_config
-        raise ValueError(f"No app found with name {app_name}")
 
     def get_migration_modules(
         self, folder_path: str
