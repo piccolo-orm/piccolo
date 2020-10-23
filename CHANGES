@@ -1,6 +1,14 @@
 Changes
 =======
 
+0.14.2
+------
+ * Centralised code for importing Piccolo apps and tables - laying the
+   foundation for fixtures.
+ * Made orjson an optional dependency, installable using
+   `pip install piccolo[orjson]`.
+ * Improved version number parsing in Postgres.
+
 0.14.1
 ------
 Fixing a bug with dropping tables in auto migrations.
