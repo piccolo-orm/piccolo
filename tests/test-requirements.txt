@@ -1,5 +1,5 @@
 coveralls==2.1.2
-flake8==3.8.3
-mypy==0.782
+flake8==3.8.4
+mypy==0.790
 pytest-cov==2.10.1
-pytest==6.0.2
+pytest==6.1.1
