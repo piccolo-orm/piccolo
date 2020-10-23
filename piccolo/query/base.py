@@ -1,10 +1,7 @@
 from __future__ import annotations
-import datetime
 import itertools
 from time import time
 import typing as t
-
-from asyncpg.pgproto.pgproto import UUID
 
 from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
