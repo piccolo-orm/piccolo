@@ -227,6 +227,19 @@ class PostgresEngine(Engine):
         )
         super().__init__()
 
+    def _parse_raw_version_string(self, version_string: str) -> float:
+        """
+        The format of the version string isn't always consistent. Sometimes
+        it's just the version number e.g. '9.6.18', and sometimes
+        it contains specific build information e.g.
+        '12.4 (Ubuntu 12.4-0ubuntu0.20.04.1)'. Just extract the major and
+        minor version numbers.
+        """
+        version_segment = version_string.split(" ")[0]
+        major, minor = version_segment.split(".")[:2]
+        version = float(f"{major}.{minor}")
+        return version
+
     def get_version(self) -> float:
         """
         Returns the version of Postgres being run.
@@ -248,10 +261,10 @@ class PostgresEngine(Engine):
             print(exception)
             return 0.0
         else:
-            server_version = response[0]["server_version"]
-            major, minor = server_version.split(".")[:2]
-            version = float(f"{major}.{minor}")
-            return version
+            version_string = response[0]["server_version"]
+            return self._parse_raw_version_string(
+                version_string=version_string
+            )
 
     def prep_database(self):
         loop = asyncio.new_event_loop()
