@@ -227,7 +227,8 @@ class PostgresEngine(Engine):
         )
         super().__init__()
 
-    def _parse_raw_version_string(self, version_string: str) -> float:
+    @staticmethod
+    def _parse_raw_version_string(version_string: str) -> float:
         """
         The format of the version string isn't always consistent. Sometimes
         it's just the version number e.g. '9.6.18', and sometimes

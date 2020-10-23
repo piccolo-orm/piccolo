@@ -11,18 +11,17 @@ class TestVersionParsing(TestCase):
         Make sure the version number can correctly be parsed from a range
         of known formats.
         """
-        engine = PostgresEngine(config={})
-
         self.assertEqual(
-            engine._parse_raw_version_string(version_string="9.4"), 9.4
+            PostgresEngine._parse_raw_version_string(version_string="9.4"), 9.4
         )
 
         self.assertEqual(
-            engine._parse_raw_version_string(version_string="9.4.1"), 9.4
+            PostgresEngine._parse_raw_version_string(version_string="9.4.1"),
+            9.4,
         )
 
         self.assertEqual(
-            engine._parse_raw_version_string(
+            PostgresEngine._parse_raw_version_string(
                 version_string="12.4 (Ubuntu 12.4-0ubuntu0.20.04.1)"
             ),
             12.4,
