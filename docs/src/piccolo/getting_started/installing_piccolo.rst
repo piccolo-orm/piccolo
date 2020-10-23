@@ -11,7 +11,6 @@ Pip
 
 Now install piccolo, ideally inside a `virtualenv <https://docs.python-guide.org/dev/virtualenvs/>`_:
 
-
 .. code-block:: python
 
     # Optional - creating a virtualenv on Unix:
@@ -21,3 +20,7 @@ Now install piccolo, ideally inside a `virtualenv <https://docs.python-guide.org
 
     # The important bit:
     pip install piccolo
+
+    # For optional orjson support, which improves JSON serialisation
+    # performance:
+    pip install piccolo[orjson]

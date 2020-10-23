@@ -5,7 +5,6 @@ from time import time
 import typing as t
 
 from asyncpg.pgproto.pgproto import UUID
-import orjson as json
 
 from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
@@ -21,17 +20,6 @@ class Timer:
     def __exit__(self, exception_type, exception, traceback):
         self.end = time()
         print(f"Duration: {self.end - self.start}s")
-
-
-def default(obj):
-    """
-    Used for handling edge cases which orjson can't serialise out of the box.
-    """
-    # This is the asyncpg UUID, not the builtin Python UUID, which orjon can
-    # serialise out of the box.
-    if isinstance(obj, (UUID, datetime.timedelta)):
-        return str(obj)
-    raise TypeError
 
 
 class Query:
@@ -83,7 +71,14 @@ class Query:
                     else:
                         raw = list(itertools.chain(*[j.values() for j in raw]))
                 if output._output.as_json:
-                    raw = json.dumps(raw, default=default)
+                    try:
+                        import orjson
+                    except ImportError:
+                        import json
+
+                        raw = json.dumps(raw, default=str)
+                    else:
+                        raw = orjson.dumps(raw, default=str).decode("utf8")
 
         return raw
 

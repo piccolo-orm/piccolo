@@ -1,8 +1,7 @@
 aiosqlite==0.15.0
-asgiref==3.2.10
+asgiref==3.3.0
 asyncpg==0.21.0
 black==19.10b0
-colorama==0.4.3
-orjson==3.4.0
+colorama==0.4.4
 Jinja2==2.11.2
 targ==0.1.*
