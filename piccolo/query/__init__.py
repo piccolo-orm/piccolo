@@ -1,5 +1,5 @@
-from .base import Query  # noqa
-from .methods import (
+from .base import Query  # noqa: F401
+from .methods import (  # noqa: F401
     Alter,
     Select,
     Objects,

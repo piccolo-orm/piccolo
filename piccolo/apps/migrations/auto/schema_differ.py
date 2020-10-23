@@ -220,7 +220,7 @@ class SchemaDiffer:
 
         return AlterStatements(
             statements=[
-                f"manager.add_table('{i.class_name}', tablename='{i.tablename}')"
+                f"manager.add_table('{i.class_name}', tablename='{i.tablename}')"  # noqa: E501
                 for i in new_tables
             ]
         )
@@ -241,7 +241,7 @@ class SchemaDiffer:
 
         return AlterStatements(
             statements=[
-                f"manager.drop_table(class_name='{i.class_name}', tablename='{i.tablename}')"  # noqa
+                f"manager.drop_table(class_name='{i.class_name}', tablename='{i.tablename}')"  # noqa: E501
                 for i in drop_tables
             ]
         )
@@ -251,7 +251,7 @@ class SchemaDiffer:
         return AlterStatements(
             statements=[
                 f"manager.rename_table(old_class_name='{renamed_table.old_class_name}', old_tablename='{renamed_table.old_tablename}', new_class_name='{renamed_table.new_class_name}', new_tablename='{renamed_table.new_tablename}')"  # noqa
-                for renamed_table in self.rename_tables_collection.rename_tables
+                for renamed_table in self.rename_tables_collection.rename_tables  # noqa: E501
             ]
         )
 
@@ -299,7 +299,7 @@ class SchemaDiffer:
                 extra_definitions.extend(old_params.extra_definitions)
 
                 response.append(
-                    f"manager.alter_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{i.column_name}', params={new_params.params}, old_params={old_params.params})"  # noqa
+                    f"manager.alter_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{i.column_name}', params={new_params.params}, old_params={old_params.params})"  # noqa: E501
                 )
 
         return AlterStatements(
@@ -326,7 +326,7 @@ class SchemaDiffer:
                     continue
 
                 response.append(
-                    f"manager.drop_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column.column_name}')"  # noqa
+                    f"manager.drop_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column.column_name}')"  # noqa: E501
                 )
         return AlterStatements(statements=response)
 
@@ -355,7 +355,7 @@ class SchemaDiffer:
                 extra_definitions.extend(params.extra_definitions)
 
                 response.append(
-                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column.column_name}', column_class_name='{column.column_class_name}', params={str(cleaned_params)})"  # noqa
+                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column.column_name}', column_class_name='{column.column_class_name}', params={str(cleaned_params)})"  # noqa: E501
                 )
         return AlterStatements(
             statements=response,
@@ -367,7 +367,7 @@ class SchemaDiffer:
     def rename_columns(self) -> AlterStatements:
         return AlterStatements(
             statements=[
-                f"manager.rename_column(table_class_name='{i.table_class_name}', tablename='{i.tablename}', old_column_name='{i.old_column_name}', new_column_name='{i.new_column_name}')"  # noqa
+                f"manager.rename_column(table_class_name='{i.table_class_name}', tablename='{i.tablename}', old_column_name='{i.old_column_name}', new_column_name='{i.new_column_name}')"  # noqa: E501
                 for i in self.rename_columns_collection.rename_columns
             ]
         )
@@ -399,7 +399,7 @@ class SchemaDiffer:
                 extra_definitions.extend(_params.extra_definitions)
 
                 response.append(
-                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column._meta.name}', column_class_name='{column.__class__.__name__}', params={str(cleaned_params)})"  # noqa
+                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column._meta.name}', column_class_name='{column.__class__.__name__}', params={str(cleaned_params)})"  # noqa: E501
                 )
         return AlterStatements(
             statements=response,

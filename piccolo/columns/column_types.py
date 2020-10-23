@@ -944,7 +944,7 @@ class ForeignKey(Integer):
                     on_update=OnUpdate.cascade
                 )
 
-    """
+    """  # noqa: E501
 
     column_type = "INTEGER"
 

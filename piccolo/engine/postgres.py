@@ -218,7 +218,7 @@ class PostgresEngine(Engine):
 
             * https://magicstack.github.io/asyncpg/current/api/index.html#connection
 
-        """
+        """  # noqa: E501
         self.config = config
         self.pool: t.Optional[Pool] = None
         database_name = config.get("database", "Unknown")
