@@ -35,13 +35,16 @@ def get_server() -> str:
     return SERVERS[int(server)]
 
 
-def new(root: str = "."):
+def new(root: str = ".", name: str = "piccolo_project"):
     """
     Create a basic ASGI app, including Piccolo, routing, and an admin.
 
     :param root:
         Where to create the app e.g. /my/folder. By default it creates the
         app in the current directory.
+    :param name:
+        The name of the app to create - this will be used to prepopulate things
+        like the database name.
 
     """
     tree = os.walk(TEMPLATE_DIR)
@@ -49,6 +52,7 @@ def new(root: str = "."):
     template_context = {
         "router": get_routing_framework(),
         "server": get_server(),
+        "project_identifier": name.replace(" ", "_").lower(),
     }
 
     for directory in tree:
