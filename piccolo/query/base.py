@@ -87,6 +87,13 @@ class Query:
         """
         pass
 
+    def __await__(self):
+        """
+        If the user doesn't explicity call .run(), proxy to it as a
+        convenience.
+        """
+        return self.run().__await__()
+
     async def run(self, in_pool=True):
         self._validate()
 
