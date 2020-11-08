@@ -1,4 +1,4 @@
-aiosqlite==0.15.0
+aiosqlite==0.16.0
 asgiref==3.3.0
 asyncpg==0.21.0
 black==19.10b0

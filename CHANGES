@@ -1,12 +1,19 @@
 Changes
 =======
 
+0.14.3
+------
+ * Queries can be directly awaited - ``await MyTable.select()``, as an
+   alternative to using the run method ``await MyTable.select().run()``.
+ * The ``piccolo asgi new`` command now accepts a ``name`` argument, which is
+   used to populate the default database name within the template.
+
 0.14.2
 ------
  * Centralised code for importing Piccolo apps and tables - laying the
    foundation for fixtures.
  * Made orjson an optional dependency, installable using
-   `pip install piccolo[orjson]`.
+   ``pip install piccolo[orjson]``.
  * Improved version number parsing in Postgres.
 
 0.14.1
@@ -187,7 +194,7 @@ an ``ImportError`` when importing `piccolo_conf.py`.
 
 0.9.1
 -----
-Auto migration fixes, and ``.first()`` method now returns None is no match is
+Auto migration fixes, and ``.first()`` method now returns None if no match is
 found.
 
 0.9.0
