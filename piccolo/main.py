@@ -11,6 +11,7 @@ from piccolo.apps.migrations.piccolo_app import APP_CONFIG as migrations_config
 from piccolo.apps.playground.piccolo_app import APP_CONFIG as playground_config
 from piccolo.apps.project.piccolo_app import APP_CONFIG as project_config
 from piccolo.apps.shell.piccolo_app import APP_CONFIG as shell_config
+from piccolo.apps.sql_shell.piccolo_app import APP_CONFIG as sql_shell_config
 from piccolo.apps.user.piccolo_app import APP_CONFIG as user_config
 
 
@@ -53,6 +54,7 @@ def main():
         playground_config,
         project_config,
         shell_config,
+        sql_shell_config,
         user_config,
     ]:
         for command in _app_config.commands:
