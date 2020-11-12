@@ -6,11 +6,10 @@ import hashlib
 import secrets
 import typing as t
 
-from asgiref.sync import async_to_sync
-
-from piccolo.table import Table
 from piccolo.columns import Varchar, Boolean, Secret
 from piccolo.columns.readable import Readable
+from piccolo.table import Table
+from piccolo.utils.sync import run_sync
 
 
 class BaseUser(Table, tablename="piccolo_user"):
@@ -50,7 +49,7 @@ class BaseUser(Table, tablename="piccolo_user"):
 
     @classmethod
     def update_password_sync(cls, user: t.Union[str, int], password: str):
-        return async_to_sync(cls.update_password)(user, password)
+        return run_sync(cls.update_password(user, password))
 
     @classmethod
     async def update_password(cls, user: t.Union[str, int], password: str):
@@ -112,7 +111,7 @@ class BaseUser(Table, tablename="piccolo_user"):
         """
         Returns the user_id if a match is found.
         """
-        return async_to_sync(cls.login)(username, password)
+        return run_sync(cls.login(username, password))
 
     @classmethod
     async def login(cls, username: str, password: str) -> t.Optional[int]:
