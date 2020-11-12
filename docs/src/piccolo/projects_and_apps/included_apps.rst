@@ -70,6 +70,20 @@ Launches an iPython shell, and automatically imports all of your registered
 
     piccolo shell run
 
+sql_shell
+~~~~~~~~~
+
+Launches a SQL shell (``psql`` or ``sqlite3`` depending on the engine), using
+the connection settings defined in ``piccolo_conf.py``. It's convenient if you
+need to run raw SQL queries on your database.
+
+.. code-block:: bash
+
+    piccolo sql_shell run
+
+For it to work, the underlying command needs to be on the path (i.e. ``psql``
+or ``sqlite3`` depending on which you're using).
+
 -------------------------------------------------------------------------------
 
 Optional includes
