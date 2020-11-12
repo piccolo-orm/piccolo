@@ -1,6 +1,15 @@
 Changes
 =======
 
+0.14.4
+------
+ * Added ``piccolo sql_shell run`` command, which launches the psql or sqlite3
+   shell, using the connection parameters defined in ``piccolo_conf.py``.
+   This is convenient when you want to run raw SQL on your database.
+ * ``run_sync`` now handles more edge cases, for example if there's already
+   an event loop in the current thread.
+ * Removed asgiref dependency.
+
 0.14.3
 ------
  * Queries can be directly awaited - ``await MyTable.select()``, as an
