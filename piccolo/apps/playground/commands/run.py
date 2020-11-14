@@ -132,8 +132,7 @@ def run(
         import IPython
     except ImportError:
         print(
-            "Install iPython using `pip install ipython==7.6.1` to use this "
-            "feature."
+            "Install iPython using `pip install ipython` to use this feature."
         )
         sys.exit(1)
 
@@ -176,4 +175,7 @@ def run(
     print("\n")
 
     populate()
-    IPython.embed()
+
+    from IPython.core.interactiveshell import _asyncio_runner
+
+    IPython.embed(using=_asyncio_runner)
