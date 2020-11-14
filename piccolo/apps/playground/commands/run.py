@@ -175,4 +175,7 @@ def run(
     print("\n")
 
     populate()
-    IPython.embed()
+
+    from IPython.core.interactiveshell import _asyncio_runner
+
+    IPython.embed(using=_asyncio_runner)
