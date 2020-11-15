@@ -7,7 +7,7 @@ from piccolo.table import Table
 
 def start_ipython_shell(**tables: t.Dict[str, t.Type[Table]]):
     try:
-        import IPython
+        import IPython  # type: ignore
     except ImportError:
         print(
             "Install iPython using `pip install ipython` to use this feature."
@@ -19,7 +19,7 @@ def start_ipython_shell(**tables: t.Dict[str, t.Type[Table]]):
         if table_class_name not in existing_global_names:
             globals()[table_class_name] = table_class
 
-    from IPython.core.interactiveshell import _asyncio_runner
+    from IPython.core.interactiveshell import _asyncio_runner  # type: ignore
 
     IPython.embed(using=_asyncio_runner)
 

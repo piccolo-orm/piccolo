@@ -63,7 +63,7 @@ class Select(Query):
     def __init__(
         self,
         table: t.Type[Table],
-        columns_list: t.Sequence[Selectable] = [],
+        columns_list: t.Sequence[t.Union[Selectable, str]] = [],
         exclude_secrets: bool = False,
     ):
         super().__init__(table)
@@ -80,7 +80,7 @@ class Select(Query):
 
         self.columns(*columns_list)
 
-    def columns(self, *columns: t.Union[Column, str]) -> Select:
+    def columns(self, *columns: t.Union[Selectable, str]) -> Select:
         _columns = self.table._process_column_args(*columns)
         self.columns_delegate.columns(*_columns)
         return self
@@ -90,8 +90,12 @@ class Select(Query):
         return self
 
     def group_by(self, *columns: Column) -> Select:
-        columns = self.table._process_column_args(*columns)
-        self.group_by_delegate.group_by(*columns)
+        _columns: t.List[Column] = [
+            i
+            for i in self.table._process_column_args(*columns)
+            if isinstance(i, Column)
+        ]
+        self.group_by_delegate.group_by(*_columns)
         return self
 
     def limit(self, number: int) -> Select:
@@ -116,8 +120,12 @@ class Select(Query):
             return response
 
     def order_by(self, *columns: Column, ascending=True) -> Select:
-        columns = self.table._process_column_args(*columns)
-        self.order_by_delegate.order_by(*columns, ascending=ascending)
+        _columns: t.List[Column] = [
+            i
+            for i in self.table._process_column_args(*columns)
+            if isinstance(i, Column)
+        ]
+        self.order_by_delegate.order_by(*_columns, ascending=ascending)
         return self
 
     def output(self, **kwargs) -> Select:
@@ -144,7 +152,11 @@ class Select(Query):
         """
         joins: t.List[str] = []
 
-        readables = [i for i in columns if isinstance(i, Readable)]
+        readables: t.List[Readable] = [
+            i for i in columns if isinstance(i, Readable)
+        ]
+
+        columns = list(columns)
         for readable in readables:
             columns += readable.columns
 

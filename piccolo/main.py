@@ -1,7 +1,7 @@
 import os
 import sys
 
-from targ import CLI
+from targ import CLI  # type: ignore
 
 from piccolo.conf.apps import AppRegistry, Finder
 from piccolo.apps.app.piccolo_app import APP_CONFIG as app_config

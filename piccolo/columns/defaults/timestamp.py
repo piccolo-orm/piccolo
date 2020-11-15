@@ -90,7 +90,7 @@ class TimestampCustom(Default):
         return self.datetime
 
     @classmethod
-    def from_datetime(cls, instance: datetime.datetime):
+    def from_datetime(cls, instance: datetime.datetime):  # type: ignore
         return cls(
             year=instance.year,
             month=instance.month,

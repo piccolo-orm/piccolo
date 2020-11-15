@@ -2,7 +2,7 @@ from __future__ import annotations
 import os
 import sys
 
-import black
+import black  # type: ignore
 import jinja2
 
 

@@ -6,11 +6,11 @@ from dataclasses import dataclass
 import typing as t
 import warnings
 
-import asyncpg
-from asyncpg.connection import Connection
-from asyncpg.cursor import Cursor
-from asyncpg.exceptions import InsufficientPrivilegeError
-from asyncpg.pool import Pool
+import asyncpg  # type: ignore
+from asyncpg.connection import Connection  # type: ignore
+from asyncpg.cursor import Cursor  # type: ignore
+from asyncpg.exceptions import InsufficientPrivilegeError  # type: ignore
+from asyncpg.pool import Pool  # type: ignore
 
 from piccolo.engine.base import Batch, Engine
 from piccolo.engine.exceptions import TransactionError

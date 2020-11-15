@@ -3,8 +3,8 @@ import os
 import shutil
 import typing as t
 
-import black
-import colorama
+import black  # type: ignore
+import colorama  # type: ignore
 from jinja2 import Environment, FileSystemLoader
 
 

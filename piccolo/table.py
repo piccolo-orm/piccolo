@@ -273,7 +273,9 @@ class Table(metaclass=TableMetaclass):
 
         """
         if isinstance(foreign_key, str):
-            foreign_key = self._meta.get_column_by_name(foreign_key)
+            column = self._meta.get_column_by_name(foreign_key)
+            if isinstance(column, ForeignKey):
+                foreign_key = column
 
         if not isinstance(foreign_key, ForeignKey):
             raise ValueError(
@@ -448,9 +450,9 @@ class Table(metaclass=TableMetaclass):
         the response. Even though passwords are hashed, you still don't want
         them being passed over the network if avoidable.
         """
-        columns = cls._process_column_args(*columns)
+        _columns = cls._process_column_args(*columns)
         return Select(
-            table=cls, columns_list=columns, exclude_secrets=exclude_secrets
+            table=cls, columns_list=_columns, exclude_secrets=exclude_secrets
         )
 
     @classmethod
@@ -560,7 +562,7 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def create_index(
         cls,
-        columns: t.Sequence[Column, str],
+        columns: t.List[t.Union[Column, str]],
         method: IndexMethod = IndexMethod.btree,
     ) -> CreateIndex:
         """
@@ -573,7 +575,7 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def drop_index(
-        cls, columns: t.Sequence[Column, str], if_exists: bool = True
+        cls, columns: t.List[t.Union[Column, str]], if_exists: bool = True
     ) -> DropIndex:
         """
         Drop a table index. If multiple columns are specified, this refers

@@ -172,6 +172,10 @@ class AppRegistry:
         """
         Returns each Table subclass defined in the given app if it exists.
         Otherwise raises a ValueError.
+
+        :raises ValueError:
+            If an AppConfig can't be found for the given app_name.
+
         """
         app_config = self.get_app_config(app_name=app_name)
         if not app_config:
@@ -186,9 +190,12 @@ class AppRegistry:
         Otherwise raises a ValueError.
         """
         app_config = self.get_app_config(app_name=app_name)
-        return app_config.get_table_with_name(
-            table_class_name=table_class_name
-        )
+        if app_config is None:
+            raise ValueError(f"Can't find an app_config for {app_name}")
+        else:
+            return app_config.get_table_with_name(
+                table_class_name=table_class_name
+            )
 
 
 class PiccoloConfModule(ModuleType):
@@ -270,10 +277,8 @@ class Finder:
         if not module_name:
             module_name = DEFAULT_MODULE_NAME
 
-        module: t.Optional[PiccoloConfModule] = None
-
         try:
-            module = import_module(module_name)
+            module = t.cast(PiccoloConfModule, import_module(module_name))
         except ModuleNotFoundError:
             if self.diagnose:
                 colored_warning(
@@ -284,8 +289,9 @@ class Finder:
                     level=Level.high,
                 )
                 print(traceback.format_exc())
-
-        return module
+            return None
+        else:
+            return module
 
     def get_app_registry(self) -> AppRegistry:
         """
