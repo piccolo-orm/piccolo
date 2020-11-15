@@ -1,6 +1,13 @@
 Changes
 =======
 
+0.14.5
+------
+ * Removed old iPython version recommendation in the ``piccolo shell run`` and
+   ``piccolo playground run``, and enabled top level await.
+ * Fixing outstanding mypy warnings.
+ * Added optional requirements for the playground to setup.py
+
 0.14.4
 ------
  * Added ``piccolo sql_shell run`` command, which launches the psql or sqlite3
