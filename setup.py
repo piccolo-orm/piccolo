@@ -42,7 +42,7 @@ setup(
         "piccolo": ["py.typed"],
     },
     install_requires=REQUIREMENTS,
-    extras_require={"orjson": ["orjson==3.4.1"]},
+    extras_require={"orjson": ["orjson==3.4.1"], "playground": ["ipython"]},
     license="MIT",
     classifiers=[
         "License :: OSI Approved :: MIT License",
