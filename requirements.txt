@@ -1,6 +1,6 @@
 aiosqlite==0.16.0
 asyncpg==0.21.0
-black==19.10b0
+black==20.8b1
 colorama==0.4.*
 Jinja2==2.11.2
 targ==0.1.*
