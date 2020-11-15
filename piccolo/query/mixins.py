@@ -8,6 +8,7 @@ from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:
     from piccolo.table import Table  # noqa
+    from piccolo.columns.base import Selectable
 
 
 @dataclass
@@ -190,10 +191,11 @@ class ColumnsDelegate:
     .columns(MyTable.column_a, MyTable.column_b)
     """
 
-    selected_columns: t.List[Column] = field(default_factory=list)
+    selected_columns: t.Sequence[Selectable] = field(default_factory=list)
 
-    def columns(self, *columns: Column):
-        self.selected_columns += columns
+    def columns(self, *columns: Selectable):
+        combined = list(self.selected_columns) + list(columns)
+        self.selected_columns = combined
 
     def remove_secret_columns(self):
         self.selected_columns = [

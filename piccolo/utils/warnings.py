@@ -1,7 +1,7 @@
 from enum import Enum
 import warnings
 
-import colorama
+import colorama  # type: ignore
 
 
 colorama.init()

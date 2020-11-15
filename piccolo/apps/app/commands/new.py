@@ -3,7 +3,7 @@ import os
 import sys
 import typing as t
 
-import black
+import black  # type: ignore
 import jinja2
 
 

@@ -251,7 +251,7 @@ class Transaction:
 ###############################################################################
 
 
-def dict_factory(cursor, row):
+def dict_factory(cursor, row) -> t.Dict:
     d = {}
     for idx, col in enumerate(cursor.description):
         d[col[0]] = row[idx]
@@ -354,7 +354,7 @@ class SQLiteEngine(Engine):
 
     async def get_connection(self) -> Connection:
         connection = await aiosqlite.connect(**self.connection_kwargs)
-        connection.row_factory = dict_factory
+        connection.row_factory = dict_factory  # type: ignore
         await connection.execute("PRAGMA foreign_keys = 1")
         return connection
 
@@ -366,7 +366,7 @@ class SQLiteEngine(Engine):
         async with aiosqlite.connect(**self.connection_kwargs) as connection:
             await connection.execute("PRAGMA foreign_keys = 1")
 
-            connection.row_factory = dict_factory
+            connection.row_factory = dict_factory  # type: ignore
             async with connection.execute(query, args) as cursor:
                 await connection.commit()
                 response = await cursor.fetchall()

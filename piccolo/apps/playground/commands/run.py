@@ -129,7 +129,7 @@ def run(
         Postgres port
     """
     try:
-        import IPython
+        import IPython  # type: ignore
     except ImportError:
         print(
             "Install iPython using `pip install ipython` to use this feature."
@@ -176,6 +176,6 @@ def run(
 
     populate()
 
-    from IPython.core.interactiveshell import _asyncio_runner
+    from IPython.core.interactiveshell import _asyncio_runner  # type: ignore
 
     IPython.embed(using=_asyncio_runner)

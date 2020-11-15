@@ -6,7 +6,7 @@ import sys
 import typing as t
 from types import ModuleType
 
-import black
+import black  # type: ignore
 import jinja2
 
 from .base import BaseMigrationManager

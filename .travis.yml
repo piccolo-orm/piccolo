@@ -21,6 +21,7 @@ before_script:
   - psql -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" -d piccolo -U postgres
 script:
   - flake8 piccolo
+  - mypy piccolo
   - cd tests && ./travis.sh
 after_success:
   - cd .. && coveralls

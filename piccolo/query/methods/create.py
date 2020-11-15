@@ -42,7 +42,7 @@ class Create(Query):
         query = f"{base} ({columns_sql})"
         create_table = QueryString(query, *[i.querystring for i in columns])
 
-        create_indexes = []
+        create_indexes: t.List[QueryString] = []
         for column in columns:
             if column._meta.index:
                 create_indexes.extend(
