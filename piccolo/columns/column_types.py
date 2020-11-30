@@ -1054,8 +1054,22 @@ class JSON(Column):
 
     value_type = str
 
-    def __init__(self, default: t.Union[str, None] = "{}", **kwargs) -> None:
-        self._validate_default(default, (str, None))
+    def __init__(
+        self, default: t.Union[str, t.List, t.Dict, None] = "{}", **kwargs
+    ) -> None:
+        self._validate_default(default, (str, list, dict, None))
+
+        if isinstance(default, (list, dict)):
+            # TODO - move to utils
+            try:
+                import orjson
+            except ImportError:
+                import json
+
+                default = json.dumps(default, default=str)
+            else:
+                default = orjson.dumps(default, default=str).decode("utf8")
+
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
