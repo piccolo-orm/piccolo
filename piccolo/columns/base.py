@@ -325,7 +325,7 @@ class Column(Selectable):
         """
         return self._meta.get_full_name(just_alias=just_alias)
 
-    def get_sql_value(self, value: t.Any) -> str:
+    def get_sql_value(self, value: t.Any) -> t.Any:
         """
         When using DDL statements, we can't parameterise the values. An example
         is when setting the default for a column. So we have to convert from
@@ -390,6 +390,13 @@ class Column(Selectable):
         if not self._meta.primary:
             default = self.get_default_value()
             sql_value = self.get_sql_value(value=default)
+            # Escape the value if it contains a pair of curly braces, otherwise
+            # an empty value will appear in the compiled querystring.
+            sql_value = (
+                sql_value.replace("{}", "{{}}")
+                if isinstance(sql_value, str)
+                else sql_value
+            )
             query += f" DEFAULT {sql_value}"
 
         return QueryString(query)

@@ -1039,3 +1039,34 @@ class ForeignKey(Integer):
             return new_column
         else:
             return value
+
+
+###############################################################################
+
+
+class JSON(Column):
+    """
+    Used for storing JSON strings. In Postgres, the JSON can be queried
+    directly. The data is stored as a string. This is preferable to JSONB
+    if you just want to store and retrieve JSON without querying it directly.
+
+    """
+
+    value_type = str
+
+    def __init__(self, default: t.Union[str, None] = "{}", **kwargs) -> None:
+        self._validate_default(default, (str, None))
+        self.default = default
+        kwargs.update({"default": default})
+        super().__init__(**kwargs)
+
+
+class JSONB(Column):
+    """
+    Used for storing JSON strings. In Postgres, the JSON can be queried
+    directly. The data is stored in a binary format, which makes querying
+    faster, but insertion and retrieval slower (as it needs to be converted
+    to and from the binary format).
+    """
+
+    pass
