@@ -27,7 +27,7 @@ author = "Daniel Townsend"
 copyright = f"{year}, {author}"
 
 
-import piccolo  # noqa
+import piccolo  # noqa: E402
 
 version = ".".join(piccolo.__VERSION__.split(".")[:2])
 release = piccolo.__VERSION__

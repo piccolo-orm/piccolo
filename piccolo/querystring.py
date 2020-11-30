@@ -81,7 +81,7 @@ class QueryString:
     def bundle(
         self,
         start_index: int = 1,
-        bundled: t.Optional[t.List] = None,
+        bundled: t.Optional[t.List[Fragment]] = None,
         combined_args: t.Optional[t.List] = None,
     ):
         # Split up the string, separating by {}.

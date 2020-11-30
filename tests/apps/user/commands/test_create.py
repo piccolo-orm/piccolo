@@ -37,9 +37,9 @@ class TestCreate(TestCase):
         self.assertTrue(
             BaseUser.exists()
             .where(
-                (BaseUser.admin == True)
+                (BaseUser.admin == True)  # noqa: E712
                 & (BaseUser.username == "bob123")
-                & (BaseUser.email == "bob@test.com")  # noqa
+                & (BaseUser.email == "bob@test.com")
             )
             .run_sync()
         )
