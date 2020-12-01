@@ -1074,8 +1074,10 @@ class JSON(Column):  # lgtm[py/missing-equals]
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
+        self.json_operator: t.Optional[str] = None
 
-class JSONB(Column):
+
+class JSONB(JSON):
     """
     Used for storing JSON strings. In Postgres, the JSON can be queried
     directly. The data is stored in a binary format, which makes querying
@@ -1083,4 +1085,19 @@ class JSONB(Column):
     to and from the binary format).
     """
 
-    pass
+    def arrow(self, key: str) -> JSON:
+        """
+        Allows part of the JSON structure to be returned - for example,
+        for {"a": 1}, and a key value of "a", then 1 will be returned.
+        """
+        self.json_operator = f"-> '{key}'"
+        return self
+
+    def get_select_string(self, engine_type: str, just_alias=False) -> str:
+        select_string = super().get_select_string(
+            engine_type=engine_type, just_alias=just_alias
+        )
+        if self.json_operator is None:
+            return select_string
+        else:
+            return f"{select_string} {self.json_operator} AS {self._meta.name}"

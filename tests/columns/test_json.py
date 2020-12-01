@@ -28,6 +28,9 @@ class TestJSON(TestCase):
         MyTable.alter().drop_table().run_sync()
 
     def test_json(self):
+        """
+        Test storing a valid JSON string.
+        """
         row = MyTable(json='{"a": 1}')
         row.save().run_sync()
         self.assertEqual(row.json, '{"a": 1}')
