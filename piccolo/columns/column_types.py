@@ -1044,7 +1044,7 @@ class ForeignKey(Integer):
 ###############################################################################
 
 
-class JSON(Column):
+class JSON(Column):  # lgtm[py/missing-equals]
     """
     Used for storing JSON strings. In Postgres, the JSON can be queried
     directly. The data is stored as a string. This is preferable to JSONB
