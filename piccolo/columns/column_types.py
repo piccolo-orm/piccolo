@@ -1094,10 +1094,11 @@ class JSONB(JSON):
         return self
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        select_string = super().get_select_string(
-            engine_type=engine_type, just_alias=just_alias
-        )
+        select_string = self._meta.get_full_name(just_alias=just_alias)
         if self.json_operator is None:
             return select_string
         else:
-            return f"{select_string} {self.json_operator} AS {self._meta.name}"
+            if self.alias is None:
+                return f"{select_string} {self.json_operator}"
+            else:
+                return f"{select_string} {self.json_operator} AS {self.alias}"

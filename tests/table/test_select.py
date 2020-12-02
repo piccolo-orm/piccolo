@@ -286,6 +286,14 @@ class TestSelect(DBTestCase):
         self.insert_rows()
 
         response = (
+            Band.select(Band.name).where(Band.name == "Pythonistas").run_sync()
+        )
+
+        self.assertTrue(
+            response == [{"name": "Pythonistas"}, {"name": "Pythonistas"}]
+        )
+
+        response = (
             Band.select(Band.name)
             .where(Band.name == "Pythonistas")
             .distinct()
@@ -410,8 +418,42 @@ class TestSelect(DBTestCase):
         """
         Make sure the call chain lengths are the correct size.
         """
-        # self.assertEqual(len(Concert.band_1.name._meta.call_chain), 1)
+        self.assertEqual(len(Concert.band_1.name._meta.call_chain), 1)
         self.assertEqual(len(Concert.band_1.manager.name._meta.call_chain), 2)
+
+    def test_as_alias(self):
+        """
+        Make sure we can specify aliases for the columns.
+        """
+        self.insert_row()
+        response = Band.select(Band.name.as_alias("title")).run_sync()
+        self.assertEqual(response, [{"title": "Pythonistas"}])
+
+    def test_as_alias_with_join(self):
+        """
+        Make sure we can specify aliases for the column, when performing a
+        join.
+        """
+        self.insert_row()
+        response = Band.select(
+            Band.manager.name.as_alias("manager_name")
+        ).run_sync()
+        self.assertEqual(response, [{"manager_name": "Guido"}])
+
+    def test_as_alias_with_where_clause(self):
+        """
+        Make sure we can specify aliases for the column, when the column is
+        also being used in a where clause.
+        """
+        self.insert_row()
+        response = (
+            Band.select(Band.name, Band.manager.name.as_alias("manager_name"))
+            .where(Band.manager.name == "Guido")
+            .run_sync()
+        )
+        self.assertEqual(
+            response, [{"name": "Pythonistas", "manager_name": "Guido"}]
+        )
 
 
 class TestSelectSecret(TestCase):
