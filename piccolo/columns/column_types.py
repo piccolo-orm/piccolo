@@ -17,6 +17,7 @@ from piccolo.columns.defaults.timestamp import (
 )
 from piccolo.columns.defaults.uuid import UUIDArg, UUID4
 from piccolo.querystring import Unquoted, QueryString
+from piccolo.utils.encoding import dump_json
 
 if t.TYPE_CHECKING:
     from piccolo.table import Table
@@ -1039,3 +1040,67 @@ class ForeignKey(Integer):
             return new_column
         else:
             return value
+
+
+###############################################################################
+
+
+class JSON(Column):  # lgtm[py/missing-equals]
+    """
+    Used for storing JSON strings. The data is stored as text. This can be
+    preferable to JSONB if you just want to store and retrieve JSON without
+    querying it directly. It works with SQLite and Postgres.
+
+    :param default:
+        Either a JSON string can be provided, or a Python ``dict`` or ``list``
+        which is then converted to a JSON string.
+
+    """
+
+    value_type = str
+
+    def __init__(
+        self, default: t.Union[str, t.List, t.Dict, None] = "{}", **kwargs
+    ) -> None:
+        self._validate_default(default, (str, list, dict, None))
+
+        if isinstance(default, (list, dict)):
+            default = dump_json(default)
+
+        self.default = default
+        kwargs.update({"default": default})
+        super().__init__(**kwargs)
+
+        self.json_operator: t.Optional[str] = None
+
+
+class JSONB(JSON):
+    """
+    Used for storing JSON strings - Postgres only. The data is stored in a
+    binary format, and can be queried. Insertion can be slower (as it needs to
+    be converted to the binary format). The benefits of JSONB generally
+    outweigh the downsides.
+
+    :param default:
+        Either a JSON string can be provided, or a Python ``dict`` or ``list``
+        which is then converted to a JSON string.
+
+    """
+
+    def arrow(self, key: str) -> JSONB:
+        """
+        Allows part of the JSON structure to be returned - for example,
+        for {"a": 1}, and a key value of "a", then 1 will be returned.
+        """
+        self.json_operator = f"-> '{key}'"
+        return self
+
+    def get_select_string(self, engine_type: str, just_alias=False) -> str:
+        select_string = self._meta.get_full_name(just_alias=just_alias)
+        if self.json_operator is None:
+            return select_string
+        else:
+            if self.alias is None:
+                return f"{select_string} {self.json_operator}"
+            else:
+                return f"{select_string} {self.json_operator} AS {self.alias}"

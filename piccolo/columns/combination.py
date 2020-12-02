@@ -60,7 +60,7 @@ class Where(CombinableMixin):
 
     def __init__(
         self,
-        column: "Column",
+        column: Column,
         value: t.Any = UNDEFINED,
         values: t.Union[Iterable, Undefined] = UNDEFINED,
         operator: t.Type[ComparisonOperator] = ComparisonOperator,
@@ -91,7 +91,9 @@ class Where(CombinableMixin):
             args.append(self.values_querystring)
 
         template = self.operator.template.format(
-            name=self.column._meta.get_full_name(just_alias=True),
+            name=self.column.get_where_string(
+                engine_type=self.column._meta.engine_type
+            ),
             value="{}",
             values="{}",
         )

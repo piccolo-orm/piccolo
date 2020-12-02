@@ -1,5 +1,6 @@
 from __future__ import annotations
 from abc import ABCMeta, abstractmethod
+import copy
 from dataclasses import dataclass, field
 import datetime
 import decimal
@@ -226,6 +227,8 @@ class Column(Selectable):
             required=required,
         )
 
+        self.alias: t.Optional[str] = None
+
     def _validate_default(
         self,
         default: t.Any,
@@ -306,6 +309,20 @@ class Column(Selectable):
     def __hash__(self):
         return hash(self._meta.name)
 
+    def as_alias(self, name: str) -> Column:
+        """
+        Allows column names to be changed in the result of a select.
+
+        For example:
+
+        >>> await Band.select(Band.name.as_alias('title')).run()
+        {'title': 'Pythonistas'}
+
+        """
+        column = copy.deepcopy(self)
+        column.alias = name
+        return column
+
     def get_default_value(self) -> t.Any:
         """
         If the column has a default attribute, return it. If it's callable,
@@ -323,9 +340,16 @@ class Column(Selectable):
         """
         How to refer to this column in a SQL query.
         """
-        return self._meta.get_full_name(just_alias=just_alias)
+        if self.alias is None:
+            return self._meta.get_full_name(just_alias=just_alias)
+        else:
+            original_name = self._meta.get_full_name(just_alias=True)
+            return f"{original_name} AS {self.alias}"
 
-    def get_sql_value(self, value: t.Any) -> str:
+    def get_where_string(self, engine_type: str) -> str:
+        return self.get_select_string(engine_type=engine_type, just_alias=True)
+
+    def get_sql_value(self, value: t.Any) -> t.Any:
         """
         When using DDL statements, we can't parameterise the values. An example
         is when setting the default for a column. So we have to convert from
@@ -390,6 +414,13 @@ class Column(Selectable):
         if not self._meta.primary:
             default = self.get_default_value()
             sql_value = self.get_sql_value(value=default)
+            # Escape the value if it contains a pair of curly braces, otherwise
+            # an empty value will appear in the compiled querystring.
+            sql_value = (
+                sql_value.replace("{}", "{{}}")
+                if isinstance(sql_value, str)
+                else sql_value
+            )
             query += f" DEFAULT {sql_value}"
 
         return QueryString(query)

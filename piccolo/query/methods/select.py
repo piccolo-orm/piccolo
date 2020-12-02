@@ -248,7 +248,9 @@ class Select(Query):
 
         #######################################################################
 
-        select = "SELECT DISTINCT" if self.distinct else "SELECT"
+        select = (
+            "SELECT DISTINCT" if self.distinct_delegate._distinct else "SELECT"
+        )
         query = f"{select} {columns_str} FROM {self.table._meta.tablename}"
 
         for join in joins:

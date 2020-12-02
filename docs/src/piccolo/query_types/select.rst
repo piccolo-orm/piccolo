@@ -31,6 +31,18 @@ Or making an alias to make it shorter:
 
 .. hint:: All of these examples also work with async by using .run() inside coroutines - see :ref:`SyncAndAsync`.
 
+as_alias
+--------
+
+By using ``as_alias``, the name of the row can be overriden in the response.
+
+.. code-block:: python
+
+    >>> Band.select(Band.name.as_alias('title')).run_sync()
+    [{'title': 'Rustaceans'}, {'title': 'Pythonistas'}]
+
+This is equivalent to ``SELECT name AS title FROM band`` in SQL.
+
 Joins
 -----
 
