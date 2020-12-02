@@ -5,6 +5,7 @@ import typing as t
 
 from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
+from piccolo.utils.encoding import dump_json
 
 if t.TYPE_CHECKING:
     from piccolo.table import Table  # noqa
@@ -68,14 +69,7 @@ class Query:
                     else:
                         raw = list(itertools.chain(*[j.values() for j in raw]))
                 if output._output.as_json:
-                    try:
-                        import orjson
-                    except ImportError:
-                        import json
-
-                        raw = json.dumps(raw, default=str)
-                    else:
-                        raw = orjson.dumps(raw, default=str).decode("utf8")
+                    raw = dump_json(raw)
 
         return raw
 

@@ -17,6 +17,7 @@ from piccolo.columns.defaults.timestamp import (
 )
 from piccolo.columns.defaults.uuid import UUIDArg, UUID4
 from piccolo.querystring import Unquoted, QueryString
+from piccolo.utils.encoding import dump_json
 
 if t.TYPE_CHECKING:
     from piccolo.table import Table
@@ -1064,15 +1065,7 @@ class JSON(Column):  # lgtm[py/missing-equals]
         self._validate_default(default, (str, list, dict, None))
 
         if isinstance(default, (list, dict)):
-            # TODO - move to utils
-            try:
-                import orjson
-            except ImportError:
-                import json
-
-                default = json.dumps(default, default=str)
-            else:
-                default = orjson.dumps(default, default=str).decode("utf8")
+            default = dump_json(default)
 
         self.default = default
         kwargs.update({"default": default})
