@@ -1088,6 +1088,10 @@ class JSONB(JSON):
     be converted to the binary format). The benefits of JSONB generally
     outweigh the downsides.
 
+    :param default:
+        Either a JSON string can be provided, or a Python ``dict`` or ``list``
+        which is then converted to a JSON string.
+
     """
 
     def arrow(self, key: str) -> JSONB:
