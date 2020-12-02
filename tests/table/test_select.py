@@ -285,21 +285,18 @@ class TestSelect(DBTestCase):
         self.insert_rows()
         self.insert_rows()
 
-        response = (
-            Band.select(Band.name).where(Band.name == "Pythonistas").run_sync()
-        )
+        query = Band.select(Band.name).where(Band.name == "Pythonistas")
+        self.assertTrue("DISTINCT" not in query.__str__())
 
+        response = query.run_sync()
         self.assertTrue(
             response == [{"name": "Pythonistas"}, {"name": "Pythonistas"}]
         )
 
-        response = (
-            Band.select(Band.name)
-            .where(Band.name == "Pythonistas")
-            .distinct()
-            .run_sync()
-        )
+        query = query.distinct()
+        self.assertTrue("DISTINCT" in query.__str__())
 
+        response = query.run_sync()
         self.assertTrue(response == [{"name": "Pythonistas"}])
 
     def test_count_group_by(self):
