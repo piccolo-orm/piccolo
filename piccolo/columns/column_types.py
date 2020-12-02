@@ -1046,9 +1046,13 @@ class ForeignKey(Integer):
 
 class JSON(Column):  # lgtm[py/missing-equals]
     """
-    Used for storing JSON strings. In Postgres, the JSON can be queried
-    directly. The data is stored as a string. This is preferable to JSONB
-    if you just want to store and retrieve JSON without querying it directly.
+    Used for storing JSON strings. The data is stored as text. This can be
+    preferable to JSONB if you just want to store and retrieve JSON without
+    querying it directly. It works with SQLite and Postgres.
+
+    :param default:
+        Either a JSON string can be provided, or a Python ``dict`` or ``list``
+        which is then converted to a JSON string.
 
     """
 
@@ -1079,13 +1083,14 @@ class JSON(Column):  # lgtm[py/missing-equals]
 
 class JSONB(JSON):
     """
-    Used for storing JSON strings. In Postgres, the JSON can be queried
-    directly. The data is stored in a binary format, which makes querying
-    faster, but insertion and retrieval slower (as it needs to be converted
-    to and from the binary format).
+    Used for storing JSON strings - Postgres only. The data is stored in a
+    binary format, and can be queried. Insertion can be slower (as it needs to
+    be converted to the binary format). The benefits of JSONB generally
+    outweigh the downsides.
+
     """
 
-    def arrow(self, key: str) -> JSON:
+    def arrow(self, key: str) -> JSONB:
         """
         Allows part of the JSON structure to be returned - for example,
         for {"a": 1}, and a key value of "a", then 1 will be returned.

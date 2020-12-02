@@ -134,3 +134,56 @@ Timestamp
 =========
 
 .. autoclass:: Timestamp
+
+-------------------------------------------------------------------------------
+
+****
+JSON
+****
+
+Storing JSON can be useful in certain situations, for example - raw API
+responses, data from a Javascript app, and for storing data with an unknown or
+changing schema.
+
+====
+JSON
+====
+
+.. autoclass:: JSON
+
+=====
+JSONB
+=====
+
+.. autoclass:: JSONB
+
+arrow
+=====
+
+``JSONB`` columns have an ``arrow`` function, which is useful for retrieving
+a subset of the JSON data, and for filtering in a where clause.
+
+.. code-block:: python
+
+    # Example schema:
+    class Booking(Table):
+        data = JSONB()
+
+    Booking.create_table().run_sync()
+
+    # Example data:
+    Booking.insert(
+        Booking(data='{"name": "Alison"}'),
+        Booking(data='{"name": "Bob"}')
+    ).run_sync()
+
+    # Example queries
+    >>> Booking.select(
+    >>>     Booking.id, Booking.data.arrow('name').as_alias('name')
+    >>> ).run_sync()
+    [{'id': 1, 'name': '"Alison"'}, {'id': 2, 'name': '"Bob"'}]
+
+    >>> Booking.select(Booking.id).where(
+    >>>     Booking.data.arrow('name') == '"Alison"'
+    >>> ).run_sync()
+    [{'id': 1}]
