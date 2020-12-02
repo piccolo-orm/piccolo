@@ -176,6 +176,14 @@ class OutputDelegate:
         as_list: t.Optional[bool] = None,
         as_json: t.Optional[bool] = None,
     ):
+        """
+        :param as_list:
+            If each row only returns a single value, compile all of the results
+            into a single list.
+        :param as_json:
+            The results are serialised into JSON. It's equivalent to running
+            `json.dumps` on the result.
+        """
         if as_list is not None:
             self._output.as_list = bool(as_list)
 
