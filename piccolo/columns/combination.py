@@ -92,7 +92,7 @@ class Where(CombinableMixin):
 
         template = self.operator.template.format(
             name=self.column.get_where_string(
-                engine_type=self.column._meta.engine_type, just_alias=True
+                engine_type=self.column._meta.engine_type
             ),
             value="{}",
             values="{}",
