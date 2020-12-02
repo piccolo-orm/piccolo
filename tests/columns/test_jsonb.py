@@ -58,3 +58,18 @@ class TestJSONB(TestCase):
         self.assertEqual(
             MyTable.count().where(MyTable.json.arrow("a") == "2").run_sync(), 0
         )
+
+    def test_arrow_first(self):
+        """
+        Make sure the arrow function can be used with the first clause.
+        """
+        MyTable.insert(
+            MyTable(json='{"a": 1}'), MyTable(json='{"b": 2}'),
+        ).run_sync()
+
+        self.assertEqual(
+            MyTable.select(MyTable.json.arrow("a").as_alias("json"))
+            .first()
+            .run_sync(),
+            {"json": "1"},
+        )
