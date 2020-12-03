@@ -1,6 +1,14 @@
 Changes
 =======
 
+0.14.6
+------
+ * Added JSON and JSONB column types, and the arrow function for JSONB.
+ * Fixed a bug with the distinct clause.
+ * Added ``as_alias``, so select queries can override column names in the
+   response (i.e. SELECT foo AS bar from baz).
+ * Refactored JSON encoding into a separate utils file.
+
 0.14.5
 ------
  * Removed old iPython version recommendation in the ``piccolo shell run`` and
