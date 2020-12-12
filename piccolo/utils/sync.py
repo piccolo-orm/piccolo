@@ -1,10 +1,12 @@
+from __future__ import annotations
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+import typing as t
 
 
-def run_sync(coroutine):
+def run_sync(coroutine: t.Coroutine):
     """
-    Run the coroutine synchronously - trying to accomodate as many edge cases
+    Run the coroutine synchronously - trying to accommodate as many edge cases
     as possible.
 
      1. When called within a coroutine.
