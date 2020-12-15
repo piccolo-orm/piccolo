@@ -148,7 +148,10 @@ class Varchar(Column):
     concat_delegate: ConcatDelegate = ConcatDelegate()
 
     def __init__(
-        self, length: int = 255, default: t.Union[str, None] = "", **kwargs
+        self,
+        length: int = 255,
+        default: t.Union[str, t.Callable[[], str], None] = "",
+        **kwargs,
     ) -> None:
         self._validate_default(default, (str, None))
 
@@ -167,7 +170,9 @@ class Varchar(Column):
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         engine_type = self._meta.table._meta.db.engine_type
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.name, value=value, engine_type=engine_type,
+            column_name=self._meta.name,
+            value=value,
+            engine_type=engine_type,
         )
 
     def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
@@ -232,7 +237,9 @@ class Text(Column):
     value_type = str
     concat_delegate: ConcatDelegate = ConcatDelegate()
 
-    def __init__(self, default: t.Union[str, None] = "", **kwargs) -> None:
+    def __init__(
+        self, default: t.Union[str, None, t.Callable[[], str]] = "", **kwargs
+    ) -> None:
         self._validate_default(default, (str, None))
         self.default = default
         kwargs.update({"default": default})
@@ -312,7 +319,9 @@ class Integer(Column):
 
     math_delegate = MathDelegate()
 
-    def __init__(self, default: t.Union[int, None] = 0, **kwargs) -> None:
+    def __init__(
+        self, default: t.Union[int, t.Callable[[], int], None] = 0, **kwargs
+    ) -> None:
         self._validate_default(default, (int, None))
         self.default = default
         kwargs.update({"default": default})
@@ -690,7 +699,11 @@ class Boolean(Column):
 
     value_type = bool
 
-    def __init__(self, default: t.Union[bool, None] = False, **kwargs) -> None:
+    def __init__(
+        self,
+        default: t.Union[bool, t.Callable[[], bool], None] = False,
+        **kwargs,
+    ) -> None:
         self._validate_default(default, (bool, None))
         self.default = default
         kwargs.update({"default": default})
@@ -757,7 +770,9 @@ class Numeric(Column):
     def __init__(
         self,
         digits: t.Optional[t.Tuple[int, int]] = None,
-        default: t.Union[decimal.Decimal, None] = decimal.Decimal(0.0),
+        default: t.Union[
+            decimal.Decimal, t.Callable[[], decimal.Decimal], None
+        ] = decimal.Decimal(0.0),
         **kwargs,
     ) -> None:
         if isinstance(digits, tuple):
@@ -810,7 +825,11 @@ class Real(Column):
 
     value_type = float
 
-    def __init__(self, default: t.Union[float, None] = 0.0, **kwargs) -> None:
+    def __init__(
+        self,
+        default: t.Union[float, t.Callable[[], float], None] = 0.0,
+        **kwargs,
+    ) -> None:
         self._validate_default(default, (float, None))
         self.default = default
         kwargs.update({"default": default})
@@ -1060,7 +1079,15 @@ class JSON(Column):  # lgtm[py/missing-equals]
     value_type = str
 
     def __init__(
-        self, default: t.Union[str, t.List, t.Dict, None] = "{}", **kwargs
+        self,
+        default: t.Union[
+            str,
+            t.List,
+            t.Dict,
+            t.Callable[[], t.Union[str, t.List, t.Dict]],
+            None,
+        ] = "{}",
+        **kwargs,
     ) -> None:
         self._validate_default(default, (str, list, dict, None))
 
