@@ -1,5 +1,4 @@
 from __future__ import annotations
-import asyncio
 import sys
 import typing as t
 
@@ -8,6 +7,7 @@ from piccolo.conf.apps import AppConfig
 from piccolo.apps.migrations.tables import Migration
 from piccolo.apps.migrations.auto import MigrationManager
 from piccolo.conf.apps import MigrationModule
+from piccolo.utils.sync import run_sync
 
 
 class ForwardsMigrationManager(BaseMigrationManager):
@@ -60,10 +60,10 @@ class ForwardsMigrationManager(BaseMigrationManager):
                 print(f"Faked {_id}")
             else:
                 migration_module = migration_modules[_id]
-                response = asyncio.run(migration_module.forwards())
+                response = run_sync(migration_module.forwards())
 
                 if isinstance(response, MigrationManager):
-                    asyncio.run(response.run())
+                    run_sync(response.run())
 
                 print(f"Ran {_id}")
 
