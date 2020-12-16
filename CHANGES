@@ -1,6 +1,13 @@
 Changes
 =======
 
+0.14.7
+------
+ * Added missing type annotation for ``run_sync``.
+ * Updating type annotations for column default values - allowing callables.
+ * Replaced instances of ``asyncio.run`` with ``run_sync``.
+ * Tidied up aiosqlite imports.
+
 0.14.6
 ------
  * Added JSON and JSONB column types, and the arrow function for JSONB.
