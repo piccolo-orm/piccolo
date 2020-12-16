@@ -1,5 +1,4 @@
 from __future__ import annotations
-import asyncio
 import importlib
 import os
 import sys
@@ -13,6 +12,7 @@ from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
 from piccolo.apps.migrations.auto.schema_snapshot import SchemaSnapshot
 from piccolo.apps.migrations.tables import Migration
+from piccolo.utils.sync import run_sync
 
 
 class BaseMigrationManager(Finder):
@@ -85,7 +85,7 @@ class BaseMigrationManager(Finder):
         ] = self.get_migration_modules(migrations_folder)
 
         for _, migration_module in migration_modules.items():
-            response = asyncio.run(migration_module.forwards())
+            response = run_sync(migration_module.forwards())
             if isinstance(response, MigrationManager):
                 if max_migration_id:
                     if response.migration_id == max_migration_id:

@@ -1,7 +1,6 @@
-import asyncio
-
 from piccolo.apps.migrations.auto import MigrationManager
 from piccolo.apps.migrations.tables import Migration
+from piccolo.utils.sync import run_sync
 from .base import BaseMigrationManager
 
 
@@ -69,12 +68,10 @@ class BackwardsMigrationManager(BaseMigrationManager):
             for migration_id in reversed_migration_ids:
                 print(f"Reversing {migration_id}")
                 migration_module = migration_modules[migration_id]
-                response = asyncio.run(
-                    migration_module.forwards()
-                )  # type: ignore
+                response = run_sync(migration_module.forwards())
 
                 if isinstance(response, MigrationManager):
-                    asyncio.run(response.run_backwards())
+                    run_sync(response.run_backwards())
 
                 Migration.delete().where(
                     Migration.name == migration_id
