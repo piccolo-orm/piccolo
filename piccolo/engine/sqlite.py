@@ -8,8 +8,7 @@ import sqlite3
 import typing as t
 import uuid
 
-import aiosqlite
-from aiosqlite import Cursor, Connection
+from aiosqlite import connect, Connection, Cursor
 
 from piccolo.engine.base import Batch, Engine
 from piccolo.engine.exceptions import TransactionError
@@ -353,7 +352,7 @@ class SQLiteEngine(Engine):
     ###########################################################################
 
     async def get_connection(self) -> Connection:
-        connection = await aiosqlite.connect(**self.connection_kwargs)
+        connection = await connect(**self.connection_kwargs)
         connection.row_factory = dict_factory  # type: ignore
         await connection.execute("PRAGMA foreign_keys = 1")
         return connection
@@ -363,7 +362,7 @@ class SQLiteEngine(Engine):
     async def _run_in_new_connection(
         self, query: str, args: t.List[t.Any] = [], query_type: str = "generic"
     ):
-        async with aiosqlite.connect(**self.connection_kwargs) as connection:
+        async with connect(**self.connection_kwargs) as connection:
             await connection.execute("PRAGMA foreign_keys = 1")
 
             connection.row_factory = dict_factory  # type: ignore
