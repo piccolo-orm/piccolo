@@ -6,10 +6,10 @@ from piccolo.apps.app.commands.show_all import show_all
 
 class TestShowAll(TestCase):
     @patch("piccolo.apps.app.commands.show_all.print")
-    def test_show_all(self, mocked_print):
+    def test_show_all(self, print_):
         show_all()
 
         self.assertEqual(
-            mocked_print.mock_calls,
+            print_.mock_calls,
             [call("Registered apps:"), call("tests.example_app.piccolo_app")],
         )
