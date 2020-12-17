@@ -33,9 +33,7 @@ TABLE_CLASSES: t.List[t.Type[Table]] = [
 @postgres_only
 class TestForwardsBackwards(TestCase):
     """
-    How to test this? Add migrations for the example app, and just run them
-    forwards and backwards. Or create a new app with loads of migrations in
-    it.
+    Test the forwards and backwards migration commands.
     """
 
     def test_forwards_backwards_all_migrations(self):
@@ -151,6 +149,7 @@ class TestForwardsBackwards(TestCase):
 
         self.assertEqual(
             ran_migration_names,
+            # TODO - rather than hardcoding, might fetch these dynamically.
             [
                 "2020-12-17T18:44:30",
                 "2020-12-17T18:44:39",
