@@ -6,6 +6,7 @@ from unittest import TestCase
 from piccolo.apps.migrations.tables import Migration
 from piccolo.apps.migrations.commands.backwards import backwards
 from piccolo.apps.migrations.commands.forwards import forwards
+from tests.base import postgres_only
 from tests.example_app.tables import (
     Band,
     Concert,
@@ -29,6 +30,7 @@ TABLE_CLASSES: t.List[t.Type[Table]] = [
 ]
 
 
+@postgres_only
 class TestForwardsBackwards(TestCase):
     """
     How to test this? Add migrations for the example app, and just run them
