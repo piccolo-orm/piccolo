@@ -6,7 +6,7 @@ from piccolo.apps.migrations.auto import MigrationManager
 from piccolo.apps.migrations.commands.base import BaseMigrationManager
 from piccolo.columns import Varchar
 
-from tests.example_project.tables import Manager
+from tests.example_app.tables import Manager
 from tests.base import DBTestCase
 from tests.base import postgres_only
 

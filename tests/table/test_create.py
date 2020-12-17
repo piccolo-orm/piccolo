@@ -3,7 +3,7 @@ from unittest import TestCase
 from piccolo.table import Table
 from piccolo.columns import Varchar
 
-from ..example_project.tables import Manager
+from ..example_app.tables import Manager
 
 
 class TestCreate(TestCase):

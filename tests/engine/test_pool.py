@@ -1,7 +1,7 @@
 import asyncio
 
 from ..base import DBTestCase, postgres_only
-from ..example_project.tables import Manager
+from ..example_app.tables import Manager
 
 
 @postgres_only

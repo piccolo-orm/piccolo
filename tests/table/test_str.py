@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from ..example_project.tables import Manager
+from ..example_app.tables import Manager
 
 
 class TestTableStr(TestCase):

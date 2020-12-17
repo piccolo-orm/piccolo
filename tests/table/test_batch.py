@@ -2,7 +2,7 @@ import asyncio
 import math
 
 from ..base import DBTestCase
-from ..example_project.tables import Manager
+from ..example_app.tables import Manager
 
 
 class TestBatchSelect(DBTestCase):

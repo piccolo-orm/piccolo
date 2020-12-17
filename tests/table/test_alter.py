@@ -4,7 +4,7 @@ from piccolo.columns import Integer, Numeric
 from piccolo.table import Table
 
 from ..base import DBTestCase, postgres_only
-from ..example_project.tables import Band, Manager
+from ..example_app.tables import Band, Manager
 
 
 class TestRenameColumn(DBTestCase):
