@@ -17,8 +17,7 @@ def change_password():
     confirmed_password = get_confirmed_password()
 
     if not password == confirmed_password:
-        print("Passwords don't match!")
-        sys.exit(1)
+        sys.exit("Passwords don't match!")
 
     BaseUser.update_password_sync(user=username, password=password)
 

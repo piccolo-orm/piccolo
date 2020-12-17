@@ -17,10 +17,9 @@ def start_ipython_shell(
     **tables: t.Dict[str, t.Type[Table]]
 ):  # pragma: no cover
     if not IPYTHON:
-        print(
+        sys.exit(
             "Install iPython using `pip install ipython` to use this feature."
         )
-        sys.exit(1)
 
     existing_global_names = globals().keys()
     for table_class_name, table_class in tables.items():
