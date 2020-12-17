@@ -229,12 +229,20 @@ class SetDigits(AlterColumnStatement):
 class DropTable:
     tablename: str
     cascade: bool
+    if_exists: bool
 
     @property
     def querystring(self) -> QueryString:
-        query = f'DROP TABLE "{self.tablename}"'
+        query = "DROP TABLE"
+
+        if self.if_exists:
+            query += " IF EXISTS"
+
+        query += f" {self.tablename}"
+
         if self.cascade:
             query += " CASCADE"
+
         return QueryString(query)
 
 
@@ -294,12 +302,16 @@ class Alter(Query):
         self._drop_default.append(DropDefault(column=column))
         return self
 
-    def drop_table(self, cascade: bool = False) -> Alter:
+    def drop_table(
+        self, cascade: bool = False, if_exists: bool = False
+    ) -> Alter:
         """
         Band.alter().drop_table()
         """
         self._drop_table = DropTable(
-            tablename=self.table._meta.tablename, cascade=cascade
+            tablename=self.table._meta.tablename,
+            cascade=cascade,
+            if_exists=if_exists,
         )
         return self
 

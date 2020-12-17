@@ -5,9 +5,12 @@ from .base import BaseMigrationManager
 
 
 class BackwardsMigrationManager(BaseMigrationManager):
-    def __init__(self, app_name: str, migration_id: str):
+    def __init__(
+        self, app_name: str, migration_id: str, auto_agree: bool = False
+    ):
         self.migration_id = migration_id
         self.app_name = app_name
+        self.auto_agree = auto_agree
         super().__init__()
 
     def run(self):
@@ -57,10 +60,14 @@ class BackwardsMigrationManager(BaseMigrationManager):
 
         #######################################################################
 
-        _continue = input(
-            "About to undo the following migrations:\n"
-            f"{reversed_migration_ids}\n"
-            "Enter y to continue.\n"
+        _continue = (
+            input(
+                "About to undo the following migrations:\n"
+                f"{reversed_migration_ids}\n"
+                "Enter y to continue.\n"
+            )
+            if not self.auto_agree
+            else "y"
         )
         if _continue == "y":
             print("Undoing migrations")
@@ -80,7 +87,9 @@ class BackwardsMigrationManager(BaseMigrationManager):
             print("Not proceeding.")
 
 
-def backwards(app_name: str, migration_id: str = "1"):
+def backwards(
+    app_name: str, migration_id: str = "1", auto_agree: bool = False
+):
     """
     Undo migrations up to a specific migration.
 
@@ -91,16 +100,23 @@ def backwards(app_name: str, migration_id: str = "1"):
         Migrations will be reversed up to and including this migration_id.
         Specify a value of 'all' to undo all of the migrations. Specify a
         value of '1' to undo the most recent migration.
+    :param auto_agree:
+        Automatically agree to any input prompts.
+
     """
     if app_name == "all":
         sorted_app_names = BaseMigrationManager().get_sorted_app_names()
         sorted_app_names.reverse()
 
-        _continue = input(
-            "You're about to undo the migrations for the following apps:\n"
-            f"{sorted_app_names}\n"
-            "Are you sure you want to continue?\n"
-            "Enter y to continue.\n"
+        _continue = (
+            input(
+                "You're about to undo the migrations for the following apps:\n"
+                f"{sorted_app_names}\n"
+                "Are you sure you want to continue?\n"
+                "Enter y to continue.\n"
+            )
+            if not auto_agree
+            else "y"
         )
         if _continue == "y":
             for _app_name in sorted_app_names:
@@ -111,6 +127,6 @@ def backwards(app_name: str, migration_id: str = "1"):
                 manager.run()
     else:
         manager = BackwardsMigrationManager(
-            app_name=app_name, migration_id=migration_id
+            app_name=app_name, migration_id=migration_id, auto_agree=auto_agree
         )
         manager.run()
