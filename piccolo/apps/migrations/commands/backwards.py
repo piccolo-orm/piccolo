@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 import sys
 
 from piccolo.apps.migrations.auto import MigrationManager
@@ -9,11 +10,16 @@ from piccolo.utils.sync import run_sync
 
 class BackwardsMigrationManager(BaseMigrationManager):
     def __init__(
-        self, app_name: str, migration_id: str, auto_agree: bool = False
+        self,
+        app_name: str,
+        migration_id: str,
+        auto_agree: bool = False,
+        clean: bool = False,
     ):
         self.migration_id = migration_id
         self.app_name = app_name
         self.auto_agree = auto_agree
+        self.clean = clean
         super().__init__()
 
     def run(self):
@@ -87,12 +93,19 @@ class BackwardsMigrationManager(BaseMigrationManager):
                 Migration.delete().where(
                     Migration.name == migration_id
                 ).run_sync()
+
+                if self.clean:
+                    os.unlink(migration_module.__file__)
+
         else:  # pragma: no cover
             sys.exit("Not proceeding.")
 
 
 def backwards(
-    app_name: str, migration_id: str = "1", auto_agree: bool = False
+    app_name: str,
+    migration_id: str = "1",
+    auto_agree: bool = False,
+    clean: bool = False,
 ):
     """
     Undo migrations up to a specific migration.
@@ -106,6 +119,9 @@ def backwards(
         value of '1' to undo the most recent migration.
     :param auto_agree:
         Automatically agree to any input prompts.
+    :param clean:
+        If true, the migration files which have been run backwards are deleted
+        from the disk after completing.
 
     """
     if app_name == "all":
@@ -133,6 +149,9 @@ def backwards(
                 manager.run()
     else:
         manager = BackwardsMigrationManager(
-            app_name=app_name, migration_id=migration_id, auto_agree=auto_agree
+            app_name=app_name,
+            migration_id=migration_id,
+            auto_agree=auto_agree,
+            clean=clean,
         )
         manager.run()
