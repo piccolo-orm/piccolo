@@ -1,7 +1,10 @@
+from __future__ import annotations
+import sys
+
 from piccolo.apps.migrations.auto import MigrationManager
+from piccolo.apps.migrations.commands.base import BaseMigrationManager
 from piccolo.apps.migrations.tables import Migration
 from piccolo.utils.sync import run_sync
-from .base import BaseMigrationManager
 
 
 class BackwardsMigrationManager(BaseMigrationManager):
@@ -14,6 +17,8 @@ class BackwardsMigrationManager(BaseMigrationManager):
         super().__init__()
 
     def run(self):
+        self.create_migration_table()
+
         app_modules = self.get_app_modules()
 
         migration_modules = []
@@ -30,8 +35,7 @@ class BackwardsMigrationManager(BaseMigrationManager):
             app_name=self.app_name
         )
         if len(ran_migration_ids) == 0:
-            print("No migrations to reverse!")
-            return
+            sys.exit("No migrations to reverse!")
 
         #######################################################################
 
@@ -43,7 +47,7 @@ class BackwardsMigrationManager(BaseMigrationManager):
             earliest_migration_id = self.migration_id
 
         if earliest_migration_id not in ran_migration_ids:
-            print(
+            sys.exit(
                 "Unrecognized migration name - must be one of "
                 f"{ran_migration_ids}"
             )
@@ -61,13 +65,13 @@ class BackwardsMigrationManager(BaseMigrationManager):
         #######################################################################
 
         _continue = (
-            input(
+            "y"
+            if self.auto_agree
+            else input(
                 "About to undo the following migrations:\n"
                 f"{reversed_migration_ids}\n"
                 "Enter y to continue.\n"
             )
-            if not self.auto_agree
-            else "y"
         )
         if _continue == "y":
             print("Undoing migrations")
@@ -83,8 +87,8 @@ class BackwardsMigrationManager(BaseMigrationManager):
                 Migration.delete().where(
                     Migration.name == migration_id
                 ).run_sync()
-        else:
-            print("Not proceeding.")
+        else:  # pragma: no cover
+            sys.exit("Not proceeding.")
 
 
 def backwards(
@@ -109,20 +113,22 @@ def backwards(
         sorted_app_names.reverse()
 
         _continue = (
-            input(
+            "y"
+            if auto_agree
+            else input(
                 "You're about to undo the migrations for the following apps:\n"
                 f"{sorted_app_names}\n"
                 "Are you sure you want to continue?\n"
                 "Enter y to continue.\n"
             )
-            if not auto_agree
-            else "y"
         )
         if _continue == "y":
             for _app_name in sorted_app_names:
                 print(f"Undoing {_app_name}")
                 manager = BackwardsMigrationManager(
-                    app_name=_app_name, migration_id="all"
+                    app_name=_app_name,
+                    migration_id="all",
+                    auto_agree=auto_agree,
                 )
                 manager.run()
     else:
