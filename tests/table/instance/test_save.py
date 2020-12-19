@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from tests.example_project.tables import Manager
+from tests.example_app.tables import Manager
 
 
 class TestSave(TestCase):

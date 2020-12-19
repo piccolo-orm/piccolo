@@ -4,7 +4,7 @@ from piccolo.apps.user.tables import BaseUser
 from piccolo.query.methods.select import Count
 
 from ..base import DBTestCase, postgres_only, sqlite_only
-from ..example_project.tables import Band, Concert
+from ..example_app.tables import Band, Concert
 
 
 class TestSelect(DBTestCase):

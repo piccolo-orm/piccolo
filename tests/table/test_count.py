@@ -1,5 +1,5 @@
 from ..base import DBTestCase
-from ..example_project.tables import Band
+from ..example_app.tables import Band
 
 
 class TestCount(DBTestCase):

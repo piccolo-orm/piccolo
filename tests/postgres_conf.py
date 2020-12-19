@@ -12,4 +12,4 @@ DB = PostgresEngine(
 )
 
 
-APP_REGISTRY = AppRegistry()
+APP_REGISTRY = AppRegistry(apps=["tests.example_app.piccolo_app"])

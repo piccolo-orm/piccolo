@@ -23,8 +23,7 @@ def new_piccolo_conf(engine_name: str, force: bool = False, root: str = "."):
     file_path = os.path.join(root, "piccolo_conf.py")
 
     if os.path.exists(file_path) and not force:
-        print("The file already exists - exiting.")
-        sys.exit(1)
+        sys.exit("The file already exists - exiting.")
 
     with open(file_path, "w") as f:
         template = JINJA_ENV.get_template("piccolo_conf.py.jinja")

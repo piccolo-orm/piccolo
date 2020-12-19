@@ -1,10 +1,9 @@
 from unittest import TestCase
 
-from ..example_project.tables import Manager
+from ..example_app.tables import Manager
 
 
 class TestTableExists(TestCase):
-
     def setUp(self):
         Manager.create_table().run_sync()
 

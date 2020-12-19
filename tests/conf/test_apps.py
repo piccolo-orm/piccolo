@@ -3,7 +3,7 @@ from unittest import TestCase
 from piccolo.apps.user.tables import BaseUser
 from piccolo.conf.apps import AppRegistry, AppConfig, table_finder
 
-from ..example_project.tables import Manager
+from ..example_app.tables import Manager
 
 
 class TestAppRegistry(TestCase):
@@ -58,7 +58,7 @@ class TestTableFinder(TestCase):
         """
         Should return all Table subclasses.
         """
-        tables = table_finder(modules=["tests.example_project.tables"])
+        tables = table_finder(modules=["tests.example_app.tables"])
 
         table_class_names = [i.__name__ for i in tables]
         table_class_names.sort()
@@ -76,7 +76,7 @@ class TestTableFinder(TestCase):
         Should return all Table subclasses with a matching tag.
         """
         tables = table_finder(
-            modules=["tests.example_project.tables"], include_tags=["special"]
+            modules=["tests.example_app.tables"], include_tags=["special"]
         )
 
         table_class_names = [i.__name__ for i in tables]
@@ -91,7 +91,7 @@ class TestTableFinder(TestCase):
         Should return all Table subclasses without the specified tags.
         """
         tables = table_finder(
-            modules=["tests.example_project.tables"], exclude_tags=["special"]
+            modules=["tests.example_app.tables"], exclude_tags=["special"]
         )
 
         table_class_names = [i.__name__ for i in tables]

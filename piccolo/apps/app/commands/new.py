@@ -22,8 +22,7 @@ def new_app(app_name: str, root: str = "."):
     app_root = os.path.join(root, app_name)
 
     if os.path.exists(app_root):
-        print("Folder already exists - exiting.")
-        sys.exit(1)
+        sys.exit("Folder already exists - exiting.")
     os.mkdir(app_root)
 
     with open(os.path.join(app_root, "__init__.py"), "w"):

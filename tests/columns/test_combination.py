@@ -1,6 +1,6 @@
 import unittest
 
-from ..example_project.tables import Band
+from ..example_app.tables import Band
 
 
 class TestWhere(unittest.TestCase):

@@ -2,11 +2,10 @@ from __future__ import annotations
 import sys
 import typing as t
 
-from .base import BaseMigrationManager
-from piccolo.conf.apps import AppConfig
-from piccolo.apps.migrations.tables import Migration
 from piccolo.apps.migrations.auto import MigrationManager
-from piccolo.conf.apps import MigrationModule
+from piccolo.apps.migrations.commands.base import BaseMigrationManager
+from piccolo.apps.migrations.tables import Migration
+from piccolo.conf.apps import AppConfig, MigrationModule
 from piccolo.utils.sync import run_sync
 
 
@@ -40,8 +39,7 @@ class ForwardsMigrationManager(BaseMigrationManager):
         print(f"Haven't run = {havent_run}")
 
         if len(havent_run) == 0:
-            print("No migrations left to run!")
-            return
+            sys.exit("No migrations left to run!")
 
         if self.migration_id == "all":
             subset = havent_run
