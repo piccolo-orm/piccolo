@@ -118,7 +118,7 @@ def backwards(
         Specify a value of 'all' to undo all of the migrations. Specify a
         value of '1' to undo the most recent migration.
     :param auto_agree:
-        Automatically agree to any input prompts.
+        If true, automatically agree to any input prompts.
     :param clean:
         If true, the migration files which have been run backwards are deleted
         from the disk after completing.
