@@ -129,12 +129,31 @@ class SchemaDiffer:
                     drop_column_names
                 )
                 if len(same_column_names) > 0:
+                    if (
+                        drop_table.class_name == new_table.class_name
+                        and drop_table.tablename != new_table.tablename
+                    ):
+                        # The class names are the same, but the tablename
+                        # has changed - we can assume this is a deliberate
+                        # rename.
+                        collection.append(
+                            RenameTable(
+                                old_class_name=drop_table.class_name,
+                                old_tablename=drop_table.tablename,
+                                new_class_name=new_table.class_name,
+                                new_tablename=new_table.tablename,
+                            )
+                        )
+                        continue
+
                     user_response = (
                         self.auto_input
                         if self.auto_input
                         else input(
-                            f"Did you rename {drop_table.class_name} to "
-                            f"{new_table.class_name}? (y/N)"
+                            f"Did you rename {drop_table.class_name} "
+                            f"(tablename: {drop_table.tablename}) to "
+                            f"{new_table.class_name} "
+                            f"(tablename: {new_table.tablename})? (y/N)"
                         )
                     )
                     if user_response.lower() == "y":
