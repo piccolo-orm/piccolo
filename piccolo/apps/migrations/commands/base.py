@@ -30,7 +30,9 @@ class BaseMigrationManager(Finder):
         self, folder_path: str
     ) -> t.Dict[str, MigrationModule]:
         """
-        Import the migration modules and store them in a dictionary.
+        Imports the migration modules in the given folder path, and returns
+        a mapping of migration ID to the corresponding migration module.
+
         """
         migration_modules = {}
 
