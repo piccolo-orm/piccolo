@@ -75,8 +75,7 @@ def _create_new_migration(app_config: AppConfig, auto=False) -> None:
         )
 
         if sum([len(i.statements) for i in alter_statements]) == 0:
-            print("No changes detected - exiting.")
-            sys.exit(1)
+            sys.exit("No changes detected - exiting.")
 
         file_contents = render_template(
             migration_id=_id,
@@ -151,8 +150,7 @@ def new(app_name: str, auto: bool = False):
 
     engine = Finder().get_engine()
     if auto and isinstance(engine, SQLiteEngine):
-        print("Auto migrations aren't currently supported by SQLite.")
-        sys.exit(1)
+        sys.exit("Auto migrations aren't currently supported by SQLite.")
 
     app_config = Finder().get_app_config(app_name=app_name)
 

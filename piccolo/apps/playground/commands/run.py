@@ -131,10 +131,9 @@ def run(
     try:
         import IPython  # type: ignore
     except ImportError:
-        print(
+        sys.exit(
             "Install iPython using `pip install ipython` to use this feature."
         )
-        sys.exit(1)
 
     if engine.upper() == "POSTGRES":
         db: Engine = PostgresEngine(

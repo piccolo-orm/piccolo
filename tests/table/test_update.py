@@ -1,5 +1,5 @@
 from ..base import DBTestCase
-from ..example_project.tables import Band, Poster
+from ..example_app.tables import Band, Poster
 
 
 class TestUpdate(DBTestCase):

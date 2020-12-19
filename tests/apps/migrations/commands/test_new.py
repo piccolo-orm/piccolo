@@ -6,13 +6,18 @@ from piccolo.conf.apps import AppConfig
 from piccolo.apps.migrations.commands.new import (
     _create_new_migration,
     BaseMigrationManager,
+    new,
 )
 
-from tests.example_project.tables import Manager
+from tests.base import postgres_only
+from tests.example_app.tables import Manager
 
 
 class TestNewMigrationCommand(TestCase):
     def test_create_new_migration(self):
+        """
+        Create a manual migration (i.e. non-auto).
+        """
         migration_folder = "/tmp/piccolo_migrations/"
 
         if os.path.exists(migration_folder):
@@ -33,3 +38,15 @@ class TestNewMigrationCommand(TestCase):
         )
 
         self.assertTrue(len(migration_modules.keys()) == 1)
+
+    @postgres_only
+    def test_new_command(self):
+        """
+        Call the command, when no migration changes are needed.
+        """
+        with self.assertRaises(SystemExit) as manager:
+            new(app_name="example_app", auto=True)
+
+        self.assertEqual(
+            manager.exception.__str__(), "No changes detected - exiting."
+        )

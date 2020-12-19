@@ -43,12 +43,10 @@ def create():
     confirmed_password = get_confirmed_password()
 
     if not password == confirmed_password:
-        print("Passwords don't match!")
-        sys.exit(1)
+        sys.exit("Passwords don't match!")
 
     if len(password) < 4:
-        print("The password is too short")
-        sys.exit(1)
+        sys.exit("The password is too short")
 
     is_admin = get_is_admin()
 

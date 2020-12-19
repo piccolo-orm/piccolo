@@ -7,7 +7,7 @@ from piccolo.engine.sqlite import SQLiteEngine
 from piccolo.table import Table
 
 from ..base import sqlite_only, DBTestCase
-from ..example_project.tables import Manager
+from ..example_app.tables import Manager
 
 
 ENGINE_1 = SQLiteEngine(path="engine1.sqlite")

@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from ..example_project.tables import Band, Manager, Concert, Venue
+from ..example_app.tables import Band, Manager, Concert, Venue
 
 
 TABLES = [Manager, Band, Venue, Concert]
