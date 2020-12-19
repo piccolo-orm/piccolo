@@ -87,13 +87,12 @@ class BaseMigrationManager(Finder):
         for _, migration_module in migration_modules.items():
             response = run_sync(migration_module.forwards())
             if isinstance(response, MigrationManager):
-                if max_migration_id:
-                    if response.migration_id == max_migration_id:
-                        break
-                    else:
-                        migration_managers.append(response)
-                else:
-                    migration_managers.append(response)
+                migration_managers.append(response)
+                if (
+                    max_migration_id
+                    and response.migration_id == max_migration_id
+                ):
+                    break
 
         if offset > 0:
             raise Exception(
