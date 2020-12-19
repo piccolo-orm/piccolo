@@ -62,12 +62,17 @@ class Query:
                     raw = self.table(**raw)
             elif type(raw) is list:
                 if output._output.as_list:
-                    if len(raw[0].keys()) != 1:
-                        raise ValueError(
-                            "Each row returned more than one value"
-                        )
+                    if len(raw) == 0:
+                        return []
                     else:
-                        raw = list(itertools.chain(*[j.values() for j in raw]))
+                        if len(raw[0].keys()) != 1:
+                            raise ValueError(
+                                "Each row returned more than one value"
+                            )
+                        else:
+                            raw = list(
+                                itertools.chain(*[j.values() for j in raw])
+                            )
                 if output._output.as_json:
                     raw = dump_json(raw)
 
