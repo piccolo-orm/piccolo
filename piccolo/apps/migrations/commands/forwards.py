@@ -63,7 +63,7 @@ class ForwardsMigrationManager(BaseMigrationManager):
                 if isinstance(response, MigrationManager):
                     run_sync(response.run())
 
-                print(f"Ran {_id}")
+                print(f"-> Ran {_id}")
 
             Migration.insert().add(
                 Migration(name=_id, app_name=self.app_name)
@@ -96,7 +96,8 @@ def forwards(app_name: str, migration_id: str = "all", fake: bool = False):
     if app_name == "all":
         sorted_app_names = BaseMigrationManager().get_sorted_app_names()
         for _app_name in sorted_app_names:
-            print(f"Migrating {_app_name}")
+            print(f"\nMigrating {_app_name}")
+            print("------------------------------------------------")
             manager = ForwardsMigrationManager(
                 app_name=_app_name, migration_id="all", fake=fake
             )
