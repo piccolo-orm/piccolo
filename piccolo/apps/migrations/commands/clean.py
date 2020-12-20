@@ -39,11 +39,11 @@ class CleanMigrationManager(BaseMigrationManager):
         migration_ids_to_remove = query.run_sync()
         return migration_ids_to_remove
 
-    def run(self):
+    async def run(self):
         print("Checking the migration table ...")
 
         # Make sure the migration table exists, otherwise we'll get an error.
-        self.create_migration_table()
+        await self.create_migration_table()
 
         migration_ids_to_remove = self.get_migration_ids_to_remove()
 
@@ -60,9 +60,9 @@ class CleanMigrationManager(BaseMigrationManager):
                 else input("Would you like to delete these rows? (y/N)")
             )
             if confirm == "y":
-                Migration.delete().where(
+                await Migration.delete().where(
                     Migration.name.is_in(migration_ids_to_remove)
-                ).run_sync()
+                ).run()
                 print("Deleted")
             else:
                 print("Cancelled")
@@ -73,7 +73,7 @@ class CleanMigrationManager(BaseMigrationManager):
             )
 
 
-def clean(app_name: str, auto_agree: bool = False):
+async def clean(app_name: str, auto_agree: bool = False):
     """
     Identifies any rows in the migration table which have no corresponding
     migration module on disk, and then optionally deletes those rows.
@@ -84,4 +84,4 @@ def clean(app_name: str, auto_agree: bool = False):
         If true, automatically agree to any input prompts.
 
     """
-    CleanMigrationManager(app_name=app_name, auto_agree=auto_agree).run()
+    await CleanMigrationManager(app_name=app_name, auto_agree=auto_agree).run()

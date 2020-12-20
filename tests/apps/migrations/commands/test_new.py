@@ -8,6 +8,7 @@ from piccolo.apps.migrations.commands.new import (
     BaseMigrationManager,
     new,
 )
+from piccolo.utils.sync import run_sync
 
 from tests.base import postgres_only
 from tests.example_app.tables import Manager
@@ -31,7 +32,7 @@ class TestNewMigrationCommand(TestCase):
             table_classes=[Manager],
         )
 
-        _create_new_migration(app_config, auto=False)
+        run_sync(_create_new_migration(app_config, auto=False))
 
         migration_modules = BaseMigrationManager().get_migration_modules(
             migration_folder
@@ -45,7 +46,7 @@ class TestNewMigrationCommand(TestCase):
         Call the command, when no migration changes are needed.
         """
         with self.assertRaises(SystemExit) as manager:
-            new(app_name="example_app", auto=True)
+            run_sync(new(app_name="example_app", auto=True))
 
         self.assertEqual(
             manager.exception.__str__(), "No changes detected - exiting."

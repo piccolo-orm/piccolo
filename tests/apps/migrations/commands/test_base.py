@@ -7,6 +7,7 @@ from piccolo.apps.migrations.commands.base import (
     BaseMigrationManager,
     Migration,
 )
+from piccolo.utils.sync import run_sync
 
 
 class TestBaseMigrationManager(TestCase):
@@ -27,8 +28,8 @@ class TestGetMigrationModules(TestCase):
             ),
         )
 
-        migration_managers = BaseMigrationManager().get_migration_managers(
-            app_name="music"
+        migration_managers = run_sync(
+            BaseMigrationManager().get_migration_managers(app_name="music")
         )
 
         self.assertTrue(len(migration_managers) == 1)
@@ -50,7 +51,9 @@ class TestGetTableFromSnapshot(TestCase):
             ),
         )
 
-        table = BaseMigrationManager().get_table_from_snaphot(
-            app_name="music", table_class_name="Band"
+        table = run_sync(
+            BaseMigrationManager().get_table_from_snaphot(
+                app_name="music", table_class_name="Band"
+            )
         )
         self.assertTrue(table.class_name == "Band")

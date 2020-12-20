@@ -8,11 +8,11 @@ class CheckMigrationManager(BaseMigrationManager):
         self.app_name = app_name
         super().__init__()
 
-    def run(self):
+    async def run(self):
         print("Listing migrations ...")
 
         # Make sure the migration table exists, otherwise we'll get an error.
-        self.create_migration_table()
+        await self.create_migration_table()
 
         print(
             f'{get_fixed_length_string("APP NAME")} | '
@@ -37,12 +37,12 @@ class CheckMigrationManager(BaseMigrationManager):
             ids = self.get_migration_ids(migration_modules)
             for _id in ids:
                 has_ran = (
-                    Migration.exists()
+                    await Migration.exists()
                     .where(
                         (Migration.name == _id)
                         & (Migration.app_name == app_name)
                     )
-                    .run_sync()
+                    .run()
                 )
                 fixed_length_id = get_fixed_length_string(_id)
                 print(
@@ -50,7 +50,7 @@ class CheckMigrationManager(BaseMigrationManager):
                 )
 
 
-def check(app_name: str = "all"):
+async def check(app_name: str = "all"):
     """
     Lists all migrations which have and haven't ran.
 
@@ -58,4 +58,4 @@ def check(app_name: str = "all"):
         The name of the app to check. Specify a value of 'all' to check
         the migrations for all apps.
     """
-    CheckMigrationManager(app_name=app_name).run()
+    await CheckMigrationManager(app_name=app_name).run()

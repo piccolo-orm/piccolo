@@ -12,17 +12,16 @@ from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
 from piccolo.apps.migrations.auto.schema_snapshot import SchemaSnapshot
 from piccolo.apps.migrations.tables import Migration
-from piccolo.utils.sync import run_sync
 
 
 class BaseMigrationManager(Finder):
-    def create_migration_table(self) -> bool:
+    async def create_migration_table(self) -> bool:
         """
         Creates the migration table in the database. Returns True/False
         depending on whether it was created or not.
         """
-        if not Migration.table_exists().run_sync():
-            Migration.create_table().run_sync()
+        if not await Migration.table_exists().run():
+            await Migration.create_table().run()
             return True
         return False
 
@@ -65,13 +64,17 @@ class BaseMigrationManager(Finder):
         """
         return sorted(list(migration_module_dict.keys()))
 
-    def get_migration_managers(
+    async def get_migration_managers(
         self,
         app_name: str,
         max_migration_id: t.Optional[str] = None,
         offset: int = 0,
     ) -> t.List[MigrationManager]:
         """
+        Call the forwards coroutine in each migration module. Each one should
+        return a `MigrationManger`. Combine all of the results, and return in
+        a list.
+
         :param max_migration_id:
             If set, only MigrationManagers up to and including the given
             migration ID will be returned.
@@ -86,8 +89,11 @@ class BaseMigrationManager(Finder):
             str, MigrationModule
         ] = self.get_migration_modules(migrations_folder)
 
-        for _, migration_module in migration_modules.items():
-            response = run_sync(migration_module.forwards())
+        migration_ids = sorted(migration_modules.keys())
+
+        for migration_id in migration_ids:
+            migration_module = migration_modules[migration_id]
+            response = await migration_module.forwards()
             if isinstance(response, MigrationManager):
                 migration_managers.append(response)
                 if (
@@ -105,7 +111,7 @@ class BaseMigrationManager(Finder):
         else:
             return migration_managers
 
-    def get_table_from_snaphot(
+    async def get_table_from_snaphot(
         self,
         app_name: str,
         table_class_name: str,
@@ -116,7 +122,7 @@ class BaseMigrationManager(Finder):
         This will generate a SchemaSnapshot up to the given migration ID, and
         will return a DiffableTable class from that snapshot.
         """
-        migration_managers = self.get_migration_managers(
+        migration_managers = await self.get_migration_managers(
             app_name=app_name, max_migration_id=max_migration_id, offset=offset
         )
         schema_snapshot = SchemaSnapshot(managers=migration_managers)

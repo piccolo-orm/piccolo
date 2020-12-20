@@ -1,8 +1,9 @@
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 
-from piccolo.conf.apps import AppRegistry
 from piccolo.apps.migrations.commands.check import check, CheckMigrationManager
+from piccolo.conf.apps import AppRegistry
+from piccolo.utils.sync import run_sync
 
 
 class TestCheckMigrationCommand(TestCase):
@@ -15,4 +16,4 @@ class TestCheckMigrationCommand(TestCase):
         )
 
         # Make sure it runs without raising an exception:
-        check()
+        run_sync(check())

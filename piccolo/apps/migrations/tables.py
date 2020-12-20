@@ -12,7 +12,7 @@ class Migration(Table):
     ran_on = Timestamp(default=TimestampNow())
 
     @classmethod
-    def get_migrations_which_ran(
+    async def get_migrations_which_ran(
         cls, app_name: t.Optional[str] = None
     ) -> t.List[str]:
         """
@@ -22,4 +22,4 @@ class Migration(Table):
         query = cls.select(cls.name, cls.ran_on).order_by(cls.ran_on)
         if app_name is not None:
             query = query.where(cls.app_name == app_name)
-        return [i["name"] for i in query.run_sync()]
+        return [i["name"] for i in await query.run()]

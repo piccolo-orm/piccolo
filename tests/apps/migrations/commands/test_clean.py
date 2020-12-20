@@ -2,6 +2,7 @@ from unittest import TestCase
 
 from piccolo.apps.migrations.commands.clean import clean
 from piccolo.apps.migrations.tables import Migration
+from piccolo.utils.sync import run_sync
 
 
 class TestCleanMigrationCommand(TestCase):
@@ -22,7 +23,7 @@ class TestCleanMigrationCommand(TestCase):
             *[Migration(name=i, app_name="example_app") for i in migration_ids]
         ).run_sync()
 
-        clean(app_name="example_app", auto_agree=True)
+        run_sync(clean(app_name="example_app", auto_agree=True))
 
         remaining_rows = (
             Migration.select(Migration.name)
