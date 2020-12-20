@@ -27,13 +27,16 @@ class CleanMigrationManager(BaseMigrationManager):
             migration_module_dict=migration_module_dict
         )
 
-        migration_ids_to_remove = (
+        query = (
             Migration.select(Migration.name)
             .where(Migration.app_name == self.app_name)
-            .where(Migration.name.not_in(migration_ids))
             .output(as_list=True)
-            .run_sync()
         )
+
+        if len(migration_ids) > 0:
+            query = query.where(Migration.name.not_in(migration_ids))
+
+        migration_ids_to_remove = query.run_sync()
         return migration_ids_to_remove
 
     def run(self):
