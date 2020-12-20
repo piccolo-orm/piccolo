@@ -24,7 +24,6 @@ from piccolo.columns.operators.comparison import (
 )
 from piccolo.columns.combination import Where
 from piccolo.columns.defaults.base import Default
-from piccolo.custom_types import Iterable
 from piccolo.querystring import QueryString
 from piccolo.utils.warnings import colored_warning
 
@@ -257,10 +256,18 @@ class Column(Selectable):
                 f"{allowed_types}"
             )
 
-    def is_in(self, values: Iterable) -> Where:
+    def is_in(self, values: t.List[t.Any]) -> Where:
+        if len(values) == 0:
+            raise ValueError(
+                "The `values` list argument must contain at least one value."
+            )
         return Where(column=self, values=values, operator=In)
 
-    def not_in(self, values: Iterable) -> Where:
+    def not_in(self, values: t.List[t.Any]) -> Where:
+        if len(values) == 0:
+            raise ValueError(
+                "The `values` list argument must contain at least one value."
+            )
         return Where(column=self, values=values, operator=NotIn)
 
     def like(self, value: str) -> Where:

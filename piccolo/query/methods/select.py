@@ -128,8 +128,8 @@ class Select(Query):
         self.order_by_delegate.order_by(*_columns, ascending=ascending)
         return self
 
-    def output(self, **kwargs) -> Select:
-        self.output_delegate.output(**kwargs)
+    def output(self, as_list: bool = False, as_json: bool = False) -> Select:
+        self.output_delegate.output(as_list=as_list, as_json=as_json)
         return self
 
     def where(self, where: Combinable) -> Select:

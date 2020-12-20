@@ -6,7 +6,6 @@ from piccolo.apps.migrations.auto import MigrationManager
 from piccolo.apps.migrations.commands.base import BaseMigrationManager
 from piccolo.apps.migrations.tables import Migration
 from piccolo.conf.apps import AppConfig, MigrationModule
-from piccolo.utils.sync import run_sync
 
 
 class ForwardsMigrationManager(BaseMigrationManager):
@@ -23,8 +22,8 @@ class ForwardsMigrationManager(BaseMigrationManager):
         self.fake = fake
         super().__init__()
 
-    def run_migrations(self, app_config: AppConfig) -> None:
-        already_ran = Migration.get_migrations_which_ran(
+    async def run_migrations(self, app_config: AppConfig) -> None:
+        already_ran = await Migration.get_migrations_which_ran(
             app_name=self.app_name
         )
 
@@ -58,27 +57,29 @@ class ForwardsMigrationManager(BaseMigrationManager):
                 print(f"Faked {_id}")
             else:
                 migration_module = migration_modules[_id]
-                response = run_sync(migration_module.forwards())
+                response = await migration_module.forwards()
 
                 if isinstance(response, MigrationManager):
-                    run_sync(response.run())
+                    await response.run()
 
-                print(f"Ran {_id}")
+                print(f"-> Ran {_id}")
 
-            Migration.insert().add(
+            await Migration.insert().add(
                 Migration(name=_id, app_name=self.app_name)
-            ).run_sync()
+            ).run()
 
-    def run(self):
+    async def run(self):
         print("Running migrations ...")
-        self.create_migration_table()
+        await self.create_migration_table()
 
         app_config = self.get_app_config(app_name=self.app_name)
 
-        self.run_migrations(app_config)
+        await self.run_migrations(app_config)
 
 
-def forwards(app_name: str, migration_id: str = "all", fake: bool = False):
+async def forwards(
+    app_name: str, migration_id: str = "all", fake: bool = False
+):
     """
     Runs any migrations which haven't been run yet.
 
@@ -96,13 +97,14 @@ def forwards(app_name: str, migration_id: str = "all", fake: bool = False):
     if app_name == "all":
         sorted_app_names = BaseMigrationManager().get_sorted_app_names()
         for _app_name in sorted_app_names:
-            print(f"Migrating {_app_name}")
+            print(f"\nMigrating {_app_name}")
+            print("------------------------------------------------")
             manager = ForwardsMigrationManager(
                 app_name=_app_name, migration_id="all", fake=fake
             )
-            manager.run()
+            await manager.run()
     else:
         manager = ForwardsMigrationManager(
             app_name=app_name, migration_id=migration_id, fake=fake
         )
-        manager.run()
+        await manager.run()

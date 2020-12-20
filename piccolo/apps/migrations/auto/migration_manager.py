@@ -265,7 +265,7 @@ class MigrationManager:
 
     ###########################################################################
 
-    def get_table_from_snaphot(
+    async def get_table_from_snaphot(
         self,
         table_class_name: str,
         app_name: t.Optional[str],
@@ -289,16 +289,13 @@ class MigrationManager:
         if app_name is None:
             app_name = self.app_name
 
-        return (
-            BaseMigrationManager()
-            .get_table_from_snaphot(
-                app_name=app_name,
-                table_class_name=table_class_name,
-                max_migration_id=migration_id,
-                offset=offset,
-            )
-            .to_table_class()
+        diffable_table = await BaseMigrationManager().get_table_from_snaphot(
+            app_name=app_name,
+            table_class_name=table_class_name,
+            max_migration_id=migration_id,
+            offset=offset,
         )
+        return diffable_table.to_table_class()
 
     ###########################################################################
 
@@ -375,7 +372,7 @@ class MigrationManager:
     async def _run_drop_tables(self, backwards=False):
         if backwards:
             for diffable_table in self.drop_tables:
-                _Table = self.get_table_from_snaphot(
+                _Table = await self.get_table_from_snaphot(
                     table_class_name=diffable_table.class_name,
                     app_name=self.app_name,
                     offset=-1,
@@ -390,7 +387,7 @@ class MigrationManager:
     async def _run_drop_columns(self, backwards=False):
         if backwards:
             for drop_column in self.drop_columns.drop_columns:
-                _Table = self.get_table_from_snaphot(
+                _Table = await self.get_table_from_snaphot(
                     table_class_name=drop_column.table_class_name,
                     app_name=self.app_name,
                     offset=-1,
@@ -477,16 +474,13 @@ class MigrationManager:
                 ).run()
         else:
             for add_table in self.add_tables:
-                columns = (
-                    self.add_columns.columns_for_table_class_name(
-                        add_table.class_name
-                    )
-                    + add_table.columns
-                )
                 _Table: t.Type[Table] = type(
                     add_table.class_name,
                     (Table,),
-                    {column._meta.name: column for column in columns},
+                    {
+                        column._meta.name: column
+                        for column in add_table.columns
+                    },
                 )
                 _Table._meta.tablename = add_table.tablename
 
@@ -494,7 +488,7 @@ class MigrationManager:
 
     async def _run_add_columns(self, backwards=False):
         """
-        Add columns, which belong to existing tables
+        Add columns, which belong to new and existing tables
         """
         if backwards:
             for add_column in self.add_columns.add_columns:
@@ -512,12 +506,7 @@ class MigrationManager:
 
                 await _Table.alter().drop_column(add_column.column).run()
         else:
-            new_table_class_names = [i.class_name for i in self.add_tables]
-
             for table_class_name in self.add_columns.table_class_names:
-                if table_class_name in new_table_class_names:
-                    continue
-
                 add_columns: t.List[
                     AddColumnClass
                 ] = self.add_columns.for_table_class_name(table_class_name)
@@ -554,8 +543,8 @@ class MigrationManager:
             await self._run_add_tables()
             await self._run_rename_tables()
             await self._run_add_columns()
-            await self._run_drop_tables()
             await self._run_drop_columns()
+            await self._run_drop_tables()
             await self._run_rename_columns()
             await self._run_alter_columns()
 
@@ -575,8 +564,8 @@ class MigrationManager:
                 else:
                     raw()
 
-            await self._run_add_tables(backwards=True)
             await self._run_add_columns(backwards=True)
+            await self._run_add_tables(backwards=True)
             await self._run_drop_tables(backwards=True)
             await self._run_rename_tables(backwards=True)
             await self._run_drop_columns(backwards=True)

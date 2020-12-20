@@ -8,7 +8,7 @@ from piccolo.columns import Varchar
 
 from tests.example_app.tables import Manager
 from tests.base import DBTestCase
-from tests.base import postgres_only
+from tests.base import postgres_only, set_mock_return_value
 
 
 class TestMigrationManager(DBTestCase):
@@ -202,7 +202,7 @@ class TestMigrationManager(DBTestCase):
         self.assertEqual(response, [{"id": 1}])
 
         # Reverse
-        get_migration_managers.return_value = [manager_1]
+        set_mock_return_value(get_migration_managers, [manager_1])
         asyncio.run(manager_2.run_backwards())
         response = self.run_sync("SELECT * FROM musician;")
         self.assertEqual(response, [{"id": 1, "name": ""}])
@@ -380,7 +380,7 @@ class TestMigrationManager(DBTestCase):
         manager_2.drop_table(class_name="Musician", tablename="musician")
         asyncio.run(manager_2.run())
 
-        get_migration_managers.return_value = [manager_1]
+        set_mock_return_value(get_migration_managers, [manager_1])
 
         self.assertTrue(not self.table_exists("musician"))
 

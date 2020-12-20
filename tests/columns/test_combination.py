@@ -24,7 +24,13 @@ class TestWhere(unittest.TestCase):
         sql = _where.__str__()
         self.assertEqual(sql, "band.name IN ('Pythonistas', 'Rustaceans')")
 
+        with self.assertRaises(ValueError):
+            Band.name.is_in([])
+
     def test_not_in(self):
         _where = Band.name.not_in(["CSharps"])
         sql = _where.__str__()
         self.assertEqual(sql, "band.name NOT IN ('CSharps')")
+
+        with self.assertRaises(ValueError):
+            Band.name.not_in([])

@@ -52,7 +52,7 @@ def _create_migrations_folder(migrations_path: str) -> bool:
         return True
 
 
-def _create_new_migration(app_config: AppConfig, auto=False) -> None:
+async def _create_new_migration(app_config: AppConfig, auto=False) -> None:
     """
     Creates a new migration file on disk.
     """
@@ -60,7 +60,7 @@ def _create_new_migration(app_config: AppConfig, auto=False) -> None:
     path = os.path.join(app_config.migrations_folder_path, f"{_id}.py")
 
     if auto:
-        alter_statements = AutoMigrationManager().get_alter_statements(
+        alter_statements = await AutoMigrationManager().get_alter_statements(
             app_config=app_config
         )
 
@@ -101,13 +101,13 @@ def _create_new_migration(app_config: AppConfig, auto=False) -> None:
 
 
 class AutoMigrationManager(BaseMigrationManager):
-    def get_alter_statements(
+    async def get_alter_statements(
         self, app_config: AppConfig
     ) -> t.List[AlterStatements]:
         """
         Works out which alter statements are required.
         """
-        migration_managers = self.get_migration_managers(
+        migration_managers = await self.get_migration_managers(
             app_name=app_config.app_name
         )
 
@@ -136,7 +136,7 @@ class AutoMigrationManager(BaseMigrationManager):
 ###############################################################################
 
 
-def new(app_name: str, auto: bool = False):
+async def new(app_name: str, auto: bool = False):
     """
     Creates a new migration file in the migrations folder.
 
@@ -155,4 +155,4 @@ def new(app_name: str, auto: bool = False):
     app_config = Finder().get_app_config(app_name=app_name)
 
     _create_migrations_folder(app_config.migrations_folder_path)
-    _create_new_migration(app_config=app_config, auto=auto)
+    await _create_new_migration(app_config=app_config, auto=auto)

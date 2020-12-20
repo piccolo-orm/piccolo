@@ -6,6 +6,7 @@ from unittest import TestCase
 from piccolo.apps.migrations.tables import Migration
 from piccolo.apps.migrations.commands.backwards import backwards
 from piccolo.apps.migrations.commands.forwards import forwards
+from piccolo.utils.sync import run_sync
 from tests.base import postgres_only
 from tests.example_app.tables import (
     Band,
@@ -41,13 +42,17 @@ class TestForwardsBackwards(TestCase):
         Test running all of the migrations forwards, then backwards.
         """
         for app_name in ("example_app", "all"):
-            forwards(app_name=app_name, migration_id="all")
+            run_sync(forwards(app_name=app_name, migration_id="all"))
 
             # Check the tables exist
             for table_class in TABLE_CLASSES:
                 self.assertTrue(table_class.table_exists().run_sync())
 
-            backwards(app_name=app_name, migration_id="all", auto_agree=True)
+            run_sync(
+                backwards(
+                    app_name=app_name, migration_id="all", auto_agree=True
+                )
+            )
 
             # Check the tables don't exist
             for table_class in TABLE_CLASSES:
@@ -58,7 +63,9 @@ class TestForwardsBackwards(TestCase):
         Test running a single migrations forwards, then backwards.
         """
         for migration_id in ["1", "2020-12-17T18:44:30"]:
-            forwards(app_name="example_app", migration_id=migration_id)
+            run_sync(
+                forwards(app_name="example_app", migration_id=migration_id)
+            )
 
             table_classes = [Band, Manager]
 
@@ -66,10 +73,12 @@ class TestForwardsBackwards(TestCase):
             for table_class in table_classes:
                 self.assertTrue(table_class.table_exists().run_sync())
 
-            backwards(
-                app_name="example_app",
-                migration_id=migration_id,
-                auto_agree=True,
+            run_sync(
+                backwards(
+                    app_name="example_app",
+                    migration_id=migration_id,
+                    auto_agree=True,
+                )
             )
 
             # Check the tables don't exist
@@ -81,7 +90,11 @@ class TestForwardsBackwards(TestCase):
         Test running an unknown migrations forwards.
         """
         with self.assertRaises(SystemExit) as manager:
-            forwards(app_name="example_app", migration_id="migration-12345")
+            run_sync(
+                forwards(
+                    app_name="example_app", migration_id="migration-12345"
+                )
+            )
 
         self.assertEqual(
             manager.exception.__str__(), "migration-12345 is unrecognised"
@@ -91,13 +104,15 @@ class TestForwardsBackwards(TestCase):
         """
         Test running an unknown migrations backwards.
         """
-        forwards(app_name="example_app", migration_id="all")
+        run_sync(forwards(app_name="example_app", migration_id="all"))
 
         with self.assertRaises(SystemExit) as manager:
-            backwards(
-                app_name="example_app",
-                migration_id="migration-12345",
-                auto_agree=True,
+            run_sync(
+                backwards(
+                    app_name="example_app",
+                    migration_id="migration-12345",
+                    auto_agree=True,
+                )
             )
 
         self.assertTrue(
@@ -111,10 +126,12 @@ class TestForwardsBackwards(TestCase):
         Test running migrations backwards if none have been run previously.
         """
         with self.assertRaises(SystemExit) as manager:
-            backwards(
-                app_name="example_app",
-                migration_id="2020-12-17T18:44:30",
-                auto_agree=True,
+            run_sync(
+                backwards(
+                    app_name="example_app",
+                    migration_id="2020-12-17T18:44:30",
+                    auto_agree=True,
+                )
             )
 
         self.assertEqual(
@@ -125,10 +142,10 @@ class TestForwardsBackwards(TestCase):
         """
         Test running the migrations if they've already run.
         """
-        forwards(app_name="example_app", migration_id="all")
+        run_sync(forwards(app_name="example_app", migration_id="all"))
 
         with self.assertRaises(SystemExit) as manager:
-            forwards(app_name="example_app", migration_id="all")
+            run_sync(forwards(app_name="example_app", migration_id="all"))
 
         self.assertEqual(
             manager.exception.__str__(), "No migrations left to run!"
@@ -138,7 +155,9 @@ class TestForwardsBackwards(TestCase):
         """
         Test running the migrations if they've already run.
         """
-        forwards(app_name="example_app", migration_id="all", fake=True)
+        run_sync(
+            forwards(app_name="example_app", migration_id="all", fake=True)
+        )
 
         for table_class in TABLE_CLASSES:
             self.assertTrue(not table_class.table_exists().run_sync())
