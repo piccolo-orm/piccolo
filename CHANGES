@@ -1,6 +1,21 @@
 Changes
 =======
 
+0.14.8
+------
+ * Improved the method signature of the ``output`` query clause (explicitly
+   added args, instead of using ``**kwargs``).
+ * Fixed a bug where ``output(as_list=True)`` would fail if no rows were found.
+ * Made ``piccolo migrations forwards`` command output more legible.
+ * Improved renamed table detection in migrations.
+ * Added the ``piccolo migrations clean`` command for removing orphaned rows
+   from the migrations table.
+ * Fixed a bug where ``get_migration_managers`` wasn't inclusive.
+ * Raising a ``ValueError`` if ``is_in`` or ``not_in`` query clauses are passed
+   an empty list.
+ * Changed the migration commands to be top level async.
+ * Combined ``print`` and ``sys.exit`` statements.
+
 0.14.7
 ------
  * Added missing type annotation for ``run_sync``.
