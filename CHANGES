@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.14.9
+------
+Modified the exit codes for the ``forwards`` and ``backwards`` commands when no
+migrations are left to run / reverse. Otherwise build scripts may fail.
+
 0.14.8
 ------
  * Improved the method signature of the ``output`` query clause (explicitly
