@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as t
 from unittest import TestCase
+from unittest.mock import patch, call, MagicMock
 
 from piccolo.apps.migrations.tables import Migration
 from piccolo.apps.migrations.commands.backwards import backwards
@@ -121,7 +122,8 @@ class TestForwardsBackwards(TestCase):
             )
         )
 
-    def test_backwards_no_migrations(self):
+    @patch("piccolo.apps.migrations.commands.backwards.print")
+    def test_backwards_no_migrations(self, print_):
         """
         Test running migrations backwards if none have been run previously.
         """
@@ -134,11 +136,13 @@ class TestForwardsBackwards(TestCase):
                 )
             )
 
-        self.assertEqual(
-            manager.exception.__str__(), "No migrations to reverse!"
+        self.assertEqual(manager.exception.code, 0)
+        self.assertTrue(
+            print_.mock_calls[-1] == call("No migrations to reverse!")
         )
 
-    def test_forwards_no_migrations(self):
+    @patch("piccolo.apps.migrations.commands.forwards.print")
+    def test_forwards_no_migrations(self, print_: MagicMock):
         """
         Test running the migrations if they've already run.
         """
@@ -147,8 +151,9 @@ class TestForwardsBackwards(TestCase):
         with self.assertRaises(SystemExit) as manager:
             run_sync(forwards(app_name="example_app", migration_id="all"))
 
-        self.assertEqual(
-            manager.exception.__str__(), "No migrations left to run!"
+        self.assertEqual(manager.exception.code, 0)
+        self.assertTrue(
+            print_.mock_calls[-1] == call("No migrations left to run!")
         )
 
     def test_forwards_fake(self):

@@ -38,7 +38,10 @@ class ForwardsMigrationManager(BaseMigrationManager):
         print(f"Haven't run = {havent_run}")
 
         if len(havent_run) == 0:
-            sys.exit("No migrations left to run!")
+            # Make sure a status of 0 is returned, as we don't want this
+            # to appear as an error in automated scripts.
+            print("No migrations left to run!")
+            sys.exit(0)
 
         if self.migration_id == "all":
             subset = havent_run
