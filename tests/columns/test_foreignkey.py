@@ -106,3 +106,14 @@ class TestLazyTableReference(TestCase):
             table_class_name="Manager", app_name="example_app"
         )
         self.assertTrue(reference.resolve() is Manager)
+
+
+class TestAttributeAccess(TestCase):
+    def test_attribute_access(self):
+        """
+        Make sure that attribute access still works correctly with lazy
+        references.
+        """
+        self.assertTrue(isinstance(Band1.manager.name, Varchar))
+        self.assertTrue(isinstance(Band2.manager.name, Varchar))
+        self.assertTrue(isinstance(Band3.manager.name, Varchar))

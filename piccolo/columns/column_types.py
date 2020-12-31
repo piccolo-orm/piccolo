@@ -17,7 +17,10 @@ from piccolo.columns.defaults.timestamp import (
 )
 from piccolo.columns.defaults.uuid import UUID4, UUIDArg
 from piccolo.columns.operators.string import ConcatPostgres, ConcatSQLite
-from piccolo.columns.reference import LazyTableReference
+from piccolo.columns.reference import (
+    LAZY_COLUMN_REFERENCES,
+    LazyTableReference,
+)
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils.encoding import dump_json
 
@@ -1041,14 +1044,40 @@ class ForeignKey(Integer):
                     Table, OnDelete.cascade, OnUpdate.cascade
                 )
 
+    def set_proxy_columns(self):
+        """
+        In order to allow a fluent interface, where tables can be traversed
+        using ForeignKeys (e.g. ``Band.manager.name``), we add attributes to
+        the ``ForeignKey`` column for each column in the table being pointed
+        to.
+        """
+        _foreign_key_meta = object.__getattribute__(self, "_foreign_key_meta")
+        for column in _foreign_key_meta.resolved_references._meta.columns:
+            _column: Column = copy.deepcopy(column)
+            setattr(self, _column._meta.name, _column)
+            _foreign_key_meta.proxy_columns.append(_column)
+
     def __getattribute__(self, name: str):
         """
         Returns attributes unmodified unless they're Column instances, in which
         case a copy is returned with an updated call_chain (which records the
         joins required).
         """
-        # see if it has an attribute with that name ...
-        # if it's asking for a foreign key ... return a copy of self ...
+        # If the ForeignKey is using a lazy reference, we need to set the
+        # attributes here. Attributes starting with a double underscore are
+        # unlikely to be column names.
+        if not name.startswith("__"):
+            try:
+                _foreign_key_meta = object.__getattribute__(
+                    self, "_foreign_key_meta"
+                )
+            except AttributeError:
+                pass
+            else:
+                if _foreign_key_meta.proxy_columns == [] and isinstance(
+                    _foreign_key_meta.references, LazyTableReference
+                ):
+                    object.__getattribute__(self, "set_proxy_columns")()
 
         try:
             value = object.__getattribute__(self, name)

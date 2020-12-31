@@ -235,15 +235,7 @@ class Table(metaclass=TableMetaclass):
             # Allow columns on the referenced table to be accessed via
             # auto completion.
             if is_table_class:
-                # We can only do this currently if a Table subclass is
-                # specified - lazy references don't work. It's a nice to have,
-                # so not the end of the world.
-                for column in references._meta.columns:
-                    _column: Column = copy.deepcopy(column)
-                    setattr(foreign_key_column, _column._meta.name, _column)
-                    foreign_key_column._foreign_key_meta.proxy_columns.append(
-                        _column
-                    )
+                foreign_key_column.set_proxy_columns()
 
     def __init__(self, ignore_missing: bool = False, **kwargs):
         """
