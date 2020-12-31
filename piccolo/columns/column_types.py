@@ -17,10 +17,7 @@ from piccolo.columns.defaults.timestamp import (
 )
 from piccolo.columns.defaults.uuid import UUID4, UUIDArg
 from piccolo.columns.operators.string import ConcatPostgres, ConcatSQLite
-from piccolo.columns.reference import (
-    LAZY_COLUMN_REFERENCES,
-    LazyTableReference,
-)
+from piccolo.columns.reference import LazyTableReference
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils.encoding import dump_json
 
