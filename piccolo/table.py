@@ -423,9 +423,13 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def ref(cls, column_name: str) -> Column:
         """
-        Used to get a copy of a column in a reference table.
+        Used to get a copy of a column from a table referenced by a
+        ``ForeignKey`` column. It's unlikely an end user of this library will
+        ever need to do this, but other libraries built on top of Piccolo may
+        need this functionality.
 
-        Example: manager.name
+        Example: Band.ref('manager.name')
+
         """
         local_column_name, reference_column_name = column_name.split(".")
 
@@ -434,13 +438,15 @@ class Table(metaclass=TableMetaclass):
         if not isinstance(local_column, ForeignKey):
             raise ValueError(f"{local_column_name} isn't a ForeignKey")
 
-        referenced_table = local_column.resolved_references
+        referenced_table = local_column._foreign_key_meta.resolved_references
         reference_column = referenced_table._meta.get_column_by_name(
             reference_column_name
         )
 
         _reference_column = copy.deepcopy(reference_column)
-        _reference_column.name = f"{local_column_name}.{reference_column_name}"
+        _reference_column._meta.name = (
+            f"{local_column_name}.{reference_column_name}"
+        )
         return _reference_column
 
     @classmethod
