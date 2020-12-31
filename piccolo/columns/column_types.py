@@ -904,6 +904,11 @@ class ForeignKey(Integer):
     :param references:
         The ``Table`` being referenced.
 
+        .. code-block:: python
+
+            class Band(Table):
+                manager = ForeignKey(references=Manager)
+
         A table can have a reference to itself, if you pass a ``references``
         argument of ``'self'``.
 
@@ -912,6 +917,44 @@ class ForeignKey(Integer):
             class Musician(Table):
                 name = Varchar(length=100)
                 instructor = ForeignKey(references='self')
+
+        In certain situations, you may be unable to reference a ``Table`` class
+        if it causes a circular dependency. Try and avoid these by refactoring
+        your code. If unavoidable, you can specify a lazy reference. If the
+        ``Table`` is defined in the same file:
+
+        .. code-block:: python
+
+            class Band(Table):
+                manager = ForeignKey(references='Manager')
+
+        If the ``Table`` is defined in a Piccolo app:
+
+        .. code-block:: python
+
+            from piccolo.columns.reference import LazyTableReference
+
+            class Band(Table):
+                manager = ForeignKey(
+                    references=LazyTableReference(
+                       table_class_name="Manager", app_name="my_app",
+                    )
+                )
+
+        If you aren't using Piccolo apps, you can specify a ``Table`` in any
+        Python module:
+
+        .. code-block:: python
+
+            from piccolo.columns.reference import LazyTableReference
+
+            class Band(Table):
+                manager = ForeignKey(
+                    references=LazyTableReference(
+                       table_class_name="Manager",
+                       module_path="some_module.tables",
+                    )
+                )
 
     :param on_delete:
         Determines what the database should do when a row is deleted with
