@@ -1,25 +1,27 @@
 from __future__ import annotations
+
 import copy
-from datetime import datetime, date, time, timedelta
 import decimal
 import typing as t
 import uuid
+from datetime import date, datetime, time, timedelta
 
-from piccolo.columns.base import Column, OnDelete, OnUpdate, ForeignKeyMeta
-from piccolo.columns.operators.string import ConcatPostgres, ConcatSQLite
-from piccolo.columns.defaults.date import DateArg, DateNow, DateCustom
-from piccolo.columns.defaults.time import TimeArg, TimeNow, TimeCustom
+from piccolo.columns.base import Column, ForeignKeyMeta, OnDelete, OnUpdate
+from piccolo.columns.defaults.date import DateArg, DateCustom, DateNow
 from piccolo.columns.defaults.interval import IntervalArg, IntervalCustom
+from piccolo.columns.defaults.time import TimeArg, TimeCustom, TimeNow
 from piccolo.columns.defaults.timestamp import (
     TimestampArg,
-    TimestampNow,
     TimestampCustom,
+    TimestampNow,
 )
-from piccolo.columns.defaults.uuid import UUIDArg, UUID4
-from piccolo.querystring import Unquoted, QueryString
+from piccolo.columns.defaults.uuid import UUID4, UUIDArg
+from piccolo.columns.operators.string import ConcatPostgres, ConcatSQLite
+from piccolo.columns.reference import LazyTableReference
+from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils.encoding import dump_json
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
@@ -170,9 +172,7 @@ class Varchar(Column):
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         engine_type = self._meta.table._meta.db.engine_type
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.name,
-            value=value,
-            engine_type=engine_type,
+            column_name=self._meta.name, value=value, engine_type=engine_type,
         )
 
     def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
@@ -970,7 +970,7 @@ class ForeignKey(Integer):
 
     def __init__(
         self,
-        references: t.Union[t.Type[Table], str],
+        references: t.Union[t.Type[Table], LazyTableReference, str],
         default: t.Union[int, None] = None,
         null: bool = True,
         on_delete: OnDelete = OnDelete.cascade,
@@ -978,13 +978,6 @@ class ForeignKey(Integer):
         **kwargs,
     ) -> None:
         self._validate_default(default, (int, None))
-
-        if isinstance(references, str):
-            if references != "self":
-                raise ValueError(
-                    "String values for 'references' currently only supports "
-                    "'self', which is a reference to the current table."
-                )
 
         kwargs.update(
             {
@@ -995,14 +988,15 @@ class ForeignKey(Integer):
         )
         super().__init__(default=default, null=null, **kwargs)
 
-        if t.TYPE_CHECKING:
+        if t.TYPE_CHECKING:  # pragma: no cover
             # This is here just for type inference - the actual value is set by
             # the Table metaclass.
             from piccolo.table import Table
 
-            self._foreign_key_meta = ForeignKeyMeta(
-                Table, OnDelete.cascade, OnUpdate.cascade
-            )
+            if not hasattr(self, "_foreign_key_meta"):
+                self._foreign_key_meta = ForeignKeyMeta(
+                    Table, OnDelete.cascade, OnUpdate.cascade
+                )
 
     def __getattribute__(self, name: str):
         """
@@ -1040,7 +1034,9 @@ class ForeignKey(Integer):
                 except Exception:
                     pass
 
-            for column in value._foreign_key_meta.references._meta.columns:
+            for (
+                column
+            ) in value._foreign_key_meta.resolved_references._meta.columns:
                 _column: Column = copy.deepcopy(column)
                 _column._meta.call_chain = copy.copy(
                     new_column._meta.call_chain

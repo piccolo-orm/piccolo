@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 import datetime
 import decimal
 from enum import Enum
+import inspect
 import typing as t
 
 from piccolo.columns.operators.comparison import (
@@ -24,12 +25,13 @@ from piccolo.columns.operators.comparison import (
 )
 from piccolo.columns.combination import Where
 from piccolo.columns.defaults.base import Default
+from piccolo.columns.reference import LazyTableReference
 from piccolo.querystring import QueryString
 from piccolo.utils.warnings import colored_warning
 
-if t.TYPE_CHECKING:
-    from piccolo.table import Table  # noqa
-    from .column_types import ForeignKey  # noqa
+if t.TYPE_CHECKING:  # pragma: no cover
+    from piccolo.table import Table
+    from piccolo.columns.column_types import ForeignKey
 
 
 class OnDelete(str, Enum):
@@ -62,10 +64,31 @@ class OnUpdate(str, Enum):
 
 @dataclass
 class ForeignKeyMeta:
-    references: t.Type[Table]
+    references: t.Union[t.Type[Table], LazyTableReference]
     on_delete: OnDelete
     on_update: OnUpdate
     proxy_columns: t.List[Column] = field(default_factory=list)
+
+    @property
+    def resolved_references(self) -> t.Type[Table]:
+        """
+        Evaluates the ``references`` attribute if it's a LazyTableReference,
+        raising a ``ValueError`` if it fails, otherwise returns a ``Table``
+        subclass.
+        """
+        from piccolo.table import Table
+
+        if isinstance(self.references, LazyTableReference):
+            return self.references.resolve()
+        elif inspect.isclass(self.references) and issubclass(
+            self.references, Table
+        ):
+            return self.references
+        else:
+            raise ValueError(
+                "The references attribute is neither a Table sublclass or a "
+                "LazyTableReference instance."
+            )
 
 
 @dataclass
@@ -409,7 +432,7 @@ class Column(Selectable):
             self, "_foreign_key_meta", None
         )
         if foreign_key_meta:
-            tablename = foreign_key_meta.references._meta.tablename
+            tablename = foreign_key_meta.resolved_references._meta.tablename
             on_delete = foreign_key_meta.on_delete.value
             on_update = foreign_key_meta.on_update.value
             query += (
@@ -436,4 +459,7 @@ class Column(Selectable):
         return self.querystring.__str__()
 
     def __repr__(self):
-        return f"{self._meta.name} - {self.__class__.__name__}"
+        return (
+            f"{self._meta.table.__name__}.{self._meta.name} - "
+            f"{self.__class__.__name__}"
+        )

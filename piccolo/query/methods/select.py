@@ -18,7 +18,7 @@ from piccolo.query.mixins import (
 )
 from piccolo.querystring import QueryString
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.custom_types import Combinable
     from piccolo.table import Table  # noqa
 
@@ -182,7 +182,7 @@ class Select(Query):
                     left_tablename = key._meta.table._meta.tablename
 
                 right_tablename = (
-                    key._foreign_key_meta.references._meta.tablename
+                    key._foreign_key_meta.resolved_references._meta.tablename
                 )
 
                 _joins.append(
