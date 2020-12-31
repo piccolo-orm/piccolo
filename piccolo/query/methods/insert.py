@@ -6,7 +6,7 @@ from piccolo.query.base import Query
 from piccolo.query.mixins import AddDelegate
 from piccolo.querystring import QueryString
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 

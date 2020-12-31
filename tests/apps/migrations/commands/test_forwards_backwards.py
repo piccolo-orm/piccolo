@@ -18,7 +18,7 @@ from tests.example_app.tables import (
     Venue,
 )
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 

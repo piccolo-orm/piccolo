@@ -8,7 +8,7 @@ from piccolo.query.methods.select import Select
 from piccolo.query.mixins import WhereDelegate
 from piccolo.querystring import QueryString
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 

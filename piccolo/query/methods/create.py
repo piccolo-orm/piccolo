@@ -5,7 +5,7 @@ from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 from piccolo.query.methods.create_index import CreateIndex
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 

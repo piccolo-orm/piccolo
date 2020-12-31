@@ -6,7 +6,7 @@ from piccolo.columns import Column
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 

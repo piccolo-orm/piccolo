@@ -6,7 +6,7 @@ from piccolo.columns import And, Column, Secret, Where, Or
 from piccolo.custom_types import Combinable
 from piccolo.querystring import QueryString
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table  # noqa
     from piccolo.columns.base import Selectable
 

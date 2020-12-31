@@ -15,7 +15,7 @@ from piccolo.query.mixins import (
 from piccolo.querystring import QueryString
 from .select import Select
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
     from piccolo.table import Table
 

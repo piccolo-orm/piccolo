@@ -7,7 +7,7 @@ from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
 from piccolo.utils.encoding import dump_json
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table  # noqa
 
 
