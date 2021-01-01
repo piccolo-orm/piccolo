@@ -503,7 +503,13 @@ class Column(Selectable):
         return self.querystring.__str__()
 
     def __repr__(self):
+        try:
+            table = self._meta.table
+        except ValueError:
+            table_class_name = "Unknown"
+        else:
+            table_class_name = table.__name__
         return (
-            f"{self._meta.table.__name__}.{self._meta.name} - "
+            f"{table_class_name}.{self._meta.name} - "
             f"{self.__class__.__name__}"
         )
