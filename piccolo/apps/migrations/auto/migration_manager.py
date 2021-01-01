@@ -511,8 +511,15 @@ class MigrationManager:
                     AddColumnClass
                 ] = self.add_columns.for_table_class_name(table_class_name)
 
+                # Define the table, with the columns, so the metaclass
+                # sets up the columns correctly.
                 _Table: t.Type[Table] = type(
-                    add_columns[0].table_class_name, (Table,), {}
+                    add_columns[0].table_class_name,
+                    (Table,),
+                    {
+                        add_column.column._meta.name: add_column.column
+                        for add_column in add_columns
+                    },
                 )
                 _Table._meta.tablename = add_columns[0].tablename
 
