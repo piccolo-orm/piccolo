@@ -28,6 +28,7 @@ from piccolo.utils.encoding import dump_json
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
+    from piccolo.columns.base import ColumnMeta
 
 
 ###############################################################################
@@ -1109,7 +1110,11 @@ class ForeignKey(Integer):
             if len(new_column._meta.call_chain) >= 10:
                 raise Exception("Call chain too long!")
 
-            for proxy_column in self._foreign_key_meta.proxy_columns:
+            foreign_key_meta: ForeignKeyMeta = object.__getattribute__(
+                self, "_foreign_key_meta"
+            )
+
+            for proxy_column in foreign_key_meta.proxy_columns:
                 try:
                     delattr(new_column, proxy_column._meta.name)
                 except Exception:
@@ -1126,12 +1131,15 @@ class ForeignKey(Integer):
                 if _column._meta.name == "id":
                     continue
                 setattr(new_column, _column._meta.name, _column)
-                self._foreign_key_meta.proxy_columns.append(_column)
+                foreign_key_meta.proxy_columns.append(_column)
 
             return new_column
         elif issubclass(type(value), Column):
             new_column = value.copy()
-            new_column._meta.call_chain = self._meta.call_chain.copy()
+
+            column_meta: ColumnMeta = object.__getattribute__(self, "_meta")
+
+            new_column._meta.call_chain = column_meta.call_chain.copy()
             new_column._meta.call_chain.append(self)
             return new_column
         else:
