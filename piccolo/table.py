@@ -210,11 +210,7 @@ class Table(metaclass=TableMetaclass):
             )
 
             if is_lazy or is_table_class:
-                foreign_key_column._foreign_key_meta = ForeignKeyMeta(
-                    references=references,
-                    on_delete=params["on_delete"],
-                    on_update=params["on_update"],
-                )
+                foreign_key_column._foreign_key_meta.references = references
             else:
                 raise ValueError(
                     "Error - ``references`` must be a ``Table`` subclass, or "

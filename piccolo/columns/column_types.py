@@ -1037,15 +1037,14 @@ class ForeignKey(Integer):
         )
         super().__init__(default=default, null=null, **kwargs)
 
-        if t.TYPE_CHECKING:  # pragma: no cover
-            # This is here just for type inference - the actual value is set by
-            # the Table metaclass.
-            from piccolo.table import Table
+        # This is here just for type inference - the actual value is set by
+        # the Table metaclass. We can't set the actual value here, as
+        # only the metaclass has access to the table.
+        from piccolo.table import Table
 
-            if not hasattr(self, "_foreign_key_meta"):
-                self._foreign_key_meta = ForeignKeyMeta(
-                    Table, OnDelete.cascade, OnUpdate.cascade
-                )
+        self._foreign_key_meta = ForeignKeyMeta(
+            Table, OnDelete.cascade, OnUpdate.cascade
+        )
 
     def copy(self) -> ForeignKey:
         column: ForeignKey = copy.copy(self)
