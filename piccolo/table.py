@@ -199,8 +199,17 @@ class Table(metaclass=TableMetaclass):
                 if references == "self":
                     references = cls
                 else:
+                    if "." in references:
+                        module_path, table_class_name = references.rsplit(
+                            ".", maxsplit=1
+                        )
+                    else:
+                        table_class_name = references
+                        module_path = cls.__module__
+
                     references = LazyTableReference(
-                        table_class_name=references, module_path=cls.__module__
+                        table_class_name=table_class_name,
+                        module_path=module_path,
                     )
 
             is_lazy = isinstance(references, LazyTableReference)

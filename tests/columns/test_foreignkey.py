@@ -27,6 +27,10 @@ class Band3(Table):
     )
 
 
+class Band4(Table):
+    manager = ForeignKey(references="tests.columns.test_foreignkey.Manager")
+
+
 class TestForeignKeySelf(TestCase):
     """
     Test that ForeignKey columns can be created with references to the parent
@@ -68,15 +72,21 @@ class TestForeignKeyString(TestCase):
 
     def setUp(self):
         Manager.create_table().run_sync()
-        Band2.create_table().run_sync()
 
     def test_foreign_key_string(self):
+        Band2.create_table().run_sync()
         self.assertEqual(
             Band2.manager._foreign_key_meta.resolved_references, Manager
         )
+        Band2.alter().drop_table().run_sync()
+
+        Band4.create_table().run_sync()
+        self.assertEqual(
+            Band4.manager._foreign_key_meta.resolved_references, Manager
+        )
+        Band4.alter().drop_table().run_sync()
 
     def tearDown(self):
-        Band2.alter().drop_table().run_sync()
         Manager.alter().drop_table().run_sync()
 
 
@@ -86,11 +96,12 @@ class TestReferences(TestCase):
         Make sure foreign key references are stored correctly on the table
         which is the target of the ForeignKey.
         """
-        self.assertEqual(len(Manager._meta.foreign_key_references), 4)
+        self.assertEqual(len(Manager._meta.foreign_key_references), 5)
 
         self.assertTrue(Band1.manager in Manager._meta.foreign_key_references)
         self.assertTrue(Band2.manager in Manager._meta.foreign_key_references)
         self.assertTrue(Band3.manager in Manager._meta.foreign_key_references)
+        self.assertTrue(Band4.manager in Manager._meta.foreign_key_references)
         self.assertTrue(
             Manager.manager in Manager._meta.foreign_key_references
         )
@@ -118,6 +129,7 @@ class TestAttributeAccess(TestCase):
         self.assertTrue(isinstance(Band1.manager.name, Varchar))
         self.assertTrue(isinstance(Band2.manager.name, Varchar))
         self.assertTrue(isinstance(Band3.manager.name, Varchar))
+        self.assertTrue(isinstance(Band4.manager.name, Varchar))
 
     def test_recursion_limit(self):
         """

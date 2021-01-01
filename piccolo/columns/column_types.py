@@ -960,6 +960,9 @@ class ForeignKey(Integer):
                        table_class_name="Manager",
                        module_path="some_module.tables",
                     )
+                    # Alternatively, Piccolo will interpret this string as
+                    # the same as above:
+                    # references="some_module.tables.Manager"
                 )
 
     :param on_delete:
