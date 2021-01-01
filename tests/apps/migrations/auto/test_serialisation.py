@@ -5,6 +5,10 @@ from piccolo.columns.defaults import DateNow, TimeNow, TimestampNow, UUID4
 from piccolo.columns.reference import LazyTableReference
 
 
+def example_function():
+    pass
+
+
 class TestSerialiseParams(TestCase):
     def test_time(self):
         serialised = serialise_params(params={"default": TimeNow()})
@@ -58,3 +62,31 @@ class TestSerialiseParams(TestCase):
                 serialised.extra_definitions[0].__str__(),
                 'class Manager(Table, tablename="manager"): pass',
             )
+
+    def test_function(self):
+        serialised = serialise_params(params={"default": example_function})
+        self.assertTrue(
+            serialised.params["default"].__repr__() == "example_function"
+        )
+
+        self.assertTrue(len(serialised.extra_imports) == 1)
+        self.assertEqual(
+            serialised.extra_imports[0].__str__(),
+            (
+                "from tests.apps.migrations.auto.test_serialisation import "
+                "example_function"
+            ),
+        )
+
+        self.assertTrue(len(serialised.extra_definitions) == 0)
+
+    def test_lambda(self):
+        """
+        Make sure lambda functions are rejected.
+        """
+        with self.assertRaises(ValueError) as manager:
+            serialise_params(params={"default": lambda x: x + 1})
+
+        self.assertEqual(
+            manager.exception.__str__(), "Lambdas can't be serialised"
+        )
