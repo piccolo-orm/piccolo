@@ -7,7 +7,6 @@ import typing as t
 from piccolo.engine import Engine, engine_finder
 from piccolo.columns import (
     Column,
-    ForeignKeyMeta,
     Selectable,
 )
 from piccolo.columns.column_types import ForeignKey, PrimaryKey
