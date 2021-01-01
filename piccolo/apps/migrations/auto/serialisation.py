@@ -9,6 +9,7 @@ import typing as t
 import uuid
 
 from piccolo.columns.defaults.base import Default
+from piccolo.columns.reference import LazyTableReference
 from piccolo.table import Table
 from .serialisation_legacy import deserialise_legacy_params
 
@@ -25,9 +26,15 @@ class SerialisedClass:
     def __eq__(self, other):
         return self.__hash__() == other.__hash__()
 
+    def _serialise_value(self, value):
+        return f"'{value}'" if isinstance(value, str) else value
+
     def __repr__(self):
         args = ", ".join(
-            [f"{key}={value}" for key, value in self.instance.__dict__.items()]
+            [
+                f"{key}={self._serialise_value(value)}"
+                for key, value in self.instance.__dict__.items()
+            ]
         )
         return f"{self.instance.__class__.__name__}({args})"
 
@@ -174,6 +181,19 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
             params[key] = SerialisedCallable(callable_=value)
             extra_imports.append(
                 Import(module=value.__module__, target=value.__name__)
+            )
+            continue
+
+        # Lazy imports - we need to resolve these now, in case the target
+        # table class gets deleted in the future.
+        if isinstance(value, LazyTableReference):
+            table_type = value.resolve()
+            params[key] = SerialisedCallable(callable_=table_type)
+            extra_definitions.append(
+                SerialisedTableType(table_type=table_type)
+            )
+            extra_imports.append(
+                Import(module=Table.__module__, target="Table")
             )
             continue
 
