@@ -90,6 +90,21 @@ class ForeignKeyMeta:
                 "LazyTableReference instance."
             )
 
+    def copy(self) -> ForeignKeyMeta:
+        kwargs = self.__dict__.copy()
+        kwargs.update(proxy_columns=self.proxy_columns.copy())
+        return self.__class__(**kwargs)
+
+    def __copy__(self) -> ForeignKeyMeta:
+        return self.copy()
+
+    def __deepcopy__(self, memo) -> ForeignKeyMeta:
+        """
+        We override deepcopy, as it's too slow if it has to recreate
+        everything.
+        """
+        return self.copy()
+
 
 @dataclass
 class ColumnMeta:
@@ -163,6 +178,23 @@ class ColumnMeta:
             return alias
         else:
             return f'{alias} AS "{column_name}"'
+
+    def copy(self) -> ColumnMeta:
+        kwargs = self.__dict__.copy()
+        kwargs.update(
+            params=self.params.copy(), call_chain=self.call_chain.copy(),
+        )
+        return self.__class__(**kwargs)
+
+    def __copy__(self) -> ColumnMeta:
+        return self.copy()
+
+    def __deepcopy__(self, memo) -> ColumnMeta:
+        """
+        We override deepcopy, as it's too slow if it has to recreate
+        everything.
+        """
+        return self.copy()
 
 
 class Selectable(metaclass=ABCMeta):
@@ -454,6 +486,18 @@ class Column(Selectable):
             query += f" DEFAULT {sql_value}"
 
         return QueryString(query)
+
+    def copy(self) -> Column:
+        column: Column = copy.copy(self)
+        column._meta = self._meta.copy()
+        return column
+
+    def __deepcopy__(self, memo) -> Column:
+        """
+        We override deepcopy, as it's too slow if it has to recreate
+        everything.
+        """
+        return self.copy()
 
     def __str__(self):
         return self.querystring.__str__()

@@ -6,7 +6,12 @@ import typing as t
 import uuid
 from datetime import date, datetime, time, timedelta
 
-from piccolo.columns.base import Column, ForeignKeyMeta, OnDelete, OnUpdate
+from piccolo.columns.base import (
+    Column,
+    ForeignKeyMeta,
+    OnDelete,
+    OnUpdate,
+)
 from piccolo.columns.defaults.date import DateArg, DateCustom, DateNow
 from piccolo.columns.defaults.interval import IntervalArg, IntervalCustom
 from piccolo.columns.defaults.time import TimeArg, TimeCustom, TimeNow
@@ -1041,6 +1046,12 @@ class ForeignKey(Integer):
                     Table, OnDelete.cascade, OnUpdate.cascade
                 )
 
+    def copy(self) -> ForeignKey:
+        column: ForeignKey = copy.copy(self)
+        column._meta = self._meta.copy()
+        column._foreign_key_meta = self._foreign_key_meta.copy()
+        return column
+
     def set_proxy_columns(self):
         """
         In order to allow a fluent interface, where tables can be traversed
@@ -1050,7 +1061,7 @@ class ForeignKey(Integer):
         """
         _foreign_key_meta = object.__getattribute__(self, "_foreign_key_meta")
         for column in _foreign_key_meta.resolved_references._meta.columns:
-            _column: Column = copy.deepcopy(column)
+            _column: Column = column.copy()
             setattr(self, _column._meta.name, _column)
             _foreign_key_meta.proxy_columns.append(_column)
 
@@ -1081,11 +1092,12 @@ class ForeignKey(Integer):
         except AttributeError:
             raise AttributeError
 
-        foreignkey_class = object.__getattribute__(self, "__class__")
+        foreignkey_class: t.Type[ForeignKey] = object.__getattribute__(
+            self, "__class__"
+        )
 
         if isinstance(value, foreignkey_class):  # i.e. a ForeignKey
-            new_column = copy.deepcopy(value)
-            new_column._meta.call_chain = copy.copy(self._meta.call_chain)
+            new_column = value.copy()
             new_column._meta.call_chain.append(self)
 
             # We have to set limits to the call chain because Table 1 can
@@ -1094,7 +1106,7 @@ class ForeignKey(Integer):
             # When querying a call chain more than 10 levels deep, an error
             # will be raised. Often there are more effective ways of
             # structuring a query than joining so many tables anyway.
-            if len(new_column._meta.call_chain) > 10:
+            if len(new_column._meta.call_chain) >= 10:
                 raise Exception("Call chain too long!")
 
             for proxy_column in self._foreign_key_meta.proxy_columns:
@@ -1106,10 +1118,10 @@ class ForeignKey(Integer):
             for (
                 column
             ) in value._foreign_key_meta.resolved_references._meta.columns:
-                _column: Column = copy.deepcopy(column)
-                _column._meta.call_chain = copy.copy(
-                    new_column._meta.call_chain
-                )
+                _column: Column = column.copy()
+                _column._meta.call_chain = [
+                    i for i in new_column._meta.call_chain
+                ]
                 _column._meta.call_chain.append(new_column)
                 if _column._meta.name == "id":
                     continue
@@ -1118,8 +1130,8 @@ class ForeignKey(Integer):
 
             return new_column
         elif issubclass(type(value), Column):
-            new_column = copy.deepcopy(value)
-            new_column._meta.call_chain = copy.copy(self._meta.call_chain)
+            new_column = value.copy()
+            new_column._meta.call_chain = self._meta.call_chain.copy()
             new_column._meta.call_chain.append(self)
             return new_column
         else:

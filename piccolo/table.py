@@ -1,5 +1,4 @@
 from __future__ import annotations
-import copy
 from dataclasses import dataclass, field
 import inspect
 import itertools
@@ -435,7 +434,7 @@ class Table(metaclass=TableMetaclass):
             reference_column_name
         )
 
-        _reference_column = copy.deepcopy(reference_column)
+        _reference_column = reference_column.copy()
         _reference_column._meta.name = (
             f"{local_column_name}.{reference_column_name}"
         )

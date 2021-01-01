@@ -1,7 +1,8 @@
 from unittest import TestCase
+import time
 
 from piccolo.table import Table
-from piccolo.columns import ForeignKey, Varchar, LazyTableReference
+from piccolo.columns import Column, ForeignKey, Varchar, LazyTableReference
 
 
 class Manager(Table):
@@ -117,3 +118,25 @@ class TestAttributeAccess(TestCase):
         self.assertTrue(isinstance(Band1.manager.name, Varchar))
         self.assertTrue(isinstance(Band2.manager.name, Varchar))
         self.assertTrue(isinstance(Band3.manager.name, Varchar))
+
+    def test_recursion_limit(self):
+        """
+        When a table has a ForeignKey to itself, an Exception should be raised
+        if the call chain is too large.
+        """
+        # Should be fine:
+        column: Column = Manager.manager.name
+        self.assertTrue(len(column._meta.call_chain), 1)
+        self.assertTrue(isinstance(column, Varchar))
+
+        with self.assertRaises(Exception):
+            Manager.manager.manager.manager.manager.manager.manager.manager.manager.manager.manager.manager.name  # noqa
+
+    def test_recursion_time(self):
+        """
+        Make sure that a really large call chain doesn't take too long.
+        """
+        start = time.time()
+        Manager.manager.manager.manager.manager.manager.manager.name
+        end = time.time()
+        self.assertTrue(end - start < 1.0)
