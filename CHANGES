@@ -1,6 +1,17 @@
 Changes
 =======
 
+0.14.10
+-------
+ * The ``ForeignKey`` ``references`` argument can now be specified using a
+   string, or a ``LazyTableReference`` instance, rather than just a ``Table``
+   subclass. This allows a ``Table`` to be specified which is in a Piccolo app,
+   or Python module. The ``Table`` is only loaded after imports have completed,
+   which prevents circular import issues.
+ * Faster column copying, which is important when specifying joins, e.g.
+   ``await Band.select(Band.manager.name).run()``.
+ * Fixed a bug with migrations and foreign key contraints.
+
 0.14.9
 ------
 Modified the exit codes for the ``forwards`` and ``backwards`` commands when no
