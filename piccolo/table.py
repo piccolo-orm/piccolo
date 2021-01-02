@@ -1,14 +1,20 @@
 from __future__ import annotations
-import copy
 from dataclasses import dataclass, field
 import inspect
 import itertools
 import typing as t
 
 from piccolo.engine import Engine, engine_finder
-from piccolo.columns import Column, ForeignKeyMeta, Selectable
+from piccolo.columns import (
+    Column,
+    Selectable,
+)
 from piccolo.columns.column_types import ForeignKey, PrimaryKey
 from piccolo.columns.readable import Readable
+from piccolo.columns.reference import (
+    LazyTableReference,
+    LAZY_COLUMN_REFERENCES,
+)
 from piccolo.columns.defaults.base import Default
 from piccolo.query import (
     Alter,
@@ -48,8 +54,22 @@ class TableMeta:
     _db: t.Optional[Engine] = None
 
     # Records reverse foreign key relationships - i.e. when the current table
-    # is the target of a foreign key.
-    foreign_key_references: t.List[ForeignKey] = field(default_factory=list)
+    # is the target of a foreign key. Used by external libraries such as
+    # Piccolo API.
+    _foreign_key_references: t.List[ForeignKey] = field(default_factory=list)
+
+    @property
+    def foreign_key_references(self) -> t.List[ForeignKey]:
+        foreign_keys: t.List[ForeignKey] = []
+        for reference in self._foreign_key_references:
+            foreign_keys.append(reference)
+
+        lazy_column_references = LAZY_COLUMN_REFERENCES.for_tablename(
+            tablename=self.tablename
+        )
+        foreign_keys.extend(lazy_column_references)
+
+        return foreign_keys
 
     @property
     def db(self) -> Engine:
@@ -156,8 +176,7 @@ class Table(metaclass=TableMetaclass):
                     non_default_columns.append(column)
 
                 column._meta._name = attribute_name
-                # Mypy wrongly thinks cls is a Table instance:
-                column._meta._table = cls  # type: ignore
+                column._meta._table = cls
 
             if isinstance(column, ForeignKey):
                 foreign_key_columns.append(column)
@@ -172,31 +191,54 @@ class Table(metaclass=TableMetaclass):
             _db=db,
         )
 
-        for column in foreign_key_columns:
-            params = column._meta.params
+        for foreign_key_column in foreign_key_columns:
+            params = foreign_key_column._meta.params
             references = params["references"]
-            if references == "self":
-                references = cls
 
-            column._foreign_key_meta = ForeignKeyMeta(
-                references=references,
-                on_delete=params["on_delete"],
-                on_update=params["on_update"],
+            if isinstance(references, str):
+                if references == "self":
+                    references = cls
+                else:
+                    if "." in references:
+                        module_path, table_class_name = references.rsplit(
+                            ".", maxsplit=1
+                        )
+                    else:
+                        table_class_name = references
+                        module_path = cls.__module__
+
+                    references = LazyTableReference(
+                        table_class_name=table_class_name,
+                        module_path=module_path,
+                    )
+
+            is_lazy = isinstance(references, LazyTableReference)
+            is_table_class = inspect.isclass(references) and issubclass(
+                references, Table
             )
 
-            # Record the reverse relationship on the target table.
-            references._meta.foreign_key_references.append(column)
+            if is_lazy or is_table_class:
+                foreign_key_column._foreign_key_meta.references = references
+            else:
+                raise ValueError(
+                    "Error - ``references`` must be a ``Table`` subclass, or "
+                    "a ``LazyTableReference`` instance."
+                )
 
-        for foreign_key_column in foreign_key_columns:
+            # Record the reverse relationship on the target table.
+            if is_table_class:
+                references._meta._foreign_key_references.append(
+                    foreign_key_column
+                )
+            elif is_lazy:
+                LAZY_COLUMN_REFERENCES.foreign_key_columns.append(
+                    foreign_key_column
+                )
+
             # Allow columns on the referenced table to be accessed via
             # auto completion.
-            references = foreign_key_column._foreign_key_meta.references
-            for column in references._meta.columns:
-                _column: Column = copy.deepcopy(column)
-                setattr(foreign_key_column, _column._meta.name, _column)
-                foreign_key_column._foreign_key_meta.proxy_columns.append(
-                    _column
-                )
+            if is_table_class:
+                foreign_key_column.set_proxy_columns()
 
     def __init__(self, ignore_missing: bool = False, **kwargs):
         """
@@ -285,7 +327,9 @@ class Table(metaclass=TableMetaclass):
 
         column_name = foreign_key._meta.name
 
-        references: t.Type[Table] = foreign_key._foreign_key_meta.references
+        references: t.Type[
+            Table
+        ] = foreign_key._foreign_key_meta.resolved_references
 
         return (
             references.objects()
@@ -309,7 +353,9 @@ class Table(metaclass=TableMetaclass):
         """
         Used for getting a readable from a foreign key.
         """
-        readable: Readable = column._foreign_key_meta.references.get_readable()
+        readable: Readable = (
+            column._foreign_key_meta.resolved_references.get_readable()
+        )
 
         columns = [getattr(column, i._meta.name) for i in readable.columns]
 
@@ -372,9 +418,13 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def ref(cls, column_name: str) -> Column:
         """
-        Used to get a copy of a column in a reference table.
+        Used to get a copy of a column from a table referenced by a
+        ``ForeignKey`` column. It's unlikely an end user of this library will
+        ever need to do this, but other libraries built on top of Piccolo may
+        need this functionality.
 
-        Example: manager.name
+        Example: Band.ref('manager.name')
+
         """
         local_column_name, reference_column_name = column_name.split(".")
 
@@ -383,12 +433,15 @@ class Table(metaclass=TableMetaclass):
         if not isinstance(local_column, ForeignKey):
             raise ValueError(f"{local_column_name} isn't a ForeignKey")
 
-        reference_column = local_column.references._meta.get_column_by_name(
+        referenced_table = local_column._foreign_key_meta.resolved_references
+        reference_column = referenced_table._meta.get_column_by_name(
             reference_column_name
         )
 
-        _reference_column = copy.deepcopy(reference_column)
-        _reference_column.name = f"{local_column_name}.{reference_column_name}"
+        _reference_column = reference_column.copy()
+        _reference_column._meta.name = (
+            f"{local_column_name}.{reference_column_name}"
+        )
         return _reference_column
 
     @classmethod

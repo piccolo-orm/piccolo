@@ -17,6 +17,12 @@ from .column_types import (  # noqa: F401
     UUID,
     Varchar,
 )
-from .base import Column, ForeignKeyMeta, Selectable  # noqa: F401
-from .base import OnDelete, OnUpdate  # noqa: F401
+from .base import (  # noqa: F401
+    Column,
+    ForeignKeyMeta,
+    Selectable,
+    OnDelete,
+    OnUpdate,
+)
 from .combination import And, Or, Where  # noqa: F401
+from .reference import LazyTableReference  # noqa: F401

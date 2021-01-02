@@ -8,7 +8,7 @@ from piccolo.querystring import QueryString
 
 from .select import Select
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 

@@ -25,3 +25,17 @@ class TestColumn(TestCase):
         for arg in ["%guido", "guido%", "%guido%"]:
             column.like("%foo")
             column.ilike("foo%")
+
+
+class TestCopy(TestCase):
+    def test_copy(self):
+        """
+        Try copying columns.
+        """
+        column = MyTable.name
+        new_column = column.copy()
+        self.assertNotEqual(id(column), id(new_column))
+        self.assertNotEqual(id(column._meta), id(new_column._meta))
+        self.assertNotEqual(
+            id(column._meta.call_chain), id(new_column._meta.call_chain)
+        )

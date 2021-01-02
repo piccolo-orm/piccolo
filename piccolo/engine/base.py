@@ -4,7 +4,7 @@ import typing as t
 
 from piccolo.utils.warnings import colored_warning, Level
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.query.base import Query
 
 

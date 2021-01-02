@@ -7,7 +7,7 @@ from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
 from piccolo.engine.finder import engine_finder
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.engine.base import Engine
 
 

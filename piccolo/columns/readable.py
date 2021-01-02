@@ -4,7 +4,7 @@ import typing as t
 
 from piccolo.columns.base import Selectable
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import Column
 
 

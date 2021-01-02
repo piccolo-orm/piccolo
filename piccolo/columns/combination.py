@@ -5,7 +5,7 @@ from piccolo.columns.operators.comparison import ComparisonOperator
 from piccolo.custom_types import Combinable, Iterable
 from piccolo.querystring import QueryString
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import Column  # noqa
 
 

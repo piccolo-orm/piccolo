@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 import datetime
 import decimal
 from enum import Enum
+import inspect
 import typing as t
 
 from piccolo.columns.operators.comparison import (
@@ -24,12 +25,13 @@ from piccolo.columns.operators.comparison import (
 )
 from piccolo.columns.combination import Where
 from piccolo.columns.defaults.base import Default
+from piccolo.columns.reference import LazyTableReference
 from piccolo.querystring import QueryString
 from piccolo.utils.warnings import colored_warning
 
-if t.TYPE_CHECKING:
-    from piccolo.table import Table  # noqa
-    from .column_types import ForeignKey  # noqa
+if t.TYPE_CHECKING:  # pragma: no cover
+    from piccolo.table import Table
+    from piccolo.columns.column_types import ForeignKey
 
 
 class OnDelete(str, Enum):
@@ -62,10 +64,46 @@ class OnUpdate(str, Enum):
 
 @dataclass
 class ForeignKeyMeta:
-    references: t.Type[Table]
+    references: t.Union[t.Type[Table], LazyTableReference]
     on_delete: OnDelete
     on_update: OnUpdate
     proxy_columns: t.List[Column] = field(default_factory=list)
+
+    @property
+    def resolved_references(self) -> t.Type[Table]:
+        """
+        Evaluates the ``references`` attribute if it's a LazyTableReference,
+        raising a ``ValueError`` if it fails, otherwise returns a ``Table``
+        subclass.
+        """
+        from piccolo.table import Table
+
+        if isinstance(self.references, LazyTableReference):
+            return self.references.resolve()
+        elif inspect.isclass(self.references) and issubclass(
+            self.references, Table
+        ):
+            return self.references
+        else:
+            raise ValueError(
+                "The references attribute is neither a Table sublclass or a "
+                "LazyTableReference instance."
+            )
+
+    def copy(self) -> ForeignKeyMeta:
+        kwargs = self.__dict__.copy()
+        kwargs.update(proxy_columns=self.proxy_columns.copy())
+        return self.__class__(**kwargs)
+
+    def __copy__(self) -> ForeignKeyMeta:
+        return self.copy()
+
+    def __deepcopy__(self, memo) -> ForeignKeyMeta:
+        """
+        We override deepcopy, as it's too slow if it has to recreate
+        everything.
+        """
+        return self.copy()
 
 
 @dataclass
@@ -140,6 +178,23 @@ class ColumnMeta:
             return alias
         else:
             return f'{alias} AS "{column_name}"'
+
+    def copy(self) -> ColumnMeta:
+        kwargs = self.__dict__.copy()
+        kwargs.update(
+            params=self.params.copy(), call_chain=self.call_chain.copy(),
+        )
+        return self.__class__(**kwargs)
+
+    def __copy__(self) -> ColumnMeta:
+        return self.copy()
+
+    def __deepcopy__(self, memo) -> ColumnMeta:
+        """
+        We override deepcopy, as it's too slow if it has to recreate
+        everything.
+        """
+        return self.copy()
 
 
 class Selectable(metaclass=ABCMeta):
@@ -236,7 +291,7 @@ class Column(Selectable):
         """
         Make sure that the default value is of the allowed types.
         """
-        if getattr(self, "validated", None):
+        if getattr(self, "_validated", None):
             # If it has previously been validated by a subclass, don't
             # validate again.
             return True
@@ -245,10 +300,10 @@ class Column(Selectable):
             and None in allowed_types
             or type(default) in allowed_types
         ):
-            self.validated = True
+            self._validated = True
             return True
         elif callable(default):
-            self.validated = True
+            self._validated = True
             return True
         else:
             raise ValueError(
@@ -409,7 +464,7 @@ class Column(Selectable):
             self, "_foreign_key_meta", None
         )
         if foreign_key_meta:
-            tablename = foreign_key_meta.references._meta.tablename
+            tablename = foreign_key_meta.resolved_references._meta.tablename
             on_delete = foreign_key_meta.on_delete.value
             on_update = foreign_key_meta.on_update.value
             query += (
@@ -432,8 +487,29 @@ class Column(Selectable):
 
         return QueryString(query)
 
+    def copy(self) -> Column:
+        column: Column = copy.copy(self)
+        column._meta = self._meta.copy()
+        return column
+
+    def __deepcopy__(self, memo) -> Column:
+        """
+        We override deepcopy, as it's too slow if it has to recreate
+        everything.
+        """
+        return self.copy()
+
     def __str__(self):
         return self.querystring.__str__()
 
     def __repr__(self):
-        return f"{self._meta.name} - {self.__class__.__name__}"
+        try:
+            table = self._meta.table
+        except ValueError:
+            table_class_name = "Unknown"
+        else:
+            table_class_name = table.__name__
+        return (
+            f"{table_class_name}.{self._meta.name} - "
+            f"{self.__class__.__name__}"
+        )

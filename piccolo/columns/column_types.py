@@ -1,26 +1,34 @@
 from __future__ import annotations
+
 import copy
-from datetime import datetime, date, time, timedelta
 import decimal
 import typing as t
 import uuid
+from datetime import date, datetime, time, timedelta
 
-from piccolo.columns.base import Column, OnDelete, OnUpdate, ForeignKeyMeta
-from piccolo.columns.operators.string import ConcatPostgres, ConcatSQLite
-from piccolo.columns.defaults.date import DateArg, DateNow, DateCustom
-from piccolo.columns.defaults.time import TimeArg, TimeNow, TimeCustom
+from piccolo.columns.base import (
+    Column,
+    ForeignKeyMeta,
+    OnDelete,
+    OnUpdate,
+)
+from piccolo.columns.defaults.date import DateArg, DateCustom, DateNow
 from piccolo.columns.defaults.interval import IntervalArg, IntervalCustom
+from piccolo.columns.defaults.time import TimeArg, TimeCustom, TimeNow
 from piccolo.columns.defaults.timestamp import (
     TimestampArg,
-    TimestampNow,
     TimestampCustom,
+    TimestampNow,
 )
-from piccolo.columns.defaults.uuid import UUIDArg, UUID4
-from piccolo.querystring import Unquoted, QueryString
+from piccolo.columns.defaults.uuid import UUID4, UUIDArg
+from piccolo.columns.operators.string import ConcatPostgres, ConcatSQLite
+from piccolo.columns.reference import LazyTableReference
+from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils.encoding import dump_json
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
+    from piccolo.columns.base import ColumnMeta
 
 
 ###############################################################################
@@ -170,9 +178,7 @@ class Varchar(Column):
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         engine_type = self._meta.table._meta.db.engine_type
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.name,
-            value=value,
-            engine_type=engine_type,
+            column_name=self._meta.name, value=value, engine_type=engine_type,
         )
 
     def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
@@ -904,6 +910,11 @@ class ForeignKey(Integer):
     :param references:
         The ``Table`` being referenced.
 
+        .. code-block:: python
+
+            class Band(Table):
+                manager = ForeignKey(references=Manager)
+
         A table can have a reference to itself, if you pass a ``references``
         argument of ``'self'``.
 
@@ -912,6 +923,47 @@ class ForeignKey(Integer):
             class Musician(Table):
                 name = Varchar(length=100)
                 instructor = ForeignKey(references='self')
+
+        In certain situations, you may be unable to reference a ``Table`` class
+        if it causes a circular dependency. Try and avoid these by refactoring
+        your code. If unavoidable, you can specify a lazy reference. If the
+        ``Table`` is defined in the same file:
+
+        .. code-block:: python
+
+            class Band(Table):
+                manager = ForeignKey(references='Manager')
+
+        If the ``Table`` is defined in a Piccolo app:
+
+        .. code-block:: python
+
+            from piccolo.columns.reference import LazyTableReference
+
+            class Band(Table):
+                manager = ForeignKey(
+                    references=LazyTableReference(
+                       table_class_name="Manager", app_name="my_app",
+                    )
+                )
+
+        If you aren't using Piccolo apps, you can specify a ``Table`` in any
+        Python module:
+
+        .. code-block:: python
+
+            from piccolo.columns.reference import LazyTableReference
+
+            class Band(Table):
+                manager = ForeignKey(
+                    references=LazyTableReference(
+                       table_class_name="Manager",
+                       module_path="some_module.tables",
+                    )
+                    # Alternatively, Piccolo will interpret this string as
+                    # the same as above:
+                    # references="some_module.tables.Manager"
+                )
 
     :param on_delete:
         Determines what the database should do when a row is deleted with
@@ -970,7 +1022,7 @@ class ForeignKey(Integer):
 
     def __init__(
         self,
-        references: t.Union[t.Type[Table], str],
+        references: t.Union[t.Type[Table], LazyTableReference, str],
         default: t.Union[int, None] = None,
         null: bool = True,
         on_delete: OnDelete = OnDelete.cascade,
@@ -978,13 +1030,6 @@ class ForeignKey(Integer):
         **kwargs,
     ) -> None:
         self._validate_default(default, (int, None))
-
-        if isinstance(references, str):
-            if references != "self":
-                raise ValueError(
-                    "String values for 'references' currently only supports "
-                    "'self', which is a reference to the current table."
-                )
 
         kwargs.update(
             {
@@ -995,14 +1040,33 @@ class ForeignKey(Integer):
         )
         super().__init__(default=default, null=null, **kwargs)
 
-        if t.TYPE_CHECKING:
-            # This is here just for type inference - the actual value is set by
-            # the Table metaclass.
-            from piccolo.table import Table
+        # This is here just for type inference - the actual value is set by
+        # the Table metaclass. We can't set the actual value here, as
+        # only the metaclass has access to the table.
+        from piccolo.table import Table
 
-            self._foreign_key_meta = ForeignKeyMeta(
-                Table, OnDelete.cascade, OnUpdate.cascade
-            )
+        self._foreign_key_meta = ForeignKeyMeta(
+            Table, OnDelete.cascade, OnUpdate.cascade
+        )
+
+    def copy(self) -> ForeignKey:
+        column: ForeignKey = copy.copy(self)
+        column._meta = self._meta.copy()
+        column._foreign_key_meta = self._foreign_key_meta.copy()
+        return column
+
+    def set_proxy_columns(self):
+        """
+        In order to allow a fluent interface, where tables can be traversed
+        using ForeignKeys (e.g. ``Band.manager.name``), we add attributes to
+        the ``ForeignKey`` column for each column in the table being pointed
+        to.
+        """
+        _foreign_key_meta = object.__getattribute__(self, "_foreign_key_meta")
+        for column in _foreign_key_meta.resolved_references._meta.columns:
+            _column: Column = column.copy()
+            setattr(self, _column._meta.name, _column)
+            _foreign_key_meta.proxy_columns.append(_column)
 
     def __getattribute__(self, name: str):
         """
@@ -1010,19 +1074,33 @@ class ForeignKey(Integer):
         case a copy is returned with an updated call_chain (which records the
         joins required).
         """
-        # see if it has an attribute with that name ...
-        # if it's asking for a foreign key ... return a copy of self ...
+        # If the ForeignKey is using a lazy reference, we need to set the
+        # attributes here. Attributes starting with a double underscore are
+        # unlikely to be column names.
+        if not name.startswith("__"):
+            try:
+                _foreign_key_meta = object.__getattribute__(
+                    self, "_foreign_key_meta"
+                )
+            except AttributeError:
+                pass
+            else:
+                if _foreign_key_meta.proxy_columns == [] and isinstance(
+                    _foreign_key_meta.references, LazyTableReference
+                ):
+                    object.__getattribute__(self, "set_proxy_columns")()
 
         try:
             value = object.__getattribute__(self, name)
         except AttributeError:
             raise AttributeError
 
-        foreignkey_class = object.__getattribute__(self, "__class__")
+        foreignkey_class: t.Type[ForeignKey] = object.__getattribute__(
+            self, "__class__"
+        )
 
         if isinstance(value, foreignkey_class):  # i.e. a ForeignKey
-            new_column = copy.deepcopy(value)
-            new_column._meta.call_chain = copy.copy(self._meta.call_chain)
+            new_column = value.copy()
             new_column._meta.call_chain.append(self)
 
             # We have to set limits to the call chain because Table 1 can
@@ -1031,30 +1109,39 @@ class ForeignKey(Integer):
             # When querying a call chain more than 10 levels deep, an error
             # will be raised. Often there are more effective ways of
             # structuring a query than joining so many tables anyway.
-            if len(new_column._meta.call_chain) > 10:
+            if len(new_column._meta.call_chain) >= 10:
                 raise Exception("Call chain too long!")
 
-            for proxy_column in self._foreign_key_meta.proxy_columns:
+            foreign_key_meta: ForeignKeyMeta = object.__getattribute__(
+                self, "_foreign_key_meta"
+            )
+
+            for proxy_column in foreign_key_meta.proxy_columns:
                 try:
                     delattr(new_column, proxy_column._meta.name)
                 except Exception:
                     pass
 
-            for column in value._foreign_key_meta.references._meta.columns:
-                _column: Column = copy.deepcopy(column)
-                _column._meta.call_chain = copy.copy(
-                    new_column._meta.call_chain
-                )
+            for (
+                column
+            ) in value._foreign_key_meta.resolved_references._meta.columns:
+                _column: Column = column.copy()
+                _column._meta.call_chain = [
+                    i for i in new_column._meta.call_chain
+                ]
                 _column._meta.call_chain.append(new_column)
                 if _column._meta.name == "id":
                     continue
                 setattr(new_column, _column._meta.name, _column)
-                self._foreign_key_meta.proxy_columns.append(_column)
+                foreign_key_meta.proxy_columns.append(_column)
 
             return new_column
         elif issubclass(type(value), Column):
-            new_column = copy.deepcopy(value)
-            new_column._meta.call_chain = copy.copy(self._meta.call_chain)
+            new_column = value.copy()
+
+            column_meta: ColumnMeta = object.__getattribute__(self, "_meta")
+
+            new_column._meta.call_chain = column_meta.call_chain.copy()
             new_column._meta.call_chain.append(self)
             return new_column
         else:
