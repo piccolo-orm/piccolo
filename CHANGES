@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.14.11
+-------
+Fixing a bug with ``Boolean`` column defaults, caused by the ``Table``
+metaclass not being explicit enough when checking falsy values.
+
 0.14.10
 -------
  * The ``ForeignKey`` ``references`` argument can now be specified using a
