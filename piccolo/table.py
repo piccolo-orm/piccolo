@@ -200,6 +200,11 @@ class Table(metaclass=TableMetaclass):
                     references = cls
                 else:
                     if "." in references:
+                        # Don't allow relative modules - this may change in
+                        # the future.
+                        if references.startswith("."):
+                            raise ValueError("Relative imports aren't allowed")
+
                         module_path, table_class_name = references.rsplit(
                             ".", maxsplit=1
                         )

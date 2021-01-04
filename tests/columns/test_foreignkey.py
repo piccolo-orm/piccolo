@@ -90,6 +90,22 @@ class TestForeignKeyString(TestCase):
         Manager.alter().drop_table().run_sync()
 
 
+class TestForeignKeyRelativeError(TestCase):
+    def test_foreign_key_relative_error(self):
+        """
+        Make sure that a references argument which contains a relative module
+        isn't allowed.
+        """
+        with self.assertRaises(ValueError) as manager:
+
+            class Band(Table):
+                manager = ForeignKey("..example_app.tables.Manager", null=True)
+
+        self.assertEqual(
+            manager.exception.__str__(), "Relative imports aren't allowed"
+        )
+
+
 class TestReferences(TestCase):
     def test_foreign_key_references(self):
         """
