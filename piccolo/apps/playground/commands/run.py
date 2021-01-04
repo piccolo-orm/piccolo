@@ -9,6 +9,7 @@ import uuid
 
 from piccolo.table import Table
 from piccolo.columns import (
+    Boolean,
     Varchar,
     ForeignKey,
     Integer,
@@ -51,6 +52,7 @@ class Ticket(Table):
 
 class DiscountCode(Table):
     code = UUID()
+    active = Boolean(default=True, null=True)
 
 
 TABLES = (Manager, Band, Venue, Concert, Ticket, DiscountCode)

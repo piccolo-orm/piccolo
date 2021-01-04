@@ -245,8 +245,8 @@ class Table(metaclass=TableMetaclass):
         Assigns any default column values to the class.
         """
         for column in self._meta.columns:
-            value = kwargs.pop(column._meta.name, None)
-            if not value:
+            value = kwargs.pop(column._meta.name, ...)
+            if value is ...:
                 value = column.get_default_value()
 
                 if isinstance(value, Default):
