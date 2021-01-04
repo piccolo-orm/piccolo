@@ -96,12 +96,21 @@ def convert_seconds_out(value: bytes) -> datetime.timedelta:
     return datetime.timedelta(seconds=float(value.decode("utf8")))
 
 
+def convert_boolean_out(value: bytes) -> bool:
+    """
+    If the value is from a boolean column, convert it to a bool value.
+    """
+    _value = value.decode("utf8")
+    return _value == "1"
+
+
 sqlite3.register_converter("Numeric", convert_numeric_out)
 sqlite3.register_converter("Integer", convert_int_out)
 sqlite3.register_converter("UUID", convert_uuid_out)
 sqlite3.register_converter("Date", convert_date_out)
 sqlite3.register_converter("Time", convert_time_out)
 sqlite3.register_converter("Seconds", convert_seconds_out)
+sqlite3.register_converter("Boolean", convert_boolean_out)
 
 sqlite3.register_adapter(Decimal, convert_numeric_in)
 sqlite3.register_adapter(uuid.UUID, convert_uuid_in)
