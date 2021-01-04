@@ -9,7 +9,7 @@ class MyTable(Table):
     boolean = Boolean(boolean=False, null=True)
 
 
-class TestUUID(TestCase):
+class TestBoolean(TestCase):
     def setUp(self):
         MyTable.create_table().run_sync()
 
