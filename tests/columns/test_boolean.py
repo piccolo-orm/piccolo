@@ -1,4 +1,3 @@
-from tests.columns.test_timestamp import MyTableDefault
 from unittest import TestCase
 
 from piccolo.table import Table
