@@ -23,9 +23,11 @@ class CreateIndex(Query):
         table: t.Type[Table],
         columns: t.List[t.Union[Column, str]],
         method: IndexMethod = IndexMethod.btree,
+        if_not_exists: bool = False,
     ):
         self.columns = columns
         self.method = method
+        self.if_not_exists = if_not_exists
         super().__init__(table)
 
     @property
@@ -33,6 +35,13 @@ class CreateIndex(Query):
         return [
             i._meta.name if isinstance(i, Column) else i for i in self.columns
         ]
+
+    @property
+    def prefix(self) -> str:
+        prefix = "CREATE INDEX"
+        if self.if_not_exists:
+            prefix += " IF NOT EXISTS"
+        return prefix
 
     @property
     def postgres_querystrings(self) -> t.Sequence[QueryString]:
@@ -43,8 +52,8 @@ class CreateIndex(Query):
         column_names_str = ", ".join(column_names)
         return [
             QueryString(
-                f"CREATE INDEX {index_name} ON {tablename} USING {method_name}"
-                f" ({column_names_str})"
+                f"{self.prefix} {index_name} ON {tablename} USING "
+                f"{method_name} ({column_names_str})"
             )
         ]
 
@@ -61,7 +70,7 @@ class CreateIndex(Query):
         column_names_str = ", ".join(column_names)
         return [
             QueryString(
-                f"CREATE INDEX {index_name} ON {tablename} "
+                f"{self.prefix} {index_name} ON {tablename} "
                 f"({column_names_str})"
             )
         ]
