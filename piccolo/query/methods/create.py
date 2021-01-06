@@ -47,7 +47,9 @@ class Create(Query):
             if column._meta.index:
                 create_indexes.extend(
                     CreateIndex(
-                        table=self.table, columns=[column]
+                        table=self.table,
+                        columns=[column],
+                        if_not_exists=self.if_not_exists,
                     ).querystrings
                 )
 

@@ -29,3 +29,23 @@ class TestCreateWithIndexes(TestCase):
         index_names = BandMember.indexes().run_sync()
         index_name = BandMember._get_index_name(["name"])
         self.assertTrue(index_name in index_names)
+
+    def test_create_if_not_exists_with_indexes(self):
+        """
+        Make sure that if the same table is created again, with the
+        `if_not_exists` flag, then no errors are raised for duplicate indexes
+        (i.e. the indexes should also be created with IF NOT EXISTS).
+        """
+        query = BandMember.create_table(if_not_exists=True)
+
+        # Shouldn't raise any errors:
+        query.run_sync()
+
+        self.assertTrue(
+            query.querystrings[0]
+            .__str__()
+            .startswith("CREATE TABLE IF NOT EXISTS"),
+            query.querystrings[1]
+            .__str__()
+            .startswith("CREATE INDEX IF NOT EXISTS"),
+        )
