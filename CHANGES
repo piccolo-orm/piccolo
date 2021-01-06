@@ -1,6 +1,14 @@
 Changes
 =======
 
+0.14.12
+-------
+ * Fixing a bug where re-running ``Table.create(if_not_exists=True)`` would
+   fail if it contained columns with indexes.
+ * Raising a ``ValueError`` if a relative path is provided to ``ForeignKey``
+   ``references``. For example, ``.tables.Manager``. The paths must be absolute
+   for now.
+
 0.14.11
 -------
 Fixing a bug with ``Boolean`` column defaults, caused by the ``Table``
