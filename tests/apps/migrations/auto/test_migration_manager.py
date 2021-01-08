@@ -351,7 +351,6 @@ class TestMigrationManager(DBTestCase):
             old_params={"default": None},
         )
         asyncio.run(manager_1.run())
-
         self.assertEqual(
             self._get_column_default(),
             [{"column_default": "'Mr Manager'::character varying"}],
@@ -364,10 +363,34 @@ class TestMigrationManager(DBTestCase):
             tablename="manager",
             column_name="name",
             params={"default": None},
-            old_params={"default": "My Manager"},
+            old_params={"default": "Mr Manager"},
         )
         asyncio.run(manager_2.run())
+        self.assertEqual(
+            self._get_column_default(), [{"column_default": None}],
+        )
 
+        # And add it back once more to be sure.
+        manager_3 = manager_1
+        asyncio.run(manager_3.run())
+        self.assertEqual(
+            self._get_column_default(),
+            [{"column_default": "'Mr Manager'::character varying"}],
+        )
+
+        # Run them all backwards
+        asyncio.run(manager_3.run_backwards())
+        self.assertEqual(
+            self._get_column_default(), [{"column_default": None}],
+        )
+
+        asyncio.run(manager_2.run_backwards())
+        self.assertEqual(
+            self._get_column_default(),
+            [{"column_default": "'Mr Manager'::character varying"}],
+        )
+
+        asyncio.run(manager_1.run_backwards())
         self.assertEqual(
             self._get_column_default(), [{"column_default": None}],
         )
