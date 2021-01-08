@@ -88,7 +88,7 @@ class AddColumn(AlterColumnStatement):
 class DropDefault(AlterColumnStatement):
     @property
     def querystring(self) -> QueryString:
-        return QueryString("DROP DEFAULT {}", self.column_name)
+        return QueryString(f"ALTER COLUMN {self.column_name} DROP DEFAULT")
 
 
 @dataclass
