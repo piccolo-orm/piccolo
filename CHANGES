@@ -1,6 +1,10 @@
 Changes
 =======
 
+0.14.13
+-------
+Fixing a bug with migrations which drop column defaults.
+
 0.14.12
 -------
  * Fixing a bug where re-running ``Table.create(if_not_exists=True)`` would
