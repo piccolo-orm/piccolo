@@ -337,6 +337,42 @@ class TestMigrationManager(DBTestCase):
         )
 
     @postgres_only
+    def test_alter_column_drop_default(self):
+        """
+        Test setting a column default to None with MigrationManager.
+        """
+        # Make sure it has a non-null default to start with.
+        manager_1 = MigrationManager()
+        manager_1.alter_column(
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="name",
+            params={"default": "Mr Manager"},
+            old_params={"default": None},
+        )
+        asyncio.run(manager_1.run())
+
+        self.assertEqual(
+            self._get_column_default(),
+            [{"column_default": "'Mr Manager'::character varying"}],
+        )
+
+        # Drop the default.
+        manager_2 = MigrationManager()
+        manager_2.alter_column(
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="name",
+            params={"default": None},
+            old_params={"default": "My Manager"},
+        )
+        asyncio.run(manager_2.run())
+
+        self.assertEqual(
+            self._get_column_default(), [{"column_default": None}],
+        )
+
+    @postgres_only
     def test_alter_column_add_index(self):
         """
         Test altering a column to add an index with MigrationManager.
