@@ -1243,6 +1243,8 @@ class Bytea(Column):
 
     """
 
+    value_type = bytes
+
     @property
     def column_type(self):
         engine_type = self._meta.table._meta.db.engine_type
