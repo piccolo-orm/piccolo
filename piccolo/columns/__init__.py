@@ -1,5 +1,6 @@
 from .column_types import (  # noqa: F401
     Boolean,
+    Bytea,
     Date,
     Decimal,
     Float,
