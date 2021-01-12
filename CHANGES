@@ -1,6 +1,10 @@
 Changes
 =======
 
+0.15.0
+------
+Added ``Bytea`` / ``Blob`` column type.
+
 0.14.13
 -------
 Fixing a bug with migrations which drop column defaults.
