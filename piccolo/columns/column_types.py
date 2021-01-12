@@ -1218,3 +1218,66 @@ class JSONB(JSON):
                 return f"{select_string} {self.json_operator}"
             else:
                 return f"{select_string} {self.json_operator} AS {self.alias}"
+
+
+###############################################################################
+
+
+class Bytea(Column):
+    """
+    Used for storing bytes.
+
+    **Example**
+
+    .. code-block:: python
+
+        class Token(Table):
+            token = Bytea(default=b'token123')
+
+        # Create
+        >>> Token(token=b'my-token').save().run_sync()
+
+        # Query
+        >>> Token.select(Token.token).run_sync()
+        {'token': b'my-token'}
+
+    """
+
+    value_type = bytes
+
+    @property
+    def column_type(self):
+        engine_type = self._meta.table._meta.db.engine_type
+        if engine_type == "postgres":
+            return "BYTEA"
+        elif engine_type == "sqlite":
+            return "BLOB"
+        raise Exception("Unrecognized engine type")
+
+    def __init__(
+        self,
+        default: t.Union[
+            bytes,
+            bytearray,
+            t.Callable[[], bytes],
+            t.Callable[[], bytearray],
+            None,
+        ] = b"",
+        **kwargs,
+    ) -> None:
+        self._validate_default(default, (bytes, bytearray, None))
+
+        if isinstance(default, bytearray):
+            default = bytes(default)
+
+        self.default = default
+        kwargs.update({"default": default})
+        super().__init__(**kwargs)
+
+
+class Blob(Bytea):
+    """
+    An alias for Bytea.
+    """
+
+    pass
