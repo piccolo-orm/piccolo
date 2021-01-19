@@ -53,12 +53,12 @@ class TimestampNow(Default):
 class TimestampCustom(Default):
     def __init__(
         self,
-        year: int,
-        month: int,
-        day: int,
-        hour: int,
-        second: int,
-        microsecond: int,
+        year: int = 2000,
+        month: int = 1,
+        day: int = 1,
+        hour: int = 0,
+        second: int = 0,
+        microsecond: int = 0,
     ):
         self.year = year
         self.month = month

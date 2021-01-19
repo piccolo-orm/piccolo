@@ -20,6 +20,11 @@ from piccolo.columns.defaults.timestamp import (
     TimestampCustom,
     TimestampNow,
 )
+from piccolo.columns.defaults.timestamptz import (
+    TimestamptzArg,
+    TimestamptzCustom,
+    TimestamptzNow,
+)
 from piccolo.columns.defaults.uuid import UUID4, UUIDArg
 from piccolo.columns.operators.string import ConcatPostgres, ConcatSQLite
 from piccolo.columns.reference import LazyTableReference
@@ -545,10 +550,67 @@ class Timestamp(Column):
         self._validate_default(default, TimestampArg.__args__)  # type: ignore
 
         if isinstance(default, datetime):
+            if default.tzinfo is not None:
+                raise ValueError(
+                    "Timestamp only stores timezone naive datetime objects - "
+                    "use Timestamptz instead."
+                )
             default = TimestampCustom.from_datetime(default)
 
         if default == datetime.now:
             default = TimestampNow()
+
+        self.default = default
+        kwargs.update({"default": default})
+        super().__init__(**kwargs)
+
+
+class Timestamptz(Column):
+    """
+    Used for storing timezone aware datetimes. Uses the ``datetime`` type for
+    values. The values are converted to UTC in the database, and are also
+    returned as UTC.
+
+    **Example**
+
+    .. code-block:: python
+
+        import datetime
+
+        class Concert(Table):
+            starts = Timestamptz()
+
+        # Create
+        >>> Concert(
+        >>>    starts=datetime.datetime(
+        >>>        year=2050, month=1, day=1, tzinfo=datetime.timezone.tz
+        >>>    )
+        >>> ).save().run_sync()
+
+        # Query
+        >>> Concert.select(Concert.starts).run_sync()
+        {
+            'starts': datetime.datetime(
+                2050, 1, 1, 0, 0, tzinfo=datetime.timezone.utc
+            )
+        }
+
+    """
+
+    value_type = datetime
+
+    def __init__(
+        self, default: TimestamptzArg = TimestamptzNow(), **kwargs
+    ) -> None:
+        self._validate_default(
+            default, TimestamptzArg.__args__  # type: ignore
+        )
+
+        if isinstance(default, datetime):
+            default = TimestamptzCustom.from_datetime(default)
+
+        if default == datetime.now:
+            default = TimestamptzNow()
 
         self.default = default
         kwargs.update({"default": default})

@@ -22,6 +22,9 @@ from piccolo.utils.sync import run_sync
 # consistent with the Postgres engine.
 
 
+# In
+
+
 def convert_numeric_in(value):
     """
     Convert any Decimal values into floats.
@@ -29,14 +32,14 @@ def convert_numeric_in(value):
     return float(value)
 
 
-def convert_uuid_in(value):
+def convert_uuid_in(value) -> str:
     """
     Converts the UUID value being passed into sqlite.
     """
     return str(value)
 
 
-def convert_time_in(value):
+def convert_time_in(value) -> str:
     """
     Converts the time value being passed into sqlite.
     """
@@ -50,11 +53,25 @@ def convert_date_in(value):
     return value.isoformat()
 
 
+def convert_datetime_in(value: datetime.datetime) -> str:
+    """
+    Converts the datetime into a string. If it's timezone aware, we want to
+    convert it to UTC first. This is to replicate Postgres, which stores
+    timezone aware datetimes in UTC.
+    """
+    if value.tzinfo is not None:
+        value = value.astimezone(datetime.timezone.utc)
+    return str(value)
+
+
 def convert_timedelta_in(value):
     """
     Converts the timedelta value being passed into sqlite.
     """
     return value.total_seconds()
+
+
+# Out
 
 
 def convert_numeric_out(value: bytes) -> Decimal:
@@ -104,6 +121,14 @@ def convert_boolean_out(value: bytes) -> bool:
     return _value == "1"
 
 
+def convert_timestamptz_out(value: bytes) -> datetime.datetime:
+    """
+    If the value is from a timstamptz column, convert it to a datetime value,
+    with a timezone of UTC.
+    """
+    return datetime.datetime.fromisoformat(value.decode("utf8"))
+
+
 sqlite3.register_converter("Numeric", convert_numeric_out)
 sqlite3.register_converter("Integer", convert_int_out)
 sqlite3.register_converter("UUID", convert_uuid_out)
@@ -111,11 +136,13 @@ sqlite3.register_converter("Date", convert_date_out)
 sqlite3.register_converter("Time", convert_time_out)
 sqlite3.register_converter("Seconds", convert_seconds_out)
 sqlite3.register_converter("Boolean", convert_boolean_out)
+sqlite3.register_converter("Timestamptz", convert_timestamptz_out)
 
 sqlite3.register_adapter(Decimal, convert_numeric_in)
 sqlite3.register_adapter(uuid.UUID, convert_uuid_in)
 sqlite3.register_adapter(datetime.time, convert_time_in)
 sqlite3.register_adapter(datetime.date, convert_date_in)
+sqlite3.register_adapter(datetime.datetime, convert_datetime_in)
 sqlite3.register_adapter(datetime.timedelta, convert_timedelta_in)
 
 ###############################################################################
