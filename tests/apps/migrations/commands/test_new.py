@@ -1,13 +1,14 @@
 import os
 import shutil
 from unittest import TestCase
+from unittest.mock import call, patch, MagicMock
 
-from piccolo.conf.apps import AppConfig
 from piccolo.apps.migrations.commands.new import (
     _create_new_migration,
     BaseMigrationManager,
     new,
 )
+from piccolo.conf.apps import AppConfig
 from piccolo.utils.sync import run_sync
 
 from tests.base import postgres_only
@@ -41,13 +42,16 @@ class TestNewMigrationCommand(TestCase):
         self.assertTrue(len(migration_modules.keys()) == 1)
 
     @postgres_only
-    def test_new_command(self):
+    @patch("piccolo.apps.migrations.commands.new.print")
+    def test_new_command(self, print_: MagicMock):
         """
         Call the command, when no migration changes are needed.
         """
         with self.assertRaises(SystemExit) as manager:
             run_sync(new(app_name="example_app", auto=True))
 
-        self.assertEqual(
-            manager.exception.__str__(), "No changes detected - exiting."
+        self.assertEqual(manager.exception.code, 0)
+
+        self.assertTrue(
+            print_.mock_calls[-1] == call("No changes detected - exiting.")
         )
