@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.15.1
+------
+Changing the status code when creating a migration, and no changes were
+detected. It now returns a status code of 0, so it doesn't fail build scripts.
+
 0.15.0
 ------
 Added ``Bytea`` / ``Blob`` column type.
