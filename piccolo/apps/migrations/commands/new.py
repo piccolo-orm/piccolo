@@ -75,7 +75,8 @@ async def _create_new_migration(app_config: AppConfig, auto=False) -> None:
         )
 
         if sum([len(i.statements) for i in alter_statements]) == 0:
-            sys.exit("No changes detected - exiting.")
+            print("No changes detected - exiting.")
+            sys.exit(0)
 
         file_contents = render_template(
             migration_id=_id,
