@@ -114,4 +114,4 @@ Database Settings
 -----------------
 
 In Django you configure your database in ``settings.py``. With Piccolo, you
-definte an ``Engine`` in ``piccolo_conf.py``. See :ref:`Engines`.
+define an ``Engine`` in ``piccolo_conf.py``. See :ref:`Engines`.

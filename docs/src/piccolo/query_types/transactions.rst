@@ -11,7 +11,7 @@ inbetween state.
 Atomic
 ------
 
-This is useful when you want to programitcally add some queries to the
+This is useful when you want to programmatically add some queries to the
 transaction before running it.
 
 .. code-block:: python
