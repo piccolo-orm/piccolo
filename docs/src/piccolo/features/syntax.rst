@@ -15,12 +15,11 @@ For example:
 Get the SQL at any time
 -----------------------
 
-At any time you can access the __str__ method of a query, to see the
+At any time you can access the ``__str__`` method of a query, to see the
 underlying SQL - making the ORM feel less magic.
 
 .. code-block:: python
 
-    query = Band.select(Band.name).where(Band.popularity >= 100)
-
-    print(query)
+    >>> query = Band.select(Band.name).where(Band.popularity >= 100)
+    >>> print(query)
     'SELECT name from band where popularity > 100'

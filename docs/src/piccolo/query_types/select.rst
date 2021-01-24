@@ -50,11 +50,9 @@ One of the most powerful things about select is it's support for joins.
 
 .. code-block:: python
 
-    b = Band
-    b.select(
-        b.name,
-        b.manager.name
-    ).run_sync()
+    >>> b = Band
+    >>> b.select(b.name, b.manager.name).run_sync()
+    [{'name': 'Pythonistas', 'manager.name': 'Guido'}, {'name': 'Rustaceans', 'manager.name': 'Graydon'}]
 
 
 The joins can go several layers deep.
@@ -163,7 +161,7 @@ To return the data as a JSON string:
 Piccolo can use `orjson <https://github.com/ijl/orjson>`_ for JSON serialisation,
 which is blazing fast, and can handle most Python types, including dates,
 datetimes, and UUIDs. To install Piccolo with orjson support use
-`pip install piccolo[orjson]`.
+``pip install piccolo[orjson]``.
 
 where
 ~~~~~
