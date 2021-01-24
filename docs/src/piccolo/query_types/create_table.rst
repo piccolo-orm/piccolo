@@ -11,3 +11,11 @@ This creates the table and columns in the database.
 
     >>> Band.create_table().run_sync()
     []
+
+
+To prevent an error from being raised if the table already exists:
+
+.. code-block:: python
+
+    >>> Band.create_table(if_not_exists=True).run_sync()
+    []
