@@ -57,7 +57,14 @@ async def _create_new_migration(app_config: AppConfig, auto=False) -> None:
     Creates a new migration file on disk.
     """
     _id = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    path = os.path.join(app_config.migrations_folder_path, f"{_id}.py")
+
+    # Originally we just used the _id as the filename, but colons aren't
+    # supported in Windows, so we need to sanitize it. We don't want to
+    # change the _id format though, as it would break existing migrations.
+    # The filename doesn't have any special significance - only the id matters.
+    filename = _id.replace(":", "-")
+
+    path = os.path.join(app_config.migrations_folder_path, f"{filename}.py")
 
     if auto:
         alter_statements = await AutoMigrationManager().get_alter_statements(

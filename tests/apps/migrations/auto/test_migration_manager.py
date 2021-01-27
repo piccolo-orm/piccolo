@@ -5,6 +5,7 @@ from asyncpg.exceptions import UniqueViolationError
 from piccolo.apps.migrations.auto import MigrationManager
 from piccolo.apps.migrations.commands.base import BaseMigrationManager
 from piccolo.columns import Varchar
+from piccolo.columns.base import OnDelete, OnUpdate
 
 from tests.example_app.tables import Manager
 from tests.base import DBTestCase
@@ -144,6 +145,51 @@ class TestMigrationManager(DBTestCase):
         asyncio.run(manager.run_backwards())
         response = self.run_sync("SELECT * FROM manager;")
         self.assertEqual(response, [{"id": 1, "name": "Dave"}])
+
+    @postgres_only
+    def test_add_foreign_key_self_column(self):
+        """
+        Test adding a ForeignKey column to a MigrationManager, with a
+        references argument of 'self'.
+        """
+        manager = MigrationManager()
+        manager.add_column(
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="advisor",
+            column_class_name="ForeignKey",
+            params={
+                "references": "self",
+                "on_delete": OnDelete.cascade,
+                "on_update": OnUpdate.cascade,
+                "default": None,
+                "null": True,
+                "primary": False,
+                "key": False,
+                "unique": False,
+                "index": False,
+            },
+        )
+        asyncio.run(manager.run())
+
+        self.run_sync("INSERT INTO manager VALUES (default, 'Alice', null);")
+        self.run_sync("INSERT INTO manager VALUES (default, 'Dave', 1);")
+
+        response = self.run_sync("SELECT * FROM manager;")
+        self.assertEqual(
+            response,
+            [
+                {"id": 1, "name": "Alice", "advisor": None},
+                {"id": 2, "name": "Dave", "advisor": 1},
+            ],
+        )
+
+        # Reverse
+        asyncio.run(manager.run_backwards())
+        response = self.run_sync("SELECT * FROM manager;")
+        self.assertEqual(
+            response, [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Dave"}],
+        )
 
     @postgres_only
     def test_add_non_nullable_column(self):

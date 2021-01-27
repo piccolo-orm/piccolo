@@ -225,7 +225,8 @@ def deserialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     for key, value in params.items():
         # This is purely for backwards compatibility.
         if isinstance(value, str) and not isinstance(value, Enum):
-            params[key] = deserialise_legacy_params(name=key, value=value)
+            if value != "self":
+                params[key] = deserialise_legacy_params(name=key, value=value)
         elif isinstance(value, SerialisedClass):
             params[key] = value.instance
         elif isinstance(value, SerialisedUUID):
