@@ -1,6 +1,13 @@
 Changes
 =======
 
+0.16.0
+------
+ * Fixed a bug with creating a ``ForeignKey`` column with ``references="self"``
+   in auto migrations.
+ * Changed migration file naming, so there are no characters in there which
+   are unsupported on Windows.
+
 0.15.1
 ------
 Changing the status code when creating a migration, and no changes were
