@@ -16,6 +16,7 @@ from .column_types import (  # noqa: F401
     Serial,
     Text,
     Timestamp,
+    Timestamptz,
     UUID,
     Varchar,
 )
