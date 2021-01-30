@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.16.1
+------
+Added ``Timestamptz`` column type, for storing datetimes which are timezone
+aware.
+
 0.16.0
 ------
  * Fixed a bug with creating a ``ForeignKey`` column with ``references="self"``
