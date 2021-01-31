@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.16.2
+------
+Reordering the dependencies in requirements.txt when using `piccolo asgi new`,
+as the latest FastAPI and Starlette versions are incompatible.
+
 0.16.1
 ------
 Added ``Timestamptz`` column type, for storing datetimes which are timezone
