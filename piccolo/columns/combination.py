@@ -54,6 +54,27 @@ class Undefined:
 UNDEFINED = Undefined()
 
 
+class WhereRaw(CombinableMixin):
+    def __init__(self, sql: str, *args: t.Any) -> None:
+        """
+        Execute raw SQL queries in your where clause. Use with caution!
+
+        await Band.where(
+            WhereRaw("name = 'Pythonistas'")
+        )
+
+        Or passing in parameters:
+
+        await Band.where(
+            WhereRaw("name = {}", 'Pythonistas')
+        )
+        """
+        self.querystring = QueryString(sql, *args)
+
+    def __str__(self):
+        return self.querystring.__str__()
+
+
 class Where(CombinableMixin):
 
     __slots__ = ("column", "value", "values", "operator")
