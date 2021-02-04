@@ -167,16 +167,27 @@ Rather than using the ``|`` and ``&`` characters, you can use the ``And`` and
 WhereRaw
 --------
 
-In certain situations you may want to have raw SQL in your where clause. For
-example, there could be a Postgres function you need to call.
+In certain situations you may want to have raw SQL in your where clause.
 
 .. code-block:: python
 
     from piccolo.columns.combination import WhereRaw
 
-    b = Band
-    b.select().where(
+    Band.select().where(
         WhereRaw("name = 'Pythonistas'")
+    ).run_sync()
+
+It's important to parameterise your SQL statements if the values come from an
+untrusted source, otherwise it could lead to a SQL injection attack.
+
+.. code-block:: python
+
+    from piccolo.columns.combination import WhereRaw
+
+    value = "Could be dangerous"
+
+    Band.select().where(
+        WhereRaw("name = {}", value)
     ).run_sync()
 
 ``WhereRaw`` can be combined into complex queries, just as you'd expect:
