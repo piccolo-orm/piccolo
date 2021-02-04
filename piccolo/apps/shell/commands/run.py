@@ -26,7 +26,7 @@ def start_ipython_shell(
         if table_class_name not in existing_global_names:
             globals()[table_class_name] = table_class
 
-    IPython.embed(using=_asyncio_runner)
+    IPython.embed(using=_asyncio_runner, colors="neutral")
 
 
 def run():
