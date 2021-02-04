@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from piccolo.apps.user.tables import BaseUser
+from piccolo.columns.combination import WhereRaw
 from piccolo.query.methods.select import Count
 
 from ..base import DBTestCase, postgres_only, sqlite_only
@@ -114,6 +115,59 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(
             response, [{"name": "Pythonistas"}, {"name": "CSharps"}]
+        )
+
+    def test_where_raw(self):
+        """
+        Make sure raw SQL passed in to a where clause works as expected.
+        """
+        self.insert_rows()
+
+        response = (
+            Band.select(Band.name)
+            .where(WhereRaw("name = 'Pythonistas'"))
+            .run_sync()
+        )
+
+        print(f"response = {response}")
+
+        self.assertEqual(response, [{"name": "Pythonistas"}])
+
+    def test_where_raw_with_args(self):
+        """
+        Make sure raw SQL with args, passed in to a where clause, works
+        as expected.
+        """
+        self.insert_rows()
+
+        response = (
+            Band.select(Band.name)
+            .where(WhereRaw("name = {}", "Pythonistas"))
+            .run_sync()
+        )
+
+        print(f"response = {response}")
+
+        self.assertEqual(response, [{"name": "Pythonistas"}])
+
+    def test_where_raw_combined_with_where(self):
+        """
+        Make sure WhereRaw can be combined with Where.
+        """
+        self.insert_rows()
+
+        response = (
+            Band.select(Band.name)
+            .where(
+                WhereRaw("name = 'Pythonistas'") | (Band.name == "Rustaceans")
+            )
+            .run_sync()
+        )
+
+        print(f"response = {response}")
+
+        self.assertEqual(
+            response, [{"name": "Pythonistas"}, {"name": "Rustaceans"}]
         )
 
     def test_where_and(self):

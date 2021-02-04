@@ -30,6 +30,8 @@ Equal / Not Equal
         b.name != 'Rustaceans'
     ).run_sync()
 
+-------------------------------------------------------------------------------
+
 Greater than / less than
 ------------------------
 
@@ -41,6 +43,8 @@ You can use the ``<, >, <=, >=`` operators, which work as you expect.
     b.select().where(
         b.popularity >= 100
     ).run_sync()
+
+-------------------------------------------------------------------------------
 
 like / ilike
 -------------
@@ -64,6 +68,8 @@ The percentage operator is required to designate where the match should occur.
 
 ``ilike`` is identical, except it's case insensitive.
 
+-------------------------------------------------------------------------------
+
 not_like
 --------
 
@@ -75,6 +81,8 @@ Usage is the same as ``like`` excepts it excludes matching rows.
     b.select().where(
         b.name.not_like('Py%')
     ).run_sync()
+
+-------------------------------------------------------------------------------
 
 is_in / not_in
 --------------
@@ -92,6 +100,8 @@ is_in / not_in
     b.select().where(
         b.name.not_in(['Rustaceans'])
     ).run_sync()
+
+-------------------------------------------------------------------------------
 
 Complex queries - and / or
 ---------------------------
@@ -150,4 +160,43 @@ Rather than using the ``|`` and ``&`` characters, you can use the ``And`` and
             And(b.popularity >= 100, b.popularity < 1000),
             b.name == 'Pythonistas'
         )
+    ).run_sync()
+
+-------------------------------------------------------------------------------
+
+WhereRaw
+--------
+
+In certain situations you may want to have raw SQL in your where clause.
+
+.. code-block:: python
+
+    from piccolo.columns.combination import WhereRaw
+
+    Band.select().where(
+        WhereRaw("name = 'Pythonistas'")
+    ).run_sync()
+
+It's important to parameterise your SQL statements if the values come from an
+untrusted source, otherwise it could lead to a SQL injection attack.
+
+.. code-block:: python
+
+    from piccolo.columns.combination import WhereRaw
+
+    value = "Could be dangerous"
+
+    Band.select().where(
+        WhereRaw("name = {}", value)
+    ).run_sync()
+
+``WhereRaw`` can be combined into complex queries, just as you'd expect:
+
+.. code-block:: python
+
+    from piccolo.columns.combination import WhereRaw
+
+    b = Band
+    b.select().where(
+        WhereRaw("name = 'Pythonistas'") | (b.popularity > 1000)
     ).run_sync()
