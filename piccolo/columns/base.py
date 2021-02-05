@@ -15,6 +15,7 @@ from piccolo.columns.operators.comparison import (
     GreaterThan,
     ILike,
     In,
+    IsNotNull,
     IsNull,
     LessEqualThan,
     LessThan,
@@ -366,10 +367,27 @@ class Column(Selectable):
             return Where(column=self, value=value, operator=Equal)
 
     def __ne__(self, value) -> Where:  # type: ignore
-        return Where(column=self, value=value, operator=NotEqual)
+        if value is None:
+            return Where(column=self, operator=IsNotNull)
+        else:
+            return Where(column=self, value=value, operator=NotEqual)
 
     def __hash__(self):
         return hash(self._meta.name)
+
+    def is_null(self) -> Where:
+        """
+        Can be used instead of `MyTable.column != None`, because some linters
+        don't like a comparison to None.
+        """
+        return Where(column=self, operator=IsNull)
+
+    def is_not_null(self) -> Where:
+        """
+        Can be used instead of `MyTable.column == None`, because some linters
+        don't like a comparison to None.
+        """
+        return Where(column=self, operator=IsNotNull)
 
     def as_alias(self, name: str) -> Column:
         """

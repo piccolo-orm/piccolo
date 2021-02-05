@@ -9,6 +9,10 @@ class IsNull(ComparisonOperator):
     template = "{name} IS NULL"
 
 
+class IsNotNull(ComparisonOperator):
+    template = "{name} IS NOT NULL"
+
+
 class Equal(ComparisonOperator):
     template = "{name} = {value}"
 
