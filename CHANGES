@@ -6,7 +6,6 @@ Changes
  * Added ``WhereRaw``, so raw SQL can be used in where clauses.
  * ``piccolo shell run`` now uses syntax highlighting - courtesy of Fingel.
 
-
 0.16.2
 ------
 Reordering the dependencies in requirements.txt when using ``piccolo asgi new``

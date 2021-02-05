@@ -12,7 +12,9 @@ from piccolo.utils.sync import run_sync
 
 class TestBaseMigrationManager(TestCase):
     def test_create_migration_table(self):
-        self.assertTrue(BaseMigrationManager().create_migration_table())
+        self.assertTrue(
+            run_sync(BaseMigrationManager().create_migration_table())
+        )
 
     def tearDown(self):
         Migration.raw("DROP TABLE IF EXISTS migration").run_sync()

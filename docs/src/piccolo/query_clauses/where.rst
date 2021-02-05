@@ -103,6 +103,44 @@ is_in / not_in
 
 -------------------------------------------------------------------------------
 
+is_null / is_not_null
+---------------------
+
+These queries work, but some linters will complain about doing a comparison
+with None:
+
+.. code-block:: python
+
+    b = Band
+
+    # Fetch all bands with a manager
+    b.select().where(
+        b.manager != None
+    ).run_sync()
+
+    # Fetch all bands without a manager
+    b.select().where(
+        b.manager == None
+    ).run_sync()
+
+To avoid the linter errors, you can use `is_null` and `is_not_null` instead.
+
+.. code-block:: python
+
+    b = Band
+
+    # Fetch all bands with a manager
+    b.select().where(
+        b.manager.is_not_null()
+    ).run_sync()
+
+    # Fetch all bands without a manager
+    b.select().where(
+        b.manager.is_null()
+    ).run_sync()
+
+-------------------------------------------------------------------------------
+
 Complex queries - and / or
 ---------------------------
 

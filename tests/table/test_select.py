@@ -77,6 +77,41 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(response, [{"name": "Rustaceans"}])
 
+    def test_where_is_null(self):
+        self.insert_rows()
+
+        Band(name="Managerless", popularity=0, manager=None).save().run_sync()
+
+        queries = (
+            Band.select(Band.name).where(Band.manager == None),  # noqa
+            Band.select(Band.name).where(Band.manager.is_null()),
+        )
+
+        for query in queries:
+            response = query.run_sync()
+            self.assertEqual(response, [{"name": "Managerless"}])
+
+    def test_where_is_not_null(self):
+        self.insert_rows()
+
+        Band(name="Managerless", popularity=0, manager=None).save().run_sync()
+
+        queries = (
+            Band.select(Band.name).where(Band.manager != None),  # noqa
+            Band.select(Band.name).where(Band.manager.is_not_null()),
+        )
+
+        for query in queries:
+            response = query.run_sync()
+            self.assertEqual(
+                response,
+                [
+                    {"name": "Pythonistas"},
+                    {"name": "Rustaceans"},
+                    {"name": "CSharps"},
+                ],
+            )
+
     def test_where_greater_equal_than(self):
         self.insert_rows()
 
