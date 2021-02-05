@@ -1,6 +1,12 @@
 Changes
 =======
 
+0.16.4
+------
+ * Fixed a bug with ``MyTable.column != None``
+ * Added ``is_null`` and ``is_not_null`` methods, to avoid linting issues when
+   comparing with None.
+
 0.16.3
 ------
  * Added ``WhereRaw``, so raw SQL can be used in where clauses.
