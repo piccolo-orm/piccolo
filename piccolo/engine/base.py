@@ -2,6 +2,7 @@ from __future__ import annotations
 from abc import abstractmethod, ABCMeta
 import typing as t
 
+from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import colored_warning, Level
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -14,8 +15,8 @@ class Batch:
 
 class Engine(metaclass=ABCMeta):
     def __init__(self):
-        self.check_version()
-        self.prep_database()
+        run_sync(self.check_version())
+        run_sync(self.prep_database())
 
     @property
     @abstractmethod
@@ -28,23 +29,23 @@ class Engine(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_version(self) -> float:
+    async def get_version(self) -> float:
         pass
 
     @abstractmethod
-    def prep_database(self):
+    async def prep_database(self):
         pass
 
     @abstractmethod
     async def batch(self, query: Query, batch_size: int = 100) -> Batch:
         pass
 
-    def check_version(self):
+    async def check_version(self):
         """
         Warn if the database version isn't supported.
         """
         try:
-            version_number = self.get_version()
+            version_number = await self.get_version()
         except Exception as exception:
             colored_warning(
                 f"Unable to fetch server version: {exception}",

@@ -337,14 +337,14 @@ class SQLiteEngine(Engine):
     def path(self, value: str):
         self.connection_kwargs["database"] = value
 
-    def get_version(self) -> float:
+    async def get_version(self) -> float:
         """
         Warn if the version of SQLite isn't supported.
         """
         major, minor, _ = sqlite3.sqlite_version_info
         return float(f"{major}.{minor}")
 
-    def prep_database(self):
+    async def prep_database(self):
         pass
 
     ###########################################################################
