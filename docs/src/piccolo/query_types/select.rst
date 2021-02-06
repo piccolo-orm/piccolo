@@ -13,7 +13,7 @@ To get all rows:
     [{'id': 1, 'name': 'Pythonistas', 'manager': 1, 'popularity': 1000},
      {'id': 2, 'name': 'Rustaceans', 'manager': 2, 'popularity': 500}]
 
-To get certain rows:
+To get certain columns:
 
 .. code-block:: python
 
