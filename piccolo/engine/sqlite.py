@@ -294,6 +294,13 @@ def dict_factory(cursor, row) -> t.Dict:
 
 
 class SQLiteEngine(Engine):
+    """
+    Any connection kwargs are passed into the database adapter.
+
+    See here for more info:
+    https://docs.python.org/3/library/sqlite3.html#sqlite3.connect
+
+    """
 
     __slots__ = ("connection_kwargs",)
 
@@ -307,13 +314,6 @@ class SQLiteEngine(Engine):
         isolation_level=None,
         **connection_kwargs,
     ) -> None:
-        """
-        Any connection kwargs are passed into the database adapter.
-
-        See here for more info:
-        https://docs.python.org/3/library/sqlite3.html#sqlite3.connect
-
-        """
         connection_kwargs.update(
             {
                 "database": path,

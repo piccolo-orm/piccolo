@@ -193,8 +193,32 @@ class Transaction:
 
 
 class PostgresEngine(Engine):
+    """
+    Used to connect to Postgresql.
 
-    __slots__ = ("config", "pool")
+    :param config:
+        The config dictionary is passed to the underlying database adapter,
+        asyncpg. Common arguments you're likely to need are:
+
+            * host
+            * port
+            * user
+            * password
+            * database
+
+        For example, ``{'host': 'localhost', 'port': 5432}``.
+
+        To see all available options:
+
+            * https://magicstack.github.io/asyncpg/current/api/index.html#connection
+
+    :param extensions:
+        When the engine starts, it will try and create these extensions
+        in Postgres.
+
+    """  # noqa: E501
+
+    __slots__ = ("config", "extensions", "pool", "transaction_connection")
 
     engine_type = "postgres"
     min_version_number = 9.6
@@ -204,28 +228,6 @@ class PostgresEngine(Engine):
         config: t.Dict[str, t.Any],
         extensions: t.Sequence[str] = ["uuid-ossp"],
     ) -> None:
-        """
-        :param config:
-            The config dictionary is passed to the underlying database adapter,
-            asyncpg. Common arguments you're likely to need are:
-
-                * host
-                * port
-                * user
-                * password
-                * database
-
-            For example, ``{'host': 'localhost', 'port': 5432}``.
-
-            To see all available options:
-
-                * https://magicstack.github.io/asyncpg/current/api/index.html#connection
-
-        :param extensions:
-            When the engine starts, it will try and create these extensions
-            in Postgres.
-
-        """  # noqa: E501
         self.config = config
         self.extensions = extensions
         self.pool: t.Optional[Pool] = None
