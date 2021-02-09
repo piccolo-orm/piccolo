@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.16.5
+------
+The Postgres extensions that ``PostgresEngine`` tries to enable at startup
+can now be configured.
+
 0.16.4
 ------
  * Fixed a bug with ``MyTable.column != None``
