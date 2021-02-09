@@ -23,6 +23,23 @@ For a full list of columns, see :ref:`ColumnTypes`.
 
 -------------------------------------------------------------------------------
 
+Default columns
+---------------
+
+id
+~~
+
+Each table is automatically given a ``PrimaryKey`` column called ``id``, which
+is an auto incrementing integer.
+
+It is used to uniquely identify a row, and is referenced by ``ForeignKey``
+columns on other tables.
+
+If you specify your own ``id`` column, you may get unexpected behaviour, so
+it's not recommended at the moment.
+
+-------------------------------------------------------------------------------
+
 Tablename
 ---------
 
