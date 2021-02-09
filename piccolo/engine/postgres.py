@@ -1,6 +1,4 @@
 from __future__ import annotations
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
 import contextvars
 from dataclasses import dataclass
 import typing as t
@@ -195,14 +193,10 @@ class Transaction:
 
 
 class PostgresEngine(Engine):
+    """
+    Used to connect to Postgresql.
 
-    __slots__ = ("config", "pool")
-
-    engine_type = "postgres"
-    min_version_number = 9.6
-
-    def __init__(self, config: t.Dict[str, t.Any]) -> None:
-        """
+    :param config:
         The config dictionary is passed to the underlying database adapter,
         asyncpg. Common arguments you're likely to need are:
 
@@ -218,8 +212,24 @@ class PostgresEngine(Engine):
 
             * https://magicstack.github.io/asyncpg/current/api/index.html#connection
 
-        """  # noqa: E501
+    :param extensions:
+        When the engine starts, it will try and create these extensions
+        in Postgres.
+
+    """  # noqa: E501
+
+    __slots__ = ("config", "extensions", "pool", "transaction_connection")
+
+    engine_type = "postgres"
+    min_version_number = 9.6
+
+    def __init__(
+        self,
+        config: t.Dict[str, t.Any],
+        extensions: t.Sequence[str] = ["uuid-ossp"],
+    ) -> None:
         self.config = config
+        self.extensions = extensions
         self.pool: t.Optional[Pool] = None
         database_name = config.get("database", "Unknown")
         self.transaction_connection = contextvars.ContextVar(
@@ -241,20 +251,14 @@ class PostgresEngine(Engine):
         version = float(f"{major}.{minor}")
         return version
 
-    def get_version(self) -> float:
+    async def get_version(self) -> float:
         """
         Returns the version of Postgres being run.
         """
-        loop = asyncio.new_event_loop()
-
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(
-                loop.run_until_complete,
-                self._run_in_new_connection("SHOW server_version"),
-            )
-
         try:
-            response: t.Sequence[t.Dict] = future.result()  # type: ignore
+            response: t.Sequence[t.Dict] = await self._run_in_new_connection(
+                "SHOW server_version"
+            )
         except ConnectionRefusedError as exception:
             # Suppressing the exception, otherwise importing piccolo_conf.py
             # containing an engine will raise an ImportError.
@@ -267,26 +271,20 @@ class PostgresEngine(Engine):
                 version_string=version_string
             )
 
-    def prep_database(self):
-        loop = asyncio.new_event_loop()
-
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(
-                loop.run_until_complete,
-                self._run_in_new_connection(
-                    'CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'
-                ),
-            )
-
-        try:
-            future.result()
-        except InsufficientPrivilegeError:
-            print(
-                "Unable to create uuid-ossp extension - UUID columns might "
-                "not behave as expected. Make sure your database user has "
-                "permission to create extensions, or add it manually using "
-                '`CREATE EXTENSION "uuid-ossp";`'
-            )
+    async def prep_database(self):
+        for extension in self.extensions:
+            try:
+                await self._run_in_new_connection(
+                    f'CREATE EXTENSION IF NOT EXISTS "{extension}"',
+                )
+            except InsufficientPrivilegeError:
+                print(
+                    f"Unable to create {extension} extension - some "
+                    "functionality may not behave as expected. Make sure your "
+                    "database user has permission to create extensions, or "
+                    "add it manually using "
+                    f'`CREATE EXTENSION "{extension}";`'
+                )
 
     ###########################################################################
 
