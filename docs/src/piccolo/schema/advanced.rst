@@ -62,3 +62,24 @@ for example with ``table_finder`` (see :ref:`TableFinder`).
 
     class Band(Table, tags=["music"]):
         name = Varchar(length=100)
+
+-------------------------------------------------------------------------------
+
+Mixins
+------
+
+If you're frequently defining the same columns over and over again, you can
+use mixins to reduce the amount of repetition.
+
+.. code-block:: python
+
+    from piccolo.columns import Varchar, Boolean
+    from piccolo.table import Table
+
+
+    class FavouriteMixin:
+        favourite = Boolean(default=False)
+
+
+    class Manager(FavouriteMixin, Table):
+        name = Varchar()
