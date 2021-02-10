@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from piccolo.columns.base import Column
 import typing as t
 
 
@@ -39,4 +40,5 @@ class AddColumn:
     table_class_name: str
     column_name: str
     column_class_name: str
+    column_class: t.Type[Column]
     params: t.Dict[str, t.Any]

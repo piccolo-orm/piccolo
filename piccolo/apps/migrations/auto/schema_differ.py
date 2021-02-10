@@ -298,9 +298,9 @@ class SchemaDiffer:
 
     @property
     def alter_columns(self) -> AlterStatements:
-        response = []
-        extra_imports = []
-        extra_definitions = []
+        response: t.List[str] = []
+        extra_imports: t.List[Import] = []
+        extra_definitions: t.List[str] = []
         for table in self.schema:
             snapshot_table = self._get_snapshot_table(table.class_name)
             if snapshot_table:
@@ -351,9 +351,9 @@ class SchemaDiffer:
 
     @property
     def add_columns(self) -> AlterStatements:
-        response = []
-        extra_imports = []
-        extra_definitions = []
+        response: t.List[str] = []
+        extra_imports: t.List[Import] = []
+        extra_definitions: t.List[str] = []
         for table in self.schema:
             snapshot_table = self._get_snapshot_table(table.class_name)
             if snapshot_table:
@@ -361,20 +361,28 @@ class SchemaDiffer:
             else:
                 continue
 
-            for column in delta.add_columns:
+            for add_column in delta.add_columns:
                 if (
-                    column.column_name
+                    add_column.column_name
                     in self.rename_columns_collection.new_column_names
                 ):
                     continue
 
-                params = serialise_params(column.params)
+                params = serialise_params(add_column.params)
                 cleaned_params = params.params
                 extra_imports.extend(params.extra_imports)
                 extra_definitions.extend(params.extra_definitions)
 
+                column_class = add_column.column_class
+                extra_imports.append(
+                    Import(
+                        module=column_class.__module__,
+                        target=column_class.__name__,
+                    )
+                )
+
                 response.append(
-                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column.column_name}', column_class_name='{column.column_class_name}', params={str(cleaned_params)})"  # noqa: E501
+                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{add_column.column_name}', column_class_name='{add_column.column_class_name}', column_class={column_class.__name__}, params={str(cleaned_params)})"  # noqa: E501
                 )
         return AlterStatements(
             statements=response,
@@ -399,9 +407,9 @@ class SchemaDiffer:
             set(self.schema) - set(self.schema_snapshot)
         )
 
-        response = []
-        extra_imports = []
-        extra_definitions = []
+        response: t.List[str] = []
+        extra_imports: t.List[Import] = []
+        extra_definitions: t.List[str] = []
         for table in new_tables:
             if (
                 table.class_name
@@ -417,8 +425,15 @@ class SchemaDiffer:
                 extra_imports.extend(_params.extra_imports)
                 extra_definitions.extend(_params.extra_definitions)
 
+                extra_imports.append(
+                    Import(
+                        module=column.__class__.__module__,
+                        target=column.__class__.__name__,
+                    )
+                )
+
                 response.append(
-                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column._meta.name}', column_class_name='{column.__class__.__name__}', params={str(cleaned_params)})"  # noqa: E501
+                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column._meta.name}', column_class_name='{column.__class__.__name__}', column_class={column.__class__.__name__}, params={str(cleaned_params)})"  # noqa: E501
                 )
         return AlterStatements(
             statements=response,

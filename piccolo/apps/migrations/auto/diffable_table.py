@@ -69,6 +69,7 @@ class DiffableTable:
                 table_class_name=self.class_name,
                 column_name=i._meta.name,
                 column_class_name=i.__class__.__name__,
+                column_class=i.__class__,
                 params=i._meta.params,
             )
             for i in (set(self.columns) - set(value.columns))

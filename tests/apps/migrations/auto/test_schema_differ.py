@@ -95,7 +95,7 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(schema_differ.add_columns.statements) == 1)
         self.assertEqual(
             schema_differ.add_columns.statements[0],
-            "manager.add_column(table_class_name='Band', tablename='band', column_name='genre', column_class_name='Varchar', params={'length': 255, 'default': '', 'null': False, 'primary': False, 'key': False, 'unique': False, 'index': False})",  # noqa
+            "manager.add_column(table_class_name='Band', tablename='band', column_name='genre', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary': False, 'key': False, 'unique': False, 'index': False})",  # noqa
         )
 
     def test_drop_column(self):

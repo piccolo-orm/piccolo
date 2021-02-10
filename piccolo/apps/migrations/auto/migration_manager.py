@@ -186,10 +186,27 @@ class MigrationManager:
         table_class_name: str,
         tablename: str,
         column_name: str,
-        column_class_name: str,
+        column_class_name: str = "",
+        column_class: t.Optional[t.Type[Column]] = None,
         params: t.Dict[str, t.Any] = {},
     ):
-        column_class = getattr(column_types, column_class_name)
+        """
+        Add a new column to the table.
+
+        :param column_class_name:
+            The column type was traditionally specified as a string, using this
+            variable. This didn't allow users to define custom column types
+            though, which is why newer migrations directly reference a
+            ``Column`` subclass using ``column_class``.
+        :param column_class:
+            A direct reference to a ``Column`` subclass.
+
+        """
+        column_class = column_class or getattr(column_types, column_class_name)
+
+        if column_class is None:
+            raise ValueError("Unrecognised column type")
+
         cleaned_params = deserialise_params(params=params)
         column = column_class(**cleaned_params)
         column._meta.name = column_name
