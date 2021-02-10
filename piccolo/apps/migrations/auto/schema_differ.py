@@ -382,7 +382,7 @@ class SchemaDiffer:
                 )
 
                 response.append(
-                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{add_column.column_name}', column_class_name='{add_column.column_class_name}', column_class={column_class.__name__ if column_class else ''}, params={str(cleaned_params)})"  # noqa: E501
+                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{add_column.column_name}', column_class_name='{add_column.column_class_name}', column_class={column_class.__name__}, params={str(cleaned_params)})"  # noqa: E501
                 )
         return AlterStatements(
             statements=response,
