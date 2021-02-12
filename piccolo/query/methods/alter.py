@@ -92,6 +92,20 @@ class DropDefault(AlterColumnStatement):
 
 
 @dataclass
+class SetColumnType(AlterColumnStatement):
+    __slots__ = ("column_name", "column")
+
+    column_name: str
+    column: Column
+
+    @property
+    def querystring(self) -> QueryString:
+        return QueryString(
+            f"ALTER COLUMN {self.column_name} TYPE {self.column.column_type}"
+        )
+
+
+@dataclass
 class SetDefault(AlterColumnStatement):
     __slots__ = ("column", "value")
 
@@ -257,6 +271,7 @@ class Alter(Query):
         "_drop",
         "_rename_columns",
         "_rename_table",
+        "_set_column_type",
         "_set_default",
         "_set_digits",
         "_set_length",
@@ -274,6 +289,7 @@ class Alter(Query):
         self._drop: t.List[DropColumn] = []
         self._rename_columns: t.List[RenameColumn] = []
         self._rename_table: t.List[RenameTable] = []
+        self._set_column_type: t.List[SetColumnType] = []
         self._set_default: t.List[SetDefault] = []
         self._set_digits: t.List[SetDigits] = []
         self._set_length: t.List[SetLength] = []
@@ -331,6 +347,15 @@ class Alter(Query):
         Band.alter().rename_column('popularity', ‘rating’)
         """
         self._rename_columns.append(RenameColumn(column, new_name))
+        return self
+
+    def set_column_type(self, column_name: str, column: Column) -> Alter:
+        """
+        Change the type of a column.
+        """
+        self._set_column_type.append(
+            SetColumnType(column_name=column_name, column=column)
+        )
         return self
 
     def set_default(self, column: Column, value: t.Any) -> Alter:
@@ -472,6 +497,7 @@ class Alter(Query):
                 self._rename_table,
                 self._drop,
                 self._drop_default,
+                self._set_column_type,
                 self._set_unique,
                 self._set_null,
                 self._set_length,
