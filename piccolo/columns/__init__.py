@@ -1,4 +1,5 @@
 from .column_types import (  # noqa: F401
+    BigInt,
     Boolean,
     Bytea,
     Date,
@@ -14,6 +15,7 @@ from .column_types import (  # noqa: F401
     Real,
     Secret,
     Serial,
+    SmallInt,
     Text,
     Timestamp,
     Timestamptz,
