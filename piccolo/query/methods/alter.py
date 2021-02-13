@@ -92,6 +92,24 @@ class DropDefault(AlterColumnStatement):
 
 
 @dataclass
+class SetColumnType(AlterStatement):
+    __slots__ = ("old_column", "new_column")
+
+    old_column: Column
+    new_column: Column
+
+    @property
+    def querystring(self) -> QueryString:
+        if self.new_column._meta._table is None:
+            self.new_column._meta._table = self.old_column._meta.table
+
+        column_name = self.old_column._meta.name
+        return QueryString(
+            f"ALTER COLUMN {column_name} TYPE {self.new_column.column_type}"
+        )
+
+
+@dataclass
 class SetDefault(AlterColumnStatement):
     __slots__ = ("column", "value")
 
@@ -107,7 +125,7 @@ class SetDefault(AlterColumnStatement):
 
 
 @dataclass
-class Unique(AlterColumnStatement):
+class SetUnique(AlterColumnStatement):
     __slots__ = ("boolean",)
 
     boolean: bool
@@ -129,7 +147,7 @@ class Unique(AlterColumnStatement):
 
 
 @dataclass
-class Null(AlterColumnStatement):
+class SetNull(AlterColumnStatement):
     __slots__ = ("boolean",)
 
     boolean: bool
@@ -255,13 +273,14 @@ class Alter(Query):
         "_drop_default",
         "_drop_table",
         "_drop",
-        "_null",
         "_rename_columns",
         "_rename_table",
+        "_set_column_type",
         "_set_default",
         "_set_digits",
         "_set_length",
-        "_unique",
+        "_set_null",
+        "_set_unique",
     )
 
     def __init__(self, table: t.Type[Table]):
@@ -272,13 +291,14 @@ class Alter(Query):
         self._drop_default: t.List[DropDefault] = []
         self._drop_table: t.Optional[DropTable] = None
         self._drop: t.List[DropColumn] = []
-        self._null: t.List[Null] = []
         self._rename_columns: t.List[RenameColumn] = []
         self._rename_table: t.List[RenameTable] = []
+        self._set_column_type: t.List[SetColumnType] = []
         self._set_default: t.List[SetDefault] = []
         self._set_digits: t.List[SetDigits] = []
         self._set_length: t.List[SetLength] = []
-        self._unique: t.List[Unique] = []
+        self._set_null: t.List[SetNull] = []
+        self._set_unique: t.List[SetUnique] = []
 
     def add_column(self, name: str, column: Column) -> Alter:
         """
@@ -333,6 +353,15 @@ class Alter(Query):
         self._rename_columns.append(RenameColumn(column, new_name))
         return self
 
+    def set_column_type(self, old_column: Column, new_column: Column) -> Alter:
+        """
+        Change the type of a column.
+        """
+        self._set_column_type.append(
+            SetColumnType(old_column=old_column, new_column=new_column)
+        )
+        return self
+
     def set_default(self, column: Column, value: t.Any) -> Alter:
         """
         Set the default for a column.
@@ -349,7 +378,7 @@ class Alter(Query):
         Band.alter().set_null(Band.name, True)
         Band.alter().set_null('name', True)
         """
-        self._null.append(Null(column, boolean))
+        self._set_null.append(SetNull(column, boolean))
         return self
 
     def set_unique(
@@ -359,7 +388,7 @@ class Alter(Query):
         Band.alter().set_unique(Band.name, True)
         Band.alter().set_unique('name', True)
         """
-        self._unique.append(Unique(column, boolean))
+        self._set_unique.append(SetUnique(column, boolean))
         return self
 
     def set_length(self, column: t.Union[str, Varchar], length: int) -> Alter:
@@ -472,8 +501,9 @@ class Alter(Query):
                 self._rename_table,
                 self._drop,
                 self._drop_default,
-                self._unique,
-                self._null,
+                self._set_column_type,
+                self._set_unique,
+                self._set_null,
                 self._set_length,
                 self._set_default,
                 self._set_digits,

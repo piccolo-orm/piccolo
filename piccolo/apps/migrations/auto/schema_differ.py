@@ -308,17 +308,45 @@ class SchemaDiffer:
             else:
                 continue
 
-            for i in delta.alter_columns:
-                new_params = serialise_params(i.params)
+            for alter_column in delta.alter_columns:
+                new_params = serialise_params(alter_column.params)
                 extra_imports.extend(new_params.extra_imports)
                 extra_definitions.extend(new_params.extra_definitions)
 
-                old_params = serialise_params(i.old_params)
+                old_params = serialise_params(alter_column.old_params)
                 extra_imports.extend(old_params.extra_imports)
                 extra_definitions.extend(old_params.extra_definitions)
 
+                column_class = (
+                    alter_column.column_class.__name__
+                    if alter_column.column_class
+                    else "None"
+                )
+
+                old_column_class = (
+                    alter_column.old_column_class.__name__
+                    if alter_column.old_column_class
+                    else "None"
+                )
+
+                if alter_column.column_class is not None:
+                    extra_imports.append(
+                        Import(
+                            module=alter_column.column_class.__module__,
+                            target=alter_column.column_class.__name__,
+                        )
+                    )
+
+                if alter_column.old_column_class is not None:
+                    extra_imports.append(
+                        Import(
+                            module=alter_column.old_column_class.__module__,
+                            target=alter_column.old_column_class.__name__,
+                        )
+                    )
+
                 response.append(
-                    f"manager.alter_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{i.column_name}', params={new_params.params}, old_params={old_params.params})"  # noqa: E501
+                    f"manager.alter_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{alter_column.column_name}', params={new_params.params}, old_params={old_params.params}, column_class={column_class}, old_column_class={old_column_class})"  # noqa: E501
                 )
 
         return AlterStatements(

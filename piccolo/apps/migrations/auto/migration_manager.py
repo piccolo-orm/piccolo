@@ -252,6 +252,8 @@ class MigrationManager:
         column_name: str,
         params: t.Dict[str, t.Any],
         old_params: t.Dict[str, t.Any],
+        column_class: t.Optional[t.Type[Column]] = None,
+        old_column_class: t.Optional[t.Type[Column]] = None,
     ):
         """
         All possible alterations aren't currently supported.
@@ -263,6 +265,8 @@ class MigrationManager:
                 column_name=column_name,
                 params=params,
                 old_params=old_params,
+                column_class=column_class,
+                old_column_class=old_column_class,
             )
         )
 
@@ -328,9 +332,53 @@ class MigrationManager:
             _Table: t.Type[Table] = type(table_class_name, (Table,), {})
             _Table._meta.tablename = alter_columns[0].tablename
 
-            for column in alter_columns:
-                params = column.old_params if backwards else column.params
-                column_name = column.column_name
+            for alter_column in alter_columns:
+
+                params = (
+                    alter_column.old_params
+                    if backwards
+                    else alter_column.params
+                )
+
+                old_params = (
+                    alter_column.params
+                    if backwards
+                    else alter_column.old_params
+                )
+
+                ###############################################################
+
+                # Change the column type if possible
+                column_class = (
+                    alter_column.old_column_class
+                    if backwards
+                    else alter_column.column_class
+                )
+                old_column_class = (
+                    alter_column.column_class
+                    if backwards
+                    else alter_column.old_column_class
+                )
+
+                if (old_column_class is not None) and (
+                    column_class is not None
+                ):
+                    if old_column_class != column_class:
+                        old_column = old_column_class(**old_params)
+                        old_column._meta._table = _Table
+                        old_column._meta._name = alter_column.column_name
+
+                        new_column = column_class(**params)
+                        new_column._meta._table = _Table
+                        new_column._meta._name = alter_column.column_name
+
+                        await _Table.alter().set_column_type(
+                            old_column=old_column, new_column=new_column
+                        )
+
+                ###############################################################
+
+                column_name = alter_column.column_name
 
                 null = params.get("null")
                 if null is not None:
@@ -383,7 +431,7 @@ class MigrationManager:
                 digits = params.get("digits", ...)
                 if digits is not ...:
                     await _Table.alter().set_digits(
-                        column=column.column_name, digits=digits,
+                        column=alter_column.column_name, digits=digits,
                     ).run()
 
     async def _run_drop_tables(self, backwards=False):

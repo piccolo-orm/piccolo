@@ -463,14 +463,15 @@ class Column(Selectable):
         return output
 
     @property
+    def column_type(self):
+        return self.__class__.__name__.upper()
+
+    @property
     def querystring(self) -> QueryString:
         """
         Used when creating tables.
         """
-        column_type = getattr(
-            self, "column_type", self.__class__.__name__.upper()
-        )
-        query = f'"{self._meta.name}" {column_type}'
+        query = f'"{self._meta.name}" {self.column_type}'
         if self._meta.primary:
             query += " PRIMARY"
         if self._meta.key:

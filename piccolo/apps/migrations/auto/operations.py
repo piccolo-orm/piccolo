@@ -26,6 +26,8 @@ class AlterColumn:
     tablename: str
     params: t.Dict[str, t.Any]
     old_params: t.Dict[str, t.Any]
+    column_class: t.Optional[t.Type[Column]] = None
+    old_column_class: t.Optional[t.Type[Column]] = None
 
 
 @dataclass

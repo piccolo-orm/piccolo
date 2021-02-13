@@ -187,7 +187,7 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(schema_differ.alter_columns.statements) == 1)
         self.assertEqual(
             schema_differ.alter_columns.statements[0],
-            "manager.alter_column(table_class_name='Ticket', tablename='ticket', column_name='price', params={'digits': (4, 2)}, old_params={'digits': (5, 2)})",  # noqa
+            "manager.alter_column(table_class_name='Ticket', tablename='ticket', column_name='price', params={'digits': (4, 2)}, old_params={'digits': (5, 2)}, column_class=Numeric, old_column_class=Numeric)",  # noqa
         )
 
     def test_alter_default(self):
