@@ -100,7 +100,9 @@ class SetColumnType(AlterStatement):
 
     @property
     def querystring(self) -> QueryString:
-        self.new_column._meta._table = self.old_column._meta.table
+        if self.new_column._meta._table is None:
+            self.new_column._meta._table = self.old_column._meta.table
+
         column_name = self.old_column._meta.name
         return QueryString(
             f"ALTER COLUMN {column_name} TYPE {self.new_column.column_type}"

@@ -137,6 +137,7 @@ class TestMultiple(DBTestCase):
         self.assertTrue("column_b" in column_names)
 
 
+# TODO - test more conversions.
 @postgres_only
 class TestSetColumnType(DBTestCase):
     def test_integer_to_bigint(self):

@@ -110,6 +110,8 @@ class DiffableTable:
                         column_name=column._meta.name,
                         params=deserialise_params(delta),
                         old_params=old_params,
+                        column_class=column.__class__,
+                        old_column_class=existing_column.__class__,
                     )
                 )
 
