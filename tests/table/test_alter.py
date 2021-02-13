@@ -1,6 +1,7 @@
+from piccolo.columns.column_types import Varchar
 from unittest import TestCase
 
-from piccolo.columns import Integer, Numeric
+from piccolo.columns import BigInt, Integer, Numeric
 from piccolo.table import Table
 
 from ..base import DBTestCase, postgres_only
@@ -113,7 +114,6 @@ class TestUnique(DBTestCase):
         self.assertTrue(len(response), 2)
 
 
-# TODO - make it work for SQLite. Should work.
 @postgres_only
 class TestMultiple(DBTestCase):
     """
@@ -135,6 +135,61 @@ class TestMultiple(DBTestCase):
         column_names = response[0].keys()
         self.assertTrue("column_a" in column_names)
         self.assertTrue("column_b" in column_names)
+
+
+@postgres_only
+class TestSetColumnType(DBTestCase):
+    def test_integer_to_bigint(self):
+        """
+        Test converting an Integer column to BigInt.
+        """
+        self.insert_row()
+
+        alter_query = Band.alter().set_column_type(
+            old_column=Band.popularity, new_column=BigInt()
+        )
+        alter_query.run_sync()
+
+        query = """
+            SELECT data_type FROM information_schema.columns
+            WHERE table_name = 'band'
+            AND table_catalog = 'piccolo'
+            AND column_name = 'popularity'
+            """
+
+        response = Band.raw(query).run_sync()
+        self.assertEqual(response[0]["data_type"].upper(), "BIGINT")
+
+        popularity = (
+            Band.select(Band.popularity).first().run_sync()["popularity"]
+        )
+        self.assertEqual(popularity, 1000)
+
+    def test_integer_to_varchar(self):
+        """
+        Test converting an Integer column to Varchar.
+        """
+        self.insert_row()
+
+        alter_query = Band.alter().set_column_type(
+            old_column=Band.popularity, new_column=Varchar()
+        )
+        alter_query.run_sync()
+
+        query = """
+            SELECT data_type FROM information_schema.columns
+            WHERE table_name = 'band'
+            AND table_catalog = 'piccolo'
+            AND column_name = 'popularity'
+            """
+
+        response = Band.raw(query).run_sync()
+        self.assertEqual(response[0]["data_type"].upper(), "CHARACTER VARYING")
+
+        popularity = (
+            Band.select(Band.popularity).first().run_sync()["popularity"]
+        )
+        self.assertEqual(popularity, "1000")
 
 
 @postgres_only

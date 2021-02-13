@@ -92,16 +92,18 @@ class DropDefault(AlterColumnStatement):
 
 
 @dataclass
-class SetColumnType(AlterColumnStatement):
-    __slots__ = ("column_name", "column")
+class SetColumnType:
+    __slots__ = ("old_column", "new_column")
 
-    column_name: str
-    column: Column
+    old_column: Column
+    new_column: Column
 
     @property
     def querystring(self) -> QueryString:
+        self.new_column._meta._table = self.old_column._meta.table
+        column_name = self.old_column._meta.name
         return QueryString(
-            f"ALTER COLUMN {self.column_name} TYPE {self.column.column_type}"
+            f"ALTER COLUMN {column_name} TYPE {self.new_column.column_type}"
         )
 
 
@@ -349,12 +351,12 @@ class Alter(Query):
         self._rename_columns.append(RenameColumn(column, new_name))
         return self
 
-    def set_column_type(self, column_name: str, column: Column) -> Alter:
+    def set_column_type(self, old_column: Column, new_column: Column) -> Alter:
         """
         Change the type of a column.
         """
         self._set_column_type.append(
-            SetColumnType(column_name=column_name, column=column)
+            SetColumnType(old_column=old_column, new_column=new_column)
         )
         return self
 
