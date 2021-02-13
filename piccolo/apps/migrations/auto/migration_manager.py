@@ -333,12 +333,18 @@ class MigrationManager:
             _Table._meta.tablename = alter_columns[0].tablename
 
             for alter_column in alter_columns:
+
                 params = (
                     alter_column.old_params
                     if backwards
                     else alter_column.params
                 )
-                column_name = alter_column.column_name
+
+                old_params = (
+                    alter_column.params
+                    if backwards
+                    else alter_column.old_params
+                )
 
                 ###############################################################
 
@@ -358,13 +364,11 @@ class MigrationManager:
                     column_class is not None
                 ):
                     if old_column_class != column_class:
-                        old_column = old_column_class(
-                            **alter_column.old_params
-                        )
+                        old_column = old_column_class(**old_params)
                         old_column._meta._table = _Table
                         old_column._meta._name = alter_column.column_name
 
-                        new_column = column_class(**alter_column.params)
+                        new_column = column_class(**params)
                         new_column._meta._table = _Table
                         new_column._meta._name = alter_column.column_name
 
@@ -373,6 +377,8 @@ class MigrationManager:
                         )
 
                 ###############################################################
+
+                column_name = alter_column.column_name
 
                 null = params.get("null")
                 if null is not None:
