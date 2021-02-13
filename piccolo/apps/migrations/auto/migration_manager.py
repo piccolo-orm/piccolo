@@ -340,9 +340,20 @@ class MigrationManager:
                 )
                 column_name = alter_column.column_name
 
+                ###############################################################
+
                 # Change the column type if possible
-                column_class = alter_column.column_class
-                old_column_class = alter_column.old_column_class
+                column_class = (
+                    alter_column.old_column_class
+                    if backwards
+                    else alter_column.column_class
+                )
+                old_column_class = (
+                    alter_column.column_class
+                    if backwards
+                    else alter_column.old_column_class
+                )
+
                 if (old_column_class is not None) and (
                     column_class is not None
                 ):
@@ -360,6 +371,8 @@ class MigrationManager:
                         await _Table.alter().set_column_type(
                             old_column=old_column, new_column=new_column
                         )
+
+                ###############################################################
 
                 null = params.get("null")
                 if null is not None:
