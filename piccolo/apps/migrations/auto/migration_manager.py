@@ -1,7 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 import inspect
-from piccolo.query.methods import alter
 import typing as t
 
 from piccolo.columns import Column, column_types
