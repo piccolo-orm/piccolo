@@ -92,7 +92,7 @@ class DropDefault(AlterColumnStatement):
 
 
 @dataclass
-class SetColumnType:
+class SetColumnType(AlterStatement):
     __slots__ = ("old_column", "new_column")
 
     old_column: Column
