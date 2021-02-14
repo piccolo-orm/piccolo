@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.17.1
+------
+Fixing a bug with ``SchemaSnapshot`` if column types were changed in migrations
+- the snapshot didn't reflect the changes.
+
 0.17.0
 ------
  * Migrations now directly import ``Column`` classes - this allows users to

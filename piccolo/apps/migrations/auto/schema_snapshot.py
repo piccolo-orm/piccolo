@@ -86,7 +86,9 @@ class SchemaSnapshot:
                                 != alter_column.old_column_class
                             ):
                                 if alter_column.column_class is not None:
-                                    new_column = alter_column.column_class()
+                                    new_column = alter_column.column_class(
+                                        **column._meta.params
+                                    )
                                     new_column._meta = column._meta
                                     table.columns[index] = new_column
 
