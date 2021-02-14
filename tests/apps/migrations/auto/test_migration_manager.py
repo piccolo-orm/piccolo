@@ -4,7 +4,7 @@ from unittest.mock import patch, MagicMock
 from asyncpg.exceptions import UniqueViolationError
 from piccolo.apps.migrations.auto import MigrationManager
 from piccolo.apps.migrations.commands.base import BaseMigrationManager
-from piccolo.columns import Varchar
+from piccolo.columns import Varchar, Text
 from piccolo.columns.base import OnDelete, OnUpdate
 
 from tests.example_app.tables import Manager
@@ -466,6 +466,30 @@ class TestMigrationManager(DBTestCase):
             Manager._get_index_name(["name"])
             not in Manager.indexes().run_sync()
         )
+
+    @postgres_only
+    def test_alter_column_set_type(self):
+        """
+        Test altering a column to change it's type with MigrationManager.
+        """
+        manager = MigrationManager()
+
+        manager.alter_column(
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="name",
+            params={},
+            old_params={},
+            column_class=Text,
+            old_column_class=Varchar,
+        )
+
+        asyncio.run(manager.run())
+
+        column_type_str = self.get_postgres_column_type_str(
+            tablename="manager", column_name="name"
+        )
+        self.assertEqual(column_type_str, "TEXT")
 
     @postgres_only
     @patch.object(BaseMigrationManager, "get_migration_managers")
