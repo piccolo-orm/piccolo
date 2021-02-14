@@ -1,7 +1,6 @@
-from piccolo.columns.column_types import Varchar
 from unittest import TestCase
 
-from piccolo.columns import BigInt, Integer, Numeric
+from piccolo.columns import BigInt, Integer, Numeric, Varchar
 from piccolo.table import Table
 
 from ..base import DBTestCase, postgres_only
@@ -151,15 +150,12 @@ class TestSetColumnType(DBTestCase):
         )
         alter_query.run_sync()
 
-        query = """
-            SELECT data_type FROM information_schema.columns
-            WHERE table_name = 'band'
-            AND table_catalog = 'piccolo'
-            AND column_name = 'popularity'
-            """
-
-        response = Band.raw(query).run_sync()
-        self.assertEqual(response[0]["data_type"].upper(), "BIGINT")
+        self.assertEqual(
+            self.get_postgres_column_type(
+                tablename="band", column_name="popularity"
+            ),
+            "BIGINT",
+        )
 
         popularity = (
             Band.select(Band.popularity).first().run_sync()["popularity"]
@@ -177,20 +173,34 @@ class TestSetColumnType(DBTestCase):
         )
         alter_query.run_sync()
 
-        query = """
-            SELECT data_type FROM information_schema.columns
-            WHERE table_name = 'band'
-            AND table_catalog = 'piccolo'
-            AND column_name = 'popularity'
-            """
-
-        response = Band.raw(query).run_sync()
-        self.assertEqual(response[0]["data_type"].upper(), "CHARACTER VARYING")
+        self.assertEqual(
+            self.get_postgres_column_type(
+                tablename="band", column_name="popularity"
+            ),
+            "CHARACTER VARYING",
+        )
 
         popularity = (
             Band.select(Band.popularity).first().run_sync()["popularity"]
         )
         self.assertEqual(popularity, "1000")
+
+    def test_using_expression(self):
+        """
+        Test the `using_expression` option, which can be used to tell Postgres
+        how to convert certain column types.
+        """
+        Band(name="1").save().run_sync()
+
+        alter_query = Band.alter().set_column_type(
+            old_column=Band.name,
+            new_column=Integer(),
+            using_expression="name::integer",
+        )
+        alter_query.run_sync()
+
+        popularity = Band.select(Band.name).first().run_sync()["name"]
+        self.assertEqual(popularity, 1)
 
 
 @postgres_only

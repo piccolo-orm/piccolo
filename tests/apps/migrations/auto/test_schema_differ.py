@@ -14,7 +14,31 @@ class TestSchemaDiffer(TestCase):
         """
         Test adding a new table.
         """
-        pass
+        name_column = Varchar()
+        name_column._meta.name = "name"
+        schema: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Band", tablename="band", columns=[name_column]
+            )
+        ]
+        schema_snapshot: t.List[DiffableTable] = []
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
+        )
+
+        create_tables = schema_differ.create_tables
+        self.assertTrue(len(create_tables.statements) == 1)
+        self.assertEqual(
+            create_tables.statements[0],
+            "manager.add_table('Band', tablename='band')",
+        )
+
+        new_table_columns = schema_differ.new_table_columns
+        self.assertTrue(len(new_table_columns.statements) == 1)
+        self.assertEqual(
+            new_table_columns.statements[0],
+            "manager.add_column(table_class_name='Band', tablename='band', column_name='name', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary': False, 'key': False, 'unique': False, 'index': False})",  # noqa
+        )
 
     def test_drop_table(self):
         """

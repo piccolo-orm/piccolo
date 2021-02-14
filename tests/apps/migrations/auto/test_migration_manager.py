@@ -4,7 +4,7 @@ from unittest.mock import patch, MagicMock
 from asyncpg.exceptions import UniqueViolationError
 from piccolo.apps.migrations.auto import MigrationManager
 from piccolo.apps.migrations.commands.base import BaseMigrationManager
-from piccolo.columns import Varchar
+from piccolo.columns import Varchar, Text
 from piccolo.columns.base import OnDelete, OnUpdate
 
 from tests.example_app.tables import Manager
@@ -145,6 +145,36 @@ class TestMigrationManager(DBTestCase):
         asyncio.run(manager.run_backwards())
         response = self.run_sync("SELECT * FROM manager;")
         self.assertEqual(response, [{"id": 1, "name": "Dave"}])
+
+    @postgres_only
+    def test_add_column_with_index(self):
+        """
+        Test adding a column with an index to a MigrationManager.
+        """
+        manager = MigrationManager()
+        manager.add_column(
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="email",
+            column_class_name="Varchar",
+            params={
+                "length": 100,
+                "default": "",
+                "null": True,
+                "primary": False,
+                "key": False,
+                "unique": True,
+                "index": True,
+            },
+        )
+        index_name = Manager._get_index_name(["email"])
+
+        asyncio.run(manager.run())
+        self.assertTrue(index_name in Manager.indexes().run_sync())
+
+        # Reverse
+        asyncio.run(manager.run_backwards())
+        self.assertTrue(index_name not in Manager.indexes().run_sync())
 
     @postgres_only
     def test_add_foreign_key_self_column(self):
@@ -310,6 +340,36 @@ class TestMigrationManager(DBTestCase):
         response = self.run_sync("SELECT name FROM manager;")
         self.assertEqual(response, [{"name": "Dave"}, {"name": "Dave"}])
 
+    @postgres_only
+    def test_alter_column_set_null(self):
+        """
+        Test altering whether a column is nullable with MigrationManager.
+        """
+        manager = MigrationManager()
+
+        manager.alter_column(
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="name",
+            params={"null": True},
+            old_params={"null": False},
+        )
+
+        asyncio.run(manager.run())
+        self.assertTrue(
+            self.get_postgres_is_nullable(
+                tablename="manager", column_name="name"
+            )
+        )
+
+        # Reverse
+        asyncio.run(manager.run_backwards())
+        self.assertFalse(
+            self.get_postgres_is_nullable(
+                tablename="manager", column_name="name"
+            )
+        )
+
     def _get_column_precision_and_scale(
         self, tablename="ticket", column_name="price"
     ):
@@ -465,6 +525,68 @@ class TestMigrationManager(DBTestCase):
         self.assertTrue(
             Manager._get_index_name(["name"])
             not in Manager.indexes().run_sync()
+        )
+
+    @postgres_only
+    def test_alter_column_set_type(self):
+        """
+        Test altering a column to change it's type with MigrationManager.
+        """
+        manager = MigrationManager()
+
+        manager.alter_column(
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="name",
+            params={},
+            old_params={},
+            column_class=Text,
+            old_column_class=Varchar,
+        )
+
+        asyncio.run(manager.run())
+        column_type_str = self.get_postgres_column_type(
+            tablename="manager", column_name="name"
+        )
+        self.assertEqual(column_type_str, "TEXT")
+
+        asyncio.run(manager.run_backwards())
+        column_type_str = self.get_postgres_column_type(
+            tablename="manager", column_name="name"
+        )
+        self.assertEqual(column_type_str, "CHARACTER VARYING")
+
+    @postgres_only
+    def test_alter_column_set_length(self):
+        """
+        Test altering a Varchar column's length with MigrationManager.
+        """
+        manager = MigrationManager()
+
+        manager.alter_column(
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="name",
+            params={"length": 500},
+            old_params={"length": 200},
+            column_class=Text,
+            old_column_class=Varchar,
+        )
+
+        asyncio.run(manager.run())
+        self.assertEqual(
+            self.get_postgres_varchar_length(
+                tablename="manager", column_name="name"
+            ),
+            500,
+        )
+
+        asyncio.run(manager.run_backwards())
+        self.assertEqual(
+            self.get_postgres_varchar_length(
+                tablename="manager", column_name="name"
+            ),
+            200,
         )
 
     @postgres_only

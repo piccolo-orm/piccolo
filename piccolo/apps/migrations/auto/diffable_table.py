@@ -102,7 +102,7 @@ class DiffableTable:
                 for key, _ in delta.items()
             }
 
-            if delta:
+            if delta or (column.__class__ != existing_column.__class__):
                 alter_columns.append(
                     AlterColumn(
                         table_class_name=self.class_name,

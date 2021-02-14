@@ -93,10 +93,17 @@ class DropDefault(AlterColumnStatement):
 
 @dataclass
 class SetColumnType(AlterStatement):
-    __slots__ = ("old_column", "new_column")
+    """
+    :param using_expression:
+        Postgres can't automatically convert between certain column types. You
+        can tell Postgres which action to take. For example
+        `my_column_name::integer`.
+
+    """
 
     old_column: Column
     new_column: Column
+    using_expression: t.Optional[str] = None
 
     @property
     def querystring(self) -> QueryString:
@@ -104,9 +111,12 @@ class SetColumnType(AlterStatement):
             self.new_column._meta._table = self.old_column._meta.table
 
         column_name = self.old_column._meta.name
-        return QueryString(
+        query = (
             f"ALTER COLUMN {column_name} TYPE {self.new_column.column_type}"
         )
+        if self.using_expression is not None:
+            query += f" USING {self.using_expression}"
+        return QueryString(query)
 
 
 @dataclass
@@ -353,12 +363,21 @@ class Alter(Query):
         self._rename_columns.append(RenameColumn(column, new_name))
         return self
 
-    def set_column_type(self, old_column: Column, new_column: Column) -> Alter:
+    def set_column_type(
+        self,
+        old_column: Column,
+        new_column: Column,
+        using_expression: t.Optional[str] = None,
+    ) -> Alter:
         """
         Change the type of a column.
         """
         self._set_column_type.append(
-            SetColumnType(old_column=old_column, new_column=new_column)
+            SetColumnType(
+                old_column=old_column,
+                new_column=new_column,
+                using_expression=using_expression,
+            )
         )
         return self
 

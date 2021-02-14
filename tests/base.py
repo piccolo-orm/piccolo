@@ -50,10 +50,59 @@ class DBTestCase(TestCase):
         _Table = type("_Table", (Table,), {})
         return _Table.raw(query).run_sync()
 
-    def table_exists(self, tablename: str):
+    def table_exists(self, tablename: str) -> bool:
         _Table: t.Type[Table] = type(tablename.upper(), (Table,), {})
         _Table._meta.tablename = tablename
         return _Table.table_exists().run_sync()
+
+    ###########################################################################
+
+    # Postgres specific utils
+
+    def get_postgres_column_definition(
+        self, tablename: str, column_name: str
+    ) -> t.Dict[str, t.Any]:
+        query = """
+            SELECT * FROM information_schema.columns
+            WHERE table_name = '{tablename}'
+            AND table_catalog = 'piccolo'
+            AND column_name = '{column_name}'
+        """.format(
+            tablename=tablename, column_name=column_name
+        )
+        response = self.run_sync(query)
+        return response[0]
+
+    def get_postgres_column_type(
+        self, tablename: str, column_name: str
+    ) -> str:
+        """
+        Fetches the column type as a string, from the database.
+        """
+        return self.get_postgres_column_definition(
+            tablename=tablename, column_name=column_name
+        )["data_type"].upper()
+
+    def get_postgres_is_nullable(self, tablename, column_name: str) -> bool:
+        """
+        Fetches whether the column is defined as nullable, from the database.
+        """
+        return (
+            self.get_postgres_column_definition(
+                tablename=tablename, column_name=column_name
+            )["is_nullable"].upper()
+            == "YES"
+        )
+
+    def get_postgres_varchar_length(self, tablename, column_name: str) -> int:
+        """
+        Fetches whether the column is defined as nullable, from the database.
+        """
+        return self.get_postgres_column_definition(
+            tablename=tablename, column_name=column_name
+        )["character_maximum_length"]
+
+    ###########################################################################
 
     def create_tables(self):
         if ENGINE.engine_type == "postgres":
