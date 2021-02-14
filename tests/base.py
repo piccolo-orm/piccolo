@@ -50,10 +50,27 @@ class DBTestCase(TestCase):
         _Table = type("_Table", (Table,), {})
         return _Table.raw(query).run_sync()
 
-    def table_exists(self, tablename: str):
+    def table_exists(self, tablename: str) -> bool:
         _Table: t.Type[Table] = type(tablename.upper(), (Table,), {})
         _Table._meta.tablename = tablename
         return _Table.table_exists().run_sync()
+
+    def get_postgres_column_type_str(
+        self, tablename: str, column_name: str
+    ) -> str:
+        """
+        Fetches the column type as a string, from the database.
+        """
+        query = """
+            SELECT data_type FROM information_schema.columns
+            WHERE table_name = '{tablename}'
+            AND table_catalog = 'piccolo'
+            AND column_name = '{column_name}'
+        """.format(
+            tablename=tablename, column_name=column_name
+        )
+        response = self.run_sync(query)
+        return response[0]["data_type"].upper()
 
     def create_tables(self):
         if ENGINE.engine_type == "postgres":
