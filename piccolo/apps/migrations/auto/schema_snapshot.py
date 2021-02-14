@@ -73,11 +73,22 @@ class SchemaSnapshot:
                     table.class_name
                 )
                 for alter_column in alter_columns:
-                    for column in table.columns:
+                    for index, column in enumerate(table.columns):
                         if column._meta.name == alter_column.column_name:
                             for key, value in alter_column.params.items():
                                 setattr(column._meta, key, value)
                                 column._meta.params.update({key: value})
+
+                            # If the column type has changed, we need to update
+                            # it.
+                            if (
+                                alter_column.column_class
+                                != alter_column.old_column_class
+                            ):
+                                if alter_column.column_class is not None:
+                                    new_column = alter_column.column_class()
+                                    new_column._meta = column._meta
+                                    table.columns[index] = new_column
 
                 ###############################################################
 
