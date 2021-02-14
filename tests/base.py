@@ -55,14 +55,15 @@ class DBTestCase(TestCase):
         _Table._meta.tablename = tablename
         return _Table.table_exists().run_sync()
 
-    def get_postgres_column_type_str(
+    ###########################################################################
+
+    # Postgres specific utils
+
+    def get_postgres_column_definition(
         self, tablename: str, column_name: str
-    ) -> str:
-        """
-        Fetches the column type as a string, from the database.
-        """
+    ) -> t.Dict[str, t.Any]:
         query = """
-            SELECT data_type FROM information_schema.columns
+            SELECT * FROM information_schema.columns
             WHERE table_name = '{tablename}'
             AND table_catalog = 'piccolo'
             AND column_name = '{column_name}'
@@ -70,7 +71,30 @@ class DBTestCase(TestCase):
             tablename=tablename, column_name=column_name
         )
         response = self.run_sync(query)
-        return response[0]["data_type"].upper()
+        return response[0]
+
+    def get_postgres_column_type_str(
+        self, tablename: str, column_name: str
+    ) -> str:
+        """
+        Fetches the column type as a string, from the database.
+        """
+        return self.get_postgres_column_definition(
+            tablename=tablename, column_name=column_name
+        )["data_type"].upper()
+
+    def get_postgres_is_nullable(self, tablename, column_name: str) -> bool:
+        """
+        Fetches whether the column is defined as nullable, from the database.
+        """
+        return (
+            self.get_postgres_column_definition(
+                tablename=tablename, column_name=column_name
+            )["is_nullable"].upper()
+            == "YES"
+        )
+
+    ###########################################################################
 
     def create_tables(self):
         if ENGINE.engine_type == "postgres":

@@ -310,6 +310,36 @@ class TestMigrationManager(DBTestCase):
         response = self.run_sync("SELECT name FROM manager;")
         self.assertEqual(response, [{"name": "Dave"}, {"name": "Dave"}])
 
+    @postgres_only
+    def test_alter_column_set_null(self):
+        """
+        Test altering whether a column is nullable with MigrationManager.
+        """
+        manager = MigrationManager()
+
+        manager.alter_column(
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="name",
+            params={"null": True},
+            old_params={"null": False},
+        )
+
+        asyncio.run(manager.run())
+        self.assertTrue(
+            self.get_postgres_is_nullable(
+                tablename="manager", column_name="name"
+            )
+        )
+
+        # Reverse
+        asyncio.run(manager.run_backwards())
+        self.assertFalse(
+            self.get_postgres_is_nullable(
+                tablename="manager", column_name="name"
+            )
+        )
+
     def _get_column_precision_and_scale(
         self, tablename="ticket", column_name="price"
     ):
