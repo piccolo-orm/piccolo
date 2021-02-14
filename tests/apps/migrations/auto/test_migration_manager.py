@@ -515,11 +515,16 @@ class TestMigrationManager(DBTestCase):
         )
 
         asyncio.run(manager.run())
-
         column_type_str = self.get_postgres_column_type(
             tablename="manager", column_name="name"
         )
         self.assertEqual(column_type_str, "TEXT")
+
+        asyncio.run(manager.run_backwards())
+        column_type_str = self.get_postgres_column_type(
+            tablename="manager", column_name="name"
+        )
+        self.assertEqual(column_type_str, "CHARACTER VARYING")
 
     @postgres_only
     def test_alter_column_set_length(self):
