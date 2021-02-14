@@ -147,6 +147,36 @@ class TestMigrationManager(DBTestCase):
         self.assertEqual(response, [{"id": 1, "name": "Dave"}])
 
     @postgres_only
+    def test_add_column_with_index(self):
+        """
+        Test adding a column with an index to a MigrationManager.
+        """
+        manager = MigrationManager()
+        manager.add_column(
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="email",
+            column_class_name="Varchar",
+            params={
+                "length": 100,
+                "default": "",
+                "null": True,
+                "primary": False,
+                "key": False,
+                "unique": True,
+                "index": True,
+            },
+        )
+        index_name = Manager._get_index_name(["email"])
+
+        asyncio.run(manager.run())
+        self.assertTrue(index_name in Manager.indexes().run_sync())
+
+        # Reverse
+        asyncio.run(manager.run_backwards())
+        self.assertTrue(index_name not in Manager.indexes().run_sync())
+
+    @postgres_only
     def test_add_foreign_key_self_column(self):
         """
         Test adding a ForeignKey column to a MigrationManager, with a
