@@ -1,6 +1,14 @@
 Changes
 =======
 
+0.17.0
+------
+ * Migrations now directly import ``Column`` classes - this allows users to
+   create custom ``Column`` subclasses. Migrations previously only worked with
+   the builtin column types.
+ * Migrations now detect if the column type has changed, and will try and
+   convert it automatically.
+
 0.16.5
 ------
 The Postgres extensions that ``PostgresEngine`` tries to enable at startup
