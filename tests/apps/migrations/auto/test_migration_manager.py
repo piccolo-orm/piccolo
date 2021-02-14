@@ -516,10 +516,43 @@ class TestMigrationManager(DBTestCase):
 
         asyncio.run(manager.run())
 
-        column_type_str = self.get_postgres_column_type_str(
+        column_type_str = self.get_postgres_column_type(
             tablename="manager", column_name="name"
         )
         self.assertEqual(column_type_str, "TEXT")
+
+    @postgres_only
+    def test_alter_column_set_length(self):
+        """
+        Test altering a Varchar column's length with MigrationManager.
+        """
+        manager = MigrationManager()
+
+        manager.alter_column(
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="name",
+            params={"length": 500},
+            old_params={"length": 200},
+            column_class=Text,
+            old_column_class=Varchar,
+        )
+
+        asyncio.run(manager.run())
+        self.assertEqual(
+            self.get_postgres_varchar_length(
+                tablename="manager", column_name="name"
+            ),
+            500,
+        )
+
+        asyncio.run(manager.run_backwards())
+        self.assertEqual(
+            self.get_postgres_varchar_length(
+                tablename="manager", column_name="name"
+            ),
+            200,
+        )
 
     @postgres_only
     @patch.object(BaseMigrationManager, "get_migration_managers")

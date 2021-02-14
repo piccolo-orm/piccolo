@@ -152,7 +152,7 @@ class TestSetColumnType(DBTestCase):
         alter_query.run_sync()
 
         self.assertEqual(
-            self.get_postgres_column_type_str(
+            self.get_postgres_column_type(
                 tablename="band", column_name="popularity"
             ),
             "BIGINT",
@@ -175,7 +175,7 @@ class TestSetColumnType(DBTestCase):
         alter_query.run_sync()
 
         self.assertEqual(
-            self.get_postgres_column_type_str(
+            self.get_postgres_column_type(
                 tablename="band", column_name="popularity"
             ),
             "CHARACTER VARYING",

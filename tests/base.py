@@ -73,7 +73,7 @@ class DBTestCase(TestCase):
         response = self.run_sync(query)
         return response[0]
 
-    def get_postgres_column_type_str(
+    def get_postgres_column_type(
         self, tablename: str, column_name: str
     ) -> str:
         """
@@ -93,6 +93,14 @@ class DBTestCase(TestCase):
             )["is_nullable"].upper()
             == "YES"
         )
+
+    def get_postgres_varchar_length(self, tablename, column_name: str) -> int:
+        """
+        Fetches whether the column is defined as nullable, from the database.
+        """
+        return self.get_postgres_column_definition(
+            tablename=tablename, column_name=column_name
+        )["character_maximum_length"]
 
     ###########################################################################
 
