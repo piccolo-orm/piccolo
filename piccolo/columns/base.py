@@ -31,8 +31,9 @@ from piccolo.querystring import QueryString
 from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.table import Table
     from piccolo.columns.column_types import ForeignKey
+    from piccolo.query.methods.create_index import IndexMethod
+    from piccolo.table import Table
 
 
 class OnDelete(str, Enum):
@@ -119,7 +120,7 @@ class ColumnMeta:
     primary: bool = False
     key: bool = False
     unique: bool = False
-    index: bool = False
+    index: t.Union[IndexMethod, bool] = False
     required: bool = False
 
     # Used for representing the table in migrations and the playground.
@@ -231,8 +232,10 @@ class Column(Selectable):
         If set, a unique contraint will be added to the column.
 
     :param index:
-        If set, the an index is created for the column, which can improve
-        the speed of selects, but can slow down inserts.
+        Whether an index is created for the column, which can improve
+        the speed of selects, but can slow down inserts. If set to True, the
+        default index type is created (b-tree). If False, no index is created.
+        If an IndexMethod value is provided, that type of index is created.
 
     :param required:
         This isn't used by the database - it's to indicate to other tools that
@@ -249,7 +252,7 @@ class Column(Selectable):
         primary: bool = False,
         key: bool = False,
         unique: bool = False,
-        index: bool = False,
+        index: t.Union[IndexMethod, bool] = False,
         required: bool = False,
         **kwargs,
     ) -> None:

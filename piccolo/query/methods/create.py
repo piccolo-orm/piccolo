@@ -3,7 +3,7 @@ import typing as t
 
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
-from piccolo.query.methods.create_index import CreateIndex
+from piccolo.query.methods.create_index import CreateIndex, IndexMethod
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
@@ -44,13 +44,22 @@ class Create(Query):
 
         create_indexes: t.List[QueryString] = []
         for column in columns:
-            if column._meta.index:
-                create_indexes.extend(
-                    CreateIndex(
-                        table=self.table,
-                        columns=[column],
-                        if_not_exists=self.if_not_exists,
-                    ).querystrings
-                )
+            if column._meta.index is False:
+                continue
+            elif column._meta.index is True:
+                method = IndexMethod.btree
+            elif isinstance(column._meta.index, IndexMethod):
+                method = column._meta.index
+            else:
+                raise ValueError("Unrecognised value for column index")
+
+            create_indexes.extend(
+                CreateIndex(
+                    table=self.table,
+                    columns=[column],
+                    method=method,
+                    if_not_exists=self.if_not_exists,
+                ).querystrings
+            )
 
         return [create_table] + create_indexes
