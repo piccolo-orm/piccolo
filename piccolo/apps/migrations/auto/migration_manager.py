@@ -404,12 +404,32 @@ class MigrationManager:
                     ).run()
 
                 index = params.get("index")
-                if index is not None:
+                index_method = params.get("index_method")
+                if index is None:
+                    if index_method is not None:
+                        # If the index value hasn't changed, but the
+                        # index_method value has, this indicates we need
+                        # to change the index type.
+                        column = Column()
+                        column._meta._table = _Table
+                        column._meta._name = column_name
+                        await _Table.drop_index([column]).run()
+                        await _Table.create_index(
+                            [column], method=index_method, if_not_exists=True
+                        ).run()
+                else:
+                    # If the index value has changed, then we are either
+                    # dropping, or creating an index.
                     column = Column()
                     column._meta._table = _Table
                     column._meta._name = column_name
-                    if index:
-                        await _Table.create_index([column]).run()
+                    if index is True:
+                        kwargs = (
+                            {"method": index_method} if index_method else {}
+                        )
+                        await _Table.create_index(
+                            [column], if_not_exists=True, **kwargs
+                        ).run()
                     else:
                         await _Table.drop_index([column]).run()
 

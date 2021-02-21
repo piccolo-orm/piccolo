@@ -44,11 +44,12 @@ class Create(Query):
 
         create_indexes: t.List[QueryString] = []
         for column in columns:
-            if column._meta.index:
+            if column._meta.index is True:
                 create_indexes.extend(
                     CreateIndex(
                         table=self.table,
                         columns=[column],
+                        method=column._meta.index_method,
                         if_not_exists=self.if_not_exists,
                     ).querystrings
                 )
