@@ -1,20 +1,13 @@
 from __future__ import annotations
-from enum import Enum
 import typing as t
 
 from piccolo.columns import Column
+from piccolo.columns.indexes import IndexMethod
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
-
-
-class IndexMethod(str, Enum):
-    btree = "btree"
-    hash = "hash"
-    gist = "gist"
-    gin = "gin"
 
 
 class CreateIndex(Query):

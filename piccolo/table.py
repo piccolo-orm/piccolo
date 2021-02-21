@@ -16,6 +16,7 @@ from piccolo.columns.reference import (
     LAZY_COLUMN_REFERENCES,
 )
 from piccolo.columns.defaults.base import Default
+from piccolo.columns.indexes import IndexMethod
 from piccolo.query import (
     Alter,
     Count,
@@ -31,7 +32,7 @@ from piccolo.query import (
     Update,
 )
 from piccolo.query.methods.indexes import Indexes
-from piccolo.query.methods.create_index import CreateIndex, IndexMethod
+from piccolo.query.methods.create_index import CreateIndex
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
 
