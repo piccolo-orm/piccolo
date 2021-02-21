@@ -623,6 +623,7 @@ class Table(metaclass=TableMetaclass):
         cls,
         columns: t.List[t.Union[Column, str]],
         method: IndexMethod = IndexMethod.btree,
+        if_not_exists: bool = False,
     ) -> CreateIndex:
         """
         Create a table index. If multiple columns are specified, this refers
@@ -630,7 +631,12 @@ class Table(metaclass=TableMetaclass):
 
         await Band.create_index([Band.name]).run()
         """
-        return CreateIndex(table=cls, columns=columns, method=method)
+        return CreateIndex(
+            table=cls,
+            columns=columns,
+            method=method,
+            if_not_exists=if_not_exists,
+        )
 
     @classmethod
     def drop_index(

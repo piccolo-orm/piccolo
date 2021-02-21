@@ -415,7 +415,7 @@ class MigrationManager:
                         column._meta._name = column_name
                         await _Table.drop_index([column]).run()
                         await _Table.create_index(
-                            [column], method=index_method
+                            [column], method=index_method, if_not_exists=True
                         ).run()
                 else:
                     # If the index value has changed, then we are either
@@ -427,7 +427,9 @@ class MigrationManager:
                         kwargs = (
                             {"method": index_method} if index_method else {}
                         )
-                        await _Table.create_index([column], **kwargs).run()
+                        await _Table.create_index(
+                            [column], if_not_exists=True, **kwargs
+                        ).run()
                     else:
                         await _Table.drop_index([column]).run()
 
