@@ -37,7 +37,7 @@ pool in the shutdown event handler.
 
 .. code-block:: python
 
-    from piccolo.engine import from starlette.applications import Starlette
+    from piccolo.engine import engine_finder
     from starlette.applications import Starlette
 
 
