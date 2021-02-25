@@ -2,7 +2,6 @@ from __future__ import annotations
 import contextvars
 from dataclasses import dataclass
 import typing as t
-import warnings
 
 import asyncpg  # type: ignore
 from asyncpg.connection import Connection  # type: ignore
@@ -291,16 +290,18 @@ class PostgresEngine(Engine):
     # methods for now to ensure backwards compatility.
 
     async def start_connnection_pool(self, **kwargs) -> None:
-        warnings.warn(
-            "This is a typo - please upgrade to `start_connection_pool`. This "
-            "proxy method will be retired in the future."
+        colored_warning(
+            "`start_connnection_pool` is a typo - please change it to "
+            "`start_connection_pool`.",
+            category=DeprecationWarning,
         )
         return await self.start_connection_pool()
 
     async def close_connnection_pool(self, **kwargs) -> None:
-        warnings.warn(
-            "This is a typo - please upgrade to `close_connection_pool`. This "
-            "proxy method will be retired in the future."
+        colored_warning(
+            "`close_connnection_pool` is a typo - please change it to "
+            "`close_connection_pool`.",
+            category=DeprecationWarning,
         )
         return await self.close_connection_pool()
 
@@ -308,9 +309,9 @@ class PostgresEngine(Engine):
 
     async def start_connection_pool(self, **kwargs) -> None:
         if self.pool:
-            warnings.warn(
+            colored_warning(
                 "A pool already exists - close it first if you want to create "
-                "a new pool."
+                "a new pool.",
             )
         else:
             config = dict(self.config)
@@ -322,7 +323,7 @@ class PostgresEngine(Engine):
             await self.pool.close()
             self.pool = None
         else:
-            warnings.warn("No pool is running.")
+            colored_warning("No pool is running.")
 
     ###########################################################################
 
