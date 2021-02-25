@@ -2,7 +2,6 @@ from __future__ import annotations
 import contextvars
 from dataclasses import dataclass
 import typing as t
-import warnings
 
 import asyncpg  # type: ignore
 from asyncpg.connection import Connection  # type: ignore
@@ -287,24 +286,44 @@ class PostgresEngine(Engine):
                 )
 
     ###########################################################################
+    # These typos existed in the codebase for a while, so leaving these proxy
+    # methods for now to ensure backwards compatility.
 
     async def start_connnection_pool(self, **kwargs) -> None:
+        colored_warning(
+            "`start_connnection_pool` is a typo - please change it to "
+            "`start_connection_pool`.",
+            category=DeprecationWarning,
+        )
+        return await self.start_connection_pool()
+
+    async def close_connnection_pool(self, **kwargs) -> None:
+        colored_warning(
+            "`close_connnection_pool` is a typo - please change it to "
+            "`close_connection_pool`.",
+            category=DeprecationWarning,
+        )
+        return await self.close_connection_pool()
+
+    ###########################################################################
+
+    async def start_connection_pool(self, **kwargs) -> None:
         if self.pool:
-            warnings.warn(
+            colored_warning(
                 "A pool already exists - close it first if you want to create "
-                "a new pool."
+                "a new pool.",
             )
         else:
             config = dict(self.config)
             config.update(**kwargs)
             self.pool = await asyncpg.create_pool(**config)
 
-    async def close_connnection_pool(self) -> None:
+    async def close_connection_pool(self) -> None:
         if self.pool:
             await self.pool.close()
             self.pool = None
         else:
-            warnings.warn("No pool is running.")
+            colored_warning("No pool is running.")
 
     ###########################################################################
 
