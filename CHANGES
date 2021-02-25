@@ -1,6 +1,12 @@
 Changes
 =======
 
+0.17.2
+------
+ * Fixing a typo with ``start_connection_pool` and ``close_connnection_pool`` -
+   thanks to paolodina for finding this.
+ * Fixing a typo in the ``PostgresEngine`` docs - courtesy of paolodina.
+
 0.17.1
 ------
 Fixing a bug with ``SchemaSnapshot`` if column types were changed in migrations
