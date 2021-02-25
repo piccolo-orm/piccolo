@@ -287,8 +287,26 @@ class PostgresEngine(Engine):
                 )
 
     ###########################################################################
+    # These typos existed in the codebase for a while, so leaving these proxy
+    # methods for now to ensure backwards compatility.
 
     async def start_connnection_pool(self, **kwargs) -> None:
+        warnings.warn(
+            "This is a typo - please upgrade to `start_connection_pool`. This "
+            "proxy method will be retired in the future."
+        )
+        return await self.start_connection_pool()
+
+    async def close_connnection_pool(self, **kwargs) -> None:
+        warnings.warn(
+            "This is a typo - please upgrade to `close_connection_pool`. This "
+            "proxy method will be retired in the future."
+        )
+        return await self.close_connection_pool()
+
+    ###########################################################################
+
+    async def start_connection_pool(self, **kwargs) -> None:
         if self.pool:
             warnings.warn(
                 "A pool already exists - close it first if you want to create "
@@ -299,7 +317,7 @@ class PostgresEngine(Engine):
             config.update(**kwargs)
             self.pool = await asyncpg.create_pool(**config)
 
-    async def close_connnection_pool(self) -> None:
+    async def close_connection_pool(self) -> None:
         if self.pool:
             await self.pool.close()
             self.pool = None

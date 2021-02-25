@@ -47,13 +47,13 @@ pool in the shutdown event handler.
     @app.on_event('startup')
     async def open_database_connection_pool():
         engine = engine_finder()
-        await engine.start_connnection_pool()
+        await engine.start_connection_pool()
 
 
     @app.on_event('shutdown')
     async def close_database_connection_pool():
         engine = engine_finder()
-        await engine.close_connnection_pool()
+        await engine.close_connection_pool()
 
 .. hint:: Using a connection pool helps with performance, since connections
     are reused instead of being created for each query.
@@ -74,7 +74,7 @@ adapter. Here's an example:
 .. code-block:: python
 
     # To increase the number of connections available:
-    await engine.start_connnection_pool(max_size=20)
+    await engine.start_connection_pool(max_size=20)
 
 -------------------------------------------------------------------------------
 
