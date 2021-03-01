@@ -3,10 +3,10 @@ import typing as t
 
 
 if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.columns.combination import Where, And, Or  # noqa
+    from piccolo.columns.combination import Where, WhereRaw, And, Or  # noqa
 
 
-Combinable = t.Union["Where", "And", "Or"]
+Combinable = t.Union["Where", "WhereRaw", "And", "Or"]
 Iterable = t.Iterable[t.Any]
 
 
