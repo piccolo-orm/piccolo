@@ -26,7 +26,7 @@ class Readable(Selectable):
             [i._meta.get_full_name(just_alias=True) for i in self.columns]
         )
 
-    def _get_string(self, operator: str):
+    def _get_string(self, operator: str) -> str:
         return (
             f"{operator}('{self.template}', {self._columns_string}) AS "
             f"{self.output_name}"
