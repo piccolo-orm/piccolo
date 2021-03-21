@@ -39,3 +39,13 @@ class TestCopy(TestCase):
         self.assertNotEqual(
             id(column._meta.call_chain), id(new_column._meta.call_chain)
         )
+
+
+class TestHelpText(TestCase):
+    def test_help_text(self):
+        """
+        Test adding help text to a column.
+        """
+        help_text = "This is some important help text for users."
+        column = Varchar(help_text=help_text)
+        self.assertTrue(column._meta.help_text == help_text)
