@@ -123,6 +123,7 @@ class ColumnMeta:
     index: bool = False
     index_method: IndexMethod = IndexMethod.btree
     required: bool = False
+    help_text: t.Optional[str] = None
 
     # Used for representing the table in migrations and the playground.
     params: t.Dict[str, t.Any] = field(default_factory=dict)
@@ -244,6 +245,13 @@ class Column(Selectable):
         the user must provide this value. Example uses are in serialisers for
         API endpoints, and form fields.
 
+    :param help_text:
+        This provides some context about what the column is being used for. For
+        example, for a `Decimal` column called `value`, it could say
+        'The units are millions of dollars'. The database doesn't use this
+        value, but tools such as Piccolo Admin use it to show a tooltip in the
+        GUI.
+
     """
 
     value_type: t.Type = int
@@ -257,11 +265,12 @@ class Column(Selectable):
         index: bool = False,
         index_method: IndexMethod = IndexMethod.btree,
         required: bool = False,
+        help_text: t.Optional[str] = None,
         **kwargs,
     ) -> None:
         # Used for migrations.
-        # We deliberately omit 'required' as it doesn't effect the actual
-        # schema.
+        # We deliberately omit 'required', and 'help_text' as they don't effect
+        # the actual schema.
         kwargs.update(
             {
                 "null": null,
@@ -288,6 +297,7 @@ class Column(Selectable):
             index_method=index_method,
             params=kwargs,
             required=required,
+            help_text=help_text,
         )
 
         self.alias: t.Optional[str] = None
