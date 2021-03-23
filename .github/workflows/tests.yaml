@@ -8,7 +8,7 @@ jobs:
         strategy:
             matrix:
                 python-version: [3.7, 3.8, 3.9]
-                postgres-version: [9, 10, 11, 12, 13]
+                postgres-version: [9.6, 10, 11, 12, 13]
 
         # Service containers to run with `container-job`
         services:
@@ -51,7 +51,7 @@ jobs:
               run: cd tests && ./test-postgres.sh
               env:
                   PG_HOST: localhost
-                  PG_DATABASE: postgres
+                  PG_DATABASE: piccolo
                   PG_PASSWORD: postgres
 
     sqlite:
