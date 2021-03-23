@@ -1,0 +1,74 @@
+name: Python package
+
+on: [push]
+
+jobs:
+    postgres:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                python-version: [3.7, 3.8, 3.9]
+                postgres-version: [9, 10, 11, 12, 13]
+
+        # Service containers to run with `container-job`
+        services:
+            # Label used to access the service container
+            postgres:
+                # Docker Hub image
+                image: postgres:${{ matrix.postgres-version }}
+                # Provide the password for postgres
+                env:
+                    POSTGRES_PASSWORD: postgres
+                # Set health checks to wait until postgres has started
+                options: >-
+                    --health-cmd pg_isready
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+                ports:
+                    - 5432:5432
+
+        steps:
+            - uses: actions/checkout@v2
+            - name: Set up Python ${{ matrix.python-version }}
+              uses: actions/setup-python@v2
+              with:
+                  python-version: ${{ matrix.python-version }}
+            - name: Install dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install -r requirements.txt
+                  pip install -r tests/test-requirements.txt
+            - name: Setup postgres
+              run: |
+                  psql -h postgres -c 'CREATE DATABASE piccolo;' -U postgres
+                  psql -h postgres -c "CREATE USER piccolo PASSWORD 'piccolo';" -U postgres
+                  psql -h postgres -c "GRANT ALL PRIVILEGES ON DATABASE piccolo TO piccolo;" -U postgres
+                  psql -h postgres -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" -d piccolo -U postgres
+
+            - name: Test with pytest, Postgres
+              run: cd tests && ./test-postgres.sh
+              env:
+                  PG_HOST: localhost
+                  PG_DATABASE: postgres
+                  PG_PASSWORD: postgres
+
+    sqlite:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                python-version: [3.7, 3.8, 3.9]
+
+        steps:
+            - uses: actions/checkout@v2
+            - name: Set up Python ${{ matrix.python-version }}
+              uses: actions/setup-python@v2
+              with:
+                  python-version: ${{ matrix.python-version }}
+            - name: Install dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install -r requirements.txt
+                  pip install -r tests/test-requirements.txt
+            - name: Test with pytest, SQLite
+              run: cd tests && ./test-sqlite.sh
