@@ -1,5 +1,5 @@
-from ..base import DBTestCase, sqlite_only, postgres_only
-from ..example_app.tables import Band
+from tests.base import DBTestCase, sqlite_only, postgres_only
+from tests.example_app.tables import Band
 
 
 class TestInstance(DBTestCase):

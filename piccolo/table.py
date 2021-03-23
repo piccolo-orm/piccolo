@@ -52,6 +52,7 @@ class TableMeta:
     non_default_columns: t.List[Column] = field(default_factory=list)
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
     tags: t.List[str] = field(default_factory=list)
+    help_text: t.Optional[str] = None
     _db: t.Optional[Engine] = None
 
     # Records reverse foreign key relationships - i.e. when the current table
@@ -124,6 +125,7 @@ class Table(metaclass=TableMetaclass):
         tablename: t.Optional[str] = None,
         db: t.Optional[Engine] = None,
         tags: t.List[str] = [],
+        help_text: t.Optional[str] = None,
     ):
         """
         Automatically populate the _meta, which includes the tablename, and
@@ -138,6 +140,10 @@ class Table(metaclass=TableMetaclass):
             imported from piccolo_conf.py using ``engine_finder``.
         :param tags:
             Used for filtering, for example by ``table_finder``.
+        :param help_text:
+            A user friendly description of what the table is used for. It isn't
+            used in the database, but will be used by tools such a Piccolo
+            Admin for tooltips.
 
         """
         tablename = tablename if tablename else _camel_to_snake(cls.__name__)
@@ -189,6 +195,7 @@ class Table(metaclass=TableMetaclass):
             non_default_columns=non_default_columns,
             foreign_key_columns=foreign_key_columns,
             tags=tags,
+            help_text=help_text,
             _db=db,
         )
 
