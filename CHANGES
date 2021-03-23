@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.17.4
+------
+Added a ``help_text`` option to the ``Table`` metaclass. This is used in
+Piccolo Admin to show tooltips.
+
 0.17.3
 ------
 Added a ``help_text`` option to the ``Column`` constructor. This is used in
