@@ -41,10 +41,10 @@ jobs:
                   pip install -r tests/test-requirements.txt
             - name: Setup postgres
               run: |
-                  psql -h postgres -c 'CREATE DATABASE piccolo;' -U postgres
-                  psql -h postgres -c "CREATE USER piccolo PASSWORD 'piccolo';" -U postgres
-                  psql -h postgres -c "GRANT ALL PRIVILEGES ON DATABASE piccolo TO piccolo;" -U postgres
-                  psql -h postgres -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" -d piccolo -U postgres
+                  psql -c 'CREATE DATABASE piccolo;' -U postgres
+                  psql -c "CREATE USER piccolo PASSWORD 'piccolo';" -U postgres
+                  psql -c "GRANT ALL PRIVILEGES ON DATABASE piccolo TO piccolo;" -U postgres
+                  psql -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" -d piccolo -U postgres
 
             - name: Test with pytest, Postgres
               run: cd tests && ./test-postgres.sh
