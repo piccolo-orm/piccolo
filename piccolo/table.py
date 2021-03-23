@@ -52,6 +52,7 @@ class TableMeta:
     non_default_columns: t.List[Column] = field(default_factory=list)
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
     tags: t.List[str] = field(default_factory=list)
+    help_text: t.Optional[str] = None
     _db: t.Optional[Engine] = None
     pre_insert: t.List[t.Callable] = field(default_factory=list)
     post_insert: t.List[t.Callable] = field(default_factory=list)
@@ -136,6 +137,10 @@ class Table(metaclass=TableMetaclass):
         post_update: t.List[t.Callable] = [],
         pre_delete: t.List[t.Callable] = [],
         post_delete: t.List[t.Callable] = []
+||||||| parent of 522448b (added help_text option to Table)
+=======
+        help_text: t.Optional[str] = None,
+>>>>>>> 522448b (added help_text option to Table)
     ):
         """
         Automatically populate the _meta, which includes the tablename, and
@@ -150,6 +155,10 @@ class Table(metaclass=TableMetaclass):
             imported from piccolo_conf.py using ``engine_finder``.
         :param tags:
             Used for filtering, for example by ``table_finder``.
+        :param help_text:
+            A user friendly description of what the table is used for. It isn't
+            used in the database, but will be used by tools such a Piccolo
+            Admin for tooltips.
 
         :param pre_insert:
             Used for defining list of functions to be run before insert
@@ -220,6 +229,7 @@ class Table(metaclass=TableMetaclass):
             non_default_columns=non_default_columns,
             foreign_key_columns=foreign_key_columns,
             tags=tags,
+            help_text=help_text,
             _db=db,
             pre_insert=pre_insert,
             post_insert=post_insert,
