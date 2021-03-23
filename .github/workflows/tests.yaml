@@ -3,6 +3,28 @@ name: Python package
 on: [push]
 
 jobs:
+    linters:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                python-version: [3.7, 3.8, 3.9]
+
+        steps:
+            - uses: actions/checkout@v2
+            - name: Set up Python ${{ matrix.python-version }}
+              uses: actions/setup-python@v2
+              with:
+                  python-version: ${{ matrix.python-version }}
+            - name: Install dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install -r requirements.txt
+                  pip install -r tests/test-requirements.txt
+            - name: Mypy
+              run: mypy piccolo
+            - name: Flake8
+              run: flake8 piccolo
+
     postgres:
         runs-on: ubuntu-latest
         strategy:
