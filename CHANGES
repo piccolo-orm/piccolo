@@ -1,6 +1,12 @@
 Changes
 =======
 
+0.17.5
+------
+Catching database connection exceptions when starting the default ASGI app
+created with ``piccolo asgi new`` - these errors exist if the Postgres
+database hasn't been created yet.
+
 0.17.4
 ------
 Added a ``help_text`` option to the ``Table`` metaclass. This is used in
