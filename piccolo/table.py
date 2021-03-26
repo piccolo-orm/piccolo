@@ -131,21 +131,15 @@ class Table(metaclass=TableMetaclass):
         tablename: t.Optional[str] = None,
         db: t.Optional[Engine] = None,
         tags: t.List[str] = [],
-<<<<<<< HEAD
         pre_insert: t.List[t.Callable] = [],
         post_insert: t.List[t.Callable] = [],
         pre_update: t.List[t.Callable] = [],
         post_update: t.List[t.Callable] = [],
         pre_delete: t.List[t.Callable] = [],
         post_delete: t.List[t.Callable] = []
-||||||| parent of 522448b (added help_text option to Table)
-=======
         help_text: t.Optional[str] = None,
->>>>>>> 522448b (added help_text option to Table)
-||||||| parent of 522448b (added help_text option to Table)
-=======
         help_text: t.Optional[str] = None,
->>>>>>> 522448b (added help_text option to Table)
+        help_text: t.Optional[str] = None,
     ):
         """
         Automatically populate the _meta, which includes the tablename, and
@@ -160,12 +154,10 @@ class Table(metaclass=TableMetaclass):
             imported from piccolo_conf.py using ``engine_finder``.
         :param tags:
             Used for filtering, for example by ``table_finder``.
-<<<<<<< HEAD
         :param help_text:
             A user friendly description of what the table is used for. It isn't
             used in the database, but will be used by tools such a Piccolo
             Admin for tooltips.
-
         :param pre_insert:
             Used for defining list of functions to be run before insert
 
@@ -183,13 +175,10 @@ class Table(metaclass=TableMetaclass):
 
         :param post_delete:
             used for defining list of functions to be run after delete
-||||||| parent of 522448b (added help_text option to Table)
-=======
         :param help_text:
             A user friendly description of what the table is used for. It isn't
             used in the database, but will be used by tools such a Piccolo
             Admin for tooltips.
->>>>>>> 522448b (added help_text option to Table)
 
         """
         tablename = tablename if tablename else _camel_to_snake(cls.__name__)

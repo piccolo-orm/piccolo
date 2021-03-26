@@ -17,14 +17,13 @@ Piccolo Admin to show tooltips.
 Added a ``help_text`` option to the ``Column`` constructor. This is used in
 Piccolo Admin to show tooltips.
 
-||||||| parent of 5341447 (bumped version)
 =======
 0.17.3
 ------
 Added a ``help_text`` option to the ``Column`` constructor. This is used in
 Piccolo Admin to show tooltips.
 
->>>>>>> 5341447 (bumped version)
+=======
 0.17.2
 ------
  * Exposing ``index_type`` in the ``Column`` constructor.
