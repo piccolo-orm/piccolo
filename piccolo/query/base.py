@@ -92,6 +92,34 @@ class Query:
         convenience.
         """
         return self.run().__await__()
+    
+    @staticmethod
+    async def run_pre_functions():
+        """
+        function has been made solely so it can be inherited and modified to run pre_query.
+        """
+        pass
+
+    @staticmethod
+    async def run_post_functions():
+        """
+        function has been made solely so it can be inherited and modified to run post_query.
+        """
+        pass
+
+    @staticmethod
+    def run_pre_functions_sync():
+        """
+        function has been made solely so it can be inherited and modified to run pre_query sync.
+        """
+        pass
+
+    @staticmethod
+    def run_post_functions_sync():
+        """
+        function has been made solely so it can be inherited and modified to run post_query sync.
+        """
+        pass
 
     async def run(self, in_pool=True):
         self._validate()
@@ -102,12 +130,14 @@ class Query:
                 f"Table {self.table._meta.tablename} has no db defined in "
                 "_meta"
             )
-
+        await self.run_pre_functions()
         if len(self.querystrings) == 1:
             results = await engine.run_querystring(
                 self.querystrings[0], in_pool=in_pool
             )
-            return await self._process_results(results)
+            results = await self._process_results(results)
+            await self.run_post_functions()
+            return results
         else:
             responses = []
             # TODO - run in a transaction
@@ -116,6 +146,7 @@ class Query:
                     querystring, in_pool=in_pool
                 )
                 responses.append(await self._process_results(results))
+            await self.run_post_functions()
             return responses
 
     def run_sync(self, timed=False, *args, **kwargs):
@@ -123,12 +154,16 @@ class Query:
         A convenience method for running the coroutine synchronously.
         """
         coroutine = self.run(*args, **kwargs, in_pool=False)
-
+        self.run_pre_functions_sync()
         if timed:
             with Timer():
-                return run_sync(coroutine)
+                response = run_sync(coroutine)
+                self.run_post_functions_sync()
+                return response
         else:
-            return run_sync(coroutine)
+            response= run_sync(coroutine)
+            self.run_post_functions_sync()
+            return response
 
     async def response_handler(self, response):
         """

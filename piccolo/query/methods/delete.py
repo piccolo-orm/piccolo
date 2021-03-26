@@ -39,6 +39,22 @@ class Delete(Query):
                 f"{classname}? If so, use {classname}.delete(force=True)."
             )
 
+    async def run_pre_functions(self):
+        for function in self.table._meta.pre_delete:
+            function()
+
+    async def run_post_functions(self):
+        for function in self.table._meta.post_delete:
+            function()
+
+    def run_pre_functions_sync(self):
+        for function in self.table._meta.pre_delete:
+            function()
+
+    def run_post_functions_sync(self):
+        for function in self.table._meta.post_delete:
+            function()
+
     @property
     def querystrings(self) -> t.Sequence[QueryString]:
         query = f"DELETE FROM {self.table._meta.tablename}"
