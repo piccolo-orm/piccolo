@@ -53,6 +53,12 @@ class TableMeta:
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
     tags: t.List[str] = field(default_factory=list)
     _db: t.Optional[Engine] = None
+    pre_insert: t.List[t.Callable] = field(default_factory=list)
+    post_insert: t.List[t.Callable] = field(default_factory=list)
+    pre_update: t.List[t.Callable] = field(default_factory=list)
+    post_update: t.List[t.Callable] = field(default_factory=list)
+    pre_delete: t.List[t.Callable] = field(default_factory=list)
+    post_delete: t.List[t.Callable] = field(default_factory=list)
 
     # Records reverse foreign key relationships - i.e. when the current table
     # is the target of a foreign key. Used by external libraries such as
@@ -124,6 +130,12 @@ class Table(metaclass=TableMetaclass):
         tablename: t.Optional[str] = None,
         db: t.Optional[Engine] = None,
         tags: t.List[str] = [],
+        pre_insert: t.List[t.Callable] = [],
+        post_insert: t.List[t.Callable] = [],
+        pre_update: t.List[t.Callable] = [],
+        post_update: t.List[t.Callable] = [],
+        pre_delete: t.List[t.Callable] = [],
+        post_delete: t.List[t.Callable] = []
     ):
         """
         Automatically populate the _meta, which includes the tablename, and
@@ -139,6 +151,24 @@ class Table(metaclass=TableMetaclass):
         :param tags:
             Used for filtering, for example by ``table_finder``.
 
+        :param pre_insert:
+            Used for defining list of functions to be run before insert
+
+        :param post_insert:
+            Used for defining list of functions to be run after insert
+
+        :param pre_update:
+            used for defining list of functions to be run before update
+
+        :param post_update:
+            used for defining list of functions to be run after update
+        
+        :param pre_delete:
+            used for defining list of functions to be run before delete
+
+        :param post_delete:
+            used for defining list of functions to be run after delete
+
         """
         tablename = tablename if tablename else _camel_to_snake(cls.__name__)
 
@@ -152,6 +182,7 @@ class Table(metaclass=TableMetaclass):
         default_columns: t.List[Column] = []
         non_default_columns: t.List[Column] = []
         foreign_key_columns: t.List[ForeignKey] = []
+        
 
         cls.id = PrimaryKey()
 
@@ -190,6 +221,12 @@ class Table(metaclass=TableMetaclass):
             foreign_key_columns=foreign_key_columns,
             tags=tags,
             _db=db,
+            pre_insert=pre_insert,
+            post_insert=post_insert,
+            pre_update=pre_update,
+            post_update=post_update,
+            pre_delete=pre_delete,
+            post_delete=post_delete
         )
 
         for foreign_key_column in foreign_key_columns:

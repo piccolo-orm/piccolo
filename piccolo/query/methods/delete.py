@@ -27,6 +27,22 @@ class Delete(Query):
         self.where_delegate.where(where)
         return self
 
+    async def run_pre_functions(self):
+        for function in self.table._meta.pre_delete:
+            function()
+
+    async def run_post_functions(self):
+        for function in self.table._meta.post_delete:
+            function()
+
+    def run_pre_functions_sync(self):
+        for function in self.table._meta.pre_delete:
+            function()
+
+    def run_post_functions_sync(self):
+        for function in self.table._meta.post_delete:
+            function()
+
     def _validate(self):
         """
         Don't let a deletion happen unless it has a where clause, or is

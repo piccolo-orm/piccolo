@@ -92,6 +92,34 @@ class Query:
         convenience.
         """
         return self.run().__await__()
+    
+    @staticmethod
+    async def run_pre_functions():
+        """
+        function has been made solely so it can be inherited and modified to run pre_query.
+        """
+        pass
+
+    @staticmethod
+    async def run_post_functions():
+        """
+        function has been made solely so it can be inherited and modified to run post_query.
+        """
+        pass
+
+    @staticmethod
+    def run_pre_functions_sync():
+        """
+        function has been made solely so it can be inherited and modified to run pre_query.
+        """
+        pass
+
+    @staticmethod
+    def run_post_functions_sync():
+        """
+        function has been made solely so it can be inherited and modified to run post_query.
+        """
+        pass
 
     async def run(self, in_pool=True):
         self._validate()
@@ -102,11 +130,12 @@ class Query:
                 f"Table {self.table._meta.tablename} has no db defined in "
                 "_meta"
             )
-
+        await self.run_pre_functions()
         if len(self.querystrings) == 1:
             results = await engine.run_querystring(
                 self.querystrings[0], in_pool=in_pool
             )
+            await self.run_post_functions()
             return await self._process_results(results)
         else:
             responses = []
@@ -116,6 +145,7 @@ class Query:
                     querystring, in_pool=in_pool
                 )
                 responses.append(await self._process_results(results))
+            await self.run_post_functions()
             return responses
 
     def run_sync(self, timed=False, *args, **kwargs):
@@ -123,11 +153,13 @@ class Query:
         A convenience method for running the coroutine synchronously.
         """
         coroutine = self.run(*args, **kwargs, in_pool=False)
-
+    
         if timed:
             with Timer():
+                self.run_pre_functions_sync()
                 return run_sync(coroutine)
         else:
+            self.run_post_functions_sync()
             return run_sync(coroutine)
 
     async def response_handler(self, response):
