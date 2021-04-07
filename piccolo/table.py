@@ -1,41 +1,25 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
+
 import inspect
 import itertools
 import typing as t
+from dataclasses import dataclass, field
 
-from piccolo.engine import Engine, engine_finder
-from piccolo.columns import (
-    Column,
-    Selectable,
-)
+from piccolo.columns import Column, Selectable
 from piccolo.columns.column_types import ForeignKey, PrimaryKey
-from piccolo.columns.readable import Readable
-from piccolo.columns.reference import (
-    LazyTableReference,
-    LAZY_COLUMN_REFERENCES,
-)
 from piccolo.columns.defaults.base import Default
 from piccolo.columns.indexes import IndexMethod
-from piccolo.query import (
-    Alter,
-    Count,
-    Create,
-    Delete,
-    DropIndex,
-    Exists,
-    Insert,
-    Objects,
-    Raw,
-    Select,
-    TableExists,
-    Update,
-)
-from piccolo.query.methods.indexes import Indexes
+from piccolo.columns.readable import Readable
+from piccolo.columns.reference import (LAZY_COLUMN_REFERENCES,
+                                       LazyTableReference)
+from piccolo.custom_types import Combinable
+from piccolo.engine import Engine, engine_finder
+from piccolo.query import (Alter, Count, Create, Delete, DropIndex, Exists,
+                           Insert, Objects, Raw, Select, TableExists, Update)
 from piccolo.query.methods.create_index import CreateIndex
+from piccolo.query.methods.indexes import Indexes
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
-
 
 PROTECTED_TABLENAMES = ("user",)
 
@@ -320,6 +304,12 @@ class Table(metaclass=TableMetaclass):
             raise ValueError(f"Unrecognized columns - {unrecognised_list}")
 
     ###########################################################################
+
+    def get(self, *where: Combinable, **kwargs):
+        """
+         A proxy to an insert or update query.
+        """
+        return self.objects().where(*where, **kwargs).first()
 
     def save(self) -> t.Union[Insert, Update]:
         """

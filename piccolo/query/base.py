@@ -1,11 +1,12 @@
 from __future__ import annotations
+
 import itertools
-from time import time
 import typing as t
+from time import time
 
 from piccolo.querystring import QueryString
-from piccolo.utils.sync import run_sync
 from piccolo.utils.encoding import dump_json
+from piccolo.utils.sync import run_sync
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table  # noqa
