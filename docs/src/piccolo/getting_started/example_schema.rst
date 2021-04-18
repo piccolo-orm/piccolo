@@ -17,7 +17,7 @@ This is the schema used by the example queries throughout the docs.
 
     class Band(Table):
         name = Varchar(length=100)
-        manager = Varchar(length=100)
+        manager = ForeignKey(references=Manager)
         popularity = Integer()
 
 To understand more about defining your own schemas, see :ref:`DefiningSchema`.
