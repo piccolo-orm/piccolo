@@ -48,6 +48,11 @@ def table_finder(
         imported. `exclude_tags` overrides `include_tags`.
 
     """
+    if isinstance(modules, str):
+        # Guard against the user just entering a string, for example
+        # 'blog.tables', instead of ['blog.tables'].
+        modules = [modules]
+
     table_subclasses: t.List[t.Type[Table]] = []
 
     for module_path in modules:
