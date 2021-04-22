@@ -71,6 +71,20 @@ class TestTableFinder(TestCase):
         with self.assertRaises(ImportError):
             table_finder(modules=["foo.bar.baz"])
 
+    def test_table_finder_coercion(self):
+        """
+        Should convert a string argument to a list.
+        """
+        tables = table_finder(modules="tests.example_app.tables")
+
+        table_class_names = [i.__name__ for i in tables]
+        table_class_names.sort()
+
+        self.assertEqual(
+            table_class_names,
+            ["Band", "Concert", "Manager", "Poster", "Ticket", "Venue"],
+        )
+
     def test_include_tags(self):
         """
         Should return all Table subclasses with a matching tag.
