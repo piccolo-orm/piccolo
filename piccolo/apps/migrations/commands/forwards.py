@@ -100,15 +100,13 @@ async def run_forwards(
             if not response.success:
                 return response
 
+        return MigrationResult(success=True)
+
     else:
         manager = ForwardsMigrationManager(
             app_name=app_name, migration_id=migration_id, fake=fake
         )
-        response = await manager.run()
-        if not response.success:
-            return response
-
-    return MigrationResult(success=True)
+        return await manager.run()
 
 
 async def forwards(
