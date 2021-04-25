@@ -120,17 +120,10 @@ class TestForwardsBackwards(TestCase):
                 )
             )
 
-        self.assertEqual(
-            len(
-                [
-                    i
-                    for i in print_.mock_calls
-                    if i.args[0].startswith(
-                        "Unrecognized migration name - must be one of "
-                    )
-                ]
-            ),
-            1,
+        self.assertTrue(
+            tuple(print_.mock_calls[0])[1][0].startswith(
+                "Unrecognized migration name - must be one of "
+            )
         )
 
     @patch("piccolo.apps.migrations.commands.backwards.print")

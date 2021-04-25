@@ -43,7 +43,7 @@ class BackwardsMigrationManager(BaseMigrationManager):
             app_name=self.app_name
         )
         if len(ran_migration_ids) == 0:
-            # Make sure a status of 0 is returned, as we don't want this
+            # Make sure a success is returned, as we don't want this
             # to appear as an error in automated scripts.
             message = "No migrations to reverse!"
             print(message)
