@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 import typing as t
 from unittest import TestCase
 from unittest.mock import patch, call, MagicMock
@@ -86,19 +87,21 @@ class TestForwardsBackwards(TestCase):
             for table_class in table_classes:
                 self.assertTrue(not table_class.table_exists().run_sync())
 
-    def test_forwards_unknown_migration(self):
+    @patch("piccolo.apps.migrations.commands.forwards.print")
+    def test_forwards_unknown_migration(self, print_):
         """
         Test running an unknown migrations forwards.
         """
-        with self.assertRaises(SystemExit) as manager:
+        with self.assertRaises(SystemExit):
             run_sync(
                 forwards(
                     app_name="example_app", migration_id="migration-12345"
                 )
             )
 
-        self.assertEqual(
-            manager.exception.__str__(), "migration-12345 is unrecognised"
+        self.assertTrue(
+            call("migration-12345 is unrecognised", file=sys.stderr)
+            in print_.mock_calls
         )
 
     def test_backwards_unknown_migration(self):
@@ -147,11 +150,8 @@ class TestForwardsBackwards(TestCase):
         Test running the migrations if they've already run.
         """
         run_sync(forwards(app_name="example_app", migration_id="all"))
+        run_sync(forwards(app_name="example_app", migration_id="all"))
 
-        with self.assertRaises(SystemExit) as manager:
-            run_sync(forwards(app_name="example_app", migration_id="all"))
-
-        self.assertEqual(manager.exception.code, 0)
         self.assertTrue(
             print_.mock_calls[-1] == call("No migrations left to run!")
         )
