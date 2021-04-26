@@ -1,4 +1,5 @@
 from .column_types import (  # noqa: F401
+    Array,
     BigInt,
     Boolean,
     Bytea,
