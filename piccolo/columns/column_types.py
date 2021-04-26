@@ -1366,4 +1366,9 @@ class Array(Column):
 
     @property
     def column_type(self):
-        return f"{self.base_column.column_type}[]"
+        engine_type = self._meta.table._meta.db.engine_type
+        if engine_type == "postgres":
+            return f"{self.base_column.column_type}[]"
+        elif engine_type == "sqlite":
+            return "ARRAY"
+        raise Exception("Unrecognized engine type")

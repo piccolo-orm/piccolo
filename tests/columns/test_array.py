@@ -3,14 +3,11 @@ from unittest import TestCase
 from piccolo.table import Table
 from piccolo.columns.column_types import Array, Integer
 
-from ..base import postgres_only
-
 
 class MyTable(Table):
     value = Array(base_column=Integer())
 
 
-@postgres_only
 class TestArrayPostgres(TestCase):
     """
     Make sure an Array column can be created.
