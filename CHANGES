@@ -1,6 +1,14 @@
 Changes
 =======
 
+0.18.0
+------
+ * Refactored ``forwards`` and ``backwards`` commands for migrations, to make
+   them easier to run programatically.
+ * Added a simple ``Array`` column type.
+ * ``table_finder`` now works if just a string is passed in, instead of having
+   to pass in an array of strings.
+
 0.17.5
 ------
 Catching database connection exceptions when starting the default ASGI app
