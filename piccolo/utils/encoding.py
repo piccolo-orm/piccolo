@@ -16,3 +16,10 @@ def dump_json(data: t.Any) -> str:
         return orjson.dumps(data, default=str).decode("utf8")
     else:
         return json.dumps(data, default=str)
+
+
+def load_json(data: str) -> t.Any:
+    if ORJSON:
+        return orjson.loads(data)
+    else:
+        return json.loads(data)

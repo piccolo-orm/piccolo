@@ -52,7 +52,7 @@ class ConcatDelegate:
         value: t.Union[str, Varchar, Text],
         engine_type: str,
         reverse=False,
-    ):
+    ) -> QueryString:
         Concat = ConcatPostgres if engine_type == "postgres" else ConcatSQLite
 
         if isinstance(value, (Varchar, Text)):
@@ -106,7 +106,7 @@ class MathDelegate:
         operator: str,
         value: t.Union[int, float, Integer],
         reverse=False,
-    ):
+    ) -> QueryString:
         if isinstance(value, Integer):
             column: Integer = value
             if len(column._meta.call_chain) > 0:
@@ -1268,8 +1268,9 @@ class JSONB(JSON):
         Allows part of the JSON structure to be returned - for example,
         for {"a": 1}, and a key value of "a", then 1 will be returned.
         """
-        self.json_operator = f"-> '{key}'"
-        return self
+        instance = t.cast(JSONB, self.copy())
+        instance.json_operator = f"-> '{key}'"
+        return instance
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         select_string = self._meta.get_full_name(just_alias=just_alias)
@@ -1343,3 +1344,95 @@ class Blob(Bytea):
     """
 
     pass
+
+
+###############################################################################
+
+
+class Array(Column):
+    """
+    Used for storing lists of data.
+
+    **Example**
+
+    .. code-block:: python
+
+        class Ticket(Table):
+            seat_numbers = Array(base_column=Integer())
+
+        # Create
+        >>> Ticket(seat_numbers=[34, 35, 36]).save().run_sync()
+
+        # Query
+        >>> Ticket.select(Ticket.seat_numbers).run_sync()
+        {'seat_numbers': [34, 35, 36]}
+
+    """
+
+    value_type = list
+
+    def __init__(
+        self,
+        base_column: Column,
+        default: t.Union[t.List, t.Callable[[], t.List], None] = list,
+        **kwargs,
+    ) -> None:
+        if isinstance(base_column, ForeignKey):
+            raise ValueError("Arrays of ForeignKeys aren't allowed.")
+
+        self._validate_default(default, (list, None))
+
+        self.base_column = base_column
+        self.default = default
+        self.index: t.Optional[int] = None
+        kwargs.update({"base_column": base_column, "default": default})
+        super().__init__(**kwargs)
+
+    @property
+    def column_type(self):
+        engine_type = self._meta.table._meta.db.engine_type
+        if engine_type == "postgres":
+            return f"{self.base_column.column_type}[]"
+        elif engine_type == "sqlite":
+            return "ARRAY"
+        raise Exception("Unrecognized engine type")
+
+    def __getitem__(self, value: int) -> Array:
+        """
+        Allows queries which retrieve an item from the array. The index starts
+        with 0 for the first value. If you were to write the SQL by hand, the
+        first index would be 1 instead:
+
+        https://www.postgresql.org/docs/current/arrays.html
+
+        However, we keep the first index as 0 to fit better with Python.
+
+        For example:
+
+        .. code-block:: python
+
+            >>> Ticket.select(Ticket.seat_numbers[0]).first().run_sync
+            {'seat_numbers': 325}
+
+
+        """
+        if isinstance(value, int):
+            if value < 0:
+                raise ValueError("Only positive integers are allowed.")
+
+            instance = t.cast(Array, self.copy())
+
+            # We deliberately add 1, as Postgres treats the first array element
+            # as index 1.
+            instance.index = value + 1
+            return instance
+        else:
+            raise ValueError("Only integers can be used for indexing.")
+
+    def get_select_string(self, engine_type: str, just_alias=False) -> str:
+        select_string = self._meta.get_full_name(just_alias=just_alias)
+
+        if isinstance(self.index, int):
+            return f"{select_string}[{self.index}]"
+        else:
+            return select_string

@@ -14,6 +14,8 @@ from piccolo.engine.base import Batch, Engine
 from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
+
+from piccolo.utils.encoding import dump_json, load_json
 from piccolo.utils.sync import run_sync
 
 ###############################################################################
@@ -39,14 +41,14 @@ def convert_uuid_in(value) -> str:
     return str(value)
 
 
-def convert_time_in(value) -> str:
+def convert_time_in(value: datetime.time) -> str:
     """
     Converts the time value being passed into sqlite.
     """
     return value.isoformat()
 
 
-def convert_date_in(value):
+def convert_date_in(value: datetime.date):
     """
     Converts the date value being passed into sqlite.
     """
@@ -64,11 +66,22 @@ def convert_datetime_in(value: datetime.datetime) -> str:
     return str(value)
 
 
-def convert_timedelta_in(value):
+def convert_timedelta_in(value: datetime.timedelta):
     """
     Converts the timedelta value being passed into sqlite.
     """
     return value.total_seconds()
+
+
+def convert_array_in(value: list):
+    """
+    Converts a list value into a string.
+    """
+    if len(value) > 0:
+        if type(value[0]) not in [str, int, float]:
+            raise ValueError("Can only serialise str, int and float.")
+
+    return dump_json(value)
 
 
 # Out
@@ -129,6 +142,14 @@ def convert_timestamptz_out(value: bytes) -> datetime.datetime:
     return datetime.datetime.fromisoformat(value.decode("utf8"))
 
 
+def convert_array_out(value: bytes) -> t.List:
+    """
+    If the value if from an array column, deserialise the string back into a
+    list.
+    """
+    return load_json(value.decode("utf8"))
+
+
 sqlite3.register_converter("Numeric", convert_numeric_out)
 sqlite3.register_converter("Integer", convert_int_out)
 sqlite3.register_converter("UUID", convert_uuid_out)
@@ -137,6 +158,7 @@ sqlite3.register_converter("Time", convert_time_out)
 sqlite3.register_converter("Seconds", convert_seconds_out)
 sqlite3.register_converter("Boolean", convert_boolean_out)
 sqlite3.register_converter("Timestamptz", convert_timestamptz_out)
+sqlite3.register_converter("Array", convert_array_out)
 
 sqlite3.register_adapter(Decimal, convert_numeric_in)
 sqlite3.register_adapter(uuid.UUID, convert_uuid_in)
@@ -144,6 +166,7 @@ sqlite3.register_adapter(datetime.time, convert_time_in)
 sqlite3.register_adapter(datetime.date, convert_date_in)
 sqlite3.register_adapter(datetime.datetime, convert_datetime_in)
 sqlite3.register_adapter(datetime.timedelta, convert_timedelta_in)
+sqlite3.register_adapter(list, convert_array_in)
 
 ###############################################################################
 

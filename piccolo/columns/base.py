@@ -475,6 +475,11 @@ class Column(Selectable):
             output = f"'{value.isoformat().replace('T', '')}'"
         elif isinstance(value, bytes):
             output = f"'{value.hex()}'"
+        elif isinstance(value, list):
+            # Convert to the array syntax.
+            output = (
+                "'{" + ", ".join([self.get_sql_value(i) for i in value]) + "}'"
+            )
         else:
             output = value
 
