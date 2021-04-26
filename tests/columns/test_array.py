@@ -27,3 +27,13 @@ class TestArrayPostgres(TestCase):
 
         row = MyTable.objects().first().run_sync()
         self.assertEqual(row.value, [1, 2, 3])
+
+    def test_index(self):
+        """
+        Indexes should allow individual array elements to be queried.
+        """
+        MyTable(value=[1, 2, 3]).save().run_sync()
+
+        self.assertEqual(
+            MyTable.select(MyTable.value[0]).first().run_sync(), {"value": 1}
+        )

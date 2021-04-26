@@ -1268,8 +1268,9 @@ class JSONB(JSON):
         Allows part of the JSON structure to be returned - for example,
         for {"a": 1}, and a key value of "a", then 1 will be returned.
         """
-        self.json_operator = f"-> '{key}'"
-        return self
+        instance = t.cast(JSONB, self.copy())
+        instance.json_operator = f"-> '{key}'"
+        return instance
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         select_string = self._meta.get_full_name(just_alias=just_alias)
@@ -1383,6 +1384,7 @@ class Array(Column):
 
         self.base_column = base_column
         self.default = default
+        self.index: t.Optional[int] = None
         kwargs.update({"base_column": base_column, "default": default})
         super().__init__(**kwargs)
 
@@ -1394,3 +1396,41 @@ class Array(Column):
         elif engine_type == "sqlite":
             return "ARRAY"
         raise Exception("Unrecognized engine type")
+
+    def __getitem__(self, value: int) -> Array:
+        """
+        Allows queries which retrieve an item from the array. The index starts
+        with 0 for the first value. If you were to write the SQL by hand, the
+        first index would be 1 instead:
+
+        https://www.postgresql.org/docs/current/arrays.html
+
+        However, we keep the first index as 0 to fit better with Python.
+
+        For example:
+
+        .. code-block:: python
+
+            Ticket.select(Ticket.seat_numbers[1]).run_sync
+
+        """
+        if isinstance(value, int):
+            if value < 0:
+                raise ValueError("Only positive integers are allowed.")
+
+            instance = t.cast(Array, self.copy())
+
+            # We deliberately add 1, as Postgres treats the first array element
+            # as index 1.
+            instance.index = value + 1
+            return instance
+        else:
+            raise ValueError("Only integers can be used for indexing.")
+
+    def get_select_string(self, engine_type: str, just_alias=False) -> str:
+        select_string = self._meta.get_full_name(just_alias=just_alias)
+
+        if isinstance(self.index, int):
+            return f"{select_string}[{self.index}]"
+        else:
+            return select_string
