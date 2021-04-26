@@ -2,6 +2,7 @@ from unittest import TestCase
 
 from piccolo.table import Table
 from piccolo.columns.column_types import Array, Integer
+from tests.base import postgres_only
 
 
 class MyTable(Table):
@@ -28,6 +29,7 @@ class TestArrayPostgres(TestCase):
         row = MyTable.objects().first().run_sync()
         self.assertEqual(row.value, [1, 2, 3])
 
+    @postgres_only
     def test_index(self):
         """
         Indexes should allow individual array elements to be queried.
