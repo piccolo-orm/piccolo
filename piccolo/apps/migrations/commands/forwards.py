@@ -3,26 +3,22 @@ import sys
 import typing as t
 
 from piccolo.apps.migrations.auto import MigrationManager
-from piccolo.apps.migrations.commands.base import BaseMigrationManager
+from piccolo.apps.migrations.commands.base import (
+    BaseMigrationManager,
+    MigrationResult,
+)
 from piccolo.apps.migrations.tables import Migration
 from piccolo.conf.apps import AppConfig, MigrationModule
 
 
 class ForwardsMigrationManager(BaseMigrationManager):
-    def __init__(
-        self,
-        app_name: str,
-        migration_id: str,
-        fake: bool = False,
-        *args,
-        **kwargs,
-    ):
+    def __init__(self, app_name: str, migration_id: str, fake: bool = False):
         self.app_name = app_name
         self.migration_id = migration_id
         self.fake = fake
         super().__init__()
 
-    async def run_migrations(self, app_config: AppConfig) -> None:
+    async def run_migrations(self, app_config: AppConfig) -> MigrationResult:
         already_ran = await Migration.get_migrations_which_ran(
             app_name=self.app_name
         )
@@ -38,10 +34,11 @@ class ForwardsMigrationManager(BaseMigrationManager):
         print(f"Haven't run = {havent_run}")
 
         if len(havent_run) == 0:
-            # Make sure a status of 0 is returned, as we don't want this
+            # Make sure this still appears successful, as we don't want this
             # to appear as an error in automated scripts.
-            print("No migrations left to run!")
-            sys.exit(0)
+            message = "No migrations left to run!"
+            print(message)
+            return MigrationResult(success=True, message=message)
 
         if self.migration_id == "all":
             subset = havent_run
@@ -51,7 +48,9 @@ class ForwardsMigrationManager(BaseMigrationManager):
             try:
                 index = havent_run.index(self.migration_id)
             except ValueError:
-                sys.exit(f"{self.migration_id} is unrecognised")
+                message = f"{self.migration_id} is unrecognised"
+                print(message, file=sys.stderr)
+                return MigrationResult(success=False, message=message)
             else:
                 subset = havent_run[: index + 1]
 
@@ -71,13 +70,43 @@ class ForwardsMigrationManager(BaseMigrationManager):
                 Migration(name=_id, app_name=self.app_name)
             ).run()
 
-    async def run(self):
+        return MigrationResult(success=True, message="Ran successfully")
+
+    async def run(self) -> MigrationResult:
         print("Running migrations ...")
         await self.create_migration_table()
 
         app_config = self.get_app_config(app_name=self.app_name)
 
-        await self.run_migrations(app_config)
+        return await self.run_migrations(app_config)
+
+
+async def run_forwards(
+    app_name: str, migration_id: str = "all", fake: bool = False
+) -> MigrationResult:
+    """
+    Run the migrations. This function can be used to programatically run
+    migrations - for example, in a unit test.
+    """
+    if app_name == "all":
+        sorted_app_names = BaseMigrationManager().get_sorted_app_names()
+        for _app_name in sorted_app_names:
+            print(f"\nMigrating {_app_name}")
+            print("------------------------------------------------")
+            manager = ForwardsMigrationManager(
+                app_name=_app_name, migration_id="all", fake=fake
+            )
+            response = await manager.run()
+            if not response.success:
+                return response
+
+        return MigrationResult(success=True)
+
+    else:
+        manager = ForwardsMigrationManager(
+            app_name=app_name, migration_id=migration_id, fake=fake
+        )
+        return await manager.run()
 
 
 async def forwards(
@@ -97,17 +126,9 @@ async def forwards(
         If set, will record the migrations as being run without actually
         running them.
     """
-    if app_name == "all":
-        sorted_app_names = BaseMigrationManager().get_sorted_app_names()
-        for _app_name in sorted_app_names:
-            print(f"\nMigrating {_app_name}")
-            print("------------------------------------------------")
-            manager = ForwardsMigrationManager(
-                app_name=_app_name, migration_id="all", fake=fake
-            )
-            await manager.run()
-    else:
-        manager = ForwardsMigrationManager(
-            app_name=app_name, migration_id=migration_id, fake=fake
-        )
-        await manager.run()
+    response = await run_forwards(
+        app_name=app_name, migration_id=migration_id, fake=fake
+    )
+
+    if not response.success:
+        sys.exit(1)

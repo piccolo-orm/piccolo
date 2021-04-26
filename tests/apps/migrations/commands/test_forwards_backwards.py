@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 import typing as t
 from unittest import TestCase
 from unittest.mock import patch, call, MagicMock
@@ -86,28 +87,31 @@ class TestForwardsBackwards(TestCase):
             for table_class in table_classes:
                 self.assertTrue(not table_class.table_exists().run_sync())
 
-    def test_forwards_unknown_migration(self):
+    @patch("piccolo.apps.migrations.commands.forwards.print")
+    def test_forwards_unknown_migration(self, print_: MagicMock):
         """
         Test running an unknown migrations forwards.
         """
-        with self.assertRaises(SystemExit) as manager:
+        with self.assertRaises(SystemExit):
             run_sync(
                 forwards(
                     app_name="example_app", migration_id="migration-12345"
                 )
             )
 
-        self.assertEqual(
-            manager.exception.__str__(), "migration-12345 is unrecognised"
+        self.assertTrue(
+            call("migration-12345 is unrecognised", file=sys.stderr)
+            in print_.mock_calls
         )
 
-    def test_backwards_unknown_migration(self):
+    @patch("piccolo.apps.migrations.commands.backwards.print")
+    def test_backwards_unknown_migration(self, print_: MagicMock):
         """
         Test running an unknown migrations backwards.
         """
         run_sync(forwards(app_name="example_app", migration_id="all"))
 
-        with self.assertRaises(SystemExit) as manager:
+        with self.assertRaises(SystemExit):
             run_sync(
                 backwards(
                     app_name="example_app",
@@ -117,29 +121,24 @@ class TestForwardsBackwards(TestCase):
             )
 
         self.assertTrue(
-            manager.exception.__str__().startswith(
+            tuple(print_.mock_calls[0])[1][0].startswith(
                 "Unrecognized migration name - must be one of "
             )
         )
 
     @patch("piccolo.apps.migrations.commands.backwards.print")
-    def test_backwards_no_migrations(self, print_):
+    def test_backwards_no_migrations(self, print_: MagicMock):
         """
         Test running migrations backwards if none have been run previously.
         """
-        with self.assertRaises(SystemExit) as manager:
-            run_sync(
-                backwards(
-                    app_name="example_app",
-                    migration_id="2020-12-17T18:44:30",
-                    auto_agree=True,
-                )
+        run_sync(
+            backwards(
+                app_name="example_app",
+                migration_id="2020-12-17T18:44:30",
+                auto_agree=True,
             )
-
-        self.assertEqual(manager.exception.code, 0)
-        self.assertTrue(
-            print_.mock_calls[-1] == call("No migrations to reverse!")
         )
+        self.assertTrue(call("No migrations to reverse!") in print_.mock_calls)
 
     @patch("piccolo.apps.migrations.commands.forwards.print")
     def test_forwards_no_migrations(self, print_: MagicMock):
@@ -147,11 +146,8 @@ class TestForwardsBackwards(TestCase):
         Test running the migrations if they've already run.
         """
         run_sync(forwards(app_name="example_app", migration_id="all"))
+        run_sync(forwards(app_name="example_app", migration_id="all"))
 
-        with self.assertRaises(SystemExit) as manager:
-            run_sync(forwards(app_name="example_app", migration_id="all"))
-
-        self.assertEqual(manager.exception.code, 0)
         self.assertTrue(
             print_.mock_calls[-1] == call("No migrations left to run!")
         )

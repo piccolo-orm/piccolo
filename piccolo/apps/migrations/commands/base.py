@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import dataclass
 import importlib
 import os
 import sys
@@ -12,6 +13,12 @@ from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
 from piccolo.apps.migrations.auto.schema_snapshot import SchemaSnapshot
 from piccolo.apps.migrations.tables import Migration
+
+
+@dataclass
+class MigrationResult:
+    success: bool
+    message: t.Optional[str] = None
 
 
 class BaseMigrationManager(Finder):

@@ -1,12 +1,12 @@
 from unittest import TestCase
-from unittest.mock import call, patch
+from unittest.mock import call, patch, MagicMock
 
 from piccolo.apps.app.commands.show_all import show_all
 
 
 class TestShowAll(TestCase):
     @patch("piccolo.apps.app.commands.show_all.print")
-    def test_show_all(self, print_):
+    def test_show_all(self, print_: MagicMock):
         show_all()
 
         self.assertEqual(
