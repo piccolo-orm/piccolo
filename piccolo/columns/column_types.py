@@ -52,7 +52,7 @@ class ConcatDelegate:
         value: t.Union[str, Varchar, Text],
         engine_type: str,
         reverse=False,
-    ):
+    ) -> QueryString:
         Concat = ConcatPostgres if engine_type == "postgres" else ConcatSQLite
 
         if isinstance(value, (Varchar, Text)):
@@ -106,7 +106,7 @@ class MathDelegate:
         operator: str,
         value: t.Union[int, float, Integer],
         reverse=False,
-    ):
+    ) -> QueryString:
         if isinstance(value, Integer):
             column: Integer = value
             if len(column._meta.call_chain) > 0:
@@ -1343,3 +1343,27 @@ class Blob(Bytea):
     """
 
     pass
+
+
+###############################################################################
+
+
+class Array(Column):
+    value_type = list
+
+    def __init__(
+        self,
+        base_column: Column,
+        default: t.Union[t.List, t.Callable[[], t.List], None] = list,
+        **kwargs,
+    ) -> None:
+        self._validate_default(default, (list, None))
+
+        self.base_column = base_column
+        self.default = default
+        kwargs.update({"base_column": base_column, "default": default})
+        super().__init__(**kwargs)
+
+    @property
+    def column_type(self):
+        return f"{self.base_column.column_type}[]"
