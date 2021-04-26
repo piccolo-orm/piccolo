@@ -215,3 +215,9 @@ Arrays of data can be stored, which can be useful when you want store lots of
 values without using foreign keys.
 
 .. autoclass:: Array
+
+=============================
+Accessing individual elements
+=============================
+
+.. automethod:: Array.__getitem__

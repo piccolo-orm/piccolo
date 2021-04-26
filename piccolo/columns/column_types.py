@@ -1411,7 +1411,9 @@ class Array(Column):
 
         .. code-block:: python
 
-            Ticket.select(Ticket.seat_numbers[1]).run_sync
+            >>> Ticket.select(Ticket.seat_numbers[0]).first().run_sync
+            {'seat_numbers': 325}
+
 
         """
         if isinstance(value, int):
