@@ -1349,6 +1349,25 @@ class Blob(Bytea):
 
 
 class Array(Column):
+    """
+    Used for storing lists of data.
+
+    **Example**
+
+    .. code-block:: python
+
+        class Ticket(Table):
+            seat_numbers = Array(base_column=Integer())
+
+        # Create
+        >>> Ticket(seat_numbers=[34, 35, 36]).save().run_sync()
+
+        # Query
+        >>> Ticket.select(Ticket.seat_numbers).run_sync()
+        {'seat_numbers': [34, 35, 36]}
+
+    """
+
     value_type = list
 
     def __init__(
@@ -1357,6 +1376,9 @@ class Array(Column):
         default: t.Union[t.List, t.Callable[[], t.List], None] = list,
         **kwargs,
     ) -> None:
+        if isinstance(base_column, ForeignKey):
+            raise ValueError("Arrays of ForeignKeys aren't allowed.")
+
         self._validate_default(default, (list, None))
 
         self.base_column = base_column

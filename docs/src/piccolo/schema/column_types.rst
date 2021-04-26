@@ -204,3 +204,14 @@ a subset of the JSON data, and for filtering in a where clause.
     >>>     Booking.data.arrow('name') == '"Alison"'
     >>> ).run_sync()
     [{'id': 1}]
+
+-------------------------------------------------------------------------------
+
+*****
+Array
+*****
+
+Arrays of data can be stored, which can be useful when you want store lots of
+values without using foreign keys.
+
+.. autoclass:: Array
