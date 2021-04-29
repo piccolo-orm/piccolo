@@ -1475,7 +1475,7 @@ class Array(Column):
         engine_type = self._meta.table._meta.db.engine_type
 
         if engine_type == "postgres":
-            return Where(column=self, value=value, operator=ArrayAny)
+            return Where(column=self, value=value, operator=ArrayAll)
         elif engine_type == "sqlite":
             raise ValueError("Unsupported by SQLite")
         else:
