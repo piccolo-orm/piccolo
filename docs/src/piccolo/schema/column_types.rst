@@ -221,3 +221,15 @@ Accessing individual elements
 =============================
 
 .. automethod:: Array.__getitem__
+
+===
+any
+===
+
+.. automethod:: Array.any
+
+===
+all
+===
+
+.. automethod:: Array.all

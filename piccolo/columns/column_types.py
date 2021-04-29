@@ -1469,7 +1469,7 @@ class Array(Column):
 
         .. code-block:: python
 
-            >>> Ticket.select().where(Ticket.seat_numbers.any(510)).run_sync()
+            >>> Ticket.select().where(Ticket.seat_numbers.all(510)).run_sync()
 
         """
         engine_type = self._meta.table._meta.db.engine_type
