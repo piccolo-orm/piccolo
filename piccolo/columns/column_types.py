@@ -12,6 +12,7 @@ from piccolo.columns.base import (
     OnDelete,
     OnUpdate,
 )
+from piccolo.columns.combination import Where
 from piccolo.columns.defaults.date import DateArg, DateCustom, DateNow
 from piccolo.columns.defaults.interval import IntervalArg, IntervalCustom
 from piccolo.columns.defaults.time import TimeArg, TimeCustom, TimeNow
@@ -26,6 +27,7 @@ from piccolo.columns.defaults.timestamptz import (
     TimestamptzNow,
 )
 from piccolo.columns.defaults.uuid import UUID4, UUIDArg
+from piccolo.columns.operators.comparison import ArrayAll, ArrayAny
 from piccolo.columns.operators.string import ConcatPostgres, ConcatSQLite
 from piccolo.columns.reference import LazyTableReference
 from piccolo.querystring import QueryString, Unquoted
@@ -1416,6 +1418,12 @@ class Array(Column):
 
 
         """
+        engine_type = self._meta.table._meta.db.engine_type
+        if engine_type != "postgres":
+            raise ValueError(
+                "Only Postgres supports array indexing currently."
+            )
+
         if isinstance(value, int):
             if value < 0:
                 raise ValueError("Only positive integers are allowed.")
@@ -1436,3 +1444,39 @@ class Array(Column):
             return f"{select_string}[{self.index}]"
         else:
             return select_string
+
+    def any(self, value: t.Any) -> Where:
+        """
+        Check if any of the items in the array match the given value.
+
+        .. code-block:: python
+
+            >>> Ticket.select().where(Ticket.seat_numbers.any(510)).run_sync()
+
+        """
+        engine_type = self._meta.table._meta.db.engine_type
+
+        if engine_type == "postgres":
+            return Where(column=self, value=value, operator=ArrayAny)
+        elif engine_type == "sqlite":
+            return self.like(f"%{value}%")
+        else:
+            raise ValueError("Unrecognised engine type")
+
+    def all(self, value: t.Any) -> Where:
+        """
+        Check if all of the items in the array match the given value.
+
+        .. code-block:: python
+
+            >>> Ticket.select().where(Ticket.seat_numbers.any(510)).run_sync()
+
+        """
+        engine_type = self._meta.table._meta.db.engine_type
+
+        if engine_type == "postgres":
+            return Where(column=self, value=value, operator=ArrayAny)
+        elif engine_type == "sqlite":
+            raise ValueError("Unsupported by SQLite")
+        else:
+            raise ValueError("Unrecognised engine type")
