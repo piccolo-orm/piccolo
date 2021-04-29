@@ -1,6 +1,10 @@
 Changes
 =======
 
+0.18.2
+------
+Added support for filtering ``Array`` columns.
+
 0.18.1
 ------
 Add the ``Array`` column type as a top level import in ``piccolo.columns``.
