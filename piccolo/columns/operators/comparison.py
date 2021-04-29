@@ -56,3 +56,11 @@ class LessThan(ComparisonOperator):
 
 class LessEqualThan(ComparisonOperator):
     template = "{name} <= {value}"
+
+
+class ArrayAny(ComparisonOperator):
+    template = "{value} = ANY ({name})"
+
+
+class ArrayAll(ComparisonOperator):
+    template = "{value} = ALL ({name})"

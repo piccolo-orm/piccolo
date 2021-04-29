@@ -39,3 +39,50 @@ class TestArrayPostgres(TestCase):
         self.assertEqual(
             MyTable.select(MyTable.value[0]).first().run_sync(), {"value": 1}
         )
+
+    @postgres_only
+    def test_all(self):
+        """
+        Make sure rows can be retrieved where all items in an array match a
+        given value.
+        """
+        MyTable(value=[1, 1, 1]).save().run_sync()
+
+        self.assertEqual(
+            MyTable.select(MyTable.value)
+            .where(MyTable.value.all(1))
+            .first()
+            .run_sync(),
+            {"value": [1, 1, 1]},
+        )
+
+        self.assertEqual(
+            MyTable.select(MyTable.value)
+            .where(MyTable.value.all(0))
+            .first()
+            .run_sync(),
+            None,
+        )
+
+    def test_any(self):
+        """
+        Make sure rows can be retrieved where any items in an array match a
+        given value.
+        """
+        MyTable(value=[1, 2, 3]).save().run_sync()
+
+        self.assertEqual(
+            MyTable.select(MyTable.value)
+            .where(MyTable.value.any(1))
+            .first()
+            .run_sync(),
+            {"value": [1, 2, 3]},
+        )
+
+        self.assertEqual(
+            MyTable.select(MyTable.value)
+            .where(MyTable.value.any(0))
+            .first()
+            .run_sync(),
+            None,
+        )
