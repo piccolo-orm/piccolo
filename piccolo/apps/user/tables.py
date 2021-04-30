@@ -6,7 +6,7 @@ import hashlib
 import secrets
 import typing as t
 
-from piccolo.columns import Varchar, Boolean, Secret
+from piccolo.columns import Varchar, Boolean, Secret, Timestamp
 from piccolo.columns.readable import Readable
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
@@ -23,7 +23,19 @@ class BaseUser(Table, tablename="piccolo_user"):
     last_name = Varchar(null=True)
     email = Varchar(length=255, unique=True)
     active = Boolean(default=False)
-    admin = Boolean(default=False)
+    admin = Boolean(
+        default=False, help_text="An admin can log into the Piccolo admin GUI."
+    )
+    superuser = Boolean(
+        default=False,
+        help_text=(
+            "If True, this user can manage other users's passwords in the "
+            "Piccolo admin GUI."
+        ),
+    )
+    last_login = Timestamp(
+        null=True, default=None, help_text="When this user last logged in."
+    )
 
     def __init__(self, **kwargs):
         """
