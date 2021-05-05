@@ -42,13 +42,10 @@ class SerialisedClassInstance:
     def __eq__(self, other):
         return self.__hash__() == other.__hash__()
 
-    def _serialise_value(self, value):
-        return f"'{value}'" if isinstance(value, str) else value
-
     def __repr__(self):
         args = ", ".join(
             [
-                f"{key}={self._serialise_value(value)}"
+                f"{key}={value.__repr__()}"
                 for key, value in self.instance.__dict__.items()
             ]
         )
@@ -66,13 +63,10 @@ class SerialisedColumnInstance:
     def __eq__(self, other):
         return self.__hash__() == other.__hash__()
 
-    def _serialise_value(self, value):
-        return f"'{value}'" if isinstance(value, str) else value
-
     def __repr__(self):
         args = ", ".join(
             [
-                f"{key}={self._serialise_value(self.serialised_params.params.get(key))}"  # noqa: E501
+                f"{key}={self.serialised_params.params.get(key).__repr__()}"  # noqa: E501
                 for key in self.instance._meta.params.keys()
             ]
         )
