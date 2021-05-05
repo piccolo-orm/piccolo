@@ -215,6 +215,10 @@ class PostgresEngine(Engine):
         When the engine starts, it will try and create these extensions
         in Postgres.
 
+    :param log_queries:
+        If True, all SQL and DDL statements are printed out before being run.
+        Useful for debugging.
+
     """  # noqa: E501
 
     __slots__ = ("config", "extensions", "pool", "transaction_connection")
@@ -226,9 +230,11 @@ class PostgresEngine(Engine):
         self,
         config: t.Dict[str, t.Any],
         extensions: t.Sequence[str] = ["uuid-ossp"],
+        log_queries: bool = False,
     ) -> None:
         self.config = config
         self.extensions = extensions
+        self.log_queries = log_queries
         self.pool: t.Optional[Pool] = None
         database_name = config.get("database", "Unknown")
         self.transaction_connection = contextvars.ContextVar(
@@ -366,6 +372,9 @@ class PostgresEngine(Engine):
         query, query_args = querystring.compile_string(
             engine_type=self.engine_type
         )
+
+        if self.log_queries:
+            print(querystring)
 
         # If running inside a transaction:
         connection = self.transaction_connection.get()
