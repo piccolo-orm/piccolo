@@ -1,4 +1,5 @@
 from __future__ import annotations
+import builtins
 from copy import deepcopy
 from dataclasses import dataclass, field
 import datetime
@@ -8,6 +9,7 @@ import inspect
 import typing as t
 import uuid
 
+from piccolo.columns import Column
 from piccolo.columns.defaults.base import Default
 from piccolo.columns.reference import LazyTableReference
 from piccolo.table import Table
@@ -17,7 +19,21 @@ from .serialisation_legacy import deserialise_legacy_params
 
 
 @dataclass
-class SerialisedClass:
+class SerialisedBuiltin:
+    builtin: t.Any
+
+    def __hash__(self):
+        return self.builtin.__name__
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
+    def __repr__(self):
+        return self.builtin.__name__
+
+
+@dataclass
+class SerialisedClassInstance:
     instance: object
 
     def __hash__(self):
@@ -26,14 +42,32 @@ class SerialisedClass:
     def __eq__(self, other):
         return self.__hash__() == other.__hash__()
 
-    def _serialise_value(self, value):
-        return f"'{value}'" if isinstance(value, str) else value
+    def __repr__(self):
+        args = ", ".join(
+            [
+                f"{key}={value.__repr__()}"
+                for key, value in self.instance.__dict__.items()
+            ]
+        )
+        return f"{self.instance.__class__.__name__}({args})"
+
+
+@dataclass
+class SerialisedColumnInstance:
+    instance: Column
+    serialised_params: SerialisedParams
+
+    def __hash__(self):
+        return self.instance.__hash__()
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
 
     def __repr__(self):
         args = ", ".join(
             [
-                f"{key}={self._serialise_value(value)}"
-                for key, value in self.instance.__dict__.items()
+                f"{key}={self.serialised_params.params.get(key).__repr__()}"  # noqa: E501
+                for key in self.instance._meta.params.keys()
             ]
         )
         return f"{self.instance.__class__.__name__}({args})"
@@ -127,9 +161,40 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
 
     for key, value in params.items():
 
+        # Builtins, such as str, list and dict.
+        if (
+            hasattr(value, "__module__")
+            and value.__module__ == builtins.__name__
+        ):
+            params[key] = SerialisedBuiltin(builtin=value)
+            continue
+
+        # Column instances, which are used by Array definitions.
+        if isinstance(value, Column):
+            column: Column = value
+            serialised_params: SerialisedParams = serialise_params(
+                params=column._meta.params
+            )
+
+            # Include the extra imports and definitions required for the
+            # column params.
+            extra_imports.extend(serialised_params.extra_imports)
+            extra_definitions.extend(serialised_params.extra_definitions)
+
+            extra_imports.append(
+                Import(
+                    module=column.__class__.__module__,
+                    target=column.__class__.__name__,
+                )
+            )
+            params[key] = SerialisedColumnInstance(
+                instance=value, serialised_params=serialised_params
+            )
+            continue
+
         # Class instances
         if isinstance(value, Default):
-            params[key] = SerialisedClass(instance=value)
+            params[key] = SerialisedClassInstance(instance=value)
             extra_imports.append(
                 Import(
                     module=value.__class__.__module__,
@@ -227,7 +292,7 @@ def deserialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
         if isinstance(value, str) and not isinstance(value, Enum):
             if value != "self":
                 params[key] = deserialise_legacy_params(name=key, value=value)
-        elif isinstance(value, SerialisedClass):
+        elif isinstance(value, SerialisedClassInstance):
             params[key] = value.instance
         elif isinstance(value, SerialisedUUID):
             params[key] = value.instance
