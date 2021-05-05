@@ -172,7 +172,12 @@ class Table(metaclass=TableMetaclass):
 
             attribute = getattr(cls, attribute_name)
             if isinstance(attribute, Column):
-                column = attribute
+                # We have to copy, then override the existing column
+                # definition, in case this column is inheritted from a mixin.
+                # Otherwise, when we set attributes on that column, it will
+                # effect all other users of that mixin.
+                column = attribute.copy()
+                setattr(cls, attribute_name, column)
 
                 if isinstance(column, PrimaryKey):
                     # We want it at the start.
@@ -185,8 +190,8 @@ class Table(metaclass=TableMetaclass):
                 column._meta._name = attribute_name
                 column._meta._table = cls
 
-            if isinstance(column, ForeignKey):
-                foreign_key_columns.append(column)
+                if isinstance(column, ForeignKey):
+                    foreign_key_columns.append(column)
 
         cls._meta = TableMeta(
             tablename=tablename,
