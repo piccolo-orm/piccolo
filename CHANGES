@@ -1,6 +1,10 @@
 Changes
 =======
 
+0.18.3
+------
+Improved ``Array`` column serialisation - needed to fix auto migrations.
+
 0.18.2
 ------
 Added support for filtering ``Array`` columns.
