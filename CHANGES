@@ -1,6 +1,18 @@
 Changes
 =======
 
+0.18.4
+------
+ * Fixed a bug when multiple tables inherit from the same mixin (thanks to
+   @brnosouza).
+ * Added a ``log_queries`` option to ``PostgresEngine``, which is useful during
+   debugging.
+ * Added the `inflection` library for converting ``Table`` class names to
+   database table names. Previously, a class called ``TableA`` would wrongly
+   have a table called ``table`` instead of ``table_a``.
+ * Fixed a bug with ``SerialisedBuiltin.__hash__`` not returning a number,
+   which could break migrations (thanks to @sinisaos).
+
 0.18.3
 ------
 Improved ``Array`` column serialisation - needed to fix auto migrations.
