@@ -23,7 +23,7 @@ class SerialisedBuiltin:
     builtin: t.Any
 
     def __hash__(self):
-        return self.builtin.__name__
+        return hash(self.builtin.__name__)
 
     def __eq__(self, other):
         return self.__hash__() == other.__hash__()
