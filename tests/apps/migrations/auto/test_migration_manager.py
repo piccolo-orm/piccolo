@@ -1,4 +1,5 @@
 import asyncio
+from piccolo.columns.column_types import ForeignKey
 from unittest.mock import patch, MagicMock
 
 from asyncpg.exceptions import UniqueViolationError
@@ -119,6 +120,7 @@ class TestMigrationManager(DBTestCase):
             table_class_name="Manager",
             tablename="manager",
             column_name="email",
+            column_class=Varchar,
             column_class_name="Varchar",
             params={
                 "length": 100,
@@ -156,6 +158,7 @@ class TestMigrationManager(DBTestCase):
             table_class_name="Manager",
             tablename="manager",
             column_name="email",
+            column_class=Varchar,
             column_class_name="Varchar",
             params={
                 "length": 100,
@@ -187,6 +190,7 @@ class TestMigrationManager(DBTestCase):
             table_class_name="Manager",
             tablename="manager",
             column_name="advisor",
+            column_class=ForeignKey,
             column_class_name="ForeignKey",
             params={
                 "references": "self",
@@ -235,6 +239,7 @@ class TestMigrationManager(DBTestCase):
             table_class_name="Manager",
             tablename="manager",
             column_name="email",
+            column_class=Varchar,
             column_class_name="Varchar",
             params={
                 "length": 100,

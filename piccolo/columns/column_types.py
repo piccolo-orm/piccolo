@@ -1384,6 +1384,10 @@ class Array(Column):
 
         self._validate_default(default, (list, None))
 
+        # Usually columns are given a name by the Table metaclass, but in this
+        # case we have to assign one manually.
+        base_column._meta._name = base_column.__class__.__name__
+
         self.base_column = base_column
         self.default = default
         self.index: t.Optional[int] = None

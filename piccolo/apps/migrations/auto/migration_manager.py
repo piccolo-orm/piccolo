@@ -609,7 +609,11 @@ class MigrationManager:
                 _Table._meta.tablename = add_columns[0].tablename
 
                 for add_column in add_columns:
-                    column = add_column.column
+                    # We fetch the column from the Table, as the metaclass
+                    # copies and sets it up properly.
+                    column = _Table._meta.get_column_by_name(
+                        add_column.column._meta.name
+                    )
                     await _Table.alter().add_column(
                         name=column._meta.name, column=column
                     ).run()

@@ -1,14 +1,8 @@
-import re
+import inflection
 
 
-_camel_words = re.compile(r"([A-Z][a-z0-9_]+)")
-
-
-def _camel_to_snake(s):
-    """ Convert CamelCase to snake_case.
+def _camel_to_snake(string: str):
     """
-    return "_".join(
-        [
-            i.lower() for i in _camel_words.split(s)[1::2]
-        ]
-    )
+    Convert CamelCase to snake_case.
+    """
+    return inflection.underscore(string)

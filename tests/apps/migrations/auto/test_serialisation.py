@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from piccolo.apps.migrations.auto.serialisation import serialise_params
+from piccolo.columns.column_types import Varchar
 from piccolo.columns.defaults import DateNow, TimeNow, TimestampNow, UUID4
 from piccolo.columns.reference import LazyTableReference
 
@@ -89,4 +90,34 @@ class TestSerialiseParams(TestCase):
 
         self.assertEqual(
             manager.exception.__str__(), "Lambdas can't be serialised"
+        )
+
+    def test_builtins(self):
+        """
+        Make sure builtins can be serialised properly.
+        """
+        serialised = serialise_params(params={"default": list})
+        self.assertTrue(serialised.params["default"].__repr__() == "list")
+
+        self.assertTrue(len(serialised.extra_imports) == 0)
+
+    def test_column_instance(self):
+        """
+        Make sure Column instances can be serialised properly. An example
+        use case is when a `base_column` argument is passed to an `Array`
+        column.
+        """
+        serialised = serialise_params(params={"base_column": Varchar()})
+
+        self.assertEqual(
+            serialised.params["base_column"].__repr__(),
+            "Varchar(length=255, default='', null=False, primary=False, key=False, unique=False, index=False, index_method=IndexMethod.btree)",  # noqa: E501
+        )
+
+        self.assertEqual(
+            {i.__repr__() for i in serialised.extra_imports},
+            {
+                "from piccolo.columns.column_types import Varchar",
+                "from piccolo.columns.indexes import IndexMethod",
+            },
         )
