@@ -3,16 +3,19 @@ import sys
 
 from targ import CLI  # type: ignore
 
-from piccolo.conf.apps import AppRegistry, Finder
 from piccolo.apps.app.piccolo_app import APP_CONFIG as app_config
 from piccolo.apps.asgi.piccolo_app import APP_CONFIG as asgi_config
 from piccolo.apps.meta.piccolo_app import APP_CONFIG as meta_config
+from piccolo.apps.migrations.commands.check import CheckMigrationManager
 from piccolo.apps.migrations.piccolo_app import APP_CONFIG as migrations_config
 from piccolo.apps.playground.piccolo_app import APP_CONFIG as playground_config
 from piccolo.apps.project.piccolo_app import APP_CONFIG as project_config
 from piccolo.apps.shell.piccolo_app import APP_CONFIG as shell_config
 from piccolo.apps.sql_shell.piccolo_app import APP_CONFIG as sql_shell_config
 from piccolo.apps.user.piccolo_app import APP_CONFIG as user_config
+from piccolo.conf.apps import AppRegistry, Finder
+from piccolo.utils.sync import run_sync
+from piccolo.utils.warnings import colored_string, Level
 
 
 DIAGNOSE_FLAG = "--diagnose"
@@ -80,6 +83,33 @@ def main():
                     # Skipping - already registered.
                     continue
                 cli.register(command, group_name=app_name)
+
+        # Show a warning if any migrations haven't been run.
+        try:
+            havent_ran_count = run_sync(
+                CheckMigrationManager(app_name="all").havent_ran_count()
+            )
+            if havent_ran_count:
+                message = (
+                    f"{havent_ran_count} migration hasn't"
+                    if havent_ran_count == 1
+                    else f"{havent_ran_count} migrations haven't"
+                )
+                print(
+                    colored_string(
+                        message=(
+                            "=> {} been run - the app "
+                            "might not behave as expected.\n"
+                            "To check which use:\n"
+                            "    piccolo migrations check\n"
+                            "To run all migrations:\n"
+                            "    piccolo migrations forwards all\n"
+                        ).format(message),
+                        level=Level.high,
+                    )
+                )
+        except Exception:
+            pass
 
     ###########################################################################
 

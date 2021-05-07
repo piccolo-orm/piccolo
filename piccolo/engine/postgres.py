@@ -14,7 +14,7 @@ from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
-from piccolo.utils.warnings import colored_warning
+from piccolo.utils.warnings import colored_warning, colored_string, Level
 
 
 @dataclass
@@ -284,11 +284,14 @@ class PostgresEngine(Engine):
                 )
             except InsufficientPrivilegeError:
                 print(
-                    f"Unable to create {extension} extension - some "
-                    "functionality may not behave as expected. Make sure your "
-                    "database user has permission to create extensions, or "
-                    "add it manually using "
-                    f'`CREATE EXTENSION "{extension}";`'
+                    colored_string(
+                        f"=> Unable to create {extension} extension - some "
+                        "functionality may not behave as expected. Make sure "
+                        "your database user has permission to create "
+                        "extensions, or add it manually using "
+                        f'`CREATE EXTENSION "{extension}";`',
+                        level=Level.medium,
+                    )
                 )
 
     ###########################################################################
