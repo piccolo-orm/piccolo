@@ -1,6 +1,22 @@
 Changes
 =======
 
+0.19.0
+------
+Changes to the ``BaseUser`` table - added a ``superuser``, and ``last_login``
+column. These are required for upgrades to Piccolo Admin.
+
+If you're using migrations, then running ``piccolo migrations forwards all``
+should add these new columns for you.
+
+If not using migrations, the ``BaseUser`` table can be upgraded using the
+following DDL statements:
+
+.. code-block:: sql
+
+    ALTER TABLE piccolo_user ADD COLUMN "superuser" BOOLEAN NOT NULL DEFAULT false
+    ALTER TABLE piccolo_user ADD COLUMN "last_login" TIMESTAMP DEFAULT null
+
 0.18.4
 ------
  * Fixed a bug when multiple tables inherit from the same mixin (thanks to
