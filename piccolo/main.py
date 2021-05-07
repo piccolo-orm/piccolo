@@ -84,32 +84,36 @@ def main():
                     continue
                 cli.register(command, group_name=app_name)
 
-        # Show a warning if any migrations haven't been run.
-        try:
-            havent_ran_count = run_sync(
-                CheckMigrationManager(app_name="all").havent_ran_count()
-            )
-            if havent_ran_count:
-                message = (
-                    f"{havent_ran_count} migration hasn't"
-                    if havent_ran_count == 1
-                    else f"{havent_ran_count} migrations haven't"
+        if "migrations" not in sys.argv:
+            # Show a warning if any migrations haven't been run.
+            # Don't run it if it looks like the user is running a migration
+            # command, as this information is redundant.
+
+            try:
+                havent_ran_count = run_sync(
+                    CheckMigrationManager(app_name="all").havent_ran_count()
                 )
-                print(
-                    colored_string(
-                        message=(
-                            "=> {} been run - the app "
-                            "might not behave as expected.\n"
-                            "To check which use:\n"
-                            "    piccolo migrations check\n"
-                            "To run all migrations:\n"
-                            "    piccolo migrations forwards all\n"
-                        ).format(message),
-                        level=Level.high,
+                if havent_ran_count:
+                    message = (
+                        f"{havent_ran_count} migration hasn't"
+                        if havent_ran_count == 1
+                        else f"{havent_ran_count} migrations haven't"
                     )
-                )
-        except Exception:
-            pass
+                    print(
+                        colored_string(
+                            message=(
+                                "=> {} been run - the app "
+                                "might not behave as expected.\n"
+                                "To check which use:\n"
+                                "    piccolo migrations check\n"
+                                "To run all migrations:\n"
+                                "    piccolo migrations forwards all\n"
+                            ).format(message),
+                            level=Level.high,
+                        )
+                    )
+            except Exception:
+                pass
 
     ###########################################################################
 
