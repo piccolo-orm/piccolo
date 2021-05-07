@@ -31,6 +31,10 @@ class TestCreate(TestCase):
     @patch(
         "piccolo.apps.user.commands.create.get_is_admin", return_value=True,
     )
+    @patch(
+        "piccolo.apps.user.commands.create.get_is_superuser",
+        return_value=True,
+    )
     def test_create(self, *args, **kwargs):
         create()
 
@@ -40,6 +44,7 @@ class TestCreate(TestCase):
                 (BaseUser.admin == True)  # noqa: E712
                 & (BaseUser.username == "bob123")
                 & (BaseUser.email == "bob@test.com")
+                & (BaseUser.superuser == True)
             )
             .run_sync()
         )

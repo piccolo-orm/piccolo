@@ -33,6 +33,17 @@ def get_is_admin() -> bool:
     return admin == "y"
 
 
+def get_is_superuser() -> bool:
+    while True:
+        superuser = input("Superuser? Enter y or n:\n")
+        if superuser in ("y", "n"):
+            break
+        else:
+            print("Unrecognised option")
+
+    return superuser == "y"
+
+
 def create():
     """
     Create a new user.
@@ -49,6 +60,7 @@ def create():
         sys.exit("The password is too short")
 
     is_admin = get_is_admin()
+    is_superuser = get_is_superuser()
 
     user = BaseUser(
         username=username,
@@ -56,6 +68,7 @@ def create():
         admin=is_admin,
         email=email,
         active=True,
+        superuser=is_superuser,
     )
     user.save().run_sync()
 
