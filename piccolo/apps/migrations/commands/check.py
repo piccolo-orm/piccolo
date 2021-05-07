@@ -1,6 +1,16 @@
+import dataclasses
+import typing as t
+
 from piccolo.apps.migrations.commands.base import BaseMigrationManager
 from piccolo.apps.migrations.tables import Migration
 from piccolo.utils.printing import get_fixed_length_string
+
+
+@dataclasses.dataclass
+class MigrationStatus:
+    app_name: str
+    migration_id: str
+    has_ran: bool
 
 
 class CheckMigrationManager(BaseMigrationManager):
@@ -8,16 +18,11 @@ class CheckMigrationManager(BaseMigrationManager):
         self.app_name = app_name
         super().__init__()
 
-    async def run(self):
-        print("Listing migrations ...")
-
+    async def get_migration_statuses(self) -> t.List[MigrationStatus]:
         # Make sure the migration table exists, otherwise we'll get an error.
         await self.create_migration_table()
 
-        print(
-            f'{get_fixed_length_string("APP NAME")} | '
-            f'{get_fixed_length_string("MIGRATION_ID")} | RAN'
-        )
+        migration_statuses: t.List[MigrationStatus] = []
 
         app_modules = self.get_app_modules()
 
@@ -28,8 +33,6 @@ class CheckMigrationManager(BaseMigrationManager):
 
             if (self.app_name != "all") and (self.app_name != app_name):
                 continue
-
-            fixed_length_app_name = get_fixed_length_string(app_name)
 
             migration_modules = self.get_migration_modules(
                 app_config.migrations_folder_path
@@ -44,10 +47,52 @@ class CheckMigrationManager(BaseMigrationManager):
                     )
                     .run()
                 )
-                fixed_length_id = get_fixed_length_string(_id)
-                print(
-                    f"{fixed_length_app_name} | {fixed_length_id} | {has_ran}"
+                migration_statuses.append(
+                    MigrationStatus(
+                        app_name=app_name, migration_id=_id, has_ran=has_ran
+                    )
                 )
+
+        return migration_statuses
+
+    async def have_ran_count(self) -> int:
+        """
+        :returns:
+            The number of migrations which have been ran.
+        """
+        migration_statuses = await self.get_migration_statuses()
+        return len([i for i in migration_statuses if i.has_ran])
+
+    async def havent_ran_count(self) -> int:
+        """
+        :returns:
+            The number of migrations which haven't been ran.
+        """
+        migration_statuses = await self.get_migration_statuses()
+        return len([i for i in migration_statuses if not i.has_ran])
+
+    async def run(self):
+        """
+        Prints out the migrations which have and haven't ran.
+        """
+        print("Listing migrations ...")
+
+        print(
+            f'{get_fixed_length_string("APP NAME")} | '
+            f'{get_fixed_length_string("MIGRATION_ID")} | RAN'
+        )
+
+        migration_statuses = await self.get_migration_statuses()
+
+        for migration_status in migration_statuses:
+            fixed_length_app_name = get_fixed_length_string(
+                migration_status.app_name
+            )
+            fixed_length_id = get_fixed_length_string(
+                migration_status.migration_id
+            )
+            has_ran = migration_status.has_ran
+            print(f"{fixed_length_app_name} | {fixed_length_id} | {has_ran}")
 
 
 async def check(app_name: str = "all"):

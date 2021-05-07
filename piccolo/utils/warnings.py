@@ -15,6 +15,10 @@ class Level(Enum):
     high = colorama.Fore.RED
 
 
+def colored_string(message: str, level: Level = Level.medium) -> str:
+    return level.value + message + colorama.Fore.RESET
+
+
 def colored_warning(
     message: str,
     category: t.Type[Warning] = Warning,
@@ -36,5 +40,5 @@ def colored_warning(
     :level:
         Used to determine the colour of the text displayed to the user.
     """
-    colored_message = level.value + message + colorama.Fore.RESET
+    colored_message = colored_string(message=message, level=level)
     warnings.warn(colored_message, category=category, stacklevel=stacklevel)
