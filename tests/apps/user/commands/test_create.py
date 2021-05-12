@@ -35,6 +35,9 @@ class TestCreate(TestCase):
         "piccolo.apps.user.commands.create.get_is_superuser",
         return_value=True,
     )
+    @patch(
+        "piccolo.apps.user.commands.create.get_is_active", return_value=True,
+    )
     def test_create(self, *args, **kwargs):
         create()
 
@@ -45,6 +48,7 @@ class TestCreate(TestCase):
                 & (BaseUser.username == "bob123")
                 & (BaseUser.email == "bob@test.com")
                 & (BaseUser.superuser == True)
+                & (BaseUser.active == True)
             )
             .run_sync()
         )
