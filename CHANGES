@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.19.1
+------
+ * Added ``piccolo user change_permissions`` commnd.
+ * Added aliases for CLI commands.
+
 0.19.0
 ------
 Changes to the ``BaseUser`` table - added a ``superuser``, and ``last_login``
