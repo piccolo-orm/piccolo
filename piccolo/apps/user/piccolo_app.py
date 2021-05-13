@@ -1,6 +1,6 @@
 import os
 
-from piccolo.conf.apps import AppConfig
+from piccolo.conf.apps import AppConfig, Command
 from .commands.change_password import change_password
 from .commands.change_permissions import change_permissions
 from .commands.create import create
@@ -17,5 +17,9 @@ APP_CONFIG = AppConfig(
     ),
     table_classes=[BaseUser],
     migration_dependencies=[],
-    commands=[create, change_password, change_permissions],
+    commands=[
+        Command(callable=create, aliases=["new"]),
+        Command(callable=change_password, aliases=["password", "pass"]),
+        Command(callable=change_permissions, aliases=["perm", "perms"]),
+    ],
 )
