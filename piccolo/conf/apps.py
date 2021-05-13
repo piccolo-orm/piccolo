@@ -85,6 +85,12 @@ def table_finder(
 
 
 @dataclass
+class Command:
+    callable: t.Callable
+    aliases: t.List[str] = field(default_factory=list)
+
+
+@dataclass
 class AppConfig:
     """
     Each app needs an AppConfig, which is defined in piccolo_app.py.
@@ -94,7 +100,14 @@ class AppConfig:
     migrations_folder_path: str
     table_classes: t.List[t.Type[Table]] = field(default_factory=list)
     migration_dependencies: t.List[str] = field(default_factory=list)
-    commands: t.List[t.Callable] = field(default_factory=list)
+    commands: t.List[t.Union[t.Callable, Command]] = field(
+        default_factory=list
+    )
+
+    def __post_init__(self):
+        self.commands = [
+            i if isinstance(i, Command) else Command(i) for i in self.commands
+        ]
 
     def register_table(self, table_class: t.Type[Table]):
         self.table_classes.append(table_class)

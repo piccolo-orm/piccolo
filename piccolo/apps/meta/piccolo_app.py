@@ -1,7 +1,9 @@
-from piccolo.conf.apps import AppConfig
+from piccolo.conf.apps import AppConfig, Command
 from .commands.version import version
 
 
 APP_CONFIG = AppConfig(
-    app_name="meta", migrations_folder_path="", commands=[version]
+    app_name="meta",
+    migrations_folder_path="",
+    commands=[Command(callable=version, aliases=["v"])],
 )

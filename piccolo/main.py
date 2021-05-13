@@ -61,7 +61,11 @@ def main():
         user_config,
     ]:
         for command in _app_config.commands:
-            cli.register(command, group_name=_app_config.app_name)
+            cli.register(
+                command.callable,
+                group_name=_app_config.app_name,
+                aliases=command.aliases,
+            )
 
     ###########################################################################
     # Get user defined apps.
@@ -78,11 +82,15 @@ def main():
         for app_name, _app_config in APP_REGISTRY.app_configs.items():
             for command in _app_config.commands:
                 if cli.command_exists(
-                    group_name=app_name, command_name=command.__name__
+                    group_name=app_name, command_name=command.callable.__name__
                 ):
                     # Skipping - already registered.
                     continue
-                cli.register(command, group_name=app_name)
+                cli.register(
+                    command.callable,
+                    group_name=app_name,
+                    aliases=command.aliases,
+                )
 
         if "migrations" not in sys.argv:
             # Show a warning if any migrations haven't been run.
