@@ -44,6 +44,17 @@ def get_is_superuser() -> bool:
     return superuser == "y"
 
 
+def get_is_active() -> bool:
+    while True:
+        active = input("Active? Enter y or n:\n")
+        if active in ("y", "n"):
+            break
+        else:
+            print("Unrecognised option")
+
+    return active == "y"
+
+
 def create():
     """
     Create a new user.
@@ -61,13 +72,14 @@ def create():
 
     is_admin = get_is_admin()
     is_superuser = get_is_superuser()
+    is_active = get_is_active()
 
     user = BaseUser(
         username=username,
         password=password,
         admin=is_admin,
         email=email,
-        active=True,
+        active=is_active,
         superuser=is_superuser,
     )
     user.save().run_sync()
