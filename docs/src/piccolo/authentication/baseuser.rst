@@ -41,6 +41,25 @@ Change a user's password.
 
     piccolo user change_password
 
+user change_permissions
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Change a user's permissions. The options are ``--admin``, ``--superuser`` and
+``--active``, which change the corresponding attributes on ``BaseUser``.
+
+For example:
+
+.. code-block:: bash
+
+    piccolo user change_permissions some_user --active=true
+
+The Piccolo Admin (see :ref:`Ecosystem`) uses these attributes to control who
+can login and what they can do.
+
+ * **active** and **admin** - must be true for a user to be able to login.
+ * **superuser** - must be true for a user to be able to change other user's
+   passwords.
+
 -------------------------------------------------------------------------------
 
 Within your code
