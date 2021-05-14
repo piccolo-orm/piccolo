@@ -34,7 +34,10 @@ class BaseUser(Table, tablename="piccolo_user"):
         ),
     )
     last_login = Timestamp(
-        null=True, default=None, help_text="When this user last logged in."
+        null=True,
+        default=None,
+        required=False,
+        help_text="When this user last logged in.",
     )
 
     def __init__(self, **kwargs):
