@@ -5,11 +5,8 @@ import itertools
 import typing as t
 
 from piccolo.engine import Engine, engine_finder
-from piccolo.columns import (
-    Column,
-    Selectable,
-)
-from piccolo.columns.column_types import ForeignKey, PrimaryKey
+from piccolo.columns import Column, Selectable
+from piccolo.columns.column_types import ForeignKey, PrimaryKey, Secret
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import (
     LazyTableReference,
@@ -51,6 +48,7 @@ class TableMeta:
     default_columns: t.List[Column] = field(default_factory=list)
     non_default_columns: t.List[Column] = field(default_factory=list)
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
+    secret_columns: t.List[Secret] = field(default_factory=list)
     tags: t.List[str] = field(default_factory=list)
     help_text: t.Optional[str] = None
     _db: t.Optional[Engine] = None
@@ -158,6 +156,7 @@ class Table(metaclass=TableMetaclass):
         default_columns: t.List[Column] = []
         non_default_columns: t.List[Column] = []
         foreign_key_columns: t.List[ForeignKey] = []
+        secret_columns: t.List[Secret] = []
 
         cls.id = PrimaryKey()
 
@@ -190,6 +189,9 @@ class Table(metaclass=TableMetaclass):
                 column._meta._name = attribute_name
                 column._meta._table = cls
 
+                if isinstance(column, Secret):
+                    secret_columns.append(column)
+
                 if isinstance(column, ForeignKey):
                     foreign_key_columns.append(column)
 
@@ -199,6 +201,7 @@ class Table(metaclass=TableMetaclass):
             default_columns=default_columns,
             non_default_columns=non_default_columns,
             foreign_key_columns=foreign_key_columns,
+            secret_columns=secret_columns,
             tags=tags,
             help_text=help_text,
             _db=db,
