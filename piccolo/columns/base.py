@@ -171,7 +171,7 @@ class ColumnMeta:
         Returns choices as a list of choice tuples (choice name, value. Custom fields should add type checking to keys as well
         """
         if isinstance(self.choices, t.Enum):
-            return [(choice.name.replace("_", " ").title() if isinstance(choice.name, str) else choice.name, choice.value) for choice in self.choices]
+            return [(choice.name.replace("_", " ").title(), choice.value) for choice in self.choices]
         elif isinstance(self.choices, tuple):
             return list(self.choices) # Guarantee a list
         elif isinstance(self.choices, list):
