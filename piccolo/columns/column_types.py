@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import decimal
+from enum import Enum
 import typing as t
 import uuid
 from datetime import date, datetime, time, timedelta
@@ -165,7 +166,7 @@ class Varchar(Column):
     def __init__(
         self,
         length: int = 255,
-        default: t.Union[str, t.Callable[[], str], None] = "",
+        default: t.Union[str, Enum, t.Callable[[], str], None] = "",
         **kwargs,
     ) -> None:
         self._validate_default(default, (str, None))
@@ -251,7 +252,9 @@ class Text(Column):
     concat_delegate: ConcatDelegate = ConcatDelegate()
 
     def __init__(
-        self, default: t.Union[str, None, t.Callable[[], str]] = "", **kwargs
+        self,
+        default: t.Union[str, Enum, None, t.Callable[[], str]] = "",
+        **kwargs,
     ) -> None:
         self._validate_default(default, (str, None))
         self.default = default
@@ -333,7 +336,9 @@ class Integer(Column):
     math_delegate = MathDelegate()
 
     def __init__(
-        self, default: t.Union[int, t.Callable[[], int], None] = 0, **kwargs
+        self,
+        default: t.Union[int, Enum, t.Callable[[], int], None] = 0,
+        **kwargs,
     ) -> None:
         self._validate_default(default, (int, None))
         self.default = default
@@ -771,7 +776,7 @@ class Boolean(Column):
 
     def __init__(
         self,
-        default: t.Union[bool, t.Callable[[], bool], None] = False,
+        default: t.Union[bool, Enum, t.Callable[[], bool], None] = False,
         **kwargs,
     ) -> None:
         self._validate_default(default, (bool, None))
@@ -841,7 +846,7 @@ class Numeric(Column):
         self,
         digits: t.Optional[t.Tuple[int, int]] = None,
         default: t.Union[
-            decimal.Decimal, t.Callable[[], decimal.Decimal], None
+            decimal.Decimal, Enum, t.Callable[[], decimal.Decimal], None
         ] = decimal.Decimal(0.0),
         **kwargs,
     ) -> None:
@@ -897,7 +902,7 @@ class Real(Column):
 
     def __init__(
         self,
-        default: t.Union[float, t.Callable[[], float], None] = 0.0,
+        default: t.Union[float, Enum, t.Callable[[], float], None] = 0.0,
         **kwargs,
     ) -> None:
         self._validate_default(default, (float, None))
@@ -1087,7 +1092,7 @@ class ForeignKey(Integer):
     def __init__(
         self,
         references: t.Union[t.Type[Table], LazyTableReference, str],
-        default: t.Union[int, None] = None,
+        default: t.Union[int, Enum, None] = None,
         null: bool = True,
         on_delete: OnDelete = OnDelete.cascade,
         on_update: OnUpdate = OnUpdate.cascade,
@@ -1324,6 +1329,7 @@ class Bytea(Column):
         default: t.Union[
             bytes,
             bytearray,
+            Enum,
             t.Callable[[], bytes],
             t.Callable[[], bytearray],
             None,
@@ -1376,7 +1382,7 @@ class Array(Column):
     def __init__(
         self,
         base_column: Column,
-        default: t.Union[t.List, t.Callable[[], t.List], None] = list,
+        default: t.Union[t.List, Enum, t.Callable[[], t.List], None] = list,
         **kwargs,
     ) -> None:
         if isinstance(base_column, ForeignKey):

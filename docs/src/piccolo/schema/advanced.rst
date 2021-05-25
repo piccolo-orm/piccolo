@@ -83,3 +83,59 @@ use mixins to reduce the amount of repetition.
 
     class Manager(FavouriteMixin, Table):
         name = Varchar()
+
+-------------------------------------------------------------------------------
+
+Choices
+-------
+
+You can specify choices for a column, using Python's ``Enum`` support.
+
+.. code-block:: python
+
+    from enum import Enum
+
+    from piccolo.columns import Varchar
+    from piccolo.table import Table
+
+
+    class Shirt(Table):
+        class Size(str, Enum):
+            small = 's'
+            medium = 'm'
+            large = 'l'
+
+        size = Varchar(length=1, choices=Size)
+
+We can then use the ``Enum`` in our queries.
+
+.. code-block:: python
+
+    >>> Shirt(size=Shirt.Size.large).save().run_sync()
+
+    >>> Shirt.select().run_sync()
+    [{'id': 1, 'size': 'l'}]
+
+Note how the value stored in the database is the ``Enum`` value (in this case ``'l'``).
+
+You can also use the ``Enum`` in ``where`` clauses, and in most other situations
+where a query requires a value.
+
+.. code-block:: python
+
+    >>> Shirt.insert(
+    >>>     Shirt(size=Shirt.Size.small),
+    >>>     Shirt(size=Shirt.Size.medium)
+    >>> ).run_sync()
+
+    >>> Shirt.select().where(Shirt.size == Shirt.Size.small).run_sync()
+    [{'id': 1, 'size': 's'}]
+
+Advantages
+~~~~~~~~~~
+
+By using choices, you get the following benefits:
+
+ * Signalling to other programmers what values are acceptable for the column.
+ * Improved storage efficiency (we can store ``'l'`` instead of ``'large'``).
+ * Piccolo admin support (in progress)

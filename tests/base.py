@@ -136,6 +136,13 @@ class DBTestCase(TestCase):
                     content TEXT
                 );"""
             )
+            self.run_sync(
+                """
+                CREATE TABLE shirt (
+                    id SERIAL PRIMARY KEY,
+                    size VARCHAR(1)
+                );"""
+            )
         elif ENGINE.engine_type == "sqlite":
             self.run_sync(
                 """
@@ -165,6 +172,13 @@ class DBTestCase(TestCase):
                 CREATE TABLE poster (
                     id SERIAL PRIMARY KEY,
                     content TEXT
+                );"""
+            )
+            self.run_sync(
+                """
+                CREATE TABLE shirt (
+                    id SERIAL PRIMARY KEY,
+                    size VARCHAR(1)
                 );"""
             )
         else:
@@ -240,11 +254,13 @@ class DBTestCase(TestCase):
             self.run_sync("DROP TABLE IF EXISTS manager CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS ticket CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS poster CASCADE;")
+            self.run_sync("DROP TABLE IF EXISTS shirt CASCADE;")
         elif ENGINE.engine_type == "sqlite":
             self.run_sync("DROP TABLE IF EXISTS band;")
             self.run_sync("DROP TABLE IF EXISTS manager;")
             self.run_sync("DROP TABLE IF EXISTS ticket;")
             self.run_sync("DROP TABLE IF EXISTS poster;")
+            self.run_sync("DROP TABLE IF EXISTS shirt;")
 
     def setUp(self):
         self.create_tables()

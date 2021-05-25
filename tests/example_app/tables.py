@@ -1,5 +1,8 @@
+from enum import Enum
+
 from piccolo.table import Table
 from piccolo.columns import Varchar, ForeignKey, Integer, Numeric, Text
+from piccolo.columns.choices import Choice
 
 
 ###############################################################################
@@ -41,3 +44,16 @@ class Poster(Table, tags=["special"]):
     """
 
     content = Text()
+
+
+class Shirt(Table):
+    """
+    Used for testing columns with a choices attribute.
+    """
+
+    class Size(str, Enum):
+        small = "s"
+        medium = "m"
+        large = "l"
+
+    size = Varchar(length=1, choices=Size, default=Size.large)

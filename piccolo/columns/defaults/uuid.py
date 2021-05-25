@@ -1,3 +1,4 @@
+from enum import Enum
 import typing as t
 import uuid
 
@@ -17,7 +18,7 @@ class UUID4(Default):
         return uuid.uuid4()
 
 
-UUIDArg = t.Union[UUID4, uuid.UUID, None]
+UUIDArg = t.Union[UUID4, uuid.UUID, Enum, None]
 
 
 __all__ = ["UUIDArg", "UUID4"]

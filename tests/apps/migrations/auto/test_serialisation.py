@@ -1,6 +1,8 @@
+from enum import Enum
 from unittest import TestCase
 
 from piccolo.apps.migrations.auto.serialisation import serialise_params
+from piccolo.columns.choices import Choice
 from piccolo.columns.column_types import Varchar
 from piccolo.columns.defaults import DateNow, TimeNow, TimestampNow, UUID4
 from piccolo.columns.reference import LazyTableReference
@@ -111,7 +113,7 @@ class TestSerialiseParams(TestCase):
 
         self.assertEqual(
             serialised.params["base_column"].__repr__(),
-            "Varchar(length=255, default='', null=False, primary=False, key=False, unique=False, index=False, index_method=IndexMethod.btree)",  # noqa: E501
+            "Varchar(length=255, default='', null=False, primary=False, key=False, unique=False, index=False, index_method=IndexMethod.btree, choices=None)",  # noqa: E501
         )
 
         self.assertEqual(
@@ -119,5 +121,30 @@ class TestSerialiseParams(TestCase):
             {
                 "from piccolo.columns.column_types import Varchar",
                 "from piccolo.columns.indexes import IndexMethod",
+            },
+        )
+
+    def test_enum_type(self):
+        """
+        Make sure Enum types can be serialised properly.
+        """
+
+        class Choices(Enum):
+            a = 1
+            b = 2
+            c = Choice(value=3, display_name="c1")
+
+        serialised = serialise_params(params={"choices": Choices})
+
+        self.assertEqual(
+            serialised.params["choices"].__repr__(),
+            "Enum('Choices', {'a': 1, 'b': 2, 'c': Choice(value=3, display_name='c1')})",  # noqa: E501
+        )
+
+        self.assertEqual(
+            {i.__repr__() for i in serialised.extra_imports},
+            {
+                "from piccolo.columns.choices import Choice",
+                "from enum import Enum",
             },
         )

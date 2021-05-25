@@ -1,5 +1,6 @@
 from __future__ import annotations
 import datetime
+from enum import Enum
 import typing as t
 
 from .timestamp import TimestampOffset, TimestampNow, TimestampCustom
@@ -53,6 +54,7 @@ TimestamptzArg = t.Union[
     TimestamptzCustom,
     TimestamptzNow,
     TimestamptzOffset,
+    Enum,
     None,
     datetime.datetime,
 ]

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from enum import Enum
 import typing as t
 
 from piccolo.columns.operators.comparison import ComparisonOperator
@@ -100,14 +101,21 @@ class Where(CombinableMixin):
         if isinstance(self.values, Undefined):
             raise ValueError("values is undefined")
 
-        template = ", ".join(["{}" for i in self.values])
-        return QueryString(template, *self.values)
+        values = [i.value if isinstance(i, Enum) else i for i in self.values]
+
+        template = ", ".join(["{}" for _ in values])
+        return QueryString(template, *values)
 
     @property
     def querystring(self) -> QueryString:
         args: t.List[t.Any] = []
         if self.value != UNDEFINED:
-            args.append(self.value)
+            value = (
+                self.value.value
+                if isinstance(self.value, Enum)
+                else self.value
+            )
+            args.append(value)
         if self.values != UNDEFINED:
             args.append(self.values_querystring)
 

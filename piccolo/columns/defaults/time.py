@@ -1,5 +1,6 @@
 from __future__ import annotations
 import datetime
+from enum import Enum
 import typing as t
 
 from .base import Default
@@ -72,7 +73,7 @@ class TimeCustom(Default):
         )
 
 
-TimeArg = t.Union[TimeCustom, TimeNow, TimeOffset, None, datetime.time]
+TimeArg = t.Union[TimeCustom, TimeNow, TimeOffset, Enum, None, datetime.time]
 
 
 __all__ = ["TimeArg", "TimeCustom", "TimeNow", "TimeOffset"]
