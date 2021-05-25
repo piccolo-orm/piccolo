@@ -1,5 +1,6 @@
 from __future__ import annotations
 import datetime
+from enum import Enum
 import typing as t
 
 from .base import Default
@@ -66,7 +67,7 @@ class DateCustom(Default):
 
 
 # Might add an enum back which encapsulates all of the options.
-DateArg = t.Union[DateOffset, DateCustom, DateNow, None, datetime.date]
+DateArg = t.Union[DateOffset, DateCustom, DateNow, Enum, None, datetime.date]
 
 
 __all__ = ["DateArg", "DateOffset", "DateCustom", "DateNow"]

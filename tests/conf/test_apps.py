@@ -65,7 +65,15 @@ class TestTableFinder(TestCase):
 
         self.assertEqual(
             table_class_names,
-            ["Band", "Concert", "Manager", "Poster", "Ticket", "Venue"],
+            [
+                "Band",
+                "Concert",
+                "Manager",
+                "Poster",
+                "Shirt",
+                "Ticket",
+                "Venue",
+            ],
         )
 
         with self.assertRaises(ImportError):
@@ -82,7 +90,15 @@ class TestTableFinder(TestCase):
 
         self.assertEqual(
             table_class_names,
-            ["Band", "Concert", "Manager", "Poster", "Ticket", "Venue"],
+            [
+                "Band",
+                "Concert",
+                "Manager",
+                "Poster",
+                "Shirt",
+                "Ticket",
+                "Venue",
+            ],
         )
 
     def test_include_tags(self):
@@ -113,5 +129,5 @@ class TestTableFinder(TestCase):
 
         self.assertEqual(
             table_class_names,
-            ["Band", "Concert", "Manager", "Ticket", "Venue"],
+            ["Band", "Concert", "Manager", "Shirt", "Ticket", "Venue"],
         )

@@ -1,5 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
+from enum import Enum
 import inspect
 import itertools
 import typing as t
@@ -403,16 +404,17 @@ class Table(metaclass=TableMetaclass):
         """
         Used when inserting rows.
         """
-        args_dict = {
-            col._meta.name: self[col._meta.name] for col in self._meta.columns
-        }
+        args_dict = {}
+        for col in self._meta.columns:
+            value = self[col._meta.name]
+            args_dict[col._meta.name] = (
+                value.value if isinstance(value, Enum) else value
+            )
 
         def is_unquoted(arg):
             return type(arg) == Unquoted
 
         # Strip out any args which are unquoted.
-        # TODO Not the cleanest place to have it (would rather have it handled
-        # in the QueryString bundle logic) - might need refactoring.
         filtered_args = [i for i in args_dict.values() if not is_unquoted(i)]
 
         # If unquoted, dump it straight into the query.

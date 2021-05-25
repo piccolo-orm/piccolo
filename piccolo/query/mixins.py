@@ -1,5 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
+from enum import Enum
 import typing as t
 
 from piccolo.columns import And, Column, Secret, Where, Or
@@ -225,6 +226,15 @@ class ValuesDelegate:
 
     def values(self, values: t.Dict[Column, t.Any]):
         self._values.update(values)
+
+    def get_sql_values(self) -> t.List[t.Any]:
+        """
+        Convert any Enums into values.
+        """
+        return [
+            value.value if isinstance(value, Enum) else value
+            for value in self._values.values()
+        ]
 
 
 @dataclass

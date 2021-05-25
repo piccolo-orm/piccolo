@@ -1,6 +1,8 @@
+from enum import Enum
 from unittest import TestCase
 
-from piccolo.columns.column_types import Varchar
+from piccolo.columns.choices import Choice
+from piccolo.columns.column_types import Integer, Varchar
 from piccolo.table import Table
 
 
@@ -49,3 +51,73 @@ class TestHelpText(TestCase):
         help_text = "This is some important help text for users."
         column = Varchar(help_text=help_text)
         self.assertTrue(column._meta.help_text == help_text)
+
+
+class TestChoices(TestCase):
+    def test_choices(self):
+        """
+        Test adding choices to a column.
+        """
+
+        class Title(Enum):
+            mr = 1
+            mrs = 2
+
+        column = Integer(choices=Title)
+        self.assertEqual(column._meta.choices, Title)
+
+    def test_invalid_types(self):
+        """
+        Test adding choices to a column, which are the wrong type.
+        """
+
+        class Title(Enum):
+            mr = 1
+            mrs = 2
+
+        with self.assertRaises(ValueError):
+            Varchar(choices=Title)
+
+    def test_get_choices_dict(self):
+        """
+        Test ``get_choices_dict``.
+        """
+
+        class Title(Enum):
+            mr = 1
+            mrs = 2
+
+        column = Integer(choices=Title)
+
+        self.assertEqual(
+            column._meta.get_choices_dict(),
+            {
+                "mr": {"display_name": "Mr", "value": 1},
+                "mrs": {"display_name": "Mrs", "value": 2},
+            },
+        )
+
+    def test_get_choices_dict_without_choices(self):
+        """
+        Test ``get_choices_dict``, with no choices set.
+        """
+        column = Integer()
+        self.assertEqual(column._meta.get_choices_dict(), None)
+
+    def test_get_choices_dict_with_custom_names(self):
+        """
+        Test ``get_choices_dict``, when ``Choice`` is used.
+        """
+
+        class Title(Enum):
+            mr = Choice(value=1, display_name="Mr.")
+            mrs = Choice(value=2, display_name="Mrs.")
+
+        column = Integer(choices=Title)
+        self.assertEqual(
+            column._meta.get_choices_dict(),
+            {
+                "mr": {"display_name": "Mr.", "value": 1},
+                "mrs": {"display_name": "Mrs.", "value": 2},
+            },
+        )

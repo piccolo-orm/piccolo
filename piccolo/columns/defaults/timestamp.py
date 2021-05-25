@@ -1,5 +1,6 @@
 from __future__ import annotations
 import datetime
+from enum import Enum
 import typing as t
 
 from .base import Default
@@ -115,6 +116,7 @@ TimestampArg = t.Union[
     TimestampCustom,
     TimestampNow,
     TimestampOffset,
+    Enum,
     None,
     datetime.datetime,
     DatetimeDefault,

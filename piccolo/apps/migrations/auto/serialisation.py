@@ -95,6 +95,22 @@ class SerialisedTableType:
 
 
 @dataclass
+class SerialisedEnumType:
+    enum_type: t.Type[Enum]
+
+    def __hash__(self):
+        return hash(self.__repr__())
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
+    def __repr__(self):
+        class_name = self.enum_type.__name__
+        params = {i.name: i.value for i in self.enum_type}
+        return f"Enum('{class_name}', {params})"
+
+
+@dataclass
 class SerialisedCallable:
     callable_: t.Callable
 
@@ -162,10 +178,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
     for key, value in params.items():
 
         # Builtins, such as str, list and dict.
-        if (
-            hasattr(value, "__module__")
-            and value.__module__ == builtins.__name__
-        ):
+        if inspect.getmodule(value) == builtins:
             params[key] = SerialisedBuiltin(builtin=value)
             continue
 
@@ -238,6 +251,20 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
             )
             continue
 
+        # Enum types
+        if inspect.isclass(value) and issubclass(value, Enum):
+            params[key] = SerialisedEnumType(enum_type=value)
+            extra_imports.append(Import(module="enum", target="Enum"))
+            for member in value:
+                type_ = type(member.value)
+                module = inspect.getmodule(type_)
+
+                if module and module != builtins:
+                    module_name = module.__name__
+                    extra_imports.append(
+                        Import(module=module_name, target=type_.__name__)
+                    )
+
         # Functions
         if inspect.isfunction(value):
             if value.__name__ == "<lambda>":
@@ -300,5 +327,7 @@ def deserialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
             params[key] = value.callable_
         elif isinstance(value, SerialisedTableType):
             params[key] = value.table_type
+        elif isinstance(value, SerialisedEnumType):
+            params[key] = value.enum_type
 
     return params

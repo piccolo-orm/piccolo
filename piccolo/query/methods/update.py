@@ -36,7 +36,7 @@ class Update(Query):
                 "No values were specified to update - please use .values"
             )
 
-        for column, value in self.values_delegate._values.items():
+        for column, _ in self.values_delegate._values.items():
             if len(column._meta.call_chain) > 0:
                 raise ValueError(
                     "Related values can't be updated via an update"
@@ -56,7 +56,7 @@ class Update(Query):
         query = f"UPDATE {self.table._meta.tablename} SET " + columns_str
 
         querystring = QueryString(
-            query, *self.values_delegate._values.values()
+            query, *self.values_delegate.get_sql_values()
         )
 
         if self.where_delegate._where:

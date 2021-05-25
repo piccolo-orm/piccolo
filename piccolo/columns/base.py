@@ -25,6 +25,7 @@ from piccolo.columns.operators.comparison import (
     NotLike,
 )
 from piccolo.columns.combination import Where
+from piccolo.columns.choices import Choice
 from piccolo.columns.defaults.base import Default
 from piccolo.columns.reference import LazyTableReference
 from piccolo.columns.indexes import IndexMethod
@@ -124,6 +125,7 @@ class ColumnMeta:
     index_method: IndexMethod = IndexMethod.btree
     required: bool = False
     help_text: t.Optional[str] = None
+    choices: t.Optional[t.Type[Enum]] = None
 
     # Used for representing the table in migrations and the playground.
     params: t.Dict[str, t.Any] = field(default_factory=dict)
@@ -164,6 +166,30 @@ class ColumnMeta:
         else:
             raise ValueError("The table has no engine defined.")
 
+    def get_choices_dict(self) -> t.Optional[t.Dict[str, t.Any]]:
+        """
+        Return the choices Enum as a dict. It maps the attribute name to a
+        dict containing the display name, and value.
+        """
+        if self.choices is None:
+            return None
+        else:
+            output = {}
+            for element in self.choices:
+                if isinstance(element.value, Choice):
+                    display_name = element.value.display_name
+                    value = element.value.value
+                else:
+                    display_name = element.name.replace("_", " ").title()
+                    value = element.value
+
+                output[element.name] = {
+                    "display_name": display_name,
+                    "value": value,
+                }
+
+            return output
+
     def get_full_name(self, just_alias=False) -> str:
         """
         Returns the full column name, taking into account joins.
@@ -182,6 +208,8 @@ class ColumnMeta:
             return alias
         else:
             return f'{alias} AS "{column_name}"'
+
+    ###########################################################################
 
     def copy(self) -> ColumnMeta:
         kwargs = self.__dict__.copy()
@@ -266,11 +294,14 @@ class Column(Selectable):
         index_method: IndexMethod = IndexMethod.btree,
         required: bool = False,
         help_text: t.Optional[str] = None,
+        choices: t.Optional[t.Type[Enum]] = None,
         **kwargs,
     ) -> None:
         # Used for migrations.
         # We deliberately omit 'required', and 'help_text' as they don't effect
         # the actual schema.
+        # 'choices' isn't used directly in the schema, but may be important
+        # for data migrations.
         kwargs.update(
             {
                 "null": null,
@@ -279,6 +310,7 @@ class Column(Selectable):
                 "unique": unique,
                 "index": index,
                 "index_method": index_method,
+                "choices": choices,
             }
         )
 
@@ -287,6 +319,9 @@ class Column(Selectable):
                 "A default value of None isn't allowed if the column is "
                 "not nullable."
             )
+
+        if choices is not None:
+            self._validate_choices(choices, allowed_type=self.value_type)
 
         self._meta = ColumnMeta(
             null=null,
@@ -298,6 +333,7 @@ class Column(Selectable):
             params=kwargs,
             required=required,
             help_text=help_text,
+            choices=choices,
         )
 
         self.alias: t.Optional[str] = None
@@ -324,11 +360,36 @@ class Column(Selectable):
         elif callable(default):
             self._validated = True
             return True
+        elif (
+            isinstance(default, Enum) and type(default.value) in allowed_types
+        ):
+            self._validated = True
+            return True
         else:
             raise ValueError(
                 f"The default {default} isn't one of the permitted types - "
                 f"{allowed_types}"
             )
+
+    def _validate_choices(
+        self, choices: t.Type[Enum], allowed_type: t.Type[t.Any]
+    ) -> bool:
+        """
+        Make sure the choices value has values of the allowed_type.
+        """
+        for element in choices:
+            if isinstance(element.value, allowed_type):
+                continue
+            elif isinstance(element.value, Choice) and isinstance(
+                element.value.value, allowed_type
+            ):
+                continue
+            else:
+                raise ValueError(
+                    f"{element.name} doesn't have the correct type"
+                )
+
+        return True
 
     def is_in(self, values: t.List[t.Any]) -> Where:
         if len(values) == 0:
