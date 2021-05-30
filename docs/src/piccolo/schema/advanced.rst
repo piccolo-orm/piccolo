@@ -138,4 +138,4 @@ By using choices, you get the following benefits:
 
  * Signalling to other programmers what values are acceptable for the column.
  * Improved storage efficiency (we can store ``'l'`` instead of ``'large'``).
- * Piccolo admin support (in progress)
+ * Piccolo Admin support
