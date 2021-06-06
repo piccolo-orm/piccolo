@@ -81,7 +81,7 @@ class Objects(Query):
             return response
 
     @property
-    def querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> t.Sequence[QueryString]:
         select = Select(table=self.table)
 
         for attr in (

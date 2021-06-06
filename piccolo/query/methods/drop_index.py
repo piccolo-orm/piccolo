@@ -27,7 +27,7 @@ class DropIndex(Query):
         ]
 
     @property
-    def querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> t.Sequence[QueryString]:
         column_names = self.column_names
         index_name = self.table._get_index_name(column_names)
         query = "DROP INDEX"

@@ -27,7 +27,7 @@ class Create(Query):
         self.only_default_columns = only_default_columns
 
     @property
-    def querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> t.Sequence[QueryString]:
         prefix = "CREATE TABLE"
         if self.if_not_exists:
             prefix += " IF NOT EXISTS"

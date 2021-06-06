@@ -506,7 +506,7 @@ class Alter(Query):
         return self
 
     @property
-    def querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> t.Sequence[QueryString]:
         if self._drop_table is not None:
             return [self._drop_table.querystring]
 

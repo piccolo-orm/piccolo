@@ -27,7 +27,7 @@ class Count(Query):
         return response[0]["count"]
 
     @property
-    def querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> t.Sequence[QueryString]:
         select = Select(self.table)
         select.where_delegate._where = self.where_delegate._where
         return [

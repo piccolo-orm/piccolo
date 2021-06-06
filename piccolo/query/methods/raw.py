@@ -20,5 +20,5 @@ class Raw(Query):
         self.querystring = querystring
 
     @property
-    def querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> t.Sequence[QueryString]:
         return [self.querystring]

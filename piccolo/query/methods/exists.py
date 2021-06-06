@@ -29,7 +29,7 @@ class Exists(Query):
         return bool(response[0]["exists"])
 
     @property
-    def querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> t.Sequence[QueryString]:
         select = Select(table=self.table)
         select.where_delegate._where = self.where_delegate._where
         return [

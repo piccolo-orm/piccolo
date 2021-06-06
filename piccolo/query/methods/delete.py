@@ -40,7 +40,7 @@ class Delete(Query):
             )
 
     @property
-    def querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> t.Sequence[QueryString]:
         query = f"DELETE FROM {self.table._meta.tablename}"
         if self.where_delegate._where:
             query += " WHERE {}"
