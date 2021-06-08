@@ -2,4 +2,6 @@
     {% include '_fastapi_app.py.jinja' %}
 {% elif router == 'starlette' %}
     {% include '_starlette_app.py.jinja' %}
+{% elif router == 'blacksheep' %}
+    {% include '_blacksheep_app.py.jinja' %}
 {% endif %}
