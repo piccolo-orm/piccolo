@@ -4,7 +4,7 @@ Changes
 0.21.0
 ------
  * Added a ``freeze`` method to ``Query``.
- * Added BlackSheep as an option to ``piccolo asgi new``
+ * Added BlackSheep as an option to ``piccolo asgi new``.
 
 0.20.0
 ------
