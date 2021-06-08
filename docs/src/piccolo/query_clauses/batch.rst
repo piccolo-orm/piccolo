@@ -33,5 +33,5 @@ There's currently no synchronous version. However, it's easy enough to achieve:
             async for _batch in batch:
                 print(_batch)
 
-    import asyncio
-    asyncio.run(get_batch())
+    from piccolo.utils.sync import run_sync
+    run_sync(get_batch())

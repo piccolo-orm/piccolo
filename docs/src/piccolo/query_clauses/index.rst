@@ -16,3 +16,4 @@ by modifying the return values.
     ./order_by
     ./where
     ./batch
+    ./freeze

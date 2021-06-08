@@ -187,7 +187,7 @@ class Query:
         This is a performance optimisation when the same query is run
         repeatedly. For example:
 
-        .. code-block: python
+        .. code-block:: python
 
             TOP_BANDS = Band.select(
                 Band.name
@@ -207,11 +207,16 @@ class Query:
 
         It means that Piccolo doesn't have to work as hard each time the query
         is run to generate the corresponding SQL - some of it is cached. If the
-        query is defined within the endpoint, it has to generate the SQL from
-        scratch each time.
+        query is defined within the view/endpoint, it has to generate the SQL
+        from scratch each time.
 
-        Once a query is frozen, you can't apply any more clauses to it (where,
-        limit, output etc).
+        Once a query is frozen, you can't apply any more clauses to it
+        (``where``, ``limit``, ``output`` etc).
+
+        Even though ``freeze`` helps with performance, there are limits to
+        how much it can help, as most of the time is still spent waiting for a
+        response from the database. However, for high throughput apps and data
+        science scripts, it's a worthwhile optimisation.
 
         """
         querystrings = self.querystrings
