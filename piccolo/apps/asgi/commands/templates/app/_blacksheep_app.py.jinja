@@ -1,0 +1,111 @@
+import typing as t
+
+from piccolo_api.crud.serializers import create_pydantic_model
+from piccolo.engine import engine_finder
+
+from blacksheep.server import Application
+from blacksheep.server.bindings import FromJSON
+from blacksheep.server.responses import json
+from blacksheep.server.openapi.v3 import OpenAPIHandler
+from openapidocs.v3 import Info
+
+from home.endpoints import home
+from home.tables import Task
+
+
+app = Application()
+
+
+docs = OpenAPIHandler(info=Info(title="Example API", version="0.0.1"))
+docs.bind_app(app)
+
+
+app.serve_files("static", root_path="/static")
+
+
+app.router.add_get("/", home)
+
+
+TaskModelIn = create_pydantic_model(table=Task, model_name="TaskModelIn")
+TaskModelOut = create_pydantic_model(
+    table=Task, include_default_columns=True, model_name="TaskModelOut"
+)
+TaskModelPartial = create_pydantic_model(
+    table=Task, model_name="TaskModelPartial", all_optional=True
+)
+
+
+@app.router.get("/tasks/")
+async def tasks() -> t.List[TaskModelOut]:
+    return await Task.select().order_by(Task.id).run()
+
+
+@app.router.post("/tasks/")
+async def create_task(task: FromJSON[TaskModelIn]) -> TaskModelOut:
+    task = Task(**task.value.__dict__)
+    await task.save().run()
+    return TaskModelOut(**task.__dict__)
+
+
+@app.router.put("/tasks/{task_id}/")
+async def put_task(
+    task_id: int, task: FromJSON[TaskModelIn]
+) -> TaskModelOut:
+    _task = await Task.objects().where(Task.id == task_id).first().run()
+    if not _task:
+        return json({}, status=404)
+
+    for key, value in task.value.__dict__.items():
+        setattr(_task, key, value)
+
+    await _task.save().run()
+
+    return TaskModelOut(**_task.__dict__)
+
+
+@app.router.patch("/tasks/{task_id}/")
+async def patch_task(
+    task_id: int, task: FromJSON[TaskModelPartial]
+) -> TaskModelOut:
+    _task = await Task.objects().where(Task.id == task_id).first().run()
+    if not _task:
+        return json({}, status=404)
+
+    for key, value in task.value.__dict__.items():
+        if  value is not None:
+            setattr(_task, key, value)
+
+    await _task.save().run()
+
+    return TaskModelOut(**_task.__dict__)
+
+
+@app.router.delete("/tasks/{task_id}/")
+async def delete_task(task_id: int):
+    task = await Task.objects().where(Task.id == task_id).first().run()
+    if not task:
+        return json({}, status=404)
+
+    await task.remove().run()
+
+    return json({})
+
+
+async def open_database_connection_pool(application):
+    try:
+        engine = engine_finder()
+        await engine.start_connection_pool()
+    except Exception:
+        print("Unable to connect to the database")
+
+
+async def close_database_connection_pool(application):
+    try:
+        engine = engine_finder()
+        await engine.close_connection_pool()
+    except Exception:
+        print("Unable to connect to the database")
+
+
+app.on_start += open_database_connection_pool
+app.on_stop += close_database_connection_pool

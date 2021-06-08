@@ -1,0 +1,5 @@
+{% if router in ['fastapi', 'starlette'] %}
+    {% include '_starlette_endpoints.py.jinja' %}
+{% elif router == 'blacksheep' %}
+    {% include '_blacksheep_endpoints.py.jinja' %}
+{% endif %}

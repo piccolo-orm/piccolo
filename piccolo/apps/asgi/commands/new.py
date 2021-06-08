@@ -8,9 +8,9 @@ import colorama  # type: ignore
 from jinja2 import Environment, FileSystemLoader
 
 
-TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates/starlette/")
+TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates/app/")
 SERVERS = ["uvicorn", "Hypercorn"]
-ROUTERS = ["starlette", "fastapi"]
+ROUTERS = ["starlette", "fastapi", "blacksheep"]
 
 
 def print_instruction(message: str):
