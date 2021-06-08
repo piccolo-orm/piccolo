@@ -15,10 +15,11 @@ class DropIndex(Query):
         table: t.Type[Table],
         columns: t.List[t.Union[Column, str]],
         if_exists: bool = True,
+        **kwargs,
     ):
         self.columns = columns
-        self.if_exists = True
-        super().__init__(table)
+        self.if_exists = if_exists
+        super().__init__(table, **kwargs)
 
     @property
     def column_names(self) -> t.List[str]:
@@ -27,7 +28,7 @@ class DropIndex(Query):
         ]
 
     @property
-    def querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> t.Sequence[QueryString]:
         column_names = self.column_names
         index_name = self.table._get_index_name(column_names)
         query = "DROP INDEX"

@@ -32,7 +32,7 @@ class QueryString:
     engine - which helps prevent SQL Injection attacks.
     """
 
-    __slots__ = ("template", "args", "query_type")
+    __slots__ = ("template", "args", "query_type", "_frozen_compiled_strings")
 
     def __init__(
         self, template: str, *args: t.Any, query_type: str = "generic"
@@ -46,6 +46,9 @@ class QueryString:
         self.template = template
         self.args = args
         self.query_type = query_type
+        self._frozen_compiled_strings: t.Optional[
+            t.Tuple[str, t.List[t.Any]]
+        ] = None
 
     def __str__(self):
         """
@@ -124,6 +127,9 @@ class QueryString:
         Compiles the template ready for the engine - keeping the arguments
         separate from the template.
         """
+        if self._frozen_compiled_strings is not None:
+            return self._frozen_compiled_strings
+
         _, bundled, combined_args = self.bundle(
             start_index=1, bundled=[], combined_args=[]
         )
@@ -146,3 +152,8 @@ class QueryString:
             raise Exception("Engine type not recognised")
 
         return (string, combined_args)
+
+    def freeze(self, engine_type: str = "postgres"):
+        self._frozen_compiled_strings = self.compile_string(
+            engine_type=engine_type
+        )

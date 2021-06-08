@@ -29,6 +29,9 @@ class Limit:
     def __str__(self) -> str:
         return self.querystring.__str__()
 
+    def copy(self) -> Limit:
+        return self.__class__(number=self.number)
+
 
 @dataclass
 class Offset:
@@ -73,6 +76,13 @@ class Output:
     as_json: bool = False
     as_list: bool = False
     as_objects: bool = False
+
+    def copy(self) -> Output:
+        return self.__class__(
+            as_json=self.as_json,
+            as_list=self.as_list,
+            as_objects=self.as_objects,
+        )
 
 
 @dataclass
@@ -120,7 +130,7 @@ class OrderByDelegate:
 class LimitDelegate:
 
     _limit: t.Optional[Limit] = None
-    _first = False
+    _first: bool = False
 
     def limit(self, number: int):
         self._limit = Limit(number)
@@ -128,6 +138,10 @@ class LimitDelegate:
     def first(self):
         self.limit(1)
         self._first = True
+
+    def copy(self) -> LimitDelegate:
+        _limit = self._limit.copy() if self._limit is not None else None
+        return self.__class__(_limit=_limit, _first=self._first)
 
 
 @dataclass
@@ -190,6 +204,10 @@ class OutputDelegate:
 
         if type(as_json) is bool:
             self._output.as_json = bool(as_json)
+
+    def copy(self) -> OutputDelegate:
+        _output = self._output.copy() if self._output is not None else None
+        return self.__class__(_output=_output)
 
 
 @dataclass

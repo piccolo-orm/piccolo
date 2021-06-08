@@ -16,8 +16,8 @@ if t.TYPE_CHECKING:  # pragma: no cover
 class Exists(Query):
     __slots__ = ("where_delegate",)
 
-    def __init__(self, table: t.Type[Table]):
-        super().__init__(table)
+    def __init__(self, table: t.Type[Table], **kwargs):
+        super().__init__(table, **kwargs)
         self.where_delegate = WhereDelegate()
 
     def where(self, where: Combinable) -> Exists:
@@ -29,7 +29,7 @@ class Exists(Query):
         return bool(response[0]["exists"])
 
     @property
-    def querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> t.Sequence[QueryString]:
         select = Select(table=self.table)
         select.where_delegate._where = self.where_delegate._where
         return [

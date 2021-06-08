@@ -22,10 +22,15 @@ class Timer:
 
 class Query:
 
-    __slots__ = ("table",)
+    __slots__ = ("table", "_frozen_querystrings")
 
-    def __init__(self, table: t.Type[Table]):
+    def __init__(
+        self,
+        table: t.Type[Table],
+        frozen_querystrings: t.Optional[t.Sequence[QueryString]] = None,
+    ):
         self.table = table
+        self._frozen_querystrings = frozen_querystrings
 
     @property
     def engine_type(self) -> str:
@@ -156,6 +161,9 @@ class Query:
         """
         Calls the correct underlying method, depending on the current engine.
         """
+        if self._frozen_querystrings is not None:
+            return self._frozen_querystrings
+
         engine_type = self.engine_type
         if engine_type == "postgres":
             try:
@@ -174,5 +182,86 @@ class Query:
 
     ###########################################################################
 
+    def freeze(self) -> FrozenQuery:
+        """
+        This is a performance optimisation when the same query is run
+        repeatedly. For example:
+
+        .. code-block:: python
+
+            TOP_BANDS = Band.select(
+                Band.name
+            ).order_by(
+                Band.popularity,
+                ascending=False
+            ).limit(
+                10
+            ).output(
+                as_json=True
+            ).freeze()
+
+            # In the corresponding view/endpoint of whichever web framework
+            # you're using:
+            async def top_bands(self, request):
+                return await TOP_BANDS.run()
+
+        It means that Piccolo doesn't have to work as hard each time the query
+        is run to generate the corresponding SQL - some of it is cached. If the
+        query is defined within the view/endpoint, it has to generate the SQL
+        from scratch each time.
+
+        Once a query is frozen, you can't apply any more clauses to it
+        (``where``, ``limit``, ``output`` etc).
+
+        Even though ``freeze`` helps with performance, there are limits to
+        how much it can help, as most of the time is still spent waiting for a
+        response from the database. However, for high throughput apps and data
+        science scripts, it's a worthwhile optimisation.
+
+        """
+        querystrings = self.querystrings
+        for querystring in querystrings:
+            querystring.freeze(engine_type=self.engine_type)
+
+        # Copy the query, so we don't store any references to the original.
+        query = self.__class__(
+            table=self.table, frozen_querystrings=self.querystrings
+        )
+
+        if hasattr(self, "limit_delegate"):
+            # Needed for `response_handler`
+            query.limit_delegate = self.limit_delegate.copy()  # type: ignore
+
+        if hasattr(self, "output_delegate"):
+            # Needed for `_process_results`
+            query.output_delegate = self.output_delegate.copy()  # type: ignore
+
+        return FrozenQuery(query=query)
+
+    ###########################################################################
+
     def __str__(self) -> str:
         return "; ".join([i.__str__() for i in self.querystrings])
+
+
+class FrozenQuery:
+    def __init__(self, query: Query):
+        self.query = query
+
+    async def run(self, *args, **kwargs):
+        return await self.query.run(*args, **kwargs)
+
+    def run_sync(self, *args, **kwargs):
+        return self.query.run_sync(*args, **kwargs)
+
+    def __getattr__(self, name: str):
+        if hasattr(self.query, name):
+            raise AttributeError(
+                f"This query is frozen - {name} is only available on "
+                "unfrozen queries."
+            )
+        else:
+            raise AttributeError("Unrecognised attribute name.")
+
+    def __str__(self) -> str:
+        return self.query.__str__()

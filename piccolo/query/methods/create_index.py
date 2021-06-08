@@ -17,11 +17,12 @@ class CreateIndex(Query):
         columns: t.List[t.Union[Column, str]],
         method: IndexMethod = IndexMethod.btree,
         if_not_exists: bool = False,
+        **kwargs,
     ):
         self.columns = columns
         self.method = method
         self.if_not_exists = if_not_exists
-        super().__init__(table)
+        super().__init__(table, **kwargs)
 
     @property
     def column_names(self) -> t.List[str]:

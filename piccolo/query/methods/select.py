@@ -65,8 +65,9 @@ class Select(Query):
         table: t.Type[Table],
         columns_list: t.Sequence[t.Union[Selectable, str]] = [],
         exclude_secrets: bool = False,
+        **kwargs,
     ):
-        super().__init__(table)
+        super().__init__(table, **kwargs)
         self.exclude_secrets = exclude_secrets
 
         self.columns_delegate = ColumnsDelegate()
@@ -212,7 +213,7 @@ class Select(Query):
         return True
 
     @property
-    def querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> t.Sequence[QueryString]:
         # JOIN
         self._check_valid_call_chain(self.columns_delegate.selected_columns)
 

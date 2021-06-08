@@ -18,8 +18,8 @@ class Delete(Query):
 
     __slots__ = ("force", "where_delegate")
 
-    def __init__(self, table: t.Type[Table], force: bool = False):
-        super().__init__(table)
+    def __init__(self, table: t.Type[Table], force: bool = False, **kwargs):
+        super().__init__(table, **kwargs)
         self.force = force
         self.where_delegate = WhereDelegate()
 
@@ -40,7 +40,7 @@ class Delete(Query):
             )
 
     @property
-    def querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> t.Sequence[QueryString]:
         query = f"DELETE FROM {self.table._meta.tablename}"
         if self.where_delegate._where:
             query += " WHERE {}"

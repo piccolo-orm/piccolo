@@ -41,9 +41,7 @@ class BaseUser(Table, tablename="piccolo_user"):
     )
 
     def __init__(self, **kwargs):
-        """
-        Generating passwords upfront is expensive, so might need reworking.
-        """
+        # Generating passwords upfront is expensive, so might need reworking.
         password = kwargs.get("password", None)
         if password:
             kwargs["password"] = self.__class__.hash_password(password)
