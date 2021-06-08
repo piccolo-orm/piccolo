@@ -214,10 +214,23 @@ class Query:
         limit, output etc).
 
         """
+        querystrings = self.querystrings
+        for querystring in querystrings:
+            querystring.freeze(engine_type=self.engine_type)
+
         # Copy the query, so we don't store any references to the original.
         query = self.__class__(
             table=self.table, frozen_querystrings=self.querystrings
         )
+
+        if hasattr(self, "limit_delegate"):
+            # Needed for `response_handler`
+            query.limit_delegate = self.limit_delegate.copy()  # type: ignore
+
+        if hasattr(self, "output_delegate"):
+            # Needed for `_process_results`
+            query.output_delegate = self.output_delegate.copy()  # type: ignore
+
         return FrozenQuery(query=query)
 
     ###########################################################################

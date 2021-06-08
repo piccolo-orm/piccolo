@@ -65,8 +65,9 @@ class Select(Query):
         table: t.Type[Table],
         columns_list: t.Sequence[t.Union[Selectable, str]] = [],
         exclude_secrets: bool = False,
+        **kwargs,
     ):
-        super().__init__(table)
+        super().__init__(table, **kwargs)
         self.exclude_secrets = exclude_secrets
 
         self.columns_delegate = ColumnsDelegate()

@@ -14,8 +14,8 @@ if t.TYPE_CHECKING:  # pragma: no cover
 class Insert(Query):
     __slots__ = ("add_delegate",)
 
-    def __init__(self, table: t.Type[Table], *instances: Table):
-        super().__init__(table)
+    def __init__(self, table: t.Type[Table], *instances: Table, **kwargs):
+        super().__init__(table, **kwargs)
         self.add_delegate = AddDelegate()
         self.add(*instances)
 

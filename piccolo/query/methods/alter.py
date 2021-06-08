@@ -293,8 +293,8 @@ class Alter(Query):
         "_set_unique",
     )
 
-    def __init__(self, table: t.Type[Table]):
-        super().__init__(table)
+    def __init__(self, table: t.Type[Table], **kwargs):
+        super().__init__(table, **kwargs)
         self._add_foreign_key_constraint: t.List[AddForeignKeyConstraint] = []
         self._add: t.List[AddColumn] = []
         self._drop_contraint: t.List[DropConstraint] = []

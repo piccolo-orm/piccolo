@@ -35,8 +35,8 @@ class Objects(Query):
         "where_delegate",
     )
 
-    def __init__(self, table: t.Type[Table]):
-        super().__init__(table)
+    def __init__(self, table: t.Type[Table], **kwargs):
+        super().__init__(table, **kwargs)
         self.limit_delegate = LimitDelegate()
         self.offset_delegate = OffsetDelegate()
         self.order_by_delegate = OrderByDelegate()

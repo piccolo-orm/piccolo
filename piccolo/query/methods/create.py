@@ -21,8 +21,9 @@ class Create(Query):
         table: t.Type[Table],
         if_not_exists: bool = False,
         only_default_columns: bool = False,
+        **kwargs,
     ):
-        super().__init__(table)
+        super().__init__(table, **kwargs)
         self.if_not_exists = if_not_exists
         self.only_default_columns = only_default_columns
 

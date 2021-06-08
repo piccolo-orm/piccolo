@@ -15,8 +15,8 @@ if t.TYPE_CHECKING:  # pragma: no cover
 class Count(Query):
     __slots__ = ("where_delegate",)
 
-    def __init__(self, table: t.Type[Table]):
-        super().__init__(table)
+    def __init__(self, table: t.Type[Table], **kwargs):
+        super().__init__(table, **kwargs)
         self.where_delegate = WhereDelegate()
 
     def where(self, where: Combinable) -> Count:
