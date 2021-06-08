@@ -78,7 +78,7 @@ Let Piccolo scaffold you an ASGI web app, using Piccolo as the ORM:
 piccolo asgi new
 ```
 
-[Starlette](https://www.starlette.io/) and [FastAPI](https://fastapi.tiangolo.com/) are currently supported.
+[Starlette](https://www.starlette.io/), [FastAPI](https://fastapi.tiangolo.com/), and [BlackSheep](https://www.neoteroi.dev/blacksheep/) are currently supported.
 
 ## Are you a Django user?
 

@@ -18,8 +18,8 @@ will ask for your preferences on which libraries to use.
 Routing frameworks
 ******************
 
-Currently, `Starlette <https://www.starlette.io/>`_ and `FastAPI <https://fastapi.tiangolo.com/>`_
-are supported.
+Currently, `Starlette <https://www.starlette.io/>`_, `FastAPI <https://fastapi.tiangolo.com/>`_,
+and `BlackSheep <https://www.neoteroi.dev/blacksheep/>`_ are supported.
 
 Other great ASGI routing frameworks exist, and may be supported in the future
 (`Quart <https://pgjones.gitlab.io/quart/>`_ ,
@@ -29,7 +29,7 @@ Other great ASGI routing frameworks exist, and may be supported in the future
 Which to use?
 =============
 
-Both are great choices. FastAPI is built on top of Starlette, so they're
+All are great choices. FastAPI is built on top of Starlette, so they're
 very similar. FastAPI is useful if you want to document a REST API.
 
 Web servers
