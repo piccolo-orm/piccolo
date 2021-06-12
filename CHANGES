@@ -1,6 +1,10 @@
 Changes
 =======
 
+0.21.1
+------
+Fix missing imports in FastAPI and Starlette app templates.
+
 0.21.0
 ------
  * Added a ``freeze`` method to ``Query``.
