@@ -74,6 +74,20 @@ class SerialisedColumnInstance:
 
 
 @dataclass
+class SerialisedEnumInstance:
+    instance: Enum
+
+    def __hash__(self):
+        return hash(self.__repr__())
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
+    def __repr__(self):
+        return f"{self.instance.__class__.__name__}.{self.instance.name}"
+
+
+@dataclass
 class SerialisedTableType:
     table_type: t.Type[Table]
 
@@ -241,14 +255,29 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
             extra_imports.append(Import(module="decimal", target="Decimal"))
             continue
 
-        # Enums
+        # Enum instances
         if isinstance(value, Enum):
-            # Enums already have a good __repr__.
-            extra_imports.append(
-                Import(
-                    module=value.__module__, target=value.__class__.__name__,
+            if value.__module__.startswith("piccolo"):
+                # It's an Enum defined within Piccolo, so we can safely import
+                # it.
+                params[key] = SerialisedEnumInstance(instance=value)
+                extra_imports.append(
+                    Import(
+                        module=value.__module__,
+                        target=value.__class__.__name__,
+                    )
                 )
-            )
+            else:
+                # It's a user defined Enum, so we'll insert the raw value.
+                enum_serialised_params: SerialisedParams = serialise_params(
+                    params={key: value.value}
+                )
+                params[key] = enum_serialised_params.params[key]
+                extra_imports.extend(enum_serialised_params.extra_imports)
+                extra_definitions.extend(
+                    enum_serialised_params.extra_definitions
+                )
+
             continue
 
         # Enum types
@@ -329,5 +358,7 @@ def deserialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
             params[key] = value.table_type
         elif isinstance(value, SerialisedEnumType):
             params[key] = value.enum_type
+        elif isinstance(value, SerialisedEnumInstance):
+            params[key] = value.instance
 
     return params
