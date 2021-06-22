@@ -2,6 +2,7 @@ from enum import Enum
 from unittest import TestCase
 
 from piccolo.apps.migrations.auto.serialisation import serialise_params
+from piccolo.columns.base import OnDelete
 from piccolo.columns.choices import Choice
 from piccolo.columns.column_types import Varchar
 from piccolo.columns.defaults import DateNow, TimeNow, TimestampNow, UUID4
@@ -148,3 +149,36 @@ class TestSerialiseParams(TestCase):
                 "from enum import Enum",
             },
         )
+
+    def test_custom_enum_instance(self):
+        """
+        Make sure custom Enum instances can be serialised properly. An example
+        is when a user defines a choices Enum, and then sets the default to
+        one of those choices.
+        """
+
+        class Choices(Enum):
+            a = 1
+            b = 2
+
+        serialised = serialise_params(params={"default": Choices.a})
+
+        self.assertEqual(serialised.params["default"], 1)
+        self.assertEqual(serialised.extra_imports, [])
+        self.assertEqual(serialised.extra_definitions, [])
+
+    def test_builtin_enum_instance(self):
+        """
+        Make sure Enum instances defiend in Piccolo can be serialised properly
+        - for example, with on_delete.
+        """
+        serialised = serialise_params(params={"on_delete": OnDelete.cascade})
+
+        self.assertEqual(
+            serialised.params["on_delete"].__repr__(), "OnDelete.cascade"
+        )
+        self.assertEqual(
+            [i.__repr__() for i in serialised.extra_imports],
+            ["from piccolo.columns.base import OnDelete"],
+        )
+        self.assertEqual(serialised.extra_definitions, [])
