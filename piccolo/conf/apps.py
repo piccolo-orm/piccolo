@@ -94,6 +94,24 @@ class Command:
 class AppConfig:
     """
     Each app needs an AppConfig, which is defined in piccolo_app.py.
+
+    :param app_name:
+        The name of the app, for example ``'article'``.
+    :param migrations_folder_path:
+        The path of the folder containing this app's migration files.
+    :param table_classes:
+        By registering table classes, Piccolo's auto migrations can detect
+        changes to tables.
+    :param migration_dependencies:
+        A list of Piccolo apps whose migrations this app depends on. For
+        example: ``['piccolo.apps.user.piccolo_conf']``. The migrations for
+        those apps will be run before the migrations for this app.
+    :param commands:
+        A list of functions and coroutines, which are then registered with
+        the Piccolo CLI. For example, with a Piccolo app called ``'article'``,
+        and a command called ``new``, it can be called on the command line
+        using ``piccolo article new``.
+
     """
 
     app_name: str
@@ -262,7 +280,7 @@ class Finder:
         for config_module_path in config_module_paths:
             try:
                 config_module = t.cast(
-                    PiccoloAppModule, import_module(config_module_path),
+                    PiccoloAppModule, import_module(config_module_path)
                 )
             except ImportError:
                 raise Exception(f"Unable to import {config_module_path}")
