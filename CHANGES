@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.21.2
+------
+Fixing a bug with serialising ``Enum`` instances in migrations. For example:
+``Varchar(default=Colour.red)``.
+
 0.21.1
 ------
 Fix missing imports in FastAPI and Starlette app templates.
