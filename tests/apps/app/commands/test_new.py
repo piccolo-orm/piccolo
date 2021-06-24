@@ -2,7 +2,13 @@ import os
 import shutil
 from unittest import TestCase
 
-from piccolo.apps.app.commands.new import new
+from piccolo.apps.app.commands.new import new, module_exists
+
+
+class TestModuleExists(TestCase):
+    def test_module_exists(self):
+        self.assertEqual(module_exists("sys"), True)
+        self.assertEqual(module_exists("abc123xyz"), False)
 
 
 class TestNewApp(TestCase):
@@ -18,3 +24,19 @@ class TestNewApp(TestCase):
         new(app_name=app_name, root=root)
 
         self.assertTrue(os.path.exists(app_path))
+
+    def test_new_with_clashing_name(self):
+        """
+        Test trying to create an app with the same name as a builtin Python
+        package - it shouldn't be allowed.
+        """
+        root = "/tmp"
+        app_name = "sys"
+
+        with self.assertRaises(SystemExit) as context:
+            new(app_name=app_name, root=root)
+
+        exception = context.exception
+        self.assertTrue(
+            exception.code.startswith("A module called sys already exists")
+        )

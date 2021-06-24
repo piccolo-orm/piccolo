@@ -1,4 +1,5 @@
 from __future__ import annotations
+import importlib
 import os
 import sys
 import typing as t
@@ -16,6 +17,19 @@ JINJA_ENV = jinja2.Environment(
 )
 
 
+def module_exists(module_name: str) -> bool:
+    """
+    Check whether a Python module already exists with this name - for
+    example, a builtin module.
+    """
+    try:
+        importlib.import_module(module_name)
+    except ModuleNotFoundError:
+        return False
+    else:
+        return True
+
+
 def new_app(app_name: str, root: str = "."):
     print(f"Creating {app_name} app ...")
 
@@ -23,6 +37,13 @@ def new_app(app_name: str, root: str = "."):
 
     if os.path.exists(app_root):
         sys.exit("Folder already exists - exiting.")
+
+    if module_exists(app_name):
+        sys.exit(
+            f"A module called {app_name} already exists - possibly a builtin "
+            "Python module. Please choose a different name for your app."
+        )
+
     os.mkdir(app_root)
 
     with open(os.path.join(app_root, "__init__.py"), "w"):
