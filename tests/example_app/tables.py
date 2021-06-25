@@ -2,8 +2,7 @@ from enum import Enum
 
 from piccolo.table import Table
 from piccolo.columns import Varchar, ForeignKey, Integer, Numeric, Text
-from piccolo.columns.choices import Choice
-
+from piccolo.columns.readable import Readable
 
 ###############################################################################
 # Simple example
@@ -11,6 +10,10 @@ from piccolo.columns.choices import Choice
 
 class Manager(Table):
     name = Varchar(length=50)
+
+    @classmethod
+    def get_readable(cls) -> Readable:
+        return Readable(template="%s", columns=[cls.name])
 
 
 class Band(Table):
