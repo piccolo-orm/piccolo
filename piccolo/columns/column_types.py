@@ -1199,8 +1199,6 @@ class ForeignKey(Integer):
                     i for i in new_column._meta.call_chain
                 ]
                 _column._meta.call_chain.append(new_column)
-                if _column._meta.name == "id":
-                    continue
                 setattr(new_column, _column._meta.name, _column)
                 foreign_key_meta.proxy_columns.append(_column)
 
