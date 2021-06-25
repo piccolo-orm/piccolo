@@ -6,8 +6,8 @@ from piccolo.columns.operators.comparison import ComparisonOperator
 from piccolo.custom_types import Combinable, Iterable
 from piccolo.querystring import QueryString
 
-if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.columns.base import Column  # noqa
+if t.TYPE_CHECKING:
+    from piccolo.columns.base import Column
 
 
 class CombinableMixin(object):
@@ -92,9 +92,42 @@ class Where(CombinableMixin):
         omitted, vs None, which is a valid value for a where clause.
         """
         self.column = column
-        self.value = value
-        self.values = values
+        self.value = self.clean_value(value)
+
+        if values == UNDEFINED:
+            self.values = values
+        else:
+            self.values = [self.clean_value(i) for i in values]  # type: ignore
+
         self.operator = operator
+
+    def clean_value(self, value: t.Any) -> t.Any:
+        """
+        If a where clause contains a Table instance, we should convert that
+        to a column reference. For example:
+
+        .. code-block:: python
+
+            manager = Manager.objects.where(
+                Manager.name == 'Guido'
+            ).first().run_sync()
+
+            # The where clause should be:
+            Band.select().where(Band.manager.id == guido.id).run_sync()
+            # Or
+            Band.select().where(Band.manager == guido.id).run_sync()
+
+            # If the object is passed in, i.e. `guido` instead of `guido.id`,
+            # it should still work.
+            Band.select().where(Band.manager == guido).run_sync()
+
+        """
+        from piccolo.table import Table
+
+        if isinstance(value, Table):
+            return value.id
+        else:
+            return value
 
     @property
     def values_querystring(self) -> QueryString:

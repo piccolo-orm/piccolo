@@ -5,7 +5,7 @@ from piccolo.columns.combination import WhereRaw
 from piccolo.query.methods.select import Count
 
 from ..base import DBTestCase, postgres_only, sqlite_only
-from ..example_app.tables import Band, Concert
+from ..example_app.tables import Band, Concert, Manager
 
 
 class TestSelect(DBTestCase):
@@ -27,6 +27,30 @@ class TestSelect(DBTestCase):
         print(f"response = {response}")
 
         self.assertDictEqual(response[0], {"name": "Pythonistas"})
+
+    def test_where_equals(self):
+        self.insert_row()
+
+        manager = Manager.objects().first().run_sync()
+
+        # This is the recommended way of running these types of queries:
+        response = (
+            Band.select(Band.name)
+            .where(Band.manager.id == manager.id)
+            .run_sync()
+        )
+        self.assertEqual(response, [{"name": "Pythonistas"}])
+
+        # Other cases which should work:
+        response = (
+            Band.select(Band.name).where(Band.manager == manager).run_sync()
+        )
+        self.assertEqual(response, [{"name": "Pythonistas"}])
+
+        response = (
+            Band.select(Band.name).where(Band.manager.id == manager).run_sync()
+        )
+        self.assertEqual(response, [{"name": "Pythonistas"}])
 
     def test_where_like(self):
         self.insert_rows()
