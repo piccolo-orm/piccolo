@@ -1,6 +1,19 @@
 Changes
 =======
 
+0.22.0
+------
+ * An error is now raised if a user tries to create a Piccolo app using
+   ``piccolo app new`` with the same name as a builtin Python module, as it
+   will cause strange bugs.
+ * Fixing a strange bug where using an expression such as
+   ``Concert.band_1.manager.id`` in a query would cause an error. It only
+   happened if multiple joins were involved, and the last column in the chain
+   was ``id``.
+ * ``where`` clauses can now accept ``Table`` instances. For example:
+   ``await Band.select().where(Band.manager == some_manager).run()``, instead
+   of having to explicity reference the ``id``.
+
 0.21.2
 ------
 Fixing a bug with serialising ``Enum`` instances in migrations. For example:
