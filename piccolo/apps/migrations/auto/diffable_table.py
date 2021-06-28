@@ -12,7 +12,7 @@ from piccolo.apps.migrations.auto.serialisation import (
     serialise_params,
     deserialise_params,
 )
-from piccolo.table import Table
+from piccolo.table import Table, create_table_class
 
 
 def compare_dicts(dict_1, dict_2) -> t.Dict[str, t.Any]:
@@ -144,10 +144,12 @@ class DiffableTable:
         """
         Converts the DiffableTable into a Table subclass.
         """
-        _Table: t.Type[Table] = type(
-            self.class_name,
-            (Table,),
-            {column._meta.name: column for column in self.columns},
+        _Table: t.Type[Table] = create_table_class(
+            class_name=self.class_name,
+            class_kwargs={"tablename": self.tablename},
+            class_members={
+                column._meta.name: column for column in self.columns
+            },
         )
-        _Table._meta.tablename = self.tablename
+
         return _Table

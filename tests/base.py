@@ -8,7 +8,7 @@ import pytest
 from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
-from piccolo.table import Table
+from piccolo.table import Table, create_table_class
 
 
 ENGINE = engine_finder()
@@ -47,12 +47,13 @@ class DBTestCase(TestCase):
     """
 
     def run_sync(self, query):
-        _Table = type("_Table", (Table,), {})
+        _Table = create_table_class(class_name="_Table")
         return _Table.raw(query).run_sync()
 
     def table_exists(self, tablename: str) -> bool:
-        _Table: t.Type[Table] = type(tablename.upper(), (Table,), {})
-        _Table._meta.tablename = tablename
+        _Table: t.Type[Table] = create_table_class(
+            class_name=tablename.upper(), class_kwargs={"tablename": tablename}
+        )
         return _Table.table_exists().run_sync()
 
     ###########################################################################

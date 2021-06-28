@@ -3,7 +3,7 @@ import datetime
 import typing as t
 
 from piccolo.columns.column_types import OnDelete, OnUpdate
-from piccolo.table import Table
+from piccolo.table import Table, create_table_class
 from piccolo.columns.defaults.timestamp import TimestampNow
 
 
@@ -25,11 +25,10 @@ def deserialise_legacy_params(name: str, value: str) -> t.Any:
                 "`SomeClassName` or `SomeClassName|some_table_name`."
             )
 
-        _Table: t.Type[Table] = type(
-            class_name, (Table,), {},
+        _Table: t.Type[Table] = create_table_class(
+            class_name=class_name,
+            class_kwargs={"tablename": tablename} if tablename else {},
         )
-        if tablename:
-            _Table._meta.tablename = tablename
         return _Table
 
     ###########################################################################
