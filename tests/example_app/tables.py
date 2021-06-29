@@ -1,7 +1,15 @@
 from enum import Enum
 
 from piccolo.table import Table
-from piccolo.columns import Varchar, ForeignKey, Integer, Numeric, Text
+from piccolo.columns import (
+    ForeignKey,
+    Integer,
+    JSON,
+    JSONB,
+    Numeric,
+    Text,
+    Varchar,
+)
 from piccolo.columns.readable import Readable
 
 ###############################################################################
@@ -60,3 +68,12 @@ class Shirt(Table):
         large = "l"
 
     size = Varchar(length=1, choices=Size, default=Size.large)
+
+
+class RecordingStudio(Table):
+    """
+    Used for testing JSON and JSONB columns.
+    """
+
+    facilities = JSON()
+    facilities_b = JSONB()

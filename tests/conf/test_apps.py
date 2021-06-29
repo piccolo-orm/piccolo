@@ -70,6 +70,7 @@ class TestTableFinder(TestCase):
                 "Concert",
                 "Manager",
                 "Poster",
+                "RecordingStudio",
                 "Shirt",
                 "Ticket",
                 "Venue",
@@ -95,6 +96,7 @@ class TestTableFinder(TestCase):
                 "Concert",
                 "Manager",
                 "Poster",
+                "RecordingStudio",
                 "Shirt",
                 "Ticket",
                 "Venue",
@@ -129,5 +131,13 @@ class TestTableFinder(TestCase):
 
         self.assertEqual(
             table_class_names,
-            ["Band", "Concert", "Manager", "Shirt", "Ticket", "Venue"],
+            [
+                "Band",
+                "Concert",
+                "Manager",
+                "RecordingStudio",
+                "Shirt",
+                "Ticket",
+                "Venue",
+            ],
         )
