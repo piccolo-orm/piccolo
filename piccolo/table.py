@@ -626,7 +626,9 @@ class Table(metaclass=TableMetaclass):
         return TableExists(table=cls)
 
     @classmethod
-    def update(cls, values: t.Dict[Column, t.Any] = {}) -> Update:
+    def update(
+        cls, values: t.Dict[t.Union[Column, str], t.Any] = {}, **kwargs
+    ) -> Update:
         """
         Update rows.
 

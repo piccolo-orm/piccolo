@@ -234,16 +234,40 @@ class ColumnsDelegate:
 class ValuesDelegate:
     """
     Used to specify new column values - primarily used in update queries.
-
-    Example usage:
-
-    .values({MyTable.column_a: 1})
     """
 
+    table: t.Type[Table]
     _values: t.Dict[Column, t.Any] = field(default_factory=dict)
 
-    def values(self, values: t.Dict[Column, t.Any]):
-        self._values.update(values)
+    def values(self, values: t.Dict[t.Union[Column, str], t.Any]):
+        """
+        Example usage:
+
+        .. code-block:: python
+
+            .values({MyTable.column_a: 1})
+
+            # Or:
+            .values({'column_a': 1})
+
+            # Or:
+            .values(column_a=1})
+
+        """
+        cleaned_values: t.Dict[Column, t.Any] = {}
+        for key, value in values.items():
+            if isinstance(key, Column):
+                column = key
+            elif isinstance(key, str):
+                column = self.table._meta.get_column_by_name(key)
+            else:
+                raise ValueError(
+                    f"Unrecognised key - {key} is neither a Column or the "
+                    "name of a Column."
+                )
+            cleaned_values[column] = value
+
+        self._values.update(cleaned_values)
 
     def get_sql_values(self) -> t.List[t.Any]:
         """
