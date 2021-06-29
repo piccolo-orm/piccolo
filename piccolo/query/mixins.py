@@ -1,10 +1,10 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from enum import Enum
 import typing as t
 
 from piccolo.columns import And, Column, Secret, Where, Or
 from piccolo.custom_types import Combinable
+from piccolo.query.sql_values import convert_to_sql_value
 from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -171,6 +171,7 @@ class AddDelegate:
         for instance in instances:
             if not isinstance(instance, table_class):
                 raise TypeError("Incompatible type added.")
+
         self._add += instances
 
 
@@ -271,11 +272,11 @@ class ValuesDelegate:
 
     def get_sql_values(self) -> t.List[t.Any]:
         """
-        Convert any Enums into values.
+        Convert any Enums into values, and serialise any JSON.
         """
         return [
-            value.value if isinstance(value, Enum) else value
-            for value in self._values.values()
+            convert_to_sql_value(value=value, column=column)
+            for column, value in self._values.items()
         ]
 
 

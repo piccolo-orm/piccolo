@@ -1,6 +1,5 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from enum import Enum
 import inspect
 import itertools
 import types
@@ -38,6 +37,7 @@ from piccolo.query import (
 )
 from piccolo.query.methods.indexes import Indexes
 from piccolo.query.methods.create_index import CreateIndex
+from piccolo.query.sql_values import convert_to_sql_value
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
 
@@ -418,10 +418,9 @@ class Table(metaclass=TableMetaclass):
         """
         args_dict = {}
         for col in self._meta.columns:
-            value = self[col._meta.name]
-            args_dict[col._meta.name] = (
-                value.value if isinstance(value, Enum) else value
-            )
+            column_name = col._meta.name
+            value = convert_to_sql_value(value=self[column_name], column=col)
+            args_dict[column_name] = value
 
         def is_unquoted(arg):
             return type(arg) == Unquoted
