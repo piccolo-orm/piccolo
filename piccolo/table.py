@@ -8,7 +8,13 @@ import typing as t
 
 from piccolo.engine import Engine, engine_finder
 from piccolo.columns import Column, Selectable
-from piccolo.columns.column_types import ForeignKey, PrimaryKey, Secret
+from piccolo.columns.column_types import (
+    ForeignKey,
+    JSON,
+    JSONB,
+    PrimaryKey,
+    Secret,
+)
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import (
     LazyTableReference,
@@ -50,6 +56,7 @@ class TableMeta:
     default_columns: t.List[Column] = field(default_factory=list)
     non_default_columns: t.List[Column] = field(default_factory=list)
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
+    json_columns: t.List[t.Union[JSON, JSONB]] = field(default_factory=list)
     secret_columns: t.List[Secret] = field(default_factory=list)
     tags: t.List[str] = field(default_factory=list)
     help_text: t.Optional[str] = None
@@ -159,6 +166,7 @@ class Table(metaclass=TableMetaclass):
         non_default_columns: t.List[Column] = []
         foreign_key_columns: t.List[ForeignKey] = []
         secret_columns: t.List[Secret] = []
+        json_columns: t.List[t.Union[JSON, JSONB]] = []
 
         cls.id = PrimaryKey()
 
@@ -196,6 +204,9 @@ class Table(metaclass=TableMetaclass):
 
                 if isinstance(column, ForeignKey):
                     foreign_key_columns.append(column)
+
+                if isinstance(column, (JSON, JSONB)):
+                    json_columns.append(column)
 
         cls._meta = TableMeta(
             tablename=tablename,
