@@ -632,12 +632,30 @@ class Table(metaclass=TableMetaclass):
         """
         Update rows.
 
-        await Band.update().values(
-            {Band.name: "Spamalot"}
-        ).where(
-            Band.name=="Pythonistas"
-        ).run()
+        All of the following work, though the first is preferable:
+
+        .. code-block:: python
+
+            await Band.update(
+                {Band.name: "Spamalot"}
+            ).where(
+                Band.name=="Pythonistas"
+            ).run()
+
+            await Band.update(
+                {"name": "Spamalot"}
+            ).where(
+                Band.name=="Pythonistas"
+            ).run()
+
+            await Band.update(
+                name="Spamalot"
+            ).where(
+                Band.name=="Pythonistas"
+            ).run()
+
         """
+        values = dict(values, **kwargs)
         return Update(table=cls).values(values)
 
     @classmethod
