@@ -76,12 +76,14 @@ class Output:
     as_json: bool = False
     as_list: bool = False
     as_objects: bool = False
+    load_json: bool = False
 
     def copy(self) -> Output:
         return self.__class__(
             as_json=self.as_json,
             as_list=self.as_list,
             as_objects=self.as_objects,
+            load_json=self.load_json,
         )
 
 
@@ -191,6 +193,7 @@ class OutputDelegate:
         self,
         as_list: t.Optional[bool] = None,
         as_json: t.Optional[bool] = None,
+        load_json: t.Optional[bool] = None,
     ):
         """
         :param as_list:
@@ -199,12 +202,18 @@ class OutputDelegate:
         :param as_json:
             The results are serialised into JSON. It's equivalent to running
             `json.dumps` on the result.
+        :param load_json:
+            If True, any JSON fields will have the JSON values returned from
+            the database loaded as Python objects.
         """
         if as_list is not None:
             self._output.as_list = bool(as_list)
 
-        if type(as_json) is bool:
+        if as_json is not None:
             self._output.as_json = bool(as_json)
+
+        if load_json is not None:
+            self._output.load_json = bool(load_json)
 
     def copy(self) -> OutputDelegate:
         _output = self._output.copy() if self._output is not None else None

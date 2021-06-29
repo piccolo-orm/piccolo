@@ -217,6 +217,7 @@ class Table(metaclass=TableMetaclass):
             default_columns=default_columns,
             non_default_columns=non_default_columns,
             foreign_key_columns=foreign_key_columns,
+            json_columns=json_columns,
             secret_columns=secret_columns,
             tags=tags,
             help_text=help_text,

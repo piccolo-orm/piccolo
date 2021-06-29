@@ -44,6 +44,12 @@ class Objects(Query):
         self.output_delegate._output.as_objects = True
         self.where_delegate = WhereDelegate()
 
+    def output(self, load_json: bool = False) -> Objects:
+        self.output_delegate.output(
+            as_list=False, as_json=False, load_json=load_json
+        )
+        return self
+
     def limit(self, number: int) -> Objects:
         self.limit_delegate.limit(number)
         return self

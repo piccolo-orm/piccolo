@@ -3,12 +3,15 @@ import itertools
 from time import time
 import typing as t
 
+from piccolo.columns.column_types import JSON, JSONB
+from piccolo.query.mixins import ColumnsDelegate
 from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
-from piccolo.utils.encoding import dump_json
+from piccolo.utils.encoding import dump_json, load_json
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table  # noqa
+    from piccolo.query.mixins import OutputDelegate
 
 
 class Timer:
@@ -51,9 +54,54 @@ class Query:
         if hasattr(self, "run_callback"):
             self.run_callback(raw)
 
-        raw = await self.response_handler(raw)
+        output: t.Optional[OutputDelegate] = getattr(
+            self, "output_delegate", None
+        )
 
-        output = getattr(self, "output_delegate", None)
+        #######################################################################
+
+        if output and output._output.load_json:
+            columns_delegate: t.Optional[ColumnsDelegate] = getattr(
+                self, "columns_delegate", None
+            )
+
+            if columns_delegate is not None:
+                json_columns = [
+                    i
+                    for i in columns_delegate.selected_columns
+                    if isinstance(i, (JSON, JSONB))
+                ]
+            else:
+                json_columns = self.table._meta.json_columns
+
+            json_column_names = []
+            for column in json_columns:
+                if column.alias is not None:
+                    json_column_names.append(column.alias)
+                elif len(column._meta.call_chain) > 0:
+                    json_column_names.append(
+                        column.get_select_string(
+                            engine_type=column._meta.engine_type
+                        )
+                    )
+                else:
+                    json_column_names.append(column._meta.name)
+
+            processed_raw = []
+
+            for row in raw:
+                new_row = {**row}
+                for json_column_name in json_column_names:
+                    value = new_row.get(json_column_name)
+                    if value is not None:
+                        new_row[json_column_name] = load_json(value)
+                processed_raw.append(new_row)
+
+            raw = processed_raw
+
+        #######################################################################
+
+        raw = await self.response_handler(raw)
 
         if output:
             if output._output.as_objects:
