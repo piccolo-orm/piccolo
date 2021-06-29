@@ -1,4 +1,4 @@
-from .alter import Alter  # noqa: F401: F401
+from .alter import Alter  # noqa: F401
 from .count import Count  # noqa: F401
 from .create import Create  # noqa: F401
 from .create_index import CreateIndex  # noqa: F401
