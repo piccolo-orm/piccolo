@@ -1,6 +1,13 @@
 Changes
 =======
 
+0.23.0
+------
+Added the ``create_table_class`` function, which can be used to create
+``Table`` subclasses at runtime. This was required to fix an existing bug,
+which was effecting migrations (see `issue 111 <https://github.com/piccolo-orm/piccolo/issues/111>`_
+for more details).
+
 0.22.0
 ------
  * An error is now raised if a user tries to create a Piccolo app using
