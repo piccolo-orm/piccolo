@@ -6,4 +6,3 @@ DB = SQLiteEngine(path="test.sqlite")
 
 
 APP_REGISTRY = AppRegistry(apps=["tests.example_app.piccolo_app"])
-

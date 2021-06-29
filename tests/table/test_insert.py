@@ -1,4 +1,3 @@
-from unittest.case import TestCase
 from ..base import DBTestCase
 from ..example_app.tables import Band, Manager
 

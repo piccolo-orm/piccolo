@@ -2,7 +2,7 @@ import asyncio
 from piccolo.columns.column_types import ForeignKey
 from unittest.mock import patch, MagicMock
 
-from asyncpg.exceptions import UniqueViolationError
+from asyncpg.exceptions import UniqueViolationError  # type: ignore
 from piccolo.apps.migrations.auto import MigrationManager
 from piccolo.apps.migrations.commands.base import BaseMigrationManager
 from piccolo.columns import Varchar, Text

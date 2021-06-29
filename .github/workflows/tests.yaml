@@ -21,9 +21,9 @@ jobs:
                   pip install -r requirements.txt
                   pip install -r tests/test-requirements.txt
             - name: Mypy
-              run: mypy piccolo
+              run: mypy piccolo tests
             - name: Flake8
-              run: flake8 piccolo
+              run: flake8 piccolo tests
 
     postgres:
         runs-on: ubuntu-latest
