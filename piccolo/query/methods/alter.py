@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import itertools
 import typing as t
 
-from piccolo.columns.base import Column, OnDelete, OnUpdate
+from piccolo.columns.base import Column
 from piccolo.columns.column_types import ForeignKey, Varchar, Numeric
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
@@ -11,6 +11,7 @@ from piccolo.utils.warnings import colored_warning, Level
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
+    from piccolo.columns.base import OnDelete, OnUpdate
 
 
 @dataclass

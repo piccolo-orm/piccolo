@@ -6,7 +6,7 @@ import types
 import typing as t
 
 from piccolo.engine import Engine, engine_finder
-from piccolo.columns import Column, Selectable
+from piccolo.columns import Column
 from piccolo.columns.column_types import (
     ForeignKey,
     JSON,
@@ -40,6 +40,9 @@ from piccolo.query.methods.create_index import CreateIndex
 from piccolo.utils.sql_values import convert_to_sql_value
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
+
+if t.TYPE_CHECKING:
+    from piccolo.columns import Selectable
 
 
 PROTECTED_TABLENAMES = ("user",)
