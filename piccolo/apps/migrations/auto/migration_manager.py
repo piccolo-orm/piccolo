@@ -13,7 +13,7 @@ from piccolo.apps.migrations.auto.operations import (
     RenameTable,
 )
 from piccolo.apps.migrations.auto.serialisation import deserialise_params
-from piccolo.table import Table
+from piccolo.table import Table, create_table_class
 
 
 @dataclass
@@ -329,8 +329,10 @@ class MigrationManager:
             if not alter_columns:
                 continue
 
-            _Table: t.Type[Table] = type(table_class_name, (Table,), {})
-            _Table._meta.tablename = alter_columns[0].tablename
+            _Table: t.Type[Table] = create_table_class(
+                class_name=table_class_name,
+                class_kwargs={"tablename": alter_columns[0].tablename},
+            )
 
             for alter_column in alter_columns:
 
@@ -492,8 +494,10 @@ class MigrationManager:
                 if not columns:
                     continue
 
-                _Table: t.Type[Table] = type(table_class_name, (Table,), {})
-                _Table._meta.tablename = columns[0].tablename
+                _Table: t.Type[Table] = create_table_class(
+                    class_name=table_class_name,
+                    class_kwargs={"tablename": columns[0].tablename},
+                )
 
                 for column in columns:
                     await _Table.alter().drop_column(
@@ -518,8 +522,9 @@ class MigrationManager:
                 else rename_table.new_tablename
             )
 
-            _Table: t.Type[Table] = type(class_name, (Table,), {})
-            _Table._meta.tablename = tablename
+            _Table: t.Type[Table] = create_table_class(
+                class_name=class_name, class_kwargs={"tablename": tablename}
+            )
 
             await _Table.alter().rename_table(new_name=new_tablename).run()
 
@@ -532,8 +537,10 @@ class MigrationManager:
             if not columns:
                 continue
 
-            _Table: t.Type[Table] = type(table_class_name, (Table,), {})
-            _Table._meta.tablename = columns[0].tablename
+            _Table: t.Type[Table] = create_table_class(
+                class_name=table_class_name,
+                class_kwargs={"tablename": columns[0].tablename},
+            )
 
             for rename_column in columns:
                 column = (
@@ -559,15 +566,14 @@ class MigrationManager:
                 ).run()
         else:
             for add_table in self.add_tables:
-                _Table: t.Type[Table] = type(
-                    add_table.class_name,
-                    (Table,),
-                    {
+                _Table: t.Type[Table] = create_table_class(
+                    class_name=add_table.class_name,
+                    class_kwargs={"tablename": add_table.tablename},
+                    class_members={
                         column._meta.name: column
                         for column in add_table.columns
                     },
                 )
-                _Table._meta.tablename = add_table.tablename
 
                 await _Table.create_table().run()
 
@@ -584,10 +590,10 @@ class MigrationManager:
                     # be deleted.
                     continue
 
-                _Table: t.Type[Table] = type(
-                    add_column.table_class_name, (Table,), {}
+                _Table: t.Type[Table] = create_table_class(
+                    class_name=add_column.table_class_name,
+                    class_kwargs={"tablename": add_column.tablename},
                 )
-                _Table._meta.tablename = add_column.tablename
 
                 await _Table.alter().drop_column(add_column.column).run()
         else:
@@ -598,15 +604,14 @@ class MigrationManager:
 
                 # Define the table, with the columns, so the metaclass
                 # sets up the columns correctly.
-                _Table: t.Type[Table] = type(
-                    add_columns[0].table_class_name,
-                    (Table,),
-                    {
+                _Table: t.Type[Table] = create_table_class(
+                    class_name=add_columns[0].table_class_name,
+                    class_kwargs={"tablename": add_columns[0].tablename},
+                    class_members={
                         add_column.column._meta.name: add_column.column
                         for add_column in add_columns
                     },
                 )
-                _Table._meta.tablename = add_columns[0].tablename
 
                 for add_column in add_columns:
                     # We fetch the column from the Table, as the metaclass

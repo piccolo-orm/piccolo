@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import inspect
 import itertools
+import types
 import typing as t
 
 from piccolo.engine import Engine, engine_finder
@@ -719,3 +720,32 @@ class Table(metaclass=TableMetaclass):
         return (
             f"class {cls.__name__}({class_args}):\n" f"    {columns_string}\n"
         )
+
+
+def create_table_class(
+    class_name: str,
+    bases: t.Tuple[t.Type] = (Table,),
+    class_kwargs: t.Dict[str, t.Any] = {},
+    class_members: t.Dict[str, t.Any] = {},
+) -> t.Type[Table]:
+    """
+    Used to dynamically create ``Table``subclasses at runtime. Most users
+    will not require this. It's mostly used internally for Piccolo's
+    migrations.
+
+    :param class_name:
+        For example `'MyTable'`.
+    :param bases:
+        A tuple of parent classes - usually just `(Table,)`.
+    :param class_kwargs:
+        For example, `{'tablename': 'my_custom_tablename'}`.
+    :param class_members:
+        For example, `{'my_column': Varchar()}`.
+
+    """
+    return types.new_class(
+        name=class_name,
+        bases=bases,
+        kwds=class_kwargs,
+        exec_body=lambda namespace: namespace.update(class_members),
+    )
