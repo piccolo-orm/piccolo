@@ -37,7 +37,7 @@ from piccolo.query import (
 )
 from piccolo.query.methods.indexes import Indexes
 from piccolo.query.methods.create_index import CreateIndex
-from piccolo.query.sql_values import convert_to_sql_value
+from piccolo.utils.sql_values import convert_to_sql_value
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
 

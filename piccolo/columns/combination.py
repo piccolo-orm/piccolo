@@ -4,7 +4,7 @@ import typing as t
 from piccolo.columns.operators.comparison import ComparisonOperator
 from piccolo.custom_types import Combinable, Iterable
 from piccolo.querystring import QueryString
-from piccolo.query.sql_values import convert_to_sql_value
+from piccolo.utils.sql_values import convert_to_sql_value
 
 if t.TYPE_CHECKING:
     from piccolo.columns.base import Column

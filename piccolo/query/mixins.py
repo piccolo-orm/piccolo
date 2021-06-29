@@ -4,7 +4,7 @@ import typing as t
 
 from piccolo.columns import And, Column, Secret, Where, Or
 from piccolo.custom_types import Combinable
-from piccolo.query.sql_values import convert_to_sql_value
+from piccolo.utils.sql_values import convert_to_sql_value
 from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:  # pragma: no cover
