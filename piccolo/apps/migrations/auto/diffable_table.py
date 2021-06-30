@@ -51,10 +51,7 @@ class ColumnComparison:
 
     def __eq__(self, value) -> bool:
         if isinstance(value, ColumnComparison):
-            return (
-                serialise_params(self.column._meta.params).params
-                == serialise_params(value.column._meta.params).params
-            ) and (self.column._meta.name == value.column._meta.name)
+            return self.column._meta.name == value.column._meta.name
         return False
 
 
