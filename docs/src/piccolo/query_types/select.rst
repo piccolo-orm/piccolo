@@ -147,21 +147,7 @@ See  :ref:`order_by`.
 output
 ~~~~~~
 
-By default, the data is returned as a list of dictionaries (where each
-dictionary represents a row). This can be altered using the ``output`` method.
-
-To return the data as a JSON string:
-
-.. code-block:: python
-
-    >>> b = Band
-    >>> b.select().output(as_json=True).run_sync()
-    '[{"name":"Pythonistas","manager":1,"popularity":1000,"id":1},{"name":"Rustaceans","manager":2,"popularity":500,"id":2}]'
-
-Piccolo can use `orjson <https://github.com/ijl/orjson>`_ for JSON serialisation,
-which is blazing fast, and can handle most Python types, including dates,
-datetimes, and UUIDs. To install Piccolo with orjson support use
-``pip install piccolo[orjson]``.
+See :ref:`output`.
 
 where
 ~~~~~

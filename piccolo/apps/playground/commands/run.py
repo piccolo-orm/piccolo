@@ -14,6 +14,7 @@ from piccolo.columns import (
     ForeignKey,
     Integer,
     Interval,
+    JSON,
     Numeric,
     Timestamp,
     UUID,
@@ -55,7 +56,12 @@ class DiscountCode(Table):
     active = Boolean(default=True, null=True)
 
 
-TABLES = (Manager, Band, Venue, Concert, Ticket, DiscountCode)
+class RecordingStudio(Table):
+    name = Varchar(length=100)
+    facilities = JSON()
+
+
+TABLES = (Manager, Band, Venue, Concert, Ticket, DiscountCode, RecordingStudio)
 
 
 def populate():
@@ -104,6 +110,11 @@ def populate():
 
     discount_code = DiscountCode(code=uuid.uuid4())
     discount_code.save().run_sync()
+
+    recording_studio = RecordingStudio(
+        name="Abbey Road", facilities={"restaurant": True, "mixing_desk": True}
+    )
+    recording_studio.save().run_sync()
 
 
 def run(
