@@ -3,37 +3,90 @@ from ..example_app.tables import Band, Poster
 
 
 class TestUpdate(DBTestCase):
+    def check_response(self):
+        response = (
+            Band.select(Band.name)
+            .where(Band.name == "Pythonistas3")
+            .run_sync()
+        )
+
+        self.assertEqual(response, [{"name": "Pythonistas3"}])
+
     def test_update(self):
+        """
+        Make sure updating work, when passing the new values directly to the
+        `update` method.
+        """
         self.insert_rows()
 
         Band.update({Band.name: "Pythonistas3"}).where(
             Band.name == "Pythonistas"
         ).run_sync()
 
-        response = (
-            Band.select(Band.name)
-            .where(Band.name == "Pythonistas3")
-            .run_sync()
-        )
-        print(f"response = {response}")
+        self.check_response()
 
-        self.assertEqual(response, [{"name": "Pythonistas3"}])
+    def test_update_with_string_keys(self):
+        """
+        Make sure updating work, when passing a dictionary of values, which
+        uses column names as keys, instead of Column instances.
+        """
+        self.insert_rows()
+
+        Band.update({"name": "Pythonistas3"}).where(
+            Band.name == "Pythonistas"
+        ).run_sync()
+
+        self.check_response()
+
+    def test_update_with_kwargs(self):
+        """
+        Make sure updating work, when passing the new value via kwargs.
+        """
+        self.insert_rows()
+
+        Band.update(name="Pythonistas3").where(
+            Band.name == "Pythonistas"
+        ).run_sync()
+
+        self.check_response()
 
     def test_update_values(self):
+        """
+        Make sure updating work, when passing the new values via the `values`
+        method.
+        """
         self.insert_rows()
 
-        Band.update({Band.name: "Pythonistas3"}).where(
+        Band.update().values({Band.name: "Pythonistas3"}).where(
             Band.name == "Pythonistas"
         ).run_sync()
 
-        response = (
-            Band.select(Band.name)
-            .where(Band.name == "Pythonistas3")
-            .run_sync()
-        )
-        print(f"response = {response}")
+        self.check_response()
 
-        self.assertEqual(response, [{"name": "Pythonistas3"}])
+    def test_update_values_with_string_keys(self):
+        """
+        Make sure updating work, when passing the new values via the `values`
+        method, using a column name as a dictionary key.
+        """
+        self.insert_rows()
+
+        Band.update().values({"name": "Pythonistas3"}).where(
+            Band.name == "Pythonistas"
+        ).run_sync()
+
+        self.check_response()
+
+    def test_update_values_with_kwargs(self):
+        """
+        Make sure updating work, when passing the new values via kwargs.
+        """
+        self.insert_rows()
+
+        Band.update().values(name="Pythonistas3").where(
+            Band.name == "Pythonistas"
+        ).run_sync()
+
+        self.check_response()
 
 
 class TestIntUpdateOperators(DBTestCase):

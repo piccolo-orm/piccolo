@@ -1,14 +1,19 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from enum import Enum
 import inspect
 import itertools
 import types
 import typing as t
 
 from piccolo.engine import Engine, engine_finder
-from piccolo.columns import Column, Selectable
-from piccolo.columns.column_types import ForeignKey, PrimaryKey, Secret
+from piccolo.columns import Column
+from piccolo.columns.column_types import (
+    ForeignKey,
+    JSON,
+    JSONB,
+    PrimaryKey,
+    Secret,
+)
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import (
     LazyTableReference,
@@ -32,8 +37,12 @@ from piccolo.query import (
 )
 from piccolo.query.methods.indexes import Indexes
 from piccolo.query.methods.create_index import CreateIndex
+from piccolo.utils.sql_values import convert_to_sql_value
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
+
+if t.TYPE_CHECKING:
+    from piccolo.columns import Selectable
 
 
 PROTECTED_TABLENAMES = ("user",)
@@ -50,6 +59,7 @@ class TableMeta:
     default_columns: t.List[Column] = field(default_factory=list)
     non_default_columns: t.List[Column] = field(default_factory=list)
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
+    json_columns: t.List[t.Union[JSON, JSONB]] = field(default_factory=list)
     secret_columns: t.List[Secret] = field(default_factory=list)
     tags: t.List[str] = field(default_factory=list)
     help_text: t.Optional[str] = None
@@ -159,6 +169,7 @@ class Table(metaclass=TableMetaclass):
         non_default_columns: t.List[Column] = []
         foreign_key_columns: t.List[ForeignKey] = []
         secret_columns: t.List[Secret] = []
+        json_columns: t.List[t.Union[JSON, JSONB]] = []
 
         cls.id = PrimaryKey()
 
@@ -197,12 +208,16 @@ class Table(metaclass=TableMetaclass):
                 if isinstance(column, ForeignKey):
                     foreign_key_columns.append(column)
 
+                if isinstance(column, (JSON, JSONB)):
+                    json_columns.append(column)
+
         cls._meta = TableMeta(
             tablename=tablename,
             columns=columns,
             default_columns=default_columns,
             non_default_columns=non_default_columns,
             foreign_key_columns=foreign_key_columns,
+            json_columns=json_columns,
             secret_columns=secret_columns,
             tags=tags,
             help_text=help_text,
@@ -407,10 +422,9 @@ class Table(metaclass=TableMetaclass):
         """
         args_dict = {}
         for col in self._meta.columns:
-            value = self[col._meta.name]
-            args_dict[col._meta.name] = (
-                value.value if isinstance(value, Enum) else value
-            )
+            column_name = col._meta.name
+            value = convert_to_sql_value(value=self[column_name], column=col)
+            args_dict[column_name] = value
 
         def is_unquoted(arg):
             return type(arg) == Unquoted
@@ -615,16 +629,36 @@ class Table(metaclass=TableMetaclass):
         return TableExists(table=cls)
 
     @classmethod
-    def update(cls, values: t.Dict[Column, t.Any] = {}) -> Update:
+    def update(
+        cls, values: t.Dict[t.Union[Column, str], t.Any] = {}, **kwargs
+    ) -> Update:
         """
         Update rows.
 
-        await Band.update().values(
-            {Band.name: "Spamalot"}
-        ).where(
-            Band.name=="Pythonistas"
-        ).run()
+        All of the following work, though the first is preferable:
+
+        .. code-block:: python
+
+            await Band.update(
+                {Band.name: "Spamalot"}
+            ).where(
+                Band.name=="Pythonistas"
+            ).run()
+
+            await Band.update(
+                {"name": "Spamalot"}
+            ).where(
+                Band.name=="Pythonistas"
+            ).run()
+
+            await Band.update(
+                name="Spamalot"
+            ).where(
+                Band.name=="Pythonistas"
+            ).run()
+
         """
+        values = dict(values, **kwargs)
         return Update(table=cls).values(values)
 
     @classmethod

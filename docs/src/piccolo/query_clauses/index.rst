@@ -14,6 +14,7 @@ by modifying the return values.
     ./limit
     ./offset
     ./order_by
+    ./output
     ./where
     ./batch
     ./freeze

@@ -117,6 +117,11 @@ order_by
 
 See  :ref:`order_by`.
 
+output
+~~~~~~
+
+See  :ref:`output`.
+
 where
 ~~~~~
 

@@ -34,7 +34,7 @@ async def change_permissions(
         )
         return
 
-    params: t.Dict[Column, bool] = {}
+    params: t.Dict[t.Union[Column, str], bool] = {}
 
     if admin is not None:
         params[BaseUser.admin] = admin

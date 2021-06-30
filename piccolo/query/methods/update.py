@@ -19,10 +19,13 @@ class Update(Query):
 
     def __init__(self, table: t.Type[Table], **kwargs):
         super().__init__(table, **kwargs)
-        self.values_delegate = ValuesDelegate()
+        self.values_delegate = ValuesDelegate(table=table)
         self.where_delegate = WhereDelegate()
 
-    def values(self, values: t.Dict[Column, t.Any]) -> Update:
+    def values(
+        self, values: t.Dict[t.Union[Column, str], t.Any] = {}, **kwargs
+    ) -> Update:
+        values = dict(values, **kwargs)
         self.values_delegate.values(values)
         return self
 

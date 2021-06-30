@@ -1,10 +1,10 @@
-from piccolo.columns.column_types import ForeignKey
+from piccolo.columns.column_types import ForeignKey, JSON, JSONB
 from unittest import TestCase
 
 from piccolo.columns import Secret
 from piccolo.table import Table
 
-from ..example_app.tables import Band
+from tests.example_app.tables import Band
 
 
 class TestMetaClass(TestCase):
@@ -62,4 +62,17 @@ class TestMetaClass(TestCase):
 
         self.assertEqual(
             Classified._meta.secret_columns, [Classified.top_secret]
+        )
+
+    def test_json_columns(self):
+        """
+        Make sure TableMeta.json_columns are setup correctly.
+        """
+
+        class MyTable(Table):
+            column_a = JSON()
+            column_b = JSONB()
+
+        self.assertEqual(
+            MyTable._meta.json_columns, [MyTable.column_a, MyTable.column_b]
         )

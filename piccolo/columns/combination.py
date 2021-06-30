@@ -1,10 +1,10 @@
 from __future__ import annotations
-from enum import Enum
 import typing as t
 
 from piccolo.columns.operators.comparison import ComparisonOperator
 from piccolo.custom_types import Combinable, Iterable
 from piccolo.querystring import QueryString
+from piccolo.utils.sql_values import convert_to_sql_value
 
 if t.TYPE_CHECKING:
     from piccolo.columns.base import Column
@@ -121,20 +121,17 @@ class Where(CombinableMixin):
             # it should still work.
             Band.select().where(Band.manager == guido).run_sync()
 
-        """
-        from piccolo.table import Table
+        Also, convert Enums to their underlying values, and serialise any JSON.
 
-        if isinstance(value, Table):
-            return value.id
-        else:
-            return value
+        """
+        return convert_to_sql_value(value=value, column=self.column)
 
     @property
     def values_querystring(self) -> QueryString:
-        if isinstance(self.values, Undefined):
-            raise ValueError("values is undefined")
+        values = self.values
 
-        values = [i.value if isinstance(i, Enum) else i for i in self.values]
+        if isinstance(values, Undefined):
+            raise ValueError("values is undefined")
 
         template = ", ".join(["{}" for _ in values])
         return QueryString(template, *values)
@@ -143,12 +140,8 @@ class Where(CombinableMixin):
     def querystring(self) -> QueryString:
         args: t.List[t.Any] = []
         if self.value != UNDEFINED:
-            value = (
-                self.value.value
-                if isinstance(self.value, Enum)
-                else self.value
-            )
-            args.append(value)
+            args.append(self.value)
+
         if self.values != UNDEFINED:
             args.append(self.values_querystring)
 

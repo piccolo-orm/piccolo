@@ -1,4 +1,4 @@
-from .base import Operator
+from piccolo.columns.operators.base import Operator
 
 
 class ComparisonOperator(Operator):
