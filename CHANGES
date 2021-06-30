@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.24.1
+------
+A bug fix for migrations. See `issue 123 <https://github.com/piccolo-orm/piccolo/issues/123>`_
+for more information.
+
 0.24.0
 ------
 Lots of improvements to ``JSON`` and ``JSONB`` columns. Piccolo will now
