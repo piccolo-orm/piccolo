@@ -37,6 +37,28 @@ class TableDelta:
 
 
 @dataclass
+class ColumnComparison:
+    """
+    As Column overrides it's `__eq__` method, to allow it to be used in the
+    `where` clause of a query, we need to wrap `Column` if we want to compare
+    them.
+    """
+
+    column: Column
+
+    def __hash__(self) -> int:
+        return self.column.__hash__()
+
+    def __eq__(self, value) -> bool:
+        if isinstance(value, ColumnComparison):
+            return (
+                serialise_params(self.column._meta.params).params
+                == serialise_params(value.column._meta.params).params
+            ) and (self.column._meta.name == value.column._meta.name)
+        return False
+
+
+@dataclass
 class DiffableTable:
     """
     Represents a Table. When we substract two instances, it returns the
@@ -67,21 +89,27 @@ class DiffableTable:
         add_columns = [
             AddColumn(
                 table_class_name=self.class_name,
-                column_name=i._meta.name,
-                column_class_name=i.__class__.__name__,
-                column_class=i.__class__,
-                params=i._meta.params,
+                column_name=i.column._meta.name,
+                column_class_name=i.column.__class__.__name__,
+                column_class=i.column.__class__,
+                params=i.column._meta.params,
             )
-            for i in (set(self.columns) - set(value.columns))
+            for i in (
+                {ColumnComparison(column=column) for column in self.columns}
+                - {ColumnComparison(column=column) for column in value.columns}
+            )
         ]
 
         drop_columns = [
             DropColumn(
                 table_class_name=self.class_name,
-                column_name=i._meta.name,
+                column_name=i.column._meta.name,
                 tablename=value.tablename,
             )
-            for i in (set(value.columns) - set(self.columns))
+            for i in (
+                {ColumnComparison(column=column) for column in value.columns}
+                - {ColumnComparison(column=column) for column in self.columns}
+            )
         ]
 
         alter_columns: t.List[AlterColumn] = []
