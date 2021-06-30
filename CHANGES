@@ -1,6 +1,39 @@
 Changes
 =======
 
+0.24.0
+------
+Lots of improvements to ``JSON`` and ``JSONB`` columns. Piccolo will now
+automatically convert between Python types and JSON strings. For example, with
+this schema:
+
+.. code-block:: python
+
+    class RecordingStudio(Table):
+        name = Varchar()
+        facilities = JSON()
+
+We can now do the following:
+
+.. code-block:: python
+
+    RecordingStudio(
+        name="Abbey Road",
+        facilities={'mixing_desk': True}  # Will automatically be converted to a JSON string
+    ).save().run_sync()
+
+Similarly, when fetching data from a JSON column, Piccolo can now automatically
+deserialise it.
+
+.. code-block:: python
+
+    >>> RecordingStudio.select().output(load_json=True).run_sync()
+    [{'id': 1, 'name': 'Abbey Road', 'facilities': {'mixing_desk': True}]
+
+    >>> studio = RecordingStudio.objects().first().output(load_json=True).run_sync()
+    >>> studio.facilities
+    {'mixing_desk': True}
+
 0.23.0
 ------
 Added the ``create_table_class`` function, which can be used to create
