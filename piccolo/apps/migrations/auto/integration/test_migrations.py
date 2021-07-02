@@ -18,7 +18,9 @@ from piccolo.utils.sync import run_sync
 
 class TestMigrations(TestCase):
     def tearDown(self):
-        create_table_class("MyTable").alter().drop_table(if_exists=True)
+        create_table_class("MyTable").alter().drop_table(
+            if_exists=True
+        ).run_sync()
 
     def run_migrations(self, app_config: AppConfig):
         manager = ForwardsMigrationManager(app_name=app_config.app_name)
