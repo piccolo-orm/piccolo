@@ -15,8 +15,10 @@ from piccolo.apps.migrations.commands.forwards import ForwardsMigrationManager
 from piccolo.table import Table, create_table_class
 from piccolo.apps.migrations.tables import Migration
 from piccolo.utils.sync import run_sync
+from tests.base import postgres_only
 
 
+@postgres_only
 class TestMigrations(TestCase):
     def tearDown(self):
         create_table_class("MyTable").alter().drop_table(
@@ -60,6 +62,9 @@ class TestMigrations(TestCase):
             time.sleep(1e-6)
 
             # TODO - check the migrations ran correctly
+
+    ###########################################################################
+    # Writing all of these by hand is going to be really tedious ...
 
     def test_add_varchar_column(self):
         self._test_migrations(
