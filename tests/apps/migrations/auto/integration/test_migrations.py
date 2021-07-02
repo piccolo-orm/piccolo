@@ -53,7 +53,8 @@ class TestMigrations(TestCase):
 
         if os.path.exists(migrations_folder_path):
             shutil.rmtree(migrations_folder_path)
-            _create_migrations_folder(migrations_folder_path)
+
+        _create_migrations_folder(migrations_folder_path)
 
         app_config = AppConfig(
             app_name="test_app",
@@ -144,12 +145,12 @@ class TestMigrations(TestCase):
                     #         "2dfc9c47-adab-4692-b804-f692f3b0fc07"
                     #     )
                     # ),
-                    UUID(default=uuid.uuid4),
-                    UUID(default=UUID4),
-                    UUID(null=True),
-                    UUID(null=False),
-                    UUID(index=True),
-                    UUID(index=False),
+                    # UUID(default=uuid.uuid4),
+                    # UUID(default=UUID4),
+                    # UUID(null=True),
+                    # UUID(null=False),
+                    # UUID(index=True),
+                    # UUID(index=False),
                 ]
             ]
         )
