@@ -60,13 +60,15 @@ class NewMigrationMeta:
     migration_path: str
 
 
-async def _create_new_migration(
-    app_config: AppConfig, auto=False
-) -> NewMigrationMeta:
+def _generate_migration_meta(app_config: AppConfig) -> NewMigrationMeta:
     """
-    Creates a new migration file on disk.
+    Generates the migration ID and filename.
     """
-    _id = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    # The microseconds originally weren't part of the ID, but there was a
+    # chance that the IDs would clash if the migrations are generated
+    # programatically in quick succession (e.g. in a unit test), so they had
+    # to be added. The trade off is a longer ID.
+    _id = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S:%f")
 
     # Originally we just used the _id as the filename, but colons aren't
     # supported in Windows, so we need to sanitize it. We don't want to
@@ -75,6 +77,19 @@ async def _create_new_migration(
     filename = _id.replace(":", "-")
 
     path = os.path.join(app_config.migrations_folder_path, f"{filename}.py")
+
+    return NewMigrationMeta(
+        migration_id=_id, migration_filename=filename, migration_path=path
+    )
+
+
+async def _create_new_migration(
+    app_config: AppConfig, auto=False
+) -> NewMigrationMeta:
+    """
+    Creates a new migration file on disk.
+    """
+    meta = _generate_migration_meta(app_config=app_config)
 
     if auto:
         alter_statements = await AutoMigrationManager().get_alter_statements(
@@ -97,7 +112,7 @@ async def _create_new_migration(
             sys.exit(0)
 
         file_contents = render_template(
-            migration_id=_id,
+            migration_id=meta.migration_id,
             auto=True,
             alter_statements=_alter_statements,
             extra_imports=extra_imports,
@@ -105,19 +120,19 @@ async def _create_new_migration(
             app_name=app_config.app_name,
         )
     else:
-        file_contents = render_template(migration_id=_id, auto=False)
+        file_contents = render_template(
+            migration_id=meta.migration_id, auto=False
+        )
 
     # Beautify the file contents a bit.
     file_contents = black.format_str(
         file_contents, mode=black.FileMode(line_length=82)
     )
 
-    with open(path, "w") as f:
+    with open(meta.migration_path, "w") as f:
         f.write(file_contents)
 
-    return NewMigrationMeta(
-        migration_id=_id, migration_filename=filename, migration_path=path
-    )
+    return meta
 
 
 ###############################################################################
