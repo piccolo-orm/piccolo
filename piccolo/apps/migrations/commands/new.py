@@ -131,7 +131,7 @@ class AutoMigrationManager(BaseMigrationManager):
         Works out which alter statements are required.
         """
         migration_managers = await self.get_migration_managers(
-            app_name=app_config.app_name
+            app_config=app_config
         )
 
         schema_snapshot = SchemaSnapshot(migration_managers)
