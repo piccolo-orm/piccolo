@@ -1,5 +1,6 @@
 import os
 import shutil
+import tempfile
 from unittest import TestCase
 from unittest.mock import call, patch, MagicMock
 
@@ -20,8 +21,9 @@ class TestNewMigrationCommand(TestCase):
         """
         Create a manual migration (i.e. non-auto).
         """
-        migration_folder = "/tmp/piccolo_migrations/"
-
+        migration_folder = os.path.join(
+            tempfile.gettempdir(), "piccolo_migrations"
+        )
         if os.path.exists(migration_folder):
             shutil.rmtree(migration_folder)
 

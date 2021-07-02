@@ -1,14 +1,15 @@
 import os
 from unittest import TestCase
+import tempfile
 
 from piccolo.apps.project.commands.new import new
 
 
 class TestNewProject(TestCase):
     def test_new(self):
-        root = "/tmp"
+        root = tempfile.gettempdir()
 
-        file_path = "/tmp/piccolo_conf.py"
+        file_path = os.path.join(root, "piccolo_conf.py")
 
         if os.path.exists(file_path):
             os.unlink(file_path)

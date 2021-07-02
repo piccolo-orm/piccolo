@@ -1,5 +1,6 @@
 import os
 import shutil
+import tempfile
 from unittest import TestCase
 
 from piccolo.apps.app.commands.new import new, module_exists
@@ -13,7 +14,7 @@ class TestModuleExists(TestCase):
 
 class TestNewApp(TestCase):
     def test_new(self):
-        root = "/tmp"
+        root = tempfile.gettempdir()
         app_name = "my_app"
 
         app_path = os.path.join(root, app_name)
@@ -30,7 +31,7 @@ class TestNewApp(TestCase):
         Test trying to create an app with the same name as a builtin Python
         package - it shouldn't be allowed.
         """
-        root = "/tmp"
+        root = tempfile.gettempdir()
         app_name = "sys"
 
         with self.assertRaises(SystemExit) as context:
