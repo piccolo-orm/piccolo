@@ -6,7 +6,7 @@ import typing as t
 from unittest import TestCase
 
 from piccolo.conf.apps import AppConfig
-from piccolo.columns.column_types import Varchar
+from piccolo.columns.column_types import Integer, Varchar
 from piccolo.apps.migrations.commands.new import (
     _create_new_migration,
     _create_migrations_folder,
@@ -61,10 +61,42 @@ class TestMigrations(TestCase):
 
             # TODO - check the migrations ran correctly
 
-    def test_add_column(self):
-        table_1 = create_table_class("MyTable")
-        table_2 = create_table_class(
-            "MyTable", class_members={"name": Varchar()}
+    def test_add_varchar_column(self):
+        self._test_migrations(
+            table_classes=[
+                create_table_class("MyTable"),
+                create_table_class(
+                    "MyTable", class_members={"name": Varchar()}
+                ),
+            ]
         )
 
-        self._test_migrations(table_classes=[table_1, table_2])
+    def test_remove_varchar_column(self):
+        self._test_migrations(
+            table_classes=[
+                create_table_class(
+                    "MyTable", class_members={"name": Varchar()}
+                ),
+                create_table_class("MyTable"),
+            ]
+        )
+
+    def test_add_integer_column(self):
+        self._test_migrations(
+            table_classes=[
+                create_table_class("MyTable"),
+                create_table_class(
+                    "MyTable", class_members={"name": Integer()}
+                ),
+            ]
+        )
+
+    def test_remove_integer_column(self):
+        self._test_migrations(
+            table_classes=[
+                create_table_class(
+                    "MyTable", class_members={"name": Integer()}
+                ),
+                create_table_class("MyTable"),
+            ]
+        )
