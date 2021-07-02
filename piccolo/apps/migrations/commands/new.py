@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import dataclass
 import datetime
 from itertools import chain
 import os
@@ -52,7 +53,16 @@ def _create_migrations_folder(migrations_path: str) -> bool:
         return True
 
 
-async def _create_new_migration(app_config: AppConfig, auto=False) -> None:
+@dataclass
+class NewMigrationMeta:
+    migration_id: str
+    migration_filename: str
+    migration_path: str
+
+
+async def _create_new_migration(
+    app_config: AppConfig, auto=False
+) -> NewMigrationMeta:
     """
     Creates a new migration file on disk.
     """
@@ -104,6 +114,10 @@ async def _create_new_migration(app_config: AppConfig, auto=False) -> None:
 
     with open(path, "w") as f:
         f.write(file_contents)
+
+    return NewMigrationMeta(
+        migration_id=_id, migration_filename=filename, migration_path=path
+    )
 
 
 ###############################################################################
