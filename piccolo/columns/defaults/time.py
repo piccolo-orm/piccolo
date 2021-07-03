@@ -57,11 +57,11 @@ class TimeCustom(Default):
 
     @property
     def postgres(self):
-        return self.time.isostring()
+        return f"'{self.time.isoformat()}'"
 
     @property
     def sqlite(self):
-        return self.time.isostring()
+        return f"'{self.time.isoformat()}'"
 
     def python(self):
         return self.time

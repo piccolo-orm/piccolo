@@ -15,6 +15,7 @@ from piccolo.columns.column_types import (
     Integer,
     SmallInt,
     Text,
+    Time,
     Timestamp,
     UUID,
     Varchar,
@@ -47,6 +48,10 @@ def uuid_default():
 
 def datetime_default():
     return datetime.datetime.now()
+
+
+def time_default():
+    return datetime.datetime.now().time()
 
 
 @postgres_only
@@ -220,6 +225,23 @@ class TestMigrations(TestCase):
                     Timestamp(null=False),
                     Timestamp(index=True),
                     Timestamp(index=False),
+                ]
+            ]
+        )
+
+    def test_time_column(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Time(),
+                    Time(default=datetime.time(hour=12, minute=0)),
+                    Time(default=datetime.time),
+                    Time(default=time_default),
+                    Time(null=True, default=None),
+                    Time(null=False),
+                    Time(index=True),
+                    Time(index=False),
                 ]
             ]
         )

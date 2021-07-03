@@ -200,3 +200,4 @@ async def new(app_name: str, auto: bool = False):
         await _create_new_migration(app_config=app_config, auto=auto)
     except NoChanges:
         print("No changes detected - exiting.")
+        sys.exit(0)
