@@ -32,6 +32,10 @@ def integer_default():
     return 1
 
 
+def uuid_default():
+    return uuid.uuid4()
+
+
 @postgres_only
 class TestMigrations(TestCase):
     def tearDown(self):
@@ -139,18 +143,19 @@ class TestMigrations(TestCase):
                 self.table(column)
                 for column in [
                     UUID(),
-                    # UUID(default="ecf338cd-6da7-464c-b31e-4b2e3e12f0f0"),
-                    # UUID(
-                    #     default=uuid.UUID(
-                    #         "2dfc9c47-adab-4692-b804-f692f3b0fc07"
-                    #     )
-                    # ),
-                    # UUID(default=uuid.uuid4),
-                    # UUID(default=UUID4),
-                    # UUID(null=True),
-                    # UUID(null=False),
-                    # UUID(index=True),
-                    # UUID(index=False),
+                    UUID(default="ecf338cd-6da7-464c-b31e-4b2e3e12f0f0"),
+                    UUID(
+                        default=uuid.UUID(
+                            "2dfc9c47-adab-4692-b804-f692f3b0fc07"
+                        )
+                    ),
+                    UUID(default=uuid.uuid4),
+                    UUID(default=uuid_default),
+                    UUID(default=UUID4()),
+                    UUID(null=True),
+                    UUID(null=False),
+                    UUID(index=True),
+                    UUID(index=False),
                 ]
             ]
         )

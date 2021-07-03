@@ -149,7 +149,7 @@ class SerialisedUUID:
         return self.__hash__() == other.__hash__()
 
     def __repr__(self):
-        return f"UUID({str(self.instance)})"
+        return f"UUID('{str(self.instance)}')"
 
 
 ###############################################################################
