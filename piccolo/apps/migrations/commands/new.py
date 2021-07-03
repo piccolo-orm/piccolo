@@ -83,6 +83,10 @@ def _generate_migration_meta(app_config: AppConfig) -> NewMigrationMeta:
     )
 
 
+class NoChanges(Exception):
+    pass
+
+
 async def _create_new_migration(
     app_config: AppConfig, auto=False
 ) -> NewMigrationMeta:
@@ -108,8 +112,7 @@ async def _create_new_migration(
         )
 
         if sum([len(i.statements) for i in alter_statements]) == 0:
-            print("No changes detected - exiting.")
-            sys.exit(0)
+            raise NoChanges()
 
         file_contents = render_template(
             migration_id=meta.migration_id,
@@ -193,4 +196,7 @@ async def new(app_name: str, auto: bool = False):
     app_config = Finder().get_app_config(app_name=app_name)
 
     _create_migrations_folder(app_config.migrations_folder_path)
-    await _create_new_migration(app_config=app_config, auto=auto)
+    try:
+        await _create_new_migration(app_config=app_config, auto=auto)
+    except NoChanges:
+        print("No changes detected - exiting.")

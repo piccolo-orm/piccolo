@@ -1,4 +1,5 @@
 from __future__ import annotations
+import datetime
 import os
 import shutil
 import tempfile
@@ -14,6 +15,7 @@ from piccolo.columns.column_types import (
     Integer,
     SmallInt,
     Text,
+    Timestamp,
     UUID,
     Varchar,
 )
@@ -41,6 +43,10 @@ def integer_default():
 
 def uuid_default():
     return uuid.uuid4()
+
+
+def datetime_default():
+    return datetime.datetime.now()
 
 
 @postgres_only
@@ -195,6 +201,25 @@ class TestMigrations(TestCase):
                     UUID(null=False),
                     UUID(index=True),
                     UUID(index=False),
+                ]
+            ]
+        )
+
+    def test_timestamp_column(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Timestamp(),
+                    Timestamp(
+                        default=datetime.datetime(year=2021, month=1, day=1)
+                    ),
+                    Timestamp(default=datetime.datetime.now),
+                    Timestamp(default=datetime_default),
+                    Timestamp(null=True, default=None),
+                    Timestamp(null=False),
+                    Timestamp(index=True),
+                    Timestamp(index=False),
                 ]
             ]
         )

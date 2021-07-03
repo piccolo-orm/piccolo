@@ -540,7 +540,7 @@ class Column(Selectable):
         elif isinstance(value, bool):
             output = str(value).lower()
         elif isinstance(value, datetime.datetime):
-            output = f"'{value.isoformat().replace('T', '')}'"
+            output = f"'{value.isoformat().replace('T', ' ')}'"
         elif isinstance(value, bytes):
             output = f"'{value.hex()}'"
         elif isinstance(value, uuid.UUID):
