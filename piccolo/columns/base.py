@@ -28,6 +28,7 @@ from piccolo.columns.operators.comparison import (
 from piccolo.columns.combination import Where
 from piccolo.columns.choices import Choice
 from piccolo.columns.defaults.base import Default
+from piccolo.columns.defaults.interval import IntervalCustom
 from piccolo.columns.reference import LazyTableReference
 from piccolo.columns.indexes import IndexMethod
 from piccolo.querystring import QueryString
@@ -545,6 +546,9 @@ class Column(Selectable):
             output = f"'{value.isoformat()}'"
         elif isinstance(value, datetime.time):
             output = f"'{value.isoformat()}'"
+        elif isinstance(value, datetime.timedelta):
+            interval = IntervalCustom.from_timedelta(value)
+            output = getattr(interval, self._meta.engine_type)
         elif isinstance(value, bytes):
             output = f"'{value.hex()}'"
         elif isinstance(value, uuid.UUID):

@@ -14,6 +14,7 @@ from piccolo.columns.column_types import (
     BigInt,
     Date,
     Integer,
+    Interval,
     SmallInt,
     Text,
     Time,
@@ -57,6 +58,10 @@ def time_default():
 
 def date_default():
     return datetime.datetime.now().date()
+
+
+def timedelta_default():
+    return datetime.timedelta(days=1)
 
 
 @postgres_only
@@ -264,6 +269,22 @@ class TestMigrations(TestCase):
                     Date(null=False),
                     Date(index=True),
                     Date(index=False),
+                ]
+            ]
+        )
+
+    def test_interval_column(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Interval(),
+                    Interval(default=datetime.timedelta(days=1)),
+                    Interval(default=timedelta_default),
+                    Interval(null=True, default=None),
+                    Interval(null=False),
+                    Interval(index=True),
+                    Interval(index=False),
                 ]
             ]
         )
