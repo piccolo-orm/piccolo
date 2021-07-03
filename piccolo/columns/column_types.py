@@ -668,6 +668,9 @@ class Date(Column):
         if isinstance(default, date):
             default = DateCustom.from_date(default)
 
+        if default == date.today:
+            default = DateNow()
+
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)

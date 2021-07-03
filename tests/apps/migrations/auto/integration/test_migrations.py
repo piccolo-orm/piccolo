@@ -12,6 +12,7 @@ from piccolo.columns.defaults.uuid import UUID4
 from piccolo.conf.apps import AppConfig
 from piccolo.columns.column_types import (
     BigInt,
+    Date,
     Integer,
     SmallInt,
     Text,
@@ -52,6 +53,10 @@ def datetime_default():
 
 def time_default():
     return datetime.datetime.now().time()
+
+
+def date_default():
+    return datetime.datetime.now().date()
 
 
 @postgres_only
@@ -242,6 +247,23 @@ class TestMigrations(TestCase):
                     Time(null=False),
                     Time(index=True),
                     Time(index=False),
+                ]
+            ]
+        )
+
+    def test_date_column(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Date(),
+                    Date(default=datetime.date(year=2021, month=1, day=1)),
+                    Date(default=datetime.date.today),
+                    Date(default=date_default),
+                    Date(null=True, default=None),
+                    Date(null=False),
+                    Date(index=True),
+                    Date(index=False),
                 ]
             ]
         )

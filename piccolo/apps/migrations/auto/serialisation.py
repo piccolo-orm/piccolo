@@ -322,6 +322,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
             )
             continue
 
+        # Plain class type
         if inspect.isclass(value) and not issubclass(value, Enum):
             params[key] = SerialisedCallable(callable_=value)
             extra_imports.append(
