@@ -9,7 +9,14 @@ import uuid
 
 from piccolo.columns.defaults.uuid import UUID4
 from piccolo.conf.apps import AppConfig
-from piccolo.columns.column_types import Integer, Text, UUID, Varchar
+from piccolo.columns.column_types import (
+    BigInt,
+    Integer,
+    SmallInt,
+    Text,
+    UUID,
+    Varchar,
+)
 from piccolo.apps.migrations.commands.new import (
     _create_new_migration,
     _create_migrations_folder,
@@ -133,6 +140,38 @@ class TestMigrations(TestCase):
                     Integer(null=False),
                     Integer(index=True),
                     Integer(index=False),
+                ]
+            ]
+        )
+
+    def test_smallint_column(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    SmallInt(),
+                    SmallInt(default=1),
+                    SmallInt(default=integer_default),
+                    SmallInt(null=True),
+                    SmallInt(null=False),
+                    SmallInt(index=True),
+                    SmallInt(index=False),
+                ]
+            ]
+        )
+
+    def test_bigint_column(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    BigInt(),
+                    BigInt(default=1),
+                    BigInt(default=integer_default),
+                    BigInt(null=True),
+                    BigInt(null=False),
+                    BigInt(index=True),
+                    BigInt(index=False),
                 ]
             ]
         )

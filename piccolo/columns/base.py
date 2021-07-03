@@ -359,7 +359,7 @@ class Column(Selectable):
         ):
             self._validated = True
             return True
-        elif inspect.isfunction(default):
+        elif callable(default):
             # We need to prevent recursion, otherwise a function which returns
             # a function would be an infinite loop.
             if allow_recursion and self._validate_default(
