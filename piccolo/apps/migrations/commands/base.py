@@ -6,6 +6,7 @@ import sys
 import typing as t
 
 from piccolo.conf.apps import (
+    AppConfig,
     MigrationModule,
     Finder,
 )
@@ -73,7 +74,7 @@ class BaseMigrationManager(Finder):
 
     async def get_migration_managers(
         self,
-        app_name: str,
+        app_config: AppConfig,
         max_migration_id: t.Optional[str] = None,
         offset: int = 0,
     ) -> t.List[MigrationManager]:
@@ -87,8 +88,6 @@ class BaseMigrationManager(Finder):
             migration ID will be returned.
         """
         migration_managers: t.List[MigrationManager] = []
-
-        app_config = self.get_app_config(app_name=app_name)
 
         migrations_folder = app_config.migrations_folder_path
 
@@ -129,8 +128,11 @@ class BaseMigrationManager(Finder):
         This will generate a SchemaSnapshot up to the given migration ID, and
         will return a DiffableTable class from that snapshot.
         """
+        app_config = self.get_app_config(app_name=app_name)
         migration_managers = await self.get_migration_managers(
-            app_name=app_name, max_migration_id=max_migration_id, offset=offset
+            app_config=app_config,
+            max_migration_id=max_migration_id,
+            offset=offset,
         )
         schema_snapshot = SchemaSnapshot(managers=migration_managers)
 

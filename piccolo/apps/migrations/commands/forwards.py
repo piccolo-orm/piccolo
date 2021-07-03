@@ -12,7 +12,9 @@ from piccolo.conf.apps import AppConfig, MigrationModule
 
 
 class ForwardsMigrationManager(BaseMigrationManager):
-    def __init__(self, app_name: str, migration_id: str, fake: bool = False):
+    def __init__(
+        self, app_name: str, migration_id: str = "all", fake: bool = False
+    ):
         self.app_name = app_name
         self.migration_id = migration_id
         self.fake = fake
@@ -20,7 +22,7 @@ class ForwardsMigrationManager(BaseMigrationManager):
 
     async def run_migrations(self, app_config: AppConfig) -> MigrationResult:
         already_ran = await Migration.get_migrations_which_ran(
-            app_name=self.app_name
+            app_name=app_config.app_name
         )
 
         migration_modules: t.Dict[
@@ -67,7 +69,7 @@ class ForwardsMigrationManager(BaseMigrationManager):
                 print(f"-> Ran {_id}")
 
             await Migration.insert().add(
-                Migration(name=_id, app_name=self.app_name)
+                Migration(name=_id, app_name=app_config.app_name)
             ).run()
 
         return MigrationResult(success=True, message="Ran successfully")

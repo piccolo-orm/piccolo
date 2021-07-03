@@ -2,6 +2,8 @@ from __future__ import annotations
 from abc import abstractmethod, abstractproperty, ABC
 import typing as t
 
+from piccolo.utils.repr import repr_class_instance
+
 
 class Default(ABC):
     @abstractproperty
@@ -50,11 +52,11 @@ class Default(ABC):
 
         return ", ".join(interval_components)
 
+    def __repr__(self):
+        return repr_class_instance(self)
+
     def __str__(self):
-        args_str = ", ".join(
-            [f"{key}={value}" for key, value in self.__dict__.items()]
-        )
-        return f"{self.__class__.__name__}({args_str})"
+        return self.__repr__()
 
     def __eq__(self, other):
         return self.__hash__() == other.__hash__()

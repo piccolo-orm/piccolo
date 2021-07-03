@@ -1,4 +1,5 @@
 import asyncio
+from piccolo.conf.apps import AppConfig
 from piccolo.columns.column_types import ForeignKey
 from unittest.mock import patch, MagicMock
 
@@ -86,7 +87,8 @@ class TestMigrationManager(DBTestCase):
             asyncio.run(manager.run_backwards())
 
     @postgres_only
-    def test_add_table(self):
+    @patch.object(BaseMigrationManager, "get_app_config")
+    def test_add_table(self, get_app_config: MagicMock):
         """
         Test adding a table to a MigrationManager.
         """
@@ -106,6 +108,10 @@ class TestMigrationManager(DBTestCase):
         self.assertEqual(response, [{"id": 1, "name": "Bob Jones"}])
 
         # Reverse
+
+        get_app_config.return_value = AppConfig(
+            app_name="music", migrations_folder_path=""
+        )
         asyncio.run(manager.run_backwards())
         self.assertEqual(self.table_exists("musician"), False)
         self.run_sync("DROP TABLE IF EXISTS musician;")
@@ -255,7 +261,10 @@ class TestMigrationManager(DBTestCase):
 
     @postgres_only
     @patch.object(BaseMigrationManager, "get_migration_managers")
-    def test_drop_column(self, get_migration_managers: MagicMock):
+    @patch.object(BaseMigrationManager, "get_app_config")
+    def test_drop_column(
+        self, get_app_config: MagicMock, get_migration_managers: MagicMock
+    ):
         """
         Test dropping a column with MigrationManager.
         """
@@ -284,6 +293,8 @@ class TestMigrationManager(DBTestCase):
 
         # Reverse
         set_mock_return_value(get_migration_managers, [manager_1])
+        app_config = AppConfig(app_name="music", migrations_folder_path="")
+        get_app_config.return_value = app_config
         asyncio.run(manager_2.run_backwards())
         response = self.run_sync("SELECT * FROM musician;")
         self.assertEqual(response, [{"id": 1, "name": ""}])
@@ -596,7 +607,10 @@ class TestMigrationManager(DBTestCase):
 
     @postgres_only
     @patch.object(BaseMigrationManager, "get_migration_managers")
-    def test_drop_table(self, get_migration_managers: MagicMock):
+    @patch.object(BaseMigrationManager, "get_app_config")
+    def test_drop_table(
+        self, get_app_config: MagicMock, get_migration_managers: MagicMock
+    ):
         self.run_sync("DROP TABLE IF EXISTS musician;")
 
         name_column = Varchar()
@@ -612,14 +626,16 @@ class TestMigrationManager(DBTestCase):
         manager_2.drop_table(class_name="Musician", tablename="musician")
         asyncio.run(manager_2.run())
 
-        set_mock_return_value(get_migration_managers, [manager_1])
-
         self.assertTrue(not self.table_exists("musician"))
 
+        # Reverse
+        set_mock_return_value(get_migration_managers, [manager_1])
+        app_config = AppConfig(app_name="music", migrations_folder_path="")
+        get_app_config.return_value = app_config
         asyncio.run(manager_2.run_backwards())
 
         get_migration_managers.assert_called_with(
-            app_name="music", max_migration_id="2", offset=-1
+            app_config=app_config, max_migration_id="2", offset=-1
         )
         self.assertTrue(self.table_exists("musician"))
 

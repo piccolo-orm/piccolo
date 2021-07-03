@@ -13,6 +13,7 @@ from piccolo.columns import Column
 from piccolo.columns.defaults.base import Default
 from piccolo.columns.reference import LazyTableReference
 from piccolo.table import Table
+from piccolo.utils.repr import repr_class_instance
 from .serialisation_legacy import deserialise_legacy_params
 
 ###############################################################################
@@ -43,13 +44,7 @@ class SerialisedClassInstance:
         return self.__hash__() == other.__hash__()
 
     def __repr__(self):
-        args = ", ".join(
-            [
-                f"{key}={value.__repr__()}"
-                for key, value in self.instance.__dict__.items()
-            ]
-        )
-        return f"{self.instance.__class__.__name__}({args})"
+        return repr_class_instance(self.instance)
 
 
 @dataclass
@@ -149,7 +144,7 @@ class SerialisedUUID:
         return self.__hash__() == other.__hash__()
 
     def __repr__(self):
-        return f"UUID({str(self.instance)})"
+        return f"UUID('{str(self.instance)}')"
 
 
 ###############################################################################
@@ -324,6 +319,14 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
             extra_definitions.append(SerialisedTableType(table_type=value))
             extra_imports.append(
                 Import(module=Table.__module__, target="Table")
+            )
+            continue
+
+        # Plain class type
+        if inspect.isclass(value) and not issubclass(value, Enum):
+            params[key] = SerialisedCallable(callable_=value)
+            extra_imports.append(
+                Import(module=value.__module__, target=value.__name__)
             )
             continue
 

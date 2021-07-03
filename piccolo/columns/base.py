@@ -7,6 +7,7 @@ import decimal
 from enum import Enum
 import inspect
 import typing as t
+import uuid
 
 from piccolo.columns.operators.comparison import (
     ComparisonOperator,
@@ -27,6 +28,7 @@ from piccolo.columns.operators.comparison import (
 from piccolo.columns.combination import Where
 from piccolo.columns.choices import Choice
 from piccolo.columns.defaults.base import Default
+from piccolo.columns.defaults.interval import IntervalCustom
 from piccolo.columns.reference import LazyTableReference
 from piccolo.columns.indexes import IndexMethod
 from piccolo.querystring import QueryString
@@ -342,6 +344,7 @@ class Column(Selectable):
         self,
         default: t.Any,
         allowed_types: t.Iterable[t.Union[None, t.Type[t.Any]]],
+        allow_recursion: bool = True,
     ) -> bool:
         """
         Make sure that the default value is of the allowed types.
@@ -358,18 +361,23 @@ class Column(Selectable):
             self._validated = True
             return True
         elif callable(default):
-            self._validated = True
-            return True
+            # We need to prevent recursion, otherwise a function which returns
+            # a function would be an infinite loop.
+            if allow_recursion and self._validate_default(
+                default(), allowed_types=allowed_types, allow_recursion=False
+            ):
+                self._validated = True
+                return True
         elif (
             isinstance(default, Enum) and type(default.value) in allowed_types
         ):
             self._validated = True
             return True
-        else:
-            raise ValueError(
-                f"The default {default} isn't one of the permitted types - "
-                f"{allowed_types}"
-            )
+
+        raise ValueError(
+            f"The default {default} isn't one of the permitted types - "
+            f"{allowed_types}"
+        )
 
     def _validate_choices(
         self, choices: t.Type[Enum], allowed_type: t.Type[t.Any]
@@ -533,9 +541,18 @@ class Column(Selectable):
         elif isinstance(value, bool):
             output = str(value).lower()
         elif isinstance(value, datetime.datetime):
-            output = f"'{value.isoformat().replace('T', '')}'"
+            output = f"'{value.isoformat().replace('T', ' ')}'"
+        elif isinstance(value, datetime.date):
+            output = f"'{value.isoformat()}'"
+        elif isinstance(value, datetime.time):
+            output = f"'{value.isoformat()}'"
+        elif isinstance(value, datetime.timedelta):
+            interval = IntervalCustom.from_timedelta(value)
+            output = getattr(interval, self._meta.engine_type)
         elif isinstance(value, bytes):
             output = f"'{value.hex()}'"
+        elif isinstance(value, uuid.UUID):
+            output = f"'{value}'"
         elif isinstance(value, list):
             # Convert to the array syntax.
             output = (

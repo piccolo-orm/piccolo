@@ -1,6 +1,6 @@
 import os
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from piccolo.conf.apps import AppConfig
 from piccolo.apps.migrations.commands.base import (
@@ -21,9 +21,8 @@ class TestBaseMigrationManager(TestCase):
 
 
 class TestGetMigrationModules(TestCase):
-    @patch.object(BaseMigrationManager, "get_app_config")
-    def test_get_migration_modules(self, get_app_config):
-        get_app_config.return_value = AppConfig(
+    def test_get_migration_modules(self):
+        app_config = AppConfig(
             app_name="music",
             migrations_folder_path=os.path.join(
                 os.path.dirname(__file__), "test_migrations"
@@ -31,7 +30,9 @@ class TestGetMigrationModules(TestCase):
         )
 
         migration_managers = run_sync(
-            BaseMigrationManager().get_migration_managers(app_name="music")
+            BaseMigrationManager().get_migration_managers(
+                app_config=app_config
+            )
         )
 
         self.assertTrue(len(migration_managers) == 1)
@@ -42,7 +43,7 @@ class TestGetMigrationModules(TestCase):
 
 class TestGetTableFromSnapshot(TestCase):
     @patch.object(BaseMigrationManager, "get_app_config")
-    def test_get_table_from_snaphot(self, get_app_config):
+    def test_get_table_from_snaphot(self, get_app_config: MagicMock):
         """
         Test the get_table_from_snaphot method.
         """

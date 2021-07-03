@@ -1,5 +1,6 @@
 import os
 import shutil
+import tempfile
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -15,7 +16,7 @@ class TestNewApp(TestCase):
         "piccolo.apps.asgi.commands.new.get_server", return_value=SERVERS[0],
     )
     def test_new(self, *args, **kwargs):
-        root = "/tmp/asgi_app"
+        root = os.path.join(tempfile.gettempdir(), "asgi_app")
 
         if os.path.exists(root):
             shutil.rmtree(root)

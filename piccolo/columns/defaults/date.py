@@ -50,11 +50,11 @@ class DateCustom(Default):
 
     @property
     def postgres(self):
-        return self.date.isostring()
+        return f"'{self.date.isoformat()}'"
 
     @property
     def sqlite(self):
-        return self.date.isostring()
+        return f"'{self.date.isoformat()}'"
 
     def python(self):
         return self.date

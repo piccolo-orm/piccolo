@@ -303,10 +303,22 @@ class UUID(Column):
     value_type = uuid.UUID
 
     def __init__(self, default: UUIDArg = UUID4(), **kwargs) -> None:
+        if default is UUID4:
+            # In case the class is passed in, instead of an instance.
+            default = UUID4()
+
         self._validate_default(default, UUIDArg.__args__)  # type: ignore
 
         if default == uuid.uuid4:
             default = UUID4()
+
+        if isinstance(default, str):
+            try:
+                default = uuid.UUID(default)
+            except ValueError:
+                raise ValueError(
+                    "The default is a string, but not a valid uuid."
+                )
 
         self.default = default
         kwargs.update({"default": default})
@@ -486,7 +498,7 @@ class SmallInt(Integer):
 
 class Serial(Column):
     """
-    An alias to an autoincremenring integer column in Postgres.
+    An alias to an autoincrementing integer column in Postgres.
     """
 
     def __init__(self, **kwargs) -> None:
@@ -655,6 +667,9 @@ class Date(Column):
 
         if isinstance(default, date):
             default = DateCustom.from_date(default)
+
+        if default == date.today:
+            default = DateNow()
 
         self.default = default
         kwargs.update({"default": default})
