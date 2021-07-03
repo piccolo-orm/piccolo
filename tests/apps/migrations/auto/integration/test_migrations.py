@@ -12,6 +12,7 @@ from piccolo.columns.defaults.uuid import UUID4
 from piccolo.conf.apps import AppConfig
 from piccolo.columns.column_types import (
     BigInt,
+    Boolean,
     Date,
     Integer,
     Interval,
@@ -62,6 +63,10 @@ def date_default():
 
 def timedelta_default():
     return datetime.timedelta(days=1)
+
+
+def boolean_default():
+    return True
 
 
 @postgres_only
@@ -285,6 +290,22 @@ class TestMigrations(TestCase):
                     Interval(null=False),
                     Interval(index=True),
                     Interval(index=False),
+                ]
+            ]
+        )
+
+    def test_boolean_column(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Boolean(),
+                    Boolean(default=True),
+                    Boolean(default=boolean_default),
+                    Boolean(null=True, default=None),
+                    Boolean(null=False),
+                    Boolean(index=True),
+                    Boolean(index=False),
                 ]
             ]
         )
