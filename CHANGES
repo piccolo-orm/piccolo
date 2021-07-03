@@ -1,6 +1,13 @@
 Changes
 =======
 
+0.25.0
+------
+ * Changed the migration IDs, so the timestamp now includes microseconds. This
+   is to make clashing migration IDs much less likely.
+ * Added a lot of end-to-end tests for migrations, which revealed some bugs
+   in ``Column`` defaults.
+
 0.24.1
 ------
 A bug fix for migrations. See `issue 123 <https://github.com/piccolo-orm/piccolo/issues/123>`_
