@@ -498,7 +498,7 @@ class SmallInt(Integer):
 
 class Serial(Column):
     """
-    An alias to an autoincremenring integer column in Postgres.
+    An alias to an autoincrementing integer column in Postgres.
     """
 
     def __init__(self, **kwargs) -> None:
