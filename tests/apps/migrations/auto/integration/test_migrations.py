@@ -152,7 +152,7 @@ class TestMigrations(TestCase):
                     UUID(default=uuid.uuid4),
                     UUID(default=uuid_default),
                     UUID(default=UUID4()),
-                    UUID(null=True),
+                    UUID(null=True, default=None),
                     UUID(null=False),
                     UUID(index=True),
                     UUID(index=False),

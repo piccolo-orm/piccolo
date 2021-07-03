@@ -372,11 +372,11 @@ class Column(Selectable):
         ):
             self._validated = True
             return True
-        else:
-            raise ValueError(
-                f"The default {default} isn't one of the permitted types - "
-                f"{allowed_types}"
-            )
+
+        raise ValueError(
+            f"The default {default} isn't one of the permitted types - "
+            f"{allowed_types}"
+        )
 
     def _validate_choices(
         self, choices: t.Type[Enum], allowed_type: t.Type[t.Any]
