@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.26.0
+------
+Added ``eq`` and ``ne`` methods to the ``Boolean`` column, which can be used
+if linters complain about using ``SomeTable.some_column == True``.
+
 0.25.0
 ------
  * Changed the migration IDs, so the timestamp now includes microseconds. This
