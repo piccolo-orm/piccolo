@@ -31,3 +31,22 @@ class TestBoolean(TestCase):
                 .run_sync()["boolean"],
                 expected,
             )
+
+    def test_eq_and_ne(self):
+        """
+        Make sure the `eq` and `ne` methods works correctly.
+        """
+        MyTable.insert(
+            MyTable(boolean=True),
+            MyTable(boolean=False),
+            MyTable(boolean=True),
+        ).run_sync()
+
+        self.assertEqual(
+            MyTable.count().where(MyTable.boolean.eq(True)).run_sync(), 2
+        )
+
+        self.assertEqual(
+            MyTable.count().where(MyTable.boolean.ne(True)).run_sync(), 1
+        )
+
