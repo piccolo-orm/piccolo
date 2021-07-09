@@ -799,6 +799,46 @@ class Boolean(Column):
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
+    def eq(self, value) -> Where:
+        """
+        When using ``Boolean`` columns in ``where`` clauses, some Python
+        linters don't like it when you do something like:
+
+        .. code-block:: python
+
+            await MyTable.select().where(
+                MyTable.some_boolean_column == True
+            ).run()
+
+        It's more Pythonic to use ``is True`` rather than ``== True``, which is
+        why linters complain. The work around is to do the following instead:
+
+        .. code-block:: python
+
+            await MyTable.select().where(
+                MyTable.some_boolean_column.__eq__(True)
+            ).run()
+
+        Using the ``__eq__`` magic method is a bit untidy, which is why this
+        ``eq`` method exists.
+
+        .. code-block:: python
+
+            await MyTable.select().where(
+                MyTable.some_boolean_column.eq(True)
+            ).run()
+
+        The ``ne`` method exists for the same reason, for ``!=``.
+
+        """
+        return self.__eq__(value)
+
+    def ne(self, value) -> Where:
+        """
+        See the ``eq`` method for more details.
+        """
+        return self.__ne__(value)
+
 
 ###############################################################################
 

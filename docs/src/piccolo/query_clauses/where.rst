@@ -30,6 +30,12 @@ Equal / Not Equal
         b.name != 'Rustaceans'
     ).run_sync()
 
+.. hint:: With ``Boolean`` columns, some linters will complain if you write
+    ``SomeTable.some_column == True`` (because it's more Pythonic to do
+    ``is True``). To work around this, you can do
+    ``SomeTable.some_column.eq(True)``. Likewise, with ``!=`` you can use
+    ``SomeTable.some_column.ne(True)``
+
 -------------------------------------------------------------------------------
 
 Greater than / less than
