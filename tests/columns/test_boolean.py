@@ -49,4 +49,3 @@ class TestBoolean(TestCase):
         self.assertEqual(
             MyTable.count().where(MyTable.boolean.ne(True)).run_sync(), 1
         )
-
