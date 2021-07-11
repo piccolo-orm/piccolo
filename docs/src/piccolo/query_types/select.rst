@@ -99,7 +99,7 @@ By default all columns are returned from the queried table.
     b.select().run_sync()
 
 To restrict the returned columns, either pass in the columns into the
-``select`` method, or use the `columns` method.
+``select`` method, or use the ``columns`` method.
 
 .. code-block:: python
 
@@ -107,7 +107,7 @@ To restrict the returned columns, either pass in the columns into the
     # Equivalent to SELECT name from band
     b.select().columns(b.name).run_sync()
 
-The `columns` method is additive, meaning you can chain it to add additional
+The ``columns`` method is additive, meaning you can chain it to add additional
 columns.
 
 .. code-block:: python
