@@ -95,7 +95,10 @@ variable accordingly.
 
     DB = SQLiteEngine(path='my_test_db.sqlite')
 
-.. hint:: You can also specify sub modules, like `my_module.piccolo_conf`.
+If the ``picolo_conf`` file is located in a sub-module (rather than the root of your project) you can specify the path:
+
+.. code-block:: bash
+    export PICCOLO_CONF=sub_module.piccolo_conf
 
 -------------------------------------------------------------------------------
 
