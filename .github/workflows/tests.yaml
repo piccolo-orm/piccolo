@@ -1,6 +1,10 @@
-name: Python package
+name: Test Suite
 
-on: [push]
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
 
 jobs:
     linters:
@@ -20,10 +24,8 @@ jobs:
                   python -m pip install --upgrade pip
                   pip install -r requirements.txt
                   pip install -r tests/test-requirements.txt
-            - name: Mypy
-              run: mypy piccolo tests
-            - name: Flake8
-              run: flake8 piccolo tests
+            - name: Lint
+              run: ./scripts/lint.sh
 
     postgres:
         runs-on: ubuntu-latest
@@ -70,7 +72,7 @@ jobs:
                   psql -h localhost -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" -d piccolo -U postgres
 
             - name: Test with pytest, Postgres
-              run: cd tests && ./test-postgres.sh
+              run: ./scripts/test-postgres.sh
               env:
                   PG_HOST: localhost
                   PG_DATABASE: piccolo
@@ -94,4 +96,4 @@ jobs:
                   pip install -r requirements.txt
                   pip install -r tests/test-requirements.txt
             - name: Test with pytest, SQLite
-              run: cd tests && ./test-sqlite.sh
+              run: ./scripts/test-sqlite.sh
