@@ -34,7 +34,10 @@ class TestChoices(DBTestCase):
             Shirt.size == Shirt.Size.small
         ).run_sync()
         shirts = (
-            Shirt.select(Shirt.size).output(as_list=True).order_by(Shirt.id).run_sync()
+            Shirt.select(Shirt.size)
+            .output(as_list=True)
+            .order_by(Shirt.id)
+            .run_sync()
         )
         self.assertEqual(shirts, ["l", "m", "l"])
 
@@ -44,7 +47,9 @@ class TestChoices(DBTestCase):
         """
         self._insert_shirts()
         shirts = (
-            Shirt.select(Shirt.size).where(Shirt.size == Shirt.Size.small).run_sync()
+            Shirt.select(Shirt.size)
+            .where(Shirt.size == Shirt.Size.small)
+            .run_sync()
         )
         self.assertEqual(shirts, [{"size": "s"}])
 
@@ -53,6 +58,8 @@ class TestChoices(DBTestCase):
         Make sure Enums can be used in the where clause of objects queries.
         """
         self._insert_shirts()
-        shirts = Shirt.objects().where(Shirt.size == Shirt.Size.small).run_sync()
+        shirts = (
+            Shirt.objects().where(Shirt.size == Shirt.Size.small).run_sync()
+        )
         self.assertEqual(len(shirts), 1)
         self.assertEqual(shirts[0].size, "s")

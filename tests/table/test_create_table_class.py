@@ -32,7 +32,11 @@ class TestCreateTableClass(TestCase):
             create_table_class(class_name="User")
 
         with self.assertRaises(ValueError):
-            create_table_class(class_name="MyUser", class_kwargs={"tablename": "user"})
+            create_table_class(
+                class_name="MyUser", class_kwargs={"tablename": "user"}
+            )
 
         # This shouldn't raise an error:
-        create_table_class(class_name="User", class_kwargs={"tablename": "my_user"})
+        create_table_class(
+            class_name="User", class_kwargs={"tablename": "my_user"}
+        )

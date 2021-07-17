@@ -62,7 +62,12 @@ class TestTimestamptz(TestCase):
             row.save().run_sync()
 
             # Fetch it back from the database
-            result = MyTable.objects().where(MyTable.id == row.id).first().run_sync()
+            result = (
+                MyTable.objects()
+                .where(MyTable.id == row.id)
+                .first()
+                .run_sync()
+            )
             self.assertEqual(result.created_on, created_on)
 
             # The database converts it to UTC

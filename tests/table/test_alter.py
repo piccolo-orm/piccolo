@@ -73,7 +73,9 @@ class TestAdd(DBTestCase):
         """
         self.insert_row()
 
-        add_query = Band.alter().add_column("weight", Integer(null=True, default=None))
+        add_query = Band.alter().add_column(
+            "weight", Integer(null=True, default=None)
+        )
         add_query.run_sync()
 
         response = Band.raw("SELECT * FROM band").run_sync()
@@ -149,11 +151,15 @@ class TestSetColumnType(DBTestCase):
         alter_query.run_sync()
 
         self.assertEqual(
-            self.get_postgres_column_type(tablename="band", column_name="popularity"),
+            self.get_postgres_column_type(
+                tablename="band", column_name="popularity"
+            ),
             "BIGINT",
         )
 
-        popularity = Band.select(Band.popularity).first().run_sync()["popularity"]
+        popularity = (
+            Band.select(Band.popularity).first().run_sync()["popularity"]
+        )
         self.assertEqual(popularity, 1000)
 
     def test_integer_to_varchar(self):
@@ -168,11 +174,15 @@ class TestSetColumnType(DBTestCase):
         alter_query.run_sync()
 
         self.assertEqual(
-            self.get_postgres_column_type(tablename="band", column_name="popularity"),
+            self.get_postgres_column_type(
+                tablename="band", column_name="popularity"
+            ),
             "CHARACTER VARYING",
         )
 
-        popularity = Band.select(Band.popularity).first().run_sync()["popularity"]
+        popularity = (
+            Band.select(Band.popularity).first().run_sync()["popularity"]
+        )
         self.assertEqual(popularity, "1000")
 
     def test_using_expression(self):
@@ -234,7 +244,9 @@ class TestSetDefault(DBTestCase):
         Manager.alter().set_default(Manager.name, "Pending").run_sync()
 
         # Bypassing the ORM to make sure the database default is present.
-        Band.raw("INSERT INTO manager (id, name) VALUES (DEFAULT, DEFAULT);").run_sync()
+        Band.raw(
+            "INSERT INTO manager (id, name) VALUES (DEFAULT, DEFAULT);"
+        ).run_sync()
 
         manager = Manager.objects().first().run_sync()
         self.assertTrue(manager.name == "Pending")
@@ -264,7 +276,9 @@ class TestSetDigits(TestCase):
             AND column_name = 'price'
             """
 
-        Ticket.alter().set_digits(column=Ticket.price, digits=(6, 2)).run_sync()
+        Ticket.alter().set_digits(
+            column=Ticket.price, digits=(6, 2)
+        ).run_sync()
         response = Ticket.raw(query).run_sync()
         self.assertTrue(response[0]["numeric_precision"] == 6)
         self.assertTrue(response[0]["numeric_scale"] == 2)

@@ -75,11 +75,15 @@ class TestForeignKeyString(TestCase):
 
     def test_foreign_key_string(self):
         Band2.create_table().run_sync()
-        self.assertEqual(Band2.manager._foreign_key_meta.resolved_references, Manager)
+        self.assertEqual(
+            Band2.manager._foreign_key_meta.resolved_references, Manager
+        )
         Band2.alter().drop_table().run_sync()
 
         Band4.create_table().run_sync()
-        self.assertEqual(Band4.manager._foreign_key_meta.resolved_references, Manager)
+        self.assertEqual(
+            Band4.manager._foreign_key_meta.resolved_references, Manager
+        )
         Band4.alter().drop_table().run_sync()
 
     def tearDown(self):
@@ -97,7 +101,9 @@ class TestForeignKeyRelativeError(TestCase):
             class Band(Table):
                 manager = ForeignKey("..example_app.tables.Manager", null=True)
 
-        self.assertEqual(manager.exception.__str__(), "Relative imports aren't allowed")
+        self.assertEqual(
+            manager.exception.__str__(), "Relative imports aren't allowed"
+        )
 
 
 class TestReferences(TestCase):
@@ -112,7 +118,9 @@ class TestReferences(TestCase):
         self.assertTrue(Band2.manager in Manager._meta.foreign_key_references)
         self.assertTrue(Band3.manager in Manager._meta.foreign_key_references)
         self.assertTrue(Band4.manager in Manager._meta.foreign_key_references)
-        self.assertTrue(Manager.manager in Manager._meta.foreign_key_references)
+        self.assertTrue(
+            Manager.manager in Manager._meta.foreign_key_references
+        )
 
 
 class TestLazyTableReference(TestCase):

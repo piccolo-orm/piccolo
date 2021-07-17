@@ -15,7 +15,9 @@ class TestSchemaDiffer(TestCase):
         name_column = Varchar()
         name_column._meta.name = "name"
         schema: t.List[DiffableTable] = [
-            DiffableTable(class_name="Band", tablename="band", columns=[name_column])
+            DiffableTable(
+                class_name="Band", tablename="band", columns=[name_column]
+            )
         ]
         schema_snapshot: t.List[DiffableTable] = []
         schema_differ = SchemaDiffer(
@@ -62,10 +64,14 @@ class TestSchemaDiffer(TestCase):
         name_column._meta.name = "name"
 
         schema: t.List[DiffableTable] = [
-            DiffableTable(class_name="Act", tablename="act", columns=[name_column])
+            DiffableTable(
+                class_name="Act", tablename="act", columns=[name_column]
+            )
         ]
         schema_snapshot: t.List[DiffableTable] = [
-            DiffableTable(class_name="Band", tablename="band", columns=[name_column])
+            DiffableTable(
+                class_name="Band", tablename="band", columns=[name_column]
+            )
         ]
 
         schema_differ = SchemaDiffer(

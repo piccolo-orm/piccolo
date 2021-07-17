@@ -89,7 +89,9 @@ class SerialisedTableType:
     table_type: t.Type[Table]
 
     def __hash__(self):
-        return hash(f"{self.table_type._meta.tablename}-{self.table_type.__name__}")
+        return hash(
+            f"{self.table_type._meta.tablename}-{self.table_type.__name__}"
+        )
 
     def __eq__(self, other):
         return self.__hash__() == other.__hash__()
@@ -226,7 +228,9 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
             continue
 
         # Dates and times
-        if isinstance(value, (datetime.time, datetime.datetime, datetime.date)):
+        if isinstance(
+            value, (datetime.time, datetime.datetime, datetime.date)
+        ):
             # Already has a good __repr__.
             extra_imports.append(
                 Import(
@@ -267,7 +271,9 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
                 )
                 params[key] = enum_serialised_params.params[key]
                 extra_imports.extend(enum_serialised_params.extra_imports)
-                extra_definitions.extend(enum_serialised_params.extra_definitions)
+                extra_definitions.extend(
+                    enum_serialised_params.extra_definitions
+                )
 
             continue
 
@@ -291,7 +297,9 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
                 raise ValueError("Lambdas can't be serialised")
 
             params[key] = SerialisedCallable(callable_=value)
-            extra_imports.append(Import(module=value.__module__, target=value.__name__))
+            extra_imports.append(
+                Import(module=value.__module__, target=value.__name__)
+            )
             continue
 
         # Lazy imports - we need to resolve these now, in case the target
@@ -299,21 +307,29 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
         if isinstance(value, LazyTableReference):
             table_type = value.resolve()
             params[key] = SerialisedCallable(callable_=table_type)
-            extra_definitions.append(SerialisedTableType(table_type=table_type))
-            extra_imports.append(Import(module=Table.__module__, target="Table"))
+            extra_definitions.append(
+                SerialisedTableType(table_type=table_type)
+            )
+            extra_imports.append(
+                Import(module=Table.__module__, target="Table")
+            )
             continue
 
         # Replace any Table class values into class and table names
         if inspect.isclass(value) and issubclass(value, Table):
             params[key] = SerialisedCallable(callable_=value)
             extra_definitions.append(SerialisedTableType(table_type=value))
-            extra_imports.append(Import(module=Table.__module__, target="Table"))
+            extra_imports.append(
+                Import(module=Table.__module__, target="Table")
+            )
             continue
 
         # Plain class type
         if inspect.isclass(value) and not issubclass(value, Enum):
             params[key] = SerialisedCallable(callable_=value)
-            extra_imports.append(Import(module=value.__module__, target=value.__name__))
+            extra_imports.append(
+                Import(module=value.__module__, target=value.__name__)
+            )
             continue
 
         # All other types can remain as is.

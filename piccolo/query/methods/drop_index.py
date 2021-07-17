@@ -24,7 +24,9 @@ class DropIndex(Query):
 
     @property
     def column_names(self) -> t.List[str]:
-        return [i._meta.name if isinstance(i, Column) else i for i in self.columns]
+        return [
+            i._meta.name if isinstance(i, Column) else i for i in self.columns
+        ]
 
     @property
     def default_querystrings(self) -> t.Sequence[QueryString]:

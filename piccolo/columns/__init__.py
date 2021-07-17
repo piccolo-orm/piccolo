@@ -1,13 +1,14 @@
-from .base import Column, ForeignKeyMeta, OnDelete, OnUpdate, Selectable  # noqa: F401
+from .base import OnUpdate  # noqa: F401
+from .base import Column, ForeignKeyMeta, OnDelete, Selectable  # noqa: F401
 from .column_types import BigInt  # noqa: F401
+from .column_types import Boolean  # noqa: F401
+from .column_types import Bytea  # noqa: F401
+from .column_types import Date  # noqa: F401
 from .column_types import (
     JSON,
     JSONB,
     UUID,
     Array,
-    Boolean,
-    Bytea,
-    Date,
     Decimal,
     Float,
     ForeignKey,

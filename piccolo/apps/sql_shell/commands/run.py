@@ -20,7 +20,8 @@ def run():
 
     if engine is None:
         raise ValueError(
-            "Unable to find the engine - make sure piccolo_conf is on the " "path."
+            "Unable to find the engine - make sure piccolo_conf is on the "
+            "path."
         )
 
     # Heavily inspired by Django's dbshell command

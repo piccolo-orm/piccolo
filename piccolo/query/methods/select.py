@@ -40,7 +40,9 @@ class Count(Selectable):
         if self.column is None:
             column_name = "*"
         else:
-            column_name = self.column._meta.get_full_name(just_alias=just_alias)
+            column_name = self.column._meta.get_full_name(
+                just_alias=just_alias
+            )
         return f"COUNT({column_name}) AS count"
 
 
@@ -143,7 +145,9 @@ class Select(Query):
         self.where_delegate.where(where)
         return self
 
-    async def batch(self, batch_size: t.Optional[int] = None, **kwargs) -> Batch:
+    async def batch(
+        self, batch_size: t.Optional[int] = None, **kwargs
+    ) -> Batch:
         if batch_size:
             kwargs.update(batch_size=batch_size)
         return await self.table._meta.db.batch(self, **kwargs)
@@ -157,7 +161,9 @@ class Select(Query):
         """
         joins: t.List[str] = []
 
-        readables: t.List[Readable] = [i for i in columns if isinstance(i, Readable)]
+        readables: t.List[Readable] = [
+            i for i in columns if isinstance(i, Readable)
+        ]
 
         columns = list(columns)
         for readable in readables:
@@ -221,7 +227,9 @@ class Select(Query):
 
         select_joins = self._get_joins(self.columns_delegate.selected_columns)
         where_joins = self._get_joins(self.where_delegate.get_where_columns())
-        order_by_joins = self._get_joins(self.order_by_delegate.get_order_by_columns())
+        order_by_joins = self._get_joins(
+            self.order_by_delegate.get_order_by_columns()
+        )
 
         # Combine all joins, and remove duplicates
         joins: t.List[str] = list(
@@ -249,7 +257,9 @@ class Select(Query):
 
         #######################################################################
 
-        select = "SELECT DISTINCT" if self.distinct_delegate._distinct else "SELECT"
+        select = (
+            "SELECT DISTINCT" if self.distinct_delegate._distinct else "SELECT"
+        )
         query = f"{select} {columns_str} FROM {self.table._meta.tablename}"
 
         for join in joins:
@@ -277,7 +287,8 @@ class Select(Query):
             and not self.limit_delegate._limit
         ):
             raise ValueError(
-                "A limit clause must be provided when doing an offset with " "SQLite."
+                "A limit clause must be provided when doing an offset with "
+                "SQLite."
             )
 
         if self.limit_delegate._limit:

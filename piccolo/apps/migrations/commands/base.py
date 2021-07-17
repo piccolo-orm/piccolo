@@ -30,7 +30,9 @@ class BaseMigrationManager(Finder):
             return True
         return False
 
-    def get_migration_modules(self, folder_path: str) -> t.Dict[str, MigrationModule]:
+    def get_migration_modules(
+        self, folder_path: str
+    ) -> t.Dict[str, MigrationModule]:
         """
         Imports the migration modules in the given folder path, and returns
         a mapping of migration ID to the corresponding migration module.
@@ -86,9 +88,9 @@ class BaseMigrationManager(Finder):
 
         migrations_folder = app_config.migrations_folder_path
 
-        migration_modules: t.Dict[str, MigrationModule] = self.get_migration_modules(
-            migrations_folder
-        )
+        migration_modules: t.Dict[
+            str, MigrationModule
+        ] = self.get_migration_modules(migrations_folder)
 
         migration_ids = sorted(migration_modules.keys())
 
@@ -97,11 +99,16 @@ class BaseMigrationManager(Finder):
             response = await migration_module.forwards()
             if isinstance(response, MigrationManager):
                 migration_managers.append(response)
-                if max_migration_id and response.migration_id == max_migration_id:
+                if (
+                    max_migration_id
+                    and response.migration_id == max_migration_id
+                ):
                     break
 
         if offset > 0:
-            raise Exception("Positive offset values aren't currently supported")
+            raise Exception(
+                "Positive offset values aren't currently supported"
+            )
         elif offset < 0:
             return migration_managers[0:offset]
         else:

@@ -41,7 +41,10 @@ class CheckMigrationManager(BaseMigrationManager):
             for _id in ids:
                 has_ran = (
                     await Migration.exists()
-                    .where((Migration.name == _id) & (Migration.app_name == app_name))
+                    .where(
+                        (Migration.name == _id)
+                        & (Migration.app_name == app_name)
+                    )
                     .run()
                 )
                 migration_statuses.append(
@@ -82,8 +85,12 @@ class CheckMigrationManager(BaseMigrationManager):
         migration_statuses = await self.get_migration_statuses()
 
         for migration_status in migration_statuses:
-            fixed_length_app_name = get_fixed_length_string(migration_status.app_name)
-            fixed_length_id = get_fixed_length_string(migration_status.migration_id)
+            fixed_length_app_name = get_fixed_length_string(
+                migration_status.app_name
+            )
+            fixed_length_id = get_fixed_length_string(
+                migration_status.migration_id
+            )
             has_ran = migration_status.has_ran
             print(f"{fixed_length_app_name} | {fixed_length_id} | {has_ran}")
 

@@ -2,14 +2,19 @@ import os
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
-from piccolo.apps.migrations.commands.base import BaseMigrationManager, Migration
+from piccolo.apps.migrations.commands.base import (
+    BaseMigrationManager,
+    Migration,
+)
 from piccolo.conf.apps import AppConfig
 from piccolo.utils.sync import run_sync
 
 
 class TestBaseMigrationManager(TestCase):
     def test_create_migration_table(self):
-        self.assertTrue(run_sync(BaseMigrationManager().create_migration_table()))
+        self.assertTrue(
+            run_sync(BaseMigrationManager().create_migration_table())
+        )
 
     def tearDown(self):
         Migration.raw("DROP TABLE IF EXISTS migration").run_sync()
@@ -25,11 +30,15 @@ class TestGetMigrationModules(TestCase):
         )
 
         migration_managers = run_sync(
-            BaseMigrationManager().get_migration_managers(app_config=app_config)
+            BaseMigrationManager().get_migration_managers(
+                app_config=app_config
+            )
         )
 
         self.assertTrue(len(migration_managers) == 1)
-        self.assertTrue(migration_managers[0].migration_id == "2020-03-31T20:38:22")
+        self.assertTrue(
+            migration_managers[0].migration_id == "2020-03-31T20:38:22"
+        )
 
 
 class TestGetTableFromSnapshot(TestCase):

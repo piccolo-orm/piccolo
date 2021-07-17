@@ -76,7 +76,9 @@ class BaseUser(Table, tablename="piccolo_user"):
         elif isinstance(user, int):
             clause = cls.id == user  # type: ignore
         else:
-            raise ValueError("The `user` arg must be a user id, or a username.")
+            raise ValueError(
+                "The `user` arg must be a user id, or a username."
+            )
 
         password = cls.hash_password(password)
         await cls.update().values({cls.password: password}).where(clause).run()
@@ -143,9 +145,14 @@ class BaseUser(Table, tablename="piccolo_user"):
 
         stored_password = response["password"]
 
-        algorithm, iterations, salt, hashed = cls.split_stored_password(stored_password)
+        algorithm, iterations, salt, hashed = cls.split_stored_password(
+            stored_password
+        )
 
-        if cls.hash_password(password, salt, int(iterations)) == stored_password:
+        if (
+            cls.hash_password(password, salt, int(iterations))
+            == stored_password
+        ):
             return response["id"]
         else:
             return None

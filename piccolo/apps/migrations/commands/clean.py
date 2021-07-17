@@ -50,7 +50,10 @@ class CleanMigrationManager(BaseMigrationManager):
 
         if migration_ids_to_remove:
             id_string = "\n".join(migration_ids_to_remove)
-            print("The following migrations exist in the table, not not in " "modules:")
+            print(
+                "The following migrations exist in the table, not not in "
+                "modules:"
+            )
             print(id_string)
             confirm = (
                 "y"
@@ -65,7 +68,10 @@ class CleanMigrationManager(BaseMigrationManager):
             else:
                 print("Cancelled")
         else:
-            print("No migrations exist in the table, which aren't also in " "modules.")
+            print(
+                "No migrations exist in the table, which aren't also in "
+                "modules."
+            )
 
 
 async def clean(app_name: str, auto_agree: bool = False):

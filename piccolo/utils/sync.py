@@ -25,7 +25,9 @@ def run_sync(coroutine: t.Coroutine):
             new_loop = asyncio.new_event_loop()
 
             with ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(new_loop.run_until_complete, coroutine)
+                future = executor.submit(
+                    new_loop.run_until_complete, coroutine
+                )
                 return future.result()
         else:
             return loop.run_until_complete(coroutine)

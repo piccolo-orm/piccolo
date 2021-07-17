@@ -47,7 +47,9 @@ class QueryString:
         self.template = template
         self.args = args
         self.query_type = query_type
-        self._frozen_compiled_strings: t.Optional[t.Tuple[str, t.List[t.Any]]] = None
+        self._frozen_compiled_strings: t.Optional[
+            t.Tuple[str, t.List[t.Any]]
+        ] = None
 
     def __str__(self):
         """
@@ -87,7 +89,9 @@ class QueryString:
         combined_args: t.Optional[t.List] = None,
     ):
         # Split up the string, separating by {}.
-        fragments = [Fragment(prefix=i[0]) for i in Formatter().parse(self.template)]
+        fragments = [
+            Fragment(prefix=i[0]) for i in Formatter().parse(self.template)
+        ]
 
         bundled = [] if bundled is None else bundled
         combined_args = [] if combined_args is None else combined_args
@@ -133,7 +137,8 @@ class QueryString:
         if engine_type == "postgres":
             string = "".join(
                 [
-                    fragment.prefix + ("" if fragment.no_arg else f"${fragment.index}")
+                    fragment.prefix
+                    + ("" if fragment.no_arg else f"${fragment.index}")
                     for fragment in bundled
                 ]
             )
@@ -150,4 +155,6 @@ class QueryString:
         return (string, combined_args)
 
     def freeze(self, engine_type: str = "postgres"):
-        self._frozen_compiled_strings = self.compile_string(engine_type=engine_type)
+        self._frozen_compiled_strings = self.compile_string(
+            engine_type=engine_type
+        )

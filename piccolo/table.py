@@ -7,11 +7,20 @@ import typing as t
 from dataclasses import dataclass, field
 
 from piccolo.columns import Column
-from piccolo.columns.column_types import JSON, JSONB, ForeignKey, PrimaryKey, Secret
+from piccolo.columns.column_types import (
+    JSON,
+    JSONB,
+    ForeignKey,
+    PrimaryKey,
+    Secret,
+)
 from piccolo.columns.defaults.base import Default
 from piccolo.columns.indexes import IndexMethod
 from piccolo.columns.readable import Readable
-from piccolo.columns.reference import LAZY_COLUMN_REFERENCES, LazyTableReference
+from piccolo.columns.reference import (
+    LAZY_COLUMN_REFERENCES,
+    LazyTableReference,
+)
 from piccolo.engine import Engine, engine_finder
 from piccolo.query import (
     Alter,
@@ -103,7 +112,9 @@ class TableMeta:
                 try:
                     column_object = getattr(column_object, reference_name)
                 except AttributeError:
-                    raise ValueError(f"Unable to find column - {reference_name}")
+                    raise ValueError(
+                        f"Unable to find column - {reference_name}"
+                    )
 
         return column_object
 
@@ -255,9 +266,13 @@ class Table(metaclass=TableMetaclass):
 
             # Record the reverse relationship on the target table.
             if is_table_class:
-                references._meta._foreign_key_references.append(foreign_key_column)
+                references._meta._foreign_key_references.append(
+                    foreign_key_column
+                )
             elif is_lazy:
-                LAZY_COLUMN_REFERENCES.foreign_key_columns.append(foreign_key_column)
+                LAZY_COLUMN_REFERENCES.foreign_key_columns.append(
+                    foreign_key_column
+                )
 
             # Allow columns on the referenced table to be accessed via
             # auto completion.
@@ -276,7 +291,11 @@ class Table(metaclass=TableMetaclass):
                 if isinstance(value, Default):
                     value = value.python()
 
-                if (value is None) and (not column._meta.null) and not ignore_missing:
+                if (
+                    (value is None)
+                    and (not column._meta.null)
+                    and not ignore_missing
+                ):
                     raise ValueError(f"{column._meta.name} wasn't provided")
 
             self[column._meta.name] = value
@@ -347,12 +366,15 @@ class Table(metaclass=TableMetaclass):
 
         column_name = foreign_key._meta.name
 
-        references: t.Type[Table] = foreign_key._foreign_key_meta.resolved_references
+        references: t.Type[
+            Table
+        ] = foreign_key._foreign_key_meta.resolved_references
 
         return (
             references.objects()
             .where(
-                references._meta.get_column_by_name("id") == getattr(self, column_name)
+                references._meta.get_column_by_name("id")
+                == getattr(self, column_name)
             )
             .first()
         )
@@ -370,7 +392,9 @@ class Table(metaclass=TableMetaclass):
         """
         Used for getting a readable from a foreign key.
         """
-        readable: Readable = column._foreign_key_meta.resolved_references.get_readable()
+        readable: Readable = (
+            column._foreign_key_meta.resolved_references.get_readable()
+        )
 
         columns = [getattr(column, i._meta.name) for i in readable.columns]
 
@@ -454,7 +478,9 @@ class Table(metaclass=TableMetaclass):
         )
 
         _reference_column = reference_column.copy()
-        _reference_column._meta.name = f"{local_column_name}.{reference_column_name}"
+        _reference_column._meta.name = (
+            f"{local_column_name}.{reference_column_name}"
+        )
         return _reference_column
 
     @classmethod
@@ -517,7 +543,9 @@ class Table(metaclass=TableMetaclass):
         them being passed over the network if avoidable.
         """
         _columns = cls._process_column_args(*columns)
-        return Select(table=cls, columns_list=_columns, exclude_secrets=exclude_secrets)
+        return Select(
+            table=cls, columns_list=_columns, exclude_secrets=exclude_secrets
+        )
 
     @classmethod
     def delete(cls, force=False) -> Delete:
@@ -532,7 +560,9 @@ class Table(metaclass=TableMetaclass):
         return Delete(table=cls, force=force)
 
     @classmethod
-    def create_table(cls, if_not_exists=False, only_default_columns=False) -> Create:
+    def create_table(
+        cls, if_not_exists=False, only_default_columns=False
+    ) -> Create:
         """
         Create table, along with all columns.
 
@@ -722,7 +752,9 @@ class Table(metaclass=TableMetaclass):
             else f"{parent_class_name}, tablename={tablename}"
         )
 
-        return f"class {cls.__name__}({class_args}):\n" f"    {columns_string}\n"
+        return (
+            f"class {cls.__name__}({class_args}):\n" f"    {columns_string}\n"
+        )
 
 
 def create_table_class(

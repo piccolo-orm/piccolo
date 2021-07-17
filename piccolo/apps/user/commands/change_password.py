@@ -22,4 +22,6 @@ def change_password():
     BaseUser.update_password_sync(user=username, password=password)
 
     print(f"Updated password for {username}")
-    print("If using session auth, we recommend invalidating this user's session.")
+    print(
+        "If using session auth, we recommend invalidating this user's session."
+    )

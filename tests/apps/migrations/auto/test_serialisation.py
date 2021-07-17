@@ -29,7 +29,9 @@ class TestSerialiseParams(TestCase):
 
     def test_timestamp(self):
         serialised = serialise_params(params={"default": TimestampNow()})
-        self.assertTrue(serialised.params["default"].__repr__() == "TimestampNow()")
+        self.assertTrue(
+            serialised.params["default"].__repr__() == "TimestampNow()"
+        )
 
     def test_uuid(self):
         serialised = serialise_params(params={"default": UUID4()})
@@ -38,7 +40,9 @@ class TestSerialiseParams(TestCase):
     def test_lazy_table_reference(self):
         # These are equivalent:
         references_list = [
-            LazyTableReference(table_class_name="Manager", app_name="example_app"),
+            LazyTableReference(
+                table_class_name="Manager", app_name="example_app"
+            ),
             LazyTableReference(
                 table_class_name="Manager",
                 module_path="tests.example_app.tables",
@@ -47,7 +51,9 @@ class TestSerialiseParams(TestCase):
 
         for references in references_list:
             serialised = serialise_params(params={"references": references})
-            self.assertTrue(serialised.params["references"].__repr__() == "Manager")
+            self.assertTrue(
+                serialised.params["references"].__repr__() == "Manager"
+            )
 
             self.assertTrue(len(serialised.extra_imports) == 1)
             self.assertEqual(
@@ -63,7 +69,9 @@ class TestSerialiseParams(TestCase):
 
     def test_function(self):
         serialised = serialise_params(params={"default": example_function})
-        self.assertTrue(serialised.params["default"].__repr__() == "example_function")
+        self.assertTrue(
+            serialised.params["default"].__repr__() == "example_function"
+        )
 
         self.assertTrue(len(serialised.extra_imports) == 1)
         self.assertEqual(
@@ -83,7 +91,9 @@ class TestSerialiseParams(TestCase):
         with self.assertRaises(ValueError) as manager:
             serialise_params(params={"default": lambda x: x + 1})
 
-        self.assertEqual(manager.exception.__str__(), "Lambdas can't be serialised")
+        self.assertEqual(
+            manager.exception.__str__(), "Lambdas can't be serialised"
+        )
 
     def test_builtins(self):
         """
@@ -164,7 +174,9 @@ class TestSerialiseParams(TestCase):
         """
         serialised = serialise_params(params={"on_delete": OnDelete.cascade})
 
-        self.assertEqual(serialised.params["on_delete"].__repr__(), "OnDelete.cascade")
+        self.assertEqual(
+            serialised.params["on_delete"].__repr__(), "OnDelete.cascade"
+        )
         self.assertEqual(
             [i.__repr__() for i in serialised.extra_imports],
             ["from piccolo.columns.base import OnDelete"],

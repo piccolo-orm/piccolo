@@ -48,7 +48,9 @@ class Insert(Query):
     @property
     def postgres_querystrings(self) -> t.Sequence[QueryString]:
         base = f"INSERT INTO {self.table._meta.tablename}"
-        columns = ",".join([f'"{i._meta.name}"' for i in self.table._meta.columns])
+        columns = ",".join(
+            [f'"{i._meta.name}"' for i in self.table._meta.columns]
+        )
         values = ",".join(["{}" for i in self.add_delegate._add])
         query = f"{base} ({columns}) VALUES {values} RETURNING id"
         return [

@@ -12,7 +12,9 @@ class TestIndexes(DBTestCase):
         for columns in [[Manager.name], [Manager.id, Manager.name]]:
             Manager.create_index(columns).run_sync()
 
-            index_name = Manager._get_index_name([i._meta.name for i in columns])
+            index_name = Manager._get_index_name(
+                [i._meta.name for i in columns]
+            )
 
             index_names = Manager.indexes().run_sync()
             self.assertTrue(index_name in index_names)
@@ -24,4 +26,6 @@ class TestIndexes(DBTestCase):
 
 class TestIndexName(TestCase):
     def test_index_name(self):
-        self.assertEqual(Manager._get_index_name(["name", "id"]), "manager_name_id")
+        self.assertEqual(
+            Manager._get_index_name(["name", "id"]), "manager_name_id"
+        )

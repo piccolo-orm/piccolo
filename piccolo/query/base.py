@@ -44,7 +44,7 @@ class Query:
         else:
             raise ValueError("Engine isn't defined.")
 
-    async def _process_results(self, results):
+    async def _process_results(self, results):  # noqa: C901
         if results:
             keys = results[0].keys()
             keys = [i.replace("$", ".") for i in keys]
@@ -55,7 +55,9 @@ class Query:
         if hasattr(self, "run_callback"):
             self.run_callback(raw)
 
-        output: t.Optional[OutputDelegate] = getattr(self, "output_delegate", None)
+        output: t.Optional[OutputDelegate] = getattr(
+            self, "output_delegate", None
+        )
 
         #######################################################################
 
@@ -79,7 +81,9 @@ class Query:
                     json_column_names.append(column.alias)
                 elif len(column._meta.call_chain) > 0:
                     json_column_names.append(
-                        column.get_select_string(engine_type=column._meta.engine_type)
+                        column.get_select_string(
+                            engine_type=column._meta.engine_type
+                        )
                     )
                 else:
                     json_column_names.append(column._meta.name)
@@ -116,9 +120,13 @@ class Query:
                         return []
                     else:
                         if len(raw[0].keys()) != 1:
-                            raise ValueError("Each row returned more than one value")
+                            raise ValueError(
+                                "Each row returned more than one value"
+                            )
                         else:
-                            raw = list(itertools.chain(*[j.values() for j in raw]))
+                            raw = list(
+                                itertools.chain(*[j.values() for j in raw])
+                            )
                 if output._output.as_json:
                     raw = dump_json(raw)
 
@@ -145,7 +153,8 @@ class Query:
         engine = self.table._meta.db
         if not engine:
             raise ValueError(
-                f"Table {self.table._meta.tablename} has no db defined in " "_meta"
+                f"Table {self.table._meta.tablename} has no db defined in "
+                "_meta"
             )
 
         if len(self.querystrings) == 1:
@@ -157,7 +166,9 @@ class Query:
             responses = []
             # TODO - run in a transaction
             for querystring in self.querystrings:
-                results = await engine.run_querystring(querystring, in_pool=in_pool)
+                results = await engine.run_querystring(
+                    querystring, in_pool=in_pool
+                )
                 responses.append(await self._process_results(results))
             return responses
 
@@ -214,7 +225,9 @@ class Query:
             except NotImplementedError:
                 return self.default_querystrings
         else:
-            raise Exception(f"No querystring found for the {engine_type} engine.")
+            raise Exception(
+                f"No querystring found for the {engine_type} engine."
+            )
 
     ###########################################################################
 
@@ -260,7 +273,9 @@ class Query:
             querystring.freeze(engine_type=self.engine_type)
 
         # Copy the query, so we don't store any references to the original.
-        query = self.__class__(table=self.table, frozen_querystrings=self.querystrings)
+        query = self.__class__(
+            table=self.table, frozen_querystrings=self.querystrings
+        )
 
         if hasattr(self, "limit_delegate"):
             # Needed for `response_handler`

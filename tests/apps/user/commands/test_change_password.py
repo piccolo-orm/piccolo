@@ -31,5 +31,6 @@ class TestChangePassword(TestCase):
         change_password()
 
         self.assertTrue(
-            BaseUser.login_sync(username="bob123", password="new_password") is not None
+            BaseUser.login_sync(username="bob123", password="new_password")
+            is not None
         )

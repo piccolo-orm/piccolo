@@ -86,7 +86,9 @@ class ForeignKeyMeta:
 
         if isinstance(self.references, LazyTableReference):
             return self.references.resolve()
-        elif inspect.isclass(self.references) and issubclass(self.references, Table):
+        elif inspect.isclass(self.references) and issubclass(
+            self.references, Table
+        ):
             return self.references
         else:
             raise ValueError(
@@ -201,7 +203,8 @@ class ColumnMeta:
             return f"{self.table._meta.tablename}.{column_name}"
 
         column_name = (
-            "$".join([i._meta.name for i in self.call_chain]) + f"${column_name}"
+            "$".join([i._meta.name for i in self.call_chain])
+            + f"${column_name}"
         )
         alias = f"{self.call_chain[-1]._meta.table_alias}.{self.name}"
         if just_alias:
@@ -353,7 +356,9 @@ class Column(Selectable):
             # validate again.
             return True
         elif (
-            default is None and None in allowed_types or type(default) in allowed_types
+            default is None
+            and None in allowed_types
+            or type(default) in allowed_types
         ):
             self._validated = True
             return True
@@ -365,7 +370,9 @@ class Column(Selectable):
             ):
                 self._validated = True
                 return True
-        elif isinstance(default, Enum) and type(default.value) in allowed_types:
+        elif (
+            isinstance(default, Enum) and type(default.value) in allowed_types
+        ):
             self._validated = True
             return True
 
@@ -388,7 +395,9 @@ class Column(Selectable):
             ):
                 continue
             else:
-                raise ValueError(f"{element.name} doesn't have the correct type")
+                raise ValueError(
+                    f"{element.name} doesn't have the correct type"
+                )
 
         return True
 
@@ -548,7 +557,9 @@ class Column(Selectable):
             output = f"'{value}'"
         elif isinstance(value, list):
             # Convert to the array syntax.
-            output = "'{" + ", ".join([self.get_sql_value(i) for i in value]) + "}'"
+            output = (
+                "'{" + ", ".join([self.get_sql_value(i) for i in value]) + "}'"
+            )
         else:
             output = value
 
@@ -622,4 +633,7 @@ class Column(Selectable):
             table_class_name = "Unknown"
         else:
             table_class_name = table.__name__
-        return f"{table_class_name}.{self._meta.name} - " f"{self.__class__.__name__}"
+        return (
+            f"{table_class_name}.{self._meta.name} - "
+            f"{self.__class__.__name__}"
+        )

@@ -18,7 +18,9 @@ def print_instruction(message: str):
 
 
 def get_options_string(options: t.List[str]):
-    return ", ".join([f"{name} [{index}]" for index, name in enumerate(options)])
+    return ", ".join(
+        [f"{name} [{index}]" for index, name in enumerate(options)]
+    )
 
 
 def get_routing_framework() -> str:
@@ -98,11 +100,15 @@ def new(root: str = ".", name: str = "piccolo_project"):
                         print(f"Problem processing {output_file_name}")
                         raise exception
 
-                with open(os.path.join(output_dir_path, output_file_name), "w") as f:
+                with open(
+                    os.path.join(output_dir_path, output_file_name), "w"
+                ) as f:
                     f.write(output_contents)
             else:
                 if file_name.endswith(".jinja_raw"):
-                    output_file_name = file_name.replace(".jinja_raw", ".jinja")
+                    output_file_name = file_name.replace(
+                        ".jinja_raw", ".jinja"
+                    )
                 else:
                     output_file_name = file_name
 
@@ -112,5 +118,6 @@ def new(root: str = ".", name: str = "piccolo_project"):
                 )
 
     print(
-        "Run `pip install -r requirements.txt` and `python main.py` to get " "started."
+        "Run `pip install -r requirements.txt` and `python main.py` to get "
+        "started."
     )

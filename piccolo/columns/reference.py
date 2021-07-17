@@ -36,9 +36,13 @@ class LazyTableReference:
 
     def __post_init__(self):
         if self.app_name is None and self.module_path is None:
-            raise ValueError("You must specify either app_name or module_path.")
+            raise ValueError(
+                "You must specify either app_name or module_path."
+            )
         if self.app_name and self.module_path:
-            raise ValueError("Specify either app_name or module_path - not both.")
+            raise ValueError(
+                "Specify either app_name or module_path - not both."
+            )
 
     def resolve(self) -> t.Type[Table]:
         if self.app_name is not None:
@@ -97,7 +101,8 @@ class LazyColumnReferenceStore:
             i
             for i in self.foreign_key_columns
             if isinstance(i._foreign_key_meta.references, LazyTableReference)
-            and i._foreign_key_meta.references.resolve()._meta.tablename == tablename
+            and i._foreign_key_meta.references.resolve()._meta.tablename
+            == tablename
         ]
 
 

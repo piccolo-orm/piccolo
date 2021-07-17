@@ -20,7 +20,9 @@ class TestNewMigrationCommand(TestCase):
         """
         Create a manual migration (i.e. non-auto).
         """
-        migration_folder = os.path.join(tempfile.gettempdir(), "piccolo_migrations")
+        migration_folder = os.path.join(
+            tempfile.gettempdir(), "piccolo_migrations"
+        )
         if os.path.exists(migration_folder):
             shutil.rmtree(migration_folder)
 
@@ -51,4 +53,6 @@ class TestNewMigrationCommand(TestCase):
 
         self.assertEqual(manager.exception.code, 0)
 
-        self.assertTrue(print_.mock_calls[-1] == call("No changes detected - exiting."))
+        self.assertTrue(
+            print_.mock_calls[-1] == call("No changes detected - exiting.")
+        )

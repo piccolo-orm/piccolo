@@ -144,7 +144,9 @@ def run(
     try:
         import IPython  # type: ignore
     except ImportError:
-        sys.exit("Install iPython using `pip install ipython` to use this feature.")
+        sys.exit(
+            "Install iPython using `pip install ipython` to use this feature."
+        )
 
     if engine.upper() == "POSTGRES":
         db: Engine = PostgresEngine(
@@ -176,7 +178,10 @@ def run(
     print("\n")
 
     print("Try it as an ORM:")
-    print("b = Band.objects().where(Band.name == 'Pythonistas').first()." "run_sync()")
+    print(
+        "b = Band.objects().where(Band.name == 'Pythonistas').first()."
+        "run_sync()"
+    )
     print("b.popularity = 10000")
     print("b.save().run_sync()")
     print("\n")

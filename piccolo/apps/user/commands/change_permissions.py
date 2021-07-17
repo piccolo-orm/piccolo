@@ -27,7 +27,11 @@ async def change_permissions(
 
     """
     if not await BaseUser.exists().where(BaseUser.username == username).run():
-        print(colored_string(f"User {username} doesn't exist!", level=Level.medium))
+        print(
+            colored_string(
+                f"User {username} doesn't exist!", level=Level.medium
+            )
+        )
         return
 
     params: t.Dict[t.Union[Column, str], bool] = {}

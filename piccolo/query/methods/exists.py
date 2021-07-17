@@ -33,4 +33,8 @@ class Exists(Query):
     def default_querystrings(self) -> t.Sequence[QueryString]:
         select = Select(table=self.table)
         select.where_delegate._where = self.where_delegate._where
-        return [QueryString('SELECT EXISTS({}) AS "exists"', select.querystrings[0])]
+        return [
+            QueryString(
+                'SELECT EXISTS({}) AS "exists"', select.querystrings[0]
+            )
+        ]

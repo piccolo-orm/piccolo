@@ -4,7 +4,10 @@ import typing as t
 from copy import deepcopy
 from dataclasses import dataclass, field
 
-from piccolo.apps.migrations.auto.diffable_table import DiffableTable, TableDelta
+from piccolo.apps.migrations.auto.diffable_table import (
+    DiffableTable,
+    TableDelta,
+)
 from piccolo.apps.migrations.auto.operations import RenameColumn, RenameTable
 from piccolo.apps.migrations.auto.serialisation import Import, serialise_params
 from piccolo.utils.printing import get_fixed_length_string
@@ -29,7 +32,9 @@ class RenameTableCollection:
         """
         Returns the old class name, if it exists.
         """
-        rename = [i for i in self.rename_tables if i.new_class_name == new_class_name]
+        rename = [
+            i for i in self.rename_tables if i.new_class_name == new_class_name
+        ]
         if len(rename) > 0:
             return rename[0].old_class_name
         else:
@@ -43,9 +48,13 @@ class RenameColumnCollection:
     def append(self, rename_column: RenameColumn):
         self.rename_columns.append(rename_column)
 
-    def for_table_class_name(self, table_class_name: str) -> t.List[RenameColumn]:
+    def for_table_class_name(
+        self, table_class_name: str
+    ) -> t.List[RenameColumn]:
         return [
-            i for i in self.rename_columns if i.table_class_name == table_class_name
+            i
+            for i in self.rename_columns
+            if i.table_class_name == table_class_name
         ]
 
     @property
@@ -167,7 +176,9 @@ class SchemaDiffer:
         collection = RenameColumnCollection()
 
         for table in self.schema:
-            snapshot_table = self.schema_snapshot_map.get(table.class_name, None)
+            snapshot_table = self.schema_snapshot_map.get(
+                table.class_name, None
+            )
             if not snapshot_table:
                 continue
             delta: TableDelta = table - snapshot_table
@@ -197,7 +208,9 @@ class SchemaDiffer:
                         )
                     )
                     if user_response.lower() == "y":
-                        renamed_column_names.append(add_column.table_class_name)
+                        renamed_column_names.append(
+                            add_column.table_class_name
+                        )
                         collection.append(
                             RenameColumn(
                                 table_class_name=add_column.table_class_name,
@@ -221,7 +234,8 @@ class SchemaDiffer:
         new_tables = [
             i
             for i in new_tables
-            if i.class_name not in self.rename_tables_collection.new_class_names
+            if i.class_name
+            not in self.rename_tables_collection.new_class_names
         ]
 
         return AlterStatements(
@@ -241,7 +255,8 @@ class SchemaDiffer:
         drop_tables = [
             i
             for i in drop_tables
-            if i.class_name not in self.rename_tables_collection.old_class_names
+            if i.class_name
+            not in self.rename_tables_collection.old_class_names
         ]
 
         return AlterStatements(
@@ -262,12 +277,17 @@ class SchemaDiffer:
 
     ###########################################################################
 
-    def _get_snapshot_table(self, table_class_name: str) -> t.Optional[DiffableTable]:
+    def _get_snapshot_table(
+        self, table_class_name: str
+    ) -> t.Optional[DiffableTable]:
         snapshot_table = self.schema_snapshot_map.get(table_class_name, None)
         if snapshot_table:
             return snapshot_table
         else:
-            if table_class_name in self.rename_tables_collection.new_class_names:
+            if (
+                table_class_name
+                in self.rename_tables_collection.new_class_names
+            ):
                 class_name = self.rename_tables_collection.renamed_from(
                     table_class_name
                 )
@@ -420,7 +440,10 @@ class SchemaDiffer:
         extra_imports: t.List[Import] = []
         extra_definitions: t.List[str] = []
         for table in new_tables:
-            if table.class_name in self.rename_tables_collection.new_class_names:
+            if (
+                table.class_name
+                in self.rename_tables_collection.new_class_names
+            ):
                 continue
 
             for column in table.columns:

@@ -4,7 +4,10 @@ import os
 import sys
 
 from piccolo.apps.migrations.auto import MigrationManager
-from piccolo.apps.migrations.commands.base import BaseMigrationManager, MigrationResult
+from piccolo.apps.migrations.commands.base import (
+    BaseMigrationManager,
+    MigrationResult,
+)
 from piccolo.apps.migrations.tables import Migration
 
 
@@ -58,7 +61,8 @@ class BackwardsMigrationManager(BaseMigrationManager):
 
         if earliest_migration_id not in ran_migration_ids:
             message = (
-                "Unrecognized migration name - must be one of " f"{ran_migration_ids}"
+                "Unrecognized migration name - must be one of "
+                f"{ran_migration_ids}"
             )
             print(message, file=sys.stderr)
             return MigrationResult(success=False, message=message)
@@ -95,7 +99,9 @@ class BackwardsMigrationManager(BaseMigrationManager):
                 if isinstance(response, MigrationManager):
                     await response.run_backwards()
 
-                await Migration.delete().where(Migration.name == migration_id).run()
+                await Migration.delete().where(
+                    Migration.name == migration_id
+                ).run()
 
                 if self.clean:
                     os.unlink(migration_module.__file__)

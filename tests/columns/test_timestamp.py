@@ -61,5 +61,7 @@ class TestTimestampDefault(TestCase):
         row.save().run_sync()
 
         result = MyTableDefault.objects().first().run_sync()
-        self.assertTrue(result.created_on - created_on < datetime.timedelta(seconds=1))
+        self.assertTrue(
+            result.created_on - created_on < datetime.timedelta(seconds=1)
+        )
         self.assertTrue(result.created_on.tzinfo is None)

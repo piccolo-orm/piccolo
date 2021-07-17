@@ -3,7 +3,11 @@ from __future__ import annotations
 import typing as t
 from dataclasses import dataclass, field
 
-from piccolo.apps.migrations.auto.operations import AddColumn, AlterColumn, DropColumn
+from piccolo.apps.migrations.auto.operations import (
+    AddColumn,
+    AlterColumn,
+    DropColumn,
+)
 from piccolo.apps.migrations.auto.serialisation import (
     deserialise_params,
     serialise_params,
@@ -65,14 +69,20 @@ class DiffableTable:
     previous_class_name: t.Optional[str] = None
 
     def __post_init__(self):
-        self.columns_map: t.Dict[str, Column] = {i._meta.name: i for i in self.columns}
+        self.columns_map: t.Dict[str, Column] = {
+            i._meta.name: i for i in self.columns
+        }
 
     def __sub__(self, value: DiffableTable) -> TableDelta:
         if not isinstance(value, DiffableTable):
-            raise ValueError("Can only diff with other DiffableTable instances")
+            raise ValueError(
+                "Can only diff with other DiffableTable instances"
+            )
 
         if value.class_name != self.class_name:
-            raise ValueError("The two tables don't appear to have the same name.")
+            raise ValueError(
+                "The two tables don't appear to have the same name."
+            )
 
         add_columns = [
             AddColumn(
@@ -114,7 +124,8 @@ class DiffableTable:
             )
 
             old_params = {
-                key: existing_column._meta.params.get(key) for key, _ in delta.items()
+                key: existing_column._meta.params.get(key)
+                for key, _ in delta.items()
             }
 
             if delta or (column.__class__ != existing_column.__class__):
@@ -162,7 +173,9 @@ class DiffableTable:
         _Table: t.Type[Table] = create_table_class(
             class_name=self.class_name,
             class_kwargs={"tablename": self.tablename},
-            class_members={column._meta.name: column for column in self.columns},
+            class_members={
+                column._meta.name: column for column in self.columns
+            },
         )
 
         return _Table

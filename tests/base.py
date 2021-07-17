@@ -74,7 +74,9 @@ class DBTestCase(TestCase):
         response = self.run_sync(query)
         return response[0]
 
-    def get_postgres_column_type(self, tablename: str, column_name: str) -> str:
+    def get_postgres_column_type(
+        self, tablename: str, column_name: str
+    ) -> str:
         """
         Fetches the column type as a string, from the database.
         """
