@@ -18,7 +18,7 @@ class Raw(Query):
         self,
         table: t.Type[Table],
         querystring: QueryString = QueryString(""),
-        **kwargs
+        **kwargs,
     ):
         super().__init__(table, **kwargs)
         self.querystring = querystring

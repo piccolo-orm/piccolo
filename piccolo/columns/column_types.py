@@ -619,8 +619,8 @@ class Timestamptz(Column):
         self, default: TimestamptzArg = TimestamptzNow(), **kwargs
     ) -> None:
         self._validate_default(
-            default, TimestamptzArg.__args__
-        )  # type: ignore
+            default, TimestamptzArg.__args__  # type: ignore
+        )
 
         if isinstance(default, datetime):
             default = TimestamptzCustom.from_datetime(default)
