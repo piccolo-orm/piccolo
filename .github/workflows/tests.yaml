@@ -100,3 +100,6 @@ jobs:
                   pip install -r tests/test-requirements.txt
             - name: Test with pytest, SQLite
               run: ./scripts/test-sqlite.sh
+            - name: Upload coverage
+              uses: codecov/codecov-action@v1
+              if: matrix.python-version == '3.7'
