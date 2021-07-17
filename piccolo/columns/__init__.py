@@ -1,14 +1,13 @@
-from .base import OnUpdate  # noqa: F401
-from .base import Column, ForeignKeyMeta, OnDelete, Selectable  # noqa: F401
-from .column_types import BigInt  # noqa: F401
-from .column_types import Boolean  # noqa: F401
-from .column_types import Bytea  # noqa: F401
-from .column_types import Date  # noqa: F401
+from .base import Column, ForeignKeyMeta, OnDelete, OnUpdate, Selectable
 from .column_types import (
     JSON,
     JSONB,
     UUID,
     Array,
+    BigInt,
+    Boolean,
+    Bytea,
+    Date,
     Decimal,
     Float,
     ForeignKey,
@@ -25,5 +24,5 @@ from .column_types import (
     Timestamptz,
     Varchar,
 )
-from .combination import And, Or, Where  # noqa: F401
-from .reference import LazyTableReference  # noqa: F401
+from .combination import And, Or, Where
+from .reference import LazyTableReference

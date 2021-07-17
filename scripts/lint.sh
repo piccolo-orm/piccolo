@@ -1,6 +1,8 @@
 #!/bin/bash
 
-isort piccolo tests
-black piccolo tests
-flake8 piccolo tests
-mypy piccolo tests
+SOURCES="piccolo tests"
+
+isort $SOURCES
+black $SOURCES
+flake8 $SOURCES
+mypy $SOURCES

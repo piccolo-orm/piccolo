@@ -1,12 +1,12 @@
-from .base import Query  # noqa: F401
-from .methods import CreateIndex  # noqa: F401
-from .methods import Delete  # noqa: F401
-from .methods import Exists  # noqa: F401
+from .base import Query
 from .methods import (
     Alter,
     Count,
     Create,
+    CreateIndex,
+    Delete,
     DropIndex,
+    Exists,
     Insert,
     Objects,
     Raw,
