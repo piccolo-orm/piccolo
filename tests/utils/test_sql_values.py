@@ -12,16 +12,12 @@ class TestConvertToSQLValue(TestCase):
         Make sure Python objects are serialised correctly to JSON strings.
         """
         self.assertEqual(
-            convert_to_sql_value(value={"a": 123}, column=JSON()).replace(
-                " ", ""
-            ),
+            convert_to_sql_value(value={"a": 123}, column=JSON()).replace(" ", ""),
             '{"a":123}',
         )
 
         self.assertEqual(
-            convert_to_sql_value(value={"a": 123}, column=JSONB()).replace(
-                " ", ""
-            ),
+            convert_to_sql_value(value={"a": 123}, column=JSONB()).replace(" ", ""),
             '{"a":123}',
         )
 
@@ -35,9 +31,7 @@ class TestConvertToSQLValue(TestCase):
 
         instance = MyTable(id=1)
 
-        self.assertEqual(
-            convert_to_sql_value(value=instance, column=MyTable.id), 1
-        )
+        self.assertEqual(convert_to_sql_value(value=instance, column=MyTable.id), 1)
 
     def test_convert_enum(self):
         """
@@ -56,5 +50,6 @@ class TestConvertToSQLValue(TestCase):
         Make sure simple Python values are returned correctly.
         """
         self.assertEqual(
-            convert_to_sql_value(value=1, column=Integer()), 1,
+            convert_to_sql_value(value=1, column=Integer()),
+            1,
         )

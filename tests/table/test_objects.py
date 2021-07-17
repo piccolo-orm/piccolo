@@ -21,8 +21,7 @@ class TestObjects(DBTestCase):
         save_query.run_sync()
 
         self.assertTrue(
-            Band.select(Band.name).output(as_list=True).run_sync()[0]
-            == "Rustaceans"
+            Band.select(Band.name).output(as_list=True).run_sync()[0] == "Rustaceans"
         )
 
     @postgres_only
@@ -35,9 +34,7 @@ class TestObjects(DBTestCase):
 
         print(f"response = {response}")
 
-        self.assertEqual(
-            [i.name for i in response], ["Pythonistas", "Rustaceans"]
-        )
+        self.assertEqual([i.name for i in response], ["Pythonistas", "Rustaceans"])
 
     @sqlite_only
     def test_offset_sqlite(self):
@@ -56,6 +53,4 @@ class TestObjects(DBTestCase):
 
         print(f"response = {response}")
 
-        self.assertEqual(
-            [i.name for i in response], ["Pythonistas", "Rustaceans"]
-        )
+        self.assertEqual([i.name for i in response], ["Pythonistas", "Rustaceans"])

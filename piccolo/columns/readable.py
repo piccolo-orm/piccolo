@@ -23,9 +23,7 @@ class Readable(Selectable):
 
     @property
     def _columns_string(self) -> str:
-        return ", ".join(
-            [i._meta.get_full_name(just_alias=True) for i in self.columns]
-        )
+        return ", ".join([i._meta.get_full_name(just_alias=True) for i in self.columns])
 
     def _get_string(self, operator: str) -> str:
         return (
@@ -45,6 +43,4 @@ class Readable(Selectable):
         try:
             return getattr(self, f"{engine_type}_string")
         except AttributeError:
-            raise ValueError(
-                f"Unrecognised engine_type - received {engine_type}"
-            )
+            raise ValueError(f"Unrecognised engine_type - received {engine_type}")

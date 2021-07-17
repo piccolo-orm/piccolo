@@ -39,12 +39,7 @@ class TestInterval(TestCase):
             row.save().run_sync()
 
             # Make sure that fetching it back works OK.
-            result = (
-                MyTable.objects()
-                .where(MyTable.id == row.id)
-                .first()
-                .run_sync()
-            )
+            result = MyTable.objects().where(MyTable.id == row.id).first().run_sync()
             self.assertEqual(result.interval, interval)
 
     def test_interval_where_clause(self):

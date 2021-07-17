@@ -6,9 +6,13 @@ from dataclasses import dataclass
 from piccolo.custom_types import Combinable
 from piccolo.engine.base import Batch
 from piccolo.query.base import Query
-from piccolo.query.mixins import (LimitDelegate, OffsetDelegate,
-                                  OrderByDelegate, OutputDelegate,
-                                  WhereDelegate)
+from piccolo.query.mixins import (
+    LimitDelegate,
+    OffsetDelegate,
+    OrderByDelegate,
+    OutputDelegate,
+    WhereDelegate,
+)
 from piccolo.querystring import QueryString
 
 from .select import Select
@@ -43,9 +47,7 @@ class Objects(Query):
         self.where_delegate = WhereDelegate()
 
     def output(self, load_json: bool = False) -> Objects:
-        self.output_delegate.output(
-            as_list=False, as_json=False, load_json=load_json
-        )
+        self.output_delegate.output(as_list=False, as_json=False, load_json=load_json)
         return self
 
     def limit(self, number: int) -> Objects:
@@ -68,9 +70,7 @@ class Objects(Query):
         self.where_delegate.where(where)
         return self
 
-    async def batch(
-        self, batch_size: t.Optional[int] = None, **kwargs
-    ) -> Batch:
+    async def batch(self, batch_size: t.Optional[int] = None, **kwargs) -> Batch:
         if batch_size:
             kwargs.update(batch_size=batch_size)
         return await self.table._meta.db.batch(self, **kwargs)

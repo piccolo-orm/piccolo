@@ -39,9 +39,7 @@ class SchemaSnapshot:
                 tables.append(table)
 
             for drop_table in manager.drop_tables:
-                tables = [
-                    i for i in tables if i.class_name != drop_table.class_name
-                ]
+                tables = [i for i in tables if i.class_name != drop_table.class_name]
 
             for rename_table in manager.rename_tables:
                 for table in tables:
@@ -95,9 +93,7 @@ class SchemaSnapshot:
 
                 ###############################################################
 
-                for (
-                    rename_column
-                ) in manager.rename_columns.for_table_class_name(
+                for rename_column in manager.rename_columns.for_table_class_name(
                     table.class_name
                 ):
                     for column in table.columns:

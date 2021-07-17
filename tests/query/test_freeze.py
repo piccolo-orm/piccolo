@@ -44,9 +44,7 @@ class TestFreeze(DBTestCase):
             ),
             QueryResponse(
                 query=(
-                    Band.select(Band.name)
-                    .where(Band.name == "Pythonistas")
-                    .freeze()
+                    Band.select(Band.name).where(Band.name == "Pythonistas").freeze()
                 ),
                 response=[{"name": "Pythonistas"}],
             ),
@@ -96,8 +94,7 @@ class TestFreeze(DBTestCase):
 
         # Remove the outliers before comparing
         self.assertTrue(
-            sum(sorted(query_duration)[5:-5])
-            > sum(sorted(frozen_query_duration)[5:-5])
+            sum(sorted(query_duration)[5:-5]) > sum(sorted(frozen_query_duration)[5:-5])
         )
 
     def test_attribute_access(self):

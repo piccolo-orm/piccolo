@@ -31,9 +31,7 @@ class TestAtomic(TestCase):
         self.assertTrue(Band.table_exists().run_sync())
         self.assertTrue(Manager.table_exists().run_sync())
 
-        transaction.add(
-            Band.alter().drop_table(), Manager.alter().drop_table()
-        )
+        transaction.add(Band.alter().drop_table(), Manager.alter().drop_table())
         transaction.run_sync()
 
 
@@ -83,12 +81,8 @@ class TestTransaction(TestCase):
         async def run_transaction():
             responses = []
             async with Band._meta.db.transaction():
-                responses.append(
-                    await Manager.raw("SELECT txid_current()").run()
-                )
-                responses.append(
-                    await Manager.raw("SELECT txid_current()").run()
-                )
+                responses.append(await Manager.raw("SELECT txid_current()").run())
+                responses.append(await Manager.raw("SELECT txid_current()").run())
             return [i[0]["txid_current"] for i in responses]
 
         txids = asyncio.run(run_transaction())

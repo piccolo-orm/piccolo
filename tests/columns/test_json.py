@@ -35,10 +35,7 @@ class TestJSONSave(TestCase):
         row.save().run_sync()
 
         self.assertEqual(
-            MyTable.select(MyTable.json)
-            .first()
-            .run_sync()["json"]
-            .replace(" ", ""),
+            MyTable.select(MyTable.json).first().run_sync()["json"].replace(" ", ""),
             '{"a":1}',
         )
 
@@ -50,10 +47,7 @@ class TestJSONSave(TestCase):
         row.save().run_sync()
 
         self.assertEqual(
-            MyTable.select(MyTable.json)
-            .first()
-            .run_sync()["json"]
-            .replace(" ", ""),
+            MyTable.select(MyTable.json).first().run_sync()["json"].replace(" ", ""),
             '{"a":1}',
         )
 
@@ -90,10 +84,7 @@ class TestJSONInsert(TestCase):
 
     def check_response(self):
         self.assertEqual(
-            MyTable.select(MyTable.json)
-            .first()
-            .run_sync()["json"]
-            .replace(" ", ""),
+            MyTable.select(MyTable.json).first().run_sync()["json"].replace(" ", ""),
             '{"message":"original"}',
         )
 
@@ -126,10 +117,7 @@ class TestJSONUpdate(TestCase):
 
     def check_response(self):
         self.assertEqual(
-            MyTable.select(MyTable.json)
-            .first()
-            .run_sync()["json"]
-            .replace(" ", ""),
+            MyTable.select(MyTable.json).first().run_sync()["json"].replace(" ", ""),
             '{"message":"updated"}',
         )
 

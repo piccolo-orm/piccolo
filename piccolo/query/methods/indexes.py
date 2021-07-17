@@ -15,8 +15,7 @@ class Indexes(Query):
     def postgres_querystrings(self) -> t.Sequence[QueryString]:
         return [
             QueryString(
-                "SELECT indexname AS name FROM pg_indexes "
-                "WHERE tablename = {}",
+                "SELECT indexname AS name FROM pg_indexes " "WHERE tablename = {}",
                 self.table._meta.tablename,
             )
         ]

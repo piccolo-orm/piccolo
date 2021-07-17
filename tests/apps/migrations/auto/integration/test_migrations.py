@@ -10,12 +10,24 @@ import uuid
 from unittest import TestCase
 
 from piccolo.apps.migrations.commands.forwards import ForwardsMigrationManager
-from piccolo.apps.migrations.commands.new import (_create_migrations_folder,
-                                                  _create_new_migration)
+from piccolo.apps.migrations.commands.new import (
+    _create_migrations_folder,
+    _create_new_migration,
+)
 from piccolo.apps.migrations.tables import Migration
-from piccolo.columns.column_types import (UUID, BigInt, Boolean, Date, Integer,
-                                          Interval, SmallInt, Text, Time,
-                                          Timestamp, Varchar)
+from piccolo.columns.column_types import (
+    UUID,
+    BigInt,
+    Boolean,
+    Date,
+    Integer,
+    Interval,
+    SmallInt,
+    Text,
+    Time,
+    Timestamp,
+    Varchar,
+)
 from piccolo.columns.defaults.uuid import UUID4
 from piccolo.conf.apps import AppConfig
 from piccolo.table import Table, create_table_class
@@ -61,9 +73,7 @@ def boolean_default():
 @postgres_only
 class TestMigrations(TestCase):
     def tearDown(self):
-        create_table_class("MyTable").alter().drop_table(
-            if_exists=True
-        ).run_sync()
+        create_table_class("MyTable").alter().drop_table(if_exists=True).run_sync()
         Migration.alter().drop_table(if_exists=True).run_sync()
 
     def run_migrations(self, app_config: AppConfig):
@@ -73,9 +83,7 @@ class TestMigrations(TestCase):
 
     def _test_migrations(self, table_classes: t.List[t.Type[Table]]):
         temp_directory_path = tempfile.gettempdir()
-        migrations_folder_path = os.path.join(
-            temp_directory_path, "piccolo_migrations"
-        )
+        migrations_folder_path = os.path.join(temp_directory_path, "piccolo_migrations")
 
         if os.path.exists(migrations_folder_path):
             shutil.rmtree(migrations_folder_path)
@@ -90,9 +98,7 @@ class TestMigrations(TestCase):
 
         for table_class in table_classes:
             app_config.table_classes = [table_class]
-            meta = run_sync(
-                _create_new_migration(app_config=app_config, auto=True)
-            )
+            meta = run_sync(_create_new_migration(app_config=app_config, auto=True))
             self.assertTrue(os.path.exists(meta.migration_path))
             self.run_migrations(app_config=app_config)
 
@@ -198,11 +204,7 @@ class TestMigrations(TestCase):
                 for column in [
                     UUID(),
                     UUID(default="ecf338cd-6da7-464c-b31e-4b2e3e12f0f0"),
-                    UUID(
-                        default=uuid.UUID(
-                            "2dfc9c47-adab-4692-b804-f692f3b0fc07"
-                        )
-                    ),
+                    UUID(default=uuid.UUID("2dfc9c47-adab-4692-b804-f692f3b0fc07")),
                     UUID(default=uuid.uuid4),
                     UUID(default=uuid_default),
                     UUID(default=UUID4()),
@@ -220,9 +222,7 @@ class TestMigrations(TestCase):
                 self.table(column)
                 for column in [
                     Timestamp(),
-                    Timestamp(
-                        default=datetime.datetime(year=2021, month=1, day=1)
-                    ),
+                    Timestamp(default=datetime.datetime(year=2021, month=1, day=1)),
                     Timestamp(default=datetime.datetime.now),
                     Timestamp(default=datetime_default),
                     Timestamp(null=True, default=None),

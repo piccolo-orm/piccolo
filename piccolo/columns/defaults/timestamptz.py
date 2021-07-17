@@ -9,9 +9,7 @@ from .timestamp import TimestampCustom, TimestampNow, TimestampOffset
 
 class TimestamptzOffset(TimestampOffset):
     def python(self):
-        return datetime.datetime.now(
-            tz=datetime.timezone.utc
-        ) + datetime.timedelta(
+        return datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(
             days=self.days,
             hours=self.hours,
             minutes=self.minutes,

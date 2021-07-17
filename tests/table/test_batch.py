@@ -21,9 +21,7 @@ class TestBatchSelect(DBTestCase):
         row_count = 0
         iterations = 0
 
-        async with await Manager.select().batch(
-            batch_size=batch_size
-        ) as batch:
+        async with await Manager.select().batch(batch_size=batch_size) as batch:
             async for _batch in batch:
                 self._check_results(_batch)
                 _row_count = len(_batch)
@@ -62,9 +60,7 @@ class TestBatchObjects(DBTestCase):
         row_count = 0
         iterations = 0
 
-        async with await Manager.objects().batch(
-            batch_size=batch_size
-        ) as batch:
+        async with await Manager.objects().batch(batch_size=batch_size) as batch:
             async for _batch in batch:
                 self._check_results(_batch)
                 _row_count = len(_batch)

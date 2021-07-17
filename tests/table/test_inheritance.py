@@ -56,9 +56,7 @@ class TestInheritance(TestCase):
         started_on = datetime.datetime(year=1989, month=12, day=1)
         name = "Guido"
         favourite = True
-        Manager(
-            name=name, started_on=started_on, favourite=favourite
-        ).save().run_sync()
+        Manager(name=name, started_on=started_on, favourite=favourite).save().run_sync()
 
         response = Manager.select().first().run_sync()
         self.assertEqual(response["started_on"], started_on)

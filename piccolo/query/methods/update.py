@@ -36,15 +36,11 @@ class Update(Query):
 
     def validate(self):
         if len(self.values_delegate._values) == 0:
-            raise ValueError(
-                "No values were specified to update - please use .values"
-            )
+            raise ValueError("No values were specified to update - please use .values")
 
         for column, _ in self.values_delegate._values.items():
             if len(column._meta.call_chain) > 0:
-                raise ValueError(
-                    "Related values can't be updated via an update"
-                )
+                raise ValueError("Related values can't be updated via an update")
 
     @property
     def default_querystrings(self) -> t.Sequence[QueryString]:
@@ -59,9 +55,7 @@ class Update(Query):
 
         query = f"UPDATE {self.table._meta.tablename} SET " + columns_str
 
-        querystring = QueryString(
-            query, *self.values_delegate.get_sql_values()
-        )
+        querystring = QueryString(query, *self.values_delegate.get_sql_values())
 
         if self.where_delegate._where:
             where_querystring = QueryString(

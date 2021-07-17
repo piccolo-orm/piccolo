@@ -27,9 +27,7 @@ class CreateIndex(Query):
 
     @property
     def column_names(self) -> t.List[str]:
-        return [
-            i._meta.name if isinstance(i, Column) else i for i in self.columns
-        ]
+        return [i._meta.name if isinstance(i, Column) else i for i in self.columns]
 
     @property
     def prefix(self) -> str:
@@ -65,7 +63,6 @@ class CreateIndex(Query):
         column_names_str = ", ".join(column_names)
         return [
             QueryString(
-                f"{self.prefix} {index_name} ON {tablename} "
-                f"({column_names_str})"
+                f"{self.prefix} {index_name} ON {tablename} " f"({column_names_str})"
             )
         ]

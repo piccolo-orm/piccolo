@@ -7,8 +7,17 @@ import sys
 import uuid
 from decimal import Decimal
 
-from piccolo.columns import (JSON, UUID, Boolean, ForeignKey, Integer,
-                             Interval, Numeric, Timestamp, Varchar)
+from piccolo.columns import (
+    JSON,
+    UUID,
+    Boolean,
+    ForeignKey,
+    Integer,
+    Interval,
+    Numeric,
+    Timestamp,
+    Varchar,
+)
 from piccolo.engine import PostgresEngine, SQLiteEngine
 from piccolo.engine.base import Engine
 from piccolo.table import Table
@@ -135,9 +144,7 @@ def run(
     try:
         import IPython  # type: ignore
     except ImportError:
-        sys.exit(
-            "Install iPython using `pip install ipython` to use this feature."
-        )
+        sys.exit("Install iPython using `pip install ipython` to use this feature.")
 
     if engine.upper() == "POSTGRES":
         db: Engine = PostgresEngine(
@@ -169,10 +176,7 @@ def run(
     print("\n")
 
     print("Try it as an ORM:")
-    print(
-        "b = Band.objects().where(Band.name == 'Pythonistas').first()."
-        "run_sync()"
-    )
+    print("b = Band.objects().where(Band.name == 'Pythonistas').first()." "run_sync()")
     print("b.popularity = 10000")
     print("b.save().run_sync()")
     print("\n")

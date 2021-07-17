@@ -4,16 +4,13 @@ import sys
 import typing as t
 
 from piccolo.apps.migrations.auto import MigrationManager
-from piccolo.apps.migrations.commands.base import (BaseMigrationManager,
-                                                   MigrationResult)
+from piccolo.apps.migrations.commands.base import BaseMigrationManager, MigrationResult
 from piccolo.apps.migrations.tables import Migration
 from piccolo.conf.apps import AppConfig, MigrationModule
 
 
 class ForwardsMigrationManager(BaseMigrationManager):
-    def __init__(
-        self, app_name: str, migration_id: str = "all", fake: bool = False
-    ):
+    def __init__(self, app_name: str, migration_id: str = "all", fake: bool = False):
         self.app_name = app_name
         self.migration_id = migration_id
         self.fake = fake
@@ -24,9 +21,9 @@ class ForwardsMigrationManager(BaseMigrationManager):
             app_name=app_config.app_name
         )
 
-        migration_modules: t.Dict[
-            str, MigrationModule
-        ] = self.get_migration_modules(app_config.migrations_folder_path)
+        migration_modules: t.Dict[str, MigrationModule] = self.get_migration_modules(
+            app_config.migrations_folder_path
+        )
 
         ids = self.get_migration_ids(migration_modules)
         print(f"All migration ids = {ids}")
@@ -110,9 +107,7 @@ async def run_forwards(
         return await manager.run()
 
 
-async def forwards(
-    app_name: str, migration_id: str = "all", fake: bool = False
-):
+async def forwards(app_name: str, migration_id: str = "all", fake: bool = False):
     """
     Runs any migrations which haven't been run yet.
 

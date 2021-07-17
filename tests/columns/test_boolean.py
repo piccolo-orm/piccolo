@@ -42,10 +42,6 @@ class TestBoolean(TestCase):
             MyTable(boolean=True),
         ).run_sync()
 
-        self.assertEqual(
-            MyTable.count().where(MyTable.boolean.eq(True)).run_sync(), 2
-        )
+        self.assertEqual(MyTable.count().where(MyTable.boolean.eq(True)).run_sync(), 2)
 
-        self.assertEqual(
-            MyTable.count().where(MyTable.boolean.ne(True)).run_sync(), 1
-        )
+        self.assertEqual(MyTable.count().where(MyTable.boolean.ne(True)).run_sync(), 1)

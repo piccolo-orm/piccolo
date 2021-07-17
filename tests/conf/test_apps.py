@@ -115,7 +115,8 @@ class TestTableFinder(TestCase):
         table_class_names.sort()
 
         self.assertEqual(
-            table_class_names, ["Poster"],
+            table_class_names,
+            ["Poster"],
         )
 
     def test_exclude_tags(self):

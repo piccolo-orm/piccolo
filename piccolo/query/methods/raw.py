@@ -15,10 +15,7 @@ class Raw(Query):
     __slots__ = ("querystring",)
 
     def __init__(
-        self,
-        table: t.Type[Table],
-        querystring: QueryString = QueryString(""),
-        **kwargs
+        self, table: t.Type[Table], querystring: QueryString = QueryString(""), **kwargs
     ):
         super().__init__(table, **kwargs)
         self.querystring = querystring

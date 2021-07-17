@@ -61,9 +61,7 @@ class RenameColumn(AlterColumnStatement):
 
     @property
     def querystring(self) -> QueryString:
-        return QueryString(
-            f"RENAME COLUMN {self.column_name} TO {self.new_name}"
-        )
+        return QueryString(f"RENAME COLUMN {self.column_name} TO {self.new_name}")
 
 
 @dataclass
@@ -113,9 +111,7 @@ class SetColumnType(AlterStatement):
             self.new_column._meta._table = self.old_column._meta.table
 
         column_name = self.old_column._meta.name
-        query = (
-            f"ALTER COLUMN {column_name} TYPE {self.new_column.column_type}"
-        )
+        query = f"ALTER COLUMN {column_name} TYPE {self.new_column.column_type}"
         if self.using_expression is not None:
             query += f" USING {self.using_expression}"
         return QueryString(query)
@@ -131,9 +127,7 @@ class SetDefault(AlterColumnStatement):
     @property
     def querystring(self) -> QueryString:
         sql_value = self.column.get_sql_value(self.value)
-        return QueryString(
-            f"ALTER COLUMN {self.column_name} SET DEFAULT {sql_value}"
-        )
+        return QueryString(f"ALTER COLUMN {self.column_name} SET DEFAULT {sql_value}")
 
 
 @dataclass
@@ -167,9 +161,7 @@ class SetNull(AlterColumnStatement):
     @property
     def querystring(self) -> QueryString:
         if self.boolean:
-            return QueryString(
-                f"ALTER COLUMN {self.column_name} DROP NOT NULL"
-            )
+            return QueryString(f"ALTER COLUMN {self.column_name} DROP NOT NULL")
         else:
             return QueryString(f"ALTER COLUMN {self.column_name} SET NOT NULL")
 
@@ -334,9 +326,7 @@ class Alter(Query):
         self._drop_default.append(DropDefault(column=column))
         return self
 
-    def drop_table(
-        self, cascade: bool = False, if_exists: bool = False
-    ) -> Alter:
+    def drop_table(self, cascade: bool = False, if_exists: bool = False) -> Alter:
         """
         Band.alter().drop_table()
         """
@@ -355,9 +345,7 @@ class Alter(Query):
         self._rename_table = [RenameTable(new_name=new_name)]
         return self
 
-    def rename_column(
-        self, column: t.Union[str, Column], new_name: str
-    ) -> Alter:
+    def rename_column(self, column: t.Union[str, Column], new_name: str) -> Alter:
         """
         Band.alter().rename_column(Band.popularity, ‘rating’)
         Band.alter().rename_column('popularity', ‘rating’)
@@ -392,9 +380,7 @@ class Alter(Query):
         self._set_default.append(SetDefault(column=column, value=value))
         return self
 
-    def set_null(
-        self, column: t.Union[str, Column], boolean: bool = True
-    ) -> Alter:
+    def set_null(self, column: t.Union[str, Column], boolean: bool = True) -> Alter:
         """
         Band.alter().set_null(Band.name, True)
         Band.alter().set_null('name', True)
@@ -402,9 +388,7 @@ class Alter(Query):
         self._set_null.append(SetNull(column, boolean))
         return self
 
-    def set_unique(
-        self, column: t.Union[str, Column], boolean: bool = True
-    ) -> Alter:
+    def set_unique(self, column: t.Union[str, Column], boolean: bool = True) -> Alter:
         """
         Band.alter().set_unique(Band.name, True)
         Band.alter().set_unique('name', True)
@@ -432,9 +416,7 @@ class Alter(Query):
             return self
 
         if not isinstance(column, (str, Varchar)):
-            raise ValueError(
-                "Only Varchar columns can have their length changed."
-            )
+            raise ValueError("Only Varchar columns can have their length changed.")
 
         self._set_length.append(SetLength(column, length))
         return self
@@ -446,14 +428,10 @@ class Alter(Query):
         return constraint_name
 
     def drop_constraint(self, constraint_name: str) -> Alter:
-        self._drop_contraint.append(
-            DropConstraint(constraint_name=constraint_name)
-        )
+        self._drop_contraint.append(DropConstraint(constraint_name=constraint_name))
         return self
 
-    def drop_foreign_key_constraint(
-        self, column: t.Union[str, ForeignKey]
-    ) -> Alter:
+    def drop_foreign_key_constraint(self, column: t.Union[str, ForeignKey]) -> Alter:
         constraint_name = self._get_constraint_name(column=column)
         return self.drop_constraint(constraint_name=constraint_name)
 
@@ -503,7 +481,11 @@ class Alter(Query):
             else "NUMERIC"
         )
         self._set_digits.append(
-            SetDigits(digits=digits, column=column, column_type=column_type,)
+            SetDigits(
+                digits=digits,
+                column=column,
+                column_type=column_type,
+            )
         )
         return self
 

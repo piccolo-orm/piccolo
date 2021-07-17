@@ -139,14 +139,10 @@ class TestMigrationManager(DBTestCase):
         )
         asyncio.run(manager.run())
 
-        self.run_sync(
-            "INSERT INTO manager VALUES (default, 'Dave', 'dave@me.com');"
-        )
+        self.run_sync("INSERT INTO manager VALUES (default, 'Dave', 'dave@me.com');")
 
         response = self.run_sync("SELECT * FROM manager;")
-        self.assertEqual(
-            response, [{"id": 1, "name": "Dave", "email": "dave@me.com"}]
-        )
+        self.assertEqual(response, [{"id": 1, "name": "Dave", "email": "dave@me.com"}])
 
         # Reverse
         asyncio.run(manager.run_backwards())
@@ -227,7 +223,8 @@ class TestMigrationManager(DBTestCase):
         asyncio.run(manager.run_backwards())
         response = self.run_sync("SELECT * FROM manager;")
         self.assertEqual(
-            response, [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Dave"}],
+            response,
+            [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Dave"}],
         )
 
     @postgres_only
@@ -343,8 +340,7 @@ class TestMigrationManager(DBTestCase):
 
         with self.assertRaises(UniqueViolationError):
             self.run_sync(
-                "INSERT INTO manager VALUES "
-                "(default, 'Dave'), (default, 'Dave');"
+                "INSERT INTO manager VALUES " "(default, 'Dave'), (default, 'Dave');"
             )
 
         # Reverse
@@ -372,22 +368,16 @@ class TestMigrationManager(DBTestCase):
 
         asyncio.run(manager.run())
         self.assertTrue(
-            self.get_postgres_is_nullable(
-                tablename="manager", column_name="name"
-            )
+            self.get_postgres_is_nullable(tablename="manager", column_name="name")
         )
 
         # Reverse
         asyncio.run(manager.run_backwards())
         self.assertFalse(
-            self.get_postgres_is_nullable(
-                tablename="manager", column_name="name"
-            )
+            self.get_postgres_is_nullable(tablename="manager", column_name="name")
         )
 
-    def _get_column_precision_and_scale(
-        self, tablename="ticket", column_name="price"
-    ):
+    def _get_column_precision_and_scale(self, tablename="ticket", column_name="price"):
         return self.run_sync(
             "SELECT numeric_precision, numeric_scale "
             "FROM information_schema.COLUMNS "
@@ -488,7 +478,8 @@ class TestMigrationManager(DBTestCase):
         )
         asyncio.run(manager_2.run())
         self.assertEqual(
-            self._get_column_default(), [{"column_default": None}],
+            self._get_column_default(),
+            [{"column_default": None}],
         )
 
         # And add it back once more to be sure.
@@ -502,7 +493,8 @@ class TestMigrationManager(DBTestCase):
         # Run them all backwards
         asyncio.run(manager_3.run_backwards())
         self.assertEqual(
-            self._get_column_default(), [{"column_default": None}],
+            self._get_column_default(),
+            [{"column_default": None}],
         )
 
         asyncio.run(manager_2.run_backwards())
@@ -513,7 +505,8 @@ class TestMigrationManager(DBTestCase):
 
         asyncio.run(manager_1.run_backwards())
         self.assertEqual(
-            self._get_column_default(), [{"column_default": None}],
+            self._get_column_default(),
+            [{"column_default": None}],
         )
 
     @postgres_only
@@ -538,8 +531,7 @@ class TestMigrationManager(DBTestCase):
 
         asyncio.run(manager.run_backwards())
         self.assertTrue(
-            Manager._get_index_name(["name"])
-            not in Manager.indexes().run_sync()
+            Manager._get_index_name(["name"]) not in Manager.indexes().run_sync()
         )
 
     @postgres_only
@@ -590,17 +582,13 @@ class TestMigrationManager(DBTestCase):
 
         asyncio.run(manager.run())
         self.assertEqual(
-            self.get_postgres_varchar_length(
-                tablename="manager", column_name="name"
-            ),
+            self.get_postgres_varchar_length(tablename="manager", column_name="name"),
             500,
         )
 
         asyncio.run(manager.run_backwards())
         self.assertEqual(
-            self.get_postgres_varchar_length(
-                tablename="manager", column_name="name"
-            ),
+            self.get_postgres_varchar_length(tablename="manager", column_name="name"),
             200,
         )
 

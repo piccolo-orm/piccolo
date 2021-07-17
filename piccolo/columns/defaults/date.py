@@ -22,9 +22,7 @@ class DateOffset(Default):
         return f"(datetime(CURRENT_TIMESTAMP, {interval_string}))"
 
     def python(self):
-        return (
-            datetime.datetime.now() + datetime.timedelta(days=self.days)
-        ).date
+        return (datetime.datetime.now() + datetime.timedelta(days=self.days)).date
 
 
 class DateNow(Default):
@@ -42,7 +40,10 @@ class DateNow(Default):
 
 class DateCustom(Default):
     def __init__(
-        self, year: int, month: int, day: int,
+        self,
+        year: int,
+        month: int,
+        day: int,
     ):
         self.day = day
         self.month = month
@@ -62,9 +63,7 @@ class DateCustom(Default):
 
     @classmethod
     def from_date(cls, instance: datetime.date):
-        return cls(
-            year=instance.year, month=instance.month, day=instance.month
-        )
+        return cls(year=instance.year, month=instance.month, day=instance.month)
 
 
 # Might add an enum back which encapsulates all of the options.

@@ -9,9 +9,7 @@ def repr_class_instance(class_instance: object) -> str:
     """
     init_arg_names = [
         i
-        for i in inspect.signature(
-            class_instance.__class__.__init__
-        ).parameters.keys()
+        for i in inspect.signature(class_instance.__class__.__init__).parameters.keys()
         if i not in ("self", "args", "kwargs")
     ]
     args_dict = {}

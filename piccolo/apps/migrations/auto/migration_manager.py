@@ -5,8 +5,12 @@ import typing as t
 from dataclasses import dataclass, field
 
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
-from piccolo.apps.migrations.auto.operations import (AlterColumn, DropColumn,
-                                                     RenameColumn, RenameTable)
+from piccolo.apps.migrations.auto.operations import (
+    AlterColumn,
+    DropColumn,
+    RenameColumn,
+    RenameTable,
+)
 from piccolo.apps.migrations.auto.serialisation import deserialise_params
 from piccolo.columns import Column, column_types
 from piccolo.engine import engine_finder
@@ -27,22 +31,12 @@ class AddColumnCollection:
     def append(self, add_column: AddColumnClass):
         self.add_columns.append(add_column)
 
-    def for_table_class_name(
-        self, table_class_name: str
-    ) -> t.List[AddColumnClass]:
-        return [
-            i
-            for i in self.add_columns
-            if i.table_class_name == table_class_name
-        ]
+    def for_table_class_name(self, table_class_name: str) -> t.List[AddColumnClass]:
+        return [i for i in self.add_columns if i.table_class_name == table_class_name]
 
-    def columns_for_table_class_name(
-        self, table_class_name: str
-    ) -> t.List[Column]:
+    def columns_for_table_class_name(self, table_class_name: str) -> t.List[Column]:
         return [
-            i.column
-            for i in self.add_columns
-            if i.table_class_name == table_class_name
+            i.column for i in self.add_columns if i.table_class_name == table_class_name
         ]
 
     @property
@@ -57,14 +51,8 @@ class DropColumnCollection:
     def append(self, drop_column: DropColumn):
         self.drop_columns.append(drop_column)
 
-    def for_table_class_name(
-        self, table_class_name: str
-    ) -> t.List[DropColumn]:
-        return [
-            i
-            for i in self.drop_columns
-            if i.table_class_name == table_class_name
-        ]
+    def for_table_class_name(self, table_class_name: str) -> t.List[DropColumn]:
+        return [i for i in self.drop_columns if i.table_class_name == table_class_name]
 
     @property
     def table_class_names(self) -> t.List[str]:
@@ -78,13 +66,9 @@ class RenameColumnCollection:
     def append(self, rename_column: RenameColumn):
         self.rename_columns.append(rename_column)
 
-    def for_table_class_name(
-        self, table_class_name: str
-    ) -> t.List[RenameColumn]:
+    def for_table_class_name(self, table_class_name: str) -> t.List[RenameColumn]:
         return [
-            i
-            for i in self.rename_columns
-            if i.table_class_name == table_class_name
+            i for i in self.rename_columns if i.table_class_name == table_class_name
         ]
 
     @property
@@ -99,14 +83,8 @@ class AlterColumnCollection:
     def append(self, alter_column: AlterColumn):
         self.alter_columns.append(alter_column)
 
-    def for_table_class_name(
-        self, table_class_name: str
-    ) -> t.List[AlterColumn]:
-        return [
-            i
-            for i in self.alter_columns
-            if i.table_class_name == table_class_name
-        ]
+    def for_table_class_name(self, table_class_name: str) -> t.List[AlterColumn]:
+        return [i for i in self.alter_columns if i.table_class_name == table_class_name]
 
     @property
     def table_class_names(self) -> t.List[str]:
@@ -125,18 +103,12 @@ class MigrationManager:
     add_tables: t.List[DiffableTable] = field(default_factory=list)
     drop_tables: t.List[DiffableTable] = field(default_factory=list)
     rename_tables: t.List[RenameTable] = field(default_factory=list)
-    add_columns: AddColumnCollection = field(
-        default_factory=AddColumnCollection
-    )
-    drop_columns: DropColumnCollection = field(
-        default_factory=DropColumnCollection
-    )
+    add_columns: AddColumnCollection = field(default_factory=AddColumnCollection)
+    drop_columns: DropColumnCollection = field(default_factory=DropColumnCollection)
     rename_columns: RenameColumnCollection = field(
         default_factory=RenameColumnCollection
     )
-    alter_columns: AlterColumnCollection = field(
-        default_factory=AlterColumnCollection
-    )
+    alter_columns: AlterColumnCollection = field(default_factory=AlterColumnCollection)
     raw: t.List[t.Union[t.Callable, t.Coroutine]] = field(default_factory=list)
     raw_backwards: t.List[t.Union[t.Callable, t.Coroutine]] = field(
         default_factory=list
@@ -152,9 +124,7 @@ class MigrationManager:
             columns = []
 
         self.add_tables.append(
-            DiffableTable(
-                class_name=class_name, tablename=tablename, columns=columns
-            )
+            DiffableTable(class_name=class_name, tablename=tablename, columns=columns)
         )
 
     def drop_table(self, class_name: str, tablename: str):
@@ -215,9 +185,7 @@ class MigrationManager:
             )
         )
 
-    def drop_column(
-        self, table_class_name: str, tablename: str, column_name: str
-    ):
+    def drop_column(self, table_class_name: str, tablename: str, column_name: str):
         self.drop_columns.append(
             DropColumn(
                 table_class_name=table_class_name,
@@ -319,9 +287,7 @@ class MigrationManager:
 
     async def _run_alter_columns(self, backwards=False):
         for table_class_name in self.alter_columns.table_class_names:
-            alter_columns = self.alter_columns.for_table_class_name(
-                table_class_name
-            )
+            alter_columns = self.alter_columns.for_table_class_name(table_class_name)
 
             if not alter_columns:
                 continue
@@ -333,16 +299,10 @@ class MigrationManager:
 
             for alter_column in alter_columns:
 
-                params = (
-                    alter_column.old_params
-                    if backwards
-                    else alter_column.params
-                )
+                params = alter_column.old_params if backwards else alter_column.params
 
                 old_params = (
-                    alter_column.params
-                    if backwards
-                    else alter_column.old_params
+                    alter_column.params if backwards else alter_column.old_params
                 )
 
                 ###############################################################
@@ -359,9 +319,7 @@ class MigrationManager:
                     else alter_column.old_column_class
                 )
 
-                if (old_column_class is not None) and (
-                    column_class is not None
-                ):
+                if (old_column_class is not None) and (column_class is not None):
                     if old_column_class != column_class:
                         old_column = old_column_class(**old_params)
                         old_column._meta._table = _Table
@@ -398,9 +356,7 @@ class MigrationManager:
                     column = Column()
                     column._meta._table = _Table
                     column._meta._name = column_name
-                    await _Table.alter().set_unique(
-                        column=column, boolean=unique
-                    ).run()
+                    await _Table.alter().set_unique(column=column, boolean=unique).run()
 
                 index = params.get("index")
                 index_method = params.get("index_method")
@@ -423,9 +379,7 @@ class MigrationManager:
                     column._meta._table = _Table
                     column._meta._name = column_name
                     if index is True:
-                        kwargs = (
-                            {"method": index_method} if index_method else {}
-                        )
+                        kwargs = {"method": index_method} if index_method else {}
                         await _Table.create_index(
                             [column], if_not_exists=True, **kwargs
                         ).run()
@@ -450,7 +404,8 @@ class MigrationManager:
                 digits = params.get("digits", ...)
                 if digits is not ...:
                     await _Table.alter().set_digits(
-                        column=alter_column.column_name, digits=digits,
+                        column=alter_column.column_name,
+                        digits=digits,
                     ).run()
 
     async def _run_drop_tables(self, backwards=False):
@@ -464,9 +419,7 @@ class MigrationManager:
                 await _Table.create_table().run()
         else:
             for diffable_table in self.drop_tables:
-                await (
-                    diffable_table.to_table_class().alter().drop_table().run()
-                )
+                await (diffable_table.to_table_class().alter().drop_table().run())
 
     async def _run_drop_columns(self, backwards=False):
         if backwards:
@@ -484,9 +437,7 @@ class MigrationManager:
                 ).run()
         else:
             for table_class_name in self.drop_columns.table_class_names:
-                columns = self.drop_columns.for_table_class_name(
-                    table_class_name
-                )
+                columns = self.drop_columns.for_table_class_name(table_class_name)
 
                 if not columns:
                     continue
@@ -497,9 +448,7 @@ class MigrationManager:
                 )
 
                 for column in columns:
-                    await _Table.alter().drop_column(
-                        column=column.column_name
-                    ).run()
+                    await _Table.alter().drop_column(column=column.column_name).run()
 
     async def _run_rename_tables(self, backwards=False):
         for rename_table in self.rename_tables:
@@ -509,14 +458,10 @@ class MigrationManager:
                 else rename_table.old_class_name
             )
             tablename = (
-                rename_table.new_tablename
-                if backwards
-                else rename_table.old_tablename
+                rename_table.new_tablename if backwards else rename_table.old_tablename
             )
             new_tablename = (
-                rename_table.old_tablename
-                if backwards
-                else rename_table.new_tablename
+                rename_table.old_tablename if backwards else rename_table.new_tablename
             )
 
             _Table: t.Type[Table] = create_table_class(
@@ -527,9 +472,7 @@ class MigrationManager:
 
     async def _run_rename_columns(self, backwards=False):
         for table_class_name in self.rename_columns.table_class_names:
-            columns = self.rename_columns.for_table_class_name(
-                table_class_name
-            )
+            columns = self.rename_columns.for_table_class_name(table_class_name)
 
             if not columns:
                 continue
@@ -552,23 +495,21 @@ class MigrationManager:
                 )
 
                 await _Table.alter().rename_column(
-                    column=column, new_name=new_name,
+                    column=column,
+                    new_name=new_name,
                 ).run()
 
     async def _run_add_tables(self, backwards=False):
         if backwards:
             for add_table in self.add_tables:
-                await add_table.to_table_class().alter().drop_table(
-                    cascade=True
-                ).run()
+                await add_table.to_table_class().alter().drop_table(cascade=True).run()
         else:
             for add_table in self.add_tables:
                 _Table: t.Type[Table] = create_table_class(
                     class_name=add_table.class_name,
                     class_kwargs={"tablename": add_table.tablename},
                     class_members={
-                        column._meta.name: column
-                        for column in add_table.columns
+                        column._meta.name: column for column in add_table.columns
                     },
                 )
 

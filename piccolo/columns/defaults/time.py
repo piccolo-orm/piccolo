@@ -69,9 +69,7 @@ class TimeCustom(Default):
 
     @classmethod
     def from_time(cls, instance: datetime.time):
-        return cls(
-            hour=instance.hour, minute=instance.minute, second=instance.second
-        )
+        return cls(hour=instance.hour, minute=instance.minute, second=instance.second)
 
 
 TimeArg = t.Union[TimeCustom, TimeNow, TimeOffset, Enum, None, datetime.time]

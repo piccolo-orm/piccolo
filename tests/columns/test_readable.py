@@ -11,9 +11,7 @@ class MyTable(Table):
 
     @classmethod
     def get_readable(cls) -> Readable:
-        return Readable(
-            template="%s %s", columns=[cls.first_name, cls.last_name]
-        )
+        return Readable(template="%s %s", columns=[cls.first_name, cls.last_name])
 
 
 class TestReadable(unittest.TestCase):

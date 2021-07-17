@@ -12,8 +12,12 @@ import black  # type: ignore
 import jinja2
 
 from piccolo import __VERSION__
-from piccolo.apps.migrations.auto import (AlterStatements, DiffableTable,
-                                          SchemaDiffer, SchemaSnapshot)
+from piccolo.apps.migrations.auto import (
+    AlterStatements,
+    DiffableTable,
+    SchemaDiffer,
+    SchemaSnapshot,
+)
 from piccolo.conf.apps import AppConfig, Finder
 from piccolo.engine import SQLiteEngine
 
@@ -84,9 +88,7 @@ class NoChanges(Exception):
     pass
 
 
-async def _create_new_migration(
-    app_config: AppConfig, auto=False
-) -> NewMigrationMeta:
+async def _create_new_migration(app_config: AppConfig, auto=False) -> NewMigrationMeta:
     """
     Creates a new migration file on disk.
     """
@@ -97,9 +99,7 @@ async def _create_new_migration(
             app_config=app_config
         )
 
-        _alter_statements = list(
-            chain(*[i.statements for i in alter_statements])
-        )
+        _alter_statements = list(chain(*[i.statements for i in alter_statements]))
         extra_imports = sorted(
             list(set(chain(*[i.extra_imports for i in alter_statements]))),
             key=lambda x: x.__repr__(),
@@ -120,14 +120,10 @@ async def _create_new_migration(
             app_name=app_config.app_name,
         )
     else:
-        file_contents = render_template(
-            migration_id=meta.migration_id, auto=False
-        )
+        file_contents = render_template(migration_id=meta.migration_id, auto=False)
 
     # Beautify the file contents a bit.
-    file_contents = black.format_str(
-        file_contents, mode=black.FileMode(line_length=82)
-    )
+    file_contents = black.format_str(file_contents, mode=black.FileMode(line_length=82))
 
     with open(meta.migration_path, "w") as f:
         f.write(file_contents)
@@ -145,9 +141,7 @@ class AutoMigrationManager(BaseMigrationManager):
         """
         Works out which alter statements are required.
         """
-        migration_managers = await self.get_migration_managers(
-            app_config=app_config
-        )
+        migration_managers = await self.get_migration_managers(app_config=app_config)
 
         schema_snapshot = SchemaSnapshot(migration_managers)
         snapshot = schema_snapshot.get_snapshot()
@@ -163,9 +157,7 @@ class AutoMigrationManager(BaseMigrationManager):
         ]
 
         # Compare the current schema with the snapshot
-        differ = SchemaDiffer(
-            schema=current_diffable_tables, schema_snapshot=snapshot
-        )
+        differ = SchemaDiffer(schema=current_diffable_tables, schema_snapshot=snapshot)
         alter_statements = differ.get_alter_statements()
 
         return alter_statements

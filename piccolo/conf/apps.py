@@ -119,9 +119,7 @@ class AppConfig:
     migrations_folder_path: str
     table_classes: t.List[t.Type[Table]] = field(default_factory=list)
     migration_dependencies: t.List[str] = field(default_factory=list)
-    commands: t.List[t.Union[t.Callable, Command]] = field(
-        default_factory=list
-    )
+    commands: t.List[t.Union[t.Callable, Command]] = field(default_factory=list)
 
     def __post_init__(self):
         self.commands = [
@@ -155,9 +153,7 @@ class AppConfig:
             if table_class.__name__ == table_class_name
         ]
         if len(filtered) == 0:
-            raise ValueError(
-                f"No table with class name {table_class_name} exists."
-            )
+            raise ValueError(f"No table with class name {table_class_name} exists.")
         return filtered[0]
 
 
@@ -230,9 +226,7 @@ class AppRegistry:
         if app_config is None:
             raise ValueError(f"Can't find an app_config for {app_name}")
         else:
-            return app_config.get_table_with_name(
-                table_class_name=table_class_name
-            )
+            return app_config.get_table_with_name(table_class_name=table_class_name)
 
 
 class PiccoloConfModule(ModuleType):
@@ -338,9 +332,7 @@ class Finder:
         app_registry = getattr(piccolo_conf_module, "APP_REGISTRY")
         return app_registry
 
-    def get_engine(
-        self, module_name: t.Optional[str] = None
-    ) -> t.Optional[Engine]:
+    def get_engine(self, module_name: t.Optional[str] = None) -> t.Optional[Engine]:
         piccolo_conf = self.get_piccolo_conf_module(module_name=module_name)
         engine: t.Optional[Engine] = None
         engine = getattr(piccolo_conf, ENGINE_VAR, None)
@@ -381,13 +373,9 @@ class Finder:
         configs: t.List[AppConfig] = [module.APP_CONFIG for module in modules]
 
         def sort_app_configs(app_config_1: AppConfig, app_config_2: AppConfig):
-            return (
-                app_config_1 in app_config_2.migration_dependency_app_configs
-            )
+            return app_config_1 in app_config_2.migration_dependency_app_configs
 
-        sorted_configs = sorted(
-            configs, key=functools.cmp_to_key(sort_app_configs)
-        )
+        sorted_configs = sorted(configs, key=functools.cmp_to_key(sort_app_configs))
         return [i.app_name for i in sorted_configs]
 
     def get_app_config(self, app_name: str) -> AppConfig:
@@ -409,6 +397,4 @@ class Finder:
         Otherwise it raises an ValueError.
         """
         app_config = self.get_app_config(app_name=app_name)
-        return app_config.get_table_with_name(
-            table_class_name=table_class_name
-        )
+        return app_config.get_table_with_name(table_class_name=table_class_name)

@@ -59,9 +59,7 @@ class TestMetaClass(TestCase):
         class Classified(Table):
             top_secret = Secret()
 
-        self.assertEqual(
-            Classified._meta.secret_columns, [Classified.top_secret]
-        )
+        self.assertEqual(Classified._meta.secret_columns, [Classified.top_secret])
 
     def test_json_columns(self):
         """

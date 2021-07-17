@@ -39,11 +39,7 @@ class TestJSONB(TestCase):
         Test using the arrow function to retrieve a subset of the JSON.
         """
         MyTable(json='{"a": 1}').save().run_sync()
-        row = (
-            MyTable.select(MyTable.json.arrow("a").as_alias("a"))
-            .first()
-            .run_sync()
-        )
+        row = MyTable.select(MyTable.json.arrow("a").as_alias("a")).first().run_sync()
         self.assertEqual(row["a"], "1")
 
     def test_arrow_where(self):
@@ -64,12 +60,11 @@ class TestJSONB(TestCase):
         Make sure the arrow function can be used with the first clause.
         """
         MyTable.insert(
-            MyTable(json='{"a": 1}'), MyTable(json='{"b": 2}'),
+            MyTable(json='{"a": 1}'),
+            MyTable(json='{"b": 2}'),
         ).run_sync()
 
         self.assertEqual(
-            MyTable.select(MyTable.json.arrow("a").as_alias("json"))
-            .first()
-            .run_sync(),
+            MyTable.select(MyTable.json.arrow("a").as_alias("json")).first().run_sync(),
             {"json": "1"},
         )

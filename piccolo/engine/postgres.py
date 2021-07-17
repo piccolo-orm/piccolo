@@ -273,9 +273,7 @@ class PostgresEngine(Engine):
             return 0.0
         else:
             version_string = response[0]["server_version"]
-            return self._parse_raw_version_string(
-                version_string=version_string
-            )
+            return self._parse_raw_version_string(version_string=version_string)
 
     async def prep_database(self):
         for extension in self.extensions:
@@ -347,9 +345,7 @@ class PostgresEngine(Engine):
 
     async def batch(self, query: Query, batch_size: int = 100) -> AsyncBatch:
         connection = await self.get_new_connection()
-        return AsyncBatch(
-            connection=connection, query=query, batch_size=batch_size
-        )
+        return AsyncBatch(connection=connection, query=query, batch_size=batch_size)
 
     ###########################################################################
 
@@ -362,20 +358,14 @@ class PostgresEngine(Engine):
 
         return response
 
-    async def _run_in_new_connection(
-        self, query: str, args: t.Sequence[t.Any] = []
-    ):
+    async def _run_in_new_connection(self, query: str, args: t.Sequence[t.Any] = []):
         connection = await self.get_new_connection()
         results = await connection.fetch(query, *args)
         await connection.close()
         return results
 
-    async def run_querystring(
-        self, querystring: QueryString, in_pool: bool = True
-    ):
-        query, query_args = querystring.compile_string(
-            engine_type=self.engine_type
-        )
+    async def run_querystring(self, querystring: QueryString, in_pool: bool = True):
+        query, query_args = querystring.compile_string(engine_type=self.engine_type)
 
         if self.log_queries:
             print(querystring)

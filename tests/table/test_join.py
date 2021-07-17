@@ -45,9 +45,7 @@ class TestJoin(TestCase):
         venue = Venue(name="Grand Central")
         venue.save().run_sync()
 
-        save_query = Concert(
-            band_1=band_1.id, band_2=band_2.id, venue=venue.id
-        ).save()
+        save_query = Concert(band_1=band_1.id, band_2=band_2.id, venue=venue.id).save()
         save_query.run_sync()
 
         select_query = Concert.select(

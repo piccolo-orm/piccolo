@@ -4,11 +4,7 @@ from ..example_app.tables import Band, Poster
 
 class TestUpdate(DBTestCase):
     def check_response(self):
-        response = (
-            Band.select(Band.name)
-            .where(Band.name == "Pythonistas3")
-            .run_sync()
-        )
+        response = Band.select(Band.name).where(Band.name == "Pythonistas3").run_sync()
 
         self.assertEqual(response, [{"name": "Pythonistas3"}])
 
@@ -44,9 +40,7 @@ class TestUpdate(DBTestCase):
         """
         self.insert_rows()
 
-        Band.update(name="Pythonistas3").where(
-            Band.name == "Pythonistas"
-        ).run_sync()
+        Band.update(name="Pythonistas3").where(Band.name == "Pythonistas").run_sync()
 
         self.check_response()
 
@@ -102,9 +96,7 @@ class TestIntUpdateOperators(DBTestCase):
     def test_add_column(self):
         self.insert_row()
 
-        Band.update(
-            {Band.popularity: Band.popularity + Band.popularity}
-        ).run_sync()
+        Band.update({Band.popularity: Band.popularity + Band.popularity}).run_sync()
 
         response = Band.select(Band.popularity).first().run_sync()
 
@@ -213,21 +205,18 @@ class TestTextUpdateOperators(DBTestCase):
 
         response = Poster.select(Poster.content).first().run_sync()
 
-        self.assertEqual(
-            response["content"], "Join us for this amazing show!!!"
-        )
+        self.assertEqual(response["content"], "Join us for this amazing show!!!")
 
     def test_add_column(self):
         self.insert_row()
 
-        Poster.update(
-            {Poster.content: Poster.content + Poster.content}
-        ).run_sync()
+        Poster.update({Poster.content: Poster.content + Poster.content}).run_sync()
 
         response = Poster.select(Poster.content).first().run_sync()
 
         self.assertEqual(
-            response["content"], "Join us for this amazing show" * 2,
+            response["content"],
+            "Join us for this amazing show" * 2,
         )
 
     def test_radd(self):
@@ -237,6 +226,4 @@ class TestTextUpdateOperators(DBTestCase):
 
         response = Poster.select(Poster.content).first().run_sync()
 
-        self.assertEqual(
-            response["content"], "!!!Join us for this amazing show"
-        )
+        self.assertEqual(response["content"], "!!!Join us for this amazing show")

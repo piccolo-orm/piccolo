@@ -118,9 +118,7 @@ class TestSchemaSnaphot(TestCase):
             new_column_name="label",
         )
 
-        schema_snapshot = SchemaSnapshot(
-            managers=[manager_1, manager_2, manager_3]
-        )
+        schema_snapshot = SchemaSnapshot(managers=[manager_1, manager_2, manager_3])
         snapshot = schema_snapshot.get_snapshot()
         self.assertTrue(snapshot[0].columns[0]._meta.name == "label")
 

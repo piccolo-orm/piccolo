@@ -12,11 +12,16 @@ from piccolo.columns.combination import Where
 from piccolo.columns.defaults.date import DateArg, DateCustom, DateNow
 from piccolo.columns.defaults.interval import IntervalArg, IntervalCustom
 from piccolo.columns.defaults.time import TimeArg, TimeCustom, TimeNow
-from piccolo.columns.defaults.timestamp import (TimestampArg, TimestampCustom,
-                                                TimestampNow)
-from piccolo.columns.defaults.timestamptz import (TimestamptzArg,
-                                                  TimestamptzCustom,
-                                                  TimestamptzNow)
+from piccolo.columns.defaults.timestamp import (
+    TimestampArg,
+    TimestampCustom,
+    TimestampNow,
+)
+from piccolo.columns.defaults.timestamptz import (
+    TimestamptzArg,
+    TimestamptzCustom,
+    TimestamptzNow,
+)
 from piccolo.columns.defaults.uuid import UUID4, UUIDArg
 from piccolo.columns.operators.comparison import ArrayAll, ArrayAny
 from piccolo.columns.operators.string import ConcatPostgres, ConcatSQLite
@@ -118,8 +123,7 @@ class MathDelegate:
                 return QueryString(f"{column_name} {operator} {{}}", value)
         else:
             raise ValueError(
-                "Only integers, floats, and other Integer columns can be "
-                "added."
+                "Only integers, floats, and other Integer columns can be " "added."
             )
 
 
@@ -176,7 +180,9 @@ class Varchar(Column):
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         engine_type = self._meta.table._meta.db.engine_type
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.name, value=value, engine_type=engine_type,
+            column_name=self._meta.name,
+            value=value,
+            engine_type=engine_type,
         )
 
     def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
@@ -306,9 +312,7 @@ class UUID(Column):
             try:
                 default = uuid.UUID(default)
             except ValueError:
-                raise ValueError(
-                    "The default is a string, but not a valid uuid."
-                )
+                raise ValueError("The default is a string, but not a valid uuid.")
 
         self.default = default
         kwargs.update({"default": default})
@@ -404,9 +408,7 @@ class Integer(Column):
             column_name=self._meta.name, operator="/", value=value
         )
 
-    def __rfloordiv__(
-        self, value: t.Union[int, float, Integer]
-    ) -> QueryString:
+    def __rfloordiv__(self, value: t.Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
             column_name=self._meta.name,
             operator="/",
@@ -553,9 +555,7 @@ class Timestamp(Column):
 
     value_type = datetime
 
-    def __init__(
-        self, default: TimestampArg = TimestampNow(), **kwargs
-    ) -> None:
+    def __init__(self, default: TimestampArg = TimestampNow(), **kwargs) -> None:
         self._validate_default(default, TimestampArg.__args__)  # type: ignore
 
         if isinstance(default, datetime):
@@ -608,12 +608,8 @@ class Timestamptz(Column):
 
     value_type = datetime
 
-    def __init__(
-        self, default: TimestamptzArg = TimestamptzNow(), **kwargs
-    ) -> None:
-        self._validate_default(
-            default, TimestamptzArg.__args__  # type: ignore
-        )
+    def __init__(self, default: TimestamptzArg = TimestamptzNow(), **kwargs) -> None:
+        self._validate_default(default, TimestamptzArg.__args__)  # type: ignore
 
         if isinstance(default, datetime):
             default = TimestamptzCustom.from_datetime(default)
@@ -729,9 +725,7 @@ class Interval(Column):  # lgtm [py/missing-equals]
 
     value_type = timedelta
 
-    def __init__(
-        self, default: IntervalArg = IntervalCustom(), **kwargs
-    ) -> None:
+    def __init__(self, default: IntervalArg = IntervalCustom(), **kwargs) -> None:
         self._validate_default(default, IntervalArg.__args__)  # type: ignore
 
         if isinstance(default, timedelta):
@@ -1193,9 +1187,7 @@ class ForeignKey(Integer):
         # unlikely to be column names.
         if not name.startswith("__"):
             try:
-                _foreign_key_meta = object.__getattribute__(
-                    self, "_foreign_key_meta"
-                )
+                _foreign_key_meta = object.__getattribute__(self, "_foreign_key_meta")
             except AttributeError:
                 pass
             else:
@@ -1236,13 +1228,9 @@ class ForeignKey(Integer):
                 except Exception:
                     pass
 
-            for (
-                column
-            ) in value._foreign_key_meta.resolved_references._meta.columns:
+            for column in value._foreign_key_meta.resolved_references._meta.columns:
                 _column: Column = column.copy()
-                _column._meta.call_chain = [
-                    i for i in new_column._meta.call_chain
-                ]
+                _column._meta.call_chain = [i for i in new_column._meta.call_chain]
                 _column._meta.call_chain.append(new_column)
                 setattr(new_column, _column._meta.name, _column)
                 foreign_key_meta.proxy_columns.append(_column)
@@ -1473,9 +1461,7 @@ class Array(Column):
         """
         engine_type = self._meta.table._meta.db.engine_type
         if engine_type != "postgres":
-            raise ValueError(
-                "Only Postgres supports array indexing currently."
-            )
+            raise ValueError("Only Postgres supports array indexing currently.")
 
         if isinstance(value, int):
             if value < 0:

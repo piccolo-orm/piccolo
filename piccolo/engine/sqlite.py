@@ -245,9 +245,7 @@ class Atomic:
             for query in self.queries:
                 for querystring in query.querystrings:
                     await connection.execute(
-                        *querystring.compile_string(
-                            engine_type=self.engine.engine_type
-                        )
+                        *querystring.compile_string(engine_type=self.engine.engine_type)
                     )
         except Exception as exception:
             await connection.execute("ROLLBACK")
@@ -404,9 +402,7 @@ class SQLiteEngine(Engine):
 
     async def batch(self, query: Query, batch_size: int = 100) -> AsyncBatch:
         connection = await self.get_connection()
-        return AsyncBatch(
-            connection=connection, query=query, batch_size=batch_size
-        )
+        return AsyncBatch(connection=connection, query=query, batch_size=batch_size)
 
     ###########################################################################
 
@@ -455,16 +451,12 @@ class SQLiteEngine(Engine):
             else:
                 return response
 
-    async def run_querystring(
-        self, querystring: QueryString, in_pool: bool = False
-    ):
+    async def run_querystring(self, querystring: QueryString, in_pool: bool = False):
         """
         Connection pools aren't currently supported - the argument is there
         for consistency with other engines.
         """
-        query, query_args = querystring.compile_string(
-            engine_type=self.engine_type
-        )
+        query, query_args = querystring.compile_string(engine_type=self.engine_type)
 
         # If running inside a transaction:
         connection = self.transaction_connection.get()
