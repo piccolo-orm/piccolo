@@ -1,7 +1,7 @@
 from enum import Enum
 from unittest import TestCase
 
-from piccolo.columns.column_types import Integer, JSON, JSONB, Varchar
+from piccolo.columns.column_types import JSON, JSONB, Integer, Varchar
 from piccolo.table import Table
 from piccolo.utils.sql_values import convert_to_sql_value
 

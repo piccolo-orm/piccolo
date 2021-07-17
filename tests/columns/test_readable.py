@@ -1,8 +1,8 @@
 import unittest
 
 from piccolo import columns
-from piccolo.table import Table
 from piccolo.columns.readable import Readable
+from piccolo.table import Table
 
 
 class MyTable(Table):

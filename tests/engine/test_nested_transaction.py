@@ -6,9 +6,8 @@ from piccolo.engine.exceptions import TransactionError
 from piccolo.engine.sqlite import SQLiteEngine
 from piccolo.table import Table
 
-from ..base import sqlite_only, DBTestCase
+from ..base import DBTestCase, sqlite_only
 from ..example_app.tables import Manager
-
 
 ENGINE_1 = SQLiteEngine(path="engine1.sqlite")
 ENGINE_2 = SQLiteEngine(path="engine2.sqlite")

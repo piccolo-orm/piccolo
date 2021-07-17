@@ -1,5 +1,5 @@
 from unittest import TestCase
-from unittest.mock import call, patch, MagicMock
+from unittest.mock import MagicMock, call, patch
 
 from piccolo.apps.shell.commands.run import run
 

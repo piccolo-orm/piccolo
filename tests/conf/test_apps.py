@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from piccolo.apps.user.tables import BaseUser
-from piccolo.conf.apps import AppRegistry, AppConfig, table_finder
+from piccolo.conf.apps import AppConfig, AppRegistry, table_finder
 
 from ..example_app.tables import Manager
 

@@ -1,9 +1,9 @@
 import datetime
 from unittest import TestCase
 
-from piccolo.table import Table
 from piccolo.columns.column_types import Interval
 from piccolo.columns.defaults.interval import IntervalCustom
+from piccolo.table import Table
 
 
 class MyTable(Table):

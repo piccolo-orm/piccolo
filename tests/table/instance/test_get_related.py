@@ -1,7 +1,6 @@
 from unittest import TestCase
 
-from tests.example_app.tables import Manager, Band
-
+from tests.example_app.tables import Band, Manager
 
 TABLES = [Manager, Band]
 

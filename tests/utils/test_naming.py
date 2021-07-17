@@ -1,5 +1,6 @@
-from piccolo.utils.naming import _camel_to_snake
 from unittest import TestCase
+
+from piccolo.utils.naming import _camel_to_snake
 
 
 class TestCamelToSnake(TestCase):

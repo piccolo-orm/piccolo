@@ -1,18 +1,9 @@
 from unittest import TestCase
 
-from piccolo.query.methods import (
-    Alter,
-    Count,
-    Create,
-    Delete,
-    Exists,
-    Insert,
-    Objects,
-    Raw,
-    Select,
-    TableExists,
-    Update,
-)
+from piccolo.query.methods import (Alter, Count, Create, Delete, Exists,
+                                   Insert, Objects, Raw, Select, TableExists,
+                                   Update)
+
 from ..example_app.tables import Manager
 
 

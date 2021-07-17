@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 import datetime
-from enum import Enum
 import typing as t
+from enum import Enum
 
 from .base import Default
 

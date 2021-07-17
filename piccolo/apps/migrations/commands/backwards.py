@@ -1,12 +1,11 @@
 from __future__ import annotations
+
 import os
 import sys
 
 from piccolo.apps.migrations.auto import MigrationManager
-from piccolo.apps.migrations.commands.base import (
-    BaseMigrationManager,
-    MigrationResult,
-)
+from piccolo.apps.migrations.commands.base import (BaseMigrationManager,
+                                                   MigrationResult)
 from piccolo.apps.migrations.tables import Migration
 
 

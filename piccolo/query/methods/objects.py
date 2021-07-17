@@ -1,18 +1,16 @@
 from __future__ import annotations
-from dataclasses import dataclass
+
 import typing as t
+from dataclasses import dataclass
 
 from piccolo.custom_types import Combinable
 from piccolo.engine.base import Batch
 from piccolo.query.base import Query
-from piccolo.query.mixins import (
-    LimitDelegate,
-    OffsetDelegate,
-    OrderByDelegate,
-    WhereDelegate,
-    OutputDelegate,
-)
+from piccolo.query.mixins import (LimitDelegate, OffsetDelegate,
+                                  OrderByDelegate, OutputDelegate,
+                                  WhereDelegate)
 from piccolo.querystring import QueryString
+
 from .select import Select
 
 if t.TYPE_CHECKING:  # pragma: no cover

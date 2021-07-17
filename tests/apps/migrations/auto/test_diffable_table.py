@@ -1,9 +1,7 @@
 from unittest import TestCase
 
-from piccolo.apps.migrations.auto.diffable_table import (
-    compare_dicts,
-    DiffableTable,
-)
+from piccolo.apps.migrations.auto.diffable_table import (DiffableTable,
+                                                         compare_dicts)
 from piccolo.columns import Varchar
 
 

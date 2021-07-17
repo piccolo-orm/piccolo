@@ -1,19 +1,16 @@
 from __future__ import annotations
-from dataclasses import dataclass
+
 import importlib
 import os
 import sys
 import typing as t
+from dataclasses import dataclass
 
-from piccolo.conf.apps import (
-    AppConfig,
-    MigrationModule,
-    Finder,
-)
-from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
+from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.apps.migrations.auto.schema_snapshot import SchemaSnapshot
 from piccolo.apps.migrations.tables import Migration
+from piccolo.conf.apps import AppConfig, Finder, MigrationModule
 
 
 @dataclass

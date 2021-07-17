@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from piccolo.apps.migrations.auto import SchemaSnapshot, MigrationManager
+from piccolo.apps.migrations.auto import MigrationManager, SchemaSnapshot
 
 
 class TestSchemaSnaphot(TestCase):

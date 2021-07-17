@@ -1,8 +1,8 @@
 import os
 from unittest import TestCase
 
-from piccolo.table import Table
 from piccolo.columns.column_types import SmallInt
+from piccolo.table import Table
 
 from ..base import postgres_only
 

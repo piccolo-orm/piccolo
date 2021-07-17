@@ -1,8 +1,8 @@
-from unittest import TestCase
 import time
+from unittest import TestCase
 
+from piccolo.columns import Column, ForeignKey, LazyTableReference, Varchar
 from piccolo.table import Table
-from piccolo.columns import Column, ForeignKey, Varchar, LazyTableReference
 
 
 class Manager(Table):

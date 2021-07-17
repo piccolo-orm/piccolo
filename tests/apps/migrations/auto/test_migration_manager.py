@@ -1,17 +1,16 @@
 import asyncio
-from piccolo.conf.apps import AppConfig
-from piccolo.columns.column_types import ForeignKey
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from asyncpg.exceptions import UniqueViolationError  # type: ignore
+
 from piccolo.apps.migrations.auto import MigrationManager
 from piccolo.apps.migrations.commands.base import BaseMigrationManager
-from piccolo.columns import Varchar, Text
+from piccolo.columns import Text, Varchar
 from piccolo.columns.base import OnDelete, OnUpdate
-
+from piccolo.columns.column_types import ForeignKey
+from piccolo.conf.apps import AppConfig
+from tests.base import DBTestCase, postgres_only, set_mock_return_value
 from tests.example_app.tables import Manager
-from tests.base import DBTestCase
-from tests.base import postgres_only, set_mock_return_value
 
 
 class TestMigrationManager(DBTestCase):

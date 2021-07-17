@@ -1,12 +1,10 @@
 from __future__ import annotations
+
 import typing as t
 from unittest import TestCase
 
-from piccolo.columns.column_types import Varchar, Numeric
-from piccolo.apps.migrations.auto import (
-    DiffableTable,
-    SchemaDiffer,
-)
+from piccolo.apps.migrations.auto import DiffableTable, SchemaDiffer
+from piccolo.columns.column_types import Numeric, Varchar
 
 
 class TestSchemaDiffer(TestCase):

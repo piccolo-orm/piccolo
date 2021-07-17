@@ -15,8 +15,7 @@ from piccolo.apps.sql_shell.piccolo_app import APP_CONFIG as sql_shell_config
 from piccolo.apps.user.piccolo_app import APP_CONFIG as user_config
 from piccolo.conf.apps import AppRegistry, Finder
 from piccolo.utils.sync import run_sync
-from piccolo.utils.warnings import colored_string, Level
-
+from piccolo.utils.warnings import Level, colored_string
 
 DIAGNOSE_FLAG = "--diagnose"
 

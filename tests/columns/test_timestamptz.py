@@ -2,12 +2,11 @@ import datetime
 from unittest import TestCase
 
 from dateutil import tz
+
 from piccolo.columns.column_types import Timestamptz
-from piccolo.columns.defaults.timestamptz import (
-    TimestamptzCustom,
-    TimestamptzNow,
-    TimestamptzOffset,
-)
+from piccolo.columns.defaults.timestamptz import (TimestamptzCustom,
+                                                  TimestamptzNow,
+                                                  TimestamptzOffset)
 from piccolo.table import Table
 
 

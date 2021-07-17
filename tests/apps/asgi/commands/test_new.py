@@ -4,7 +4,7 @@ import tempfile
 from unittest import TestCase
 from unittest.mock import patch
 
-from piccolo.apps.asgi.commands.new import new, SERVERS, ROUTERS
+from piccolo.apps.asgi.commands.new import ROUTERS, SERVERS, new
 
 
 class TestNewApp(TestCase):

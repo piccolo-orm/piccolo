@@ -1,9 +1,8 @@
-from piccolo.columns.column_types import ForeignKey, JSON, JSONB
 from unittest import TestCase
 
 from piccolo.columns import Secret
+from piccolo.columns.column_types import JSON, JSONB, ForeignKey
 from piccolo.table import Table
-
 from tests.example_app.tables import Band
 
 

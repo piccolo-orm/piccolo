@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from piccolo.table import Table
 from piccolo.columns.column_types import Varchar
+from piccolo.table import Table
 
 from ..base import postgres_only
 

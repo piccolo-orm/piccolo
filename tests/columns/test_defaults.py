@@ -1,26 +1,12 @@
 import datetime
 import decimal
-from unittest import TestCase
 import uuid
+from unittest import TestCase
 
-from piccolo.columns.column_types import (
-    BigInt,
-    Date,
-    DateNow,
-    ForeignKey,
-    Integer,
-    Numeric,
-    Real,
-    SmallInt,
-    Text,
-    Time,
-    TimeNow,
-    Timestamp,
-    TimestampNow,
-    UUID,
-    UUID4,
-    Varchar,
-)
+from piccolo.columns.column_types import (UUID, UUID4, BigInt, Date, DateNow,
+                                          ForeignKey, Integer, Numeric, Real,
+                                          SmallInt, Text, Time, TimeNow,
+                                          Timestamp, TimestampNow, Varchar)
 from piccolo.table import Table
 
 

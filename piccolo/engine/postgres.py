@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 import contextvars
-from dataclasses import dataclass
 import typing as t
+from dataclasses import dataclass
 
 import asyncpg  # type: ignore
 from asyncpg.connection import Connection  # type: ignore
@@ -14,7 +15,7 @@ from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
-from piccolo.utils.warnings import colored_warning, colored_string, Level
+from piccolo.utils.warnings import Level, colored_string, colored_warning
 
 
 @dataclass
