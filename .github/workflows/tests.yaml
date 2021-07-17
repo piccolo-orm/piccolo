@@ -77,6 +77,9 @@ jobs:
                   PG_HOST: localhost
                   PG_DATABASE: piccolo
                   PG_PASSWORD: postgres
+            - name: Upload coverage
+              uses: codecov/codecov-action@v1
+              if: matrix.python-version == '3.7'
 
     sqlite:
         runs-on: ubuntu-latest
