@@ -5,4 +5,4 @@
 # To run a single test tests/test_foo.py::TestFoo::test_foo
 
 export PICCOLO_CONF="tests.postgres_conf"
-./tests.sh
+./scripts/tests.sh
