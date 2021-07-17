@@ -4,4 +4,4 @@
 # To run all in a class tests/test_foo.py::TestFoo
 # To run a single test tests/test_foo.py::TestFoo::test_foo
 
-python -m pytest --cov=piccolo --cov-report xml --cov-report html --cov-fail-under 75 -s $@
+python -m pytest --cov=piccolo --cov-report xml --cov-report html --cov-fail-under 85 -s $@
