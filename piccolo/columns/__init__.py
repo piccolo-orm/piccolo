@@ -12,7 +12,6 @@ from .column_types import (  # noqa: F401
     JSON,
     JSONB,
     Numeric,
-    PrimaryKey,
     Real,
     Secret,
     Serial,

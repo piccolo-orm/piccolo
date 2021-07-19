@@ -427,12 +427,14 @@ class SQLiteEngine(Engine):
             connection.row_factory = dict_factory  # type: ignore
             async with connection.execute(query, args) as cursor:
                 await connection.commit()
-                response = await cursor.fetchall()
 
                 if query_type == "insert":
+                    # await cursor.execute(f"SELECT id from my_table_primary_key_uuid WHERE rowid = {cursor.lastrowid};")
+                    # response = await cursor.fetchone()
+                    # return [{"id": response["id"]}]
                     return [{"id": cursor.lastrowid}]
                 else:
-                    return response
+                    return await cursor.fetchall()
 
     async def _run_in_existing_connection(
         self,

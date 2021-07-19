@@ -496,20 +496,13 @@ class SmallInt(Integer):
 ###############################################################################
 
 
+DEFAULT = Unquoted("DEFAULT")
+NULL = Unquoted("null")
+
 class Serial(Column):
     """
     An alias to an autoincrementing integer column in Postgres.
     """
-
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
-
-
-DEFAULT = Unquoted("DEFAULT")
-NULL = Unquoted("null")
-
-
-class PrimaryKey(Column):
     @property
     def column_type(self):
         engine_type = self._meta.table._meta.db.engine_type
@@ -526,12 +519,6 @@ class PrimaryKey(Column):
         elif engine_type == "sqlite":
             return NULL
         raise Exception("Unrecognized engine type")
-
-    def __init__(self, **kwargs) -> None:
-        # Set the index to False, as a database should automatically create
-        # an index for a PrimaryKey column.
-        kwargs.update({"primary": True, "key": True, "index": False})
-        super().__init__(**kwargs)
 
 
 ###############################################################################

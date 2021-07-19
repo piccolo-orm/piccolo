@@ -8,11 +8,13 @@ import typing as t
 from piccolo.engine import Engine, engine_finder
 from piccolo.columns import Column
 from piccolo.columns.column_types import (
+    BigInt,
     ForeignKey,
     JSON,
     JSONB,
-    PrimaryKey,
+    UUID,
     Secret,
+    Serial,
 )
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import (
@@ -128,7 +130,6 @@ class Table(metaclass=TableMetaclass):
     # These are just placeholder values, so type inference isn't confused - the
     # actual values are set in __init_subclass__.
     _meta = TableMeta()
-    id = PrimaryKey()
 
     def __init_subclass__(
         cls,
@@ -170,8 +171,7 @@ class Table(metaclass=TableMetaclass):
         foreign_key_columns: t.List[ForeignKey] = []
         secret_columns: t.List[Secret] = []
         json_columns: t.List[t.Union[JSON, JSONB]] = []
-
-        cls.id = PrimaryKey()
+        primary_key_column: t.Optional[Column] = None
 
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]
@@ -191,13 +191,13 @@ class Table(metaclass=TableMetaclass):
                 column = attribute.copy()
                 setattr(cls, attribute_name, column)
 
-                if isinstance(column, PrimaryKey):
-                    # We want it at the start.
-                    columns = [column] + columns  # type: ignore
+                if column._meta.primary and column._meta.key:
+                    primary_key_column = column
                     default_columns.append(column)
                 else:
-                    columns.append(column)
                     non_default_columns.append(column)
+
+                columns.append(column)
 
                 column._meta._name = attribute_name
                 column._meta._table = cls
@@ -210,6 +210,14 @@ class Table(metaclass=TableMetaclass):
 
                 if isinstance(column, (JSON, JSONB)):
                     json_columns.append(column)
+
+        if not primary_key_column:
+            primary_key_column = cls._create_serial_primary_key()
+
+            columns.insert(0, primary_key_column)  # PK should be added first
+            default_columns.append(primary_key_column)
+
+        cls.id = primary_key_column  # type: ignore
 
         cls._meta = TableMeta(
             tablename=tablename,
@@ -303,6 +311,14 @@ class Table(metaclass=TableMetaclass):
         if unrecognized:
             unrecognised_list = [i for i in unrecognized]
             raise ValueError(f"Unrecognized columns - {unrecognised_list}")
+
+    @classmethod
+    def _create_serial_primary_key(cls) -> Serial:
+        pk = Serial(index=False, primary=True, key=True)
+        pk._meta._name = "id"
+        pk._meta._table = cls
+
+        return pk
 
     ###########################################################################
 
