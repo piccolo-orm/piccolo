@@ -1,6 +1,6 @@
 import os
-from unittest import TestCase
 import tempfile
+from unittest import TestCase
 
 from piccolo.apps.project.commands.new import new
 

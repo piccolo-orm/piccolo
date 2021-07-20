@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 import datetime
-from enum import Enum
 import typing as t
+from enum import Enum
 
 from .base import Default
 
@@ -71,7 +72,10 @@ class IntervalCustom(Default):  # lgtm [py/missing-equals]
 ###############################################################################
 
 IntervalArg = t.Union[
-    IntervalCustom, Enum, None, datetime.timedelta,
+    IntervalCustom,
+    Enum,
+    None,
+    datetime.timedelta,
 ]
 
 

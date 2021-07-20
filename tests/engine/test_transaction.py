@@ -1,8 +1,8 @@
 import asyncio
 from unittest import TestCase
 
-from ..example_app.tables import Band, Manager
 from ..base import postgres_only
+from ..example_app.tables import Band, Manager
 
 
 class TestAtomic(TestCase):

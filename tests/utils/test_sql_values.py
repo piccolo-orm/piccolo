@@ -1,7 +1,7 @@
 from enum import Enum
 from unittest import TestCase
 
-from piccolo.columns.column_types import Integer, JSON, JSONB, Varchar
+from piccolo.columns.column_types import JSON, JSONB, Integer, Varchar
 from piccolo.table import Table
 from piccolo.utils.sql_values import convert_to_sql_value
 
@@ -56,5 +56,6 @@ class TestConvertToSQLValue(TestCase):
         Make sure simple Python values are returned correctly.
         """
         self.assertEqual(
-            convert_to_sql_value(value=1, column=Integer()), 1,
+            convert_to_sql_value(value=1, column=Integer()),
+            1,
         )

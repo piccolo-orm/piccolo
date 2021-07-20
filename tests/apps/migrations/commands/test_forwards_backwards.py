@@ -3,11 +3,11 @@ from __future__ import annotations
 import sys
 import typing as t
 from unittest import TestCase
-from unittest.mock import patch, call, MagicMock
+from unittest.mock import MagicMock, call, patch
 
-from piccolo.apps.migrations.tables import Migration
 from piccolo.apps.migrations.commands.backwards import backwards
 from piccolo.apps.migrations.commands.forwards import forwards
+from piccolo.apps.migrations.tables import Migration
 from piccolo.utils.sync import run_sync
 from tests.base import postgres_only
 from tests.example_app.tables import (

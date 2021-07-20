@@ -2,9 +2,9 @@ import datetime
 from functools import partial
 from unittest import TestCase
 
-from piccolo.table import Table
 from piccolo.columns.column_types import Time
 from piccolo.columns.defaults.time import TimeNow
+from piccolo.table import Table
 
 
 class MyTable(Table):

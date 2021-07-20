@@ -1,5 +1,6 @@
 ipdb==0.12.2
 ipython==7.8.0
+isort==5.9.2
 twine==3.1.1
 mypy==0.782
 pip-upgrader==1.4.15

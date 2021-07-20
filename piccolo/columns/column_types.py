@@ -2,17 +2,12 @@ from __future__ import annotations
 
 import copy
 import decimal
-from enum import Enum
 import typing as t
 import uuid
 from datetime import date, datetime, time, timedelta
+from enum import Enum
 
-from piccolo.columns.base import (
-    Column,
-    ForeignKeyMeta,
-    OnDelete,
-    OnUpdate,
-)
+from piccolo.columns.base import Column, ForeignKeyMeta, OnDelete, OnUpdate
 from piccolo.columns.combination import Where
 from piccolo.columns.defaults.date import DateArg, DateCustom, DateNow
 from piccolo.columns.defaults.interval import IntervalArg, IntervalCustom
@@ -35,8 +30,8 @@ from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils.encoding import dump_json
 
 if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.table import Table
     from piccolo.columns.base import ColumnMeta
+    from piccolo.table import Table
 
 
 ###############################################################################
@@ -186,7 +181,9 @@ class Varchar(Column):
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         engine_type = self._meta.table._meta.db.engine_type
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.name, value=value, engine_type=engine_type,
+            column_name=self._meta.name,
+            value=value,
+            engine_type=engine_type,
         )
 
     def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:

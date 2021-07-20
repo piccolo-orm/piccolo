@@ -1,17 +1,18 @@
 from __future__ import annotations
+
 import itertools
-from time import time
 import typing as t
+from time import time
 
 from piccolo.columns.column_types import JSON, JSONB
 from piccolo.query.mixins import ColumnsDelegate
 from piccolo.querystring import QueryString
-from piccolo.utils.sync import run_sync
 from piccolo.utils.encoding import dump_json, load_json
+from piccolo.utils.sync import run_sync
 
 if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.table import Table  # noqa
     from piccolo.query.mixins import OutputDelegate
+    from piccolo.table import Table  # noqa
 
 
 class Timer:
@@ -43,7 +44,7 @@ class Query:
         else:
             raise ValueError("Engine isn't defined.")
 
-    async def _process_results(self, results):
+    async def _process_results(self, results):  # noqa: C901
         if results:
             keys = results[0].keys()
             keys = [i.replace("$", ".") for i in keys]

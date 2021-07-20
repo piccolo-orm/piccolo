@@ -1,5 +1,5 @@
-from unittest import TestCase
 import json
+from unittest import TestCase
 
 from tests.base import DBTestCase
 from tests.example_app.tables import Band, RecordingStudio

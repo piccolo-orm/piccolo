@@ -1,8 +1,6 @@
 from piccolo.apps.migrations.auto import MigrationManager
-from piccolo.columns.column_types import Boolean
-from piccolo.columns.column_types import Timestamp
+from piccolo.columns.column_types import Boolean, Timestamp
 from piccolo.columns.indexes import IndexMethod
-
 
 ID = "2021-04-30T16:14:15"
 VERSION = "0.18.2"

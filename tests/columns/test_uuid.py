@@ -1,8 +1,8 @@
-from unittest import TestCase
 import uuid
+from unittest import TestCase
 
-from piccolo.table import Table
 from piccolo.columns.column_types import UUID
+from piccolo.table import Table
 
 
 class MyTable(Table):

@@ -1,14 +1,20 @@
 from __future__ import annotations
-from abc import ABCMeta, abstractmethod
+
 import copy
-from dataclasses import dataclass, field
 import datetime
 import decimal
-from enum import Enum
 import inspect
 import typing as t
 import uuid
+from abc import ABCMeta, abstractmethod
+from dataclasses import dataclass, field
+from enum import Enum
 
+from piccolo.columns.choices import Choice
+from piccolo.columns.combination import Where
+from piccolo.columns.defaults.base import Default
+from piccolo.columns.defaults.interval import IntervalCustom
+from piccolo.columns.indexes import IndexMethod
 from piccolo.columns.operators.comparison import (
     ComparisonOperator,
     Equal,
@@ -25,12 +31,7 @@ from piccolo.columns.operators.comparison import (
     NotIn,
     NotLike,
 )
-from piccolo.columns.combination import Where
-from piccolo.columns.choices import Choice
-from piccolo.columns.defaults.base import Default
-from piccolo.columns.defaults.interval import IntervalCustom
 from piccolo.columns.reference import LazyTableReference
-from piccolo.columns.indexes import IndexMethod
 from piccolo.querystring import QueryString
 from piccolo.utils.warnings import colored_warning
 
@@ -216,7 +217,8 @@ class ColumnMeta:
     def copy(self) -> ColumnMeta:
         kwargs = self.__dict__.copy()
         kwargs.update(
-            params=self.params.copy(), call_chain=self.call_chain.copy(),
+            params=self.params.copy(),
+            call_chain=self.call_chain.copy(),
         )
         return self.__class__(**kwargs)
 

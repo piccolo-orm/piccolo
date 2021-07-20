@@ -1,17 +1,18 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
-import typing as t
 
-from piccolo.columns.base import Column
+import typing as t
+from dataclasses import dataclass, field
+
 from piccolo.apps.migrations.auto.operations import (
     AddColumn,
-    DropColumn,
     AlterColumn,
+    DropColumn,
 )
 from piccolo.apps.migrations.auto.serialisation import (
-    serialise_params,
     deserialise_params,
+    serialise_params,
 )
+from piccolo.columns.base import Column
 from piccolo.table import Table, create_table_class
 
 

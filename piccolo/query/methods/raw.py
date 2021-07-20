@@ -1,6 +1,7 @@
 from __future__ import annotations
-from dataclasses import dataclass
+
 import typing as t
+from dataclasses import dataclass
 
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
@@ -17,7 +18,7 @@ class Raw(Query):
         self,
         table: t.Type[Table],
         querystring: QueryString = QueryString(""),
-        **kwargs
+        **kwargs,
     ):
         super().__init__(table, **kwargs)
         self.querystring = querystring

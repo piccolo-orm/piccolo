@@ -2,11 +2,11 @@ import os
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
-from piccolo.conf.apps import AppConfig
 from piccolo.apps.migrations.commands.base import (
     BaseMigrationManager,
     Migration,
 )
+from piccolo.conf.apps import AppConfig
 from piccolo.utils.sync import run_sync
 
 

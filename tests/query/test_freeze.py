@@ -1,9 +1,8 @@
-from dataclasses import dataclass
 import timeit
 import typing as t
+from dataclasses import dataclass
 
 from piccolo.query.base import Query
-
 from tests.base import DBTestCase, sqlite_only
 from tests.example_app.tables import Band
 

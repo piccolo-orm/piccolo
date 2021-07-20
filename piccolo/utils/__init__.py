@@ -1,1 +1,1 @@
-from .naming import _camel_to_snake  # noqa
+from .naming import _camel_to_snake

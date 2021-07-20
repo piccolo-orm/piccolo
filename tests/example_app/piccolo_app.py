@@ -2,8 +2,7 @@ import os
 
 from piccolo.conf.apps import AppConfig
 
-from .tables import Manager, Band, Venue, Concert, Ticket, Poster
-
+from .tables import Band, Concert, Manager, Poster, Ticket, Venue
 
 CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 

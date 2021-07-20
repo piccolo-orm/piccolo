@@ -1,26 +1,27 @@
 from __future__ import annotations
-from dataclasses import dataclass
+
 import datetime
-from itertools import chain
 import os
 import sys
 import typing as t
+from dataclasses import dataclass
+from itertools import chain
 from types import ModuleType
 
 import black  # type: ignore
 import jinja2
 
-from .base import BaseMigrationManager
 from piccolo import __VERSION__
-from piccolo.conf.apps import AppConfig, Finder
 from piccolo.apps.migrations.auto import (
     AlterStatements,
-    SchemaSnapshot,
     DiffableTable,
     SchemaDiffer,
+    SchemaSnapshot,
 )
+from piccolo.conf.apps import AppConfig, Finder
 from piccolo.engine import SQLiteEngine
 
+from .base import BaseMigrationManager
 
 TEMPLATE_DIRECTORY = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "templates"

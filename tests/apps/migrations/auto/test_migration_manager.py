@@ -1,17 +1,16 @@
 import asyncio
-from piccolo.conf.apps import AppConfig
-from piccolo.columns.column_types import ForeignKey
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from asyncpg.exceptions import UniqueViolationError  # type: ignore
+
 from piccolo.apps.migrations.auto import MigrationManager
 from piccolo.apps.migrations.commands.base import BaseMigrationManager
-from piccolo.columns import Varchar, Text
+from piccolo.columns import Text, Varchar
 from piccolo.columns.base import OnDelete, OnUpdate
-
+from piccolo.columns.column_types import ForeignKey
+from piccolo.conf.apps import AppConfig
+from tests.base import DBTestCase, postgres_only, set_mock_return_value
 from tests.example_app.tables import Manager
-from tests.base import DBTestCase
-from tests.base import postgres_only, set_mock_return_value
 
 
 class TestMigrationManager(DBTestCase):
@@ -228,7 +227,8 @@ class TestMigrationManager(DBTestCase):
         asyncio.run(manager.run_backwards())
         response = self.run_sync("SELECT * FROM manager;")
         self.assertEqual(
-            response, [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Dave"}],
+            response,
+            [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Dave"}],
         )
 
     @postgres_only
@@ -489,7 +489,8 @@ class TestMigrationManager(DBTestCase):
         )
         asyncio.run(manager_2.run())
         self.assertEqual(
-            self._get_column_default(), [{"column_default": None}],
+            self._get_column_default(),
+            [{"column_default": None}],
         )
 
         # And add it back once more to be sure.
@@ -503,7 +504,8 @@ class TestMigrationManager(DBTestCase):
         # Run them all backwards
         asyncio.run(manager_3.run_backwards())
         self.assertEqual(
-            self._get_column_default(), [{"column_default": None}],
+            self._get_column_default(),
+            [{"column_default": None}],
         )
 
         asyncio.run(manager_2.run_backwards())
@@ -514,7 +516,8 @@ class TestMigrationManager(DBTestCase):
 
         asyncio.run(manager_1.run_backwards())
         self.assertEqual(
-            self._get_column_default(), [{"column_default": None}],
+            self._get_column_default(),
+            [{"column_default": None}],
         )
 
     @postgres_only

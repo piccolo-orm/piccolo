@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from piccolo.table import Table
 from piccolo.columns import Varchar
+from piccolo.table import Table
 
 from ..example_app.tables import Manager
 

@@ -2,7 +2,6 @@ import asyncio
 
 from piccolo.engine.finder import engine_finder
 
-
 ENGINE = engine_finder()
 
 

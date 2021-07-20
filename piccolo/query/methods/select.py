@@ -1,6 +1,7 @@
 from __future__ import annotations
-from collections import OrderedDict
+
 import typing as t
+from collections import OrderedDict
 
 from piccolo.columns import Column, Selectable
 from piccolo.columns.readable import Readable

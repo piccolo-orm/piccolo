@@ -3,7 +3,7 @@ import shutil
 import tempfile
 from unittest import TestCase
 
-from piccolo.apps.app.commands.new import new, module_exists
+from piccolo.apps.app.commands.new import module_exists, new
 
 
 class TestModuleExists(TestCase):

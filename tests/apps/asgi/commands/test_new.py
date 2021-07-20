@@ -4,7 +4,7 @@ import tempfile
 from unittest import TestCase
 from unittest.mock import patch
 
-from piccolo.apps.asgi.commands.new import new, SERVERS, ROUTERS
+from piccolo.apps.asgi.commands.new import ROUTERS, SERVERS, new
 
 
 class TestNewApp(TestCase):
@@ -13,7 +13,8 @@ class TestNewApp(TestCase):
         return_value=ROUTERS[0],
     )
     @patch(
-        "piccolo.apps.asgi.commands.new.get_server", return_value=SERVERS[0],
+        "piccolo.apps.asgi.commands.new.get_server",
+        return_value=SERVERS[0],
     )
     def test_new(self, *args, **kwargs):
         root = os.path.join(tempfile.gettempdir(), "asgi_app")

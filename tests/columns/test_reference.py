@@ -25,16 +25,19 @@ class TestLazyTableReference(TestCase):
 
         # Shouldn't raise exceptions:
         LazyTableReference(
-            table_class_name="Manager", app_name="example_app",
+            table_class_name="Manager",
+            app_name="example_app",
         )
         LazyTableReference(
-            table_class_name="Manager", module_path="tests.example_app.tables",
+            table_class_name="Manager",
+            module_path="tests.example_app.tables",
         )
 
     def test_str(self):
         self.assertEqual(
             LazyTableReference(
-                table_class_name="Manager", app_name="example_app",
+                table_class_name="Manager",
+                app_name="example_app",
             ).__str__(),
             "App example_app.Manager",
         )

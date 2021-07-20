@@ -1,16 +1,22 @@
 from __future__ import annotations
+
 import datetime
 import os
 import shutil
 import tempfile
 import time
 import typing as t
-from unittest import TestCase
 import uuid
+from unittest import TestCase
 
-from piccolo.columns.defaults.uuid import UUID4
-from piccolo.conf.apps import AppConfig
+from piccolo.apps.migrations.commands.forwards import ForwardsMigrationManager
+from piccolo.apps.migrations.commands.new import (
+    _create_migrations_folder,
+    _create_new_migration,
+)
+from piccolo.apps.migrations.tables import Migration
 from piccolo.columns.column_types import (
+    UUID,
     BigInt,
     Boolean,
     Date,
@@ -20,16 +26,11 @@ from piccolo.columns.column_types import (
     Text,
     Time,
     Timestamp,
-    UUID,
     Varchar,
 )
-from piccolo.apps.migrations.commands.new import (
-    _create_new_migration,
-    _create_migrations_folder,
-)
-from piccolo.apps.migrations.commands.forwards import ForwardsMigrationManager
+from piccolo.columns.defaults.uuid import UUID4
+from piccolo.conf.apps import AppConfig
 from piccolo.table import Table, create_table_class
-from piccolo.apps.migrations.tables import Migration
 from piccolo.utils.sync import run_sync
 from tests.base import postgres_only
 

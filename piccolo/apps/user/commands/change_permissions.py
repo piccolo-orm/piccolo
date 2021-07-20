@@ -1,7 +1,7 @@
 import typing as t
 
 from piccolo.apps.user.tables import BaseUser
-from piccolo.utils.warnings import colored_string, Level
+from piccolo.utils.warnings import Level, colored_string
 
 if t.TYPE_CHECKING:
     from piccolo.columns import Column

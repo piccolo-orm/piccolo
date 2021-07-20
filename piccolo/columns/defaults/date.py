@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 import datetime
-from enum import Enum
 import typing as t
+from enum import Enum
 
 from .base import Default
 
@@ -41,7 +42,10 @@ class DateNow(Default):
 
 class DateCustom(Default):
     def __init__(
-        self, year: int, month: int, day: int,
+        self,
+        year: int,
+        month: int,
+        day: int,
     ):
         self.day = day
         self.month = month

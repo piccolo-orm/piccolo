@@ -1,8 +1,8 @@
 from decimal import Decimal
 from unittest import TestCase
 
-from piccolo.table import Table
 from piccolo.columns.column_types import Numeric
+from piccolo.table import Table
 
 
 class MyTable(Table):

@@ -1,6 +1,6 @@
-from enum import Enum
 import typing as t
 import uuid
+from enum import Enum
 
 from .base import Default
 

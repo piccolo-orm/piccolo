@@ -13,6 +13,7 @@ from piccolo.query.methods import (
     TableExists,
     Update,
 )
+
 from ..example_app.tables import Manager
 
 
