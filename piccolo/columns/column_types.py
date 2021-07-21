@@ -14,6 +14,7 @@ from piccolo.columns.base import (
     OnUpdate,
 )
 from piccolo.columns.combination import Where
+from piccolo.utils.warnings import colored_warning
 from piccolo.columns.defaults.date import DateArg, DateCustom, DateNow
 from piccolo.columns.defaults.interval import IntervalArg, IntervalCustom
 from piccolo.columns.defaults.time import TimeArg, TimeCustom, TimeNow
@@ -519,6 +520,20 @@ class Serial(Column):
         elif engine_type == "sqlite":
             return NULL
         raise Exception("Unrecognized engine type")
+
+
+class PrimaryKey(Serial):
+    def __init__(self, **kwargs) -> None:
+        # Set the index to False, as a database should automatically create
+        # an index for a PrimaryKey column.
+        kwargs.update({"primary": True, "key": True, "index": False})
+
+        colored_warning(
+            "`PrimaryKey` is deprecated and will be removed in future versions.",
+            category=DeprecationWarning,
+        )
+
+        super().__init__(**kwargs)
 
 
 ###############################################################################
