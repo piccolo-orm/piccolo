@@ -1,10 +1,11 @@
 from __future__ import annotations
+
 import datetime
 import typing as t
 
 from piccolo.columns.column_types import OnDelete, OnUpdate
-from piccolo.table import Table, create_table_class
 from piccolo.columns.defaults.timestamp import TimestampNow
+from piccolo.table import Table, create_table_class
 
 
 def deserialise_legacy_params(name: str, value: str) -> t.Any:

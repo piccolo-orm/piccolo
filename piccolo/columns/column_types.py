@@ -2,19 +2,13 @@ from __future__ import annotations
 
 import copy
 import decimal
-from enum import Enum
 import typing as t
 import uuid
 from datetime import date, datetime, time, timedelta
+from enum import Enum
 
-from piccolo.columns.base import (
-    Column,
-    ForeignKeyMeta,
-    OnDelete,
-    OnUpdate,
-)
+from piccolo.columns.base import Column, ForeignKeyMeta, OnDelete, OnUpdate
 from piccolo.columns.combination import Where
-from piccolo.utils.warnings import colored_warning
 from piccolo.columns.defaults.date import DateArg, DateCustom, DateNow
 from piccolo.columns.defaults.interval import IntervalArg, IntervalCustom
 from piccolo.columns.defaults.time import TimeArg, TimeCustom, TimeNow
@@ -34,10 +28,11 @@ from piccolo.columns.operators.string import ConcatPostgres, ConcatSQLite
 from piccolo.columns.reference import LazyTableReference
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils.encoding import dump_json
+from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.table import Table
     from piccolo.columns.base import ColumnMeta
+    from piccolo.table import Table
 
 
 ###############################################################################
@@ -187,7 +182,9 @@ class Varchar(Column):
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         engine_type = self._meta.table._meta.db.engine_type
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.name, value=value, engine_type=engine_type,
+            column_name=self._meta.name,
+            value=value,
+            engine_type=engine_type,
         )
 
     def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
@@ -500,10 +497,12 @@ class SmallInt(Integer):
 DEFAULT = Unquoted("DEFAULT")
 NULL = Unquoted("null")
 
+
 class Serial(Column):
     """
     An alias to an autoincrementing integer column in Postgres.
     """
+
     @property
     def column_type(self):
         engine_type = self._meta.table._meta.db.engine_type
@@ -529,7 +528,8 @@ class PrimaryKey(Serial):
         kwargs.update({"primary": True, "key": True, "index": False})
 
         colored_warning(
-            "`PrimaryKey` is deprecated and will be removed in future versions.",
+            "`PrimaryKey` is deprecated and "
+            "will be removed in future versions.",
             category=DeprecationWarning,
         )
 

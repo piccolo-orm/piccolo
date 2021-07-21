@@ -1,12 +1,10 @@
 from __future__ import annotations
+
 import typing as t
 from unittest import TestCase
 
-from piccolo.columns.column_types import Varchar, Numeric
-from piccolo.apps.migrations.auto import (
-    DiffableTable,
-    SchemaDiffer,
-)
+from piccolo.apps.migrations.auto import DiffableTable, SchemaDiffer
+from piccolo.columns.column_types import Numeric, Varchar
 
 
 class TestSchemaDiffer(TestCase):
@@ -108,7 +106,9 @@ class TestSchemaDiffer(TestCase):
         ]
         schema_snapshot: t.List[DiffableTable] = [
             DiffableTable(
-                class_name="Band", tablename="band", columns=[name_column],
+                class_name="Band",
+                tablename="band",
+                columns=[name_column],
             )
         ]
 
@@ -134,7 +134,9 @@ class TestSchemaDiffer(TestCase):
 
         schema: t.List[DiffableTable] = [
             DiffableTable(
-                class_name="Band", tablename="band", columns=[name_column],
+                class_name="Band",
+                tablename="band",
+                columns=[name_column],
             )
         ]
         schema_snapshot: t.List[DiffableTable] = [
@@ -167,12 +169,16 @@ class TestSchemaDiffer(TestCase):
 
         schema: t.List[DiffableTable] = [
             DiffableTable(
-                class_name="Band", tablename="band", columns=[name_column],
+                class_name="Band",
+                tablename="band",
+                columns=[name_column],
             )
         ]
         schema_snapshot: t.List[DiffableTable] = [
             DiffableTable(
-                class_name="Band", tablename="band", columns=[title_column],
+                class_name="Band",
+                tablename="band",
+                columns=[title_column],
             )
         ]
 
@@ -195,12 +201,16 @@ class TestSchemaDiffer(TestCase):
 
         schema: t.List[DiffableTable] = [
             DiffableTable(
-                class_name="Ticket", tablename="ticket", columns=[price_1],
+                class_name="Ticket",
+                tablename="ticket",
+                columns=[price_1],
             )
         ]
         schema_snapshot: t.List[DiffableTable] = [
             DiffableTable(
-                class_name="Ticket", tablename="ticket", columns=[price_2],
+                class_name="Ticket",
+                tablename="ticket",
+                columns=[price_2],
             )
         ]
 

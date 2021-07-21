@@ -1,9 +1,10 @@
 from __future__ import annotations
-import datetime
-from enum import Enum
-import typing as t
 
-from .timestamp import TimestampOffset, TimestampNow, TimestampCustom
+import datetime
+import typing as t
+from enum import Enum
+
+from .timestamp import TimestampCustom, TimestampNow, TimestampOffset
 
 
 class TimestamptzOffset(TimestampOffset):

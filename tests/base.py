@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import typing as t
 from unittest import TestCase
 from unittest.mock import MagicMock
@@ -9,7 +10,6 @@ from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
 from piccolo.table import Table, create_table_class
-
 
 ENGINE = engine_finder()
 

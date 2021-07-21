@@ -1,7 +1,7 @@
 import datetime
 from unittest import TestCase
 
-from piccolo.columns import Varchar, Timestamp, Boolean
+from piccolo.columns import Boolean, Timestamp, Varchar
 from piccolo.table import Table
 
 

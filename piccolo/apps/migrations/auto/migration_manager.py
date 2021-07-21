@@ -1,18 +1,19 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
+
 import inspect
 import typing as t
+from dataclasses import dataclass, field
 
-from piccolo.columns import Column, column_types
-from piccolo.engine import engine_finder
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
 from piccolo.apps.migrations.auto.operations import (
+    AlterColumn,
     DropColumn,
     RenameColumn,
-    AlterColumn,
     RenameTable,
 )
 from piccolo.apps.migrations.auto.serialisation import deserialise_params
+from piccolo.columns import Column, column_types
+from piccolo.engine import engine_finder
 from piccolo.table import Table, create_table_class
 
 
@@ -453,7 +454,8 @@ class MigrationManager:
                 digits = params.get("digits", ...)
                 if digits is not ...:
                     await _Table.alter().set_digits(
-                        column=alter_column.column_name, digits=digits,
+                        column=alter_column.column_name,
+                        digits=digits,
                     ).run()
 
     async def _run_drop_tables(self, backwards=False):
@@ -555,7 +557,8 @@ class MigrationManager:
                 )
 
                 await _Table.alter().rename_column(
-                    column=column, new_name=new_name,
+                    column=column,
+                    new_name=new_name,
                 ).run()
 
     async def _run_add_tables(self, backwards=False):

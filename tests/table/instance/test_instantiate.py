@@ -1,4 +1,4 @@
-from tests.base import DBTestCase, sqlite_only, postgres_only
+from tests.base import DBTestCase, postgres_only, sqlite_only
 from tests.example_app.tables import Band
 
 

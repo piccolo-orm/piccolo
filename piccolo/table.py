@@ -1,28 +1,27 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
+
 import inspect
 import itertools
 import types
 import typing as t
+from dataclasses import dataclass, field
 
-from piccolo.engine import Engine, engine_finder
 from piccolo.columns import Column
 from piccolo.columns.column_types import (
-    BigInt,
-    ForeignKey,
     JSON,
     JSONB,
-    UUID,
+    ForeignKey,
     Secret,
     Serial,
 )
-from piccolo.columns.readable import Readable
-from piccolo.columns.reference import (
-    LazyTableReference,
-    LAZY_COLUMN_REFERENCES,
-)
 from piccolo.columns.defaults.base import Default
 from piccolo.columns.indexes import IndexMethod
+from piccolo.columns.readable import Readable
+from piccolo.columns.reference import (
+    LAZY_COLUMN_REFERENCES,
+    LazyTableReference,
+)
+from piccolo.engine import Engine, engine_finder
 from piccolo.query import (
     Alter,
     Count,
@@ -37,11 +36,11 @@ from piccolo.query import (
     TableExists,
     Update,
 )
-from piccolo.query.methods.indexes import Indexes
 from piccolo.query.methods.create_index import CreateIndex
-from piccolo.utils.sql_values import convert_to_sql_value
+from piccolo.query.methods.indexes import Indexes
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
+from piccolo.utils.sql_values import convert_to_sql_value
 
 if t.TYPE_CHECKING:
     from piccolo.columns import Selectable
@@ -130,6 +129,7 @@ class Table(metaclass=TableMetaclass):
     # These are just placeholder values, so type inference isn't confused - the
     # actual values are set in __init_subclass__.
     _meta = TableMeta()
+    id = None
 
     def __init_subclass__(
         cls,
@@ -217,7 +217,7 @@ class Table(metaclass=TableMetaclass):
             columns.insert(0, primary_key_column)  # PK should be added first
             default_columns.append(primary_key_column)
 
-        cls.id = primary_key_column  # type: ignore
+        cls.id = primary_key_column
 
         cls._meta = TableMeta(
             tablename=tablename,

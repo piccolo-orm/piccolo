@@ -5,7 +5,7 @@ from piccolo.apps.migrations.auto.serialisation import serialise_params
 from piccolo.columns.base import OnDelete
 from piccolo.columns.choices import Choice
 from piccolo.columns.column_types import Varchar
-from piccolo.columns.defaults import DateNow, TimeNow, TimestampNow, UUID4
+from piccolo.columns.defaults import UUID4, DateNow, TimeNow, TimestampNow
 from piccolo.columns.reference import LazyTableReference
 
 

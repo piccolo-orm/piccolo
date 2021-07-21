@@ -1,6 +1,7 @@
 from __future__ import annotations
-from enum import Enum
+
 import typing as t
+from enum import Enum
 
 from piccolo.utils.encoding import dump_json
 
@@ -14,8 +15,8 @@ def convert_to_sql_value(value: t.Any, column: Column) -> t.Any:
     database. For example, Enums, Table instances, and dictionaries for JSON
     columns.
     """
-    from piccolo.table import Table
     from piccolo.columns.column_types import JSON, JSONB
+    from piccolo.table import Table
 
     if isinstance(value, Table):
         return value.id

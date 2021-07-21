@@ -1,6 +1,5 @@
 from piccolo.apps.migrations.auto import MigrationManager
 
-
 ID = "2021-07-19T12:40:31:140762"
 VERSION = "0.26.0"
 

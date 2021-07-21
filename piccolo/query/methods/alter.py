@@ -1,17 +1,18 @@
 from __future__ import annotations
-from dataclasses import dataclass
+
 import itertools
 import typing as t
+from dataclasses import dataclass
 
 from piccolo.columns.base import Column
-from piccolo.columns.column_types import ForeignKey, Varchar, Numeric
+from piccolo.columns.column_types import ForeignKey, Numeric, Varchar
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
-from piccolo.utils.warnings import colored_warning, Level
+from piccolo.utils.warnings import Level, colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.table import Table
     from piccolo.columns.base import OnDelete, OnUpdate
+    from piccolo.table import Table
 
 
 @dataclass
@@ -502,7 +503,11 @@ class Alter(Query):
             else "NUMERIC"
         )
         self._set_digits.append(
-            SetDigits(digits=digits, column=column, column_type=column_type,)
+            SetDigits(
+                digits=digits,
+                column=column,
+                column_type=column_type,
+            )
         )
         return self
 

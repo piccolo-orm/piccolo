@@ -1,11 +1,11 @@
 import sys
 
-from piccolo.apps.user.tables import BaseUser
 from piccolo.apps.user.commands.create import (
-    get_username,
-    get_password,
     get_confirmed_password,
+    get_password,
+    get_username,
 )
+from piccolo.apps.user.tables import BaseUser
 
 
 def change_password():

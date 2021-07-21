@@ -1,8 +1,7 @@
 import os
 
-from piccolo.engine.postgres import PostgresEngine
 from piccolo.conf.apps import AppRegistry
-
+from piccolo.engine.postgres import PostgresEngine
 
 DB = PostgresEngine(
     config={

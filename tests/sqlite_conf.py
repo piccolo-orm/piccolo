@@ -1,6 +1,5 @@
-from piccolo.engine.sqlite import SQLiteEngine
 from piccolo.conf.apps import AppRegistry
-
+from piccolo.engine.sqlite import SQLiteEngine
 
 DB = SQLiteEngine(path="test.sqlite")
 

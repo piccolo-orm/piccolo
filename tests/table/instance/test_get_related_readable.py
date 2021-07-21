@@ -1,5 +1,5 @@
-from tests.example_app.tables import Band
 from tests.base import DBTestCase
+from tests.example_app.tables import Band
 
 
 class TestGetRelatedReadable(DBTestCase):

@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from piccolo.table import create_table_class
 from piccolo.columns import Varchar
+from piccolo.table import create_table_class
 
 
 class TestCreateTableClass(TestCase):

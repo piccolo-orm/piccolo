@@ -1,20 +1,20 @@
 from __future__ import annotations
+
 import contextvars
-from dataclasses import dataclass
 import datetime
-from decimal import Decimal
 import os
 import sqlite3
 import typing as t
 import uuid
+from dataclasses import dataclass
+from decimal import Decimal
 
-from aiosqlite import connect, Connection, Cursor
+from aiosqlite import Connection, Cursor, connect
 
 from piccolo.engine.base import Batch, Engine
 from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
-
 from piccolo.utils.encoding import dump_json, load_json
 from piccolo.utils.sync import run_sync
 
@@ -429,7 +429,7 @@ class SQLiteEngine(Engine):
                 await connection.commit()
 
                 if query_type == "insert":
-                    # await cursor.execute(f"SELECT id from my_table_primary_key_uuid WHERE rowid = {cursor.lastrowid};")
+                    # await cursor.execute(query)
                     # response = await cursor.fetchone()
                     # return [{"id": response["id"]}]
                     return [{"id": cursor.lastrowid}]

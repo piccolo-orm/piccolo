@@ -1,16 +1,16 @@
 from enum import Enum
 
-from piccolo.table import Table
 from piccolo.columns import (
-    ForeignKey,
-    Integer,
     JSON,
     JSONB,
+    ForeignKey,
+    Integer,
     Numeric,
     Text,
     Varchar,
 )
 from piccolo.columns.readable import Readable
+from piccolo.table import Table
 
 ###############################################################################
 # Simple example

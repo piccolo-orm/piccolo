@@ -2,16 +2,15 @@ import os
 import shutil
 import tempfile
 from unittest import TestCase
-from unittest.mock import call, patch, MagicMock
+from unittest.mock import MagicMock, call, patch
 
 from piccolo.apps.migrations.commands.new import (
-    _create_new_migration,
     BaseMigrationManager,
+    _create_new_migration,
     new,
 )
 from piccolo.conf.apps import AppConfig
 from piccolo.utils.sync import run_sync
-
 from tests.base import postgres_only
 from tests.example_app.tables import Manager
 

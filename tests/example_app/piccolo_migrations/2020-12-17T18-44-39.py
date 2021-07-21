@@ -1,7 +1,7 @@
-from piccolo.apps.migrations.auto import MigrationManager
 from decimal import Decimal
-from piccolo.columns.base import OnDelete
-from piccolo.columns.base import OnUpdate
+
+from piccolo.apps.migrations.auto import MigrationManager
+from piccolo.columns.base import OnDelete, OnUpdate
 from piccolo.table import Table
 
 
