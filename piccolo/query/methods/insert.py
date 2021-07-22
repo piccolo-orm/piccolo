@@ -42,6 +42,7 @@ class Insert(Query):
                 query,
                 *[i.querystring for i in self.add_delegate._add],
                 query_type="insert",
+                tablename=self.table._meta.tablename,
             )
         ]
 

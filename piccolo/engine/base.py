@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 from abc import ABCMeta, abstractmethod
 
+from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import Level, colored_warning
 
@@ -39,6 +40,10 @@ class Engine(metaclass=ABCMeta):
 
     @abstractmethod
     async def batch(self, query: Query, batch_size: int = 100) -> Batch:
+        pass
+
+    @abstractmethod
+    async def run_querystring(self, query_string: QueryString, in_pool: bool):
         pass
 
     async def check_version(self):

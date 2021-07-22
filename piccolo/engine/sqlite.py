@@ -9,7 +9,9 @@ import uuid
 from dataclasses import dataclass
 from decimal import Decimal
 
+import aiosqlite
 from aiosqlite import Connection, Cursor, connect
+from packaging import version
 
 from piccolo.engine.base import Batch, Engine
 from piccolo.engine.exceptions import TransactionError
@@ -418,8 +420,28 @@ class SQLiteEngine(Engine):
 
     ###########################################################################
 
+    async def _get_inserted_id(
+        self, cursor, tablename: t.Optional[str]
+    ) -> t.Any:
+        """
+        If `id` column is non-integer
+        `ROWID` and `id` will return different types.
+        Need to query by `lastrowid` to get `id`s in SQLite prior to 3.35.0.
+        """
+        # TODO: Add RETURNING clause for > 3.35.0
+        if version.parse(aiosqlite.sqlite_version) < version.parse("3.35.0"):
+            await cursor.execute(
+                f"SELECT id FROM {tablename} WHERE ROWID = {cursor.lastrowid}"
+            )
+            response = await cursor.fetchone()
+            return response["id"]
+
     async def _run_in_new_connection(
-        self, query: str, args: t.List[t.Any] = [], query_type: str = "generic"
+        self,
+        query: str,
+        args: t.List[t.Any] = [],
+        query_type: str = "generic",
+        tablename: t.Optional[str] = None,
     ):
         async with connect(**self.connection_kwargs) as connection:
             await connection.execute("PRAGMA foreign_keys = 1")
@@ -429,10 +451,8 @@ class SQLiteEngine(Engine):
                 await connection.commit()
 
                 if query_type == "insert":
-                    # await cursor.execute(query)
-                    # response = await cursor.fetchone()
-                    # return [{"id": response["id"]}]
-                    return [{"id": cursor.lastrowid}]
+                    id = await self._get_inserted_id(cursor, tablename)
+                    return [{"id": id}]
                 else:
                     return await cursor.fetchall()
 
@@ -442,6 +462,7 @@ class SQLiteEngine(Engine):
         query: str,
         args: t.List[t.Any] = [],
         query_type: str = "generic",
+        tablename: t.Optional[str] = None,
     ):
         """
         This is used when a transaction is currently active.
@@ -453,7 +474,8 @@ class SQLiteEngine(Engine):
             response = await cursor.fetchall()
 
             if query_type == "insert":
-                return [{"id": cursor.lastrowid}]
+                id = await self._get_inserted_id(cursor, tablename)
+                return [{"id": id}]
             else:
                 return response
 
@@ -476,10 +498,14 @@ class SQLiteEngine(Engine):
                 query=query,
                 args=query_args,
                 query_type=querystring.query_type,
+                tablename=querystring.tablename,
             )
 
         return await self._run_in_new_connection(
-            query=query, args=query_args, query_type=querystring.query_type
+            query=query,
+            args=query_args,
+            query_type=querystring.query_type,
+            tablename=querystring.tablename,
         )
 
     def atomic(self) -> Atomic:

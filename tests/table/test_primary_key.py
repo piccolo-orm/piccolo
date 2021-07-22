@@ -1,5 +1,4 @@
 import uuid
-import pytest
 from unittest import TestCase
 
 from piccolo.columns.column_types import UUID, Integer, Varchar
@@ -55,7 +54,6 @@ class TestPrimaryKeyUUID(TestCase):
     def tearDown(self):
         MyTablePrimaryKeyUUID.alter().drop_table().run_sync()
 
-    @pytest.mark.skip
     def test_return_type(self):
         row = MyTablePrimaryKeyUUID()
         row.save().run_sync()
