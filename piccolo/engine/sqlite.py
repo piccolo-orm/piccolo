@@ -9,8 +9,7 @@ import uuid
 from dataclasses import dataclass
 from decimal import Decimal
 
-import aiosqlite
-from aiosqlite import Connection, Cursor, connect
+from aiosqlite import Connection, Cursor, connect, sqlite_version
 from packaging import version
 
 from piccolo.engine.base import Batch, Engine
@@ -429,7 +428,7 @@ class SQLiteEngine(Engine):
         Need to query by `lastrowid` to get `id`s in SQLite prior to 3.35.0.
         """
         # TODO: Add RETURNING clause for > 3.35.0
-        if version.parse(aiosqlite.sqlite_version) < version.parse("3.35.0"):
+        if version.parse(sqlite_version) < version.parse("3.35.0"):
             await cursor.execute(
                 f"SELECT id FROM {tablename} WHERE ROWID = {cursor.lastrowid}"
             )
