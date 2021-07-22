@@ -34,7 +34,7 @@ def colored_warning(
         `Warning` has several subclasses which may be more appropriate, for
         example `DeprecationWarning`.
     :stacklevel:
-        Used to determine there the source of the error within the source code.
+        Used to determine the source of the error within the source code.
         See the Python docs for more detail.
         https://docs.python.org/3/library/warnings.html#warnings.warn
     :level:
