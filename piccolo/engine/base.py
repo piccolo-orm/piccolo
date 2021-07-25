@@ -43,7 +43,7 @@ class Engine(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    async def run_querystring(self, query_string: QueryString, in_pool: bool):
+    async def run_querystring(self, querystring: QueryString, in_pool: bool):
         pass
 
     async def check_version(self):

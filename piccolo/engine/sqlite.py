@@ -10,7 +10,6 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from aiosqlite import Connection, Cursor, connect
-from packaging import version
 
 from piccolo.engine.base import Batch, Engine
 from piccolo.engine.exceptions import TransactionError
@@ -427,13 +426,12 @@ class SQLiteEngine(Engine):
         `ROWID` and `id` will return different types.
         Need to query by `lastrowid` to get `id`s in SQLite prior to 3.35.0.
         """
-        # TODO: Add RETURNING clause for > 3.35.0
-        if version.parse(sqlite3.sqlite_version) < version.parse("3.35.0"):
-            await cursor.execute(
-                f"SELECT id FROM {tablename} WHERE ROWID = {cursor.lastrowid}"
-            )
-            response = await cursor.fetchone()
-            return response["id"]
+        # TODO: Add RETURNING clause for sqlite > 3.35.0
+        await cursor.execute(
+            f"SELECT id FROM {tablename} WHERE ROWID = {cursor.lastrowid}"
+        )
+        response = await cursor.fetchone()
+        return response["id"]
 
     async def _run_in_new_connection(
         self,
