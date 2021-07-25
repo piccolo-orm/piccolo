@@ -15,6 +15,8 @@ from tests.example_app.tables import (
     Concert,
     Manager,
     Poster,
+    RecordingStudio,
+    Shirt,
     Ticket,
     Venue,
 )
@@ -30,6 +32,8 @@ TABLE_CLASSES: t.List[t.Type[Table]] = [
     Concert,
     Ticket,
     Poster,
+    Shirt,
+    RecordingStudio,
 ]
 
 
@@ -174,8 +178,7 @@ class TestForwardsBackwards(TestCase):
                 "2020-12-17T18:44:30",
                 "2020-12-17T18:44:39",
                 "2020-12-17T18:44:44",
-                "2021-07-19T12:40:31:140762",
-                "2021-07-19T13:34:56:395354",
+                "2021-07-25T22:38:48:009306"
             ],
         )
 
