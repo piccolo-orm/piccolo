@@ -26,7 +26,7 @@ APP_CONFIG = AppConfig(
         Ticket,
         Poster,
         Shirt,
-        RecordingStudio
+        RecordingStudio,
     ],
     migrations_folder_path=os.path.join(
         CURRENT_DIRECTORY, "piccolo_migrations"

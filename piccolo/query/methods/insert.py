@@ -29,7 +29,9 @@ class Insert(Query):
         Assign the ids of the created rows to the model instances.
         """
         for index, row in enumerate(results):
-            self.add_delegate._add[index].id = row["id"]
+            self.add_delegate._add[index]._meta.primary_key = row[
+                self.table._meta.primary_key._meta.name
+            ]
 
     @property
     def sqlite_querystrings(self) -> t.Sequence[QueryString]:
@@ -42,7 +44,7 @@ class Insert(Query):
                 query,
                 *[i.querystring for i in self.add_delegate._add],
                 query_type="insert",
-                tablename=self.table._meta.tablename,
+                table=self.table,
             )
         ]
 

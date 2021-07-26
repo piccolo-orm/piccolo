@@ -15,6 +15,7 @@ from piccolo.engine.base import Batch, Engine
 from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
+from piccolo.table import Table
 from piccolo.utils.encoding import dump_json, load_json
 from piccolo.utils.sync import run_sync
 
@@ -418,9 +419,7 @@ class SQLiteEngine(Engine):
 
     ###########################################################################
 
-    async def _get_inserted_id(
-        self, cursor, tablename: t.Optional[str]
-    ) -> t.Any:
+    async def _get_inserted_pk(self, cursor, table: Table) -> t.Any:
         """
         If `pk` column is non-integer
         `ROWID` and `pk` will return different types.
@@ -428,17 +427,18 @@ class SQLiteEngine(Engine):
         """
         # TODO: Add RETURNING clause for sqlite > 3.35.0
         await cursor.execute(
-            f"SELECT id FROM {tablename} WHERE ROWID = {cursor.lastrowid}"
+            f"SELECT {table._meta.primary_key._meta.name} FROM "
+            f"{table._meta.tablename} WHERE ROWID = {cursor.lastrowid}"
         )
         response = await cursor.fetchone()
-        return response["id"]
+        return response[table._meta.primary_key._meta.name]
 
     async def _run_in_new_connection(
         self,
         query: str,
         args: t.List[t.Any] = [],
         query_type: str = "generic",
-        tablename: t.Optional[str] = None,
+        table: t.Optional[Table] = None,
     ):
         async with connect(**self.connection_kwargs) as connection:
             await connection.execute("PRAGMA foreign_keys = 1")
@@ -448,8 +448,9 @@ class SQLiteEngine(Engine):
                 await connection.commit()
 
                 if query_type == "insert":
-                    id = await self._get_inserted_id(cursor, tablename)
-                    return [{"id": id}]
+                    assert table is not None
+                    pk = await self._get_inserted_pk(cursor, table)
+                    return [{table._meta.primary_key._meta.name: pk}]
                 else:
                     return await cursor.fetchall()
 
@@ -459,7 +460,7 @@ class SQLiteEngine(Engine):
         query: str,
         args: t.List[t.Any] = [],
         query_type: str = "generic",
-        tablename: t.Optional[str] = None,
+        table: t.Optional[Table] = None,
     ):
         """
         This is used when a transaction is currently active.
@@ -471,8 +472,9 @@ class SQLiteEngine(Engine):
             response = await cursor.fetchall()
 
             if query_type == "insert":
-                id = await self._get_inserted_id(cursor, tablename)
-                return [{"id": id}]
+                assert table is not None
+                pk = await self._get_inserted_pk(cursor, table)
+                return [{table._meta.primary_key._meta.name: pk}]
             else:
                 return response
 
@@ -495,14 +497,14 @@ class SQLiteEngine(Engine):
                 query=query,
                 args=query_args,
                 query_type=querystring.query_type,
-                tablename=querystring.tablename,
+                table=querystring.table,
             )
 
         return await self._run_in_new_connection(
             query=query,
             args=query_args,
             query_type=querystring.query_type,
-            tablename=querystring.tablename,
+            table=querystring.table,
         )
 
     def atomic(self) -> Atomic:

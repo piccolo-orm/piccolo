@@ -5,6 +5,9 @@ import typing as t
 from dataclasses import dataclass
 from string import Formatter
 
+if t.TYPE_CHECKING:
+    from piccolo.table import Table
+
 
 @dataclass
 class Unquoted:
@@ -37,7 +40,7 @@ class QueryString:
         "template",
         "args",
         "query_type",
-        "tablename",
+        "table",
         "_frozen_compiled_strings",
     )
 
@@ -46,7 +49,7 @@ class QueryString:
         template: str,
         *args: t.Any,
         query_type: str = "generic",
-        tablename: t.Optional[str] = None,
+        table: t.Optional[Table] = None,
     ) -> None:
         """
         Example template: "WHERE {} = {}"
@@ -57,7 +60,7 @@ class QueryString:
         self.template = template
         self.args = args
         self.query_type = query_type
-        self.tablename = tablename
+        self.table = table
         self._frozen_compiled_strings: t.Optional[
             t.Tuple[str, t.List[t.Any]]
         ] = None

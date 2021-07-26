@@ -8,4 +8,6 @@ class TestTableRepr(DBTestCase):
 
         self.insert_row()
         manager = Manager.objects().first().run_sync()
-        self.assertEqual(manager.__repr__(), f"<Manager: {Manager._meta.primary_key}>")
+        self.assertEqual(
+            manager.__repr__(), f"<Manager: {Manager._meta.primary_key}>"
+        )
