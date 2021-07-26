@@ -422,9 +422,9 @@ class SQLiteEngine(Engine):
         self, cursor, tablename: t.Optional[str]
     ) -> t.Any:
         """
-        If `id` column is non-integer
-        `ROWID` and `id` will return different types.
-        Need to query by `lastrowid` to get `id`s in SQLite prior to 3.35.0.
+        If `pk` column is non-integer
+        `ROWID` and `pk` will return different types.
+        Need to query by `lastrowid` to get `pk`s in SQLite prior to 3.35.0.
         """
         # TODO: Add RETURNING clause for sqlite > 3.35.0
         await cursor.execute(

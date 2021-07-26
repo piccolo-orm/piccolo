@@ -36,7 +36,7 @@ class TestConvertToSQLValue(TestCase):
         instance = MyTable(id=1)
 
         self.assertEqual(
-            convert_to_sql_value(value=instance, column=MyTable.id), 1
+            convert_to_sql_value(value=instance, column=MyTable._meta.primary_key), 1
         )
 
     def test_convert_enum(self):

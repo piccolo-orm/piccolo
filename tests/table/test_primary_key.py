@@ -1,7 +1,7 @@
 import uuid
 from unittest import TestCase
 
-from piccolo.columns.column_types import UUID, Integer, Varchar
+from piccolo.columns.column_types import Serial, UUID, Integer, Varchar
 from piccolo.table import Table
 
 
@@ -10,7 +10,7 @@ class MyTableDefaultPrimaryKey(Table):
 
 
 class MyTablePrimaryKeyInteger(Table):
-    id = Integer(null=False, primary=True, key=True)
+    pk = Integer(null=False, primary=True, key=True)
     name = Varchar()
 
 
@@ -30,7 +30,7 @@ class TestPrimaryKeyDefault(TestCase):
         row = MyTableDefaultPrimaryKey()
         row.save().run_sync()
 
-        self.assertIsInstance(row.id, int)
+        self.assertIsInstance(row._meta.primary_key, Serial)
 
 
 class TestPrimaryKeyInteger(TestCase):
@@ -44,7 +44,7 @@ class TestPrimaryKeyInteger(TestCase):
         row = MyTablePrimaryKeyInteger()
         row.save().run_sync()
 
-        self.assertIsInstance(row.id, int)
+        self.assertIsInstance(row.pk, int)
 
 
 class TestPrimaryKeyUUID(TestCase):

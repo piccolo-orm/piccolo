@@ -41,7 +41,7 @@ class TestInterval(TestCase):
             # Make sure that fetching it back works OK.
             result = (
                 MyTable.objects()
-                .where(MyTable.id == row.id)
+                .where(MyTable._meta.primary_key == row._meta.primary_key)
                 .first()
                 .run_sync()
             )

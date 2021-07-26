@@ -19,7 +19,7 @@ def convert_to_sql_value(value: t.Any, column: Column) -> t.Any:
     from piccolo.table import Table
 
     if isinstance(value, Table):
-        return value.id
+        return value._meta.primary_key
     elif isinstance(value, Enum):
         return value.value
     elif isinstance(column, (JSON, JSONB)) and not isinstance(value, str):

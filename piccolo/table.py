@@ -60,6 +60,7 @@ class TableMeta:
     default_columns: t.List[Column] = field(default_factory=list)
     non_default_columns: t.List[Column] = field(default_factory=list)
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
+    primary_key: Column = field(default_factory=Column)
     json_columns: t.List[t.Union[JSON, JSONB]] = field(default_factory=list)
     secret_columns: t.List[Secret] = field(default_factory=list)
     tags: t.List[str] = field(default_factory=list)
@@ -129,7 +130,6 @@ class Table(metaclass=TableMetaclass):
     # These are just placeholder values, so type inference isn't confused - the
     # actual values are set in __init_subclass__.
     _meta = TableMeta()
-    id: Column
 
     def __init_subclass__(
         cls,
@@ -171,7 +171,7 @@ class Table(metaclass=TableMetaclass):
         foreign_key_columns: t.List[ForeignKey] = []
         secret_columns: t.List[Secret] = []
         json_columns: t.List[t.Union[JSON, JSONB]] = []
-        primary_key_column: t.Optional[Column] = None
+        primary_key: t.Optional[Column] = None
 
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]
@@ -192,7 +192,7 @@ class Table(metaclass=TableMetaclass):
                 setattr(cls, attribute_name, column)
 
                 if column._meta.primary and column._meta.key:
-                    primary_key_column = column
+                    primary_key = column
                     default_columns.append(column)
                 else:
                     non_default_columns.append(column)
@@ -211,19 +211,18 @@ class Table(metaclass=TableMetaclass):
                 if isinstance(column, (JSON, JSONB)):
                     json_columns.append(column)
 
-        if not primary_key_column:
-            primary_key_column = cls._create_serial_primary_key()
+        if not primary_key:
+            primary_key = cls._create_serial_primary_key()
 
-            columns.insert(0, primary_key_column)  # PK should be added first
-            default_columns.append(primary_key_column)
-
-        cls.id = primary_key_column
+            columns.insert(0, primary_key)  # PK should be added first
+            default_columns.append(primary_key)
 
         cls._meta = TableMeta(
             tablename=tablename,
             columns=columns,
             default_columns=default_columns,
             non_default_columns=non_default_columns,
+            primary_key=primary_key,
             foreign_key_columns=foreign_key_columns,
             json_columns=json_columns,
             secret_columns=secret_columns,
@@ -326,19 +325,20 @@ class Table(metaclass=TableMetaclass):
         """
         A proxy to an insert or update query.
         """
-        if not hasattr(self, "id"):
-            raise ValueError("No id value found")
-
         cls = self.__class__
 
-        if isinstance(self.id, int):
+        if isinstance(self._meta.primary_key, int):
             # pre-existing row
             kwargs: t.Dict[Column, t.Any] = {
                 i: getattr(self, i._meta.name, None)
                 for i in cls._meta.columns
-                if i._meta.name != "id"
+                if i._meta.name != self._meta.primary_key._meta.name
             }
-            return cls.update().values(kwargs).where(cls.id == self.id)
+            return (
+                cls.update()
+                .values(kwargs)
+                .where(cls._meta.primary_key == self._meta.primary_key)
+            )
         else:
             return cls.insert().add(self)
 
@@ -346,14 +346,14 @@ class Table(metaclass=TableMetaclass):
         """
         A proxy to a delete query.
         """
-        _id = self.id
+        if not self._meta.primary_key:
+            raise ValueError("Can only delete pre-existing rows with a PK.")
 
-        if not isinstance(_id, int):
-            raise ValueError("Can only delete pre-existing rows with an id.")
+        self._meta.primary_key = None  # type: ignore
 
-        self.id = None  # type: ignore
-
-        return self.__class__.delete().where(self.__class__.id == _id)
+        return self.__class__.delete().where(
+            self.__class__._meta.primary_key == self._meta.primary_key
+        )
 
     def get_related(self, foreign_key: t.Union[ForeignKey, str]) -> Objects:
         """
@@ -388,7 +388,9 @@ class Table(metaclass=TableMetaclass):
         return (
             references.objects()
             .where(
-                references._meta.get_column_by_name("id")
+                references._meta.get_column_by_name(
+                    self._meta.primary_key._meta.name
+                )
                 == getattr(self, column_name)
             )
             .first()
@@ -427,7 +429,7 @@ class Table(metaclass=TableMetaclass):
         """
         Creates a readable representation of the row.
         """
-        return Readable(template="%s", columns=[cls.id])
+        return Readable(template="%s", columns=[cls._meta.primary_key])
 
     ###########################################################################
 
@@ -463,8 +465,8 @@ class Table(metaclass=TableMetaclass):
         return self.querystring.__str__()
 
     def __repr__(self) -> str:
-        _id = self.id if isinstance(self.id, int) else None
-        return f"<{self.__class__.__name__}: {_id}>"
+        _pk = self._meta.primary_key if self._meta.primary_key else None
+        return f"<{self.__class__.__name__}: {_pk}>"
 
     ###########################################################################
     # Classmethods
