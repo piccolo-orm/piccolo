@@ -49,7 +49,7 @@ class QueryString:
         template: str,
         *args: t.Any,
         query_type: str = "generic",
-        table: t.Optional[Table] = None,
+        table: t.Optional[t.Type[Table]] = None,
     ) -> None:
         """
         Example template: "WHERE {} = {}"

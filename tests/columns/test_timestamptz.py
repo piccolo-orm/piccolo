@@ -64,7 +64,10 @@ class TestTimestamptz(TestCase):
             # Fetch it back from the database
             result = (
                 MyTable.objects()
-                .where(MyTable._meta.primary_key == row._meta.primary_key)
+                .where(
+                    MyTable._meta.primary_key
+                    == getattr(row, MyTable._meta.primary_key._meta.name)
+                )
                 .first()
                 .run_sync()
             )

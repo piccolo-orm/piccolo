@@ -36,7 +36,10 @@ class TestSelect(DBTestCase):
         # This is the recommended way of running these types of queries:
         response = (
             Band.select(Band.name)
-            .where(Band.manager.id == manager.id)
+            .where(
+                Band.manager.id
+                == getattr(manager, Band._meta.primary_key._meta.name)
+            )
             .run_sync()
         )
         self.assertEqual(response, [{"name": "Pythonistas"}])

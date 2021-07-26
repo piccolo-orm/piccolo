@@ -31,8 +31,7 @@ async def forwards():
             "index": False,
             "index_method": IndexMethod.btree,
             "choices": Enum(
-                "Size",
-                {"small": "s", "medium": "m", "large": "l"}
+                "Size", {"small": "s", "medium": "m", "large": "l"}
             ),
         },
     )

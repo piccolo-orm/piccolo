@@ -419,7 +419,7 @@ class SQLiteEngine(Engine):
 
     ###########################################################################
 
-    async def _get_inserted_pk(self, cursor, table: Table) -> t.Any:
+    async def _get_inserted_pk(self, cursor, table: t.Type[Table]) -> t.Any:
         """
         If `pk` column is non-integer
         `ROWID` and `pk` will return different types.
@@ -438,7 +438,7 @@ class SQLiteEngine(Engine):
         query: str,
         args: t.List[t.Any] = [],
         query_type: str = "generic",
-        table: t.Optional[Table] = None,
+        table: t.Optional[t.Type[Table]] = None,
     ):
         async with connect(**self.connection_kwargs) as connection:
             await connection.execute("PRAGMA foreign_keys = 1")
@@ -460,7 +460,7 @@ class SQLiteEngine(Engine):
         query: str,
         args: t.List[t.Any] = [],
         query_type: str = "generic",
-        table: t.Optional[Table] = None,
+        table: t.Optional[t.Type[Table]] = None,
     ):
         """
         This is used when a transaction is currently active.

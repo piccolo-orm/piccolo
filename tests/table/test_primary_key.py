@@ -30,7 +30,7 @@ class TestPrimaryKeyDefault(TestCase):
         row = MyTableDefaultPrimaryKey()
         row.save().run_sync()
 
-        self.assertIsInstance(row._meta.primary_key, int)
+        self.assertIsInstance(row._meta.primary_key, Serial)
 
 
 class TestPrimaryKeyInteger(TestCase):
