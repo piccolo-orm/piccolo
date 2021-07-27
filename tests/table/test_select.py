@@ -46,12 +46,22 @@ class TestSelect(DBTestCase):
 
         # Other cases which should work:
         response = (
-            Band.select(Band.name).where(Band.manager == manager).run_sync()
+            Band.select(Band.name)
+            .where(
+                Band.manager
+                == getattr(manager, Manager._meta.primary_key._meta.name)
+            )
+            .run_sync()
         )
         self.assertEqual(response, [{"name": "Pythonistas"}])
 
         response = (
-            Band.select(Band.name).where(Band.manager.id == manager).run_sync()
+            Band.select(Band.name)
+            .where(
+                Band.manager.id
+                == getattr(manager, Manager._meta.primary_key._meta.name)
+            )
+            .run_sync()
         )
         self.assertEqual(response, [{"name": "Pythonistas"}])
 
@@ -519,7 +529,7 @@ class TestSelect(DBTestCase):
         # Multiple calls to 'columns' should be additive.
         response = (
             Band.select()
-            .columns(Band.id)
+            .columns(Band._meta.primary_key)
             .columns(Band.name)
             .where(Band.name == "Pythonistas")
             .first()

@@ -327,7 +327,7 @@ class Table(metaclass=TableMetaclass):
         """
         cls = self.__class__
 
-        if isinstance(self._meta.primary_key, int):
+        if isinstance(getattr(self, self._meta.primary_key._meta.name), int):
             # pre-existing row
             kwargs: t.Dict[Column, t.Any] = {
                 i: getattr(self, i._meta.name, None)
@@ -336,8 +336,11 @@ class Table(metaclass=TableMetaclass):
             }
             return (
                 cls.update()
-                .values(kwargs)
-                .where(cls._meta.primary_key == self._meta.primary_key)
+                .values(kwargs)  # type: ignore
+                .where(
+                    cls._meta.primary_key
+                    == getattr(self, self._meta.primary_key._meta.name)
+                )
             )
         else:
             return cls.insert().add(self)
