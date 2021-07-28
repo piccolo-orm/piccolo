@@ -56,7 +56,10 @@ class Insert(Query):
             [f'"{i._meta.name}"' for i in self.table._meta.columns]
         )
         values = ",".join(["{}" for i in self.add_delegate._add])
-        query = f"{base} ({columns}) VALUES {values} RETURNING id"
+        primary_key_name = self.table._meta.primary_key._meta.name
+        query = (
+            f"{base} ({columns}) VALUES {values} RETURNING {primary_key_name}"
+        )
         return [
             QueryString(
                 query,

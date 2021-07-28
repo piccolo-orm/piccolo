@@ -327,7 +327,14 @@ class Table(metaclass=TableMetaclass):
         """
         cls = self.__class__
 
-        if isinstance(getattr(self, self._meta.primary_key._meta.name), int):
+        if isinstance(
+            getattr(
+                self,
+                self._meta.primary_key._meta.name,
+                None
+            ),
+            self._meta.primary_key.__class__.value_type
+        ):
             # pre-existing row
             kwargs: t.Dict[Column, t.Any] = {
                 i: getattr(self, i._meta.name, None)
@@ -352,10 +359,13 @@ class Table(metaclass=TableMetaclass):
         if not self._meta.primary_key:
             raise ValueError("Can only delete pre-existing rows with a PK.")
 
-        self._meta.primary_key = None  # type: ignore
+        setattr(self, self._meta.primary_key._meta.name, None)
 
         return self.__class__.delete().where(
-            self.__class__._meta.primary_key == self._meta.primary_key
+            self.__class__._meta.primary_key == getattr(
+                self,
+                self._meta.primary_key._meta.name
+            )
         )
 
     def get_related(self, foreign_key: t.Union[ForeignKey, str]) -> Objects:
