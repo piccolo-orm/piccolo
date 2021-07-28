@@ -588,11 +588,13 @@ class Column(Selectable):
             self, "_foreign_key_meta", None
         )
         if foreign_key_meta:
-            tablename = foreign_key_meta.resolved_references._meta.tablename
+            references = foreign_key_meta.resolved_references
+            tablename = references._meta.tablename
             on_delete = foreign_key_meta.on_delete.value
             on_update = foreign_key_meta.on_update.value
+            primary_key_name = references._meta.primary_key._meta.name
             query += (
-                f" REFERENCES {tablename} (id)"
+                f" REFERENCES {tablename} ({primary_key_name})"
                 f" ON DELETE {on_delete}"
                 f" ON UPDATE {on_update}"
             )
