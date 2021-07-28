@@ -15,9 +15,11 @@ from piccolo.engine.base import Batch, Engine
 from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
-from piccolo.table import Table
 from piccolo.utils.encoding import dump_json, load_json
 from piccolo.utils.sync import run_sync
+
+if t.TYPE_CHECKING:
+    from piccolo.table import Table
 
 ###############################################################################
 
