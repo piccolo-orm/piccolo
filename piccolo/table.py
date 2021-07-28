@@ -213,6 +213,7 @@ class Table(metaclass=TableMetaclass):
 
         if not primary_key:
             primary_key = cls._create_serial_primary_key()
+            setattr(cls, 'id', primary_key)
 
             columns.insert(0, primary_key)  # PK should be added first
             default_columns.append(primary_key)
