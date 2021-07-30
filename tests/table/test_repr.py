@@ -3,7 +3,6 @@ from ..example_app.tables import Manager
 
 
 class TestTableRepr(DBTestCase):
-
     @postgres_only
     def test_repr_postgres(self):
         self.assertEqual(

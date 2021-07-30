@@ -213,7 +213,7 @@ class Table(metaclass=TableMetaclass):
 
         if not primary_key:
             primary_key = cls._create_serial_primary_key()
-            setattr(cls, 'id', primary_key)
+            setattr(cls, "id", primary_key)
 
             columns.insert(0, primary_key)  # PK should be added first
             default_columns.append(primary_key)
@@ -329,12 +329,8 @@ class Table(metaclass=TableMetaclass):
         cls = self.__class__
 
         if isinstance(
-            getattr(
-                self,
-                self._meta.primary_key._meta.name,
-                None
-            ),
-            self._meta.primary_key.__class__.value_type
+            getattr(self, self._meta.primary_key._meta.name, None),
+            self._meta.primary_key.__class__.value_type,
         ):
             # pre-existing row
             kwargs: t.Dict[Column, t.Any] = {
