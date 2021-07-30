@@ -353,16 +353,15 @@ class Table(metaclass=TableMetaclass):
         """
         A proxy to a delete query.
         """
-        if not self._meta.primary_key:
+        primary_key_value = getattr(self, self._meta.primary_key._meta.name)
+
+        if not primary_key_value:
             raise ValueError("Can only delete pre-existing rows with a PK.")
 
         setattr(self, self._meta.primary_key._meta.name, None)
 
         return self.__class__.delete().where(
-            self.__class__._meta.primary_key == getattr(
-                self,
-                self._meta.primary_key._meta.name
-            )
+            self.__class__._meta.primary_key == primary_key_value
         )
 
     def get_related(self, foreign_key: t.Union[ForeignKey, str]) -> Objects:
