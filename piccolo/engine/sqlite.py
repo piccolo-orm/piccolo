@@ -423,9 +423,9 @@ class SQLiteEngine(Engine):
 
     async def _get_inserted_pk(self, cursor, table: t.Type[Table]) -> t.Any:
         """
-        If `pk` column is non-integer
-        `ROWID` and `pk` will return different types.
-        Need to query by `lastrowid` to get `pk`s in SQLite prior to 3.35.0.
+        If the `pk` column is a non-integer then `ROWID` and `pk` will return
+        different types. Need to query by `lastrowid` to get `pk`s in SQLite
+        prior to 3.35.0.
         """
         # TODO: Add RETURNING clause for sqlite > 3.35.0
         await cursor.execute(

@@ -100,9 +100,12 @@ class TestDefaults(TestCase):
             Timestamp(default=None, null=False)
 
     def test_foreignkey(self):
-        ForeignKey(references=Table(), default=None, null=True)
-        ForeignKey(references=Table(), default=1)
+        class MyTable(Table):
+            pass
+
+        ForeignKey(references=MyTable, default=None, null=True)
+        ForeignKey(references=MyTable, default=1)
         with self.assertRaises(ValueError):
-            ForeignKey(references=Table, default="hello world")
+            ForeignKey(references=MyTable, default="hello world")
         with self.assertRaises(ValueError):
-            ForeignKey(references=Table, default=None, null=False)
+            ForeignKey(references=MyTable, default=None, null=False)

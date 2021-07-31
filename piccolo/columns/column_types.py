@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import decimal
+import inspect
 import typing as t
 import uuid
 from datetime import date, datetime, time, timedelta
@@ -979,9 +980,10 @@ class Float(Real):
 ###############################################################################
 
 
-class ForeignKey(Integer):
+class ForeignKey(Column):
     """
-    Used to reference another table. Uses the ``int`` type for values.
+    Used to reference another table. Uses the same type as the primary key
+    column on the table it references.
 
     **Example**
 
@@ -1144,33 +1146,60 @@ class ForeignKey(Integer):
 
     """  # noqa: E501
 
-    column_type = "INTEGER"
+    _foreign_key_meta: ForeignKeyMeta
+
+    @property
+    def column_type(self):
+        """
+        A ForeignKey column needs to have the same type as the primary key
+        column of the table being referenced.
+        """
+        referenced_table = self._foreign_key_meta.resolved_references
+        pk_column = referenced_table._meta.primary_key
+        if isinstance(pk_column, Serial):
+            return Integer().column_type
+        else:
+            return pk_column.column_type
 
     def __init__(
         self,
         references: t.Union[t.Type[Table], LazyTableReference, str],
-        default: t.Union[int, Enum, None] = None,
+        default: t.Any = None,
         null: bool = True,
         on_delete: OnDelete = OnDelete.cascade,
         on_update: OnUpdate = OnUpdate.cascade,
         **kwargs,
     ) -> None:
-        self._validate_default(default, (int, None))
+        from piccolo.table import Table
+
+        if inspect.isclass(references):
+            references = t.cast(t.Type, references)
+            if issubclass(references, Table):
+                # Using this to validate the default value - will raise a
+                # ValueError if incorrect.
+                if isinstance(references._meta.primary_key, Serial):
+                    Integer(default=default, null=null)
+                else:
+                    references._meta.primary_key.__class__(
+                        default=default, null=null
+                    )
+
+        self.default = default
 
         kwargs.update(
             {
                 "references": references,
                 "on_delete": on_delete,
                 "on_update": on_update,
+                "null": null,
             }
         )
-        super().__init__(default=default, null=null, **kwargs)
+
+        super().__init__(**kwargs)
 
         # This is here just for type inference - the actual value is set by
         # the Table metaclass. We can't set the actual value here, as
         # only the metaclass has access to the table.
-        from piccolo.table import Table
-
         self._foreign_key_meta = ForeignKeyMeta(
             Table, OnDelete.cascade, OnUpdate.cascade
         )

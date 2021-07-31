@@ -318,6 +318,9 @@ class Column(Selectable):
             }
         )
 
+        if (primary is True) and (key is False):
+            raise ValueError("If primary=True, please also set key=True.")
+
         if kwargs.get("default", ...) is None and not null:
             raise ValueError(
                 "A default value of None isn't allowed if the column is "

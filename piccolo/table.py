@@ -286,10 +286,17 @@ class Table(metaclass=TableMetaclass):
             if is_table_class:
                 foreign_key_column.set_proxy_columns()
 
-    def __init__(self, ignore_missing: bool = False, **kwargs):
+    def __init__(
+        self,
+        ignore_missing: bool = False,
+        exists_in_db: bool = False,
+        **kwargs,
+    ):
         """
         Assigns any default column values to the class.
         """
+        self._exists_in_db = exists_in_db
+
         for column in self._meta.columns:
             value = kwargs.pop(column._meta.name, ...)
             if value is ...:
@@ -328,10 +335,7 @@ class Table(metaclass=TableMetaclass):
         """
         cls = self.__class__
 
-        if isinstance(
-            getattr(self, self._meta.primary_key._meta.name, None),
-            self._meta.primary_key.__class__.value_type,
-        ):
+        if self._exists_in_db:
             # pre-existing row
             kwargs: t.Dict[Column, t.Any] = {
                 i: getattr(self, i._meta.name, None)
