@@ -1,7 +1,15 @@
+import importlib
 import os
 import sys
 
 from targ import CLI  # type: ignore
+
+try:
+    import uvloop
+
+    uvloop.install()
+except ImportError:
+    pass
 
 from piccolo.apps.app.piccolo_app import APP_CONFIG as app_config
 from piccolo.apps.asgi.piccolo_app import APP_CONFIG as asgi_config

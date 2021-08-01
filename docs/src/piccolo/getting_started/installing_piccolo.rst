@@ -21,6 +21,10 @@ Now install piccolo, ideally inside a `virtualenv <https://docs.python-guide.org
     # The important bit:
     pip install piccolo
 
-    # For optional orjson support, which improves JSON serialisation
-    # performance:
+    # Optional: orjson for improved JSON serialisation performance
     pip install piccolo[orjson]
+
+    # Optional: uvloop as default event loop instead of asyncio
+    # If using Piccolo with Uvicorn, Uvicorn will set uvloop as
+    # default event loop if installed
+    pip install piccolo[uvloop]

@@ -15,3 +15,5 @@ _build/
 *.sqlite
 htmlcov/
 prof/
+.env/
+.venv/
