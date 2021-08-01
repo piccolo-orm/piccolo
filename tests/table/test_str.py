@@ -9,8 +9,8 @@ class TestTableStr(TestCase):
             Manager._table_str(),
             (
                 "class Manager(Table, tablename='manager'):\n"
-                "    id = Serial(null=False, primary=True, key=True, unique=False, index=False, index_method=IndexMethod.btree, choices=None)\n"  # noqa: E501
-                "    name = Varchar(length=50, default='', null=False, primary=False, key=False, unique=False, index=False, index_method=IndexMethod.btree, choices=None)\n"  # noqa: E501
+                "    id = Serial(null=False, primary_key=True, unique=False, index=False, index_method=IndexMethod.btree, choices=None)\n"  # noqa: E501
+                "    name = Varchar(length=50, default='', null=False, primary_key=False, unique=False, index=False, index_method=IndexMethod.btree, choices=None)\n"  # noqa: E501
             ),
         )
 

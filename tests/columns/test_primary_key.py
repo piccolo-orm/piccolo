@@ -10,12 +10,12 @@ class MyTableDefaultPrimaryKey(Table):
 
 
 class MyTablePrimaryKeySerial(Table):
-    pk = Serial(null=False, primary=True, key=True)
+    pk = Serial(null=False, primary_key=True)
     name = Varchar()
 
 
 class MyTablePrimaryKeyUUID(Table):
-    id = UUID(null=False, primary=True, key=True)
+    id = UUID(null=False, primary_key=True)
     name = Varchar()
 
 

@@ -191,7 +191,7 @@ class Table(metaclass=TableMetaclass):
                 column = attribute.copy()
                 setattr(cls, attribute_name, column)
 
-                if column._meta.primary and column._meta.key:
+                if column._meta.primary_key:
                     primary_key = column
                     default_columns.append(column)
                 else:
@@ -321,7 +321,7 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def _create_serial_primary_key(cls) -> Serial:
-        pk = Serial(index=False, primary=True, key=True)
+        pk = Serial(index=False, primary_key=True)
         pk._meta._name = "id"
         pk._meta._table = cls
 

@@ -526,7 +526,7 @@ class PrimaryKey(Serial):
     def __init__(self, **kwargs) -> None:
         # Set the index to False, as a database should automatically create
         # an index for a PrimaryKey column.
-        kwargs.update({"primary": True, "key": True, "index": False})
+        kwargs.update({"primary_key": True, "index": False})
 
         colored_warning(
             "`PrimaryKey` is deprecated and "
