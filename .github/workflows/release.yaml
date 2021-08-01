@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: 3.7
       - name: "Install dependencies"
-        run: "pip install -r dev-requirements.txt"
+        run: "pip install -r requirements/dev-requirements.txt"
       - name: "Publish to PyPI"
         run: "./scripts/release.sh"
         env:
