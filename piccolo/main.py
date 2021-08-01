@@ -1,11 +1,10 @@
-import importlib
 import os
 import sys
 
 from targ import CLI  # type: ignore
 
 try:
-    import uvloop
+    import uvloop  # type: ignore
 
     uvloop.install()
 except ImportError:
