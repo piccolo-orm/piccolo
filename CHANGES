@@ -1,6 +1,14 @@
 Changes
 =======
 
+0.27.0
+------
+Added uvloop as an optional dependency, installed via `pip install piccolo[uvloop]`
+(courtesy @aminalaee). uvloop is a faster implementation of the asyncio event
+loop found in Python's standard library. When uvloop is installed, Piccolo will
+use it to increase the performance of the Piccolo CLI, and web servers such as
+Uvicorn will use it to increase the performance of your ASGI app.
+
 0.26.0
 ------
 Added ``eq`` and ``ne`` methods to the ``Boolean`` column, which can be used
