@@ -4,7 +4,7 @@ import sys
 from targ import CLI  # type: ignore
 
 try:
-    import uvloop  # type: ignore
+    import uvloop
 
     uvloop.install()
 except ImportError:

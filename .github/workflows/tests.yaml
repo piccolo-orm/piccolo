@@ -25,6 +25,7 @@ jobs:
                   pip install -r requirements/requirements.txt
                   pip install -r requirements/dev-requirements.txt
                   pip install -r requirements/test-requirements.txt
+                  mypy --install-types
             - name: Lint
               run: ./scripts/lint.sh
 
