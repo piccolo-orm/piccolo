@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+from typing import List
 from setuptools import find_packages, setup
 
 from piccolo import __VERSION__ as VERSION
@@ -9,14 +10,38 @@ from piccolo import __VERSION__ as VERSION
 
 directory = os.path.abspath(os.path.dirname(__file__))
 
-
-with open(os.path.join(directory, "requirements.txt")) as f:
-    contents = f.read()
-    REQUIREMENTS = [i.strip() for i in contents.strip().split("\n")]
+extras = ["orjson", "playground", "uvloop"]
 
 
 with open(os.path.join(directory, "README.md")) as f:
     LONG_DESCRIPTION = f.read()
+
+
+def parse_requirement(req_path: str) -> List[str]:
+    """
+    Parse requirement file.
+    Example:
+        parse_requirement('requirements.txt')       # requirements/requirements.txt
+        parse_requirement('extras/playground.txt')  # requirements/extras/playground.txt
+    Returns:
+        List[str]: list of requirements specified in the file.
+    """
+    with open(os.path.join(directory, "requirements", req_path)) as f:
+        contents = f.read()
+        return [i.strip() for i in contents.strip().split("\n")]
+
+
+def extras_require():
+    """
+    Parse requirements in requirements/extras directory
+    """
+    extra_requirements = {}
+    for extra in extras:
+        extra_requirements[extra] = parse_requirement(
+            os.path.join("extras", extra + ".txt")
+        )
+
+    return extra_requirements
 
 
 setup(
@@ -41,8 +66,8 @@ setup(
         ],
         "piccolo": ["py.typed"],
     },
-    install_requires=REQUIREMENTS,
-    extras_require={"orjson": ["orjson==3.4.1"], "playground": ["ipython"]},
+    install_requires=parse_requirement("requirements.txt"),
+    extras_require=extras_require(),
     license="MIT",
     classifiers=[
         "License :: OSI Approved :: MIT License",
