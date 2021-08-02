@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+from typing import List
 from setuptools import find_packages, setup
 
 from piccolo import __VERSION__ as VERSION
@@ -16,8 +17,9 @@ with open(os.path.join(directory, "README.md")) as f:
     LONG_DESCRIPTION = f.read()
 
 
-def parse_requirement(req_path):
-    """Parse requirement file.
+def parse_requirement(req_path: str) -> List[str]:
+    """
+    Parse requirement file.
     Example:
         parse_requirement('requirements.txt')       # requirements/requirements.txt
         parse_requirement('extras/playground.txt')  # requirements/extras/playground.txt
@@ -30,7 +32,9 @@ def parse_requirement(req_path):
 
 
 def extras_require():
-    """Parse requirements in requirements/extras directory"""
+    """
+    Parse requirements in requirements/extras directory
+    """
     extra_requirements = {}
     for extra in extras:
         extra_requirements[extra] = parse_requirement(
