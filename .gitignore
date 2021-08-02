@@ -16,5 +16,5 @@ coverage.xml
 *.sqlite
 htmlcov/
 prof/
-.venv/
 .env/
+.venv/
