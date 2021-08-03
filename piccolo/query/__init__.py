@@ -1,6 +1,7 @@
 from .base import Query
 from .methods import (
     Alter,
+    Avg,
     Count,
     Create,
     CreateIndex,
@@ -8,9 +9,12 @@ from .methods import (
     DropIndex,
     Exists,
     Insert,
+    Max,
+    Min,
     Objects,
     Raw,
     Select,
+    Sum,
     TableExists,
     Update,
 )

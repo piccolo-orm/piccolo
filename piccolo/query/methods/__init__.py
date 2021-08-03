@@ -1,3 +1,4 @@
+from .aggregate import Avg, Max, Min, Sum
 from .alter import Alter
 from .count import Count
 from .create import Create
