@@ -10,7 +10,7 @@ from piccolo import __VERSION__ as VERSION
 
 directory = os.path.abspath(os.path.dirname(__file__))
 
-extras = ["orjson", "playground", "uvloop"]
+extras = ["orjson", "playground", "postgres", "sqlite", "uvloop"]
 
 
 with open(os.path.join(directory, "README.md")) as f:
