@@ -9,14 +9,19 @@ import uuid
 from dataclasses import dataclass
 from decimal import Decimal
 
-from aiosqlite import Connection, Cursor, connect
-
 from piccolo.engine.base import Batch, Engine
 from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 from piccolo.utils.encoding import dump_json, load_json
+from piccolo.utils.lazy_loader import LazyLoader
 from piccolo.utils.sync import run_sync
+
+aiosqlite = LazyLoader("aiosqlite", globals(), "aiosqlite")
+
+
+if t.TYPE_CHECKING:
+    from aiosqlite import Connection, Cursor  # type: ignore
 
 ###############################################################################
 
@@ -411,7 +416,7 @@ class SQLiteEngine(Engine):
     ###########################################################################
 
     async def get_connection(self) -> Connection:
-        connection = await connect(**self.connection_kwargs)
+        connection = await aiosqlite.connect(**self.connection_kwargs)
         connection.row_factory = dict_factory  # type: ignore
         await connection.execute("PRAGMA foreign_keys = 1")
         return connection
@@ -421,7 +426,7 @@ class SQLiteEngine(Engine):
     async def _run_in_new_connection(
         self, query: str, args: t.List[t.Any] = [], query_type: str = "generic"
     ):
-        async with connect(**self.connection_kwargs) as connection:
+        async with aiosqlite.connect(**self.connection_kwargs) as connection:
             await connection.execute("PRAGMA foreign_keys = 1")
 
             connection.row_factory = dict_factory  # type: ignore

@@ -1,16 +1,17 @@
 import asyncio
 from unittest.mock import MagicMock, patch
 
-from asyncpg.exceptions import UniqueViolationError  # type: ignore
-
 from piccolo.apps.migrations.auto import MigrationManager
 from piccolo.apps.migrations.commands.base import BaseMigrationManager
 from piccolo.columns import Text, Varchar
 from piccolo.columns.base import OnDelete, OnUpdate
 from piccolo.columns.column_types import ForeignKey
 from piccolo.conf.apps import AppConfig
+from piccolo.utils.lazy_loader import LazyLoader
 from tests.base import DBTestCase, postgres_only, set_mock_return_value
 from tests.example_app.tables import Manager
+
+asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")
 
 
 class TestMigrationManager(DBTestCase):
@@ -342,7 +343,7 @@ class TestMigrationManager(DBTestCase):
 
         asyncio.run(manager.run())
 
-        with self.assertRaises(UniqueViolationError):
+        with self.assertRaises(asyncpg.exceptions.UniqueViolationError):
             self.run_sync(
                 "INSERT INTO manager VALUES "
                 "(default, 'Dave'), (default, 'Dave');"

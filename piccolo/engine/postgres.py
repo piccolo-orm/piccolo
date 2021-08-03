@@ -4,18 +4,20 @@ import contextvars
 import typing as t
 from dataclasses import dataclass
 
-import asyncpg  # type: ignore
-from asyncpg.connection import Connection  # type: ignore
-from asyncpg.cursor import Cursor  # type: ignore
-from asyncpg.exceptions import InsufficientPrivilegeError  # type: ignore
-from asyncpg.pool import Pool  # type: ignore
-
 from piccolo.engine.base import Batch, Engine
 from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
+from piccolo.utils.lazy_loader import LazyLoader
 from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import Level, colored_string, colored_warning
+
+asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")
+
+if t.TYPE_CHECKING:
+    from asyncpg.connection import Connection  # type: ignore
+    from asyncpg.cursor import Cursor  # type: ignore
+    from asyncpg.pool import Pool  # type: ignore
 
 
 @dataclass
@@ -283,7 +285,7 @@ class PostgresEngine(Engine):
                 await self._run_in_new_connection(
                     f'CREATE EXTENSION IF NOT EXISTS "{extension}"',
                 )
-            except InsufficientPrivilegeError:
+            except asyncpg.exceptions.InsufficientPrivilegeError:
                 print(
                     colored_string(
                         f"=> Unable to create {extension} extension - some "
