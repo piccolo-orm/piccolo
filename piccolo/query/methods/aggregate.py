@@ -37,7 +37,7 @@ class Avg(Selectable):
 
 class Max(Selectable):
     """
-    MAX() SQL function. The column type must be numeric to run the query.
+    MAX() SQL function.
 
     await Band.select(Max(Band.popularity)).run()
     """
@@ -52,7 +52,7 @@ class Max(Selectable):
 
 class Min(Selectable):
     """
-    MIN() SQL function. The column type must be numeric to run the query.
+    MIN() SQL function.
 
     await Band.select(Min(Band.popularity)).run()
     """
