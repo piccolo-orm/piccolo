@@ -1,4 +1,3 @@
-from .aggregate import Avg, Max, Min, Sum
 from .alter import Alter
 from .count import Count
 from .create import Create
@@ -9,6 +8,6 @@ from .exists import Exists
 from .insert import Insert
 from .objects import Objects
 from .raw import Raw
-from .select import Select
+from .select import Avg, Max, Min, Select, Sum
 from .table_exists import TableExists
 from .update import Update

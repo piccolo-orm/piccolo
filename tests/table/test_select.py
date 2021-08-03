@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from piccolo.apps.user.tables import BaseUser
 from piccolo.columns.combination import WhereRaw
-from piccolo.query.methods.select import Count
+from piccolo.query.methods.select import Avg, Count, Max, Min, Sum
 
 from ..base import DBTestCase, postgres_only, sqlite_only
 from ..example_app.tables import Band, Concert, Manager
@@ -496,6 +496,117 @@ class TestSelect(DBTestCase):
                 {"manager.name": "Mads", "count": 2},
             ]
         )
+
+    def test_avg(self):
+        self.insert_rows()
+
+        response = Band.select(Avg(Band.popularity)).first().run_sync()
+
+        self.assertTrue(float(response["avg"]) == 1003.3333333333334)
+
+    def test_avg_alias(self):
+        self.insert_rows()
+
+        response = (
+            Band.select(Avg(Band.popularity, alias="popularity_avg"))
+            .first()
+            .run_sync()
+        )
+
+        self.assertTrue(
+            float(response["popularity_avg"]) == 1003.3333333333334
+        )
+
+    def test_max(self):
+        self.insert_rows()
+
+        response = Band.select(Max(Band.popularity)).first().run_sync()
+
+        self.assertTrue(response["max"] == 2000)
+
+    def test_max_alias(self):
+        self.insert_rows()
+
+        response = (
+            Band.select(Max(Band.popularity, alias="popularity_max"))
+            .first()
+            .run_sync()
+        )
+
+        self.assertTrue(response["popularity_max"] == 2000)
+
+    def test_min(self):
+        self.insert_rows()
+
+        response = Band.select(Min(Band.popularity)).first().run_sync()
+
+        self.assertTrue(response["min"] == 10)
+
+    def test_min_alias(self):
+        self.insert_rows()
+
+        response = (
+            Band.select(Min(Band.popularity, alias="popularity_min"))
+            .first()
+            .run_sync()
+        )
+
+        self.assertTrue(response["popularity_min"] == 10)
+
+    def test_sum(self):
+        self.insert_rows()
+
+        response = Band.select(Sum(Band.popularity)).first().run_sync()
+
+        self.assertTrue(response["sum"] == 3010)
+
+    def test_sum_alias(self):
+        self.insert_rows()
+
+        response = (
+            Band.select(Sum(Band.popularity, alias="popularity_sum"))
+            .first()
+            .run_sync()
+        )
+
+        self.assertTrue(response["popularity_sum"] == 3010)
+
+    def test_chain_different_functions(self):
+        self.insert_rows()
+
+        response = (
+            Band.select(Avg(Band.popularity), Sum(Band.popularity))
+            .first()
+            .run_sync()
+        )
+
+        self.assertTrue(float(response["avg"]) == 1003.3333333333334)
+        self.assertTrue(response["sum"] == 3010)
+
+    def test_chain_different_functions_alias(self):
+        self.insert_rows()
+
+        response = (
+            Band.select(
+                Avg(Band.popularity, alias="popularity_avg"),
+                Sum(Band.popularity, alias="popularity_sum"),
+            )
+            .first()
+            .run_sync()
+        )
+
+        self.assertTrue(
+            float(response["popularity_avg"]) == 1003.3333333333334
+        )
+        self.assertTrue(response["popularity_sum"] == 3010)
+
+    def test_avg_validation(self):
+        with self.assertRaises(Exception):
+            Band.select(Avg(Band.name)).run_sync()
+
+    def test_sum_validation(self):
+        with self.assertRaises(Exception):
+            Band.select(Sum(Band.name)).run_sync()
 
     def test_columns(self):
         """
