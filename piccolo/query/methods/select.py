@@ -25,6 +25,10 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table  # noqa
 
 
+def is_numeric_column(column: Column) -> bool:
+    return column.value_type in (int, decimal.Decimal, float)
+
+
 class Avg(Selectable):
     """
     AVG() SQL function. Column type must be numeric to run the query.
@@ -35,7 +39,10 @@ class Avg(Selectable):
     """
 
     def __init__(self, column: Column, alias: str = "avg"):
-        self.column = column
+        if is_numeric_column(column):
+            self.column = column
+        else:
+            raise ValueError("Column type must be numeric to run the query.")
         self.alias = alias
 
     def as_alias(self, alias: str) -> Avg:
@@ -43,12 +50,7 @@ class Avg(Selectable):
         return self
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        if self.column.value_type in (int, decimal.Decimal, float):
-            column_name = self.column._meta.get_full_name(
-                just_alias=just_alias
-            )
-        else:
-            raise ValueError("Column type must be numeric to run the query.")
+        column_name = self.column._meta.get_full_name(just_alias=just_alias)
         return f"AVG({column_name}) AS {self.alias}"
 
 
@@ -128,7 +130,10 @@ class Sum(Selectable):
     """
 
     def __init__(self, column: Column, alias: str = "sum"):
-        self.column = column
+        if is_numeric_column(column):
+            self.column = column
+        else:
+            raise ValueError("Column type must be numeric to run the query.")
         self.alias = alias
 
     def as_alias(self, alias: str) -> Sum:
@@ -136,12 +141,7 @@ class Sum(Selectable):
         return self
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        if self.column.value_type in (int, decimal.Decimal, float):
-            column_name = self.column._meta.get_full_name(
-                just_alias=just_alias
-            )
-        else:
-            raise ValueError("Column type must be numeric to run the query.")
+        column_name = self.column._meta.get_full_name(just_alias=just_alias)
         return f"SUM({column_name}) AS {self.alias}"
 
 

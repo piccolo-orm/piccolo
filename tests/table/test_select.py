@@ -735,11 +735,11 @@ class TestSelect(DBTestCase):
         self.assertTrue(response["popularity_sum"] == 3010)
 
     def test_avg_validation(self):
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValueError):
             Band.select(Avg(Band.name)).run_sync()
 
     def test_sum_validation(self):
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValueError):
             Band.select(Sum(Band.name)).run_sync()
 
     def test_columns(self):

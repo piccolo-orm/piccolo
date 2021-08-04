@@ -86,7 +86,7 @@ Aggregate functions
 Count
 ~~~~~
 
-Returns the number of rows which match the query.
+Returns the number of rows which match the query:
 
 .. code-block:: python
 
@@ -96,7 +96,7 @@ Returns the number of rows which match the query.
 Avg
 ~~~
 
-Returns average of numeric rows which match the query.
+Returns the average for a given column:
 
 .. code-block:: python
 
@@ -108,7 +108,7 @@ Returns average of numeric rows which match the query.
 Sum
 ~~~
 
-Returns sum of numeric rows which match the query.
+Returns the sum for a given column:
 
 .. code-block:: python
 
@@ -120,7 +120,7 @@ Returns sum of numeric rows which match the query.
 Max
 ~~~
 
-Returns maximum of rows which match the query.
+Returns the maximum for a given column:
 
 .. code-block:: python
 
@@ -132,7 +132,7 @@ Returns maximum of rows which match the query.
 Min
 ~~~
 
-Returns minimum of rows which match the query.
+Returns the minimum for a given column:
 
 .. code-block:: python
 
@@ -144,7 +144,7 @@ Returns minimum of rows which match the query.
 Additional features
 ~~~~~~~~~~~~~~~~~~~
 
-You also can chain multiple different aggregate functions in one query,
+You also can chain multiple different aggregate functions in one query:
 
 .. code-block:: python
 
@@ -153,7 +153,7 @@ You also can chain multiple different aggregate functions in one query,
     >>> response
     {"avg": 750.0, "sum": 1500}
 
-use aliases for aggregate functions like this
+And can use aliases for aggregate functions like this:
 
 .. code-block:: python
 
@@ -162,11 +162,7 @@ use aliases for aggregate functions like this
     >>> response["popularity_avg"]
     750.0
 
-or use ``as_alias`` method for aggregate functions like this.
-
-.. code-block:: python
-
-    >>> from piccolo.query import Avg
+    # Alternatively, you can use the `as_alias` method.
     >>> response = Band.select(Avg(Band.popularity).as_alias("popularity_avg")).first().run_sync()
     >>> response["popularity_avg"]
     750.0
