@@ -572,11 +572,12 @@ class MigrationManager:
                 _Table: t.Type[Table] = create_table_class(
                     class_name=add_table.class_name,
                     class_kwargs={"tablename": add_table.tablename},
-                    class_members={
-                        column._meta.name: column
-                        for column in add_table.columns
-                    },
+                    class_members={},
                 )
+
+                _Table._meta.columns = (
+                    []
+                )  # Create empty table then add columns
 
                 await _Table.create_table().run()
 
