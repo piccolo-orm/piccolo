@@ -193,9 +193,6 @@ class Table(metaclass=TableMetaclass):
 
                 if column._meta.primary_key:
                     primary_key = column
-                    # default_columns.append(column)
-                # else:
-                # non_default_columns.append(column)
 
                 non_default_columns.append(column)
                 columns.append(column)
@@ -218,7 +215,6 @@ class Table(metaclass=TableMetaclass):
 
             columns.insert(0, primary_key)  # PK should be added first
             non_default_columns.append(primary_key)
-            # default_columns.append(primary_key)
 
         cls._meta = TableMeta(
             tablename=tablename,
