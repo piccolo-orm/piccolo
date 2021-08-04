@@ -37,13 +37,16 @@ class Avg(Selectable):
         self.column = column
         self.alias = alias
 
+    def as_alias(self, alias: str):  # pragma: no cover
+        self.alias = alias
+
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         if self.column.value_type in (int, decimal.Decimal, float):
             column_name = self.column._meta.get_full_name(
                 just_alias=just_alias
             )
         else:
-            raise Exception("Column type must be numeric to run the query.")
+            raise ValueError("Column type must be numeric to run the query.")
         return f"AVG({column_name}) AS {self.alias}"
 
 
@@ -81,6 +84,9 @@ class Max(Selectable):
         self.column = column
         self.alias = alias
 
+    def as_alias(self, alias: str):  # pragma: no cover
+        self.alias = alias
+
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         column_name = self.column._meta.get_full_name(just_alias=just_alias)
         return f"MAX({column_name}) AS {self.alias}"
@@ -96,6 +102,9 @@ class Min(Selectable):
 
     def __init__(self, column: Column, alias: str = "min"):
         self.column = column
+        self.alias = alias
+
+    def as_alias(self, alias: str):  # pragma: no cover
         self.alias = alias
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
@@ -115,13 +124,16 @@ class Sum(Selectable):
         self.column = column
         self.alias = alias
 
+    def as_alias(self, alias: str):  # pragma: no cover
+        self.alias = alias
+
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         if self.column.value_type in (int, decimal.Decimal, float):
             column_name = self.column._meta.get_full_name(
                 just_alias=just_alias
             )
         else:
-            raise Exception("Column type must be numeric to run the query.")
+            raise ValueError("Column type must be numeric to run the query.")
         return f"SUM({column_name}) AS {self.alias}"
 
 
