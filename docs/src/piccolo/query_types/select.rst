@@ -43,6 +43,18 @@ By using ``as_alias``, the name of the row can be overriden in the response.
 
 This is equivalent to ``SELECT name AS title FROM band`` in SQL.
 
+Distinct
+--------
+
+To get ``DISTINCT`` values of a column add `distinct()` to `select` statement.
+
+.. code-block:: python
+
+    >>> Band.select(Band.name).distinct().run_sync()
+    [{'title': 'Pythonistas'}]
+
+This is equivalent to ``SELECT DISTINCT name FROM band`` in SQL.
+
 Joins
 -----
 
