@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.28.0
+------
+Added aggregations functions, such as ``Sum``, ``Min``, ``Max`` and ``Avg``,
+for use in select queries (courtesy @sinisaos).
+
 0.27.0
 ------
 Added uvloop as an optional dependency, installed via `pip install piccolo[uvloop]`
