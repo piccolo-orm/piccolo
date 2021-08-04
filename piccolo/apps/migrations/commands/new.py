@@ -156,9 +156,6 @@ class AutoMigrationManager(BaseMigrationManager):
         schema_snapshot = SchemaSnapshot(migration_managers)
         snapshot = schema_snapshot.get_snapshot()
 
-        for i in app_config.table_classes:
-            print(i._meta.non_default_columns, "@@@@@@@@@2")
-
         # Now get the current schema:
         current_diffable_tables = [
             DiffableTable(
