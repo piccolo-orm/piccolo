@@ -7,7 +7,7 @@ from piccolo.apps.migrations.auto import MigrationManager
 from piccolo.apps.migrations.commands.base import BaseMigrationManager
 from piccolo.columns import Text, Varchar
 from piccolo.columns.base import OnDelete, OnUpdate
-from piccolo.columns.column_types import ForeignKey, Serial
+from piccolo.columns.column_types import ForeignKey
 from piccolo.conf.apps import AppConfig
 from tests.base import DBTestCase, postgres_only, set_mock_return_value
 from tests.example_app.tables import Manager
