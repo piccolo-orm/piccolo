@@ -217,6 +217,7 @@ class Table(metaclass=TableMetaclass):
             setattr(cls, "id", primary_key)
 
             columns.insert(0, primary_key)  # PK should be added first
+            non_default_columns.append(primary_key)
             # default_columns.append(primary_key)
 
         cls._meta = TableMeta(
