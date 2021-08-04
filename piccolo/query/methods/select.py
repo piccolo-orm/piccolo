@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import decimal
 import typing as t
 from collections import OrderedDict
 
@@ -24,6 +25,33 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table  # noqa
 
 
+class Avg(Selectable):
+    """
+    AVG() SQL function. Column type must be numeric to run the query.
+
+    await Band.select(Avg(Band.popularity)).run() or with aliases
+    await Band.select(Avg(Band.popularity, alias="popularity_avg")).run()
+    await Band.select(Avg(Band.popularity).as_alias("popularity_avg")).run()
+    """
+
+    def __init__(self, column: Column, alias: str = "avg"):
+        self.column = column
+        self.alias = alias
+
+    def as_alias(self, alias: str) -> Avg:
+        self.alias = alias
+        return self
+
+    def get_select_string(self, engine_type: str, just_alias=False) -> str:
+        if self.column.value_type in (int, decimal.Decimal, float):
+            column_name = self.column._meta.get_full_name(
+                just_alias=just_alias
+            )
+        else:
+            raise ValueError("Column type must be numeric to run the query.")
+        return f"AVG({column_name}) AS {self.alias}"
+
+
 class Count(Selectable):
     """
     Used in conjunction with the ``group_by`` clause in ``Select`` queries.
@@ -44,6 +72,77 @@ class Count(Selectable):
                 just_alias=just_alias
             )
         return f"COUNT({column_name}) AS count"
+
+
+class Max(Selectable):
+    """
+    MAX() SQL function.
+
+    await Band.select(Max(Band.popularity)).run() or with aliases
+    await Band.select(Max(Band.popularity, alias="popularity_max")).run()
+    await Band.select(Max(Band.popularity).as_alias("popularity_max")).run()
+    """
+
+    def __init__(self, column: Column, alias: str = "max"):
+        self.column = column
+        self.alias = alias
+
+    def as_alias(self, alias: str) -> Max:
+        self.alias = alias
+        return self
+
+    def get_select_string(self, engine_type: str, just_alias=False) -> str:
+        column_name = self.column._meta.get_full_name(just_alias=just_alias)
+        return f"MAX({column_name}) AS {self.alias}"
+
+
+class Min(Selectable):
+    """
+    MIN() SQL function.
+
+    await Band.select(Min(Band.popularity)).run()
+    await Band.select(Min(Band.popularity, alias="popularity_min")).run()
+    await Band.select(Min(Band.popularity).as_alias("popularity_min")).run()
+    """
+
+    def __init__(self, column: Column, alias: str = "min"):
+        self.column = column
+        self.alias = alias
+
+    def as_alias(self, alias: str) -> Min:
+        self.alias = alias
+        return self
+
+    def get_select_string(self, engine_type: str, just_alias=False) -> str:
+        column_name = self.column._meta.get_full_name(just_alias=just_alias)
+        return f"MIN({column_name}) AS {self.alias}"
+
+
+class Sum(Selectable):
+    """
+    SUM() SQL function. Column type must be numeric to run the query.
+
+    await Band.select(Sum(Band.popularity)).run()
+    await Band.select(Sum(Band.popularity, alias="popularity_sum")).run()
+    await Band.select(Sum(Band.popularity).as_alias("popularity_sum")).run()
+    """
+
+    def __init__(self, column: Column, alias: str = "sum"):
+        self.column = column
+        self.alias = alias
+
+    def as_alias(self, alias: str) -> Sum:
+        self.alias = alias
+        return self
+
+    def get_select_string(self, engine_type: str, just_alias=False) -> str:
+        if self.column.value_type in (int, decimal.Decimal, float):
+            column_name = self.column._meta.get_full_name(
+                just_alias=just_alias
+            )
+        else:
+            raise ValueError("Column type must be numeric to run the query.")
+        return f"SUM({column_name}) AS {self.alias}"
 
 
 class Select(Query):
