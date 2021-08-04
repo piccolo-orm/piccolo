@@ -7,7 +7,7 @@ from piccolo.apps.migrations.auto import MigrationManager
 from piccolo.apps.migrations.commands.base import BaseMigrationManager
 from piccolo.columns import Text, Varchar
 from piccolo.columns.base import OnDelete, OnUpdate
-from piccolo.columns.column_types import ForeignKey
+from piccolo.columns.column_types import ForeignKey, Serial
 from piccolo.conf.apps import AppConfig
 from tests.base import DBTestCase, postgres_only, set_mock_return_value
 from tests.example_app.tables import Manager
@@ -96,8 +96,10 @@ class TestMigrationManager(DBTestCase):
         manager = MigrationManager()
         name_column = Varchar()
         name_column._meta.name = "name"
+        id_column = Serial()
+        id_column._meta.name = "id"
         manager.add_table(
-            class_name="Musician", tablename="musician", columns=[name_column]
+            class_name="Musician", tablename="musician", columns=[id_column, name_column]
         )
         asyncio.run(manager.run())
 
@@ -271,8 +273,10 @@ class TestMigrationManager(DBTestCase):
         manager_1 = MigrationManager()
         name_column = Varchar()
         name_column._meta.name = "name"
+        id_column = Serial()
+        id_column._meta.name = "id"
         manager_1.add_table(
-            class_name="Musician", tablename="musician", columns=[name_column]
+            class_name="Musician", tablename="musician", columns=[id_column, name_column]
         )
         asyncio.run(manager_1.run())
 
