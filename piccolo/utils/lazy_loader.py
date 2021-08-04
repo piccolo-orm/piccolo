@@ -23,17 +23,33 @@ class LazyLoader(types.ModuleType):
         super(LazyLoader, self).__init__(name)
 
     def _load(self) -> types.ModuleType:
-        # Import the target module and insert it into the parent's namespace
-        module = importlib.import_module(self.__name__)
-        self._parent_module_globals[self._local_name] = module
+        try:
+            # Import the target module and
+            # insert it into the parent's namespace
+            module = importlib.import_module(self.__name__)
+            self._parent_module_globals[self._local_name] = module
 
-        # Update this object's dict so that
-        # if someone keeps a reference to the
-        #   LazyLoader, lookups are efficient
-        #  (__getattr__ is only called on lookups that fail).
-        self.__dict__.update(module.__dict__)
+            # Update this object's dict so that
+            # if someone keeps a reference to the
+            #   LazyLoader, lookups are efficient
+            #  (__getattr__ is only called on lookups that fail).
+            self.__dict__.update(module.__dict__)
 
-        return module
+            return module
+
+        except ModuleNotFoundError as exc:
+            if exc.msg == "No module named 'asyncpg'":
+                raise ModuleNotFoundError(
+                    "PostgreSQL driver not found. "
+                    "Try running 'pip install piccolo[postgres]'"
+                )
+            elif exc.msg == "No module named 'aiosqlite'":
+                raise ModuleNotFoundError(
+                    "SQLite driver not found. "
+                    "Try running 'pip install piccolo[sqlite]'"
+                )
+            else:
+                raise exc
 
     def __getattr__(self, item) -> t.Any:
         module = self._load()
