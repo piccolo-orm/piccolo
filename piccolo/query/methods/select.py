@@ -31,14 +31,16 @@ class Avg(Selectable):
 
     await Band.select(Avg(Band.popularity)).run() or with aliases
     await Band.select(Avg(Band.popularity, alias="popularity_avg")).run()
+    await Band.select(Avg(Band.popularity).as_alias("popularity_avg")).run()
     """
 
     def __init__(self, column: Column, alias: str = "avg"):
         self.column = column
         self.alias = alias
 
-    def as_alias(self, alias: str):  # pragma: no cover
+    def as_alias(self, alias: str) -> Avg:
         self.alias = alias
+        return self
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         if self.column.value_type in (int, decimal.Decimal, float):
@@ -78,14 +80,16 @@ class Max(Selectable):
 
     await Band.select(Max(Band.popularity)).run() or with aliases
     await Band.select(Max(Band.popularity, alias="popularity_max")).run()
+    await Band.select(Max(Band.popularity).as_alias("popularity_max")).run()
     """
 
     def __init__(self, column: Column, alias: str = "max"):
         self.column = column
         self.alias = alias
 
-    def as_alias(self, alias: str):  # pragma: no cover
+    def as_alias(self, alias: str) -> Max:
         self.alias = alias
+        return self
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         column_name = self.column._meta.get_full_name(just_alias=just_alias)
@@ -96,16 +100,18 @@ class Min(Selectable):
     """
     MIN() SQL function.
 
-    await Band.select(Min(Band.popularity)).run() or with aliases
+    await Band.select(Min(Band.popularity)).run()
     await Band.select(Min(Band.popularity, alias="popularity_min")).run()
+    await Band.select(Min(Band.popularity).as_alias("popularity_min")).run()
     """
 
     def __init__(self, column: Column, alias: str = "min"):
         self.column = column
         self.alias = alias
 
-    def as_alias(self, alias: str):  # pragma: no cover
+    def as_alias(self, alias: str) -> Min:
         self.alias = alias
+        return self
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         column_name = self.column._meta.get_full_name(just_alias=just_alias)
@@ -116,16 +122,18 @@ class Sum(Selectable):
     """
     SUM() SQL function. Column type must be numeric to run the query.
 
-    await Band.select(Sum(Band.popularity)).run() or with aliases
+    await Band.select(Sum(Band.popularity)).run()
     await Band.select(Sum(Band.popularity, alias="popularity_sum")).run()
+    await Band.select(Sum(Band.popularity).as_alias("popularity_sum")).run()
     """
 
     def __init__(self, column: Column, alias: str = "sum"):
         self.column = column
         self.alias = alias
 
-    def as_alias(self, alias: str):  # pragma: no cover
+    def as_alias(self, alias: str) -> Sum:
         self.alias = alias
+        return self
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         if self.column.value_type in (int, decimal.Decimal, float):

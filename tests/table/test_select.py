@@ -517,6 +517,19 @@ class TestSelect(DBTestCase):
             float(response["popularity_avg"]) == 1003.3333333333334
         )
 
+    def test_avg_as_alias_method(self):
+        self.insert_rows()
+
+        response = (
+            Band.select(Avg(Band.popularity).as_alias("popularity_avg"))
+            .first()
+            .run_sync()
+        )
+
+        self.assertTrue(
+            float(response["popularity_avg"]) == 1003.3333333333334
+        )
+
     def test_avg_with_where_clause(self):
         self.insert_rows()
 
@@ -545,6 +558,22 @@ class TestSelect(DBTestCase):
 
         self.assertTrue(response["popularity_avg"] == 1500)
 
+    def test_avg_as_alias_method_with_where_clause(self):
+        """
+        Make sure we can specify as_alias method for the aggregate function,
+        when the column is also being used in a where clause.
+        """
+        self.insert_rows()
+
+        response = (
+            Band.select(Avg(Band.popularity).as_alias("popularity_avg"))
+            .where(Band.popularity > 500)
+            .first()
+            .run_sync()
+        )
+
+        self.assertTrue(response["popularity_avg"] == 1500)
+
     def test_max(self):
         self.insert_rows()
 
@@ -557,6 +586,17 @@ class TestSelect(DBTestCase):
 
         response = (
             Band.select(Max(Band.popularity, alias="popularity_max"))
+            .first()
+            .run_sync()
+        )
+
+        self.assertTrue(response["popularity_max"] == 2000)
+
+    def test_max_as_alias_method(self):
+        self.insert_rows()
+
+        response = (
+            Band.select(Max(Band.popularity).as_alias("popularity_max"))
             .first()
             .run_sync()
         )
@@ -581,6 +621,17 @@ class TestSelect(DBTestCase):
 
         self.assertTrue(response["popularity_min"] == 10)
 
+    def test_min_as_alias_method(self):
+        self.insert_rows()
+
+        response = (
+            Band.select(Min(Band.popularity).as_alias("popularity_min"))
+            .first()
+            .run_sync()
+        )
+
+        self.assertTrue(response["popularity_min"] == 10)
+
     def test_sum(self):
         self.insert_rows()
 
@@ -593,6 +644,17 @@ class TestSelect(DBTestCase):
 
         response = (
             Band.select(Sum(Band.popularity, alias="popularity_sum"))
+            .first()
+            .run_sync()
+        )
+
+        self.assertTrue(response["popularity_sum"] == 3010)
+
+    def test_sum_as_alias_method(self):
+        self.insert_rows()
+
+        response = (
+            Band.select(Sum(Band.popularity).as_alias("popularity_sum"))
             .first()
             .run_sync()
         )
@@ -620,6 +682,22 @@ class TestSelect(DBTestCase):
 
         response = (
             Band.select(Sum(Band.popularity, alias="popularity_sum"))
+            .where(Band.popularity > 500)
+            .first()
+            .run_sync()
+        )
+
+        self.assertTrue(response["popularity_sum"] == 3000)
+
+    def test_sum_as_alias_method_with_where_clause(self):
+        """
+        Make sure we can specify as_alias method for the aggregate function,
+        when the column is also being used in a where clause.
+        """
+        self.insert_rows()
+
+        response = (
+            Band.select(Sum(Band.popularity).as_alias("popularity_sum"))
             .where(Band.popularity > 500)
             .first()
             .run_sync()
