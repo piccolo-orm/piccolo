@@ -980,7 +980,7 @@ class Float(Real):
 ###############################################################################
 
 
-class ForeignKey(Column):
+class ForeignKey(Column):  # lgtm [py/missing-equals]
     """
     Used to reference another table. Uses the same type as the primary key
     column on the table it references.
