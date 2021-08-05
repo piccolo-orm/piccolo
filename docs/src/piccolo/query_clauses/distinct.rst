@@ -1,7 +1,7 @@
 .. _distinct:
 
 distinct
-=====
+========
 
 You can use ``distinct`` clauses with the following queries:
 

@@ -172,7 +172,7 @@ Query clauses
 -------------
 
 batch
-~~~~~~~
+~~~~~
 
 See :ref:`batch`.
 
@@ -229,7 +229,7 @@ offset
 See  :ref:`offset`.
 
 distinct
-~~~~~
+~~~~~~~~
 
 See  :ref:`distinct`.
 
