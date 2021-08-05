@@ -86,6 +86,28 @@ use mixins to reduce the amount of repetition.
 
 -------------------------------------------------------------------------------
 
+Abstract
+--------
+
+Abstract tables also help to reduce the amount of repetition. The difference is
+that abstract tables are ignored in migrations so they're not created but
+mixin tables are created.
+
+.. code-block:: python
+
+    from piccolo.columns import Varchar, Boolean
+    from piccolo.table import Table
+
+
+    class Base(Table, abstract=True):
+        favourite = Boolean(default=False)
+
+
+    class Manager(Base):
+        name = Varchar()
+
+-------------------------------------------------------------------------------
+
 Choices
 -------
 

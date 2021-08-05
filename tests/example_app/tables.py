@@ -34,8 +34,11 @@ class Band(Table):
 # More complex
 
 
-class Venue(Table):
+class Base(Table, abstract=True):
     name = Varchar(length=100)
+
+
+class Venue(Base):
     capacity = Integer(default=0)
 
 

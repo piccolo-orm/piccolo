@@ -42,7 +42,7 @@ from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
 from piccolo.utils.sql_values import convert_to_sql_value
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Selectable
 
 
@@ -55,6 +55,7 @@ class TableMeta:
     This is used to store info about the table.
     """
 
+    abstract: bool = False
     tablename: str = ""
     columns: t.List[Column] = field(default_factory=list)
     default_columns: t.List[Column] = field(default_factory=list)
@@ -133,6 +134,7 @@ class Table(metaclass=TableMetaclass):
 
     def __init_subclass__(
         cls,
+        abstract: bool = False,
         tablename: t.Optional[str] = None,
         db: t.Optional[Engine] = None,
         tags: t.List[str] = [],
@@ -142,6 +144,9 @@ class Table(metaclass=TableMetaclass):
         Automatically populate the _meta, which includes the tablename, and
         columns.
 
+        :param abstract:
+            Specify if a table is abstract. Abstract tables are ignored
+            in migrations.
         :param tablename:
             Specify a custom tablename. By default the classname is converted
             to snakecase.
@@ -217,6 +222,7 @@ class Table(metaclass=TableMetaclass):
             default_columns.append(primary_key)
 
         cls._meta = TableMeta(
+            abstract=abstract,
             tablename=tablename,
             columns=columns,
             default_columns=default_columns,

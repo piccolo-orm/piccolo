@@ -3,7 +3,7 @@ import typing as t
 from piccolo.apps.user.tables import BaseUser
 from piccolo.utils.warnings import Level, colored_string
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
 
 

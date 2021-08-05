@@ -25,6 +25,19 @@ class PiccoloAppModule(ModuleType):
     APP_CONFIG: AppConfig
 
 
+def _filter_table_classes(
+    table_classes: t.List[t.Type[Table]],
+) -> t.List[t.Type[Table]]:
+    """
+    Filter out abstract Tables for migrations
+    """
+    return [
+        table_class
+        for table_class in table_classes
+        if not table_class._meta.abstract
+    ]
+
+
 def table_finder(
     modules: t.Sequence[str],
     include_tags: t.Sequence[str] = ["__all__"],
@@ -82,7 +95,7 @@ def table_finder(
                 elif set(table._meta.tags).intersection(set(include_tags)):
                     table_subclasses.append(_object)
 
-    return table_subclasses
+    return _filter_table_classes(table_subclasses)
 
 
 @dataclass
@@ -127,6 +140,7 @@ class AppConfig:
         self.commands = [
             i if isinstance(i, Command) else Command(i) for i in self.commands
         ]
+        self.table_classes = _filter_table_classes(self.table_classes)
 
     def register_table(self, table_class: t.Type[Table]):
         self.table_classes.append(table_class)
