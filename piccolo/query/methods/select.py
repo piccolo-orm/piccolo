@@ -63,8 +63,15 @@ class Count(Selectable):
     they have null values or not.
     """
 
-    def __init__(self, column: t.Optional[Column] = None):
+    def __init__(
+        self, column: t.Optional[Column] = None, alias: str = "count"
+    ):
         self.column = column
+        self.alias = alias
+
+    def as_alias(self, alias: str) -> Count:
+        self.alias = alias
+        return self
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         if self.column is None:
@@ -73,7 +80,7 @@ class Count(Selectable):
             column_name = self.column._meta.get_full_name(
                 just_alias=just_alias
             )
-        return f"COUNT({column_name}) AS count"
+        return f"COUNT({column_name}) AS {self.alias}"
 
 
 class Max(Selectable):
