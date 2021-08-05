@@ -243,6 +243,10 @@ class Selectable(metaclass=ABCMeta):
         """
         pass
 
+    def as_alias(self, alias: str) -> Selectable:
+        self.alias: t.Optional[str] = alias
+        return self
+
 
 class Column(Selectable):
     """

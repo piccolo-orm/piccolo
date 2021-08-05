@@ -61,6 +61,10 @@ class Count(Selectable):
     If a column is specified, the count is for non-null values in that
     column. If no column is specified, the count is for all rows, whether
     they have null values or not.
+
+    Band.select(Band.name, Count()).group_by(Band.name).run()
+    Band.select(Band.name, Count(alias="total")).group_by(Band.name).run()
+    Band.select(Band.name, Count().as_alias("total")).group_by(Band.name).run()
     """
 
     def __init__(
@@ -68,10 +72,6 @@ class Count(Selectable):
     ):
         self.column = column
         self.alias = alias
-
-    def as_alias(self, alias: str) -> Count:
-        self.alias = alias
-        return self
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         if self.column is None:
@@ -96,10 +96,6 @@ class Max(Selectable):
         self.column = column
         self.alias = alias
 
-    def as_alias(self, alias: str) -> Max:
-        self.alias = alias
-        return self
-
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         column_name = self.column._meta.get_full_name(just_alias=just_alias)
         return f"MAX({column_name}) AS {self.alias}"
@@ -117,10 +113,6 @@ class Min(Selectable):
     def __init__(self, column: Column, alias: str = "min"):
         self.column = column
         self.alias = alias
-
-    def as_alias(self, alias: str) -> Min:
-        self.alias = alias
-        return self
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         column_name = self.column._meta.get_full_name(just_alias=just_alias)
@@ -142,10 +134,6 @@ class Sum(Selectable):
         else:
             raise ValueError("Column type must be numeric to run the query.")
         self.alias = alias
-
-    def as_alias(self, alias: str) -> Sum:
-        self.alias = alias
-        return self
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         column_name = self.column._meta.get_full_name(just_alias=just_alias)
