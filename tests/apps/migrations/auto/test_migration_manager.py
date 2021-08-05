@@ -94,10 +94,12 @@ class TestMigrationManager(DBTestCase):
         self.run_sync("DROP TABLE IF EXISTS musician;")
 
         manager = MigrationManager()
-        name_column = Varchar()
-        name_column._meta.name = "name"
-        manager.add_table(
-            class_name="Musician", tablename="musician", columns=[name_column]
+        manager.add_table(class_name="Musician", tablename="musician")
+        manager.add_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="name",
+            column_class_name="Varchar",
         )
         asyncio.run(manager.run())
 
@@ -269,10 +271,12 @@ class TestMigrationManager(DBTestCase):
         Test dropping a column with MigrationManager.
         """
         manager_1 = MigrationManager()
-        name_column = Varchar()
-        name_column._meta.name = "name"
-        manager_1.add_table(
-            class_name="Musician", tablename="musician", columns=[name_column]
+        manager_1.add_table(class_name="Musician", tablename="musician")
+        manager_1.add_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="name",
+            column_class_name="Varchar",
         )
         asyncio.run(manager_1.run())
 

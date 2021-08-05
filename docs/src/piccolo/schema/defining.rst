@@ -23,20 +23,40 @@ For a full list of columns, see :ref:`ColumnTypes`.
 
 -------------------------------------------------------------------------------
 
-Default columns
+Primary Key
 ---------------
 
-id
-~~
-
-Each table is automatically given a ``PrimaryKey`` column called ``id``, which
-is an auto incrementing integer.
+You can specify your ``PrimaryKey`` with any column type by passing ``primary_key`` to the ``Column``.
 
 It is used to uniquely identify a row, and is referenced by ``ForeignKey``
 columns on other tables.
 
-If you specify your own ``id`` column, you may get unexpected behaviour, so
-it's not recommended at the moment.
+.. code-block:: python
+
+    # tables.py
+    from piccolo.table import Table
+    from piccolo.columns import UUID, Varchar
+
+
+    class Band(Table):
+        id = UUID(primary_key=True)
+        name = Varchar(length=100)
+
+If you don't specify a ``PrimaryKey``, the table is automatically given a ``PrimaryKey`` column called ``id``, which
+is an auto incrementing integer.
+
+This is equivalent to:
+
+.. code-block:: python
+
+    # tables.py
+    from piccolo.table import Table
+    from piccolo.columns import Serial, Varchar
+
+
+    class Band(Table):
+        id = Serial(primary_key=True)
+        name = Varchar(length=100)
 
 -------------------------------------------------------------------------------
 

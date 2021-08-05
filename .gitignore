@@ -12,6 +12,7 @@ dist/
 piccolo.sqlite
 _build/
 .coverage
+coverage.xml
 *.sqlite
 htmlcov/
 prof/

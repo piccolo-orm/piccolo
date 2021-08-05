@@ -121,8 +121,7 @@ class ColumnMeta:
 
     # General attributes:
     null: bool = False
-    primary: bool = False
-    key: bool = False
+    primary_key: bool = False
     unique: bool = False
     index: bool = False
     index_method: IndexMethod = IndexMethod.btree
@@ -253,11 +252,8 @@ class Column(Selectable):
     :param null:
         Whether the column is nullable.
 
-    :param primary:
+    :param primary_key:
         If set, the column is used as a primary key.
-
-    :param key:
-        If set, the column is treated as a key.
 
     :param default:
         The column value to use if not specified by the user.
@@ -291,8 +287,7 @@ class Column(Selectable):
     def __init__(
         self,
         null: bool = False,
-        primary: bool = False,
-        key: bool = False,
+        primary_key: bool = False,
         unique: bool = False,
         index: bool = False,
         index_method: IndexMethod = IndexMethod.btree,
@@ -301,6 +296,12 @@ class Column(Selectable):
         choices: t.Optional[t.Type[Enum]] = None,
         **kwargs,
     ) -> None:
+        # This is for backwards compatibility - originally there were two
+        # separate arguments `primary` and `key`, but they have now been merged
+        # into `primary_key`.
+        if (kwargs.get("primary") is True) and (kwargs.get("key") is True):
+            primary_key = True
+
         # Used for migrations.
         # We deliberately omit 'required', and 'help_text' as they don't effect
         # the actual schema.
@@ -309,8 +310,7 @@ class Column(Selectable):
         kwargs.update(
             {
                 "null": null,
-                "primary": primary,
-                "key": key,
+                "primary_key": primary_key,
                 "unique": unique,
                 "index": index,
                 "index_method": index_method,
@@ -329,8 +329,7 @@ class Column(Selectable):
 
         self._meta = ColumnMeta(
             null=null,
-            primary=primary,
-            key=key,
+            primary_key=primary_key,
             unique=unique,
             index=index,
             index_method=index_method,
@@ -575,10 +574,8 @@ class Column(Selectable):
         Used when creating tables.
         """
         query = f'"{self._meta.name}" {self.column_type}'
-        if self._meta.primary:
-            query += " PRIMARY"
-        if self._meta.key:
-            query += " KEY"
+        if self._meta.primary_key:
+            query += " PRIMARY KEY"
         if self._meta.unique:
             query += " UNIQUE"
         if not self._meta.null:
@@ -588,16 +585,18 @@ class Column(Selectable):
             self, "_foreign_key_meta", None
         )
         if foreign_key_meta:
-            tablename = foreign_key_meta.resolved_references._meta.tablename
+            references = foreign_key_meta.resolved_references
+            tablename = references._meta.tablename
             on_delete = foreign_key_meta.on_delete.value
             on_update = foreign_key_meta.on_update.value
+            primary_key_name = references._meta.primary_key._meta.name
             query += (
-                f" REFERENCES {tablename} (id)"
+                f" REFERENCES {tablename} ({primary_key_name})"
                 f" ON DELETE {on_delete}"
                 f" ON UPDATE {on_update}"
             )
 
-        if not self._meta.primary:
+        if not self._meta.primary_key:
             default = self.get_default_value()
             sql_value = self.get_sql_value(value=default)
             # Escape the value if it contains a pair of curly braces, otherwise
