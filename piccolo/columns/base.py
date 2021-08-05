@@ -247,7 +247,7 @@ class Selectable(metaclass=ABCMeta):
 
     def as_alias(self, alias: str) -> Selectable:
         """
-        Set an alias for a Column, the output will rename Column to the alias
+        Allows column names to be changed in the result of a select.
         """
         self.alias = alias
         return self

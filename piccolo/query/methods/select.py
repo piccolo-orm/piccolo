@@ -45,10 +45,6 @@ class Avg(Selectable):
             raise ValueError("Column type must be numeric to run the query.")
         self.alias = alias
 
-    def as_alias(self, alias: str) -> Avg:
-        self.alias = alias
-        return self
-
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         column_name = self.column._meta.get_full_name(just_alias=just_alias)
         return f"AVG({column_name}) AS {self.alias}"
