@@ -244,6 +244,9 @@ class Selectable(metaclass=ABCMeta):
         pass
 
     def as_alias(self, alias: str) -> Selectable:
+        """
+        Set an alias for a Column, the output will rename Column to the alias
+        """
         self.alias: t.Optional[str] = alias
         return self
 
