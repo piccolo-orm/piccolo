@@ -48,6 +48,7 @@
             </ul>
             <h3>BlackSheep</h3>
             <ul>
+                <li><a href="/admin/">Admin</a></li>
                 <li><a href="/docs/">Swagger API</a></li>
             </ul>
         </section>
