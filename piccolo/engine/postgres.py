@@ -14,7 +14,7 @@ from piccolo.utils.warnings import Level, colored_string, colored_warning
 
 asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from asyncpg.connection import Connection  # type: ignore
     from asyncpg.cursor import Cursor  # type: ignore
     from asyncpg.pool import Pool  # type: ignore

@@ -20,7 +20,7 @@ from piccolo.utils.sync import run_sync
 aiosqlite = LazyLoader("aiosqlite", globals(), "aiosqlite")
 
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from aiosqlite import Connection, Cursor  # type: ignore
 
 ###############################################################################
