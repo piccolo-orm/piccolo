@@ -11,6 +11,7 @@ from piccolo.apps.migrations.tables import Migration
 from piccolo.utils.sync import run_sync
 from tests.base import postgres_only
 from tests.example_app.tables import (
+    Album,
     Band,
     Concert,
     Manager,
@@ -27,6 +28,7 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 TABLE_CLASSES: t.List[t.Type[Table]] = [
     Manager,
+    Album,
     Band,
     Venue,
     Concert,
@@ -179,6 +181,7 @@ class TestForwardsBackwards(TestCase):
                 "2020-12-17T18:44:39",
                 "2020-12-17T18:44:44",
                 "2021-07-25T22:38:48:009306",
+                "2021-08-06T17:46:53:490098",
             ],
         )
 

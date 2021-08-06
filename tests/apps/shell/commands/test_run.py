@@ -18,6 +18,7 @@ class TestRun(TestCase):
             [
                 call("-------"),
                 call("Importing example_app tables:"),
+                call("- Album"),
                 call("- Band"),
                 call("- Concert"),
                 call("- Manager"),

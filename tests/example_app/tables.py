@@ -80,10 +80,10 @@ class RecordingStudio(Table):
     facilities_b = JSONB()
 
 
-class Studio(Table):
+class Album(Table):
     """
     Used for testing custom PrimaryKey
     """
 
-    id = UUID()
+    id = UUID(primary_key=True)
     name = Varchar()

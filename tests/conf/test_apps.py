@@ -66,6 +66,7 @@ class TestTableFinder(TestCase):
         self.assertEqual(
             table_class_names,
             [
+                "Album",
                 "Band",
                 "Concert",
                 "Manager",
@@ -92,6 +93,7 @@ class TestTableFinder(TestCase):
         self.assertEqual(
             table_class_names,
             [
+                "Album",
                 "Band",
                 "Concert",
                 "Manager",
@@ -133,6 +135,7 @@ class TestTableFinder(TestCase):
         self.assertEqual(
             table_class_names,
             [
+                "Album",
                 "Band",
                 "Concert",
                 "Manager",

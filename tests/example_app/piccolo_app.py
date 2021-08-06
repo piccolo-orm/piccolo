@@ -3,13 +3,13 @@ import os
 from piccolo.conf.apps import AppConfig
 
 from .tables import (
+    Album,
     Band,
     Concert,
     Manager,
     Poster,
     RecordingStudio,
     Shirt,
-    Studio,
     Ticket,
     Venue,
 )
@@ -21,13 +21,13 @@ APP_CONFIG = AppConfig(
     app_name="example_app",
     table_classes=[
         Manager,
+        Album,
         Band,
         Venue,
         Concert,
         Ticket,
         Poster,
         Shirt,
-        Studio,
         RecordingStudio,
     ],
     migrations_folder_path=os.path.join(

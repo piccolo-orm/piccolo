@@ -3,22 +3,23 @@ from piccolo.columns.column_types import UUID, Serial, Varchar
 from piccolo.columns.defaults.uuid import UUID4
 from piccolo.columns.indexes import IndexMethod
 
-ID = "2021-08-06T15:40:44:097377"
+ID = "2021-08-06T17:46:53:490098"
 VERSION = "0.29.0"
 
 
 async def forwards():
     manager = MigrationManager(migration_id=ID, app_name="example_app")
 
-    manager.add_table("Studio", tablename="studio")
+    manager.add_table("Album", tablename="album")
 
     manager.add_column(
-        table_class_name="Studio",
-        tablename="studio",
+        table_class_name="Album",
+        tablename="album",
         column_name="id",
-        column_class_name="Serial",
-        column_class=Serial,
+        column_class_name="UUID",
+        column_class=UUID,
         params={
+            "default": UUID4(),
             "null": False,
             "primary_key": True,
             "unique": False,
@@ -29,25 +30,8 @@ async def forwards():
     )
 
     manager.add_column(
-        table_class_name="Studio",
-        tablename="studio",
-        column_name="id",
-        column_class_name="UUID",
-        column_class=UUID,
-        params={
-            "default": UUID4(),
-            "null": False,
-            "primary_key": False,
-            "unique": False,
-            "index": False,
-            "index_method": IndexMethod.btree,
-            "choices": None,
-        },
-    )
-
-    manager.add_column(
-        table_class_name="Studio",
-        tablename="studio",
+        table_class_name="Album",
+        tablename="album",
         column_name="name",
         column_class_name="Varchar",
         column_class=Varchar,
