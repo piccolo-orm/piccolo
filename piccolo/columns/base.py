@@ -233,6 +233,8 @@ class ColumnMeta:
 
 
 class Selectable(metaclass=ABCMeta):
+    alias: t.Optional[str]
+
     @abstractmethod
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         """
@@ -241,6 +243,13 @@ class Selectable(metaclass=ABCMeta):
         column name.
         """
         pass
+
+    def as_alias(self, alias: str) -> Selectable:
+        """
+        Allows column names to be changed in the result of a select.
+        """
+        self.alias = alias
+        return self
 
 
 class Column(Selectable):

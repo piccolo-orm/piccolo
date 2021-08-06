@@ -448,6 +448,52 @@ class TestSelect(DBTestCase):
             ]
         )
 
+    def test_count_with_alias_group_by(self):
+        """
+        Test grouping and counting all rows with alias.
+        """
+        self.insert_rows()
+        self.insert_rows()
+
+        response = (
+            Band.select(Band.name, Count(alias="total"))
+            .group_by(Band.name)
+            .order_by(Band.name)
+            .run_sync()
+        )
+
+        self.assertTrue(
+            response
+            == [
+                {"name": "CSharps", "total": 2},
+                {"name": "Pythonistas", "total": 2},
+                {"name": "Rustaceans", "total": 2},
+            ]
+        )
+
+    def test_count_with_as_alias_group_by(self):
+        """
+        Test grouping and counting all rows with as_alias.
+        """
+        self.insert_rows()
+        self.insert_rows()
+
+        response = (
+            Band.select(Band.name, Count().as_alias("total"))
+            .group_by(Band.name)
+            .order_by(Band.name)
+            .run_sync()
+        )
+
+        self.assertTrue(
+            response
+            == [
+                {"name": "CSharps", "total": 2},
+                {"name": "Pythonistas", "total": 2},
+                {"name": "Rustaceans", "total": 2},
+            ]
+        )
+
     def test_count_column_group_by(self):
         """
         Test grouping and counting a specific column. Any null values in the
