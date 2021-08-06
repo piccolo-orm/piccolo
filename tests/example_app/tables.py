@@ -3,6 +3,7 @@ from enum import Enum
 from piccolo.columns import (
     JSON,
     JSONB,
+    UUID,
     ForeignKey,
     Integer,
     Numeric,
@@ -77,3 +78,12 @@ class RecordingStudio(Table):
 
     facilities = JSON()
     facilities_b = JSONB()
+
+
+class Studio(Table):
+    """
+    Used for testing custom PrimaryKey
+    """
+
+    id = UUID()
+    name = Varchar()

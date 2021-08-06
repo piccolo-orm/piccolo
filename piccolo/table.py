@@ -193,8 +193,10 @@ class Table(metaclass=TableMetaclass):
 
                 if column._meta.primary_key:
                     primary_key = column
+                    default_columns.append(primary_key)
+                else:
+                    non_default_columns.append(column)
 
-                non_default_columns.append(column)
                 columns.append(column)
 
                 column._meta._name = attribute_name

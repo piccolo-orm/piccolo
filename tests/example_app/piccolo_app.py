@@ -9,6 +9,7 @@ from .tables import (
     Poster,
     RecordingStudio,
     Shirt,
+    Studio,
     Ticket,
     Venue,
 )
@@ -26,6 +27,7 @@ APP_CONFIG = AppConfig(
         Ticket,
         Poster,
         Shirt,
+        Studio,
         RecordingStudio,
     ],
     migrations_folder_path=os.path.join(
