@@ -23,6 +23,8 @@ aiosqlite = LazyLoader("aiosqlite", globals(), "aiosqlite")
 if t.TYPE_CHECKING:  # pragma: no cover
     from aiosqlite import Connection, Cursor  # type: ignore
 
+    from piccolo.table import Table
+
 ###############################################################################
 
 # We need to register some adapters so sqlite returns types which are more
@@ -423,8 +425,26 @@ class SQLiteEngine(Engine):
 
     ###########################################################################
 
+    async def _get_inserted_pk(self, cursor, table: t.Type[Table]) -> t.Any:
+        """
+        If the `pk` column is a non-integer then `ROWID` and `pk` will return
+        different types. Need to query by `lastrowid` to get `pk`s in SQLite
+        prior to 3.35.0.
+        """
+        # TODO: Add RETURNING clause for sqlite > 3.35.0
+        await cursor.execute(
+            f"SELECT {table._meta.primary_key._meta.name} FROM "
+            f"{table._meta.tablename} WHERE ROWID = {cursor.lastrowid}"
+        )
+        response = await cursor.fetchone()
+        return response[table._meta.primary_key._meta.name]
+
     async def _run_in_new_connection(
-        self, query: str, args: t.List[t.Any] = [], query_type: str = "generic"
+        self,
+        query: str,
+        args: t.List[t.Any] = [],
+        query_type: str = "generic",
+        table: t.Optional[t.Type[Table]] = None,
     ):
         async with aiosqlite.connect(**self.connection_kwargs) as connection:
             await connection.execute("PRAGMA foreign_keys = 1")
@@ -432,12 +452,13 @@ class SQLiteEngine(Engine):
             connection.row_factory = dict_factory  # type: ignore
             async with connection.execute(query, args) as cursor:
                 await connection.commit()
-                response = await cursor.fetchall()
 
                 if query_type == "insert":
-                    return [{"id": cursor.lastrowid}]
+                    assert table is not None
+                    pk = await self._get_inserted_pk(cursor, table)
+                    return [{table._meta.primary_key._meta.name: pk}]
                 else:
-                    return response
+                    return await cursor.fetchall()
 
     async def _run_in_existing_connection(
         self,
@@ -445,6 +466,7 @@ class SQLiteEngine(Engine):
         query: str,
         args: t.List[t.Any] = [],
         query_type: str = "generic",
+        table: t.Optional[t.Type[Table]] = None,
     ):
         """
         This is used when a transaction is currently active.
@@ -456,7 +478,9 @@ class SQLiteEngine(Engine):
             response = await cursor.fetchall()
 
             if query_type == "insert":
-                return [{"id": cursor.lastrowid}]
+                assert table is not None
+                pk = await self._get_inserted_pk(cursor, table)
+                return [{table._meta.primary_key._meta.name: pk}]
             else:
                 return response
 
@@ -479,10 +503,14 @@ class SQLiteEngine(Engine):
                 query=query,
                 args=query_args,
                 query_type=querystring.query_type,
+                table=querystring.table,
             )
 
         return await self._run_in_new_connection(
-            query=query, args=query_args, query_type=querystring.query_type
+            query=query,
+            args=query_args,
+            query_type=querystring.query_type,
+            table=querystring.table,
         )
 
     def atomic(self) -> Atomic:

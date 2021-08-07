@@ -36,7 +36,7 @@ class TestChoices(DBTestCase):
         shirts = (
             Shirt.select(Shirt.size)
             .output(as_list=True)
-            .order_by(Shirt.id)
+            .order_by(Shirt._meta.primary_key)
             .run_sync()
         )
         self.assertEqual(shirts, ["l", "m", "l"])

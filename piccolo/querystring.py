@@ -5,6 +5,9 @@ import typing as t
 from dataclasses import dataclass
 from string import Formatter
 
+if t.TYPE_CHECKING:
+    from piccolo.table import Table
+
 
 @dataclass
 class Unquoted:
@@ -33,10 +36,20 @@ class QueryString:
     engine - which helps prevent SQL Injection attacks.
     """
 
-    __slots__ = ("template", "args", "query_type", "_frozen_compiled_strings")
+    __slots__ = (
+        "template",
+        "args",
+        "query_type",
+        "table",
+        "_frozen_compiled_strings",
+    )
 
     def __init__(
-        self, template: str, *args: t.Any, query_type: str = "generic"
+        self,
+        template: str,
+        *args: t.Any,
+        query_type: str = "generic",
+        table: t.Optional[t.Type[Table]] = None,
     ) -> None:
         """
         Example template: "WHERE {} = {}"
@@ -47,6 +60,7 @@ class QueryString:
         self.template = template
         self.args = args
         self.query_type = query_type
+        self.table = table
         self._frozen_compiled_strings: t.Optional[
             t.Tuple[str, t.List[t.Any]]
         ] = None

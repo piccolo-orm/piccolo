@@ -75,3 +75,13 @@ class TestMetaClass(TestCase):
         self.assertEqual(
             MyTable._meta.json_columns, [MyTable.column_a, MyTable.column_b]
         )
+
+    def test_id_column(self):
+        """
+        Makes sure an id column is added.
+        """
+
+        class TableA(Table):
+            pass
+
+        self.assertTrue(hasattr(TableA, "id"))

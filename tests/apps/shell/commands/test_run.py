@@ -22,6 +22,8 @@ class TestRun(TestCase):
                 call("- Concert"),
                 call("- Manager"),
                 call("- Poster"),
+                call("- RecordingStudio"),
+                call("- Shirt"),
                 call("- Ticket"),
                 call("- Venue"),
                 call("-------"),

@@ -134,7 +134,7 @@ class BaseUser(Table, tablename="piccolo_user"):
         """
         query = (
             cls.select()
-            .columns(cls.id, cls.password)
+            .columns(cls._meta.primary_key, cls.password)
             .where((cls.username == username))
             .first()
         )

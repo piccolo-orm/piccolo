@@ -9,7 +9,10 @@ class TestIndexes(DBTestCase):
         """
         Test single column and multi column indexes.
         """
-        for columns in [[Manager.name], [Manager.id, Manager.name]]:
+        for columns in [
+            [Manager.name],
+            [Manager._meta.primary_key, Manager.name],
+        ]:
             Manager.create_index(columns).run_sync()
 
             index_name = Manager._get_index_name(
