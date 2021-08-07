@@ -13,14 +13,11 @@ class LazyLoader(types.ModuleType):
     `PostgresEngine` and `SQLiteEngine` are example use cases.
     """
 
-    # The lint error here is incorrect.
-    def __init__(
-        self, local_name, parent_module_globals, name
-    ):  # pylint: disable=super-on-old-class
+    def __init__(self, local_name, parent_module_globals, name):
         self._local_name = local_name
         self._parent_module_globals = parent_module_globals
 
-        super(LazyLoader, self).__init__(name)
+        super().__init__(name)
 
     def _load(self) -> types.ModuleType:
         try:
