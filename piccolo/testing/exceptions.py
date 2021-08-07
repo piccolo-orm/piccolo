@@ -1,0 +1,2 @@
+class InvalidColumnError(Exception):
+    pass

@@ -14,6 +14,7 @@ Welcome to Piccolo's documentation!
    piccolo/migrations/index
    piccolo/authentication/index
    piccolo/asgi/index
+   piccolo/testing/index
    piccolo/features/index
    piccolo/playground/index
    piccolo/deployment/index
