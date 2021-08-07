@@ -1,5 +1,6 @@
 import typing as t
 
+from piccolo_admin.endpoints import create_admin
 from piccolo_api.crud.serializers import create_pydantic_model
 from piccolo.engine import engine_finder
 
@@ -10,11 +11,20 @@ from blacksheep.server.openapi.v3 import OpenAPIHandler
 from openapidocs.v3 import Info
 
 from home.endpoints import home
+from home.piccolo_app import APP_CONFIG 
 from home.tables import Task
 
 
 app = Application()
 
+app.mount(
+    "/admin/",
+    create_admin(
+        tables=APP_CONFIG.table_classes,
+        # Required when running under HTTPS:
+        # allowed_hosts=['my_site.com']
+    ),
+)
 
 docs = OpenAPIHandler(info=Info(title="Example API", version="0.0.1"))
 docs.bind_app(app)

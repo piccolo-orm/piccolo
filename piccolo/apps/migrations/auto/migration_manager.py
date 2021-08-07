@@ -569,12 +569,15 @@ class MigrationManager:
                 ).run()
         else:
             for add_table in self.add_tables:
+                add_columns: t.List[
+                    AddColumnClass
+                ] = self.add_columns.for_table_class_name(add_table.class_name)
                 _Table: t.Type[Table] = create_table_class(
                     class_name=add_table.class_name,
                     class_kwargs={"tablename": add_table.tablename},
                     class_members={
-                        column._meta.name: column
-                        for column in add_table.columns
+                        add_column.column._meta.name: add_column.column
+                        for add_column in add_columns
                     },
                 )
 
@@ -582,7 +585,7 @@ class MigrationManager:
 
     async def _run_add_columns(self, backwards=False):
         """
-        Add columns, which belong to new and existing tables
+        Add columns, which belong to existing tables
         """
         if backwards:
             for add_column in self.add_columns.add_columns:
@@ -601,6 +604,9 @@ class MigrationManager:
                 await _Table.alter().drop_column(add_column.column).run()
         else:
             for table_class_name in self.add_columns.table_class_names:
+                if table_class_name in [i.class_name for i in self.add_tables]:
+                    continue  # No need to add columns to new tables
+
                 add_columns: t.List[
                     AddColumnClass
                 ] = self.add_columns.for_table_class_name(table_class_name)

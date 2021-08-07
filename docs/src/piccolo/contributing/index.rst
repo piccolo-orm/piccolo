@@ -10,12 +10,15 @@ Get the tests running
 ---------------------
 
  * Create a new virtualenv
- * Clone the `Git repo <https://github.com/piccolo-orm/piccolo>`_.
- * Install the dependencies: ``pip install -r requirements.txt``.
- * ``cd tests``
- * Install the test dependencies: ``pip install -r test-requirements.txt``.
+ * Clone the `Git repo <https://github.com/piccolo-orm/piccolo>`_
+ * ``cd piccolo``
+ * Install default dependencies: ``pip install -r requirements/requirements.txt``
+ * Install development dependencies: ``pip install -r requirements/dev-requirements.txt``
+ * Install test dependencies: ``pip install -r requirements/test-requirements.txt``
  * Setup Postgres
- * Run the tests: ``./run-tests.sh``
+ * Run the automated code linting/formatting tools: ``./scripts/lint.sh``
+ * Run the test suite with Postgres: ``./scripts/test-postgres.sh``
+ * Run the test suite with Sqlite: ``./scripts/test-sqlite.sh``
 
 Contributing to the docs
 ------------------------

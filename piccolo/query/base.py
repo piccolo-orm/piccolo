@@ -109,11 +109,14 @@ class Query:
                 # When using .first() we get a single row, not a list
                 # of rows.
                 if type(raw) is list:
-                    raw = [self.table(**columns) for columns in raw]
+                    raw = [
+                        self.table(**columns, exists_in_db=True)
+                        for columns in raw
+                    ]
                 elif raw is None:
                     pass
                 else:
-                    raw = self.table(**raw)
+                    raw = self.table(**raw, exists_in_db=True)
             elif type(raw) is list:
                 if output._output.as_list:
                     if len(raw) == 0:
