@@ -10,9 +10,7 @@ class TestCleanMigrationCommand(TestCase):
         Migration.create_table(if_not_exists=True).run_sync()
 
         real_migration_ids = [
-            "2020-12-17T18:44:30",
-            "2020-12-17T18:44:39",
-            "2020-12-17T18:44:44",
+            "2021-08-08T13:17:33:948878",
         ]
 
         orphaned_migration_id = "2010-01-101T00:00:00"

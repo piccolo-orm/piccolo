@@ -70,7 +70,7 @@ class TestForwardsBackwards(TestCase):
         """
         Test running a single migrations forwards, then backwards.
         """
-        for migration_id in ["1", "2020-12-17T18:44:30"]:
+        for migration_id in ["1", "2021-08-08T13:17:33:948878"]:
             run_sync(
                 forwards(app_name="example_app", migration_id=migration_id)
             )
@@ -140,7 +140,7 @@ class TestForwardsBackwards(TestCase):
         run_sync(
             backwards(
                 app_name="example_app",
-                migration_id="2020-12-17T18:44:30",
+                migration_id="2021-08-08T13:17:33:948878",
                 auto_agree=True,
             )
         )
@@ -177,11 +177,8 @@ class TestForwardsBackwards(TestCase):
             ran_migration_names,
             # TODO - rather than hardcoding, might fetch these dynamically.
             [
-                "2020-12-17T18:44:30",
-                "2020-12-17T18:44:39",
-                "2020-12-17T18:44:44",
-                "2021-07-25T22:38:48:009306",
-                "2021-08-06T17:46:53:490098",
+                "2021-08-08T13:17:33:948878",
+                "2021-08-08T13:31:10:125966",
             ],
         )
 
