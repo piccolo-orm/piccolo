@@ -66,8 +66,16 @@ await b.remove().run()
 
 ## Installation
 
+Installing with PostgreSQL driver:
+
 ```
-pip install piccolo
+pip install piccolo[postgres]
+```
+
+Installing with SQLite driver:
+
+```
+pip install piccolo[sqlite]
 ```
 
 ## Building a web app?
