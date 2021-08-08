@@ -1,9 +1,7 @@
 from piccolo.apps.migrations.auto import MigrationManager
-from piccolo.columns.column_types import UUID
-from piccolo.columns.column_types import Varchar
+from piccolo.columns.column_types import UUID, Varchar
 from piccolo.columns.defaults.uuid import UUID4
 from piccolo.columns.indexes import IndexMethod
-
 
 ID = "2021-08-08T13:31:10:125966"
 VERSION = "0.29.0"

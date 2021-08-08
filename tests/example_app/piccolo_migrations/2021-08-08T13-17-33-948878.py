@@ -1,18 +1,18 @@
-from piccolo.apps.migrations.auto import MigrationManager
 from decimal import Decimal
 from enum import Enum
-from piccolo.columns.base import OnDelete
-from piccolo.columns.base import OnUpdate
-from piccolo.columns.column_types import ForeignKey
-from piccolo.columns.column_types import Integer
-from piccolo.columns.column_types import JSON
-from piccolo.columns.column_types import JSONB
-from piccolo.columns.column_types import Numeric
-from piccolo.columns.column_types import Serial
-from piccolo.columns.column_types import Text
-from piccolo.columns.column_types import UUID
-from piccolo.columns.column_types import Varchar
-from piccolo.columns.defaults.uuid import UUID4
+
+from piccolo.apps.migrations.auto import MigrationManager
+from piccolo.columns.base import OnDelete, OnUpdate
+from piccolo.columns.column_types import (
+    JSON,
+    JSONB,
+    ForeignKey,
+    Integer,
+    Numeric,
+    Serial,
+    Text,
+    Varchar,
+)
 from piccolo.columns.indexes import IndexMethod
 from piccolo.table import Table
 
@@ -310,7 +310,9 @@ async def forwards():
             "unique": False,
             "index": False,
             "index_method": IndexMethod.btree,
-            "choices": Enum("Size", {"small": "s", "medium": "m", "large": "l"}),
+            "choices": Enum(
+                "Size", {"small": "s", "medium": "m", "large": "l"}
+            ),
         },
     )
 
