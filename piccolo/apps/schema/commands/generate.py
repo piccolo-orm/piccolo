@@ -111,13 +111,13 @@ async def generate(schema_name: str = "public"):
                 data_type = pg_row_meta.data_type
                 column_type = column_type_map.get(data_type, None)
                 column_name = pg_row_meta.column_name
-                if not column_type:
+
+                if column_type:
+                    columns[pg_row_meta.column_name] = column_type()
+                else:
                     warnings.append(
                         f"{tablename}.{column_name} ['{data_type}']"
                     )
-
-                if column_type is Integer:
-                    columns[pg_row_meta.column_name] = Integer()
 
             table = create_table_class(
                 class_name=class_name,
