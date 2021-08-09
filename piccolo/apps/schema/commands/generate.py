@@ -117,7 +117,10 @@ async def generate(schema_name: str = "public"):
                 column_name = pg_row_meta.column_name
 
                 if column_type:
-                    columns[pg_row_meta.column_name] = column_type()
+                    null = pg_row_meta.is_nullable == "YES"
+                    columns[pg_row_meta.column_name] = column_type(
+                        null=null
+                    )
                 else:
                     warnings.append(
                         f"{tablename}.{column_name} ['{data_type}']"
