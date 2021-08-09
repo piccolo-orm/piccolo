@@ -14,6 +14,7 @@ from piccolo.columns.column_types import (
     SmallInt,
     Text,
     Timestamp,
+    Timestamptz,
     Varchar,
 )
 from piccolo.engine.finder import engine_finder
@@ -107,6 +108,7 @@ async def generate(schema_name: str = "public"):
                     "smallint": SmallInt,
                     "text": Text,
                     "timestamp without time zone": Timestamp,
+                    "timestamp with time zone": Timestamptz,
                     "uuid": UUID,
                 }
 
