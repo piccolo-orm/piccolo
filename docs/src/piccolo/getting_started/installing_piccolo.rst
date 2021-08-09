@@ -21,6 +21,12 @@ Now install piccolo, ideally inside a `virtualenv <https://docs.python-guide.org
     # The important bit:
     pip install piccolo
 
+    # Install Piccolo with PostgreSQL driver:
+    pip install piccolo[postgres]
+
+    # Install Piccolo with SQLite driver:
+    pip install piccolo[sqlite]
+
     # Optional: orjson for improved JSON serialisation performance
     pip install piccolo[orjson]
 

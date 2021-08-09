@@ -316,7 +316,7 @@ class Finder:
 
         try:
             module = t.cast(PiccoloConfModule, import_module(module_name))
-        except ModuleNotFoundError:
+        except ModuleNotFoundError as exc:
             if self.diagnose:
                 colored_warning(
                     (
@@ -326,7 +326,19 @@ class Finder:
                     level=Level.high,
                 )
                 print(traceback.format_exc())
-            return None
+
+            if str(exc) == "No module named 'asyncpg'":
+                raise ModuleNotFoundError(
+                    "PostgreSQL driver not found. "
+                    "Try running 'pip install piccolo[postgres]'"
+                )
+            elif str(exc) == "No module named 'aiosqlite'":
+                raise ModuleNotFoundError(
+                    "SQLite driver not found. "
+                    "Try running 'pip install piccolo[sqlite]'"
+                )
+            else:
+                raise exc
         else:
             return module
 
