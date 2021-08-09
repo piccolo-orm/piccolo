@@ -1,6 +1,7 @@
 import dataclasses
 import typing as t
 
+import black
 from typing_extensions import Literal
 
 from piccolo.columns.base import Column
@@ -74,6 +75,7 @@ async def generate(schema_name: str = "public"):
         [i.name for i in dataclasses.fields(PostgresRowMeta)]
     )
 
+    output = []
     warnings: t.List[str] = []
 
     for tablename in tablenames:
@@ -124,11 +126,20 @@ async def generate(schema_name: str = "public"):
                 class_kwargs={"tablename": tablename},
                 class_members=columns,
             )
-            print(table)
+            output.append(table._table_str())
 
     if warnings:
-        print('"""')
-        print("WARNINGS")
-        print("Unrecognised column types, added `Column` as a placeholder:\n")
-        print("\n".join(warnings))
-        print('"""')
+        warning_str = "\n".join(warnings)
+
+        output.append('"""')
+        output.append(
+            "WARNING: Unrecognised column types, added `Column` as a "
+            "placeholder:"
+        )
+        output.append(warning_str)
+        output.append('"""')
+
+    nicely_formatted = black.format_str(
+        "\n".join(output), mode=black.FileMode(line_length=79)
+    )
+    print(nicely_formatted)
