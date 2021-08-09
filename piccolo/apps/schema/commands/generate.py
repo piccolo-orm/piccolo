@@ -117,10 +117,14 @@ async def generate(schema_name: str = "public"):
                 column_name = pg_row_meta.column_name
 
                 if column_type:
-                    null = pg_row_meta.is_nullable == "YES"
-                    columns[pg_row_meta.column_name] = column_type(
-                        null=null
-                    )
+                    kwargs: t.Dict[str, t.Any] = {
+                        "null": pg_row_meta.is_nullable == "YES"
+                    }
+
+                    if column_type is Varchar:
+                        kwargs["length"] = pg_row_meta.character_maximum_length
+
+                    columns[pg_row_meta.column_name] = column_type(**kwargs)
                 else:
                     warnings.append(
                         f"{tablename}.{column_name} ['{data_type}']"
