@@ -1,6 +1,15 @@
 Changes
 =======
 
+0.30.0
+------
+The database drivers are now installed separately. For example:
+``pip install piccolo[postgres]`` (courtesy @aminalaee).
+
+For some users this might be a **breaking change** - please make sure that for
+existing Piccolo projects, you have either ``asyncpg``, or
+``piccolo[postgres]`` in your ``requirements.txt`` file.
+
 0.29.0
 ------
 The user can now specify the primary key column (courtesy @aminalaee). For
