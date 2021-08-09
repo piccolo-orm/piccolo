@@ -20,6 +20,7 @@ from piccolo.columns.column_types import (
 from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.table import Table, create_table_class
+from piccolo.utils.naming import _snake_to_camel
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.engine.base import Engine
@@ -30,10 +31,102 @@ class PostgresRowMeta:
     column_default: str
     column_name: str
     is_nullable: Literal["YES", "NO"]
-    ordinal_position: int
     table_name: str
     character_maximum_length: t.Optional[int]
     data_type: str
+
+    @classmethod
+    def get_column_name_str(cls) -> str:
+        return ", ".join([i.name for i in dataclasses.fields(cls)])
+
+
+@dataclasses.dataclass
+class PostgresContraint:
+    contraint_type: Literal["PRIMARY KEY", "UNIQUE", "FOREIGN KEY", "CHECK"]
+    constraint_name: str
+
+    @classmethod
+    def get_column_name_str(cls) -> str:
+        return ", ".join([i.name for i in dataclasses.fields(cls)])
+
+
+COLUMN_TYPE_MAP = {
+    "bigint": BigInt,
+    "boolean": Boolean,
+    "character varying": Varchar,
+    "integer": Integer,
+    "numeric": Numeric,
+    "smallint": SmallInt,
+    "text": Text,
+    "timestamp without time zone": Timestamp,
+    "timestamp with time zone": Timestamptz,
+    "uuid": UUID,
+}
+
+
+async def get_foreign_keys(
+    table_class: t.Type[Table], schema_name: str = "public"
+):
+    """
+    :param table_class:
+        Any Table subclass - just used to execute raw queries on the database.
+
+    """
+    foreign_key_meta: t.List[str] = await table_class.raw(
+        (
+            f"SELECT {PostgresContraint.get_column_name_str()} FROM "
+            "information_schema.table_constraints "
+            "WHERE table_schema = {} "
+            "AND table_name = {};"
+        ),
+        schema_name,
+    )
+    return foreign_key_meta
+
+
+async def get_tablenames(
+    table_class: t.Type[Table], schema_name: str = "public"
+) -> t.List[str]:
+    """
+    :param table_class:
+        Any Table subclass - just used to execute raw queries on the database.
+    :returns:
+        A list of tablenames for the given schema.
+
+    """
+    tablenames: t.List[str] = [
+        i["tablename"]
+        for i in await table_class.raw(
+            (
+                "SELECT tablename FROM pg_catalog.pg_tables WHERE "
+                "schemaname = {};"
+            ),
+            schema_name,
+        ).run()
+    ]
+    return tablenames
+
+
+async def get_table_schema(
+    table_class: t.Type[Table], tablename: str, schema_name: str = "public"
+) -> t.List[PostgresRowMeta]:
+    """
+    :returns:
+        A list, with each item containing information about a colum in the
+        table.
+
+    """
+    row_meta_list = await table_class.raw(
+        (
+            f"SELECT {PostgresRowMeta.get_column_name_str()} FROM "
+            "information_schema.columns "
+            "WHERE table_schema = {} "
+            "AND TABLE_NAME = {};"
+        ),
+        schema_name,
+        tablename,
+    ).run()
+    return [PostgresRowMeta(**row_meta) for row_meta in row_meta_list]
 
 
 # This is currently a beta version, and can be improved. However, having
@@ -61,81 +154,46 @@ async def generate(schema_name: str = "public"):
     class Schema(Table, db=engine):
         pass
 
-    tablenames: t.List[str] = [
-        i["tablename"]
-        for i in await Schema.raw(
-            (
-                "SELECT tablename FROM pg_catalog.pg_tables WHERE "
-                "schemaname = {};"
-            ),
-            schema_name,
-        ).run()
-    ]
+    tablenames = await get_tablenames(Schema, schema_name=schema_name)
 
-    schema_column_names = ", ".join(
-        [i.name for i in dataclasses.fields(PostgresRowMeta)]
-    )
-
-    output = []
+    output: t.List[str] = []
+    imports: t.Set[str] = {"from piccolo.table import Table"}
     warnings: t.List[str] = []
 
     for tablename in tablenames:
-        row_meta_list = await Schema.raw(
-            (
-                f"SELECT {schema_column_names} FROM "
-                "information_schema.columns "
-                "WHERE table_schema = {} "
-                "AND TABLE_NAME = {};"
-            ),
-            schema_name,
-            tablename,
-        ).run()
+        table_schema = await get_table_schema(Schema, tablename, schema_name)
 
-        class_name = tablename.title()
+        columns: t.Dict[str, Column] = {}
 
-        if row_meta_list:
-            columns: t.Dict[str, Column] = {}
+        for pg_row_meta in table_schema:
+            data_type = pg_row_meta.data_type
+            column_type = COLUMN_TYPE_MAP.get(data_type, None)
+            column_name = pg_row_meta.column_name
 
-            for row_meta in row_meta_list:
-                pg_row_meta = PostgresRowMeta(**row_meta)
-
-                column_type_map = {
-                    "bigint": BigInt,
-                    "boolean": Boolean,
-                    "character varying": Varchar,
-                    "integer": Integer,
-                    "numeric": Numeric,
-                    "smallint": SmallInt,
-                    "text": Text,
-                    "timestamp without time zone": Timestamp,
-                    "timestamp with time zone": Timestamptz,
-                    "uuid": UUID,
+            if column_type:
+                kwargs: t.Dict[str, t.Any] = {
+                    "null": pg_row_meta.is_nullable == "YES"
                 }
 
-                data_type = pg_row_meta.data_type
-                column_type = column_type_map.get(data_type, None)
-                column_name = pg_row_meta.column_name
+                imports.add(
+                    "from piccolo.column_types import " + column_type.__name__
+                )
 
-                if column_type:
-                    kwargs: t.Dict[str, t.Any] = {
-                        "null": pg_row_meta.is_nullable == "YES"
-                    }
+                if column_type is Varchar:
+                    kwargs["length"] = pg_row_meta.character_maximum_length
 
-                    if column_type is Varchar:
-                        kwargs["length"] = pg_row_meta.character_maximum_length
+                columns[column_name] = column_type(**kwargs)
+            else:
+                warnings.append(f"{tablename}.{column_name} ['{data_type}']")
 
-                    columns[pg_row_meta.column_name] = column_type(**kwargs)
-                else:
-                    warnings.append(
-                        f"{tablename}.{column_name} ['{data_type}']"
-                    )
+        table = create_table_class(
+            class_name=_snake_to_camel(tablename),
+            class_kwargs={"tablename": tablename},
+            class_members=columns,
+        )
+        output.append(table._table_str())
 
-            table = create_table_class(
-                class_name=class_name,
-                class_kwargs={"tablename": tablename},
-                class_members=columns,
-            )
-            output.append(table._table_str())
+    output = sorted(list(imports)) + output
 
     if warnings:
         warning_str = "\n".join(warnings)
