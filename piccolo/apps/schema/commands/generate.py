@@ -20,6 +20,7 @@ from piccolo.columns.column_types import (
     Interval,
     Numeric,
     Real,
+    Serial,
     SmallInt,
     Text,
     Timestamp,
@@ -86,7 +87,7 @@ class TableConstraints:
 
     def is_primary_key(self, column_name: str, tablename: str) -> bool:
         for i in self.primary_key_names:
-            if i.startswith(f"{tablename}_{column_name}"):
+            if i == f"{tablename}_pkey":
                 return True
 
         return False
@@ -270,10 +271,14 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
                     "unique": constraints.is_unique(
                         column_name=column_name, tablename=tablename
                     ),
-                    "primary_key": constraints.is_primary_key(
-                        column_name=column_name, tablename=tablename
-                    ),
                 }
+
+                if constraints.is_primary_key(
+                    column_name=column_name, tablename=tablename
+                ):
+                    kwargs["primary_key"] = True
+                    if column_type == Integer:
+                        column_type = Serial
 
                 if constraints.is_foreign_key(
                     column_name=column_name, tablename=tablename
