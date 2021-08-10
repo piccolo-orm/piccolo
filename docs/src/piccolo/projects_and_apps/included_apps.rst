@@ -60,6 +60,21 @@ Lets you create a new ``piccolo_conf.py`` file. See :ref:`PiccoloProjects`.
 
     piccolo project new
 
+schema
+~~~~~~
+
+Lets you auto generate Piccolo ``Table`` classes from an existing database.
+Make sure the credentials in ``piccolo_conf.py`` are for the database you're
+interested in, then run the following:
+
+.. code-block:: bash
+
+    piccolo schema generate > tables.py
+
+.. warning:: This feature is still a work in progress. However, even in it's
+    current form it will save you a lot of time. Make sure you check the
+    generated code to make sure it's correct.
+
 shell
 ~~~~~
 
