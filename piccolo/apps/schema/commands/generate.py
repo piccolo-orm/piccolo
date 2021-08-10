@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import dataclasses
 import typing as t
 
@@ -6,11 +8,17 @@ from typing_extensions import Literal
 
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import (
+    JSON,
+    JSONB,
     UUID,
     BigInt,
     Boolean,
+    Bytea,
+    Date,
     Integer,
+    Interval,
     Numeric,
+    Real,
     SmallInt,
     Text,
     Timestamp,
@@ -50,16 +58,47 @@ class PostgresContraint:
         return ", ".join([i.name for i in dataclasses.fields(cls)])
 
 
+@dataclasses.dataclass
+class OutputSchema:
+    """
+    Represents the schema which will printed output.
+
+    :param imports:
+        e.g. ["from piccolo.table import Table"]
+    :param warnings:
+        e.g. ["some_table.some_column unrecognised_type"]
+    :param tables:
+        e.g. ["class MyTable(Table): ..."]
+
+    """
+
+    imports: t.List[str]
+    warnings: t.List[str]
+    tables: t.List[t.Type[Table]]
+
+    def get_table_with_name(self, name: str) -> t.Type[Table]:
+        """
+        Just used by unit tests.
+        """
+        return next(table for table in self.tables if table.__name__ == name)
+
+
 COLUMN_TYPE_MAP = {
     "bigint": BigInt,
     "boolean": Boolean,
+    "bytea": Bytea,
     "character varying": Varchar,
+    "date": Date,
     "integer": Integer,
+    "interval": Interval,
+    "json": JSON,
+    "jsonb": JSONB,
     "numeric": Numeric,
+    "real": Real,
     "smallint": SmallInt,
     "text": Text,
-    "timestamp without time zone": Timestamp,
     "timestamp with time zone": Timestamptz,
+    "timestamp without time zone": Timestamp,
     "uuid": UUID,
 }
 
@@ -129,15 +168,7 @@ async def get_table_schema(
     return [PostgresRowMeta(**row_meta) for row_meta in row_meta_list]
 
 
-# This is currently a beta version, and can be improved. However, having
-# something working is still useful for people migrating large schemas to
-# Piccolo.
-async def generate(schema_name: str = "public"):
-    """
-    Automatically generates Piccolo Table classes by introspecting the
-    database. Please check the generated code in case there are errors.
-
-    """
+async def get_output_schema(schema_name: str = "public") -> OutputSchema:
     engine: t.Optional[Engine] = engine_finder()
 
     if engine is None:
@@ -152,11 +183,15 @@ async def generate(schema_name: str = "public"):
         )
 
     class Schema(Table, db=engine):
+        """
+        Just used for making raw queries on the db.
+        """
+
         pass
 
     tablenames = await get_tablenames(Schema, schema_name=schema_name)
 
-    output: t.List[str] = []
+    tables: t.List[t.Type[Table]] = []
     imports: t.Set[str] = {"from piccolo.table import Table"}
     warnings: t.List[str] = []
 
@@ -191,12 +226,30 @@ async def generate(schema_name: str = "public"):
             class_kwargs={"tablename": tablename},
             class_members=columns,
         )
-        output.append(table._table_str())
+        tables.append(table)
 
-    output = sorted(list(imports)) + output
+    return OutputSchema(
+        imports=sorted(list(imports)), warnings=warnings, tables=tables
+    )
 
-    if warnings:
-        warning_str = "\n".join(warnings)
+
+# This is currently a beta version, and can be improved. However, having
+# something working is still useful for people migrating large schemas to
+# Piccolo.
+async def generate(schema_name: str = "public"):
+    """
+    Automatically generates Piccolo Table classes by introspecting the
+    database. Please check the generated code in case there are errors.
+
+    """
+    output_schema = await get_output_schema(schema_name=schema_name)
+
+    output = output_schema.imports + [
+        i._table_str() for i in output_schema.tables
+    ]
+
+    if output_schema.warnings:
+        warning_str = "\n".join(output_schema.warnings)
 
         output.append('"""')
         output.append(
