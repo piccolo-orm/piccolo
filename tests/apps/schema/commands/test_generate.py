@@ -28,6 +28,7 @@ from piccolo.columns.column_types import (
 )
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
+from tests.base import postgres_only
 
 
 class SmallTable(Table):
@@ -62,6 +63,7 @@ class MegaTable(Table):
     not_null_col = Varchar(null=False)
 
 
+@postgres_only
 class TestGenerate(TestCase):
     def setUp(self):
         for table_class in (SmallTable, MegaTable):
@@ -82,10 +84,18 @@ class TestGenerate(TestCase):
             column._meta.name for column in table_1._meta.non_default_columns
         ]
         for column_name in column_names:
-            self.assertTrue(
-                type(table_1._meta.get_column_by_name(column_name)),
-                type(table_2._meta.get_column_by_name(column_name)),
-            )
+            col_1 = table_1._meta.get_column_by_name(column_name)
+            col_2 = table_2._meta.get_column_by_name(column_name)
+
+            # Make sure they're the same type
+            self.assertEqual(type(col_1), type(col_2))
+
+            # Make sure they're both nullable or not
+            self.assertEqual(col_1._meta.null, col_2._meta.null)
+
+            # Make sure the max length is the same
+            if isinstance(col_1, Varchar) and isinstance(col_2, Varchar):
+                self.assertEqual(col_1.length, col_2.length)
 
     def test_get_output_schema(self):
         """

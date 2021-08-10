@@ -15,6 +15,7 @@ from piccolo.columns.column_types import (
     Boolean,
     Bytea,
     Date,
+    ForeignKey,
     Integer,
     Interval,
     Numeric,
@@ -34,8 +35,12 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.engine.base import Engine
 
 
+class ForeignKeyPlaceholder(Table):
+    pass
+
+
 @dataclasses.dataclass
-class PostgresRowMeta:
+class RowMeta:
     column_default: str
     column_name: str
     is_nullable: Literal["YES", "NO"]
@@ -49,8 +54,8 @@ class PostgresRowMeta:
 
 
 @dataclasses.dataclass
-class PostgresContraint:
-    contraint_type: Literal["PRIMARY KEY", "UNIQUE", "FOREIGN KEY", "CHECK"]
+class Constraint:
+    constraint_type: Literal["PRIMARY KEY", "UNIQUE", "FOREIGN KEY", "CHECK"]
     constraint_name: str
 
     @classmethod
@@ -59,9 +64,52 @@ class PostgresContraint:
 
 
 @dataclasses.dataclass
+class TableConstraints:
+    constraints: t.List[Constraint]
+
+    def __post_init__(self):
+        foreign_key_names: t.List[str] = []
+        unique_key_names: t.List[str] = []
+        primary_key_names: t.List[str] = []
+
+        for constraint in self.constraints:
+            if constraint.constraint_type == "FOREIGN KEY":
+                foreign_key_names.append(constraint.constraint_name)
+            elif constraint.constraint_type == "PRIMARY KEY":
+                primary_key_names.append(constraint.constraint_name)
+            elif constraint.constraint_name == "UNIQUE":
+                primary_key_names.append(primary_key_names)
+
+        self.foreign_key_names = foreign_key_names
+        self.unique_key_names = unique_key_names
+        self.primary_key_names = primary_key_names
+
+    def is_primary_key(self, column_name: str, tablename: str) -> bool:
+        for i in self.primary_key_names:
+            if i.startswith(f"{tablename}_{column_name}"):
+                return True
+
+        return False
+
+    def is_unique(self, column_name: str, tablename: str) -> bool:
+        for i in self.unique_key_names:
+            if i.startswith(f"{tablename}_{column_name}"):
+                return True
+
+        return False
+
+    def is_foreign_key(self, column_name: str, tablename: str) -> bool:
+        for i in self.foreign_key_names:
+            if i.startswith(f"{tablename}_{column_name}"):
+                return True
+
+        return False
+
+
+@dataclasses.dataclass
 class OutputSchema:
     """
-    Represents the schema which will printed output.
+    Represents the schema which will be printed out.
 
     :param imports:
         e.g. ["from piccolo.table import Table"]
@@ -76,11 +124,16 @@ class OutputSchema:
     warnings: t.List[str]
     tables: t.List[t.Type[Table]]
 
-    def get_table_with_name(self, name: str) -> t.Type[Table]:
+    def get_table_with_name(self, name: str) -> t.Optional[t.Type[Table]]:
         """
         Just used by unit tests.
         """
-        return next(table for table in self.tables if table.__name__ == name)
+        try:
+            return next(
+                table for table in self.tables if table.__name__ == name
+            )
+        except StopIteration:
+            return None
 
 
 COLUMN_TYPE_MAP = {
@@ -103,24 +156,25 @@ COLUMN_TYPE_MAP = {
 }
 
 
-async def get_foreign_keys(
-    table_class: t.Type[Table], schema_name: str = "public"
-):
+async def get_contraints(
+    table_class: t.Type[Table], tablename: str, schema_name: str = "public"
+) -> TableConstraints:
     """
     :param table_class:
         Any Table subclass - just used to execute raw queries on the database.
 
     """
-    foreign_key_meta: t.List[str] = await table_class.raw(
+    constraints = await table_class.raw(
         (
-            f"SELECT {PostgresContraint.get_column_name_str()} FROM "
+            f"SELECT {Constraint.get_column_name_str()} FROM "
             "information_schema.table_constraints "
             "WHERE table_schema = {} "
-            "AND table_name = {};"
+            "AND table_name = {} "
         ),
         schema_name,
+        tablename,
     )
-    return foreign_key_meta
+    return TableConstraints(constraints=[Constraint(**i) for i in constraints])
 
 
 async def get_tablenames(
@@ -138,7 +192,7 @@ async def get_tablenames(
         for i in await table_class.raw(
             (
                 "SELECT tablename FROM pg_catalog.pg_tables WHERE "
-                "schemaname = {};"
+                "schemaname = {}"
             ),
             schema_name,
         ).run()
@@ -148,24 +202,24 @@ async def get_tablenames(
 
 async def get_table_schema(
     table_class: t.Type[Table], tablename: str, schema_name: str = "public"
-) -> t.List[PostgresRowMeta]:
+) -> t.List[RowMeta]:
     """
     :returns:
-        A list, with each item containing information about a colum in the
+        A list, with each item containing information about a column in the
         table.
 
     """
     row_meta_list = await table_class.raw(
         (
-            f"SELECT {PostgresRowMeta.get_column_name_str()} FROM "
+            f"SELECT {RowMeta.get_column_name_str()} FROM "
             "information_schema.columns "
             "WHERE table_schema = {} "
-            "AND TABLE_NAME = {};"
+            "AND TABLE_NAME = {}"
         ),
         schema_name,
         tablename,
     ).run()
-    return [PostgresRowMeta(**row_meta) for row_meta in row_meta_list]
+    return [RowMeta(**row_meta) for row_meta in row_meta_list]
 
 
 async def get_output_schema(schema_name: str = "public") -> OutputSchema:
@@ -196,7 +250,12 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
     warnings: t.List[str] = []
 
     for tablename in tablenames:
-        table_schema = await get_table_schema(Schema, tablename, schema_name)
+        constraints = await get_contraints(
+            table_class=Schema, tablename=tablename, schema_name=schema_name
+        )
+        table_schema = await get_table_schema(
+            table_class=Schema, tablename=tablename, schema_name=schema_name
+        )
 
         columns: t.Dict[str, Column] = {}
 
@@ -207,8 +266,20 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
 
             if column_type:
                 kwargs: t.Dict[str, t.Any] = {
-                    "null": pg_row_meta.is_nullable == "YES"
+                    "null": pg_row_meta.is_nullable == "YES",
+                    "unique": constraints.is_unique(
+                        column_name=column_name, tablename=tablename
+                    ),
+                    "primary_key": constraints.is_primary_key(
+                        column_name=column_name, tablename=tablename
+                    ),
                 }
+
+                if constraints.is_foreign_key(
+                    column_name=column_name, tablename=tablename
+                ):
+                    column_type = ForeignKey
+                    kwargs["references"] = ForeignKeyPlaceholder
 
                 imports.add(
                     "from piccolo.column_types import " + column_type.__name__
