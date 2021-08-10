@@ -26,7 +26,7 @@ To return the data as a JSON string:
 Piccolo can use `orjson <https://github.com/ijl/orjson>`_ for JSON serialisation,
 which is blazing fast, and can handle most Python types, including dates,
 datetimes, and UUIDs. To install Piccolo with orjson support use
-``pip install piccolo[orjson]``.
+``pip install 'piccolo[orjson]'``.
 
 as_list
 ~~~~~~~
