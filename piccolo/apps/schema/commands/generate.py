@@ -285,6 +285,9 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
                 ):
                     column_type = ForeignKey
                     kwargs["references"] = ForeignKeyPlaceholder
+                    imports.add(
+                        "from piccolo.columns.base import OnDelete, OnUpdate"
+                    )
 
                 imports.add(
                     "from piccolo.column_types import " + column_type.__name__
