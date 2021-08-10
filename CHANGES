@@ -1,6 +1,20 @@
 Changes
 =======
 
+0.31.0
+------
+Added an ``all_columns`` method, to make it easier to retrieve all related
+columns when doing a join. For example:
+
+.. code-block:: python
+
+    await Band.select(Band.name, *Band.manager.all_columns()).first().run()
+
+Changed the instructions for installing additional dependencies, so they're
+wrapped in quotes, to make sure it works on ZSH (i.e.
+``pip install 'piccolo[postgres]'`` instead of
+``pip install piccolo[postgres]``).
+
 0.30.0
 ------
 The database drivers are now installed separately. For example:
