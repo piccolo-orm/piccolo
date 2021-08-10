@@ -145,7 +145,7 @@ def run(
         import IPython  # type: ignore
     except ImportError:
         sys.exit(
-            "Install iPython using `pip install piccolo[playground,sqlite]` "
+            "Install iPython using `pip install 'piccolo[playground,sqlite]'` "
             "to use this feature."
         )
 

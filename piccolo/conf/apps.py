@@ -330,12 +330,12 @@ class Finder:
             if str(exc) == "No module named 'asyncpg'":
                 raise ModuleNotFoundError(
                     "PostgreSQL driver not found. "
-                    "Try running 'pip install piccolo[postgres]'"
+                    "Try running `pip install 'piccolo[postgres]'`"
                 )
             elif str(exc) == "No module named 'aiosqlite'":
                 raise ModuleNotFoundError(
                     "SQLite driver not found. "
-                    "Try running 'pip install piccolo[sqlite]'"
+                    "Try running `pip install 'piccolo[sqlite]'`"
                 )
             else:
                 raise exc
