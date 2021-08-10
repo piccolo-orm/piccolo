@@ -316,7 +316,8 @@ async def generate(schema_name: str = "public"):
     output_schema = await get_output_schema(schema_name=schema_name)
 
     output = output_schema.imports + [
-        i._table_str() for i in output_schema.tables
+        i._table_str(excluded_params=["index_method", "index", "choices"])
+        for i in output_schema.tables
     ]
 
     if output_schema.warnings:
