@@ -16,6 +16,10 @@ from piccolo.utils.warnings import Level, colored_warning
 
 
 class MigrationModule(ModuleType):
+    ID: str
+    VERSION: str
+    DESCRIPTION: str
+
     @staticmethod
     async def forwards() -> None:
         pass
