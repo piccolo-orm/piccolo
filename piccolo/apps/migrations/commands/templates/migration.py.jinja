@@ -11,10 +11,11 @@ from piccolo.apps.migrations.auto import MigrationManager
 
 ID = '{{ migration_id }}'
 VERSION = '{{ version }}'
+DESCRIPTION = '{{ description }}'
 
 
 async def forwards():
-    manager = MigrationManager(migration_id=ID, app_name="{{ app_name }}")
+    manager = MigrationManager(migration_id=ID, app_name="{{ app_name }}", description=DESCRIPTION)
     {% if auto %}
     {% for alter_statement in alter_statements %}
     {{ alter_statement }}
