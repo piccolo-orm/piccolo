@@ -1,6 +1,12 @@
 Changes
 =======
 
+0.32.0
+------
+Migrations can now have a description, which is shown when using
+``piccolo migrations check``. This makes migrations easier to identify (thanks
+to @davidolrik for the idea).
+
 0.31.0
 ------
 Added an ``all_columns`` method, to make it easier to retrieve all related
