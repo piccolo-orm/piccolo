@@ -17,7 +17,7 @@ migration filename is a timestamp, which also serves as the migration ID.
 .. code-block:: bash
 
     piccolo_migrations/
-        2018-09-04T19:44:09.py
+        2021-08-06T16-22-51-415781.py
 
 The contents of an empty migration file looks like this:
 
@@ -26,11 +26,13 @@ The contents of an empty migration file looks like this:
     from piccolo.apps.migrations.auto import MigrationManager
 
 
-    ID = '2018-09-04T19:44:09'
+    ID = '2021-08-06T16:22:51:415781'
+    VERSION = "0.29.0" # The version of Piccolo used to create it
+    DESCRIPTION = "Optional description"
 
 
     async def forwards():
-        manager = MigrationManager(migration_id=ID)
+        manager = MigrationManager(migration_id=ID, app_name="my_app", description=DESCRIPTION)
 
         def run():
             print(f"running {ID}")
@@ -52,7 +54,9 @@ This is a **bad example**:
 
     from ..tables import Band
 
-    ID = '2018-09-04T19:44:09'
+    ID = '2021-08-06T16:22:51:415781'
+    VERSION = "0.29.0" # The version of Piccolo used to create it
+    DESCRIPTION = "Optional description"
 
 
     async def forwards():
@@ -68,6 +72,8 @@ The reason you don't want to do this, is your tables will change over time. If
 someone runs your migrations in the future, they will get different results.
 Make your migrations completely independent of other code, so they're
 self contained and repeatable.
+
+-------------------------------------------------------------------------------
 
 Auto migrations
 ---------------
@@ -102,3 +108,19 @@ Auto migrations can accommodate most schema changes. There may be some rare edge
 cases where a single migration is trying to do too much in one go, and fails.
 To avoid these situations, create auto migrations frequently, and keep them
 fairly small.
+
+-------------------------------------------------------------------------------
+
+Migration descriptions
+----------------------
+
+To make the migrations more memorable, you can give them a description. Inside
+the migration file, you can set a ``DESCRIPTION`` global variable manually, or
+can specify it when creating the migration:
+
+.. code-block:: bash
+
+    piccolo migrations new my_app --auto --desc="Adding name column"
+
+The Piccolo CLI will then use this description where appropriate when dealing
+with migrations.
