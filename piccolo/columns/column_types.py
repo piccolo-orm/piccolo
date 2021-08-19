@@ -1006,12 +1006,19 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
 
     **Joins**
 
-    Can also use it to perform joins:
+    You also use it to perform joins:
 
     .. code-block:: python
 
         >>> await Band.select(Band.name, Band.manager.name).first().run()
         {'name': 'Pythonistas', 'manager.name': 'Guido'}
+
+    To retrieve all of the columns in the related table:
+
+    .. code-block:: python
+
+        >>> await Band.select(Band.name, *Band.manager.all_columns()).first().run()
+        {'name': 'Pythonistas', 'manager.id': 1, 'manager.name': 'Guido'}
 
     To get a referenced row as an object:
 
@@ -1217,11 +1224,27 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
         the ``ForeignKey`` column for each column in the table being pointed
         to.
         """
-        _foreign_key_meta = object.__getattribute__(self, "_foreign_key_meta")
-        for column in _foreign_key_meta.resolved_references._meta.columns:
+        _fk_meta = object.__getattribute__(self, "_foreign_key_meta")
+        for column in _fk_meta.resolved_references._meta.columns:
             _column: Column = column.copy()
             setattr(self, _column._meta.name, _column)
-            _foreign_key_meta.proxy_columns.append(_column)
+            _fk_meta.proxy_columns.append(_column)
+
+        def all_columns():
+            """
+            Allow a user to access all of the columns on the related table.
+
+            For example:
+
+            Band.select(Band.name, *Band.manager.all_columns()).run_sync()
+
+            """
+            return [
+                getattr(self, column._meta.name)
+                for column in _fk_meta.resolved_references._meta.columns
+            ]
+
+        setattr(self, "all_columns", all_columns)
 
     def __getattribute__(self, name: str):
         """

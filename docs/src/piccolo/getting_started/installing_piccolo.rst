@@ -21,10 +21,16 @@ Now install piccolo, ideally inside a `virtualenv <https://docs.python-guide.org
     # The important bit:
     pip install piccolo
 
+    # Install Piccolo with PostgreSQL driver:
+    pip install 'piccolo[postgres]'
+
+    # Install Piccolo with SQLite driver:
+    pip install 'piccolo[sqlite]'
+
     # Optional: orjson for improved JSON serialisation performance
-    pip install piccolo[orjson]
+    pip install 'piccolo[orjson]'
 
     # Optional: uvloop as default event loop instead of asyncio
     # If using Piccolo with Uvicorn, Uvicorn will set uvloop as
     # default event loop if installed
-    pip install piccolo[uvloop]
+    pip install 'piccolo[uvloop]'

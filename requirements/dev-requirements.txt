@@ -1,6 +1,7 @@
 black>=21.7b0
 ipdb==0.12.2
 ipython==7.8.0
+flake8==3.8.4
 isort==5.9.2
 twine==3.1.1
 mypy==0.782

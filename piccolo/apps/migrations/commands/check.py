@@ -10,6 +10,7 @@ from piccolo.utils.printing import get_fixed_length_string
 class MigrationStatus:
     app_name: str
     migration_id: str
+    description: str
     has_ran: bool
 
 
@@ -47,9 +48,15 @@ class CheckMigrationManager(BaseMigrationManager):
                     )
                     .run()
                 )
+                description = getattr(
+                    migration_modules[_id], "DESCRIPTION", "-"
+                )
                 migration_statuses.append(
                     MigrationStatus(
-                        app_name=app_name, migration_id=_id, has_ran=has_ran
+                        app_name=app_name,
+                        migration_id=_id,
+                        description=description,
+                        has_ran=has_ran,
                     )
                 )
 
@@ -76,10 +83,13 @@ class CheckMigrationManager(BaseMigrationManager):
         Prints out the migrations which have and haven't ran.
         """
         print("Listing migrations ...")
+        desc_length = 40
+        id_length = 26
 
         print(
             f'{get_fixed_length_string("APP NAME")} | '
-            f'{get_fixed_length_string("MIGRATION_ID")} | RAN'
+            f'{get_fixed_length_string("MIGRATION_ID", id_length)} | '
+            f'{get_fixed_length_string("DESCRIPTION", desc_length)} | RAN'
         )
 
         migration_statuses = await self.get_migration_statuses()
@@ -89,10 +99,18 @@ class CheckMigrationManager(BaseMigrationManager):
                 migration_status.app_name
             )
             fixed_length_id = get_fixed_length_string(
-                migration_status.migration_id
+                migration_status.migration_id, length=id_length
+            )
+            fixed_length_description = get_fixed_length_string(
+                migration_status.description, desc_length
             )
             has_ran = migration_status.has_ran
-            print(f"{fixed_length_app_name} | {fixed_length_id} | {has_ran}")
+            print(
+                f"{fixed_length_app_name} | "
+                f"{fixed_length_id} | "
+                f"{fixed_length_description} | "
+                f"{has_ran}"
+            )
 
 
 async def check(app_name: str = "all"):

@@ -89,7 +89,7 @@ class NoChanges(Exception):
 
 
 async def _create_new_migration(
-    app_config: AppConfig, auto=False
+    app_config: AppConfig, auto: bool = False, description: str = ""
 ) -> NewMigrationMeta:
     """
     Creates a new migration file on disk.
@@ -122,10 +122,11 @@ async def _create_new_migration(
             extra_imports=extra_imports,
             extra_definitions=extra_definitions,
             app_name=app_config.app_name,
+            description=description,
         )
     else:
         file_contents = render_template(
-            migration_id=meta.migration_id, auto=False
+            migration_id=meta.migration_id, auto=False, description=description
         )
 
     # Beautify the file contents a bit.
@@ -178,7 +179,7 @@ class AutoMigrationManager(BaseMigrationManager):
 ###############################################################################
 
 
-async def new(app_name: str, auto: bool = False):
+async def new(app_name: str, auto: bool = False, desc: str = ""):
     """
     Creates a new migration file in the migrations folder.
 
@@ -186,6 +187,9 @@ async def new(app_name: str, auto: bool = False):
         The app to create a migration for.
     :param auto:
         Auto create the migration contents.
+    :param desc:
+        A description of what the migration does, for example 'adding name
+        column'.
 
     """
     print("Creating new migration ...")
@@ -198,7 +202,9 @@ async def new(app_name: str, auto: bool = False):
 
     _create_migrations_folder(app_config.migrations_folder_path)
     try:
-        await _create_new_migration(app_config=app_config, auto=auto)
+        await _create_new_migration(
+            app_config=app_config, auto=auto, description=desc
+        )
     except NoChanges:
         print("No changes detected - exiting.")
         sys.exit(0)

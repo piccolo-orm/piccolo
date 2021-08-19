@@ -126,6 +126,7 @@ class MigrationManager:
 
     migration_id: str = ""
     app_name: str = ""
+    description: str = ""
     add_tables: t.List[DiffableTable] = field(default_factory=list)
     drop_tables: t.List[DiffableTable] = field(default_factory=list)
     rename_tables: t.List[RenameTable] = field(default_factory=list)

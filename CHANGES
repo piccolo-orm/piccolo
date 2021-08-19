@@ -1,6 +1,35 @@
 Changes
 =======
 
+0.32.0
+------
+Migrations can now have a description, which is shown when using
+``piccolo migrations check``. This makes migrations easier to identify (thanks
+to @davidolrik for the idea).
+
+0.31.0
+------
+Added an ``all_columns`` method, to make it easier to retrieve all related
+columns when doing a join. For example:
+
+.. code-block:: python
+
+    await Band.select(Band.name, *Band.manager.all_columns()).first().run()
+
+Changed the instructions for installing additional dependencies, so they're
+wrapped in quotes, to make sure it works on ZSH (i.e.
+``pip install 'piccolo[postgres]'`` instead of
+``pip install piccolo[postgres]``).
+
+0.30.0
+------
+The database drivers are now installed separately. For example:
+``pip install piccolo[postgres]`` (courtesy @aminalaee).
+
+For some users this might be a **breaking change** - please make sure that for
+existing Piccolo projects, you have either ``asyncpg``, or
+``piccolo[postgres]`` in your ``requirements.txt`` file.
+
 0.29.0
 ------
 The user can now specify the primary key column (courtesy @aminalaee). For

@@ -64,6 +64,7 @@ jobs:
                   python -m pip install --upgrade pip
                   pip install -r requirements/requirements.txt
                   pip install -r requirements/test-requirements.txt
+                  pip install -r requirements/extras/postgres.txt
             - name: Setup postgres
               run: |
                   export PGPASSWORD=postgres
@@ -99,6 +100,7 @@ jobs:
                   python -m pip install --upgrade pip
                   pip install -r requirements/requirements.txt
                   pip install -r requirements/test-requirements.txt
+                  pip install -r requirements/extras/sqlite.txt
             - name: Test with pytest, SQLite
               run: ./scripts/test-sqlite.sh
             - name: Upload coverage

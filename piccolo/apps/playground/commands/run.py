@@ -145,7 +145,8 @@ def run(
         import IPython  # type: ignore
     except ImportError:
         sys.exit(
-            "Install iPython using `pip install ipython` to use this feature."
+            "Install iPython using `pip install 'piccolo[playground,sqlite]'` "
+            "to use this feature."
         )
 
     if engine.upper() == "POSTGRES":
