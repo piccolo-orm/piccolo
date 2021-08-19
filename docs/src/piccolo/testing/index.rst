@@ -36,6 +36,13 @@ You can build a random ``Band`` which will also build and save a random ``Manage
 
 .. note:: ``ModelBuilder().build(Band)`` persists record into the database by default.
 
+The ``build`` method saves the instance using ``.save().run()`` which is async.
+You can also run the method ``sync`` instead:
+
+.. code-block:: python
+
+    manager = ModelBuilder().build_sync(Manager)
+
 
 To specify any attribute, pass the attribute and value to the ``build`` method:
 

@@ -1,3 +1,4 @@
+import asyncio
 import json
 import typing as t
 from datetime import date, datetime, time, timedelta
@@ -38,10 +39,10 @@ class ModelBuilder:
         self.minimal = minimal
         self.persist = persist
 
-    def build(self, table_class: t.Type[Table], **attrs) -> Table:
+    async def build(self, table_class: t.Type[Table], **kwargs) -> Table:
         """
-        Build Table instance with random data. It can build relationships,
-        all supported data types and parameters.
+        Build Table instance with random data and save async.
+        This can build relationships, supported data types and parameters.
 
         :param table_class:
             Table class to randomize.
@@ -54,10 +55,46 @@ class ModelBuilder:
             manager = ModelBuilder(minimal=True).build(Manager)
             band = ModelBuilder.build(Band, manager=manager)
         """
+        return await self._build(
+            table_class, _persist=self.persist, _minimal=self.minimal, **kwargs
+        )
+
+    def build_sync(self, table_class: t.Type[Table], **kwargs) -> Table:
+        """
+        Build Table instance with random data and save sync.
+        This can build relationships, supported data types and parameters.
+
+        :param table_class:
+            Table class to randomize.
+
+        Examples:
+
+            manager = ModelBuilder.build_sync(Manager)
+            manager = ModelBuilder.build_sync(Manager, name='Guido')
+            manager = ModelBuilder(persist=False).build_sync(Manager)
+            manager = ModelBuilder(minimal=True).build_sync(Manager)
+            band = ModelBuilder.build_sync(Band, manager=manager)
+        """
+        return asyncio.run(
+            self._build(
+                table_class,
+                _persist=self.persist,
+                _minimal=self.minimal,
+                **kwargs,
+            )
+        )
+
+    async def _build(
+        self,
+        table_class: t.Type[Table],
+        _minimal=False,
+        _persist: bool = True,
+        **kwargs,
+    ) -> Table:
         model = table_class()
         column_names = [column._meta.name for column in model._meta.columns]
 
-        for name, value in attrs.items():
+        for name, value in kwargs.items():
             if name not in column_names:
                 raise InvalidColumnError(
                     f"Table {model.__class__.__name__} has no column {name}"
@@ -67,31 +104,33 @@ class ModelBuilder:
 
         for column in model._meta.columns:
 
-            if column._meta.null and self.minimal:
+            if column._meta.null and _minimal:
                 continue
 
-            if column._meta.name in attrs:
+            if column._meta.name in kwargs:
                 continue  # Column value exists
 
             if "references" in column._meta.params and self.persist:
-                reference_model = self.build(column._meta.params["references"])
-                reference_model.save().run_sync()
+                reference_model = await self._build(
+                    column._meta.params["references"],
+                    _persist=True,
+                )
                 random_value = getattr(
                     reference_model,
                     reference_model._meta.primary_key._meta.name,
                 )
             else:
-                random_value = self.__randomize_attribute(column)
+                random_value = self._randomize_attribute(column)
 
             setattr(model, column._meta.name, random_value)
 
-        if self.persist:
-            model.save().run_sync()
+        if _persist:
+            await model.save().run()
 
         return model
 
     @classmethod
-    def __randomize_attribute(cls, column: Column) -> t.Any:
+    def _randomize_attribute(cls, column: Column) -> t.Any:
         """
         Generate a random value for a column and apply formattings.
 

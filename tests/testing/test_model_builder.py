@@ -1,3 +1,4 @@
+import asyncio
 import unittest
 
 from piccolo.testing.exceptions import InvalidColumnError
@@ -23,14 +24,23 @@ class TestModelBuilder(unittest.TestCase):
         Shirt.create_table().run_sync()
         Ticket.create_table().run_sync()
 
-    def test_model_builder(self):
-        ModelBuilder().build(Manager)
-        ModelBuilder().build(Ticket)
-        ModelBuilder().build(Poster)
-        ModelBuilder().build(RecordingStudio)
+    def test_model_builder_async(self):
+        async def build_model(model):
+            return await ModelBuilder().build(model)
+
+        asyncio.run(build_model(Manager))
+        asyncio.run(build_model(Ticket))
+        asyncio.run(build_model(Poster))
+        asyncio.run(build_model(RecordingStudio))
+
+    def test_model_builder_sync(self):
+        ModelBuilder().build_sync(Manager)
+        ModelBuilder().build_sync(Ticket)
+        ModelBuilder().build_sync(Poster)
+        ModelBuilder().build_sync(RecordingStudio)
 
     def test_model_builder_with_choices(self):
-        shirt = ModelBuilder().build(Shirt)
+        shirt = ModelBuilder().build_sync(Shirt)
         queried_shirt = (
             Shirt.objects().where(Shirt.id == shirt.id).first().run_sync()
         )
@@ -41,14 +51,14 @@ class TestModelBuilder(unittest.TestCase):
         )
 
     def test_model_builder_with_foreign_key(self):
-        ModelBuilder().build(Band)
+        ModelBuilder().build_sync(Band)
 
     def test_model_builder_with_invalid_column(self):
         with self.assertRaises(InvalidColumnError):
-            ModelBuilder().build(Band, x=1)
+            ModelBuilder().build_sync(Band, x=1)
 
     def test_model_builder_with_minimal(self):
-        band = ModelBuilder(minimal=True).build(Band)
+        band = ModelBuilder(minimal=True).build_sync(Band)
 
         self.assertEqual(
             Band.exists().where(Band.id == band.id).run_sync(),
@@ -56,7 +66,7 @@ class TestModelBuilder(unittest.TestCase):
         )
 
     def test_model_builder_with_no_persist(self):
-        band = ModelBuilder(persist=False).build(Band)
+        band = ModelBuilder(persist=False).build_sync(Band)
 
         self.assertEqual(
             Band.exists().where(Band.id == band.id).run_sync(),
@@ -64,7 +74,7 @@ class TestModelBuilder(unittest.TestCase):
         )
 
     def test_model_builder_with_valid_column(self):
-        manager = ModelBuilder().build(Manager, name="Guido")
+        manager = ModelBuilder().build_sync(Manager, name="Guido")
 
         queried_manager = (
             Manager.objects()
@@ -76,8 +86,8 @@ class TestModelBuilder(unittest.TestCase):
         self.assertEqual(queried_manager.name, "Guido")
 
     def test_model_builder_with_valid_foreign_key(self):
-        manager = ModelBuilder().build(Manager)
+        manager = ModelBuilder().build_sync(Manager)
 
-        band = ModelBuilder().build(Band, manager=manager)
+        band = ModelBuilder().build_sync(Band, manager=manager)
 
         self.assertEqual(manager._meta.primary_key, band.manager)
