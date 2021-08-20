@@ -335,6 +335,21 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
             extra_imports.append(
                 Import(module=Table.__module__, target="Table")
             )
+
+            extra_imports.append(
+                Import(
+                    module=value._meta.primary_key.__class__.__module__,
+                    target=value._meta.primary_key.__class__.__name__,
+                )
+            )
+            # Include the extra imports and definitions required for the
+            # primary column params.
+            pk_serialised_params: SerialisedParams = serialise_params(
+                params=value._meta.primary_key._meta.params
+            )
+            extra_imports.extend(pk_serialised_params.extra_imports)
+            extra_definitions.extend(pk_serialised_params.extra_definitions)
+
             continue
 
         # Plain class type
