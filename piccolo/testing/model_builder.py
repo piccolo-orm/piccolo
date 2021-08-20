@@ -1,4 +1,3 @@
-import asyncio
 import json
 import typing as t
 from datetime import date, datetime, time, timedelta
@@ -9,6 +8,7 @@ from piccolo.columns.base import Column
 from piccolo.table import Table
 from piccolo.testing.exceptions import InvalidColumnError
 from piccolo.testing.random_builder import RandomBuilder
+from piccolo.utils.sync import run_sync
 
 
 class ModelBuilder:
@@ -75,7 +75,7 @@ class ModelBuilder:
             manager = ModelBuilder(minimal=True).build_sync(Manager)
             band = ModelBuilder.build_sync(Band, manager=manager)
         """
-        return asyncio.run(
+        return run_sync(
             self._build(
                 table_class,
                 _persist=self.persist,
