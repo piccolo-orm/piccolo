@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.33.0
+------
+Fix for auto migrations when using custom primary keys (thanks to @adriangb and
+@aminalaee for investigating this issue).
+
 0.32.0
 ------
 Migrations can now have a description, which is shown when using
