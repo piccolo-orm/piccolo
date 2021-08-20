@@ -64,7 +64,12 @@ class TestSerialiseParams(TestCase):
             self.assertTrue(len(serialised.extra_definitions) == 1)
             self.assertEqual(
                 serialised.extra_definitions[0].__str__(),
-                'class Manager(Table, tablename="manager"): pass',
+                (
+                    'class Manager(Table, tablename="manager"): '
+                    "id = Serial(null=False, primary_key=True, unique=False, "
+                    "index=False, index_method=IndexMethod.btree, "
+                    "choices=None)"
+                ),
             )
 
     def test_function(self):

@@ -99,7 +99,20 @@ class SerialisedTableType:
     def __repr__(self):
         tablename = self.table_type._meta.tablename
         class_name = self.table_type.__name__
-        return f'class {class_name}(Table, tablename="{tablename}"): pass'
+
+        # We have to add the primary key column definition too, so foreign
+        # keys can be created with the correct type.
+        pk_column = self.table_type._meta.primary_key
+        pk_column_name = pk_column._meta.name
+        serialised_pk_column = SerialisedColumnInstance(
+            pk_column,
+            serialised_params=serialise_params(params=pk_column._meta.params),
+        )
+
+        return (
+            f'class {class_name}(Table, tablename="{tablename}"): '
+            f"{pk_column_name} = {serialised_pk_column}"
+        )
 
     def __lt__(self, other):
         return repr(self) < repr(other)
