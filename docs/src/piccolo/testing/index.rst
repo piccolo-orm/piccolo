@@ -32,34 +32,38 @@ You can build a random ``Band`` which will also build and save a random ``Manage
 
     from piccolo.testing.model_builder import ModelBuilder
 
-    band = ModelBuilder().build(Band)  # Band instance with random values persisted
+    band = ModelBuilder.build(Band)  # Band instance with random values persisted
 
-.. note:: ``ModelBuilder().build(Band)`` persists record into the database by default.
+.. note:: ``ModelBuilder.build(Band)`` persists record into the database by default.
 
 The ``build`` method saves the instance using ``.save().run()`` which is async.
 You can also run the method ``sync`` instead:
 
 .. code-block:: python
 
-    manager = ModelBuilder().build_sync(Manager)
+    manager = ModelBuilder.build_sync(Manager)
 
 
-To specify any attribute, pass the attribute and value to the ``build`` method:
-
-.. code-block:: python
-
-    manager = ModelBuilder().build(Manager)
-
-    band = ModelBuilder().build(Band, name='Guido', manager=manager)
-
-To build objects without persisting that into database:
+To specify any attribute, pass the ``defaults`` dictionary to the ``build`` method:
 
 .. code-block:: python
 
-    band = ModelBuilder(persist=False).build(Band)
+    manager = ModelBuilder.build(Manager)
+
+    # Using table columns
+    band = ModelBuilder.build(Band, defaults={Band.name: "Guido", Band.manager: manager})
+
+    # Or using strings as keys
+    band = ModelBuilder.build(Band, defaults={"name": "Guido", "manager": manager})
+
+To build objects without persisting them into the database:
+
+.. code-block:: python
+
+    band = ModelBuilder.build(Band, persist=False)
 
 To build object with minimal attributes, leaving nullable fields empty:
 
 .. code-block:: python
 
-    band = ModelBuilder(minimal=True).build(Band)  # Leaves manager empty
+    band = ModelBuilder.build(Band, minimal=True)  # Leaves manager empty

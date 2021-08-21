@@ -6,7 +6,6 @@ from uuid import UUID
 
 from piccolo.columns.base import Column
 from piccolo.table import Table
-from piccolo.testing.exceptions import InvalidColumnError
 from piccolo.testing.random_builder import RandomBuilder
 from piccolo.utils.sync import run_sync
 
@@ -25,21 +24,14 @@ class ModelBuilder:
         UUID: RandomBuilder.next_uuid,
     }
 
-    def __init__(self, minimal: bool = False, persist: bool = True):
-        """
-        Configurations for ModelBuilder
-
-        :param minimal:
-            If set, only required and non-nullable fields will be randomized.
-
-        :param persist:
-            If set, random model will not persisted by default.
-
-        """
-        self.minimal = minimal
-        self.persist = persist
-
-    async def build(self, table_class: t.Type[Table], **kwargs) -> Table:
+    @classmethod
+    async def build(
+        cls,
+        table_class: t.Type[Table],
+        defaults: t.Dict[t.Union[Column, str], t.Any] = None,
+        persist: bool = True,
+        minimal: bool = False,
+    ) -> Table:
         """
         Build Table instance with random data and save async.
         This can build relationships, supported data types and parameters.
@@ -55,11 +47,21 @@ class ModelBuilder:
             manager = ModelBuilder(minimal=True).build(Manager)
             band = ModelBuilder.build(Band, manager=manager)
         """
-        return await self._build(
-            table_class, _persist=self.persist, _minimal=self.minimal, **kwargs
+        return await cls._build(
+            table_class=table_class,
+            defaults=defaults,
+            persist=persist,
+            minimal=minimal,
         )
 
-    def build_sync(self, table_class: t.Type[Table], **kwargs) -> Table:
+    @classmethod
+    def build_sync(
+        cls,
+        table_class: t.Type[Table],
+        defaults: t.Dict[t.Union[Column, str], t.Any] = None,
+        persist: bool = True,
+        minimal: bool = False,
+    ) -> Table:
         """
         Build Table instance with random data and save sync.
         This can build relationships, supported data types and parameters.
@@ -76,55 +78,54 @@ class ModelBuilder:
             band = ModelBuilder.build_sync(Band, manager=manager)
         """
         return run_sync(
-            self._build(
-                table_class,
-                _persist=self.persist,
-                _minimal=self.minimal,
-                **kwargs,
+            cls.build(
+                table_class=table_class,
+                defaults=defaults,
+                persist=persist,
+                minimal=minimal,
             )
         )
 
+    @classmethod
     async def _build(
-        self,
+        cls,
         table_class: t.Type[Table],
-        _minimal=False,
-        _persist: bool = True,
-        **kwargs,
+        defaults: t.Dict[t.Union[Column, str], t.Any] = None,
+        minimal: bool = False,
+        persist: bool = True,
     ) -> Table:
         model = table_class()
-        column_names = [column._meta.name for column in model._meta.columns]
+        defaults = {} if not defaults else defaults
 
-        for name, value in kwargs.items():
-            if name not in column_names:
-                raise InvalidColumnError(
-                    f"Table {model.__class__.__name__} has no column {name}"
-                )
+        for column, value in defaults.items():
+            if isinstance(column, str):
+                column = model._meta.get_column_by_name(column)
 
-            setattr(model, name, value)
+            setattr(model, column._meta.name, value)
 
         for column in model._meta.columns:
 
-            if column._meta.null and _minimal:
+            if column._meta.null and minimal:
                 continue
 
-            if column._meta.name in kwargs:
+            if column._meta.name in defaults:
                 continue  # Column value exists
 
-            if "references" in column._meta.params and self.persist:
-                reference_model = await self._build(
+            if "references" in column._meta.params and persist:
+                reference_model = await cls._build(
                     column._meta.params["references"],
-                    _persist=True,
+                    persist=True,
                 )
                 random_value = getattr(
                     reference_model,
                     reference_model._meta.primary_key._meta.name,
                 )
             else:
-                random_value = self._randomize_attribute(column)
+                random_value = cls._randomize_attribute(column)
 
             setattr(model, column._meta.name, random_value)
 
-        if _persist:
+        if persist:
             await model.save().run()
 
         return model
