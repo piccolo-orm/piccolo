@@ -60,6 +60,11 @@ class Objects(Query):
         self.limit_delegate.first()
         return self
 
+    def get(self, where: Combinable) -> Objects:
+        self.where_delegate.where(where)
+        self.limit_delegate.first()
+        return self
+
     def offset(self, number: int) -> Objects:
         self.offset_delegate.offset(number)
         return self
