@@ -530,7 +530,8 @@ class PrimaryKey(Serial):
 
         colored_warning(
             "`PrimaryKey` is deprecated and "
-            "will be removed in future versions.",
+            "will be removed in future versions. Use `UUID(primary_key=True)`"
+            " or `BigInt(primary_key=True)` instead.",
             category=DeprecationWarning,
         )
 
