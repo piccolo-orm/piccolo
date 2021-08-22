@@ -50,6 +50,13 @@ class GetOrCreate:
 
         return instance
 
+    def __await__(self):
+        """
+        If the user doesn't explicity call .run(), proxy to it as a
+        convenience.
+        """
+        return self.run().__await__()
+
     def run_sync(self):
         return run_sync(self.run())
 
@@ -97,7 +104,9 @@ class Objects(Query):
         return self
 
     def get_or_create(
-        self, where: Combinable, defaults: t.Dict[t.Union[Column, str], t.Any]
+        self,
+        where: Combinable,
+        defaults: t.Dict[t.Union[Column, str], t.Any] = {},
     ):
         return GetOrCreate(query=self, where=where, defaults=defaults)
 
