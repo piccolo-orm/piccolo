@@ -64,6 +64,25 @@ class Objects(Query):
         self.offset_delegate.offset(number)
         return self
 
+    async def get_or_create(
+        self, where: Combinable, defaults: t.Dict[t.Union[Column, str], t.Any]
+    ):
+        instance = await self.where(where).first().run()
+        if instance:
+            return instance
+
+        instance = self.table()
+        setattr(instance, where.column._meta.name, where.value)  # type: ignore
+        for column, value in defaults.items():
+            column = (
+                instance._meta.get_column_by_name(column)
+                if isinstance(column, str)
+                else column
+            )
+            setattr(instance, column._meta.name, value)
+            await instance.save().run()
+        return instance
+
     def order_by(self, *columns: Column, ascending=True) -> Objects:
         self.order_by_delegate.order_by(*columns, ascending=ascending)
         return self

@@ -1,3 +1,5 @@
+from piccolo.utils.sync import run_sync
+
 from ..base import DBTestCase, postgres_only, sqlite_only
 from ..example_app.tables import Band
 
@@ -59,3 +61,32 @@ class TestObjects(DBTestCase):
         self.assertEqual(
             [i.name for i in response], ["Pythonistas", "Rustaceans"]
         )
+
+    def test_get_or_create(self):
+        run_sync(
+            Band.objects().get_or_create(
+                Band.name == "Pink Floyd", defaults={"popularity": 100}
+            )
+        )
+
+        instance = (
+            Band.objects().where(Band.name == "Pink Floyd").first().run_sync()
+        )
+
+        self.assertTrue(isinstance(instance, Band))
+        self.assertTrue(instance.name == "Pink Floyd")
+        self.assertTrue(instance.popularity == 100)
+
+        run_sync(
+            Band.objects().get_or_create(
+                Band.name == "Pink Floyd", defaults={Band.popularity: 100}
+            )
+        )
+
+        instance = (
+            Band.objects().where(Band.name == "Pink Floyd").first().run_sync()
+        )
+
+        self.assertTrue(isinstance(instance, Band))
+        self.assertTrue(instance.name == "Pink Floyd")
+        self.assertTrue(instance.popularity == 100)
