@@ -1,6 +1,14 @@
 Changes
 =======
 
+0.33.1
+------
+ * Bug fix, where ``compare_dicts`` was failing in migrations if any ``Column``
+   had an unhashable type as an argument. For example: ``Array(default=[])``.
+   Thanks to @hipertracker for reporting this problem.
+ * Increased the minimum version of orjson, so binaries are available for Macs
+   running on Apple silicon (courtesy @hipertracker).
+
 0.33.0
 ------
 Fix for auto migrations when using custom primary keys (thanks to @adriangb and
