@@ -1,6 +1,17 @@
 Changes
 =======
 
+0.34.0
+------
+Added the ``get_or_create`` convenience method (courtesy @aminalaee). Example
+usage:
+
+.. code-block:: python
+
+    manager = await Manager.objects().get_or_create(
+        Manager.name == 'Guido'
+    ).run()
+
 0.33.1
 ------
  * Bug fix, where ``compare_dicts`` was failing in migrations if any ``Column``
