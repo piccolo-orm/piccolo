@@ -14,12 +14,44 @@ from piccolo.query.mixins import (
     WhereDelegate,
 )
 from piccolo.querystring import QueryString
+from piccolo.utils.sync import run_sync
 
 from .select import Select
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
     from piccolo.table import Table
+
+
+@dataclass
+class GetOrCreate:
+    query: Objects
+    where: Combinable
+    defaults: t.Dict[t.Union[Column, str], t.Any]
+
+    async def run(self):
+        instance = await self.query.where(self.where).first().run()
+        if instance:
+            return instance
+
+        instance = self.query.table()
+        setattr(
+            instance,
+            self.where.column._meta.name,  # type: ignore
+            self.where.value,  # type: ignore
+        )
+
+        for column, value in self.defaults.items():
+            if isinstance(column, str):
+                column = instance._meta.get_column_by_name(column)
+            setattr(instance, column._meta.name, value)
+
+        await instance.save().run()
+
+        return instance
+
+    def run_sync(self):
+        return run_sync(self.run())
 
 
 @dataclass
@@ -64,24 +96,10 @@ class Objects(Query):
         self.offset_delegate.offset(number)
         return self
 
-    async def get_or_create(
+    def get_or_create(
         self, where: Combinable, defaults: t.Dict[t.Union[Column, str], t.Any]
     ):
-        instance = await self.where(where).first().run()
-        if instance:
-            return instance
-
-        instance = self.table()
-        setattr(instance, where.column._meta.name, where.value)  # type: ignore
-        for column, value in defaults.items():
-            column = (
-                instance._meta.get_column_by_name(column)
-                if isinstance(column, str)
-                else column
-            )
-            setattr(instance, column._meta.name, value)
-            await instance.save().run()
-        return instance
+        return GetOrCreate(query=self, where=where, defaults=defaults)
 
     def order_by(self, *columns: Column, ascending=True) -> Objects:
         self.order_by_delegate.order_by(*columns, ascending=ascending)
