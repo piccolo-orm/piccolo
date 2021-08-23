@@ -66,3 +66,28 @@ class TestObjects(DBTestCase):
         band = Band.objects().get(Band.name == "Pythonistas").run_sync()
 
         self.assertTrue(band.name == "Pythonistas")
+
+    def test_get_or_create(self):
+        Band.objects().get_or_create(
+            Band.name == "Pink Floyd", defaults={"popularity": 100}
+        ).run_sync()
+
+        instance = (
+            Band.objects().where(Band.name == "Pink Floyd").first().run_sync()
+        )
+
+        self.assertTrue(isinstance(instance, Band))
+        self.assertTrue(instance.name == "Pink Floyd")
+        self.assertTrue(instance.popularity == 100)
+
+        Band.objects().get_or_create(
+            Band.name == "Pink Floyd", defaults={Band.popularity: 100}
+        ).run_sync()
+
+        instance = (
+            Band.objects().where(Band.name == "Pink Floyd").first().run_sync()
+        )
+
+        self.assertTrue(isinstance(instance, Band))
+        self.assertTrue(instance.name == "Pink Floyd")
+        self.assertTrue(instance.popularity == 100)

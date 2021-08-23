@@ -89,6 +89,23 @@ object, you can do so using ``get_related``.
     >>> print(manager.name)
     'Guido'
 
+get_or_create
+-------------
+
+With ``get_or_create`` you can get an existing record matching the criteria,
+or create a new one with the ``defaults`` arguments:
+
+.. code-block:: python
+
+    band = Band.objects().get_or_create(
+        Band.name == 'Pythonistas', defaults={Band.popularity: 100}
+    ).run_sync()
+
+    # Or using string column names
+    band = Band.objects().get_or_create(
+        Band.name == 'Pythonistas', defaults={'popularity': 100}
+    ).run_sync()
+
 Query clauses
 -------------
 
