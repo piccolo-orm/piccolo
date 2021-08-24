@@ -1,7 +1,8 @@
 import os
 from unittest import TestCase
+from unittest.mock import MagicMock, patch
 
-from piccolo.apps.tester.commands.run import set_env_var
+from piccolo.apps.tester.commands.run import run, set_env_var
 
 
 class TestSetEnvVar(TestCase):
@@ -61,3 +62,12 @@ class TestSetEnvVar(TestCase):
             pass
 
         self.assertEqual(os.environ.get(var_name), initial_value)
+
+
+class TestRun(TestCase):
+    @patch("piccolo.apps.tester.commands.run.run_pytest")
+    def test_success(self, pytest: MagicMock):
+        with self.assertRaises(SystemExit):
+            run(pytest_args="-s foo", piccolo_conf="my_piccolo_conf")
+
+        pytest.assert_called_once_with(["-s", "foo"])
