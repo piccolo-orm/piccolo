@@ -84,6 +84,39 @@ need to run raw SQL queries on your database.
 For it to work, the underlying command needs to be on the path (i.e. ``psql``
 or ``sqlite3`` depending on which you're using).
 
+tester
+~~~~~~
+
+Launches `pytest <https://pytest.org/>`_ , which runs your unit test suite. The
+advantage of using this rather than running ``pytest`` directly, is the
+``PICCOLO_CONF`` environment variable will automatically be set before the
+testing starts, and will be restored to it's initial value once the tests
+finish.
+
+.. code-block:: bash
+
+    piccolo tester run
+
+Setting the :ref:`PICCOLO_CONF<PICCOLO_CONF>` environment variable means your
+code will use the database engine specified in that file for the duration of
+the testing.
+
+By default ``piccolo tester run`` sets ``PICCOLO_CONF`` to
+``'piccolo_conf_test'``, meaning that a file called ``piccolo_conf_test.py``
+will be imported.
+
+If you prefer, you can set a custom ``PICCOLO_CONF`` value:
+
+.. code-block:: bash
+
+    piccolo tester run --piccolo_conf=my_custom_piccolo_conf
+
+You can also pass arguments to pytest:
+
+.. code-block:: bash
+
+    piccolo tester run --pytest_args="-s"
+
 -------------------------------------------------------------------------------
 
 Optional includes
