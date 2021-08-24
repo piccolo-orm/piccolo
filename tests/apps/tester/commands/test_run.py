@@ -38,3 +38,26 @@ class TestSetEnvVar(TestCase):
             self.assertEqual(os.environ.get(var_name), new_value)
 
         self.assertEqual(os.environ.get(var_name), initial_value)
+
+    def test_raise_exception(self):
+        """
+        Make sure the environment variable is still reset, even if an exception
+        is raised within the context manager body.
+        """
+        var_name = "PICCOLO_TEST_3"
+        initial_value = "hello"
+        new_value = "goodbye"
+
+        os.environ[var_name] = initial_value
+
+        class FakeException(Exception):
+            pass
+
+        try:
+            with set_env_var(var_name=var_name, temp_value=new_value):
+                self.assertEqual(os.environ.get(var_name), new_value)
+                raise FakeException("Something went wrong ...")
+        except FakeException:
+            pass
+
+        self.assertEqual(os.environ.get(var_name), initial_value)
