@@ -115,7 +115,7 @@ You can also pass arguments to pytest:
 
 .. code-block:: bash
 
-    piccolo tester run --pytest_args="-s"
+    piccolo tester run --pytest_args="-s foo"
 
 -------------------------------------------------------------------------------
 
