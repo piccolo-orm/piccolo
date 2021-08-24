@@ -28,7 +28,7 @@ To get certain rows:
     >>> Band.objects().where(Band.name == 'Pythonistas').run_sync()
     [<Band: 1>]
 
-To get one certain row:
+To get a single row (or ``None`` if it doesn't exist):
 
 .. code-block:: python
 
