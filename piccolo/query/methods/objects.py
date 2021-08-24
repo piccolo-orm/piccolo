@@ -30,7 +30,7 @@ class GetOrCreate:
     defaults: t.Dict[t.Union[Column, str], t.Any]
 
     async def run(self):
-        instance = await self.query.where(self.where).first().run()
+        instance = await self.query.get(self.where).run()
         if instance:
             return instance
 
@@ -96,6 +96,11 @@ class Objects(Query):
         return self
 
     def first(self) -> Objects:
+        self.limit_delegate.first()
+        return self
+
+    def get(self, where: Combinable) -> Objects:
+        self.where_delegate.where(where)
         self.limit_delegate.first()
         return self
 

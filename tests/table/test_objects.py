@@ -60,6 +60,13 @@ class TestObjects(DBTestCase):
             [i.name for i in response], ["Pythonistas", "Rustaceans"]
         )
 
+    def test_get(self):
+        self.insert_row()
+
+        band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+
+        self.assertTrue(band.name == "Pythonistas")
+
     def test_get_or_create(self):
         Band.objects().get_or_create(
             Band.name == "Pink Floyd", defaults={"popularity": 100}
