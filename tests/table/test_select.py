@@ -65,27 +65,134 @@ class TestSelect(DBTestCase):
         )
         self.assertEqual(response, [{"name": "Pythonistas"}])
 
-    def test_where_like(self):
+    @postgres_only
+    def test_where_like_postgres(self):
+        """
+        Postgres' LIKE is case sensitive.
+        """
         self.insert_rows()
 
-        response = (
-            Band.select(Band.name).where(Band.name.like("Python%")).run_sync()
-        )
+        for like_query in ("Python%", "Pythonistas", "%istas", "%ist%"):
+            response = (
+                Band.select(Band.name)
+                .where(Band.name.like(like_query))
+                .run_sync()
+            )
 
-        print(f"response = {response}")
+            self.assertEqual(response, [{"name": "Pythonistas"}])
 
-        self.assertEqual(response, [{"name": "Pythonistas"}])
+        for like_query in (
+            "PyThonISTAs",
+            "PYth%",
+            "%ISTAS",
+            "%Ist%",
+            "PYTHONISTAS",
+        ):
+            response = (
+                Band.select(Band.name)
+                .where(Band.name.like(like_query))
+                .run_sync()
+            )
 
-    def test_where_ilike(self):
+            self.assertEqual(response, [])
+
+    @sqlite_only
+    def test_where_like_sqlite(self):
+        """
+        SQLite's LIKE is case insensitive for ASCII characters,
+        i.e. a == 'A' -> True.
+        """
         self.insert_rows()
 
-        response = (
-            Band.select(Band.name).where(Band.name.ilike("python%")).run_sync()
-        )
+        for like_query in (
+            "Python%",
+            "Pythonistas",
+            "%istas",
+            "%ist%",
+            "PYTHONISTAS",
+        ):
+            response = (
+                Band.select(Band.name)
+                .where(Band.name.like(like_query))
+                .run_sync()
+            )
 
-        print(f"response = {response}")
+            self.assertEqual(response, [{"name": "Pythonistas"}])
 
-        self.assertEqual(response, [{"name": "Pythonistas"}])
+        for like_query in (
+            "xyz",
+            "XYZ%",
+            "%xyz",
+            "%xyz%",
+        ):
+            response = (
+                Band.select(Band.name)
+                .where(Band.name.like(like_query))
+                .run_sync()
+            )
+
+            self.assertEqual(response, [])
+
+    @sqlite_only
+    def test_where_ilike_sqlite(self):
+        """
+        SQLite doesn't support ILIKE, so it's just a proxy to LIKE. We still
+        have a test to make sure it proxies correctly.
+        """
+        self.insert_rows()
+
+        for ilike_query in (
+            "Python%",
+            "Pythonistas",
+            "pythonistas",
+            "PytHonIStas",
+            "%istas",
+            "%ist%",
+            "%IST%",
+        ):
+
+            self.assertEqual(
+                Band.select(Band.name)
+                .where(Band.name.ilike(ilike_query))
+                .run_sync(),
+                Band.select(Band.name)
+                .where(Band.name.like(ilike_query))
+                .run_sync(),
+            )
+
+    @postgres_only
+    def test_where_ilike_postgres(self):
+        """
+        Only Postgres has ILIKE - it's not in the SQL standard. It's for
+        case insensitive matching, i.e. 'Foo' == 'foo' -> True.
+        """
+        self.insert_rows()
+
+        for ilike_query in (
+            "Python%",
+            "Pythonistas",
+            "pythonistas",
+            "PytHonIStas",
+            "%istas",
+            "%ist%",
+            "%IST%",
+        ):
+            response = (
+                Band.select(Band.name)
+                .where(Band.name.ilike(ilike_query))
+                .run_sync()
+            )
+
+            self.assertEqual(response, [{"name": "Pythonistas"}])
+
+        for ilike_query in ("Pythonistas1", "%123", "%xyz%"):
+            response = (
+                Band.select(Band.name)
+                .where(Band.name.ilike(ilike_query))
+                .run_sync()
+            )
+
+            self.assertEqual(response, [])
 
     def test_where_not_like(self):
         self.insert_rows()
@@ -97,8 +204,6 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        print(f"response = {response}")
-
         self.assertEqual(
             response, [{"name": "CSharps"}, {"name": "Rustaceans"}]
         )
@@ -109,8 +214,6 @@ class TestSelect(DBTestCase):
         response = (
             Band.select(Band.name).where(Band.popularity > 1000).run_sync()
         )
-
-        print(f"response = {response}")
 
         self.assertEqual(response, [{"name": "Rustaceans"}])
 
@@ -159,8 +262,6 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        print(f"response = {response}")
-
         self.assertEqual(
             response, [{"name": "Pythonistas"}, {"name": "Rustaceans"}]
         )
@@ -172,8 +273,6 @@ class TestSelect(DBTestCase):
             Band.select(Band.name).where(Band.popularity < 1000).run_sync()
         )
 
-        print(f"response = {response}")
-
         self.assertEqual(response, [{"name": "CSharps"}])
 
     def test_where_less_equal_than(self):
@@ -182,8 +281,6 @@ class TestSelect(DBTestCase):
         response = (
             Band.select(Band.name).where(Band.popularity <= 1000).run_sync()
         )
-
-        print(f"response = {response}")
 
         self.assertEqual(
             response, [{"name": "Pythonistas"}, {"name": "CSharps"}]
@@ -201,8 +298,6 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        print(f"response = {response}")
-
         self.assertEqual(response, [{"name": "Pythonistas"}])
 
     def test_where_raw_with_args(self):
@@ -217,8 +312,6 @@ class TestSelect(DBTestCase):
             .where(WhereRaw("name = {}", "Pythonistas"))
             .run_sync()
         )
-
-        print(f"response = {response}")
 
         self.assertEqual(response, [{"name": "Pythonistas"}])
 
@@ -236,8 +329,6 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        print(f"response = {response}")
-
         self.assertEqual(
             response, [{"name": "Pythonistas"}, {"name": "Rustaceans"}]
         )
@@ -251,8 +342,6 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        print(f"response = {response}")
-
         self.assertEqual(response, [{"name": "Pythonistas"}])
 
     def test_where_or(self):
@@ -264,8 +353,6 @@ class TestSelect(DBTestCase):
             .order_by(Band.name)
             .run_sync()
         )
-
-        print(f"response = {response}")
 
         self.assertEqual(
             response, [{"name": "CSharps"}, {"name": "Rustaceans"}]
@@ -284,8 +371,6 @@ class TestSelect(DBTestCase):
         )
 
         response = query.run_sync()
-
-        print(f"response = {response}")
 
         self.assertEqual(response, [{"name": "Rustaceans"}])
         self.assertTrue("AND" in query.__str__())
@@ -307,8 +392,6 @@ class TestSelect(DBTestCase):
 
         response = query.run_sync()
 
-        print(f"response = {response}")
-
         self.assertEqual(
             response, [{"name": "CSharps"}, {"name": "Rustaceans"}]
         )
@@ -320,8 +403,6 @@ class TestSelect(DBTestCase):
             Band.select(Band.name).order_by(Band.name).limit(1).run_sync()
         )
 
-        print(f"response = {response}")
-
         self.assertEqual(response, [{"name": "CSharps"}])
 
     @postgres_only
@@ -331,8 +412,6 @@ class TestSelect(DBTestCase):
         response = (
             Band.select(Band.name).order_by(Band.name).offset(1).run_sync()
         )
-
-        print(f"response = {response}")
 
         self.assertEqual(
             response, [{"name": "Pythonistas"}, {"name": "Rustaceans"}]
@@ -353,8 +432,6 @@ class TestSelect(DBTestCase):
         query = query.limit(5)
         response = query.run_sync()
 
-        print(f"response = {response}")
-
         self.assertEqual(
             response, [{"name": "Pythonistas"}, {"name": "Rustaceans"}]
         )
@@ -366,8 +443,6 @@ class TestSelect(DBTestCase):
             Band.select(Band.name).order_by(Band.name).first().run_sync()
         )
 
-        print(f"response = {response}")
-
         self.assertEqual(response, {"name": "CSharps"})
 
     def test_order_by_ascending(self):
@@ -376,8 +451,6 @@ class TestSelect(DBTestCase):
         response = (
             Band.select(Band.name).order_by(Band.name).limit(1).run_sync()
         )
-
-        print(f"response = {response}")
 
         self.assertEqual(response, [{"name": "CSharps"}])
 
@@ -391,16 +464,12 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        print(f"response = {response}")
-
         self.assertEqual(response, [{"name": "Rustaceans"}])
 
     def test_count(self):
         self.insert_rows()
 
         response = Band.count().where(Band.name == "Pythonistas").run_sync()
-
-        print(f"response = {response}")
 
         self.assertEqual(response, 1)
 

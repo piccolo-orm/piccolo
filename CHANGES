@@ -1,6 +1,66 @@
 Changes
 =======
 
+0.36.0
+------
+Fixed an issue where ``like`` and ``ilike`` clauses required a wildcard. For
+example:
+
+.. code-block:: python
+
+  await Manager.select().where(Manager.name.ilike('Guido%')).run()
+
+You can now omit wildcards if you like:
+
+.. code-block:: python
+
+  await Manager.select().where(Manager.name.ilike('Guido')).run()
+
+Which would match on ``'guido'`` and ``'Guido'``, but not ``'Guidoxyz'``.
+
+Thanks to @wmshort for reporting this issue.
+
+0.35.0
+------
+ * Improved ``PrimaryKey`` deprecation warning (courtesy @tonybaloney).
+ * Added ``piccolo schema generate`` which creates a Piccolo schema from an
+   existing database.
+ * Added ``piccolo tester run`` which is a wrapper around pytest, and
+   temporarily sets ``PICCOLO_CONF``, so a test database is used.
+ * Added the ``get`` convenience method (courtesy @aminalaee). It returns the
+   first matching record, or ``None`` if there's no match. For example:
+
+  .. code-block:: python
+
+      manager = await Manager.objects().get(Manager.name == 'Guido').run()
+
+      # This is equivalent to:
+      manager = await Manager.objects().where(Manager.name == 'Guido').first().run()
+
+0.34.0
+------
+Added the ``get_or_create`` convenience method (courtesy @aminalaee). Example
+usage:
+
+.. code-block:: python
+
+    manager = await Manager.objects().get_or_create(
+        Manager.name == 'Guido'
+    ).run()
+
+0.33.1
+------
+ * Bug fix, where ``compare_dicts`` was failing in migrations if any ``Column``
+   had an unhashable type as an argument. For example: ``Array(default=[])``.
+   Thanks to @hipertracker for reporting this problem.
+ * Increased the minimum version of orjson, so binaries are available for Macs
+   running on Apple silicon (courtesy @hipertracker).
+
+0.33.0
+------
+Fix for auto migrations when using custom primary keys (thanks to @adriangb and
+@aminalaee for investigating this issue).
+
 0.32.0
 ------
 Migrations can now have a description, which is shown when using

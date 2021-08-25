@@ -20,8 +20,29 @@ def compare_dicts(dict_1, dict_2) -> t.Dict[str, t.Any]:
     """
     Returns a new dictionary which only contains key, value pairs which are in
     the first dictionary and not the second.
+
+    For example:
+        dict_1 = {'a': 1, 'b': 2}
+        dict_2 = {'a': 1}
+        returns {'b': 2}
+
+        dict_1 = {'a': 2, 'b': 2}
+        dict_2 = {'a': 1}
+        returns {'a': 2, 'b': 2}
+
     """
-    return dict(set(dict_1.items()) - set(dict_2.items()))
+    output = {}
+
+    for key, value in dict_1.items():
+
+        dict_2_value = dict_2.get(key, ...)
+        if dict_2_value is ...:
+            output[key] = value
+        else:
+            if dict_2_value != value:
+                output[key] = value
+
+    return output
 
 
 @dataclass

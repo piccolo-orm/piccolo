@@ -61,6 +61,8 @@ Here's an example ``piccolo_conf.py`` file:
 .. hint:: A good place for your piccolo_conf file is at the root of your
     project, where the Python interpreter will be launched.
 
+.. _PICCOLO_CONF:
+
 PICCOLO_CONF environment variable
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

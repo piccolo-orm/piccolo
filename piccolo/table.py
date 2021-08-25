@@ -743,13 +743,17 @@ class Table(metaclass=TableMetaclass):
     ###########################################################################
 
     @classmethod
-    def _table_str(cls, abbreviated=False):
+    def _table_str(cls, abbreviated=False, excluded_params: t.List[str] = []):
         """
         Returns a basic string representation of the table and its columns.
         Used by the playground.
 
         :param abbreviated:
             If True, a very high level representation is printed out.
+        :param excluded_params:
+            Lets us find a middle ground between outputting every kwarg, and
+            the abbreviated version with very few kwargs. For example
+            `['index_method']`, if we want to show all kwargs but index_method.
 
         """
         spacer = "\n    "
@@ -757,6 +761,9 @@ class Table(metaclass=TableMetaclass):
         for col in cls._meta.columns:
             params: t.List[str] = []
             for key, value in col._meta.params.items():
+                if key in excluded_params:
+                    continue
+
                 _value: str = ""
                 if inspect.isclass(value):
                     _value = value.__name__
