@@ -5,6 +5,7 @@ from unittest import TestCase
 
 from piccolo.apps.schema.commands.generate import (
     OutputSchema,
+    generate,
     get_output_schema,
 )
 from piccolo.columns.column_types import (
@@ -115,3 +116,9 @@ class TestGenerate(TestCase):
 
         SmallTable_ = output_schema.get_table_with_name("SmallTable")
         self._compare_table_columns(SmallTable, SmallTable_)
+
+    def test_generate(self):
+        """
+        Test the main generate command runs without errors.
+        """
+        run_sync(generate())
