@@ -58,53 +58,59 @@ class RowMeta:
 class Constraint:
     constraint_type: Literal["PRIMARY KEY", "UNIQUE", "FOREIGN KEY", "CHECK"]
     constraint_name: str
-
-    @classmethod
-    def get_column_name_str(cls) -> str:
-        return ", ".join([i.name for i in dataclasses.fields(cls)])
+    column_name: t.Optional[str] = None
 
 
 @dataclasses.dataclass
 class TableConstraints:
+    """
+    All of the constraints for a certain table in the database.
+    """
+
+    tablename: str
     constraints: t.List[Constraint]
 
     def __post_init__(self):
-        foreign_key_names: t.List[str] = []
-        unique_key_names: t.List[str] = []
-        primary_key_names: t.List[str] = []
+        foreign_key_constraints: t.List[Constraint] = []
+        unique_constraints: t.List[Constraint] = []
+        primary_key_constraints: t.List[Constraint] = []
 
         for constraint in self.constraints:
             if constraint.constraint_type == "FOREIGN KEY":
-                foreign_key_names.append(constraint.constraint_name)
+                foreign_key_constraints.append(constraint)
             elif constraint.constraint_type == "PRIMARY KEY":
-                primary_key_names.append(constraint.constraint_name)
+                primary_key_constraints.append(constraint)
             elif constraint.constraint_name == "UNIQUE":
-                primary_key_names.append(primary_key_names)
+                unique_constraints.append(constraint)
 
-        self.foreign_key_names = foreign_key_names
-        self.unique_key_names = unique_key_names
-        self.primary_key_names = primary_key_names
+        self.foreign_key_constraints = foreign_key_constraints
+        self.unique_constraints = unique_constraints
+        self.primary_key_constraints = primary_key_constraints
 
-    def is_primary_key(self, column_name: str, tablename: str) -> bool:
-        for i in self.primary_key_names:
-            if i == f"{tablename}_pkey":
+    def is_primary_key(self, column_name: str) -> bool:
+        for i in self.primary_key_constraints:
+            if i.column_name == column_name:
                 return True
-
         return False
 
-    def is_unique(self, column_name: str, tablename: str) -> bool:
-        for i in self.unique_key_names:
-            if i.startswith(f"{tablename}_{column_name}"):
+    def is_unique(self, column_name: str) -> bool:
+        for i in self.unique_constraints:
+            if i.column_name == column_name:
                 return True
-
         return False
 
-    def is_foreign_key(self, column_name: str, tablename: str) -> bool:
-        for i in self.foreign_key_names:
-            if i.startswith(f"{tablename}_{column_name}"):
+    def is_foreign_key(self, column_name: str) -> bool:
+        for i in self.foreign_key_constraints:
+            if i.column_name == column_name:
                 return True
-
         return False
+
+    def get_foreign_key_constraint_name(self, column_name) -> str:
+        for i in self.foreign_key_constraints:
+            if i.column_name == column_name:
+                return i.constraint_name
+
+        raise ValueError("No matching constraint found")
 
 
 @dataclasses.dataclass
@@ -161,27 +167,36 @@ async def get_contraints(
     table_class: t.Type[Table], tablename: str, schema_name: str = "public"
 ) -> TableConstraints:
     """
+    Get all of the constraints for a table.
+
     :param table_class:
         Any Table subclass - just used to execute raw queries on the database.
 
     """
     constraints = await table_class.raw(
         (
-            f"SELECT {Constraint.get_column_name_str()} FROM "
-            "information_schema.table_constraints "
-            "WHERE table_schema = {} "
-            "AND table_name = {} "
+            "SELECT tc.constraint_name, tc.constraint_type, kcu.column_name "  # noqa: E501
+            "FROM information_schema.table_constraints tc "
+            "LEFT JOIN information_schema.key_column_usage kcu "
+            "ON tc.constraint_name = kcu.constraint_name "
+            "WHERE tc.table_schema = {} "
+            "AND tc.table_name = {} "
         ),
         schema_name,
         tablename,
     )
-    return TableConstraints(constraints=[Constraint(**i) for i in constraints])
+    return TableConstraints(
+        tablename=tablename,
+        constraints=[Constraint(**i) for i in constraints],
+    )
 
 
 async def get_tablenames(
     table_class: t.Type[Table], schema_name: str = "public"
 ) -> t.List[str]:
     """
+    Get the tablenames for the schema.
+
     :param table_class:
         Any Table subclass - just used to execute raw queries on the database.
     :returns:
@@ -205,6 +220,15 @@ async def get_table_schema(
     table_class: t.Type[Table], tablename: str, schema_name: str = "public"
 ) -> t.List[RowMeta]:
     """
+    Get the schema from the database.
+
+    :param table_class:
+        Any Table subclass - just used to execute raw queries on the database.
+    :param tablename:
+        The name of the table whose schema we want from the database.
+    :param schema_name:
+        A Postgres database can have multiple schemas, this is the name of the
+        one you're interested in.
     :returns:
         A list, with each item containing information about a column in the
         table.
@@ -215,12 +239,32 @@ async def get_table_schema(
             f"SELECT {RowMeta.get_column_name_str()} FROM "
             "information_schema.columns "
             "WHERE table_schema = {} "
-            "AND TABLE_NAME = {}"
+            "AND table_name = {}"
         ),
         schema_name,
         tablename,
     ).run()
     return [RowMeta(**row_meta) for row_meta in row_meta_list]
+
+
+async def get_foreign_key_reference(
+    table_class: t.Type[Table], constraint_name: str
+) -> t.Optional[str]:
+    """
+    Retrieve the name of the table that a foreign key is referencing.
+    """
+    response = await table_class.raw(
+        (
+            "SELECT table_name "
+            "FROM information_schema.constraint_column_usage "
+            "WHERE constraint_name = {};"
+        ),
+        constraint_name,
+    )
+    if len(response) > 0:
+        return response[0]["table_name"]
+    else:
+        return None
 
 
 async def get_output_schema(schema_name: str = "public") -> OutputSchema:
@@ -268,23 +312,30 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
             if column_type:
                 kwargs: t.Dict[str, t.Any] = {
                     "null": pg_row_meta.is_nullable == "YES",
-                    "unique": constraints.is_unique(
-                        column_name=column_name, tablename=tablename
-                    ),
+                    "unique": constraints.is_unique(column_name=column_name),
                 }
 
-                if constraints.is_primary_key(
-                    column_name=column_name, tablename=tablename
-                ):
+                if constraints.is_primary_key(column_name=column_name):
                     kwargs["primary_key"] = True
                     if column_type == Integer:
                         column_type = Serial
 
-                if constraints.is_foreign_key(
-                    column_name=column_name, tablename=tablename
-                ):
+                if constraints.is_foreign_key(column_name=column_name):
+                    fk_constraint_name = (
+                        constraints.get_foreign_key_constraint_name(
+                            column_name=column_name
+                        )
+                    )
                     column_type = ForeignKey
-                    kwargs["references"] = ForeignKeyPlaceholder
+                    referenced_tablename = await get_foreign_key_reference(
+                        table_class=Schema, constraint_name=fk_constraint_name
+                    )
+                    if referenced_tablename:
+                        kwargs["references"] = create_table_class(
+                            _snake_to_camel(referenced_tablename)
+                        )
+                    else:
+                        kwargs["references"] = ForeignKeyPlaceholder
                     imports.add(
                         "from piccolo.columns.base import OnDelete, OnUpdate"
                     )
