@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.37.0
+------
+Added ``ModelBuilder``, which can be used to generate data for tests (courtesy
+@aminalaee).
+
 0.36.0
 ------
 Fixed an issue where ``like`` and ``ilike`` clauses required a wildcard. For
