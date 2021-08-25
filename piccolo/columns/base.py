@@ -424,25 +424,38 @@ class Column(Selectable):
         return Where(column=self, values=values, operator=NotIn)
 
     def like(self, value: str) -> Where:
-        if "%" not in value:
-            raise ValueError("% is required for like operators")
+        """
+        Both SQLite and Postgres support LIKE, but they mean different things.
+
+        In Postgres, LIKE is case sensitive (i.e. 'foo' equals 'foo', but
+        'foo' doesn't equal 'Foo').
+
+        In SQLite, LIKE is case insensitive for ASCII characters
+        (i.e. 'foo' equals 'Foo'). But not for non-ASCII characters. To learn
+        more, see the docs:
+
+        https://sqlite.org/lang_expr.html#the_like_glob_regexp_and_match_operators
+
+        """
         return Where(column=self, value=value, operator=Like)
 
     def ilike(self, value: str) -> Where:
-        if "%" not in value:
-            raise ValueError("% is required for ilike operators")
+        """
+        Only Postgres supports ILIKE. It's used for case insensitive matching.
+
+        For SQLite, it's just proxied to a LIKE query instead.
+
+        """
         if self._meta.engine_type == "postgres":
             operator: t.Type[ComparisonOperator] = ILike
         else:
             colored_warning(
-                "SQLite doesn't support ILIKE currently, falling back to LIKE."
+                "SQLite doesn't support ILIKE, falling back to LIKE."
             )
             operator = Like
         return Where(column=self, value=value, operator=operator)
 
     def not_like(self, value: str) -> Where:
-        if "%" not in value:
-            raise ValueError("% is required for like operators")
         return Where(column=self, value=value, operator=NotLike)
 
     def __lt__(self, value) -> Where:
