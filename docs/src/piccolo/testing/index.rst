@@ -1,7 +1,7 @@
 Testing
 =======
 
-``Piccolo`` provides a few tools to make testing easier and decrease manual work.
+Piccolo provides a few tools to make testing easier and decrease manual work.
 
 Model Builder
 -------------
@@ -11,7 +11,7 @@ You can build and save the records manually or use ``ModelBuilder`` to generate 
 
 This way you can randomize the fields you don't care about and specify important fields explicitly and
 reduce the amount of manual work required.
-``ModelBuilder`` currently supports all ``Piccolo`` column types and features.
+``ModelBuilder`` currently supports all Piccolo column types and features.
 
 Let's say we have the following schema:
 
@@ -32,12 +32,11 @@ You can build a random ``Band`` which will also build and save a random ``Manage
 
     from piccolo.testing.model_builder import ModelBuilder
 
-    band = ModelBuilder.build(Band)  # Band instance with random values persisted
+    band = await ModelBuilder.build(Band)  # Band instance with random values persisted
 
 .. note:: ``ModelBuilder.build(Band)`` persists record into the database by default.
 
-The ``build`` method saves the instance using ``.save().run()`` which is async.
-You can also run the method ``sync`` instead:
+You can also run it synchronously if you prefer:
 
 .. code-block:: python
 
@@ -51,19 +50,24 @@ To specify any attribute, pass the ``defaults`` dictionary to the ``build`` meth
     manager = ModelBuilder.build(Manager)
 
     # Using table columns
-    band = ModelBuilder.build(Band, defaults={Band.name: "Guido", Band.manager: manager})
+    band = await ModelBuilder.build(Band, defaults={Band.name: "Guido", Band.manager: manager})
 
     # Or using strings as keys
-    band = ModelBuilder.build(Band, defaults={"name": "Guido", "manager": manager})
+    band = await ModelBuilder.build(Band, defaults={"name": "Guido", "manager": manager})
 
 To build objects without persisting them into the database:
 
 .. code-block:: python
 
-    band = ModelBuilder.build(Band, persist=False)
+    band = await ModelBuilder.build(Band, persist=False)
 
 To build object with minimal attributes, leaving nullable fields empty:
 
 .. code-block:: python
 
-    band = ModelBuilder.build(Band, minimal=True)  # Leaves manager empty
+    band = await ModelBuilder.build(Band, minimal=True)  # Leaves manager empty
+
+Test runner
+-----------
+
+See the :ref:`tester app<TesterApp>`.
