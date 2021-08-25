@@ -72,7 +72,11 @@ The percentage operator is required to designate where the match should occur.
         b.name.like('%is%')  # Matches anywhere in string
     ).run_sync()
 
-``ilike`` is identical, except it's case insensitive.
+    b.select().where(
+        b.name.like('Pythonistas')  # Matches the entire string
+    ).run_sync()
+
+``ilike`` is identical, except it's Postgres specific and case insensitive.
 
 -------------------------------------------------------------------------------
 
