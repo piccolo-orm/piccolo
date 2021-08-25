@@ -113,6 +113,23 @@ or create a new one with the ``defaults`` arguments:
         Band.name == 'Pythonistas', defaults={'popularity': 100}
     ).run_sync()
 
+Complex where clauses are supported, but only within reason. For example:
+
+.. code-block:: python
+
+    # This works OK:
+    band = Band.objects().get_or_create(
+        (Band.name == 'Pythonistas') & (Band.popularity == 1000),
+    ).run_sync()
+
+    # This is problematic, as it's unclear what the name should be if we
+    # need to create the row:
+    band = Band.objects().get_or_create(
+        (Band.name == 'Pythonistas') | (Band.name == 'Rustaceans'),
+        defaults={'popularity': 100}
+    ).run_sync()
+
+
 Query clauses
 -------------
 
