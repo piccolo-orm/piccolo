@@ -21,6 +21,10 @@ columns. Here's a very simple schema:
 
 For a full list of columns, see :ref:`ColumnTypes`.
 
+.. hint:: If you're using an existing database, see Piccolo's
+ :ref:`auto schema generation command<SchemaApp>`, which will save you some
+ time.
+
 -------------------------------------------------------------------------------
 
 Primary Key

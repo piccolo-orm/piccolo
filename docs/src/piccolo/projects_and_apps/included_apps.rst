@@ -60,6 +60,8 @@ Lets you create a new ``piccolo_conf.py`` file. See :ref:`PiccoloProjects`.
 
     piccolo project new
 
+.. _SchemaApp:
+
 schema
 ~~~~~~
 
