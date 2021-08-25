@@ -1,6 +1,24 @@
 Changes
 =======
 
+0.35.0
+------
+
+ * Improved ``ForeignKey`` deprecation warning (courtesy @tonybaloney).
+ * Added ``piccolo schema generate`` which creates a Piccolo schema from an
+   existing database.
+ * Added ``piccolo tester run`` which is a wrapper around pytest, and
+   temporarily sets ``PICCOLO_CONF``, so a test database is used.
+ * Added the ``get`` convenience method (courtesy @aminalaee). It returns the
+   first matching record, or ``None`` if there's no match. For example:
+
+  .. code-block:: python
+
+      manager = await Manager.objects().get(Manager.name == 'Guido').run()
+
+      # This is equivalent to:
+      manager = await Manager.objects().where(Manager.name == 'Guido').first().run()
+
 0.34.0
 ------
 Added the ``get_or_create`` convenience method (courtesy @aminalaee). Example
