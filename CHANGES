@@ -1,9 +1,27 @@
 Changes
 =======
 
+0.36.0
+------
+Fixed an issue where ``like`` and ``ilike`` clauses required a wildcard. For
+example:
+
+.. code-block:: python
+
+  await Manager.select().where(Manager.name.ilike('Guido%')).run()
+
+You can now omit wildcards if you like:
+
+.. code-block:: python
+
+  await Manager.select().where(Manager.name.ilike('Guido')).run()
+
+Which would match on ``'guido'`` and ``'Guido'``, but not ``'Guidoxyz'``.
+
+Thanks to @wmshort for reporting this issue.
+
 0.35.0
 ------
-
  * Improved ``PrimaryKey`` deprecation warning (courtesy @tonybaloney).
  * Added ``piccolo schema generate`` which creates a Piccolo schema from an
    existing database.
