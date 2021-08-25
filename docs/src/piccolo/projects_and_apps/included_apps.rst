@@ -101,6 +101,8 @@ need to run raw SQL queries on your database.
 For it to work, the underlying command needs to be on the path (i.e. ``psql``
 or ``sqlite3`` depending on which you're using).
 
+.. _TesterApp:
+
 tester
 ~~~~~~
 
