@@ -529,9 +529,11 @@ class PrimaryKey(Serial):
         kwargs.update({"primary_key": True, "index": False})
 
         colored_warning(
-            "`PrimaryKey` is deprecated and "
-            "will be removed in future versions. Use `UUID(primary_key=True)`"
-            " or `BigInt(primary_key=True)` instead.",
+            "`PrimaryKey` is deprecated and will be removed in future "
+            "versions. Use `UUID(primary_key=True)` or "
+            "`Serial(primary_key=True)` instead. If no primary key column is "
+            "specified, Piccolo will automatically add one for you called "
+            "`id`.",
             category=DeprecationWarning,
         )
 
