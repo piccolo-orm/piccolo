@@ -63,8 +63,6 @@ class And(Combination):
         Returns {Band.name: 'Pythonistas'}
 
         """
-        from piccolo.columns.combination import Where
-
         output = {}
         for combinable in (self.first, self.second):
             if isinstance(combinable, Where):

@@ -33,6 +33,7 @@ class GetOrCreate:
     async def run(self):
         instance = await self.query.get(self.where).run()
         if instance:
+            instance._was_created = False
             return instance
 
         instance = self.query.table()
@@ -55,6 +56,8 @@ class GetOrCreate:
             setattr(instance, column._meta.name, value)
 
         await instance.save().run()
+
+        instance._was_created = True
 
         return instance
 

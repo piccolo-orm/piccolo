@@ -112,6 +112,7 @@ class TestObjects(DBTestCase):
             .run_sync()
         )
         self.assertIsInstance(instance, Band)
+        self.assertEqual(instance._was_created, False)
 
         # When the row doesn't exist in the db:
         instance = (
@@ -122,6 +123,7 @@ class TestObjects(DBTestCase):
             .run_sync()
         )
         self.assertIsInstance(instance, Band)
+        self.assertEqual(instance._was_created, True)
 
     def test_get_or_create_very_complex(self):
         """
@@ -140,6 +142,7 @@ class TestObjects(DBTestCase):
             .run_sync()
         )
         self.assertIsInstance(instance, Band)
+        self.assertEqual(instance._was_created, False)
 
         # When the row doesn't exist in the db:
         instance = (
@@ -152,6 +155,7 @@ class TestObjects(DBTestCase):
             .run_sync()
         )
         self.assertIsInstance(instance, Band)
+        self.assertEqual(instance._was_created, True)
 
         # The values in the > and < should be ignored, and the default should
         # be used for the column.
