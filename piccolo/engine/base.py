@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 from abc import ABCMeta, abstractmethod
 
@@ -9,6 +10,9 @@ from piccolo.utils.warnings import Level, colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.query.base import Query
+
+
+logger = logging.getLogger(__file__)
 
 
 class Batch:
@@ -60,7 +64,7 @@ class Engine(metaclass=ABCMeta):
             return
 
         engine_type = self.engine_type.capitalize()
-        print(f"Running {engine_type} version {version_number}")
+        logger.info(f"Running {engine_type} version {version_number}")
         if version_number < self.min_version_number:
             message = (
                 f"This version of {self.engine_type} isn't supported "
