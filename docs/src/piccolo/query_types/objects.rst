@@ -113,6 +113,32 @@ or create a new one with the ``defaults`` arguments:
         Band.name == 'Pythonistas', defaults={'popularity': 100}
     ).run_sync()
 
+You can find out if an existing row was found, or if a new row was created:
+
+.. code-block:: python
+
+    band = Band.objects.get_or_create(
+        Band.name == 'Pythonistas'
+    ).run_sync()
+    band._was_created  # True if it was created, otherwise False if it was already in the db
+
+Complex where clauses are supported, but only within reason. For example:
+
+.. code-block:: python
+
+    # This works OK:
+    band = Band.objects().get_or_create(
+        (Band.name == 'Pythonistas') & (Band.popularity == 1000),
+    ).run_sync()
+
+    # This is problematic, as it's unclear what the name should be if we
+    # need to create the row:
+    band = Band.objects().get_or_create(
+        (Band.name == 'Pythonistas') | (Band.name == 'Rustaceans'),
+        defaults={'popularity': 100}
+    ).run_sync()
+
+
 Query clauses
 -------------
 

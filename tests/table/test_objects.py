@@ -68,6 +68,10 @@ class TestObjects(DBTestCase):
         self.assertTrue(band.name == "Pythonistas")
 
     def test_get_or_create(self):
+        """
+        Make sure `get_or_create` works for simple where clauses.
+        """
+        # When the row doesn't exist in the db:
         Band.objects().get_or_create(
             Band.name == "Pink Floyd", defaults={"popularity": 100}
         ).run_sync()
@@ -76,10 +80,11 @@ class TestObjects(DBTestCase):
             Band.objects().where(Band.name == "Pink Floyd").first().run_sync()
         )
 
-        self.assertTrue(isinstance(instance, Band))
+        self.assertIsInstance(instance, Band)
         self.assertTrue(instance.name == "Pink Floyd")
         self.assertTrue(instance.popularity == 100)
 
+        # When the row already exists in the db:
         Band.objects().get_or_create(
             Band.name == "Pink Floyd", defaults={Band.popularity: 100}
         ).run_sync()
@@ -88,6 +93,70 @@ class TestObjects(DBTestCase):
             Band.objects().where(Band.name == "Pink Floyd").first().run_sync()
         )
 
-        self.assertTrue(isinstance(instance, Band))
+        self.assertIsInstance(instance, Band)
         self.assertTrue(instance.name == "Pink Floyd")
         self.assertTrue(instance.popularity == 100)
+
+    def test_get_or_create_complex(self):
+        """
+        Make sure `get_or_create` works with complex where clauses.
+        """
+        self.insert_rows()
+
+        # When the row already exists in the db:
+        instance = (
+            Band.objects()
+            .get_or_create(
+                (Band.name == "Pythonistas") & (Band.popularity == 1000)
+            )
+            .run_sync()
+        )
+        self.assertIsInstance(instance, Band)
+        self.assertEqual(instance._was_created, False)
+
+        # When the row doesn't exist in the db:
+        instance = (
+            Band.objects()
+            .get_or_create(
+                (Band.name == "Pythonistas2") & (Band.popularity == 2000)
+            )
+            .run_sync()
+        )
+        self.assertIsInstance(instance, Band)
+        self.assertEqual(instance._was_created, True)
+
+    def test_get_or_create_very_complex(self):
+        """
+        Make sure `get_or_create` works with very complex where clauses.
+        """
+        self.insert_rows()
+
+        # When the row already exists in the db:
+        instance = (
+            Band.objects()
+            .get_or_create(
+                (Band.name == "Pythonistas")
+                & (Band.popularity > 0)
+                & (Band.popularity < 5000)
+            )
+            .run_sync()
+        )
+        self.assertIsInstance(instance, Band)
+        self.assertEqual(instance._was_created, False)
+
+        # When the row doesn't exist in the db:
+        instance = (
+            Band.objects()
+            .get_or_create(
+                (Band.name == "Pythonistas2")
+                & (Band.popularity > 10)
+                & (Band.popularity < 5000)
+            )
+            .run_sync()
+        )
+        self.assertIsInstance(instance, Band)
+        self.assertEqual(instance._was_created, True)
+
+        # The values in the > and < should be ignored, and the default should
+        # be used for the column.
+        self.assertEqual(instance.popularity, 0)

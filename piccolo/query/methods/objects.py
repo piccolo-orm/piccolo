@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 from dataclasses import dataclass
 
+from piccolo.columns.combination import And, Where
 from piccolo.custom_types import Combinable
 from piccolo.engine.base import Batch
 from piccolo.query.base import Query
@@ -32,14 +33,22 @@ class GetOrCreate:
     async def run(self):
         instance = await self.query.get(self.where).run()
         if instance:
+            instance._was_created = False
             return instance
 
         instance = self.query.table()
-        setattr(
-            instance,
-            self.where.column._meta.name,  # type: ignore
-            self.where.value,  # type: ignore
-        )
+
+        # If it's a complex `where`, there can be several column values to
+        # extract e.g. (Band.name == 'Pythonistas') & (Band.popularity == 1000)
+        if isinstance(self.where, Where):
+            setattr(
+                instance,
+                self.where.column._meta.name,  # type: ignore
+                self.where.value,  # type: ignore
+            )
+        elif isinstance(self.where, And):
+            for column, value in self.where.get_column_values().items():
+                setattr(instance, column._meta.name, value)
 
         for column, value in self.defaults.items():
             if isinstance(column, str):
@@ -47,6 +56,8 @@ class GetOrCreate:
             setattr(instance, column._meta.name, value)
 
         await instance.save().run()
+
+        instance._was_created = True
 
         return instance
 
