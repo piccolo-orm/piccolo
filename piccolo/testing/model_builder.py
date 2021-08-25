@@ -40,12 +40,12 @@ class ModelBuilder:
             Table class to randomize.
 
         Examples:
+            manager = await ModelBuilder.build(Manager)
+            manager = await ModelBuilder.build(Manager, name='Guido')
+            manager = await ModelBuilder(persist=False).build(Manager)
+            manager = await ModelBuilder(minimal=True).build(Manager)
+            band = await ModelBuilder.build(Band, manager=manager)
 
-            manager = ModelBuilder.build(Manager)
-            manager = ModelBuilder.build(Manager, name='Guido')
-            manager = ModelBuilder(persist=False).build(Manager)
-            manager = ModelBuilder(minimal=True).build(Manager)
-            band = ModelBuilder.build(Band, manager=manager)
         """
         return await cls._build(
             table_class=table_class,
@@ -70,12 +70,12 @@ class ModelBuilder:
             Table class to randomize.
 
         Examples:
-
             manager = ModelBuilder.build_sync(Manager)
             manager = ModelBuilder.build_sync(Manager, name='Guido')
             manager = ModelBuilder(persist=False).build_sync(Manager)
             manager = ModelBuilder(minimal=True).build_sync(Manager)
             band = ModelBuilder.build_sync(Band, manager=manager)
+
         """
         return run_sync(
             cls.build(
@@ -133,10 +133,11 @@ class ModelBuilder:
     @classmethod
     def _randomize_attribute(cls, column: Column) -> t.Any:
         """
-        Generate a random value for a column and apply formattings.
+        Generate a random value for a column and apply formatting.
 
         :param column:
             Column class to randomize.
+
         """
         if column.value_type == Decimal:
             precision, scale = column._meta.params["digits"]
