@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from piccolo.columns.operators.comparison import ComparisonOperator
+from piccolo.columns.operators.comparison import ComparisonOperator, Equal
 from piccolo.custom_types import Combinable, Iterable
 from piccolo.querystring import QueryString
 from piccolo.utils.sql_values import convert_to_sql_value
@@ -43,6 +43,37 @@ class Combination(CombinableMixin):
 
 class And(Combination):
     operator = "AND"
+
+    def get_column_values(self) -> t.Dict[Column, t.Any]:
+        """
+        This is used by `get_or_create` to know which values to assign if
+        the row doesn't exist in the database.
+
+        For example, if we have:
+
+        (Band.name == 'Pythonistas') & (Band.popularity == 1000)
+
+        We will return {Band.name: 'Pythonistas', Band.popularity: 1000}.
+
+        If the operator is anything besides equals, we don't return it, for
+        example:
+
+        (Band.name == 'Pythonistas') & (Band.popularity > 1000)
+
+        Returns {Band.name: 'Pythonistas'}
+
+        """
+        from piccolo.columns.combination import Where
+
+        output = {}
+        for combinable in (self.first, self.second):
+            if isinstance(combinable, Where):
+                if combinable.operator == Equal:
+                    output[combinable.column] = combinable.value
+            elif isinstance(combinable, And):
+                output.update(combinable.get_column_values())
+
+        return output
 
 
 class Or(Combination):
