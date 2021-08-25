@@ -80,7 +80,7 @@ class TableConstraints:
                 foreign_key_constraints.append(constraint)
             elif constraint.constraint_type == "PRIMARY KEY":
                 primary_key_constraints.append(constraint)
-            elif constraint.constraint_name == "UNIQUE":
+            elif constraint.constraint_type == "UNIQUE":
                 unique_constraints.append(constraint)
 
         self.foreign_key_constraints = foreign_key_constraints

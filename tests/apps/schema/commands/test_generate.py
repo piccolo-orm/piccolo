@@ -97,6 +97,9 @@ class TestGenerate(TestCase):
             if isinstance(col_1, Varchar) and isinstance(col_2, Varchar):
                 self.assertEqual(col_1.length, col_2.length)
 
+            # Make sure the unique constraint is the same
+            self.assertEqual(col_1._meta.unique, col_2._meta.unique)
+
     def test_get_output_schema(self):
         """
         Make sure that the a Piccolo schema can be generated from the database.
