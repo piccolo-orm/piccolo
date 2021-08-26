@@ -83,8 +83,8 @@ supports `auto migrations` which can save a great deal of time.
 
 Piccolo will work out which tables to add by comparing previous auto migrations,
 and your current tables. In order for this to work, you have to register
-your app's tables with the `AppConfig` in the piccolo_app.py file at the root
-of your app (see :ref:`PiccoloApps`).
+your app's tables with the ``AppConfig`` in the ``piccolo_app.py`` file at the
+root of your app (see :ref:`PiccoloApps`).
 
 Creating an auto migration:
 
@@ -122,5 +122,5 @@ can specify it when creating the migration:
 
     piccolo migrations new my_app --auto --desc="Adding name column"
 
-The Piccolo CLI will then use this description where appropriate when dealing
-with migrations.
+The Piccolo CLI will then use this description when listing migrations, to make
+them easier to identify.
