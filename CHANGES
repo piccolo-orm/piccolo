@@ -1,6 +1,24 @@
 Changes
 =======
 
+0.38.1
+------
+Minor changes to ``get_or_create`` to make sure it handles joins correctly.
+
+.. code-block:: python
+
+  instance = (
+      Band.objects()
+      .get_or_create(
+          (Band.name == "My new band")
+          & (Band.manager.name == "Excellent manager")
+      )
+      .run_sync()
+  )
+
+In this situation, there are two columns called ``name`` - we need to make sure
+the correct value is applied if the row doesn't exist.
+
 0.38.0
 ------
 ``get_or_create`` now supports more complex where clauses. For example:
