@@ -2,8 +2,6 @@ import os
 import sys
 import typing as t
 
-from _pytest.config import ExitCode
-
 
 class set_env_var:
     def __init__(self, var_name: str, temp_value: str):
@@ -37,9 +35,7 @@ class set_env_var:
             self.set_var(self.existing_value)
 
 
-def run_pytest(
-    pytest_args: t.List[str],
-) -> t.Union[int, ExitCode]:  # pragma: no cover
+def run_pytest(pytest_args: t.List[str]) -> int:  # pragma: no cover
     try:
         import pytest
     except ImportError:
