@@ -48,7 +48,10 @@ class GetOrCreate:
             )
         elif isinstance(self.where, And):
             for column, value in self.where.get_column_values().items():
-                setattr(instance, column._meta.name, value)
+                if len(column._meta.call_chain) == 0:
+                    # Make sure we only set the value if the column belongs
+                    # to this table.
+                    setattr(instance, column._meta.name, value)
 
         for column, value in self.defaults.items():
             if isinstance(column, str):

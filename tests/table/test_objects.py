@@ -160,3 +160,23 @@ class TestObjects(DBTestCase):
         # The values in the > and < should be ignored, and the default should
         # be used for the column.
         self.assertEqual(instance.popularity, 0)
+
+    def test_get_or_create_with_joins(self):
+        """
+        Make sure that that `get_or_create` creates rows correctly when using
+        joins.
+        """
+        instance = (
+            Band.objects()
+            .get_or_create(
+                (Band.name == "My new band")
+                & (Band.manager.name == "Excellent manager")
+            )
+            .run_sync()
+        )
+        self.assertIsInstance(instance, Band)
+        self.assertEqual(instance._was_created, True)
+
+        # We want to make sure the band name isn't 'Excellent manager' by
+        # mistake.
+        self.assertEqual(Band.name, "My new band")
