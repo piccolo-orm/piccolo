@@ -1,6 +1,9 @@
 Welcome to Piccolo's documentation!
 ===================================
 
+Piccolo is a modern, async query builder and ORM for Python, with lots of
+batteries included.
+
 .. toctree::
    :maxdepth: 1
    :caption: Contents:
@@ -46,3 +49,6 @@ Give me an ASGI web app!
 .. code-block:: bash
 
    piccolo asgi new
+
+FastAPI, Starlette, and BlackSheep are currently supported, with more coming
+soon.
