@@ -1,6 +1,10 @@
 Changes
 =======
 
+0.38.2
+------
+Removed problematic type hint which assumed pytest was installed.
+
 0.38.1
 ------
 Minor changes to ``get_or_create`` to make sure it handles joins correctly.
