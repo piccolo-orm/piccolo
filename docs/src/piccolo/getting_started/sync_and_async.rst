@@ -9,6 +9,8 @@ ORMs which support asyncio.
 However, you can use Piccolo in synchronous apps as well, whether that be a
 WSGI web app, or a data science script.
 
+-------------------------------------------------------------------------------
+
 Sync example
 ------------
 
@@ -23,6 +25,8 @@ Sync example
 
     if __name__ == '__main__':
         main()
+
+-------------------------------------------------------------------------------
 
 Async example
 -------------
@@ -40,6 +44,22 @@ Async example
     if __name__ == '__main__':
         asyncio.run(main())
 
+Direct await
+~~~~~~~~~~~~
+
+You can directly await a query if you prefer. For example:
+
+.. code-block:: python
+
+    >>> await Band.select()
+    [{'id': 1, 'name': 'Pythonistas', 'manager': 1, 'popularity': 1000},
+    {'id': 2, 'name': 'Rustaceans', 'manager': 2, 'popularity': 500}]
+
+By convention, we await the ``run`` method (``await Band.select().run()``), but
+you can use this shorter form if you prefer.
+
+-------------------------------------------------------------------------------
+
 Which to use?
 -------------
 
@@ -49,6 +69,8 @@ examples use the sync version.
 Using the async version is useful for web applications which require high
 throughput, based on `ASGI frameworks <https://piccolo-orm.com/blog/introduction-to-asgi>`_.
 Piccolo makes building an ASGI web app really simple - see :ref:`ASGICommand`.
+
+-------------------------------------------------------------------------------
 
 Explicit
 --------
