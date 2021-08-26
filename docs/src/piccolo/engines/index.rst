@@ -75,7 +75,7 @@ In your terminal:
 
     export PICCOLO_CONF=piccolo_conf_test
 
-Or at the entypoint for your app, before any other imports:
+Or at the entypoint of your app, before any other imports:
 
 .. code-block:: python
 
@@ -84,10 +84,11 @@ Or at the entypoint for your app, before any other imports:
 
 
 This is helpful during tests - you can specify a different configuration file
-which contains the connection details for a test database. Similarly,
-it's useful if you're deploying your code to different environments (e.g.
-staging and production). Have two configuration files, and set the environment
-variable accordingly.
+which contains the connection details for a test database.
+
+.. hint:: Piccolo has a builtin command which will do this for you -
+  automatically setting ``PICCOLO_CONF`` for the duration of your tests. See
+  :ref:`TesterApp`.
 
 .. code-block:: python
 
@@ -96,6 +97,11 @@ variable accordingly.
 
 
     DB = SQLiteEngine(path='my_test_db.sqlite')
+
+
+It's also useful if you're deploying your code to different environments (e.g.
+staging and production). Have two configuration files, and set the environment
+variable accordingly.
 
 If the ``piccolo_conf.py`` file is located in a sub-module (rather than the
 root of your project) you can specify the path like this:
