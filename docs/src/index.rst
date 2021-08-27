@@ -52,3 +52,11 @@ Give me an ASGI web app!
 
 FastAPI, Starlette, and BlackSheep are currently supported, with more coming
 soon.
+
+-------------------------------------------------------------------------------
+
+Videos
+------
+
+Piccolo has some `tutorial videos on YouTube <https://www.youtube.com/channel/UCE7x5nm1Iy9KDfXPNrNQ5lA>`_,
+which are a great companion to the docs.
