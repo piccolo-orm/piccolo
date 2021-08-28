@@ -1,6 +1,29 @@
 Changes
 =======
 
+0.39.0
+------
+Added ``to_dict`` method to ``Table``.
+
+If you just use ``__dict__`` on a ``Table`` instance, you get some non-column
+values. By using ``to_dict`` it's just the column values. Here's an example:
+
+.. code-block:: python
+
+  class MyTable(Table):
+      name = Varchar()
+
+  instance = MyTable.objects().first().run_sync()
+
+  >>> instance.__dict__
+  {'_exists_in_db': True, 'id': 1, 'name': 'foo'}
+
+  >>> instance.to_dict()
+  {'id': 1, 'name': 'foo'}
+
+Thanks to @wmshort for the idea, and @aminalaee and @sinisaos for investigating
+edge cases.
+
 0.38.2
 ------
 Removed problematic type hint which assumed pytest was installed.
