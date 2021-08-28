@@ -151,14 +151,15 @@ If you need to convert an object into a dictionary, you can do so using the
     >>> band.to_dict()
     {'id': 1, 'name': 'Pythonistas', 'manager': 1, 'popularity': 1000}
 
-You can override some of the column names if you like:
+If you only want a subset of the columns, or want to use aliases for some of
+the columns:
 
 .. code-block:: python
 
     band = Band.objects().first().run_sync()
 
-    >>> band.to_dict(Band.name.as_alias('title'))
-    {'id': 1, 'title': 'Pythonistas', 'manager': 1, 'popularity': 1000}
+    >>> band.to_dict(Band.id, Band.name.as_alias('title'))
+    {'id': 1, 'title': 'Pythonistas'}
 
 
 Query clauses
