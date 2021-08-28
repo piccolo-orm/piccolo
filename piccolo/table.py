@@ -407,6 +407,25 @@ class Table(metaclass=TableMetaclass):
             .first()
         )
 
+    def to_dict(self) -> t.Dict[str, t.Any]:
+        """
+        A convenience menthod which returns a dictionary, mapping column names
+        to values for this table instance.
+
+        .. code-block::
+
+            instance = await Manager.objects().get(
+                Manager.name == 'Guido'
+            ).run()
+            >>> instance.to_dict()
+            {'id': 1, 'name': 'Guido'}
+
+        """
+        output = {}
+        for column in self._meta.columns:
+            output[column._meta.name] = getattr(self, column._meta.name)
+        return output
+
     def __setitem__(self, key: str, value: t.Any):
         setattr(self, key, value)
 
