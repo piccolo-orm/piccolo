@@ -407,6 +407,41 @@ class Table(metaclass=TableMetaclass):
             .first()
         )
 
+    def to_dict(self, *columns: Column) -> t.Dict[str, t.Any]:
+        """
+        A convenience method which returns a dictionary, mapping column names
+        to values for this table instance.
+
+        .. code-block::
+
+            instance = await Manager.objects().get(
+                Manager.name == 'Guido'
+            ).run()
+
+            >>> instance.to_dict()
+            {'id': 1, 'name': 'Guido'}
+
+        If the columns argument is provided, only those columns are included in
+        the output. It also works with column aliases.
+
+        .. code-block::
+
+            >>> instance.to_dict(Manager.id, Manager.name.as_alias('title'))
+            {'id': 1, 'title': 'Guido'}
+
+        """
+        alias_names = {
+            column._meta.name: getattr(column, "alias", None)
+            for column in columns
+        }
+
+        output = {}
+        for column in columns or self._meta.columns:
+            output[
+                alias_names.get(column._meta.name) or column._meta.name
+            ] = getattr(self, column._meta.name)
+        return output
+
     def __setitem__(self, key: str, value: t.Any):
         setattr(self, key, value)
 
