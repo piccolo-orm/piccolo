@@ -1,5 +1,5 @@
-from ..base import DBTestCase
-from ..example_app.tables import Band, Manager
+from tests.base import DBTestCase, postgres_only
+from tests.example_app.tables import Band, Manager
 
 
 class TestInsert(DBTestCase):
@@ -12,6 +12,15 @@ class TestInsert(DBTestCase):
         names = [i["name"] for i in response]
 
         self.assertTrue("Rustaceans" in names)
+
+    @postgres_only
+    def test_insert_returning(self):
+        response = Band.insert(
+            Band(name="Rustaceans", popularity=100),
+            returning=[Band.id, Band.name],
+        ).run_sync()
+
+        self.assertEqual(response, [{"id": 1, "name": "Rustaceans"}])
 
     def test_add(self):
         self.insert_rows()

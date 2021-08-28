@@ -547,13 +547,15 @@ class Table(metaclass=TableMetaclass):
         return _reference_column
 
     @classmethod
-    def insert(cls, *rows: "Table") -> Insert:
+    def insert(
+        cls, *rows: "Table", returning: t.Optional[t.List[Column]] = None
+    ) -> Insert:
         """
         await Band.insert(
             Band(name="Pythonistas", popularity=500, manager=1)
         ).run()
         """
-        query = Insert(table=cls)
+        query = Insert(table=cls, returning=returning)
         if rows:
             query.add(*rows)
         return query

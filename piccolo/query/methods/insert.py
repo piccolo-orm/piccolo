@@ -4,24 +4,40 @@ import typing as t
 from dataclasses import dataclass
 
 from piccolo.query.base import Query
-from piccolo.query.mixins import AddDelegate
+from piccolo.query.mixins import AddDelegate, ReturningDelegate
 from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:  # pragma: no cover
+    from piccolo.columns import Column
     from piccolo.table import Table
 
 
 @dataclass
 class Insert(Query):
-    __slots__ = ("add_delegate",)
+    __slots__ = ("add_delegate", "returning_delegate")
 
-    def __init__(self, table: t.Type[Table], *instances: Table, **kwargs):
+    def __init__(
+        self,
+        table: t.Type[Table],
+        *instances: Table,
+        returning: t.Optional[t.List[Column]] = None,
+        **kwargs,
+    ):
         super().__init__(table, **kwargs)
         self.add_delegate = AddDelegate()
+        self.returning_delegate = ReturningDelegate(
+            _returning=returning
+            if returning
+            else [self.table._meta.primary_key]
+        )
         self.add(*instances)
 
     def add(self, *instances: Table) -> Insert:
         self.add_delegate.add(*instances, table_class=self.table)
+        return self
+
+    def returning(self, *columns: Column) -> Insert:
+        self.returning_delegate.returning(*columns)
         return self
 
     def run_callback(self, results):
@@ -58,11 +74,13 @@ class Insert(Query):
         columns = ",".join(
             [f'"{i._meta.name}"' for i in self.table._meta.columns]
         )
-        values = ",".join(["{}" for i in self.add_delegate._add])
-        primary_key_name = self.table._meta.primary_key._meta.name
-        query = (
-            f"{base} ({columns}) VALUES {values} RETURNING {primary_key_name}"
+        values = ",".join(["{}" for _ in self.add_delegate._add])
+
+        returning = ",".join(
+            [f'"{i._meta.name}"' for i in self.returning_delegate._returning]
         )
+
+        query = f"{base} ({columns}) VALUES {values} RETURNING {returning}"
         return [
             QueryString(
                 query,

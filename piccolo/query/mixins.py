@@ -337,3 +337,15 @@ class GroupByDelegate:
 
     def group_by(self, *columns: Column):
         self._group_by = GroupBy(columns=columns)
+
+
+@dataclass
+class ReturningDelegate:
+    """
+    Used to specify which columns to return from a query.
+    """
+
+    _returning: t.List[Column] = field(default_factory=list)
+
+    def returning(self, *columns: Column):
+        self._returning = list(columns)
