@@ -409,7 +409,7 @@ class Table(metaclass=TableMetaclass):
 
     def to_dict(self, *aliases: Column) -> t.Dict[str, t.Any]:
         """
-        A convenience menthod which returns a dictionary, mapping column names
+        A convenience method which returns a dictionary, mapping column names
         to values for this table instance.
 
         .. code-block::
