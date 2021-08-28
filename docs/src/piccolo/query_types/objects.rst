@@ -138,6 +138,28 @@ Complex where clauses are supported, but only within reason. For example:
         defaults={'popularity': 100}
     ).run_sync()
 
+to_dict
+-------
+
+If you need to convert an object into a dictionary, you can do so using the
+``to_dict`` method.
+
+.. code-block:: python
+
+    band = Band.objects().first().run_sync()
+
+    >>> band.to_dict()
+    {'id': 1, 'name': 'Pythonistas', 'manager': 1, 'popularity': 1000}
+
+You can override some of the column names if you like:
+
+.. code-block:: python
+
+    band = Band.objects().first().run_sync()
+
+    >>> band.to_dict(Band.name.as_alias('title'))
+    {'id': 1, 'title': 'Pythonistas', 'manager': 1, 'popularity': 1000}
+
 
 Query clauses
 -------------
