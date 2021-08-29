@@ -205,7 +205,7 @@ class Select(Query):
 
     async def response_handler(self, response):
         # If no columns were specified, it's a select *, so we know that
-        # now columns were selected from related tables.
+        # no columns were selected from related tables.
         was_select_star = len(self.columns_delegate.selected_columns) == 0
 
         if self.limit_delegate._first:
