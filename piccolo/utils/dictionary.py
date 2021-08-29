@@ -8,7 +8,7 @@ def make_nested(dictionary: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     Rows are returned from the database as a flat dictionary, with keys such
     as ``'manager.name'`` if the column belongs to a related table.
 
-    This functions puts any values from a related table into a sub dictionary.
+    This function puts any values from a related table into a sub dictionary.
 
     .. code-block::
 
