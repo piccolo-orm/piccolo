@@ -19,6 +19,7 @@ from piccolo.query.mixins import (
     WhereDelegate,
 )
 from piccolo.querystring import QueryString
+from piccolo.utils.dictionary import make_nested
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.custom_types import Combinable
@@ -203,13 +204,23 @@ class Select(Query):
         return self
 
     async def response_handler(self, response):
+        # If no columns were specified, it's a select *, so we know that
+        # now columns were selected from related tables.
+        was_select_star = len(self.columns_delegate.selected_columns) == 0
+
         if self.limit_delegate._first:
             if len(response) == 0:
                 return None
+
+            if self.output_delegate._output.nested and not was_select_star:
+                return make_nested(response[0])
             else:
                 return response[0]
         else:
-            return response
+            if self.output_delegate._output.nested and not was_select_star:
+                return [make_nested(i) for i in response]
+            else:
+                return response
 
     def order_by(self, *columns: Column, ascending=True) -> Select:
         _columns: t.List[Column] = [
@@ -225,9 +236,13 @@ class Select(Query):
         as_list: bool = False,
         as_json: bool = False,
         load_json: bool = False,
+        nested: bool = False,
     ) -> Select:
         self.output_delegate.output(
-            as_list=as_list, as_json=as_json, load_json=load_json
+            as_list=as_list,
+            as_json=as_json,
+            load_json=load_json,
+            nested=nested,
         )
         return self
 

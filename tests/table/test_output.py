@@ -59,3 +59,30 @@ class TestOutputLoadJSON(TestCase):
 
         self.assertEqual(results[0].facilities, json)
         self.assertEqual(results[0].facilities_b, json)
+
+
+class TestOutputNested(DBTestCase):
+    def test_output_nested(self):
+        self.insert_row()
+
+        response = (
+            Band.select(Band.name, Band.manager.name)
+            .output(nested=True)
+            .run_sync()
+        )
+        self.assertEqual(
+            response, [{"name": "Pythonistas", "manager": {"name": "Guido"}}]
+        )
+
+    def test_output_nested_with_first(self):
+        self.insert_row()
+
+        response = (
+            Band.select(Band.name, Band.manager.name)
+            .first()
+            .output(nested=True)
+            .run_sync()
+        )
+        self.assertEqual(
+            response, {"name": "Pythonistas", "manager": {"name": "Guido"}}
+        )

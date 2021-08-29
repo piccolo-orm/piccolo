@@ -78,6 +78,7 @@ class Output:
     as_list: bool = False
     as_objects: bool = False
     load_json: bool = False
+    nested: bool = False
 
     def copy(self) -> Output:
         return self.__class__(
@@ -85,6 +86,7 @@ class Output:
             as_list=self.as_list,
             as_objects=self.as_objects,
             load_json=self.load_json,
+            nested=self.nested,
         )
 
 
@@ -195,6 +197,7 @@ class OutputDelegate:
         as_list: t.Optional[bool] = None,
         as_json: t.Optional[bool] = None,
         load_json: t.Optional[bool] = None,
+        nested: t.Optional[bool] = None,
     ):
         """
         :param as_list:
@@ -215,6 +218,9 @@ class OutputDelegate:
 
         if load_json is not None:
             self._output.load_json = bool(load_json)
+
+        if nested is not None:
+            self._output.nested = bool(nested)
 
     def copy(self) -> OutputDelegate:
         _output = self._output.copy() if self._output is not None else None
