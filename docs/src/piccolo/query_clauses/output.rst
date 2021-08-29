@@ -39,6 +39,16 @@ If you're just querying a single column from a database table, you can use
     >>> Band.select(Band.id).output(as_list=True).run_sync()
     [1, 2]
 
+nested
+~~~~~~
+
+Output any data from related tables in nested dictionaries.
+
+.. code-block:: python
+
+    >>> Band.select(Band.name, Band.manager.name).first().output(nested=True).run_sync()
+    {'name': 'Pythonistas', 'manager': {'name': 'Guido'}}
+
 -------------------------------------------------------------------------------
 
 Select and Objects queries

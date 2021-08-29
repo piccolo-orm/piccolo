@@ -20,7 +20,7 @@ To get certain columns:
     >>> Band.select(Band.name).run_sync()
     [{'name': 'Rustaceans'}, {'name': 'Pythonistas'}]
 
-Or making an alias to make it shorter:
+Or use an alias to make it shorter:
 
 .. code-block:: python
 
@@ -46,12 +46,11 @@ This is equivalent to ``SELECT name AS title FROM band`` in SQL.
 Joins
 -----
 
-One of the most powerful things about select is it's support for joins.
+One of the most powerful things about ``select`` is it's support for joins.
 
 .. code-block:: python
 
-    >>> b = Band
-    >>> b.select(b.name, b.manager.name).run_sync()
+    >>> Band.select(Band.name, Band.manager.name).run_sync()
     [{'name': 'Pythonistas', 'manager.name': 'Guido'}, {'name': 'Rustaceans', 'manager.name': 'Graydon'}]
 
 
@@ -59,11 +58,29 @@ The joins can go several layers deep.
 
 .. code-block:: python
 
-    c = Concert
-    c.select(
-        c.id,
-        c.band_1.manager.name
-    ).run_sync()
+    >>> Concert.select(Concert.id, Concert.band_1.manager.name).run_sync()
+    [{'id': 1, 'band_1.manager.name': 'Guido'}]
+
+If you want all of the columns from a related table, there's a useful shortcut
+which saves you from typing them all out:
+
+.. code-block:: python
+
+    >>> Band.select(Band.name, *Band.manager.all_columns()).run_sync()
+    [
+        {'name': 'Pythonistas', 'manager.id': 1, 'manager.name': 'Guido'},
+        {'name': 'Rustaceans', 'manager.id': 2, 'manager.name': 'Graydon'}
+    ]
+
+You can also get the response as nested dictionaries, which can be very useful:
+
+.. code-block:: python
+
+    >>> Band.select(Band.name, *Band.manager.all_columns()).output(nested=True).run_sync()
+    [
+        {'name': 'Pythonistas', 'manager': {'id': 1, 'name': 'Guido'}},
+        {'name': 'Rustaceans', 'manager': {'id': 2, 'manager.name': 'Graydon'}}
+    ]
 
 String syntax
 -------------
@@ -183,29 +200,29 @@ By default all columns are returned from the queried table.
 
 .. code-block:: python
 
-    b = Band
     # Equivalent to SELECT * from band
-    b.select().run_sync()
+    Band.select().run_sync()
 
 To restrict the returned columns, either pass in the columns into the
 ``select`` method, or use the ``columns`` method.
 
 .. code-block:: python
 
-    b = Band
     # Equivalent to SELECT name from band
-    b.select().columns(b.name).run_sync()
+    Band.select(Band.name).run_sync()
+
+    # Or alternatively:
+    Band.select().columns(Band.name).run_sync()
 
 The ``columns`` method is additive, meaning you can chain it to add additional
 columns.
 
 .. code-block:: python
 
-    b = Band
-    b.select().columns(b.name).columns(b.manager).run_sync()
+    Band.select().columns(Band.name).columns(Band.manager).run_sync()
 
     # Or just define it one go:
-    b.select().columns(b.name, b.manager).run_sync()
+    Band.select().columns(Band.name, Band.manager).run_sync()
 
 
 first
