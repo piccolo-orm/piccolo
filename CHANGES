@@ -1,6 +1,18 @@
 Changes
 =======
 
+0.40.0
+------
+Added ``nested`` output option, which makes the response from a ``select``
+query use nested dictionaries:
+
+.. code-block:: python
+
+  >>> await Band.select(Band.name, *Band.manager.all_columns()).output(nested=True).run()
+  [{'name': 'Pythonistas', 'manager': {'id': 1, 'name': 'Guido'}}]
+
+Thanks to @wmshort for the idea.
+
 0.39.0
 ------
 Added ``to_dict`` method to ``Table``.
