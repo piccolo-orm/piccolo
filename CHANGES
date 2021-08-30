@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.40.1
+------
+Loosen the ``typing-extensions`` requirement, as it was causing issues when
+installing ``asyncpg``.
+
 0.40.0
 ------
 Added ``nested`` output option, which makes the response from a ``select``
