@@ -137,7 +137,7 @@ class ColumnMeta:
     _table: t.Optional[t.Type[Table]] = None
 
     # Used by Foreign Keys:
-    call_chain: t.List["ForeignKey"] = field(default_factory=lambda: [])
+    call_chain: t.List["ForeignKey"] = field(default_factory=list)
     table_alias: t.Optional[str] = None
 
     @property

@@ -3,8 +3,7 @@ from unittest import TestCase
 
 from piccolo.columns import Column, ForeignKey, LazyTableReference, Varchar
 from piccolo.table import Table
-from tests.base import DBTestCase
-from tests.example_app.tables import Band, Manager
+from tests.example_app.tables import Band, Concert, Manager
 
 
 class Manager1(Table, tablename="manager"):
@@ -172,32 +171,36 @@ class TestAttributeAccess(TestCase):
         self.assertTrue(end - start < 1.0)
 
 
-class TestAllColumns(DBTestCase):
-    def setUp(self):
-        Manager.create_table().run_sync()
-        manager = Manager(name="Guido")
-        manager.save().run_sync()
-
-        Band.create_table().run_sync()
-        Band(manager=manager, name="Pythonistas").save().run_sync()
-
-    def tearDown(self):
-        Band.alter().drop_table().run_sync()
-        Manager.alter().drop_table().run_sync()
-
+class TestAllColumns(TestCase):
     def test_all_columns(self):
         """
         Make sure you can retrieve all columns from a related table, without
         explicitly specifying them.
         """
-        result = Band.select(Band.name, *Band.manager.all_columns()).run_sync()
+        all_columns = Band.manager.all_columns()
+        self.assertEqual(all_columns, [Band.manager.id, Band.manager.name])
+
+        # Make sure the call chains are also correct.
         self.assertEqual(
-            result,
-            [
-                {
-                    "name": "Pythonistas",
-                    "manager.id": 1,
-                    "manager.name": "Guido",
-                }
-            ],
+            all_columns[0]._meta.call_chain, Band.manager.id._meta.call_chain
+        )
+        self.assertEqual(
+            all_columns[1]._meta.call_chain, Band.manager.name._meta.call_chain
+        )
+
+    def test_all_columns_deep(self):
+        """
+        Make sure ``all_columns`` works when the joins are several layers deep.
+        """
+        all_columns = Concert.band_1.manager.all_columns()
+        self.assertEqual(all_columns, [Band.manager.id, Band.manager.name])
+
+        # Make sure the call chains are also correct.
+        self.assertEqual(
+            all_columns[0]._meta.call_chain,
+            Concert.band_1.manager.id._meta.call_chain,
+        )
+        self.assertEqual(
+            all_columns[1]._meta.call_chain,
+            Concert.band_1.manager.name._meta.call_chain,
         )

@@ -1220,6 +1220,22 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
         column._foreign_key_meta = self._foreign_key_meta.copy()
         return column
 
+    def all_columns(self):
+        """
+        Allow a user to access all of the columns on the related table.
+
+        For example:
+
+        Band.select(Band.name, *Band.manager.all_columns()).run_sync()
+
+        """
+        _fk_meta = object.__getattribute__(self, "_foreign_key_meta")
+
+        return [
+            getattr(self, column._meta.name)
+            for column in _fk_meta.resolved_references._meta.columns
+        ]
+
     def set_proxy_columns(self):
         """
         In order to allow a fluent interface, where tables can be traversed
@@ -1232,22 +1248,6 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
             _column: Column = column.copy()
             setattr(self, _column._meta.name, _column)
             _fk_meta.proxy_columns.append(_column)
-
-        def all_columns():
-            """
-            Allow a user to access all of the columns on the related table.
-
-            For example:
-
-            Band.select(Band.name, *Band.manager.all_columns()).run_sync()
-
-            """
-            return [
-                getattr(self, column._meta.name)
-                for column in _fk_meta.resolved_references._meta.columns
-            ]
-
-        setattr(self, "all_columns", all_columns)
 
     def __getattribute__(self, name: str):
         """

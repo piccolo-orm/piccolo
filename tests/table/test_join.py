@@ -25,11 +25,6 @@ class TestJoin(TestCase):
         for table in self.tables:
             table.create_table().run_sync()
 
-    def tearDown(self):
-        for table in reversed(self.tables):
-            table.alter().drop_table().run_sync()
-
-    def test_join(self):
         manager_1 = Manager(name="Guido")
         manager_1.save().run_sync()
 
@@ -42,7 +37,7 @@ class TestJoin(TestCase):
         band_2 = Band(name="Rustaceans", manager=manager_2.id)
         band_2.save().run_sync()
 
-        venue = Venue(name="Grand Central")
+        venue = Venue(name="Grand Central", capacity=1000)
         venue.save().run_sync()
 
         save_query = Concert(
@@ -50,6 +45,11 @@ class TestJoin(TestCase):
         ).save()
         save_query.run_sync()
 
+    def tearDown(self):
+        for table in reversed(self.tables):
+            table.alter().drop_table().run_sync()
+
+    def test_join(self):
         select_query = Concert.select(
             Concert.band_1.name,
             Concert.band_2.name,
@@ -73,3 +73,49 @@ class TestJoin(TestCase):
         select_query = Concert.select(Concert.band_1.manager.name)
         response = select_query.run_sync()
         self.assertEqual(response, [{"band_1.manager.name": "Guido"}])
+
+    def test_all_columns(self):
+        """
+        Make sure you can retrieve all columns from a related table, without
+        explicitly specifying them.
+        """
+        result = (
+            Band.select(Band.name, *Band.manager.all_columns())
+            .first()
+            .run_sync()
+        )
+        self.assertEqual(
+            result,
+            {
+                "name": "Pythonistas",
+                "manager.id": 1,
+                "manager.name": "Guido",
+            },
+        )
+
+    def test_all_columns_deep(self):
+        """
+        Make sure that ``all_columns`` can be used several layers deep.
+        """
+        result = (
+            Concert.select(
+                *Concert.venue.all_columns(),
+                *Concert.band_1.manager.all_columns(),
+                *Concert.band_2.manager.all_columns(),
+            )
+            .first()
+            .run_sync()
+        )
+
+        self.assertEqual(
+            result,
+            {
+                "venue.id": 1,
+                "venue.name": "Grand Central",
+                "venue.capacity": 1000,
+                "band_1.manager.id": 1,
+                "band_1.manager.name": "Guido",
+                "band_2.manager.id": 2,
+                "band_2.manager.name": "Graydon",
+            },
+        )

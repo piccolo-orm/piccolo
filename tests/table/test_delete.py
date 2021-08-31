@@ -11,7 +11,6 @@ class TestDelete(DBTestCase):
         Band.delete().where(Band.name == "CSharps").run_sync()
 
         response = Band.count().where(Band.name == "CSharps").run_sync()
-        print(f"response = {response}")
 
         self.assertEqual(response, 0)
 
