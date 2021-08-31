@@ -237,8 +237,22 @@ class ColumnsDelegate:
 
     selected_columns: t.Sequence[Selectable] = field(default_factory=list)
 
-    def columns(self, *columns: Selectable):
-        combined = list(self.selected_columns) + list(columns)
+    def columns(self, *columns: t.Union[Selectable, t.List[Selectable]]):
+        """
+        :param columns:
+            We accept ``Selectable`` and ``List[Selectable]`` here, in case
+            someone passes in a list by accident when using ``all_columns()``,
+            in which case we flatten the list.
+
+        """
+        _columns = []
+        for column in columns:
+            if isinstance(column, list):
+                _columns.extend(column)
+            else:
+                _columns.append(column)
+
+        combined = list(self.selected_columns) + _columns
         self.selected_columns = combined
 
     def remove_secret_columns(self):
