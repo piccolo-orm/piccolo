@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.41.1
+------
+Fix a regression where if multiple tables are created in a single migration
+file, it could potentially fail by applying them in the wrong order.
+
 0.41.0
 ------
 Fixed a bug where if ``all_columns`` was used two or more levels deep, it would
