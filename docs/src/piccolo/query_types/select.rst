@@ -61,8 +61,9 @@ The joins can go several layers deep.
     >>> Concert.select(Concert.id, Concert.band_1.manager.name).run_sync()
     [{'id': 1, 'band_1.manager.name': 'Guido'}]
 
-If you want all of the columns from a related table, there's a useful shortcut
-which saves you from typing them all out:
+If you want all of the columns from a related table you can use
+``all_columns``, which is a useful shortcut which saves you from typing them
+all out:
 
 .. code-block:: python
 
@@ -71,6 +72,10 @@ which saves you from typing them all out:
         {'name': 'Pythonistas', 'manager.id': 1, 'manager.name': 'Guido'},
         {'name': 'Rustaceans', 'manager.id': 2, 'manager.name': 'Graydon'}
     ]
+
+    # In Piccolo > 0.41.0 you no longer need to explicitly unpack ``all_columns``.
+    # This is equivalent:
+    >>> Band.select(Band.name, Band.manager.all_columns()).run_sync()
 
 You can also get the response as nested dictionaries, which can be very useful:
 
