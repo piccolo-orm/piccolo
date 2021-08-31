@@ -32,9 +32,6 @@ class TestObjects(DBTestCase):
         """
         self.insert_rows()
         response = Band.objects().order_by(Band.name).offset(1).run_sync()
-
-        print(f"response = {response}")
-
         self.assertEqual(
             [i.name for i in response], ["Pythonistas", "Rustaceans"]
         )
@@ -53,8 +50,6 @@ class TestObjects(DBTestCase):
         query = query.limit(5)
 
         response = query.run_sync()
-
-        print(f"response = {response}")
 
         self.assertEqual(
             [i.name for i in response], ["Pythonistas", "Rustaceans"]

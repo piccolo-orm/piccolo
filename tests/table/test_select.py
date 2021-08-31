@@ -13,7 +13,6 @@ class TestSelect(DBTestCase):
         self.insert_row()
 
         response = Band.select().run_sync()
-        print(f"response = {response}")
 
         self.assertDictEqual(
             response[0],
@@ -24,7 +23,6 @@ class TestSelect(DBTestCase):
         self.insert_row()
 
         response = Band.select(Band.name).run_sync()
-        print(f"response = {response}")
 
         self.assertDictEqual(response[0], {"name": "Pythonistas"})
 
