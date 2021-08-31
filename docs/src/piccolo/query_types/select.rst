@@ -31,6 +31,8 @@ Or use an alias to make it shorter:
 
 .. hint:: All of these examples also work with async by using .run() inside coroutines - see :ref:`SyncAndAsync`.
 
+-------------------------------------------------------------------------------
+
 as_alias
 --------
 
@@ -43,6 +45,8 @@ By using ``as_alias``, the name of the row can be overriden in the response.
 
 This is equivalent to ``SELECT name AS title FROM band`` in SQL.
 
+-------------------------------------------------------------------------------
+
 Joins
 -----
 
@@ -51,7 +55,10 @@ One of the most powerful things about ``select`` is it's support for joins.
 .. code-block:: python
 
     >>> Band.select(Band.name, Band.manager.name).run_sync()
-    [{'name': 'Pythonistas', 'manager.name': 'Guido'}, {'name': 'Rustaceans', 'manager.name': 'Graydon'}]
+    [
+        {'name': 'Pythonistas', 'manager.name': 'Guido'},
+        {'name': 'Rustaceans', 'manager.name': 'Graydon'}
+    ]
 
 
 The joins can go several layers deep.
@@ -61,36 +68,90 @@ The joins can go several layers deep.
     >>> Concert.select(Concert.id, Concert.band_1.manager.name).run_sync()
     [{'id': 1, 'band_1.manager.name': 'Guido'}]
 
+all_columns
+~~~~~~~~~~~
+
 If you want all of the columns from a related table you can use
 ``all_columns``, which is a useful shortcut which saves you from typing them
 all out:
 
 .. code-block:: python
 
-    >>> Band.select(Band.name, *Band.manager.all_columns()).run_sync()
+    >>> Band.select(Band.name, Band.manager.all_columns()).run_sync()
     [
         {'name': 'Pythonistas', 'manager.id': 1, 'manager.name': 'Guido'},
         {'name': 'Rustaceans', 'manager.id': 2, 'manager.name': 'Graydon'}
     ]
 
-    # In Piccolo > 0.41.0 you no longer need to explicitly unpack ``all_columns``.
-    # This is equivalent:
-    >>> Band.select(Band.name, Band.manager.all_columns()).run_sync()
+
+In Piccolo < 0.41.0 you had to explicitly unpack ``all_columns``. This is
+equivalent to the code above:
+
+.. code-block:: python
+
+    >>> Band.select(Band.name, *Band.manager.all_columns()).run_sync()
+
+
+You can exclude some columns if you like:
+
+.. code-block:: python
+
+    >>> Band.select(
+    >>>     Band.name,
+    >>>     Band.manager.all_columns(exclude=[Band.manager.id)
+    >>> ).run_sync()
+    [
+        {'name': 'Pythonistas', 'manager.name': 'Guido'},
+        {'name': 'Rustaceans', 'manager.name': 'Graydon'}
+    ]
+
+
+Strings are supported too if you prefer:
+
+.. code-block:: python
+
+    >>> Band.select(
+    >>>     Band.name,
+    >>>     Band.manager.all_columns(exclude=['id'])
+    >>> ).run_sync()
+    [
+        {'name': 'Pythonistas', 'manager.name': 'Guido'},
+        {'name': 'Rustaceans', 'manager.name': 'Graydon'}
+    ]
+
+You can also use ``all_columns`` on the root table, which saves you time if
+you have lots of columns. It works identically to related tables:
+
+.. code-block:: python
+
+    >>> Band.select(
+    >>>     Band.all_columns(exclude=[Band.id]),
+    >>>     Band.manager.all_columns(exclude=[Band.manager.id])
+    >>> ).run_sync()
+    [
+        {'name': 'Pythonistas', 'popularity': 1000, 'manager.name': 'Guido'},
+        {'name': 'Rustaceans', 'popularity': 500, 'manager.name': 'Graydon'}
+    ]
+
+Nested
+~~~~~~
 
 You can also get the response as nested dictionaries, which can be very useful:
 
 .. code-block:: python
 
-    >>> Band.select(Band.name, *Band.manager.all_columns()).output(nested=True).run_sync()
+    >>> Band.select(Band.name, Band.manager.all_columns()).output(nested=True).run_sync()
     [
         {'name': 'Pythonistas', 'manager': {'id': 1, 'name': 'Guido'}},
         {'name': 'Rustaceans', 'manager': {'id': 2, 'manager.name': 'Graydon'}}
     ]
 
+-------------------------------------------------------------------------------
+
 String syntax
 -------------
 
-Alternatively, you can specify the column names using a string. The
+You can specify the column names using a string if you prefer. The
 disadvantage is you won't have tab completion, but sometimes it's more
 convenient.
 
@@ -101,6 +162,7 @@ convenient.
     # For joins:
     Band.select('manager.name').run_sync()
 
+-------------------------------------------------------------------------------
 
 Aggregate functions
 -------------------
@@ -189,6 +251,7 @@ And can use aliases for aggregate functions like this:
     >>> response["popularity_avg"]
     750.0
 
+-------------------------------------------------------------------------------
 
 Query clauses
 -------------

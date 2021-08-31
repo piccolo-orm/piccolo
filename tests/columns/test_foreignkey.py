@@ -204,3 +204,16 @@ class TestAllColumns(TestCase):
             all_columns[1]._meta.call_chain,
             Concert.band_1.manager.name._meta.call_chain,
         )
+
+    def test_all_columns_exclude(self):
+        """
+        Make sure you can exclude some columns.
+        """
+        self.assertEqual(
+            Band.manager.all_columns(exclude=["id"]), [Band.manager.name]
+        )
+
+        self.assertEqual(
+            Band.manager.all_columns(exclude=[Band.manager.id]),
+            [Band.manager.name],
+        )
