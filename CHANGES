@@ -1,6 +1,31 @@
 Changes
 =======
 
+0.41.0
+------
+Fixed a bug where if ``all_columns`` was used two or more levels deep, it would
+fail. Thanks to @wmshort for reporting this issue.
+
+Here's an example:
+
+.. code-block:: python
+
+  Concert.select(
+      Concert.venue.name,
+      *Concert.band_1.manager.all_columns()
+  ).run_sync()
+
+Also, the ``ColumnsDelegate`` has now been tweaked, so unpacking of
+``all_columns`` is optional.
+
+.. code-block:: python
+
+  # This now works the same as the code above (we have omitted the *)
+  Concert.select(
+      Concert.venue.name,
+      Concert.band_1.manager.all_columns()
+  ).run_sync()
+
 0.40.1
 ------
 Loosen the ``typing-extensions`` requirement, as it was causing issues when
