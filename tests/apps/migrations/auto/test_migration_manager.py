@@ -1,7 +1,11 @@
 import asyncio
+from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
-from piccolo.apps.migrations.auto import MigrationManager
+from piccolo.apps.migrations.auto.migration_manager import (
+    MigrationManager,
+    sort_table_classes,
+)
 from piccolo.apps.migrations.commands.base import BaseMigrationManager
 from piccolo.columns import Text, Varchar
 from piccolo.columns.base import OnDelete, OnUpdate
@@ -9,9 +13,26 @@ from piccolo.columns.column_types import ForeignKey
 from piccolo.conf.apps import AppConfig
 from piccolo.utils.lazy_loader import LazyLoader
 from tests.base import DBTestCase, postgres_only, set_mock_return_value
-from tests.example_app.tables import Manager
+from tests.example_app.tables import Band, Concert, Manager, Venue
 
 asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")
+
+
+class TestSortTableClasses(TestCase):
+    def test_sort_table_classes(self):
+        self.assertEqual(sort_table_classes([Manager, Band]), [Manager, Band])
+        self.assertEqual(sort_table_classes([Band, Manager]), [Manager, Band])
+
+        sorted_tables = sort_table_classes([Manager, Venue, Concert, Band])
+        self.assertTrue(
+            sorted_tables.index(Manager) < sorted_tables.index(Band)
+        )
+        self.assertTrue(
+            sorted_tables.index(Venue) < sorted_tables.index(Concert)
+        )
+        self.assertTrue(
+            sorted_tables.index(Band) < sorted_tables.index(Concert)
+        )
 
 
 class TestMigrationManager(DBTestCase):

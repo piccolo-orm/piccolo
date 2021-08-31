@@ -14,8 +14,8 @@ VERSION = "0.14.7"
 async def forwards():
     manager = MigrationManager(migration_id=ID, app_name="example_app")
 
-    manager.add_table("Manager", tablename="manager")
     manager.add_table("Band", tablename="band")
+    manager.add_table("Manager", tablename="manager")
 
     manager.add_column(
         table_class_name="Band",
