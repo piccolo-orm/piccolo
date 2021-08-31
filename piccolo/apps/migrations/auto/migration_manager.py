@@ -118,11 +118,24 @@ class AlterColumnCollection:
         return list(set([i.table_class_name for i in self.alter_columns]))
 
 
-def _compare_tables(table_a: t.Type[Table], table_b: t.Type[Table]) -> int:
+def _compare_tables(
+    table_a: t.Type[Table],
+    table_b: t.Type[Table],
+    iterations: int = 0,
+    max_iterations=5,
+) -> int:
     """
     A comparison function, for sorting Table classes, based on their foreign
     keys.
+
+    :param iterations:
+        As this function is called recursively, we use this to limit the depth,
+        to prevent an infinite loop.
+
     """
+    if iterations >= max_iterations:
+        return 0
+
     for fk_column in table_a._meta.foreign_key_columns:
         references = fk_column._foreign_key_meta.resolved_references
         if references._meta.tablename == table_b._meta.tablename:
@@ -131,8 +144,7 @@ def _compare_tables(table_a: t.Type[Table], table_b: t.Type[Table]) -> int:
             for _fk_column in references._meta.foreign_key_columns:
                 _references = _fk_column._foreign_key_meta.resolved_references
                 if _compare_tables(
-                    _references,
-                    table_b,
+                    _references, table_b, iterations=iterations + 1
                 ):
                     return 1
 
