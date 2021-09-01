@@ -17,6 +17,7 @@ from piccolo.apps.migrations.commands.new import (
 from piccolo.apps.migrations.tables import Migration
 from piccolo.columns.column_types import (
     UUID,
+    Array,
     BigInt,
     Boolean,
     Date,
@@ -68,6 +69,10 @@ def timedelta_default():
 
 def boolean_default():
     return True
+
+
+def array_default():
+    return [4, 5, 6]
 
 
 @postgres_only
@@ -307,6 +312,22 @@ class TestMigrations(TestCase):
                     Boolean(null=False),
                     Boolean(index=True),
                     Boolean(index=False),
+                ]
+            ]
+        )
+
+    def test_array_column(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Array(base_column=Integer()),
+                    Array(base_column=Integer(), default=[1, 2, 3]),
+                    Array(base_column=Integer(), default=array_default),
+                    Array(base_column=Integer(), null=True, default=None),
+                    # Array(base_column=Integer(), null=False),
+                    # Array(base_column=Integer(), index=True),
+                    # Array(base_column=Integer(), index=False),
                 ]
             ]
         )

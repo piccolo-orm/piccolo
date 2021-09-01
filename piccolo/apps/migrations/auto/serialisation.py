@@ -29,7 +29,14 @@ class SerialisedBuiltin:
         return hash(self.builtin.__name__)
 
     def __eq__(self, other):
-        return self.__hash__() == other.__hash__()
+        """
+        We need to be careful here in case we're comparing it to something
+        unhashable, like a list.
+        """
+        if getattr(other, "__hash__", None) is not None:
+            return self.__hash__() == other.__hash__()
+        else:
+            return False
 
     def __repr__(self):
         return self.builtin.__name__
@@ -43,7 +50,10 @@ class SerialisedClassInstance:
         return self.instance.__hash__()
 
     def __eq__(self, other):
-        return self.__hash__() == other.__hash__()
+        if getattr(other, "__hash__", None) is not None:
+            return self.__hash__() == other.__hash__()
+        else:
+            return False
 
     def __repr__(self):
         return repr_class_instance(self.instance)
@@ -58,7 +68,10 @@ class SerialisedColumnInstance:
         return self.instance.__hash__()
 
     def __eq__(self, other):
-        return self.__hash__() == other.__hash__()
+        if getattr(other, "__hash__", None) is not None:
+            return self.__hash__() == other.__hash__()
+        else:
+            return False
 
     def __repr__(self):
         args = ", ".join(
@@ -78,7 +91,10 @@ class SerialisedEnumInstance:
         return hash(self.__repr__())
 
     def __eq__(self, other):
-        return self.__hash__() == other.__hash__()
+        if getattr(other, "__hash__", None) is not None:
+            return self.__hash__() == other.__hash__()
+        else:
+            return False
 
     def __repr__(self):
         return f"{self.instance.__class__.__name__}.{self.instance.name}"
@@ -94,7 +110,10 @@ class SerialisedTableType:
         )
 
     def __eq__(self, other):
-        return self.__hash__() == other.__hash__()
+        if getattr(other, "__hash__", None) is not None:
+            return self.__hash__() == other.__hash__()
+        else:
+            return False
 
     def __repr__(self):
         tablename = self.table_type._meta.tablename
@@ -126,7 +145,10 @@ class SerialisedEnumType:
         return hash(self.__repr__())
 
     def __eq__(self, other):
-        return self.__hash__() == other.__hash__()
+        if getattr(other, "__hash__", None) is not None:
+            return self.__hash__() == other.__hash__()
+        else:
+            return False
 
     def __repr__(self):
         class_name = self.enum_type.__name__
@@ -142,7 +164,10 @@ class SerialisedCallable:
         return hash(self.callable_.__name__)
 
     def __eq__(self, other):
-        return self.__hash__() == other.__hash__()
+        if getattr(other, "__hash__", None) is not None:
+            return self.__hash__() == other.__hash__()
+        else:
+            return False
 
     def __repr__(self):
         return self.callable_.__name__
@@ -156,7 +181,10 @@ class SerialisedUUID:
         return self.instance.int
 
     def __eq__(self, other):
-        return self.__hash__() == other.__hash__()
+        if getattr(other, "__hash__", None) is not None:
+            return self.__hash__() == other.__hash__()
+        else:
+            return False
 
     def __repr__(self):
         return f"UUID('{str(self.instance)}')"

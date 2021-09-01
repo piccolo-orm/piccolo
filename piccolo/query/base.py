@@ -317,3 +317,89 @@ class FrozenQuery:
 
     def __str__(self) -> str:
         return self.query.__str__()
+
+
+class DDL:
+
+    __slots__ = ("table",)
+
+    def __init__(self, table: t.Type[Table], **kwargs):
+        self.table = table
+
+    @property
+    def engine_type(self) -> str:
+        engine = self.table._meta.db
+        if engine:
+            return engine.engine_type
+        else:
+            raise ValueError("Engine isn't defined.")
+
+    @property
+    def sqlite_ddl(self) -> t.Sequence[str]:
+        raise NotImplementedError
+
+    @property
+    def postgres_ddl(self) -> t.Sequence[str]:
+        raise NotImplementedError
+
+    @property
+    def default_ddl(self) -> t.Sequence[str]:
+        raise NotImplementedError
+
+    @property
+    def ddl(self) -> t.Sequence[str]:
+        """
+        Calls the correct underlying method, depending on the current engine.
+        """
+        engine_type = self.engine_type
+        if engine_type == "postgres":
+            try:
+                return self.postgres_ddl
+            except NotImplementedError:
+                return self.default_ddl
+        elif engine_type == "sqlite":
+            try:
+                return self.sqlite_ddl
+            except NotImplementedError:
+                return self.default_ddl
+        else:
+            raise Exception(
+                f"No querystring found for the {engine_type} engine."
+            )
+
+    def __await__(self):
+        """
+        If the user doesn't explicity call .run(), proxy to it as a
+        convenience.
+        """
+        return self.run().__await__()
+
+    async def run(self, in_pool=True):
+        engine = self.table._meta.db
+        if not engine:
+            raise ValueError(
+                f"Table {self.table._meta.tablename} has no db defined in "
+                "_meta"
+            )
+
+        if len(self.ddl) == 1:
+            return await engine.run_ddl(self.ddl[0], in_pool=in_pool)
+        else:
+            responses = []
+            # TODO - run in a transaction
+            for ddl in self.ddl:
+                response = await engine.run_ddl(ddl, in_pool=in_pool)
+                responses.append(response)
+            return responses
+
+    def run_sync(self, timed=False, *args, **kwargs):
+        """
+        A convenience method for running the coroutine synchronously.
+        """
+        coroutine = self.run(*args, **kwargs, in_pool=False)
+
+        if timed:
+            with Timer():
+                return run_sync(coroutine)
+        else:
+            return run_sync(coroutine)

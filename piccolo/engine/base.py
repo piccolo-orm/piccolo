@@ -50,6 +50,10 @@ class Engine(metaclass=ABCMeta):
     async def run_querystring(self, querystring: QueryString, in_pool: bool):
         pass
 
+    @abstractmethod
+    async def run_ddl(self, ddl: str, in_pool: bool = True):
+        pass
+
     async def check_version(self):
         """
         Warn if the database version isn't supported.

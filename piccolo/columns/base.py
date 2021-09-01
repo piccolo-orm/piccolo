@@ -579,7 +579,9 @@ class Column(Selectable):
         elif isinstance(value, list):
             # Convert to the array syntax.
             output = (
-                "'{" + ", ".join([self.get_sql_value(i) for i in value]) + "}'"
+                "'{"
+                + ", ".join([str(self.get_sql_value(i)) for i in value])
+                + "}'"
             )
         else:
             output = value
@@ -591,7 +593,7 @@ class Column(Selectable):
         return self.__class__.__name__.upper()
 
     @property
-    def querystring(self) -> QueryString:
+    def ddl(self) -> str:
         """
         Used when creating tables.
         """
@@ -621,16 +623,9 @@ class Column(Selectable):
         if not self._meta.primary_key:
             default = self.get_default_value()
             sql_value = self.get_sql_value(value=default)
-            # Escape the value if it contains a pair of curly braces, otherwise
-            # an empty value will appear in the compiled querystring.
-            sql_value = (
-                sql_value.replace("{}", "{{}}")
-                if isinstance(sql_value, str)
-                else sql_value
-            )
             query += f" DEFAULT {sql_value}"
 
-        return QueryString(query)
+        return query
 
     def copy(self) -> Column:
         column: Column = copy.copy(self)
@@ -645,7 +640,7 @@ class Column(Selectable):
         return self.copy()
 
     def __str__(self):
-        return self.querystring.__str__()
+        return self.ddl.__str__()
 
     def __repr__(self):
         try:

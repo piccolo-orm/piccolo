@@ -391,6 +391,19 @@ class PostgresEngine(Engine):
         else:
             return await self._run_in_new_connection(query, query_args)
 
+    async def run_ddl(self, ddl: str, in_pool: bool = True):
+        if self.log_queries:
+            print(ddl)
+
+        # If running inside a transaction:
+        connection = self.transaction_connection.get()
+        if connection:
+            return await connection.fetch(ddl)
+        elif in_pool and self.pool:
+            return await self._run_in_pool(ddl)
+        else:
+            return await self._run_in_new_connection(ddl)
+
     def atomic(self) -> Atomic:
         return Atomic(engine=self)
 

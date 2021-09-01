@@ -6,8 +6,7 @@ from dataclasses import dataclass
 
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import ForeignKey, Numeric, Varchar
-from piccolo.query.base import Query
-from piccolo.querystring import QueryString
+from piccolo.query.base import DDL
 from piccolo.utils.warnings import Level, colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -19,7 +18,7 @@ if t.TYPE_CHECKING:  # pragma: no cover
 class AlterStatement:
     __slots__ = tuple()  # type: ignore
 
-    def querystring(self) -> QueryString:
+    def ddl(self) -> str:
         raise NotImplementedError()
 
     def __str__(self) -> str:
@@ -33,8 +32,8 @@ class RenameTable(AlterStatement):
     new_name: str
 
     @property
-    def querystring(self) -> QueryString:
-        return QueryString(f"RENAME TO {self.new_name}")
+    def ddl(self) -> str:
+        return f"RENAME TO {self.new_name}"
 
 
 @dataclass
@@ -60,17 +59,15 @@ class RenameColumn(AlterColumnStatement):
     new_name: str
 
     @property
-    def querystring(self) -> QueryString:
-        return QueryString(
-            f"RENAME COLUMN {self.column_name} TO {self.new_name}"
-        )
+    def ddl(self) -> str:
+        return f"RENAME COLUMN {self.column_name} TO {self.new_name}"
 
 
 @dataclass
 class DropColumn(AlterColumnStatement):
     @property
-    def querystring(self) -> QueryString:
-        return QueryString(f"DROP COLUMN {self.column_name}")
+    def ddl(self) -> str:
+        return f"DROP COLUMN {self.column_name}"
 
 
 @dataclass
@@ -81,16 +78,16 @@ class AddColumn(AlterColumnStatement):
     name: str
 
     @property
-    def querystring(self) -> QueryString:
+    def ddl(self) -> str:
         self.column._meta.name = self.name
-        return QueryString("ADD COLUMN {}", self.column.querystring)
+        return f"ADD COLUMN {self.column.ddl}"
 
 
 @dataclass
 class DropDefault(AlterColumnStatement):
     @property
-    def querystring(self) -> QueryString:
-        return QueryString(f"ALTER COLUMN {self.column_name} DROP DEFAULT")
+    def querystring(self) -> str:
+        return f"ALTER COLUMN {self.column_name} DROP DEFAULT"
 
 
 @dataclass
@@ -108,7 +105,7 @@ class SetColumnType(AlterStatement):
     using_expression: t.Optional[str] = None
 
     @property
-    def querystring(self) -> QueryString:
+    def ddl(self) -> str:
         if self.new_column._meta._table is None:
             self.new_column._meta._table = self.old_column._meta.table
 
@@ -118,7 +115,7 @@ class SetColumnType(AlterStatement):
         )
         if self.using_expression is not None:
             query += f" USING {self.using_expression}"
-        return QueryString(query)
+        return query
 
 
 @dataclass
@@ -129,11 +126,9 @@ class SetDefault(AlterColumnStatement):
     value: t.Any
 
     @property
-    def querystring(self) -> QueryString:
+    def ddl(self) -> str:
         sql_value = self.column.get_sql_value(self.value)
-        return QueryString(
-            f"ALTER COLUMN {self.column_name} SET DEFAULT {sql_value}"
-        )
+        return f"ALTER COLUMN {self.column_name} SET DEFAULT {sql_value}"
 
 
 @dataclass
@@ -143,9 +138,9 @@ class SetUnique(AlterColumnStatement):
     boolean: bool
 
     @property
-    def querystring(self) -> QueryString:
+    def querystring(self) -> str:
         if self.boolean:
-            return QueryString(f"ADD UNIQUE ({self.column_name})")
+            return f"ADD UNIQUE ({self.column_name})"
         else:
             if isinstance(self.column, str):
                 raise ValueError(
@@ -155,7 +150,7 @@ class SetUnique(AlterColumnStatement):
             tablename = self.column._meta.table._meta.tablename
             column_name = self.column_name
             key = f"{tablename}_{column_name}_key"
-            return QueryString(f'DROP CONSTRAINT "{key}"')
+            return f'DROP CONSTRAINT "{key}"'
 
 
 @dataclass
@@ -165,13 +160,11 @@ class SetNull(AlterColumnStatement):
     boolean: bool
 
     @property
-    def querystring(self) -> QueryString:
+    def ddl(self) -> str:
         if self.boolean:
-            return QueryString(
-                f"ALTER COLUMN {self.column_name} DROP NOT NULL"
-            )
+            return f"ALTER COLUMN {self.column_name} DROP NOT NULL"
         else:
-            return QueryString(f"ALTER COLUMN {self.column_name} SET NOT NULL")
+            return f"ALTER COLUMN {self.column_name} SET NOT NULL"
 
 
 @dataclass
@@ -182,10 +175,8 @@ class SetLength(AlterColumnStatement):
     length: int
 
     @property
-    def querystring(self) -> QueryString:
-        return QueryString(
-            f"ALTER COLUMN {self.column_name} TYPE VARCHAR({self.length})"
-        )
+    def ddl(self) -> str:
+        return f"ALTER COLUMN {self.column_name} TYPE VARCHAR({self.length})"
 
 
 @dataclass
@@ -195,10 +186,8 @@ class DropConstraint(AlterStatement):
     constraint_name: str
 
     @property
-    def querystring(self) -> QueryString:
-        return QueryString(
-            f"DROP CONSTRAINT IF EXISTS {self.constraint_name}",
-        )
+    def ddl(self) -> str:
+        return f"DROP CONSTRAINT IF EXISTS {self.constraint_name}"
 
 
 @dataclass
@@ -219,7 +208,7 @@ class AddForeignKeyConstraint(AlterStatement):
     referenced_column_name: str = "id"
 
     @property
-    def querystring(self) -> QueryString:
+    def ddl(self) -> str:
         query = (
             f"ADD CONSTRAINT {self.constraint_name} FOREIGN KEY "
             f"({self.foreign_key_column_name}) REFERENCES "
@@ -229,7 +218,7 @@ class AddForeignKeyConstraint(AlterStatement):
             query += f" ON DELETE {self.on_delete.value}"
         if self.on_update:
             query += f" ON UPDATE {self.on_update.value}"
-        return QueryString(query)
+        return query
 
 
 @dataclass
@@ -241,16 +230,16 @@ class SetDigits(AlterColumnStatement):
     column_type: str
 
     @property
-    def querystring(self) -> QueryString:
+    def ddl(self) -> str:
         if self.digits is not None:
             precision = self.digits[0]
             scale = self.digits[1]
-            return QueryString(
+            return (
                 f"ALTER COLUMN {self.column_name} TYPE "
                 f"{self.column_type}({precision}, {scale})"
             )
         else:
-            return QueryString(
+            return (
                 f"ALTER COLUMN {self.column_name} TYPE {self.column_type}",
             )
 
@@ -262,7 +251,7 @@ class DropTable:
     if_exists: bool
 
     @property
-    def querystring(self) -> QueryString:
+    def ddl(self) -> str:
         query = "DROP TABLE"
 
         if self.if_exists:
@@ -273,10 +262,10 @@ class DropTable:
         if self.cascade:
             query += " CASCADE"
 
-        return QueryString(query)
+        return query
 
 
-class Alter(Query):
+class Alter(DDL):
 
     __slots__ = (
         "_add_foreign_key_constraint",
@@ -512,14 +501,14 @@ class Alter(Query):
         return self
 
     @property
-    def default_querystrings(self) -> t.Sequence[QueryString]:
+    def default_ddl(self) -> t.Sequence[str]:
         if self._drop_table is not None:
-            return [self._drop_table.querystring]
+            return [self._drop_table.ddl]
 
         query = f"ALTER TABLE {self.table._meta.tablename}"
 
         alterations = [
-            i.querystring
+            i.ddl
             for i in itertools.chain(
                 self._add,
                 self._rename_columns,
@@ -538,9 +527,9 @@ class Alter(Query):
         if self.engine_type == "sqlite":
             # Can only perform one alter statement at a time.
             query += " {}"
-            return [QueryString(query, i) for i in alterations]
+            return [f"{query} {i}" for i in alterations]
 
         # Postgres can perform them all at once:
-        query += ",".join([" {}" for i in alterations])
+        query += ",".join([f" {i}" for i in alterations])
 
-        return [QueryString(query, *alterations)]
+        return [query]

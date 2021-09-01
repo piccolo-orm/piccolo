@@ -513,6 +513,23 @@ class SQLiteEngine(Engine):
             table=querystring.table,
         )
 
+    async def run_ddl(self, ddl: str, in_pool: bool = False):
+        """
+        Connection pools aren't currently supported - the argument is there
+        for consistency with other engines.
+        """
+        # If running inside a transaction:
+        connection = self.transaction_connection.get()
+        if connection:
+            return await self._run_in_existing_connection(
+                connection=connection,
+                query=ddl,
+            )
+
+        return await self._run_in_new_connection(
+            query=ddl,
+        )
+
     def atomic(self) -> Atomic:
         return Atomic(engine=self)
 
