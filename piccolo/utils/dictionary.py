@@ -27,7 +27,22 @@ def make_nested(dictionary: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
         if len(path) == 1:
             output[path[0]] = value
         else:
-            dictionary = output.setdefault(path[0], {})
+            # Force the root element to be an empty dictionary, if it's some
+            # other value (most likely an integer). This is because there are
+            # situations where a query can have `band` and `band.id`.
+            # For example:
+            # await Band.select(
+            #     Band.all_columns(),
+            #     Band.manager.all_columns()
+            # ).run()
+            # In this situation nesting takes precendence.
+            root = output.get(path[0], None)
+            if isinstance(root, dict):
+                dictionary = root
+            else:
+                dictionary = {}
+                output[path[0]] = dictionary
+
             for path_element in path[1:-1]:
                 dictionary = dictionary.setdefault(path_element, {})
             dictionary[path[-1]] = value

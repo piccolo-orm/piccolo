@@ -518,6 +518,39 @@ class Table(metaclass=TableMetaclass):
     # Classmethods
 
     @classmethod
+    def all_columns(
+        cls, exclude: t.List[t.Union[str, Column]] = []
+    ) -> t.List[Column]:
+        """
+        Just as we can use ``all_columns`` to retrieve all of the columns from
+        a related table, we can also use it at the root of our query to get
+        all of the columns for the root table. For example:
+
+        .. code-block:: python
+
+            await Band.select(
+                Band.all_columns(),
+                Band.manager.all_columns()
+            ).run()
+
+        This is mostly useful when the table has a lot of columns, and typing
+        them out by hand would be tedious.
+
+        :param exclude:
+            You can request all columns, except these.
+
+        """
+        excluded_column_names = [
+            i._meta.name if isinstance(i, Column) else i for i in exclude
+        ]
+
+        return [
+            i
+            for i in cls._meta.columns
+            if i._meta.name not in excluded_column_names
+        ]
+
+    @classmethod
     def ref(cls, column_name: str) -> Column:
         """
         Used to get a copy of a column from a table referenced by a

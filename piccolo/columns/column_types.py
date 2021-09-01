@@ -1220,20 +1220,44 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
         column._foreign_key_meta = self._foreign_key_meta.copy()
         return column
 
-    def all_columns(self):
+    def all_columns(
+        self, exclude: t.List[t.Union[Column, str]] = []
+    ) -> t.List[Column]:
         """
         Allow a user to access all of the columns on the related table.
 
         For example:
 
-        Band.select(Band.name, *Band.manager.all_columns()).run_sync()
+        .. code-block:: python
+
+            Band.select(Band.name, Band.manager.all_columns()).run_sync()
+
+        To exclude certain columns:
+
+        .. code-block:: python
+
+            Band.select(
+                Band.name,
+                Band.manager.all_columns(
+                    exclude=[Band.manager.id]
+                )
+            ).run_sync()
+
+        :param exclude:
+            Columns to exclude - can be the name of a column, or a column
+            instance. For example ``['id']`` or ``[Band.manager.id]``.
 
         """
         _fk_meta = object.__getattribute__(self, "_foreign_key_meta")
 
+        excluded_column_names = [
+            i._meta.name if isinstance(i, Column) else i for i in exclude
+        ]
+
         return [
             getattr(self, column._meta.name)
             for column in _fk_meta.resolved_references._meta.columns
+            if column._meta.name not in excluded_column_names
         ]
 
     def set_proxy_columns(self):

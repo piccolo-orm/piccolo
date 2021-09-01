@@ -28,7 +28,9 @@ class TestJoin(TestCase):
         manager_1 = Manager(name="Guido")
         manager_1.save().run_sync()
 
-        band_1 = Band(name="Pythonistas", manager=manager_1.id)
+        band_1 = Band(
+            name="Pythonistas", manager=manager_1.id, popularity=1000
+        )
         band_1.save().run_sync()
 
         manager_2 = Manager(name="Graydon")
@@ -80,11 +82,11 @@ class TestJoin(TestCase):
         explicitly specifying them.
         """
         result = (
-            Band.select(Band.name, *Band.manager.all_columns())
+            Band.select(Band.name, Band.manager.all_columns())
             .first()
             .run_sync()
         )
-        self.assertEqual(
+        self.assertDictEqual(
             result,
             {
                 "name": "Pythonistas",
@@ -99,15 +101,15 @@ class TestJoin(TestCase):
         """
         result = (
             Concert.select(
-                *Concert.venue.all_columns(),
-                *Concert.band_1.manager.all_columns(),
-                *Concert.band_2.manager.all_columns(),
+                Concert.venue.all_columns(),
+                Concert.band_1.manager.all_columns(),
+                Concert.band_2.manager.all_columns(),
             )
             .first()
             .run_sync()
         )
 
-        self.assertEqual(
+        self.assertDictEqual(
             result,
             {
                 "venue.id": 1,
@@ -119,3 +121,84 @@ class TestJoin(TestCase):
                 "band_2.manager.name": "Graydon",
             },
         )
+
+    def test_all_columns_root(self):
+        """
+        Make sure that using ``all_columns`` at the root doesn't interfere
+        with using it for referenced tables.
+        """
+        result = (
+            Band.select(
+                Band.all_columns(),
+                Band.manager.all_columns(),
+            )
+            .first()
+            .run_sync()
+        )
+        self.assertDictEqual(
+            result,
+            {
+                "id": 1,
+                "name": "Pythonistas",
+                "manager": 1,
+                "popularity": 1000,
+                "manager.id": 1,
+                "manager.name": "Guido",
+            },
+        )
+
+    def test_all_columns_root_nested(self):
+        """
+        Make sure that using ``all_columns`` at the root doesn't interfere
+        with using it for referenced tables.
+        """
+        result = (
+            Band.select(Band.all_columns(), Band.manager.all_columns())
+            .output(nested=True)
+            .first()
+            .run_sync()
+        )
+
+        self.assertDictEqual(
+            result,
+            {
+                "id": 1,
+                "name": "Pythonistas",
+                "manager": {"id": 1, "name": "Guido"},
+                "popularity": 1000,
+            },
+        )
+
+    def test_all_columns_exclude(self):
+        """
+        Make sure we can get all columns, except the ones we specify.
+        """
+        result = (
+            Band.select(
+                Band.all_columns(exclude=[Band.id]),
+                Band.manager.all_columns(exclude=[Band.manager.id]),
+            )
+            .output(nested=True)
+            .first()
+            .run_sync()
+        )
+
+        result_str_args = (
+            Band.select(
+                Band.all_columns(exclude=["id"]),
+                Band.manager.all_columns(exclude=["id"]),
+            )
+            .output(nested=True)
+            .first()
+            .run_sync()
+        )
+
+        for data in (result, result_str_args):
+            self.assertDictEqual(
+                data,
+                {
+                    "name": "Pythonistas",
+                    "manager": {"name": "Guido"},
+                    "popularity": 1000,
+                },
+            )
