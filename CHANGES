@@ -1,6 +1,26 @@
 Changes
 =======
 
+0.42.0
+------
+You can now use ``all_columns`` at the root. For example:
+
+.. code-block:: python
+
+  await Band.select(
+      Band.all_columns(),
+      Band.manager.all_columns()
+  ).run()
+
+You can also exclude certain columns if you like:
+
+.. code-block:: python
+
+  await Band.select(
+      Band.all_columns(exclude=[Band.id]),
+      Band.manager.all_columns(exclude=[Band.manager.id])
+  ).run()
+
 0.41.1
 ------
 Fix a regression where if multiple tables are created in a single migration
