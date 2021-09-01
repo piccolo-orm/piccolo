@@ -403,3 +403,6 @@ class DDL:
                 return run_sync(coroutine)
         else:
             return run_sync(coroutine)
+
+    def __str__(self) -> str:
+        return self.ddl.__str__()

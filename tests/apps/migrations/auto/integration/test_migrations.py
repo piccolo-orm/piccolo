@@ -325,9 +325,9 @@ class TestMigrations(TestCase):
                     Array(base_column=Integer(), default=[1, 2, 3]),
                     Array(base_column=Integer(), default=array_default),
                     Array(base_column=Integer(), null=True, default=None),
-                    # Array(base_column=Integer(), null=False),
-                    # Array(base_column=Integer(), index=True),
-                    # Array(base_column=Integer(), index=False),
+                    Array(base_column=Integer(), null=False),
+                    Array(base_column=Integer(), index=True),
+                    Array(base_column=Integer(), index=False),
                 ]
             ]
         )

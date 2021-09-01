@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import itertools
 import typing as t
+from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 
 from piccolo.columns.base import Column
@@ -14,15 +15,16 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
-@dataclass
-class AlterStatement:
+class AlterStatement(metaclass=ABCMeta):
     __slots__ = tuple()  # type: ignore
 
+    @property
+    @abstractmethod
     def ddl(self) -> str:
         raise NotImplementedError()
 
     def __str__(self) -> str:
-        return self.querystring.__str__()
+        return self.ddl
 
 
 @dataclass
@@ -86,7 +88,7 @@ class AddColumn(AlterColumnStatement):
 @dataclass
 class DropDefault(AlterColumnStatement):
     @property
-    def querystring(self) -> str:
+    def ddl(self) -> str:
         return f"ALTER COLUMN {self.column_name} DROP DEFAULT"
 
 
@@ -138,7 +140,7 @@ class SetUnique(AlterColumnStatement):
     boolean: bool
 
     @property
-    def querystring(self) -> str:
+    def ddl(self) -> str:
         if self.boolean:
             return f"ADD UNIQUE ({self.column_name})"
         else:
