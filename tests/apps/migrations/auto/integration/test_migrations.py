@@ -16,7 +16,10 @@ from piccolo.apps.migrations.commands.new import (
 )
 from piccolo.apps.migrations.tables import Migration
 from piccolo.columns.column_types import (
+    JSON,
+    JSONB,
     UUID,
+    Array,
     BigInt,
     Boolean,
     Date,
@@ -68,6 +71,14 @@ def timedelta_default():
 
 def boolean_default():
     return True
+
+
+def array_default_integer():
+    return [4, 5, 6]
+
+
+def array_default_varchar():
+    return ['x', 'y', 'z']
 
 
 @postgres_only
@@ -307,6 +318,77 @@ class TestMigrations(TestCase):
                     Boolean(null=False),
                     Boolean(index=True),
                     Boolean(index=False),
+                ]
+            ]
+        )
+
+    def test_array_column_integer(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Array(base_column=Integer()),
+                    Array(base_column=Integer(), default=[1, 2, 3]),
+                    Array(
+                        base_column=Integer(), default=array_default_integer
+                    ),
+                    Array(base_column=Integer(), null=True, default=None),
+                    Array(base_column=Integer(), null=False),
+                    Array(base_column=Integer(), index=True),
+                    Array(base_column=Integer(), index=False),
+                ]
+            ]
+        )
+
+    def test_array_column_varchar(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Array(base_column=Varchar()),
+                    Array(base_column=Varchar(), default=["a", "b", "c"]),
+                    Array(
+                        base_column=Varchar(), default=array_default_varchar
+                    ),
+                    Array(base_column=Varchar(), null=True, default=None),
+                    Array(base_column=Varchar(), null=False),
+                    Array(base_column=Varchar(), index=True),
+                    Array(base_column=Varchar(), index=False),
+                ]
+            ]
+        )
+
+    ###########################################################################
+
+    # We deliberately don't test setting JSON or JSONB columns as indexes, as
+    # we know it'll fail.
+
+    def test_json_column(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    JSON(),
+                    JSON(default=["a", "b", "c"]),
+                    JSON(default={"name": "bob"}),
+                    JSON(default='{"name": "Sally"}'),
+                    JSON(null=True, default=None),
+                    JSON(null=False),
+                ]
+            ]
+        )
+
+    def test_jsonb_column(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    JSONB(),
+                    JSONB(default=["a", "b", "c"]),
+                    JSONB(default={"name": "bob"}),
+                    JSONB(default='{"name": "Sally"}'),
+                    JSONB(null=True, default=None),
+                    JSONB(null=False),
                 ]
             ]
         )

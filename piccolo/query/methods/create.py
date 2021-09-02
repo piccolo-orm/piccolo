@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import typing as t
 
-from piccolo.query.base import Query
+from piccolo.query.base import DDL
 from piccolo.query.methods.create_index import CreateIndex
-from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
-class Create(Query):
+class Create(DDL):
     """
     Creates a database table.
     """
@@ -29,7 +28,7 @@ class Create(Query):
         self.only_default_columns = only_default_columns
 
     @property
-    def default_querystrings(self) -> t.Sequence[QueryString]:
+    def default_ddl(self) -> t.Sequence[str]:
         prefix = "CREATE TABLE"
         if self.if_not_exists:
             prefix += " IF NOT EXISTS"
@@ -40,11 +39,10 @@ class Create(Query):
             columns = self.table._meta.columns
 
         base = f"{prefix} {self.table._meta.tablename}"
-        columns_sql = ", ".join(["{}" for i in columns])
-        query = f"{base} ({columns_sql})"
-        create_table = QueryString(query, *[i.querystring for i in columns])
+        columns_sql = ", ".join([i.ddl for i in columns])
+        create_table_ddl = f"{base} ({columns_sql})"
 
-        create_indexes: t.List[QueryString] = []
+        create_indexes: t.List[str] = []
         for column in columns:
             if column._meta.index is True:
                 create_indexes.extend(
@@ -53,7 +51,7 @@ class Create(Query):
                         columns=[column],
                         method=column._meta.index_method,
                         if_not_exists=self.if_not_exists,
-                    ).querystrings
+                    ).ddl
                 )
 
-        return [create_table] + create_indexes
+        return [create_table_ddl] + create_indexes

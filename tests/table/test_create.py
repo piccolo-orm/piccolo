@@ -42,10 +42,6 @@ class TestCreateWithIndexes(TestCase):
         query.run_sync()
 
         self.assertTrue(
-            query.querystrings[0]
-            .__str__()
-            .startswith("CREATE TABLE IF NOT EXISTS"),
-            query.querystrings[1]
-            .__str__()
-            .startswith("CREATE INDEX IF NOT EXISTS"),
+            query.ddl[0].__str__().startswith("CREATE TABLE IF NOT EXISTS"),
+            query.ddl[1].__str__().startswith("CREATE INDEX IF NOT EXISTS"),
         )

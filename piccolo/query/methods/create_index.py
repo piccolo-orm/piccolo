@@ -4,14 +4,13 @@ import typing as t
 
 from piccolo.columns import Column
 from piccolo.columns.indexes import IndexMethod
-from piccolo.query.base import Query
-from piccolo.querystring import QueryString
+from piccolo.query.base import DDL
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
-class CreateIndex(Query):
+class CreateIndex(DDL):
     def __init__(
         self,
         table: t.Type[Table],
@@ -39,21 +38,21 @@ class CreateIndex(Query):
         return prefix
 
     @property
-    def postgres_querystrings(self) -> t.Sequence[QueryString]:
+    def postgres_ddl(self) -> t.Sequence[str]:
         column_names = self.column_names
         index_name = self.table._get_index_name(column_names)
         tablename = self.table._meta.tablename
         method_name = self.method.value
         column_names_str = ", ".join(column_names)
         return [
-            QueryString(
+            (
                 f"{self.prefix} {index_name} ON {tablename} USING "
                 f"{method_name} ({column_names_str})"
             )
         ]
 
     @property
-    def sqlite_querystrings(self) -> t.Sequence[QueryString]:
+    def sqlite_ddl(self) -> t.Sequence[str]:
         column_names = self.column_names
         index_name = self.table._get_index_name(column_names)
         tablename = self.table._meta.tablename
@@ -64,7 +63,7 @@ class CreateIndex(Query):
 
         column_names_str = ", ".join(column_names)
         return [
-            QueryString(
+            (
                 f"{self.prefix} {index_name} ON {tablename} "
                 f"({column_names_str})"
             )

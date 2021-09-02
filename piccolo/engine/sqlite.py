@@ -11,7 +11,7 @@ from decimal import Decimal
 
 from piccolo.engine.base import Batch, Engine
 from piccolo.engine.exceptions import TransactionError
-from piccolo.query.base import Query
+from piccolo.query.base import DDL, Query
 from piccolo.querystring import QueryString
 from piccolo.utils.encoding import dump_json, load_json
 from piccolo.utils.lazy_loader import LazyLoader
@@ -250,12 +250,17 @@ class Atomic:
 
         try:
             for query in self.queries:
-                for querystring in query.querystrings:
-                    await connection.execute(
-                        *querystring.compile_string(
-                            engine_type=self.engine.engine_type
+                if isinstance(query, Query):
+                    for querystring in query.querystrings:
+                        await connection.execute(
+                            *querystring.compile_string(
+                                engine_type=self.engine.engine_type
+                            )
                         )
-                    )
+                elif isinstance(query, DDL):
+                    for ddl in query.ddl:
+                        await connection.execute(ddl)
+
         except Exception as exception:
             await connection.execute("ROLLBACK")
             await connection.close()
@@ -511,6 +516,23 @@ class SQLiteEngine(Engine):
             args=query_args,
             query_type=querystring.query_type,
             table=querystring.table,
+        )
+
+    async def run_ddl(self, ddl: str, in_pool: bool = False):
+        """
+        Connection pools aren't currently supported - the argument is there
+        for consistency with other engines.
+        """
+        # If running inside a transaction:
+        connection = self.transaction_connection.get()
+        if connection:
+            return await self._run_in_existing_connection(
+                connection=connection,
+                query=ddl,
+            )
+
+        return await self._run_in_new_connection(
+            query=ddl,
         )
 
     def atomic(self) -> Atomic:

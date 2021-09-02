@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from piccolo.engine.base import Batch, Engine
 from piccolo.engine.exceptions import TransactionError
-from piccolo.query.base import Query
+from piccolo.query.base import DDL, Query
 from piccolo.querystring import QueryString
 from piccolo.utils.lazy_loader import LazyLoader
 from piccolo.utils.sync import run_sync
@@ -100,11 +100,15 @@ class Atomic:
     async def _run_queries(self, connection):
         async with connection.transaction():
             for query in self.queries:
-                for querystring in query.querystrings:
-                    _query, args = querystring.compile_string(
-                        engine_type=self.engine.engine_type
-                    )
-                    await connection.execute(_query, *args)
+                if isinstance(query, Query):
+                    for querystring in query.querystrings:
+                        _query, args = querystring.compile_string(
+                            engine_type=self.engine.engine_type
+                        )
+                        await connection.execute(_query, *args)
+                elif isinstance(query, DDL):
+                    for ddl in query.ddl:
+                        await connection.execute(ddl)
 
         self.queries = []
 
@@ -390,6 +394,19 @@ class PostgresEngine(Engine):
             return await self._run_in_pool(query, query_args)
         else:
             return await self._run_in_new_connection(query, query_args)
+
+    async def run_ddl(self, ddl: str, in_pool: bool = True):
+        if self.log_queries:
+            print(ddl)
+
+        # If running inside a transaction:
+        connection = self.transaction_connection.get()
+        if connection:
+            return await connection.fetch(ddl)
+        elif in_pool and self.pool:
+            return await self._run_in_pool(ddl)
+        else:
+            return await self._run_in_new_connection(ddl)
 
     def atomic(self) -> Atomic:
         return Atomic(engine=self)
