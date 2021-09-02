@@ -11,7 +11,7 @@ from decimal import Decimal
 
 from piccolo.engine.base import Batch, Engine
 from piccolo.engine.exceptions import TransactionError
-from piccolo.query.base import Query
+from piccolo.query.base import DDL, Query
 from piccolo.querystring import QueryString
 from piccolo.utils.encoding import dump_json, load_json
 from piccolo.utils.lazy_loader import LazyLoader
@@ -250,12 +250,17 @@ class Atomic:
 
         try:
             for query in self.queries:
-                for querystring in query.querystrings:
-                    await connection.execute(
-                        *querystring.compile_string(
-                            engine_type=self.engine.engine_type
+                if isinstance(query, Query):
+                    for querystring in query.querystrings:
+                        await connection.execute(
+                            *querystring.compile_string(
+                                engine_type=self.engine.engine_type
+                            )
                         )
-                    )
+                elif isinstance(query, DDL):
+                    for ddl in query.ddl:
+                        await connection.execute(ddl)
+
         except Exception as exception:
             await connection.execute("ROLLBACK")
             await connection.close()

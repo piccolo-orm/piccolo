@@ -579,7 +579,14 @@ class Column(Selectable):
             # Convert to the array syntax.
             output = (
                 "'{"
-                + ", ".join([str(self.get_sql_value(i)) for i in value])
+                + ", ".join(
+                    [
+                        f'"{i}"'
+                        if isinstance(i, str)
+                        else str(self.get_sql_value(i))
+                        for i in value
+                    ]
+                )
                 + "}'"
             )
         else:

@@ -73,8 +73,12 @@ def boolean_default():
     return True
 
 
-def array_default():
+def array_default_integer():
     return [4, 5, 6]
+
+
+def array_default_varchar():
+    return ['x', 'y', 'z']
 
 
 @postgres_only
@@ -318,18 +322,38 @@ class TestMigrations(TestCase):
             ]
         )
 
-    def test_array_column(self):
+    def test_array_column_integer(self):
         self._test_migrations(
             table_classes=[
                 self.table(column)
                 for column in [
                     Array(base_column=Integer()),
                     Array(base_column=Integer(), default=[1, 2, 3]),
-                    Array(base_column=Integer(), default=array_default),
+                    Array(
+                        base_column=Integer(), default=array_default_integer
+                    ),
                     Array(base_column=Integer(), null=True, default=None),
                     Array(base_column=Integer(), null=False),
                     Array(base_column=Integer(), index=True),
                     Array(base_column=Integer(), index=False),
+                ]
+            ]
+        )
+
+    def test_array_column_varchar(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Array(base_column=Varchar()),
+                    Array(base_column=Varchar(), default=["a", "b", "c"]),
+                    Array(
+                        base_column=Varchar(), default=array_default_varchar
+                    ),
+                    Array(base_column=Varchar(), null=True, default=None),
+                    Array(base_column=Varchar(), null=False),
+                    Array(base_column=Varchar(), index=True),
+                    Array(base_column=Varchar(), index=False),
                 ]
             ]
         )

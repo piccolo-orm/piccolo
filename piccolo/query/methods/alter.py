@@ -524,7 +524,6 @@ class Alter(DDL):
 
         if self.engine_type == "sqlite":
             # Can only perform one alter statement at a time.
-            query += " {}"
             return [f"{query} {i}" for i in alterations]
 
         # Postgres can perform them all at once:
