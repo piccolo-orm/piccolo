@@ -16,6 +16,8 @@ from piccolo.apps.migrations.commands.new import (
 )
 from piccolo.apps.migrations.tables import Migration
 from piccolo.columns.column_types import (
+    JSON,
+    JSONB,
     UUID,
     Array,
     BigInt,
@@ -328,6 +330,41 @@ class TestMigrations(TestCase):
                     Array(base_column=Integer(), null=False),
                     Array(base_column=Integer(), index=True),
                     Array(base_column=Integer(), index=False),
+                ]
+            ]
+        )
+
+    ###########################################################################
+
+    # We deliberately don't test setting JSON or JSONB columns as indexes, as
+    # we know it'll fail.
+
+    def test_json_column(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    JSON(),
+                    JSON(default=["a", "b", "c"]),
+                    JSON(default={"name": "bob"}),
+                    JSON(default='{"name": "Sally"}'),
+                    JSON(null=True, default=None),
+                    JSON(null=False),
+                ]
+            ]
+        )
+
+    def test_jsonb_column(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    JSONB(),
+                    JSONB(default=["a", "b", "c"]),
+                    JSONB(default={"name": "bob"}),
+                    JSONB(default='{"name": "Sally"}'),
+                    JSONB(null=True, default=None),
+                    JSONB(null=False),
                 ]
             ]
         )
