@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.43.0
+------
+Migrations containing ``Array``, ``JSON`` and ``JSONB`` columns should be
+more reliable now. More unit tests were added to cover edge cases.
+
 0.42.0
 ------
 You can now use ``all_columns`` at the root. For example:
