@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import itertools
 import typing as t
-from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 
 from piccolo.columns.base import Column
@@ -15,11 +14,10 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
-class AlterStatement(metaclass=ABCMeta):
+class AlterStatement:
     __slots__ = tuple()  # type: ignore
 
     @property
-    @abstractmethod
     def ddl(self) -> str:
         raise NotImplementedError()
 
@@ -241,9 +239,7 @@ class SetDigits(AlterColumnStatement):
                 f"{self.column_type}({precision}, {scale})"
             )
         else:
-            return (
-                f"ALTER COLUMN {self.column_name} TYPE {self.column_type}",
-            )
+            return f"ALTER COLUMN {self.column_name} TYPE {self.column_type}"
 
 
 @dataclass

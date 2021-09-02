@@ -32,7 +32,6 @@ from piccolo.columns.operators.comparison import (
     NotLike,
 )
 from piccolo.columns.reference import LazyTableReference
-from piccolo.querystring import QueryString
 from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover

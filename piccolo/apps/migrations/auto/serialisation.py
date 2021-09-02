@@ -29,10 +29,6 @@ class SerialisedBuiltin:
         return hash(self.builtin.__name__)
 
     def __eq__(self, other):
-        """
-        We need to be careful here in case we're comparing it to something
-        unhashable, like a list.
-        """
         if getattr(other, "__hash__", None) is not None:
             return self.__hash__() == other.__hash__()
         else:
