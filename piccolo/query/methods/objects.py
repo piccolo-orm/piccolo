@@ -16,6 +16,7 @@ from piccolo.query.mixins import (
     WhereDelegate,
 )
 from piccolo.querystring import QueryString
+from piccolo.utils.dictionary import make_nested
 from piccolo.utils.sync import run_sync
 
 from .select import Select
@@ -154,9 +155,15 @@ class Objects(Query):
             if len(response) == 0:
                 return None
             else:
-                return response[0]
+                if self.output_delegate._output.nested:
+                    return make_nested(response[0])
+                else:
+                    return response[0]
         else:
-            return response
+            if self.output_delegate._output.nested:
+                return [make_nested(i) for i in response]
+            else:
+                return response
 
     @property
     def default_querystrings(self) -> t.Sequence[QueryString]:
