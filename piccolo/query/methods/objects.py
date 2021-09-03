@@ -175,9 +175,7 @@ class Objects(Query):
             select.columns(*self.table.all_columns())
             for fk in self.nested:
                 if isinstance(fk, ForeignKey):
-                    select.columns(
-                        *fk._foreign_key_meta.resolved_references.all_columns()
-                    )
+                    select.columns(*fk.all_columns())
                 else:
                     raise ValueError(f"{fk} doesn't seem to be a ForeignKey.")
             select.output_delegate.output(nested=True)
