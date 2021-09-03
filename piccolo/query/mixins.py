@@ -210,6 +210,8 @@ class OutputDelegate:
             If True, any JSON fields will have the JSON values returned from
             the database loaded as Python objects.
         """
+        # We do it like this, so output can be called multiple times, without
+        # overriding any existing values if they're not specified.
         if as_list is not None:
             self._output.as_list = bool(as_list)
 

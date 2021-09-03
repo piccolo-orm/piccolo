@@ -680,23 +680,43 @@ class Table(metaclass=TableMetaclass):
         return Alter(table=cls)
 
     @classmethod
-    def objects(cls) -> Objects:
+    def objects(cls, *nested: ForeignKey) -> Objects:
         """
         Returns a list of table instances (each representing a row), which you
         can modify and then call 'save' on, or can delete by calling 'remove'.
 
-        pythonistas = await Band.objects().where(
-            Band.name == 'Pythonistas'
-        ).first().run()
+        .. code-block:: python
 
-        pythonistas.name = 'Pythonistas Reborn'
+            pythonistas = await Band.objects().where(
+                Band.name == 'Pythonistas'
+            ).first().run()
 
-        await pythonistas.save().run()
+            pythonistas.name = 'Pythonistas Reborn'
 
-        # Or to remove it from the database:
-        await pythonistas.remove()
+            await pythonistas.save().run()
+
+            # Or to remove it from the database:
+            await pythonistas.remove()
+
+        :param nested:
+            Rather than returning the primary key value of this related table,
+            a nested object will be returned for the row on the related table.
+
+        .. code-block:: python
+
+            # Without nested
+            band = await Band.objects().first().run()
+
+            >>> band.manager
+            1
+
+            # With nested
+            band = await Band.objects(Band.manager).first().run()
+            >>> band.manager
+            <Band 1>
+
         """
-        return Objects(table=cls)
+        return Objects(table=cls, nested=list(nested))
 
     @classmethod
     def count(cls) -> Count:

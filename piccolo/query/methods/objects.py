@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 from dataclasses import dataclass
 
+from piccolo.columns.column_types import ForeignKey
 from piccolo.columns.combination import And, Where
 from piccolo.custom_types import Combinable
 from piccolo.engine.base import Batch
@@ -83,6 +84,7 @@ class Objects(Query):
     """
 
     __slots__ = (
+        "nested",
         "limit_delegate",
         "offset_delegate",
         "order_by_delegate",
@@ -90,8 +92,11 @@ class Objects(Query):
         "where_delegate",
     )
 
-    def __init__(self, table: t.Type[Table], **kwargs):
+    def __init__(
+        self, table: t.Type[Table], nested: t.Tuple[ForeignKey] = (), **kwargs
+    ):
         super().__init__(table, **kwargs)
+        self.nested = nested
         self.limit_delegate = LimitDelegate()
         self.offset_delegate = OffsetDelegate()
         self.order_by_delegate = OrderByDelegate()
@@ -165,5 +170,16 @@ class Objects(Query):
             "order_by_delegate",
         ):
             setattr(select, attr, getattr(self, attr))
+
+        if self.nested:
+            select.columns(*self.table.all_columns())
+            for fk in self.nested:
+                if isinstance(fk, ForeignKey):
+                    select.columns(
+                        *fk._foreign_key_meta.resolved_references.all_columns()
+                    )
+                else:
+                    raise ValueError(f"{fk} doesn't seem to be a ForeignKey.")
+            select.output_delegate.output(nested=True)
 
         return select.querystrings
