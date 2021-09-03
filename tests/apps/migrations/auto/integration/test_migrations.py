@@ -78,7 +78,7 @@ def array_default_integer():
 
 
 def array_default_varchar():
-    return ['x', 'y', 'z']
+    return ["x", "y", "z"]
 
 
 @postgres_only

@@ -716,7 +716,7 @@ class Table(metaclass=TableMetaclass):
             <Band 1>
 
         """
-        return Objects(table=cls, nested=list(nested))
+        return Objects(table=cls, nested=nested)
 
     @classmethod
     def count(cls) -> Count:

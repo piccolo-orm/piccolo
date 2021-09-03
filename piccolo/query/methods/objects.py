@@ -94,7 +94,10 @@ class Objects(Query):
     )
 
     def __init__(
-        self, table: t.Type[Table], nested: t.Tuple[ForeignKey] = (), **kwargs
+        self,
+        table: t.Type[Table],
+        nested: t.Tuple[ForeignKey, ...] = (),
+        **kwargs,
     ):
         super().__init__(table, **kwargs)
         self.nested = nested
