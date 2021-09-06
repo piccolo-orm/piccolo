@@ -18,3 +18,5 @@ htmlcov/
 prof/
 .env/
 .venv/
+.idea/
+.python-version
