@@ -1,13 +1,12 @@
 import asyncio
 import logging
 import os
-from contextlib import suppress
-from typing import Union
 import socket
+from typing import Union
 
 import asyncpg  # type: ignore
 import docker  # type: ignore
-from docker.errors import APIError, NullResource  # type: ignore
+from docker.errors import APIError  # type: ignore
 from docker.models.containers import Container  # type: ignore
 from faker import Faker
 
@@ -15,7 +14,7 @@ PG_DOCKER_IMAGE_NAME = os.environ.get("PG_DOCKER_IMAGE_NAME", "postgres")
 
 fake = Faker()
 
-TEST_CONTAINER_IDENTIFIER = "7F71F5AB-E255-4E76-B650-3F1EE64B2E36"
+CONTAINER_IDENTIFIER = "7F71F5AB-E255-4E76-B650-3F1EE64B2E36"
 
 
 class TestPostgres:
@@ -33,24 +32,26 @@ class TestPostgres:
     @property
     def port_is_free(self) -> bool:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        result = sock.connect_ex((self.config['host'], self.config['port']))
+        result = sock.connect_ex((self.config["host"], self.config["port"]))
         sock.close()
         return result != 0
 
     @property
-    def container(self) -> Union[Container, None]:
-        with suppress(NullResource):
-            return self.docker_client.containers.get(
-                container_id=self.container_name
-            )
+    def container(self) -> Container:
+        return self.docker_client.containers.get(
+            container_id=self.container_name
+        )
 
     @property
-    def container_name(self) -> str:
+    def container_name(self) -> Union[str, None]:
         test_container = self.docker_client.containers.list(
-            filters={"label": f"test_container_identifier={TEST_CONTAINER_IDENTIFIER}"}
+            filters={
+                "label": f"test_container_identifier={CONTAINER_IDENTIFIER}"
+            }
         )
         if len(test_container) == 1:
             return test_container[0].name
+        return None
 
     async def create_piccolo_database(self) -> None:
         """
@@ -76,7 +77,7 @@ class TestPostgres:
 
     def spin_up(self):
         if not self.port_is_free:
-            raise OSError(f"Something is already running in port {self.config['port']}.")
+            raise OSError(f"Port {self.config['port']} is taken.")
         self.start_container()
         asyncio.get_event_loop().run_until_complete(
             self.create_piccolo_database()
@@ -104,13 +105,13 @@ class TestPostgres:
                     "POSTGRES_PASSWORD": self.config["password"],
                     "POSTGRES_HOST_AUTH_METHOD": "trust",
                 },
-                labels={"test_container_identifier": TEST_CONTAINER_IDENTIFIER},
+                labels={"test_container_identifier": CONTAINER_IDENTIFIER},
                 detach=True,
                 auto_remove=True,
             )
         except APIError as error:
             if error.status_code == 500:
-                raise APIError(f"Something is already running in port {self.config['port']}.")
+                raise APIError(f"Port {self.config['port']} is taken.")
             else:
                 raise APIError(error)
 
