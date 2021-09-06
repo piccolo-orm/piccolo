@@ -77,6 +77,10 @@ class GetOrCreate:
     def run_sync(self):
         return run_sync(self.run())
 
+    def prefetch(self, *fk_columns) -> GetOrCreate:
+        self.query.prefetch(*fk_columns)
+        return self
+
 
 @dataclass
 class Objects(Query):

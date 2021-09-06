@@ -155,7 +155,7 @@ database, just as you would expect:
     ticket.concert.band_1.save().run_sync()
 
 Instead of passing the ``ForeignKey`` columns into the ``objects`` method, you
-can also use the ``prefetch`` clause.
+can use the ``prefetch`` clause if you prefer.
 
 .. code-block:: python
 
