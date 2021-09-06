@@ -15,9 +15,9 @@ Get the tests running
  * Install default dependencies: ``pip install -r requirements/requirements.txt``
  * Install development dependencies: ``pip install -r requirements/dev-requirements.txt``
  * Install test dependencies: ``pip install -r requirements/test-requirements.txt``
- * Setup Postgres
  * Run the automated code linting/formatting tools: ``./scripts/lint.sh``
  * Run the test suite with Postgres: ``./scripts/test-postgres.sh``
+    * This will launch a docker postgres container with a piccolo database in port 5432
  * Run the test suite with Sqlite: ``./scripts/test-sqlite.sh``
 
 Contributing to the docs
