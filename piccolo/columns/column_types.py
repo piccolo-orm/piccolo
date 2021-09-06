@@ -1224,13 +1224,22 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
         self, exclude: t.List[t.Union[Column, str]] = []
     ) -> t.List[Column]:
         """
-        Allow a user to access all of the columns on the related table.
+        Allow a user to access all of the columns on the related table. This is
+        intended for use with ``select`` queries, and saves the user from
+        typing out all of the columns by hand.
 
         For example:
 
         .. code-block:: python
 
             Band.select(Band.name, Band.manager.all_columns()).run_sync()
+
+            # Equivalent to:
+            Band.select(
+                Band.name,
+                Band.manager.id,
+                Band.manager.name
+            ).run_sync()
 
         To exclude certain columns:
 
@@ -1258,6 +1267,60 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
             getattr(self, column._meta.name)
             for column in _fk_meta.resolved_references._meta.columns
             if column._meta.name not in excluded_column_names
+        ]
+
+    def all_related(
+        self, exclude: t.List[t.Union[ForeignKey, str]]
+    ) -> t.List[ForeignKey]:
+        """
+        Returns each ``ForeignKey`` column on the related table. This is
+        intended for use with ``objects`` queries, where you want to return
+        all of the related tables as nested objects.
+
+        For example:
+
+        .. code-block:: python
+
+            class Band(Table):
+                name = Varchar()
+
+            class Concert(Table):
+                name = Varchar()
+                band_1 = ForeignKey(Band)
+                band_2 = ForeignKey(Band)
+
+            class Tour(Table):
+                name = Varchar()
+                concert = ForeignKey(Concert)
+
+            Tour.objects(Tour.concert, Tour.concert.all_related()).run_sync()
+
+            # Equivalent to
+            Tour.objects(
+                Tour.concert,
+                Tour.concert.band_1,
+                Tour.concert.band_2
+            ).run_sync()
+
+        :param exclude:
+            Columns to exclude - can be the name of a column, or a
+            ``ForeignKey`` instance. For example ``['band_1']`` or
+            ``[Tour.concert.band_1]``.
+
+        """
+        _fk_meta: ForeignKeyMeta = object.__getattribute__(
+            self, "_foreign_key_meta"
+        )
+        related_fk_columns = (
+            _fk_meta.resolved_references._meta.foreign_key_columns
+        )
+        excluded_column_names = [
+            i._meta.name if isinstance(i, Column) else i for i in exclude
+        ]
+        return [
+            fk_column
+            for fk_column in related_fk_columns
+            if fk_column._meta.name not in excluded_column_names
         ]
 
     def set_proxy_columns(self):

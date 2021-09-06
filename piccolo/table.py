@@ -702,18 +702,17 @@ class Table(metaclass=TableMetaclass):
             Rather than returning the primary key value of this related table,
             a nested object will be returned for the row on the related table.
 
-        .. code-block:: python
+            .. code-block:: python
 
-            # Without nested
-            band = await Band.objects().first().run()
+                # Without nested
+                band = await Band.objects().first().run()
+                >>> band.manager
+                1
 
-            >>> band.manager
-            1
-
-            # With nested
-            band = await Band.objects(Band.manager).first().run()
-            >>> band.manager
-            <Band 1>
+                # With nested
+                band = await Band.objects(Band.manager).first().run()
+                >>> band.manager
+                <Band 1>
 
         """
         return Objects(table=cls, nested=nested)
