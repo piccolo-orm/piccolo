@@ -7,6 +7,7 @@ ENGINE = engine_finder()
 
 async def drop_tables():
     for table in [
+        "promoter",
         "venue",
         "concert",
         "band",

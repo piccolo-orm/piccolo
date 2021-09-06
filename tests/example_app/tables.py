@@ -45,6 +45,11 @@ class Concert(Table):
     venue = ForeignKey(Venue)
 
 
+class Promoter(Table):
+    name = Varchar()
+    concert = ForeignKey(Concert)
+
+
 class Ticket(Table):
     price = Numeric(digits=(5, 2))
 

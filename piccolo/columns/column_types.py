@@ -1270,7 +1270,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
         ]
 
     def all_related(
-        self, exclude: t.List[t.Union[ForeignKey, str]]
+        self, exclude: t.List[t.Union[ForeignKey, str]] = []
     ) -> t.List[ForeignKey]:
         """
         Returns each ``ForeignKey`` column on the related table. This is
@@ -1318,7 +1318,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
             i._meta.name if isinstance(i, Column) else i for i in exclude
         ]
         return [
-            fk_column
+            getattr(self, fk_column._meta.name)
             for fk_column in related_fk_columns
             if fk_column._meta.name not in excluded_column_names
         ]
