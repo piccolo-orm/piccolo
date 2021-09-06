@@ -1,6 +1,7 @@
+import decimal
 from unittest import TestCase
 
-from ..example_app.tables import Band, Concert, Manager, Venue
+from tests.example_app.tables import Band, Concert, Manager, Ticket, Venue
 
 TABLES = [Manager, Band, Venue, Concert]
 
@@ -15,11 +16,8 @@ class TestCreateJoin:
 
 
 class TestJoin(TestCase):
-    """
-    Test instantiating Table instances
-    """
 
-    tables = [Manager, Band, Venue, Concert]
+    tables = [Manager, Band, Venue, Concert, Ticket]
 
     def setUp(self):
         for table in self.tables:
@@ -42,14 +40,17 @@ class TestJoin(TestCase):
         venue = Venue(name="Grand Central", capacity=1000)
         venue.save().run_sync()
 
-        save_query = Concert(
-            band_1=band_1.id, band_2=band_2.id, venue=venue.id
-        ).save()
-        save_query.run_sync()
+        concert = Concert(band_1=band_1.id, band_2=band_2.id, venue=venue.id)
+        concert.save().run_sync()
+
+        ticket = Ticket(concert=concert, price=decimal.Decimal(50.0))
+        ticket.save().run_sync()
 
     def tearDown(self):
         for table in reversed(self.tables):
             table.alter().drop_table().run_sync()
+
+    ###########################################################################
 
     def test_join(self):
         select_query = Concert.select(
@@ -76,7 +77,7 @@ class TestJoin(TestCase):
         response = select_query.run_sync()
         self.assertEqual(response, [{"band_1.manager.name": "Guido"}])
 
-    def test_all_columns(self):
+    def test_select_all_columns(self):
         """
         Make sure you can retrieve all columns from a related table, without
         explicitly specifying them.
@@ -95,7 +96,7 @@ class TestJoin(TestCase):
             },
         )
 
-    def test_all_columns_deep(self):
+    def test_select_all_columns_deep(self):
         """
         Make sure that ``all_columns`` can be used several layers deep.
         """
@@ -122,7 +123,7 @@ class TestJoin(TestCase):
             },
         )
 
-    def test_all_columns_root(self):
+    def test_select_all_columns_root(self):
         """
         Make sure that using ``all_columns`` at the root doesn't interfere
         with using it for referenced tables.
@@ -147,7 +148,7 @@ class TestJoin(TestCase):
             },
         )
 
-    def test_all_columns_root_nested(self):
+    def test_select_all_columns_root_nested(self):
         """
         Make sure that using ``all_columns`` at the root doesn't interfere
         with using it for referenced tables.
@@ -169,7 +170,7 @@ class TestJoin(TestCase):
             },
         )
 
-    def test_all_columns_exclude(self):
+    def test_select_all_columns_exclude(self):
         """
         Make sure we can get all columns, except the ones we specify.
         """
@@ -202,3 +203,78 @@ class TestJoin(TestCase):
                     "popularity": 1000,
                 },
             )
+
+    ###########################################################################
+
+    def test_objects_nested(self):
+        """
+        Make sure the nested argument works correctly for objects.
+        """
+        band = Band.objects(Band.manager).first().run_sync()
+        self.assertIsInstance(band.manager, Manager)
+
+    def test_objects__all_related__root(self):
+        concert = Concert.objects(Concert.all_related()).first().run_sync()
+        self.assertIsInstance(concert.band_1, Band)
+        self.assertIsInstance(concert.band_2, Band)
+        self.assertIsInstance(concert.venue, Venue)
+
+    def test_objects_nested_deep(self):
+        ticket = (
+            Ticket.objects(
+                Ticket.concert,
+                Ticket.concert.band_1,
+                Ticket.concert.band_2,
+                Ticket.concert.venue,
+                Ticket.concert.band_1.manager,
+                Ticket.concert.band_2.manager,
+            )
+            .first()
+            .run_sync()
+        )
+
+        self.assertIsInstance(ticket.concert, Concert)
+        self.assertIsInstance(ticket.concert.band_1, Band)
+        self.assertIsInstance(ticket.concert.band_2, Band)
+        self.assertIsInstance(ticket.concert.venue, Venue)
+        self.assertIsInstance(ticket.concert.band_1.manager, Manager)
+        self.assertIsInstance(ticket.concert.band_2.manager, Manager)
+
+    def test_objects__all_related__deep(self):
+        ticket = (
+            Ticket.objects(
+                Ticket.all_related(),
+                Ticket.concert.all_related(),
+                Ticket.concert.band_1.all_related(),
+                Ticket.concert.band_2.all_related(),
+            )
+            .first()
+            .run_sync()
+        )
+
+        self.assertIsInstance(ticket.concert, Concert)
+        self.assertIsInstance(ticket.concert.band_1, Band)
+        self.assertIsInstance(ticket.concert.band_2, Band)
+        self.assertIsInstance(ticket.concert.venue, Venue)
+        self.assertIsInstance(ticket.concert.band_1.manager, Manager)
+        self.assertIsInstance(ticket.concert.band_2.manager, Manager)
+
+    def test_objects_prefetch_method(self):
+        ticket = (
+            Ticket.objects()
+            .prefetch(
+                Ticket.all_related(),
+                Ticket.concert.all_related(),
+                Ticket.concert.band_1.all_related(),
+                Ticket.concert.band_2.all_related(),
+            )
+            .first()
+            .run_sync()
+        )
+
+        self.assertIsInstance(ticket.concert, Concert)
+        self.assertIsInstance(ticket.concert.band_1, Band)
+        self.assertIsInstance(ticket.concert.band_2, Band)
+        self.assertIsInstance(ticket.concert.venue, Venue)
+        self.assertIsInstance(ticket.concert.band_1.manager, Manager)
+        self.assertIsInstance(ticket.concert.band_2.manager, Manager)

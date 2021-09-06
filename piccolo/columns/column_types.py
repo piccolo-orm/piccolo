@@ -1315,7 +1315,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
             _fk_meta.resolved_references._meta.foreign_key_columns
         )
         excluded_column_names = [
-            i._meta.name if isinstance(i, Column) else i for i in exclude
+            i._meta.name if isinstance(i, ForeignKey) else i for i in exclude
         ]
         return [
             getattr(self, fk_column._meta.name)
@@ -1397,7 +1397,6 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
                 _column._meta.call_chain = [
                     i for i in new_column._meta.call_chain
                 ]
-                _column._meta.call_chain.append(new_column)
                 setattr(new_column, _column._meta.name, _column)
                 foreign_key_meta.proxy_columns.append(_column)
 

@@ -15,7 +15,6 @@ from tests.example_app.tables import (
     Concert,
     Manager,
     Poster,
-    Promoter,
     RecordingStudio,
     Shirt,
     Ticket,
@@ -34,7 +33,6 @@ TABLE_CLASSES: t.List[t.Type[Table]] = [
     Ticket,
     Poster,
     Shirt,
-    Promoter,
     RecordingStudio,
 ]
 

@@ -1,5 +1,5 @@
 from tests.base import DBTestCase, postgres_only, sqlite_only
-from tests.example_app.tables import Band, Manager
+from tests.example_app.tables import Band
 
 
 class TestObjects(DBTestCase):
@@ -175,11 +175,3 @@ class TestObjects(DBTestCase):
         # We want to make sure the band name isn't 'Excellent manager' by
         # mistake.
         self.assertEqual(Band.name, "My new band")
-
-    def test_nested(self):
-        """
-        Make sure the nested argument works correctly.
-        """
-        self.insert_rows()
-        band = Band.objects(Band.manager).first().run_sync()
-        self.assertIsInstance(band.manager, Manager)

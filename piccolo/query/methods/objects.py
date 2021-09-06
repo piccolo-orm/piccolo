@@ -13,6 +13,7 @@ from piccolo.query.mixins import (
     OffsetDelegate,
     OrderByDelegate,
     OutputDelegate,
+    PrefetchDelegate,
     WhereDelegate,
 )
 from piccolo.querystring import QueryString
@@ -90,22 +91,24 @@ class Objects(Query):
         "offset_delegate",
         "order_by_delegate",
         "output_delegate",
+        "prefetch_delegate",
         "where_delegate",
     )
 
     def __init__(
         self,
         table: t.Type[Table],
-        nested: t.Tuple[ForeignKey, ...] = (),
+        prefetch: t.Sequence[t.Union[ForeignKey, t.List[ForeignKey]]] = (),
         **kwargs,
     ):
         super().__init__(table, **kwargs)
-        self.nested = nested
         self.limit_delegate = LimitDelegate()
         self.offset_delegate = OffsetDelegate()
         self.order_by_delegate = OrderByDelegate()
         self.output_delegate = OutputDelegate()
         self.output_delegate._output.as_objects = True
+        self.prefetch_delegate = PrefetchDelegate()
+        self.prefetch(*prefetch)
         self.where_delegate = WhereDelegate()
 
     def output(self, load_json: bool = False) -> Objects:
@@ -120,6 +123,12 @@ class Objects(Query):
 
     def first(self) -> Objects:
         self.limit_delegate.first()
+        return self
+
+    def prefetch(
+        self, *fk_columns: t.Union[ForeignKey, t.List[ForeignKey]]
+    ) -> Objects:
+        self.prefetch_delegate.prefetch(*fk_columns)
         return self
 
     def get(self, where: Combinable) -> Objects:
@@ -181,9 +190,9 @@ class Objects(Query):
         ):
             setattr(select, attr, getattr(self, attr))
 
-        if self.nested:
+        if self.prefetch_delegate.fk_columns:
             select.columns(*self.table.all_columns())
-            for fk in self.nested:
+            for fk in self.prefetch_delegate.fk_columns:
                 if isinstance(fk, ForeignKey):
                     select.columns(*fk.all_columns())
                 else:

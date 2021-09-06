@@ -22,7 +22,10 @@ def make_nested(dictionary: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     """
     output: t.Dict[str, t.Any] = {}
 
-    for key, value in dictionary.items():
+    items = [i for i in dictionary.items()]
+    items.sort(key=lambda x: x[0])
+
+    for key, value in items:
         path = key.split(".")
         if len(path) == 1:
             output[path[0]] = value
@@ -44,7 +47,12 @@ def make_nested(dictionary: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
                 output[path[0]] = dictionary
 
             for path_element in path[1:-1]:
-                dictionary = dictionary.setdefault(path_element, {})
+                root = dictionary.setdefault(path_element, {})
+                if not isinstance(root, dict):
+                    root = {}
+                    dictionary[path_element] = root
+                dictionary = root
+
             dictionary[path[-1]] = value
 
     return output

@@ -518,13 +518,62 @@ class Table(metaclass=TableMetaclass):
     # Classmethods
 
     @classmethod
+    def all_related(
+        cls, exclude: t.List[t.Union[str, ForeignKey]] = []
+    ) -> t.List[Column]:
+        """
+        Used in conjunction with ``objects`` queries. Just as we can use
+        ``all_related`` on a ``ForeignKey``, you can also use it for the table
+        at the root of the query, which will return each related row as a
+        nested object. For example:
+
+        .. code-block:: python
+
+            concert = await Concert.objects(
+                Concert.all_related()
+            ).run()
+
+            >>> concert.band_1
+            <Band: 1>
+            >>> concert.band_2
+            <Band: 2>
+            >>> concert.venue
+            <Venue: 1>
+
+        This is mostly useful when the table has a lot of foreign keys, and
+        typing them out by hand would be tedious. It's equivalent to:
+
+        .. code-block:: python
+
+            concert = await Concert.objects(
+                Concert.venue,
+                Concert.band_1,
+                Concert.band_2
+            ).run()
+
+        :param exclude:
+            You can request all columns, except these.
+
+        """
+        excluded_column_names = [
+            i._meta.name if isinstance(i, ForeignKey) else i for i in exclude
+        ]
+
+        return [
+            i
+            for i in cls._meta.foreign_key_columns
+            if i._meta.name not in excluded_column_names
+        ]
+
+    @classmethod
     def all_columns(
         cls, exclude: t.List[t.Union[str, Column]] = []
     ) -> t.List[Column]:
         """
-        Just as we can use ``all_columns`` to retrieve all of the columns from
-        a related table, we can also use it at the root of our query to get
-        all of the columns for the root table. For example:
+        Used in conjunction with ``select`` queries. Just as we can use
+        ``all_columns`` to retrieve all of the columns from a related table,
+        we can also use it at the root of our query to get all of the columns
+        for the root table. For example:
 
         .. code-block:: python
 
@@ -680,7 +729,9 @@ class Table(metaclass=TableMetaclass):
         return Alter(table=cls)
 
     @classmethod
-    def objects(cls, *nested: ForeignKey) -> Objects:
+    def objects(
+        cls, *prefetch: t.Union[ForeignKey, t.List[ForeignKey]]
+    ) -> Objects:
         """
         Returns a list of table instances (each representing a row), which you
         can modify and then call 'save' on, or can delete by calling 'remove'.
@@ -698,7 +749,7 @@ class Table(metaclass=TableMetaclass):
             # Or to remove it from the database:
             await pythonistas.remove()
 
-        :param nested:
+        :param prefetch:
             Rather than returning the primary key value of this related table,
             a nested object will be returned for the row on the related table.
 
@@ -715,7 +766,7 @@ class Table(metaclass=TableMetaclass):
                 <Band 1>
 
         """
-        return Objects(table=cls, nested=nested)
+        return Objects(table=cls, prefetch=prefetch)
 
     @classmethod
     def count(cls) -> Count:

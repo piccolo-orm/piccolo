@@ -5,11 +5,13 @@ from piccolo.testing.model_builder import ModelBuilder
 
 from ..example_app.tables import (
     Band,
+    Concert,
     Manager,
     Poster,
     RecordingStudio,
     Shirt,
     Ticket,
+    Venue,
 )
 
 
@@ -21,6 +23,8 @@ class TestModelBuilder(unittest.TestCase):
         Poster.create_table().run_sync()
         RecordingStudio.create_table().run_sync()
         Shirt.create_table().run_sync()
+        Venue.create_table().run_sync()
+        Concert.create_table().run_sync()
         Ticket.create_table().run_sync()
 
     def test_model_builder_async(self):

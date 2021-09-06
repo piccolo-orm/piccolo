@@ -11,6 +11,8 @@ can manipulate them, and save the changes back to the database.
 In Piccolo, an instance of a ``Table`` class represents a row. Let's do some
 examples.
 
+-------------------------------------------------------------------------------
+
 Fetching objects
 ----------------
 
@@ -45,6 +47,8 @@ To get the first row:
 You'll notice that the API is similar to :ref:`Select` - except it returns all
 columns.
 
+-------------------------------------------------------------------------------
+
 Creating objects
 ----------------
 
@@ -53,6 +57,8 @@ Creating objects
     >>> band = Band(name="C-Sharps", popularity=100)
     >>> band.save().run_sync()
 
+-------------------------------------------------------------------------------
+
 Updating objects
 ----------------
 
@@ -60,12 +66,14 @@ Objects have a ``save`` method, which is convenient for updating values:
 
 .. code-block:: python
 
-    pythonistas = Band.objects().where(
+    band = Band.objects().where(
         Band.name == 'Pythonistas'
     ).first().run_sync()
 
-    pythonistas.popularity = 100000
-    pythonistas.save().run_sync()
+    band.popularity = 100000
+    band.save().run_sync()
+
+-------------------------------------------------------------------------------
 
 Deleting objects
 ----------------
@@ -74,27 +82,71 @@ Similarly, we can delete objects, using the ``remove`` method.
 
 .. code-block:: python
 
-    pythonistas = Band.objects().where(
+    band = Band.objects().where(
         Band.name == 'Pythonistas'
     ).first().run_sync()
 
-    pythonistas.remove().run_sync()
+    band.remove().run_sync()
+
+-------------------------------------------------------------------------------
+
+Fetching related objects
+------------------------
 
 get_related
------------
+~~~~~~~~~~~
 
-If you have an object with a foreign key, and you want to fetch the related
-object, you can do so using ``get_related``.
+If you have an object from a table with a ``ForeignKey`` column, and you want
+to fetch the related row as an object, you can do so using ``get_related``.
 
 .. code-block:: python
 
-    pythonistas = Band.objects().where(
+    band = Band.objects().where(
         Band.name == 'Pythonistas'
     ).first().run_sync()
 
-    manager = pythonistas.get_related(Band.manager).run_sync()
-    >>> print(manager.name)
+    manager = band.get_related(Band.manager).run_sync()
+    >>> manager
+    <Manager: 1>
+    >>> manager.name
     'Guido'
+
+Prefetching related objects
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can also prefetch the rows from related tables, and store them as child
+objects. To do this, pass in ``ForeignKey`` columns into ``objects``, which
+refer to the related rows you want to load.
+
+.. code-block:: python
+
+    band = Band.objects(Band.manager).where(
+        Band.name == 'Pythonistas'
+    ).first().run_sync()
+
+    >>> band.manager
+    <Manager: 1>
+    >>> band.manager.name
+    'Guido'
+
+If you have a table containing lots of ``ForeignKey`` columns, and want to
+preload them all you can do so using ``all_related``.
+
+.. code-block:: python
+
+    ticket = Ticket.objects(
+        Ticket.concert,
+        Ticket.concert.all_related()
+    ).first().run_sync()
+
+    >>> ticket.concert
+    <Concert: 1>
+    >>> ticket.concert.band_1
+    <Band: 1>
+    >>> ticket.concert.band_2
+    <Band: 2>
+
+-------------------------------------------------------------------------------
 
 get_or_create
 -------------
@@ -138,6 +190,8 @@ Complex where clauses are supported, but only within reason. For example:
         defaults={'popularity': 100}
     ).run_sync()
 
+-------------------------------------------------------------------------------
+
 to_dict
 -------
 
@@ -161,6 +215,7 @@ the columns:
     >>> band.to_dict(Band.id, Band.name.as_alias('title'))
     {'id': 1, 'title': 'Pythonistas'}
 
+-------------------------------------------------------------------------------
 
 Query clauses
 -------------

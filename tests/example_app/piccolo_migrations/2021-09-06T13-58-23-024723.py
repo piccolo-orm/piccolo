@@ -1,6 +1,6 @@
 from piccolo.apps.migrations.auto import MigrationManager
 from piccolo.columns.base import OnDelete, OnUpdate
-from piccolo.columns.column_types import ForeignKey, Serial, Varchar
+from piccolo.columns.column_types import ForeignKey, Serial
 from piccolo.columns.indexes import IndexMethod
 from piccolo.table import Table
 
@@ -26,29 +26,9 @@ async def forwards():
         migration_id=ID, app_name="example_app", description=DESCRIPTION
     )
 
-    manager.add_table("Promoter", tablename="promoter")
-
     manager.add_column(
-        table_class_name="Promoter",
-        tablename="promoter",
-        column_name="name",
-        column_class_name="Varchar",
-        column_class=Varchar,
-        params={
-            "length": 255,
-            "default": "",
-            "null": False,
-            "primary_key": False,
-            "unique": False,
-            "index": False,
-            "index_method": IndexMethod.btree,
-            "choices": None,
-        },
-    )
-
-    manager.add_column(
-        table_class_name="Promoter",
-        tablename="promoter",
+        table_class_name="Ticket",
+        tablename="ticket",
         column_name="concert",
         column_class_name="ForeignKey",
         column_class=ForeignKey,

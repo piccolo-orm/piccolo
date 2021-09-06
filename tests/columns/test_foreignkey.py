@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from piccolo.columns import Column, ForeignKey, LazyTableReference, Varchar
 from piccolo.table import Table
-from tests.example_app.tables import Band, Concert, Manager, Promoter
+from tests.example_app.tables import Band, Concert, Manager, Ticket
 
 
 class Manager1(Table, tablename="manager"):
@@ -225,42 +225,42 @@ class TestAllRelated(TestCase):
         Make sure you can retrieve all foreign keys from a related table,
         without explicitly specifying them.
         """
-        all_related = Promoter.concert.all_related()
+        all_related = Ticket.concert.all_related()
 
         self.assertEqual(
             all_related,
             [
-                Promoter.concert.band_1,
-                Promoter.concert.band_2,
-                Promoter.concert.venue,
+                Ticket.concert.band_1,
+                Ticket.concert.band_2,
+                Ticket.concert.venue,
             ],
         )
 
         # Make sure the call chains are also correct.
         self.assertEqual(
             all_related[0]._meta.call_chain,
-            Promoter.concert.band_1._meta.call_chain,
+            Ticket.concert.band_1._meta.call_chain,
         )
         self.assertEqual(
             all_related[1]._meta.call_chain,
-            Promoter.concert.band_2._meta.call_chain,
+            Ticket.concert.band_2._meta.call_chain,
         )
         self.assertEqual(
             all_related[2]._meta.call_chain,
-            Promoter.concert.venue._meta.call_chain,
+            Ticket.concert.venue._meta.call_chain,
         )
 
     def test_all_related_deep(self):
         """
         Make sure ``all_related`` works when the joins are several layers deep.
         """
-        all_related = Promoter.concert.band_1.all_related()
-        self.assertEqual(all_related, [Promoter.concert.band_1.manager])
+        all_related = Ticket.concert.band_1.all_related()
+        self.assertEqual(all_related, [Ticket.concert.band_1.manager])
 
         # Make sure the call chains are also correct.
         self.assertEqual(
             all_related[0]._meta.call_chain,
-            Promoter.concert.band_1.manager._meta.call_chain,
+            Ticket.concert.band_1.manager._meta.call_chain,
         )
 
     def test_all_related_exclude(self):
@@ -268,11 +268,11 @@ class TestAllRelated(TestCase):
         Make sure you can exclude some columns.
         """
         self.assertEqual(
-            Promoter.concert.all_related(exclude=["venue"]),
-            [Promoter.concert.band_1, Promoter.concert.band_2],
+            Ticket.concert.all_related(exclude=["venue"]),
+            [Ticket.concert.band_1, Ticket.concert.band_2],
         )
 
         self.assertEqual(
-            Promoter.concert.all_related(exclude=[Promoter.concert.venue]),
-            [Promoter.concert.band_1, Promoter.concert.band_2],
+            Ticket.concert.all_related(exclude=[Ticket.concert.venue]),
+            [Ticket.concert.band_1, Ticket.concert.band_2],
         )
