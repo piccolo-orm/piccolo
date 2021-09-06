@@ -115,7 +115,7 @@ Prefetching related objects
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can also prefetch the rows from related tables, and store them as child
-objects. To do this, pass in ``ForeignKey`` columns into ``objects``, which
+objects. To do this, pass ``ForeignKey`` columns into ``objects``, which
 refer to the related rows you want to load.
 
 .. code-block:: python
@@ -130,7 +130,7 @@ refer to the related rows you want to load.
     'Guido'
 
 If you have a table containing lots of ``ForeignKey`` columns, and want to
-preload them all you can do so using ``all_related``.
+prefetch them all you can do so using ``all_related``.
 
 .. code-block:: python
 
@@ -145,6 +145,30 @@ preload them all you can do so using ``all_related``.
     <Band: 1>
     >>> ticket.concert.band_2
     <Band: 2>
+
+You can manipulate these nested objects, and save the values back to the
+database, just as you would expect:
+
+.. code-block:: python
+
+    ticket.concert.band_1.name = 'Pythonistas 2'
+    ticket.concert.band_1.save().run_sync()
+
+Instead of passing the ``ForeignKey`` columns into the ``objects`` method, you
+can also use the ``prefetch`` clause.
+
+.. code-block:: python
+
+    # These are equivalent:
+    ticket = Ticket.objects(
+        Ticket.concert,
+        Ticket.concert.all_related()
+    ).first().run_sync()
+
+    ticket = Ticket.objects().prefetch(
+        Ticket.concert,
+        Ticket.concert.all_related()
+    ).run_sync()
 
 -------------------------------------------------------------------------------
 
