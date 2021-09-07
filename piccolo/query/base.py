@@ -8,6 +8,7 @@ from piccolo.columns.column_types import JSON, JSONB
 from piccolo.query.mixins import ColumnsDelegate
 from piccolo.querystring import QueryString
 from piccolo.utils.encoding import dump_json, load_json
+from piccolo.utils.objects import make_nested_object
 from piccolo.utils.sync import run_sync
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -109,14 +110,22 @@ class Query:
                 # When using .first() we get a single row, not a list
                 # of rows.
                 if type(raw) is list:
-                    raw = [
-                        self.table(**columns, exists_in_db=True)
-                        for columns in raw
-                    ]
+                    if output._output.nested:
+                        raw = [
+                            make_nested_object(row, self.table) for row in raw
+                        ]
+                    else:
+                        raw = [
+                            self.table(**columns, exists_in_db=True)
+                            for columns in raw
+                        ]
                 elif raw is None:
                     pass
                 else:
-                    raw = self.table(**raw, exists_in_db=True)
+                    if output._output.nested:
+                        raw = make_nested_object(raw, self.table)
+                    else:
+                        raw = self.table(**raw, exists_in_db=True)
             elif type(raw) is list:
                 if output._output.as_list:
                     if len(raw) == 0:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 from dataclasses import dataclass
 
+from piccolo.columns.column_types import ForeignKey
 from piccolo.columns.combination import And, Where
 from piccolo.custom_types import Combinable
 from piccolo.engine.base import Batch
@@ -12,9 +13,11 @@ from piccolo.query.mixins import (
     OffsetDelegate,
     OrderByDelegate,
     OutputDelegate,
+    PrefetchDelegate,
     WhereDelegate,
 )
 from piccolo.querystring import QueryString
+from piccolo.utils.dictionary import make_nested
 from piccolo.utils.sync import run_sync
 
 from .select import Select
@@ -74,6 +77,10 @@ class GetOrCreate:
     def run_sync(self):
         return run_sync(self.run())
 
+    def prefetch(self, *fk_columns) -> GetOrCreate:
+        self.query.prefetch(*fk_columns)
+        return self
+
 
 @dataclass
 class Objects(Query):
@@ -83,20 +90,29 @@ class Objects(Query):
     """
 
     __slots__ = (
+        "nested",
         "limit_delegate",
         "offset_delegate",
         "order_by_delegate",
         "output_delegate",
+        "prefetch_delegate",
         "where_delegate",
     )
 
-    def __init__(self, table: t.Type[Table], **kwargs):
+    def __init__(
+        self,
+        table: t.Type[Table],
+        prefetch: t.Sequence[t.Union[ForeignKey, t.List[ForeignKey]]] = (),
+        **kwargs,
+    ):
         super().__init__(table, **kwargs)
         self.limit_delegate = LimitDelegate()
         self.offset_delegate = OffsetDelegate()
         self.order_by_delegate = OrderByDelegate()
         self.output_delegate = OutputDelegate()
         self.output_delegate._output.as_objects = True
+        self.prefetch_delegate = PrefetchDelegate()
+        self.prefetch(*prefetch)
         self.where_delegate = WhereDelegate()
 
     def output(self, load_json: bool = False) -> Objects:
@@ -111,6 +127,12 @@ class Objects(Query):
 
     def first(self) -> Objects:
         self.limit_delegate.first()
+        return self
+
+    def prefetch(
+        self, *fk_columns: t.Union[ForeignKey, t.List[ForeignKey]]
+    ) -> Objects:
+        self.prefetch_delegate.prefetch(*fk_columns)
         return self
 
     def get(self, where: Combinable) -> Objects:
@@ -149,9 +171,15 @@ class Objects(Query):
             if len(response) == 0:
                 return None
             else:
-                return response[0]
+                if self.output_delegate._output.nested:
+                    return make_nested(response[0])
+                else:
+                    return response[0]
         else:
-            return response
+            if self.output_delegate._output.nested:
+                return [make_nested(i) for i in response]
+            else:
+                return response
 
     @property
     def default_querystrings(self) -> t.Sequence[QueryString]:
@@ -165,5 +193,19 @@ class Objects(Query):
             "order_by_delegate",
         ):
             setattr(select, attr, getattr(self, attr))
+
+        if self.prefetch_delegate.fk_columns:
+            select.columns(*self.table.all_columns())
+            for fk in self.prefetch_delegate.fk_columns:
+                if isinstance(fk, ForeignKey):
+                    select.columns(*fk.all_columns())
+                else:
+                    raise ValueError(f"{fk} doesn't seem to be a ForeignKey.")
+
+                # Make sure that all intermediate objects are fully loaded.
+                for parent_fk in fk._meta.call_chain:
+                    select.columns(*parent_fk.all_columns())
+
+            select.output_delegate.output(nested=True)
 
         return select.querystrings

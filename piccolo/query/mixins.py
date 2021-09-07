@@ -4,6 +4,7 @@ import typing as t
 from dataclasses import dataclass, field
 
 from piccolo.columns import And, Column, Or, Secret, Where
+from piccolo.columns.column_types import ForeignKey
 from piccolo.custom_types import Combinable
 from piccolo.querystring import QueryString
 from piccolo.utils.sql_values import convert_to_sql_value
@@ -210,6 +211,8 @@ class OutputDelegate:
             If True, any JSON fields will have the JSON values returned from
             the database loaded as Python objects.
         """
+        # We do it like this, so output can be called multiple times, without
+        # overriding any existing values if they're not specified.
         if as_list is not None:
             self._output.as_list = bool(as_list)
 
@@ -225,6 +228,35 @@ class OutputDelegate:
     def copy(self) -> OutputDelegate:
         _output = self._output.copy() if self._output is not None else None
         return self.__class__(_output=_output)
+
+
+@dataclass
+class PrefetchDelegate:
+    """
+    Example usage:
+
+    .prefetch(MyTable.column_a, MyTable.column_b)
+    """
+
+    fk_columns: t.List[ForeignKey] = field(default_factory=list)
+
+    def prefetch(self, *fk_columns: t.Union[ForeignKey, t.List[ForeignKey]]):
+        """
+        :param columns:
+            We accept ``ForeignKey`` and ``List[ForeignKey]`` here, in case
+            someone passes in a list by accident when using ``all_related()``,
+            in which case we flatten the list.
+
+        """
+        _fk_columns: t.List[ForeignKey] = []
+        for column in fk_columns:
+            if isinstance(column, list):
+                _fk_columns.extend(column)
+            else:
+                _fk_columns.append(column)
+
+        combined = self.fk_columns + _fk_columns
+        self.fk_columns = combined
 
 
 @dataclass

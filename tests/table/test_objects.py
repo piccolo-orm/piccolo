@@ -1,5 +1,5 @@
-from ..base import DBTestCase, postgres_only, sqlite_only
-from ..example_app.tables import Band
+from tests.base import DBTestCase, postgres_only, sqlite_only
+from tests.example_app.tables import Band, Manager
 
 
 class TestObjects(DBTestCase):
@@ -61,6 +61,26 @@ class TestObjects(DBTestCase):
         band = Band.objects().get(Band.name == "Pythonistas").run_sync()
 
         self.assertTrue(band.name == "Pythonistas")
+
+    def test_get__prefetch(self):
+        self.insert_rows()
+
+        # With prefetch clause
+        band = (
+            Band.objects()
+            .get((Band.name == "Pythonistas"))
+            .prefetch(Band.manager)
+            .run_sync()
+        )
+        self.assertIsInstance(band.manager, Manager)
+
+        # Just passing it straight into objects
+        band = (
+            Band.objects(Band.manager)
+            .get((Band.name == "Pythonistas"))
+            .run_sync()
+        )
+        self.assertIsInstance(band.manager, Manager)
 
     def test_get_or_create(self):
         """
@@ -175,3 +195,26 @@ class TestObjects(DBTestCase):
         # We want to make sure the band name isn't 'Excellent manager' by
         # mistake.
         self.assertEqual(Band.name, "My new band")
+
+    def test_get_or_create__prefetch(self):
+        """
+        Make sure that that `get_or_create` works with the `prefetch` clause.
+        """
+        self.insert_rows()
+
+        # With prefetch clause
+        band = (
+            Band.objects()
+            .get_or_create((Band.name == "Pythonistas"))
+            .prefetch(Band.manager)
+            .run_sync()
+        )
+        self.assertIsInstance(band.manager, Manager)
+
+        # Just passing it straight into objects
+        band = (
+            Band.objects(Band.manager)
+            .get_or_create((Band.name == "Pythonistas"))
+            .run_sync()
+        )
+        self.assertIsInstance(band.manager, Manager)

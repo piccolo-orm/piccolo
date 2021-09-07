@@ -46,6 +46,7 @@ class Concert(Table):
 
 
 class Ticket(Table):
+    concert = ForeignKey(Concert)
     price = Numeric(digits=(5, 2))
 
 
