@@ -1,6 +1,31 @@
 Changes
 =======
 
+0.44.0
+------
+Added the ability to prefetch related objects. Here's an example:
+
+.. code-block:: python
+
+  band = await Band.objects(Band.manager).run()
+  >>> band.manager
+  <Manager: 1>
+
+If a table has a lot of ``ForeignKey`` columns, there's a useful shortcut,
+which will return all of the related rows as objects.
+
+.. code-block:: python
+
+  concert = await Concert.objects(Concert.all_related()).run()
+  >>> concert.band_1
+  <Band: 1>
+  >>> concert.band_2
+  <Band: 2>
+  >>> concert.venue
+  <Venue: 1>
+
+Thanks to @wmshort for all the input.
+
 0.43.0
 ------
 Migrations containing ``Array``, ``JSON`` and ``JSONB`` columns should be
