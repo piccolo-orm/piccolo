@@ -162,12 +162,10 @@ can use the ``prefetch`` clause if you prefer.
 
     # These are equivalent:
     ticket = Ticket.objects(
-        Ticket.concert,
         Ticket.concert.all_related()
     ).first().run_sync()
 
     ticket = Ticket.objects().prefetch(
-        Ticket.concert,
         Ticket.concert.all_related()
     ).run_sync()
 
