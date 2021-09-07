@@ -135,12 +135,13 @@ prefetch them all you can do so using ``all_related``.
 .. code-block:: python
 
     ticket = Ticket.objects(
-        Ticket.concert,
         Ticket.concert.all_related()
     ).first().run_sync()
 
+    # Any intermediate objects will also be loaded:
     >>> ticket.concert
     <Concert: 1>
+
     >>> ticket.concert.band_1
     <Band: 1>
     >>> ticket.concert.band_2

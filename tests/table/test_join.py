@@ -208,18 +208,25 @@ class TestJoin(TestCase):
 
     def test_objects_nested(self):
         """
-        Make sure the nested argument works correctly for objects.
+        Make sure the prefetch argument works correctly for objects.
         """
         band = Band.objects(Band.manager).first().run_sync()
         self.assertIsInstance(band.manager, Manager)
 
     def test_objects__all_related__root(self):
+        """
+        Make sure that ``all_related`` works correctly when called from the
+        root table of the query.
+        """
         concert = Concert.objects(Concert.all_related()).first().run_sync()
         self.assertIsInstance(concert.band_1, Band)
         self.assertIsInstance(concert.band_2, Band)
         self.assertIsInstance(concert.venue, Venue)
 
     def test_objects_nested_deep(self):
+        """
+        Make sure that ``prefetch`` works correctly with deeply nested tables.
+        """
         ticket = (
             Ticket.objects(
                 Ticket.concert,
@@ -241,6 +248,10 @@ class TestJoin(TestCase):
         self.assertIsInstance(ticket.concert.band_2.manager, Manager)
 
     def test_objects__all_related__deep(self):
+        """
+        Make sure that ``all_related`` works correctly when called on a deeply
+        nested table.
+        """
         ticket = (
             Ticket.objects(
                 Ticket.all_related(),
@@ -259,7 +270,10 @@ class TestJoin(TestCase):
         self.assertIsInstance(ticket.concert.band_1.manager, Manager)
         self.assertIsInstance(ticket.concert.band_2.manager, Manager)
 
-    def test_objects_prefetch_method(self):
+    def test_objects_prefetch_clause(self):
+        """
+        Make sure that ``prefetch`` clause works correctly.
+        """
         ticket = (
             Ticket.objects()
             .prefetch(
@@ -278,3 +292,32 @@ class TestJoin(TestCase):
         self.assertIsInstance(ticket.concert.venue, Venue)
         self.assertIsInstance(ticket.concert.band_1.manager, Manager)
         self.assertIsInstance(ticket.concert.band_2.manager, Manager)
+
+    def test_objects_prefetch_intermediate(self):
+        """
+        Make sure when using ``prefetch`` on a deeply nested table, all of the
+        intermediate objects are also retrieved properly.
+        """
+        ticket = (
+            Ticket.objects()
+            .prefetch(
+                Ticket.concert.band_1.manager,
+            )
+            .first()
+            .run_sync()
+        )
+
+        self.assertIsInstance(ticket.price, decimal.Decimal)
+        self.assertIsInstance(ticket.concert, Concert)
+
+        self.assertIsInstance(ticket.concert.id, int)
+        self.assertIsInstance(ticket.concert.band_1, Band)
+        self.assertIsInstance(ticket.concert.band_2, int)
+        self.assertIsInstance(ticket.concert.venue, int)
+
+        self.assertIsInstance(ticket.concert.band_1.id, int)
+        self.assertIsInstance(ticket.concert.band_1.name, str)
+        self.assertIsInstance(ticket.concert.band_1.manager, Manager)
+
+        self.assertIsInstance(ticket.concert.band_1.manager.id, int)
+        self.assertIsInstance(ticket.concert.band_1.manager.name, str)

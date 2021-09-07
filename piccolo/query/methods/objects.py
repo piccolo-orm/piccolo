@@ -201,6 +201,11 @@ class Objects(Query):
                     select.columns(*fk.all_columns())
                 else:
                     raise ValueError(f"{fk} doesn't seem to be a ForeignKey.")
+
+                # Make sure that all intermediate objects are fully loaded.
+                for parent_fk in fk._meta.call_chain:
+                    select.columns(*parent_fk.all_columns())
+
             select.output_delegate.output(nested=True)
 
         return select.querystrings
