@@ -321,3 +321,40 @@ class TestJoin(TestCase):
 
         self.assertIsInstance(ticket.concert.band_1.manager.id, int)
         self.assertIsInstance(ticket.concert.band_1.manager.name, str)
+
+    def test_objects_prefetch_multiple_intermediate(self):
+        """
+        Make sure that if we're fetching multiple deeply nested tables, the
+        intermediate tables are still created correctly.
+        """
+        ticket = (
+            Ticket.objects()
+            .prefetch(
+                Ticket.concert.band_1.manager,
+                Ticket.concert.band_2.manager,
+            )
+            .first()
+            .run_sync()
+        )
+
+        self.assertIsInstance(ticket.price, decimal.Decimal)
+        self.assertIsInstance(ticket.concert, Concert)
+
+        self.assertIsInstance(ticket.concert.id, int)
+        self.assertIsInstance(ticket.concert.band_1, Band)
+        self.assertIsInstance(ticket.concert.band_2, Band)
+        self.assertIsInstance(ticket.concert.venue, int)
+
+        self.assertIsInstance(ticket.concert.band_1.id, int)
+        self.assertIsInstance(ticket.concert.band_1.name, str)
+        self.assertIsInstance(ticket.concert.band_1.manager, Manager)
+
+        self.assertIsInstance(ticket.concert.band_1.manager.id, int)
+        self.assertIsInstance(ticket.concert.band_1.manager.name, str)
+
+        self.assertIsInstance(ticket.concert.band_2.id, int)
+        self.assertIsInstance(ticket.concert.band_2.name, str)
+        self.assertIsInstance(ticket.concert.band_2.manager, Manager)
+
+        self.assertIsInstance(ticket.concert.band_2.manager.id, int)
+        self.assertIsInstance(ticket.concert.band_2.manager.name, str)
