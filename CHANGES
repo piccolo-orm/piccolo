@@ -4,7 +4,7 @@ Changes
 0.44.1
 ------
 Updated ``to_dict`` so it works with nested objects, as introduced by the
-``prefech`` functionality.
+``prefetch`` functionality.
 
 For example:
 
