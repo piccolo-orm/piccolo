@@ -4,6 +4,8 @@ import typing as t
 
 import jinja2
 
+from piccolo.conf.apps import Finder
+
 TEMPLATE_DIRECTORY = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "templates"
 )
@@ -27,8 +29,8 @@ class GraphTable:
 
 @dataclasses.dataclass
 class GraphRelation:
-    table_a: GraphTable
-    table_b: GraphTable
+    table_a: str
+    table_b: str
     label: str
 
 
@@ -38,15 +40,38 @@ def render_template(**kwargs):
 
 
 def graph():
-    table_a = GraphTable(
-        name="TableA", columns=[GraphColumn(name="id", type="Serial")]
-    )
-    table_b = GraphTable(
-        name="TableB", columns=[GraphColumn(name="id", type="Serial")]
-    )
+    finder = Finder()
+    app_names = finder.get_sorted_app_names()
 
-    relation = GraphRelation(table_a=table_a, table_b=table_b, label="foo")
+    tables: t.List[GraphTable] = []
+    relations: t.List[GraphRelation] = []
 
-    template = render_template(tables=[table_a, table_b], relations=[relation])
+    for app_name in app_names:
+        app_config = finder.get_app_config(app_name=app_name)
+        for table_class in app_config.table_classes:
+            tables.append(
+                GraphTable(
+                    name=table_class.__name__,
+                    columns=[
+                        GraphColumn(
+                            name=i._meta.name, type=i.__class__.__name__
+                        )
+                        for i in table_class._meta.columns
+                    ],
+                )
+            )
+            for fk_column in table_class._meta.foreign_key_columns:
+                reference_table_class = (
+                    fk_column._foreign_key_meta.resolved_references
+                )
+                relations.append(
+                    GraphRelation(
+                        table_a=table_class.__name__,
+                        table_b=reference_table_class.__name__,
+                        label=fk_column._meta.name,
+                    )
+                )
+
+    template = render_template(tables=tables, relations=relations)
 
     print(template)

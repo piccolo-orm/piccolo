@@ -16,7 +16,7 @@ digraph model_graph {
 
     // Tables
     {% for table in tables %}
-    {{ table.name }} [label=<
+    TABLE_{{ table.name }} [label=<
         <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
             <TR>
                 <TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#4C89C8">
@@ -46,7 +46,7 @@ digraph model_graph {
 
      // Relations
     {% for relation in relations %}
-    {{ relation.table_a.name }} -> {{ relation.table_b.name }}
+    TABLE_{{ relation.table_a }} -> TABLE_{{ relation.table_b }}
     [label="{{ relation.label }}"] [arrowhead=none, arrowtail=dot, dir=both];
     {% endfor %}
 }
