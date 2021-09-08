@@ -1,0 +1,52 @@
+digraph model_graph {
+    fontname = "Roboto"
+    fontsize = 8
+    splines  = true
+
+    node [
+        fontname = "Roboto"
+        fontsize = 8
+        shape = "plaintext"
+    ]
+
+    edge [
+        fontname = "Roboto"
+        fontsize = 8
+    ]
+
+    // Tables
+    {% for table in tables %}
+    {{ table.name }} [label=<
+        <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+            <TR>
+                <TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#4C89C8">
+                    <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10">
+                        <B>{{ table.name }}</B>
+                    </FONT>
+                </TD>
+            </TR>
+
+            {% for column in table.columns %}
+            <TR>
+                <TD ALIGN="LEFT" BORDER="0">
+                    <FONT FACE="Roboto">
+                        <B>{{ column.name }}</B>
+                    </FONT>
+                </TD>
+                <TD ALIGN="LEFT">
+                    <FONT FACE="Roboto">
+                        <B>{{ column.type }}</B>
+                    </FONT>
+                </TD>
+            </TR>
+            {% endfor %}
+        </TABLE>
+    >]
+    {% endfor %}
+
+     // Relations
+    {% for relation in relations %}
+    {{ relation.table_a.name }} -> {{ relation.table_b.name }}
+    [label="{{ relation.label }}"] [arrowhead=none, arrowtail=dot, dir=both];
+    {% endfor %}
+}
