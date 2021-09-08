@@ -40,7 +40,7 @@ def render_template(**kwargs):
     return template.render(**kwargs)
 
 
-def graph(apps: str = "all"):
+def graph(apps: str = "all", direction: str = "LR"):
     """
     Prints out a graphviz .dot file for your schema.
 
@@ -48,6 +48,10 @@ def graph(apps: str = "all"):
         The name of the apps to include. If 'all' is given then every app is
         included. To specify multiple app names, separate them with commas.
         For example --apps="app1,app2".
+    :param direction:
+        How the tables should be orientated - by default it's "LR" which is
+        left to right, so the graph will be landscape. The alternative is
+        "TB", which is top to bottom, so the graph will be portrait.
 
     """
     finder = Finder()
@@ -89,6 +93,8 @@ def graph(apps: str = "all"):
                     )
                 )
 
-    template = render_template(tables=tables, relations=relations)
+    template = render_template(
+        tables=tables, relations=relations, direction=direction
+    )
 
     print(template)
