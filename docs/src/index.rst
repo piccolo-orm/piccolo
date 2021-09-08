@@ -24,6 +24,7 @@ batteries included.
    piccolo/ecosystem/index
    piccolo/contributing/index
    piccolo/changes/index
+   piccolo/help/index
 
 -------------------------------------------------------------------------------
 
