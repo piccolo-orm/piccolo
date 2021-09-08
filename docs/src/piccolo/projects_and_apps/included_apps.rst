@@ -9,6 +9,8 @@ Auto includes
 
 The following are registered with your :ref:`AppRegistry<AppRegistry>` automatically:
 
+-------------------------------------------------------------------------------
+
 app
 ~~~
 
@@ -17,6 +19,8 @@ Lets you create new Piccolo apps. See :ref:`PiccoloApps`.
 .. code-block:: bash
 
     piccolo app new
+
+-------------------------------------------------------------------------------
 
 asgi
 ~~~~
@@ -27,6 +31,8 @@ Lets you scaffold an ASGI web app. See :ref:`ASGICommand`.
 
     piccolo asgi new
 
+-------------------------------------------------------------------------------
+
 meta
 ~~~~
 
@@ -36,10 +42,14 @@ Tells you which version of Piccolo is installed.
 
     piccolo meta version
 
+-------------------------------------------------------------------------------
+
 migrations
 ~~~~~~~~~~
 
 Lets you create and run migrations. See :ref:`Migrations`.
+
+-------------------------------------------------------------------------------
 
 playground
 ~~~~~~~~~~
@@ -50,6 +60,8 @@ Lets you learn the Piccolo query syntax, using an example schema. See
 .. code-block:: bash
 
     piccolo playground run
+
+-------------------------------------------------------------------------------
 
 project
 ~~~~~~~
@@ -62,8 +74,13 @@ Lets you create a new ``piccolo_conf.py`` file. See :ref:`PiccoloProjects`.
 
 .. _SchemaApp:
 
+-------------------------------------------------------------------------------
+
 schema
 ~~~~~~
+
+generate
+^^^^^^^^
 
 Lets you auto generate Piccolo ``Table`` classes from an existing database.
 Make sure the credentials in ``piccolo_conf.py`` are for the database you're
@@ -77,6 +94,29 @@ interested in, then run the following:
     current form it will save you a lot of time. Make sure you check the
     generated code to make sure it's correct.
 
+graph
+^^^^^
+
+A basic schema visualisation tool. It prints out the contents of a GraphViz dot
+file representing your schema.
+
+.. code-block:: bash
+
+    piccolo schema graph
+
+You can pipe the output to your clipboard (``piccolo schema graph | pbcopy``
+on a Mac), then paste it into a `website like this <https://dreampuf.github.io/GraphvizOnline>`_
+to turn it into an image file.
+
+Or if you have `Graphviz <https://graphviz.org/download/>`_ installed on your
+machine, you can do this to create an image file:
+
+.. code-block:: bash
+
+    piccolo schema graph | dot -Tpdf -o graph.pdf
+
+-------------------------------------------------------------------------------
+
 shell
 ~~~~~
 
@@ -86,6 +126,8 @@ Launches an iPython shell, and automatically imports all of your registered
 .. code-block:: bash
 
     piccolo shell run
+
+-------------------------------------------------------------------------------
 
 sql_shell
 ~~~~~~~~~
@@ -100,6 +142,8 @@ need to run raw SQL queries on your database.
 
 For it to work, the underlying command needs to be on the path (i.e. ``psql``
 or ``sqlite3`` depending on which you're using).
+
+-------------------------------------------------------------------------------
 
 .. _TesterApp:
 
