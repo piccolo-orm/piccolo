@@ -75,7 +75,7 @@ def new(root: str = ".", name: str = "piccolo_project"):
                 os.mkdir(sub_dir_path)
 
         for file_name in file_names:
-            if file_name.startswith("_"):
+            if file_name.startswith("_") and file_name != "__init__.py.jinja":
                 continue
 
             extension = file_name.rsplit(".")[0]

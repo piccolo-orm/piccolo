@@ -11,7 +11,7 @@ from blacksheep.server.openapi.v3 import OpenAPIHandler
 from openapidocs.v3 import Info
 
 from home.endpoints import home
-from home.piccolo_app import APP_CONFIG 
+from home.piccolo_app import APP_CONFIG
 from home.tables import Task
 
 
@@ -36,11 +36,11 @@ app.serve_files("static", root_path="/static")
 app.router.add_get("/", home)
 
 
-TaskModelIn = create_pydantic_model(table=Task, model_name="TaskModelIn")
-TaskModelOut = create_pydantic_model(
+TaskModelIn: t.Any = create_pydantic_model(table=Task, model_name="TaskModelIn")
+TaskModelOut: t.Any = create_pydantic_model(
     table=Task, include_default_columns=True, model_name="TaskModelOut"
 )
-TaskModelPartial = create_pydantic_model(
+TaskModelPartial: t.Any = create_pydantic_model(
     table=Task, model_name="TaskModelPartial", all_optional=True
 )
 
