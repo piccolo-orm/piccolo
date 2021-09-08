@@ -1,6 +1,27 @@
 Changes
 =======
 
+0.44.1
+------
+Updated ``to_dict`` so it works with nested objects, as introduced by the
+``prefech`` functionality.
+
+For example:
+
+.. code-block:: python
+
+  band = Band.objects(Band.manager).first().run_sync()
+
+  >>> band.to_dict()
+  {'id': 1, 'name': 'Pythonistas', 'manager': {'id': 1, 'name': 'Guido'}}
+
+It also works with filtering:
+
+.. code-block:: python
+
+  >>> band.to_dict(Band.name, Band.manager.name)
+  {'name': 'Pythonistas', 'manager': {'name': 'Guido'}}
+
 0.44.0
 ------
 Added the ability to prefetch related objects. Here's an example:
