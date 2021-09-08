@@ -1,5 +1,6 @@
 import dataclasses
 import os
+import sys
 import typing as t
 
 import jinja2
@@ -39,9 +40,25 @@ def render_template(**kwargs):
     return template.render(**kwargs)
 
 
-def graph():
+def graph(apps: str = "all"):
+    """
+    Prints out a graphviz .dot file for your schema.
+
+    :param apps:
+        The name of the apps to include. If 'all' is given then every app is
+        included. To specify multiple app names, separate them with commas.
+        For example --apps="app1,app2".
+
+    """
     finder = Finder()
     app_names = finder.get_sorted_app_names()
+
+    if apps != "all":
+        given_app_names = [i.strip() for i in apps.split(",")]
+        delta = set(given_app_names) - set(app_names)
+        if delta:
+            sys.exit(f"These apps aren't recognised: {', '.join(delta)}.")
+        app_names = given_app_names
 
     tables: t.List[GraphTable] = []
     relations: t.List[GraphRelation] = []
