@@ -430,16 +430,34 @@ class Table(metaclass=TableMetaclass):
             {'id': 1, 'title': 'Guido'}
 
         """
+        # Make sure we're only looking at columns for the current table. If
+        # someone passes in a column for a sub table (for example
+        # `Band.manager.name`), we need to add `Band.manager` so the nested
+        # value appears in the output.
+        filtered_columns = []
+        for column in columns:
+            if column._meta.table == self.__class__:
+                filtered_columns.append(column)
+            else:
+                for parent_column in column._meta.call_chain:
+                    if parent_column._meta.table == self.__class__:
+                        filtered_columns.append(parent_column)
+                        break
+
         alias_names = {
             column._meta.name: getattr(column, "alias", None)
-            for column in columns
+            for column in filtered_columns
         }
 
         output = {}
-        for column in columns or self._meta.columns:
+        for column in filtered_columns if columns else self._meta.columns:
+            value = getattr(self, column._meta.name)
+            if isinstance(value, Table):
+                value = value.to_dict(*columns)
+
             output[
                 alias_names.get(column._meta.name) or column._meta.name
-            ] = getattr(self, column._meta.name)
+            ] = value
         return output
 
     def __setitem__(self, key: str, value: t.Any):
