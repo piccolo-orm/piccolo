@@ -8,6 +8,9 @@ APP_CONFIG = AppConfig(
     migrations_folder_path="",
     commands=[
         Command(callable=generate, aliases=["gen", "create", "new"]),
-        Command(callable=graph, aliases=["map"]),
+        Command(
+            callable=graph,
+            aliases=["map", "visualise", "vizualise", "viz," "vis"],
+        ),
     ],
 )
