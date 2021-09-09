@@ -19,6 +19,7 @@ Some of it’s stand out features are:
 - Tab completion support - works great with iPython and VSCode.
 - Batteries included - a User model, authentication, migrations, an [admin GUI](https://github.com/piccolo-orm/piccolo_admin), and more.
 - Modern Python - fully type annotated.
+- Make your codebase modular and scalable with Piccolo apps (similar to Django apps).
 
 ## Syntax
 
@@ -59,7 +60,7 @@ b = Band(name='C-Sharps', popularity=100)
 await b.save().run()
 
 # To fetch an object from the database, and update it:
-b = await Band.objects().where(Band.name == 'Pythonistas').first().run()
+b = await Band.objects().get(Band.name == 'Pythonistas').run()
 b.popularity = 10000
 await b.save().run()
 
