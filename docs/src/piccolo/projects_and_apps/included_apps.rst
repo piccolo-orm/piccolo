@@ -115,6 +115,11 @@ machine, you can do this to create an image file:
 
     piccolo schema graph | dot -Tpdf -o graph.pdf
 
+Here's an example of a generated image:
+
+.. image:: ./images/schema_graph_output.png
+    :target: /_images/schema_graph_output.png
+
 -------------------------------------------------------------------------------
 
 shell
