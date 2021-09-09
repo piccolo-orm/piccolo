@@ -1,6 +1,18 @@
 Changes
 =======
 
+0.45.0
+------
+Added the ``piccolo schema graph`` command for visualising your database
+structure, which outputs a Graphviz file. It can then be turned into an
+image, for example:
+
+.. code-block:: bash
+
+  piccolo schema map | dot -Tpdf -o graph.pdf
+
+Also made some minor changes to the ASGI templates, to reduce MyPy errors.
+
 0.44.1
 ------
 Updated ``to_dict`` so it works with nested objects, as introduced by the
