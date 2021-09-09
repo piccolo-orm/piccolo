@@ -28,7 +28,7 @@ class TestGraph(TestCase):
         Make sure the file contents can be printed to stdout.
         """
         graph()
-        file_contents = print_.call_args.args[0]
+        file_contents = print_.call_args[0][0]
         self._verify_contents(file_contents)
 
     def test_graph_to_file(self):
