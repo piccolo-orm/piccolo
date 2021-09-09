@@ -44,7 +44,9 @@ def render_template(**kwargs):
     return template.render(**kwargs)
 
 
-def graph(apps: str = "all", direction: str = "LR"):
+def graph(
+    apps: str = "all", direction: str = "LR", output: t.Optional[str] = None
+):
     """
     Prints out a graphviz .dot file for your schema.
 
@@ -56,6 +58,9 @@ def graph(apps: str = "all", direction: str = "LR"):
         How the tables should be orientated - by default it's "LR" which is
         left to right, so the graph will be landscape. The alternative is
         "TB", which is top to bottom, so the graph will be portrait.
+    :param output:
+        If specified, rather than printing out the file contents, they'll be
+        written to this file. For example --output=graph.dot
 
     """
     finder = Finder()
@@ -97,8 +102,12 @@ def graph(apps: str = "all", direction: str = "LR"):
                     )
                 )
 
-    template = render_template(
+    contents = render_template(
         tables=tables, relations=relations, direction=direction
     )
 
-    print(template)
+    if output is None:
+        print(contents)
+    else:
+        with open(output, "w") as f:
+            f.write(contents)
