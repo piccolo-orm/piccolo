@@ -1,5 +1,6 @@
 import os
 import tempfile
+import uuid
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
@@ -35,7 +36,7 @@ class TestGraph(TestCase):
         Make sure the file contents can be written to disk.
         """
         directory = tempfile.gettempdir()
-        path = os.path.join(directory, "map.dot")
+        path = os.path.join(directory, f"{uuid.uuid4()}.dot")
 
         graph(output=path)
 
