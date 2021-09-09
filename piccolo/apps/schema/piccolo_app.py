@@ -10,7 +10,7 @@ APP_CONFIG = AppConfig(
         Command(callable=generate, aliases=["gen", "create", "new"]),
         Command(
             callable=graph,
-            aliases=["map", "visualise", "vizualise", "viz," "vis"],
+            aliases=["map", "visualise", "vizualise", "viz", "vis"],
         ),
     ],
 )
