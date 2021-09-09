@@ -24,7 +24,7 @@ from piccolo.apps.tester.piccolo_app import APP_CONFIG as tester_config
 from piccolo.apps.user.piccolo_app import APP_CONFIG as user_config
 from piccolo.conf.apps import AppRegistry, Finder
 from piccolo.utils.sync import run_sync
-from piccolo.utils.warnings import Level, colored_string
+from piccolo.utils.warnings import Level, colored_warning
 
 DIAGNOSE_FLAG = "--diagnose"
 
@@ -117,18 +117,17 @@ def main():
                         if havent_ran_count == 1
                         else f"{havent_ran_count} migrations haven't"
                     )
-                    print(
-                        colored_string(
-                            message=(
-                                "=> {} been run - the app "
-                                "might not behave as expected.\n"
-                                "To check which use:\n"
-                                "    piccolo migrations check\n"
-                                "To run all migrations:\n"
-                                "    piccolo migrations forwards all\n"
-                            ).format(message),
-                            level=Level.high,
-                        )
+
+                    colored_warning(
+                        message=(
+                            "=> {} been run - the app "
+                            "might not behave as expected.\n"
+                            "To check which use:\n"
+                            "    piccolo migrations check\n"
+                            "To run all migrations:\n"
+                            "    piccolo migrations forwards all\n"
+                        ).format(message),
+                        level=Level.high,
                     )
             except Exception:
                 pass

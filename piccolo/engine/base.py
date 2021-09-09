@@ -69,7 +69,7 @@ class Engine(metaclass=ABCMeta):
 
         engine_type = self.engine_type.capitalize()
         logger.info(f"Running {engine_type} version {version_number}")
-        if version_number < self.min_version_number:
+        if version_number and (version_number < self.min_version_number):
             message = (
                 f"This version of {self.engine_type} isn't supported "
                 f"(< {self.min_version_number}) - some features might not be "

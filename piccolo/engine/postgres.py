@@ -10,7 +10,7 @@ from piccolo.query.base import DDL, Query
 from piccolo.querystring import QueryString
 from piccolo.utils.lazy_loader import LazyLoader
 from piccolo.utils.sync import run_sync
-from piccolo.utils.warnings import Level, colored_string, colored_warning
+from piccolo.utils.warnings import Level, colored_warning
 
 asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")
 
@@ -274,8 +274,7 @@ class PostgresEngine(Engine):
         except ConnectionRefusedError as exception:
             # Suppressing the exception, otherwise importing piccolo_conf.py
             # containing an engine will raise an ImportError.
-            colored_warning("Unable to connect to database")
-            print(exception)
+            colored_warning(f"Unable to connect to database - {exception}")
             return 0.0
         else:
             version_string = response[0]["server_version"]
@@ -290,15 +289,13 @@ class PostgresEngine(Engine):
                     f'CREATE EXTENSION IF NOT EXISTS "{extension}"',
                 )
             except asyncpg.exceptions.InsufficientPrivilegeError:
-                print(
-                    colored_string(
-                        f"=> Unable to create {extension} extension - some "
-                        "functionality may not behave as expected. Make sure "
-                        "your database user has permission to create "
-                        "extensions, or add it manually using "
-                        f'`CREATE EXTENSION "{extension}";`',
-                        level=Level.medium,
-                    )
+                colored_warning(
+                    f"=> Unable to create {extension} extension - some "
+                    "functionality may not behave as expected. Make sure "
+                    "your database user has permission to create "
+                    "extensions, or add it manually using "
+                    f'`CREATE EXTENSION "{extension}";`',
+                    level=Level.medium,
                 )
 
     ###########################################################################
