@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import ast
 import typing as t
 from unittest import TestCase
+from unittest.mock import MagicMock, patch
 
 from piccolo.apps.schema.commands.generate import (
     OutputSchema,
@@ -117,8 +119,14 @@ class TestGenerate(TestCase):
         SmallTable_ = output_schema.get_table_with_name("SmallTable")
         self._compare_table_columns(SmallTable, SmallTable_)
 
-    def test_generate(self):
+    @patch("piccolo.apps.schema.commands.generate.print")
+    def test_generate(self, print_: MagicMock):
         """
         Test the main generate command runs without errors.
         """
         run_sync(generate())
+        file_contents = print_.call_args[0][0]
+
+        # Make sure the output is valid Python code (will raise a SyntaxError
+        # exception otherwise).
+        ast.parse(file_contents)
