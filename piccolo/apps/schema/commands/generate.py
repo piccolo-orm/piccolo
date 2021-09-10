@@ -7,6 +7,7 @@ import black
 from typing_extensions import Literal
 
 from piccolo.apps.migrations.auto.migration_manager import sort_table_classes
+from piccolo.apps.migrations.auto.serialisation import serialise_params
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import (
     JSON,
@@ -337,9 +338,6 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
                         )
                     else:
                         kwargs["references"] = ForeignKeyPlaceholder
-                    imports.add(
-                        "from piccolo.columns.base import OnDelete, OnUpdate"
-                    )
 
                 imports.add(
                     "from piccolo.columns.column_types import "
@@ -349,7 +347,13 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
                 if column_type is Varchar:
                     kwargs["length"] = pg_row_meta.character_maximum_length
 
-                columns[column_name] = column_type(**kwargs)
+                column = column_type(**kwargs)
+
+                serialised_params = serialise_params(column._meta.params)
+                for extra_import in serialised_params.extra_imports:
+                    imports.add(extra_import.__repr__())
+
+                columns[column_name] = column
             else:
                 warnings.append(f"{tablename}.{column_name} ['{data_type}']")
 
