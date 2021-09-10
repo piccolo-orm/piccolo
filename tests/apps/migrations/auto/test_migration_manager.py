@@ -11,6 +11,7 @@ from piccolo.columns import Text, Varchar
 from piccolo.columns.base import OnDelete, OnUpdate
 from piccolo.columns.column_types import ForeignKey
 from piccolo.conf.apps import AppConfig
+from piccolo.table import Table
 from piccolo.utils.lazy_loader import LazyLoader
 from tests.base import DBTestCase, postgres_only, set_mock_return_value
 from tests.example_app.tables import Band, Concert, Manager, Venue
@@ -33,6 +34,29 @@ class TestSortTableClasses(TestCase):
         self.assertTrue(
             sorted_tables.index(Band) < sorted_tables.index(Concert)
         )
+
+    def test_sort_unrelated_tables(self):
+        """
+        Make sure there are no weird edge cases with tables with no foreign
+        key relationships with each other.
+        """
+
+        class TableA(Table):
+            pass
+
+        class TableB(Table):
+            pass
+
+        self.assertEqual(
+            sort_table_classes([TableA, TableB]), [TableA, TableB]
+        )
+
+    def test_single_table(self):
+        """
+        Make sure that sorting a list with only a single table in it still
+        works.
+        """
+        self.assertEqual(sort_table_classes([Band]), [Band])
 
 
 class TestMigrationManager(DBTestCase):
