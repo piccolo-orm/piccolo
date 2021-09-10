@@ -3,7 +3,6 @@ from __future__ import annotations
 import inspect
 import typing as t
 from dataclasses import dataclass, field
-from functools import cmp_to_key
 
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
 from piccolo.apps.migrations.auto.operations import (
@@ -16,6 +15,7 @@ from piccolo.apps.migrations.auto.serialisation import deserialise_params
 from piccolo.columns import Column, column_types
 from piccolo.engine import engine_finder
 from piccolo.table import Table, create_table_class
+from piccolo.utils.graphlib import TopologicalSorter
 
 
 @dataclass
@@ -118,37 +118,48 @@ class AlterColumnCollection:
         return list(set([i.table_class_name for i in self.alter_columns]))
 
 
-def _compare_tables(
-    table_a: t.Type[Table],
-    table_b: t.Type[Table],
+def _get_graph(
+    table_classes: t.List[t.Type[Table]],
     iterations: int = 0,
-    max_iterations=5,
-) -> int:
+    max_iterations: int = 5,
+) -> t.Dict[str, t.Set[str]]:
     """
-    A comparison function, for sorting Table classes, based on their foreign
-    keys.
+    Analyses the tables based on their foreign keys, and returns a data
+    structure like:
 
-    :param iterations:
-        As this function is called recursively, we use this to limit the depth,
-        to prevent an infinite loop.
+    .. code-block:: python
+
+        {'band': {'manager'}, 'concert': {'band', 'venue'}, 'manager': set()}
+
+    The keys are tablenames, and the values are tablenames directly connected
+    to it via a foreign key.
 
     """
+    output: t.Dict[str, t.Set[str]] = {}
+
     if iterations >= max_iterations:
-        return 0
+        return output
 
-    for fk_column in table_a._meta.foreign_key_columns:
-        references = fk_column._foreign_key_meta.resolved_references
-        if references._meta.tablename == table_b._meta.tablename:
-            return 1
-        else:
-            for _fk_column in references._meta.foreign_key_columns:
-                _references = _fk_column._foreign_key_meta.resolved_references
-                if _compare_tables(
-                    _references, table_b, iterations=iterations + 1
-                ):
-                    return 1
+    for table_class in table_classes:
+        dependents: t.Set[str] = set()
+        for fk in table_class._meta.foreign_key_columns:
+            dependents.add(
+                fk._foreign_key_meta.resolved_references._meta.tablename
+            )
 
-    return -1
+            # We also recursively check the related tables to get a fuller
+            # picture of the schema and relationships.
+            referenced_table = fk._foreign_key_meta.resolved_references
+            output.update(
+                _get_graph(
+                    [referenced_table],
+                    iterations=iterations + 1,
+                )
+            )
+
+        output[table_class._meta.tablename] = dependents
+
+    return output
 
 
 def sort_table_classes(
@@ -158,7 +169,23 @@ def sort_table_classes(
     Sort the table classes based on their foreign keys, so they can be created
     in the correct order.
     """
-    return sorted(table_classes, key=cmp_to_key(_compare_tables))
+    table_class_dict = {
+        table_class._meta.tablename: table_class
+        for table_class in table_classes
+    }
+
+    graph = _get_graph(table_classes)
+
+    sorter = TopologicalSorter(graph)
+    ordered_tablenames = tuple(sorter.static_order())
+
+    output: t.List[t.Type[Table]] = []
+    for tablename in ordered_tablenames:
+        table_class = table_class_dict.get(tablename, None)
+        if table_class is not None:
+            output.append(table_class)
+
+    return output
 
 
 @dataclass

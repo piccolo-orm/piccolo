@@ -6,6 +6,8 @@ import typing as t
 import black
 from typing_extensions import Literal
 
+from piccolo.apps.migrations.auto.migration_manager import sort_table_classes
+from piccolo.apps.migrations.auto.serialisation import serialise_params
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import (
     JSON,
@@ -336,18 +338,22 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
                         )
                     else:
                         kwargs["references"] = ForeignKeyPlaceholder
-                    imports.add(
-                        "from piccolo.columns.base import OnDelete, OnUpdate"
-                    )
 
                 imports.add(
-                    "from piccolo.column_types import " + column_type.__name__
+                    "from piccolo.columns.column_types import "
+                    + column_type.__name__
                 )
 
                 if column_type is Varchar:
                     kwargs["length"] = pg_row_meta.character_maximum_length
 
-                columns[column_name] = column_type(**kwargs)
+                column = column_type(**kwargs)
+
+                serialised_params = serialise_params(column._meta.params)
+                for extra_import in serialised_params.extra_imports:
+                    imports.add(extra_import.__repr__())
+
+                columns[column_name] = column
             else:
                 warnings.append(f"{tablename}.{column_name} ['{data_type}']")
 
@@ -357,6 +363,13 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
             class_members=columns,
         )
         tables.append(table)
+
+    # Sort the tables based on their ForeignKeys.
+    tables = sort_table_classes(tables)
+
+    # We currently don't show the index argument for columns in the output,
+    # so we don't need this import for now:
+    imports.remove("from piccolo.columns.indexes import IndexMethod")
 
     return OutputSchema(
         imports=sorted(list(imports)), warnings=warnings, tables=tables
