@@ -47,8 +47,16 @@ class TestSortTableClasses(TestCase):
         class TableB(Table):
             pass
 
-        sorted_tables = sort_table_classes([TableA, TableB])
-        self.assertEqual(sorted_tables, [TableA, TableB])
+        self.assertEqual(
+            sort_table_classes([TableA, TableB]), [TableA, TableB]
+        )
+
+    def test_single_table(self):
+        """
+        Make sure that sorting a list with only a single table in it still
+        works.
+        """
+        self.assertEqual(sort_table_classes([Band]), [Band])
 
 
 class TestMigrationManager(DBTestCase):
