@@ -118,6 +118,50 @@ class AlterColumnCollection:
         return list(set([i.table_class_name for i in self.alter_columns]))
 
 
+def _get_graph(
+    table_classes: t.List[t.Type[Table]],
+    iterations: int = 0,
+    max_iterations: int = 5,
+) -> t.Dict[str, t.Set[str]]:
+    """
+    Analyses the tables based on their foreign keys, and returns a data
+    structure like:
+
+    .. code-block:: python
+
+        {'band': {'manager'}, 'concert': {'band', 'venue'}, 'manager': set()}
+
+    The keys are tablenames, and the values are tablenames directly connected
+    to it via a foreign key.
+
+    """
+    output: t.Dict[str, t.Set[str]] = {}
+
+    if iterations >= max_iterations:
+        return output
+
+    for table_class in table_classes:
+        dependents: t.Set[str] = set()
+        for fk in table_class._meta.foreign_key_columns:
+            dependents.add(
+                fk._foreign_key_meta.resolved_references._meta.tablename
+            )
+
+            # We also recursively check the related tables to get a fuller
+            # picture of the schema and relationships.
+            referenced_table = fk._foreign_key_meta.resolved_references
+            output.update(
+                _get_graph(
+                    [referenced_table],
+                    iterations=iterations + 1,
+                )
+            )
+
+        output[table_class._meta.tablename] = dependents
+
+    return output
+
+
 def sort_table_classes(
     table_classes: t.List[t.Type[Table]],
 ) -> t.List[t.Type[Table]]:
@@ -130,13 +174,7 @@ def sort_table_classes(
         for table_class in table_classes
     }
 
-    graph = {
-        table_class._meta.tablename: {
-            fk._foreign_key_meta.resolved_references._meta.tablename
-            for fk in table_class._meta.foreign_key_columns
-        }
-        for table_class in table_classes
-    }
+    graph = _get_graph(table_classes)
 
     sorter = TopologicalSorter(graph)
     ordered_tablenames = tuple(sorter.static_order())
