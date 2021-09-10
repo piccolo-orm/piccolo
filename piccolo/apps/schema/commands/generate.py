@@ -341,7 +341,8 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
                     )
 
                 imports.add(
-                    "from piccolo.column_types import " + column_type.__name__
+                    "from piccolo.columns.column_types import "
+                    + column_type.__name__
                 )
 
                 if column_type is Varchar:
