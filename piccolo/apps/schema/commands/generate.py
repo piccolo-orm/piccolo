@@ -367,6 +367,10 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
     # Sort the tables based on their ForeignKeys.
     tables = sort_table_classes(tables)
 
+    # We currently don't show the index argument for columns in the output,
+    # so we don't need this import for now:
+    imports.remove("from piccolo.columns.indexes import IndexMethod")
+
     return OutputSchema(
         imports=sorted(list(imports)), warnings=warnings, tables=tables
     )
