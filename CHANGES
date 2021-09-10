@@ -1,6 +1,13 @@
 Changes
 =======
 
+0.45.1
+------
+Improvements to ``piccolo schema generate``. It's now smarter about which
+imports to include. Also, the ``Table`` classes output will now be sorted based
+on their ``ForeignKey`` columns. Internally the sorting algorithm has been
+changed to use the ``graphlib`` module, which was added in Python 3.9.
+
 0.45.0
 ------
 Added the ``piccolo schema graph`` command for visualising your database
