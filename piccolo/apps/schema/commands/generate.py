@@ -6,6 +6,7 @@ import typing as t
 import black
 from typing_extensions import Literal
 
+from piccolo.apps.migrations.auto.migration_manager import sort_table_classes
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import (
     JSON,
@@ -358,6 +359,9 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
             class_members=columns,
         )
         tables.append(table)
+
+    # Sort the tables based on their ForeignKeys.
+    tables = sort_table_classes(tables)
 
     return OutputSchema(
         imports=sorted(list(imports)), warnings=warnings, tables=tables
