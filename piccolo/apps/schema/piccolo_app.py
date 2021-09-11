@@ -7,7 +7,7 @@ APP_CONFIG = AppConfig(
     app_name="schema",
     migrations_folder_path="",
     commands=[
-        Command(callable=generate, aliases=["gen", "create", "new"]),
+        Command(callable=generate, aliases=["gen", "create", "new", "mirror"]),
         Command(
             callable=graph,
             aliases=["map", "visualise", "vizualise", "viz", "vis"],
