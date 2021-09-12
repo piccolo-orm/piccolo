@@ -1,3 +1,5 @@
+import typing as t
+
 from piccolo.apps.migrations.auto.migration_manager import sort_table_classes
 from piccolo.conf.apps import Finder
 from piccolo.utils.encoding import dump_json
@@ -33,7 +35,7 @@ async def dump(apps: str = "all", tables: str = "all"):
 
     ###########################################################################
 
-    output = {}
+    output: t.Dict[str, t.Any] = {}
 
     for app_name in app_names:
         app_config = finder.get_app_config(app_name=app_name)
@@ -53,9 +55,11 @@ async def dump(apps: str = "all", tables: str = "all"):
         # Sort the table classes based on their ForeignKey columns
         sorted_table_classes = sort_table_classes(table_classes)
 
+        output[app_name] = {}
+
         for table_class in sorted_table_classes:
             data = await table_class.select().run()
-            output[table_class._meta.tablename] = data
+            output[app_name][table_class.__name__] = data
 
-    json_output = dump_json(output)
+    json_output = dump_json(output, pretty=True)
     print(json_output)
