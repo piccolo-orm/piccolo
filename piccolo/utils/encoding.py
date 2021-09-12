@@ -12,24 +12,19 @@ except ImportError:
     ORJSON = False
 
 
-def dump_json(data: t.Any, pretty=False) -> str:
+def dump_json(data: t.Any, pretty: bool = False) -> str:
     if ORJSON:
+        orjson_params: t.Dict[str, t.Any] = {"default": str}
         if pretty:
-            return orjson.dumps(
-                data,
-                default=str,
-                option=(
-                    orjson.OPT_INDENT_2
-                    | orjson.OPT_APPEND_NEWLINE  # type: ignore
-                ),
-            ).decode("utf8")
-        else:
-            return orjson.dumps(data, default=str).decode("utf8")
+            orjson_params["option"] = (
+                orjson.OPT_INDENT_2 | orjson.OPT_APPEND_NEWLINE  # type: ignore
+            )
+        return orjson.dumps(data, **orjson_params).decode("utf8")
     else:
+        params: t.Dict[str, t.Any] = {"default": str}
         if pretty:
-            return json.dumps(data, default=str, indent=2)
-        else:
-            return json.dumps(data, default=str)
+            params["indent"] = 2
+        return json.dumps(data, **params)
 
 
 def load_json(data: str) -> t.Any:

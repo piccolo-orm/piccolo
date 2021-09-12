@@ -5,21 +5,9 @@ from piccolo.conf.apps import Finder
 from piccolo.utils.encoding import dump_json
 
 
-async def dump(apps: str = "all", tables: str = "all"):
-    """
-    Serialises the data from the given Piccolo apps / tables, and prints it
-    out.
-
-    :param apps:
-        For all apps, specify `all`. For specific apps, pass in a comma
-        separated list e.g. `blog,profiles,billing`. For a single app, just
-        pass in the name of that app, e.g. `blog`.
-    :param tables:
-        For all tables, specify `all`. For specific tables, pass in a comma
-        separated list e.g. `Post,Tag`. For a single app, just
-        pass in the name of that app, e.g. `Post`.
-
-    """
+async def get_dump(
+    apps: str = "all", tables: str = "all"
+) -> t.Dict[str, t.Any]:
     finder = Finder()
     app_names = []
 
@@ -43,7 +31,7 @@ async def dump(apps: str = "all", tables: str = "all"):
 
         if tables != "all":
             if "," in tables:
-                table_class_names = apps.split(",")
+                table_class_names = tables.split(",")
             else:
                 # Must be a single table class name
                 table_class_names = [tables]
@@ -61,5 +49,30 @@ async def dump(apps: str = "all", tables: str = "all"):
             data = await table_class.select().run()
             output[app_name][table_class.__name__] = data
 
-    json_output = dump_json(output, pretty=True)
-    print(json_output)
+    return output
+
+
+async def dump_to_json_string(apps: str = "all", tables: str = "all") -> str:
+    dump = await get_dump(apps=apps, tables=tables)
+    json_output = dump_json(dump, pretty=True)
+    return json_output
+
+
+# TODO - parse the apps and tables, rather than passing around the strings.
+async def dump(apps: str = "all", tables: str = "all"):
+    """
+    Serialises the data from the given Piccolo apps / tables, and prints it
+    out.
+
+    :param apps:
+        For all apps, specify `all`. For specific apps, pass in a comma
+        separated list e.g. `blog,profiles,billing`. For a single app, just
+        pass in the name of that app, e.g. `blog`.
+    :param tables:
+        For all tables, specify `all`. For specific tables, pass in a comma
+        separated list e.g. `Post,Tag`. For a single app, just
+        pass in the name of that app, e.g. `Post`.
+
+    """
+    json_string = dump_to_json_string(apps, tables)
+    print(json_string)

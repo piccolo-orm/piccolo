@@ -54,6 +54,10 @@ class Engine(metaclass=ABCMeta):
     async def run_ddl(self, ddl: str, in_pool: bool = True):
         pass
 
+    @abstractmethod
+    def transaction(self):
+        pass
+
     async def check_version(self):
         """
         Warn if the database version isn't supported.
