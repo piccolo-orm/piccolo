@@ -49,10 +49,11 @@ up an application on their local machines, or when deploying to a new
 environment.
 
 Databases such as Postgres have inbuilt ways of dumping and restoring data
-(via ``pg_dump`` and ``pg_restore``), however they use binary files, which
-aren't suitable for source control. Also, when dumping and restoring data, the
-databases need to be running the same version of Postgres, which occasionally
-is problematic.
+(via ``pg_dump`` and ``pg_restore``). Some reasons to use the fixtures app
+instead:
+
+ * When you want the data to be loadable in a range of database versions.
+ * Fixtures are stored in JSON, which are a bit friendlier for source control.
 
 To dump the data into a new fixture file:
 
