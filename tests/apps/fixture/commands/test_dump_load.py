@@ -1,6 +1,12 @@
+import datetime
+import decimal
+import uuid
 from unittest import TestCase
 
-from piccolo.apps.fixture.commands.dump import dump_to_json_string
+from piccolo.apps.fixture.commands.dump import (
+    FixtureConfig,
+    dump_to_json_string,
+)
 from piccolo.apps.fixture.commands.load import load_json_string
 from piccolo.utils.sync import run_sync
 from tests.example_apps.mega.tables import MegaTable, SmallTable
@@ -19,9 +25,46 @@ class TestDumpLoad(TestCase):
         for table_class in (MegaTable, SmallTable):
             table_class.alter().drop_table().run_sync()
 
-    def _test_dump_load(self):
+    def insert_row(self):
+        small_table = SmallTable(varchar_col="Test")
+        small_table.save().run_sync()
+
+        mega_table = MegaTable(
+            bigint_col=1,
+            boolean_col=True,
+            bytea_col="hello".encode("utf8"),
+            date_col=datetime.date(year=2021, month=1, day=1),
+            foreignkey_col=small_table,
+            integer_col=1,
+            interval_col=datetime.timedelta(seconds=10),
+            json_col={"a": 1},
+            jsonb_col={"a": 1},
+            numeric_col=decimal.Decimal("1.1"),
+            real_col=1.1,
+            smallint_col=1,
+            text_col="hello",
+            timestamp_col=datetime.datetime(year=2021, month=1, day=1),
+            timestamptz_col=datetime.datetime(year=2021, month=1, day=1),
+            uuid_col=uuid.UUID("12783854-c012-4c15-8183-8eecb46f2c4e"),
+            varchar_col="hello",
+            unique_col="hello",
+            null_col=None,
+            not_null_col="hello",
+        )
+        mega_table.save().run_sync()
+
+    def test_dump_load(self):
+        self.insert_row()
+
         json_string = run_sync(
-            dump_to_json_string(apps="example_app", tables="Band,Manager")
+            dump_to_json_string(
+                fixture_configs=[
+                    FixtureConfig(
+                        app_name="mega",
+                        table_class_names=["SmallTable", "MegaTable"],
+                    )
+                ]
+            )
         )
 
         # We need to clear the data out now, otherwise when loading the data
@@ -34,28 +77,46 @@ class TestDumpLoad(TestCase):
 
         self.assertEqual(
             SmallTable.select().run_sync(),
-            [
-                {
-                    "id": 1,
-                    "name": "Pythonistas",
-                    "manager": 1,
-                    "popularity": 1000,
-                },
-                {
-                    "id": 2,
-                    "name": "Rustaceans",
-                    "manager": 2,
-                    "popularity": 2000,
-                },
-                {"id": 3, "name": "CSharps", "manager": 3, "popularity": 10},
-            ],
+            [{"id": 1, "varchar_col": "Test"}],
+        )
+
+        mega_table_data = MegaTable.select().run_sync()
+
+        # Real numbers don't have perfect precision when coming back from the
+        # database, so we need to round them to be able to compare them.
+        mega_table_data[0]["real_col"] = round(
+            mega_table_data[0]["real_col"], 1
         )
 
         self.assertEqual(
-            MegaTable.select().run_sync(),
+            mega_table_data,
             [
-                {"id": 1, "name": "Guido"},
-                {"id": 2, "name": "Graydon"},
-                {"id": 3, "name": "Mads"},
+                {
+                    "id": 1,
+                    "bigint_col": 1,
+                    "boolean_col": True,
+                    "bytea_col": b"hello",
+                    "date_col": datetime.date(2021, 1, 1),
+                    "foreignkey_col": 1,
+                    "integer_col": 1,
+                    "interval_col": datetime.timedelta(seconds=10),
+                    "json_col": '{"a":1}',
+                    "jsonb_col": '{"a": 1}',
+                    "numeric_col": decimal.Decimal("1.1"),
+                    "real_col": 1.1,
+                    "smallint_col": 1,
+                    "text_col": "hello",
+                    "timestamp_col": datetime.datetime(2021, 1, 1, 0, 0),
+                    "timestamptz_col": datetime.datetime(
+                        2021, 1, 1, 0, 0, tzinfo=datetime.timezone.utc
+                    ),
+                    "uuid_col": uuid.UUID(
+                        "12783854-c012-4c15-8183-8eecb46f2c4e"
+                    ),
+                    "varchar_col": "hello",
+                    "unique_col": "hello",
+                    "null_col": None,
+                    "not_null_col": "hello",
+                }
             ],
         )

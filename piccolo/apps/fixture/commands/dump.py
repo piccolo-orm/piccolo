@@ -1,17 +1,52 @@
 import typing as t
 
+from piccolo.apps.fixture.commands.shared import (
+    FixtureConfig,
+    create_pydantic_fixture_model,
+)
 from piccolo.apps.migrations.auto.migration_manager import sort_table_classes
 from piccolo.conf.apps import Finder
-from piccolo.utils.encoding import dump_json
 
 
 async def get_dump(
-    apps: str = "all", tables: str = "all"
+    fixture_configs: t.List[FixtureConfig],
 ) -> t.Dict[str, t.Any]:
     finder = Finder()
-    app_names = []
 
-    ###########################################################################
+    output: t.Dict[str, t.Any] = {}
+
+    for fixture_config in fixture_configs:
+        app_config = finder.get_app_config(app_name=fixture_config.app_name)
+        table_classes = [
+            i
+            for i in app_config.table_classes
+            if i.__name__ in fixture_config.table_class_names
+        ]
+        sorted_table_classes = sort_table_classes(table_classes)
+
+        output[fixture_config.app_name] = {}
+
+        for table_class in sorted_table_classes:
+            data = await table_class.select().run()
+            output[fixture_config.app_name][table_class.__name__] = data
+
+    return output
+
+
+async def dump_to_json_string(
+    fixture_configs: t.List[FixtureConfig],
+) -> str:
+    dump = await get_dump(fixture_configs=fixture_configs)
+    pydantic_model = create_pydantic_fixture_model(
+        fixture_configs=fixture_configs
+    )
+    json_output = pydantic_model(**dump).json()
+    return json_output
+
+
+def parse_args(apps: str, tables: str) -> t.List[FixtureConfig]:
+    finder = Finder()
+    app_names = []
 
     if apps == "all":
         app_names = finder.get_sorted_app_names()
@@ -21,41 +56,37 @@ async def get_dump(
         # Must be a single app name
         app_names.append(apps)
 
-    ###########################################################################
+    table_class_names: t.Optional[t.List[str]] = None
 
-    output: t.Dict[str, t.Any] = {}
+    if tables != "all":
+        if "," in tables:
+            table_class_names = tables.split(",")
+        else:
+            # Must be a single table class name
+            table_class_names = [tables]
+
+    output: t.List[FixtureConfig] = []
 
     for app_name in app_names:
         app_config = finder.get_app_config(app_name=app_name)
         table_classes = app_config.table_classes
 
-        if tables != "all":
-            if "," in tables:
-                table_class_names = tables.split(",")
-            else:
-                # Must be a single table class name
-                table_class_names = [tables]
-
-            table_classes = [
-                i for i in table_classes if i.__name__ in table_class_names
+        if table_class_names is None:
+            fixture_configs = [i.__name__ for i in table_classes]
+        else:
+            fixture_configs = [
+                i.__name__
+                for i in table_classes
+                if i.__name__ in table_class_names
             ]
-
-        # Sort the table classes based on their ForeignKey columns
-        sorted_table_classes = sort_table_classes(table_classes)
-
-        output[app_name] = {}
-
-        for table_class in sorted_table_classes:
-            data = await table_class.select().run()
-            output[app_name][table_class.__name__] = data
+        output.append(
+            FixtureConfig(
+                app_name=app_name,
+                table_class_names=fixture_configs,
+            )
+        )
 
     return output
-
-
-async def dump_to_json_string(apps: str = "all", tables: str = "all") -> str:
-    dump = await get_dump(apps=apps, tables=tables)
-    json_output = dump_json(dump, pretty=True)
-    return json_output
 
 
 # TODO - parse the apps and tables, rather than passing around the strings.
@@ -74,5 +105,6 @@ async def dump(apps: str = "all", tables: str = "all"):
         pass in the name of that app, e.g. `Post`.
 
     """
-    json_string = await dump_to_json_string(apps, tables)
+    fixture_configs = parse_args(apps=apps, tables=tables)
+    json_string = await dump_to_json_string(fixture_configs=fixture_configs)
     print(json_string)
