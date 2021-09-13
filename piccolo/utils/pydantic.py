@@ -6,7 +6,6 @@ import uuid
 from functools import lru_cache
 
 import pydantic
-from asyncpg.pgproto.pgproto import UUID
 
 from piccolo.columns import Column
 from piccolo.columns.column_types import (
@@ -23,9 +22,16 @@ from piccolo.columns.column_types import (
 from piccolo.table import Table
 from piccolo.utils.encoding import load_json
 
+try:
+    from asyncpg.pgproto.pgproto import UUID  # type: ignore
+except ImportError:
+    JSON_ENCODERS = {uuid.UUID: lambda i: str(i)}
+else:
+    JSON_ENCODERS = {uuid.UUID: lambda i: str(i), UUID: lambda i: str(i)}
+
 
 class Config(pydantic.BaseConfig):
-    json_encoders = {uuid.UUID: lambda i: str(i), UUID: lambda i: str(i)}
+    json_encoders = JSON_ENCODERS
     arbitrary_types_allowed = True
 
 
