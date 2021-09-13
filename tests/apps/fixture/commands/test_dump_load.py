@@ -1,5 +1,5 @@
-from piccolo.apps.fixtures.commands.dump import dump_to_json_string
-from piccolo.apps.fixtures.commands.load import load_json_string
+from piccolo.apps.fixture.commands.dump import dump_to_json_string
+from piccolo.apps.fixture.commands.load import load_json_string
 from piccolo.utils.sync import run_sync
 from tests.base import DBTestCase
 from tests.example_app.tables import Band, Manager

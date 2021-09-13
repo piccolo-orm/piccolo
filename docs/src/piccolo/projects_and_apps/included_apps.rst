@@ -38,8 +38,8 @@ Lets you scaffold an ASGI web app. See :ref:`ASGICommand`.
 
 -------------------------------------------------------------------------------
 
-fixtures
-~~~~~~~~
+fixture
+~~~~~~~
 
 Fixtures are used when you want to seed your database with essential data (for
 example, country names).
@@ -65,7 +65,7 @@ a subset of apps and tables instead, for example:
 
 .. code-block:: bash
 
-    piccolo fixtures dump --apps=blog --tables=Post > fixtures.json
+    piccolo fixture dump --apps=blog --tables=Post > fixtures.json
 
     # Or for multiple apps / tables
     piccolo fixtures dump --apps=blog,shop --tables=Post,Product > fixtures.json
@@ -74,7 +74,7 @@ To load the fixture:
 
 .. code-block:: bash
 
-    piccolo fixtures load fixtures.json
+    piccolo fixture load fixtures.json
 
 -------------------------------------------------------------------------------
 

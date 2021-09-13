@@ -12,7 +12,7 @@ except ImportError:
 
 from piccolo.apps.app.piccolo_app import APP_CONFIG as app_config
 from piccolo.apps.asgi.piccolo_app import APP_CONFIG as asgi_config
-from piccolo.apps.fixtures.piccolo_app import APP_CONFIG as fixtures_config
+from piccolo.apps.fixture.piccolo_app import APP_CONFIG as fixtures_config
 from piccolo.apps.meta.piccolo_app import APP_CONFIG as meta_config
 from piccolo.apps.migrations.commands.check import CheckMigrationManager
 from piccolo.apps.migrations.piccolo_app import APP_CONFIG as migrations_config
