@@ -74,5 +74,5 @@ async def dump(apps: str = "all", tables: str = "all"):
         pass in the name of that app, e.g. `Post`.
 
     """
-    json_string = dump_to_json_string(apps, tables)
+    json_string = await dump_to_json_string(apps, tables)
     print(json_string)
