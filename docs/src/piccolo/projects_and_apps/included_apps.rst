@@ -60,11 +60,15 @@ To dump the data into a new fixture file:
 
     piccolo fixtures dump > fixtures.json
 
-You can dump the data from certain apps and tables, for example:
+By default, the fixture contains data from all apps and tables. You can specify
+a subset of apps and tables instead, for example:
 
 .. code-block:: bash
 
-    piccolo fixtures dump --apps=Blog --tables=Post > fixtures.json
+    piccolo fixtures dump --apps=blog --tables=Post > fixtures.json
+
+    # Or for multiple apps / tables
+    piccolo fixtures dump --apps=blog,shop --tables=Post,Product > fixtures.json
 
 To load the fixture:
 
