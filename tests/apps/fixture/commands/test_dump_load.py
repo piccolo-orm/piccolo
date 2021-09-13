@@ -9,6 +9,7 @@ from piccolo.apps.fixture.commands.dump import (
 )
 from piccolo.apps.fixture.commands.load import load_json_string
 from piccolo.utils.sync import run_sync
+from tests.base import postgres_only
 from tests.example_apps.mega.tables import MegaTable, SmallTable
 
 
@@ -53,6 +54,7 @@ class TestDumpLoad(TestCase):
         )
         mega_table.save().run_sync()
 
+    @postgres_only
     def test_dump_load(self):
         self.insert_row()
 
@@ -88,6 +90,12 @@ class TestDumpLoad(TestCase):
             mega_table_data[0]["real_col"], 1
         )
 
+        # Remove white space from the JSON values
+        for col_name in ("json_col", "jsonb_col"):
+            mega_table_data[0][col_name] = mega_table_data[0][
+                col_name
+            ].replace(" ", "")
+
         self.assertEqual(
             mega_table_data,
             [
@@ -101,7 +109,7 @@ class TestDumpLoad(TestCase):
                     "integer_col": 1,
                     "interval_col": datetime.timedelta(seconds=10),
                     "json_col": '{"a":1}',
-                    "jsonb_col": '{"a": 1}',
+                    "jsonb_col": '{"a":1}',
                     "numeric_col": decimal.Decimal("1.1"),
                     "real_col": 1.1,
                     "smallint_col": 1,
