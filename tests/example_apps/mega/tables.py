@@ -42,7 +42,7 @@ class MegaTable(Table):
     interval_col = Interval()
     json_col = JSON()
     jsonb_col = JSONB()
-    numeric_col = Numeric()
+    numeric_col = Numeric(digits=(5, 2))
     real_col = Real()
     smallint_col = SmallInt()
     text_col = Text()
