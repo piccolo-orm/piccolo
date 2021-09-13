@@ -14,7 +14,7 @@ from piccolo.columns.column_types import Varchar
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
 from tests.base import postgres_only
-from tests.mega_table import MegaTable, SmallTable
+from tests.example_apps.mega.tables import MegaTable, SmallTable
 
 
 @postgres_only

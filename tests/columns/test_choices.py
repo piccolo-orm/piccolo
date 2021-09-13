@@ -1,5 +1,5 @@
 from tests.base import DBTestCase
-from tests.example_app.tables import Shirt
+from tests.example_apps.music.tables import Shirt
 
 
 class TestChoices(DBTestCase):

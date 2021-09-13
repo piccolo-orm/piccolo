@@ -10,7 +10,7 @@ from piccolo.apps.migrations.commands.forwards import forwards
 from piccolo.apps.migrations.tables import Migration
 from piccolo.utils.sync import run_sync
 from tests.base import postgres_only
-from tests.example_app.tables import (
+from tests.example_apps.music.tables import (
     Band,
     Concert,
     Manager,

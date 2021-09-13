@@ -2,9 +2,9 @@ from unittest import TestCase
 
 from piccolo.columns import BigInt, Integer, Numeric, Varchar
 from piccolo.table import Table
+from tests.example_apps.music.tables import Band, Manager
 
 from ..base import DBTestCase, postgres_only
-from ..example_app.tables import Band, Manager
 
 
 class TestRenameColumn(DBTestCase):

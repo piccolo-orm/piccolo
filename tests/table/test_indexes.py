@@ -1,7 +1,8 @@
 from unittest import TestCase
 
+from tests.example_apps.music.tables import Manager
+
 from ..base import DBTestCase
-from ..example_app.tables import Manager
 
 
 class TestIndexes(DBTestCase):

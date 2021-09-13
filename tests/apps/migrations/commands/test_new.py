@@ -12,7 +12,7 @@ from piccolo.apps.migrations.commands.new import (
 from piccolo.conf.apps import AppConfig
 from piccolo.utils.sync import run_sync
 from tests.base import postgres_only
-from tests.example_app.tables import Manager
+from tests.example_apps.music.tables import Manager
 
 
 class TestNewMigrationCommand(TestCase):

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from piccolo.query.base import Query
 from tests.base import DBTestCase, sqlite_only
-from tests.example_app.tables import Band
+from tests.example_apps.music.tables import Band
 
 
 @dataclass

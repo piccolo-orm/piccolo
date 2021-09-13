@@ -11,5 +11,9 @@ class TestShowAll(TestCase):
 
         self.assertEqual(
             print_.mock_calls,
-            [call("Registered apps:"), call("tests.example_app.piccolo_app")],
+            [
+                call("Registered apps:"),
+                call("tests.example_apps.music.piccolo_app"),
+                call("tests.example_apps.mega.piccolo_app"),
+            ],
         )

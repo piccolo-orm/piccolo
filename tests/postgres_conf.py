@@ -14,4 +14,9 @@ DB = PostgresEngine(
 )
 
 
-APP_REGISTRY = AppRegistry(apps=["tests.example_app.piccolo_app"])
+APP_REGISTRY = AppRegistry(
+    apps=[
+        "tests.example_apps.music.piccolo_app",
+        "tests.example_apps.mega.piccolo_app",
+    ]
+)

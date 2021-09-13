@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from piccolo.columns.column_types import Varchar
-from tests.example_app.tables import Band
+from tests.example_apps.music.tables import Band
 
 
 class TestRef(TestCase):

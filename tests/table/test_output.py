@@ -2,7 +2,7 @@ import json
 from unittest import TestCase
 
 from tests.base import DBTestCase
-from tests.example_app.tables import Band, RecordingStudio
+from tests.example_apps.music.tables import Band, RecordingStudio
 
 
 class TestOutputList(DBTestCase):

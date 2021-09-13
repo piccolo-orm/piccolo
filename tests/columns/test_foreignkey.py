@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from piccolo.columns import Column, ForeignKey, LazyTableReference, Varchar
 from piccolo.table import Table
-from tests.example_app.tables import Band, Concert, Manager, Ticket
+from tests.example_apps.music.tables import Band, Concert, Manager, Ticket
 
 
 class Manager1(Table, tablename="manager"):

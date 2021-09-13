@@ -1,7 +1,13 @@
 import decimal
 from unittest import TestCase
 
-from tests.example_app.tables import Band, Concert, Manager, Ticket, Venue
+from tests.example_apps.music.tables import (
+    Band,
+    Concert,
+    Manager,
+    Ticket,
+    Venue,
+)
 
 TABLES = [Manager, Band, Venue, Concert]
 
