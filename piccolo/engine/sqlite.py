@@ -141,12 +141,21 @@ def convert_boolean_out(value: bytes) -> bool:
     return _value == "1"
 
 
-def convert_timestamptz_out(value: bytes) -> datetime.datetime:
+def convert_timestamp_out(value: bytes) -> datetime.datetime:
     """
-    If the value is from a timstamptz column, convert it to a datetime value,
-    with a timezone of UTC.
+    If the value is from a timestamp column, convert it to a datetime value.
     """
     return datetime.datetime.fromisoformat(value.decode("utf8"))
+
+
+def convert_timestamptz_out(value: bytes) -> datetime.datetime:
+    """
+    If the value is from a timestamptz column, convert it to a datetime value,
+    with a timezone of UTC.
+    """
+    _value = datetime.datetime.fromisoformat(value.decode("utf8"))
+    _value = _value.replace(tzinfo=datetime.timezone.utc)
+    return _value
 
 
 def convert_array_out(value: bytes) -> t.List:
@@ -164,6 +173,7 @@ sqlite3.register_converter("Date", convert_date_out)
 sqlite3.register_converter("Time", convert_time_out)
 sqlite3.register_converter("Seconds", convert_seconds_out)
 sqlite3.register_converter("Boolean", convert_boolean_out)
+sqlite3.register_converter("Timestamp", convert_timestamp_out)
 sqlite3.register_converter("Timestamptz", convert_timestamptz_out)
 sqlite3.register_converter("Array", convert_array_out)
 

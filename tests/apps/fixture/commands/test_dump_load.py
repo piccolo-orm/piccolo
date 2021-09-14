@@ -9,13 +9,13 @@ from piccolo.apps.fixture.commands.dump import (
 )
 from piccolo.apps.fixture.commands.load import load_json_string
 from piccolo.utils.sync import run_sync
-from tests.base import postgres_only
 from tests.example_apps.mega.tables import MegaTable, SmallTable
 
 
 class TestDumpLoad(TestCase):
     """
-    Test the dump and load commands - makes sense to test them together.
+    Test the fixture dump and load commands - makes sense to test them
+    together.
     """
 
     def setUp(self):
@@ -54,8 +54,11 @@ class TestDumpLoad(TestCase):
         )
         mega_table.save().run_sync()
 
-    @postgres_only
     def test_dump_load(self):
+        """
+        Make sure we can dump some rows into a JSON fixture, then load them
+        back into the database.
+        """
         self.insert_row()
 
         json_string = run_sync(
@@ -96,35 +99,33 @@ class TestDumpLoad(TestCase):
                 col_name
             ].replace(" ", "")
 
-        self.assertEqual(
-            mega_table_data,
-            [
-                {
-                    "id": 1,
-                    "bigint_col": 1,
-                    "boolean_col": True,
-                    "bytea_col": b"hello",
-                    "date_col": datetime.date(2021, 1, 1),
-                    "foreignkey_col": 1,
-                    "integer_col": 1,
-                    "interval_col": datetime.timedelta(seconds=10),
-                    "json_col": '{"a":1}',
-                    "jsonb_col": '{"a":1}',
-                    "numeric_col": decimal.Decimal("1.1"),
-                    "real_col": 1.1,
-                    "smallint_col": 1,
-                    "text_col": "hello",
-                    "timestamp_col": datetime.datetime(2021, 1, 1, 0, 0),
-                    "timestamptz_col": datetime.datetime(
-                        2021, 1, 1, 0, 0, tzinfo=datetime.timezone.utc
-                    ),
-                    "uuid_col": uuid.UUID(
-                        "12783854-c012-4c15-8183-8eecb46f2c4e"
-                    ),
-                    "varchar_col": "hello",
-                    "unique_col": "hello",
-                    "null_col": None,
-                    "not_null_col": "hello",
-                }
-            ],
+        self.assertTrue(len(mega_table_data) == 1)
+
+        self.assertDictEqual(
+            mega_table_data[0],
+            {
+                "id": 1,
+                "bigint_col": 1,
+                "boolean_col": True,
+                "bytea_col": b"hello",
+                "date_col": datetime.date(2021, 1, 1),
+                "foreignkey_col": 1,
+                "integer_col": 1,
+                "interval_col": datetime.timedelta(seconds=10),
+                "json_col": '{"a":1}',
+                "jsonb_col": '{"a":1}',
+                "numeric_col": decimal.Decimal("1.1"),
+                "real_col": 1.1,
+                "smallint_col": 1,
+                "text_col": "hello",
+                "timestamp_col": datetime.datetime(2021, 1, 1, 0, 0),
+                "timestamptz_col": datetime.datetime(
+                    2021, 1, 1, 0, 0, tzinfo=datetime.timezone.utc
+                ),
+                "uuid_col": uuid.UUID("12783854-c012-4c15-8183-8eecb46f2c4e"),
+                "varchar_col": "hello",
+                "unique_col": "hello",
+                "null_col": None,
+                "not_null_col": "hello",
+            },
         )
