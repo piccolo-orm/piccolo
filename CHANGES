@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.47.0
+------
+You can now use ``pip install piccolo[all]``, which will install all optional
+requirements.
+
 0.46.0
 ------
 Added the fixture app. This is used to dump data from a database to a JSON
