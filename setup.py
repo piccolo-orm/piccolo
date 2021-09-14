@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import itertools
 import os
-from typing import List
+import typing as t
+
 from setuptools import find_packages, setup
 
 from piccolo import __VERSION__ as VERSION
-
 
 directory = os.path.abspath(os.path.dirname(__file__))
 
@@ -17,7 +18,7 @@ with open(os.path.join(directory, "README.md")) as f:
     LONG_DESCRIPTION = f.read()
 
 
-def parse_requirement(req_path: str) -> List[str]:
+def parse_requirement(req_path: str) -> t.List[str]:
     """
     Parse requirement file.
     Example:
@@ -31,7 +32,7 @@ def parse_requirement(req_path: str) -> List[str]:
         return [i.strip() for i in contents.strip().split("\n")]
 
 
-def extras_require():
+def extras_require() -> t.Dict[str, t.List[str]]:
     """
     Parse requirements in requirements/extras directory
     """
@@ -40,6 +41,10 @@ def extras_require():
         extra_requirements[extra] = parse_requirement(
             os.path.join("extras", extra + ".txt")
         )
+
+    extra_requirements["all"] = [
+        i for i in itertools.chain.from_iterable(extra_requirements.values())
+    ]
 
     return extra_requirements
 

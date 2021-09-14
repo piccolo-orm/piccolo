@@ -72,21 +72,27 @@ await b.remove().run()
 
 Installing with PostgreSQL driver:
 
-```
+```bash
 pip install 'piccolo[postgres]'
 ```
 
 Installing with SQLite driver:
 
-```
+```bash
 pip install 'piccolo[sqlite]'
+```
+
+Installing with all optional dependencies (easiest):
+
+```bash
+pip install 'piccolo[all]'
 ```
 
 ## Building a web app?
 
 Let Piccolo scaffold you an ASGI web app, using Piccolo as the ORM:
 
-```
+```bash
 piccolo asgi new
 ```
 
@@ -98,4 +104,6 @@ We have a handy page which shows the equivalent of [common Django queries in Pic
 
 ## Documentation
 
-See [Read the docs](https://piccolo-orm.readthedocs.io/en/latest/piccolo/getting_started/index.html).
+Our documentation is on [Read the docs](https://piccolo-orm.readthedocs.io/en/latest/piccolo/getting_started/index.html).
+
+We also have some great [tutorial videos on YouTube](https://www.youtube.com/channel/UCE7x5nm1Iy9KDfXPNrNQ5lA).
