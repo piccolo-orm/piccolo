@@ -14,7 +14,7 @@ from piccolo.conf.apps import AppConfig
 from piccolo.table import Table
 from piccolo.utils.lazy_loader import LazyLoader
 from tests.base import DBTestCase, postgres_only, set_mock_return_value
-from tests.example_app.tables import Band, Concert, Manager, Venue
+from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
 asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")
 

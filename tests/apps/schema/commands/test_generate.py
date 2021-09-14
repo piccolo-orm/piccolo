@@ -10,60 +10,11 @@ from piccolo.apps.schema.commands.generate import (
     generate,
     get_output_schema,
 )
-from piccolo.columns.column_types import (
-    JSON,
-    JSONB,
-    UUID,
-    BigInt,
-    Boolean,
-    Bytea,
-    Date,
-    ForeignKey,
-    Integer,
-    Interval,
-    Numeric,
-    Real,
-    SmallInt,
-    Text,
-    Timestamp,
-    Timestamptz,
-    Varchar,
-)
+from piccolo.columns.column_types import Varchar
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
 from tests.base import postgres_only
-
-
-class SmallTable(Table):
-    varchar_col = Varchar()
-
-
-class MegaTable(Table):
-    """
-    A table containing all of the column types, and different column kwargs.
-    """
-
-    bigint_col = BigInt()
-    boolean_col = Boolean()
-    bytea_col = Bytea()
-    date_col = Date()
-    foreignkey_col = ForeignKey(SmallTable)
-    integer_col = Integer()
-    interval_col = Interval()
-    json_col = JSON()
-    jsonb_col = JSONB()
-    numeric_col = Numeric()
-    real_col = Real()
-    smallint_col = SmallInt()
-    text_col = Text()
-    timestamp_col = Timestamp()
-    timestamptz_col = Timestamptz()
-    uuid_col = UUID()
-    varchar_col = Varchar()
-
-    unique_col = Varchar(unique=True)
-    null_col = Varchar(null=True)
-    not_null_col = Varchar(null=False)
+from tests.example_apps.mega.tables import MegaTable, SmallTable
 
 
 @postgres_only

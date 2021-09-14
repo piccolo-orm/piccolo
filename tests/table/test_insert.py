@@ -1,5 +1,6 @@
+from tests.example_apps.music.tables import Band, Manager
+
 from ..base import DBTestCase
-from ..example_app.tables import Band, Manager
 
 
 class TestInsert(DBTestCase):

@@ -1,5 +1,5 @@
 from tests.base import DBTestCase
-from tests.example_app.tables import Band, Manager
+from tests.example_apps.music.tables import Band, Manager
 
 
 class TestToDict(DBTestCase):

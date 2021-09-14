@@ -4,10 +4,15 @@ Included Apps
 Just as you can modularise your own code using :ref:`apps<PiccoloApps>`, Piccolo itself
 ships with several builtin apps, which provide a lot of its functionality.
 
+-------------------------------------------------------------------------------
+
 Auto includes
 -------------
 
-The following are registered with your :ref:`AppRegistry<AppRegistry>` automatically:
+The following are registered with your :ref:`AppRegistry<AppRegistry>` automatically.
+
+.. hint:: To find out more about each of these commands you can use the
+    ``--help`` flag on the command line. For example ``piccolo app new --help``.
 
 -------------------------------------------------------------------------------
 
@@ -30,6 +35,47 @@ Lets you scaffold an ASGI web app. See :ref:`ASGICommand`.
 .. code-block:: bash
 
     piccolo asgi new
+
+-------------------------------------------------------------------------------
+
+fixture
+~~~~~~~
+
+Fixtures are used when you want to seed your database with essential data (for
+example, country names).
+
+Once you have created a fixture, it can be used by your colleagues when setting
+up an application on their local machines, or when deploying to a new
+environment.
+
+Databases such as Postgres have inbuilt ways of dumping and restoring data
+(via ``pg_dump`` and ``pg_restore``). Some reasons to use the fixtures app
+instead:
+
+ * When you want the data to be loadable in a range of database versions.
+ * Fixtures are stored in JSON, which are a bit friendlier for source control.
+
+To dump the data into a new fixture file:
+
+.. code-block:: bash
+
+    piccolo fixtures dump > fixtures.json
+
+By default, the fixture contains data from all apps and tables. You can specify
+a subset of apps and tables instead, for example:
+
+.. code-block:: bash
+
+    piccolo fixture dump --apps=blog --tables=Post > fixtures.json
+
+    # Or for multiple apps / tables
+    piccolo fixtures dump --apps=blog,shop --tables=Post,Product > fixtures.json
+
+To load the fixture:
+
+.. code-block:: bash
+
+    piccolo fixture load fixtures.json
 
 -------------------------------------------------------------------------------
 

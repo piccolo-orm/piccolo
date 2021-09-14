@@ -13,8 +13,7 @@ from piccolo.query.methods import (
     TableExists,
     Update,
 )
-
-from ..example_app.tables import Manager
+from tests.example_apps.music.tables import Manager
 
 
 class TestSlots(TestCase):

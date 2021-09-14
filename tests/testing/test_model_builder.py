@@ -2,8 +2,7 @@ import asyncio
 import unittest
 
 from piccolo.testing.model_builder import ModelBuilder
-
-from ..example_app.tables import (
+from tests.example_apps.music.tables import (
     Band,
     Concert,
     Manager,

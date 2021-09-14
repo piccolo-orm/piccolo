@@ -3,7 +3,7 @@ from unittest import TestCase
 from piccolo.columns import Secret
 from piccolo.columns.column_types import JSON, JSONB, ForeignKey
 from piccolo.table import Table
-from tests.example_app.tables import Band
+from tests.example_apps.music.tables import Band
 
 
 class TestMetaClass(TestCase):

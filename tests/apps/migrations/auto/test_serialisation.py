@@ -45,7 +45,7 @@ class TestSerialiseParams(TestCase):
             ),
             LazyTableReference(
                 table_class_name="Manager",
-                module_path="tests.example_app.tables",
+                module_path="tests.example_apps.music.tables",
             ),
         ]
 

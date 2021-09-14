@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from piccolo.query.mixins import ColumnsDelegate
-from tests.example_app.tables import Band
+from tests.example_apps.music.tables import Band
 
 
 class TestColumnsDelegate(TestCase):

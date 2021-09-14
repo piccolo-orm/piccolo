@@ -1,9 +1,9 @@
 import asyncio
 
 from piccolo.engine.postgres import PostgresEngine
+from tests.example_apps.music.tables import Manager
 
 from ..base import DBTestCase, postgres_only
-from ..example_app.tables import Manager
 
 
 @postgres_only
