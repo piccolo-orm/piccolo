@@ -34,3 +34,7 @@ Now install piccolo, ideally inside a `virtualenv <https://docs.python-guide.org
     # If using Piccolo with Uvicorn, Uvicorn will set uvloop as
     # default event loop if installed
     pip install 'piccolo[uvloop]'
+
+    # If you just want Piccolo with all of it's functionality, you might prefer
+    # to use this:
+    pip install 'piccolo[all]'
