@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing as t
 
 from piccolo.apps.fixture.commands.shared import (
@@ -11,6 +13,23 @@ from piccolo.conf.apps import Finder
 async def get_dump(
     fixture_configs: t.List[FixtureConfig],
 ) -> t.Dict[str, t.Any]:
+    """
+    Gets the data for each table specified and returns a data structure like:
+
+    .. code-block:: python
+
+        {
+            'my_app_name': {
+                'MyTableName': [
+                    {
+                        'id': 1,
+                        'my_column_name': 'foo'
+                    }
+                ]
+            }
+        }
+
+    """
     finder = Finder()
 
     output: t.Dict[str, t.Any] = {}
@@ -36,6 +55,9 @@ async def get_dump(
 async def dump_to_json_string(
     fixture_configs: t.List[FixtureConfig],
 ) -> str:
+    """
+    Dumps all of the data for the given tables into a JSON string.
+    """
     dump = await get_dump(fixture_configs=fixture_configs)
     pydantic_model = create_pydantic_fixture_model(
         fixture_configs=fixture_configs
@@ -45,6 +67,9 @@ async def dump_to_json_string(
 
 
 def parse_args(apps: str, tables: str) -> t.List[FixtureConfig]:
+    """
+    Works out which apps and tables the user is referring to.
+    """
     finder = Finder()
     app_names = []
 
@@ -89,7 +114,6 @@ def parse_args(apps: str, tables: str) -> t.List[FixtureConfig]:
     return output
 
 
-# TODO - parse the apps and tables, rather than passing around the strings.
 async def dump(apps: str = "all", tables: str = "all"):
     """
     Serialises the data from the given Piccolo apps / tables, and prints it

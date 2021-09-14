@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from piccolo.apps.fixture.commands.shared import (
     FixtureConfig,
     create_pydantic_fixture_model,
@@ -8,6 +10,9 @@ from piccolo.utils.encoding import load_json
 
 
 async def load_json_string(json_string: str):
+    """
+    Parses the JSON string, and inserts the parsed data into the database.
+    """
     # We have to deserialise the JSON to find out which apps and tables it
     # contains, so we can create a Pydantic model.
     # Then we let Pydantic do the proper deserialisation, as it does a much
