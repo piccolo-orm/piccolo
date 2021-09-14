@@ -1,6 +1,30 @@
 Changes
 =======
 
+0.46.0
+------
+Added the fixture app. This is used to dump data from a database to a JSON
+file, and then reload it again. It's useful for seeding a database with
+essential data, whether that's a colleague setting up their local environment,
+or deploying to production.
+
+To create a fixture:
+
+.. code-block:: bash
+
+  piccolo fixture dump --apps=blog > fixture.json
+
+To load a fixture:
+
+.. code-block:: bash
+
+  piccolo fixture load fixture.json
+
+As part of this change, Piccolo's Pydantic support was brought into this
+library (prior to this it only existed within the ``piccolo_api`` library). At
+a later date, the ``piccolo_api`` library will be updated, so it's Pydantic
+code just proxies to what's within the main ``piccolo`` library.
+
 0.45.1
 ------
 Improvements to ``piccolo schema generate``. It's now smarter about which
