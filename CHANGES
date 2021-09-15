@@ -3,9 +3,8 @@ Changes
 
 0.48.0
 ------
-The ``piccolo user create`` command can now be used without using the
-interactive prompt, by passing in command line arguments instead (courtesy
-@AliSayyah).
+The ``piccolo user create`` command can now be used by passing in command line
+arguments, instead of using the interactive prompt (courtesy @AliSayyah).
 
 For example ``piccolo user create --username=bob ...``.
 
