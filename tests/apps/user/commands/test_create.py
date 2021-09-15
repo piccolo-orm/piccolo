@@ -45,14 +45,14 @@ class TestCreate(TestCase):
 
         self.assertTrue(
             BaseUser.exists()
-                .where(
+            .where(
                 (BaseUser.admin == True)  # noqa: E712
                 & (BaseUser.username == "bob123")
                 & (BaseUser.email == "bob@test.com")
                 & (BaseUser.superuser == True)
                 & (BaseUser.active == True)
             )
-                .run_sync()
+            .run_sync()
         )
 
     def test_create_with_arguments(self, *args, **kwargs):
@@ -62,18 +62,18 @@ class TestCreate(TestCase):
             "password": "password123",
             "is_admin": True,
             "is_superuser": True,
-            "is_active": True
+            "is_active": True,
         }
         create(**arguments)
 
         self.assertTrue(
             BaseUser.exists()
-                .where(
+            .where(
                 (BaseUser.admin == True)  # noqa: E712
                 & (BaseUser.username == "bob123")
                 & (BaseUser.email == "bob@test.com")
                 & (BaseUser.superuser == True)
                 & (BaseUser.active == True)
             )
-                .run_sync()
+            .run_sync()
         )
