@@ -26,11 +26,22 @@ The app comes with some useful commands.
 user create
 ~~~~~~~~~~~
 
-Create a new user.
+Creates a new user. It presents an interactive prompt, asking for the username,
+password etc.
 
 .. code-block:: bash
 
     piccolo user create
+
+If you'd prefer to create a user without the interactive prompt (perhaps in a
+script), you can pass all of the arguments in as follows:
+
+.. code-block:: bash
+
+    piccolo user create --username=bob --password=bob123 --email=foo@bar.com  --is_admin=t --is_superuser=t --is_active=t
+
+If you choose this approach then be careful, as the password will be in the
+shell's history.
 
 user change_password
 ~~~~~~~~~~~~~~~~~~~~
