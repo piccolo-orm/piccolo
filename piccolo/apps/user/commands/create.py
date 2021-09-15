@@ -93,4 +93,4 @@ def create(
     )
     user.save().run_sync()
 
-    print(f"Created User {user.id}")
+    print(f"Created User {user.id}")  # type: ignore
