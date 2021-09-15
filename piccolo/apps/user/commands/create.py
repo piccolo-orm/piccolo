@@ -1,4 +1,5 @@
 import sys
+import typing as t
 from getpass import getpass, getuser
 
 from piccolo.apps.user.tables import BaseUser
@@ -55,24 +56,32 @@ def get_is_active() -> bool:
     return active == "y"
 
 
-def create():
+def create(
+    username: t.Optional[str] = None,
+    email: t.Optional[str] = None,
+    password: t.Optional[str] = None,
+    is_admin: t.Optional[bool] = None,
+    is_superuser: t.Optional[bool] = None,
+    is_active: t.Optional[bool] = None,
+):
     """
     Create a new user.
     """
-    username = get_username()
-    email = get_email()
-    password = get_password()
-    confirmed_password = get_confirmed_password()
+    username = get_username() if username is None else username
+    email = get_email() if email is None else email
+    if password is None:
+        password = get_password()
+        confirmed_password = get_confirmed_password()
 
-    if not password == confirmed_password:
-        sys.exit("Passwords don't match!")
+        if not password == confirmed_password:
+            sys.exit("Passwords don't match!")
 
     if len(password) < 4:
         sys.exit("The password is too short")
 
-    is_admin = get_is_admin()
-    is_superuser = get_is_superuser()
-    is_active = get_is_active()
+    is_admin = get_is_admin() if is_admin is None else is_admin
+    is_superuser = get_is_superuser() if is_superuser is None else is_superuser
+    is_active = get_is_active() if is_active is None else is_active
 
     user = BaseUser(
         username=username,
@@ -84,4 +93,4 @@ def create():
     )
     user.save().run_sync()
 
-    print(f"Created User {user.id}")
+    print(f"Created User {user.id}")  # type: ignore
