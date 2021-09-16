@@ -6,8 +6,8 @@ from piccolo.apps.fixtures.commands.shared import (
     FixtureConfig,
     create_pydantic_fixture_model,
 )
-from piccolo.apps.migrations.auto.migration_manager import sort_table_classes
 from piccolo.conf.apps import Finder
+from piccolo.table import sort_table_classes
 
 
 async def get_dump(

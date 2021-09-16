@@ -6,7 +6,6 @@ import typing as t
 import black
 from typing_extensions import Literal
 
-from piccolo.apps.migrations.auto.migration_manager import sort_table_classes
 from piccolo.apps.migrations.auto.serialisation import serialise_params
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import (
@@ -31,7 +30,7 @@ from piccolo.columns.column_types import (
 )
 from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
-from piccolo.table import Table, create_table_class
+from piccolo.table import Table, create_table_class, sort_table_classes
 from piccolo.utils.naming import _snake_to_camel
 
 if t.TYPE_CHECKING:  # pragma: no cover
