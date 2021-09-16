@@ -45,6 +45,20 @@ class TestNumericColumn(TestCase):
 
         pydantic_model(box_office=decimal.Decimal("1.0"))
 
+    def test_numeric_without_digits(self):
+        class Movie(Table):
+            box_office = Numeric()
+
+        try:
+            create_pydantic_model(table=Movie)
+        except TypeError:
+            self.fail(
+                "Creating numeric field without"
+                " digits failed in pydantic model."
+            )
+        else:
+            self.assertTrue(True)
+
 
 class TestSecretColumn(TestCase):
     def test_secret_param(self):
@@ -93,7 +107,6 @@ class TestColumnHelpText(TestCase):
     """
 
     def test_help_text_present(self):
-
         help_text = "In millions of US dollars."
 
         class Movie(Table):
@@ -115,7 +128,6 @@ class TestTableHelpText(TestCase):
     """
 
     def test_help_text_present(self):
-
         help_text = "Movies which were released in cinemas."
 
         class Movie(Table, help_text=help_text):
