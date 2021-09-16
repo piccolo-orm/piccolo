@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from piccolo.apps.migrations.tables import create_tables
+from piccolo.table import create_tables
 from tests.example_apps.music.tables import Band, Manager
 
 
