@@ -6,8 +6,8 @@ from tests.example_apps.music.tables import Band, Manager
 
 class TestCreateTables(TestCase):
     def tearDown(self) -> None:
-        Manager.alter().drop_table(cascade=True, if_exists=True).run_sync()
         Band.alter().drop_table(if_exists=True).run_sync()
+        Manager.alter().drop_table(if_exists=True).run_sync()
 
     def test_create_tables(self):
         create_tables(Manager, Band, if_not_exists=False)
