@@ -3,11 +3,11 @@ import decimal
 import uuid
 from unittest import TestCase
 
-from piccolo.apps.fixture.commands.dump import (
+from piccolo.apps.fixtures.commands.dump import (
     FixtureConfig,
     dump_to_json_string,
 )
-from piccolo.apps.fixture.commands.load import load_json_string
+from piccolo.apps.fixtures.commands.load import load_json_string
 from piccolo.utils.sync import run_sync
 from tests.example_apps.mega.tables import MegaTable, SmallTable
 

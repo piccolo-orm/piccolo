@@ -17,7 +17,7 @@ requirements.
 
 0.46.0
 ------
-Added the fixture app. This is used to dump data from a database to a JSON
+Added the fixtures app. This is used to dump data from a database to a JSON
 file, and then reload it again. It's useful for seeding a database with
 essential data, whether that's a colleague setting up their local environment,
 or deploying to production.
@@ -26,13 +26,13 @@ To create a fixture:
 
 .. code-block:: bash
 
-  piccolo fixture dump --apps=blog > fixture.json
+  piccolo fixtures dump --apps=blog > fixture.json
 
 To load a fixture:
 
 .. code-block:: bash
 
-  piccolo fixture load fixture.json
+  piccolo fixtures load fixture.json
 
 As part of this change, Piccolo's Pydantic support was brought into this
 library (prior to this it only existed within the ``piccolo_api`` library). At

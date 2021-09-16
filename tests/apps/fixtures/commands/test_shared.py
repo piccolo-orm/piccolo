@@ -3,7 +3,7 @@ import decimal
 import uuid
 from unittest import TestCase
 
-from piccolo.apps.fixture.commands.shared import (
+from piccolo.apps.fixtures.commands.shared import (
     FixtureConfig,
     create_pydantic_fixture_model,
 )
