@@ -1,6 +1,31 @@
 Changes
 =======
 
+0.49.0
+------
+Fixed a bug with ``create_pydantic_model`` when used with a ``Decimal`` /
+``Numeric`` column when no ``digits`` arguments was set (courtesy @AliSayyah).
+
+Added the ``create_tables`` function, which accepts a sequence of ``Table``
+subclasses, then sorts them based on their ``ForeignKey`` columns, and creates
+them. This is really useful for people who aren't using migrations (for
+example, when using Piccolo in a simple data science script). Courtesy
+@AliSayyah.
+
+.. code-block:: python
+
+  from piccolo.tables import create_tables
+
+  create_tables(Band, Manager, if_not_exists=True)
+
+  # Equivalent to:
+  Manager.create_table(if_not_exists=True).run_sync()
+  Band.create_table(if_not_exists=True).run_sync()
+
+Fixed typos with the new fixtures app - sometimes it was referred to as
+``fixture`` and other times ``fixtures``. It's now standardised as
+``fixtures`` (courtesy @hipertracker).
+
 0.48.0
 ------
 The ``piccolo user create`` command can now be used by passing in command line
