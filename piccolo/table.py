@@ -40,11 +40,11 @@ from piccolo.query.methods.create_index import CreateIndex
 from piccolo.query.methods.indexes import Indexes
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
+from piccolo.utils.graphlib import TopologicalSorter
 from piccolo.utils.sql_values import convert_to_sql_value
 
 if t.TYPE_CHECKING:
     from piccolo.columns import Selectable
-
 
 PROTECTED_TABLENAMES = ("user",)
 
@@ -126,7 +126,6 @@ class TableMetaclass(type):
 
 
 class Table(metaclass=TableMetaclass):
-
     # These are just placeholder values, so type inference isn't confused - the
     # actual values are set in __init_subclass__.
     _meta = TableMeta()
@@ -975,3 +974,82 @@ def create_table_class(
         kwds=class_kwargs,
         exec_body=lambda namespace: namespace.update(class_members),
     )
+
+
+def create_tables(*args: t.Type[Table], if_not_exists: bool = False) -> None:
+    """
+    Creates multiple tables that passed to it.
+    """
+    sorted_table_classes = sort_table_classes(list(args))
+    for table in sorted_table_classes:
+        Create(table=table, if_not_exists=if_not_exists).run_sync()
+
+
+def sort_table_classes(
+    table_classes: t.List[t.Type[Table]],
+) -> t.List[t.Type[Table]]:
+    """
+    Sort the table classes based on their foreign keys, so they can be created
+    in the correct order.
+    """
+    table_class_dict = {
+        table_class._meta.tablename: table_class
+        for table_class in table_classes
+    }
+
+    graph = _get_graph(table_classes)
+
+    sorter = TopologicalSorter(graph)
+    ordered_tablenames = tuple(sorter.static_order())
+
+    output: t.List[t.Type[Table]] = []
+    for tablename in ordered_tablenames:
+        table_class = table_class_dict.get(tablename, None)
+        if table_class is not None:
+            output.append(table_class)
+
+    return output
+
+
+def _get_graph(
+    table_classes: t.List[t.Type[Table]],
+    iterations: int = 0,
+    max_iterations: int = 5,
+) -> t.Dict[str, t.Set[str]]:
+    """
+    Analyses the tables based on their foreign keys, and returns a data
+    structure like:
+
+    .. code-block:: python
+
+        {'band': {'manager'}, 'concert': {'band', 'venue'}, 'manager': set()}
+
+    The keys are tablenames, and the values are tablenames directly connected
+    to it via a foreign key.
+
+    """
+    output: t.Dict[str, t.Set[str]] = {}
+
+    if iterations >= max_iterations:
+        return output
+
+    for table_class in table_classes:
+        dependents: t.Set[str] = set()
+        for fk in table_class._meta.foreign_key_columns:
+            dependents.add(
+                fk._foreign_key_meta.resolved_references._meta.tablename
+            )
+
+            # We also recursively check the related tables to get a fuller
+            # picture of the schema and relationships.
+            referenced_table = fk._foreign_key_meta.resolved_references
+            output.update(
+                _get_graph(
+                    [referenced_table],
+                    iterations=iterations + 1,
+                )
+            )
+
+        output[table_class._meta.tablename] = dependents
+
+    return output

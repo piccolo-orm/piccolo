@@ -2,16 +2,13 @@ import asyncio
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
-from piccolo.apps.migrations.auto.migration_manager import (
-    MigrationManager,
-    sort_table_classes,
-)
+from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.apps.migrations.commands.base import BaseMigrationManager
 from piccolo.columns import Text, Varchar
 from piccolo.columns.base import OnDelete, OnUpdate
 from piccolo.columns.column_types import ForeignKey
 from piccolo.conf.apps import AppConfig
-from piccolo.table import Table
+from piccolo.table import Table, sort_table_classes
 from piccolo.utils.lazy_loader import LazyLoader
 from tests.base import DBTestCase, postgres_only, set_mock_return_value
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
