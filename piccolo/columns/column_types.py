@@ -894,14 +894,14 @@ class Numeric(Column):
         """
         The total number of digits allowed.
         """
-        return self.digits[0]
+        return self.digits[0] if self.digits is not None else None
 
     @property
     def scale(self):
         """
         The number of digits after the decimal point.
         """
-        return self.digits[1]
+        return self.digits[1] if self.digits is not None else None
 
     def __init__(
         self,
