@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from piccolo.apps.fixture.commands.shared import (
+from piccolo.apps.fixtures.commands.shared import (
     FixtureConfig,
     create_pydantic_fixture_model,
 )

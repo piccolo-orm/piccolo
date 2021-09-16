@@ -17,7 +17,7 @@ requirements.
 
 0.46.0
 ------
-Added the fixture app. This is used to dump data from a database to a JSON
+Added the fixtures app. This is used to dump data from a database to a JSON
 file, and then reload it again. It's useful for seeding a database with
 essential data, whether that's a colleague setting up their local environment,
 or deploying to production.
