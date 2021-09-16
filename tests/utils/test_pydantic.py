@@ -52,7 +52,10 @@ class TestNumericColumn(TestCase):
         try:
             create_pydantic_model(table=Movie)
         except TypeError:
-            self.fail(f'Creating numeric field without digits failed in pydantic model.')
+            self.fail(
+                "Creating numeric field without"
+                " digits failed in pydantic model."
+            )
         else:
             self.assertTrue(True)
 
