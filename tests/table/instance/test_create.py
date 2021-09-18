@@ -18,12 +18,3 @@ class TestCreate(TestCase):
 
         names = [i["name"] for i in Manager.select(Manager.name).run_sync()]
         self.assertTrue("Maz" in names)
-
-    # def test_create_new_async(self):
-    #     """
-    #     Make sure that creating a new instance works with async.
-    #     """
-    #     await Manager.objects().create(name="Maz").run()
-    #
-    #     names = [i["name"] for i in Manager.select(Manager.name).run_sync()]
-    #     self.assertTrue("Maz" in names)
