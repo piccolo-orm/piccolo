@@ -57,6 +57,12 @@ Creating objects
     >>> band = Band(name="C-Sharps", popularity=100)
     >>> band.save().run_sync()
 
+This can also be done like this:
+
+.. code-block:: python
+
+    >>> band.objects().create(name="C-Sharps", popularity=100).run_sync()
+
 -------------------------------------------------------------------------------
 
 Updating objects
