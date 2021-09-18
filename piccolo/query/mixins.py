@@ -113,11 +113,12 @@ class WhereDelegate:
             self._extract_columns(combinable.first)
             self._extract_columns(combinable.second)
 
-    def where(self, where: Combinable):
-        if self._where:
-            self._where = And(self._where, where)
-        else:
-            self._where = where
+    def where(self, *where: Combinable):
+        for arg in where:
+            if self._where:
+                self._where = And(self._where, arg)
+            else:
+                self._where = arg
 
 
 @dataclass

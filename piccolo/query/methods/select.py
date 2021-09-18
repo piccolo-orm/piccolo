@@ -246,8 +246,8 @@ class Select(Query):
         )
         return self
 
-    def where(self, where: Combinable) -> Select:
-        self.where_delegate.where(where)
+    def where(self, *where: Combinable) -> Select:
+        self.where_delegate.where(*where)
         return self
 
     async def batch(

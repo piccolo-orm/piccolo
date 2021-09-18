@@ -155,8 +155,8 @@ class Objects(Query):
         self.order_by_delegate.order_by(*columns, ascending=ascending)
         return self
 
-    def where(self, where: Combinable) -> Objects:
-        self.where_delegate.where(where)
+    def where(self, *where: Combinable) -> Objects:
+        self.where_delegate.where(*where)
         return self
 
     async def batch(
