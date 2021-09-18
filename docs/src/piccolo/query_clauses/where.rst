@@ -191,6 +191,21 @@ Using multiple ``where`` clauses is equivalent to an AND.
         b.popularity < 1000
     ).run_sync()
 
+Also, multiple arguments inside ``where`` clause is equivalent to an AND.
+
+.. code-block:: python
+
+    b = Band
+
+    # These are equivalent:
+    b.select().where(
+        (b.popularity >= 100) & (b.popularity < 1000)
+    ).run_sync()
+
+    b.select().where(
+        b.popularity >= 100, b.popularity < 1000
+    ).run_sync()
+
 Using And / Or directly
 ~~~~~~~~~~~~~~~~~~~~~~~
 
