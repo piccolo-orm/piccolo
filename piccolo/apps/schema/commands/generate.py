@@ -309,52 +309,52 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
             data_type = pg_row_meta.data_type
             column_type = COLUMN_TYPE_MAP.get(data_type, None)
             column_name = pg_row_meta.column_name
-
-            if column_type:
-                kwargs: t.Dict[str, t.Any] = {
-                    "null": pg_row_meta.is_nullable == "YES",
-                    "unique": constraints.is_unique(column_name=column_name),
-                }
-
-                if constraints.is_primary_key(column_name=column_name):
-                    kwargs["primary_key"] = True
-                    if column_type == Integer:
-                        column_type = Serial
-
-                if constraints.is_foreign_key(column_name=column_name):
-                    fk_constraint_name = (
-                        constraints.get_foreign_key_constraint_name(
-                            column_name=column_name
-                        )
-                    )
-                    column_type = ForeignKey
-                    referenced_tablename = await get_foreign_key_reference(
-                        table_class=Schema, constraint_name=fk_constraint_name
-                    )
-                    if referenced_tablename:
-                        kwargs["references"] = create_table_class(
-                            _snake_to_camel(referenced_tablename)
-                        )
-                    else:
-                        kwargs["references"] = ForeignKeyPlaceholder
-
-                imports.add(
-                    "from piccolo.columns.column_types import "
-                    + column_type.__name__
-                )
-
-                if column_type is Varchar:
-                    kwargs["length"] = pg_row_meta.character_maximum_length
-
-                column = column_type(**kwargs)
-
-                serialised_params = serialise_params(column._meta.params)
-                for extra_import in serialised_params.extra_imports:
-                    imports.add(extra_import.__repr__())
-
-                columns[column_name] = column
-            else:
+            if not column_type:
                 warnings.append(f"{tablename}.{column_name} ['{data_type}']")
+                column_type = Column
+
+            kwargs: t.Dict[str, t.Any] = {
+                "null": pg_row_meta.is_nullable == "YES",
+                "unique": constraints.is_unique(column_name=column_name),
+            }
+
+            if constraints.is_primary_key(column_name=column_name):
+                kwargs["primary_key"] = True
+                if column_type == Integer:
+                    column_type = Serial
+
+            if constraints.is_foreign_key(column_name=column_name):
+                fk_constraint_name = (
+                    constraints.get_foreign_key_constraint_name(
+                        column_name=column_name
+                    )
+                )
+                column_type = ForeignKey
+                referenced_tablename = await get_foreign_key_reference(
+                    table_class=Schema, constraint_name=fk_constraint_name
+                )
+                if referenced_tablename:
+                    kwargs["references"] = create_table_class(
+                        _snake_to_camel(referenced_tablename)
+                    )
+                else:
+                    kwargs["references"] = ForeignKeyPlaceholder
+
+            imports.add(
+                "from piccolo.columns.column_types import "
+                + column_type.__name__
+            )
+
+            if column_type is Varchar:
+                kwargs["length"] = pg_row_meta.character_maximum_length
+
+            column = column_type(**kwargs)
+
+            serialised_params = serialise_params(column._meta.params)
+            for extra_import in serialised_params.extra_imports:
+                imports.add(extra_import.__repr__())
+
+            columns[column_name] = column
 
         table = create_table_class(
             class_name=_snake_to_camel(tablename),
