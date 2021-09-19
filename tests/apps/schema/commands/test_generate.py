@@ -10,6 +10,7 @@ from piccolo.apps.schema.commands.generate import (
     generate,
     get_output_schema,
 )
+from piccolo.columns.base import Column
 from piccolo.columns.column_types import Varchar
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
@@ -71,7 +72,7 @@ class TestGenerate(TestCase):
         self._compare_table_columns(SmallTable, SmallTable_)
 
     @patch("piccolo.apps.schema.commands.generate.print")
-    def test_generate(self, print_: MagicMock):
+    def test_generate_command(self, print_: MagicMock):
         """
         Test the main generate command runs without errors.
         """
@@ -81,3 +82,29 @@ class TestGenerate(TestCase):
         # Make sure the output is valid Python code (will raise a SyntaxError
         # exception otherwise).
         ast.parse(file_contents)
+
+    def test_unknown_column_type(self):
+        """
+        Make sure unknown column types are handled gracefully.
+        """
+
+        class Box(Column):
+            """
+            A column type which isn't supported by Piccolo officially yet.
+            """
+
+            pass
+
+        MegaTable.alter().add_column("box", Box()).run_sync()
+
+        output_schema: OutputSchema = run_sync(get_output_schema())
+
+        # Make sure there's a warning.
+        self.assertEqual(output_schema.warnings, ["mega_table.box ['box']"])
+
+        # Make sure the column type of the generated table is just ``Column``.
+        for table in output_schema.tables:
+            if table.__name__ == "MegaTable":
+                self.assertEqual(
+                    output_schema.tables[1].box.__class__.__name__, "Column"
+                )
