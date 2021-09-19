@@ -21,8 +21,8 @@ class Exists(Query):
         super().__init__(table, **kwargs)
         self.where_delegate = WhereDelegate()
 
-    def where(self, where: Combinable) -> Exists:
-        self.where_delegate.where(where)
+    def where(self, *where: Combinable) -> Exists:
+        self.where_delegate.where(*where)
         return self
 
     async def response_handler(self, response) -> bool:

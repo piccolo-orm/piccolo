@@ -30,8 +30,8 @@ class Update(Query):
         self.values_delegate.values(values)
         return self
 
-    def where(self, where: Combinable) -> Update:
-        self.where_delegate.where(where)
+    def where(self, *where: Combinable) -> Update:
+        self.where_delegate.where(*where)
         return self
 
     def validate(self):

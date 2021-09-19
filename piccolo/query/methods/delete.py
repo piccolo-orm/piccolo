@@ -24,8 +24,8 @@ class Delete(Query):
         self.force = force
         self.where_delegate = WhereDelegate()
 
-    def where(self, where: Combinable) -> Delete:
-        self.where_delegate.where(where)
+    def where(self, *where: Combinable) -> Delete:
+        self.where_delegate.where(*where)
         return self
 
     def _validate(self):

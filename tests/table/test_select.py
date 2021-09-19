@@ -63,6 +63,18 @@ class TestSelect(DBTestCase):
         )
         self.assertEqual(response, [{"name": "Pythonistas"}])
 
+        # check multiple arguments inside WHERE clause
+        response = (
+            Band.select(Band.name)
+            .where(Band.manager.id == 1, Band.popularity == 500)
+            .run_sync()
+        )
+        self.assertEqual(response, [])
+
+        # check empty WHERE clause
+        response = Band.select(Band.name).where().run_sync()
+        self.assertEqual(response, [{"name": "Pythonistas"}])
+
     @postgres_only
     def test_where_like_postgres(self):
         """
@@ -148,7 +160,6 @@ class TestSelect(DBTestCase):
             "%ist%",
             "%IST%",
         ):
-
             self.assertEqual(
                 Band.select(Band.name)
                 .where(Band.name.ilike(ilike_query))
