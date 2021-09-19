@@ -9,6 +9,7 @@ from .column_types import (
     Bytea,
     Date,
     Decimal,
+    DoublePrecision,
     Float,
     ForeignKey,
     Integer,

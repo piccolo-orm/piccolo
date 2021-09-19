@@ -980,6 +980,16 @@ class Float(Real):
     pass
 
 
+class DoublePrecision(Real):
+    """
+    Implementation is same as Real
+    """
+
+    @property
+    def column_type(self):
+        return "DOUBLE PRECISION"
+
+
 ###############################################################################
 
 
