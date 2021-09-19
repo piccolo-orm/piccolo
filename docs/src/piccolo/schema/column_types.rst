@@ -77,6 +77,13 @@ Real
 
 .. hint:: There is also a ``Float`` column type, which is an alias for
     ``Real``.
+    
+   
+====
+Double Precision
+====
+
+.. autoclass:: Double Percision
 
 ========
 SmallInt
