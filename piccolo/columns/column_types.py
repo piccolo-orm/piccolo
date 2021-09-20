@@ -982,7 +982,7 @@ class Float(Real):
 
 class DoublePrecision(Real):
     """
-    Implementation is same as Real
+    The same as ``Real``, except the numbers are stored with greater precision.
     """
 
     @property
