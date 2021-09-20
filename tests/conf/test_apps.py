@@ -31,7 +31,7 @@ class TestAppRegistry(TestCase):
                 ]
             )
 
-    def test_app_names_which_not_end_piccolo_app(self):
+    def test_app_names_not_ending_piccolo_app(self):
         """
         Should automatically add `.piccolo_app` to end.
         """
@@ -41,9 +41,10 @@ class TestAppRegistry(TestCase):
             ]
         )
 
-    def test_duplicates_app_names_with_auto_changed(self):
+    def test_duplicate_app_names_with_auto_changed(self):
         """
-        An exception should be if apps with duplicate names are registered.
+        Make sure duplicate app names are still detected when `piccolo_app`
+        is omitted from the end.
         """
         with self.assertRaises(ValueError):
             AppRegistry(
