@@ -182,7 +182,7 @@ And from the command line:
     >>> piccolo my_app say_hello bob
     bob
 
-If the code contains an error to see more details in the output add a `--trace` flag to the command line.
+If the code contains an error to see more details in the output add a ``--trace`` flag to the command line.
 
 .. code-block:: bash
 
