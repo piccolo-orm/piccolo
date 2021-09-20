@@ -23,8 +23,10 @@ from piccolo.columns.column_types import (
     BigInt,
     Boolean,
     Date,
+    DoublePrecision,
     Integer,
     Interval,
+    Real,
     SmallInt,
     Text,
     Time,
@@ -178,6 +180,36 @@ class TestMigrations(TestCase):
                     Integer(null=False),
                     Integer(index=True),
                     Integer(index=False),
+                ]
+            ]
+        )
+
+    def test_real_column(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Real(),
+                    Real(default=1.1),
+                    Real(null=True),
+                    Real(null=False),
+                    Real(index=True),
+                    Real(index=False),
+                ]
+            ]
+        )
+
+    def test_double_precision_column(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    DoublePrecision(),
+                    DoublePrecision(default=1.1),
+                    DoublePrecision(null=True),
+                    DoublePrecision(null=False),
+                    DoublePrecision(index=True),
+                    DoublePrecision(index=False),
                 ]
             ]
         )

@@ -9,6 +9,7 @@ from piccolo.columns.column_types import (
     BigInt,
     Date,
     DateNow,
+    DoublePrecision,
     ForeignKey,
     Integer,
     Numeric,
@@ -54,6 +55,14 @@ class TestDefaults(TestCase):
             Real(default="hello world")
         with self.assertRaises(ValueError):
             Real(default=None, null=False)
+
+    def test_double_precision(self):
+        DoublePrecision(default=0.0)
+        DoublePrecision(default=None, null=True)
+        with self.assertRaises(ValueError):
+            DoublePrecision(default="hello world")
+        with self.assertRaises(ValueError):
+            DoublePrecision(default=None, null=False)
 
     def test_numeric(self):
         Numeric(default=decimal.Decimal(1.0))

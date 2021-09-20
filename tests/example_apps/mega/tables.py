@@ -10,6 +10,7 @@ from piccolo.columns.column_types import (
     Boolean,
     Bytea,
     Date,
+    DoublePrecision,
     ForeignKey,
     Integer,
     Interval,
@@ -44,6 +45,7 @@ class MegaTable(Table):
     jsonb_col = JSONB()
     numeric_col = Numeric(digits=(5, 2))
     real_col = Real()
+    double_precision_col = DoublePrecision()
     smallint_col = SmallInt()
     text_col = Text()
     timestamp_col = Timestamp()
