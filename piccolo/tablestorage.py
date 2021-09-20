@@ -1,7 +1,8 @@
+import asyncio
 import typing as t
 
-from piccolo.columns import Column
-from piccolo.table import Table
+from piccolo.apps.schema.commands.generate import get_output_schema
+from piccolo.table import Table, TableMetaclass
 
 
 class Immutable(object):
@@ -47,14 +48,16 @@ class ImmutableDict(Immutable, dict):
 
 class Singleton(type):
     """
-     A metaclass that creates a Singleton base class when called.
+    A metaclass that creates a Singleton base class when called.
     """
 
-    _instances = {}
+    _instances: t.Dict = {}
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+            cls._instances[cls] = super(Singleton, cls).__call__(
+                *args, **kwargs
+            )
         return cls._instances[cls]
 
 
@@ -66,15 +69,43 @@ class TableStorage(metaclass=Singleton):
     def __init__(self):
         self.tables = ImmutableDict()
 
+    async def reflect(
+        self,
+        schema_name: str = "public",
+        if_not_exists: t.Optional[bool] = False,
+    ) -> None:
+        output_schema = await get_output_schema(schema_name=schema_name)
+        add_tables = [
+            self._add_table(
+                schema_name=schema_name,
+                table=table,
+                if_not_exists=if_not_exists,
+            )
+            for table in output_schema.tables
+        ]
+        await asyncio.gather(*add_tables)
+
+    async def _add_table(
+        self,
+        schema_name: str,
+        table: t.Type[Table],
+        if_not_exists: t.Optional[bool] = False,
+    ) -> None:
+        if isinstance(table, TableMetaclass):
+            tablename = self._get_table_name(
+                table._meta.tablename, schema_name
+            )
+            if if_not_exists:
+                if self.tables.get(tablename):
+                    return
+            self.tables._insert_item(tablename, table)
+
     @staticmethod
-    def _create_table(name, columns: t.Dict[str, Column], BaseClass=Table) -> type:
-        """
-        A factory for generating dynamic Table classes
-        """
+    def _get_table_name(name: str, schema: str):
+        if schema == "public":
+            return name
+        else:
+            return schema + "." + name
 
-        for key, value in columns.items():
-            if not isinstance(value, Column):
-                raise TypeError(f"Argument {key} must be a Column object.")
-
-        newtable = type(name, (BaseClass,), columns)
-        return newtable
+    def __repr__(self):
+        return f"{self.tables}"
