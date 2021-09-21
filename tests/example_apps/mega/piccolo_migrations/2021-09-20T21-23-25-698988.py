@@ -1,26 +1,28 @@
-from piccolo.apps.migrations.auto import MigrationManager
 from decimal import Decimal
-from piccolo.columns.base import OnDelete
-from piccolo.columns.base import OnUpdate
-from piccolo.columns.column_types import BigInt
-from piccolo.columns.column_types import Boolean
-from piccolo.columns.column_types import Bytea
-from piccolo.columns.column_types import Date
-from piccolo.columns.column_types import DoublePrecision
-from piccolo.columns.column_types import ForeignKey
-from piccolo.columns.column_types import Integer
-from piccolo.columns.column_types import Interval
-from piccolo.columns.column_types import JSON
-from piccolo.columns.column_types import JSONB
-from piccolo.columns.column_types import Numeric
-from piccolo.columns.column_types import Real
-from piccolo.columns.column_types import Serial
-from piccolo.columns.column_types import SmallInt
-from piccolo.columns.column_types import Text
-from piccolo.columns.column_types import Timestamp
-from piccolo.columns.column_types import Timestamptz
-from piccolo.columns.column_types import UUID
-from piccolo.columns.column_types import Varchar
+
+from piccolo.apps.migrations.auto import MigrationManager
+from piccolo.columns.base import OnDelete, OnUpdate
+from piccolo.columns.column_types import (
+    JSON,
+    JSONB,
+    UUID,
+    BigInt,
+    Boolean,
+    Bytea,
+    Date,
+    DoublePrecision,
+    ForeignKey,
+    Integer,
+    Interval,
+    Numeric,
+    Real,
+    Serial,
+    SmallInt,
+    Text,
+    Timestamp,
+    Timestamptz,
+    Varchar,
+)
 from piccolo.columns.defaults.date import DateNow
 from piccolo.columns.defaults.interval import IntervalCustom
 from piccolo.columns.defaults.timestamp import TimestampNow
