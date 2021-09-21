@@ -11,11 +11,27 @@ from piccolo.apps.schema.commands.generate import (
     get_output_schema,
 )
 from piccolo.columns.base import Column
-from piccolo.columns.column_types import Varchar
+from piccolo.columns.column_types import ForeignKey, Integer, Varchar
+from piccolo.engine import engine_finder, Engine
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
 from tests.base import postgres_only
 from tests.example_apps.mega.tables import MegaTable, SmallTable
+
+
+class Publication(Table, tablename="schema2.publication"):
+    name = Varchar(length=50)
+
+
+class Writer(Table, tablename="schema1.writer"):
+    name = Varchar(length=50)
+    publication = ForeignKey(Publication, null=True)
+
+
+class Book(Table):
+    name = Varchar(length=50)
+    writer = ForeignKey(Writer, null=True)
+    popularity = Integer(default=0)
 
 
 @postgres_only
@@ -29,7 +45,7 @@ class TestGenerate(TestCase):
             table_class.alter().drop_table().run_sync()
 
     def _compare_table_columns(
-        self, table_1: t.Type[Table], table_2: t.Type[Table]
+            self, table_1: t.Type[Table], table_2: t.Type[Table]
     ):
         """
         Make sure that for each column in table_1, there is a corresponding
@@ -108,3 +124,45 @@ class TestGenerate(TestCase):
                 self.assertEqual(
                     output_schema.tables[1].box.__class__.__name__, "Column"
                 )
+
+
+@postgres_only
+class TestGenerateWithSchema(TestCase):
+    def setUp(self) -> None:
+        engine: t.Optional[Engine] = engine_finder()
+
+        class Schema(Table, db=engine):
+            """
+            Only for raw query execution
+            """
+            pass
+
+        Schema.raw(
+            "CREATE SCHEMA IF NOT EXISTS schema1"
+        ).run_sync()
+        Schema.raw(
+            "CREATE SCHEMA IF NOT EXISTS schema2"
+        ).run_sync()
+        Publication.create_table().run_sync()
+        Writer.create_table().run_sync()
+        Book.create_table().run_sync()
+
+    def tearDown(self) -> None:
+        Book.alter().drop_table().run_sync()
+        Writer.alter().drop_table().run_sync()
+        Publication.alter().drop_table().run_sync()
+
+    def test_reference_to_another_schema(self):
+        output_schema: OutputSchema = run_sync(get_output_schema())
+        self.assertEqual(len(output_schema.tables), 3)
+        publication = output_schema.tables[0]
+        writer = output_schema.tables[1]
+        book = output_schema.tables[2]
+        # make sure refrerenced tables have been created
+        self.assertEqual(Publication._meta.tablename, publication._meta.tablename)
+        self.assertEqual(Writer._meta.tablename, writer._meta.tablename)
+
+        # make sure foregin key values are correct.
+        self.assertEqual(writer.publication, publication)
+        self.assertEqual(book.writer, writer)
+
