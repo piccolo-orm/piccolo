@@ -172,6 +172,8 @@ def create_pydantic_model(
                 columns[f"{column_name}_readable"] = (str, None)
         elif isinstance(column, Text):
             field = pydantic.Field(format="text-area", extra=extra, **params)
+        elif isinstance(column, (JSON, JSONB)):
+            field = pydantic.Field(format="json", extra=extra, **params)
         elif isinstance(column, Secret):
             field = pydantic.Field(extra={"secret": True, **extra})
         else:
