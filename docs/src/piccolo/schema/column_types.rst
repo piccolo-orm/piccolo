@@ -79,9 +79,9 @@ Real
     ``Real``.
 
 
-====
+================
 Double Precision
-====
+================
 
 .. autoclass:: DoublePrecision
 
