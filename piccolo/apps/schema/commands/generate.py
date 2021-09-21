@@ -61,6 +61,7 @@ class Constraint:
     constraint_type: Literal["PRIMARY KEY", "UNIQUE", "FOREIGN KEY", "CHECK"]
     constraint_name: str
     column_name: t.Optional[str] = None
+    constraint_schema: t.Optional[str] = None
 
 
 @dataclasses.dataclass
@@ -107,15 +108,16 @@ class TableConstraints:
                 return True
         return False
 
-    def get_foreign_key_constraint_name(self, column_name) -> str:
+    def get_foreign_key_constraint_name(
+        self, column_name
+    ) -> t.Tuple[str, str] | ValueError:  # type: ignore
         for i in self.foreign_key_constraints:
             if i.column_name == column_name:
-                return i.constraint_name
+                return i.constraint_name, i.constraint_schema
 
         raise ValueError("No matching constraint found")
 
 
-@dataclasses.dataclass
 class OutputSchema:
     """
     Represents the schema which will be printed out.
@@ -129,9 +131,10 @@ class OutputSchema:
 
     """
 
-    imports: t.List[str]
-    warnings: t.List[str]
-    tables: t.List[t.Type[Table]]
+    def __init__(self):
+        self.imports: t.List[str] = []
+        self.warnings: t.List[str] = []
+        self.tables: t.List[t.Type[Table]] = []
 
     def get_table_with_name(self, name: str) -> t.Optional[t.Type[Table]]:
         """
@@ -178,7 +181,7 @@ async def get_contraints(
     """
     constraints = await table_class.raw(
         (
-            "SELECT tc.constraint_name, tc.constraint_type, kcu.column_name "  # noqa: E501
+            "SELECT tc.constraint_name, tc.constraint_type, kcu.column_name, tc.constraint_schema "  # noqa: E501
             "FROM information_schema.table_constraints tc "
             "LEFT JOIN information_schema.key_column_usage kcu "
             "ON tc.constraint_name = kcu.constraint_name "
@@ -251,23 +254,115 @@ async def get_table_schema(
 
 
 async def get_foreign_key_reference(
-    table_class: t.Type[Table], constraint_name: str
-) -> t.Optional[str]:
+    table_class: t.Type[Table], constraint_name: str, constraint_schema: str
+) -> t.Tuple[str, str] | None:  # type: ignore
     """
     Retrieve the name of the table that a foreign key is referencing.
     """
     response = await table_class.raw(
         (
-            "SELECT table_name "
+            "SELECT table_name, table_schema "
             "FROM information_schema.constraint_column_usage "
-            "WHERE constraint_name = {};"
+            "WHERE constraint_name = {} AND constraint_schema  = {};"
         ),
         constraint_name,
+        constraint_schema,
     )
     if len(response) > 0:
-        return response[0]["table_name"]
+        return response[0]["table_name"], response[0]["table_schema"]
     else:
         return None
+
+
+def get_table_name(name: str, schema: str) -> str:
+    if schema == "public":
+        return name
+    return f"{schema}.{name}"
+
+
+async def create_table(
+    Schema: t.Type[Table],
+    tablename: str,
+    schema_name: str,
+    output_schema: OutputSchema,
+) -> t.Type[Table]:
+    constraints = await get_contraints(
+        table_class=Schema, tablename=tablename, schema_name=schema_name
+    )
+    table_schema = await get_table_schema(
+        table_class=Schema, tablename=tablename, schema_name=schema_name
+    )
+
+    columns: t.Dict[str, Column] = {}
+
+    for pg_row_meta in table_schema:
+        data_type = pg_row_meta.data_type
+        column_type = COLUMN_TYPE_MAP.get(data_type, None)
+        column_name = pg_row_meta.column_name
+        if not column_type:
+            output_schema.warnings.append(
+                f"{tablename}.{column_name} ['{data_type}']"
+            )
+            column_type = Column
+
+        kwargs: t.Dict[str, t.Any] = {
+            "null": pg_row_meta.is_nullable == "YES",
+            "unique": constraints.is_unique(column_name=column_name),
+        }
+
+        if constraints.is_primary_key(column_name=column_name):
+            kwargs["primary_key"] = True
+            if column_type == Integer:
+                column_type = Serial
+
+        if constraints.is_foreign_key(column_name=column_name):
+            (
+                fk_constraint_name,
+                fk_constraint_schema,
+            ) = constraints.get_foreign_key_constraint_name(
+                column_name=column_name
+            )
+            column_type = ForeignKey
+            (
+                referenced_tablename,
+                refrenced_schemaname,
+            ) = await get_foreign_key_reference(
+                table_class=Schema,
+                constraint_name=fk_constraint_name,
+                constraint_schema=fk_constraint_schema,
+            )
+            if referenced_tablename:
+                kwargs["references"] = await create_table(
+                    Schema,
+                    referenced_tablename,
+                    refrenced_schemaname,
+                    output_schema,
+                )
+            else:
+                kwargs["references"] = ForeignKeyPlaceholder
+
+        output_schema.imports.append(
+            "from piccolo.columns.column_types import " + column_type.__name__
+        )
+
+        if column_type is Varchar:
+            kwargs["length"] = pg_row_meta.character_maximum_length
+
+        column = column_type(**kwargs)
+
+        serialised_params = serialise_params(column._meta.params)
+        for extra_import in serialised_params.extra_imports:
+            output_schema.imports.append(extra_import.__repr__())
+
+        columns[column_name] = column
+
+    table = create_table_class(
+        class_name=_snake_to_camel(tablename),
+        class_kwargs={"tablename": get_table_name(tablename, schema_name)},
+        class_members=columns,
+    )
+    output_schema.tables.append(table)
+    return table
 
 
 async def get_output_schema(schema_name: str = "public") -> OutputSchema:
@@ -293,88 +388,22 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
 
     tablenames = await get_tablenames(Schema, schema_name=schema_name)
 
-    tables: t.List[t.Type[Table]] = []
-    imports: t.Set[str] = {"from piccolo.table import Table"}
-    warnings: t.List[str] = []
+    output_schema = OutputSchema()
 
     for tablename in tablenames:
-        constraints = await get_contraints(
-            table_class=Schema, tablename=tablename, schema_name=schema_name
-        )
-        table_schema = await get_table_schema(
-            table_class=Schema, tablename=tablename, schema_name=schema_name
-        )
-
-        columns: t.Dict[str, Column] = {}
-
-        for pg_row_meta in table_schema:
-            data_type = pg_row_meta.data_type
-            column_type = COLUMN_TYPE_MAP.get(data_type, None)
-            column_name = pg_row_meta.column_name
-            if not column_type:
-                warnings.append(f"{tablename}.{column_name} ['{data_type}']")
-                column_type = Column
-
-            kwargs: t.Dict[str, t.Any] = {
-                "null": pg_row_meta.is_nullable == "YES",
-                "unique": constraints.is_unique(column_name=column_name),
-            }
-
-            if constraints.is_primary_key(column_name=column_name):
-                kwargs["primary_key"] = True
-                if column_type == Integer:
-                    column_type = Serial
-
-            if constraints.is_foreign_key(column_name=column_name):
-                fk_constraint_name = (
-                    constraints.get_foreign_key_constraint_name(
-                        column_name=column_name
-                    )
-                )
-                column_type = ForeignKey
-                referenced_tablename = await get_foreign_key_reference(
-                    table_class=Schema, constraint_name=fk_constraint_name
-                )
-                if referenced_tablename:
-                    kwargs["references"] = create_table_class(
-                        _snake_to_camel(referenced_tablename)
-                    )
-                else:
-                    kwargs["references"] = ForeignKeyPlaceholder
-
-            imports.add(
-                "from piccolo.columns.column_types import "
-                + column_type.__name__
-            )
-
-            if column_type is Varchar:
-                kwargs["length"] = pg_row_meta.character_maximum_length
-
-            column = column_type(**kwargs)
-
-            serialised_params = serialise_params(column._meta.params)
-            for extra_import in serialised_params.extra_imports:
-                imports.add(extra_import.__repr__())
-
-            columns[column_name] = column
-
-        table = create_table_class(
-            class_name=_snake_to_camel(tablename),
-            class_kwargs={"tablename": tablename},
-            class_members=columns,
-        )
-        tables.append(table)
+        await create_table(Schema, tablename, schema_name, output_schema)
 
     # Sort the tables based on their ForeignKeys.
-    tables = sort_table_classes(tables)
+    output_schema.tables = sort_table_classes(output_schema.tables)
+    output_schema.imports = sorted(list(set(output_schema.imports)))
 
     # We currently don't show the index argument for columns in the output,
     # so we don't need this import for now:
-    imports.remove("from piccolo.columns.indexes import IndexMethod")
-
-    return OutputSchema(
-        imports=sorted(list(imports)), warnings=warnings, tables=tables
+    output_schema.imports.remove(
+        "from piccolo.columns.indexes import IndexMethod"
     )
+
+    return output_schema
 
 
 # This is currently a beta version, and can be improved. However, having
