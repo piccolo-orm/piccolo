@@ -12,7 +12,7 @@ from piccolo.apps.schema.commands.generate import (
 )
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import ForeignKey, Integer, Varchar
-from piccolo.engine import engine_finder, Engine
+from piccolo.engine import Engine, engine_finder
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
 from tests.base import postgres_only
@@ -45,7 +45,7 @@ class TestGenerate(TestCase):
             table_class.alter().drop_table().run_sync()
 
     def _compare_table_columns(
-            self, table_1: t.Type[Table], table_2: t.Type[Table]
+        self, table_1: t.Type[Table], table_2: t.Type[Table]
     ):
         """
         Make sure that for each column in table_1, there is a corresponding
@@ -135,14 +135,11 @@ class TestGenerateWithSchema(TestCase):
             """
             Only for raw query execution
             """
+
             pass
 
-        Schema.raw(
-            "CREATE SCHEMA IF NOT EXISTS schema1"
-        ).run_sync()
-        Schema.raw(
-            "CREATE SCHEMA IF NOT EXISTS schema2"
-        ).run_sync()
+        Schema.raw("CREATE SCHEMA IF NOT EXISTS schema1").run_sync()
+        Schema.raw("CREATE SCHEMA IF NOT EXISTS schema2").run_sync()
         Publication.create_table().run_sync()
         Writer.create_table().run_sync()
         Book.create_table().run_sync()
@@ -159,10 +156,11 @@ class TestGenerateWithSchema(TestCase):
         writer = output_schema.tables[1]
         book = output_schema.tables[2]
         # make sure refrerenced tables have been created
-        self.assertEqual(Publication._meta.tablename, publication._meta.tablename)
+        self.assertEqual(
+            Publication._meta.tablename, publication._meta.tablename
+        )
         self.assertEqual(Writer._meta.tablename, writer._meta.tablename)
 
         # make sure foregin key values are correct.
         self.assertEqual(writer.publication, publication)
         self.assertEqual(book.writer, writer)
-

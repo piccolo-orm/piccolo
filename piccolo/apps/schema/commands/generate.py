@@ -43,6 +43,12 @@ class ForeignKeyPlaceholder(Table):
 
 
 @dataclasses.dataclass
+class ConstraintTable:
+    name: str = ""
+    schema: str = ""
+
+
+@dataclasses.dataclass
 class RowMeta:
     column_default: str
     column_name: str
@@ -60,8 +66,8 @@ class RowMeta:
 class Constraint:
     constraint_type: Literal["PRIMARY KEY", "UNIQUE", "FOREIGN KEY", "CHECK"]
     constraint_name: str
-    column_name: t.Optional[str] = None
     constraint_schema: t.Optional[str] = None
+    column_name: t.Optional[str] = None
 
 
 @dataclasses.dataclass
@@ -108,12 +114,10 @@ class TableConstraints:
                 return True
         return False
 
-    def get_foreign_key_constraint_name(
-        self, column_name
-    ) -> t.Tuple[str, str] | ValueError:  # type: ignore
+    def get_foreign_key_constraint_name(self, column_name) -> ConstraintTable:
         for i in self.foreign_key_constraints:
             if i.column_name == column_name:
-                return i.constraint_name, i.constraint_schema
+                return ConstraintTable(i.constraint_name, i.constraint_schema)
 
         raise ValueError("No matching constraint found")
 
@@ -254,7 +258,7 @@ async def get_table_schema(
 
 async def get_foreign_key_reference(
     table_class: t.Type[Table], constraint_name: str, constraint_schema: str
-) -> t.Tuple[str, str] | None:  # type: ignore
+) -> ConstraintTable:  # type: ignore
     """
     Retrieve the name of the table that a foreign key is referencing.
     """
@@ -268,9 +272,11 @@ async def get_foreign_key_reference(
         constraint_schema,
     )
     if len(response) > 0:
-        return response[0]["table_name"], response[0]["table_schema"]
+        return ConstraintTable(
+            response[0]["table_name"], response[0]["table_schema"]
+        )
     else:
-        return None
+        return ConstraintTable()
 
 
 def get_table_name(name: str, schema: str) -> str:
@@ -315,26 +321,20 @@ async def create_table(
                 column_type = Serial
 
         if constraints.is_foreign_key(column_name=column_name):
-            (
-                fk_constraint_name,
-                fk_constraint_schema,
-            ) = constraints.get_foreign_key_constraint_name(
+            fk_constraint_table = constraints.get_foreign_key_constraint_name(
                 column_name=column_name
             )
             column_type = ForeignKey
-            (
-                referenced_tablename,
-                refrenced_schemaname,
-            ) = await get_foreign_key_reference(
+            constraint_table = await get_foreign_key_reference(
                 table_class=Schema,
-                constraint_name=fk_constraint_name,
-                constraint_schema=fk_constraint_schema,
+                constraint_name=fk_constraint_table.name,
+                constraint_schema=fk_constraint_table.schema,
             )
-            if referenced_tablename:
+            if constraint_table.name:
                 kwargs["references"] = await create_table(
                     Schema,
-                    referenced_tablename,
-                    refrenced_schemaname,
+                    constraint_table.name,
+                    constraint_table.schema,
                     output_schema,
                 )
             else:
