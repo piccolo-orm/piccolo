@@ -31,6 +31,29 @@ class TestAppRegistry(TestCase):
                 ]
             )
 
+    def test_app_names_not_ending_piccolo_app(self):
+        """
+        Should automatically add `.piccolo_app` to end.
+        """
+        AppRegistry(
+            apps=[
+                "piccolo.apps.user",
+            ]
+        )
+
+    def test_duplicate_app_names_with_auto_changed(self):
+        """
+        Make sure duplicate app names are still detected when `piccolo_app`
+        is omitted from the end.
+        """
+        with self.assertRaises(ValueError):
+            AppRegistry(
+                apps=[
+                    "piccolo.apps.user.piccolo_app",
+                    "piccolo.apps.user",
+                ]
+            )
+
     def test_get_table_with_name(self):
         app_registry = AppRegistry(apps=["piccolo.apps.user.piccolo_app"])
         table = app_registry.get_table_with_name(

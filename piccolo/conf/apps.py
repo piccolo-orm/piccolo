@@ -182,8 +182,22 @@ class AppRegistry:
         app_names = []
 
         for app in self.apps:
-            app_conf_module = import_module(app)
-            app_config: AppConfig = getattr(app_conf_module, "APP_CONFIG")
+            try:
+                app_conf_module = import_module(app)
+                app_config: AppConfig = getattr(app_conf_module, "APP_CONFIG")
+            except (ImportError, AttributeError) as e:
+                if not app.endswith(".piccolo_app"):
+                    app += ".piccolo_app"
+                    app_conf_module = import_module(app)
+                    app_config: AppConfig = getattr(
+                        app_conf_module, "APP_CONFIG"
+                    )
+                    colored_warning(
+                        f"App {app[:-12]} should end with `.piccolo_app`",
+                        level=Level.medium,
+                    )
+                else:
+                    raise e
             self.app_configs[app_config.app_name] = app_config
             app_names.append(app_config.app_name)
 
