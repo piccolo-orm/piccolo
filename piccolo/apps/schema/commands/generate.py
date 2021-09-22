@@ -122,15 +122,21 @@ class TableConstraints:
         raise ValueError("No matching constraint found")
 
 
+@dataclasses.dataclass
 class OutputSchema:
     """
     Represents the schema which will be printed out.
+    :param imports:
+    e.g. ["from piccolo.table import Table"]
+    :param warnings:
+        e.g. ["some_table.some_column unrecognised_type"]
+    :param tables:
+        e.g. ["class MyTable(Table): ..."]
     """
 
-    def __init__(self):
-        self.imports: t.List[str] = []
-        self.warnings: t.List[str] = []
-        self.tables: t.List[t.Type[Table]] = []
+    imports: t.List[str] = dataclasses.field(default_factory=list)
+    warnings: t.List[str] = dataclasses.field(default_factory=list)
+    tables: t.List[t.Type[Table]] = dataclasses.field(default_factory=list)
 
     def get_table_with_name(self, name: str) -> t.Optional[t.Type[Table]]:
         """
@@ -173,10 +179,11 @@ async def get_contraints(
 
     :param table_class:
         Any Table subclass - just used to execute raw queries on the database.
+    :param tablename:
+    Name of the table.
+    :param schema_name:
+    Name of the schema.
 
-    :param tablename - name of the table
-
-    :param schema_name name of the schema
 
     """
     constraints = await table_class.raw(
