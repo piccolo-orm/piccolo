@@ -1,5 +1,5 @@
-from enum import Enum
 from datetime import timedelta
+from enum import Enum
 
 from piccolo.columns import (
     JSON,
@@ -25,6 +25,7 @@ from piccolo.columns.readable import Readable
 from piccolo.table import Table
 
 from .resources import QUAVERS_ICON
+
 ###############################################################################
 # Simple example
 
@@ -98,6 +99,6 @@ class RecordingStudio(Table):
     Used for testing JSON and JSONB columns.
     """
 
-    facilities = JSON( default={ "amplifier": False, "microphone": True } )
+    facilities = JSON(default={"amplifier": False, "microphone": True})
     facilities_b = JSONB()
     records = BigInt(default=9223372036854775807)
