@@ -171,7 +171,7 @@ COLUMN_TYPE_MAP = {
 }
 
 COLUMN_DEFAULT_PARSER = {
-    BigInt: re.compile(r"^(-?[0-9]\d*)$"),
+    BigInt: re.compile(r"^'?(-?[0-9]\d*)'?(?:::bigint)?$"),
     Boolean: re.compile(r"^(true|false)$"),
     Bytea: re.compile(r"'(.*)'::bytea$"),
     DoublePrecision: re.compile(r"[+-]?([0-9]*[.])?[0-9]+"),
@@ -183,7 +183,7 @@ COLUMN_DEFAULT_PARSER = {
     JSONB: re.compile(r"^'(.*)'::jsonb$"),
     Numeric: re.compile(r"(\d+)"),
     Real: re.compile(r"^(-?[0-9]\d*(\.\d+)?)$"),
-    SmallInt: re.compile(r"^(-?[0-9]\d*)$"),
+    SmallInt: re.compile(r"^'?(-?[0-9]\d*)'?(?:::integer)?$"),
     Text: re.compile(r"^'(.*)'::text$"),
     Timestamp: re.compile(
         r"^((?:\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})|CURRENT_TIMESTAMP)$"
@@ -199,6 +199,7 @@ COLUMN_DEFAULT_PARSER = {
 
 def get_column_default(column_type: t.Type[Column], column_default: str):
     pat = COLUMN_DEFAULT_PARSER[column_type]
+    print(column_type, column_default)
     if pat:
         value = re.match(pat, column_default).group(1)
         if column_type is Serial:
