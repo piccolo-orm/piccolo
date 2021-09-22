@@ -4,7 +4,7 @@ import dataclasses
 import json
 import re
 import typing as t
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import black
 from typing_extensions import Literal
@@ -206,7 +206,7 @@ def get_column_default(column_type: t.Type[Column], column_default: str):
         elif column_type is UUID:
             return defaults.uuid.UUID4
         elif column_type is Date:
-            return defaults.date.DateNow
+            return defaults.date.DateNow if value == "CURRENT_DATE" else defaults.date.DateCustom(*value.split("-"))
         elif column_type is Bytea:
             return value.encode('utf8')
         elif column_type is Timestamp:
