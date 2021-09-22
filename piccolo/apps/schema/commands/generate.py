@@ -4,13 +4,13 @@ import dataclasses
 import json
 import re
 import typing as t
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import black
 from typing_extensions import Literal
 
-from piccolo.columns import defaults
 from piccolo.apps.migrations.auto.serialisation import serialise_params
+from piccolo.columns import defaults
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import (
     JSON,
@@ -33,12 +33,11 @@ from piccolo.columns.column_types import (
     Timestamptz,
     Varchar,
 )
+from piccolo.columns.defaults.interval import IntervalCustom
 from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.table import Table, create_table_class, sort_table_classes
 from piccolo.utils.naming import _snake_to_camel
-
-from piccolo.columns.defaults.interval import IntervalCustom
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.engine.base import Engine
@@ -172,9 +171,10 @@ COLUMN_TYPE_MAP = {
 }
 
 COLUMN_DEFAULT_PARSER = {
-    BigInt: re.compile(r"^'(-?[0-9]\d*)'::bigint$"),
+    BigInt: re.compile(r"^(-?[0-9]\d*)$"),
     Boolean: re.compile(r"^(true|false)$"),
     Bytea: re.compile(r"'(.*)'::bytea$"),
+    DoublePrecision: re.compile(r"[+-]?([0-9]*[.])?[0-9]+"),
     Varchar: re.compile(r"^'(.*)'::character varying$"),
     Date: re.compile(r"^((?:\d{4}-\d{2}-\d{2})|CURRENT_DATE)$"),
     Integer: re.compile(r"^(-?\d+)$"),
@@ -183,10 +183,14 @@ COLUMN_DEFAULT_PARSER = {
     JSONB: re.compile(r"^'(.*)'::jsonb$"),
     Numeric: re.compile(r"(\d+)"),
     Real: re.compile(r"^(-?[0-9]\d*(\.\d+)?)$"),
-    SmallInt: re.compile(r"^'(-?[0-9]\d*)'::integer$"),
+    SmallInt: re.compile(r"^(-?[0-9]\d*)$"),
     Text: re.compile(r"^'(.*)'::text$"),
-    Timestamp: re.compile(r"^((?:\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})|CURRENT_TIMESTAMP)$"),
-    Timestamptz: re.compile(r"^((?:\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?-\d{2})|CURRENT_TIMESTAMP)$"),
+    Timestamp: re.compile(
+        r"^((?:\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})|CURRENT_TIMESTAMP)$"
+    ),
+    Timestamptz: re.compile(
+        r"^((?:\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?-\d{2})|CURRENT_TIMESTAMP)$"
+    ),
     UUID: re.compile(r"^(.*)\(\)$"),
     Serial: re.compile(r"^nextval\('(\w*)'::regclass\)$"),
     ForeignKey: None,
@@ -200,7 +204,7 @@ def get_column_default(column_type: t.Type[Column], column_default: str):
         if column_type is Serial:
             return f"nextval('{value}')"
         elif column_type is Boolean:
-            return True if value == 'true' else False
+            return True if value == "true" else False
         elif column_type is Interval:
             return IntervalCustom(value)
         elif column_type is JSON or column_type is JSONB:
@@ -208,13 +212,25 @@ def get_column_default(column_type: t.Type[Column], column_default: str):
         elif column_type is UUID:
             return defaults.uuid.UUID4
         elif column_type is Date:
-            return defaults.date.DateNow if value == "CURRENT_DATE" else defaults.date.DateCustom(*value.split("-"))
+            return (
+                defaults.date.DateNow
+                if value == "CURRENT_DATE"
+                else defaults.date.DateCustom(*value.split("-"))
+            )
         elif column_type is Bytea:
-            return value.encode('utf8')
+            return value.encode("utf8")
         elif column_type is Timestamp:
-            return defaults.timestamp.TimestampNow if value == "CURRENT_TIMESTAMP" else datetime.fromtimestamp(value)
+            return (
+                defaults.timestamp.TimestampNow
+                if value == "CURRENT_TIMESTAMP"
+                else datetime.fromtimestamp(value)
+            )
         elif column_type is Timestamptz:
-            return defaults.timestamptz.TimestamptzNow if value == "CURRENT_TIMESTAMP" else datetime.fromtimestamp(value)
+            return (
+                defaults.timestamptz.TimestamptzNow
+                if value == "CURRENT_TIMESTAMP"
+                else datetime.fromtimestamp(value)
+            )
         else:
             return column_type.value_type(value)
 
@@ -405,7 +421,9 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
                 kwargs["length"] = pg_row_meta.character_maximum_length
 
             if column_default:
-                kwargs["default"] = get_column_default(column_type, column_default)
+                kwargs["default"] = get_column_default(
+                    column_type, column_default
+                )
 
             column = column_type(**kwargs)
 
