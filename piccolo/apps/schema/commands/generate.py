@@ -378,6 +378,17 @@ async def get_output_schema(
     tablenames: t.Optional[t.List[str]] = None,
     exclude: t.Optional[t.List[str]] = None,
 ) -> OutputSchema:
+    """
+
+    :param schema_name:
+    name of the schema
+    :param tablenames:
+    optional list of table names. Only creates the specifed tables.
+    :param exclude:
+    optional list of table names. excludes the specified tables.
+    :return:
+    OutputSchema
+    """
     engine: t.Optional[Engine] = engine_finder()
 
     if exclude is None:
