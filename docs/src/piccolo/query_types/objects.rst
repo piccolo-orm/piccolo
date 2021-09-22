@@ -61,7 +61,7 @@ This can also be done like this:
 
 .. code-block:: python
 
-    >>> band.objects().create(name="C-Sharps", popularity=100).run_sync()
+    >>> band = Band.objects().create(name="C-Sharps", popularity=100).run_sync()
 
 -------------------------------------------------------------------------------
 
