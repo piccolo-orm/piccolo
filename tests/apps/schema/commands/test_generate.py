@@ -125,6 +125,28 @@ class TestGenerate(TestCase):
                     output_schema.tables[1].box.__class__.__name__, "Column"
                 )
 
+    def test_generate_required_tables(self):
+        """
+        Make sure only tables passed to `tablenames` are created
+        """
+        output_schema: OutputSchema = run_sync(
+            get_output_schema(tablenames=[SmallTable._meta.tablename])
+        )
+        self.assertEqual(len(output_schema.tables), 1)
+        SmallTable_ = output_schema.get_table_with_name("SmallTable")
+        self._compare_table_columns(SmallTable, SmallTable_)
+
+    def test_exclude_table(self):
+        """
+        make sure exclude works
+        """
+        output_schema: OutputSchema = run_sync(
+            get_output_schema(exclude=[MegaTable._meta.tablename])
+        )
+        self.assertEqual(len(output_schema.tables), 1)
+        SmallTable_ = output_schema.get_table_with_name("SmallTable")
+        self._compare_table_columns(SmallTable, SmallTable_)
+
 
 @postgres_only
 class TestGenerateWithSchema(TestCase):

@@ -373,8 +373,15 @@ async def create_table(
     return table
 
 
-async def get_output_schema(schema_name: str = "public") -> OutputSchema:
+async def get_output_schema(
+    schema_name: str = "public",
+    tablenames: t.Optional[t.List[str]] = None,
+    exclude: t.Optional[t.List[str]] = None,
+) -> OutputSchema:
     engine: t.Optional[Engine] = engine_finder()
+
+    if exclude is None:
+        exclude = []
 
     if engine is None:
         raise ValueError(
@@ -394,12 +401,14 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
 
         pass
 
-    tablenames = await get_tablenames(Schema, schema_name=schema_name)
+    if not tablenames:
+        tablenames = await get_tablenames(Schema, schema_name=schema_name)
 
     output_schema = OutputSchema()
 
     for tablename in tablenames:
-        await create_table(Schema, tablename, schema_name, output_schema)
+        if tablename not in exclude:
+            await create_table(Schema, tablename, schema_name, output_schema)
 
     # Sort the tables based on their ForeignKeys.
     output_schema.tables = sort_table_classes(output_schema.tables)
