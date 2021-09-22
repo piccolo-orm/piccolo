@@ -117,7 +117,9 @@ class TableConstraints:
     def get_foreign_key_constraint_name(self, column_name) -> ConstraintTable:
         for i in self.foreign_key_constraints:
             if i.column_name == column_name:
-                return ConstraintTable(i.constraint_name, i.constraint_schema)
+                return ConstraintTable(
+                    name=i.constraint_name, schema=i.constraint_schema
+                )
 
         raise ValueError("No matching constraint found")
 
@@ -265,7 +267,7 @@ async def get_table_schema(
 
 async def get_foreign_key_reference(
     table_class: t.Type[Table], constraint_name: str, constraint_schema: str
-) -> ConstraintTable:  # type: ignore
+) -> ConstraintTable:
     """
     Retrieve the name of the table that a foreign key is referencing.
     """
@@ -280,7 +282,7 @@ async def get_foreign_key_reference(
     )
     if len(response) > 0:
         return ConstraintTable(
-            response[0]["table_name"], response[0]["table_schema"]
+            name=response[0]["table_name"], schema=response[0]["table_schema"]
         )
     else:
         return ConstraintTable()
