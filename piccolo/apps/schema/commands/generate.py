@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import dataclasses
+import json
+import re
 import typing as t
+from datetime import datetime
+import chardet
 
 import black
 from typing_extensions import Literal
 
+from piccolo.columns import defaults
 from piccolo.apps.migrations.auto.serialisation import serialise_params
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import (
@@ -32,6 +37,8 @@ from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.table import Table, create_table_class, sort_table_classes
 from piccolo.utils.naming import _snake_to_camel
+
+from piccolo.columns.defaults.interval import IntervalCustom
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.engine.base import Engine
@@ -162,6 +169,53 @@ COLUMN_TYPE_MAP = {
     "timestamp without time zone": Timestamp,
     "uuid": UUID,
 }
+
+COLUMN_DEFAULT_PARSER = {
+    BigInt: re.compile(r"^'(-?[0-9]\d*)'::bigint$"),
+    Boolean: re.compile(r"^(true|false)$"),
+    Bytea: re.compile(r"'(.*)'::bytea$"),
+    Varchar: re.compile(r"^'(.*)'::character varying$"),
+    Date: re.compile(r"^((?:\d{4}-\d{2}-\d{2})|CURRENT_DATE)$"),
+    Integer: re.compile(r"^(-?\d+)$"),
+    Interval: re.compile(r"^'(.*)'::interval"),
+    JSON: re.compile(r"^'(.*)'::json$"),
+    JSONB: re.compile(r"^'(.*)'::jsonb$"),
+    Numeric: re.compile(r"(\d+)"),
+    Real: re.compile(r"^(-?[0-9]\d*(\.\d+)?)$"),
+    SmallInt: re.compile(r"^'(-?[0-9]\d*)'::integer$"),
+    Text: re.compile(r"^'(.*)'::text$"),
+    Timestamp: re.compile(r"^((?:\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})|CURRENT_TIMESTAMP)$"),
+    Timestamptz: re.compile(r"^((?:\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?-\d{2})|CURRENT_TIMESTAMP)$"),
+    UUID: re.compile(r"^(.*)\(\)$"),
+    Serial: re.compile(r"^nextval\('(\w*)'::regclass\)$"),
+    ForeignKey: None,
+}
+
+
+def get_column_default(column_type: t.Type[Column], column_default: str):
+    pat = COLUMN_DEFAULT_PARSER[column_type]
+    if pat:
+        value = re.match(pat, column_default).group(1)
+        if column_type is Serial:
+            return f"nextval('{value}')"
+        elif column_type is Boolean:
+            return True if value == 'true' else False
+        elif column_type is Interval:
+            return IntervalCustom(value)
+        elif column_type is JSON or column_type is JSONB:
+            return json.loads(value)
+        elif column_type is UUID:
+            return defaults.uuid.UUID4
+        elif column_type is Date:
+            return defaults.date.DateNow
+        elif column_type is Bytea:
+            return value.encode('utf8')
+        elif column_type is Timestamp:
+            return defaults.timestamp.TimestampNow if value == "CURRENT_TIMESTAMP" else datetime.fromtimestamp(value)
+        elif column_type is Timestamptz:
+            return defaults.timestamptz.TimestamptzNow if value == "CURRENT_TIMESTAMP" else datetime.fromtimestamp(value)
+        else:
+            return column_type.value_type(value)
 
 
 async def get_contraints(
@@ -309,6 +363,7 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
             data_type = pg_row_meta.data_type
             column_type = COLUMN_TYPE_MAP.get(data_type, None)
             column_name = pg_row_meta.column_name
+            column_default = pg_row_meta.column_default
             if not column_type:
                 warnings.append(f"{tablename}.{column_name} ['{data_type}']")
                 column_type = Column
@@ -347,6 +402,9 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
 
             if column_type is Varchar:
                 kwargs["length"] = pg_row_meta.character_maximum_length
+
+            if column_default:
+                kwargs["default"] = get_column_default(column_type, column_default)
 
             column = column_type(**kwargs)
 
