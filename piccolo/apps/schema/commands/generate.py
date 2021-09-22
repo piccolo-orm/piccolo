@@ -5,7 +5,6 @@ import json
 import re
 import typing as t
 from datetime import datetime
-import chardet
 
 import black
 from typing_extensions import Literal
