@@ -4,7 +4,8 @@ import dataclasses
 import json
 import re
 import typing as t
-from datetime import datetime
+import uuid
+from datetime import date, datetime
 
 import black
 from typing_extensions import Literal
@@ -171,84 +172,130 @@ COLUMN_TYPE_MAP = {
 }
 
 COLUMN_DEFAULT_PARSER = {
-    BigInt: re.compile(r"^'?(-?[0-9]\d*)'?(?:::bigint)?$"),
-    Boolean: re.compile(r"^(true|false)$"),
-    Bytea: re.compile(r"'(.*)'::bytea$"),
-    DoublePrecision: re.compile(r"([+-]?(?:[0-9]*[.])?[0-9]+)"),
-    Varchar: re.compile(r"^'(.*)'::character varying$"),
-    Date: re.compile(r"^((?:\d{4}-\d{2}-\d{2})|CURRENT_DATE)$"),
-    Integer: re.compile(r"^(-?\d+)$"),
+    BigInt: re.compile(r"^'?(?P<value>-?[0-9]\d*)'?(?:::bigint)?$"),
+    Boolean: re.compile(r"^(?P<value>true|false)$"),
+    Bytea: re.compile(r"'(?P<value>.*)'::bytea$"),
+    DoublePrecision: re.compile(r"(?P<value>[+-]?(?:[0-9]*[.])?[0-9]+)"),
+    Varchar: re.compile(r"^'(?P<value>.*)'::character varying$"),
+    Date: re.compile(r"^(?P<value>(?:\d{4}-\d{2}-\d{2})|CURRENT_DATE)$"),
+    Integer: re.compile(r"^(?P<value>-?\d+)$"),
     Interval: re.compile(
-        r"^(?:')?(?:(?:(?P<years>\d+) y(?:ear(?:s)?)?\b)|(?:(?P<months>\d+) m(?:onth(?:s)?)?\b)|(?:(?P<weeks>\d+) w(?:eek(?:s)?)?\b)|(?:(?P<days>\d+) d(?:ay(?:s)?)?\b)|(?:(?:(?:(?P<hours>\d+) h(?:our(?:s)?)?\b)|(?:(?P<minutes>\d+) m(?:inute(?:s)?)?\b)|(?:(?P<seconds>\d+) s(?:econd(?:s)?)?\b))|(?:(?P<digits>-?\d\d:\d\d:\d\d))?\b))+(?P<direction>ago)?(?:'::interval)?$"
-        ),
-    JSON: re.compile(r"^'(.*)'::json$"), 
-    JSONB: re.compile(r"^'(.*)'::jsonb$"),
-    Numeric: re.compile(r"(\d+)"),
-    Real: re.compile(r"^(-?[0-9]\d*(?:\.\d+)?)$"),
-    SmallInt: re.compile(r"^'?(-?[0-9]\d*)'?(?:::integer)?$"),
-    Text: re.compile(r"^'(.*)'::text$"),
+        r"""^
+            (?:')?
+            (?:
+                (?:(?P<years>\d+)[ ]y(?:ear(?:s)?)?\b)        |
+                (?:(?P<months>\d+)[ ]m(?:onth(?:s)?)?\b)      |
+                (?:(?P<weeks>\d+)[ ]w(?:eek(?:s)?)?\b)        |
+                (?:(?P<days>\d+)[ ]d(?:ay(?:s)?)?\b)          |
+                (?:
+                    (?:
+                        (?:(?P<hours>\d+)[ ]h(?:our(?:s)?)?\b)        |
+                        (?:(?P<minutes>\d+)[ ]m(?:inute(?:s)?)?\b)    |
+                        (?:(?P<seconds>\d+)[ ]s(?:econd(?:s)?)?\b)
+                    )   |
+                    (?:
+                        (?P<digits>-?\d{2}:\d{2}:\d{2}))?\b)
+                    )
+                +(?P<direction>ago)?
+            (?:'::interval)?
+            $""",
+        re.X,
+    ),
+    JSON: re.compile(r"^'(?P<value>.*)'::json$"),
+    JSONB: re.compile(r"^'(?P<value>.*)'::jsonb$"),
+    Numeric: re.compile(r"(?P<value>\d+)"),
+    Real: re.compile(r"^(?P<value>-?[0-9]\d*(?:\.\d+)?)$"),
+    SmallInt: re.compile(r"^'?(?P<value>-?[0-9]\d*)'?(?:::integer)?$"),
+    Text: re.compile(r"^'(?P<value>.*)'::text$"),
     Timestamp: re.compile(
-        r"^((?:\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})|CURRENT_TIMESTAMP)$"
+        r"""^
+        (?P<value>
+            (?:\d{4}-\d{2}-\d{2}[ ]\d{2}:\d{2}:\d{2})   |
+            CURRENT_TIMESTAMP
+        )
+        $""",
+        re.VERBOSE,
     ),
     Timestamptz: re.compile(
-        r"^((?:\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?-\d{2})|CURRENT_TIMESTAMP)$"
+        r"""^
+            (?P<value>
+                (?:\d{4}-\d{2}-\d{2}[ ]\d{2}:\d{2}:\d{2}(?:\.\d+)?-\d{2})     |
+                CURRENT_TIMESTAMP
+            )
+            $""",
+        re.X,
     ),
-    UUID: re.compile(r"^(.*)\(\)$"),
-    Serial: re.compile(r"^nextval\('(\w*)'::regclass\)$"),
+    UUID: None,
+    Serial: None,
     ForeignKey: None,
 }
 
 
-def get_column_default(column_type: t.Type[Column], column_default: str):
-    print(column_type, column_default)
+def get_column_default(
+    column_type: t.Type[Column], column_default: str
+) -> t.Any:
     pat = COLUMN_DEFAULT_PARSER[column_type]
-    if pat:
+
+    if pat is not None:
         match = re.match(pat, column_default)
-        if len(match.groups()) == 1:
-            value = match.group(1)
-        else:
+        if match is not None:
             value = match.groupdict()
-        if column_type is Serial:
-            return f"nextval('{value}')"
-        elif column_type is Boolean:
-            return True if value == "true" else False
-        elif column_type is Interval:
-            kwargs = {}
-            for period in ["years", "months", "weeks", "days", "hours", "minutes", "seconds"]:
-                period_match = value.get(period, 0)
-                if period_match:
-                    kwargs[period] = int(period_match)
-            # Digits take precedence
-            digits = value["digits"]
-            if digits:
-                kwargs.update(dict(zip(["hours", "minutes", "seconds"], value["digits"].split(":"))))
-            return IntervalCustom(**kwargs)
-        elif column_type is JSON or column_type is JSONB:
-            return json.loads(value)
-        elif column_type is UUID:
-            return defaults.uuid.UUID4
-        elif column_type is Date:
-            return (
-                defaults.date.DateNow
-                if value == "CURRENT_DATE"
-                else defaults.date.DateCustom(*value.split("-"))
-            )
-        elif column_type is Bytea:
-            return value.encode("utf8")
-        elif column_type is Timestamp:
-            return (
-                defaults.timestamp.TimestampNow
-                if value == "CURRENT_TIMESTAMP"
-                else datetime.fromtimestamp(value)
-            )
-        elif column_type is Timestamptz:
-            return (
-                defaults.timestamptz.TimestamptzNow
-                if value == "CURRENT_TIMESTAMP"
-                else datetime.fromtimestamp(value)
-            )
-        else:
-            return column_type.value_type(value)
+
+            if column_type is Boolean:
+                return True if value["value"] == "true" else False
+            elif column_type is Interval:
+                kwargs = {}
+                for period in [
+                    "years",
+                    "months",
+                    "weeks",
+                    "days",
+                    "hours",
+                    "minutes",
+                    "seconds",
+                ]:
+                    period_match = value.get(period, 0)
+                    if period_match:
+                        kwargs[period] = int(period_match)
+                digits = value["digits"]
+                if digits:
+                    kwargs.update(
+                        dict(
+                            zip(
+                                ["hours", "minutes", "seconds"],
+                                [int(v) for v in value["digits"].split(":")],
+                            )
+                        )
+                    )
+                return IntervalCustom(**kwargs)
+            elif column_type is JSON or column_type is JSONB:
+                return json.loads(value["value"])
+            elif column_type is UUID:
+                return uuid.uuid4
+            elif column_type is Date:
+                return (
+                    date.today
+                    if value["value"] == "CURRENT_DATE"
+                    else defaults.date.DateCustom(
+                        *[int(v) for v in value["value"].split("-")]
+                    )
+                )
+            elif column_type is Bytea:
+                return value["value"].encode("utf8")
+            elif column_type is Timestamp:
+                return (
+                    datetime.now
+                    if value["value"] == "CURRENT_TIMESTAMP"
+                    else datetime.fromtimestamp(float(value["value"]))
+                )
+            elif column_type is Timestamptz:
+                return (
+                    datetime.now
+                    if value["value"] == "CURRENT_TIMESTAMP"
+                    else datetime.fromtimestamp(float(value["value"]))
+                )
+            else:
+                return column_type.value_type(value["value"])
 
 
 async def get_contraints(
@@ -437,9 +484,9 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
                 kwargs["length"] = pg_row_meta.character_maximum_length
 
             if column_default:
-                kwargs["default"] = get_column_default(
-                    column_type, column_default
-                )
+                default_value = get_column_default(column_type, column_default)
+                if default_value:
+                    kwargs["default"] = default_value
 
             column = column_type(**kwargs)
 

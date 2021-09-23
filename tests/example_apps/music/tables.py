@@ -13,8 +13,6 @@ from piccolo.columns import (
     Integer,
     Interval,
     Numeric,
-    Real,
-    Serial,
     SmallInt,
     Text,
     Timestamp,
@@ -23,8 +21,6 @@ from piccolo.columns import (
 )
 from piccolo.columns.readable import Readable
 from piccolo.table import Table
-
-from .resources import QUAVERS_ICON
 
 ###############################################################################
 # Simple example
@@ -77,7 +73,7 @@ class Poster(Table, tags=["special"]):
     Has tags for tests which need it.
     """
 
-    image = Bytea(default=QUAVERS_ICON)
+    image = Bytea(default=b"\xbd\x78\xd8")
     content = Text()
 
 
