@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import dataclasses
 import typing as t
 
@@ -417,12 +418,22 @@ async def get_output_schema(
 
     output_schema = OutputSchema()
 
-    for tablename in tablenames:
-        if tablename not in exclude:
-            await create_table(Schema, tablename, schema_name, output_schema)
+    tablecoroutines = (
+        create_table(
+            Schema=Schema,
+            tablename=table,
+            schema_name=schema_name,
+            output_schema=output_schema,
+        )
+        for table in tablenames
+        if table not in exclude
+    )
+    await asyncio.gather(*tablecoroutines)
 
     # Sort the tables based on their ForeignKeys.
-    output_schema.tables = sort_table_classes(output_schema.tables)
+    output_schema.tables = sort_table_classes(
+        sorted(output_schema.tables, key=lambda x: x._meta.tablename)
+    )
     output_schema.imports = sorted(list(set(output_schema.imports)))
 
     # We currently don't show the index argument for columns in the output,
