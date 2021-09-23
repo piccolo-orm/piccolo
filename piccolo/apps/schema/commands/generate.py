@@ -153,7 +153,15 @@ class OutputSchema:
         except StopIteration:
             return None
 
-    def __add__(self, value) -> OutputSchema:
+    def __radd__(self, value: OutputSchema) -> OutputSchema:
+        if isinstance(value, int):
+            return self
+        value.imports.extend(self.imports)
+        value.warnings.extend(self.warnings)
+        value.tables.extend(self.tables)
+        return value
+
+    def __add__(self, value: OutputSchema) -> OutputSchema:
         self.imports.extend(value.imports)
         self.warnings.extend(value.warnings)
         self.tables.extend(value.tables)
@@ -360,9 +368,8 @@ async def create_table_class_from_db(
                     else ForeignKeyPlaceholder
                 )
                 output_schema = sum(
-                    [output_schema, referenced_output_schema],
-                    start=OutputSchema(),
-                )
+                    [output_schema, referenced_output_schema]
+                )  # type: ignore
             else:
                 kwargs["references"] = ForeignKeyPlaceholder
 
@@ -442,7 +449,7 @@ async def get_output_schema(
     output_schemas = await asyncio.gather(*table_coroutines)
 
     # merge all the output schemas to a single OutputSchema object
-    output_schema = sum(output_schemas, start=OutputSchema())
+    output_schema: OutputSchema = sum(output_schemas)  # type: ignore
 
     # Sort the tables based on their ForeignKeys.
     output_schema.tables = sort_table_classes(
