@@ -1,7 +1,7 @@
 name: Features💡
 description: Suggest us a new feature
 title: "[Feature]: Describe your Feature/Suggestion here"
-labels: [goal:addition]
+labels: ["goal:addition"]
 body:
   - type: markdown
     attributes:
