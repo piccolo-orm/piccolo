@@ -367,8 +367,8 @@ async def create_table_class_from_db(
                     if referenced_table is not None
                     else ForeignKeyPlaceholder
                 )
-                output_schema = sum(
-                    [output_schema, referenced_output_schema]
+                output_schema = sum(  # type: ignore
+                    [output_schema, referenced_output_schema]  # type: ignore
                 )  # type: ignore
             else:
                 kwargs["references"] = ForeignKeyPlaceholder
