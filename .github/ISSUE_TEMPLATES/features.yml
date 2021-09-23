@@ -1,0 +1,34 @@
+name: Features💡
+description: Suggest us a new feature
+title: "[Feature]: Describe your Feature/Suggestion here"
+labels: [goal:addition]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this suggestion form!
+  - type: input
+    attributes:
+      label: Suggestion
+      description: Can you please elaborate about your suggestion?
+      placeholder: I would like to see...
+    validations:
+      required: true
+  
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What is expected?
+      description: Also tell us, what did you wish to see ?
+      placeholder: Give us specific details .
+      value: "Details!"
+    validations:
+      required: true
+  
+  - type: textarea
+    id: multimedia
+    attributes:
+      label: Relevant log output
+      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      placeholder: Please upload your multimedia(screenshots and video) here
+      
