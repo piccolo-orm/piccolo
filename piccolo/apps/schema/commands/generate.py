@@ -174,15 +174,17 @@ COLUMN_DEFAULT_PARSER = {
     BigInt: re.compile(r"^'?(-?[0-9]\d*)'?(?:::bigint)?$"),
     Boolean: re.compile(r"^(true|false)$"),
     Bytea: re.compile(r"'(.*)'::bytea$"),
-    DoublePrecision: re.compile(r"[+-]?([0-9]*[.])?[0-9]+"),
+    DoublePrecision: re.compile(r"([+-]?(?:[0-9]*[.])?[0-9]+)"),
     Varchar: re.compile(r"^'(.*)'::character varying$"),
     Date: re.compile(r"^((?:\d{4}-\d{2}-\d{2})|CURRENT_DATE)$"),
     Integer: re.compile(r"^(-?\d+)$"),
-    Interval: re.compile(r"^'(.*)'::interval"),
-    JSON: re.compile(r"^'(.*)'::json$"),
+    Interval: re.compile(
+        r"^(?:')?(?:(?:(?P<years>\d+) y(?:ear(?:s)?)?\b)|(?:(?P<months>\d+) m(?:onth(?:s)?)?\b)|(?:(?P<weeks>\d+) w(?:eek(?:s)?)?\b)|(?:(?P<days>\d+) d(?:ay(?:s)?)?\b)|(?:(?:(?:(?P<hours>\d+) h(?:our(?:s)?)?\b)|(?:(?P<minutes>\d+) m(?:inute(?:s)?)?\b)|(?:(?P<seconds>\d+) s(?:econd(?:s)?)?\b))|(?:(?P<digits>-?\d\d:\d\d:\d\d))?\b))+(?P<direction>ago)?(?:'::interval)?$"
+        ),
+    JSON: re.compile(r"^'(.*)'::json$"), 
     JSONB: re.compile(r"^'(.*)'::jsonb$"),
     Numeric: re.compile(r"(\d+)"),
-    Real: re.compile(r"^(-?[0-9]\d*(\.\d+)?)$"),
+    Real: re.compile(r"^(-?[0-9]\d*(?:\.\d+)?)$"),
     SmallInt: re.compile(r"^'?(-?[0-9]\d*)'?(?:::integer)?$"),
     Text: re.compile(r"^'(.*)'::text$"),
     Timestamp: re.compile(
@@ -198,16 +200,29 @@ COLUMN_DEFAULT_PARSER = {
 
 
 def get_column_default(column_type: t.Type[Column], column_default: str):
-    pat = COLUMN_DEFAULT_PARSER[column_type]
     print(column_type, column_default)
+    pat = COLUMN_DEFAULT_PARSER[column_type]
     if pat:
-        value = re.match(pat, column_default).group(1)
+        match = re.match(pat, column_default)
+        if len(match.groups()) == 1:
+            value = match.group(1)
+        else:
+            value = match.groupdict()
         if column_type is Serial:
             return f"nextval('{value}')"
         elif column_type is Boolean:
             return True if value == "true" else False
         elif column_type is Interval:
-            return IntervalCustom(value)
+            kwargs = {}
+            for period in ["years", "months", "weeks", "days", "hours", "minutes", "seconds"]:
+                period_match = value.get(period, 0)
+                if period_match:
+                    kwargs[period] = int(period_match)
+            # Digits take precedence
+            digits = value["digits"]
+            if digits:
+                kwargs.update(dict(zip(["hours", "minutes", "seconds"], value["digits"].split(":"))))
+            return IntervalCustom(**kwargs)
         elif column_type is JSON or column_type is JSONB:
             return json.loads(value)
         elif column_type is UUID:
