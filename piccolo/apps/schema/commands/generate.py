@@ -174,7 +174,7 @@ COLUMN_TYPE_MAP = {
 }
 
 
-async def get_contraints(
+async def get_constraints(
     table_class: t.Type[Table], tablename: str, schema_name: str = "public"
 ) -> TableConstraints:
     """
@@ -300,7 +300,7 @@ async def create_table_class_from_db(
     schema_name: str,
     output_schema: OutputSchema,
 ) -> t.Type[Table]:
-    constraints = await get_contraints(
+    constraints = await get_constraints(
         table_class=table_class, tablename=tablename, schema_name=schema_name
     )
     table_schema = await get_table_schema(
