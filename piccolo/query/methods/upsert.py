@@ -33,13 +33,12 @@ class Upsert(Query):
         values = dict(values, **kwargs)
         self.values_delegate.values(values)
         return self
-    
+
     def validator(self, *instances: Table, values: t.Dict[t.Union[Column, str], t.Any] = {}):
         if self.where_delegate.response_handler(self) == False:
-          self.add_delegate.add(*instances, table_class=self.table)
+            self.add_delegate.add(*instances, table_class=self.table)
         else:
             self.values_delegate.values(values)
-        
 
     def run_callback(self, results):
         for index, row in enumerate(results):
