@@ -141,16 +141,23 @@ class OutputSchema:
     warnings: t.List[str] = dataclasses.field(default_factory=list)
     tables: t.List[t.Type[Table]] = dataclasses.field(default_factory=list)
 
-    def get_table_with_name(self, name: str) -> t.Optional[t.Type[Table]]:
+    def get_table_with_name(self, tablename: str) -> t.Optional[t.Type[Table]]:
         """
-        Just used by unit tests.
+        used to search for a table by name.
         """
+        tablename = _snake_to_camel(tablename)
         try:
             return next(
-                table for table in self.tables if table.__name__ == name
+                table for table in self.tables if table.__name__ == tablename
             )
         except StopIteration:
             return None
+
+    def __add__(self, value) -> OutputSchema:
+        self.imports.extend(value.imports)
+        self.warnings.extend(value.warnings)
+        self.tables.extend(value.tables)
+        return self
 
 
 COLUMN_TYPE_MAP = {
@@ -295,18 +302,15 @@ def get_table_name(name: str, schema: str) -> str:
 
 
 async def create_table_class_from_db(
-    table_class: t.Type[Table],
-    tablename: str,
-    schema_name: str,
-    output_schema: OutputSchema,
-) -> t.Type[Table]:
+    table_class: t.Type[Table], tablename: str, schema_name: str
+) -> OutputSchema:
     constraints = await get_constraints(
         table_class=table_class, tablename=tablename, schema_name=schema_name
     )
     table_schema = await get_table_schema(
         table_class=table_class, tablename=tablename, schema_name=schema_name
     )
-
+    output_schema = OutputSchema()
     columns: t.Dict[str, Column] = {}
 
     for pg_row_meta in table_schema:
@@ -340,11 +344,24 @@ async def create_table_class_from_db(
                 constraint_schema=fk_constraint_table.schema,
             )
             if constraint_table.name:
-                kwargs["references"] = await create_table_class_from_db(
+                referenced_output_schema = await create_table_class_from_db(
                     table_class=table_class,
                     tablename=constraint_table.name,
                     schema_name=constraint_table.schema,
-                    output_schema=output_schema,
+                )
+                referenced_table = (
+                    referenced_output_schema.get_table_with_name(
+                        tablename=constraint_table.name
+                    )
+                )
+                kwargs["references"] = (
+                    referenced_table
+                    if referenced_table is not None
+                    else ForeignKeyPlaceholder
+                )
+                output_schema = sum(
+                    [output_schema, referenced_output_schema],
+                    start=OutputSchema(),
                 )
             else:
                 kwargs["references"] = ForeignKeyPlaceholder
@@ -370,7 +387,7 @@ async def create_table_class_from_db(
         class_members=columns,
     )
     output_schema.tables.append(table)
-    return table
+    return output_schema
 
 
 async def get_output_schema(
@@ -415,19 +432,17 @@ async def get_output_schema(
     if not tablenames:
         tablenames = await get_tablenames(Schema, schema_name=schema_name)
 
-    output_schema = OutputSchema()
-
     table_coroutines = (
         create_table_class_from_db(
-            table_class=Schema,
-            tablename=tablename,
-            schema_name=schema_name,
-            output_schema=output_schema,
+            table_class=Schema, tablename=tablename, schema_name=schema_name
         )
         for tablename in tablenames
         if tablename not in exclude
     )
-    await asyncio.gather(*table_coroutines)
+    output_schemas = await asyncio.gather(*table_coroutines)
+
+    # merge all the output schemas to a single OutputSchema object
+    output_schema = sum(output_schemas, start=OutputSchema())
 
     # Sort the tables based on their ForeignKeys.
     output_schema.tables = sort_table_classes(
