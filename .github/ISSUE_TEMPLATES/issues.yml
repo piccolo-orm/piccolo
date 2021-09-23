@@ -1,7 +1,7 @@
 name: Issues/Bug 🐛🐛
 description: File/Create an Issue
 title: "[Issue]: Describe your issue here "
-labels: [goal:fix, priority:medium]
+labels: ["goal:fix, priority:medium"]
 body:
   - type: markdown
     attributes:
