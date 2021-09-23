@@ -183,6 +183,6 @@ class TestGenerateWithSchema(TestCase):
         )
         self.assertEqual(Writer._meta.tablename, writer._meta.tablename)
 
-        # make sure foregin key values are correct.
+        # make sure foreign key values are correct.
         self.assertEqual(writer.publication, publication)
         self.assertEqual(book.writer, writer)

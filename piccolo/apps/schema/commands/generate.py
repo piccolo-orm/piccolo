@@ -130,7 +130,7 @@ class OutputSchema:
     """
     Represents the schema which will be printed out.
     :param imports:
-    e.g. ["from piccolo.table import Table"]
+        e.g. ["from piccolo.table import Table"]
     :param warnings:
         e.g. ["some_table.some_column unrecognised_type"]
     :param tables:
@@ -183,9 +183,9 @@ async def get_contraints(
     :param table_class:
         Any Table subclass - just used to execute raw queries on the database.
     :param tablename:
-    Name of the table.
+        Name of the table.
     :param schema_name:
-    Name of the schema.
+        Name of the schema.
 
 
     """
@@ -215,7 +215,6 @@ async def get_tablenames(
 
     :param table_class:
         Any Table subclass - just used to execute raw queries on the database.
-
     :param schema_name:
         name of the schema
     :returns:
@@ -295,17 +294,17 @@ def get_table_name(name: str, schema: str) -> str:
     return f"{schema}.{name}"
 
 
-async def create_table(
-    Schema: t.Type[Table],
+async def create_table_class_from_db(
+    table_class: t.Type[Table],
     tablename: str,
     schema_name: str,
     output_schema: OutputSchema,
 ) -> t.Type[Table]:
     constraints = await get_contraints(
-        table_class=Schema, tablename=tablename, schema_name=schema_name
+        table_class=table_class, tablename=tablename, schema_name=schema_name
     )
     table_schema = await get_table_schema(
-        table_class=Schema, tablename=tablename, schema_name=schema_name
+        table_class=table_class, tablename=tablename, schema_name=schema_name
     )
 
     columns: t.Dict[str, Column] = {}
@@ -336,16 +335,16 @@ async def create_table(
             )
             column_type = ForeignKey
             constraint_table = await get_foreign_key_reference(
-                table_class=Schema,
+                table_class=table_class,
                 constraint_name=fk_constraint_table.name,
                 constraint_schema=fk_constraint_table.schema,
             )
             if constraint_table.name:
-                kwargs["references"] = await create_table(
-                    Schema,
-                    constraint_table.name,
-                    constraint_table.schema,
-                    output_schema,
+                kwargs["references"] = await create_table_class_from_db(
+                    table_class=table_class,
+                    tablename=constraint_table.name,
+                    schema_name=constraint_table.schema,
+                    output_schema=output_schema,
                 )
             else:
                 kwargs["references"] = ForeignKeyPlaceholder
@@ -382,13 +381,13 @@ async def get_output_schema(
     """
 
     :param schema_name:
-    name of the schema
+        name of the schema
     :param tablenames:
-    optional list of table names. Only creates the specifed tables.
+        optional list of table names. Only creates the specifed tables.
     :param exclude:
-    optional list of table names. excludes the specified tables.
+        optional list of table names. excludes the specified tables.
     :return:
-    OutputSchema
+        OutputSchema
     """
     engine: t.Optional[Engine] = engine_finder()
 
@@ -418,17 +417,17 @@ async def get_output_schema(
 
     output_schema = OutputSchema()
 
-    tablecoroutines = (
-        create_table(
-            Schema=Schema,
-            tablename=table,
+    table_coroutines = (
+        create_table_class_from_db(
+            table_class=Schema,
+            tablename=tablename,
             schema_name=schema_name,
             output_schema=output_schema,
         )
-        for table in tablenames
-        if table not in exclude
+        for tablename in tablenames
+        if tablename not in exclude
     )
-    await asyncio.gather(*tablecoroutines)
+    await asyncio.gather(*table_coroutines)
 
     # Sort the tables based on their ForeignKeys.
     output_schema.tables = sort_table_classes(
