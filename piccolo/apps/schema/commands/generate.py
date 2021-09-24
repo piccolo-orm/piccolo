@@ -440,7 +440,6 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
         columns: t.Dict[str, Column] = {}
 
         for pg_row_meta in table_schema:
-            print(pg_row_meta)
             data_type = pg_row_meta.data_type
             column_type = COLUMN_TYPE_MAP.get(data_type, None)
             column_name = pg_row_meta.column_name
