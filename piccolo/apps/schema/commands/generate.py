@@ -84,7 +84,7 @@ class TableConstraints:
         primary_key_constraints: t.List[Constraint] = []
 
         for constraint in self.constraints:
-            if constraint.constraint_type in ["FOREIGN KEY", "ON DELETE"]:
+            if constraint.constraint_type == "FOREIGN KEY":
                 foreign_key_constraints.append(constraint)
             elif constraint.constraint_type == "PRIMARY KEY":
                 primary_key_constraints.append(constraint)
@@ -436,7 +436,6 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
         table_schema = await get_table_schema(
             table_class=Schema, tablename=tablename, schema_name=schema_name
         )
-
         columns: t.Dict[str, Column] = {}
 
         for pg_row_meta in table_schema:
