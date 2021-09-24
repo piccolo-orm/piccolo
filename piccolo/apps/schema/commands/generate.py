@@ -64,7 +64,7 @@ class RowMeta:
 
 @dataclasses.dataclass
 class Constraint:
-    constraint_type: Literal["REFERENCES", "PRIMARY KEY", "UNIQUE", "FOREIGN KEY", "CHECK", "ON DELETE"]
+    constraint_type: Literal["PRIMARY KEY", "UNIQUE", "FOREIGN KEY", "CHECK"]
     constraint_name: str
     column_name: t.Optional[str] = None
 
@@ -433,7 +433,6 @@ async def get_output_schema(schema_name: str = "public") -> OutputSchema:
         constraints = await get_contraints(
             table_class=Schema, tablename=tablename, schema_name=schema_name
         )
-        print(constraints)
         table_schema = await get_table_schema(
             table_class=Schema, tablename=tablename, schema_name=schema_name
         )

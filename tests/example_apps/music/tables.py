@@ -17,8 +17,7 @@ from piccolo.columns import (
     Text,
     Timestamp,
     Timestamptz,
-    Varchar,
-    OnDelete
+    Varchar
 )
 from piccolo.columns.readable import Readable
 from piccolo.table import Table
@@ -40,7 +39,7 @@ class Band(Table):
     label_id = UUID()
     date_signed = Date()
     name = Varchar(length=50)
-    manager = ForeignKey(Manager, null=True, on_delete=OnDelete.no_action)
+    manager = ForeignKey(Manager, null=True)
     popularity = Integer(default=0)
 
 
