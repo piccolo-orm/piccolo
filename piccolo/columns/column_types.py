@@ -1217,11 +1217,9 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
 
         super().__init__(**kwargs)
 
-        # This is here just for type inference - the actual value is set by
-        # the Table metaclass. We can't set the actual value here, as
-        # only the metaclass has access to the table.
+        # The Table metaclass sets the actual value for `table`:
         self._foreign_key_meta = ForeignKeyMeta(
-            Table, OnDelete.cascade, OnUpdate.cascade
+            references=Table, on_delete=on_delete, on_update=on_update
         )
 
     def copy(self) -> ForeignKey:
