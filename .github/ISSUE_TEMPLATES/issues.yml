@@ -1,0 +1,22 @@
+name: Bug 🐛
+description: Report a bug
+title: "[Issue]: Describe the bug here"
+labels: ["goal:fix, priority:medium"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: input
+    attributes:
+      label: Bug description
+      description: Can you please describe the bug in more detail?
+      placeholder: Tell us what you found.
+    validations:
+      required: true
+  - type: textarea
+    id: multimedia
+    attributes:
+      label: Relevant log output
+      description: Please paste any relevant log output.
+      placeholder: Please upload your multimedia (screenshots and video) here.
