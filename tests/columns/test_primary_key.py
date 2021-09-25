@@ -1,7 +1,13 @@
 import uuid
 from unittest import TestCase
 
-from piccolo.columns.column_types import UUID, ForeignKey, Serial, Varchar
+from piccolo.columns.column_types import (
+    UUID,
+    BigSerial,
+    ForeignKey,
+    Serial,
+    Varchar,
+)
 from piccolo.table import Table
 
 
@@ -11,6 +17,11 @@ class MyTableDefaultPrimaryKey(Table):
 
 class MyTablePrimaryKeySerial(Table):
     pk = Serial(null=False, primary_key=True)
+    name = Varchar()
+
+
+class MyTablePrimaryKeyBigSerial(Table):
+    pk = BigSerial(null=False, primary_key=True)
     name = Varchar()
 
 
@@ -45,6 +56,20 @@ class TestPrimaryKeyInteger(TestCase):
         result = row.save().run_sync()[0]
 
         self.assertIsInstance(result["pk"], int)
+
+
+class TestPrimaryKeyBigSerial(TestCase):
+    def setUp(self):
+        MyTablePrimaryKeyBigSerial.create_table().run_sync()
+
+    def tearDown(self):
+        MyTablePrimaryKeyBigSerial.alter().drop_table().run_sync()
+
+    def test_return_type(self):
+        row = MyTablePrimaryKeyBigSerial()
+        row.save().run_sync()
+
+        self.assertIsInstance(row._meta.primary_key, BigSerial)
 
 
 class TestPrimaryKeyUUID(TestCase):

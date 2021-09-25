@@ -522,6 +522,21 @@ class Serial(Column):
         raise Exception("Unrecognized engine type")
 
 
+class BigSerial(Serial):
+    """
+    An alias to a large autoincrementing integer column in Postgres.
+    """
+
+    @property
+    def column_type(self):
+        engine_type = self._meta.table._meta.db.engine_type
+        if engine_type == "postgres":
+            return "BIGSERIAL"
+        elif engine_type == "sqlite":
+            return "INTEGER"
+        raise Exception("Unrecognized engine type")
+
+
 class PrimaryKey(Serial):
     def __init__(self, **kwargs) -> None:
         # Set the index to False, as a database should automatically create
