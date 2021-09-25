@@ -13,7 +13,7 @@ from typing_extensions import Literal
 
 from piccolo.apps.migrations.auto.serialisation import serialise_params
 from piccolo.columns import defaults
-from piccolo.columns.base import Column
+from piccolo.columns.base import Column, OnDelete, OnUpdate
 from piccolo.columns.column_types import (
     JSON,
     JSONB,
@@ -129,6 +129,39 @@ class TableConstraints:
                 )
 
         raise ValueError("No matching constraint found")
+
+
+@dataclasses.dataclass
+class Trigger:
+    constraint_name: str
+    constraint_type: str
+    table_name: str
+    column_name: str
+    on_update: str
+    on_delete: Literal["NO ACTION", "RESTRICT", "CASCADE", "SET NULL", "SET_DEFAULT"]
+    references_table: str
+    references_column: str
+
+@dataclasses.dataclass
+class TableTriggers:
+    """
+    All of the triggers for a certain table in the database.
+    """
+
+    tablename: str
+    triggers: t.List[Trigger]
+
+    def get_column_triggers(self, column_name) -> List[Trigger]:
+        triggers = []
+        for i in self.triggers:
+            if i.column_name == column_name:
+                triggers.append(i)
+        return triggers
+    
+    def get_column_ref_trigger(self, column_name, references_table) -> Trigger:
+        for i in self.triggers:
+            if i.column_name == column_name and i.references_table == references_table:
+                return i
 
 
 @dataclasses.dataclass
@@ -321,6 +354,69 @@ def get_column_default(
                 return column_type.value_type(value["value"])
 
 
+async def get_fk_triggers(
+    table_class: t.Type[Table], tablename: str, schema_name: str = "public"
+) -> TableTriggers:
+    """
+    Get all of the constraints for a table.
+
+    :param table_class:
+        Any Table subclass - just used to execute raw queries on the database.
+
+    """
+    triggers = await table_class.raw(
+        (
+            "SELECT tc.constraint_name, "
+            "       tc.constraint_type, "
+            "       tc.table_name, "
+            "       kcu.column_name, "
+            "       rc.update_rule AS on_update, "
+            "       rc.delete_rule AS on_delete, "
+            "       ccu.table_name AS references_table, "
+            "       ccu.column_name AS references_column "
+            "FROM information_schema.table_constraints tc "
+            "LEFT JOIN information_schema.key_column_usage kcu "
+            "  ON tc.constraint_catalog = kcu.constraint_catalog "
+            "  AND tc.constraint_schema = kcu.constraint_schema "
+            "  AND tc.constraint_name = kcu.constraint_name "
+            "LEFT JOIN information_schema.referential_constraints rc "
+            "  ON tc.constraint_catalog = rc.constraint_catalog "
+            "  AND tc.constraint_schema = rc.constraint_schema "
+            "  AND tc.constraint_name = rc.constraint_name "
+            "LEFT JOIN information_schema.constraint_column_usage ccu "
+            "  ON rc.unique_constraint_catalog = ccu.constraint_catalog "
+            "  AND rc.unique_constraint_schema = ccu.constraint_schema "
+            "  AND rc.unique_constraint_name = ccu.constraint_name "
+            "WHERE lower(tc.constraint_type) in ('foreign key')"
+            "AND tc.table_schema = {} "
+            "AND tc.table_name = {}; "
+        ),
+        schema_name,
+        tablename,
+    )
+    return TableTriggers(
+        tablename=tablename,
+        triggers=[Trigger(**i) for i in triggers],
+    )
+
+
+ONDELETE_MAP = {
+    "NO ACTION": OnDelete.no_action,
+    "RESTRICT": OnDelete.restrict,
+    "CASCADE": OnDelete.cascade,
+    "SET NULL": OnDelete.set_null,
+    "SET DEFAULT": OnDelete.set_default
+}
+
+ONUPDATE_MAP = {
+    "NO ACTION": OnUpdate.no_action,
+    "RESTRICT": OnUpdate.restrict,
+    "CASCADE": OnUpdate.cascade,
+    "SET NULL": OnUpdate.set_null,
+    "SET DEFAULT": OnUpdate.set_default
+}
+
+
 async def get_constraints(
     table_class: t.Type[Table], tablename: str, schema_name: str = "public"
 ) -> TableConstraints:
@@ -447,6 +543,9 @@ async def create_table_class_from_db(
     constraints = await get_constraints(
         table_class=table_class, tablename=tablename, schema_name=schema_name
     )
+    triggers = await get_fk_triggers(
+        table_class=table_class, tablename=tablename, schema_name=schema_name
+    )
     table_schema = await get_table_schema(
         table_class=table_class, tablename=tablename, schema_name=schema_name
     )
@@ -500,6 +599,12 @@ async def create_table_class_from_db(
                     if referenced_table is not None
                     else ForeignKeyPlaceholder
                 )
+
+                trigger = triggers.get_column_ref_trigger(column_name, referenced_tablename)
+                if trigger:
+                    kwargs["on_update"] = ONUPDATE_MAP[trigger.on_update]
+                    kwargs["on_delete"] = ONDELETE_MAP[trigger.on_delete]
+
                 output_schema = sum(  # type: ignore
                     [output_schema, referenced_output_schema]  # type: ignore
                 )  # type: ignore
