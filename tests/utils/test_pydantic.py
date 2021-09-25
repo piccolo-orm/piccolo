@@ -185,6 +185,17 @@ class TestJSONColumn(TestCase):
             with self.assertRaises(pydantic.ValidationError):
                 pydantic_model(meta=json_string, meta_b=json_string)
 
+    def test_json_format(self):
+        class Movie(Table):
+            features = JSON()
+
+        pydantic_model = create_pydantic_model(table=Movie)
+
+        self.assertEqual(
+            pydantic_model.schema()["properties"]["features"]["format"],
+            "json",
+        )
+
 
 class TestExcludeColumn(TestCase):
     def test_all(self):
