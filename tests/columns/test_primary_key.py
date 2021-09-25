@@ -26,7 +26,7 @@ class MyTablePrimaryKeyBigSerial(Table):
 
 
 class MyTablePrimaryKeyUUID(Table):
-    id = UUID(null=False, primary_key=True)
+    pk = UUID(null=False, primary_key=True)
     name = Varchar()
 
 
@@ -42,6 +42,7 @@ class TestPrimaryKeyDefault(TestCase):
         row.save().run_sync()
 
         self.assertIsInstance(row._meta.primary_key, Serial)
+        self.assertIsInstance(row["id"], int)
 
 
 class TestPrimaryKeyInteger(TestCase):
@@ -53,9 +54,10 @@ class TestPrimaryKeyInteger(TestCase):
 
     def test_return_type(self):
         row = MyTablePrimaryKeySerial()
-        result = row.save().run_sync()[0]
+        row.save().run_sync()
 
-        self.assertIsInstance(result["pk"], int)
+        self.assertIsInstance(row._meta.primary_key, Serial)
+        self.assertIsInstance(row["pk"], int)
 
 
 class TestPrimaryKeyBigSerial(TestCase):
@@ -70,6 +72,7 @@ class TestPrimaryKeyBigSerial(TestCase):
         row.save().run_sync()
 
         self.assertIsInstance(row._meta.primary_key, BigSerial)
+        self.assertIsInstance(row["pk"], int)
 
 
 class TestPrimaryKeyUUID(TestCase):
@@ -83,7 +86,8 @@ class TestPrimaryKeyUUID(TestCase):
         row = MyTablePrimaryKeyUUID()
         row.save().run_sync()
 
-        self.assertIsInstance(row.id, uuid.UUID)
+        self.assertIsInstance(row._meta.primary_key, UUID)
+        self.assertIsInstance(row["pk"], uuid.UUID)
 
 
 class Manager(Table):

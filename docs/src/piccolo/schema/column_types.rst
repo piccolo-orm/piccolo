@@ -54,6 +54,18 @@ BigInt
 
 .. autoclass:: BigInt
 
+=========
+BigSerial
+=========
+
+.. autoclass:: BigSerial
+
+================
+Double Precision
+================
+
+.. autoclass:: DoublePrecision
+
 =======
 Integer
 =======
@@ -78,12 +90,11 @@ Real
 .. hint:: There is also a ``Float`` column type, which is an alias for
     ``Real``.
 
+======
+Serial
+======
 
-================
-Double Precision
-================
-
-.. autoclass:: DoublePrecision
+.. autoclass:: Serial
 
 ========
 SmallInt
