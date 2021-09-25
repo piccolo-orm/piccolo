@@ -1,0 +1,22 @@
+name: Features 💡
+description: Suggest a new feature
+title: "[Feature]: Describe your feature idea here"
+labels: ["goal:addition"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this suggestion form!
+  - type: input
+    attributes:
+      label: Suggestion
+      description: Can you please elaborate on your suggestion?
+      placeholder: I would like to see...
+    validations:
+      required: true
+  - type: textarea
+    id: multimedia
+    attributes:
+      label: Relevant media
+      description: You can add any media which helps explain your idea.
+      placeholder: Please upload your multimedia (screenshots and video) here.
