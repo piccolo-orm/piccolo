@@ -2,6 +2,7 @@ import time
 from unittest import TestCase
 
 from piccolo.columns import Column, ForeignKey, LazyTableReference, Varchar
+from piccolo.columns.base import OnDelete, OnUpdate
 from piccolo.table import Table
 from tests.example_apps.music.tables import Band, Concert, Manager, Ticket
 
@@ -30,6 +31,28 @@ class Band3(Table, tablename="band"):
 
 class Band4(Table, tablename="band"):
     manager = ForeignKey(references="tests.columns.test_foreignkey.Manager1")
+
+
+class TestForeignKeyMeta(TestCase):
+    """
+    Make sure that `ForeignKeyMeta` is setup correctly.
+    """
+
+    def test_foreignkeymeta(self):
+        class Band(Table):
+            manager = ForeignKey(
+                references=Manager,
+                on_delete=OnDelete.set_null,
+                on_update=OnUpdate.set_null,
+            )
+
+        self.assertTrue(
+            Band.manager._foreign_key_meta.on_update == OnUpdate.set_null
+        )
+        self.assertTrue(
+            Band.manager._foreign_key_meta.on_delete == OnDelete.set_null
+        )
+        self.assertTrue(Band.manager._foreign_key_meta.references == Manager)
 
 
 class TestForeignKeySelf(TestCase):
