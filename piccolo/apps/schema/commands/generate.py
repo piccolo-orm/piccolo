@@ -457,6 +457,7 @@ async def create_table_class_from_db(
         data_type = pg_row_meta.data_type
         column_type = COLUMN_TYPE_MAP.get(data_type, None)
         column_name = pg_row_meta.column_name
+        column_default = pg_row_meta.column_default
         if not column_type:
             output_schema.warnings.append(
                 f"{tablename}.{column_name} ['{data_type}']"
