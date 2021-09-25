@@ -190,7 +190,7 @@ class TestJSONColumn(TestCase):
             features = JSON()
 
         pydantic_model = create_pydantic_model(table=Movie)
-        
+
         self.assertEqual(
             pydantic_model.schema()["properties"]["features"]["format"],
             "json",
