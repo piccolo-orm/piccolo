@@ -63,42 +63,89 @@ class Singleton(type):
 
 class TableStorage(metaclass=Singleton):
     """
-    A singleton object to store reflected tables
+    A singleton object to store and access reflected tables
     """
 
     def __init__(self):
         self.tables = ImmutableDict()
+        self._schema_tables = dict()
 
     async def reflect(
-        self,
-        schema_name: str = "public",
-        if_not_exists: t.Optional[bool] = False,
+            self,
+            schema_name: str = "public",
+            include: t.Union[list, str, None] = None,
+            exclude: t.Union[list, str, None] = None,
+            keep_existing: bool = False,
     ) -> None:
-        output_schema = await get_output_schema(schema_name=schema_name)
+        """
+        Imports tables from database into Table objects without hard-coding
+        them. If a table has a reference to another table, the referenced
+        table will be imported too. Reflection can have a performance impact
+        based on the number of tables. If you want to reflect your whole
+        database, make sure to only do it once or use the provided parameters
+        instead of reflecting the whole database every time.
+        :param schema_name:
+            Name of the schema you want to reflect.
+        :param include:
+            It will only reflect the specified tables. Can be a list of tables
+            or a single table.
+        :param exclude:
+            It won't reflect the specified tables. Can be a list of tables or
+            a single table.
+        :param keep_existing:
+            If True, it will exclude the available tables and reflects the
+            currently unavailable ones. default is False.
+        :return:
+            None
+        """
+        include = self._to_list(include)
+        exclude = self._to_list(exclude)
+
+        if keep_existing:
+            exclude += self._schema_tables.get(schema_name, [])
+
+        output_schema = await get_output_schema(
+            schema_name=schema_name, include=include, exclude=exclude
+        )
         add_tables = [
-            self._add_table(
-                schema_name=schema_name,
-                table=table,
-                if_not_exists=if_not_exists,
-            )
+            self._add_table(schema_name=schema_name, table=table)
             for table in output_schema.tables
         ]
         await asyncio.gather(*add_tables)
 
-    async def _add_table(
-        self,
-        schema_name: str,
-        table: t.Type[Table],
-        if_not_exists: t.Optional[bool] = False,
-    ) -> None:
+    async def get_table(self, tablename: str) -> t.Optional[t.Type[Table]]:
+        """
+        Returns the Table object if exists. if table is not present in the
+        TableStorage, it will try to reflect it.
+        if reflection fails, it will return None
+        :param tablename:
+            Name of the Table.
+        :return:
+            Table | None
+        """
+        # not implemented yet
+        pass
+
+    async def _add_table(self, schema_name: str, table: t.Type[Table]) -> None:
         if isinstance(table, TableMetaclass):
-            tablename = self._get_table_name(
+            table_name = self._get_table_name(
                 table._meta.tablename, schema_name
             )
-            if if_not_exists:
-                if self.tables.get(tablename):
-                    return
-            self.tables._insert_item(tablename, table)
+            self.tables._insert_item(table_name, table)
+            self._add_to_schema_tables(
+                schema_name=schema_name, table_name=table._meta.tablename
+            )
+
+    def _add_to_schema_tables(self, schema_name: str, table_name: str) -> None:
+        """
+        We keep record of schemas and their tables for easy use.
+        This method adds a table to its schema.
+        """
+        schema_tables = self._schema_tables.get(schema_name)
+        if schema_tables is None:
+            self._schema_tables[schema_name] = []
+        else:
+            self._schema_tables[schema_name].append(table_name)
 
     @staticmethod
     def _get_table_name(name: str, schema: str):
@@ -109,3 +156,29 @@ class TableStorage(metaclass=Singleton):
 
     def __repr__(self):
         return f"{self.tables}"
+
+    @staticmethod
+    def _get_schema_name(table_class: t.Type[Table]) -> t.Optional[str]:
+        """
+        Extract schema name from tablename attribute.
+        :param table_class:
+            Table Object
+        :return:
+            Returns the name of the schema.
+        """
+        table_class_name = table_class.__name__
+        full_name = table_class._meta.tablename
+        if table_class_name in full_name:
+            schema_name = full_name.replace(f".{table_class_name}", "")
+            return "public" if schema_name == full_name else schema_name
+        else:
+            raise ValueError("Couldn't find schema name.")
+
+    @staticmethod
+    def _to_list(value):
+        if isinstance(value, list):
+            return value
+        elif isinstance(value, tuple) or isinstance(value, set):
+            return list(value)
+        elif isinstance(value, str):
+            return [value]
