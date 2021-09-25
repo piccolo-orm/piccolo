@@ -177,12 +177,12 @@ class TestGenerateWithSchema(TestCase):
         publication = output_schema.tables[0]
         writer = output_schema.tables[1]
         book = output_schema.tables[2]
-        # make sure refrerenced tables have been created
+        # Make sure referenced tables have been created
         self.assertEqual(
             Publication._meta.tablename, publication._meta.tablename
         )
         self.assertEqual(Writer._meta.tablename, writer._meta.tablename)
 
-        # make sure foreign key values are correct.
+        # Make sure foreign key values are correct.
         self.assertEqual(writer.publication, publication)
         self.assertEqual(book.writer, writer)
