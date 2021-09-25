@@ -1,6 +1,6 @@
-name: Features💡
-description: Suggest us a new feature
-title: "[Feature]: Describe your Feature/Suggestion here"
+name: Features 💡
+description: Suggest a new feature
+title: "[Feature]: Describe your feature idea here"
 labels: ["goal:addition"]
 body:
   - type: markdown
@@ -10,25 +10,13 @@ body:
   - type: input
     attributes:
       label: Suggestion
-      description: Can you please elaborate about your suggestion?
+      description: Can you please elaborate on your suggestion?
       placeholder: I would like to see...
     validations:
       required: true
-  
-  - type: textarea
-    id: what-happened
-    attributes:
-      label: What is expected?
-      description: Also tell us, what did you wish to see ?
-      placeholder: Give us specific details .
-      value: "Details!"
-    validations:
-      required: true
-  
   - type: textarea
     id: multimedia
     attributes:
-      label: Relevant log output
-      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
-      placeholder: Please upload your multimedia(screenshots and video) here
-      
+      label: Relevant media
+      description: You can add any media which helps explain your idea.
+      placeholder: Please upload your multimedia (screenshots and video) here.
