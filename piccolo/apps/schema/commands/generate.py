@@ -143,7 +143,7 @@ class OutputSchema:
 
     def get_table_with_name(self, tablename: str) -> t.Optional[t.Type[Table]]:
         """
-        used to search for a table by name.
+        Used to search for a table by name.
         """
         tablename = _snake_to_camel(tablename)
         try:
@@ -231,7 +231,7 @@ async def get_tablenames(
     :param table_class:
         Any Table subclass - just used to execute raw queries on the database.
     :param schema_name:
-        name of the schema
+        Name of the schema.
     :returns:
         A list of tablenames for the given schema.
 
@@ -403,14 +403,13 @@ async def get_output_schema(
     exclude: t.Optional[t.List[str]] = None,
 ) -> OutputSchema:
     """
-
     :param schema_name:
-        name of the schema
+        Name of the schema.
     :param tablenames:
-        optional list of table names. Only creates the specifed tables.
+        Optional list of table names. Only creates the specifed tables.
     :param exclude:
-        optional list of table names. excludes the specified tables.
-    :return:
+        Optional list of table names. excludes the specified tables.
+    :returns:
         OutputSchema
     """
     engine: t.Optional[Engine] = engine_finder()
@@ -448,7 +447,7 @@ async def get_output_schema(
     )
     output_schemas = await asyncio.gather(*table_coroutines)
 
-    # merge all the output schemas to a single OutputSchema object
+    # Merge all the output schemas to a single OutputSchema object
     output_schema: OutputSchema = sum(output_schemas)  # type: ignore
 
     # Sort the tables based on their ForeignKeys.
