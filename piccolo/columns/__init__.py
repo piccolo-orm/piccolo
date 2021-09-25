@@ -5,6 +5,7 @@ from .column_types import (
     UUID,
     Array,
     BigInt,
+    BigSerial,
     Boolean,
     Bytea,
     Date,
