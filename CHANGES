@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.51.1
+------
+Fixing a bug with ``on_delete`` and ``on_update`` not being set correctly.
+Thanks to @wmshort for discovering this.
+
 0.51.0
 ------
 Modified ``create_pydantic_model``, so ``JSON`` and ``JSONB`` columns have a
