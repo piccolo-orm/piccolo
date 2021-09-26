@@ -151,14 +151,14 @@ class TableTriggers:
     tablename: str
     triggers: t.List[Trigger]
 
-    def get_column_triggers(self, column_name) -> t.List[Trigger]:
+    def get_column_triggers(self, column_name: str) -> t.List[Trigger]:
         triggers = []
         for i in self.triggers:
             if i.column_name == column_name:
                 triggers.append(i)
         return triggers
     
-    def get_column_ref_trigger(self, column_name, references_table) -> Trigger:
+    def get_column_ref_trigger(self, column_name: str, references_table: str) -> Trigger:
         for i in self.triggers:
             if i.column_name == column_name and i.references_table == references_table:
                 return i
