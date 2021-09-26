@@ -151,7 +151,7 @@ class TableTriggers:
     tablename: str
     triggers: t.List[Trigger]
 
-    def get_column_triggers(self, column_name) -> List[Trigger]:
+    def get_column_triggers(self, column_name) -> t.List[Trigger]:
         triggers = []
         for i in self.triggers:
             if i.column_name == column_name:
@@ -162,6 +162,8 @@ class TableTriggers:
         for i in self.triggers:
             if i.column_name == column_name and i.references_table == references_table:
                 return i
+
+        raise ValueError("No matching trigger found")
 
 
 @dataclasses.dataclass
@@ -600,7 +602,7 @@ async def create_table_class_from_db(
                     else ForeignKeyPlaceholder
                 )
 
-                trigger = triggers.get_column_ref_trigger(column_name, referenced_tablename)
+                trigger = triggers.get_column_ref_trigger(column_name, constraint_table.name)
                 if trigger:
                     kwargs["on_update"] = ONUPDATE_MAP[trigger.on_update]
                     kwargs["on_delete"] = ONDELETE_MAP[trigger.on_delete]
