@@ -11,7 +11,7 @@ Lots of improvements to ``piccolo schema generate``:
    schema, this will now work (courtesy @AliSayyah).
  * The column defaults are now extracted from the database (courtesy @wmshort).
  * The ``scale`` and ``precision`` values for ``Numeric`` / ``Decimal`` column
-   types are extracted from the datbase (courtesy @wmshort).
+   types are extracted from the database (courtesy @wmshort).
  * The ``ON DELETE`` and ``ON UPDATE`` values for ``ForeignKey`` columns are
    now extracted from the database (courtesy @wmshort).
 
