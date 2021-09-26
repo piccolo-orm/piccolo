@@ -9,13 +9,13 @@ class Immutable(object):
     def _immutable(self, *arg, **kw) -> TypeError:
         raise TypeError("%s object is immutable" % self.__class__.__name__)
 
-    __delitem__ = __setitem__ = __setattr__ = _immutable
+    __delitem__ = __setitem__ = __setattr__ = _immutable  # type: ignore
 
 
-class ImmutableDict(Immutable, dict):
+class ImmutableDict(Immutable, dict):  # type: ignore
     """A dictionary that is not publicly mutable."""
 
-    clear = pop = popitem = setdefault = update = Immutable._immutable
+    clear = pop = popitem = setdefault = update = Immutable._immutable  # type: ignore  # noqa:E501
 
     def __new__(cls, *args):
         new = dict.__new__(cls)
@@ -71,11 +71,11 @@ class TableStorage(metaclass=Singleton):
         self._schema_tables = dict()
 
     async def reflect(
-            self,
-            schema_name: str = "public",
-            include: t.Union[list, str, None] = None,
-            exclude: t.Union[list, str, None] = None,
-            keep_existing: bool = False,
+        self,
+        schema_name: str = "public",
+        include: t.Union[t.List[str], str, None] = None,
+        exclude: t.Union[t.List[str], str, None] = None,
+        keep_existing: bool = False,
     ) -> None:
         """
         Imports tables from database into Table objects without hard-coding
@@ -98,14 +98,14 @@ class TableStorage(metaclass=Singleton):
         :return:
             None
         """
-        include = self._to_list(include)
-        exclude = self._to_list(exclude)
+        include_list = self._to_list(include)
+        exclude_list = self._to_list(exclude)
 
         if keep_existing:
             exclude += self._schema_tables.get(schema_name, [])
 
         output_schema = await get_output_schema(
-            schema_name=schema_name, include=include, exclude=exclude
+            schema_name=schema_name, include=include_list, exclude=exclude_list
         )
         add_tables = [
             self._add_table(schema_name=schema_name, table=table)
@@ -175,10 +175,12 @@ class TableStorage(metaclass=Singleton):
             raise ValueError("Couldn't find schema name.")
 
     @staticmethod
-    def _to_list(value):
+    def _to_list(value) -> t.Optional[t.List[str]]:
         if isinstance(value, list):
             return value
         elif isinstance(value, tuple) or isinstance(value, set):
             return list(value)
         elif isinstance(value, str):
             return [value]
+        else:
+            return None

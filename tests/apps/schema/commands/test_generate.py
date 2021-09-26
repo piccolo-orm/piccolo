@@ -130,7 +130,7 @@ class TestGenerate(TestCase):
         Make sure only tables passed to `tablenames` are created
         """
         output_schema: OutputSchema = run_sync(
-            get_output_schema(tablenames=[SmallTable._meta.tablename])
+            get_output_schema(include=[SmallTable._meta.tablename])
         )
         self.assertEqual(len(output_schema.tables), 1)
         SmallTable_ = output_schema.get_table_with_name("SmallTable")
