@@ -63,7 +63,10 @@ class RowMeta:
     table_name: str
     character_maximum_length: t.Optional[int]
     data_type: str
-
+    numeric_precision: t.Optional[t.Union[int, str]]
+    numeric_scale: t.Optional[t.Union[int, str]]
+    numeric_precision_radix: t.Optional[Literal[2, 10]]
+    
     @classmethod
     def get_column_name_str(cls) -> str:
         return ", ".join([i.name for i in dataclasses.fields(cls)])
@@ -512,6 +515,11 @@ async def create_table_class_from_db(
 
         if column_type is Varchar:
             kwargs["length"] = pg_row_meta.character_maximum_length
+        elif isinstance(column_type, Numeric):
+            radix = pg_row_meta.numeric_precision_radix
+            precision = int(str(pg_row_meta.numeric_precision), radix)
+            scale = int(str(pg_row_meta.numeric_scale), radix)
+            kwargs["digits"] = (precision, scale)
 
         if column_default:
             default_value = get_column_default(column_type, column_default)
