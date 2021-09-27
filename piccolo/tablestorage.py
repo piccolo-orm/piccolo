@@ -113,6 +113,16 @@ class TableStorage(metaclass=Singleton):
         ]
         await asyncio.gather(*add_tables)
 
+    def clear(self) -> None:
+        """
+        Removes all the tables within TableStorage.
+
+        :return:
+            None
+        """
+        dict.clear(self.tables)
+        self._schema_tables.clear()
+
     async def get_table(self, tablename: str) -> t.Optional[t.Type[Table]]:
         """
         Returns the Table object if exists. if table is not present in the
@@ -175,7 +185,7 @@ class TableStorage(metaclass=Singleton):
             raise ValueError("Couldn't find schema name.")
 
     @staticmethod
-    def _to_list(value) -> t.Optional[t.List[str]]:
+    def _to_list(value: t.Any) -> t.List:
         if isinstance(value, list):
             return value
         elif isinstance(value, tuple) or isinstance(value, set):
@@ -183,4 +193,4 @@ class TableStorage(metaclass=Singleton):
         elif isinstance(value, str):
             return [value]
         else:
-            return None
+            return []
