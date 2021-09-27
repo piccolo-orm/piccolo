@@ -1,6 +1,24 @@
 Changes
 =======
 
+0.52.0
+------
+Lots of improvements to ``piccolo schema generate``:
+
+ * Dramatically improved performance, by executing more queries in parallel
+   (courtesy @AliSayyah).
+ * If a table in the database has a foreign key to a table in another
+   schema, this will now work (courtesy @AliSayyah).
+ * The column defaults are now extracted from the database (courtesy @wmshort).
+ * The ``scale`` and ``precision`` values for ``Numeric`` / ``Decimal`` column
+   types are extracted from the database (courtesy @wmshort).
+ * The ``ON DELETE`` and ``ON UPDATE`` values for ``ForeignKey`` columns are
+   now extracted from the database (courtesy @wmshort).
+
+Added ``BigSerial`` column type (courtesy @aliereno).
+
+Added GitHub issue templates (courtesy @AbhijithGanesh).
+
 0.51.1
 ------
 Fixing a bug with ``on_delete`` and ``on_update`` not being set correctly.

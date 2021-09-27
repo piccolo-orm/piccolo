@@ -2,13 +2,18 @@ from __future__ import annotations
 
 import asyncio
 import dataclasses
+import json
+import re
 import typing as t
+import uuid
+from datetime import date, datetime
 
 import black
 from typing_extensions import Literal
 
 from piccolo.apps.migrations.auto.serialisation import serialise_params
-from piccolo.columns.base import Column
+from piccolo.columns import defaults
+from piccolo.columns.base import Column, OnDelete, OnUpdate
 from piccolo.columns.column_types import (
     JSON,
     JSONB,
@@ -30,6 +35,7 @@ from piccolo.columns.column_types import (
     Timestamptz,
     Varchar,
 )
+from piccolo.columns.defaults.interval import IntervalCustom
 from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.table import Table, create_table_class, sort_table_classes
@@ -57,7 +63,10 @@ class RowMeta:
     table_name: str
     character_maximum_length: t.Optional[int]
     data_type: str
-
+    numeric_precision: t.Optional[t.Union[int, str]]
+    numeric_scale: t.Optional[t.Union[int, str]]
+    numeric_precision_radix: t.Optional[Literal[2, 10]]
+    
     @classmethod
     def get_column_name_str(cls) -> str:
         return ", ".join([i.name for i in dataclasses.fields(cls)])
@@ -126,6 +135,41 @@ class TableConstraints:
 
 
 @dataclasses.dataclass
+class Trigger:
+    constraint_name: str
+    constraint_type: str
+    table_name: str
+    column_name: str
+    on_update: str
+    on_delete: Literal["NO ACTION", "RESTRICT", "CASCADE", "SET NULL", "SET_DEFAULT"]
+    references_table: str
+    references_column: str
+
+@dataclasses.dataclass
+class TableTriggers:
+    """
+    All of the triggers for a certain table in the database.
+    """
+
+    tablename: str
+    triggers: t.List[Trigger]
+
+    def get_column_triggers(self, column_name: str) -> t.List[Trigger]:
+        triggers = []
+        for i in self.triggers:
+            if i.column_name == column_name:
+                triggers.append(i)
+        return triggers
+    
+    def get_column_ref_trigger(self, column_name: str, references_table: str) -> Trigger:
+        for i in self.triggers:
+            if i.column_name == column_name and i.references_table == references_table:
+                return i
+
+        raise ValueError("No matching trigger found")
+
+
+@dataclasses.dataclass
 class OutputSchema:
     """
     Represents the schema which will be printed out.
@@ -168,7 +212,7 @@ class OutputSchema:
         return self
 
 
-COLUMN_TYPE_MAP = {
+COLUMN_TYPE_MAP: t.Dict[str, t.Type[Column]] = {
     "bigint": BigInt,
     "boolean": Boolean,
     "bytea": Bytea,
@@ -186,6 +230,195 @@ COLUMN_TYPE_MAP = {
     "timestamp with time zone": Timestamptz,
     "timestamp without time zone": Timestamp,
     "uuid": UUID,
+}
+
+COLUMN_DEFAULT_PARSER = {
+    BigInt: re.compile(r"^'?(?P<value>-?[0-9]\d*)'?(?:::bigint)?$"),
+    Boolean: re.compile(r"^(?P<value>true|false)$"),
+    Bytea: re.compile(r"'(?P<value>.*)'::bytea$"),
+    DoublePrecision: re.compile(r"(?P<value>[+-]?(?:[0-9]*[.])?[0-9]+)"),
+    Varchar: re.compile(r"^'(?P<value>.*)'::character varying$"),
+    Date: re.compile(r"^(?P<value>(?:\d{4}-\d{2}-\d{2})|CURRENT_DATE)$"),
+    Integer: re.compile(r"^(?P<value>-?\d+)$"),
+    Interval: re.compile(
+        r"""^
+            (?:')?
+            (?:
+                (?:(?P<years>\d+)[ ]y(?:ear(?:s)?)?\b)        |
+                (?:(?P<months>\d+)[ ]m(?:onth(?:s)?)?\b)      |
+                (?:(?P<weeks>\d+)[ ]w(?:eek(?:s)?)?\b)        |
+                (?:(?P<days>\d+)[ ]d(?:ay(?:s)?)?\b)          |
+                (?:
+                    (?:
+                        (?:(?P<hours>\d+)[ ]h(?:our(?:s)?)?\b)        |
+                        (?:(?P<minutes>\d+)[ ]m(?:inute(?:s)?)?\b)    |
+                        (?:(?P<seconds>\d+)[ ]s(?:econd(?:s)?)?\b)
+                    )   |
+                    (?:
+                        (?P<digits>-?\d{2}:\d{2}:\d{2}))?\b)
+                    )
+                +(?P<direction>ago)?
+            (?:'::interval)?
+            $""",
+        re.X,
+    ),
+    JSON: re.compile(r"^'(?P<value>.*)'::json$"),
+    JSONB: re.compile(r"^'(?P<value>.*)'::jsonb$"),
+    Numeric: re.compile(r"(?P<value>\d+)"),
+    Real: re.compile(r"^(?P<value>-?[0-9]\d*(?:\.\d+)?)$"),
+    SmallInt: re.compile(r"^'?(?P<value>-?[0-9]\d*)'?(?:::integer)?$"),
+    Text: re.compile(r"^'(?P<value>.*)'::text$"),
+    Timestamp: re.compile(
+        r"""^
+        (?P<value>
+            (?:\d{4}-\d{2}-\d{2}[ ]\d{2}:\d{2}:\d{2})   |
+            CURRENT_TIMESTAMP
+        )
+        $""",
+        re.VERBOSE,
+    ),
+    Timestamptz: re.compile(
+        r"""^
+            (?P<value>
+                (?:\d{4}-\d{2}-\d{2}[ ]\d{2}:\d{2}:\d{2}(?:\.\d+)?-\d{2})     |
+                CURRENT_TIMESTAMP
+            )
+            $""",
+        re.X,
+    ),
+    UUID: None,
+    Serial: None,
+    ForeignKey: None,
+}
+
+
+def get_column_default(
+    column_type: t.Type[Column], column_default: str
+) -> t.Any:
+    pat = COLUMN_DEFAULT_PARSER[column_type]
+
+    if pat is not None:
+        match = re.match(pat, column_default)
+        if match is not None:
+            value = match.groupdict()
+
+            if column_type is Boolean:
+                return True if value["value"] == "true" else False
+            elif column_type is Interval:
+                kwargs = {}
+                for period in [
+                    "years",
+                    "months",
+                    "weeks",
+                    "days",
+                    "hours",
+                    "minutes",
+                    "seconds",
+                ]:
+                    period_match = value.get(period, 0)
+                    if period_match:
+                        kwargs[period] = int(period_match)
+                digits = value["digits"]
+                if digits:
+                    kwargs.update(
+                        dict(
+                            zip(
+                                ["hours", "minutes", "seconds"],
+                                [int(v) for v in value["digits"].split(":")],
+                            )
+                        )
+                    )
+                return IntervalCustom(**kwargs)
+            elif column_type is JSON or column_type is JSONB:
+                return json.loads(value["value"])
+            elif column_type is UUID:
+                return uuid.uuid4
+            elif column_type is Date:
+                return (
+                    date.today
+                    if value["value"] == "CURRENT_DATE"
+                    else defaults.date.DateCustom(
+                        *[int(v) for v in value["value"].split("-")]
+                    )
+                )
+            elif column_type is Bytea:
+                return value["value"].encode("utf8")
+            elif column_type is Timestamp:
+                return (
+                    datetime.now
+                    if value["value"] == "CURRENT_TIMESTAMP"
+                    else datetime.fromtimestamp(float(value["value"]))
+                )
+            elif column_type is Timestamptz:
+                return (
+                    datetime.now
+                    if value["value"] == "CURRENT_TIMESTAMP"
+                    else datetime.fromtimestamp(float(value["value"]))
+                )
+            else:
+                return column_type.value_type(value["value"])
+
+
+async def get_fk_triggers(
+    table_class: t.Type[Table], tablename: str, schema_name: str = "public"
+) -> TableTriggers:
+    """
+    Get all of the constraints for a table.
+
+    :param table_class:
+        Any Table subclass - just used to execute raw queries on the database.
+
+    """
+    triggers = await table_class.raw(
+        (
+            "SELECT tc.constraint_name, "
+            "       tc.constraint_type, "
+            "       tc.table_name, "
+            "       kcu.column_name, "
+            "       rc.update_rule AS on_update, "
+            "       rc.delete_rule AS on_delete, "
+            "       ccu.table_name AS references_table, "
+            "       ccu.column_name AS references_column "
+            "FROM information_schema.table_constraints tc "
+            "LEFT JOIN information_schema.key_column_usage kcu "
+            "  ON tc.constraint_catalog = kcu.constraint_catalog "
+            "  AND tc.constraint_schema = kcu.constraint_schema "
+            "  AND tc.constraint_name = kcu.constraint_name "
+            "LEFT JOIN information_schema.referential_constraints rc "
+            "  ON tc.constraint_catalog = rc.constraint_catalog "
+            "  AND tc.constraint_schema = rc.constraint_schema "
+            "  AND tc.constraint_name = rc.constraint_name "
+            "LEFT JOIN information_schema.constraint_column_usage ccu "
+            "  ON rc.unique_constraint_catalog = ccu.constraint_catalog "
+            "  AND rc.unique_constraint_schema = ccu.constraint_schema "
+            "  AND rc.unique_constraint_name = ccu.constraint_name "
+            "WHERE lower(tc.constraint_type) in ('foreign key')"
+            "AND tc.table_schema = {} "
+            "AND tc.table_name = {}; "
+        ),
+        schema_name,
+        tablename,
+    )
+    return TableTriggers(
+        tablename=tablename,
+        triggers=[Trigger(**i) for i in triggers],
+    )
+
+
+ONDELETE_MAP = {
+    "NO ACTION": OnDelete.no_action,
+    "RESTRICT": OnDelete.restrict,
+    "CASCADE": OnDelete.cascade,
+    "SET NULL": OnDelete.set_null,
+    "SET DEFAULT": OnDelete.set_default
+}
+
+ONUPDATE_MAP = {
+    "NO ACTION": OnUpdate.no_action,
+    "RESTRICT": OnUpdate.restrict,
+    "CASCADE": OnUpdate.cascade,
+    "SET NULL": OnUpdate.set_null,
+    "SET DEFAULT": OnUpdate.set_default
 }
 
 
@@ -315,6 +548,9 @@ async def create_table_class_from_db(
     constraints = await get_constraints(
         table_class=table_class, tablename=tablename, schema_name=schema_name
     )
+    triggers = await get_fk_triggers(
+        table_class=table_class, tablename=tablename, schema_name=schema_name
+    )
     table_schema = await get_table_schema(
         table_class=table_class, tablename=tablename, schema_name=schema_name
     )
@@ -325,6 +561,7 @@ async def create_table_class_from_db(
         data_type = pg_row_meta.data_type
         column_type = COLUMN_TYPE_MAP.get(data_type, None)
         column_name = pg_row_meta.column_name
+        column_default = pg_row_meta.column_default
         if not column_type:
             output_schema.warnings.append(
                 f"{tablename}.{column_name} ['{data_type}']"
@@ -367,6 +604,12 @@ async def create_table_class_from_db(
                     if referenced_table is not None
                     else ForeignKeyPlaceholder
                 )
+
+                trigger = triggers.get_column_ref_trigger(column_name, constraint_table.name)
+                if trigger:
+                    kwargs["on_update"] = ONUPDATE_MAP[trigger.on_update]
+                    kwargs["on_delete"] = ONDELETE_MAP[trigger.on_delete]
+
                 output_schema = sum(  # type: ignore
                     [output_schema, referenced_output_schema]  # type: ignore
                 )  # type: ignore
@@ -379,7 +622,17 @@ async def create_table_class_from_db(
 
         if column_type is Varchar:
             kwargs["length"] = pg_row_meta.character_maximum_length
+        elif isinstance(column_type, Numeric):
+            radix = pg_row_meta.numeric_precision_radix
+            precision = int(str(pg_row_meta.numeric_precision), radix)
+            scale = int(str(pg_row_meta.numeric_scale), radix)
+            kwargs["digits"] = (precision, scale)
 
+        if column_default:
+            default_value = get_column_default(column_type, column_default)
+            if default_value:
+                kwargs["default"] = default_value
+                  
         column = column_type(**kwargs)
 
         serialised_params = serialise_params(column._meta.params)
