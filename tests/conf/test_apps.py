@@ -82,23 +82,7 @@ class TestTableFinder(TestCase):
         """
         tables = table_finder(modules=["tests.example_apps.music.tables"])
 
-        table_class_names = [i.__name__ for i in tables]
-        table_class_names.sort()
-
-        self.assertEqual(
-            table_class_names,
-            [
-                "Band",
-                "Concert",
-                "Manager",
-                "Poster",
-                "RecordingStudio",
-                "Shirt",
-                "Ticket",
-                "Venue",
-            ],
-        )
-
+        self.test_table_finder_coercion1(tables)
         with self.assertRaises(ImportError):
             table_finder(modules=["foo.bar.baz"])
 
@@ -108,9 +92,11 @@ class TestTableFinder(TestCase):
         """
         tables = table_finder(modules="tests.example_apps.music.tables")
 
+        self.test_table_finder_coercion1(tables)
+
+    def test_table_finder_coercion1(self, tables):
         table_class_names = [i.__name__ for i in tables]
         table_class_names.sort()
-
         self.assertEqual(
             table_class_names,
             [
