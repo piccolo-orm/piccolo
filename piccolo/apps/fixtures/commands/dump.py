@@ -62,8 +62,7 @@ async def dump_to_json_string(
     pydantic_model = create_pydantic_fixture_model(
         fixture_configs=fixture_configs
     )
-    json_output = pydantic_model(**dump).json()
-    return json_output
+    return pydantic_model(**dump).json()
 
 
 def parse_args(apps: str, tables: str) -> t.List[FixtureConfig]:
@@ -84,12 +83,7 @@ def parse_args(apps: str, tables: str) -> t.List[FixtureConfig]:
     table_class_names: t.Optional[t.List[str]] = None
 
     if tables != "all":
-        if "," in tables:
-            table_class_names = tables.split(",")
-        else:
-            # Must be a single table class name
-            table_class_names = [tables]
-
+        table_class_names = tables.split(",") if "," in tables else [tables]
     output: t.List[FixtureConfig] = []
 
     for app_name in app_names:

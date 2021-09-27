@@ -73,7 +73,7 @@ def create(
         password = get_password()
         confirmed_password = get_confirmed_password()
 
-        if not password == confirmed_password:
+        if password != confirmed_password:
             sys.exit("Passwords don't match!")
 
     if len(password) < 4:
