@@ -84,9 +84,8 @@ def convert_array_in(value: list):
     """
     Converts a list value into a string.
     """
-    if len(value) > 0:
-        if type(value[0]) not in [str, int, float]:
-            raise ValueError("Can only serialise str, int and float.")
+    if value and type(value[0]) not in [str, int, float]:
+        raise ValueError("Can only serialise str, int and float.")
 
     return dump_json(value)
 
@@ -332,10 +331,7 @@ class Transaction:
 
 
 def dict_factory(cursor, row) -> t.Dict:
-    d = {}
-    for idx, col in enumerate(cursor.description):
-        d[col[0]] = row[idx]
-    return d
+    return {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
 
 
 class SQLiteEngine(Engine):
@@ -407,20 +403,15 @@ class SQLiteEngine(Engine):
         Create the database file, with the option to run migrations. Useful
         for testing purposes.
         """
-        if not os.path.exists(self.path):
-            with open(self.path, "w"):
-                pass
-        else:
+        if os.path.exists(self.path):
             raise Exception(f"Database at {self.path} already exists")
-        if migrate:
+        with open(self.path, "w"):
+            pass
             # Commented out for now, as migrations for SQLite aren't as
             # well supported as Postgres.
             # from piccolo.commands.migration.forwards import (
             #     ForwardsMigrationManager,
             # )
-
-            # ForwardsMigrationManager().run()
-            pass
 
     ###########################################################################
 
@@ -468,12 +459,12 @@ class SQLiteEngine(Engine):
             async with connection.execute(query, args) as cursor:
                 await connection.commit()
 
-                if query_type == "insert":
-                    assert table is not None
-                    pk = await self._get_inserted_pk(cursor, table)
-                    return [{table._meta.primary_key._meta.name: pk}]
-                else:
+                if query_type != "insert":
                     return await cursor.fetchall()
+
+                assert table is not None
+                pk = await self._get_inserted_pk(cursor, table)
+                return [{table._meta.primary_key._meta.name: pk}]
 
     async def _run_in_existing_connection(
         self,
@@ -492,12 +483,12 @@ class SQLiteEngine(Engine):
         async with connection.execute(query, args) as cursor:
             response = await cursor.fetchall()
 
-            if query_type == "insert":
-                assert table is not None
-                pk = await self._get_inserted_pk(cursor, table)
-                return [{table._meta.primary_key._meta.name: pk}]
-            else:
+            if query_type != "insert":
                 return response
+
+            assert table is not None
+            pk = await self._get_inserted_pk(cursor, table)
+            return [{table._meta.primary_key._meta.name: pk}]
 
     async def run_querystring(
         self, querystring: QueryString, in_pool: bool = False
