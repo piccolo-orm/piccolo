@@ -84,3 +84,10 @@ class TestTableStorage(TestCase):
         # make sure the requested table has been added to the TableStorage
         self.assertEqual(len(self.table_storage.tables), 2)
         self.assertIsNotNone(self.table_storage.tables.get("band"))
+
+    def test_get_schema_and_table_name(self):
+        tableNameDetail = self.table_storage._get_schema_and_table_name(
+            "music.manager"
+        )
+        self.assertEqual(tableNameDetail.name, "manager")
+        self.assertEqual(tableNameDetail.schema, "music")

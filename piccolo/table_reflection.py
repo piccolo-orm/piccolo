@@ -186,20 +186,17 @@ class TableStorage(metaclass=Singleton):
             return schema + "." + name
 
     def __repr__(self):
-        return f"{self.tables}"
+        return f"{[tablename for tablename, _ in self.tables.items()]}"
 
     @staticmethod
     def _get_schema_and_table_name(tablename: str) -> TableNameDetail:
         """
-        Extract schema name from tablename attribute.
+        Extract schema name and table name from full name of the table.
         :param tablename:
             Full name of the table
         :return:
             Returns the name of the schema and the table.
         """
-        # Bad naming, I know :))
-        # And maybe not the best idea for handling schema names.
-        # Could use your suggestion.
         tablenamelist = tablename.split(".")
         if len(tablenamelist) == 2:
             return TableNameDetail(
@@ -219,5 +216,4 @@ class TableStorage(metaclass=Singleton):
             return list(value)
         elif isinstance(value, str):
             return [value]
-        else:
-            return []
+        return []
