@@ -32,7 +32,7 @@ class CheckMigrationManager(BaseMigrationManager):
 
             app_name = app_config.app_name
 
-            if (self.app_name != "all") and (self.app_name != app_name):
+            if self.app_name not in ["all", app_name]:
                 continue
 
             migration_modules = self.get_migration_modules(

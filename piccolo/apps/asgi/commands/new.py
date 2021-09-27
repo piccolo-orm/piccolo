@@ -18,9 +18,7 @@ def print_instruction(message: str):
 
 
 def get_options_string(options: t.List[str]):
-    return ", ".join(
-        [f"{name} [{index}]" for index, name in enumerate(options)]
-    )
+    return ", ".join(f"{name} [{index}]" for index, name in enumerate(options))
 
 
 def get_routing_framework() -> str:

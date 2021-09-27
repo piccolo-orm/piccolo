@@ -22,7 +22,7 @@ class SchemaSnapshot:
     def get_table_from_snapshot(self, table_class_name: str) -> DiffableTable:
         snapshot = self.get_snapshot()
         filtered = [i for i in snapshot if i.class_name == table_class_name]
-        if len(filtered) == 0:
+        if not filtered:
             raise ValueError(f"No match was found for {table_class_name}")
         return filtered[0]
 
@@ -85,13 +85,12 @@ class SchemaSnapshot:
                             if (
                                 alter_column.column_class
                                 != alter_column.old_column_class
-                            ):
-                                if alter_column.column_class is not None:
-                                    new_column = alter_column.column_class(
-                                        **column._meta.params
-                                    )
-                                    new_column._meta = column._meta
-                                    table.columns[index] = new_column
+                            ) and alter_column.column_class is not None:
+                                new_column = alter_column.column_class(
+                                    **column._meta.params
+                                )
+                                new_column._meta = column._meta
+                                table.columns[index] = new_column
 
                 ###############################################################
 

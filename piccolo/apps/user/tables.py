@@ -107,9 +107,8 @@ class BaseUser(Table, tablename="piccolo_user"):
         """
         Make sure that if the password is set, it's stored in a hashed form.
         """
-        if name == "password":
-            if not value.startswith("pbkdf2_sha256"):
-                value = self.__class__.hash_password(value)
+        if name == "password" and not value.startswith("pbkdf2_sha256"):
+            value = self.__class__.hash_password(value)
 
         super().__setattr__(name, value)
 

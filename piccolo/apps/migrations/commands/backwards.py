@@ -134,18 +134,17 @@ async def run_backwards(
                 "Enter y to continue.\n"
             )
         )
-        if _continue == "y":
-            for _app_name in sorted_app_names:
-                print(f"Undoing {_app_name}")
-                manager = BackwardsMigrationManager(
-                    app_name=_app_name,
-                    migration_id="all",
-                    auto_agree=auto_agree,
-                )
-                await manager.run()
-            return MigrationResult(success=True)
-        else:
+        if _continue != "y":
             return MigrationResult(success=False, message="User cancelled")
+        for _app_name in sorted_app_names:
+            print(f"Undoing {_app_name}")
+            manager = BackwardsMigrationManager(
+                app_name=_app_name,
+                migration_id="all",
+                auto_agree=auto_agree,
+            )
+            await manager.run()
+        return MigrationResult(success=True)
     else:
         manager = BackwardsMigrationManager(
             app_name=app_name,
