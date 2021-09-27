@@ -1,5 +1,6 @@
 import asyncio
 import typing as t
+from dataclasses import dataclass
 
 from piccolo.apps.schema.commands.generate import get_output_schema
 from piccolo.table import Table, TableMetaclass
@@ -59,6 +60,12 @@ class Singleton(type):
                 *args, **kwargs
             )
         return cls._instances[cls]
+
+
+@dataclass
+class TableNameDetail:
+    name: str = ""
+    schema: str = ""
 
 
 class TableStorage(metaclass=Singleton):
@@ -137,10 +144,11 @@ class TableStorage(metaclass=Singleton):
         """
         table_class = self.tables.get(tablename)
         if table_class is None:
-            schema_name, table_name = self._get_schema_and_table_name(
-                tablename
+            tableNameDetail = self._get_schema_and_table_name(tablename)
+            await self.reflect(
+                schema_name=tableNameDetail.schema,
+                include=[tableNameDetail.name],
             )
-            await self.reflect(schema_name=schema_name, include=[table_name])
             table_class = self.tables.get(tablename)
         return table_class
 
@@ -176,7 +184,7 @@ class TableStorage(metaclass=Singleton):
         return f"{self.tables}"
 
     @staticmethod
-    def _get_schema_and_table_name(tablename: str) -> t.Tuple[str, str]:
+    def _get_schema_and_table_name(tablename: str) -> TableNameDetail:
         """
         Extract schema name from tablename attribute.
         :param tablename:
@@ -189,10 +197,12 @@ class TableStorage(metaclass=Singleton):
         # Could use your suggestion.
         tablenamelist = tablename.split(".")
         if len(tablenamelist) == 2:
-            return tablenamelist[0], tablenamelist[1]
+            return TableNameDetail(
+                name=tablenamelist[1], schema=tablenamelist[0]
+            )
 
         elif len(tablenamelist) == 1:
-            return "public", tablenamelist[0]
+            return TableNameDetail(name=tablenamelist[0], schema="public")
         else:
             raise ValueError("Couldn't find schema name.")
 
