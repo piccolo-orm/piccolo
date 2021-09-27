@@ -11,6 +11,8 @@ from piccolo.apps.migrations.commands.base import (
 from piccolo.apps.migrations.tables import Migration
 from piccolo.conf.apps import AppConfig, MigrationModule
 
+from itertools import zip_longest
+
 
 class ForwardsMigrationManager(BaseMigrationManager):
     def __init__(
@@ -31,17 +33,19 @@ class ForwardsMigrationManager(BaseMigrationManager):
         ] = self.get_migration_modules(app_config.migrations_folder_path)
 
         ids = self.get_migration_ids(migration_modules)
-        print(f"All migration ids = {ids}")
+        n = len(ids)
+        print(f"👍 {n} migration{'s' if n != 1 else ''} already complete")
 
         havent_run = sorted(set(ids) - set(already_ran))
-        print(f"Haven't run = {havent_run}")
-
         if len(havent_run) == 0:
             # Make sure this still appears successful, as we don't want this
             # to appear as an error in automated scripts.
-            message = "No migrations left to run!"
+            message = "🏁 No migrations need to be run"
             print(message)
             return MigrationResult(success=True, message=message)
+        else:
+            n = len(havent_run)
+            print(f"⚠ {n} migration{'s' if n != 1 else ''} not yet run")
 
         if self.migration_id == "all":
             subset = havent_run
@@ -57,26 +61,29 @@ class ForwardsMigrationManager(BaseMigrationManager):
             else:
                 subset = havent_run[: index + 1]
 
-        for _id in subset:
-            if self.fake:
-                print(f"Faked {_id}")
-            else:
-                migration_module = migration_modules[_id]
-                response = await migration_module.forwards()
+        if subset:
+            n = len(subset)
+            print(f"🚀 Running {n} migration{'s' if n != 1 else ''}:")
 
-                if isinstance(response, MigrationManager):
-                    await response.run()
+            for _id in subset:
+                if self.fake:
+                    print(f"- {_id}: faked! ⭕")
+                else:
+                    migration_module = migration_modules[_id]
+                    response = await migration_module.forwards()
 
-                print(f"-> Ran {_id}")
+                    if isinstance(response, MigrationManager):
+                        await response.run()
 
-            await Migration.insert().add(
-                Migration(name=_id, app_name=app_config.app_name)
-            ).run()
+                    print(f"ok! ✓")
 
-        return MigrationResult(success=True, message="Ran successfully")
+                await Migration.insert().add(
+                    Migration(name=_id, app_name=app_config.app_name)
+                ).run()
+
+        return MigrationResult(success=True, message="migration succeeded")
 
     async def run(self) -> MigrationResult:
-        print("Running migrations ...")
         await self.create_migration_table()
 
         app_config = self.get_app_config(app_name=self.app_name)
@@ -94,8 +101,8 @@ async def run_forwards(
     if app_name == "all":
         sorted_app_names = BaseMigrationManager().get_sorted_app_names()
         for _app_name in sorted_app_names:
-            print(f"\nMigrating {_app_name}")
-            print("------------------------------------------------")
+            print(f"\n{_app_name.upper():^64}")
+            print("-" * 64)
             manager = ForwardsMigrationManager(
                 app_name=_app_name, migration_id="all", fake=fake
             )
