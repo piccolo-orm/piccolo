@@ -51,10 +51,8 @@ class Update(Query):
         self.validate()
 
         columns_str = ", ".join(
-            [
-                f"{col._meta.name} = {{}}"
-                for col, _ in self.values_delegate._values.items()
-            ]
+            f"{col._meta.name} = {{}}"
+            for col, _ in self.values_delegate._values.items()
         )
 
         query = f"UPDATE {self.table._meta.tablename} SET " + columns_str
@@ -63,12 +61,12 @@ class Update(Query):
             query, *self.values_delegate.get_sql_values()
         )
 
-        if self.where_delegate._where:
-            where_querystring = QueryString(
-                "{} WHERE {}",
-                querystring,
-                self.where_delegate._where.querystring,
-            )
-            return [where_querystring]
-        else:
+        if not self.where_delegate._where:
             return [querystring]
+
+        where_querystring = QueryString(
+            "{} WHERE {}",
+            querystring,
+            self.where_delegate._where.querystring,
+        )
+        return [where_querystring]

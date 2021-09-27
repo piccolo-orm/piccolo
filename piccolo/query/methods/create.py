@@ -39,7 +39,7 @@ class Create(DDL):
             columns = self.table._meta.columns
 
         base = f"{prefix} {self.table._meta.tablename}"
-        columns_sql = ", ".join([i.ddl for i in columns])
+        columns_sql = ", ".join(i.ddl for i in columns)
         create_table_ddl = f"{base} ({columns_sql})"
 
         create_indexes: t.List[str] = []

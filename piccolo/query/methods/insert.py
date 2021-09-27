@@ -40,8 +40,8 @@ class Insert(Query):
     @property
     def sqlite_querystrings(self) -> t.Sequence[QueryString]:
         base = f"INSERT INTO {self.table._meta.tablename}"
-        columns = ",".join([i._meta.name for i in self.table._meta.columns])
-        values = ",".join(["{}" for _ in self.add_delegate._add])
+        columns = ",".join(i._meta.name for i in self.table._meta.columns)
+        values = ",".join("{}" for _ in self.add_delegate._add)
         query = f"{base} ({columns}) VALUES {values}"
         return [
             QueryString(
@@ -56,9 +56,9 @@ class Insert(Query):
     def postgres_querystrings(self) -> t.Sequence[QueryString]:
         base = f"INSERT INTO {self.table._meta.tablename}"
         columns = ",".join(
-            [f'"{i._meta.name}"' for i in self.table._meta.columns]
+            f'"{i._meta.name}"' for i in self.table._meta.columns
         )
-        values = ",".join(["{}" for i in self.add_delegate._add])
+        values = ",".join("{}" for i in self.add_delegate._add)
         primary_key_name = self.table._meta.primary_key._meta.name
         query = (
             f"{base} ({columns}) VALUES {values} RETURNING {primary_key_name}"

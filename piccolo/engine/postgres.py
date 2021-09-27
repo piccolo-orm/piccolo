@@ -260,8 +260,7 @@ class PostgresEngine(Engine):
         """
         version_segment = version_string.split(" ")[0]
         major, minor = version_segment.split(".")[:2]
-        version = float(f"{major}.{minor}")
-        return version
+        return float(f"{major}.{minor}")
 
     async def get_version(self) -> float:
         """

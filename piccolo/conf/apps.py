@@ -158,7 +158,7 @@ class AppConfig:
             for table_class in self.table_classes
             if table_class.__name__ == table_class_name
         ]
-        if len(filtered) == 0:
+        if not filtered:
             raise ValueError(
                 f"No table with class name {table_class_name} exists."
             )
@@ -186,18 +186,16 @@ class AppRegistry:
                 app_conf_module = import_module(app)
                 app_config: AppConfig = getattr(app_conf_module, "APP_CONFIG")
             except (ImportError, AttributeError) as e:
-                if not app.endswith(".piccolo_app"):
-                    app += ".piccolo_app"
-                    app_conf_module = import_module(app)
-                    app_config: AppConfig = getattr(
-                        app_conf_module, "APP_CONFIG"
-                    )
-                    colored_warning(
-                        f"App {app[:-12]} should end with `.piccolo_app`",
-                        level=Level.medium,
-                    )
-                else:
+                if app.endswith(".piccolo_app"):
                     raise e
+                app += ".piccolo_app"
+                app_conf_module = import_module(app)
+                app_config: AppConfig = getattr(app_conf_module, "APP_CONFIG")
+                colored_warning(
+                    f"App {app[:-12]} should end with `.piccolo_app`",
+                    level=Level.medium,
+                )
+
             self.app_configs[app_config.app_name] = app_config
             app_names.append(app_config.app_name)
 
@@ -365,8 +363,7 @@ class Finder:
         Returns the AppRegistry instance within piccolo_conf.
         """
         piccolo_conf_module = self.get_piccolo_conf_module()
-        app_registry = getattr(piccolo_conf_module, "APP_REGISTRY")
-        return app_registry
+        return getattr(piccolo_conf_module, "APP_REGISTRY")
 
     def get_engine(
         self, module_name: t.Optional[str] = None

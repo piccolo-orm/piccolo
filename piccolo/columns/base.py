@@ -174,22 +174,21 @@ class ColumnMeta:
         """
         if self.choices is None:
             return None
-        else:
-            output = {}
-            for element in self.choices:
-                if isinstance(element.value, Choice):
-                    display_name = element.value.display_name
-                    value = element.value.value
-                else:
-                    display_name = element.name.replace("_", " ").title()
-                    value = element.value
+        output = {}
+        for element in self.choices:
+            if isinstance(element.value, Choice):
+                display_name = element.value.display_name
+                value = element.value.value
+            else:
+                display_name = element.name.replace("_", " ").title()
+                value = element.value
 
-                output[element.name] = {
-                    "display_name": display_name,
-                    "value": value,
-                }
+            output[element.name] = {
+                "display_name": display_name,
+                "value": value,
+            }
 
-            return output
+        return output
 
     def get_full_name(self, just_alias=False) -> str:
         """
@@ -201,9 +200,9 @@ class ColumnMeta:
             return f"{self.table._meta.tablename}.{column_name}"
 
         column_name = (
-            "$".join([i._meta.name for i in self.call_chain])
-            + f"${column_name}"
+            "$".join(i._meta.name for i in self.call_chain) + f"${column_name}"
         )
+
         alias = f"{self.call_chain[-1]._meta.table_alias}.{self.name}"
         if just_alias:
             return alias
@@ -521,8 +520,7 @@ class Column(Selectable):
         if default is not ...:
             default = default.value if isinstance(default, Enum) else default
             is_callable = hasattr(default, "__call__")
-            value = default() if is_callable else default
-            return value
+            return default() if is_callable else default
         return None
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
@@ -531,9 +529,8 @@ class Column(Selectable):
         """
         if self.alias is None:
             return self._meta.get_full_name(just_alias=just_alias)
-        else:
-            original_name = self._meta.get_full_name(just_alias=True)
-            return f"{original_name} AS {self.alias}"
+        original_name = self._meta.get_full_name(just_alias=True)
+        return f"{original_name} AS {self.alias}"
 
     def get_where_string(self, engine_type: str) -> str:
         return self.get_select_string(engine_type=engine_type, just_alias=True)
@@ -553,46 +550,41 @@ class Column(Selectable):
 
         """
         if isinstance(value, Default):
-            output = getattr(value, self._meta.engine_type)
+            return getattr(value, self._meta.engine_type)
         elif value is None:
-            output = "null"
+            return "null"
         elif isinstance(value, (float, decimal.Decimal)):
-            output = str(value)
+            return str(value)
         elif isinstance(value, str):
-            output = f"'{value}'"
+            return f"'{value}'"
         elif isinstance(value, bool):
-            output = str(value).lower()
+            return str(value).lower()
         elif isinstance(value, datetime.datetime):
-            output = f"'{value.isoformat().replace('T', ' ')}'"
+            return f"'{value.isoformat().replace('T', ' ')}'"
         elif isinstance(value, datetime.date):
-            output = f"'{value.isoformat()}'"
+            return f"'{value.isoformat()}'"
         elif isinstance(value, datetime.time):
-            output = f"'{value.isoformat()}'"
+            return f"'{value.isoformat()}'"
         elif isinstance(value, datetime.timedelta):
             interval = IntervalCustom.from_timedelta(value)
-            output = getattr(interval, self._meta.engine_type)
+            return getattr(interval, self._meta.engine_type)
         elif isinstance(value, bytes):
-            output = f"'{value.hex()}'"
+            return f"'{value.hex()}'"
         elif isinstance(value, uuid.UUID):
-            output = f"'{value}'"
+            return f"'{value}'"
         elif isinstance(value, list):
             # Convert to the array syntax.
-            output = (
+            return (
                 "'{"
                 + ", ".join(
-                    [
-                        f'"{i}"'
-                        if isinstance(i, str)
-                        else str(self.get_sql_value(i))
-                        for i in value
-                    ]
+                    f'"{i}"'
+                    if isinstance(i, str)
+                    else str(self.get_sql_value(i))
+                    for i in value
                 )
-                + "}'"
-            )
+            ) + "}'"
         else:
-            output = value
-
-        return output
+            return value
 
     @property
     def column_type(self):
