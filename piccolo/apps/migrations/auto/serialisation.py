@@ -69,11 +69,10 @@ class SerialisedColumnInstance:
 
     def __repr__(self):
         args = ", ".join(
-            [
-                f"{key}={self.serialised_params.params.get(key).__repr__()}"  # noqa: E501
-                for key in self.instance._meta.params.keys()
-            ]
+            f"{key}={self.serialised_params.params.get(key).__repr__()}"
+            for key in self.instance._meta.params.keys()
         )
+
         return f"{self.instance.__class__.__name__}({args})"
 
 

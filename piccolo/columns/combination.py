@@ -163,7 +163,7 @@ class Where(CombinableMixin):
         if isinstance(values, Undefined):
             raise ValueError("values is undefined")
 
-        template = ", ".join(["{}" for _ in values])
+        template = ", ".join("{}" for _ in values)
         return QueryString(template, *values)
 
     @property

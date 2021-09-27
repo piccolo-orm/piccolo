@@ -216,11 +216,10 @@ class Select(Query):
                 return make_nested(response[0])
             else:
                 return response[0]
+        elif self.output_delegate._output.nested and not was_select_star:
+            return [make_nested(i) for i in response]
         else:
-            if self.output_delegate._output.nested and not was_select_star:
-                return [make_nested(i) for i in response]
-            else:
-                return response
+            return response
 
     def order_by(self, *columns: Column, ascending=True) -> Select:
         _columns: t.List[Column] = [
@@ -281,11 +280,10 @@ class Select(Query):
             _joins: t.List[str] = []
             for index, key in enumerate(column._meta.call_chain, 0):
                 table_alias = "$".join(
-                    [
-                        f"{_key._meta.table._meta.tablename}${_key._meta.name}"
-                        for _key in column._meta.call_chain[: index + 1]
-                    ]
+                    f"{_key._meta.table._meta.tablename}${_key._meta.name}"
+                    for _key in column._meta.call_chain[: index + 1]
                 )
+
                 key._meta.table_alias = table_alias
 
                 if index > 0:
@@ -314,15 +312,13 @@ class Select(Query):
         for column in keys:
             if not isinstance(column, Column):
                 continue
-            if column._meta.call_chain:
+            if column._meta.call_chain and len(column._meta.call_chain) > 10:
                 # Make sure the call_chain isn't too large to discourage
                 # very inefficient queries.
-
-                if len(column._meta.call_chain) > 10:
-                    raise Exception(
-                        "Joining more than 10 tables isn't supported - "
-                        "please restructure your query."
-                    )
+                raise Exception(
+                    "Joining more than 10 tables isn't supported - "
+                    "please restructure your query."
+                )
         return True
 
     @property

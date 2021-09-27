@@ -66,10 +66,10 @@ class RowMeta:
     numeric_precision: t.Optional[t.Union[int, str]]
     numeric_scale: t.Optional[t.Union[int, str]]
     numeric_precision_radix: t.Optional[Literal[2, 10]]
-    
+
     @classmethod
     def get_column_name_str(cls) -> str:
-        return ", ".join([i.name for i in dataclasses.fields(cls)])
+        return ", ".join(i.name for i in dataclasses.fields(cls))
 
 
 @dataclasses.dataclass
@@ -107,22 +107,19 @@ class TableConstraints:
         self.primary_key_constraints = primary_key_constraints
 
     def is_primary_key(self, column_name: str) -> bool:
-        for i in self.primary_key_constraints:
-            if i.column_name == column_name:
-                return True
-        return False
+        return any(
+            i.column_name == column_name for i in self.primary_key_constraints
+        )
 
     def is_unique(self, column_name: str) -> bool:
-        for i in self.unique_constraints:
-            if i.column_name == column_name:
-                return True
-        return False
+        return any(
+            i.column_name == column_name for i in self.unique_constraints
+        )
 
     def is_foreign_key(self, column_name: str) -> bool:
-        for i in self.foreign_key_constraints:
-            if i.column_name == column_name:
-                return True
-        return False
+        return any(
+            i.column_name == column_name for i in self.foreign_key_constraints
+        )
 
     def get_foreign_key_constraint_name(self, column_name) -> ConstraintTable:
         for i in self.foreign_key_constraints:
@@ -141,9 +138,12 @@ class Trigger:
     table_name: str
     column_name: str
     on_update: str
-    on_delete: Literal["NO ACTION", "RESTRICT", "CASCADE", "SET NULL", "SET_DEFAULT"]
+    on_delete: Literal[
+        "NO ACTION", "RESTRICT", "CASCADE", "SET NULL", "SET_DEFAULT"
+    ]
     references_table: str
     references_column: str
+
 
 @dataclasses.dataclass
 class TableTriggers:
@@ -155,15 +155,16 @@ class TableTriggers:
     triggers: t.List[Trigger]
 
     def get_column_triggers(self, column_name: str) -> t.List[Trigger]:
-        triggers = []
+        return [i for i in self.triggers if i.column_name == column_name]
+
+    def get_column_ref_trigger(
+        self, column_name: str, references_table: str
+    ) -> Trigger:
         for i in self.triggers:
-            if i.column_name == column_name:
-                triggers.append(i)
-        return triggers
-    
-    def get_column_ref_trigger(self, column_name: str, references_table: str) -> Trigger:
-        for i in self.triggers:
-            if i.column_name == column_name and i.references_table == references_table:
+            if (
+                i.column_name == column_name
+                and i.references_table == references_table
+            ):
                 return i
 
         raise ValueError("No matching trigger found")
@@ -303,7 +304,7 @@ def get_column_default(
             value = match.groupdict()
 
             if column_type is Boolean:
-                return True if value["value"] == "true" else False
+                return value["value"] == "true"
             elif column_type is Interval:
                 kwargs = {}
                 for period in [
@@ -324,10 +325,11 @@ def get_column_default(
                         dict(
                             zip(
                                 ["hours", "minutes", "seconds"],
-                                [int(v) for v in value["digits"].split(":")],
+                                [int(v) for v in digits.split(":")],
                             )
                         )
                     )
+
                 return IntervalCustom(**kwargs)
             elif column_type is JSON or column_type is JSONB:
                 return json.loads(value["value"])
@@ -410,7 +412,7 @@ ONDELETE_MAP = {
     "RESTRICT": OnDelete.restrict,
     "CASCADE": OnDelete.cascade,
     "SET NULL": OnDelete.set_null,
-    "SET DEFAULT": OnDelete.set_default
+    "SET DEFAULT": OnDelete.set_default,
 }
 
 ONUPDATE_MAP = {
@@ -418,7 +420,7 @@ ONUPDATE_MAP = {
     "RESTRICT": OnUpdate.restrict,
     "CASCADE": OnUpdate.cascade,
     "SET NULL": OnUpdate.set_null,
-    "SET DEFAULT": OnUpdate.set_default
+    "SET DEFAULT": OnUpdate.set_default,
 }
 
 
@@ -605,7 +607,9 @@ async def create_table_class_from_db(
                     else ForeignKeyPlaceholder
                 )
 
-                trigger = triggers.get_column_ref_trigger(column_name, constraint_table.name)
+                trigger = triggers.get_column_ref_trigger(
+                    column_name, constraint_table.name
+                )
                 if trigger:
                     kwargs["on_update"] = ONUPDATE_MAP[trigger.on_update]
                     kwargs["on_delete"] = ONDELETE_MAP[trigger.on_delete]
@@ -632,7 +636,7 @@ async def create_table_class_from_db(
             default_value = get_column_default(column_type, column_default)
             if default_value:
                 kwargs["default"] = default_value
-                  
+
         column = column_type(**kwargs)
 
         serialised_params = serialise_params(column._meta.params)

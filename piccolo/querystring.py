@@ -74,10 +74,8 @@ class QueryString:
             start_index=1, bundled=[], combined_args=[]
         )
         template = "".join(
-            [
-                fragment.prefix + ("" if fragment.no_arg else "{}")
-                for fragment in bundled
-            ]
+            fragment.prefix + ("" if fragment.no_arg else "{}")
+            for fragment in bundled
         )
 
         # Do some basic type conversion here.
@@ -150,19 +148,17 @@ class QueryString:
         )
         if engine_type == "postgres":
             string = "".join(
-                [
-                    fragment.prefix
-                    + ("" if fragment.no_arg else f"${fragment.index}")
-                    for fragment in bundled
-                ]
+                fragment.prefix
+                + ("" if fragment.no_arg else f"${fragment.index}")
+                for fragment in bundled
             )
+
         elif engine_type == "sqlite":
             string = "".join(
-                [
-                    fragment.prefix + ("" if fragment.no_arg else "?")
-                    for fragment in bundled
-                ]
+                fragment.prefix + ("" if fragment.no_arg else "?")
+                for fragment in bundled
             )
+
         else:
             raise Exception("Engine type not recognised")
 
