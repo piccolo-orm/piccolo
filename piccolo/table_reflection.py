@@ -1,3 +1,8 @@
+"""
+This is an advanced Piccolo feature,
+which allows runtime reflection of database tables.
+"""
+
 import asyncio
 import typing as t
 from dataclasses import dataclass
