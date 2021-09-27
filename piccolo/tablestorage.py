@@ -127,14 +127,22 @@ class TableStorage(metaclass=Singleton):
         """
         Returns the Table object if exists. if table is not present in the
         TableStorage, it will try to reflect it.
-        if reflection fails, it will return None
         :param tablename:
-            Name of the Table.
+            Name of the table, schema name included.
+            If schema is public, It's not necessary.
+            for example: "public.manager" or "manager",
+            "test_schema.test_table"
         :return:
             Table | None
         """
-        # not implemented yet
-        pass
+        table_class = self.tables.get(tablename)
+        if table_class is None:
+            schema_name, table_name = self._get_schema_and_table_name(
+                tablename
+            )
+            await self.reflect(schema_name=schema_name, include=[table_name])
+            table_class = self.tables.get(tablename)
+        return table_class
 
     async def _add_table(self, schema_name: str, table: t.Type[Table]) -> None:
         if isinstance(table, TableMetaclass):
@@ -168,19 +176,23 @@ class TableStorage(metaclass=Singleton):
         return f"{self.tables}"
 
     @staticmethod
-    def _get_schema_name(table_class: t.Type[Table]) -> t.Optional[str]:
+    def _get_schema_and_table_name(tablename: str) -> t.Tuple[str, str]:
         """
         Extract schema name from tablename attribute.
-        :param table_class:
-            Table Object
+        :param tablename:
+            Full name of the table
         :return:
-            Returns the name of the schema.
+            Returns the name of the schema and the table.
         """
-        table_class_name = table_class.__name__
-        full_name = table_class._meta.tablename
-        if table_class_name in full_name:
-            schema_name = full_name.replace(f".{table_class_name}", "")
-            return "public" if schema_name == full_name else schema_name
+        # Bad naming, I know :))
+        # And maybe not the best idea for handling schema names.
+        # Could use your suggestion.
+        tablenamelist = tablename.split(".")
+        if len(tablenamelist) == 2:
+            return tablenamelist[0], tablenamelist[1]
+
+        elif len(tablenamelist) == 1:
+            return "public", tablenamelist[0]
         else:
             raise ValueError("Couldn't find schema name.")
 
