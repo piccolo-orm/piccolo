@@ -204,13 +204,11 @@ class TableIndexes:
     tablename: str
     indexes: t.List[Index]
 
-    def get_column_index(self, column_name: str) -> Index:
+    def get_column_index(self, column_name: str) -> t.Optional[Index]:
         for i in self.indexes:
             if i.column_name == column_name:
                 return i
-        else:
-            return None
-
+        
 
 @dataclasses.dataclass
 class OutputSchema:
