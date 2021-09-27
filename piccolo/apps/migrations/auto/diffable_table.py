@@ -36,11 +36,12 @@ def compare_dicts(dict_1, dict_2) -> t.Dict[str, t.Any]:
     for key, value in dict_1.items():
 
         dict_2_value = dict_2.get(key, ...)
-        if dict_2_value is ...:
+        if (
+            dict_2_value is not ...
+            and dict_2_value != value
+            or dict_2_value is ...
+        ):
             output[key] = value
-        else:
-            if dict_2_value != value:
-                output[key] = value
 
     return output
 

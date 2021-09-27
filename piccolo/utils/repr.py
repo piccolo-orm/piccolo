@@ -20,6 +20,7 @@ def repr_class_instance(class_instance: object) -> str:
         args_dict[arg_name] = value
 
     args_str = ", ".join(
-        [f"{key}={value.__repr__()}" for key, value in args_dict.items()]
+        f"{key}={value.__repr__()}" for key, value in args_dict.items()
     )
+
     return f"{class_instance.__class__.__name__}({args_str})"

@@ -159,13 +159,10 @@ def run(
                 "port": port,
             }
         )
-        for _table in TABLES:
-            _table._meta._db = db
     else:
         db = SQLiteEngine()
-        for _table in TABLES:
-            _table._meta._db = db
-
+    for _table in TABLES:
+        _table._meta._db = db
     print("Tables:\n")
 
     for _table in TABLES:

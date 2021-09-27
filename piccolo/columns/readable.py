@@ -24,7 +24,7 @@ class Readable(Selectable):
     @property
     def _columns_string(self) -> str:
         return ", ".join(
-            [i._meta.get_full_name(just_alias=True) for i in self.columns]
+            i._meta.get_full_name(just_alias=True) for i in self.columns
         )
 
     def _get_string(self, operator: str) -> str:

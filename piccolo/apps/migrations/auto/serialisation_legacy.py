@@ -41,7 +41,7 @@ def deserialise_legacy_params(name: str, value: str) -> t.Any:
 
     ###########################################################################
 
-    if name == "on_update":
+    elif name == "on_update":
         enum_name, item_name = value.split(".")
         if enum_name == "OnUpdate":
             return getattr(OnUpdate, item_name)
@@ -49,14 +49,13 @@ def deserialise_legacy_params(name: str, value: str) -> t.Any:
     ###########################################################################
 
     if name == "default":
-        if value in ("TimestampDefault.now", "DatetimeDefault.now"):
+        if value in {"TimestampDefault.now", "DatetimeDefault.now"}:
             return TimestampNow()
+        try:
+            _value = datetime.datetime.fromisoformat(value)
+        except ValueError:
+            pass
         else:
-            try:
-                _value = datetime.datetime.fromisoformat(value)
-            except ValueError:
-                pass
-            else:
-                return _value
+            return _value
 
     return value
