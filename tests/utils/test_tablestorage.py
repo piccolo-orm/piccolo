@@ -12,10 +12,12 @@ from tests.example_apps.music.tables import Band, Manager
 @postgres_only
 class TestTableStorage(TestCase):
     def setUp(self) -> None:
+        self.table_storage = TableStorage()
         for table_class in (Manager, Band):
             table_class.create_table().run_sync()
 
     def tearDown(self):
+        self.table_storage.clear()
         for table_class in (Band, Manager):
             table_class.alter().drop_table(if_exists=True).run_sync()
 
@@ -47,10 +49,8 @@ class TestTableStorage(TestCase):
             self.assertEqual(col_1._meta.unique, col_2._meta.unique)
 
     def test_reflect_all_tables(self):
-        table_storage = TableStorage()
-        table_storage.clear()
-        run_sync(table_storage.reflect())
-        reflected_tables = table_storage.tables
+        run_sync(self.table_storage.reflect())
+        reflected_tables = self.table_storage.tables
         self.assertEqual(len(reflected_tables), 2)
         for table_class in (Manager, Band):
             self._compare_table_columns(
@@ -58,17 +58,29 @@ class TestTableStorage(TestCase):
             )
 
     def test_reflect_with_include(self):
-        table_storage = TableStorage()
-        table_storage.clear()
-        run_sync(table_storage.reflect(include=["manager"]))
-        reflected_tables = table_storage.tables
+        run_sync(self.table_storage.reflect(include=["manager"]))
+        reflected_tables = self.table_storage.tables
         self.assertEqual(len(reflected_tables), 1)
         self._compare_table_columns(reflected_tables["manager"], Manager)
 
     def test_reflect_with_exclude(self):
-        table_storage = TableStorage()
-        table_storage.clear()
-        run_sync(table_storage.reflect(exclude=["band"]))
-        reflected_tables = table_storage.tables
+        run_sync(self.table_storage.reflect(exclude=["band"]))
+        reflected_tables = self.table_storage.tables
         self.assertEqual(len(reflected_tables), 1)
         self._compare_table_columns(reflected_tables["manager"], Manager)
+
+    def test_get_present_table(self):
+        run_sync(self.table_storage.reflect())
+        table = run_sync(self.table_storage.get_table(tablename="manager"))
+        self._compare_table_columns(table, Manager)
+
+    def test_get_unavailable_table(self):
+        run_sync(self.table_storage.reflect(exclude=["band"]))
+        # make sure only one table is present
+        self.assertEqual(len(self.table_storage.tables), 1)
+        table = run_sync(self.table_storage.get_table(tablename="band"))
+        # make sure the returned table is correct
+        self._compare_table_columns(table, Band)
+        # make sure the requested table has been added to the TableStorage
+        self.assertEqual(len(self.table_storage.tables), 2)
+        self.assertIsNotNone(self.table_storage.tables.get("band"))
