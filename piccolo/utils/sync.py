@@ -21,13 +21,11 @@ def run_sync(coroutine: t.Coroutine):
     except RuntimeError:
         return asyncio.run(coroutine)
     else:
-        if loop.is_running():
-            new_loop = asyncio.new_event_loop()
-
-            with ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(
-                    new_loop.run_until_complete, coroutine
-                )
-                return future.result()
-        else:
+        if not loop.is_running():
             return loop.run_until_complete(coroutine)
+
+        new_loop = asyncio.new_event_loop()
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(new_loop.run_until_complete, coroutine)
+            return future.result()

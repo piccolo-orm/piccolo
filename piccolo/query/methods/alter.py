@@ -141,16 +141,15 @@ class SetUnique(AlterColumnStatement):
     def ddl(self) -> str:
         if self.boolean:
             return f"ADD UNIQUE ({self.column_name})"
-        else:
-            if isinstance(self.column, str):
-                raise ValueError(
-                    "Removing a unique constraint requires a Column instance "
-                    "to be passed as the column arg instead of a string."
-                )
-            tablename = self.column._meta.table._meta.tablename
-            column_name = self.column_name
-            key = f"{tablename}_{column_name}_key"
-            return f'DROP CONSTRAINT "{key}"'
+        if isinstance(self.column, str):
+            raise ValueError(
+                "Removing a unique constraint requires a Column instance "
+                "to be passed as the column arg instead of a string."
+            )
+        tablename = self.column._meta.table._meta.tablename
+        column_name = self.column_name
+        key = f"{tablename}_{column_name}_key"
+        return f'DROP CONSTRAINT "{key}"'
 
 
 @dataclass
@@ -231,15 +230,15 @@ class SetDigits(AlterColumnStatement):
 
     @property
     def ddl(self) -> str:
-        if self.digits is not None:
-            precision = self.digits[0]
-            scale = self.digits[1]
-            return (
-                f"ALTER COLUMN {self.column_name} TYPE "
-                f"{self.column_type}({precision}, {scale})"
-            )
-        else:
+        if self.digits is None:
             return f"ALTER COLUMN {self.column_name} TYPE {self.column_type}"
+
+        precision = self.digits[0]
+        scale = self.digits[1]
+        return (
+            f"ALTER COLUMN {self.column_name} TYPE "
+            f"{self.column_type}({precision}, {scale})"
+        )
 
 
 @dataclass
@@ -429,8 +428,7 @@ class Alter(DDL):
     def _get_constraint_name(self, column: t.Union[str, ForeignKey]) -> str:
         column_name = AlterColumnStatement(column=column).column_name
         tablename = self.table._meta.tablename
-        constraint_name = f"{tablename}_{column_name}_fk"
-        return constraint_name
+        return f"{tablename}_{column_name}_fk"
 
     def drop_constraint(self, constraint_name: str) -> Alter:
         self._drop_contraint.append(
@@ -527,6 +525,6 @@ class Alter(DDL):
             return [f"{query} {i}" for i in alterations]
 
         # Postgres can perform them all at once:
-        query += ",".join([f" {i}" for i in alterations])
+        query += ",".join(f" {i}" for i in alterations)
 
         return [query]

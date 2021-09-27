@@ -70,7 +70,7 @@ class RowMeta:
 
     @classmethod
     def get_column_name_str(cls) -> str:
-        return ", ".join([i.name for i in dataclasses.fields(cls)])
+        return ", ".join(i.name for i in dataclasses.fields(cls))
 
 
 @dataclasses.dataclass
@@ -108,22 +108,19 @@ class TableConstraints:
         self.primary_key_constraints = primary_key_constraints
 
     def is_primary_key(self, column_name: str) -> bool:
-        for i in self.primary_key_constraints:
-            if i.column_name == column_name:
-                return True
-        return False
+        return any(
+            i.column_name == column_name for i in self.primary_key_constraints
+        )
 
     def is_unique(self, column_name: str) -> bool:
-        for i in self.unique_constraints:
-            if i.column_name == column_name:
-                return True
-        return False
+        return any(
+            i.column_name == column_name for i in self.unique_constraints
+        )
 
     def is_foreign_key(self, column_name: str) -> bool:
-        for i in self.foreign_key_constraints:
-            if i.column_name == column_name:
-                return True
-        return False
+        return any(
+            i.column_name == column_name for i in self.foreign_key_constraints
+        )
 
     def get_foreign_key_constraint_name(self, column_name) -> ConstraintTable:
         for i in self.foreign_key_constraints:
@@ -159,11 +156,7 @@ class TableTriggers:
     triggers: t.List[Trigger]
 
     def get_column_triggers(self, column_name: str) -> t.List[Trigger]:
-        triggers = []
-        for i in self.triggers:
-            if i.column_name == column_name:
-                triggers.append(i)
-        return triggers
+        return [i for i in self.triggers if i.column_name == column_name]
 
     def get_column_ref_trigger(
         self, column_name: str, references_table: str
@@ -348,7 +341,7 @@ def get_column_default(
             value = match.groupdict()
 
             if column_type is Boolean:
-                return True if value["value"] == "true" else False
+                return value["value"] == "true"
             elif column_type is Interval:
                 kwargs = {}
                 for period in [
@@ -369,10 +362,11 @@ def get_column_default(
                         dict(
                             zip(
                                 ["hours", "minutes", "seconds"],
-                                [int(v) for v in value["digits"].split(":")],
+                                [int(v) for v in digits.split(":")],
                             )
                         )
                     )
+
                 return IntervalCustom(**kwargs)
             elif column_type is JSON or column_type is JSONB:
                 return json.loads(value["value"])

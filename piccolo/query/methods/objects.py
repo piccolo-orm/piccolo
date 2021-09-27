@@ -203,16 +203,14 @@ class Objects(Query):
         if self.limit_delegate._first:
             if len(response) == 0:
                 return None
-            else:
-                if self.output_delegate._output.nested:
-                    return make_nested(response[0])
-                else:
-                    return response[0]
-        else:
             if self.output_delegate._output.nested:
-                return [make_nested(i) for i in response]
+                return make_nested(response[0])
             else:
-                return response
+                return response[0]
+        elif self.output_delegate._output.nested:
+            return [make_nested(i) for i in response]
+        else:
+            return response
 
     @property
     def default_querystrings(self) -> t.Sequence[QueryString]:
