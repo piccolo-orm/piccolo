@@ -67,7 +67,7 @@ class RowMeta:
     numeric_precision: t.Optional[t.Union[int, str]]
     numeric_scale: t.Optional[t.Union[int, str]]
     numeric_precision_radix: t.Optional[Literal[2, 10]]
-    
+
     @classmethod
     def get_column_name_str(cls) -> str:
         return ", ".join([i.name for i in dataclasses.fields(cls)])
@@ -164,8 +164,10 @@ class TableTriggers:
             if i.column_name == column_name:
                 triggers.append(i)
         return triggers
-    
-    def get_column_ref_trigger(self, column_name: str, references_table: str) -> Trigger:
+
+    def get_column_ref_trigger(
+        self, column_name: str, references_table: str
+    ) -> Trigger:
         for i in self.triggers:
             if (
                 i.column_name == column_name
@@ -208,7 +210,9 @@ class TableIndexes:
         for i in self.indexes:
             if i.column_name == column_name:
                 return i
-        
+        else:
+            return None
+
 
 @dataclasses.dataclass
 class OutputSchema:
