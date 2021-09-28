@@ -1,0 +1,44 @@
+name: Bug/issue
+description: Create a bug report or other issue
+
+title: "<Enter a brief description here>"
+
+labels: [triage]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this Bug/Issue report!
+  - type: textarea
+    id: issue-description
+    attributes:
+      label: Description
+      description: Please describe your issue here
+      placeholder: When I ... then I see ...
+    validations:
+      required: true
+  - type: textarea
+    id: what-was-expected
+    attributes:
+      label: What should have happened?
+      description: If this issue is causing unexpected behavior, what should happen differently?
+      placeholder: I expected...
+    validations:
+      required: false
+  - type: dropdown
+    id: browsers
+    attributes:
+      label: What browser(s) are you seeing the problem on?
+      multiple: true
+      options:
+        - Chrome
+        - Firefox
+        - Microsoft Edge
+        - Safari
+        - Not applicable
+  - type: textarea
+    id: multimedia
+    attributes:
+      label: Further details
+      description: Please copy and paste any relevant log output or multimedia (e.g. screenshots).
