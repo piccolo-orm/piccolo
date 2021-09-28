@@ -1,0 +1,25 @@
+name: Feature request
+
+description: Suggest a feature or improvement
+
+title: "<Add a brief title for your idea> "
+labels: [community, triage, help wanted]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to share your ideas. Your efforts are appreciated by the community.
+  - type: input
+    attributes:
+      label: Idea summary
+      description: Please briefly describe your idea
+    validations:
+      required: true
+  - type: textarea
+    id: elaboration
+    attributes:
+      label: Further details
+      description: If desired, provide a detailed explanation about your idea
+    validations:
+      required: false
