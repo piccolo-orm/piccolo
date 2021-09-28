@@ -156,7 +156,7 @@ class Table(metaclass=TableMetaclass):
             Admin for tooltips.
 
         """
-        tablename = tablename if tablename else _camel_to_snake(cls.__name__)
+        tablename = tablename or _camel_to_snake(cls.__name__)
 
         if tablename in PROTECTED_TABLENAMES:
             raise ValueError(
@@ -332,23 +332,23 @@ class Table(metaclass=TableMetaclass):
         """
         cls = self.__class__
 
-        if self._exists_in_db:
-            # pre-existing row
-            kwargs: t.Dict[Column, t.Any] = {
-                i: getattr(self, i._meta.name, None)
-                for i in cls._meta.columns
-                if i._meta.name != self._meta.primary_key._meta.name
-            }
-            return (
-                cls.update()
-                .values(kwargs)  # type: ignore
-                .where(
-                    cls._meta.primary_key
-                    == getattr(self, self._meta.primary_key._meta.name)
-                )
-            )
-        else:
+        if not self._exists_in_db:
             return cls.insert().add(self)
+
+        # pre-existing row
+        kwargs: t.Dict[Column, t.Any] = {
+            i: getattr(self, i._meta.name, None)
+            for i in cls._meta.columns
+            if i._meta.name != self._meta.primary_key._meta.name
+        }
+        return (
+            cls.update()
+            .values(kwargs)  # type: ignore
+            .where(
+                cls._meta.primary_key
+                == getattr(self, self._meta.primary_key._meta.name)
+            )
+        )
 
     def remove(self) -> Delete:
         """
@@ -480,12 +480,11 @@ class Table(metaclass=TableMetaclass):
 
         output_name = f"{column._meta.name}_readable"
 
-        new_readable = Readable(
+        return Readable(
             template=readable.template,
             columns=columns,
             output_name=output_name,
         )
-        return new_readable
 
     @classmethod
     def get_readable(cls) -> Readable:
@@ -528,7 +527,7 @@ class Table(metaclass=TableMetaclass):
         return self.querystring.__str__()
 
     def __repr__(self) -> str:
-        _pk = self._meta.primary_key if self._meta.primary_key else None
+        _pk = self._meta.primary_key or None
         return f"<{self.__class__.__name__}: {_pk}>"
 
     ###########################################################################
@@ -1004,7 +1003,7 @@ def sort_table_classes(
 
     output: t.List[t.Type[Table]] = []
     for tablename in ordered_tablenames:
-        table_class = table_class_dict.get(tablename, None)
+        table_class = table_class_dict.get(tablename)
         if table_class is not None:
             output.append(table_class)
 

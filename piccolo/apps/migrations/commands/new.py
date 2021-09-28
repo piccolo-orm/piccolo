@@ -47,11 +47,10 @@ def _create_migrations_folder(migrations_path: str) -> bool:
     """
     if os.path.exists(migrations_path):
         return False
-    else:
-        os.mkdir(migrations_path)
-        with open(os.path.join(migrations_path, "__init__.py"), "w"):
-            pass
-        return True
+    os.mkdir(migrations_path)
+    with open(os.path.join(migrations_path, "__init__.py"), "w"):
+        pass
+    return True
 
 
 @dataclass
@@ -112,7 +111,7 @@ async def _create_new_migration(
             list(set(chain(*[i.extra_definitions for i in alter_statements]))),
         )
 
-        if sum([len(i.statements) for i in alter_statements]) == 0:
+        if sum(len(i.statements) for i in alter_statements) == 0:
             raise NoChanges()
 
         file_contents = render_template(
@@ -171,9 +170,7 @@ class AutoMigrationManager(BaseMigrationManager):
         differ = SchemaDiffer(
             schema=current_diffable_tables, schema_snapshot=snapshot
         )
-        alter_statements = differ.get_alter_statements()
-
-        return alter_statements
+        return differ.get_alter_statements()
 
 
 ###############################################################################

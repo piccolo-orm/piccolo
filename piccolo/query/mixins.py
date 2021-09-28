@@ -64,8 +64,9 @@ class OrderBy:
     def querystring(self) -> QueryString:
         order = "ASC" if self.ascending else "DESC"
         columns_names = ", ".join(
-            [i._meta.get_full_name(just_alias=True) for i in self.columns]
+            i._meta.get_full_name(just_alias=True) for i in self.columns
         )
+
         return QueryString(f" ORDER BY {columns_names} {order}")
 
     def __str__(self):
@@ -109,16 +110,13 @@ class WhereDelegate:
     def _extract_columns(self, combinable: Combinable):
         if isinstance(combinable, Where):
             self._where_columns.append(combinable.column)
-        elif isinstance(combinable, And) or isinstance(combinable, Or):
+        elif isinstance(combinable, (And, Or)):
             self._extract_columns(combinable.first)
             self._extract_columns(combinable.second)
 
     def where(self, *where: Combinable):
         for arg in where:
-            if self._where:
-                self._where = And(self._where, arg)
-            else:
-                self._where = arg
+            self._where = And(self._where, arg) if self._where else arg
 
 
 @dataclass
@@ -370,8 +368,9 @@ class GroupBy:
     @property
     def querystring(self) -> QueryString:
         columns_names = ", ".join(
-            [i._meta.get_full_name(just_alias=True) for i in self.columns]
+            i._meta.get_full_name(just_alias=True) for i in self.columns
         )
+
         return QueryString(f" GROUP BY {columns_names}")
 
     def __str__(self):

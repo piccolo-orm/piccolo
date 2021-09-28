@@ -131,6 +131,7 @@ async def run_backwards(
                 "Are you sure you want to continue? [y/N] "
             )
         )
+
         if _continue in "yY":
             for _app_name in sorted_app_names:
                 print(f"\n{_app_name.upper():^64}")

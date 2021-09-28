@@ -37,9 +37,9 @@ def run():
     app_registry: AppRegistry = Finder().get_app_registry()
 
     tables = {}
-    spacer = "-------"
-
     if app_registry.app_configs:
+        spacer = "-------"
+
         print(spacer)
 
         for app_name, app_config in app_registry.app_configs.items():
