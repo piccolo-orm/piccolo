@@ -43,7 +43,7 @@ class ForwardsMigrationManager(BaseMigrationManager):
             return MigrationResult(success=True, message=message)
         else:
             n = len(havent_run)
-            print(f"ℹ️ {n} migration{'s' if n != 1 else ''} not yet run")
+            print(f"⏩ {n} migration{'s' if n != 1 else ''} not yet run")
 
         if self.migration_id == "all":
             subset = havent_run
@@ -65,7 +65,7 @@ class ForwardsMigrationManager(BaseMigrationManager):
 
             for _id in subset:
                 if self.fake:
-                    print(f"- {_id}: faked! ⭕")
+                    print(f"- {_id}: faked! ⏭️")
                 else:
                     migration_module = migration_modules[_id]
                     response = await migration_module.forwards()
@@ -73,7 +73,7 @@ class ForwardsMigrationManager(BaseMigrationManager):
                     if isinstance(response, MigrationManager):
                         await response.run()
 
-                    print(f"ok! ✔️")
+                    print("ok! ✔️")
 
                 await Migration.insert().add(
                     Migration(name=_id, app_name=app_config.app_name)

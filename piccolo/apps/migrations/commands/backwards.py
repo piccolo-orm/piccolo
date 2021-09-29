@@ -83,9 +83,7 @@ class BackwardsMigrationManager(BaseMigrationManager):
         _continue = (
             "y"
             if self.auto_agree
-            else input(
-                f"Reverse {n} migration{'s' if n != 1 else ''}? [y/N] "
-            )
+            else input(f"Reverse {n} migration{'s' if n != 1 else ''}? [y/N] ")
         )
         if _continue in "yY":
             for migration_id in reversed_migration_ids:
@@ -102,7 +100,7 @@ class BackwardsMigrationManager(BaseMigrationManager):
                 if self.clean:
                     os.unlink(migration_module.__file__)
 
-                print(f"ok! ✓")
+                print("ok! ✔️")
             return MigrationResult(success=True)
 
         else:  # pragma: no cover
@@ -126,7 +124,8 @@ async def run_backwards(
             "y"
             if auto_agree
             else input(
-                "You are about to undo the migrations for the following apps:\n"
+                "You are about to undo the migrations for the following "
+                "apps:\n"
                 f"{', '.join(names)}\n"
                 "Are you sure you want to continue? [y/N] "
             )

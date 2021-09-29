@@ -142,7 +142,9 @@ class TestForwardsBackwards(TestCase):
                 auto_agree=True,
             )
         )
-        self.assertTrue(call("🏁 No migrations to reverse!") in print_.mock_calls)
+        self.assertTrue(
+            call("🏁 No migrations to reverse!") in print_.mock_calls
+        )
 
     @patch("piccolo.apps.migrations.commands.forwards.print")
     def test_forwards_no_migrations(self, print_: MagicMock):
