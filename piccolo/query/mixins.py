@@ -9,7 +9,6 @@ from piccolo.columns.column_types import ForeignKey
 from piccolo.custom_types import Combinable
 from piccolo.querystring import QueryString
 from piccolo.utils.sql_values import convert_to_sql_value
-from piccolo.query.base import Query
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import Selectable

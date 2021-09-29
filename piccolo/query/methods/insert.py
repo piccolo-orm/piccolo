@@ -19,7 +19,7 @@ class Insert(Query):
         super().__init__(table, **kwargs)
         self.add_delegate = AddDelegate()
         self.on_conflict_delegate = OnConflictDelegate()
-        self.on_conflict(conflict)
+        self.on_conflict(on_conflict)
         self.add(*instances)
 
     def on_conflict(self, conflict: Conflict) -> Insert:
