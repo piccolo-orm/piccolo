@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+from enum import Enum
 from dataclasses import dataclass, field
 
 from piccolo.columns import And, Column, Or, Secret, Where
@@ -8,6 +9,7 @@ from piccolo.columns.column_types import ForeignKey
 from piccolo.custom_types import Combinable
 from piccolo.querystring import QueryString
 from piccolo.utils.sql_values import convert_to_sql_value
+from piccolo.query.base import Query
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import Selectable
@@ -52,6 +54,11 @@ class Offset:
     def __str__(self) -> str:
         return self.querystring.__str__()
 
+@dataclass
+class on_conflict:
+    __slots__ = ("number", )
+
+    
 
 @dataclass
 class OrderBy:
@@ -390,3 +397,25 @@ class GroupByDelegate:
 
     def group_by(self, *columns: Column):
         self._group_by = GroupBy(columns=columns)
+
+
+class Conflict(Enum):
+    do_nothing = 'DO NOTHING'
+    do_update = 'DO UPDATE'
+    
+
+@dataclass
+class OnConflict:
+
+    _on_conflict: t.Optional[Conflict] = None
+
+    def on_conflict(self, conflict: Conflict):
+        self._on_conflict = conflict
+
+@dataclass
+class OnConflictDelegate:
+    on_conflict: t.Optional[Conflict] = None
+
+    def on_conflict(self, *columns: Column):
+        self._on_conflict=  OnConflict(columns)
+        
