@@ -14,11 +14,13 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 @dataclass
 class Upsert(Query):
-    __slots__ = ("add_delegate", "where_delegate")
+    __slots__ = ("add_delegate", "value_delegate" "where_delegate")
 
     def __init__(self, table: t.Type[Table], *instances: Table, **kwargs):
         super().__init__(table, **kwargs)
         self.add_delegate = AddDelegate()
+        self.value_delegate = ValuesDelegate()
+        self.where_delegate = WhereDelegate()
         self.add(*instances)
 
     def add(self, *instances: Table) -> Upsert:
