@@ -415,6 +415,6 @@ class OnConflict:
 class OnConflictDelegate:
     on_conflict: t.Optional[Conflict] = None
 
-    def on_conflict(self, *columns: Column):
+    def On_Conflict(self, *columns: Column):
         self._on_conflict=  OnConflict(columns)
-        
+        return None
