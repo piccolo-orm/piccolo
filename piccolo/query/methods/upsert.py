@@ -19,8 +19,6 @@ class Upsert(Query):
     def __init__(self, table: t.Type[Table], *instances: Table, **kwargs):
         super().__init__(table, **kwargs)
         self.add_delegate = AddDelegate()
-        self.values_update = ValuesDelegate()
-        self.where_delegate = WhereDelegate()
         self.add(*instances)
 
     def add(self, *instances: Table) -> Upsert:
