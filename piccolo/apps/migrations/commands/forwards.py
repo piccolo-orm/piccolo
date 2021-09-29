@@ -11,8 +11,6 @@ from piccolo.apps.migrations.commands.base import (
 from piccolo.apps.migrations.tables import Migration
 from piccolo.conf.apps import AppConfig, MigrationModule
 
-from itertools import zip_longest
-
 
 class ForwardsMigrationManager(BaseMigrationManager):
     def __init__(
