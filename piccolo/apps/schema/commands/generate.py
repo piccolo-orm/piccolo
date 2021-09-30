@@ -203,8 +203,6 @@ class TableIndexes:
         for i in self.indexes:
             if i.column_name == column_name:
                 return i
-        else:
-            return None
 
 
 @dataclasses.dataclass

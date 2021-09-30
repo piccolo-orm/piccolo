@@ -70,7 +70,6 @@ class Shirt(Table):
 
     size = Varchar(length=1, choices=Size, default=Size.large)
 
-
 class RecordingStudio(Table):
     """
     Used for testing JSON and JSONB columns.
