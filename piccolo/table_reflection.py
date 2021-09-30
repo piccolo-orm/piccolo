@@ -75,7 +75,8 @@ class TableNameDetail:
 
 class TableStorage(metaclass=Singleton):
     """
-    A singleton object to store and access reflected tables
+    A singleton object to store and access reflected tables. Currently it just
+    works with Postgres.
     """
 
     def __init__(self):

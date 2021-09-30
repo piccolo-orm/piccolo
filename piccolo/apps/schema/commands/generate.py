@@ -715,9 +715,13 @@ async def get_output_schema(
 
     # We currently don't show the index argument for columns in the output,
     # so we don't need this import for now:
-    output_schema.imports.remove(
+    if (
         "from piccolo.columns.indexes import IndexMethod"
-    )
+        in output_schema.imports
+    ):
+        output_schema.imports.remove(
+            "from piccolo.columns.indexes import IndexMethod"
+        )
 
     return output_schema
 

@@ -146,7 +146,7 @@ Reflection
 ----------
 
 This is a very advanced feature, which is only required for specialist use
-cases.
+cases. Currently, just Postgres is supported.
 
 Instead of writing your ``Table`` definitions in a ``tables.py`` file, Piccolo
 can dynamically create them at run time, by inspecting the database. These
