@@ -139,75 +139,95 @@ By using choices, you get the following benefits:
  * Signalling to other programmers what values are acceptable for the column.
  * Improved storage efficiency (we can store ``'l'`` instead of ``'large'``).
  * Piccolo Admin support
- 
 
 -------------------------------------------------------------------------------
 
 Reflection
--------
+----------
 
-Instead of hardcoding your tables, you can directly create Table objects from your database on your memory.
-Reflected tables will be stored in a Singleton object named `TableStorage` and can be accessed globally.
-This will be useful in very dynamic databases where new tables are created constantly.
+This is a very advanced feature, which is only required for specialist use
+cases.
 
-.. hint:: Reflection automatically will create objects for referenced tables too.
-          for example, if `Table1` references `Table2`, and `Table2` is not selected or it's not present in the same schema, It's object will be created and                 stored in `TableStorage`. 
+Instead of writing your ``Table`` definitions in a ``tables.py`` file, Piccolo
+can dynamically create them at run time, by inspecting the database. These
+``Table`` classes are then stored in memory, using a singleton object called
+``TableStorage``.
 
-Full schema reflection:
+Some example use cases:
 
-.. code-block:: python 
+ * You have a very dynamic database, where new tables are being created
+   constantly, so updating a ``tables.py`` is impractical.
+ * You use Piccolo on the command line to explore databases.
 
-    >>> from piccolo.table_reflection import TableStorage
-    >>> storage = TableStorage()
-    >>> await storage.reflect(schema_name="music")
-    >>> storage.tables  # `Table` objects are accessible from `storage.tables`.
-    {"music.Band": <class 'Band'>, ... }
-    >>> Band = storage.tables["music.Band"]
-    # Then, you can use them like your normal Table classes.
-    >>> Band.select().run_sync()
-    
-    
-.. hint:: `TableStorage` has a helper method named `get_table`. If the table is already present in the `TableStorage`, this will return it.
-and if the table is not present, it will be reflected and returned.
+Full reflection
+~~~~~~~~~~~~~~~
+
+Here's an example, where we reflect the entire schema:
 
 .. code-block:: python
 
-    >>> storage = TableStorage()
-    >>> Band = storage.get_table(tablename='band')
-    
-    
+    from piccolo.table_reflection import TableStorage
+
+    storage = TableStorage()
+    await storage.reflect(schema_name="music")
+
+``Table`` objects are accessible from ``TableStorage.tables``:
+
+.. code-block:: python
+
+    >>> storage.tables
+    {"music.Band": <class 'Band'>, ... }
+
+    >>> Band = storage.tables["music.Band"]
+
+Then you can use them like your normal ``Table`` classes:
+
+.. code-block:: python
+
+    >>> Band.select().run_sync()
+    [{'id': 1, 'name': 'Pythonistas', 'manager': 1}, ...]
+
+
+Partial reflection
+~~~~~~~~~~~~~~~~~~
+
+Full schema reflection can be a heavy process based on the size of your schema.
+You can use ``include``, ``exclude`` and ``keep_existing`` parameters of
+the ``reflect`` method to limit the overhead dramatically.
+
 Only reflect the needed table(s):
 
-.. code-block:: python 
+.. code-block:: python
 
-    >>> from piccolo.table_reflection import TableStorage
-    >>> storage = TableStorage()
-    >>> await storage.reflect(schema_name="music", include=['band', ...])
-    
-    
+    from piccolo.table_reflection import TableStorage
+
+    storage = TableStorage()
+    await storage.reflect(schema_name="music", include=['band', ...])
+
 Exclude table(s):
 
-.. code-block:: python 
+.. code-block:: python
 
-    >>> from piccolo.table_reflection import TableStorage
-    >>> storage = TableStorage()
-    >>> await storage.reflect(schema_name="music", exclude=['band', ...])
-    
-    
-    
-.. warning::
-        Full schema reflection can be a heavy proccess based on size of your schema. make sure to not reflect the whole schema everytime in runtime.
-        You can use `include`, `exclude` and `keep_existing` parameters of the `reflect` method to limit the overhead dramatically. 
-        
-Keep existing:
+    await storage.reflect(schema_name="music", exclude=['band', ...])
 
-I you set this parameter to `True`, only new tables on the database will be reflected and the existing tables in `TableStorage` will be left intact.
+If you set ``keep_existing=True``, only new tables on the database will be
+reflected and the existing tables in ``TableStorage`` will be left intact.
 
-.. code-block:: python 
+.. code-block:: python
 
-    >>> from piccolo.table_reflection import TableStorage
-    >>> storage = TableStorage()
-    >>> await storage.reflect(schema_name="music", keep_existing=True)
-    
-    
+    await storage.reflect(schema_name="music", keep_existing=True)
 
+get_table
+~~~~~~~~~
+
+``TableStorage`` has a helper method named ``get_table``. If the table is
+already present in the ``TableStorage``, this will return it and if the table
+is not present, it will be reflected and returned.
+
+.. code-block:: python
+
+    Band = storage.get_table(tablename='band')
+
+.. hint:: Reflection will automatically create ``Table`` classes for referenced
+    tables too. For example, if ``Table1`` references ``Table2``, then
+    ``Table2`` will automatically be added to ``TableStorage``.
