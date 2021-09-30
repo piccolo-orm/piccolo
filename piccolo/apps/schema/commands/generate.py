@@ -160,12 +160,12 @@ class TableTriggers:
     def get_column_ref_trigger(
         self, column_name: str, references_table: str
     ) -> Trigger:
-        for i in self.triggers:
+        for trigger in self.triggers:
             if (
-                i.column_name == column_name
-                and i.references_table == references_table
+                trigger.column_name == column_name
+                and trigger.references_table == references_table
             ):
-                return i
+                return trigger
 
         raise ValueError("No matching trigger found")
 
@@ -656,14 +656,14 @@ async def create_table_class_from_db(
 
 async def get_output_schema(
     schema_name: str = "public",
-    tablenames: t.Optional[t.List[str]] = None,
+    include: t.Optional[t.List[str]] = None,
     exclude: t.Optional[t.List[str]] = None,
 ) -> OutputSchema:
     """
     :param schema_name:
         Name of the schema.
-    :param tablenames:
-        Optional list of table names. Only creates the specifed tables.
+    :param include:
+        Optional list of table names. Only creates the specified tables.
     :param exclude:
         Optional list of table names. excludes the specified tables.
     :returns:
@@ -692,14 +692,14 @@ async def get_output_schema(
 
         pass
 
-    if not tablenames:
-        tablenames = await get_tablenames(Schema, schema_name=schema_name)
+    if not include:
+        include = await get_tablenames(Schema, schema_name=schema_name)
 
     table_coroutines = (
         create_table_class_from_db(
             table_class=Schema, tablename=tablename, schema_name=schema_name
         )
-        for tablename in tablenames
+        for tablename in include
         if tablename not in exclude
     )
     output_schemas = await asyncio.gather(*table_coroutines)
