@@ -640,7 +640,7 @@ class MigrationManager:
                         await _Table.create_index([add_column.column]).run()
 
     async def run(self):
-        print("Running MigrationManager ...")
+        print(f"  - {self.migration_id} [forwards]... ", end="")
 
         engine = engine_finder()
 
@@ -664,7 +664,7 @@ class MigrationManager:
             await self._run_alter_columns()
 
     async def run_backwards(self):
-        print("Reversing MigrationManager ...")
+        print(f" - {self.migration_id} [backwards]... ", end="")
 
         engine = engine_finder()
 

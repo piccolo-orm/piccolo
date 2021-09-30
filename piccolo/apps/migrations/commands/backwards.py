@@ -46,7 +46,7 @@ class BackwardsMigrationManager(BaseMigrationManager):
         if len(ran_migration_ids) == 0:
             # Make sure a success is returned, as we don't want this
             # to appear as an error in automated scripts.
-            message = "No migrations to reverse!"
+            message = "🏁 No migrations to reverse!"
             print(message)
             return MigrationResult(success=True, message=message)
 
@@ -79,20 +79,14 @@ class BackwardsMigrationManager(BaseMigrationManager):
 
         #######################################################################
 
+        n = len(reversed_migration_ids)
         _continue = (
             "y"
             if self.auto_agree
-            else input(
-                "About to undo the following migrations:\n"
-                f"{reversed_migration_ids}\n"
-                "Enter y to continue.\n"
-            )
+            else input(f"Reverse {n} migration{'s' if n != 1 else ''}? [y/N] ")
         )
-        if _continue == "y":
-            print("Undoing migrations")
-
+        if _continue in "yY":
             for migration_id in reversed_migration_ids:
-                print(f"Reversing {migration_id}")
                 migration_module = migration_modules[migration_id]
                 response = await migration_module.forwards()
 
@@ -106,6 +100,7 @@ class BackwardsMigrationManager(BaseMigrationManager):
                 if self.clean:
                     os.unlink(migration_module.__file__)
 
+                print("ok! ✔️")
             return MigrationResult(success=True)
 
         else:  # pragma: no cover
@@ -124,27 +119,31 @@ async def run_backwards(
         sorted_app_names = BaseMigrationManager().get_sorted_app_names()
         sorted_app_names.reverse()
 
+        names = [f"'{name}'" for name in sorted_app_names]
         _continue = (
             "y"
             if auto_agree
             else input(
-                "You're about to undo the migrations for the following apps:\n"
-                f"{sorted_app_names}\n"
-                "Are you sure you want to continue?\n"
-                "Enter y to continue.\n"
+                "You are about to undo the migrations for the following "
+                "apps:\n"
+                f"{', '.join(names)}\n"
+                "Are you sure you want to continue? [y/N] "
             )
         )
-        if _continue != "y":
-            return MigrationResult(success=False, message="User cancelled")
-        for _app_name in sorted_app_names:
-            print(f"Undoing {_app_name}")
-            manager = BackwardsMigrationManager(
-                app_name=_app_name,
-                migration_id="all",
-                auto_agree=auto_agree,
-            )
-            await manager.run()
-        return MigrationResult(success=True)
+
+        if _continue in "yY":
+            for _app_name in sorted_app_names:
+                print(f"\n{_app_name.upper():^64}")
+                print("-" * 64)
+                manager = BackwardsMigrationManager(
+                    app_name=_app_name,
+                    migration_id="all",
+                    auto_agree=auto_agree,
+                )
+                await manager.run()
+            return MigrationResult(success=True)
+        else:
+            return MigrationResult(success=False, message="user cancelled")
     else:
         manager = BackwardsMigrationManager(
             app_name=app_name,

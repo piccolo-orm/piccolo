@@ -1,6 +1,31 @@
 Changes
 =======
 
+0.53.0
+------
+An internal code clean up (courtesy @yezz123).
+
+Dramatically improved CLI appearance when running migrations (courtesy
+@wmshort).
+
+Added a runtime reflection feature, where ``Table`` classes can be generated
+on the fly from existing database tables (courtesy @AliSayyah). This is useful
+when dealing with very dynamic databases, where tables are frequently being
+added / modified, so hard coding them in a ``tables.py`` is impractical. Also,
+for exploring databases on the command line. It currently just supports
+Postgres.
+
+Here's an example:
+
+.. code-block:: python
+
+  from piccolo.table_reflection import TableStorage
+
+  storage = TableStorage()
+  Band = await storage.get_table('band')
+  >>> await Band.select().run()
+  [{'id': 1, 'name': 'Pythonistas', 'manager': 1}, ...]
+
 0.52.0
 ------
 Lots of improvements to ``piccolo schema generate``:
