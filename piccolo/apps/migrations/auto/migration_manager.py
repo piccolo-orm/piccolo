@@ -13,6 +13,13 @@ from piccolo.apps.migrations.auto.operations import (
 )
 from piccolo.apps.migrations.auto.serialisation import deserialise_params
 from piccolo.columns import Column, column_types
+from piccolo.columns.column_types import (
+    BigInt,
+    Integer,
+    SmallInt,
+    Text,
+    Varchar,
+)
 from piccolo.engine import engine_finder
 from piccolo.table import Table, create_table_class, sort_table_classes
 
@@ -376,9 +383,37 @@ class MigrationManager:
                         new_column._meta._table = _Table
                         new_column._meta._name = alter_column.column_name
 
+                        set_column_type_kwargs: t.Dict[str, str] = {}
+
+                        # Postgres won't automatically cast a string to an
+                        # integer, unless we tell it to. We may as well try, as
+                        # it will definitely fail otherwise.
+                        if (
+                            old_column_class
+                            in [
+                                Varchar,
+                                Text,
+                            ]
+                            and column_class in [Integer, BigInt, SmallInt]
+                        ):
+                            # Unless the column's default value is also
+                            # something which can be cast to an integer it will
+                            # also fail. Drop the default value for now - the
+                            # proper default is set later on.
+                            if old_params.get("default", ...) is not None:
+                                await _Table.alter().drop_default(
+                                    old_column
+                                ).run()
+
+                            set_column_type_kwargs[
+                                "using_expression"
+                            ] = f"{alter_column.column_name}::integer"
+
                         await _Table.alter().set_column_type(
-                            old_column=old_column, new_column=new_column
-                        )
+                            old_column=old_column,
+                            new_column=new_column,
+                            **set_column_type_kwargs,
+                        ).run()
 
                 ###############################################################
 

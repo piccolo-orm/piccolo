@@ -97,6 +97,9 @@ class TestMigrations(TestCase):
         run_sync(manager.run_migrations(app_config=app_config))
 
     def _test_migrations(self, table_classes: t.List[t.Type[Table]]):
+        """
+        Writes a migration file to disk and runs it.
+        """
         temp_directory_path = tempfile.gettempdir()
         migrations_folder_path = os.path.join(
             temp_directory_path, "piccolo_migrations"
@@ -421,6 +424,27 @@ class TestMigrations(TestCase):
                     JSONB(default='{"name": "Sally"}'),
                     JSONB(null=True, default=None),
                     JSONB(null=False),
+                ]
+            ]
+        )
+
+    ###########################################################################
+
+    def test_column_type_conversion(self):
+        """
+        We can't manage all column type conversions, but should be able to
+        manage most simple ones (e.g. Varchar to Text).
+        """
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Varchar(),
+                    Text(),
+                    Integer(),
+                    BigInt(),
+                    SmallInt(),
+                    Boolean(),
                 ]
             ]
         )
