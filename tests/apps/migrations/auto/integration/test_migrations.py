@@ -444,7 +444,6 @@ class TestMigrations(TestCase):
                     Integer(),
                     BigInt(),
                     SmallInt(),
-                    Boolean(),
                 ]
             ]
         )
