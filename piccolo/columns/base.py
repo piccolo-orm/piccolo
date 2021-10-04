@@ -131,8 +131,9 @@ class ColumnMeta:
     # Used for representing the table in migrations and the playground.
     params: t.Dict[str, t.Any] = field(default_factory=dict)
 
-    # Set by the Table Metaclass:
+    # Set by the Table Metaclass, if not provided by the user:
     _name: t.Optional[str] = None
+    # Set by the Table Metaclass:
     _table: t.Optional[t.Type[Table]] = None
 
     # Used by Foreign Keys:
@@ -287,6 +288,19 @@ class Column(Selectable):
         value, but tools such as Piccolo Admin use it to show a tooltip in the
         GUI.
 
+    :param choices:
+        An optional Enum - when specified, other tools such as Piccolo Admin
+        will render the available options in the GUI.
+
+    :param name:
+        If specified, you can override the name used for the column in the
+        database. There are several reasons for this:
+
+         * When using a legacy database, there may be columns with sub-optimal
+           names.
+         * You may want a database column which has a problematic name (for
+           example ``'class'``, which is a reserved Python keyword).
+
     """
 
     value_type: t.Type = int
@@ -301,6 +315,7 @@ class Column(Selectable):
         required: bool = False,
         help_text: t.Optional[str] = None,
         choices: t.Optional[t.Type[Enum]] = None,
+        name: t.Optional[str] = None,
         **kwargs,
     ) -> None:
         # This is for backwards compatibility - originally there were two
@@ -322,6 +337,7 @@ class Column(Selectable):
                 "index": index,
                 "index_method": index_method,
                 "choices": choices,
+                "name": name,
             }
         )
 
@@ -344,6 +360,7 @@ class Column(Selectable):
             required=required,
             help_text=help_text,
             choices=choices,
+            _name=name,
         )
 
         self.alias: t.Optional[str] = None

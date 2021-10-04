@@ -196,7 +196,10 @@ class Table(metaclass=TableMetaclass):
                 non_default_columns.append(column)
                 columns.append(column)
 
-                column._meta._name = attribute_name
+                if column._meta._name is None:
+                    # We only set this if the user hasn't already provided a
+                    # value.
+                    column._meta._name = attribute_name
                 column._meta._table = cls
 
                 if isinstance(column, Secret):
