@@ -162,7 +162,7 @@ and docstrings. Here's an example:
             The person to greet.
 
         """
-        print(name)
+        print("hello,", name)
 
 We then register it with the ``AppConfig``.
 
@@ -180,7 +180,7 @@ And from the command line:
 .. code-block:: bash
 
     >>> piccolo my_app say_hello bob
-    bob
+    hello, bob
 
 If the code contains an error to see more details in the output add a ``--trace`` flag to the command line.
 
