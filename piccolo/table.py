@@ -196,8 +196,6 @@ class Table(metaclass=TableMetaclass):
                 non_default_columns.append(column)
                 columns.append(column)
 
-                if column._meta.db_column_name is None:
-                    column._meta.db_column_name = attribute_name
                 column._meta._name = attribute_name
                 column._meta._table = cls
 

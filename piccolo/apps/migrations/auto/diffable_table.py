@@ -113,8 +113,7 @@ class DiffableTable:
             AddColumn(
                 table_class_name=self.class_name,
                 column_name=i.column._meta.name,
-                db_column_name=i.column._meta.db_column_name
-                or i.column._meta.name,
+                db_column_name=i.column._meta.db_column_name,
                 column_class_name=i.column.__class__.__name__,
                 column_class=i.column.__class__,
                 params=i.column._meta.params,
@@ -129,8 +128,7 @@ class DiffableTable:
             DropColumn(
                 table_class_name=self.class_name,
                 column_name=i.column._meta.name,
-                db_column_name=i.column._meta.db_column_name
-                or i.column._meta.name,
+                db_column_name=i.column._meta.db_column_name,
                 tablename=value.tablename,
             )
             for i in (
@@ -163,8 +161,7 @@ class DiffableTable:
                         table_class_name=self.class_name,
                         tablename=self.tablename,
                         column_name=column._meta.name,
-                        db_column_name=column._meta.db_column_name
-                        or column._meta.name,
+                        db_column_name=column._meta.db_column_name,
                         params=deserialise_params(delta),
                         old_params=old_params,
                         column_class=column.__class__,

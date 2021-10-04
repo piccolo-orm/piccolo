@@ -131,18 +131,24 @@ class ColumnMeta:
     # Used for representing the table in migrations and the playground.
     params: t.Dict[str, t.Any] = field(default_factory=dict)
 
-    # Lets you to map a column to a database column with a different name. If
-    # the user doesn't specify it, the Table Metaclass automatically sets it
-    # to the same as _name.
-    db_column_name: t.Optional[str] = None
+    ###########################################################################
+
+    # Lets you to map a column to a database column with a different name.
+    _db_column_name: t.Optional[str] = None
+
+    @property
+    def db_column_name(self) -> str:
+        return self._db_column_name or self.name
+
+    @db_column_name.setter
+    def db_column_name(self, value: str):
+        self._db_column_name = value
+
+    ###########################################################################
 
     # Set by the Table Metaclass:
     _name: t.Optional[str] = None
     _table: t.Optional[t.Type[Table]] = None
-
-    # Used by Foreign Keys:
-    call_chain: t.List["ForeignKey"] = field(default_factory=list)
-    table_alias: t.Optional[str] = None
 
     @property
     def name(self) -> str:
@@ -163,6 +169,12 @@ class ColumnMeta:
                 "`_table` isn't defined - the Table Metaclass should set it."
             )
         return self._table
+
+    ###########################################################################
+
+    # Used by Foreign Keys:
+    call_chain: t.List["ForeignKey"] = field(default_factory=list)
+    table_alias: t.Optional[str] = None
 
     @property
     def engine_type(self) -> str:
@@ -367,7 +379,7 @@ class Column(Selectable):
             required=required,
             help_text=help_text,
             choices=choices,
-            db_column_name=db_column_name,
+            _db_column_name=db_column_name,
         )
 
         self.alias: t.Optional[str] = None
