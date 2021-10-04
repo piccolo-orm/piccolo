@@ -72,7 +72,10 @@ class DBTestCase(TestCase):
             tablename=tablename, column_name=column_name
         )
         response = self.run_sync(query)
-        return response[0]
+        if len(response) > 0:
+            return response[0]
+        else:
+            raise ValueError("No such column")
 
     def get_postgres_column_type(
         self, tablename: str, column_name: str

@@ -68,7 +68,7 @@ class TestSerialiseParams(TestCase):
                     'class Manager(Table, tablename="manager"): '
                     "id = Serial(null=False, primary_key=True, unique=False, "
                     "index=False, index_method=IndexMethod.btree, "
-                    "choices=None, name=None)"
+                    "choices=None, db_column_name='id')"
                 ),
             )
 
@@ -119,7 +119,7 @@ class TestSerialiseParams(TestCase):
 
         self.assertEqual(
             serialised.params["base_column"].__repr__(),
-            "Varchar(length=255, default='', null=False, primary_key=False, unique=False, index=False, index_method=IndexMethod.btree, choices=None, name=None)",  # noqa: E501
+            "Varchar(length=255, default='', null=False, primary_key=False, unique=False, index=False, index_method=IndexMethod.btree, choices=None, db_column_name=None)",  # noqa: E501
         )
 
         self.assertEqual(

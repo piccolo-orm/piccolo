@@ -61,7 +61,7 @@ class ConcatDelegate:
                 raise ValueError(
                     "Adding values across joins isn't currently supported."
                 )
-            other_column_name = column._meta.name
+            other_column_name = column._meta.db_column_name
             if reverse:
                 return QueryString(
                     Concat.template.format(
@@ -113,7 +113,7 @@ class MathDelegate:
                 raise ValueError(
                     "Adding values across joins isn't currently supported."
                 )
-            column_name = column._meta.name
+            column_name = column._meta.db_column_name
             if reverse:
                 return QueryString(f"{column_name} {operator} {column_name}")
             else:
@@ -183,7 +183,7 @@ class Varchar(Column):
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         engine_type = self._meta.table._meta.db.engine_type
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.name,
+            column_name=self._meta.db_column_name,
             value=value,
             engine_type=engine_type,
         )
@@ -191,7 +191,7 @@ class Varchar(Column):
     def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         engine_type = self._meta.table._meta.db.engine_type
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.name,
+            column_name=self._meta.db_column_name,
             value=value,
             engine_type=engine_type,
             reverse=True,
@@ -263,13 +263,15 @@ class Text(Column):
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         engine_type = self._meta.table._meta.db.engine_type
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.name, value=value, engine_type=engine_type
+            column_name=self._meta.db_column_name,
+            value=value,
+            engine_type=engine_type,
         )
 
     def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         engine_type = self._meta.table._meta.db.engine_type
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.name,
+            column_name=self._meta.db_column_name,
             value=value,
             engine_type=engine_type,
             reverse=True,
@@ -358,12 +360,12 @@ class Integer(Column):
 
     def __add__(self, value: t.Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
-            column_name=self._meta.name, operator="+", value=value
+            column_name=self._meta.db_column_name, operator="+", value=value
         )
 
     def __radd__(self, value: t.Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
-            column_name=self._meta.name,
+            column_name=self._meta.db_column_name,
             operator="+",
             value=value,
             reverse=True,
@@ -371,12 +373,12 @@ class Integer(Column):
 
     def __sub__(self, value: t.Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
-            column_name=self._meta.name, operator="-", value=value
+            column_name=self._meta.db_column_name, operator="-", value=value
         )
 
     def __rsub__(self, value: t.Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
-            column_name=self._meta.name,
+            column_name=self._meta.db_column_name,
             operator="-",
             value=value,
             reverse=True,
@@ -384,12 +386,12 @@ class Integer(Column):
 
     def __mul__(self, value: t.Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
-            column_name=self._meta.name, operator="*", value=value
+            column_name=self._meta.db_column_name, operator="*", value=value
         )
 
     def __rmul__(self, value: t.Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
-            column_name=self._meta.name,
+            column_name=self._meta.db_column_name,
             operator="*",
             value=value,
             reverse=True,
@@ -397,12 +399,12 @@ class Integer(Column):
 
     def __truediv__(self, value: t.Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
-            column_name=self._meta.name, operator="/", value=value
+            column_name=self._meta.db_column_name, operator="/", value=value
         )
 
     def __rtruediv__(self, value: t.Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
-            column_name=self._meta.name,
+            column_name=self._meta.db_column_name,
             operator="/",
             value=value,
             reverse=True,
@@ -410,14 +412,14 @@ class Integer(Column):
 
     def __floordiv__(self, value: t.Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
-            column_name=self._meta.name, operator="/", value=value
+            column_name=self._meta.db_column_name, operator="/", value=value
         )
 
     def __rfloordiv__(
         self, value: t.Union[int, float, Integer]
     ) -> QueryString:
         return self.math_delegate.get_querystring(
-            column_name=self._meta.name,
+            column_name=self._meta.db_column_name,
             operator="/",
             value=value,
             reverse=True,

@@ -202,8 +202,8 @@ class SchemaDiffer:
                         self.auto_input
                         if self.auto_input
                         else input(
-                            f"Did you rename the `{drop_column.column_name}` "
-                            f"column to `{add_column.column_name}` on the "
+                            f"Did you rename the `{drop_column.db_column_name}` "  # noqa: E501
+                            f"column to `{add_column.db_column_name}` on the "
                             f"`{ add_column.table_class_name }` table? (y/N)"
                         )
                     )
@@ -217,6 +217,8 @@ class SchemaDiffer:
                                 tablename=drop_column.tablename,
                                 old_column_name=drop_column.column_name,
                                 new_column_name=add_column.column_name,
+                                old_db_column_name=drop_column.db_column_name,
+                                new_db_column_name=add_column.db_column_name,
                             )
                         )
 
@@ -374,7 +376,7 @@ class SchemaDiffer:
                     continue
 
                 response.append(
-                    f"manager.drop_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column.column_name}')"  # noqa: E501
+                    f"manager.drop_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column.column_name}', db_column_name='{column.db_column_name}')"  # noqa: E501
                 )
         return AlterStatements(statements=response)
 
@@ -423,7 +425,7 @@ class SchemaDiffer:
     def rename_columns(self) -> AlterStatements:
         return AlterStatements(
             statements=[
-                f"manager.rename_column(table_class_name='{i.table_class_name}', tablename='{i.tablename}', old_column_name='{i.old_column_name}', new_column_name='{i.new_column_name}')"  # noqa: E501
+                f"manager.rename_column(table_class_name='{i.table_class_name}', tablename='{i.tablename}', old_column_name='{i.old_column_name}', new_column_name='{i.new_column_name}', old_db_column_name='{i.old_db_column_name}', new_db_column_name='{i.new_db_column_name}')"  # noqa: E501
                 for i in self.rename_columns_collection.rename_columns
             ]
         )

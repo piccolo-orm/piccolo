@@ -131,9 +131,13 @@ class ColumnMeta:
     # Used for representing the table in migrations and the playground.
     params: t.Dict[str, t.Any] = field(default_factory=dict)
 
-    # Set by the Table Metaclass, if not provided by the user:
-    _name: t.Optional[str] = None
+    # Lets you to map a column to a database column with a different name. If
+    # the user doesn't specify it, the Table Metaclass automatically sets it
+    # to the same as _name.
+    db_column_name: t.Optional[str] = None
+
     # Set by the Table Metaclass:
+    _name: t.Optional[str] = None
     _table: t.Optional[t.Type[Table]] = None
 
     # Used by Foreign Keys:
@@ -195,13 +199,16 @@ class ColumnMeta:
         """
         Returns the full column name, taking into account joins.
         """
-        column_name = self.name
+        column_name = self.db_column_name
 
         if not self.call_chain:
             return f"{self.table._meta.tablename}.{column_name}"
 
         column_name = (
-            "$".join(i._meta.name for i in self.call_chain) + f"${column_name}"
+            "$".join(
+                t.cast(str, i._meta.db_column_name) for i in self.call_chain
+            )
+            + f"${column_name}"
         )
 
         alias = f"{self.call_chain[-1]._meta.table_alias}.{self.name}"
@@ -315,7 +322,7 @@ class Column(Selectable):
         required: bool = False,
         help_text: t.Optional[str] = None,
         choices: t.Optional[t.Type[Enum]] = None,
-        name: t.Optional[str] = None,
+        db_column_name: t.Optional[str] = None,
         **kwargs,
     ) -> None:
         # This is for backwards compatibility - originally there were two
@@ -337,7 +344,7 @@ class Column(Selectable):
                 "index": index,
                 "index_method": index_method,
                 "choices": choices,
-                "name": name,
+                "db_column_name": db_column_name,
             }
         )
 
@@ -360,7 +367,7 @@ class Column(Selectable):
             required=required,
             help_text=help_text,
             choices=choices,
-            _name=name,
+            db_column_name=db_column_name,
         )
 
         self.alias: t.Optional[str] = None
@@ -612,7 +619,7 @@ class Column(Selectable):
         """
         Used when creating tables.
         """
-        query = f'"{self._meta.name}" {self.column_type}'
+        query = f'"{self._meta.db_column_name}" {self.column_type}'
         if self._meta.primary_key:
             query += " PRIMARY KEY"
         if self._meta.unique:

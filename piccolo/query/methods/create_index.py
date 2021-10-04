@@ -27,7 +27,8 @@ class CreateIndex(DDL):
     @property
     def column_names(self) -> t.List[str]:
         return [
-            i._meta.name if isinstance(i, Column) else i for i in self.columns
+            i._meta.db_column_name if isinstance(i, Column) else i
+            for i in self.columns
         ]
 
     @property
