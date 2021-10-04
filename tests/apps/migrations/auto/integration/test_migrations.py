@@ -116,7 +116,9 @@ class TestMigrations(TestCase):
         for table_class in table_classes:
             app_config.table_classes = [table_class]
             meta = run_sync(
-                _create_new_migration(app_config=app_config, auto=True)
+                _create_new_migration(
+                    app_config=app_config, auto=True, auto_input="y"
+                )
             )
             self.assertTrue(os.path.exists(meta.migration_path))
             self.run_migrations(app_config=app_config)
@@ -421,6 +423,21 @@ class TestMigrations(TestCase):
                     JSONB(default='{"name": "Sally"}'),
                     JSONB(null=True, default=None),
                     JSONB(null=False),
+                ]
+            ]
+        )
+
+    ###########################################################################
+
+    def test_db_column_name(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Varchar(),
+                    Varchar(db_column_name="custom_name"),
+                    Varchar(db_column_name="custom_name_2"),
+                    Varchar(),
                 ]
             ]
         )
