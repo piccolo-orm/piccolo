@@ -1,6 +1,6 @@
 from piccolo.columns.column_types import Integer, Varchar
 from piccolo.table import Table
-from tests.base import DBTestCase
+from tests.base import DBTestCase, postgres_only
 
 
 class Band(Table):
@@ -20,6 +20,7 @@ class TestDBColumnName(DBTestCase):
     def tearDown(self):
         Band.alter().drop_table().run_sync()
 
+    @postgres_only
     def test_column_name_correct(self):
         """
         Make sure the column has the correct name in the database.
