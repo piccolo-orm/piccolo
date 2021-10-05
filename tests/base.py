@@ -101,7 +101,9 @@ class DBTestCase(TestCase):
             == "YES"
         )
 
-    def get_postgres_varchar_length(self, tablename, column_name: str) -> int:
+    def get_postgres_varchar_length(
+        self, tablename, column_name: str
+    ) -> t.Optional[int]:
         """
         Fetches whether the column is defined as nullable, from the database.
         """
