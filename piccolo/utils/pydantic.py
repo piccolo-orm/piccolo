@@ -145,6 +145,9 @@ def create_pydantic_model(
             "nullable": column._meta.null,
         }
 
+        if column._meta.db_column_name != column._meta.name:
+            params["alias"] = column._meta.db_column_name
+
         extra = {
             "help_text": column._meta.help_text,
             "choices": column._meta.get_choices_dict(),

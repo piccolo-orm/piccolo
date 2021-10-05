@@ -352,3 +352,20 @@ class TestNestedModel(TestCase):
 
         country_model_keys = [i for i in CountryModel.__fields__.keys()]
         self.assertEqual(country_model_keys, ["id", "name"])
+
+
+class TestDBColumnName(TestCase):
+    def test_db_column_name(self):
+        """
+        Make sure that the Pydantic model has an alias if ``db_column_name``
+        is specified for a column.
+        """
+
+        class Band(Table):
+            name = Varchar(db_column_name="regrettable_column_name")
+
+        BandModel = create_pydantic_model(table=Band)
+
+        model = BandModel(regrettable_column_name="test")
+
+        self.assertTrue(model.name == "test")
