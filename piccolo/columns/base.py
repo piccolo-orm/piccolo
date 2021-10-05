@@ -672,7 +672,7 @@ class Column(Selectable):
                 f" ON UPDATE {on_update}"
             )
 
-        if not self._meta.primary_key:
+        if self.__class__.__name__ not in ("Serial", "BigSerial"):
             default = self.get_default_value()
             sql_value = self.get_sql_value(value=default)
             query += f" DEFAULT {sql_value}"

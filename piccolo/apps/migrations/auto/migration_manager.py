@@ -13,15 +13,10 @@ from piccolo.apps.migrations.auto.operations import (
 )
 from piccolo.apps.migrations.auto.serialisation import deserialise_params
 from piccolo.columns import Column, column_types
-from piccolo.columns.column_types import (
-    BigInt,
-    Integer,
-    SmallInt,
-    Text,
-    Varchar,
-)
+from piccolo.columns.column_types import Serial
 from piccolo.engine import engine_finder
 from piccolo.table import Table, create_table_class, sort_table_classes
+from piccolo.utils.warnings import colored_warning
 
 
 @dataclass
@@ -403,37 +398,42 @@ class MigrationManager:
                             alter_column.db_column_name
                         )
 
-                        set_column_type_kwargs: t.Dict[str, str] = {}
+                        using_expression: t.Optional[str] = None
 
-                        # Postgres won't automatically cast a string to an
-                        # integer, unless we tell it to. We may as well try, as
-                        # it will definitely fail otherwise.
-                        if (
-                            old_column_class
-                            in [
-                                Varchar,
-                                Text,
-                            ]
-                            and column_class in [Integer, BigInt, SmallInt]
-                        ):
-                            # Unless the column's default value is also
-                            # something which can be cast to an integer it will
-                            # also fail. Drop the default value for now - the
-                            # proper default is set later on.
+                        # Postgres won't automatically cast some types to
+                        # others. We may as well try, as it will definitely
+                        # fail otherwise.
+                        if new_column.value_type != old_column.value_type:
                             if old_params.get("default", ...) is not None:
+                                # Unless the column's default value is also
+                                # something which can be cast to the new type,
+                                # it will also fail. Drop the default value for
+                                # now - the proper default is set later on.
                                 await _Table.alter().drop_default(
                                     old_column
                                 ).run()
 
-                            set_column_type_kwargs[
-                                "using_expression"
-                            ] = f"{alter_column.column_name}::integer"
+                            using_expression = "{}::{}".format(
+                                alter_column.db_column_name,
+                                new_column.column_type,
+                            )
 
-                        await _Table.alter().set_column_type(
-                            old_column=old_column,
-                            new_column=new_column,
-                            **set_column_type_kwargs,
-                        ).run()
+                        # We can't migrate a SERIAL to a BIGSERIAL or vice
+                        # versa, as SERIAL isn't a true type, just an alias to
+                        # other commands.
+                        if issubclass(column_class, Serial) and issubclass(
+                            old_column_class, Serial
+                        ):
+                            colored_warning(
+                                "Unable to migrate Serial to BigSerial and "
+                                "vice versa. This must be done manually."
+                            )
+                        else:
+                            await _Table.alter().set_column_type(
+                                old_column=old_column,
+                                new_column=new_column,
+                                using_expression=using_expression,
+                            ).run()
 
                 ###############################################################
 
