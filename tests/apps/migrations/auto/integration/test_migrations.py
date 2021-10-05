@@ -600,3 +600,24 @@ class TestMigrations(DBTestCase):
                 ]
             ),
         )
+
+    def test_db_column_name_initial(self):
+        """
+        Make sure that if a new table is created which contains a column with
+        ``db_column_name`` specified, then the column has the correct name.
+        """
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Varchar(db_column_name="custom_name"),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "character varying",
+                    x.is_nullable == "NO",
+                    x.column_default == "''::character varying",
+                ]
+            ),
+        )

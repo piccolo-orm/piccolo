@@ -123,9 +123,13 @@ class SchemaDiffer:
         # A renamed table should have at least one column remaining with the
         # same name.
         for new_table in new_tables:
-            new_column_names = [i._meta.name for i in new_table.columns]
+            new_column_names = [
+                i._meta.db_column_name for i in new_table.columns
+            ]
             for drop_table in drop_tables:
-                drop_column_names = [i._meta.name for i in new_table.columns]
+                drop_column_names = [
+                    i._meta.db_column_name for i in new_table.columns
+                ]
                 same_column_names = set(new_column_names).intersection(
                     drop_column_names
                 )
@@ -413,7 +417,7 @@ class SchemaDiffer:
                 )
 
                 response.append(
-                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{add_column.column_name}', column_class_name='{add_column.column_class_name}', column_class={column_class.__name__}, params={str(cleaned_params)})"  # noqa: E501
+                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{add_column.column_name}', db_column_name='{add_column.db_column_name}', column_class_name='{add_column.column_class_name}', column_class={column_class.__name__}, params={str(cleaned_params)})"  # noqa: E501
                 )
         return AlterStatements(
             statements=response,
@@ -464,7 +468,7 @@ class SchemaDiffer:
                 )
 
                 response.append(
-                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column._meta.name}', column_class_name='{column.__class__.__name__}', column_class={column.__class__.__name__}, params={str(cleaned_params)})"  # noqa: E501
+                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column._meta.name}', db_column_name='{column._meta.db_column_name}', column_class_name='{column.__class__.__name__}', column_class={column.__class__.__name__}, params={str(cleaned_params)})"  # noqa: E501
                 )
         return AlterStatements(
             statements=response,
