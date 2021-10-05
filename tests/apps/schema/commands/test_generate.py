@@ -12,26 +12,12 @@ from piccolo.apps.schema.commands.generate import (
 )
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import ForeignKey, Integer, Varchar
+from piccolo.columns.indexes import IndexMethod
 from piccolo.engine import Engine, engine_finder
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
 from tests.base import postgres_only
 from tests.example_apps.mega.tables import MegaTable, SmallTable
-
-
-class Publication(Table, tablename="schema2.publication"):
-    name = Varchar(length=50)
-
-
-class Writer(Table, tablename="schema1.writer"):
-    name = Varchar(length=50)
-    publication = ForeignKey(Publication, null=True)
-
-
-class Book(Table):
-    name = Varchar(length=50)
-    writer = ForeignKey(Writer, null=True)
-    popularity = Integer(default=0)
 
 
 @postgres_only
@@ -127,7 +113,7 @@ class TestGenerate(TestCase):
 
     def test_generate_required_tables(self):
         """
-        Make sure only tables passed to `tablenames` are created
+        Make sure only tables passed to `tablenames` are created.
         """
         output_schema: OutputSchema = run_sync(
             get_output_schema(include=[SmallTable._meta.tablename])
@@ -138,7 +124,7 @@ class TestGenerate(TestCase):
 
     def test_exclude_table(self):
         """
-        make sure exclude works
+        Make sure exclude works.
         """
         output_schema: OutputSchema = run_sync(
             get_output_schema(exclude=[MegaTable._meta.tablename])
@@ -146,6 +132,56 @@ class TestGenerate(TestCase):
         self.assertEqual(len(output_schema.tables), 1)
         SmallTable_ = output_schema.get_table_with_name("SmallTable")
         self._compare_table_columns(SmallTable, SmallTable_)
+
+
+###############################################################################
+
+
+class Band(Table):
+    name = Varchar(index=True, index_method=IndexMethod.hash)
+    popularity = Integer(index=False)
+
+
+@postgres_only
+class TestGenerateWithIndexes(TestCase):
+    def setUp(self):
+        Band.create_table().run_sync()
+
+    def tearDown(self):
+        Band.alter().drop_table(if_exists=True).run_sync()
+
+    def test_index(self):
+        """
+        Make sure that a table with an index is reflected correctly.
+        """
+        output_schema: OutputSchema = run_sync(get_output_schema())
+        Band_ = output_schema.tables[0]
+
+        self.assertEqual(Band_.name._meta.index, True)
+        self.assertEqual(Band_.name._meta.index_method, IndexMethod.hash)
+
+        self.assertEqual(Band_.popularity._meta.index, False)
+        self.assertEqual(
+            Band_.popularity._meta.index_method, IndexMethod.btree
+        )
+
+
+###############################################################################
+
+
+class Publication(Table, tablename="schema2.publication"):
+    name = Varchar(length=50)
+
+
+class Writer(Table, tablename="schema1.writer"):
+    name = Varchar(length=50)
+    publication = ForeignKey(Publication, null=True)
+
+
+class Book(Table):
+    name = Varchar(length=50)
+    writer = ForeignKey(Writer, null=True)
+    popularity = Integer(default=0)
 
 
 @postgres_only
