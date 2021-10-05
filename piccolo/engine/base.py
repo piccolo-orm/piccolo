@@ -58,6 +58,10 @@ class Engine(metaclass=ABCMeta):
     def transaction(self):
         pass
 
+    @abstractmethod
+    def atomic(self):
+        pass
+
     async def check_version(self):
         """
         Warn if the database version isn't supported.

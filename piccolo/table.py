@@ -1001,9 +1001,21 @@ def create_tables(*tables: t.Type[Table], if_not_exists: bool = False) -> None:
     Creates the tables passed to it in the correct order, based on their
     foreign keys.
     """
+    if tables:
+        engine = tables[0]._meta.db
+    else:
+        return
+
     sorted_table_classes = sort_table_classes(list(tables))
-    for table in sorted_table_classes:
-        table.create_table(if_not_exists=if_not_exists).run_sync()
+
+    atomic = engine.atomic()
+    atomic.add(
+        *[
+            table.create_table(if_not_exists=if_not_exists)
+            for table in sorted_table_classes
+        ]
+    )
+    atomic.run_sync()
 
 
 def drop_tables(*tables: t.Type[Table]) -> None:
@@ -1017,13 +1029,26 @@ def drop_tables(*tables: t.Type[Table]) -> None:
         return
 
     if engine.engine_type == "sqlite":
-        # SQLite doesn't support CASCADE
+        # SQLite doesn't support CASCADE, so we have to drop them in the
+        # correct order.
         sorted_table_classes = reversed(sort_table_classes(list(tables)))
-        for table in sorted_table_classes:
-            Alter(table=table).drop_table(if_exists=True).run_sync()
+        atomic = engine.atomic()
+        atomic.add(
+            *[
+                Alter(table=table).drop_table(if_exists=True)
+                for table in sorted_table_classes
+            ]
+        )
+        atomic.run_sync()
     else:
-        for table in tables:
-            table.alter().drop_table(cascade=True, if_exists=True).run_sync()
+        atomic = engine.atomic()
+        atomic.add(
+            *[
+                table.alter().drop_table(cascade=True, if_exists=True)
+                for table in tables
+            ]
+        )
+        atomic.run_sync()
 
 
 def sort_table_classes(
