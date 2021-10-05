@@ -8,7 +8,7 @@ a legacy database is being used, with problematic column names. For example,
 if a column is called ``class``, this clashes with a Python builtin, so the
 following isn't possible:
 
-.. code-block::
+.. code-block:: text
 
   class MyTable(Table):
       class = Varchar()  # Syntax error!
