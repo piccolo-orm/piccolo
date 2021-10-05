@@ -47,7 +47,7 @@ class AlterColumnStatement(AlterStatement):
         if isinstance(self.column, str):
             return self.column
         elif isinstance(self.column, Column):
-            return self.column._meta.name
+            return self.column._meta.db_column_name
         else:
             raise ValueError("Unrecognised column type")
 
@@ -109,7 +109,7 @@ class SetColumnType(AlterStatement):
         if self.new_column._meta._table is None:
             self.new_column._meta._table = self.old_column._meta.table
 
-        column_name = self.old_column._meta.name
+        column_name = self.old_column._meta.db_column_name
         query = (
             f"ALTER COLUMN {column_name} TYPE {self.new_column.column_type}"
         )
@@ -303,6 +303,8 @@ class Alter(DDL):
         Band.alter().add_column(‘members’, Integer())
         """
         column._meta._table = self.table
+        column._meta._name = name
+        column._meta.db_column_name = name
         self._add.append(AddColumn(column, name))
         return self
 

@@ -296,6 +296,12 @@ class Table(metaclass=TableMetaclass):
 
         for column in self._meta.columns:
             value = kwargs.pop(column._meta.name, ...)
+
+            if value is ...:
+                value = kwargs.pop(
+                    t.cast(str, column._meta.db_column_name), ...
+                )
+
             if value is ...:
                 value = column.get_default_value()
 
@@ -318,7 +324,7 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def _create_serial_primary_key(cls) -> Serial:
-        pk = Serial(index=False, primary_key=True)
+        pk = Serial(index=False, primary_key=True, db_column_name="id")
         pk._meta._name = "id"
         pk._meta._table = cls
 
@@ -1035,13 +1041,16 @@ def _get_graph(
     for table_class in table_classes:
         dependents: t.Set[str] = set()
         for fk in table_class._meta.foreign_key_columns:
-            dependents.add(
-                fk._foreign_key_meta.resolved_references._meta.tablename
-            )
+            referenced_table = fk._foreign_key_meta.resolved_references
+
+            if referenced_table._meta.tablename == table_class._meta.tablename:
+                # Most like a recursive link (using ForeignKey('self')).
+                continue
+
+            dependents.add(referenced_table._meta.tablename)
 
             # We also recursively check the related tables to get a fuller
             # picture of the schema and relationships.
-            referenced_table = fk._foreign_key_meta.resolved_references
             output.update(
                 _get_graph(
                     [referenced_table],

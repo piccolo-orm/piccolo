@@ -55,6 +55,22 @@ class TestSortTableClasses(TestCase):
         """
         self.assertEqual(sort_table_classes([Band]), [Band])
 
+    def test_recursive_table(self):
+        """
+        Make sure that a table with a foreign key to itself sorts without
+        issues.
+        """
+
+        class TableA(Table):
+            table_a = ForeignKey("self")
+
+        class TableB(Table):
+            table_a = ForeignKey(TableA)
+
+        self.assertEqual(
+            sort_table_classes([TableA, TableB]), [TableA, TableB]
+        )
+
 
 class TestMigrationManager(DBTestCase):
     @postgres_only
