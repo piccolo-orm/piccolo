@@ -203,7 +203,7 @@ class TableIndexes:
         for i in self.indexes:
             if i.column_name == column_name:
                 return i
-        
+
         return None
 
 
@@ -654,7 +654,6 @@ async def create_table_class_from_db(
         index = indexes.get_column_index(column_name=column_name)
         if index is not None:
             kwargs["index"] = True
-            kwargs["unique"] = index.unique
             kwargs["index_method"] = index.method
 
         if constraints.is_primary_key(column_name=column_name):
