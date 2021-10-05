@@ -1,6 +1,43 @@
 Changes
 =======
 
+0.54.0
+------
+Added the ``db_column_name`` option to columns. This is for edge cases where
+a legacy database is being used, with problematic column names. For example,
+if a column is called ``class``, this clashes with a Python builtin, so the
+following isn't possible:
+
+.. code-block:: text
+
+  class MyTable(Table):
+      class = Varchar()  # Syntax error!
+
+You can now do the following:
+
+.. code-block:: python
+
+  class MyTable(Table):
+      class_ = Varchar(db_column_name='class')
+
+Here are some example queries using it:
+
+.. code-block:: python
+
+  # Create - both work as expected
+  MyTable(class_='Test').save().run_sync()
+  MyTable.objects().create(class_='Test').run_sync()
+
+  # Objects
+  row = MyTable.objects().first().where(MyTable.class_ == 'Test').run_sync()
+  >>> row.class_
+  'Test'
+
+  # Select
+  >>> MyTable.select().first().where(MyTable.class_ == 'Test').run_sync()
+  {'id': 1, 'class': 'Test'}
+
+
 0.53.0
 ------
 An internal code clean up (courtesy @yezz123).

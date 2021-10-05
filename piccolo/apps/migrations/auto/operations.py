@@ -18,12 +18,15 @@ class RenameColumn:
     tablename: str
     old_column_name: str
     new_column_name: str
+    old_db_column_name: str
+    new_db_column_name: str
 
 
 @dataclass
 class AlterColumn:
     table_class_name: str
     column_name: str
+    db_column_name: str
     tablename: str
     params: t.Dict[str, t.Any]
     old_params: t.Dict[str, t.Any]
@@ -35,6 +38,7 @@ class AlterColumn:
 class DropColumn:
     table_class_name: str
     column_name: str
+    db_column_name: str
     tablename: str
 
 
@@ -42,6 +46,7 @@ class DropColumn:
 class AddColumn:
     table_class_name: str
     column_name: str
+    db_column_name: str
     column_class_name: str
     column_class: t.Type[Column]
     params: t.Dict[str, t.Any]

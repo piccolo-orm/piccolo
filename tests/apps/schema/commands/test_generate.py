@@ -111,18 +111,21 @@ class TestGenerate(TestCase):
 
             pass
 
-        MegaTable.alter().add_column("box", Box()).run_sync()
+        MegaTable.alter().add_column("my_column", Box()).run_sync()
 
         output_schema: OutputSchema = run_sync(get_output_schema())
 
         # Make sure there's a warning.
-        self.assertEqual(output_schema.warnings, ["mega_table.box ['box']"])
+        self.assertEqual(
+            output_schema.warnings, ["mega_table.my_column ['box']"]
+        )
 
         # Make sure the column type of the generated table is just ``Column``.
         for table in output_schema.tables:
             if table.__name__ == "MegaTable":
                 self.assertEqual(
-                    output_schema.tables[1].box.__class__.__name__, "Column"
+                    output_schema.tables[1].my_column.__class__.__name__,
+                    "Column",
                 )
 
     def test_generate_required_tables(self):
