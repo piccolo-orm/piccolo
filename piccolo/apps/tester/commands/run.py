@@ -4,6 +4,8 @@ import os
 import sys
 import typing as t
 
+from piccolo.table import TABLE_REGISTRY
+
 
 class set_env_var:
     def __init__(self, var_name: str, temp_value: str):
@@ -49,6 +51,13 @@ def run_pytest(pytest_args: t.List[str]) -> int:  # pragma: no cover
     return pytest.main(pytest_args)
 
 
+def refresh_db():
+    for table_class in TABLE_REGISTRY:
+        # In case any table classes were imported before we set the
+        # environment variable.
+        table_class.refresh_db()
+
+
 def run(
     pytest_args: str = "", piccolo_conf: str = "piccolo_conf_test"
 ) -> None:
@@ -65,5 +74,6 @@ def run(
 
     """
     with set_env_var(var_name="PICCOLO_CONF", temp_value=piccolo_conf):
+        refresh_db()
         args = pytest_args.split(" ")
         sys.exit(run_pytest(args))

@@ -49,6 +49,9 @@ if t.TYPE_CHECKING:
 PROTECTED_TABLENAMES = ("user",)
 
 
+TABLE_REGISTRY: t.List[t.Type[Table]] = []
+
+
 @dataclass
 class TableMeta:
     """
@@ -94,6 +97,10 @@ class TableMeta:
             self._db = db
 
         return self._db
+
+    @db.setter
+    def db(self, value: Engine):
+        self._db = value
 
     def get_column_by_name(self, name: str) -> Column:
         """
@@ -282,6 +289,8 @@ class Table(metaclass=TableMetaclass):
             # auto completion.
             if is_table_class:
                 foreign_key_column.set_proxy_columns()
+
+        TABLE_REGISTRY.append(cls)
 
     def __init__(
         self,
@@ -498,6 +507,12 @@ class Table(metaclass=TableMetaclass):
         Creates a readable representation of the row.
         """
         return Readable(template="%s", columns=[cls._meta.primary_key])
+
+    ###########################################################################
+
+    @classmethod
+    def refresh_db(cls):
+        cls._meta.db = engine_finder()
 
     ###########################################################################
 
