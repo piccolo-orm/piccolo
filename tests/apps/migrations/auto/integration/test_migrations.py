@@ -379,7 +379,7 @@ class TestMigrations(DBTestCase):
                 [
                     x.data_type == "timestamp without time zone",
                     x.is_nullable == "NO",
-                    x.column_default == "now()",
+                    x.column_default in ("now()", "CURRENT_TIMESTAMP"),
                 ]
             ),
         )
@@ -403,7 +403,8 @@ class TestMigrations(DBTestCase):
                 [
                     x.data_type == "time without time zone",
                     x.is_nullable == "NO",
-                    x.column_default == "('now'::text)::time with time zone",
+                    x.column_default
+                    in ("('now'::text)::time with time zone", "CURRENT_TIME"),
                 ]
             ),
         )
@@ -427,7 +428,8 @@ class TestMigrations(DBTestCase):
                 [
                     x.data_type == "date",
                     x.is_nullable == "NO",
-                    x.column_default == "('now'::text)::date",
+                    x.column_default
+                    in ("('now'::text)::date", "CURRENT_DATE"),
                 ]
             ),
         )
