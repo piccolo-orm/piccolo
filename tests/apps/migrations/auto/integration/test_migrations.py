@@ -7,6 +7,7 @@ import tempfile
 import time
 import typing as t
 import uuid
+from unittest.mock import MagicMock, patch
 
 from piccolo.apps.migrations.commands.forwards import ForwardsMigrationManager
 from piccolo.apps.migrations.commands.new import (
@@ -21,16 +22,20 @@ from piccolo.columns.column_types import (
     UUID,
     Array,
     BigInt,
+    BigSerial,
     Boolean,
     Date,
     DoublePrecision,
     Integer,
     Interval,
+    Numeric,
     Real,
+    Serial,
     SmallInt,
     Text,
     Time,
     Timestamp,
+    Timestamptz,
     Varchar,
 )
 from piccolo.columns.defaults.uuid import UUID4
@@ -105,6 +110,8 @@ class TestMigrations(DBTestCase):
         test_function: t.Optional[t.Callable[[RowMeta], None]] = None,
     ):
         """
+        Writes a migration file to disk and runs it.
+
         :param table_classes:
             Migrations will be created and run based on successive table
             classes in this list.
@@ -620,4 +627,108 @@ class TestMigrations(DBTestCase):
                     x.column_default == "''::character varying",
                 ]
             ),
+        )
+
+    ###########################################################################
+
+    def test_column_type_conversion_string(self):
+        """
+        We can't manage all column type conversions, but should be able to
+        manage most simple ones (e.g. Varchar to Text).
+        """
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Varchar(),
+                    Text(),
+                    Varchar(),
+                ]
+            ]
+        )
+
+    def test_column_type_conversion_integer(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Integer(),
+                    BigInt(),
+                    SmallInt(),
+                    BigInt(),
+                    Integer(),
+                ]
+            ]
+        )
+
+    def test_column_type_conversion_string_to_integer(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Varchar(default="1"),
+                    Integer(default=1),
+                    Varchar(default="1"),
+                ]
+            ]
+        )
+
+    def test_column_type_conversion_float_decimal(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Real(default=1.0),
+                    DoublePrecision(default=1.0),
+                    Real(default=1.0),
+                    Numeric(),
+                    Real(default=1.0),
+                ]
+            ]
+        )
+
+    def test_column_type_conversion_json(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    JSON(),
+                    JSONB(),
+                    JSON(),
+                ]
+            ]
+        )
+
+    def test_column_type_conversion_timestamp(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Timestamp(),
+                    Timestamptz(),
+                    Timestamp(),
+                ]
+            ]
+        )
+
+    @patch("piccolo.apps.migrations.auto.migration_manager.colored_warning")
+    def test_column_type_conversion_serial(self, colored_warning: MagicMock):
+        """
+        This isn't possible, as neither SERIAL or BIGSERIAL are actual types.
+        They're just shortcuts. Make sure the migration doesn't crash - it
+        should just output a warning.
+        """
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Serial(),
+                    BigSerial(),
+                ]
+            ]
+        )
+
+        colored_warning.assert_called_once_with(
+            "Unable to migrate Serial to BigSerial and vice versa. This must "
+            "be done manually."
         )

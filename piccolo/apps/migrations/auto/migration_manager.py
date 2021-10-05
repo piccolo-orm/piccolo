@@ -13,8 +13,10 @@ from piccolo.apps.migrations.auto.operations import (
 )
 from piccolo.apps.migrations.auto.serialisation import deserialise_params
 from piccolo.columns import Column, column_types
+from piccolo.columns.column_types import Serial
 from piccolo.engine import engine_finder
 from piccolo.table import Table, create_table_class, sort_table_classes
+from piccolo.utils.warnings import colored_warning
 
 
 @dataclass
@@ -396,9 +398,42 @@ class MigrationManager:
                             alter_column.db_column_name
                         )
 
-                        await _Table.alter().set_column_type(
-                            old_column=old_column, new_column=new_column
-                        )
+                        using_expression: t.Optional[str] = None
+
+                        # Postgres won't automatically cast some types to
+                        # others. We may as well try, as it will definitely
+                        # fail otherwise.
+                        if new_column.value_type != old_column.value_type:
+                            if old_params.get("default", ...) is not None:
+                                # Unless the column's default value is also
+                                # something which can be cast to the new type,
+                                # it will also fail. Drop the default value for
+                                # now - the proper default is set later on.
+                                await _Table.alter().drop_default(
+                                    old_column
+                                ).run()
+
+                            using_expression = "{}::{}".format(
+                                alter_column.db_column_name,
+                                new_column.column_type,
+                            )
+
+                        # We can't migrate a SERIAL to a BIGSERIAL or vice
+                        # versa, as SERIAL isn't a true type, just an alias to
+                        # other commands.
+                        if issubclass(column_class, Serial) and issubclass(
+                            old_column_class, Serial
+                        ):
+                            colored_warning(
+                                "Unable to migrate Serial to BigSerial and "
+                                "vice versa. This must be done manually."
+                            )
+                        else:
+                            await _Table.alter().set_column_type(
+                                old_column=old_column,
+                                new_column=new_column,
+                                using_expression=using_expression,
+                            ).run()
 
                 ###############################################################
 
