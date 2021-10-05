@@ -11,7 +11,7 @@ class Band(Table):
 class TestDBColumnName(DBTestCase):
     """
     By using the ``db_column_name`` arg, the user can map a ``Column`` to a
-    database column a different name. For example:
+    database column with a different name. For example:
 
     .. code-block::
 
@@ -73,6 +73,7 @@ class TestDBColumnName(DBTestCase):
         """
         Band.objects().create(name="Pythonistas", popularity=1000).run_sync()
 
+        # Make sure we can select all columns
         bands = Band.select().run_sync()
         self.assertEqual(
             bands,
@@ -85,12 +86,24 @@ class TestDBColumnName(DBTestCase):
             ],
         )
 
+        # Make sure we can select a single column
         bands = Band.select(Band.name).run_sync()
         self.assertEqual(
             bands,
             [
                 {
                     "regrettable_column_name": "Pythonistas",
+                }
+            ],
+        )
+
+        # Make sure aliases still work
+        bands = Band.select(Band.name.as_alias("name")).run_sync()
+        self.assertEqual(
+            bands,
+            [
+                {
+                    "name": "Pythonistas",
                 }
             ],
         )
