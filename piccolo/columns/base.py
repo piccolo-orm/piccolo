@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import copy
-import dataclasses
 import datetime
 import decimal
 import inspect
 import typing as t
 import uuid
 from abc import ABCMeta, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from enum import Enum
 
 from piccolo.columns.choices import Choice
@@ -241,7 +240,7 @@ class ColumnMeta:
 
         # Make sure we don't accidentally include any other attributes which
         # aren't supported by the constructor.
-        field_names = [i.name for i in dataclasses.fields(self.__class__)]
+        field_names = [i.name for i in fields(self.__class__)]
         kwargs = {
             kwarg: value
             for kwarg, value in kwargs.items()
