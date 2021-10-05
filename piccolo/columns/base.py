@@ -302,8 +302,8 @@ class Column(Selectable):
 
     :param help_text:
         This provides some context about what the column is being used for. For
-        example, for a `Decimal` column called `value`, it could say
-        'The units are millions of dollars'. The database doesn't use this
+        example, for a ``Decimal`` column called ``value``, it could say
+        ``'The units are millions of dollars'``. The database doesn't use this
         value, but tools such as Piccolo Admin use it to show a tooltip in the
         GUI.
 
@@ -311,14 +311,22 @@ class Column(Selectable):
         An optional Enum - when specified, other tools such as Piccolo Admin
         will render the available options in the GUI.
 
-    :param name:
+    :param db_column_name:
         If specified, you can override the name used for the column in the
-        database. There are several reasons for this:
+        database. The main reason for this is when using a legacy database,
+        with a problematic column name (for example ``'class'``, which is a
+        reserved Python keyword). Here's an example:
 
-         * When using a legacy database, there may be columns with sub-optimal
-           names.
-         * You may want a database column which has a problematic name (for
-           example ``'class'``, which is a reserved Python keyword).
+        .. code-block:: python
+
+            class MyTable(Table):
+                class_ = Varchar(db_column_name="class")
+
+            >>> MyTable.select(MyTable.class_).run_sync()
+            [{'id': 1, 'class': 'test'}]
+
+        This is an advanced feature which you should only need in niche
+        situations.
 
     """
 
