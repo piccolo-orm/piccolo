@@ -6,6 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from piccolo.apps.schema.commands.generate import RowMeta
 from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
@@ -62,18 +63,20 @@ class DBTestCase(TestCase):
 
     def get_postgres_column_definition(
         self, tablename: str, column_name: str
-    ) -> t.Dict[str, t.Any]:
+    ) -> RowMeta:
         query = """
-            SELECT * FROM information_schema.columns
+            SELECT {columns} FROM information_schema.columns
             WHERE table_name = '{tablename}'
             AND table_catalog = 'piccolo'
             AND column_name = '{column_name}'
         """.format(
-            tablename=tablename, column_name=column_name
+            columns=RowMeta.get_column_name_str(),
+            tablename=tablename,
+            column_name=column_name,
         )
         response = self.run_sync(query)
         if len(response) > 0:
-            return response[0]
+            return RowMeta(**response[0])
         else:
             raise ValueError("No such column")
 
@@ -85,7 +88,7 @@ class DBTestCase(TestCase):
         """
         return self.get_postgres_column_definition(
             tablename=tablename, column_name=column_name
-        )["data_type"].upper()
+        ).data_type.upper()
 
     def get_postgres_is_nullable(self, tablename, column_name: str) -> bool:
         """
@@ -94,7 +97,7 @@ class DBTestCase(TestCase):
         return (
             self.get_postgres_column_definition(
                 tablename=tablename, column_name=column_name
-            )["is_nullable"].upper()
+            ).is_nullable.upper()
             == "YES"
         )
 
@@ -104,7 +107,7 @@ class DBTestCase(TestCase):
         """
         return self.get_postgres_column_definition(
             tablename=tablename, column_name=column_name
-        )["character_maximum_length"]
+        ).character_maximum_length
 
     ###########################################################################
 

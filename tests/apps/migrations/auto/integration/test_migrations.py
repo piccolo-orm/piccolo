@@ -7,7 +7,6 @@ import tempfile
 import time
 import typing as t
 import uuid
-from unittest import TestCase
 
 from piccolo.apps.migrations.commands.forwards import ForwardsMigrationManager
 from piccolo.apps.migrations.commands.new import (
@@ -15,6 +14,7 @@ from piccolo.apps.migrations.commands.new import (
     _create_new_migration,
 )
 from piccolo.apps.migrations.tables import Migration
+from piccolo.apps.schema.commands.generate import RowMeta
 from piccolo.columns.column_types import (
     JSON,
     JSONB,
@@ -37,7 +37,7 @@ from piccolo.columns.defaults.uuid import UUID4
 from piccolo.conf.apps import AppConfig
 from piccolo.table import Table, create_table_class
 from piccolo.utils.sync import run_sync
-from tests.base import postgres_only
+from tests.base import DBTestCase, postgres_only
 
 if t.TYPE_CHECKING:
     from piccolo.columns.base import Column
@@ -84,7 +84,10 @@ def array_default_varchar():
 
 
 @postgres_only
-class TestMigrations(TestCase):
+class TestMigrations(DBTestCase):
+    def setUp(self):
+        pass
+
     def tearDown(self):
         create_table_class("MyTable").alter().drop_table(
             if_exists=True
@@ -96,7 +99,22 @@ class TestMigrations(TestCase):
         run_sync(manager.create_migration_table())
         run_sync(manager.run_migrations(app_config=app_config))
 
-    def _test_migrations(self, table_classes: t.List[t.Type[Table]]):
+    def _test_migrations(
+        self,
+        table_classes: t.List[t.Type[Table]],
+        test_function: t.Optional[t.Callable[[RowMeta], None]] = None,
+    ):
+        """
+        :param table_classes:
+            Migrations will be created and run based on successive table
+            classes in this list.
+        :param test_function:
+            After the migrations are run, this function is called. It is passed
+            a ``RowMeta`` instance which can be used to check the column was
+            created correctly in the database. It should return ``True`` if the
+            test passes, otherwise ``False``.
+
+        """
         temp_directory_path = tempfile.gettempdir()
         migrations_folder_path = os.path.join(
             temp_directory_path, "piccolo_migrations"
@@ -128,7 +146,20 @@ class TestMigrations(TestCase):
             # and / or Python get insanely fast in the future :)
             time.sleep(1e-6)
 
-            # TODO - check the migrations ran correctly
+        if test_function:
+            column_name = (
+                table_classes[-1]
+                ._meta.non_default_columns[0]
+                ._meta.db_column_name
+            )
+            row_meta = self.get_postgres_column_definition(
+                tablename="my_table",
+                column_name=column_name,
+            )
+            self.assertTrue(
+                test_function(row_meta),
+                msg=f"Meta is incorrect: {row_meta}",
+            )
 
     ###########################################################################
 
@@ -151,7 +182,14 @@ class TestMigrations(TestCase):
                     Varchar(index=True),
                     Varchar(index=False),
                 ]
-            ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "character varying",
+                    x.is_nullable == "NO",
+                    x.column_default == "''::character varying",
+                ]
+            ),
         )
 
     def test_text_column(self):
@@ -167,7 +205,14 @@ class TestMigrations(TestCase):
                     Text(index=True),
                     Text(index=False),
                 ]
-            ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "text",
+                    x.is_nullable == "NO",
+                    x.column_default == "''::text",
+                ]
+            ),
         )
 
     def test_integer_column(self):
@@ -183,7 +228,14 @@ class TestMigrations(TestCase):
                     Integer(index=True),
                     Integer(index=False),
                 ]
-            ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "integer",
+                    x.is_nullable == "NO",
+                    x.column_default == "0",
+                ]
+            ),
         )
 
     def test_real_column(self):
@@ -198,7 +250,14 @@ class TestMigrations(TestCase):
                     Real(index=True),
                     Real(index=False),
                 ]
-            ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "real",
+                    x.is_nullable == "NO",
+                    x.column_default == "0.0",
+                ]
+            ),
         )
 
     def test_double_precision_column(self):
@@ -213,7 +272,14 @@ class TestMigrations(TestCase):
                     DoublePrecision(index=True),
                     DoublePrecision(index=False),
                 ]
-            ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "double precision",
+                    x.is_nullable == "NO",
+                    x.column_default == "0.0",
+                ]
+            ),
         )
 
     def test_smallint_column(self):
@@ -229,7 +295,14 @@ class TestMigrations(TestCase):
                     SmallInt(index=True),
                     SmallInt(index=False),
                 ]
-            ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "smallint",
+                    x.is_nullable == "NO",
+                    x.column_default == "0",
+                ]
+            ),
         )
 
     def test_bigint_column(self):
@@ -245,7 +318,14 @@ class TestMigrations(TestCase):
                     BigInt(index=True),
                     BigInt(index=False),
                 ]
-            ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "bigint",
+                    x.is_nullable == "NO",
+                    x.column_default == "0",
+                ]
+            ),
         )
 
     def test_uuid_column(self):
@@ -268,7 +348,14 @@ class TestMigrations(TestCase):
                     UUID(index=True),
                     UUID(index=False),
                 ]
-            ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "uuid",
+                    x.is_nullable == "NO",
+                    x.column_default == "uuid_generate_v4()",
+                ]
+            ),
         )
 
     def test_timestamp_column(self):
@@ -287,7 +374,14 @@ class TestMigrations(TestCase):
                     Timestamp(index=True),
                     Timestamp(index=False),
                 ]
-            ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "timestamp without time zone",
+                    x.is_nullable == "NO",
+                    x.column_default == "now()",
+                ]
+            ),
         )
 
     def test_time_column(self):
@@ -304,7 +398,14 @@ class TestMigrations(TestCase):
                     Time(index=True),
                     Time(index=False),
                 ]
-            ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "time without time zone",
+                    x.is_nullable == "NO",
+                    x.column_default == "('now'::text)::time with time zone",
+                ]
+            ),
         )
 
     def test_date_column(self):
@@ -321,7 +422,14 @@ class TestMigrations(TestCase):
                     Date(index=True),
                     Date(index=False),
                 ]
-            ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "date",
+                    x.is_nullable == "NO",
+                    x.column_default == "('now'::text)::date",
+                ]
+            ),
         )
 
     def test_interval_column(self):
@@ -337,7 +445,14 @@ class TestMigrations(TestCase):
                     Interval(index=True),
                     Interval(index=False),
                 ]
-            ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "interval",
+                    x.is_nullable == "NO",
+                    x.column_default == "'00:00:00'::interval",
+                ]
+            ),
         )
 
     def test_boolean_column(self):
@@ -353,7 +468,14 @@ class TestMigrations(TestCase):
                     Boolean(index=True),
                     Boolean(index=False),
                 ]
-            ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "boolean",
+                    x.is_nullable == "NO",
+                    x.column_default == "false",
+                ]
+            ),
         )
 
     def test_array_column_integer(self):
@@ -371,7 +493,14 @@ class TestMigrations(TestCase):
                     Array(base_column=Integer(), index=True),
                     Array(base_column=Integer(), index=False),
                 ]
-            ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "ARRAY",
+                    x.is_nullable == "NO",
+                    x.column_default == "'{}'::integer[]",
+                ]
+            ),
         )
 
     def test_array_column_varchar(self):
@@ -389,7 +518,14 @@ class TestMigrations(TestCase):
                     Array(base_column=Varchar(), index=True),
                     Array(base_column=Varchar(), index=False),
                 ]
-            ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "ARRAY",
+                    x.is_nullable == "NO",
+                    x.column_default == "'{}'::character varying[]",
+                ]
+            ),
         )
 
     ###########################################################################
@@ -409,7 +545,14 @@ class TestMigrations(TestCase):
                     JSON(null=True, default=None),
                     JSON(null=False),
                 ]
-            ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "json",
+                    x.is_nullable == "NO",
+                    x.column_default == "'{}'::json",
+                ]
+            ),
         )
 
     def test_jsonb_column(self):
@@ -424,7 +567,14 @@ class TestMigrations(TestCase):
                     JSONB(null=True, default=None),
                     JSONB(null=False),
                 ]
-            ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "jsonb",
+                    x.is_nullable == "NO",
+                    x.column_default == "'{}'::jsonb",
+                ]
+            ),
         )
 
     ###########################################################################
@@ -436,8 +586,15 @@ class TestMigrations(TestCase):
                 for column in [
                     Varchar(),
                     Varchar(db_column_name="custom_name"),
-                    Varchar(db_column_name="custom_name_2"),
                     Varchar(),
+                    Varchar(db_column_name="custom_name_2"),
                 ]
-            ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "character varying",
+                    x.is_nullable == "NO",
+                    x.column_default == "''::character varying",
+                ]
+            ),
         )
