@@ -37,6 +37,14 @@ Used to drop the table - use with caution!
 
     Band.alter().drop_table().run_sync()
 
+If you have several tables which you want to drop, you can use ``drop_tables``
+instead. It will drop them in the correct order.
+
+.. code-block:: python
+
+    from piccolo.table import drop_tables
+
+    drop_tables(Band, Manager)
 
 rename_column
 -------------
