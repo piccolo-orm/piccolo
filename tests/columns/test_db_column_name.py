@@ -11,7 +11,13 @@ class Band(Table):
 class TestDBColumnName(DBTestCase):
     """
     By using the ``db_column_name`` arg, the user can map a ``Column`` to a
-    database column with the given name.
+    database column a different name. For example:
+
+    .. code-block::
+
+        class MyTable(Table):
+            class_ = Varchar(db_column_name='class')
+
     """
 
     def setUp(self):
@@ -35,6 +41,9 @@ class TestDBColumnName(DBTestCase):
             )
 
     def test_save(self):
+        """
+        Make sure save queries work correctly.
+        """
         band = Band(name="Pythonistas", popularity=1000)
         band.save().run_sync()
 
@@ -42,6 +51,9 @@ class TestDBColumnName(DBTestCase):
         self.assertTrue(band_from_db.name == "Pythonistas")
 
     def test_create(self):
+        """
+        Make sure create queries work correctly.
+        """
         band = (
             Band.objects()
             .create(name="Pythonistas", popularity=1000)
@@ -55,9 +67,95 @@ class TestDBColumnName(DBTestCase):
     def test_select(self):
         """
         Make sure that select queries just return what is stored in the
-        database.
+        database. We might add an option in the future which maps the column
+        name to it's alias, but it's hard to predict what behaviour the user
+        wants.
         """
         Band.objects().create(name="Pythonistas", popularity=1000).run_sync()
+
+        bands = Band.select().run_sync()
+        self.assertEqual(
+            bands,
+            [
+                {
+                    "id": 1,
+                    "regrettable_column_name": "Pythonistas",
+                    "popularity": 1000,
+                }
+            ],
+        )
+
+        bands = Band.select(Band.name).run_sync()
+        self.assertEqual(
+            bands,
+            [
+                {
+                    "regrettable_column_name": "Pythonistas",
+                }
+            ],
+        )
+
+    def test_update(self):
+        """
+        Make sure update queries work correctly.
+        """
+        Band.objects().create(name="Pythonistas", popularity=1000).run_sync()
+
+        Band.update({Band.name: "Pythonistas 2"}).run_sync()
+
+        bands = Band.select().run_sync()
+        self.assertEqual(
+            bands,
+            [
+                {
+                    "id": 1,
+                    "regrettable_column_name": "Pythonistas 2",
+                    "popularity": 1000,
+                }
+            ],
+        )
+
+        Band.update({"name": "Pythonistas 3"}).run_sync()
+
+        bands = Band.select().run_sync()
+        self.assertEqual(
+            bands,
+            [
+                {
+                    "id": 1,
+                    "regrettable_column_name": "Pythonistas 3",
+                    "popularity": 1000,
+                }
+            ],
+        )
+
+    def test_delete(self):
+        """
+        Make sure delete queries work correctly.
+        """
+        Band.insert(
+            Band(name="Pythonistas", popularity=1000),
+            Band(name="Rustaceans", popularity=500),
+        ).run_sync()
+
+        bands = Band.select().run_sync()
+        self.assertEqual(
+            bands,
+            [
+                {
+                    "id": 1,
+                    "regrettable_column_name": "Pythonistas",
+                    "popularity": 1000,
+                },
+                {
+                    "id": 2,
+                    "regrettable_column_name": "Rustaceans",
+                    "popularity": 500,
+                },
+            ],
+        )
+
+        Band.delete().where(Band.name == "Rustaceans").run_sync()
 
         bands = Band.select().run_sync()
         self.assertEqual(
