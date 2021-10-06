@@ -36,6 +36,7 @@ from piccolo.columns.column_types import (
     Varchar,
 )
 from piccolo.columns.defaults.interval import IntervalCustom
+from piccolo.columns.indexes import IndexMethod
 from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.table import Table, create_table_class, sort_table_classes
@@ -171,6 +172,42 @@ class TableTriggers:
 
 
 @dataclasses.dataclass
+class Index:
+    indexname: str
+    indexdef: str
+
+    def __post_init__(self):
+        pat = re.compile(
+            r"""^CREATE[ ](?:(?P<unique>UNIQUE)[ ])?INDEX[ ]\w+?[ ]
+                 ON[ ].+?[ ]USING[ ](?P<method>\w+?)[ ]
+                 \((?P<column_name>\w+?)\)""",
+            re.VERBOSE,
+        )
+        groups = re.match(pat, self.indexdef).groupdict()
+
+        self.column_name = groups["column_name"]
+        self.unique = True if "unique" in groups else False
+        self.method = INDEX_METHOD_MAP[groups["method"]]
+
+
+@dataclasses.dataclass
+class TableIndexes:
+    """
+    All of the indexes for a certain table in the database.
+    """
+
+    tablename: str
+    indexes: t.List[Index]
+
+    def get_column_index(self, column_name: str) -> t.Optional[Index]:
+        for i in self.indexes:
+            if i.column_name == column_name:
+                return i
+
+        return None
+
+
+@dataclasses.dataclass
 class OutputSchema:
     """
     Represents the schema which will be printed out.
@@ -285,7 +322,7 @@ COLUMN_DEFAULT_PARSER = {
                 CURRENT_TIMESTAMP
             )
             $""",
-        re.X,
+        re.VERBOSE,
     ),
     UUID: None,
     Serial: None,
@@ -359,6 +396,42 @@ def get_column_default(
                 )
             else:
                 return column_type.value_type(value["value"])
+
+
+INDEX_METHOD_MAP: t.Dict[str, IndexMethod] = {
+    "btree": IndexMethod.btree,
+    "hash": IndexMethod.hash,
+    "gist": IndexMethod.gist,
+    "gin": IndexMethod.gin,
+}
+
+
+# 'Indices' seems old-fashioned and obscure in this context.
+async def get_indexes(
+    table_class: t.Type[Table], tablename: str, schema_name: str = "public"
+) -> TableIndexes:
+    """
+    Get all of the constraints for a table.
+
+    :param table_class:
+        Any Table subclass - just used to execute raw queries on the database.
+
+    """
+    indexes = await table_class.raw(
+        (
+            "SELECT indexname, indexdef "
+            "FROM pg_indexes "
+            "WHERE schemaname = {} "
+            "AND tablename = {}; "
+        ),
+        schema_name,
+        tablename,
+    )
+
+    return TableIndexes(
+        tablename=tablename,
+        indexes=[Index(**i) for i in indexes],
+    )
 
 
 async def get_fk_triggers(
@@ -547,6 +620,9 @@ def get_table_name(name: str, schema: str) -> str:
 async def create_table_class_from_db(
     table_class: t.Type[Table], tablename: str, schema_name: str
 ) -> OutputSchema:
+    indexes = await get_indexes(
+        table_class=table_class, tablename=tablename, schema_name=schema_name
+    )
     constraints = await get_constraints(
         table_class=table_class, tablename=tablename, schema_name=schema_name
     )
@@ -574,6 +650,11 @@ async def create_table_class_from_db(
             "null": pg_row_meta.is_nullable == "YES",
             "unique": constraints.is_unique(column_name=column_name),
         }
+
+        index = indexes.get_column_index(column_name=column_name)
+        if index is not None:
+            kwargs["index"] = True
+            kwargs["index_method"] = index.method
 
         if constraints.is_primary_key(column_name=column_name):
             kwargs["primary_key"] = True
@@ -713,16 +794,6 @@ async def get_output_schema(
     )
     output_schema.imports = sorted(list(set(output_schema.imports)))
 
-    # We currently don't show the index argument for columns in the output,
-    # so we don't need this import for now:
-    if (
-        "from piccolo.columns.indexes import IndexMethod"
-        in output_schema.imports
-    ):
-        output_schema.imports.remove(
-            "from piccolo.columns.indexes import IndexMethod"
-        )
-
     return output_schema
 
 
@@ -738,8 +809,7 @@ async def generate(schema_name: str = "public"):
     output_schema = await get_output_schema(schema_name=schema_name)
 
     output = output_schema.imports + [
-        i._table_str(excluded_params=["index_method", "index", "choices"])
-        for i in output_schema.tables
+        i._table_str(excluded_params=["choices"]) for i in output_schema.tables
     ]
 
     if output_schema.warnings:
