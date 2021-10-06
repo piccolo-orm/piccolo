@@ -55,7 +55,7 @@ def refresh_db():
     for table_class in TABLE_REGISTRY:
         # In case any table classes were imported before we set the
         # environment variable.
-        table_class.refresh_db()
+        table_class._meta.refresh_db()
 
 
 def run(

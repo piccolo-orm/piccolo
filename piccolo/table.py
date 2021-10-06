@@ -102,6 +102,9 @@ class TableMeta:
     def db(self, value: Engine):
         self._db = value
 
+    def refresh_db(self):
+        self.db = engine_finder()
+
     def get_column_by_name(self, name: str) -> Column:
         """
         Returns a column which matches the given name. It will try and follow
@@ -507,12 +510,6 @@ class Table(metaclass=TableMetaclass):
         Creates a readable representation of the row.
         """
         return Readable(template="%s", columns=[cls._meta.primary_key])
-
-    ###########################################################################
-
-    @classmethod
-    def refresh_db(cls):
-        cls._meta.db = engine_finder()
 
     ###########################################################################
 
