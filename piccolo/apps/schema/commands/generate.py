@@ -180,7 +180,7 @@ class Index:
         pat = re.compile(
             r"""^CREATE[ ](?:(?P<unique>UNIQUE)[ ])?INDEX[ ]\w+?[ ]
                  ON[ ].+?[ ]USING[ ](?P<method>\w+?)[ ]
-                 \((?P<column_name>\w+?)\)""",
+                 \(\"?(?P<column_name>\w+?\"?)\)""",
             re.VERBOSE,
         )
         groups = re.match(pat, self.indexdef).groupdict()
