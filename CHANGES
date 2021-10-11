@@ -1,6 +1,74 @@
 Changes
 =======
 
+0.56.0
+------
+
+Fixed schema generation bug
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When using ``piccolo schema generate`` to auto generate Piccolo ``Table``
+classes from an existing database, it would fail in this situation:
+
+ * A table has a column with an index.
+ * The column name clashed with a Postgres type.
+
+For example, we couldn't auto generate this ``Table`` class:
+
+.. code-block:: python
+
+  class MyTable(Table):
+      time = Timestamp()
+
+This is because ``time`` is a builtin Postgres type, and the ``CREATE INDEX``
+statement being inspected in the database wrapped the column name in quotes,
+which broke our regex.
+
+Thanks to @knguyen5 for fixing this.
+
+Improved testing docs
+~~~~~~~~~~~~~~~~~~~~~
+
+A convenience method called ``get_table_classes`` was added to ``Finder``.
+
+``Finder`` is the main class in Piccolo for dynamically importing projects /
+apps / tables / migrations etc.
+
+``get_table_classes`` lets us easily get the ``Table`` classes for a project.
+This makes writing unit tests easier, when we need to setup a schema.
+
+.. code-block:: python
+
+  from unittest import TestCase
+
+  from piccolo.table import create_tables, drop_tables
+  from piccolo.conf.apps import Finder
+
+  TABLES = Finder().get_table_classes()
+
+  class TestApp(TestCase):
+      def setUp(self):
+          create_tables(*TABLES)
+
+      def tearDown(self):
+          drop_tables(*TABLES)
+
+      def test_app(self):
+          # Do some testing ...
+          pass
+
+When dropping tables in a unit test, remember to use ``piccolo tester run``, to
+make sure the test database is used.
+
+get_output_schema
+~~~~~~~~~~~~~~~~~
+
+``get_output_schema`` is the main entrypoint for database reflection in
+Piccolo. It has been modified to accept an ``Engine`` argument, which makes it
+more flexible.
+
+-------------------------------------------------------------------------------
+
 0.55.0
 ------
 
