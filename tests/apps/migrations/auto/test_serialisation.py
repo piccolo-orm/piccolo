@@ -40,9 +40,7 @@ class TestSerialiseParams(TestCase):
     def test_lazy_table_reference(self):
         # These are equivalent:
         references_list = [
-            LazyTableReference(
-                table_class_name="Manager", app_name="example_app"
-            ),
+            LazyTableReference(table_class_name="Manager", app_name="music"),
             LazyTableReference(
                 table_class_name="Manager",
                 module_path="tests.example_apps.music.tables",

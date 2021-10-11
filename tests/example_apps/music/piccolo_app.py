@@ -17,7 +17,7 @@ CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
 
 APP_CONFIG = AppConfig(
-    app_name="example_app",
+    app_name="music",
     table_classes=[
         Manager,
         Band,

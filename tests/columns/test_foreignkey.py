@@ -201,7 +201,7 @@ class TestLazyTableReference(TestCase):
         Make sure a LazyTableReference to a Table within a Piccolo app works.
         """
         reference = LazyTableReference(
-            table_class_name="Manager", app_name="example_app"
+            table_class_name="Manager", app_name="music"
         )
         self.assertTrue(reference.resolve() is Manager)
 
