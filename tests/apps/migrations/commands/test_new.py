@@ -49,7 +49,7 @@ class TestNewMigrationCommand(TestCase):
         Call the command, when no migration changes are needed.
         """
         with self.assertRaises(SystemExit) as manager:
-            run_sync(new(app_name="example_app", auto=True))
+            run_sync(new(app_name="music", auto=True))
 
         self.assertEqual(manager.exception.code, 0)
 

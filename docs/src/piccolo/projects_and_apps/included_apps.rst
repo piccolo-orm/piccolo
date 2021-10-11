@@ -219,6 +219,20 @@ By default ``piccolo tester run`` sets ``PICCOLO_CONF`` to
 ``'piccolo_conf_test'``, meaning that a file called ``piccolo_conf_test.py``
 will be imported.
 
+Within the ``piccolo_conf_test.py`` file, override the database settings, so it
+uses a test database:
+
+.. code-block:: python
+
+    from piccolo_conf import *
+
+    DB = PostgresEngine(
+        config={
+            "database": "my_app_test"
+        }
+    )
+
+
 If you prefer, you can set a custom ``PICCOLO_CONF`` value:
 
 .. code-block:: bash

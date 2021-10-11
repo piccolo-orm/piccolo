@@ -360,7 +360,7 @@ class Finder:
 
     def get_app_registry(self) -> AppRegistry:
         """
-        Returns the AppRegistry instance within piccolo_conf.
+        Returns the ``AppRegistry`` instance within piccolo_conf.
         """
         piccolo_conf_module = self.get_piccolo_conf_module()
         return getattr(piccolo_conf_module, "APP_REGISTRY")
@@ -388,8 +388,8 @@ class Finder:
 
     def get_app_modules(self) -> t.List[PiccoloAppModule]:
         """
-        Returns the piccolo_app.py modules for each registered Piccolo app in
-        your project.
+        Returns the ``piccolo_app.py`` modules for each registered Piccolo app
+        in your project.
         """
         app_registry = self.get_app_registry()
         app_modules = self._import_app_modules(app_registry.apps)
@@ -399,13 +399,20 @@ class Finder:
 
         return app_modules
 
-    def get_sorted_app_names(self) -> t.List[str]:
+    def get_app_names(self, sort: bool = True) -> t.List[str]:
         """
-        Sorts the app names using the migration dependencies, so dependencies
-        are before dependents in the list.
+        Return all of the app names.
+
+        :param sort:
+            If True, sorts the app names using the migration dependencies, so
+            dependencies are before dependents in the list.
+
         """
         modules = self.get_app_modules()
         configs: t.List[AppConfig] = [module.APP_CONFIG for module in modules]
+
+        if not sort:
+            return [i.app_name for i in configs]
 
         def sort_app_configs(app_config_1: AppConfig, app_config_2: AppConfig):
             return (
@@ -417,9 +424,15 @@ class Finder:
         )
         return [i.app_name for i in sorted_configs]
 
+    def get_sorted_app_names(self) -> t.List[str]:
+        """
+        Just here for backwards compatibility.
+        """
+        return self.get_app_names(sort=True)
+
     def get_app_config(self, app_name: str) -> AppConfig:
         """
-        Returns an `AppConfig` for the given app name.
+        Returns an ``AppConfig`` for the given app name.
         """
         modules = self.get_app_modules()
         for module in modules:
@@ -432,10 +445,38 @@ class Finder:
         self, app_name: str, table_class_name: str
     ) -> t.Type[Table]:
         """
-        Returns a Table subclass registered with the given app if it exists.
-        Otherwise it raises an ValueError.
+        Returns a ``Table`` class registered with the given app if it exists.
+        Otherwise it raises an ``ValueError``.
         """
         app_config = self.get_app_config(app_name=app_name)
         return app_config.get_table_with_name(
             table_class_name=table_class_name
         )
+
+    def get_table_classes(
+        self,
+        include_apps: t.Optional[t.List[str]] = None,
+        exclude_apps: t.Optional[t.List[str]] = None,
+    ) -> t.List[t.Type[Table]]:
+        """
+        Returns all ``Table`` classes registered with the given apps. If
+        ``app_names`` is ``None``, then ``Table`` classes will be returned
+        for all apps.
+        """
+        if include_apps and exclude_apps:
+            raise ValueError("Only specify `include_apps` or `exclude_apps`.")
+
+        if include_apps:
+            app_names = include_apps
+        else:
+            app_names = self.get_app_names()
+            if exclude_apps:
+                app_names = [i for i in app_names if i not in exclude_apps]
+
+        tables: t.List[t.Type[Table]] = []
+
+        for app_name in app_names:
+            app_config = self.get_app_config(app_name=app_name)
+            tables.extend(app_config.table_classes)
+
+        return tables
