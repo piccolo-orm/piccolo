@@ -739,7 +739,7 @@ async def get_output_schema(
     schema_name: str = "public",
     include: t.Optional[t.List[str]] = None,
     exclude: t.Optional[t.List[str]] = None,
-    engine: t.Optional[Engine] = None
+    engine: t.Optional[Engine] = None,
 ) -> OutputSchema:
     """
     :param schema_name:
@@ -755,7 +755,8 @@ async def get_output_schema(
     :returns:
         OutputSchema
     """
-    engine: t.Optional[Engine] = engine_finder() if engine is None else engine
+    if engine is None:
+        engine = engine_finder()
 
     if exclude is None:
         exclude = []
