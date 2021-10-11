@@ -177,6 +177,20 @@ class Index:
     indexdef: str
 
     def __post_init__(self):
+        """
+        An example DDL statement which will be parsed:
+
+        .. code-block:: sql
+
+            CREATE INDEX some_index_name
+            ON some_schema.some_table
+            USING some_index_type (some_column_name)
+
+        If the column name is the same as a Postgres data type, then Postgres
+        wraps the column name in quotes. For example, ``"time"`` instead of
+        ``time``.
+
+        """
         pat = re.compile(
             r"""^CREATE[ ](?:(?P<unique>UNIQUE)[ ])?INDEX[ ]\w+?[ ]
                  ON[ ].+?[ ]USING[ ](?P<method>\w+?)[ ]
@@ -185,7 +199,7 @@ class Index:
         )
         groups = re.match(pat, self.indexdef).groupdict()
 
-        self.column_name = groups["column_name"]
+        self.column_name = groups["column_name"].lstrip('"').rstrip('"')
         self.unique = True if "unique" in groups else False
         self.method = INDEX_METHOD_MAP[groups["method"]]
 
