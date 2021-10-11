@@ -739,6 +739,7 @@ async def get_output_schema(
     schema_name: str = "public",
     include: t.Optional[t.List[str]] = None,
     exclude: t.Optional[t.List[str]] = None,
+    engine: t.Optional[Engine] = None
 ) -> OutputSchema:
     """
     :param schema_name:
@@ -747,10 +748,14 @@ async def get_output_schema(
         Optional list of table names. Only creates the specified tables.
     :param exclude:
         Optional list of table names. excludes the specified tables.
+    :param engine:
+        The ``Engine`` instance to use for making database queries. If not
+        specified, then ``engine_finder`` is used to get the engine from
+        ``piccolo_conf.py``.
     :returns:
         OutputSchema
     """
-    engine: t.Optional[Engine] = engine_finder()
+    engine: t.Optional[Engine] = engine_finder() if engine is None else engine
 
     if exclude is None:
         exclude = []
