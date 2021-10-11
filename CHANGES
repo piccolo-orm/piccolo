@@ -57,6 +57,8 @@ This makes writing unit tests easier, when we need to setup a schema.
           # Do some testing ...
           pass
 
+The docs were updated to reflect this.
+
 When dropping tables in a unit test, remember to use ``piccolo tester run``, to
 make sure the test database is used.
 
