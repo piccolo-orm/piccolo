@@ -64,8 +64,8 @@ get_output_schema
 ~~~~~~~~~~~~~~~~~
 
 ``get_output_schema`` is the main entrypoint for database reflection in
-Piccolo. It has been modified to accept an ``Engine`` argument, which makes it
-more flexible.
+Piccolo. It has been modified to accept an optional ``Engine`` argument, which
+makes it more flexible.
 
 -------------------------------------------------------------------------------
 
