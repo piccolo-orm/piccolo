@@ -18,7 +18,7 @@ For example, we couldn't auto generate this ``Table`` class:
 .. code-block:: python
 
   class MyTable(Table):
-      time = Timestamp()
+      time = Timestamp(index=True)
 
 This is because ``time`` is a builtin Postgres type, and the ``CREATE INDEX``
 statement being inspected in the database wrapped the column name in quotes,
