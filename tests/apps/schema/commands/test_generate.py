@@ -11,7 +11,12 @@ from piccolo.apps.schema.commands.generate import (
     get_output_schema,
 )
 from piccolo.columns.base import Column
-from piccolo.columns.column_types import ForeignKey, Integer, Varchar
+from piccolo.columns.column_types import (
+    ForeignKey,
+    Integer,
+    Timestamp,
+    Varchar,
+)
 from piccolo.columns.indexes import IndexMethod
 from piccolo.engine import Engine, engine_finder
 from piccolo.table import Table
@@ -140,32 +145,38 @@ class TestGenerate(TestCase):
 ###############################################################################
 
 
-class Band(Table):
+class Concert(Table):
     name = Varchar(index=True, index_method=IndexMethod.hash)
-    popularity = Integer(index=False)
+    time = Timestamp(
+        index=True
+    )  # Testing a column with the same name as a Postgres data type.
+    capacity = Integer(index=False)
 
 
 @postgres_only
 class TestGenerateWithIndexes(TestCase):
     def setUp(self):
-        Band.create_table().run_sync()
+        Concert.create_table().run_sync()
 
     def tearDown(self):
-        Band.alter().drop_table(if_exists=True).run_sync()
+        Concert.alter().drop_table(if_exists=True).run_sync()
 
     def test_index(self):
         """
         Make sure that a table with an index is reflected correctly.
         """
         output_schema: OutputSchema = run_sync(get_output_schema())
-        Band_ = output_schema.tables[0]
+        Concert_ = output_schema.tables[0]
 
-        self.assertEqual(Band_.name._meta.index, True)
-        self.assertEqual(Band_.name._meta.index_method, IndexMethod.hash)
+        self.assertEqual(Concert_.name._meta.index, True)
+        self.assertEqual(Concert_.name._meta.index_method, IndexMethod.hash)
 
-        self.assertEqual(Band_.popularity._meta.index, False)
+        self.assertEqual(Concert_.time._meta.index, True)
+        self.assertEqual(Concert_.time._meta.index_method, IndexMethod.btree)
+
+        self.assertEqual(Concert_.capacity._meta.index, False)
         self.assertEqual(
-            Band_.popularity._meta.index_method, IndexMethod.btree
+            Concert_.capacity._meta.index_method, IndexMethod.btree
         )
 
 
