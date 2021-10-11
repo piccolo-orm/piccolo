@@ -47,7 +47,7 @@ class TestForwardsBackwards(TestCase):
         """
         Test running all of the migrations forwards, then backwards.
         """
-        for app_name in ("example_app", "all"):
+        for app_name in ("music", "all"):
             run_sync(forwards(app_name=app_name, migration_id="all"))
 
             # Check the tables exist
@@ -69,9 +69,7 @@ class TestForwardsBackwards(TestCase):
         Test running a single migrations forwards, then backwards.
         """
         for migration_id in ["1", "2020-12-17T18:44:30"]:
-            run_sync(
-                forwards(app_name="example_app", migration_id=migration_id)
-            )
+            run_sync(forwards(app_name="music", migration_id=migration_id))
 
             table_classes = [Band, Manager]
 
@@ -81,7 +79,7 @@ class TestForwardsBackwards(TestCase):
 
             run_sync(
                 backwards(
-                    app_name="example_app",
+                    app_name="music",
                     migration_id=migration_id,
                     auto_agree=True,
                 )
@@ -98,9 +96,7 @@ class TestForwardsBackwards(TestCase):
         """
         with self.assertRaises(SystemExit):
             run_sync(
-                forwards(
-                    app_name="example_app", migration_id="migration-12345"
-                )
+                forwards(app_name="music", migration_id="migration-12345")
             )
 
         self.assertTrue(
@@ -113,12 +109,12 @@ class TestForwardsBackwards(TestCase):
         """
         Test running an unknown migrations backwards.
         """
-        run_sync(forwards(app_name="example_app", migration_id="all"))
+        run_sync(forwards(app_name="music", migration_id="all"))
 
         with self.assertRaises(SystemExit):
             run_sync(
                 backwards(
-                    app_name="example_app",
+                    app_name="music",
                     migration_id="migration-12345",
                     auto_agree=True,
                 )
@@ -137,7 +133,7 @@ class TestForwardsBackwards(TestCase):
         """
         run_sync(
             backwards(
-                app_name="example_app",
+                app_name="music",
                 migration_id="2020-12-17T18:44:30",
                 auto_agree=True,
             )
@@ -151,8 +147,8 @@ class TestForwardsBackwards(TestCase):
         """
         Test running the migrations if they've already run.
         """
-        run_sync(forwards(app_name="example_app", migration_id="all"))
-        run_sync(forwards(app_name="example_app", migration_id="all"))
+        run_sync(forwards(app_name="music", migration_id="all"))
+        run_sync(forwards(app_name="music", migration_id="all"))
 
         self.assertTrue(
             print_.mock_calls[-1] == call("🏁 No migrations need to be run")
@@ -162,9 +158,7 @@ class TestForwardsBackwards(TestCase):
         """
         Test running the migrations if they've already run.
         """
-        run_sync(
-            forwards(app_name="example_app", migration_id="all", fake=True)
-        )
+        run_sync(forwards(app_name="music", migration_id="all", fake=True))
 
         for table_class in TABLE_CLASSES:
             self.assertTrue(not table_class.table_exists().run_sync())

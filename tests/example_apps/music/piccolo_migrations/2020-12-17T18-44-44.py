@@ -5,7 +5,7 @@ VERSION = "0.14.7"
 
 
 async def forwards():
-    manager = MigrationManager(migration_id=ID, app_name="example_app")
+    manager = MigrationManager(migration_id=ID, app_name="music")
 
     manager.add_table("Poster", tablename="poster")
 
