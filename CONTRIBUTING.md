@@ -4,7 +4,7 @@ Thanks for your interest in the Piccolo project. 👍
 
 The aim of Piccolo is to build a fantastic ORM and query builder, with a world class admin GUI, which makes developers happy and productive. There are lots of ways to get involved. 🚀
 
-The community is friendly and responsive. You don't have to be a Python or database ninja to get involved. 🥷
+The community is friendly and responsive. You don't have to be a Python or database ninja to contribute. 🥷
 
 ---
 
