@@ -55,7 +55,7 @@ Even without writing code there are lots of ways to get involved.
 
 ### Documentation
 
-Is something in the documentation unclear or missing? These types of contibutions are invaluable.
+Is something in the documentation unclear or missing? These types of contributions are invaluable.
 
 ### Design input
 
