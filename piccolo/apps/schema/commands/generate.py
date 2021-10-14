@@ -686,7 +686,7 @@ async def create_table_class_from_db(
                 constraint_schema=fk_constraint_table.schema,
             )
             if constraint_table.name:
-                if contraint_table.name == tablename:
+                if constraint_table.name == tablename:
                     referenced_table = '"self"'
                 else:
                     referenced_output_schema = await create_table_class_from_db(
