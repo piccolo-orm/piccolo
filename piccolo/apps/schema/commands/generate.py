@@ -686,16 +686,19 @@ async def create_table_class_from_db(
                 constraint_schema=fk_constraint_table.schema,
             )
             if constraint_table.name:
-                referenced_output_schema = await create_table_class_from_db(
-                    table_class=table_class,
-                    tablename=constraint_table.name,
-                    schema_name=constraint_table.schema,
-                )
-                referenced_table = (
-                    referenced_output_schema.get_table_with_name(
-                        tablename=constraint_table.name
+                if contraint_table.name == tablename:
+                    referenced_table = '"self"'
+                else:
+                    referenced_output_schema = await create_table_class_from_db(
+                        table_class=table_class,
+                        tablename=constraint_table.name,
+                        schema_name=constraint_table.schema,
                     )
-                )
+                    referenced_table = (
+                        referenced_output_schema.get_table_with_name(
+                            tablename=constraint_table.name
+                        )
+                    )
                 kwargs["references"] = (
                     referenced_table
                     if referenced_table is not None
