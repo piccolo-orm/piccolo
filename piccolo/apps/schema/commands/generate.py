@@ -686,7 +686,7 @@ async def create_table_class_from_db(
                 constraint_schema=fk_constraint_table.schema,
             )
             if constraint_table.name:
-                referenced_table = t.Union[str, t.Optional[t.Type[Table]]]
+                referenced_table: t.Union[str, t.Optional[t.Type[Table]]]
                 if constraint_table.name == tablename:
                     referenced_table = '"self"'
                 else:
