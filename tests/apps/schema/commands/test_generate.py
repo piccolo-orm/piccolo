@@ -141,6 +141,22 @@ class TestGenerate(TestCase):
         SmallTable_ = output_schema.get_table_with_name("SmallTable")
         self._compare_table_columns(SmallTable, SmallTable_)
 
+    def test_self_referencing_fk(self):
+        """
+        Make sure self-referencing foreign keys are handled correctly.
+        """
+
+        MegaTable.alter().add_column("self_referencing_fk", ForeignKey("self")).run_sync()
+
+        output_schema: OutputSchema = run_sync(get_output_schema())
+
+        # Make sure the 'references' value of the generated column is "self".
+        for table in output_schema.tables:
+            if table.__name__ == "MegaTable":
+                self.assertEqual(
+                    output_schema.tables[1].self_referencing_fk,
+                    "self"
+                )
 
 ###############################################################################
 

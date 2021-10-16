@@ -687,8 +687,10 @@ async def create_table_class_from_db(
             )
             if constraint_table.name:
                 referenced_table: t.Union[str, t.Optional[t.Type[Table]]]
+                
                 if constraint_table.name == tablename:
-                    referenced_table = '"self"'
+                    referenced_output_schema = output_schema
+                    referenced_table = "self"
                 else:
                     referenced_output_schema = (
                         await create_table_class_from_db(
