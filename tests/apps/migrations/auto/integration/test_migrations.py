@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import decimal
 import os
 import shutil
 import tempfile
@@ -25,6 +26,7 @@ from piccolo.columns.column_types import (
     BigSerial,
     Boolean,
     Date,
+    Decimal,
     DoublePrecision,
     Integer,
     Interval,
@@ -78,6 +80,10 @@ def timedelta_default():
 
 def boolean_default():
     return True
+
+
+def numeric_default():
+    return decimal.Decimal("1.2")
 
 
 def array_default_integer():
@@ -483,6 +489,56 @@ class TestMigrations(DBTestCase):
                     x.data_type == "boolean",
                     x.is_nullable == "NO",
                     x.column_default == "false",
+                ]
+            ),
+        )
+
+    def test_numeric_column(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Numeric(),
+                    Numeric(digits=(4, 2)),
+                    Numeric(digits=None),
+                    Numeric(default=decimal.Decimal("1.2")),
+                    Numeric(default=numeric_default),
+                    Numeric(null=True, default=None),
+                    Numeric(null=False),
+                    Numeric(index=True),
+                    Numeric(index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "numeric",
+                    x.is_nullable == "NO",
+                    x.column_default == "0",
+                ]
+            ),
+        )
+
+    def test_decimal_column(self):
+        self._test_migrations(
+            table_classes=[
+                self.table(column)
+                for column in [
+                    Decimal(),
+                    Decimal(digits=(4, 2)),
+                    Decimal(digits=None),
+                    Decimal(default=decimal.Decimal("1.2")),
+                    Decimal(default=numeric_default),
+                    Decimal(null=True, default=None),
+                    Decimal(null=False),
+                    Decimal(index=True),
+                    Decimal(index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "decimal",
+                    x.is_nullable == "NO",
+                    x.column_default == "0",
                 ]
             ),
         )
