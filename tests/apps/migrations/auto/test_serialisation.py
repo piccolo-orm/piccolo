@@ -1,12 +1,128 @@
 from enum import Enum
 from unittest import TestCase
 
-from piccolo.apps.migrations.auto.serialisation import serialise_params
+import pytest
+
+from piccolo.apps.migrations.auto.serialisation import (
+    CanConflictWithGlobalNames,
+    Import,
+    UniqueGlobalNameConflictError,
+    UniqueGlobalNames,
+    serialise_params,
+)
 from piccolo.columns.base import OnDelete
 from piccolo.columns.choices import Choice
 from piccolo.columns.column_types import Varchar
 from piccolo.columns.defaults import UUID4, DateNow, TimeNow, TimestampNow
 from piccolo.columns.reference import LazyTableReference
+
+
+class TestUniqueGlobals:
+    def test_contains_column_types(self):
+        assert getattr(UniqueGlobalNames, "COLUMN_VARCHAR", "Varchar")
+        assert getattr(UniqueGlobalNames, "COLUMN_SECRET", "Secret")
+        assert getattr(UniqueGlobalNames, "COLUMN_TEXT", "Text")
+        assert getattr(UniqueGlobalNames, "COLUMN_UUID", "UUID")
+        assert getattr(UniqueGlobalNames, "COLUMN_INTEGER", "Integer")
+        assert getattr(UniqueGlobalNames, "COLUMN_BIGINT", "BigInt")
+        assert getattr(UniqueGlobalNames, "COLUMN_SMALLINT", "SmallInt")
+        assert getattr(UniqueGlobalNames, "COLUMN_SERIAL", "Serial")
+        assert getattr(UniqueGlobalNames, "COLUMN_BIGSERIAL", "BigSerial")
+        assert getattr(UniqueGlobalNames, "COLUMN_PRIMARYKEY", "PrimaryKey")
+        assert getattr(UniqueGlobalNames, "COLUMN_TIMESTAMP", "Timestamp")
+        assert getattr(UniqueGlobalNames, "COLUMN_TIMESTAMPZ", "Timestampz")
+        assert getattr(UniqueGlobalNames, "COLUMN_DATE", "Date")
+        assert getattr(UniqueGlobalNames, "COLUMN_TIME", "Time")
+        assert getattr(UniqueGlobalNames, "COLUMN_INTERVAL", "Interval")
+        assert getattr(UniqueGlobalNames, "COLUMN_BOOLEAN", "Boolean")
+        assert getattr(UniqueGlobalNames, "COLUMN_NUMERIC", "Numeric")
+        assert getattr(UniqueGlobalNames, "COLUMN_DECIMAL", "Decimal")
+        assert getattr(UniqueGlobalNames, "COLUMN_FLOAT", "Float")
+        assert getattr(
+            UniqueGlobalNames, "COLUMN_DOUBLEPERCISION", "DoublePrecision"
+        )
+        assert getattr(UniqueGlobalNames, "COLUMN_FOREIGNKEY", "ForeignKey")
+        assert getattr(UniqueGlobalNames, "COLUMN_JSON", "JSON")
+        assert getattr(UniqueGlobalNames, "COLUMN_BYTEA", "Bytea")
+        assert getattr(UniqueGlobalNames, "COLUMN_BLOB", "Blob")
+        assert getattr(UniqueGlobalNames, "COLUMN_ARRAY", "Array")
+
+    def test_raise_if_is_conflicting_name(self):
+        # Test will fail if this fails
+        UniqueGlobalNames.raise_if_is_conflicting_name("SuperMassiveBlackHole")
+
+        with pytest.raises(UniqueGlobalNameConflictError):
+            UniqueGlobalNames.raise_if_is_conflicting_name("Varchar")
+
+    def test_is_conflicting_name(self):
+        assert (
+            UniqueGlobalNames.is_conflicting_name("SuperMassiveBlackHole")
+            is False
+        )
+        assert UniqueGlobalNames.is_conflicting_name("Varchar") is True
+
+    def test_raise_if_are_conflicting_objects(self):
+        class ConflictingCls1(CanConflictWithGlobalNames):
+            def raise_if_is_conflicting_with_global_name(self):
+                pass
+
+        class ConflictingCls2(CanConflictWithGlobalNames):
+            def raise_if_is_conflicting_with_global_name(self):
+                pass
+
+        class ConflictingCls3(CanConflictWithGlobalNames):
+            def raise_if_is_conflicting_with_global_name(self):
+                raise UniqueGlobalNameConflictError("test")
+
+        # Test will fail if this fails
+        UniqueGlobalNames.raise_if_are_conflicting_objects(
+            [ConflictingCls1(), ConflictingCls2()]
+        )
+
+        with pytest.raises(UniqueGlobalNameConflictError):
+            UniqueGlobalNames.raise_if_are_conflicting_objects(
+                [ConflictingCls2(), ConflictingCls3()]
+            )
+
+
+class TestImport:
+    def test_with_module_only(self):
+        assert repr(Import(module="a.b.c")) == "import a.b.c"
+
+    def test_with_module_and_target(self):
+        assert repr(Import(module="a.b", target="c")) == "from a.b import c"
+
+    def test_raise_if_is_conflicting_with_global_name_with_module_only(self):
+        # Test will fail if this fails
+        Import(module="a.b.c").raise_if_is_conflicting_with_global_name()
+
+        with pytest.raises(UniqueGlobalNameConflictError):
+            Import(module="Varchar").raise_if_is_conflicting_with_global_name()
+
+        # Test will fail if this fails
+        Import(
+            module="Varchar", expect_conflict_with_global_name="Varchar"
+        ).raise_if_is_conflicting_with_global_name()
+
+    def test_raise_if_is_conflicting_with_global_name_with_module_and_target(
+        self,
+    ):
+        # Test will fail if this fails
+        Import(
+            module="a.b", target="c"
+        ).raise_if_is_conflicting_with_global_name()
+
+        with pytest.raises(UniqueGlobalNameConflictError):
+            Import(
+                module="a.b", target="Varchar"
+            ).raise_if_is_conflicting_with_global_name()
+
+        # Test will fail if this fails
+        Import(
+            module="a.b",
+            target="Varchar",
+            expect_conflict_with_global_name="Varchar",
+        ).raise_if_is_conflicting_with_global_name()
 
 
 def example_function():
