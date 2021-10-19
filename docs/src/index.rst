@@ -17,6 +17,7 @@ batteries included.
    piccolo/migrations/index
    piccolo/authentication/index
    piccolo/asgi/index
+   piccolo/serialization/index
    piccolo/testing/index
    piccolo/features/index
    piccolo/playground/index
