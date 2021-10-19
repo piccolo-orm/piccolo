@@ -4,46 +4,58 @@ Serialization
 ``Piccolo`` uses `Pydantic <https://github.com/samuelcolvin/pydantic>`_
 internally to serialize and deserialize data.
 
+-------------------------------------------------------------------------------
+
 create_pydantic_model
 ---------------------
 
 Using ``create_pydantic_model`` we can easily create a `Pydantic model <https://pydantic-docs.helpmanual.io/usage/models/>`_
-from a Piccolo ``Table``. With ``create_pydantic_model`` you have several options depending on how you want to display the data.
+from a Piccolo ``Table``.
 
-For example, if we want to exclude column ``bio`` from BandModel:
+Using this example schema:
 
 .. code-block:: python
 
+    from piccolo.columns import ForeignKey, Integer, Varchar
     from piccolo.table import Table
-    from piccolo.columns import ForeignKey, Text, Varchar
 
     class Manager(Table):
         name = Varchar()
 
     class Band(Table):
         name = Varchar(length=100)
-        bio = Text()
         manager = ForeignKey(Manager)
+        popularity = Integer()
 
-    BandModel = create_pydantic_model(Band, exclude_columns=(Band.bio,))
+Creating a Pydantic model is as simple as:
 
-Another great feature is ``nested=True``. With that feature
-for each ``ForeignKey`` in the Piccolo table, the Pydantic model will contain a 
-sub model for the related table.
+.. code-block:: python
+
+    from piccolo.utils.pydantic import create_pydantic_model
+
+    BandModel = create_pydantic_model(Band)
+
+You have several options for configuring the model, as shown below.
+
+exclude_columns
+~~~~~~~~~~~~~~~
+
+If we want to exclude the ``popularity`` column from the ``Band`` table:
+
+.. code-block:: python
+
+    BandModel = create_pydantic_model(Band, exclude_columns=(Band.popularity,))
+
+nested
+~~~~~~
+
+Another great feature is ``nested=True``. For each ``ForeignKey`` in the
+Piccolo ``Table``, the Pydantic model will contain a sub model for the related
+table.
 
 For example:
 
 .. code-block:: python
-
-    from piccolo.table import Table
-    from piccolo.columns import ForeignKey, Varchar
-
-    class Manager(Table):
-        name = Varchar()
-
-    class Band(Table):
-        name = Varchar()
-        manager = ForeignKey(Manager)
 
     BandModel = create_pydantic_model(Band, nested=True)
 
@@ -59,13 +71,9 @@ If we were to write ``BandModel`` by hand instead, it would look like this:
     class BandModel(BaseModel):
         name: str
         manager: ManagerModel
+        popularity: int
 
-but with ``nested=True`` we can achieve this with one line of code.
-
-Best place to look ``create_pydantic_model`` in action is 
-`PiccoloCRUD <https://github.com/piccolo-orm/piccolo_api/blob/master/piccolo_api/crud/endpoints.py>`_
-because ``PiccoloCRUD`` internally use ``create_pydantic_model`` to create a 
-Pydantic model from a Piccolo table.
+But with ``nested=True`` we can achieve this with one line of code.
 
 Source
 ~~~~~~
@@ -73,8 +81,16 @@ Source
 .. automodule:: piccolo.utils.pydantic
     :members:
 
+.. hint:: A good place to see ``create_pydantic_model`` in action is `PiccoloCRUD <https://github.com/piccolo-orm/piccolo_api/blob/master/piccolo_api/crud/endpoints.py>`_,
+  as it uses ``create_pydantic_model`` extensively to create Pydantic models
+  from Piccolo tables.
+
+-------------------------------------------------------------------------------
+
 FastAPI template
-~~~~~~~~~~~~~~~~
+----------------
+
+Piccolo's FastAPI template uses ``create_pydantic_model`` to create serializers.
 
 To create a new FastAPI app using Piccolo, simply use:
 
@@ -82,7 +98,4 @@ To create a new FastAPI app using Piccolo, simply use:
 
     piccolo asgi new
 
-This uses ``create_pydantic_model`` to create serializers.
-
-See the `Piccolo ASGI docs <https://piccolo-orm.readthedocs.io/en/latest/piccolo/asgi/index.html>`_
-for details.
+See the :ref:`ASGI docs <ASGICommand>` for more details.
