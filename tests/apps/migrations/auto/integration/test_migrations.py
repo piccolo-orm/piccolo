@@ -536,7 +536,7 @@ class TestMigrations(DBTestCase):
             ],
             test_function=lambda x: all(
                 [
-                    x.data_type == "decimal",
+                    x.data_type == "numeric",
                     x.is_nullable == "NO",
                     x.column_default == "0",
                 ]

@@ -1,3 +1,5 @@
+import decimal
+import uuid
 from enum import Enum
 from unittest import TestCase
 
@@ -8,6 +10,7 @@ from piccolo.apps.migrations.auto.serialisation import (
     Import,
     UniqueGlobalNameConflictError,
     UniqueGlobalNames,
+    UniqueGlobalNamesMeta,
     serialise_params,
 )
 from piccolo.columns.base import OnDelete
@@ -15,6 +18,15 @@ from piccolo.columns.choices import Choice
 from piccolo.columns.column_types import Varchar
 from piccolo.columns.defaults import UUID4, DateNow, TimeNow, TimestampNow
 from piccolo.columns.reference import LazyTableReference
+
+
+class TestUniqueGlobalNamesMeta:
+    def test_duplicate_class_attribute_values_raises_error(self):
+        with pytest.raises(ValueError):
+
+            class IncorrectUniqueGlobalNames(metaclass=UniqueGlobalNamesMeta):
+                A = "duplicate"
+                B = "duplicate"
 
 
 class TestUniqueGlobals:
@@ -150,8 +162,20 @@ class TestSerialiseParams(TestCase):
         )
 
     def test_uuid(self):
+        serialised = serialise_params(params={"default": uuid.UUID(int=4)})
+        assert (
+            repr(serialised.params["default"])
+            == 'uuid.UUID("00000000-0000-0000-0000-000000000004")'
+        )
+
         serialised = serialise_params(params={"default": UUID4()})
         self.assertTrue(serialised.params["default"].__repr__() == "UUID4()")
+
+    def test_decimal(self):
+        serialised = serialise_params(
+            params={"default": decimal.Decimal("1.2")}
+        )
+        assert repr(serialised.params["default"]) == 'decimal.Decimal("1.2")'
 
     def test_lazy_table_reference(self):
         # These are equivalent:

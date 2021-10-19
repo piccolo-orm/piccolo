@@ -144,11 +144,10 @@ class UniqueGlobalNames(metaclass=UniqueGlobalNamesMeta):
     # Standard library imports
     STD_LIB_ENUM = Enum.__name__
     STD_LIB_MODULE_DECIMAL = "decimal"
-    STD_LIB_DECIMAL = f"{STD_LIB_MODULE_DECIMAL}.Decimal"
 
     # Third-party library imports
     EXTERNAL_MODULE_UUID = "uuid"
-    EXTERNAL_UUID = f"{EXTERNAL_MODULE_UUID}.uuid"
+    EXTERNAL_UUID = f"{EXTERNAL_MODULE_UUID}.{uuid.UUID.__name__}"
 
     # This attribute is set in metaclass
     unique_names: t.Set[str]
@@ -402,10 +401,23 @@ class SerialisedUUID:
         return check_equality(self, other)
 
     def __repr__(self):
-        return (
-            f"{getattr(UniqueGlobalNames, 'COLUMN_UUID')}"
-            f'("{str(self.instance)}")'
-        )
+        return f'{UniqueGlobalNames.EXTERNAL_UUID}("{str(self.instance)}")'
+
+
+@dataclass
+class SerialisedDecimal:
+    instance: decimal.Decimal
+
+    def __hash__(self):
+        return hash(repr(self))
+
+    def __eq__(self, other):
+        return check_equality(self, other)
+
+    def __repr__(self):
+        return f"{UniqueGlobalNames.STD_LIB_MODULE_DECIMAL}." + repr(
+            self.instance
+        ).replace("'", '"')
 
 
 ###############################################################################
@@ -483,13 +495,27 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
         # UUIDs
         if isinstance(value, uuid.UUID):
             params[key] = SerialisedUUID(instance=value)
-            extra_imports.append(Import(module="uuid", target="UUID"))
+            extra_imports.append(
+                Import(
+                    module=UniqueGlobalNames.EXTERNAL_MODULE_UUID,
+                    expect_conflict_with_global_name=(
+                        UniqueGlobalNames.EXTERNAL_MODULE_UUID
+                    ),
+                )
+            )
             continue
 
         # Decimals
         if isinstance(value, decimal.Decimal):
-            # Already has a good __repr__.
-            extra_imports.append(Import(module="decimal", target="Decimal"))
+            params[key] = SerialisedDecimal(instance=value)
+            extra_imports.append(
+                Import(
+                    module=UniqueGlobalNames.STD_LIB_MODULE_DECIMAL,
+                    expect_conflict_with_global_name=(
+                        UniqueGlobalNames.STD_LIB_MODULE_DECIMAL
+                    ),
+                )
+            )
             continue
 
         # Enum instances
@@ -640,6 +666,8 @@ def deserialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
         elif isinstance(value, SerialisedClassInstance):
             params[key] = value.instance
         elif isinstance(value, SerialisedUUID):
+            params[key] = value.instance
+        elif isinstance(value, SerialisedDecimal):
             params[key] = value.instance
         elif isinstance(value, SerialisedCallable):
             params[key] = value.callable_
