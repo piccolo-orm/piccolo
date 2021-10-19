@@ -49,7 +49,9 @@ For example:
 
 If we were to write ``BandModel`` by hand instead, it would look like this:
 
-.. code-block::
+.. code-block:: python
+
+    from pydantic import BaseModel
 
     class ManagerModel(BaseModel):
         name: str
