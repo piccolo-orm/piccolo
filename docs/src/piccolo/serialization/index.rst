@@ -1,8 +1,8 @@
 Serialization
 =============
 
-``Piccolo`` uses `Pydantic <https://github.com/samuelcolvin/pydantic>`_
-internally to serialize and deserialize data.
+Piccolo uses `Pydantic <https://github.com/samuelcolvin/pydantic>`_ internally
+to serialize and deserialize data.
 
 -------------------------------------------------------------------------------
 
