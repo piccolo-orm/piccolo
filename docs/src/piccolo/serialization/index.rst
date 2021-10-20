@@ -35,6 +35,23 @@ Creating a Pydantic model is as simple as:
 
     BandModel = create_pydantic_model(Band)
 
+We can then create model instances from data we fetch from the database:
+
+.. code-block:: python
+
+    # If using objects:
+    model = BandModel(
+        **Band.objects().get(Band.name == 'Pythonistas').run_sync().to_dict()
+    )
+
+    # If using select:
+    model = BandModel(
+        **Band.select().where(Band.name == 'Pythonistas').first().run_sync()
+    )
+
+    >>> model.name
+    'Pythonistas'
+
 You have several options for configuring the model, as shown below.
 
 exclude_columns
@@ -74,6 +91,59 @@ If we were to write ``BandModel`` by hand instead, it would look like this:
         popularity: int
 
 But with ``nested=True`` we can achieve this with one line of code.
+
+To populate a nested Pydantic model with data from the database:
+
+.. code-block:: python
+
+    # If using objects:
+    model = BandModel(
+        **Band.objects(Band.manager).get(Band.name == 'Pythonistas').run_sync().to_dict()
+    )
+
+    # If using select:
+    model = BandModel(
+        **Band.select(
+            Band.all_columns(),
+            Band.manager.all_columns()
+        ).where(
+            Band.name == 'Pythonistas'
+        ).first().output(
+            nested=True
+        ).run_sync()
+    )
+
+    >>> model.manager.name
+    'Guido'
+
+include_default_columns
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Sometimes you'll want to include the Piccolo ``Table``'s primary key column in
+the generated Pydantic model. For example, in a ``GET`` endpoint, we usually
+want to include the ``id`` in the response:
+
+.. code-block:: javascript
+
+    // GET /api/bands/1/
+    // Response:
+    {"id": 1, "name": "Pythonistas", "popularity": 1000}
+
+Other times, you won't want the Pydantic model to include the primary key
+column. For example, in a ``POST`` endpoint, when using a Pydantic model to
+serialise the payload, we don't expect the user to pass in an ``id`` value:
+
+.. code-block:: javascript
+
+    // POST /api/bands/
+    // Payload:
+    {"name": "Pythonistas", "popularity": 1000}
+
+By default the primary key column isn't included - you can add it using:
+
+.. code-block:: python
+
+    BandModel = create_pydantic_model(Band, include_default_columns=True)
 
 Source
 ~~~~~~
