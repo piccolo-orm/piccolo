@@ -1,5 +1,6 @@
 import decimal
 import uuid
+import warnings
 from enum import Enum
 from unittest import TestCase
 
@@ -8,7 +9,7 @@ import pytest
 from piccolo.apps.migrations.auto.serialisation import (
     CanConflictWithGlobalNames,
     Import,
-    UniqueGlobalNameConflictError,
+    UniqueGlobalNameConflictWarning,
     UniqueGlobalNames,
     UniqueGlobalNamesMeta,
     serialise_params,
@@ -59,12 +60,22 @@ class TestUniqueGlobals:
         assert getattr(UniqueGlobalNames, "COLUMN_BLOB", "Blob")
         assert getattr(UniqueGlobalNames, "COLUMN_ARRAY", "Array")
 
-    def test_raise_if_is_conflicting_name(self):
-        # Test will fail if this fails
-        UniqueGlobalNames.raise_if_is_conflicting_name("SuperMassiveBlackHole")
+    def test_warn_if_is_conflicting_name(self):
+        with pytest.warns(None) as recorded_warnings:
+            UniqueGlobalNames.warn_if_is_conflicting_name(
+                "SuperMassiveBlackHole"
+            )
 
-        with pytest.raises(UniqueGlobalNameConflictError):
-            UniqueGlobalNames.raise_if_is_conflicting_name("Varchar")
+            if len(recorded_warnings) != 0:
+                pytest.fail("Unexpected warning!")
+
+        with pytest.warns(
+            UniqueGlobalNameConflictWarning
+        ) as recorded_warnings:
+            UniqueGlobalNames.warn_if_is_conflicting_name("Varchar")
+
+            if len(recorded_warnings) != 1:
+                pytest.fail("Expected 1 warning!")
 
     def test_is_conflicting_name(self):
         assert (
@@ -73,28 +84,36 @@ class TestUniqueGlobals:
         )
         assert UniqueGlobalNames.is_conflicting_name("Varchar") is True
 
-    def test_raise_if_are_conflicting_objects(self):
+    def test_warn_if_are_conflicting_objects(self):
         class ConflictingCls1(CanConflictWithGlobalNames):
-            def raise_if_is_conflicting_with_global_name(self):
+            def warn_if_is_conflicting_with_global_name(self):
                 pass
 
         class ConflictingCls2(CanConflictWithGlobalNames):
-            def raise_if_is_conflicting_with_global_name(self):
+            def warn_if_is_conflicting_with_global_name(self):
                 pass
 
         class ConflictingCls3(CanConflictWithGlobalNames):
-            def raise_if_is_conflicting_with_global_name(self):
-                raise UniqueGlobalNameConflictError("test")
+            def warn_if_is_conflicting_with_global_name(self):
+                warnings.warn("test", UniqueGlobalNameConflictWarning)
 
-        # Test will fail if this fails
-        UniqueGlobalNames.raise_if_are_conflicting_objects(
-            [ConflictingCls1(), ConflictingCls2()]
-        )
+        with pytest.warns(None) as recorded_warnings:
+            UniqueGlobalNames.warn_if_are_conflicting_objects(
+                [ConflictingCls1(), ConflictingCls2()]
+            )
 
-        with pytest.raises(UniqueGlobalNameConflictError):
-            UniqueGlobalNames.raise_if_are_conflicting_objects(
+            if len(recorded_warnings) != 0:
+                pytest.fail("Unexpected warning!")
+
+        with pytest.warns(
+            UniqueGlobalNameConflictWarning
+        ) as recorded_warnings:
+            UniqueGlobalNames.warn_if_are_conflicting_objects(
                 [ConflictingCls2(), ConflictingCls3()]
             )
+
+            if len(recorded_warnings) != 1:
+                pytest.fail("Expected 1 warning!")
 
 
 class TestImport:
@@ -104,37 +123,59 @@ class TestImport:
     def test_with_module_and_target(self):
         assert repr(Import(module="a.b", target="c")) == "from a.b import c"
 
-    def test_raise_if_is_conflicting_with_global_name_with_module_only(self):
-        # Test will fail if this fails
-        Import(module="a.b.c").raise_if_is_conflicting_with_global_name()
+    def test_warn_if_is_conflicting_with_global_name_with_module_only(self):
+        with pytest.warns(None) as recorded_warnings:
+            Import(module="a.b.c").warn_if_is_conflicting_with_global_name()
 
-        with pytest.raises(UniqueGlobalNameConflictError):
-            Import(module="Varchar").raise_if_is_conflicting_with_global_name()
+            if len(recorded_warnings) != 0:
+                pytest.fail("Unexpected warning!")
 
-        # Test will fail if this fails
-        Import(
-            module="Varchar", expect_conflict_with_global_name="Varchar"
-        ).raise_if_is_conflicting_with_global_name()
+        with pytest.warns(
+            UniqueGlobalNameConflictWarning
+        ) as recorded_warnings:
+            Import(module="Varchar").warn_if_is_conflicting_with_global_name()
 
-    def test_raise_if_is_conflicting_with_global_name_with_module_and_target(
+            if len(recorded_warnings) != 1:
+                pytest.fail("Expected 1 warning!")
+
+        with pytest.warns(None) as recorded_warnings:
+            Import(
+                module="Varchar", expect_conflict_with_global_name="Varchar"
+            ).warn_if_is_conflicting_with_global_name()
+
+            if len(recorded_warnings) != 0:
+                pytest.fail("Unexpected warning!")
+
+    def test_warn_if_is_conflicting_with_global_name_with_module_and_target(
         self,
     ):
-        # Test will fail if this fails
-        Import(
-            module="a.b", target="c"
-        ).raise_if_is_conflicting_with_global_name()
+        with pytest.warns(None) as recorded_warnings:
+            Import(
+                module="a.b", target="c"
+            ).warn_if_is_conflicting_with_global_name()
 
-        with pytest.raises(UniqueGlobalNameConflictError):
+            if len(recorded_warnings) != 0:
+                pytest.fail("Unexpected warning!")
+
+        with pytest.warns(
+            UniqueGlobalNameConflictWarning
+        ) as recorded_warnings:
             Import(
                 module="a.b", target="Varchar"
-            ).raise_if_is_conflicting_with_global_name()
+            ).warn_if_is_conflicting_with_global_name()
 
-        # Test will fail if this fails
-        Import(
-            module="a.b",
-            target="Varchar",
-            expect_conflict_with_global_name="Varchar",
-        ).raise_if_is_conflicting_with_global_name()
+            if len(recorded_warnings) != 1:
+                pytest.fail("Expected 1 warning!")
+
+        with pytest.warns(None) as recorded_warnings:
+            Import(
+                module="a.b",
+                target="Varchar",
+                expect_conflict_with_global_name="Varchar",
+            ).warn_if_is_conflicting_with_global_name()
+
+            if len(recorded_warnings) != 0:
+                pytest.fail("Unexpected warning!")
 
 
 def example_function():

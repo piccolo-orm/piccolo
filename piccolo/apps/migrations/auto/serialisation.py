@@ -7,6 +7,7 @@ import decimal
 import inspect
 import typing as t
 import uuid
+import warnings
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
@@ -24,7 +25,7 @@ from .serialisation_legacy import deserialise_legacy_params
 
 class CanConflictWithGlobalNames(abc.ABC):
     @abc.abstractmethod
-    def raise_if_is_conflicting_with_global_name(self):
+    def warn_if_is_conflicting_with_global_name(self):
         ...
 
 
@@ -153,13 +154,16 @@ class UniqueGlobalNames(metaclass=UniqueGlobalNamesMeta):
     unique_names: t.Set[str]
 
     @classmethod
-    def raise_if_is_conflicting_name(
+    def warn_if_is_conflicting_name(
         cls, name: str, name_type: str = "Name"
     ) -> None:
         """Raise an error if ``name`` matches a class attribute value."""
 
         if cls.is_conflicting_name(name):
-            raise UniqueGlobalNameConflictError(name, name_type=name_type)
+            warnings.warn(
+                f"{name_type} '{name}' could conflict with global name",
+                UniqueGlobalNameConflictWarning,
+            )
 
     @classmethod
     def is_conflicting_name(cls, name: str) -> bool:
@@ -168,7 +172,7 @@ class UniqueGlobalNames(metaclass=UniqueGlobalNamesMeta):
         return name in cls.unique_names
 
     @staticmethod
-    def raise_if_are_conflicting_objects(
+    def warn_if_are_conflicting_objects(
         objects: t.Iterable[CanConflictWithGlobalNames],
     ) -> None:
         """
@@ -176,23 +180,11 @@ class UniqueGlobalNames(metaclass=UniqueGlobalNamesMeta):
         """
 
         for obj in objects:
-            obj.raise_if_is_conflicting_with_global_name()
+            obj.warn_if_is_conflicting_with_global_name()
 
 
-class UniqueGlobalNameConflictError(ValueError):
-    def __init__(
-        self,
-        name: str,
-        name_type: t.Optional[str] = "Name",
-        error_message_template: str = (
-            "{name_type} '{name}' could conflict with global name"
-        ),
-    ) -> None:
-        super().__init__(
-            error_message_template.format(name=name, name_type=name_type)
-        )
-
-        self.name = name
+class UniqueGlobalNameConflictWarning(UserWarning):
+    pass
 
 
 ###############################################################################
@@ -203,6 +195,19 @@ class Import(CanConflictWithGlobalNames):
     module: str
     target: t.Optional[str] = None
     expect_conflict_with_global_name: t.Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if (
+            self.expect_conflict_with_global_name is not None
+            and not UniqueGlobalNames.is_conflicting_name(
+                self.expect_conflict_with_global_name
+            )
+        ):
+            raise ValueError(
+                f"`expect_conflict_with_global_name="
+                f'"{self.expect_conflict_with_global_name}"` '
+                f"is not listed in `{UniqueGlobalNames.__name__}`"
+            )
 
     def __repr__(self):
         if self.target is None:
@@ -219,19 +224,19 @@ class Import(CanConflictWithGlobalNames):
     def __lt__(self, other):
         return repr(self) < repr(other)
 
-    def raise_if_is_conflicting_with_global_name(self):
+    def warn_if_is_conflicting_with_global_name(self):
         if self.target is None:
             name = self.module
         else:
             name = self.target
 
-        try:
-            UniqueGlobalNames.raise_if_is_conflicting_name(
+        if name == self.expect_conflict_with_global_name:
+            return
+
+        if UniqueGlobalNames.is_conflicting_name(name):
+            UniqueGlobalNames.warn_if_is_conflicting_name(
                 name, name_type="Import"
             )
-        except UniqueGlobalNameConflictError as err:
-            if err.name != self.expect_conflict_with_global_name:
-                raise err
 
 
 class Definition(CanConflictWithGlobalNames, abc.ABC):
@@ -356,8 +361,8 @@ class SerialisedTableType(Definition):
     def table_class_name(self) -> str:
         return self.table_type.__name__
 
-    def raise_if_is_conflicting_with_global_name(self) -> None:
-        UniqueGlobalNames.raise_if_is_conflicting_name(self.table_class_name)
+    def warn_if_is_conflicting_with_global_name(self) -> None:
+        UniqueGlobalNames.warn_if_is_conflicting_name(self.table_class_name)
 
 
 @dataclass
@@ -637,12 +642,10 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
         # All other types can remain as is.
 
     unique_extra_imports = [i for i in set(extra_imports)]
-    UniqueGlobalNames.raise_if_are_conflicting_objects(unique_extra_imports)
+    UniqueGlobalNames.warn_if_are_conflicting_objects(unique_extra_imports)
 
     unique_extra_definitions = [i for i in set(extra_definitions)]
-    UniqueGlobalNames.raise_if_are_conflicting_objects(
-        unique_extra_definitions
-    )
+    UniqueGlobalNames.warn_if_are_conflicting_objects(unique_extra_definitions)
 
     return SerialisedParams(
         params=params,
