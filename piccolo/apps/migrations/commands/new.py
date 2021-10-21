@@ -88,7 +88,10 @@ class NoChanges(Exception):
 
 
 async def _create_new_migration(
-    app_config: AppConfig, auto: bool = False, description: str = ""
+    app_config: AppConfig,
+    auto: bool = False,
+    description: str = "",
+    auto_input: t.Optional[str] = None,
 ) -> NewMigrationMeta:
     """
     Creates a new migration file on disk.
@@ -96,9 +99,9 @@ async def _create_new_migration(
     meta = _generate_migration_meta(app_config=app_config)
 
     if auto:
-        alter_statements = await AutoMigrationManager().get_alter_statements(
-            app_config=app_config
-        )
+        alter_statements = await AutoMigrationManager(
+            auto_input=auto_input
+        ).get_alter_statements(app_config=app_config)
 
         _alter_statements = list(
             chain(*[i.statements for i in alter_statements])
@@ -143,6 +146,10 @@ async def _create_new_migration(
 
 
 class AutoMigrationManager(BaseMigrationManager):
+    def __init__(self, auto_input: t.Optional[str] = None, *args, **kwargs):
+        self.auto_input = auto_input
+        super().__init__(*args, **kwargs)
+
     async def get_alter_statements(
         self, app_config: AppConfig
     ) -> t.List[AlterStatements]:
@@ -168,7 +175,9 @@ class AutoMigrationManager(BaseMigrationManager):
 
         # Compare the current schema with the snapshot
         differ = SchemaDiffer(
-            schema=current_diffable_tables, schema_snapshot=snapshot
+            schema=current_diffable_tables,
+            schema_snapshot=snapshot,
+            auto_input=self.auto_input,
         )
         return differ.get_alter_statements()
 
@@ -176,7 +185,12 @@ class AutoMigrationManager(BaseMigrationManager):
 ###############################################################################
 
 
-async def new(app_name: str, auto: bool = False, desc: str = ""):
+async def new(
+    app_name: str,
+    auto: bool = False,
+    desc: str = "",
+    auto_input: t.Optional[str] = None,
+):
     """
     Creates a new migration file in the migrations folder.
 
@@ -187,6 +201,9 @@ async def new(app_name: str, auto: bool = False, desc: str = ""):
     :param desc:
         A description of what the migration does, for example 'adding name
         column'.
+    :param auto_input:
+        If provided, all prompts for user input will automatically have this
+        entered. For example, --auto_input='y'.
 
     """
     print("Creating new migration ...")
@@ -200,7 +217,10 @@ async def new(app_name: str, auto: bool = False, desc: str = ""):
     _create_migrations_folder(app_config.migrations_folder_path)
     try:
         await _create_new_migration(
-            app_config=app_config, auto=auto, description=desc
+            app_config=app_config,
+            auto=auto,
+            description=desc,
+            auto_input=auto_input,
         )
     except NoChanges:
         print("No changes detected - exiting.")

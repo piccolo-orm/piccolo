@@ -19,14 +19,14 @@ class TestLazyTableReference(TestCase):
         with self.assertRaises(ValueError):
             LazyTableReference(
                 table_class_name="Manager",
-                app_name="example_app",
+                app_name="music",
                 module_path="tests.example_apps.music.tables",
             )
 
         # Shouldn't raise exceptions:
         LazyTableReference(
             table_class_name="Manager",
-            app_name="example_app",
+            app_name="music",
         )
         LazyTableReference(
             table_class_name="Manager",
@@ -37,9 +37,9 @@ class TestLazyTableReference(TestCase):
         self.assertEqual(
             LazyTableReference(
                 table_class_name="Manager",
-                app_name="example_app",
+                app_name="music",
             ).__str__(),
-            "App example_app.Manager",
+            "App music.Manager",
         )
 
         self.assertEqual(

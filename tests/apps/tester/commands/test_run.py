@@ -66,8 +66,10 @@ class TestSetEnvVar(TestCase):
 
 class TestRun(TestCase):
     @patch("piccolo.apps.tester.commands.run.run_pytest")
-    def test_success(self, pytest: MagicMock):
+    @patch("piccolo.apps.tester.commands.run.refresh_db")
+    def test_success(self, refresh_db: MagicMock, pytest: MagicMock):
         with self.assertRaises(SystemExit):
             run(pytest_args="-s foo", piccolo_conf="my_piccolo_conf")
 
         pytest.assert_called_once_with(["-s", "foo"])
+        refresh_db.assert_called_once()

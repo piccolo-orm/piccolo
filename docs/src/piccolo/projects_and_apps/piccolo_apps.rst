@@ -23,7 +23,7 @@ Run the following command within your project:
     piccolo app new my_app
 
 
-Where `my_app` is your new app's name. This will create a folder like this:
+Where ``my_app`` is your new app's name. This will create a folder like this:
 
 .. code-block:: bash
 
@@ -36,7 +36,7 @@ Where `my_app` is your new app's name. This will create a folder like this:
 
 
 It's important to register your new app with the ``APP_REGISTRY`` in
-`piccolo_conf.py`.
+``piccolo_conf.py``.
 
 .. code-block:: python
 
@@ -53,7 +53,7 @@ operations on your app, such as :ref:`Migrations`.
 AppConfig
 *********
 
-Inside your app's `piccolo_app.py` file is an ``AppConfig`` instance. This is
+Inside your app's ``piccolo_app.py`` file is an ``AppConfig`` instance. This is
 how you customise your app's settings.
 
 .. code-block:: python
@@ -84,7 +84,7 @@ how you customise your app's settings.
 app_name
 ========
 
-This is used to identify your app, when using the `piccolo` CLI, for example:
+This is used to identify your app, when using the ``piccolo`` CLI, for example:
 
 .. code-block:: bash
 
@@ -146,7 +146,7 @@ commands
 ========
 
 You can register functions and coroutines, which are automatically added to
-the `piccolo` CLI.
+the ``piccolo`` CLI.
 
 The `targ <http://targ.readthedocs.io/>`_ library is used under the hood. It
 makes it really easy to write command lines tools - just use type annotations
@@ -162,7 +162,7 @@ and docstrings. Here's an example:
             The person to greet.
 
         """
-        print(name)
+        print("hello,", name)
 
 We then register it with the ``AppConfig``.
 
@@ -180,16 +180,17 @@ And from the command line:
 .. code-block:: bash
 
     >>> piccolo my_app say_hello bob
-    bob
+    hello, bob
 
-If the code contains an error to see more details in the output add a ``--trace`` flag to the command line.
+If the code contains an error to see more details in the output add a ``--trace``
+flag to the command line.
 
 .. code-block:: bash
 
     >>> piccolo my_app say_hello bob --trace
 
 
-By convention, store the command definitions in a `commands` folder in your
+By convention, store the command definitions in a ``commands`` folder in your
 app.
 
 .. code-block:: bash

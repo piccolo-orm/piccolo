@@ -8,6 +8,9 @@ from piccolo.columns.column_types import Numeric, Varchar
 
 
 class TestSchemaDiffer(TestCase):
+
+    maxDiff = None
+
     def test_add_table(self):
         """
         Test adding a new table.
@@ -35,7 +38,7 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(new_table_columns.statements) == 1)
         self.assertEqual(
             new_table_columns.statements[0],
-            "manager.add_column(table_class_name='Band', tablename='band', column_name='name', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None})",  # noqa
+            "manager.add_column(table_class_name='Band', tablename='band', column_name='name', db_column_name='name', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None})",  # noqa
         )
 
     def test_drop_table(self):
@@ -119,7 +122,7 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(schema_differ.add_columns.statements) == 1)
         self.assertEqual(
             schema_differ.add_columns.statements[0],
-            "manager.add_column(table_class_name='Band', tablename='band', column_name='genre', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None})",  # noqa
+            "manager.add_column(table_class_name='Band', tablename='band', column_name='genre', db_column_name='genre', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None})",  # noqa
         )
 
     def test_drop_column(self):
@@ -154,7 +157,7 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(schema_differ.drop_columns.statements) == 1)
         self.assertEqual(
             schema_differ.drop_columns.statements[0],
-            "manager.drop_column(table_class_name='Band', tablename='band', column_name='genre')",  # noqa
+            "manager.drop_column(table_class_name='Band', tablename='band', column_name='genre', db_column_name='genre')",  # noqa
         )
 
     def test_rename_column(self):
@@ -189,7 +192,7 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(schema_differ.rename_columns.statements) == 1)
         self.assertEqual(
             schema_differ.rename_columns.statements[0],
-            "manager.rename_column(table_class_name='Band', tablename='band', old_column_name='title', new_column_name='name')",  # noqa
+            "manager.rename_column(table_class_name='Band', tablename='band', old_column_name='title', new_column_name='name', old_db_column_name='title', new_db_column_name='name')",  # noqa
         )
 
     def test_alter_column_precision(self):

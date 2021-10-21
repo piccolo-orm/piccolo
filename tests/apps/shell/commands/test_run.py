@@ -17,7 +17,7 @@ class TestRun(TestCase):
             print_.mock_calls,
             [
                 call("-------"),
-                call("Importing example_app tables:"),
+                call("Importing music tables:"),
                 call("- Band"),
                 call("- Concert"),
                 call("- Manager"),

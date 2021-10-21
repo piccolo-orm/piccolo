@@ -1,8 +1,18 @@
 from unittest import TestCase
 
 from piccolo.apps.user.tables import BaseUser
-from piccolo.conf.apps import AppConfig, AppRegistry, table_finder
-from tests.example_apps.music.tables import Manager
+from piccolo.conf.apps import AppConfig, AppRegistry, Finder, table_finder
+from tests.example_apps.mega.tables import MegaTable, SmallTable
+from tests.example_apps.music.tables import (
+    Band,
+    Concert,
+    Manager,
+    Poster,
+    RecordingStudio,
+    Shirt,
+    Ticket,
+    Venue,
+)
 
 
 class TestAppRegistry(TestCase):
@@ -166,3 +176,55 @@ class TestTableFinder(TestCase):
                 "Venue",
             ],
         )
+
+
+class TestFinder(TestCase):
+    def test_get_table_classes(self):
+        """
+        Make sure ``Table`` classes can be retrieved.
+        """
+        finder = Finder()
+
+        self.assertEqual(
+            finder.get_table_classes(),
+            [
+                Manager,
+                Band,
+                Venue,
+                Concert,
+                Ticket,
+                Poster,
+                Shirt,
+                RecordingStudio,
+                MegaTable,
+                SmallTable,
+            ],
+        )
+
+        self.assertEqual(
+            finder.get_table_classes(include_apps=["music"]),
+            [
+                Manager,
+                Band,
+                Venue,
+                Concert,
+                Ticket,
+                Poster,
+                Shirt,
+                RecordingStudio,
+            ],
+        )
+
+        self.assertEqual(
+            finder.get_table_classes(exclude_apps=["music"]),
+            [
+                MegaTable,
+                SmallTable,
+            ],
+        )
+
+        with self.assertRaises(ValueError):
+            # You shouldn't be allowed to specify both include and exclude.
+            finder.get_table_classes(
+                exclude_apps=["music"], include_apps=["mega"]
+            )

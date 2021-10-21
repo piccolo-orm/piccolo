@@ -26,7 +26,7 @@ def parse_requirement(req_path: str) -> t.List[str]:
         parse_requirement('extras/playground.txt')  # requirements/extras/playground.txt
     Returns:
         List[str]: list of requirements specified in the file.
-    """
+    """  # noqa: E501
     with open(os.path.join(directory, "requirements", req_path)) as f:
         contents = f.read()
         return [i.strip() for i in contents.strip().split("\n")]
@@ -81,6 +81,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: Implementation :: CPython",
         "Framework :: AsyncIO",
         "Typing :: Typed",

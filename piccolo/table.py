@@ -49,6 +49,9 @@ if t.TYPE_CHECKING:
 PROTECTED_TABLENAMES = ("user",)
 
 
+TABLE_REGISTRY: t.List[t.Type[Table]] = []
+
+
 @dataclass
 class TableMeta:
     """
@@ -94,6 +97,13 @@ class TableMeta:
             self._db = db
 
         return self._db
+
+    @db.setter
+    def db(self, value: Engine):
+        self._db = value
+
+    def refresh_db(self):
+        self.db = engine_finder()
 
     def get_column_by_name(self, name: str) -> Column:
         """
@@ -283,6 +293,8 @@ class Table(metaclass=TableMetaclass):
             if is_table_class:
                 foreign_key_column.set_proxy_columns()
 
+        TABLE_REGISTRY.append(cls)
+
     def __init__(
         self,
         ignore_missing: bool = False,
@@ -296,6 +308,12 @@ class Table(metaclass=TableMetaclass):
 
         for column in self._meta.columns:
             value = kwargs.pop(column._meta.name, ...)
+
+            if value is ...:
+                value = kwargs.pop(
+                    t.cast(str, column._meta.db_column_name), ...
+                )
+
             if value is ...:
                 value = column.get_default_value()
 
@@ -318,7 +336,7 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def _create_serial_primary_key(cls) -> Serial:
-        pk = Serial(index=False, primary_key=True)
+        pk = Serial(index=False, primary_key=True, db_column_name="id")
         pk._meta._name = "id"
         pk._meta._table = cls
 
@@ -975,13 +993,59 @@ def create_table_class(
     )
 
 
-def create_tables(*args: t.Type[Table], if_not_exists: bool = False) -> None:
+def create_tables(*tables: t.Type[Table], if_not_exists: bool = False) -> None:
     """
-    Creates multiple tables that passed to it.
+    Creates the tables passed to it in the correct order, based on their
+    foreign keys.
     """
-    sorted_table_classes = sort_table_classes(list(args))
-    for table in sorted_table_classes:
-        Create(table=table, if_not_exists=if_not_exists).run_sync()
+    if tables:
+        engine = tables[0]._meta.db
+    else:
+        return
+
+    sorted_table_classes = sort_table_classes(list(tables))
+
+    atomic = engine.atomic()
+    atomic.add(
+        *[
+            table.create_table(if_not_exists=if_not_exists)
+            for table in sorted_table_classes
+        ]
+    )
+    atomic.run_sync()
+
+
+def drop_tables(*tables: t.Type[Table]) -> None:
+    """
+    Drops the tables passed to it in the correct order, based on their foreign
+    keys.
+    """
+    if tables:
+        engine = tables[0]._meta.db
+    else:
+        return
+
+    if engine.engine_type == "sqlite":
+        # SQLite doesn't support CASCADE, so we have to drop them in the
+        # correct order.
+        sorted_table_classes = reversed(sort_table_classes(list(tables)))
+        atomic = engine.atomic()
+        atomic.add(
+            *[
+                Alter(table=table).drop_table(if_exists=True)
+                for table in sorted_table_classes
+            ]
+        )
+        atomic.run_sync()
+    else:
+        atomic = engine.atomic()
+        atomic.add(
+            *[
+                table.alter().drop_table(cascade=True, if_exists=True)
+                for table in tables
+            ]
+        )
+        atomic.run_sync()
 
 
 def sort_table_classes(
@@ -1035,13 +1099,16 @@ def _get_graph(
     for table_class in table_classes:
         dependents: t.Set[str] = set()
         for fk in table_class._meta.foreign_key_columns:
-            dependents.add(
-                fk._foreign_key_meta.resolved_references._meta.tablename
-            )
+            referenced_table = fk._foreign_key_meta.resolved_references
+
+            if referenced_table._meta.tablename == table_class._meta.tablename:
+                # Most like a recursive link (using ForeignKey('self')).
+                continue
+
+            dependents.add(referenced_table._meta.tablename)
 
             # We also recursively check the related tables to get a fuller
             # picture of the schema and relationships.
-            referenced_table = fk._foreign_key_meta.resolved_references
             output.update(
                 _get_graph(
                     [referenced_table],

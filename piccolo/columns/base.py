@@ -7,7 +7,7 @@ import inspect
 import typing as t
 import uuid
 from abc import ABCMeta, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from enum import Enum
 
 from piccolo.columns.choices import Choice
@@ -131,13 +131,24 @@ class ColumnMeta:
     # Used for representing the table in migrations and the playground.
     params: t.Dict[str, t.Any] = field(default_factory=dict)
 
+    ###########################################################################
+
+    # Lets you to map a column to a database column with a different name.
+    _db_column_name: t.Optional[str] = None
+
+    @property
+    def db_column_name(self) -> str:
+        return self._db_column_name or self.name
+
+    @db_column_name.setter
+    def db_column_name(self, value: str):
+        self._db_column_name = value
+
+    ###########################################################################
+
     # Set by the Table Metaclass:
     _name: t.Optional[str] = None
     _table: t.Optional[t.Type[Table]] = None
-
-    # Used by Foreign Keys:
-    call_chain: t.List["ForeignKey"] = field(default_factory=list)
-    table_alias: t.Optional[str] = None
 
     @property
     def name(self) -> str:
@@ -158,6 +169,12 @@ class ColumnMeta:
                 "`_table` isn't defined - the Table Metaclass should set it."
             )
         return self._table
+
+    ###########################################################################
+
+    # Used by Foreign Keys:
+    call_chain: t.List["ForeignKey"] = field(default_factory=list)
+    table_alias: t.Optional[str] = None
 
     @property
     def engine_type(self) -> str:
@@ -194,13 +211,16 @@ class ColumnMeta:
         """
         Returns the full column name, taking into account joins.
         """
-        column_name = self.name
+        column_name = self.db_column_name
 
         if not self.call_chain:
             return f"{self.table._meta.tablename}.{column_name}"
 
         column_name = (
-            "$".join(i._meta.name for i in self.call_chain) + f"${column_name}"
+            "$".join(
+                t.cast(str, i._meta.db_column_name) for i in self.call_chain
+            )
+            + f"${column_name}"
         )
 
         alias = f"{self.call_chain[-1]._meta.table_alias}.{self.name}"
@@ -217,6 +237,16 @@ class ColumnMeta:
             params=self.params.copy(),
             call_chain=self.call_chain.copy(),
         )
+
+        # Make sure we don't accidentally include any other attributes which
+        # aren't supported by the constructor.
+        field_names = [i.name for i in fields(self.__class__)]
+        kwargs = {
+            kwarg: value
+            for kwarg, value in kwargs.items()
+            if kwarg in field_names
+        }
+
         return self.__class__(**kwargs)
 
     def __copy__(self) -> ColumnMeta:
@@ -282,10 +312,31 @@ class Column(Selectable):
 
     :param help_text:
         This provides some context about what the column is being used for. For
-        example, for a `Decimal` column called `value`, it could say
-        'The units are millions of dollars'. The database doesn't use this
+        example, for a ``Decimal`` column called ``value``, it could say
+        ``'The units are millions of dollars'``. The database doesn't use this
         value, but tools such as Piccolo Admin use it to show a tooltip in the
         GUI.
+
+    :param choices:
+        An optional Enum - when specified, other tools such as Piccolo Admin
+        will render the available options in the GUI.
+
+    :param db_column_name:
+        If specified, you can override the name used for the column in the
+        database. The main reason for this is when using a legacy database,
+        with a problematic column name (for example ``'class'``, which is a
+        reserved Python keyword). Here's an example:
+
+        .. code-block:: python
+
+            class MyTable(Table):
+                class_ = Varchar(db_column_name="class")
+
+            >>> MyTable.select(MyTable.class_).run_sync()
+            [{'id': 1, 'class': 'test'}]
+
+        This is an advanced feature which you should only need in niche
+        situations.
 
     """
 
@@ -301,6 +352,7 @@ class Column(Selectable):
         required: bool = False,
         help_text: t.Optional[str] = None,
         choices: t.Optional[t.Type[Enum]] = None,
+        db_column_name: t.Optional[str] = None,
         **kwargs,
     ) -> None:
         # This is for backwards compatibility - originally there were two
@@ -322,6 +374,7 @@ class Column(Selectable):
                 "index": index,
                 "index_method": index_method,
                 "choices": choices,
+                "db_column_name": db_column_name,
             }
         )
 
@@ -344,6 +397,7 @@ class Column(Selectable):
             required=required,
             help_text=help_text,
             choices=choices,
+            _db_column_name=db_column_name,
         )
 
         self.alias: t.Optional[str] = None
@@ -595,7 +649,7 @@ class Column(Selectable):
         """
         Used when creating tables.
         """
-        query = f'"{self._meta.name}" {self.column_type}'
+        query = f'"{self._meta.db_column_name}" {self.column_type}'
         if self._meta.primary_key:
             query += " PRIMARY KEY"
         if self._meta.unique:
@@ -618,7 +672,7 @@ class Column(Selectable):
                 f" ON UPDATE {on_update}"
             )
 
-        if not self._meta.primary_key:
+        if self.__class__.__name__ not in ("Serial", "BigSerial"):
             default = self.get_default_value()
             sql_value = self.get_sql_value(value=default)
             query += f" DEFAULT {sql_value}"

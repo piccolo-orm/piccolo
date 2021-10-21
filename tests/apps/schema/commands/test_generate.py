@@ -11,27 +11,18 @@ from piccolo.apps.schema.commands.generate import (
     get_output_schema,
 )
 from piccolo.columns.base import Column
-from piccolo.columns.column_types import ForeignKey, Integer, Varchar
+from piccolo.columns.column_types import (
+    ForeignKey,
+    Integer,
+    Timestamp,
+    Varchar,
+)
+from piccolo.columns.indexes import IndexMethod
 from piccolo.engine import Engine, engine_finder
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
 from tests.base import postgres_only
 from tests.example_apps.mega.tables import MegaTable, SmallTable
-
-
-class Publication(Table, tablename="schema2.publication"):
-    name = Varchar(length=50)
-
-
-class Writer(Table, tablename="schema1.writer"):
-    name = Varchar(length=50)
-    publication = ForeignKey(Publication, null=True)
-
-
-class Book(Table):
-    name = Varchar(length=50)
-    writer = ForeignKey(Writer, null=True)
-    popularity = Integer(default=0)
 
 
 @postgres_only
@@ -111,26 +102,29 @@ class TestGenerate(TestCase):
 
             pass
 
-        MegaTable.alter().add_column("box", Box()).run_sync()
+        MegaTable.alter().add_column("my_column", Box()).run_sync()
 
         output_schema: OutputSchema = run_sync(get_output_schema())
 
         # Make sure there's a warning.
-        self.assertEqual(output_schema.warnings, ["mega_table.box ['box']"])
+        self.assertEqual(
+            output_schema.warnings, ["mega_table.my_column ['box']"]
+        )
 
         # Make sure the column type of the generated table is just ``Column``.
         for table in output_schema.tables:
             if table.__name__ == "MegaTable":
                 self.assertEqual(
-                    output_schema.tables[1].box.__class__.__name__, "Column"
+                    output_schema.tables[1].my_column.__class__.__name__,
+                    "Column",
                 )
 
     def test_generate_required_tables(self):
         """
-        Make sure only tables passed to `tablenames` are created
+        Make sure only tables passed to `tablenames` are created.
         """
         output_schema: OutputSchema = run_sync(
-            get_output_schema(tablenames=[SmallTable._meta.tablename])
+            get_output_schema(include=[SmallTable._meta.tablename])
         )
         self.assertEqual(len(output_schema.tables), 1)
         SmallTable_ = output_schema.get_table_with_name("SmallTable")
@@ -138,7 +132,7 @@ class TestGenerate(TestCase):
 
     def test_exclude_table(self):
         """
-        make sure exclude works
+        Make sure exclude works.
         """
         output_schema: OutputSchema = run_sync(
             get_output_schema(exclude=[MegaTable._meta.tablename])
@@ -146,6 +140,62 @@ class TestGenerate(TestCase):
         self.assertEqual(len(output_schema.tables), 1)
         SmallTable_ = output_schema.get_table_with_name("SmallTable")
         self._compare_table_columns(SmallTable, SmallTable_)
+
+
+###############################################################################
+
+
+class Concert(Table):
+    name = Varchar(index=True, index_method=IndexMethod.hash)
+    time = Timestamp(
+        index=True
+    )  # Testing a column with the same name as a Postgres data type.
+    capacity = Integer(index=False)
+
+
+@postgres_only
+class TestGenerateWithIndexes(TestCase):
+    def setUp(self):
+        Concert.create_table().run_sync()
+
+    def tearDown(self):
+        Concert.alter().drop_table(if_exists=True).run_sync()
+
+    def test_index(self):
+        """
+        Make sure that a table with an index is reflected correctly.
+        """
+        output_schema: OutputSchema = run_sync(get_output_schema())
+        Concert_ = output_schema.tables[0]
+
+        self.assertEqual(Concert_.name._meta.index, True)
+        self.assertEqual(Concert_.name._meta.index_method, IndexMethod.hash)
+
+        self.assertEqual(Concert_.time._meta.index, True)
+        self.assertEqual(Concert_.time._meta.index_method, IndexMethod.btree)
+
+        self.assertEqual(Concert_.capacity._meta.index, False)
+        self.assertEqual(
+            Concert_.capacity._meta.index_method, IndexMethod.btree
+        )
+
+
+###############################################################################
+
+
+class Publication(Table, tablename="schema2.publication"):
+    name = Varchar(length=50)
+
+
+class Writer(Table, tablename="schema1.writer"):
+    name = Varchar(length=50)
+    publication = ForeignKey(Publication, null=True)
+
+
+class Book(Table):
+    name = Varchar(length=50)
+    writer = ForeignKey(Writer, null=True)
+    popularity = Integer(default=0)
 
 
 @postgres_only

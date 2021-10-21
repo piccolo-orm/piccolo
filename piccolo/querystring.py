@@ -20,6 +20,12 @@ class Unquoted:
 
     value: str
 
+    def __repr__(self):
+        return f"{self.value}"
+
+    def __str__(self):
+        return f"{self.value}"
+
 
 @dataclass
 class Fragment:

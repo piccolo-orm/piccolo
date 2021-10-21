@@ -40,9 +40,7 @@ class TestSerialiseParams(TestCase):
     def test_lazy_table_reference(self):
         # These are equivalent:
         references_list = [
-            LazyTableReference(
-                table_class_name="Manager", app_name="example_app"
-            ),
+            LazyTableReference(table_class_name="Manager", app_name="music"),
             LazyTableReference(
                 table_class_name="Manager",
                 module_path="tests.example_apps.music.tables",
@@ -68,7 +66,7 @@ class TestSerialiseParams(TestCase):
                     'class Manager(Table, tablename="manager"): '
                     "id = Serial(null=False, primary_key=True, unique=False, "
                     "index=False, index_method=IndexMethod.btree, "
-                    "choices=None)"
+                    "choices=None, db_column_name='id')"
                 ),
             )
 
@@ -119,7 +117,7 @@ class TestSerialiseParams(TestCase):
 
         self.assertEqual(
             serialised.params["base_column"].__repr__(),
-            "Varchar(length=255, default='', null=False, primary_key=False, unique=False, index=False, index_method=IndexMethod.btree, choices=None)",  # noqa: E501
+            "Varchar(length=255, default='', null=False, primary_key=False, unique=False, index=False, index_method=IndexMethod.btree, choices=None, db_column_name=None)",  # noqa: E501
         )
 
         self.assertEqual(

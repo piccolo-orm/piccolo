@@ -17,14 +17,32 @@ from tests.example_apps.music.tables import (
 class TestModelBuilder(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        Manager.create_table().run_sync()
-        Band.create_table().run_sync()
-        Poster.create_table().run_sync()
-        RecordingStudio.create_table().run_sync()
-        Shirt.create_table().run_sync()
-        Venue.create_table().run_sync()
-        Concert.create_table().run_sync()
-        Ticket.create_table().run_sync()
+
+        for table_class in (
+            Manager,
+            Band,
+            Poster,
+            RecordingStudio,
+            Shirt,
+            Venue,
+            Concert,
+            Ticket,
+        ):
+            table_class.create_table().run_sync()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        for table_class in (
+            Ticket,
+            Concert,
+            Venue,
+            Shirt,
+            RecordingStudio,
+            Poster,
+            Band,
+            Manager,
+        ):
+            table_class.alter().drop_table().run_sync()
 
     def test_model_builder_async(self):
         async def build_model(model):

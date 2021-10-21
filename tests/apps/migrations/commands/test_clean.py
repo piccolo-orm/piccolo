@@ -20,14 +20,14 @@ class TestCleanMigrationCommand(TestCase):
         migration_ids = real_migration_ids + [orphaned_migration_id]
 
         Migration.insert(
-            *[Migration(name=i, app_name="example_app") for i in migration_ids]
+            *[Migration(name=i, app_name="music") for i in migration_ids]
         ).run_sync()
 
-        run_sync(clean(app_name="example_app", auto_agree=True))
+        run_sync(clean(app_name="music", auto_agree=True))
 
         remaining_rows = (
             Migration.select(Migration.name)
-            .where(Migration.app_name == "example_app")
+            .where(Migration.app_name == "music")
             .output(as_list=True)
             .order_by(Migration.name)
             .run_sync()
