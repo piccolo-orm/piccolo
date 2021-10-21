@@ -1036,7 +1036,6 @@ def drop_tables(*tables: t.Type[Table]) -> None:
                 for table in sorted_table_classes
             ]
         )
-        atomic.run_sync()
     else:
         atomic = engine.atomic()
         atomic.add(
@@ -1045,7 +1044,8 @@ def drop_tables(*tables: t.Type[Table]) -> None:
                 for table in tables
             ]
         )
-        atomic.run_sync()
+
+    atomic.run_sync()
 
 
 def sort_table_classes(

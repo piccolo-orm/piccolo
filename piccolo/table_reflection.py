@@ -24,8 +24,7 @@ class ImmutableDict(Immutable, dict):  # type: ignore
     clear = pop = popitem = setdefault = update = Immutable._immutable  # type: ignore  # noqa: E501
 
     def __new__(cls, *args):
-        new = dict.__new__(cls)
-        return new
+        return dict.__new__(cls)
 
     def copy(self):
         raise NotImplementedError(
@@ -81,7 +80,7 @@ class TableStorage(metaclass=Singleton):
 
     def __init__(self):
         self.tables = ImmutableDict()
-        self._schema_tables = dict()
+        self._schema_tables = {}
 
     async def reflect(
         self,
@@ -224,7 +223,7 @@ class TableStorage(metaclass=Singleton):
     def _to_list(value: t.Any) -> t.List:
         if isinstance(value, list):
             return value
-        elif isinstance(value, tuple) or isinstance(value, set):
+        elif isinstance(value, (tuple, set)):
             return list(value)
         elif isinstance(value, str):
             return [value]
