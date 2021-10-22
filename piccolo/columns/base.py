@@ -91,7 +91,7 @@ class ForeignKeyMeta:
             return self.references
         else:
             raise ValueError(
-                "The references attribute is neither a Table sublclass or a "
+                "The references attribute is neither a Table subclass or a "
                 "LazyTableReference instance."
             )
 
