@@ -146,17 +146,25 @@ class TestGenerate(TestCase):
         Make sure self-referencing foreign keys are handled correctly.
         """
 
-        MegaTable.alter().add_column("self_referencing_fk", ForeignKey("self")).run_sync()
+        MegaTable.alter().add_column(
+            "self_referencing_fk", ForeignKey("self")
+        ).run_sync()
 
         output_schema: OutputSchema = run_sync(get_output_schema())
 
         # Make sure the 'references' value of the generated column is "self".
         for table in output_schema.tables:
             if table.__name__ == "MegaTable":
+                column: ForeignKey = output_schema.tables[
+                    1
+                ].self_referencing_fk
+
                 self.assertEqual(
-                    output_schema.tables[1].self_referencing_fk,
-                    "self"
+                    column._foreign_key_meta.references._meta.tablename,
+                    MegaTable._meta.tablename,
                 )
+                self.assertEqual(column._meta.params["references"], "self")
+
 
 ###############################################################################
 
