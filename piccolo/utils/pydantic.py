@@ -54,7 +54,7 @@ def create_pydantic_model(
     all_optional: bool = False,
     model_name: t.Optional[str] = None,
     deserialize_json: bool = False,
-    **schema_extra
+    **schema_extra_kwargs,
 ) -> t.Type[pydantic.BaseModel]:
     """
     Create a Pydantic model representing a table.
@@ -152,7 +152,6 @@ def create_pydantic_model(
         extra = {
             "help_text": column._meta.help_text,
             "choices": column._meta.get_choices_dict(),
-            **schema_extra
         }
 
         if isinstance(column, ForeignKey):
@@ -189,7 +188,10 @@ def create_pydantic_model(
     model_name = model_name or table.__name__
 
     class CustomConfig(Config):
-        schema_extra = {"help_text": table._meta.help_text}
+        schema_extra = {
+            "help_text": table._meta.help_text,
+            **schema_extra_kwargs,
+        }
 
     return pydantic.create_model(
         model_name,
