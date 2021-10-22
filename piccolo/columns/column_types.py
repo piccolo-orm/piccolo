@@ -5,6 +5,7 @@ import decimal
 import inspect
 import typing as t
 import uuid
+from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from enum import Enum
 
@@ -1010,6 +1011,11 @@ class DoublePrecision(Real):
 ###############################################################################
 
 
+@dataclass
+class ForeignKeySetupResponse:
+    is_lazy: bool
+
+
 class ForeignKey(Column):  # lgtm [py/missing-equals]
     """
     Used to reference another table. Uses the same type as the primary key
@@ -1234,10 +1240,69 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
 
         super().__init__(**kwargs)
 
-        # The Table metaclass sets the actual value for `table`:
+        # The ``TableMetaclass``` sets the actual value for ``table``:
         self._foreign_key_meta = ForeignKeyMeta(
             references=Table, on_delete=on_delete, on_update=on_update
         )
+
+    def _setup(self, table_class: t.Type[Table]) -> ForeignKeySetupResponse:
+        """
+        This is called by the ``TableMetaclass``. A ``ForeignKey`` column can
+        only be completely setup once it's parent ``Table`` is known.
+
+        :param table_class:
+            The parent ``Table`` class for this column.
+
+        """
+        from piccolo.table import Table
+
+        params = self._meta.params
+        references = params["references"]
+
+        if isinstance(references, str):
+            if references == "self":
+                references = table_class
+            else:
+                if "." in references:
+                    # Don't allow relative modules - this may change in
+                    # the future.
+                    if references.startswith("."):
+                        raise ValueError("Relative imports aren't allowed")
+
+                    module_path, table_class_name = references.rsplit(
+                        ".", maxsplit=1
+                    )
+                else:
+                    table_class_name = references
+                    module_path = table_class.__module__
+
+                references = LazyTableReference(
+                    table_class_name=table_class_name,
+                    module_path=module_path,
+                )
+
+        is_lazy = isinstance(references, LazyTableReference)
+        is_table_class = inspect.isclass(references) and issubclass(
+            references, Table
+        )
+
+        if is_lazy or is_table_class:
+            self._foreign_key_meta.references = references
+        else:
+            raise ValueError(
+                "Error - ``references`` must be a ``Table`` subclass, or "
+                "a ``LazyTableReference`` instance."
+            )
+
+        if is_table_class:
+            # Record the reverse relationship on the target table.
+            references._meta._foreign_key_references.append(self)
+
+            # Allow columns on the referenced table to be accessed via
+            # auto completion.
+            self.set_proxy_columns()
+
+        return ForeignKeySetupResponse(is_lazy=is_lazy)
 
     def copy(self) -> ForeignKey:
         column: ForeignKey = copy.copy(self)

@@ -240,58 +240,15 @@ class Table(metaclass=TableMetaclass):
         )
 
         for foreign_key_column in foreign_key_columns:
-            params = foreign_key_column._meta.params
-            references = params["references"]
-
-            if isinstance(references, str):
-                if references == "self":
-                    references = cls
-                else:
-                    if "." in references:
-                        # Don't allow relative modules - this may change in
-                        # the future.
-                        if references.startswith("."):
-                            raise ValueError("Relative imports aren't allowed")
-
-                        module_path, table_class_name = references.rsplit(
-                            ".", maxsplit=1
-                        )
-                    else:
-                        table_class_name = references
-                        module_path = cls.__module__
-
-                    references = LazyTableReference(
-                        table_class_name=table_class_name,
-                        module_path=module_path,
-                    )
-
-            is_lazy = isinstance(references, LazyTableReference)
-            is_table_class = inspect.isclass(references) and issubclass(
-                references, Table
+            # ForeignKey columns require additional setup based on their
+            # parent Table.
+            foreign_key_setup_response = foreign_key_column._setup(
+                table_class=cls
             )
-
-            if is_lazy or is_table_class:
-                foreign_key_column._foreign_key_meta.references = references
-            else:
-                raise ValueError(
-                    "Error - ``references`` must be a ``Table`` subclass, or "
-                    "a ``LazyTableReference`` instance."
-                )
-
-            # Record the reverse relationship on the target table.
-            if is_table_class:
-                references._meta._foreign_key_references.append(
-                    foreign_key_column
-                )
-            elif is_lazy:
+            if foreign_key_setup_response.is_lazy:
                 LAZY_COLUMN_REFERENCES.foreign_key_columns.append(
                     foreign_key_column
                 )
-
-            # Allow columns on the referenced table to be accessed via
-            # auto completion.
-            if is_table_class:
-                foreign_key_column.set_proxy_columns()
 
         TABLE_REGISTRY.append(cls)
 
