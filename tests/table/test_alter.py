@@ -1,14 +1,20 @@
+from __future__ import annotations
+
+import typing as t
 from unittest import TestCase
 
 from piccolo.columns import BigInt, Integer, Numeric, Varchar
+from piccolo.columns.column_types import ForeignKey, Text
 from piccolo.table import Table
+from tests.base import DBTestCase, postgres_only
 from tests.example_apps.music.tables import Band, Manager
 
-from ..base import DBTestCase, postgres_only
+if t.TYPE_CHECKING:
+    from piccolo.columns.base import Column
 
 
 class TestRenameColumn(DBTestCase):
-    def _test_rename(self, column):
+    def _test_rename(self, column: Column):
         self.insert_row()
 
         rename_query = Band.alter().rename_column(column, "rating")
@@ -64,26 +70,41 @@ class TestDropColumn(DBTestCase):
         self._test_drop("popularity")
 
 
-class TestAdd(DBTestCase):
-    def test_add(self):
-        """
-        This needs a lot more work. Need to set values for existing rows.
-
-        Just write the test for now ...
-        """
+class TestAddColumn(DBTestCase):
+    def _test_add_column(
+        self, column: Column, column_name: str, expected_value: t.Any
+    ):
         self.insert_row()
-
-        add_query = Band.alter().add_column(
-            "weight", Integer(null=True, default=None)
-        )
-        add_query.run_sync()
+        Band.alter().add_column(column_name, column).run_sync()
 
         response = Band.raw("SELECT * FROM band").run_sync()
 
         column_names = response[0].keys()
-        self.assertTrue("weight" in column_names)
+        self.assertTrue(column_name in column_names)
 
-        self.assertEqual(response[0]["weight"], None)
+        self.assertEqual(response[0][column_name], expected_value)
+
+    def test_add_integer(self):
+        self._test_add_column(
+            column=Integer(null=True, default=None),
+            column_name="members",
+            expected_value=None,
+        )
+
+    def test_add_foreign_key(self):
+        self._test_add_column(
+            column=ForeignKey(references=Manager),
+            column_name="assistant_manager",
+            expected_value=None,
+        )
+
+    def test_add_text(self):
+        bio = "An amazing band"
+        self._test_add_column(
+            column=Text(default=bio),
+            column_name="bio",
+            expected_value=bio,
+        )
 
 
 @postgres_only

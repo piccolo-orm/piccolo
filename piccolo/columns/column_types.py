@@ -1240,9 +1240,12 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
 
         super().__init__(**kwargs)
 
-        # The ``TableMetaclass``` sets the actual value for ``table``:
+        # The ``TableMetaclass``` sets the actual value for
+        # ``ForeignKeyMeta.references``, if the user passed in a string.
         self._foreign_key_meta = ForeignKeyMeta(
-            references=Table, on_delete=on_delete, on_update=on_update
+            references=Table if isinstance(references, str) else references,
+            on_delete=on_delete,
+            on_update=on_update,
         )
 
     def _setup(self, table_class: t.Type[Table]) -> ForeignKeySetupResponse:

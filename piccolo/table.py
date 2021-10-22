@@ -17,10 +17,7 @@ from piccolo.columns.column_types import (
 from piccolo.columns.defaults.base import Default
 from piccolo.columns.indexes import IndexMethod
 from piccolo.columns.readable import Readable
-from piccolo.columns.reference import (
-    LAZY_COLUMN_REFERENCES,
-    LazyTableReference,
-)
+from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
 from piccolo.engine import Engine, engine_finder
 from piccolo.query import (
     Alter,
