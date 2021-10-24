@@ -5,9 +5,3 @@ target-version = ['py37', 'py38', 'py39']
 [tool.isort]
 profile = "black"
 line_length = 79
-
-[tool.pytest.ini_options]
-filterwarnings = [
-    "error::piccolo.apps.migrations.auto.serialisation.UniqueGlobalNameConflictWarning",
-]
-
