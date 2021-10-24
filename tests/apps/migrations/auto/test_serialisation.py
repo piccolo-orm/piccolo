@@ -1,12 +1,181 @@
+import decimal
+import uuid
+import warnings
 from enum import Enum
 from unittest import TestCase
 
-from piccolo.apps.migrations.auto.serialisation import serialise_params
+import pytest
+
+from piccolo.apps.migrations.auto.serialisation import (
+    CanConflictWithGlobalNames,
+    Import,
+    UniqueGlobalNameConflictWarning,
+    UniqueGlobalNames,
+    UniqueGlobalNamesMeta,
+    serialise_params,
+)
 from piccolo.columns.base import OnDelete
 from piccolo.columns.choices import Choice
 from piccolo.columns.column_types import Varchar
 from piccolo.columns.defaults import UUID4, DateNow, TimeNow, TimestampNow
 from piccolo.columns.reference import LazyTableReference
+
+
+class TestUniqueGlobalNamesMeta:
+    def test_duplicate_class_attribute_values_raises_error(self):
+        with pytest.raises(ValueError):
+
+            class IncorrectUniqueGlobalNames(metaclass=UniqueGlobalNamesMeta):
+                A = "duplicate"
+                B = "duplicate"
+
+
+class TestUniqueGlobals:
+    def test_contains_column_types(self):
+        assert getattr(UniqueGlobalNames, "COLUMN_VARCHAR", "Varchar")
+        assert getattr(UniqueGlobalNames, "COLUMN_SECRET", "Secret")
+        assert getattr(UniqueGlobalNames, "COLUMN_TEXT", "Text")
+        assert getattr(UniqueGlobalNames, "COLUMN_UUID", "UUID")
+        assert getattr(UniqueGlobalNames, "COLUMN_INTEGER", "Integer")
+        assert getattr(UniqueGlobalNames, "COLUMN_BIGINT", "BigInt")
+        assert getattr(UniqueGlobalNames, "COLUMN_SMALLINT", "SmallInt")
+        assert getattr(UniqueGlobalNames, "COLUMN_SERIAL", "Serial")
+        assert getattr(UniqueGlobalNames, "COLUMN_BIGSERIAL", "BigSerial")
+        assert getattr(UniqueGlobalNames, "COLUMN_PRIMARYKEY", "PrimaryKey")
+        assert getattr(UniqueGlobalNames, "COLUMN_TIMESTAMP", "Timestamp")
+        assert getattr(UniqueGlobalNames, "COLUMN_TIMESTAMPZ", "Timestampz")
+        assert getattr(UniqueGlobalNames, "COLUMN_DATE", "Date")
+        assert getattr(UniqueGlobalNames, "COLUMN_TIME", "Time")
+        assert getattr(UniqueGlobalNames, "COLUMN_INTERVAL", "Interval")
+        assert getattr(UniqueGlobalNames, "COLUMN_BOOLEAN", "Boolean")
+        assert getattr(UniqueGlobalNames, "COLUMN_NUMERIC", "Numeric")
+        assert getattr(UniqueGlobalNames, "COLUMN_DECIMAL", "Decimal")
+        assert getattr(UniqueGlobalNames, "COLUMN_FLOAT", "Float")
+        assert getattr(
+            UniqueGlobalNames, "COLUMN_DOUBLEPERCISION", "DoublePrecision"
+        )
+        assert getattr(UniqueGlobalNames, "COLUMN_FOREIGNKEY", "ForeignKey")
+        assert getattr(UniqueGlobalNames, "COLUMN_JSON", "JSON")
+        assert getattr(UniqueGlobalNames, "COLUMN_BYTEA", "Bytea")
+        assert getattr(UniqueGlobalNames, "COLUMN_BLOB", "Blob")
+        assert getattr(UniqueGlobalNames, "COLUMN_ARRAY", "Array")
+
+    def test_warn_if_is_conflicting_name(self):
+        with pytest.warns(None) as recorded_warnings:
+            UniqueGlobalNames.warn_if_is_conflicting_name(
+                "SuperMassiveBlackHole"
+            )
+
+            if len(recorded_warnings) != 0:
+                pytest.fail("Unexpected warning!")
+
+        with pytest.warns(
+            UniqueGlobalNameConflictWarning
+        ) as recorded_warnings:
+            UniqueGlobalNames.warn_if_is_conflicting_name("Varchar")
+
+            if len(recorded_warnings) != 1:
+                pytest.fail("Expected 1 warning!")
+
+    def test_is_conflicting_name(self):
+        assert (
+            UniqueGlobalNames.is_conflicting_name("SuperMassiveBlackHole")
+            is False
+        )
+        assert UniqueGlobalNames.is_conflicting_name("Varchar") is True
+
+    def test_warn_if_are_conflicting_objects(self):
+        class ConflictingCls1(CanConflictWithGlobalNames):
+            def warn_if_is_conflicting_with_global_name(self):
+                pass
+
+        class ConflictingCls2(CanConflictWithGlobalNames):
+            def warn_if_is_conflicting_with_global_name(self):
+                pass
+
+        class ConflictingCls3(CanConflictWithGlobalNames):
+            def warn_if_is_conflicting_with_global_name(self):
+                warnings.warn("test", UniqueGlobalNameConflictWarning)
+
+        with pytest.warns(None) as recorded_warnings:
+            UniqueGlobalNames.warn_if_are_conflicting_objects(
+                [ConflictingCls1(), ConflictingCls2()]
+            )
+
+            if len(recorded_warnings) != 0:
+                pytest.fail("Unexpected warning!")
+
+        with pytest.warns(
+            UniqueGlobalNameConflictWarning
+        ) as recorded_warnings:
+            UniqueGlobalNames.warn_if_are_conflicting_objects(
+                [ConflictingCls2(), ConflictingCls3()]
+            )
+
+            if len(recorded_warnings) != 1:
+                pytest.fail("Expected 1 warning!")
+
+
+class TestImport:
+    def test_with_module_only(self):
+        assert repr(Import(module="a.b.c")) == "import a.b.c"
+
+    def test_with_module_and_target(self):
+        assert repr(Import(module="a.b", target="c")) == "from a.b import c"
+
+    def test_warn_if_is_conflicting_with_global_name_with_module_only(self):
+        with pytest.warns(None) as recorded_warnings:
+            Import(module="a.b.c").warn_if_is_conflicting_with_global_name()
+
+            if len(recorded_warnings) != 0:
+                pytest.fail("Unexpected warning!")
+
+        with pytest.warns(
+            UniqueGlobalNameConflictWarning
+        ) as recorded_warnings:
+            Import(module="Varchar").warn_if_is_conflicting_with_global_name()
+
+            if len(recorded_warnings) != 1:
+                pytest.fail("Expected 1 warning!")
+
+        with pytest.warns(None) as recorded_warnings:
+            Import(
+                module="Varchar", expect_conflict_with_global_name="Varchar"
+            ).warn_if_is_conflicting_with_global_name()
+
+            if len(recorded_warnings) != 0:
+                pytest.fail("Unexpected warning!")
+
+    def test_warn_if_is_conflicting_with_global_name_with_module_and_target(
+        self,
+    ):
+        with pytest.warns(None) as recorded_warnings:
+            Import(
+                module="a.b", target="c"
+            ).warn_if_is_conflicting_with_global_name()
+
+            if len(recorded_warnings) != 0:
+                pytest.fail("Unexpected warning!")
+
+        with pytest.warns(
+            UniqueGlobalNameConflictWarning
+        ) as recorded_warnings:
+            Import(
+                module="a.b", target="Varchar"
+            ).warn_if_is_conflicting_with_global_name()
+
+            if len(recorded_warnings) != 1:
+                pytest.fail("Expected 1 warning!")
+
+        with pytest.warns(None) as recorded_warnings:
+            Import(
+                module="a.b",
+                target="Varchar",
+                expect_conflict_with_global_name="Varchar",
+            ).warn_if_is_conflicting_with_global_name()
+
+            if len(recorded_warnings) != 0:
+                pytest.fail("Unexpected warning!")
 
 
 def example_function():
@@ -34,8 +203,20 @@ class TestSerialiseParams(TestCase):
         )
 
     def test_uuid(self):
+        serialised = serialise_params(params={"default": uuid.UUID(int=4)})
+        assert (
+            repr(serialised.params["default"])
+            == 'uuid.UUID("00000000-0000-0000-0000-000000000004")'
+        )
+
         serialised = serialise_params(params={"default": UUID4()})
         self.assertTrue(serialised.params["default"].__repr__() == "UUID4()")
+
+    def test_decimal(self):
+        serialised = serialise_params(
+            params={"default": decimal.Decimal("1.2")}
+        )
+        assert repr(serialised.params["default"]) == 'decimal.Decimal("1.2")'
 
     def test_lazy_table_reference(self):
         # These are equivalent:
