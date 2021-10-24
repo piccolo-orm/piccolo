@@ -369,3 +369,17 @@ class TestDBColumnName(TestCase):
         model = BandModel(regrettable_column_name="test")
 
         self.assertTrue(model.name == "test")
+
+
+class TestSchemaExtraKwargs(TestCase):
+    def test_schema_extra_kwargs(self):
+        """
+        Make sure that the ``schema_extra_kwargs`` arguments are reflected in
+        Pydantic model's schema.
+        """
+
+        class Band(Table):
+            name = Varchar()
+
+        model = create_pydantic_model(Band, visible_columns=("name",))
+        self.assertEqual(model.schema()["visible_columns"], ("name",))
