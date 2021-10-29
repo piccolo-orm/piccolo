@@ -46,24 +46,24 @@ async def tasks():
 
 
 @app.post('/tasks/', response_model=TaskModelOut)
-async def create_task(task: TaskModelIn):
-    task = Task(**task.__dict__)
+async def create_task(task_model: TaskModelIn):
+    task = Task(**task_model.__dict__)
     await task.save().run()
-    return TaskModelOut(**task.__dict__)
+    return task.to_dict()
 
 
 @app.put('/tasks/{task_id}/', response_model=TaskModelOut)
-async def update_task(task_id: int, task: TaskModelIn):
-    _task = await Task.objects().where(Task.id == task_id).first().run()
-    if not _task:
+async def update_task(task_id: int, task_model: TaskModelIn):
+    task = await Task.objects().where(Task.id == task_id).first().run()
+    if not task:
         return JSONResponse({}, status_code=404)
 
-    for key, value in task.__dict__.items():
-        setattr(_task, key, value)
+    for key, value in task_model.__dict__.items():
+        setattr(task, key, value)
 
-    await _task.save().run()
+    await task.save().run()
 
-    return TaskModelOut(**_task.__dict__)
+    return task.to_dict()
 
 
 @app.delete('/tasks/{task_id}/')
