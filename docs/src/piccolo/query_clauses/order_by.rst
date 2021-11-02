@@ -12,18 +12,16 @@ To order the results by a certain column (ascending):
 
 .. code-block:: python
 
-    b = Band
-    b.select().order_by(
-        b.name
+    Band.select().order_by(
+        Band.name
     ).run_sync()
 
 To order by descending:
 
 .. code-block:: python
 
-    b = Band
-    b.select().order_by(
-        b.name,
+    Band.select().order_by(
+        Band.name,
         ascending=False
     ).run_sync()
 
@@ -31,8 +29,7 @@ You can order by multiple columns, and even use joins:
 
 .. code-block:: python
 
-    b = Band
-    b.select().order_by(
-        b.name,
-        b.manager.name
+    Band.select().order_by(
+        Band.name,
+        Band.manager.name
     ).run_sync()

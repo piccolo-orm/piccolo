@@ -14,7 +14,7 @@ Now install piccolo, ideally inside a `virtualenv <https://docs.python-guide.org
 .. code-block:: python
 
     # Optional - creating a virtualenv on Unix:
-    python3.7 -m venv my_project
+    python3 -m venv my_project
     cd my_project
     source bin/activate
 
