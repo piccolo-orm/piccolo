@@ -10,6 +10,8 @@ You can use ``group_by`` clauses with the following queries:
 It is used in combination with aggregate functions - ``Count`` is currently
 supported.
 
+-------------------------------------------------------------------------------
+
 Count
 -----
 

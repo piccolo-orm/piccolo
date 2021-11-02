@@ -12,7 +12,7 @@ typical ORM.
 
     ./select
     ./objects
-    ./alter  
+    ./alter
     ./create_table
     ./delete
     ./exists
@@ -20,6 +20,8 @@ typical ORM.
     ./raw
     ./update
     ./transactions
+
+-------------------------------------------------------------------------------
 
 Comparisons
 -----------

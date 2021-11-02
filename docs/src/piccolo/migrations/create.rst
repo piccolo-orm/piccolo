@@ -43,6 +43,8 @@ The contents of an empty migration file looks like this:
 Replace the ``run`` function with whatever you want the migration to do -
 typically running some SQL. It can be a function or a coroutine.
 
+-------------------------------------------------------------------------------
+
 The golden rule
 ---------------
 

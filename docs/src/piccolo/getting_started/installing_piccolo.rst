@@ -6,6 +6,8 @@ Python
 
 You need `Python 3.7 <https://www.python.org/downloads/>`_ or above installed on your system.
 
+-------------------------------------------------------------------------------
+
 Pip
 ---
 

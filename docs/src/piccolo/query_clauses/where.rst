@@ -13,6 +13,8 @@ You can use ``where`` clauses with the following queries:
 
 It allows powerful filtering of your data.
 
+-------------------------------------------------------------------------------
+
 Equal / Not Equal
 -----------------
 

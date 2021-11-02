@@ -10,6 +10,8 @@ This deletes any matching rows from the table.
     >>> Band.delete().where(Band.name == 'Rustaceans').run_sync()
     []
 
+-------------------------------------------------------------------------------
+
 force
 -----
 
@@ -25,6 +27,8 @@ the data from a table.
     # Works fine:
     >>> Band.delete(force=True).run_sync()
     []
+
+-------------------------------------------------------------------------------
 
 Query clauses
 -------------
