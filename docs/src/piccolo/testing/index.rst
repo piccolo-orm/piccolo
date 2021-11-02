@@ -36,7 +36,7 @@ You can build a random ``Band`` which will also build and save a random ``Manage
 
     band = await ModelBuilder.build(Band)  # Band instance with random values persisted
 
-.. note:: ``ModelBuilder.build(Band)`` persists record into the database by default.
+.. note:: ``ModelBuilder.build(Band)`` persists the record into the database by default.
 
 You can also run it synchronously if you prefer:
 
