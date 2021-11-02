@@ -44,7 +44,7 @@ It's important to register your new app with the ``APP_REGISTRY`` in
     APP_REGISTRY = AppRegistry(apps=['my_app.piccolo_app'])
 
 
-Anytime you invoke the `piccolo` command, you will now be able to perform
+Anytime you invoke the ``piccolo`` command, you will now be able to perform
 operations on your app, such as :ref:`Migrations`.
 
 -------------------------------------------------------------------------------
@@ -94,7 +94,7 @@ migrations_folder_path
 ======================
 
 Specifies where your app's migrations are stored. By default, a folder called
-`piccolo_migrations` is used.
+``piccolo_migrations`` is used.
 
 table_classes
 =============
@@ -130,6 +130,9 @@ The module path should be from the root of the project (the same directory as
 your ``piccolo_conf.py`` file, rather than a relative path).
 
 You can filter the ``Table`` subclasses returned using tags (see :ref:`TableTags`).
+
+Source
+~~~~~~
 
 .. currentmodule:: piccolo.conf.apps
 
