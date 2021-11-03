@@ -17,6 +17,7 @@ This is used to update any rows in the table which match the criteria.
 As well as replacing values with new ones, you can also modify existing values, for
 instance by adding to an integer.
 
+-------------------------------------------------------------------------------
 
 Modifying values
 ----------------
@@ -78,6 +79,7 @@ You can concatenate values:
 
 You can currently only combine two values together at a time.
 
+-------------------------------------------------------------------------------
 
 Query clauses
 -------------

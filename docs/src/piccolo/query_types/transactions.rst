@@ -8,6 +8,8 @@ Transactions allow multiple queries to be committed only once successful.
 This is useful for things like migrations, where you can't have it fail in an
 inbetween state.
 
+-------------------------------------------------------------------------------
+
 Atomic
 ------
 
@@ -23,6 +25,8 @@ transaction before running it.
 
     # You're also able to run this synchronously:
     transaction.run_sync()
+
+-------------------------------------------------------------------------------
 
 Transaction
 -----------

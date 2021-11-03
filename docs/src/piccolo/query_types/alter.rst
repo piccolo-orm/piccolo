@@ -7,6 +7,7 @@ This is used to modify an existing table.
 
 .. hint:: You can use migrations instead of manually altering the schema - see :ref:`Migrations`.
 
+-------------------------------------------------------------------------------
 
 add_column
 ----------
@@ -17,6 +18,7 @@ Used to add a column to an existing table.
 
     Band.alter().add_column('members', Integer()).run_sync()
 
+-------------------------------------------------------------------------------
 
 drop_column
 -----------
@@ -27,6 +29,7 @@ Used to drop an existing column.
 
     Band.alter().drop_column('popularity').run_sync()
 
+-------------------------------------------------------------------------------
 
 drop_table
 ----------
@@ -46,6 +49,8 @@ instead. It will drop them in the correct order.
 
     drop_tables(Band, Manager)
 
+-------------------------------------------------------------------------------
+
 rename_column
 -------------
 
@@ -55,6 +60,7 @@ Used to rename an existing column.
 
     Band.alter().rename_column(Band.popularity, 'rating').run_sync()
 
+-------------------------------------------------------------------------------
 
 set_null
 --------
@@ -69,6 +75,7 @@ Set whether a column is nullable or not.
     # To stop a row being nullable:
     Band.alter().set_null(Band.name, False).run_sync()
 
+-------------------------------------------------------------------------------
 
 set_unique
 ----------

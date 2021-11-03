@@ -3,7 +3,7 @@
 Playground
 ==========
 
-Piccolo ships with a handy command called `playground`, which is a great way
+Piccolo ships with a handy command called ``playground``, which is a great way
 to learn the basics.
 
 .. code-block:: bash
@@ -21,6 +21,8 @@ Piccolo, no matter how experienced you are.
 .. warning::
     Each time you launch the playground it flushes out the existing tables and rebuilds them, so don't use it for anything permanent!
 
+-------------------------------------------------------------------------------
+
 SQLite
 ------
 
@@ -28,11 +30,15 @@ SQLite is used by default, which provides a zero config way of getting started.
 
 A ``piccolo.sqlite`` file will get created in the current directory.
 
+-------------------------------------------------------------------------------
+
 Advanced usage
 ---------------
 
 To see how to use the playground with Postgres, and other advanced usage, see
 :ref:`PlaygroundAdvanced`.
+
+-------------------------------------------------------------------------------
 
 Test queries
 ------------
@@ -50,6 +56,8 @@ Give these queries a go:
     Band.objects().run_sync()
     Band.select(Band.name).run_sync()
     Band.select(Band.name, Band.manager.name).run_sync()
+
+-------------------------------------------------------------------------------
 
 Tab completion is your friend
 -----------------------------
