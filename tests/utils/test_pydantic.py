@@ -280,6 +280,7 @@ class TestExcludeColumn(TestCase):
         with self.assertRaises(ValueError):
             create_pydantic_model(Computer, exclude_columns=(Computer2.CPU,))
 
+
 class TestIncludeColumn(TestCase):
     def test_include(self):
         class Computer(Table):
@@ -306,6 +307,7 @@ class TestIncludeColumn(TestCase):
                 exclude_columns=(Computer.CPU,),
                 include_columns=(Computer.CPU,),
             )
+
 
 class TestNestedModel(TestCase):
     def test_nested_models(self):
