@@ -25,7 +25,7 @@ If your ``piccolo_conf.py`` is not in the default location or uses a different n
 
 .. code-block:: bash
 
-    export PICCOLO_CONF=<path/to/conf.py>
+    export PICCOLO_CONF=<path/to/new/piccolo_conf.py>
 
 This can be useful if an application is run from outside the application directory such as ``uvicorn app.app:app``.
 
