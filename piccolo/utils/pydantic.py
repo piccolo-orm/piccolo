@@ -48,6 +48,7 @@ def pydantic_json_validator(cls, value):
 def create_pydantic_model(
     table: t.Type[Table],
     nested: bool = False,
+    include_columns: t.Tuple[Column, ...] = (),
     exclude_columns: t.Tuple[Column, ...] = (),
     include_default_columns: bool = False,
     include_readable: bool = False,
@@ -64,6 +65,9 @@ def create_pydantic_model(
         for.
     :param nested:
         Whether ``ForeignKey`` columns are converted to nested Pydantic models.
+     :param include_columns:
+        A tuple of ``Column`` instances that should be included in the
+        Pydantic model.
     :param exclude_columns:
         A tuple of ``Column`` instances that should be excluded from the
         Pydantic model.
@@ -100,7 +104,7 @@ def create_pydantic_model(
     """
     columns: t.Dict[str, t.Any] = {}
     validators: t.Dict[str, classmethod] = {}
-    piccolo_columns = (
+    piccolo_columns = tuple(
         table._meta.columns
         if include_default_columns
         else table._meta.non_default_columns
@@ -113,6 +117,14 @@ def create_pydantic_model(
         for column in exclude_columns
     ):
         raise ValueError(f"Exclude columns ({exclude_columns!r}) are invalid.")
+
+    if include_columns:
+        piccolo_columns = include_columns
+
+    if exclude_columns and include_columns:
+        raise ValueError(
+            "Include and exclude columns can't be used at the same time."
+        )
 
     for column in piccolo_columns:
         # normal __contains__ checks __eq__ as well which returns ``Where``

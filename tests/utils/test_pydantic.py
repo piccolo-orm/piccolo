@@ -280,6 +280,32 @@ class TestExcludeColumn(TestCase):
         with self.assertRaises(ValueError):
             create_pydantic_model(Computer, exclude_columns=(Computer2.CPU,))
 
+class TestIncludeColumn(TestCase):
+    def test_include(self):
+        class Computer(Table):
+            CPU = Varchar()
+            GPU = Varchar()
+
+        pydantic_model = create_pydantic_model(
+            Computer,
+            include_columns=(Computer.CPU,),
+        )
+
+        properties = pydantic_model.schema()["properties"]
+        self.assertIsInstance(properties.get("CPU"), dict)
+        self.assertIsNone(properties.get("GPU"))
+
+    def test_include_exclude_error(self):
+        class Computer(Table):
+            CPU = Varchar()
+            GPU = Varchar()
+
+        with self.assertRaises(ValueError):
+            create_pydantic_model(
+                Computer,
+                exclude_columns=(Computer.CPU,),
+                include_columns=(Computer.CPU,),
+            )
 
 class TestNestedModel(TestCase):
     def test_nested_models(self):
