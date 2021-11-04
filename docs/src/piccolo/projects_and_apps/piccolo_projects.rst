@@ -21,6 +21,14 @@ The file serves two important purposes:
  * Contains your database settings
  * Is used for registering :ref:`PiccoloApps`.
 
+If your ``piccolo_conf.py`` is not in the default location or uses a different name consider:
+
+.. code-block:: bash
+
+    export PICCOLO_CONF=<path/to/conf.py>
+
+This can be useful if an application is run from outside the application directory such as ``uvicorn app.app:app``.
+
 -------------------------------------------------------------------------------
 
 Example
