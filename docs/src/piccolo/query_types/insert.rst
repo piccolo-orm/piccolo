@@ -19,6 +19,8 @@ We can insert multiple rows in one go:
         Band(name="Gophers")
     ).run_sync()
 
+-------------------------------------------------------------------------------
+
 add
 ---
 

@@ -54,6 +54,7 @@ def create_pydantic_model(
     all_optional: bool = False,
     model_name: t.Optional[str] = None,
     deserialize_json: bool = False,
+    **schema_extra_kwargs,
 ) -> t.Type[pydantic.BaseModel]:
     """
     Create a Pydantic model representing a table.
@@ -80,9 +81,19 @@ def create_pydantic_model(
         you can override it if you want multiple Pydantic models based off the
         same Piccolo table.
     :param deserialize_json:
-        By default, the values of any Piccolo JSON or JSONB columns are
+        By default, the values of any Piccolo ``JSON`` or ``JSONB`` columns are
         returned as strings. By setting this parameter to True, they will be
         returned as objects.
+    :param schema_extra_kwargs:
+        This can be used to add additional fields to the schema. This is
+        very useful when using Pydantic's JSON Schema features. For example:
+
+        .. code-block:: python
+
+            >>> my_model = create_pydantic_model(Band, my_extra_field="Hello")
+            >>> my_model.schema()
+            {..., "my_extra_field": "Hello"}
+
     :returns:
         A Pydantic model.
 
@@ -187,7 +198,10 @@ def create_pydantic_model(
     model_name = model_name or table.__name__
 
     class CustomConfig(Config):
-        schema_extra = {"help_text": table._meta.help_text}
+        schema_extra = {
+            "help_text": table._meta.help_text,
+            **schema_extra_kwargs,
+        }
 
     return pydantic.create_model(
         model_name,

@@ -10,7 +10,7 @@ A Piccolo project is a collection of apps.
 piccolo_conf.py
 ---------------
 
-A project requires a `piccolo_conf.py` file. To create this file, use the following command:
+A project requires a ``piccolo_conf.py`` file. To create this file, use the following command:
 
 .. code-block:: bash
 

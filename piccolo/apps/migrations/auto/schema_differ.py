@@ -9,7 +9,12 @@ from piccolo.apps.migrations.auto.diffable_table import (
     TableDelta,
 )
 from piccolo.apps.migrations.auto.operations import RenameColumn, RenameTable
-from piccolo.apps.migrations.auto.serialisation import Import, serialise_params
+from piccolo.apps.migrations.auto.serialisation import (
+    Definition,
+    Import,
+    UniqueGlobalNames,
+    serialise_params,
+)
 from piccolo.utils.printing import get_fixed_length_string
 
 
@@ -70,7 +75,7 @@ class RenameColumnCollection:
 class AlterStatements:
     statements: t.List[str]
     extra_imports: t.List[Import] = field(default_factory=list)
-    extra_definitions: t.List[str] = field(default_factory=list)
+    extra_definitions: t.List[Definition] = field(default_factory=list)
 
 
 @dataclass
@@ -307,7 +312,7 @@ class SchemaDiffer:
     def alter_columns(self) -> AlterStatements:
         response: t.List[str] = []
         extra_imports: t.List[Import] = []
-        extra_definitions: t.List[str] = []
+        extra_definitions: t.List[Definition] = []
         for table in self.schema:
             snapshot_table = self._get_snapshot_table(table.class_name)
             if snapshot_table:
@@ -341,6 +346,10 @@ class SchemaDiffer:
                         Import(
                             module=alter_column.column_class.__module__,
                             target=alter_column.column_class.__name__,
+                            expect_conflict_with_global_name=getattr(
+                                UniqueGlobalNames,
+                                f"COLUMN_{alter_column.column_class.__name__.upper()}",  # noqa: E501
+                            ),
                         )
                     )
 
@@ -349,6 +358,10 @@ class SchemaDiffer:
                         Import(
                             module=alter_column.old_column_class.__module__,
                             target=alter_column.old_column_class.__name__,
+                            expect_conflict_with_global_name=getattr(
+                                UniqueGlobalNames,
+                                f"COLUMN_{alter_column.old_column_class.__name__.upper()}",  # noqa: E501
+                            ),
                         )
                     )
 
@@ -388,7 +401,7 @@ class SchemaDiffer:
     def add_columns(self) -> AlterStatements:
         response: t.List[str] = []
         extra_imports: t.List[Import] = []
-        extra_definitions: t.List[str] = []
+        extra_definitions: t.List[Definition] = []
         for table in self.schema:
             snapshot_table = self._get_snapshot_table(table.class_name)
             if snapshot_table:
@@ -413,6 +426,10 @@ class SchemaDiffer:
                     Import(
                         module=column_class.__module__,
                         target=column_class.__name__,
+                        expect_conflict_with_global_name=getattr(
+                            UniqueGlobalNames,
+                            f"COLUMN_{column_class.__name__.upper()}",
+                        ),
                     )
                 )
 
@@ -444,7 +461,7 @@ class SchemaDiffer:
 
         response: t.List[str] = []
         extra_imports: t.List[Import] = []
-        extra_definitions: t.List[str] = []
+        extra_definitions: t.List[Definition] = []
         for table in new_tables:
             if (
                 table.class_name
@@ -464,6 +481,10 @@ class SchemaDiffer:
                     Import(
                         module=column.__class__.__module__,
                         target=column.__class__.__name__,
+                        expect_conflict_with_global_name=getattr(
+                            UniqueGlobalNames,
+                            f"COLUMN_{column.__class__.__name__.upper()}",
+                        ),
                     )
                 )
 

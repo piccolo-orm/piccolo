@@ -1,6 +1,80 @@
 Changes
 =======
 
+0.58.0
+------
+
+Improved Pydantic docs
+~~~~~~~~~~~~~~~~~~~~~~
+
+The Pydantic docs used to be in the Piccolo API repo, but have been moved over
+to this repo. We took this opportunity to improve them significantly with
+additional examples. Courtesy @sinisaos.
+
+Internal code refactoring
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Some of the code has been optimised and cleaned up. Courtesy @yezz123.
+
+Schema generation for recursive foreign keys
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When using ``piccolo schema generate``, it would get stuck in a loop if a
+table had a foreign key column which referenced itself. Thanks to @knguyen5
+for reporting this issue, and @wmshort for implementing the fix. The output
+will now look like:
+
+.. code-block:: python
+
+  class Employee(Table):
+      name = Varchar()
+      manager = ForeignKey("self")
+
+Fixing a bug with Alter.add_column
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When using the ``Alter.add_column`` API directly (not via migrations), it would
+fail with foreign key columns. For example:
+
+.. code-block:: python
+
+  SomeTable.alter().add_column(
+      name="my_fk_column",
+      column=ForeignKey(SomeOtherTable)
+    ).run_sync()
+
+This has now been fixed. Thanks to @wmshort for discovering this issue.
+
+create_pydantic_model improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Additional fields can now be added to the Pydantic schema. This is useful
+when using Pydantic's JSON schema functionality:
+
+.. code-block:: python
+
+    my_model = create_pydantic_model(Band, my_extra_field="Hello")
+    >>> my_model.schema()
+    {..., "my_extra_field": "Hello"}
+
+This feature was added to support new features in Piccolo Admin.
+
+Fixing a bug with import clashes in migrations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In certain situations it was possible to create a migration file with clashing
+imports. For example:
+
+.. code-block:: python
+
+    from uuid import UUID
+    from piccolo.columns.column_types import UUID
+
+Piccolo now tries to detect these clashes, and prevent them. If they can't be
+prevented automatically, a warning is shown to the user. Courtesy @0scarB.
+
+-------------------------------------------------------------------------------
+
 0.57.0
 ------
 

@@ -17,6 +17,8 @@ Examples include:
 `See the docs <https://piccolo-api.readthedocs.io/en/latest/index.html>`_ for
 more information.
 
+-------------------------------------------------------------------------------
+
 Piccolo Admin
 -------------
 
@@ -27,6 +29,8 @@ project on `Github <https://github.com/piccolo-orm/piccolo_admin>`_.
 
 It's a modern UI built with Vue JS, which supports powerful data filtering, and
 CSV exports. It's the crown jewel in the Piccolo ecosystem!
+
+-------------------------------------------------------------------------------
 
 Piccolo Examples
 ----------------

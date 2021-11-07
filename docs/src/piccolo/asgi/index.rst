@@ -15,6 +15,8 @@ By using the ``piccolo asgi new`` command, Piccolo will scaffold an ASGI web
 app for you, which includes everything you need to get started. The command
 will ask for your preferences on which libraries to use.
 
+-------------------------------------------------------------------------------
+
 Routing frameworks
 ******************
 
@@ -31,6 +33,8 @@ Which to use?
 
 All are great choices. FastAPI is built on top of Starlette, so they're
 very similar. FastAPI is useful if you want to document a REST API.
+
+-------------------------------------------------------------------------------
 
 Web servers
 ************

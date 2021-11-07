@@ -13,21 +13,21 @@ You can use ``where`` clauses with the following queries:
 
 It allows powerful filtering of your data.
 
+-------------------------------------------------------------------------------
+
 Equal / Not Equal
 -----------------
 
 .. code-block:: python
 
-    b = Band
-    b.select().where(
-        b.name == 'Pythonistas'
+    Band.select().where(
+        Band.name == 'Pythonistas'
     ).run_sync()
 
 .. code-block:: python
 
-    b = Band
-    b.select().where(
-        b.name != 'Rustaceans'
+    Band.select().where(
+        Band.name != 'Rustaceans'
     ).run_sync()
 
 .. hint:: With ``Boolean`` columns, some linters will complain if you write
@@ -45,9 +45,8 @@ You can use the ``<, >, <=, >=`` operators, which work as you expect.
 
 .. code-block:: python
 
-    b = Band
-    b.select().where(
-        b.popularity >= 100
+    Band.select().where(
+        Band.popularity >= 100
     ).run_sync()
 
 -------------------------------------------------------------------------------
@@ -59,21 +58,20 @@ The percentage operator is required to designate where the match should occur.
 
 .. code-block:: python
 
-    b = Band
-    b.select().where(
-        b.name.like('Py%')  # Matches the start of the string
+    Band.select().where(
+        Band.name.like('Py%')  # Matches the start of the string
     ).run_sync()
 
-    b.select().where(
-        b.name.like('%istas')  # Matches the end of the string
+    Band.select().where(
+        Band.name.like('%istas')  # Matches the end of the string
     ).run_sync()
 
-    b.select().where(
-        b.name.like('%is%')  # Matches anywhere in string
+    Band.select().where(
+        Band.name.like('%is%')  # Matches anywhere in string
     ).run_sync()
 
-    b.select().where(
-        b.name.like('Pythonistas')  # Matches the entire string
+    Band.select().where(
+        Band.name.like('Pythonistas')  # Matches the entire string
     ).run_sync()
 
 ``ilike`` is identical, except it's Postgres specific and case insensitive.
@@ -87,9 +85,8 @@ Usage is the same as ``like`` excepts it excludes matching rows.
 
 .. code-block:: python
 
-    b = Band
-    b.select().where(
-        b.name.not_like('Py%')
+    Band.select().where(
+        Band.name.not_like('Py%')
     ).run_sync()
 
 -------------------------------------------------------------------------------
@@ -99,16 +96,14 @@ is_in / not_in
 
 .. code-block:: python
 
-    b = Band
-    b.select().where(
-        b.name.is_in(['Pythonistas'])
+    Band.select().where(
+        Band.name.is_in(['Pythonistas'])
     ).run_sync()
 
 .. code-block:: python
 
-    b = Band
-    b.select().where(
-        b.name.not_in(['Rustaceans'])
+    Band.select().where(
+        Band.name.not_in(['Rustaceans'])
     ).run_sync()
 
 -------------------------------------------------------------------------------
@@ -121,32 +116,28 @@ with None:
 
 .. code-block:: python
 
-    b = Band
-
     # Fetch all bands with a manager
-    b.select().where(
-        b.manager != None
+    Band.select().where(
+        Band.manager != None
     ).run_sync()
 
     # Fetch all bands without a manager
-    b.select().where(
-        b.manager == None
+    Band.select().where(
+        Band.manager == None
     ).run_sync()
 
 To avoid the linter errors, you can use `is_null` and `is_not_null` instead.
 
 .. code-block:: python
 
-    b = Band
-
     # Fetch all bands with a manager
-    b.select().where(
-        b.manager.is_not_null()
+    Band.select().where(
+        Band.manager.is_not_null()
     ).run_sync()
 
     # Fetch all bands without a manager
-    b.select().where(
-        b.manager.is_null()
+    Band.select().where(
+        Band.manager.is_null()
     ).run_sync()
 
 -------------------------------------------------------------------------------
@@ -158,13 +149,12 @@ You can make complex ``where`` queries using ``&`` for AND, and ``|`` for OR.
 
 .. code-block:: python
 
-    b = Band
-    b.select().where(
-        (b.popularity >= 100) & (b.popularity < 1000)
+    Band.select().where(
+        (Band.popularity >= 100) & (Band.popularity < 1000)
     ).run_sync()
 
-    b.select().where(
-        (b.popularity >= 100) | (b.name ==  'Pythonistas')
+    Band.select().where(
+        (Band.popularity >= 100) | (Band.name ==  'Pythonistas')
     ).run_sync()
 
 You can make really complex ``where`` clauses if you so choose - just be
@@ -178,32 +168,28 @@ Using multiple ``where`` clauses is equivalent to an AND.
 
 .. code-block:: python
 
-    b = Band
-
     # These are equivalent:
-    b.select().where(
-        (b.popularity >= 100) & (b.popularity < 1000)
+    Band.select().where(
+        (Band.popularity >= 100) & (Band.popularity < 1000)
     ).run_sync()
 
-    b.select().where(
-        b.popularity >= 100
+    Band.select().where(
+        Band.popularity >= 100
     ).where(
-        b.popularity < 1000
+        Band.popularity < 1000
     ).run_sync()
 
 Also, multiple arguments inside ``where`` clause is equivalent to an AND.
 
 .. code-block:: python
 
-    b = Band
-
     # These are equivalent:
-    b.select().where(
-        (b.popularity >= 100) & (b.popularity < 1000)
+    Band.select().where(
+        (Band.popularity >= 100) & (Band.popularity < 1000)
     ).run_sync()
 
-    b.select().where(
-        b.popularity >= 100, b.popularity < 1000
+    Band.select().where(
+        Band.popularity >= 100, Band.popularity < 1000
     ).run_sync()
 
 Using And / Or directly
@@ -216,12 +202,10 @@ Rather than using the ``|`` and ``&`` characters, you can use the ``And`` and
 
     from piccolo.columns.combination import And, Or
 
-    b = Band
-
-    b.select().where(
+    Band.select().where(
         Or(
-            And(b.popularity >= 100, b.popularity < 1000),
-            b.name == 'Pythonistas'
+            And(Band.popularity >= 100, Band.popularity < 1000),
+            Band.name == 'Pythonistas'
         )
     ).run_sync()
 
@@ -259,7 +243,6 @@ untrusted source, otherwise it could lead to a SQL injection attack.
 
     from piccolo.columns.combination import WhereRaw
 
-    b = Band
-    b.select().where(
-        WhereRaw("name = 'Pythonistas'") | (b.popularity > 1000)
+    Band.select().where(
+        WhereRaw("name = 'Pythonistas'") | (Band.popularity > 1000)
     ).run_sync()

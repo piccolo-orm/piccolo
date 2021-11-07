@@ -6,6 +6,8 @@ Contributing
 If you want to dig deeper into the Piccolo internals, follow these
 instructions.
 
+-------------------------------------------------------------------------------
+
 Get the tests running
 ---------------------
 
@@ -20,16 +22,20 @@ Get the tests running
  * Run the test suite with Postgres: ``./scripts/test-postgres.sh``
  * Run the test suite with Sqlite: ``./scripts/test-sqlite.sh``
 
+-------------------------------------------------------------------------------
+
 Contributing to the docs
 ------------------------
 
 The docs are written using Sphinx. To get them running locally:
 
+ * Install the requirements: ``pip install -r requirements/doc-requirements.txt``
  * ``cd docs``
- * Install the requirements: ``pip install -r doc-requirements.txt``
  * Do an initial build of the docs: ``make html``
  * Serve the docs: ``python serve_docs.py``
  * The docs will auto rebuild as you make changes.
+
+-------------------------------------------------------------------------------
 
 Code style
 ----------

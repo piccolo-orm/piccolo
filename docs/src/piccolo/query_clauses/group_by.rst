@@ -10,6 +10,8 @@ You can use ``group_by`` clauses with the following queries:
 It is used in combination with aggregate functions - ``Count`` is currently
 supported.
 
+-------------------------------------------------------------------------------
+
 Count
 -----
 
@@ -19,18 +21,20 @@ In the following query, we get a count of the number of bands per manager:
 
     >>> from piccolo.query.methods.select import Count
 
-    >>> b = Band
-    >>> b.select(
-    >>>     b.manager.name,
-    >>>     Count(b.manager)
+    >>> Band.select(
+    >>>     Band.manager.name,
+    >>>     Count(Band.manager)
     >>> ).group_by(
-    >>>     b.manager
+    >>>     Band.manager
     >>> ).run_sync()
 
     [
         {"manager.name": "Graydon", "count": 1},
         {"manager.name": "Guido", "count": 1}
     ]
+
+Source
+~~~~~~
 
 .. currentmodule:: piccolo.query.methods.select
 

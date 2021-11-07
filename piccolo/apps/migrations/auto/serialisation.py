@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import abc
 import builtins
 import datetime
 import decimal
 import inspect
 import typing as t
 import uuid
+import warnings
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
@@ -17,6 +19,238 @@ from piccolo.table import Table
 from piccolo.utils.repr import repr_class_instance
 
 from .serialisation_legacy import deserialise_legacy_params
+
+###############################################################################
+
+
+class CanConflictWithGlobalNames(abc.ABC):
+    @abc.abstractmethod
+    def warn_if_is_conflicting_with_global_name(self):
+        ...
+
+
+class UniqueGlobalNamesMeta(type):
+    """
+    Metaclass for ``UniqueGlobalNames``.
+
+    Fulfills the following functions:
+
+    - Assure that no two class attributes have the same value.
+    - Add class attributes `COLUMN_<capitalized column class name>`
+      to the class for each column type.
+    """
+
+    def __new__(mcs, name, bases, class_attributes):
+        class_attributes_with_columns = mcs.merge_class_attributes(
+            class_attributes,
+            mcs.get_column_class_attributes(),
+        )
+
+        return super().__new__(
+            mcs,
+            name,
+            bases,
+            mcs.merge_class_attributes(
+                class_attributes_with_columns,
+                dict(
+                    unique_names=mcs.get_unique_class_attribute_values(
+                        class_attributes_with_columns
+                    )
+                ),
+            ),
+        )
+
+    @staticmethod
+    def get_unique_class_attribute_values(
+        class_attributes: t.Dict[str, t.Any]
+    ) -> t.Set[t.Any]:
+        """
+        Return class attribute values.
+
+        Raises an error if attribute values are not unique.
+        """
+
+        unique_attribute_values = set()
+        for attribute_name, attribute_value in class_attributes.items():
+            # Skip special attributes, i.e. "__<special attribute name>__"
+            if attribute_name.startswith("__") and attribute_name.endswith(
+                "__"
+            ):
+                continue
+
+            if attribute_value in unique_attribute_values:
+                raise ValueError(
+                    f"Duplicate unique global name {attribute_value}"
+                )
+            unique_attribute_values.add(attribute_value)
+
+        return unique_attribute_values
+
+    @staticmethod
+    def merge_class_attributes(
+        class_attributes1: t.Dict[str, t.Any],
+        class_attributes2: t.Dict[str, t.Any],
+    ) -> t.Dict[str, t.Any]:
+        """
+        Merges two class attribute dictionaries.
+
+        Raise an error if both dictionaries have an attribute
+        with the same name.
+        """
+
+        for attribute_name in class_attributes2:
+            if attribute_name in class_attributes1:
+                raise ValueError(f"Duplicate class attribute {attribute_name}")
+
+        return dict(**class_attributes1, **class_attributes2)
+
+    @staticmethod
+    def get_column_class_attributes() -> t.Dict[str, str]:
+        """Automatically generates global names for each column type."""
+
+        import piccolo.columns.column_types
+
+        class_attributes: t.Dict[str, str] = {}
+        for module_global in piccolo.columns.column_types.__dict__.values():
+            try:
+                if module_global is not Column and issubclass(
+                    module_global, Column
+                ):
+                    class_attributes[
+                        f"COLUMN_{module_global.__name__.upper()}"
+                    ] = module_global.__name__
+            except TypeError:
+                pass
+
+        return class_attributes
+
+
+class UniqueGlobalNames(metaclass=UniqueGlobalNamesMeta):
+    """
+    Contains global names that may be used during serialisation.
+
+    The global names are stored as class attributes. Names that may
+    occur in the global namespace after serialisation should be listed here.
+
+    This class is meant to prevent against the use of conflicting global
+    names. If possible imports and global definitions should use this
+    class to ensure that no conflicts arise during serialisation.
+    """
+
+    # Piccolo imports
+    TABLE = Table.__name__
+    DEFAULT = Default.__name__
+    # Column types are omitted because they are added by metaclass
+
+    # Standard library imports
+    STD_LIB_ENUM = Enum.__name__
+    STD_LIB_MODULE_DECIMAL = "decimal"
+
+    # Third-party library imports
+    EXTERNAL_MODULE_UUID = "uuid"
+    EXTERNAL_UUID = f"{EXTERNAL_MODULE_UUID}.{uuid.UUID.__name__}"
+
+    # This attribute is set in metaclass
+    unique_names: t.Set[str]
+
+    @classmethod
+    def warn_if_is_conflicting_name(
+        cls, name: str, name_type: str = "Name"
+    ) -> None:
+        """Raise an error if ``name`` matches a class attribute value."""
+
+        if cls.is_conflicting_name(name):
+            warnings.warn(
+                f"{name_type} '{name}' could conflict with global name",
+                UniqueGlobalNameConflictWarning,
+            )
+
+    @classmethod
+    def is_conflicting_name(cls, name: str) -> bool:
+        """Check if ``name`` matches a class attribute value."""
+
+        return name in cls.unique_names
+
+    @staticmethod
+    def warn_if_are_conflicting_objects(
+        objects: t.Iterable[CanConflictWithGlobalNames],
+    ) -> None:
+        """
+        Call each object's ``raise_if_is_conflicting_with_global_name`` method.
+        """
+
+        for obj in objects:
+            obj.warn_if_is_conflicting_with_global_name()
+
+
+class UniqueGlobalNameConflictWarning(UserWarning):
+    pass
+
+
+###############################################################################
+
+
+@dataclass
+class Import(CanConflictWithGlobalNames):
+    module: str
+    target: t.Optional[str] = None
+    expect_conflict_with_global_name: t.Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if (
+            self.expect_conflict_with_global_name is not None
+            and not UniqueGlobalNames.is_conflicting_name(
+                self.expect_conflict_with_global_name
+            )
+        ):
+            raise ValueError(
+                f"`expect_conflict_with_global_name="
+                f'"{self.expect_conflict_with_global_name}"` '
+                f"is not listed in `{UniqueGlobalNames.__name__}`"
+            )
+
+    def __repr__(self):
+        if self.target is None:
+            return f"import {self.module}"
+
+        return f"from {self.module} import {self.target}"
+
+    def __hash__(self):
+        if self.target is None:
+            return hash(f"{self.module}")
+
+        return hash(f"{self.module}-{self.target}")
+
+    def __lt__(self, other):
+        return repr(self) < repr(other)
+
+    def warn_if_is_conflicting_with_global_name(self):
+        if self.target is None:
+            name = self.module
+        else:
+            name = self.target
+
+        if name == self.expect_conflict_with_global_name:
+            return
+
+        if UniqueGlobalNames.is_conflicting_name(name):
+            UniqueGlobalNames.warn_if_is_conflicting_name(
+                name, name_type="Import"
+            )
+
+
+class Definition(CanConflictWithGlobalNames, abc.ABC):
+    @abc.abstractmethod
+    def __repr__(self):
+        ...
+
+
+@dataclass
+class SerialisedParams:
+    params: t.Dict[str, t.Any]
+    extra_imports: t.List[Import]
+    extra_definitions: t.List[Definition] = field(default_factory=list)
+
 
 ###############################################################################
 
@@ -91,7 +325,7 @@ class SerialisedEnumInstance:
 
 
 @dataclass
-class SerialisedTableType:
+class SerialisedTableType(Definition):
     table_type: t.Type[Table]
 
     def __hash__(self):
@@ -104,7 +338,6 @@ class SerialisedTableType:
 
     def __repr__(self):
         tablename = self.table_type._meta.tablename
-        class_name = self.table_type.__name__
 
         # We have to add the primary key column definition too, so foreign
         # keys can be created with the correct type.
@@ -116,12 +349,20 @@ class SerialisedTableType:
         )
 
         return (
-            f'class {class_name}(Table, tablename="{tablename}"): '
+            f"class {self.table_class_name}"
+            f'({UniqueGlobalNames.TABLE}, tablename="{tablename}"): '
             f"{pk_column_name} = {serialised_pk_column}"
         )
 
     def __lt__(self, other):
         return repr(self) < repr(other)
+
+    @property
+    def table_class_name(self) -> str:
+        return self.table_type.__name__
+
+    def warn_if_is_conflicting_with_global_name(self) -> None:
+        UniqueGlobalNames.warn_if_is_conflicting_name(self.table_class_name)
 
 
 @dataclass
@@ -137,7 +378,7 @@ class SerialisedEnumType:
     def __repr__(self):
         class_name = self.enum_type.__name__
         params = {i.name: i.value for i in self.enum_type}
-        return f"Enum('{class_name}', {params})"
+        return f"{UniqueGlobalNames.STD_LIB_ENUM}('{class_name}', {params})"
 
 
 @dataclass
@@ -165,32 +406,23 @@ class SerialisedUUID:
         return check_equality(self, other)
 
     def __repr__(self):
-        return f"UUID('{str(self.instance)}')"
-
-
-###############################################################################
+        return f'{UniqueGlobalNames.EXTERNAL_UUID}("{str(self.instance)}")'
 
 
 @dataclass
-class Import:
-    module: str
-    target: str
-
-    def __repr__(self):
-        return f"from {self.module} import {self.target}"
+class SerialisedDecimal:
+    instance: decimal.Decimal
 
     def __hash__(self):
-        return hash(f"{self.module}-{self.target}")
+        return hash(repr(self))
 
-    def __lt__(self, other):
-        return repr(self) < repr(other)
+    def __eq__(self, other):
+        return check_equality(self, other)
 
-
-@dataclass
-class SerialisedParams:
-    params: t.Dict[str, t.Any]
-    extra_imports: t.List[Import]
-    extra_definitions: t.List[str] = field(default_factory=list)
+    def __repr__(self):
+        return f"{UniqueGlobalNames.STD_LIB_MODULE_DECIMAL}." + repr(
+            self.instance
+        ).replace("'", '"')
 
 
 ###############################################################################
@@ -203,7 +435,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
     """
     params = deepcopy(params)
     extra_imports: t.List[Import] = []
-    extra_definitions: t.List[t.Any] = []
+    extra_definitions: t.List[Definition] = []
 
     for key, value in params.items():
 
@@ -224,10 +456,15 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
             extra_imports.extend(serialised_params.extra_imports)
             extra_definitions.extend(serialised_params.extra_definitions)
 
+            column_class_name = column.__class__.__name__
             extra_imports.append(
                 Import(
                     module=column.__class__.__module__,
-                    target=column.__class__.__name__,
+                    target=column_class_name,
+                    expect_conflict_with_global_name=getattr(
+                        UniqueGlobalNames,
+                        f"COLUMN_{column_class_name.upper()}",
+                    ),
                 )
             )
             params[key] = SerialisedColumnInstance(
@@ -242,6 +479,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
                 Import(
                     module=value.__class__.__module__,
                     target=value.__class__.__name__,
+                    expect_conflict_with_global_name=UniqueGlobalNames.DEFAULT,
                 )
             )
             continue
@@ -262,13 +500,27 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
         # UUIDs
         if isinstance(value, uuid.UUID):
             params[key] = SerialisedUUID(instance=value)
-            extra_imports.append(Import(module="uuid", target="UUID"))
+            extra_imports.append(
+                Import(
+                    module=UniqueGlobalNames.EXTERNAL_MODULE_UUID,
+                    expect_conflict_with_global_name=(
+                        UniqueGlobalNames.EXTERNAL_MODULE_UUID
+                    ),
+                )
+            )
             continue
 
         # Decimals
         if isinstance(value, decimal.Decimal):
-            # Already has a good __repr__.
-            extra_imports.append(Import(module="decimal", target="Decimal"))
+            params[key] = SerialisedDecimal(instance=value)
+            extra_imports.append(
+                Import(
+                    module=UniqueGlobalNames.STD_LIB_MODULE_DECIMAL,
+                    expect_conflict_with_global_name=(
+                        UniqueGlobalNames.STD_LIB_MODULE_DECIMAL
+                    ),
+                )
+            )
             continue
 
         # Enum instances
@@ -299,7 +551,15 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
         # Enum types
         if inspect.isclass(value) and issubclass(value, Enum):
             params[key] = SerialisedEnumType(enum_type=value)
-            extra_imports.append(Import(module="enum", target="Enum"))
+            extra_imports.append(
+                Import(
+                    module="enum",
+                    target=UniqueGlobalNames.STD_LIB_ENUM,
+                    expect_conflict_with_global_name=(
+                        UniqueGlobalNames.STD_LIB_ENUM
+                    ),
+                )
+            )
             for member in value:
                 type_ = type(member.value)
                 module = inspect.getmodule(type_)
@@ -330,7 +590,11 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
                 SerialisedTableType(table_type=table_type)
             )
             extra_imports.append(
-                Import(module=Table.__module__, target="Table")
+                Import(
+                    module=Table.__module__,
+                    target=UniqueGlobalNames.TABLE,
+                    expect_conflict_with_global_name=UniqueGlobalNames.TABLE,
+                )
             )
             continue
 
@@ -339,13 +603,22 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
             params[key] = SerialisedCallable(callable_=value)
             extra_definitions.append(SerialisedTableType(table_type=value))
             extra_imports.append(
-                Import(module=Table.__module__, target="Table")
+                Import(
+                    module=Table.__module__,
+                    target=UniqueGlobalNames.TABLE,
+                    expect_conflict_with_global_name=UniqueGlobalNames.TABLE,
+                )
             )
 
+            primary_key_class = value._meta.primary_key.__class__
             extra_imports.append(
                 Import(
-                    module=value._meta.primary_key.__class__.__module__,
-                    target=value._meta.primary_key.__class__.__name__,
+                    module=primary_key_class.__module__,
+                    target=primary_key_class.__name__,
+                    expect_conflict_with_global_name=getattr(
+                        UniqueGlobalNames,
+                        f"COLUMN_{primary_key_class.__name__.upper()}",
+                    ),
                 )
             )
             # Include the extra imports and definitions required for the
@@ -368,10 +641,16 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
 
         # All other types can remain as is.
 
+    unique_extra_imports = [i for i in set(extra_imports)]
+    UniqueGlobalNames.warn_if_are_conflicting_objects(unique_extra_imports)
+
+    unique_extra_definitions = [i for i in set(extra_definitions)]
+    UniqueGlobalNames.warn_if_are_conflicting_objects(unique_extra_definitions)
+
     return SerialisedParams(
         params=params,
-        extra_imports=[i for i in set(extra_imports)],
-        extra_definitions=[i for i in set(extra_definitions)],
+        extra_imports=unique_extra_imports,
+        extra_definitions=unique_extra_definitions,
     )
 
 
@@ -390,6 +669,8 @@ def deserialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
         elif isinstance(value, SerialisedClassInstance):
             params[key] = value.instance
         elif isinstance(value, SerialisedUUID):
+            params[key] = value.instance
+        elif isinstance(value, SerialisedDecimal):
             params[key] = value.instance
         elif isinstance(value, SerialisedCallable):
             params[key] = value.callable_

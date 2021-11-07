@@ -58,7 +58,7 @@ Here's an example ``piccolo_conf.py`` file:
 
     DB = SQLiteEngine(path='my_db.sqlite')
 
-.. hint:: A good place for your piccolo_conf file is at the root of your
+.. hint:: A good place for your ``piccolo_conf.py`` file is at the root of your
     project, where the Python interpreter will be launched.
 
 .. _PICCOLO_CONF:
