@@ -1,3 +1,5 @@
+![Logo](docs/logo_hero.png "Piccolo Logo")
+
 # Piccolo
 
 ![Tests](https://github.com/piccolo-orm/piccolo/actions/workflows/tests.yaml/badge.svg)
