@@ -49,8 +49,8 @@ class TestCreate(TestCase):
                 (BaseUser.admin == True)  # noqa: E712
                 & (BaseUser.username == "bob123")
                 & (BaseUser.email == "bob@test.com")
-                & (BaseUser.superuser == True)
-                & (BaseUser.active == True)
+                & (BaseUser.superuser.eq(True))
+                & (BaseUser.active.eq(True))
             )
             .run_sync()
         )
@@ -72,8 +72,8 @@ class TestCreate(TestCase):
                 (BaseUser.admin == True)  # noqa: E712
                 & (BaseUser.username == "bob123")
                 & (BaseUser.email == "bob@test.com")
-                & (BaseUser.superuser == True)
-                & (BaseUser.active == True)
+                & (BaseUser.superuser.eq(True))
+                & (BaseUser.active.eq(True))
             )
             .run_sync()
         )
