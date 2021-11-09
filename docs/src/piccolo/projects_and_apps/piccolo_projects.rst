@@ -10,7 +10,7 @@ A Piccolo project is a collection of apps.
 piccolo_conf.py
 ---------------
 
-A project requires a ``piccolo_conf.py`` file. To create this file, use the following command:
+A project requires a ``piccolo_conf.py`` file. To create this, use the following command:
 
 .. code-block:: bash
 
@@ -18,16 +18,39 @@ A project requires a ``piccolo_conf.py`` file. To create this file, use the foll
 
 The file serves two important purposes:
 
- * Contains your database settings
+ * Contains your database settings.
  * Is used for registering :ref:`PiccoloApps`.
 
-If your ``piccolo_conf.py`` is not in the default location or uses a different name consider:
+Location
+~~~~~~~~
+
+By convention, the ``piccolo_conf.py`` file should be at the root of your project:
+
+.. code-block::
+
+    my_project/
+        piccolo_conf.py
+        my_app/
+            piccolo_app.py
+
+This means that when you use the ``piccolo`` CLI from the ``my_project``
+folder it can import ``piccolo_conf.py``.
+
+If you prefer to keep ``piccolo_conf.py`` in a different location, or to give
+it a different name, you can do so using the ``PICCOLO_CONF`` environment
+variable (see :ref:`PICCOLO_CONF<PICCOLO_CONF>`). For example:
+
+.. code-block::
+
+    my_project/
+        conf/
+            piccolo_conf_local.py
+        my_app/
+            piccolo_app.py
 
 .. code-block:: bash
 
-    export PICCOLO_CONF=<path/to/new/piccolo_conf.py>
-
-This can be useful if an application is run from outside the application directory such as ``uvicorn app.app:app``.
+    export PICCOLO_CONF=conf.piccolo_conf_local
 
 -------------------------------------------------------------------------------
 
