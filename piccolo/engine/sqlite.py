@@ -343,7 +343,7 @@ class SQLiteEngine(Engine):
 
     """
 
-    __slots__ = ("connection_kwargs",)
+    __slots__ = ("connection_kwargs", "transaction_connection")
 
     engine_type = "sqlite"
     min_version_number = 3.25
