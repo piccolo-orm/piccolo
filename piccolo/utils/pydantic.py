@@ -146,13 +146,13 @@ def create_pydantic_model(
     columns: t.Dict[str, t.Any] = {}
     validators: t.Dict[str, classmethod] = {}
     piccolo_columns = (
-        tuple(
+        include_columns
+        if include_columns
+        else tuple(
             table._meta.columns
             if include_default_columns
             else table._meta.non_default_columns
         )
-        if not include_columns
-        else include_columns
     )
 
     for column in piccolo_columns:
