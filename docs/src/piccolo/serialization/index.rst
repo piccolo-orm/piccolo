@@ -54,14 +54,20 @@ We can then create model instances from data we fetch from the database:
 
 You have several options for configuring the model, as shown below.
 
-exclude_columns
-~~~~~~~~~~~~~~~
+include_columns / exclude_columns
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If we want to exclude the ``popularity`` column from the ``Band`` table:
 
 .. code-block:: python
 
     BandModel = create_pydantic_model(Band, exclude_columns=(Band.popularity,))
+
+Conversely, if you only wanted the ``popularity`` column:
+
+.. code-block:: python
+
+    BandModel = create_pydantic_model(Band, include_columns=(Band.popularity,))
 
 nested
 ~~~~~~
@@ -148,8 +154,9 @@ By default the primary key column isn't included - you can add it using:
 Source
 ~~~~~~
 
-.. automodule:: piccolo.utils.pydantic
-    :members:
+.. currentmodule:: piccolo.utils.pydantic
+
+.. autofunction:: create_pydantic_model
 
 .. hint:: A good place to see ``create_pydantic_model`` in action is `PiccoloCRUD <https://github.com/piccolo-orm/piccolo_api/blob/master/piccolo_api/crud/endpoints.py>`_,
   as it uses ``create_pydantic_model`` extensively to create Pydantic models
