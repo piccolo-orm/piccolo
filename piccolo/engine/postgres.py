@@ -228,7 +228,13 @@ class PostgresEngine(Engine):
 
     """  # noqa: E501
 
-    __slots__ = ("config", "extensions", "pool", "transaction_connection")
+    __slots__ = (
+        "config",
+        "extensions",
+        "log_queries",
+        "pool",
+        "transaction_connection",
+    )
 
     engine_type = "postgres"
     min_version_number = 9.6

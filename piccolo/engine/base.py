@@ -20,6 +20,9 @@ class Batch:
 
 
 class Engine(metaclass=ABCMeta):
+
+    __slots__ = ()
+
     def __init__(self):
         run_sync(self.check_version())
         run_sync(self.prep_database())
