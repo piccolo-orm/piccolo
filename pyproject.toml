@@ -5,3 +5,12 @@ target-version = ['py37', 'py38', 'py39']
 [tool.isort]
 profile = "black"
 line_length = 79
+
+[tool.mypy]
+[[tool.mypy.overrides]]
+module = [
+    "orjson",
+    "jinja2",
+    "dateutil"
+]
+ignore_missing_imports = true
