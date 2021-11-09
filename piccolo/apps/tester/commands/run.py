@@ -64,6 +64,9 @@ def run(
     """
     Run your unit test suite using Pytest.
 
+    While running, it sets the ``PICCOLO_TEST_RUNNER`` environment variable to
+    ``'True'``, in case any other code needs to be aware of this.
+
     :param piccolo_conf:
         The piccolo_conf module to use when running your tests. This will
         contain the database settings you want to use. For example
@@ -76,4 +79,6 @@ def run(
     with set_env_var(var_name="PICCOLO_CONF", temp_value=piccolo_conf):
         refresh_db()
         args = pytest_args.split(" ")
-        sys.exit(run_pytest(args))
+
+        with set_env_var(var_name="PICCOLO_TEST_RUNNER", temp_value="True"):
+            sys.exit(run_pytest(args))
