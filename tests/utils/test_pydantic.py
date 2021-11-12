@@ -4,7 +4,16 @@ from unittest import TestCase
 import pydantic
 from pydantic import ValidationError
 
-from piccolo.columns import JSON, JSONB, Array, Numeric, Secret, Text, Varchar
+from piccolo.columns import (
+    JSON,
+    JSONB,
+    Array,
+    Integer,
+    Numeric,
+    Secret,
+    Text,
+    Varchar,
+)
 from piccolo.columns.column_types import ForeignKey
 from piccolo.table import Table
 from piccolo.utils.pydantic import create_pydantic_model
@@ -281,32 +290,55 @@ class TestExcludeColumn(TestCase):
             create_pydantic_model(Computer, exclude_columns=(Computer2.CPU,))
 
 
-class TestIncludeColumn(TestCase):
+class TestIncludeColumns(TestCase):
     def test_include(self):
-        class Computer(Table):
-            CPU = Varchar()
-            GPU = Varchar()
+        class Band(Table):
+            name = Varchar()
+            popularity = Integer()
 
         pydantic_model = create_pydantic_model(
-            Computer,
-            include_columns=(Computer.CPU,),
+            Band,
+            include_columns=(Band.name,),
         )
 
         properties = pydantic_model.schema()["properties"]
-        self.assertIsInstance(properties.get("CPU"), dict)
-        self.assertIsNone(properties.get("GPU"))
+        self.assertIsInstance(properties.get("name"), dict)
+        self.assertIsNone(properties.get("popularity"))
 
     def test_include_exclude_error(self):
-        class Computer(Table):
-            CPU = Varchar()
-            GPU = Varchar()
+        """
+        An exception should be raised if both `include_columns` and
+        `exclude_columns` are provided.
+        """
+
+        class Band(Table):
+            name = Varchar()
+            popularity = Integer()
 
         with self.assertRaises(ValueError):
             create_pydantic_model(
-                Computer,
-                exclude_columns=(Computer.CPU,),
-                include_columns=(Computer.CPU,),
+                Band,
+                exclude_columns=(Band.name,),
+                include_columns=(Band.name,),
             )
+
+    def test_join(self):
+        """
+        Make sure that columns on related tables work.
+        """
+
+        class Manager(Table):
+            name = Varchar(length=10)
+
+        class Band(Table):
+            name = Varchar(length=10)
+            manager = ForeignKey(Manager)
+
+        pydantic_model = create_pydantic_model(
+            table=Band, include_columns=(Band.name, Band.manager.name)
+        )
+
+        self.assertIsNotNone(pydantic_model.__fields__.get("manager.name"))
 
 
 class TestNestedModel(TestCase):

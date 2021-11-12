@@ -48,7 +48,15 @@ def is_table_column(column: Column, table: t.Type[Table]) -> bool:
     """
     Verify that the given ``Column`` belongs to the given ``Table``.
     """
-    return column._meta.table is table
+    if column._meta.table is table:
+        return True
+    elif (
+        column._meta.call_chain
+        and column._meta.call_chain[0]._meta.table is table
+    ):
+        # We also allow the column if it's joined from the table.
+        return True
+    return False
 
 
 def validate_columns(
@@ -161,7 +169,14 @@ def create_pydantic_model(
         if exclude_columns and any(column is obj for obj in exclude_columns):
             continue
 
-        column_name = column._meta.name
+        column_name = (
+            ".".join(
+                [i._meta.name for i in column._meta.call_chain]
+                + [column._meta.name]
+            )
+            if column._meta.call_chain
+            else column._meta.name
+        )
 
         is_optional = True if all_optional else not column._meta.required
 
