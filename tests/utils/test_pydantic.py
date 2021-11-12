@@ -346,6 +346,10 @@ class TestIncludeColumns(TestCase):
         )
         self.assertEqual(getattr(model_instance, "name"), "Pythonistas")
         self.assertEqual(getattr(model_instance, "manager.name"), "Guido")
+        self.assertEqual(
+            model_instance.dict(),
+            {"name": "Pythonistas", "manager.name": "Guido"},
+        )
 
 
 class TestNestedModel(TestCase):
