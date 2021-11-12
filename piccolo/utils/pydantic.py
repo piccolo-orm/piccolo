@@ -245,7 +245,7 @@ def create_pydantic_model(
         elif isinstance(column, (JSON, JSONB)):
             field = pydantic.Field(format="json", extra=extra, **params)
         elif isinstance(column, Secret):
-            field = pydantic.Field(extra={"secret": True, **extra})
+            field = pydantic.Field(extra={"secret": True, **extra}, **params)
         else:
             field = pydantic.Field(extra=extra, **params)
 

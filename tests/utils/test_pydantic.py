@@ -328,10 +328,10 @@ class TestIncludeColumns(TestCase):
         """
 
         class Manager(Table):
-            name = Varchar(length=10)
+            name = Varchar()
 
         class Band(Table):
-            name = Varchar(length=10)
+            name = Varchar()
             manager = ForeignKey(Manager)
 
         pydantic_model = create_pydantic_model(
@@ -339,6 +339,13 @@ class TestIncludeColumns(TestCase):
         )
 
         self.assertIsNotNone(pydantic_model.__fields__.get("manager.name"))
+
+        # Make sure it can be instantiated:
+        model_instance = pydantic_model(
+            **{"name": "Pythonistas", "manager.name": "Guido"}
+        )
+        self.assertEqual(getattr(model_instance, "name"), "Pythonistas")
+        self.assertEqual(getattr(model_instance, "manager.name"), "Guido")
 
 
 class TestNestedModel(TestCase):
