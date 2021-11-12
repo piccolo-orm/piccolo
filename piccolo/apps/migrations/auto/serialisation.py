@@ -244,6 +244,21 @@ class Definition(CanConflictWithGlobalNames, abc.ABC):
     def __repr__(self):
         ...
 
+    ###########################################################################
+    # To allow sorting:
+
+    def __lt__(self, value):
+        return self.__repr__() < value.__repr__()
+
+    def __le__(self, value):
+        return self.__repr__() <= value.__repr__()
+
+    def __gt__(self, value):
+        return self.__repr__() > value.__repr__()
+
+    def __ge__(self, value):
+        return self.__repr__() >= value.__repr__()
+
 
 @dataclass
 class SerialisedParams:

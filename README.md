@@ -1,4 +1,4 @@
-# Piccolo
+![Logo](https://raw.githubusercontent.com/piccolo-orm/piccolo/master/docs/logo_hero.png "Piccolo Logo")
 
 ![Tests](https://github.com/piccolo-orm/piccolo/actions/workflows/tests.yaml/badge.svg)
 ![Release](https://github.com/piccolo-orm/piccolo/actions/workflows/release.yaml/badge.svg)
@@ -8,7 +8,7 @@
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/piccolo-orm/piccolo.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/piccolo-orm/piccolo/alerts/)
 [![codecov](https://codecov.io/gh/piccolo-orm/piccolo/branch/master/graph/badge.svg?token=V19CWH7MXX)](https://codecov.io/gh/piccolo-orm/piccolo)
 
-A fast, user friendly ORM and query builder which supports asyncio. [Read the docs](https://piccolo-orm.readthedocs.io/en/latest/).
+Piccolo is a fast, user friendly ORM and query builder which supports asyncio. [Read the docs](https://piccolo-orm.readthedocs.io/en/latest/).
 
 ## Features
 

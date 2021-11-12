@@ -44,11 +44,41 @@ def pydantic_json_validator(cls, value):
         return value
 
 
+def is_table_column(column: Column, table: t.Type[Table]) -> bool:
+    """
+    Verify that the given ``Column`` belongs to the given ``Table``.
+    """
+    if column._meta.table is table:
+        return True
+    elif (
+        column._meta.call_chain
+        and column._meta.call_chain[0]._meta.table is table
+    ):
+        # We also allow the column if it's joined from the table.
+        return True
+    return False
+
+
+def validate_columns(
+    columns: t.Tuple[Column, ...], table: t.Type[Table]
+) -> bool:
+    """
+    Verify that each column is a ``Column``` instance, and its parent is the
+    given ``Table``.
+    """
+    return all(
+        isinstance(column, Column)
+        and is_table_column(column=column, table=table)
+        for column in columns
+    )
+
+
 @lru_cache()
 def create_pydantic_model(
     table: t.Type[Table],
     nested: bool = False,
     exclude_columns: t.Tuple[Column, ...] = (),
+    include_columns: t.Tuple[Column, ...] = (),
     include_default_columns: bool = False,
     include_readable: bool = False,
     all_optional: bool = False,
@@ -66,7 +96,10 @@ def create_pydantic_model(
         Whether ``ForeignKey`` columns are converted to nested Pydantic models.
     :param exclude_columns:
         A tuple of ``Column`` instances that should be excluded from the
-        Pydantic model.
+        Pydantic model. Only specify ``include_column`` or ``exclude_column``.
+    :param include_columns:
+        A tuple of ``Column`` instances that should be included in the
+        Pydantic model. Only specify ``include_column`` or ``exclude_column``.
     :param include_default_columns:
         Whether to include columns like ``id`` in the serialiser. You will
         typically include these columns in GET requests, but don't require
@@ -98,29 +131,52 @@ def create_pydantic_model(
         A Pydantic model.
 
     """
+    if exclude_columns and include_columns:
+        raise ValueError(
+            "`include_columns` and `exclude_columns` can't be used at the "
+            "same time."
+        )
+
+    if exclude_columns:
+        if not validate_columns(columns=exclude_columns, table=table):
+            raise ValueError(
+                f"`exclude_columns` are invalid: ({exclude_columns!r})"
+            )
+
+    if include_columns:
+        if not validate_columns(columns=include_columns, table=table):
+            raise ValueError(
+                f"`include_columns` are invalid: ({include_columns!r})"
+            )
+
+    ###########################################################################
+
     columns: t.Dict[str, t.Any] = {}
     validators: t.Dict[str, classmethod] = {}
     piccolo_columns = (
-        table._meta.columns
-        if include_default_columns
-        else table._meta.non_default_columns
+        include_columns
+        if include_columns
+        else tuple(
+            table._meta.columns
+            if include_default_columns
+            else table._meta.non_default_columns
+        )
     )
-
-    if not all(
-        isinstance(column, Column)
-        # Make sure that every column is tied to the current Table
-        and column._meta.table is table
-        for column in exclude_columns
-    ):
-        raise ValueError(f"Exclude columns ({exclude_columns!r}) are invalid.")
 
     for column in piccolo_columns:
         # normal __contains__ checks __eq__ as well which returns ``Where``
         # instance which always evaluates to ``True``
-        if any(column is obj for obj in exclude_columns):
+        if exclude_columns and any(column is obj for obj in exclude_columns):
             continue
 
-        column_name = column._meta.name
+        column_name = (
+            ".".join(
+                [i._meta.name for i in column._meta.call_chain]
+                + [column._meta.name]
+            )
+            if column._meta.call_chain
+            else column._meta.name
+        )
 
         is_optional = True if all_optional else not column._meta.required
 
@@ -189,7 +245,7 @@ def create_pydantic_model(
         elif isinstance(column, (JSON, JSONB)):
             field = pydantic.Field(format="json", extra=extra, **params)
         elif isinstance(column, Secret):
-            field = pydantic.Field(extra={"secret": True, **extra})
+            field = pydantic.Field(extra={"secret": True, **extra}, **params)
         else:
             field = pydantic.Field(extra=extra, **params)
 

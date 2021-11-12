@@ -1,6 +1,22 @@
 Changes
 =======
 
+0.59.0
+------
+
+ * When using ``piccolo asgi new`` to generate a FastAPI app, the generated code
+   is now cleaner. It also contains a ``conftest.py`` file, which encourages
+   people to use ``piccolo tester run`` rather than using ``pytest`` directly.
+ * Tidied up docs, and added logo.
+ * Clarified the use of the ``PICCOLO_CONF`` environment variable in the docs
+   (courtesy @theelderbeever).
+ * ``create_pydantic_model`` now accepts an ``include_columns`` argument, in
+   case you only want a few columns in your model, it's faster than using
+   ``exclude_columns`` (courtesy @sinisaos).
+ * Updated linters, and fixed new errors.
+
+-------------------------------------------------------------------------------
+
 0.58.0
 ------
 
