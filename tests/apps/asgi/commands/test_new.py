@@ -39,8 +39,9 @@ class TestNewApp(TestCase):
     )
     def test_new_created_files_content(self, *args, **kwargs):
         """
-        Test that the created files have the correct content
-        list all .py files inside root directory and check if they are valid python code with ast.parse
+        Test that the created files have the correct content.
+        list all .py files inside root directory and check
+         if they are valid python code with ast.parse
         """
         root = os.path.join(tempfile.gettempdir(), "asgi_app")
 
@@ -77,8 +78,10 @@ class TestNewApp(TestCase):
 
         venv_path = os.path.join(root, "venv")
         os.mkdir(venv_path)
-        os.system(f"#!/bin/bash &&"
-                  f"cd {root} && virtualenv venv &&"
-                  f" source {venv_path}/bin/activate &&"
-                  f" pip install -r requirements.txt &&"
-                  f" python main.py")
+        os.system(
+            f"#!/bin/bash &&"
+            f"cd {root} && virtualenv venv &&"
+            f" source {venv_path}/bin/activate &&"
+            f" pip install -r requirements.txt &&"
+            f" python main.py"
+        )
