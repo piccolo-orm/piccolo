@@ -66,8 +66,7 @@ class TestModelBuilder(unittest.TestCase):
         )
 
         self.assertIn(
-            queried_shirt.size,
-            ["s", "l", "m"],
+            queried_shirt.size, ["s", "l", "m"],
         )
 
     def test_model_builder_with_foreign_key(self):
@@ -81,16 +80,14 @@ class TestModelBuilder(unittest.TestCase):
         band = ModelBuilder.build_sync(Band, minimal=True)
 
         self.assertEqual(
-            Band.exists().where(Band.id == band.id).run_sync(),
-            True,
+            Band.exists().where(Band.id == band.id).run_sync(), True,
         )
 
     def test_model_builder_with_no_persist(self):
         band = ModelBuilder.build_sync(Band, persist=False)
 
         self.assertEqual(
-            Band.exists().where(Band.id == band.id).run_sync(),
-            False,
+            Band.exists().where(Band.id == band.id).run_sync(), False,
         )
 
     def test_model_builder_with_valid_column(self):

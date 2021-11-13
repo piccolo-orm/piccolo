@@ -228,8 +228,7 @@ class TestTextUpdateOperators(DBTestCase):
         response = Poster.select(Poster.content).first().run_sync()
 
         self.assertEqual(
-            response["content"],
-            "Join us for this amazing show" * 2,
+            response["content"], "Join us for this amazing show" * 2,
         )
 
     def test_radd(self):

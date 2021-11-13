@@ -29,16 +29,14 @@ class TestCreate(TestCase):
         return_value="password123",
     )
     @patch(
-        "piccolo.apps.user.commands.create.get_is_admin",
-        return_value=True,
+        "piccolo.apps.user.commands.create.get_is_admin", return_value=True,
     )
     @patch(
         "piccolo.apps.user.commands.create.get_is_superuser",
         return_value=True,
     )
     @patch(
-        "piccolo.apps.user.commands.create.get_is_active",
-        return_value=True,
+        "piccolo.apps.user.commands.create.get_is_active", return_value=True,
     )
     def test_create(self, *args, **kwargs):
         create()

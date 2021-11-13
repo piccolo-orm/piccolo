@@ -150,7 +150,6 @@ class Query:
         executing a query - for example, warning a user if they're about to
         delete all the data from a table.
         """
-        pass
 
     def __await__(self):
         """

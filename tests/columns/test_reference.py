@@ -25,8 +25,7 @@ class TestLazyTableReference(TestCase):
 
         # Shouldn't raise exceptions:
         LazyTableReference(
-            table_class_name="Manager",
-            app_name="music",
+            table_class_name="Manager", app_name="music",
         )
         LazyTableReference(
             table_class_name="Manager",
@@ -36,8 +35,7 @@ class TestLazyTableReference(TestCase):
     def test_str(self):
         self.assertEqual(
             LazyTableReference(
-                table_class_name="Manager",
-                app_name="music",
+                table_class_name="Manager", app_name="music",
             ).__str__(),
             "App music.Manager",
         )

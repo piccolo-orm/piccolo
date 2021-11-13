@@ -528,13 +528,10 @@ class SQLiteEngine(Engine):
         connection = self.transaction_connection.get()
         if connection:
             return await self._run_in_existing_connection(
-                connection=connection,
-                query=ddl,
+                connection=connection, query=ddl,
             )
 
-        return await self._run_in_new_connection(
-            query=ddl,
-        )
+        return await self._run_in_new_connection(query=ddl,)
 
     def atomic(self) -> Atomic:
         return Atomic(engine=self)

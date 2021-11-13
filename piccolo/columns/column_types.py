@@ -224,8 +224,6 @@ class Secret(Varchar):
 
     """
 
-    pass
-
 
 class Text(Column):
     """
@@ -953,8 +951,6 @@ class Decimal(Numeric):
     An alias for Numeric.
     """
 
-    pass
-
 
 class Real(Column):
     """
@@ -994,8 +990,6 @@ class Float(Real):
     """
     An alias for Real.
     """
-
-    pass
 
 
 class DoublePrecision(Real):
@@ -1280,8 +1274,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
                     module_path = table_class.__module__
 
                 references = LazyTableReference(
-                    table_class_name=table_class_name,
-                    module_path=module_path,
+                    table_class_name=table_class_name, module_path=module_path,
                 )
 
         is_lazy = isinstance(references, LazyTableReference)
@@ -1639,8 +1632,6 @@ class Blob(Bytea):
     """
     An alias for Bytea.
     """
-
-    pass
 
 
 ###############################################################################

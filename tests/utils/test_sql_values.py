@@ -59,6 +59,5 @@ class TestConvertToSQLValue(TestCase):
         Make sure simple Python values are returned correctly.
         """
         self.assertEqual(
-            convert_to_sql_value(value=1, column=Integer()),
-            1,
+            convert_to_sql_value(value=1, column=Integer()), 1,
         )

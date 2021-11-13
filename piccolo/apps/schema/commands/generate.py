@@ -443,8 +443,7 @@ async def get_indexes(
     )
 
     return TableIndexes(
-        tablename=tablename,
-        indexes=[Index(**i) for i in indexes],
+        tablename=tablename, indexes=[Index(**i) for i in indexes],
     )
 
 
@@ -489,8 +488,7 @@ async def get_fk_triggers(
         tablename,
     )
     return TableTriggers(
-        tablename=tablename,
-        triggers=[Trigger(**i) for i in triggers],
+        tablename=tablename, triggers=[Trigger(**i) for i in triggers],
     )
 
 
@@ -692,17 +690,13 @@ async def create_table_class_from_db(
                     referenced_output_schema = output_schema
                     referenced_table = "self"
                 else:
-                    referenced_output_schema = (
-                        await create_table_class_from_db(
-                            table_class=table_class,
-                            tablename=constraint_table.name,
-                            schema_name=constraint_table.schema,
-                        )
+                    referenced_output_schema = await create_table_class_from_db(
+                        table_class=table_class,
+                        tablename=constraint_table.name,
+                        schema_name=constraint_table.schema,
                     )
-                    referenced_table = (
-                        referenced_output_schema.get_table_with_name(
-                            tablename=constraint_table.name
-                        )
+                    referenced_table = referenced_output_schema.get_table_with_name(
+                        tablename=constraint_table.name
                     )
                 kwargs["references"] = (
                     referenced_table
@@ -798,8 +792,6 @@ async def get_output_schema(
         """
         Just used for making raw queries on the db.
         """
-
-        pass
 
     if not include:
         include = await get_tablenames(Schema, schema_name=schema_name)
