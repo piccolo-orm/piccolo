@@ -287,8 +287,11 @@ class ColumnsDelegate:
         self.selected_columns = combined
 
     def remove_secret_columns(self):
+        # ``Secret`` column check is kept for backwards compatibility
         self.selected_columns = [
-            i for i in self.selected_columns if not isinstance(i, Secret)
+            i
+            for i in self.selected_columns
+            if not i._meta.secret and not isinstance(i, Secret)
         ]
 
 

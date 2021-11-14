@@ -3,7 +3,7 @@ from unittest import TestCase
 from piccolo.apps.user.tables import BaseUser
 from piccolo.columns.combination import WhereRaw
 from piccolo.query.methods.select import Avg, Count, Max, Min, Sum
-from tests.example_apps.music.tables import Band, Concert, Manager
+from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
 from ..base import DBTestCase, postgres_only, sqlite_only
 
@@ -965,3 +965,23 @@ class TestSelectSecret(TestCase):
 
         user_dict = BaseUser.select(exclude_secrets=True).first().run_sync()
         self.assertTrue("password" not in user_dict.keys())
+
+
+class TestSelectSecretParameter(TestCase):
+    def setUp(self):
+        Venue.create_table().run_sync()
+
+    def tearDown(self):
+        Venue.alter().drop_table().run_sync()
+
+    def test_secret_parameter(self):
+        """
+        Make sure that fields with parameter ``secret=True`` are omitted
+        from the response when requested.
+        """
+        venue = Venue(name="The Garage", capacity=1000)
+        venue.save().run_sync()
+
+        venue_dict = Venue.select(exclude_secrets=True).first().run_sync()
+        self.assertTrue(venue_dict, {"id": 1, "name": "The Garage"})
+        self.assertTrue("capacity" not in venue_dict.keys())
