@@ -36,7 +36,7 @@ class Band(Table):
 
 class Venue(Table):
     name = Varchar(length=100)
-    capacity = Integer(default=0)
+    capacity = Integer(default=0, secret=True)
 
 
 class Concert(Table):

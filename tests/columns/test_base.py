@@ -34,6 +34,16 @@ class TestHelpText(TestCase):
         self.assertTrue(column._meta.help_text == help_text)
 
 
+class TestSecretParameter(TestCase):
+    def test_secret_parameter(self):
+        """
+        Test adding secret parameter to a column.
+        """
+        secret = False
+        column = Varchar(secret=secret)
+        self.assertTrue(column._meta.secret == secret)
+
+
 class TestChoices(TestCase):
     def test_choices(self):
         """
