@@ -353,37 +353,90 @@ class TestIncludeColumns(TestCase):
 
 
 class TestNestedModel(TestCase):
-    def test_nested_models(self):
+    def test_true(self):
+        """
+        Make sure all foreign key columns are convered to nested models, when
+        `nested=True`.
+        """
+
         class Country(Table):
             name = Varchar(length=10)
 
-        class Director(Table):
+        class Manager(Table):
             name = Varchar(length=10)
             country = ForeignKey(Country)
 
-        class Movie(Table):
+        class Band(Table):
             name = Varchar(length=10)
-            director = ForeignKey(Director)
+            manager = ForeignKey(Manager)
 
-        MovieModel = create_pydantic_model(table=Movie, nested=True)
-
-        #######################################################################
-
-        DirectorModel = MovieModel.__fields__["director"].type_
-
-        self.assertTrue(issubclass(DirectorModel, pydantic.BaseModel))
-
-        director_model_keys = [i for i in DirectorModel.__fields__.keys()]
-        self.assertEqual(director_model_keys, ["name", "country"])
+        BandModel = create_pydantic_model(table=Band, nested=True)
 
         #######################################################################
 
-        CountryModel = DirectorModel.__fields__["country"].type_
+        ManagerModel = BandModel.__fields__["manager"].type_
+        self.assertTrue(issubclass(ManagerModel, pydantic.BaseModel))
+        self.assertEqual(
+            [i for i in ManagerModel.__fields__.keys()], ["name", "country"]
+        )
 
+        #######################################################################
+
+        CountryModel = ManagerModel.__fields__["country"].type_
         self.assertTrue(issubclass(CountryModel, pydantic.BaseModel))
+        self.assertEqual([i for i in CountryModel.__fields__.keys()], ["name"])
 
-        country_model_keys = [i for i in CountryModel.__fields__.keys()]
-        self.assertEqual(country_model_keys, ["name"])
+    def test_tuple(self):
+        """
+        Make sure only the specified foreign key columns are converted to
+        nested models.
+        """
+
+        class Country(Table):
+            name = Varchar(length=10)
+
+        class Manager(Table):
+            name = Varchar(length=10)
+            country = ForeignKey(Country)
+
+        class Band(Table):
+            name = Varchar(length=10)
+            manager = ForeignKey(Manager)
+            assistant_manager = ForeignKey(Manager)
+
+        #######################################################################
+        # Test one level deep
+
+        BandModel = create_pydantic_model(table=Band, nested=(Band.manager,))
+
+        ManagerModel = BandModel.__fields__["manager"].type_
+        self.assertTrue(issubclass(ManagerModel, pydantic.BaseModel))
+        self.assertEqual(
+            [i for i in ManagerModel.__fields__.keys()], ["name", "country"]
+        )
+
+        AssistantManagerType = BandModel.__fields__["assistant_manager"].type_
+        self.assertTrue(AssistantManagerType is int)
+
+        #######################################################################
+        # Test two levels deep
+
+        BandModel = create_pydantic_model(
+            table=Band, nested=(Band.manager.country,)
+        )
+
+        ManagerModel = BandModel.__fields__["manager"].type_
+        self.assertTrue(issubclass(ManagerModel, pydantic.BaseModel))
+        self.assertEqual(
+            [i for i in ManagerModel.__fields__.keys()], ["name", "country"]
+        )
+
+        AssistantManagerType = BandModel.__fields__["assistant_manager"].type_
+        self.assertTrue(AssistantManagerType is int)
+
+        CountryModel = ManagerModel.__fields__["country"].type_
+        self.assertTrue(issubclass(CountryModel, pydantic.BaseModel))
+        self.assertEqual([i for i in ManagerModel.__fields__.keys()], ["name"])
 
     def test_cascaded_args(self):
         """
@@ -394,35 +447,34 @@ class TestNestedModel(TestCase):
         class Country(Table):
             name = Varchar(length=10)
 
-        class Director(Table):
+        class Manager(Table):
             name = Varchar(length=10)
             country = ForeignKey(Country)
 
-        class Movie(Table):
+        class Band(Table):
             name = Varchar(length=10)
-            director = ForeignKey(Director)
+            manager = ForeignKey(Manager)
 
-        MovieModel = create_pydantic_model(
-            table=Movie, nested=True, include_default_columns=True
+        BandModel = create_pydantic_model(
+            table=Band, nested=True, include_default_columns=True
         )
 
         #######################################################################
 
-        DirectorModel = MovieModel.__fields__["director"].type_
-
-        self.assertTrue(issubclass(DirectorModel, pydantic.BaseModel))
-
-        director_model_keys = [i for i in DirectorModel.__fields__.keys()]
-        self.assertEqual(director_model_keys, ["id", "name", "country"])
+        ManagerModel = BandModel.__fields__["manager"].type_
+        self.assertTrue(issubclass(ManagerModel, pydantic.BaseModel))
+        self.assertEqual(
+            [i for i in ManagerModel.__fields__.keys()],
+            ["id", "name", "country"],
+        )
 
         #######################################################################
 
-        CountryModel = DirectorModel.__fields__["country"].type_
-
+        CountryModel = ManagerModel.__fields__["country"].type_
         self.assertTrue(issubclass(CountryModel, pydantic.BaseModel))
-
-        country_model_keys = [i for i in CountryModel.__fields__.keys()]
-        self.assertEqual(country_model_keys, ["id", "name"])
+        self.assertEqual(
+            [i for i in CountryModel.__fields__.keys()], ["id", "name"]
+        )
 
 
 class TestDBColumnName(TestCase):

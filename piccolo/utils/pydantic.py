@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import json
 import typing as t
 import uuid
@@ -76,7 +77,7 @@ def validate_columns(
 @lru_cache()
 def create_pydantic_model(
     table: t.Type[Table],
-    nested: bool = False,
+    nested: t.Union[bool, t.Tuple[ForeignKey, ...]] = False,
     exclude_columns: t.Tuple[Column, ...] = (),
     include_columns: t.Tuple[Column, ...] = (),
     include_default_columns: bool = False,
@@ -94,6 +95,9 @@ def create_pydantic_model(
         for.
     :param nested:
         Whether ``ForeignKey`` columns are converted to nested Pydantic models.
+        If ``False``, none are converted. If ``True``, they all are converted.
+        If a tuple of ``ForeignKey`` columns is passed in, then only those are
+        converted.
     :param exclude_columns:
         A tuple of ``Column`` instances that should be excluded from the
         Pydantic model. Only specify ``include_column`` or ``exclude_column``.
@@ -221,7 +225,15 @@ def create_pydantic_model(
         }
 
         if isinstance(column, ForeignKey):
-            if nested:
+            if (nested is True) or (
+                isinstance(nested, tuple)
+                and any(
+                    column._equals(i)
+                    for i in itertools.chain(
+                        nested, *[i._meta.call_chain for i in nested]
+                    )
+                )
+            ):
                 _type = create_pydantic_model(
                     table=column._foreign_key_meta.resolved_references,
                     nested=True,
