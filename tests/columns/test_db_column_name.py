@@ -13,7 +13,7 @@ class TestDBColumnName(DBTestCase):
     By using the ``db_column_name`` arg, the user can map a ``Column`` to a
     database column with a different name. For example:
 
-    .. code-block::
+    .. code-block:: python
 
         class MyTable(Table):
             class_ = Varchar(db_column_name='class')

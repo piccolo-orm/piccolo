@@ -27,7 +27,7 @@ def make_nested_object(
 
     For example:
 
-    .. code-block::
+    .. code-block:: python
 
         band = make_nested(row, Band)
         >>> band
