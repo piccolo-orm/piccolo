@@ -119,6 +119,8 @@ class TestEquals(TestCase):
     def test_equals(self):
         self.assertTrue(Manager.name._equals(Manager.name))
 
+        self.assertFalse(Manager.name._equals(Band.name))
+
         self.assertTrue(Band.manager.name._equals(Manager.name))
 
         self.assertFalse(
