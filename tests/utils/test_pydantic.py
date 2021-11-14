@@ -436,7 +436,7 @@ class TestNestedModel(TestCase):
 
         CountryModel = ManagerModel.__fields__["country"].type_
         self.assertTrue(issubclass(CountryModel, pydantic.BaseModel))
-        self.assertEqual([i for i in ManagerModel.__fields__.keys()], ["name"])
+        self.assertEqual([i for i in CountryModel.__fields__.keys()], ["name"])
 
     def test_cascaded_args(self):
         """
