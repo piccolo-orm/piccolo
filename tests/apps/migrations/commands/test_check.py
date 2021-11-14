@@ -8,7 +8,8 @@ from piccolo.utils.sync import run_sync
 
 class TestCheckMigrationCommand(TestCase):
     @patch.object(
-        CheckMigrationManager, "get_app_registry",
+        CheckMigrationManager,
+        "get_app_registry",
     )
     def test_check_migrations(self, get_app_registry: MagicMock):
         get_app_registry.return_value = AppRegistry(

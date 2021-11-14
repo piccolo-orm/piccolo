@@ -42,7 +42,8 @@ class UniqueGlobalNamesMeta(type):
 
     def __new__(mcs, name, bases, class_attributes):
         class_attributes_with_columns = mcs.merge_class_attributes(
-            class_attributes, mcs.get_column_class_attributes(),
+            class_attributes,
+            mcs.get_column_class_attributes(),
         )
 
         return super().__new__(

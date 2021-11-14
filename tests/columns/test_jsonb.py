@@ -64,7 +64,8 @@ class TestJSONB(TestCase):
         Make sure the arrow function can be used with the first clause.
         """
         MyTable.insert(
-            MyTable(json='{"a": 1}'), MyTable(json='{"b": 2}'),
+            MyTable(json='{"a": 1}'),
+            MyTable(json='{"b": 2}'),
         ).run_sync()
 
         self.assertEqual(

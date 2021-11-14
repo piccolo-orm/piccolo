@@ -113,7 +113,8 @@ class ModelBuilder:
 
             if "references" in column._meta.params and persist:
                 reference_model = await cls._build(
-                    column._meta.params["references"], persist=True,
+                    column._meta.params["references"],
+                    persist=True,
                 )
                 random_value = getattr(
                     reference_model,

@@ -288,7 +288,8 @@ class TestMigrationManager(DBTestCase):
         asyncio.run(manager.run_backwards())
         response = self.run_sync("SELECT * FROM manager;")
         self.assertEqual(
-            response, [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Dave"}],
+            response,
+            [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Dave"}],
         )
 
     @postgres_only
@@ -551,7 +552,8 @@ class TestMigrationManager(DBTestCase):
         )
         asyncio.run(manager_2.run())
         self.assertEqual(
-            self._get_column_default(), [{"column_default": None}],
+            self._get_column_default(),
+            [{"column_default": None}],
         )
 
         # And add it back once more to be sure.
@@ -565,7 +567,8 @@ class TestMigrationManager(DBTestCase):
         # Run them all backwards
         asyncio.run(manager_3.run_backwards())
         self.assertEqual(
-            self._get_column_default(), [{"column_default": None}],
+            self._get_column_default(),
+            [{"column_default": None}],
         )
 
         asyncio.run(manager_2.run_backwards())
@@ -576,7 +579,8 @@ class TestMigrationManager(DBTestCase):
 
         asyncio.run(manager_1.run_backwards())
         self.assertEqual(
-            self._get_column_default(), [{"column_default": None}],
+            self._get_column_default(),
+            [{"column_default": None}],
         )
 
     @postgres_only

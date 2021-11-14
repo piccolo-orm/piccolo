@@ -95,7 +95,11 @@ class TestJoin(TestCase):
         )
         self.assertDictEqual(
             result,
-            {"name": "Pythonistas", "manager.id": 1, "manager.name": "Guido",},
+            {
+                "name": "Pythonistas",
+                "manager.id": 1,
+                "manager.name": "Guido",
+            },
         )
 
     def test_select_all_columns_deep(self):
@@ -131,7 +135,10 @@ class TestJoin(TestCase):
         with using it for referenced tables.
         """
         result = (
-            Band.select(Band.all_columns(), Band.manager.all_columns(),)
+            Band.select(
+                Band.all_columns(),
+                Band.manager.all_columns(),
+            )
             .first()
             .run_sync()
         )
@@ -299,7 +306,9 @@ class TestJoin(TestCase):
         """
         ticket = (
             Ticket.objects()
-            .prefetch(Ticket.concert.band_1.manager,)
+            .prefetch(
+                Ticket.concert.band_1.manager,
+            )
             .first()
             .run_sync()
         )
@@ -327,7 +336,8 @@ class TestJoin(TestCase):
         ticket = (
             Ticket.objects()
             .prefetch(
-                Ticket.concert.band_1.manager, Ticket.concert.band_2.manager,
+                Ticket.concert.band_1.manager,
+                Ticket.concert.band_2.manager,
             )
             .first()
             .run_sync()

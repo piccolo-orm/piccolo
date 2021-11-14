@@ -1064,7 +1064,10 @@ def _get_graph(
             # We also recursively check the related tables to get a fuller
             # picture of the schema and relationships.
             output.update(
-                _get_graph([referenced_table], iterations=iterations + 1,)
+                _get_graph(
+                    [referenced_table],
+                    iterations=iterations + 1,
+                )
             )
 
         output[table_class._meta.tablename] = dependents

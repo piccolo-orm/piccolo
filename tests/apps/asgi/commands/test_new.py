@@ -13,7 +13,8 @@ class TestNewApp(TestCase):
         return_value=ROUTERS[0],
     )
     @patch(
-        "piccolo.apps.asgi.commands.new.get_server", return_value=SERVERS[0],
+        "piccolo.apps.asgi.commands.new.get_server",
+        return_value=SERVERS[0],
     )
     def test_new(self, *args, **kwargs):
         root = os.path.join(tempfile.gettempdir(), "asgi_app")

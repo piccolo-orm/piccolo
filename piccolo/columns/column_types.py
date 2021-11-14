@@ -1274,7 +1274,8 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
                     module_path = table_class.__module__
 
                 references = LazyTableReference(
-                    table_class_name=table_class_name, module_path=module_path,
+                    table_class_name=table_class_name,
+                    module_path=module_path,
                 )
 
         is_lazy = isinstance(references, LazyTableReference)

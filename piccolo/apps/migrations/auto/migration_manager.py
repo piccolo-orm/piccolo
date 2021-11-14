@@ -516,7 +516,8 @@ class MigrationManager:
                 digits = params.get("digits", ...)
                 if digits is not ...:
                     await _Table.alter().set_digits(
-                        column=alter_column.db_column_name, digits=digits,
+                        column=alter_column.db_column_name,
+                        digits=digits,
                     ).run()
 
     async def _run_drop_tables(self, backwards=False):
@@ -618,7 +619,8 @@ class MigrationManager:
                 )
 
                 await _Table.alter().rename_column(
-                    column=column, new_name=new_name,
+                    column=column,
+                    new_name=new_name,
                 ).run()
 
     async def _run_add_tables(self, backwards=False):

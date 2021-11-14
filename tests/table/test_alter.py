@@ -101,7 +101,9 @@ class TestAddColumn(DBTestCase):
     def test_add_text(self):
         bio = "An amazing band"
         self._test_add_column(
-            column=Text(default=bio), column_name="bio", expected_value=bio,
+            column=Text(default=bio),
+            column_name="bio",
+            expected_value=bio,
         )
 
 

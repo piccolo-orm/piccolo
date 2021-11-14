@@ -72,7 +72,10 @@ class IntervalCustom(Default):  # lgtm [py/missing-equals]
 ###############################################################################
 
 IntervalArg = t.Union[
-    IntervalCustom, Enum, None, datetime.timedelta,
+    IntervalCustom,
+    Enum,
+    None,
+    datetime.timedelta,
 ]
 
 

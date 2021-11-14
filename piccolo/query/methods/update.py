@@ -65,6 +65,8 @@ class Update(Query):
             return [querystring]
 
         where_querystring = QueryString(
-            "{} WHERE {}", querystring, self.where_delegate._where.querystring,
+            "{} WHERE {}",
+            querystring,
+            self.where_delegate._where.querystring,
         )
         return [where_querystring]

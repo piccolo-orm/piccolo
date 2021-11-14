@@ -89,13 +89,23 @@ class TestDBColumnName(DBTestCase):
         # Make sure we can select a single column
         bands = Band.select(Band.name).run_sync()
         self.assertEqual(
-            bands, [{"regrettable_column_name": "Pythonistas",}],
+            bands,
+            [
+                {
+                    "regrettable_column_name": "Pythonistas",
+                }
+            ],
         )
 
         # Make sure aliases still work
         bands = Band.select(Band.name.as_alias("name")).run_sync()
         self.assertEqual(
-            bands, [{"name": "Pythonistas",}],
+            bands,
+            [
+                {
+                    "name": "Pythonistas",
+                }
+            ],
         )
 
     def test_update(self):

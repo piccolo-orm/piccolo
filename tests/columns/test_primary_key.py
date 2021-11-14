@@ -116,7 +116,8 @@ class TestPrimaryKeyQueries(TestCase):
         key column defined work as expected.
         """
         Manager.insert(
-            Manager(name="Guido"), Manager(name="Graydon"),
+            Manager(name="Guido"),
+            Manager(name="Graydon"),
         ).run_sync()
 
         #######################################################################
@@ -134,7 +135,8 @@ class TestPrimaryKeyQueries(TestCase):
         manager_dict = Manager.select().first().run_sync()
 
         self.assertEqual(
-            [i for i in manager_dict.keys()], ["pk", "name"],
+            [i for i in manager_dict.keys()],
+            ["pk", "name"],
         )
 
         self.assertTrue(isinstance(manager_dict["pk"], uuid.UUID))

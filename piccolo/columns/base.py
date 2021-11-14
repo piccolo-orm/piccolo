@@ -234,7 +234,8 @@ class ColumnMeta:
     def copy(self) -> ColumnMeta:
         kwargs = self.__dict__.copy()
         kwargs.update(
-            params=self.params.copy(), call_chain=self.call_chain.copy(),
+            params=self.params.copy(),
+            call_chain=self.call_chain.copy(),
         )
 
         # Make sure we don't accidentally include any other attributes which

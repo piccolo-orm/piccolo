@@ -166,10 +166,12 @@ class TestMigrations(DBTestCase):
                 ._meta.db_column_name
             )
             row_meta = self.get_postgres_column_definition(
-                tablename="my_table", column_name=column_name,
+                tablename="my_table",
+                column_name=column_name,
             )
             self.assertTrue(
-                test_function(row_meta), msg=f"Meta is incorrect: {row_meta}",
+                test_function(row_meta),
+                msg=f"Meta is incorrect: {row_meta}",
             )
 
     ###########################################################################
@@ -670,7 +672,9 @@ class TestMigrations(DBTestCase):
         self._test_migrations(
             table_classes=[
                 self.table(column)
-                for column in [Varchar(db_column_name="custom_name"),]
+                for column in [
+                    Varchar(db_column_name="custom_name"),
+                ]
             ],
             test_function=lambda x: all(
                 [
@@ -691,7 +695,11 @@ class TestMigrations(DBTestCase):
         self._test_migrations(
             table_classes=[
                 self.table(column)
-                for column in [Varchar(), Text(), Varchar(),]
+                for column in [
+                    Varchar(),
+                    Text(),
+                    Varchar(),
+                ]
             ]
         )
 
@@ -738,7 +746,12 @@ class TestMigrations(DBTestCase):
     def test_column_type_conversion_json(self):
         self._test_migrations(
             table_classes=[
-                self.table(column) for column in [JSON(), JSONB(), JSON(),]
+                self.table(column)
+                for column in [
+                    JSON(),
+                    JSONB(),
+                    JSON(),
+                ]
             ]
         )
 
@@ -746,7 +759,11 @@ class TestMigrations(DBTestCase):
         self._test_migrations(
             table_classes=[
                 self.table(column)
-                for column in [Timestamp(), Timestamptz(), Timestamp(),]
+                for column in [
+                    Timestamp(),
+                    Timestamptz(),
+                    Timestamp(),
+                ]
             ]
         )
 
@@ -759,7 +776,11 @@ class TestMigrations(DBTestCase):
         """
         self._test_migrations(
             table_classes=[
-                self.table(column) for column in [Serial(), BigSerial(),]
+                self.table(column)
+                for column in [
+                    Serial(),
+                    BigSerial(),
+                ]
             ]
         )
 

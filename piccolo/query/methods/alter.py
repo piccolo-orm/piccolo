@@ -494,7 +494,11 @@ class Alter(DDL):
             else "NUMERIC"
         )
         self._set_digits.append(
-            SetDigits(digits=digits, column=column, column_type=column_type,)
+            SetDigits(
+                digits=digits,
+                column=column,
+                column_type=column_type,
+            )
         )
         return self
 

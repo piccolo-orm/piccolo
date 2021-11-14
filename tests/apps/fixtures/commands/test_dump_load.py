@@ -82,7 +82,8 @@ class TestDumpLoad(TestCase):
         run_sync(load_json_string(json_string))
 
         self.assertEqual(
-            SmallTable.select().run_sync(), [{"id": 1, "varchar_col": "Test"}],
+            SmallTable.select().run_sync(),
+            [{"id": 1, "varchar_col": "Test"}],
         )
 
         mega_table_data = MegaTable.select().run_sync()

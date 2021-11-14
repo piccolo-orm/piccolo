@@ -46,7 +46,9 @@ class TestAppRegistry(TestCase):
         Should automatically add `.piccolo_app` to end.
         """
         AppRegistry(
-            apps=["piccolo.apps.user",]
+            apps=[
+                "piccolo.apps.user",
+            ]
         )
 
     def test_duplicate_app_names_with_auto_changed(self):
@@ -56,7 +58,10 @@ class TestAppRegistry(TestCase):
         """
         with self.assertRaises(ValueError):
             AppRegistry(
-                apps=["piccolo.apps.user.piccolo_app", "piccolo.apps.user",]
+                apps=[
+                    "piccolo.apps.user.piccolo_app",
+                    "piccolo.apps.user",
+                ]
             )
 
     def test_get_table_with_name(self):
@@ -143,7 +148,8 @@ class TestTableFinder(TestCase):
         table_class_names.sort()
 
         self.assertEqual(
-            table_class_names, ["Poster"],
+            table_class_names,
+            ["Poster"],
         )
 
     def test_exclude_tags(self):
@@ -211,7 +217,10 @@ class TestFinder(TestCase):
 
         self.assertEqual(
             finder.get_table_classes(exclude_apps=["music"]),
-            [MegaTable, SmallTable,],
+            [
+                MegaTable,
+                SmallTable,
+            ],
         )
 
         with self.assertRaises(ValueError):

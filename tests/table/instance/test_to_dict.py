@@ -52,7 +52,11 @@ class TestToDict(DBTestCase):
         instance = Band.objects(Band.manager).first().run_sync()
         dictionary = instance.to_dict(Band.name, Band.manager.id)
         self.assertDictEqual(
-            dictionary, {"name": "Pythonistas", "manager": {"id": 1},},
+            dictionary,
+            {
+                "name": "Pythonistas",
+                "manager": {"id": 1},
+            },
         )
 
     def test_aliases(self):

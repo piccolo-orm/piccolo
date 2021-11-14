@@ -42,7 +42,10 @@ class DateNow(Default):
 
 class DateCustom(Default):
     def __init__(
-        self, year: int, month: int, day: int,
+        self,
+        year: int,
+        month: int,
+        day: int,
     ):
         self.day = day
         self.month = month

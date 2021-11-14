@@ -146,13 +146,15 @@ class TestForeignKeyString(TestCase):
     def test_foreign_key_string(self):
         Band2.create_table().run_sync()
         self.assertEqual(
-            Band2.manager._foreign_key_meta.resolved_references, Manager1,
+            Band2.manager._foreign_key_meta.resolved_references,
+            Manager1,
         )
         Band2.alter().drop_table().run_sync()
 
         Band4.create_table().run_sync()
         self.assertEqual(
-            Band4.manager._foreign_key_meta.resolved_references, Manager1,
+            Band4.manager._foreign_key_meta.resolved_references,
+            Manager1,
         )
         Band4.alter().drop_table().run_sync()
 

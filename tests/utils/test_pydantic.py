@@ -144,7 +144,8 @@ class TestTableHelpText(TestCase):
 
         pydantic_model = create_pydantic_model(table=Movie)
         self.assertEqual(
-            pydantic_model.schema()["help_text"], help_text,
+            pydantic_model.schema()["help_text"],
+            help_text,
         )
 
 
@@ -223,7 +224,8 @@ class TestExcludeColumn(TestCase):
             GPU = Varchar()
 
         pydantic_model = create_pydantic_model(
-            Computer, exclude_columns=(Computer.CPU,),
+            Computer,
+            exclude_columns=(Computer.CPU,),
         )
 
         properties = pydantic_model.schema()["properties"]
@@ -236,7 +238,8 @@ class TestExcludeColumn(TestCase):
             CPU = Varchar()
 
         pydantic_model = create_pydantic_model(
-            Computer, exclude_columns=(Computer.GPU, Computer.CPU),
+            Computer,
+            exclude_columns=(Computer.GPU, Computer.CPU),
         )
 
         self.assertEqual(pydantic_model.schema()["properties"], {})
@@ -247,7 +250,8 @@ class TestExcludeColumn(TestCase):
             CPU = Varchar()
 
         pydantic_model = create_pydantic_model(
-            Computer, exclude_columns=tuple(Computer._meta.columns),
+            Computer,
+            exclude_columns=tuple(Computer._meta.columns),
         )
 
         self.assertEqual(pydantic_model.schema()["properties"], {})
@@ -259,7 +263,8 @@ class TestExcludeColumn(TestCase):
 
         with self.assertRaises(ValueError):
             create_pydantic_model(
-                Computer, exclude_columns=("CPU",),
+                Computer,
+                exclude_columns=("CPU",),
             )
 
     def test_invalid_column_different_table(self):
@@ -292,7 +297,8 @@ class TestIncludeColumns(TestCase):
             popularity = Integer()
 
         pydantic_model = create_pydantic_model(
-            Band, include_columns=(Band.name,),
+            Band,
+            include_columns=(Band.name,),
         )
 
         properties = pydantic_model.schema()["properties"]

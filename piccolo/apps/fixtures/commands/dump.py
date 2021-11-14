@@ -52,7 +52,9 @@ async def get_dump(
     return output
 
 
-async def dump_to_json_string(fixture_configs: t.List[FixtureConfig],) -> str:
+async def dump_to_json_string(
+    fixture_configs: t.List[FixtureConfig],
+) -> str:
     """
     Dumps all of the data for the given tables into a JSON string.
     """
@@ -98,7 +100,8 @@ def parse_args(apps: str, tables: str) -> t.List[FixtureConfig]:
             ]
         output.append(
             FixtureConfig(
-                app_name=app_name, table_class_names=fixture_configs,
+                app_name=app_name,
+                table_class_names=fixture_configs,
             )
         )
 
