@@ -540,6 +540,64 @@ class Column(Selectable):
     def __ge__(self, value) -> Where:
         return Where(column=self, value=value, operator=GreaterEqualThan)
 
+    def _equals(self, column: Column, including_joins: bool = False) -> bool:
+        """
+        We override ``__eq__``, in order to do queries such as:
+
+        .. code-block:: python
+
+            Band.select().where(Band.name == 'Pythonistas').run_sync()
+
+        But this means that comparisons such as this can give unexpected
+        results:
+
+        .. code-block:: python
+
+            # We would expect the answer to be `True`, but we get `Where`
+            # instead:
+            >>> MyTable.some_column == MyTable.some_column
+            <Where>
+
+        Also, column comparison is sometimes more complex than it appears. This
+        is why we have this custom method for comparing columns.
+
+        Take this example:
+
+        .. code-block:: python
+
+            Band.manager.name == Manager.name
+
+        They both refer to the ``name`` column on the ``Manager`` table, except
+        one has joins and the other doesn't.
+
+        :param including_joins:
+            If ``True``, then we check if the columns are the same, as well as
+            their joins, i.e. ``Band.manager.name`` != ``Manager.name``.
+
+        """
+        if isinstance(column, Column):
+            if (
+                self._meta.name == column._meta.name
+                and self._meta.table._meta.tablename
+                == column._meta.table._meta.tablename
+            ):
+                if including_joins:
+                    if len(column._meta.call_chain) == len(
+                        self._meta.call_chain
+                    ):
+                        return all(
+                            column_a._equals(column_b, including_joins=False)
+                            for column_a, column_b in zip(
+                                column._meta.call_chain,
+                                self._meta.call_chain,
+                            )
+                        )
+
+                else:
+                    return True
+
+        return False
+
     def __eq__(self, value) -> Where:  # type: ignore
         if value is None:
             return Where(column=self, operator=IsNull)

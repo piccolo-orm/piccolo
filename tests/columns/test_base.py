@@ -4,6 +4,7 @@ from unittest import TestCase
 from piccolo.columns.choices import Choice
 from piccolo.columns.column_types import Integer, Varchar
 from piccolo.table import Table
+from tests.example_apps.music.tables import Band, Manager
 
 
 class MyTable(Table):
@@ -111,4 +112,36 @@ class TestChoices(TestCase):
                 "mr": {"display_name": "Mr.", "value": 1},
                 "mrs": {"display_name": "Mrs.", "value": 2},
             },
+        )
+
+
+class TestEquals(TestCase):
+    def test_non_column(self):
+        """
+        Make sure non-column values don't match.
+        """
+        for value in (1, "abc", None):
+            self.assertFalse(Manager.name._equals(value))
+
+    def test_equals(self):
+        """
+        Test basic usage.
+        """
+        self.assertTrue(Manager.name._equals(Manager.name))
+
+    def test_same_name(self):
+        """
+        Make sure that columns with the same name, but on different tables,
+        don't match.
+        """
+        self.assertFalse(Manager.name._equals(Band.name))
+
+    def test_including_joins(self):
+        """
+        Make sure `including_joins` arg works correctly.
+        """
+        self.assertTrue(Band.manager.name._equals(Manager.name))
+
+        self.assertFalse(
+            Band.manager.name._equals(Manager.name, including_joins=True)
         )
