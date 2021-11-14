@@ -116,13 +116,32 @@ class TestChoices(TestCase):
 
 
 class TestEquals(TestCase):
+    def test_non_column(self):
+        """
+        Make sure non-column values don't match.
+        """
+        for value in (1, "abc", None):
+            self.assertFalse(Manager.name._equals(value))
+
     def test_equals(self):
+        """
+        Test basic usage.
+        """
         self.assertTrue(Manager.name._equals(Manager.name))
 
+    def test_same_name(self):
+        """
+        Make sure that columns with the same name, but on different tables,
+        don't match.
+        """
         self.assertFalse(Manager.name._equals(Band.name))
 
+    def test_including_joins(self):
+        """
+        Make sure `including_joins` arg works correctly.
+        """
         self.assertTrue(Band.manager.name._equals(Manager.name))
 
         self.assertFalse(
-            Manager.name._equals(Band.manager.name, including_joins=True)
+            Band.manager.name._equals(Manager.name, including_joins=True)
         )
