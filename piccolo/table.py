@@ -341,13 +341,15 @@ class Table(metaclass=TableMetaclass):
         """
         Used to fetch a Table instance, for the target of a foreign key.
 
-        band = await Band.objects().first().run()
-        manager = await band.get_related(Band.manager).run()
-        >>> print(manager.name)
-        'Guido'
+        .. code-block:: python
+
+            band = await Band.objects().first().run()
+            manager = await band.get_related(Band.manager).run()
+            >>> print(manager.name)
+            'Guido'
 
         It can only follow foreign keys one level currently.
-        i.e. Band.manager, but not Band.manager.x.y.z
+        i.e. ``Band.manager``, but not ``Band.manager.x.y.z``.
 
         """
         if isinstance(foreign_key, str):
@@ -383,7 +385,7 @@ class Table(metaclass=TableMetaclass):
         A convenience method which returns a dictionary, mapping column names
         to values for this table instance.
 
-        .. code-block::
+        .. code-block:: python
 
             instance = await Manager.objects().get(
                 Manager.name == 'Guido'
@@ -395,7 +397,7 @@ class Table(metaclass=TableMetaclass):
         If the columns argument is provided, only those columns are included in
         the output. It also works with column aliases.
 
-        .. code-block::
+        .. code-block:: python
 
             >>> instance.to_dict(Manager.id, Manager.name.as_alias('title'))
             {'id': 1, 'title': 'Guido'}

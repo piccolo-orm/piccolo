@@ -38,7 +38,7 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(new_table_columns.statements) == 1)
         self.assertEqual(
             new_table_columns.statements[0],
-            "manager.add_column(table_class_name='Band', tablename='band', column_name='name', db_column_name='name', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None})",  # noqa
+            "manager.add_column(table_class_name='Band', tablename='band', column_name='name', db_column_name='name', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None, 'secret': False})",  # noqa
         )
 
     def test_drop_table(self):
@@ -122,7 +122,7 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(schema_differ.add_columns.statements) == 1)
         self.assertEqual(
             schema_differ.add_columns.statements[0],
-            "manager.add_column(table_class_name='Band', tablename='band', column_name='genre', db_column_name='genre', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None})",  # noqa
+            "manager.add_column(table_class_name='Band', tablename='band', column_name='genre', db_column_name='genre', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None, 'secret': False})",  # noqa
         )
 
     def test_drop_column(self):
