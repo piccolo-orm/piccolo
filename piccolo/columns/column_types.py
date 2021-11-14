@@ -201,30 +201,13 @@ class Varchar(Column):
 
 class Secret(Varchar):
     """
-    The database treats it the same as a ``Varchar``, but Piccolo may treat it
-    differently internally - for example, allowing a user to automatically
-    omit any secret fields when doing a select query, to help prevent
-    inadvertant leakage. A common use for a ``Secret`` field is a password.
-
-    Uses the ``str`` type for values.
-
-    **Example**
-
-    .. code-block:: python
-
-        class Door(Table):
-            code = Secret(length=100)
-
-        # Create
-        >>> Door(code='123abc').save().run_sync()
-
-        # Query
-        >>> Door.select(Door.code).run_sync()
-        {'code': '123abc'}
-
+    This is just an alias to ``Varchar(secret=True)``. It's here for backwards
+    compatibility.
     """
 
-    pass
+    def __init__(self, *args, **kwargs):
+        kwargs["secret"] = True
+        super().__init__(*args, **kwargs)
 
 
 class Text(Column):

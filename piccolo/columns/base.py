@@ -127,6 +127,7 @@ class ColumnMeta:
     required: bool = False
     help_text: t.Optional[str] = None
     choices: t.Optional[t.Type[Enum]] = None
+    secret: bool = False
 
     # Used for representing the table in migrations and the playground.
     params: t.Dict[str, t.Any] = field(default_factory=dict)
@@ -338,6 +339,20 @@ class Column(Selectable):
         This is an advanced feature which you should only need in niche
         situations.
 
+    :param secret:
+        If ``secret=True`` is specified, it allows a user to automatically
+        omit any fields when doing a select query, to help prevent
+        inadvertent leakage of sensitive data.
+
+        .. code-block:: python
+
+            class Band(Table):
+                name = Varchar()
+                net_worth = Integer(secret=True)
+
+            >>> Property.select(exclude_secrets=True).run_sync()
+            [{'name': 'Pythonistas'}]
+
     """
 
     value_type: t.Type = int
@@ -353,6 +368,7 @@ class Column(Selectable):
         help_text: t.Optional[str] = None,
         choices: t.Optional[t.Type[Enum]] = None,
         db_column_name: t.Optional[str] = None,
+        secret: bool = False,
         **kwargs,
     ) -> None:
         # This is for backwards compatibility - originally there were two
@@ -375,6 +391,7 @@ class Column(Selectable):
                 "index_method": index_method,
                 "choices": choices,
                 "db_column_name": db_column_name,
+                "secret": secret,
             }
         )
 
@@ -398,6 +415,7 @@ class Column(Selectable):
             help_text=help_text,
             choices=choices,
             _db_column_name=db_column_name,
+            secret=secret,
         )
 
         self.alias: t.Optional[str] = None
