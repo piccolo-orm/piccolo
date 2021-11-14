@@ -342,17 +342,16 @@ class Column(Selectable):
     :param secret:
         If ``secret=True`` is specified, it allows a user to automatically
         omit any fields when doing a select query, to help prevent
-        inadvertent leakage.
+        inadvertent leakage of sensitive data.
 
         .. code-block:: python
 
-            class Property(Table):
-                address = Text()
-                code = Varchar(secret=True)
-                value = Integer(secret=True)
+            class Band(Table):
+                name = Varchar()
+                net_worth = Integer(secret=True)
 
             >>> Property.select(exclude_secrets=True).run_sync()
-            [{'address': 'Buckingham Palace'}]
+            [{'name': 'Pythonistas'}]
 
     """
 
