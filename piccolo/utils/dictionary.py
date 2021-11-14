@@ -10,7 +10,7 @@ def make_nested(dictionary: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
 
     This function puts any values from a related table into a sub dictionary.
 
-    .. code-block::
+    .. code-block:: python
 
         response = Band.select(Band.name, Band.manager.name).run_sync()
         >>> print(response)
