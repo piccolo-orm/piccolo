@@ -4,6 +4,7 @@ from unittest import TestCase
 from piccolo.columns.choices import Choice
 from piccolo.columns.column_types import Integer, Varchar
 from piccolo.table import Table
+from tests.example_apps.music.tables import Band, Manager
 
 
 class MyTable(Table):
@@ -111,4 +112,15 @@ class TestChoices(TestCase):
                 "mr": {"display_name": "Mr.", "value": 1},
                 "mrs": {"display_name": "Mrs.", "value": 2},
             },
+        )
+
+
+class TestEquals(TestCase):
+    def test_equals(self):
+        self.assertTrue(Manager.name._equals(Manager.name))
+
+        self.assertTrue(Band.manager.name._equals(Manager.name))
+
+        self.assertFalse(
+            Manager.name._equals(Band.manager.name, including_joins=True)
         )
