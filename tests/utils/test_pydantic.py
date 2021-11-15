@@ -393,16 +393,24 @@ class TestNestedModel(TestCase):
         """
 
         class Country(Table):
-            name = Varchar(length=10)
+            name = Varchar()
 
         class Manager(Table):
-            name = Varchar(length=10)
+            name = Varchar()
             country = ForeignKey(Country)
 
         class Band(Table):
-            name = Varchar(length=10)
+            name = Varchar()
             manager = ForeignKey(Manager)
             assistant_manager = ForeignKey(Manager)
+
+        class Venue(Table):
+            name = Varchar()
+
+        class Concert(Table):
+            band_1 = ForeignKey(Band)
+            band_2 = ForeignKey(Band)
+            venue = ForeignKey(Venue)
 
         #######################################################################
         # Test one level deep
@@ -437,6 +445,36 @@ class TestNestedModel(TestCase):
         CountryModel = ManagerModel.__fields__["country"].type_
         self.assertTrue(issubclass(CountryModel, pydantic.BaseModel))
         self.assertEqual([i for i in CountryModel.__fields__.keys()], ["name"])
+
+        #######################################################################
+        # Test three levels deep
+
+        ConcertModel = create_pydantic_model(
+            Concert, nested=(Concert.band_1.manager,)
+        )
+
+        VenueModel = ConcertModel.__fields__["venue"].type_
+        self.assertTrue(VenueModel is int)
+
+        BandModel = ConcertModel.__fields__["band_1"].type_
+        self.assertTrue(issubclass(BandModel, pydantic.BaseModel))
+        self.assertEqual(
+            [i for i in BandModel.__fields__.keys()],
+            ["name", "manager", "assistant_manager"],
+        )
+
+        ManagerModel = BandModel.__fields__["manager"].type_
+        self.assertTrue(issubclass(ManagerModel, pydantic.BaseModel))
+        self.assertEqual(
+            [i for i in ManagerModel.__fields__.keys()],
+            ["name", "country"],
+        )
+
+        AssistantManagerType = BandModel.__fields__["assistant_manager"].type_
+        self.assertTrue(AssistantManagerType is int)
+
+        CountryModel = ManagerModel.__fields__["country"].type_
+        self.assertTrue(CountryModel is int)
 
     def test_cascaded_args(self):
         """
