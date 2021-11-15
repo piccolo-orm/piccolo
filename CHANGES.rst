@@ -1,6 +1,75 @@
 Changes
 =======
 
+0.60.0
+------
+
+Secret columns
+~~~~~~~~~~~~~~
+
+All column types can now be secret, rather than being limited to the
+``Secret`` column type which is a ``Varchar`` under the hood (courtesy
+@sinisaos).
+
+.. code-block:: python
+
+  class Manager(Table):
+      name = Varchar()
+      net_worth = Integer(secret=True)
+
+The reason this is useful is you can do queries such as:
+
+.. code-block:: python
+
+  >>> Manager.select(exclude_secrets=True).run_sync()
+  [{'id': 1, 'name': 'Guido'}]
+
+In the Piccolo API project we have ``PiccoloCRUD`` which is an incredibly
+powerful way of building an API with very little code. ``PiccoloCRUD`` has an
+``exclude_secrets`` option which lets you safely expose your data without
+leaking sensitive information.
+
+Pydantic improvements
+~~~~~~~~~~~~~~~~~~~~~
+
+max_recursion_depth
+*******************
+
+``create_pydantic_model`` now has a ``max_recursion_depth`` argument, which is
+useful when using ``nested=True`` on large database schemas.
+
+.. code-block:: python
+
+  >>> create_pydantic_model(MyTable, nested=True, max_recursion_depth=3)
+
+Nested tuple
+************
+
+You can now pass a tuple of columns as the argument to ``nested``:
+
+.. code-block:: python
+
+  >>> create_pydantic_model(Band, nested=(Band.manager,))
+
+This gives you more control than just using ``nested=True``.
+
+include_columns / exclude_columns
+*********************************
+
+You can now include / exclude columns from related tables. For example:
+
+.. code-block:: python
+
+  >>> create_pydantic_model(Band, nested=(Band.manager,), exclude_columns=(Band.manager.country))
+
+Similarly:
+
+.. code-block:: python
+
+  >>> create_pydantic_model(Band, nested=(Band.manager,), include_columns=(Band.name, Band.manager.name))
+
+-------------------------------------------------------------------------------
+
 0.59.0
 ------
 
