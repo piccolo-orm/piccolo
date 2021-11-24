@@ -1,6 +1,15 @@
 Changes
 =======
 
+0.60.1
+------
+
+Modified the import path for ``MigrationManager`` in migration files. It was
+confusing Pylance (VSCode's type checker). Thanks to @gmos for reporting and
+investigating this issue.
+
+-------------------------------------------------------------------------------
+
 0.60.0
 ------
 
