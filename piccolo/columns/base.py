@@ -127,6 +127,7 @@ class ColumnMeta:
     required: bool = False
     help_text: t.Optional[str] = None
     choices: t.Optional[t.Type[Enum]] = None
+    secret: bool = False
 
     # Used for representing the table in migrations and the playground.
     params: t.Dict[str, t.Any] = field(default_factory=dict)
@@ -338,6 +339,20 @@ class Column(Selectable):
         This is an advanced feature which you should only need in niche
         situations.
 
+    :param secret:
+        If ``secret=True`` is specified, it allows a user to automatically
+        omit any fields when doing a select query, to help prevent
+        inadvertent leakage of sensitive data.
+
+        .. code-block:: python
+
+            class Band(Table):
+                name = Varchar()
+                net_worth = Integer(secret=True)
+
+            >>> Property.select(exclude_secrets=True).run_sync()
+            [{'name': 'Pythonistas'}]
+
     """
 
     value_type: t.Type = int
@@ -353,6 +368,7 @@ class Column(Selectable):
         help_text: t.Optional[str] = None,
         choices: t.Optional[t.Type[Enum]] = None,
         db_column_name: t.Optional[str] = None,
+        secret: bool = False,
         **kwargs,
     ) -> None:
         # This is for backwards compatibility - originally there were two
@@ -375,6 +391,7 @@ class Column(Selectable):
                 "index_method": index_method,
                 "choices": choices,
                 "db_column_name": db_column_name,
+                "secret": secret,
             }
         )
 
@@ -398,6 +415,7 @@ class Column(Selectable):
             help_text=help_text,
             choices=choices,
             _db_column_name=db_column_name,
+            secret=secret,
         )
 
         self.alias: t.Optional[str] = None
@@ -522,6 +540,64 @@ class Column(Selectable):
     def __ge__(self, value) -> Where:
         return Where(column=self, value=value, operator=GreaterEqualThan)
 
+    def _equals(self, column: Column, including_joins: bool = False) -> bool:
+        """
+        We override ``__eq__``, in order to do queries such as:
+
+        .. code-block:: python
+
+            Band.select().where(Band.name == 'Pythonistas').run_sync()
+
+        But this means that comparisons such as this can give unexpected
+        results:
+
+        .. code-block:: python
+
+            # We would expect the answer to be `True`, but we get `Where`
+            # instead:
+            >>> MyTable.some_column == MyTable.some_column
+            <Where>
+
+        Also, column comparison is sometimes more complex than it appears. This
+        is why we have this custom method for comparing columns.
+
+        Take this example:
+
+        .. code-block:: python
+
+            Band.manager.name == Manager.name
+
+        They both refer to the ``name`` column on the ``Manager`` table, except
+        one has joins and the other doesn't.
+
+        :param including_joins:
+            If ``True``, then we check if the columns are the same, as well as
+            their joins, i.e. ``Band.manager.name`` != ``Manager.name``.
+
+        """
+        if isinstance(column, Column):
+            if (
+                self._meta.name == column._meta.name
+                and self._meta.table._meta.tablename
+                == column._meta.table._meta.tablename
+            ):
+                if including_joins:
+                    if len(column._meta.call_chain) == len(
+                        self._meta.call_chain
+                    ):
+                        return all(
+                            column_a._equals(column_b, including_joins=False)
+                            for column_a, column_b in zip(
+                                column._meta.call_chain,
+                                self._meta.call_chain,
+                            )
+                        )
+
+                else:
+                    return True
+
+        return False
+
     def __eq__(self, value) -> Where:  # type: ignore
         if value is None:
             return Where(column=self, operator=IsNull)
@@ -539,14 +615,14 @@ class Column(Selectable):
 
     def is_null(self) -> Where:
         """
-        Can be used instead of `MyTable.column != None`, because some linters
+        Can be used instead of ``MyTable.column != None``, because some linters
         don't like a comparison to None.
         """
         return Where(column=self, operator=IsNull)
 
     def is_not_null(self) -> Where:
         """
-        Can be used instead of `MyTable.column == None`, because some linters
+        Can be used instead of ``MyTable.column == None``, because some linters
         don't like a comparison to None.
         """
         return Where(column=self, operator=IsNotNull)
@@ -557,8 +633,10 @@ class Column(Selectable):
 
         For example:
 
-        >>> await Band.select(Band.name.as_alias('title')).run()
-        {'title': 'Pythonistas'}
+        .. code-block:: python
+
+            >>> await Band.select(Band.name.as_alias('title')).run()
+            {'title': 'Pythonistas'}
 
         """
         column = copy.deepcopy(self)

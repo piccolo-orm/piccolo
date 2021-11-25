@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import typing as t
-from dataclasses import dataclass
 
 from piccolo.custom_types import Combinable
 from piccolo.query.base import Query
@@ -13,7 +12,6 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
-@dataclass
 class Update(Query):
 
     __slots__ = ("values_delegate", "where_delegate")

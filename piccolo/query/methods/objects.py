@@ -112,7 +112,6 @@ class Create:
         return run_sync(self.run())
 
 
-@dataclass
 class Objects(Query):
     """
     Almost identical to select, except you have to select all fields, and
