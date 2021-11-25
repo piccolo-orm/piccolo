@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import typing as t
-from dataclasses import dataclass
 
 from piccolo.query.base import Query
 from piccolo.query.mixins import AddDelegate
@@ -11,7 +10,6 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
-@dataclass
 class Insert(Query):
     __slots__ = ("add_delegate",)
 
