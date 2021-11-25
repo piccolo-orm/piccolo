@@ -1,6 +1,15 @@
 Changes
 =======
 
+0.60.2
+------
+
+Fixed a bug with ``asyncio.gather`` not working with some query types. It was
+due to them being dataclasses, and they couldn't be hashed properly. Thanks to
+@brnosouza for reporting this issue.
+
+-------------------------------------------------------------------------------
+
 0.60.1
 ------
 
