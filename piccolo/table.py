@@ -260,8 +260,6 @@ class Table(metaclass=TableMetaclass):
         """
         self._exists_in_db = exists_in_db
 
-        initial_data: t.Dict[Column, t.Any] = {}
-
         for column in self._meta.columns:
             value = kwargs.pop(column._meta.name, ...)
 
@@ -284,15 +282,11 @@ class Table(metaclass=TableMetaclass):
                     raise ValueError(f"{column._meta.name} wasn't provided")
 
             self[column._meta.name] = value
-            initial_data[column] = value
 
         unrecognized = kwargs.keys()
         if unrecognized:
             unrecognised_list = [i for i in unrecognized]
             raise ValueError(f"Unrecognized columns - {unrecognised_list}")
-
-        # So we can detect if values are mutated or not.
-        self._initial_data = initial_data
 
     @classmethod
     def _create_serial_primary_key(cls) -> Serial:
@@ -303,22 +297,6 @@ class Table(metaclass=TableMetaclass):
         return pk
 
     ###########################################################################
-
-    @property
-    def _changed_columns(self) -> t.List[Column]:
-        """
-        Work out which columns have had their values changed.
-        """
-        if not self._exists_in_db:
-            return self._meta.columns
-
-        changed_columns = []
-
-        for column, value in self._initial_data.items():
-            if value != getattr(self, column._meta.name):
-                changed_columns.append(column)
-
-        return changed_columns
 
     def save(
         self, columns: t.Optional[t.List[t.Union[Column, str]]] = None
@@ -337,14 +315,7 @@ class Table(metaclass=TableMetaclass):
                 band.save(columns=[Band.popularity]).run_sync()
 
             If ``columns=None`` (the default) then all columns will be synced
-            back to the database. To just sync the ones which have changed,
-            use the ``_changed_columns`` property:
-
-            .. code-block:: python
-
-                band = Band.objects().first().run_sync()
-                band.popularity = 2000
-                band.save(columns=band._changed_columns).run_sync()
+            back to the database.
 
         """
         cls = self.__class__
