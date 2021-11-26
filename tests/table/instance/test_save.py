@@ -58,9 +58,80 @@ class TestSave(TestCase):
             ],
         )
 
-        band.name = "Pythonistas Reborn"
+        band.name = "Pythonistas 2"
         band.popularity = 2000
         band.save(columns=[Band.name]).run_sync()
+
+        # Only the name should update, and not the popularity:
+        self.assertEqual(
+            Band.select().run_sync(),
+            [
+                {
+                    "id": 1,
+                    "name": "Pythonistas 2",
+                    "manager": 1,
+                    "popularity": 1000,
+                }
+            ],
+        )
+
+        #######################################################################
+
+        # Also test it using strings to identify columns
+        band.name = "Pythonistas 3"
+        band.popularity = 3000
+        band.save(columns=["popularity"]).run_sync()
+
+        # Only the popularity should update, and not the name:
+        self.assertEqual(
+            Band.select().run_sync(),
+            [
+                {
+                    "id": 1,
+                    "name": "Pythonistas 2",
+                    "manager": 1,
+                    "popularity": 3000,
+                }
+            ],
+        )
+
+    def test_changed_columns(self):
+        """
+        Make sure that the ``_changed_columns`` attribute is being recorded
+        correctly.
+        """
+        manager = Manager(name="Guido")
+        manager._changed_columns
+
+        # As it hasn't been saved in the database yet, then all of the columns
+        # should be returned.
+        breakpoint()
+
+    def test_save_changed_columns(self):
+        """
+        Make sure that we can save just the modified columns.
+        """
+        manager = Manager(name="Guido")
+        manager.save().run_sync()
+
+        band = Band(name="Pythonistas", popularity=1000, manager=manager)
+        band.save().run_sync()
+
+        self.assertEqual(
+            Band.select().run_sync(),
+            [
+                {
+                    "id": 1,
+                    "name": "Pythonistas",
+                    "manager": 1,
+                    "popularity": 1000,
+                }
+            ],
+        )
+
+        band.name = "Pythonistas Reborn"
+        band.popularity = 2000
+        band.save(columns=band._changed_columns).run_sync()
 
         # Only the name should update, and not the popularity:
         self.assertEqual(

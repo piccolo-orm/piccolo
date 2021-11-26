@@ -260,7 +260,7 @@ class Table(metaclass=TableMetaclass):
         """
         self._exists_in_db = exists_in_db
 
-        initial_data = {}
+        initial_data: t.Dict[Column, t.Any] = {}
 
         for column in self._meta.columns:
             value = kwargs.pop(column._meta.name, ...)
@@ -309,9 +309,12 @@ class Table(metaclass=TableMetaclass):
         """
         Work out which columns have had their values changed.
         """
+        if not self._exists_in_db:
+            return self._meta.columns
+
         changed_columns = []
 
-        for column, value in self._initial_data.values():
+        for column, value in self._initial_data.items():
             if value != getattr(self, column._meta.name):
                 changed_columns.append(column)
 
