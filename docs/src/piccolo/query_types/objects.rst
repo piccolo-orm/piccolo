@@ -77,7 +77,12 @@ Objects have a ``save`` method, which is convenient for updating values:
     ).first().run_sync()
 
     band.popularity = 100000
+
+    # This saves all values back to the database.
     band.save().run_sync()
+
+    # Or specify specific columns to save:
+    band.save([Band.popularity]).run_sync()
 
 -------------------------------------------------------------------------------
 

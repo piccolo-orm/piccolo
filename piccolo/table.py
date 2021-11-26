@@ -298,24 +298,51 @@ class Table(metaclass=TableMetaclass):
 
     ###########################################################################
 
-    def save(self) -> t.Union[Insert, Update]:
+    def save(
+        self, columns: t.Optional[t.List[t.Union[Column, str]]] = None
+    ) -> t.Union[Insert, Update]:
         """
         A proxy to an insert or update query.
+
+        :param columns:
+            Only the specified columns will be synced back to the database
+            when doing an update. For example:
+
+            .. code-block:: python
+
+                band = Band.objects().first().run_sync()
+                band.popularity = 2000
+                band.save(columns=[Band.popularity]).run_sync()
+
+            If ``columns=None`` (the default) then all columns will be synced
+            back to the database.
+
         """
         cls = self.__class__
 
         if not self._exists_in_db:
             return cls.insert().add(self)
 
-        # pre-existing row
-        kwargs: t.Dict[Column, t.Any] = {
-            i: getattr(self, i._meta.name, None)
-            for i in cls._meta.columns
-            if i._meta.name != self._meta.primary_key._meta.name
+        # Pre-existing row - update
+        if columns is None:
+            column_instances = [
+                i
+                for i in cls._meta.columns
+                if i._meta.name != self._meta.primary_key._meta.name
+            ]
+        else:
+            column_instances = [
+                self._meta.get_column_by_name(i) if isinstance(i, str) else i
+                for i in columns
+            ]
+
+        values: t.Dict[Column, t.Any] = {
+            i: getattr(self, i._meta.name, None) for i in column_instances
         }
+
         return (
             cls.update()
-            .values(kwargs)  # type: ignore
+            .values(values)  # type: ignore
             .where(
                 cls._meta.primary_key
                 == getattr(self, self._meta.primary_key._meta.name)
