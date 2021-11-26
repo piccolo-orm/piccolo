@@ -1,6 +1,25 @@
 Changes
 =======
 
+0.61.0
+------
+
+The ``save`` method now supports a ``columns`` argument, so when updating a
+row you can specify which values to sync back. For example:
+
+.. code-block:: python
+
+  band = await Band.objects().get(Band.name == "Pythonistas")
+  band.name = "Super Pythonistas"
+  await band.save([Band.name])
+
+  # Alternatively, strings are also supported:
+  await band.save(['name'])
+
+Thanks to @trondhindenes for suggesting this feature.
+
+-------------------------------------------------------------------------------
+
 0.60.2
 ------
 
