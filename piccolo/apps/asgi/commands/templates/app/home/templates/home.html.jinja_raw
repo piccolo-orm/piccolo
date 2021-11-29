@@ -8,7 +8,7 @@
         <section>
             <h2>Postgres</h2>
             <p>Make sure you create the database. See the <a href="https://piccolo-orm.readthedocs.io/en/latest/piccolo/getting_started/setup_postgres.html">docs</a> for guidance.</p>
-            <p>See <em>piccolo_conf.py</em> for the database settings.</p>
+            <p>See <code>piccolo_conf.py</code> for the database settings.</p>
         </section>
 
         <section>
@@ -26,7 +26,7 @@
 
         <section>
             <h2>Custom Tables</h2>
-            <p>An example table called <em>Task</em> exists in <em>tables.py</em>.</p>
+            <p>An example table called <code>Task</code> exists in <code>tables.py</code>.</p>
             <p>When you're ready, create a migration, and run it to add the table to the database:</p>
             <p class="code">
                 <span>piccolo migrations new home --auto</span>
