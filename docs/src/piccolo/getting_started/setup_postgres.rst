@@ -79,9 +79,7 @@ DEB packages are available for `Ubuntu <https://www.pgadmin.org/download/pgadmin
 Postgres version
 ****************
 
-Piccolo is currently tested against Postgres 9.6, 10.6, and 11.1 so it's
-recommended to use one of those. To check all supported versions, see the
-`Travis file <https://github.com/piccolo-orm/piccolo/blob/master/.travis.yml>`_.
+Piccolo is tested on most major Postgres versions (see the `GitHub Actions file <https://github.com/piccolo-orm/piccolo/blob/master/.github/workflows/tests.yaml>`_).
 
 -------------------------------------------------------------------------------
 
