@@ -4,7 +4,8 @@ body, html {
 }
 
 body {
-    background-color: #f0f0f0;
+    background-color: #f0f7fd;
+    color: #2b475f;
     font-family: 'Open Sans', sans-serif;
 }
 
@@ -16,6 +17,7 @@ div.hero {
 
 a {
     color: #4C89C8;
+    text-decoration: none;
 }
 
 div.hero h1 {
@@ -36,20 +38,27 @@ div.content {
     max-width: 50rem;
     padding: 2rem;
     transform: translateY(-4rem);
+    box-shadow: 0px 1px 1px 1px rgb(0,0,0,0.05);
 }
 
-div.content h2 {
+div.content h2, div.content h3 {
     font-weight: normal;
-    border-bottom: 4px solid #f0f0f0;
+}
+
+div.content code {
+    padding: 2px 4px;
+    background-color: #f0f7fd;
+    border-radius: 0.2rem;
 }
 
 p.code {
-    background-color: #2b2b2b;
+    background-color: #233d58;
     color: white;
     font-family: monospace;
     padding: 1rem;
     margin: 0;
     display: block;
+    border-radius: 0.2rem;
 }
 
 p.code span {
