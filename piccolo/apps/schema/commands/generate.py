@@ -347,9 +347,11 @@ COLUMN_DEFAULT_PARSER = {
 def get_column_default(
     column_type: t.Type[Column], column_default: str
 ) -> t.Any:
-    pat = COLUMN_DEFAULT_PARSER[column_type]
+    pat = COLUMN_DEFAULT_PARSER.get(column_type)
 
-    if pat is not None:
+    if pat is None:
+        return None
+    else:
         match = re.match(pat, column_default)
         if match is not None:
             value = match.groupdict()
