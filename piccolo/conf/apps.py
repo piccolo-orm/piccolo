@@ -369,8 +369,7 @@ class Finder:
         self, module_name: t.Optional[str] = None
     ) -> t.Optional[Engine]:
         piccolo_conf = self.get_piccolo_conf_module(module_name=module_name)
-        engine: t.Optional[Engine] = None
-        engine = getattr(piccolo_conf, ENGINE_VAR, None)
+        engine: t.Optional[Engine] = getattr(piccolo_conf, ENGINE_VAR, None)
 
         if not engine:
             colored_warning(
