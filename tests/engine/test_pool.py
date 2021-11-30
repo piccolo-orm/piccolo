@@ -1,9 +1,10 @@
 import asyncio
 
 from piccolo.engine.postgres import PostgresEngine
+from piccolo.engine.sqlite import SQLiteEngine
 from tests.example_apps.music.tables import Manager
 
-from ..base import DBTestCase, postgres_only
+from ..base import DBTestCase, postgres_only, sqlite_only
 
 
 @postgres_only
@@ -77,4 +78,16 @@ class TestPoolProxyMethods(DBTestCase):
         There are some proxy methods, due to some old typos. Make sure they
         work, to ensure backwards compatibility.
         """
+        asyncio.run(self._create_pool())
+
+
+@sqlite_only
+class TestConnectionPoolWarning(DBTestCase):
+    async def _create_pool(self):
+        engine: SQLiteEngine = SQLiteEngine(path="engine1.sqlite")
+        await engine.start_connection_pool()
+
+        await engine.close_connection_pool()
+
+    def test_proxy_methods(self):
         asyncio.run(self._create_pool())
