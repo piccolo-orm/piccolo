@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 import typing as t
 from unittest import TestCase
 from unittest.mock import MagicMock
@@ -22,6 +23,11 @@ postgres_only = pytest.mark.skipif(
 
 sqlite_only = pytest.mark.skipif(
     not isinstance(ENGINE, SQLiteEngine), reason="Only running for SQLite"
+)
+
+
+unix_only = pytest.mark.skipif(
+    sys.platform.startswith("win"), reason="Only running on a Unix system"
 )
 
 
