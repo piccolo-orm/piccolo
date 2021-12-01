@@ -46,6 +46,7 @@ jobs:
                   python -m pip install --upgrade pip
                   pip install -r requirements/requirements.txt
                   pip install -r requirements/test-requirements.txt
+                  pip install -r requirements/extras/postgres.txt
             - name: Run integration tests
               run: ./scripts/test-integration.sh
 
