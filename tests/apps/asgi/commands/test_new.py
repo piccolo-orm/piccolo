@@ -85,7 +85,7 @@ class TestNewAppRuns(TestCase):
 
             response = subprocess.run(
                 f"cd {root} && "
-                "virtualenv venv && "
+                "python -m virtualenv venv && "
                 "./venv/bin/pip install -r requirements.txt && "
                 "./venv/bin/python dummy_server.py",
                 shell=True,
