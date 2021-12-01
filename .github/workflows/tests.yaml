@@ -69,6 +69,10 @@ jobs:
                   psql -h localhost -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" -d piccolo -U postgres
             - name: Run integration tests
               run: ./scripts/test-integration.sh
+              env:
+                  PG_HOST: localhost
+                  PG_DATABASE: piccolo
+                  PG_PASSWORD: postgres
 
     postgres:
         runs-on: ubuntu-latest
