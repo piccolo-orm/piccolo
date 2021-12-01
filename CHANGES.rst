@@ -1,6 +1,30 @@
 Changes
 =======
 
+0.61.1
+------
+
+Nicer ASGI template
+~~~~~~~~~~~~~~~~~~~
+
+When using ``piccolo asgi new`` to generate a web app, it now has a nicer home
+page template, with improved styles.
+
+Improved schema generation
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Fixed a bug with ``piccolo schema generate`` where it would crash if the column
+type was unrecognised, due to failing to parse the column's default value.
+Thanks to @gmos for reporting this issue, and figuring out the fix.
+
+Fix Pylance error
+~~~~~~~~~~~~~~~~~
+
+Added ``start_connection_pool`` and ``close_connection_pool`` methods to the
+base ``Engine`` class (courtesy @gmos).
+
+-------------------------------------------------------------------------------
+
 0.61.0
 ------
 
