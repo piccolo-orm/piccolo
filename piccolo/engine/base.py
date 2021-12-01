@@ -88,3 +88,22 @@ class Engine(metaclass=ABCMeta):
                 "Piccolo docs."
             )
             colored_warning(message, stacklevel=3)
+
+    def _connection_pool_warning(self):
+        message = (
+            f"Connection pooling is not supported for {self.engine_type}."
+        )
+        logger.warning(message)
+        colored_warning(message, stacklevel=3)
+
+    async def start_connection_pool(self):
+        """
+        The database driver doesn't implement connection pooling.
+        """
+        self._connection_pool_warning()
+
+    async def close_connection_pool(self):
+        """
+        The database driver doesn't implement connection pooling.
+        """
+        self._connection_pool_warning()
