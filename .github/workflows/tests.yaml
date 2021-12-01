@@ -35,6 +35,19 @@ jobs:
                 # These tests are slow, so we only run on the latest Python
                 # version.
                 python-version: ["3.10"]
+                postgres-version: [14]
+        services:
+            postgres:
+                image: postgres:${{ matrix.postgres-version }}
+                env:
+                    POSTGRES_PASSWORD: postgres
+                options: >-
+                    --health-cmd pg_isready
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+                ports:
+                    - 5432:5432
         steps:
             - uses: actions/checkout@v2
             - name: Set up Python ${{ matrix.python-version }}
