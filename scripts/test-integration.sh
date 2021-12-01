@@ -6,9 +6,5 @@
 
 export PICCOLO_CONF="tests.postgres_conf"
 python -m pytest \
-    --cov=piccolo \
-    --cov-report=xml \
-    --cov-report=html \
-    --cov-fail-under=85 \
     -m integration \
     -s $@
