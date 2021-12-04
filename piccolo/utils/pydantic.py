@@ -102,10 +102,12 @@ def create_pydantic_model(
         converted.
     :param exclude_columns:
         A tuple of ``Column`` instances that should be excluded from the
-        Pydantic model. Only specify ``include_column`` or ``exclude_column``.
+        Pydantic model. Only specify ``include_columns`` or
+        ``exclude_columns``.
     :param include_columns:
         A tuple of ``Column`` instances that should be included in the
-        Pydantic model. Only specify ``include_column`` or ``exclude_column``.
+        Pydantic model. Only specify ``include_columns`` or
+        ``exclude_columns``.
     :param include_default_columns:
         Whether to include columns like ``id`` in the serialiser. You will
         typically include these columns in GET requests, but don't require

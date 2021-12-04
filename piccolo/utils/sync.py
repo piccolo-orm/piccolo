@@ -11,7 +11,7 @@ def run_sync(coroutine: t.Coroutine):
     as possible.
 
      1. When called within a coroutine.
-     2. When called from `python -m asyncio`, or iPython with %autoawait
+     2. When called from ``python -m asyncio``, or iPython with %autoawait
         enabled, which means an event loop may already be running in the
         current thread.
 
