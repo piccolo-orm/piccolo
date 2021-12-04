@@ -73,8 +73,8 @@ class QueryString:
 
     def __str__(self):
         """
-        The SQL returned by the __str__ method isn't used directly in queries
-        - it's just a usability feature.
+        The SQL returned by the ``__str__`` method isn't used directly in
+        queries - it's just a usability feature.
         """
         _, bundled, combined_args = self.bundle(
             start_index=1, bundled=[], combined_args=[]

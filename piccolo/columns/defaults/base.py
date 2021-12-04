@@ -24,9 +24,10 @@ class Default(ABC):
         Returns a string usable as an interval argument in Postgres e.g.
         "1 day 2 hour".
 
-        :arg attributes:
+        :param attributes:
             Date / time attributes to extract from the instance. e.g.
             ['hours', 'minutes']
+
         """
         interval_components = []
         for attr_name in attributes:
@@ -41,9 +42,10 @@ class Default(ABC):
         Returns a string usable as an interval argument in SQLite e.g.
         "'-2 hours', '1 days'".
 
-        :arg attributes:
+        :param attributes:
             Date / time attributes to extract from the instance. e.g.
             ['hours', 'minutes']
+
         """
         interval_components = []
         for attr_name in attributes:

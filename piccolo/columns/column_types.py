@@ -871,13 +871,13 @@ class Numeric(Column):
         >>> Ticket.select(Ticket.price).run_sync()
         {'price': Decimal('50.0')}
 
-    :arg digits:
+    :param digits:
         When creating the column, you specify how many digits are allowed
-        using a tuple. The first value is the `precision`, which is the
-        total number of digits allowed. The second value is the `range`,
+        using a tuple. The first value is the ``precision``, which is the
+        total number of digits allowed. The second value is the ``range``,
         which specifies how many of those digits are after the decimal
         point. For example, to store monetary values up to £999.99, the
-        digits argument is `(5,2)`.
+        digits argument is ``(5,2)``.
 
     """
 

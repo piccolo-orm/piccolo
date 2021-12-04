@@ -696,13 +696,17 @@ class Table(metaclass=TableMetaclass):
 
         These are all equivalent:
 
-        await Band.select().columns(Band.name).run()
-        await Band.select(Band.name).run()
-        await Band.select('name').run()
+        .. code-block:: python
 
-        :param exclude_secrets: If True, any password fields are omitted from
-        the response. Even though passwords are hashed, you still don't want
-        them being passed over the network if avoidable.
+            await Band.select().columns(Band.name).run()
+            await Band.select(Band.name).run()
+            await Band.select('name').run()
+
+        :param exclude_secrets:
+            If ``True``, any password fields are omitted from the response.
+            Even though passwords are hashed, you still don't want them being
+            passed over the network if avoidable.
+
         """
         _columns = cls._process_column_args(*columns)
         return Select(
@@ -714,10 +718,14 @@ class Table(metaclass=TableMetaclass):
         """
         Delete rows from the table.
 
-        await Band.delete().where(Band.name == 'Pythonistas').run()
+        .. code-block:: python
 
-        Unless 'force' is set to True, deletions aren't allowed without a
-        'where' clause, to prevent accidental mass deletions.
+            await Band.delete().where(Band.name == 'Pythonistas').run()
+
+        :param force:
+            Unless set to ``True``, deletions aren't allowed without a
+            ``where`` clause, to prevent accidental mass deletions.
+
         """
         return Delete(table=cls, force=force)
 
@@ -728,7 +736,10 @@ class Table(metaclass=TableMetaclass):
         """
         Create table, along with all columns.
 
-        await Band.create_table().run()
+        .. code-block:: python
+
+            await Band.create_table().run()
+
         """
         return Create(
             table=cls,
@@ -741,7 +752,10 @@ class Table(metaclass=TableMetaclass):
         """
         Used to modify existing tables and columns.
 
-        await Band.alter().rename_column(Band.popularity, 'rating').run()
+        .. code-block:: python
+
+            await Band.alter().rename_column(Band.popularity, 'rating').run()
+
         """
         return Alter(table=cls)
 
@@ -790,7 +804,10 @@ class Table(metaclass=TableMetaclass):
         """
         Count the number of matching rows.
 
-        await Band.count().where(Band.popularity > 1000).run()
+        .. code-block:: python
+
+            await Band.count().where(Band.popularity > 1000).run()
+
         """
         return Count(table=cls)
 
@@ -799,7 +816,10 @@ class Table(metaclass=TableMetaclass):
         """
         Use it to check if a row exists, not if the table exists.
 
-        await Band.exists().where(Band.name == 'Pythonistas').run()
+        .. code-block:: python
+
+            await Band.exists().where(Band.name == 'Pythonistas').run()
+
         """
         return Exists(table=cls)
 
@@ -808,7 +828,10 @@ class Table(metaclass=TableMetaclass):
         """
         Check if the table exists in the database.
 
-        await Band.table_exists().run()
+        .. code-block:: python
+
+            await Band.table_exists().run()
+
         """
         return TableExists(table=cls)
 
@@ -850,7 +873,10 @@ class Table(metaclass=TableMetaclass):
         """
         Returns a list of the indexes for this tables.
 
-        await Band.indexes().run()
+        .. code-block:: python
+
+            await Band.indexes().run()
+
         """
         return Indexes(table=cls)
 
@@ -865,7 +891,10 @@ class Table(metaclass=TableMetaclass):
         Create a table index. If multiple columns are specified, this refers
         to a multicolumn index, rather than multiple single column indexes.
 
-        await Band.create_index([Band.name]).run()
+        .. code-block:: python
+
+            await Band.create_index([Band.name]).run()
+
         """
         return CreateIndex(
             table=cls,
@@ -882,7 +911,10 @@ class Table(metaclass=TableMetaclass):
         Drop a table index. If multiple columns are specified, this refers
         to a multicolumn index, rather than multiple single column indexes.
 
-        await Band.drop_index([Band.name]).run()
+        .. code-block:: python
+
+            await Band.drop_index([Band.name]).run()
+
         """
         return DropIndex(table=cls, columns=columns, if_exists=if_exists)
 
