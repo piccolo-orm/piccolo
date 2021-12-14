@@ -49,7 +49,7 @@ class Update(Query):
         self.validate()
 
         columns_str = ", ".join(
-            f"{col._meta.db_column_name} = {{}}"
+            f'"{col._meta.db_column_name}" = {{}}'
             for col, _ in self.values_delegate._values.items()
         )
 

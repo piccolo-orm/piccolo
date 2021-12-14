@@ -1,6 +1,5 @@
+from tests.base import DBTestCase
 from tests.example_apps.music.tables import Band
-
-from ..base import DBTestCase
 
 
 class TestExists(DBTestCase):

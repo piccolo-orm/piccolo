@@ -4,35 +4,60 @@ import typing as t
 from unittest import TestCase
 
 from piccolo.columns import BigInt, Integer, Numeric, Varchar
+from piccolo.columns.base import Column
 from piccolo.columns.column_types import ForeignKey, Text
 from piccolo.table import Table
 from tests.base import DBTestCase, postgres_only
 from tests.example_apps.music.tables import Band, Manager
 
-if t.TYPE_CHECKING:
-    from piccolo.columns.base import Column
-
 
 class TestRenameColumn(DBTestCase):
-    def _test_rename(self, column: Column):
+    def _test_rename(
+        self,
+        existing_column: t.Union[Column, str],
+        new_column_name: str = "rating",
+    ):
         self.insert_row()
 
-        rename_query = Band.alter().rename_column(column, "rating")
+        rename_query = Band.alter().rename_column(
+            existing_column, new_column_name
+        )
         rename_query.run_sync()
 
         select_query = Band.raw("SELECT * FROM band")
         response = select_query.run_sync()
 
         column_names = response[0].keys()
+        existing_column_name = (
+            existing_column._meta.name
+            if isinstance(existing_column, Column)
+            else existing_column
+        )
         self.assertTrue(
-            ("rating" in column_names) and ("popularity" not in column_names)
+            (new_column_name in column_names)
+            and (existing_column_name not in column_names)
         )
 
-    def test_rename_string(self):
+    def test_column(self):
+        """
+        Make sure a ``Column`` argument works.
+        """
         self._test_rename(Band.popularity)
 
-    def test_rename_column(self):
+    def test_string(self):
+        """
+        Make sure a string argument works.
+        """
         self._test_rename("popularity")
+
+    def test_problematic_name(self):
+        """
+        Make sure we can rename columns with names which clash with SQL
+        keywords.
+        """
+        self._test_rename(
+            existing_column=Band.popularity, new_column_name="order"
+        )
 
 
 class TestRenameTable(DBTestCase):
@@ -84,26 +109,36 @@ class TestAddColumn(DBTestCase):
 
         self.assertEqual(response[0][column_name], expected_value)
 
-    def test_add_integer(self):
+    def test_integer(self):
         self._test_add_column(
             column=Integer(null=True, default=None),
             column_name="members",
             expected_value=None,
         )
 
-    def test_add_foreign_key(self):
+    def test_foreign_key(self):
         self._test_add_column(
             column=ForeignKey(references=Manager),
             column_name="assistant_manager",
             expected_value=None,
         )
 
-    def test_add_text(self):
+    def test_text(self):
         bio = "An amazing band"
         self._test_add_column(
             column=Text(default=bio),
             column_name="bio",
             expected_value=bio,
+        )
+
+    def test_problematic_name(self):
+        """
+        Make sure we can add columns with names which clash with SQL keywords.
+        """
+        self._test_add_column(
+            column=Text(default="asc"),
+            column_name="order",
+            expected_value="asc",
         )
 
 

@@ -32,11 +32,22 @@ def is_numeric_column(column: Column) -> bool:
 
 class Avg(Selectable):
     """
-    AVG() SQL function. Column type must be numeric to run the query.
+    ``AVG()`` SQL function. Column type must be numeric to run the query.
 
-    await Band.select(Avg(Band.popularity)).run() or with aliases
-    await Band.select(Avg(Band.popularity, alias="popularity_avg")).run()
-    await Band.select(Avg(Band.popularity).as_alias("popularity_avg")).run()
+    .. code-block:: python
+
+        await Band.select(Avg(Band.popularity)).run()
+
+        # We can use an alias. These two are equivalent:
+
+        await Band.select(
+            Avg(Band.popularity, alias="popularity_avg")
+        ).run()
+
+        await Band.select(
+            Avg(Band.popularity).as_alias("popularity_avg")
+        ).run()
+
     """
 
     def __init__(self, column: Column, alias: str = "avg"):
@@ -47,7 +58,9 @@ class Avg(Selectable):
         self.alias = alias
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        column_name = self.column._meta.get_full_name(just_alias=just_alias)
+        column_name = self.column._meta.get_full_name(
+            just_alias=just_alias, include_quotes=True
+        )
         return f"AVG({column_name}) AS {self.alias}"
 
 
@@ -59,9 +72,21 @@ class Count(Selectable):
     column. If no column is specified, the count is for all rows, whether
     they have null values or not.
 
-    Band.select(Band.name, Count()).group_by(Band.name).run()
-    Band.select(Band.name, Count(alias="total")).group_by(Band.name).run()
-    Band.select(Band.name, Count().as_alias("total")).group_by(Band.name).run()
+    .. code-block:: python
+
+        Band.select(Band.name, Count()).group_by(Band.name).run()
+
+        # We can use an alias. These two are equivalent:
+
+        Band.select(
+            Band.name, Count(alias="total")
+        ).group_by(Band.name).run()
+
+        Band.select(
+            Band.name,
+            Count().as_alias("total")
+        ).group_by(Band.name).run()
+
     """
 
     def __init__(
@@ -75,18 +100,31 @@ class Count(Selectable):
             column_name = "*"
         else:
             column_name = self.column._meta.get_full_name(
-                just_alias=just_alias
+                just_alias=just_alias, include_quotes=True
             )
         return f"COUNT({column_name}) AS {self.alias}"
 
 
 class Max(Selectable):
     """
-    MAX() SQL function.
+    ``MAX()`` SQL function.
 
-    await Band.select(Max(Band.popularity)).run() or with aliases
-    await Band.select(Max(Band.popularity, alias="popularity_max")).run()
-    await Band.select(Max(Band.popularity).as_alias("popularity_max")).run()
+    .. code-block:: python
+
+        await Band.select(
+            Max(Band.popularity)
+        ).run()
+
+        # We can use an alias. These two are equivalent:
+
+        await Band.select(
+            Max(Band.popularity, alias="popularity_max")
+        ).run()
+
+        await Band.select(
+            Max(Band.popularity).as_alias("popularity_max")
+        ).run()
+
     """
 
     def __init__(self, column: Column, alias: str = "max"):
@@ -94,17 +132,30 @@ class Max(Selectable):
         self.alias = alias
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        column_name = self.column._meta.get_full_name(just_alias=just_alias)
+        column_name = self.column._meta.get_full_name(
+            just_alias=just_alias, include_quotes=True
+        )
         return f"MAX({column_name}) AS {self.alias}"
 
 
 class Min(Selectable):
     """
-    MIN() SQL function.
+    ``MIN()`` SQL function.
 
-    await Band.select(Min(Band.popularity)).run()
-    await Band.select(Min(Band.popularity, alias="popularity_min")).run()
-    await Band.select(Min(Band.popularity).as_alias("popularity_min")).run()
+    .. code-block:: python
+
+        await Band.select(Min(Band.popularity)).run()
+
+        # We can use an alias. These two are equivalent:
+
+        await Band.select(
+            Min(Band.popularity, alias="popularity_min")
+        ).run()
+
+        await Band.select(
+            Min(Band.popularity).as_alias("popularity_min")
+        ).run()
+
     """
 
     def __init__(self, column: Column, alias: str = "min"):
@@ -112,17 +163,32 @@ class Min(Selectable):
         self.alias = alias
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        column_name = self.column._meta.get_full_name(just_alias=just_alias)
+        column_name = self.column._meta.get_full_name(
+            just_alias=just_alias, include_quotes=True
+        )
         return f"MIN({column_name}) AS {self.alias}"
 
 
 class Sum(Selectable):
     """
-    SUM() SQL function. Column type must be numeric to run the query.
+    ``SUM()`` SQL function. Column type must be numeric to run the query.
 
-    await Band.select(Sum(Band.popularity)).run()
-    await Band.select(Sum(Band.popularity, alias="popularity_sum")).run()
-    await Band.select(Sum(Band.popularity).as_alias("popularity_sum")).run()
+    .. code-block:: python
+
+        await Band.select(
+            Sum(Band.popularity)
+        ).run()
+
+        # We can use an alias. These two are equivalent:
+
+        await Band.select(
+            Sum(Band.popularity, alias="popularity_sum")
+        ).run()
+
+        await Band.select(
+            Sum(Band.popularity).as_alias("popularity_sum")
+        ).run()
+
     """
 
     def __init__(self, column: Column, alias: str = "sum"):
@@ -133,7 +199,9 @@ class Sum(Selectable):
         self.alias = alias
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        column_name = self.column._meta.get_full_name(just_alias=just_alias)
+        column_name = self.column._meta.get_full_name(
+            just_alias=just_alias, include_quotes=True
+        )
         return f"SUM({column_name}) AS {self.alias}"
 
 
