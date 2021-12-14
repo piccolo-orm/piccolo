@@ -1,6 +1,20 @@
 Changes
 =======
 
+0.61.2
+------
+
+Fixed some edge cases where migrations would fail if a column name clashed with
+a reserved Postgres keyword (for example ``order`` or ``select``).
+
+We now have more robust tests for ``piccolo asgi new`` - as part of our CI we
+actually run the generated ASGI app to make sure it works (thanks to @AliSayyah
+and @yezz123 for their help with this).
+
+We also improved docstrings across the project.
+
+-------------------------------------------------------------------------------
+
 0.61.1
 ------
 
