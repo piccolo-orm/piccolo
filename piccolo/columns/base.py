@@ -208,14 +208,46 @@ class ColumnMeta:
 
         return output
 
-    def get_full_name(self, just_alias=False) -> str:
+    def get_full_name(
+        self, just_alias: bool = False, include_quotes: bool = False
+    ) -> str:
         """
         Returns the full column name, taking into account joins.
+
+        :param just_alias:
+            Examples:
+
+            .. code-block python::
+
+                >>> Band.manager.name._meta.get_full_name(just_alias=True)
+                'band$manager.name'
+
+                >>> Band.manager.name._meta.get_full_name(just_alias=False)
+                'band$manager.name AS "manager$name"'
+
+        :param include_quotes:
+            If you're using the name in a SQL query, each component needs to be
+            surrounded by double quotes, in case the table or column name
+            clashes with a reserved SQL keyword (for example, a column called
+            ``order``).
+
+            .. code-block python::
+
+                >>> column._meta.get_full_name(include_quotes=True)
+                '"my_table_name"."my_column_name"'
+
+                >>> column._meta.get_full_name(include_quotes=False)
+                'my_table_name.my_column_name'
+
+
         """
         column_name = self.db_column_name
 
         if not self.call_chain:
-            return f"{self.table._meta.tablename}.{column_name}"
+            if include_quotes:
+                return f'"{self.table._meta.tablename}"."{column_name}"'
+            else:
+                return f"{self.table._meta.tablename}.{column_name}"
 
         column_name = (
             "$".join(
@@ -224,7 +256,11 @@ class ColumnMeta:
             + f"${column_name}"
         )
 
-        alias = f"{self.call_chain[-1]._meta.table_alias}.{self.name}"
+        if include_quotes:
+            alias = f'"{self.call_chain[-1]._meta.table_alias}"."{self.name}"'
+        else:
+            alias = f"{self.call_chain[-1]._meta.table_alias}.{self.name}"
+
         if just_alias:
             return alias
         else:
@@ -660,8 +696,12 @@ class Column(Selectable):
         How to refer to this column in a SQL query.
         """
         if self.alias is None:
-            return self._meta.get_full_name(just_alias=just_alias)
-        original_name = self._meta.get_full_name(just_alias=True)
+            return self._meta.get_full_name(
+                just_alias=just_alias, include_quotes=True
+            )
+        original_name = self._meta.get_full_name(
+            just_alias=True, include_quotes=True
+        )
         return f"{original_name} AS {self.alias}"
 
     def get_where_string(self, engine_type: str) -> str:

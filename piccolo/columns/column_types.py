@@ -1552,7 +1552,9 @@ class JSONB(JSON):
         return instance
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        select_string = self._meta.get_full_name(just_alias=just_alias)
+        select_string = self._meta.get_full_name(
+            just_alias=just_alias, include_quotes=True
+        )
         if self.json_operator is None:
             return select_string
         else:
@@ -1720,7 +1722,9 @@ class Array(Column):
             raise ValueError("Only integers can be used for indexing.")
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        select_string = self._meta.get_full_name(just_alias=just_alias)
+        select_string = self._meta.get_full_name(
+            just_alias=just_alias, include_quotes=True
+        )
 
         if isinstance(self.index, int):
             return f"{select_string}[{self.index}]"

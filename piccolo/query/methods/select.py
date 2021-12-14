@@ -58,7 +58,9 @@ class Avg(Selectable):
         self.alias = alias
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        column_name = self.column._meta.get_full_name(just_alias=just_alias)
+        column_name = self.column._meta.get_full_name(
+            just_alias=just_alias, include_quotes=True
+        )
         return f"AVG({column_name}) AS {self.alias}"
 
 
@@ -98,7 +100,7 @@ class Count(Selectable):
             column_name = "*"
         else:
             column_name = self.column._meta.get_full_name(
-                just_alias=just_alias
+                just_alias=just_alias, include_quotes=True
             )
         return f"COUNT({column_name}) AS {self.alias}"
 
@@ -130,7 +132,9 @@ class Max(Selectable):
         self.alias = alias
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        column_name = self.column._meta.get_full_name(just_alias=just_alias)
+        column_name = self.column._meta.get_full_name(
+            just_alias=just_alias, include_quotes=True
+        )
         return f"MAX({column_name}) AS {self.alias}"
 
 
@@ -159,7 +163,9 @@ class Min(Selectable):
         self.alias = alias
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        column_name = self.column._meta.get_full_name(just_alias=just_alias)
+        column_name = self.column._meta.get_full_name(
+            just_alias=just_alias, include_quotes=True
+        )
         return f"MIN({column_name}) AS {self.alias}"
 
 
@@ -193,7 +199,9 @@ class Sum(Selectable):
         self.alias = alias
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        column_name = self.column._meta.get_full_name(just_alias=just_alias)
+        column_name = self.column._meta.get_full_name(
+            just_alias=just_alias, include_quotes=True
+        )
         return f"SUM({column_name}) AS {self.alias}"
 
 
