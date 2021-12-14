@@ -100,7 +100,7 @@ class Count(Selectable):
             column_name = self.column._meta.get_full_name(
                 just_alias=just_alias
             )
-        return f'COUNT("{column_name}") AS {self.alias}'
+        return f"COUNT({column_name}) AS {self.alias}"
 
 
 class Max(Selectable):
@@ -131,7 +131,7 @@ class Max(Selectable):
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         column_name = self.column._meta.get_full_name(just_alias=just_alias)
-        return f'MAX("{column_name}") AS {self.alias}'
+        return f"MAX({column_name}) AS {self.alias}"
 
 
 class Min(Selectable):
@@ -160,7 +160,7 @@ class Min(Selectable):
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         column_name = self.column._meta.get_full_name(just_alias=just_alias)
-        return f'MIN("{column_name}") AS {self.alias}'
+        return f"MIN({column_name}) AS {self.alias}"
 
 
 class Sum(Selectable):

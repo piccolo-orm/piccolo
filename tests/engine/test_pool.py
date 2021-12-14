@@ -6,9 +6,8 @@ from unittest.mock import MagicMock, call, patch
 
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
-from tests.example_apps.music.tables import Manager
-
 from tests.base import DBTestCase, postgres_only, sqlite_only
+from tests.example_apps.music.tables import Manager
 
 
 @postgres_only

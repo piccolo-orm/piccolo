@@ -1,6 +1,5 @@
-from tests.example_apps.music.tables import Manager
-
 from tests.base import DBTestCase, postgres_only, sqlite_only
+from tests.example_apps.music.tables import Manager
 
 
 class TestTableRepr(DBTestCase):

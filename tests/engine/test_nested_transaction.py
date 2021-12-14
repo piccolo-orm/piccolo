@@ -5,9 +5,8 @@ from piccolo.columns.column_types import Varchar
 from piccolo.engine.exceptions import TransactionError
 from piccolo.engine.sqlite import SQLiteEngine
 from piccolo.table import Table
-from tests.example_apps.music.tables import Manager
-
 from tests.base import DBTestCase, sqlite_only
+from tests.example_apps.music.tables import Manager
 
 ENGINE_1 = SQLiteEngine(path="engine1.sqlite")
 ENGINE_2 = SQLiteEngine(path="engine2.sqlite")

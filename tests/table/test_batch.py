@@ -1,9 +1,8 @@
 import asyncio
 import math
 
-from tests.example_apps.music.tables import Manager
-
 from tests.base import DBTestCase
+from tests.example_apps.music.tables import Manager
 
 
 class TestBatchSelect(DBTestCase):

@@ -1,7 +1,6 @@
 from piccolo.query.methods.delete import DeletionError
-from tests.example_apps.music.tables import Band
-
 from tests.base import DBTestCase
+from tests.example_apps.music.tables import Band
 
 
 class TestDelete(DBTestCase):
