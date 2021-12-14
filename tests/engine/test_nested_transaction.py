@@ -7,7 +7,7 @@ from piccolo.engine.sqlite import SQLiteEngine
 from piccolo.table import Table
 from tests.example_apps.music.tables import Manager
 
-from ..base import DBTestCase, sqlite_only
+from tests.base import DBTestCase, sqlite_only
 
 ENGINE_1 = SQLiteEngine(path="engine1.sqlite")
 ENGINE_2 = SQLiteEngine(path="engine2.sqlite")

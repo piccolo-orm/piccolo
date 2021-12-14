@@ -3,7 +3,7 @@ import math
 
 from tests.example_apps.music.tables import Manager
 
-from ..base import DBTestCase
+from tests.base import DBTestCase
 
 
 class TestBatchSelect(DBTestCase):

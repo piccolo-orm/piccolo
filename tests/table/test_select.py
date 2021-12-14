@@ -5,7 +5,7 @@ from piccolo.columns.combination import WhereRaw
 from piccolo.query.methods.select import Avg, Count, Max, Min, Sum
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
-from ..base import DBTestCase, postgres_only, sqlite_only
+from tests.base import DBTestCase, postgres_only, sqlite_only
 
 
 class TestSelect(DBTestCase):
