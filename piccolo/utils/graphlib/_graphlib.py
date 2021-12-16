@@ -40,8 +40,6 @@ class CycleError(ValueError):
     the same, to make it clear that it is cyclic.
     """
 
-    pass
-
 
 class TopologicalSorter:
     """Provides functionality to topologically sort a graph of hashable nodes"""

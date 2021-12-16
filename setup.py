@@ -36,9 +36,10 @@ def extras_require() -> t.Dict[str, t.List[str]]:
     """
     Parse requirements in requirements/extras directory
     """
-    extra_requirements = {extra: parse_requirement(
-            os.path.join("extras", extra + ".txt")
-        ) for extra in extras}
+    extra_requirements = {
+        extra: parse_requirement(os.path.join("extras", extra + ".txt"))
+        for extra in extras
+    }
     extra_requirements["all"] = [
         i for i in itertools.chain.from_iterable(extra_requirements.values())
     ]

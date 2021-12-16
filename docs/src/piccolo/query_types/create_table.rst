@@ -25,7 +25,7 @@ Also, you can create multiple tables at once.
 This function will automatically sort tables based on their foreign keys so they're created in the right order:
 
 .. code-block:: python
-    
-    >>> from piccolo.table import create_tables 
+
+    >>> from piccolo.table import create_tables
     >>> create_tables(Band, Manager, if_not_exists=True)
-   
+

@@ -307,7 +307,6 @@ class Selectable(metaclass=ABCMeta):
         column name, a sub query, a function etc. For a column it will be the
         column name.
         """
-        pass
 
     def as_alias(self, alias: str) -> Selectable:
         """

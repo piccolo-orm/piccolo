@@ -26,7 +26,7 @@ jobs:
                   pip install -r requirements/dev-requirements.txt
                   pip install -r requirements/test-requirements.txt
             - name: Lint
-              run: ./scripts/lint.sh
+              run: pre-commit run --all-files
 
     integration:
         runs-on: ubuntu-latest

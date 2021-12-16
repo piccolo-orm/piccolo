@@ -100,8 +100,6 @@ class TestGenerate(TestCase):
             A column type which isn't supported by Piccolo officially yet.
             """
 
-            pass
-
         MegaTable.alter().add_column("my_column", Box()).run_sync()
 
         output_schema: OutputSchema = run_sync(get_output_schema())
@@ -231,8 +229,6 @@ class TestGenerateWithSchema(TestCase):
             """
             Only for raw query execution
             """
-
-            pass
 
         Schema.raw("CREATE SCHEMA IF NOT EXISTS schema1").run_sync()
         Schema.raw("CREATE SCHEMA IF NOT EXISTS schema2").run_sync()

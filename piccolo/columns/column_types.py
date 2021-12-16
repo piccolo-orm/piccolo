@@ -936,8 +936,6 @@ class Decimal(Numeric):
     An alias for Numeric.
     """
 
-    pass
-
 
 class Real(Column):
     """
@@ -977,8 +975,6 @@ class Float(Real):
     """
     An alias for Real.
     """
-
-    pass
 
 
 class DoublePrecision(Real):
@@ -1624,8 +1620,6 @@ class Blob(Bytea):
     """
     An alias for Bytea.
     """
-
-    pass
 
 
 ###############################################################################

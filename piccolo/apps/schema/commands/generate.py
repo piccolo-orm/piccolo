@@ -801,8 +801,6 @@ async def get_output_schema(
         Just used for making raw queries on the db.
         """
 
-        pass
-
     if not include:
         include = await get_tablenames(Schema, schema_name=schema_name)
 

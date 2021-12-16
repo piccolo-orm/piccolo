@@ -1,0 +1,39 @@
+repos:
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v4.0.1
+      hooks:
+          - id: check-merge-conflict
+          - id: check-added-large-files
+          - id: check-ast
+          - id: check-symlinks
+          - id: trailing-whitespace
+          - id: check-json
+          - id: debug-statements
+          - id: pretty-format-json
+            args: ["--autofix", "--allow-missing-credentials"]
+    - repo: https://github.com/PyCQA/isort
+      rev: 5.10.1
+      hooks:
+          - id: isort
+            args: ["--profile", "black"]
+    - repo: https://gitlab.com/pycqa/flake8
+      rev: 4.0.1
+      hooks:
+          - id: flake8
+            additional_dependencies: [flake8-print]
+            files: '\.py$'
+            exclude: docs/
+            args:
+                - --select=F403,F406,F821,T003
+    - repo: https://github.com/humitos/mirrors-autoflake
+      rev: v1.3
+      hooks:
+          - id: autoflake
+            files: '\.py$'
+            exclude: '^\..*'
+            args: ["--in-place"]
+    - repo: https://github.com/psf/black
+      rev: 21.7b0
+      hooks:
+          - id: black
+            args: ["--target-version", "py38"]
