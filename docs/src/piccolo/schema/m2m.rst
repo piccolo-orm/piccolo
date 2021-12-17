@@ -65,6 +65,17 @@ If we want to select each band, along with a list of genres, we can do this:
         {"name": "C-Sharps", "genres": ["Rock", "Classical"]},
     ]
 
+You can request whichever column you like from the related table:
+
+.. code-block:: python
+
+    >>> await Band.select(Band.name, Band.genres(Genre.id))
+    [
+        {"name": "Pythonistas", "genres": [1, 2]},
+        {"name": "Rustaceans", "genres": [2]},
+        {"name": "C-Sharps", "genres": [1, 3]},
+    ]
+
 -------------------------------------------------------------------------------
 
 Objects queries
