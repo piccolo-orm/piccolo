@@ -7,9 +7,9 @@ M2M
 Sometimes in database design you need `many-to-many (M2M) <https://en.wikipedia.org/wiki/Many-to-many_(data_model)>`_
 relationships.
 
-For example, we might have our ``Band`` table, and want to describe which genres
-each band belongs to. As each band can have multiple genres, a ``ForeignKey``
-alone won't suffice. Our options are using an ``Array`` / ``JSON`` / ``JSONB``
+For example, we might have our ``Band`` table, and want to describe which genres of music
+each band belongs to (e.g. rock and electronic). As each band can have multiple genres, a ``ForeignKey``
+on the ``Band`` table won't suffice. Our options are using an ``Array`` / ``JSON`` / ``JSONB``
 column, or using an ``M2M`` relationship.
 
 Postgres and SQLite don't natively support ``M2M`` relationships - we create
