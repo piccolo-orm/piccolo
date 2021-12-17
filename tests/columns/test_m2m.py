@@ -12,9 +12,7 @@ from tests.base import postgres_only
 
 class Band(Table):
     name = Varchar()
-    genres = M2M(
-        LazyTableReference("GenreToBand", module_path="tests.columns.test_m2m")
-    )
+    genres = M2M(LazyTableReference("GenreToBand", module_path=__name__))
 
 
 class Genre(Table):
