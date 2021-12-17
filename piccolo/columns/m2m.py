@@ -30,13 +30,13 @@ class M2MSelect(Selectable):
         m2m_table_name = self.m2m._meta.resolved_joining_table._meta.tablename
         m2m_relationship_name = self.m2m._meta.name
 
-        fk_1 = self.m2m._meta.foreign_key_columns[0]
+        fk_1 = self.m2m._meta.primary_foreign_key
         fk_1_name = fk_1._meta.db_column_name
         table_1 = fk_1._foreign_key_meta.resolved_references
         table_1_name = table_1._meta.tablename
         table_1_pk_name = table_1._meta.primary_key._meta.db_column_name
 
-        fk_2 = self.m2m._meta.foreign_key_columns[1]
+        fk_2 = self.m2m._meta.secondary_foreign_key
         fk_2_name = fk_2._meta.db_column_name
         table_2 = fk_2._foreign_key_meta.resolved_references
         table_2_name = table_2._meta.tablename

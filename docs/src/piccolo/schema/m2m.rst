@@ -70,13 +70,18 @@ If we want to select each band, along with a list of genres, we can do this:
 Objects queries
 ===============
 
-add_related
------------
-
-...
+Piccolo makes it easy working with objects and ``M2M`` relationship.
 
 
-get_related
------------
+add_m2m
+-------
 
-...
+.. currentmodule:: piccolo.table
+
+.. automethod:: Table.add_m2m
+
+
+get_m2m
+-------
+
+.. automethod:: Table.get_m2m
