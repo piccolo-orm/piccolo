@@ -16,7 +16,11 @@ Postgres and SQLite don't natively support ``M2M`` relationships - we create
 them using a joining table which has foreign keys to each of the related tables
 (in our example, ``Genre`` and ``Band``).
 
-Take this schema as an example:
+.. image:: ./images/m2m.png
+    :width: 500
+    :align: center
+
+We create it in Piccolo like this:
 
 .. code-block:: python
 
