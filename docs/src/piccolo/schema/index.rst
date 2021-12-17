@@ -8,4 +8,5 @@ The schema is how you define your database tables, columns and relationships.
 
     ./defining
     ./column_types
+    ./m2m
     ./advanced
