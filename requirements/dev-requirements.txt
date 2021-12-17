@@ -1,9 +1,9 @@
 black>=21.7b0
 ipdb==0.13.9
-ipython==7.29.0
+ipython==7.30.1
 flake8==4.0.1
 isort==5.10.1
-twine==3.5.0
-mypy==0.910
+twine==3.7.1
+mypy==0.920
 pip-upgrader==1.4.15
 wheel==0.37.0
