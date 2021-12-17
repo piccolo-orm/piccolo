@@ -688,7 +688,7 @@ class Column(Selectable):
         if default is not ...:
             default = default.value if isinstance(default, Enum) else default
             is_callable = hasattr(default, "__call__")
-            return default() if is_callable else default
+            return default() if is_callable else default  # type: ignore
         return None
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:

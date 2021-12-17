@@ -76,7 +76,7 @@ def table_finder(
                 and issubclass(_object, Table)
                 and _object is not Table
             ):
-                table: Table = _object
+                table: Table = _object  # type: ignore
                 if exclude_tags and set(table._meta.tags).intersection(
                     set(exclude_tags)
                 ):
