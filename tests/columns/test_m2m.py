@@ -17,6 +17,7 @@ class Band(Table):
 
 class Genre(Table):
     name = Varchar()
+    bands = M2M(LazyTableReference("GenreToBand", module_path=__name__))
 
 
 class GenreToBand(Table):
@@ -63,6 +64,17 @@ class TestM2M(TestCase):
                 {"name": "Pythonistas", "genres": ["Rock", "Folk"]},
                 {"name": "Rustaceans", "genres": ["Folk"]},
                 {"name": "C-Sharps", "genres": ["Rock", "Classical"]},
+            ],
+        )
+
+        # Now try it in reverse.
+        response = Genre.select(Genre.name, Genre.bands(Band.name)).run_sync()
+        self.assertEqual(
+            response,
+            [
+                {"name": "Rock", "bands": ["Pythonistas", "C-Sharps"]},
+                {"name": "Folk", "bands": ["Pythonistas", "Rustaceans"]},
+                {"name": "Classical", "bands": ["C-Sharps"]},
             ],
         )
 

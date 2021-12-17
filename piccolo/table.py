@@ -444,7 +444,8 @@ class Table(metaclass=TableMetaclass):
 
             >>> band = await Band.objects().get(name="Pythonistas")
             >>> await band.add_m2m(
-            >>>     Genre(name="Punk rock"), m2m=Band.genres
+            >>>     Genre(name="Punk rock"),
+            >>>     m2m=Band.genres
             >>> )
             <Genre: 5>
 
