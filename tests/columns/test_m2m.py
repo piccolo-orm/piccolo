@@ -55,7 +55,7 @@ class TestM2M(TestCase):
     def tearDown(self):
         drop_tables(*TABLES)
 
-    def test_m2m(self):
+    def test_select(self):
         response = Band.select(Band.name, Band.genres(Genre.name)).run_sync()
         self.assertEqual(
             response,
@@ -65,3 +65,36 @@ class TestM2M(TestCase):
                 {"name": "C-Sharps", "genres": ["Rock", "Classical"]},
             ],
         )
+
+    def test_add_m2m(self):
+        """
+        Make sure we can add items to the joining table.
+        """
+        band: Band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        band.add_m2m(Genre(name="Punk Rock"), m2m=Band.genres).run_sync()
+
+        self.assertTrue(
+            Genre.exists().where(Genre.name == "Punk Rock").run_sync()
+        )
+
+        self.assertEqual(
+            GenreToBand.count()
+            .where(
+                GenreToBand.band.name == "Pythonistas",
+                GenreToBand.genre.name == "Punk Rock",
+            )
+            .run_sync(),
+            1,
+        )
+
+    def test_get_m2m(self):
+        """
+        Make sure we can get related items via the joining table.
+        """
+        band: Band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+
+        genres = band.get_m2m(Band.genres).run_sync()
+
+        self.assertTrue(all([isinstance(i, Table) for i in genres]))
+
+        self.assertEqual([i.name for i in genres], ["Rock", "Folk"])

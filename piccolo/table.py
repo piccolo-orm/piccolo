@@ -16,7 +16,7 @@ from piccolo.columns.column_types import (
 )
 from piccolo.columns.defaults.base import Default
 from piccolo.columns.indexes import IndexMethod
-from piccolo.columns.m2m import M2M
+from piccolo.columns.m2m import M2M, M2MAddRelated, M2MGetRelated
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
 from piccolo.engine import Engine, engine_finder
@@ -371,7 +371,7 @@ class Table(metaclass=TableMetaclass):
 
     def get_related(self, foreign_key: t.Union[ForeignKey, str]) -> Objects:
         """
-        Used to fetch a Table instance, for the target of a foreign key.
+        Used to fetch a ``Table`` instance, for the target of a foreign key.
 
         .. code-block:: python
 
@@ -410,6 +410,51 @@ class Table(metaclass=TableMetaclass):
                 == getattr(self, column_name)
             )
             .first()
+        )
+
+    # TODO - I might merge this with ``get_related``.
+    def get_m2m(self, m2m: M2M) -> M2MGetRelated:
+        """
+        Get all matching rows via the join table.
+
+        .. code-block:: python
+
+            >>> band = await Band.objects().get(name="Pythonistas")
+            >>> await band.get_m2m(Band.genres)
+            [<Genre: 1>, <Genre: 2>]
+
+        """
+        return M2MGetRelated(row=self, m2m=m2m)
+
+    def add_m2m(
+        self,
+        *rows: Table,
+        m2m: M2M,
+        extra_column_values: t.Dict[t.Union[Column, str], t.Any] = {},
+    ) -> M2MAddRelated:
+        """
+        Save the row if it doesn't already exist in the database, and insert
+        an entry into the joining table.
+
+        .. code-block:: python
+
+            >>> band = await Band.objects().get(name="Pythonistas")
+            >>> await band.add_m2m(
+            >>>     Genre(name="Punk rock"), m2m=Band.genres
+            >>> )
+            <Genre: 5>
+
+        :param extra_column_values:
+            If the joining table has additional columns besides the two
+            required foreign keys, you can specify the values for those
+            additional columns.
+
+        """
+        return M2MAddRelated(
+            target_row=self,
+            rows=rows,
+            m2m=m2m,
+            extra_column_values=extra_column_values,
         )
 
     def to_dict(self, *columns: Column) -> t.Dict[str, t.Any]:
