@@ -67,6 +67,7 @@ class TableMeta:
     tags: t.List[str] = field(default_factory=list)
     help_text: t.Optional[str] = None
     _db: t.Optional[Engine] = None
+    m2m_relationships: t.List[M2M] = field(default_factory=list)
 
     # Records reverse foreign key relationships - i.e. when the current table
     # is the target of a foreign key. Used by external libraries such as
@@ -179,6 +180,7 @@ class Table(metaclass=TableMetaclass):
         secret_columns: t.List[Secret] = []
         json_columns: t.List[t.Union[JSON, JSONB]] = []
         primary_key: t.Optional[Column] = None
+        m2m_relationships: t.List[M2M] = []
 
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]
@@ -219,6 +221,7 @@ class Table(metaclass=TableMetaclass):
             if isinstance(attribute, M2M):
                 attribute._meta._name = attribute_name
                 attribute._meta._table = cls
+                m2m_relationships.append(attribute)
 
         if not primary_key:
             primary_key = cls._create_serial_primary_key()
@@ -239,6 +242,7 @@ class Table(metaclass=TableMetaclass):
             tags=tags,
             help_text=help_text,
             _db=db,
+            m2m_relationships=m2m_relationships,
         )
 
         for foreign_key_column in foreign_key_columns:
