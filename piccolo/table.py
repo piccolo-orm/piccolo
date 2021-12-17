@@ -16,6 +16,7 @@ from piccolo.columns.column_types import (
 )
 from piccolo.columns.defaults.base import Default
 from piccolo.columns.indexes import IndexMethod
+from piccolo.columns.m2m import M2M
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
 from piccolo.engine import Engine, engine_finder
@@ -214,6 +215,10 @@ class Table(metaclass=TableMetaclass):
 
                 if isinstance(column, (JSON, JSONB)):
                     json_columns.append(column)
+
+            if isinstance(attribute, M2M):
+                attribute._meta._name = attribute_name
+                attribute._meta._table = cls
 
         if not primary_key:
             primary_key = cls._create_serial_primary_key()
