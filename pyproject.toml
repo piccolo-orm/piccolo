@@ -20,3 +20,6 @@ ignore_missing_imports = true
 markers = [
     "integration",
 ]
+
+[tool.coverage.run]
+omit = ["*.jinja", "**/piccolo_migrations/*", "**/piccolo_app.py"]
