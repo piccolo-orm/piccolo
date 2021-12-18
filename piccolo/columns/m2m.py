@@ -47,16 +47,16 @@ class M2MSelect(Selectable):
         return f"""
             ARRAY(
                 SELECT
-                inner_{table_2_name}.{column_name}
-                from {m2m_table_name}
-                join {table_1_name} inner_{table_1_name} on (
-                    {m2m_table_name}.{fk_1_name} = inner_{table_1_name}.{table_1_pk_name}
+                "inner_{table_2_name}"."{column_name}"
+                FROM "{m2m_table_name}"
+                JOIN "{table_1_name}" "inner_{table_1_name}" ON (
+                    "{m2m_table_name}"."{fk_1_name}" = "inner_{table_1_name}"."{table_1_pk_name}"
                 )
-                join {table_2_name} inner_{table_2_name} on (
-                    {m2m_table_name}.{fk_2_name} = inner_{table_2_name}.{table_2_pk_name}
+                JOIN "{table_2_name}" "inner_{table_2_name}" ON (
+                    "{m2m_table_name}"."{fk_2_name}" = "inner_{table_2_name}"."{table_2_pk_name}"
                 )
-                where {m2m_table_name}.{fk_1_name} = {table_1_name}.{table_1_pk_name}
-            ) as {m2m_relationship_name}
+                WHERE "{m2m_table_name}"."{fk_1_name}" = "{table_1_name}"."{table_1_pk_name}"
+            ) AS "{m2m_relationship_name}"
         """  # noqa: E501
 
 
