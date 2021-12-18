@@ -127,7 +127,7 @@ class M2MMeta:
     def foreign_key_columns(self) -> t.List[ForeignKey]:
         if not self._foreign_key_columns:
             self._foreign_key_columns = (
-                self.resolved_joining_table._meta.foreign_key_columns[0:2]
+                self.resolved_joining_table._meta.foreign_key_columns[:2]
             )
         return self._foreign_key_columns
 
