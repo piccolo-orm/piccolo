@@ -8,7 +8,6 @@ from piccolo.columns.column_types import (
 )
 from piccolo.columns.m2m import M2M
 from piccolo.table import Table, create_tables, drop_tables
-from tests.base import postgres_only
 
 
 class Band(Table):
@@ -29,7 +28,6 @@ class GenreToBand(Table):
 TABLES_1 = [Band, Genre, GenreToBand]
 
 
-@postgres_only
 class TestM2M(TestCase):
     def setUp(self):
         create_tables(*TABLES_1, if_not_exists=True)
@@ -47,17 +45,17 @@ class TestM2M(TestCase):
         ).run_sync()
 
         GenreToBand.insert(
-            GenreToBand(genre=1, band=1),
-            GenreToBand(genre=1, band=3),
-            GenreToBand(genre=2, band=1),
-            GenreToBand(genre=2, band=2),
-            GenreToBand(genre=3, band=3),
+            GenreToBand(band=1, genre=1),
+            GenreToBand(band=1, genre=2),
+            GenreToBand(band=2, genre=2),
+            GenreToBand(band=3, genre=1),
+            GenreToBand(band=3, genre=3),
         ).run_sync()
 
     def tearDown(self):
         drop_tables(*TABLES_1)
 
-    def test_select(self):
+    def test_select_name(self):
         response = Band.select(Band.name, Band.genres(Genre.name)).run_sync()
         self.assertEqual(
             response,
@@ -76,6 +74,28 @@ class TestM2M(TestCase):
                 {"name": "Rock", "bands": ["Pythonistas", "C-Sharps"]},
                 {"name": "Folk", "bands": ["Pythonistas", "Rustaceans"]},
                 {"name": "Classical", "bands": ["C-Sharps"]},
+            ],
+        )
+
+    def test_select_id(self):
+        response = Band.select(Band.name, Band.genres(Genre.id)).run_sync()
+        self.assertEqual(
+            response,
+            [
+                {"name": "Pythonistas", "genres": [1, 2]},
+                {"name": "Rustaceans", "genres": [2]},
+                {"name": "C-Sharps", "genres": [1, 3]},
+            ],
+        )
+
+        # Now try it in reverse.
+        response = Genre.select(Genre.name, Genre.bands(Band.id)).run_sync()
+        self.assertEqual(
+            response,
+            [
+                {"name": "Rock", "bands": [1, 3]},
+                {"name": "Folk", "bands": [1, 2]},
+                {"name": "Classical", "bands": [3]},
             ],
         )
 
@@ -210,7 +230,6 @@ class CustomerToConcert(Table):
 TABLES_2 = [Customer, Concert, CustomerToConcert]
 
 
-@postgres_only
 class TestM2MCustomPrimaryKey(TestCase):
     """
     Make sure the M2M functionality works correctly when the tables have custom
@@ -244,7 +263,7 @@ class TestM2MCustomPrimaryKey(TestCase):
             Customer.name, Customer.concerts(Concert.name)
         ).run_sync()
 
-        self.assertEqual(
+        self.assertListEqual(
             response,
             [
                 {"name": "Bob", "concerts": ["Rockfest", "Classicfest"]},
@@ -258,7 +277,7 @@ class TestM2MCustomPrimaryKey(TestCase):
             Concert.name, Concert.customers(Customer.name)
         ).run_sync()
 
-        self.assertEqual(
+        self.assertListEqual(
             response,
             [
                 {"name": "Rockfest", "customers": ["Bob", "Sally"]},
@@ -304,6 +323,6 @@ class TestM2MCustomPrimaryKey(TestCase):
 
         self.assertTrue(all([isinstance(i, Table) for i in concerts]))
 
-        self.assertEqual(
+        self.assertCountEqual(
             [i.name for i in concerts], ["Rockfest", "Classicfest"]
         )

@@ -5,6 +5,7 @@ import typing as t
 from collections import OrderedDict
 
 from piccolo.columns import Column, Selectable
+from piccolo.columns.m2m import M2MSelect
 from piccolo.columns.readable import Readable
 from piccolo.engine.base import Batch
 from piccolo.query.base import Query
@@ -20,6 +21,7 @@ from piccolo.query.mixins import (
 )
 from piccolo.querystring import QueryString
 from piccolo.utils.dictionary import make_nested
+from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.custom_types import Combinable
@@ -272,6 +274,26 @@ class Select(Query):
         return self
 
     async def response_handler(self, response):
+        # With M2M queries in SQLite, we always get the value back as a list
+        # of strings, so we need to do some type conversion.
+        if self.engine_type == "sqlite":
+            m2m_selects = [
+                i
+                for i in self.columns_delegate.selected_columns
+                if isinstance(i, M2MSelect)
+            ]
+            for m2m_select in m2m_selects:
+                m2m_name = m2m_select.m2m._meta.name
+                value_type = m2m_select.column.__class__.value_type
+                try:
+                    for row in response:
+                        row[m2m_name] = [value_type(i) for i in row[m2m_name]]
+                except ValueError:
+                    colored_warning(
+                        "Unable to do type converstion for the "
+                        f"{m2m_name} relation"
+                    )
+
         # If no columns were specified, it's a select *, so we know that
         # no columns were selected from related tables.
         was_select_star = len(self.columns_delegate.selected_columns) == 0

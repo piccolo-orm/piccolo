@@ -44,20 +44,37 @@ class M2MSelect(Selectable):
 
         column_name = self.column._meta.db_column_name
 
-        return f"""
-            ARRAY(
-                SELECT
-                "inner_{table_2_name}"."{column_name}"
-                FROM "{m2m_table_name}"
-                JOIN "{table_1_name}" "inner_{table_1_name}" ON (
-                    "{m2m_table_name}"."{fk_1_name}" = "inner_{table_1_name}"."{table_1_pk_name}"
-                )
-                JOIN "{table_2_name}" "inner_{table_2_name}" ON (
-                    "{m2m_table_name}"."{fk_2_name}" = "inner_{table_2_name}"."{table_2_pk_name}"
-                )
-                WHERE "{m2m_table_name}"."{fk_1_name}" = "{table_1_name}"."{table_1_pk_name}"
-            ) AS "{m2m_relationship_name}"
+        inner_select = f"""
+            "{m2m_table_name}"
+            JOIN "{table_1_name}" "inner_{table_1_name}" ON (
+                "{m2m_table_name}"."{fk_1_name}" = "inner_{table_1_name}"."{table_1_pk_name}"
+            )
+            JOIN "{table_2_name}" "inner_{table_2_name}" ON (
+                "{m2m_table_name}"."{fk_2_name}" = "inner_{table_2_name}"."{table_2_pk_name}"
+            )
+            WHERE "{m2m_table_name}"."{fk_1_name}" = "{table_1_name}"."{table_1_pk_name}"
         """  # noqa: E501
+
+        if engine_type == "postgres":
+            return f"""
+                ARRAY(
+                    SELECT
+                        "inner_{table_2_name}"."{column_name}"
+                    FROM {inner_select}
+                ) AS "{m2m_relationship_name}"
+            """
+        elif engine_type == "sqlite":
+            return f"""
+                (
+                    SELECT group_concat(
+                        "inner_{table_2_name}"."{column_name}"
+                    )
+                    FROM {inner_select}
+                )
+                AS "{m2m_relationship_name} [M2M]"
+            """
+        else:
+            raise ValueError(f"{engine_type} is an unrecognised engine type")
 
 
 @dataclass
@@ -310,7 +327,7 @@ class M2M:
             _foreign_key_columns=foreign_key_columns,
         )
 
-    def __call__(self, column: Column) -> Selectable:
+    def __call__(self, column: Column) -> M2MSelect:
         """
         :param column:
             Which column to include from the related table.
