@@ -211,7 +211,7 @@ class TestM2M(TestCase):
 
         genres = band.get_m2m(Band.genres).run_sync()
 
-        self.assertTrue(all([isinstance(i, Table) for i in genres]))
+        self.assertTrue(all(isinstance(i, Table) for i in genres))
 
         self.assertEqual([i.name for i in genres], ["Rock", "Folk"])
 
