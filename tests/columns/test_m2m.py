@@ -377,7 +377,7 @@ class TestM2MCustomPrimaryKey(TestCase):
 
         concerts = customer.get_m2m(Customer.concerts).run_sync()
 
-        self.assertTrue(all([isinstance(i, Table) for i in concerts]))
+        self.assertTrue(all(isinstance(i, Table) for i in concerts))
 
         self.assertCountEqual(
             [i.name for i in concerts], ["Rockfest", "Classicfest"]
