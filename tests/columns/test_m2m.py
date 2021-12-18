@@ -4,6 +4,7 @@ from piccolo.columns.column_types import (
     UUID,
     ForeignKey,
     LazyTableReference,
+    Text,
     Varchar,
 )
 from piccolo.columns.m2m import M2M
@@ -23,6 +24,7 @@ class Genre(Table):
 class GenreToBand(Table):
     band = ForeignKey(Band)
     genre = ForeignKey(Genre)
+    reason = Text(help_text="For testing additional columns on join tables.")
 
 
 TABLES_1 = [Band, Genre, GenreToBand]
@@ -119,6 +121,32 @@ class TestM2M(TestCase):
             .run_sync(),
             1,
         )
+
+    def test_add_m2m_extra_columns(self):
+        """
+        Make sure the ``extra_column_values`` parameter works correctly.
+        """
+        reason = "Their second album was very punk rock."
+
+        band: Band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        band.add_m2m(
+            Genre(name="Punk Rock"),
+            m2m=Band.genres,
+            extra_column_values={
+                "reason": "Their second album was very punk rock."
+            },
+        ).run_sync()
+
+        genre_to_band = (
+            GenreToBand.objects()
+            .get(
+                (GenreToBand.band.name == "Pythonistas")
+                & (GenreToBand.genre.name == "Punk Rock")
+            )
+            .run_sync()
+        )
+
+        self.assertEqual(genre_to_band.reason, reason)
 
     def test_add_m2m_existing(self):
         """
