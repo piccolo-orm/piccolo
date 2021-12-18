@@ -423,7 +423,7 @@ class Table(metaclass=TableMetaclass):
 
         .. code-block:: python
 
-            >>> band = await Band.objects().get(name="Pythonistas")
+            >>> band = await Band.objects().get(Band.name == "Pythonistas")
             >>> await band.get_m2m(Band.genres)
             [<Genre: 1>, <Genre: 2>]
 
@@ -442,7 +442,7 @@ class Table(metaclass=TableMetaclass):
 
         .. code-block:: python
 
-            >>> band = await Band.objects().get(name="Pythonistas")
+            >>> band = await Band.objects().get(Band.name == "Pythonistas")
             >>> await band.add_m2m(
             >>>     Genre(name="Punk rock"),
             >>>     m2m=Band.genres
@@ -583,7 +583,7 @@ class Table(metaclass=TableMetaclass):
         return self.querystring.__str__()
 
     def __repr__(self) -> str:
-        _pk = self._meta.primary_key or None
+        _pk = getattr(self, self._meta.primary_key._meta.name, None)
         return f"<{self.__class__.__name__}: {_pk}>"
 
     ###########################################################################
