@@ -28,6 +28,7 @@ from piccolo.columns.column_types import (
     Date,
     Decimal,
     DoublePrecision,
+    ForeignKey,
     Integer,
     Interval,
     Numeric,
@@ -41,8 +42,10 @@ from piccolo.columns.column_types import (
     Varchar,
 )
 from piccolo.columns.defaults.uuid import UUID4
+from piccolo.columns.m2m import M2M
+from piccolo.columns.reference import LazyTableReference
 from piccolo.conf.apps import AppConfig
-from piccolo.table import Table, create_table_class
+from piccolo.table import Table, create_table_class, drop_tables
 from piccolo.utils.sync import run_sync
 from tests.base import DBTestCase, postgres_only
 
@@ -94,17 +97,7 @@ def array_default_varchar():
     return ["x", "y", "z"]
 
 
-@postgres_only
-class TestMigrations(DBTestCase):
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        create_table_class("MyTable").alter().drop_table(
-            if_exists=True
-        ).run_sync()
-        Migration.alter().drop_table(if_exists=True).run_sync()
-
+class MigrationTestCase(DBTestCase):
     def run_migrations(self, app_config: AppConfig):
         manager = ForwardsMigrationManager(app_name=app_config.app_name)
         run_sync(manager.create_migration_table())
@@ -112,15 +105,15 @@ class TestMigrations(DBTestCase):
 
     def _test_migrations(
         self,
-        table_classes: t.List[t.Type[Table]],
+        table_snapshots: t.List[t.List[t.Type[Table]]],
         test_function: t.Optional[t.Callable[[RowMeta], None]] = None,
     ):
         """
         Writes a migration file to disk and runs it.
 
-        :param table_classes:
-            Migrations will be created and run based on successive table
-            classes in this list.
+        :param table_snapshots:
+            A list of lists. Each sub list represents a snapshot of the table
+            state. Migrations will be created and run based each snapshot.
         :param test_function:
             After the migrations are run, this function is called. It is passed
             a ``RowMeta`` instance which can be used to check the column was
@@ -144,8 +137,8 @@ class TestMigrations(DBTestCase):
             table_classes=[],
         )
 
-        for table_class in table_classes:
-            app_config.table_classes = [table_class]
+        for table_snapshot in table_snapshots:
+            app_config.table_classes = table_snapshot
             meta = run_sync(
                 _create_new_migration(
                     app_config=app_config, auto=True, auto_input="y"
@@ -161,7 +154,7 @@ class TestMigrations(DBTestCase):
 
         if test_function:
             column_name = (
-                table_classes[-1]
+                table_snapshots[-1][-1]
                 ._meta.non_default_columns[0]
                 ._meta.db_column_name
             )
@@ -174,6 +167,18 @@ class TestMigrations(DBTestCase):
                 msg=f"Meta is incorrect: {row_meta}",
             )
 
+
+@postgres_only
+class TestMigrations(MigrationTestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        create_table_class("MyTable").alter().drop_table(
+            if_exists=True
+        ).run_sync()
+        Migration.alter().drop_table(if_exists=True).run_sync()
+
     ###########################################################################
 
     def table(self, column: Column):
@@ -183,8 +188,8 @@ class TestMigrations(DBTestCase):
 
     def test_varchar_column(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Varchar(),
                     Varchar(length=100),
@@ -207,8 +212,8 @@ class TestMigrations(DBTestCase):
 
     def test_text_column(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Text(),
                     Text(default="hello world"),
@@ -230,8 +235,8 @@ class TestMigrations(DBTestCase):
 
     def test_integer_column(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Integer(),
                     Integer(default=1),
@@ -253,8 +258,8 @@ class TestMigrations(DBTestCase):
 
     def test_real_column(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Real(),
                     Real(default=1.1),
@@ -275,8 +280,8 @@ class TestMigrations(DBTestCase):
 
     def test_double_precision_column(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     DoublePrecision(),
                     DoublePrecision(default=1.1),
@@ -297,8 +302,8 @@ class TestMigrations(DBTestCase):
 
     def test_smallint_column(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     SmallInt(),
                     SmallInt(default=1),
@@ -320,8 +325,8 @@ class TestMigrations(DBTestCase):
 
     def test_bigint_column(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     BigInt(),
                     BigInt(default=1),
@@ -343,8 +348,8 @@ class TestMigrations(DBTestCase):
 
     def test_uuid_column(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     UUID(),
                     UUID(default="ecf338cd-6da7-464c-b31e-4b2e3e12f0f0"),
@@ -373,8 +378,8 @@ class TestMigrations(DBTestCase):
 
     def test_timestamp_column(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Timestamp(),
                     Timestamp(
@@ -399,8 +404,8 @@ class TestMigrations(DBTestCase):
 
     def test_time_column(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Time(),
                     Time(default=datetime.time(hour=12, minute=0)),
@@ -424,8 +429,8 @@ class TestMigrations(DBTestCase):
 
     def test_date_column(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Date(),
                     Date(default=datetime.date(year=2021, month=1, day=1)),
@@ -449,8 +454,8 @@ class TestMigrations(DBTestCase):
 
     def test_interval_column(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Interval(),
                     Interval(default=datetime.timedelta(days=1)),
@@ -472,8 +477,8 @@ class TestMigrations(DBTestCase):
 
     def test_boolean_column(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Boolean(),
                     Boolean(default=True),
@@ -495,8 +500,8 @@ class TestMigrations(DBTestCase):
 
     def test_numeric_column(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Numeric(),
                     Numeric(digits=(4, 2)),
@@ -520,8 +525,8 @@ class TestMigrations(DBTestCase):
 
     def test_decimal_column(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Decimal(),
                     Decimal(digits=(4, 2)),
@@ -545,8 +550,8 @@ class TestMigrations(DBTestCase):
 
     def test_array_column_integer(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Array(base_column=Integer()),
                     Array(base_column=Integer(), default=[1, 2, 3]),
@@ -570,8 +575,8 @@ class TestMigrations(DBTestCase):
 
     def test_array_column_varchar(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Array(base_column=Varchar()),
                     Array(base_column=Varchar(), default=["a", "b", "c"]),
@@ -600,8 +605,8 @@ class TestMigrations(DBTestCase):
 
     def test_json_column(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     JSON(),
                     JSON(default=["a", "b", "c"]),
@@ -622,8 +627,8 @@ class TestMigrations(DBTestCase):
 
     def test_jsonb_column(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     JSONB(),
                     JSONB(default=["a", "b", "c"]),
@@ -646,8 +651,8 @@ class TestMigrations(DBTestCase):
 
     def test_db_column_name(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Varchar(),
                     Varchar(db_column_name="custom_name"),
@@ -670,8 +675,8 @@ class TestMigrations(DBTestCase):
         ``db_column_name`` specified, then the column has the correct name.
         """
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Varchar(db_column_name="custom_name"),
                 ]
@@ -687,14 +692,16 @@ class TestMigrations(DBTestCase):
 
     ###########################################################################
 
+    # Column type conversion
+
     def test_column_type_conversion_string(self):
         """
         We can't manage all column type conversions, but should be able to
         manage most simple ones (e.g. Varchar to Text).
         """
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Varchar(),
                     Text(),
@@ -705,8 +712,8 @@ class TestMigrations(DBTestCase):
 
     def test_column_type_conversion_integer(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Integer(),
                     BigInt(),
@@ -719,8 +726,8 @@ class TestMigrations(DBTestCase):
 
     def test_column_type_conversion_string_to_integer(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Varchar(default="1"),
                     Integer(default=1),
@@ -731,8 +738,8 @@ class TestMigrations(DBTestCase):
 
     def test_column_type_conversion_float_decimal(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Real(default=1.0),
                     DoublePrecision(default=1.0),
@@ -745,8 +752,8 @@ class TestMigrations(DBTestCase):
 
     def test_column_type_conversion_json(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     JSON(),
                     JSONB(),
@@ -757,8 +764,8 @@ class TestMigrations(DBTestCase):
 
     def test_column_type_conversion_timestamp(self):
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Timestamp(),
                     Timestamptz(),
@@ -775,8 +782,8 @@ class TestMigrations(DBTestCase):
         should just output a warning.
         """
         self._test_migrations(
-            table_classes=[
-                self.table(column)
+            table_snapshots=[
+                [self.table(column)]
                 for column in [
                     Serial(),
                     BigSerial(),
@@ -788,3 +795,42 @@ class TestMigrations(DBTestCase):
             "Unable to migrate Serial to BigSerial and vice versa. This must "
             "be done manually."
         )
+
+
+###############################################################################
+
+
+class Band(Table):
+    name = Varchar()
+    genres = M2M(LazyTableReference("GenreToBand", module_path=__name__))
+
+
+class Genre(Table):
+    name = Varchar()
+    bands = M2M(LazyTableReference("GenreToBand", module_path=__name__))
+
+
+class GenreToBand(Table):
+    band = ForeignKey(Band)
+    genre = ForeignKey(Genre)
+
+
+@postgres_only
+class TestM2MMigrations(MigrationTestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        drop_tables(Migration, Band, Genre, GenreToBand)
+
+    def test_m2m(self):
+        """
+        Make sure M2M relations can be created.
+        """
+
+        self._test_migrations(
+            table_snapshots=[[Band, Genre, GenreToBand]],
+        )
+
+        for table_class in [Band, Genre, GenreToBand]:
+            self.assertTrue(table_class.table_exists().run_sync())
