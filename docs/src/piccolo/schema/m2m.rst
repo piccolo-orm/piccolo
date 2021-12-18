@@ -39,6 +39,7 @@ We create it in Piccolo like this:
 
     class Genre(Table):
         name = Varchar()
+        bands = M2M(LazyTableReference("GenreToBand", module_path=__name__))
 
 
     # This is our joining table:
@@ -48,8 +49,8 @@ We create it in Piccolo like this:
 
 
 .. note::
-    We use ``LazyTableReference`` because when Python evaluates ``Band``,
-    the ``GenreToBand`` class doesn't exist yet.
+    We use ``LazyTableReference`` because when Python evaluates ``Band`` and
+    ``Genre``, the ``GenreToBand`` class doesn't exist yet.
 
 By using ``M2M`` it unlocks some powerful and convenient features.
 
@@ -78,6 +79,18 @@ You can request whichever column you like from the related table:
         {"name": "Pythonistas", "genres": [1, 2]},
         {"name": "Rustaceans", "genres": [2]},
         {"name": "C-Sharps", "genres": [1, 3]},
+    ]
+
+As we defined ``M2M`` on the ``Genre`` table too, we can get each band in a
+given genre:
+
+.. code-block:: python
+
+    >>> await Genre.select(Genre.name, Genre.bands(Band.name))
+    [
+        {"name": "Rock", "bands": ["Pythonistas", "C-Sharps"]},
+        {"name": "Folk", "bands": ["Pythonistas", "Rustaceans"]},
+        {"name": "Classical", "bands": ["C-Sharps"]},
     ]
 
 -------------------------------------------------------------------------------
