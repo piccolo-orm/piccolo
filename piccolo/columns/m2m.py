@@ -229,9 +229,13 @@ class M2MRemoveRelated:
                 row_ids.append(row_id)
 
         if row_ids:
-            joining_table = self.m2m._meta.table
-            return await joining_table.delete().where(
-                joining_table._meta.primary_key.is_in(row_ids)
+            return (
+                await self.m2m._meta.resolved_joining_table.delete()
+                .where(
+                    self.m2m._meta.primary_foreign_key == self.target_row,
+                    self.m2m._meta.secondary_foreign_key.is_in(row_ids),
+                )
+                .run()
             )
 
         return None

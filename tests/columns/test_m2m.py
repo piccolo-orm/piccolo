@@ -145,7 +145,7 @@ class TestM2M(TestCase):
         """
         band: Band = Band.objects().get(Band.name == "Pythonistas").run_sync()
 
-        genre = Genre.objects().get(Genre.name == "Classical").run_sync()
+        genre = Genre.objects().get(Genre.name == "Rock").run_sync()
 
         band.remove_m2m(genre, m2m=Band.genres).run_sync()
 
@@ -153,17 +153,27 @@ class TestM2M(TestCase):
             GenreToBand.count()
             .where(
                 GenreToBand.band.name == "Pythonistas",
-                GenreToBand.genre.name == "Classical",
+                GenreToBand.genre.name == "Rock",
             )
             .run_sync(),
             0,
         )
 
-        # Make sure the other one wasn't removed:
+        # Make sure the others weren't removed:
         self.assertEqual(
             GenreToBand.count()
             .where(
                 GenreToBand.band.name == "Pythonistas",
+                GenreToBand.genre.name == "Folk",
+            )
+            .run_sync(),
+            1,
+        )
+
+        self.assertEqual(
+            GenreToBand.count()
+            .where(
+                GenreToBand.band.name == "C-Sharps",
                 GenreToBand.genre.name == "Rock",
             )
             .run_sync(),
