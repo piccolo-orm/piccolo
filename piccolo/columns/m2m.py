@@ -280,27 +280,27 @@ class M2MGetRelated:
     async def run(self):
         joining_table = self.m2m._meta.resolved_joining_table
 
-        async with self.row._meta.db.transaction():
-            secondary_table = (
-                self.m2m._meta.secondary_foreign_key._foreign_key_meta.resolved_references  # noqa: E501
-            )
+        secondary_table = (
+            self.m2m._meta.secondary_foreign_key._foreign_key_meta.resolved_references  # noqa: E501
+        )
 
-            ids = (
-                await joining_table.select(
-                    getattr(
-                        self.m2m._meta.secondary_foreign_key,
-                        secondary_table._meta.primary_key._meta.name,
-                    )
+        # TODO - replace this with a subquery in the future.
+        ids = (
+            await joining_table.select(
+                getattr(
+                    self.m2m._meta.secondary_foreign_key,
+                    secondary_table._meta.primary_key._meta.name,
                 )
-                .where(self.m2m._meta.primary_foreign_key == self.row)
-                .output(as_list=True)
             )
+            .where(self.m2m._meta.primary_foreign_key == self.row)
+            .output(as_list=True)
+        )
 
-            results = await secondary_table.objects().where(
-                secondary_table._meta.primary_key.is_in(ids)
-            )
+        results = await secondary_table.objects().where(
+            secondary_table._meta.primary_key.is_in(ids)
+        )
 
-            return results
+        return results
 
     def run_sync(self):
         return run_sync(self.run())
