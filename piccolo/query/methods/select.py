@@ -365,10 +365,14 @@ class Select(Query):
                     key._foreign_key_meta.resolved_references._meta.tablename
                 )
 
+                pk_name = column._meta.call_chain[
+                    index
+                ]._foreign_key_meta.resolved_references._meta.primary_key._meta.name  # noqa: E501
+
                 _joins.append(
                     f"LEFT JOIN {right_tablename} {table_alias}"
                     " ON "
-                    f"({left_tablename}.{key._meta.name} = {table_alias}.id)"
+                    f"({left_tablename}.{key._meta.name} = {table_alias}.{pk_name})"  # noqa: E501
                 )
 
             joins.extend(_joins)

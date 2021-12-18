@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from piccolo.columns.column_types import (
+    UUID,
     ForeignKey,
     LazyTableReference,
     Varchar,
@@ -25,13 +26,13 @@ class GenreToBand(Table):
     genre = ForeignKey(Genre)
 
 
-TABLES = [Band, Genre, GenreToBand]
+TABLES_1 = [Band, Genre, GenreToBand]
 
 
 @postgres_only
 class TestM2M(TestCase):
     def setUp(self):
-        create_tables(*TABLES, if_not_exists=True)
+        create_tables(*TABLES_1, if_not_exists=True)
 
         Band.insert(
             Band(name="Pythonistas"),
@@ -47,14 +48,14 @@ class TestM2M(TestCase):
 
         GenreToBand.insert(
             GenreToBand(genre=1, band=1),
+            GenreToBand(genre=1, band=3),
             GenreToBand(genre=2, band=1),
             GenreToBand(genre=2, band=2),
-            GenreToBand(genre=1, band=3),
             GenreToBand(genre=3, band=3),
         ).run_sync()
 
     def tearDown(self):
-        drop_tables(*TABLES)
+        drop_tables(*TABLES_1)
 
     def test_select(self):
         response = Band.select(Band.name, Band.genres(Genre.name)).run_sync()
@@ -110,3 +111,131 @@ class TestM2M(TestCase):
         self.assertTrue(all([isinstance(i, Table) for i in genres]))
 
         self.assertEqual([i.name for i in genres], ["Rock", "Folk"])
+
+
+###############################################################################
+
+# A schema using custom primary keys
+
+
+class Customer(Table):
+    uuid = UUID(primary_key=True)
+    name = Varchar()
+    concerts = M2M(
+        LazyTableReference("CustomerToConcert", module_path=__name__)
+    )
+
+
+class Concert(Table):
+    uuid = UUID(primary_key=True)
+    name = Varchar()
+    customers = M2M(
+        LazyTableReference("CustomerToConcert", module_path=__name__)
+    )
+
+
+class CustomerToConcert(Table):
+    customer = ForeignKey(Customer)
+    concert = ForeignKey(Concert)
+
+
+TABLES_2 = [Customer, Concert, CustomerToConcert]
+
+
+@postgres_only
+class TestM2MCustomPrimaryKey(TestCase):
+    """
+    Make sure the M2M functionality works correctly when the tables have custom
+    primary key columns.
+    """
+
+    def setUp(self):
+        create_tables(*TABLES_2, if_not_exists=True)
+
+        bob = Customer.objects().create(name="Bob").run_sync()
+        sally = Customer.objects().create(name="Sally").run_sync()
+        fred = Customer.objects().create(name="Fred").run_sync()
+
+        rockfest = Concert.objects().create(name="Rockfest").run_sync()
+        folkfest = Concert.objects().create(name="Folkfest").run_sync()
+        classicfest = Concert.objects().create(name="Classicfest").run_sync()
+
+        CustomerToConcert.insert(
+            CustomerToConcert(customer=bob, concert=rockfest),
+            CustomerToConcert(customer=bob, concert=classicfest),
+            CustomerToConcert(customer=sally, concert=rockfest),
+            CustomerToConcert(customer=sally, concert=folkfest),
+            CustomerToConcert(customer=fred, concert=classicfest),
+        ).run_sync()
+
+    def tearDown(self):
+        drop_tables(*TABLES_2)
+
+    def test_select(self):
+        response = Customer.select(
+            Customer.name, Customer.concerts(Concert.name)
+        ).run_sync()
+
+        self.assertEqual(
+            response,
+            [
+                {"name": "Bob", "concerts": ["Rockfest", "Classicfest"]},
+                {"name": "Sally", "concerts": ["Rockfest", "Folkfest"]},
+                {"name": "Fred", "concerts": ["Classicfest"]},
+            ],
+        )
+
+        # Now try it in reverse.
+        response = Concert.select(
+            Concert.name, Concert.customers(Customer.name)
+        ).run_sync()
+
+        self.assertEqual(
+            response,
+            [
+                {"name": "Rockfest", "customers": ["Bob", "Sally"]},
+                {"name": "Folkfest", "customers": ["Sally"]},
+                {"name": "Classicfest", "customers": ["Bob", "Fred"]},
+            ],
+        )
+
+    def test_add_m2m(self):
+        """
+        Make sure we can add items to the joining table.
+        """
+        customer: Customer = (
+            Customer.objects().get(Customer.name == "Bob").run_sync()
+        )
+        customer.add_m2m(
+            Concert(name="Jazzfest"), m2m=Customer.concerts
+        ).run_sync()
+
+        self.assertTrue(
+            Concert.exists().where(Concert.name == "Jazzfest").run_sync()
+        )
+
+        self.assertEqual(
+            CustomerToConcert.count()
+            .where(
+                CustomerToConcert.customer.name == "Bob",
+                CustomerToConcert.concert.name == "Jazzfest",
+            )
+            .run_sync(),
+            1,
+        )
+
+    def test_get_m2m(self):
+        """
+        Make sure we can get related items via the joining table.
+        """
+        customer: Customer = (
+            Customer.objects().get(Customer.name == "Bob").run_sync()
+        )
+
+        concerts = customer.get_m2m(Customer.concerts).run_sync()
+
+        self.assertTrue(all([isinstance(i, Table) for i in concerts]))
+
+        self.assertEqual(
+            [i.name for i in concerts], ["Rockfest", "Classicfest"]
+        )
