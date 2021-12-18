@@ -583,8 +583,12 @@ class Table(metaclass=TableMetaclass):
         return self.querystring.__str__()
 
     def __repr__(self) -> str:
-        _pk = getattr(self, self._meta.primary_key._meta.name, None)
-        return f"<{self.__class__.__name__}: {_pk}>"
+        pk = (
+            None
+            if not self._exists_in_db
+            else getattr(self, self._meta.primary_key._meta.name, None)
+        )
+        return f"<{self.__class__.__name__}: {pk}>"
 
     ###########################################################################
     # Classmethods
