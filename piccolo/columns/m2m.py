@@ -323,11 +323,11 @@ class M2M:
             columns, you can explicitly specify which two are relevant.
 
         """
-        if foreign_key_columns:
-            if len(foreign_key_columns) != 2 or not all(
-                isinstance(i, ForeignKey) for i in foreign_key_columns
-            ):
-                raise ValueError("You must specify two ForeignKey columns.")
+        if foreign_key_columns and (
+            len(foreign_key_columns) != 2
+            or not all(isinstance(i, ForeignKey) for i in foreign_key_columns)
+        ):
+            raise ValueError("You must specify two ForeignKey columns.")
 
         self._meta = M2MMeta(
             joining_table=joining_table,
