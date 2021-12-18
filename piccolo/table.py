@@ -456,7 +456,26 @@ class Table(metaclass=TableMetaclass):
         :param extra_column_values:
             If the joining table has additional columns besides the two
             required foreign keys, you can specify the values for those
-            additional columns.
+            additional columns. For example, if this is our joining table:
+
+            .. code-block:: python
+
+                class GenreToBand(Table):
+                    band = ForeignKey(Band)
+                    genre = ForeignKey(Genre)
+                    reason = Text()
+
+            We can provide the ``reason`` value:
+
+            .. code-block:: python
+
+                await band.add_m2m(
+                    Genre(name="Punk rock"),
+                    m2m=Band.genres,
+                    extra_column_values={
+                        "reason": "Their second album was very punk."
+                    }
+                )
 
         """
         return M2MAddRelated(
