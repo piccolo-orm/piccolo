@@ -183,6 +183,13 @@ class M2MAddRelated:
     rows: t.Sequence[Table]
     extra_column_values: t.Dict[t.Union[Column, str], t.Any]
 
+    def __post_init__(self):
+        # Normalise `extra_column_values`, so we just have the column names.
+        self.extra_column_values: t.Dict[str, t.Any] = {
+            i._meta.name if isinstance(i, Column) else i: j
+            for i, j in self.extra_column_values.items()
+        }
+
     async def run(self):
         rows = self.rows
         unsaved = [i for i in rows if not i._exists_in_db]

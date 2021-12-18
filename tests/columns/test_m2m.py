@@ -122,9 +122,10 @@ class TestM2M(TestCase):
             1,
         )
 
-    def test_add_m2m_extra_columns(self):
+    def test_extra_columns_str(self):
         """
-        Make sure the ``extra_column_values`` parameter works correctly.
+        Make sure the ``extra_column_values`` parameter for ``add_m2m`` works
+        correctly when the dictionary keys are strings.
         """
         reason = "Their second album was very punk rock."
 
@@ -134,6 +135,33 @@ class TestM2M(TestCase):
             m2m=Band.genres,
             extra_column_values={
                 "reason": "Their second album was very punk rock."
+            },
+        ).run_sync()
+
+        genre_to_band = (
+            GenreToBand.objects()
+            .get(
+                (GenreToBand.band.name == "Pythonistas")
+                & (GenreToBand.genre.name == "Punk Rock")
+            )
+            .run_sync()
+        )
+
+        self.assertEqual(genre_to_band.reason, reason)
+
+    def test_extra_columns_class(self):
+        """
+        Make sure the ``extra_column_values`` parameter for ``add_m2m`` works
+        correctly when the dictionary keys are ``Column`` classes.
+        """
+        reason = "Their second album was very punk rock."
+
+        band: Band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        band.add_m2m(
+            Genre(name="Punk Rock"),
+            m2m=Band.genres,
+            extra_column_values={
+                GenreToBand.reason: "Their second album was very punk rock."
             },
         ).run_sync()
 
