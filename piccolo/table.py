@@ -447,7 +447,7 @@ class Table(metaclass=TableMetaclass):
             >>>     Genre(name="Punk rock"),
             >>>     m2m=Band.genres
             >>> )
-            <Genre: 5>
+            [{'id': 1}]
 
         :param extra_column_values:
             If the joining table has additional columns besides the two

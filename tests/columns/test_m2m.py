@@ -100,6 +100,33 @@ class TestM2M(TestCase):
             1,
         )
 
+    def test_add_m2m_existing(self):
+        """
+        Make sure we can add an existing element to the joining table.
+        """
+        band: Band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+
+        genre: Genre = (
+            Genre.objects().get(Genre.name == "Classical").run_sync()
+        )
+
+        band.add_m2m(genre, m2m=Band.genres).run_sync()
+
+        # We shouldn't have created a duplicate genre in the database.
+        self.assertEqual(
+            Genre.count().where(Genre.name == "Classical").run_sync(), 1
+        )
+
+        self.assertEqual(
+            GenreToBand.count()
+            .where(
+                GenreToBand.band.name == "Pythonistas",
+                GenreToBand.genre.name == "Classical",
+            )
+            .run_sync(),
+            1,
+        )
+
     def test_get_m2m(self):
         """
         Make sure we can get related items via the joining table.

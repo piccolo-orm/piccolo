@@ -171,7 +171,8 @@ class M2MAddRelated:
         unsaved = [i for i in rows if not i._exists_in_db]
 
         async with rows[0]._meta.db.transaction():
-            await rows[0].__class__.insert(*unsaved)
+            if unsaved:
+                await rows[0].__class__.insert(*unsaved)
 
             joining_table = self.m2m._meta.resolved_joining_table
 
