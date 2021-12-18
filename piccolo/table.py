@@ -16,7 +16,12 @@ from piccolo.columns.column_types import (
 )
 from piccolo.columns.defaults.base import Default
 from piccolo.columns.indexes import IndexMethod
-from piccolo.columns.m2m import M2M, M2MAddRelated, M2MGetRelated
+from piccolo.columns.m2m import (
+    M2M,
+    M2MAddRelated,
+    M2MGetRelated,
+    M2MRemoveRelated,
+)
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
 from piccolo.engine import Engine, engine_finder
@@ -416,7 +421,6 @@ class Table(metaclass=TableMetaclass):
             .first()
         )
 
-    # TODO - I might merge this with ``get_related``.
     def get_m2m(self, m2m: M2M) -> M2MGetRelated:
         """
         Get all matching rows via the join table.
@@ -460,6 +464,26 @@ class Table(metaclass=TableMetaclass):
             rows=rows,
             m2m=m2m,
             extra_column_values=extra_column_values,
+        )
+
+    def remove_m2m(self, *rows: Table, m2m: M2M) -> M2MRemoveRelated:
+        """
+        Remove the rows from the joining table.
+
+        .. code-block:: python
+
+            >>> band = await Band.objects().get(Band.name == "Pythonistas")
+            >>> genre = await Genre.objects().get(Genre.name == "Rock")
+            >>> await band.remove_m2m(
+            >>>     genre,
+            >>>     m2m=Band.genres
+            >>> )
+
+        """
+        return M2MRemoveRelated(
+            target_row=self,
+            rows=rows,
+            m2m=m2m,
         )
 
     def to_dict(self, *columns: Column) -> t.Dict[str, t.Any]:

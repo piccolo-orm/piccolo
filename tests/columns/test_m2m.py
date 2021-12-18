@@ -139,6 +139,37 @@ class TestM2M(TestCase):
 
         self.assertEqual([i.name for i in genres], ["Rock", "Folk"])
 
+    def test_remove_m2m(self):
+        """
+        Make sure we can remove related items via the joining table.
+        """
+        band: Band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+
+        genre = Genre.objects().get(Genre.name == "Classical").run_sync()
+
+        band.remove_m2m(genre, m2m=Band.genres).run_sync()
+
+        self.assertEqual(
+            GenreToBand.count()
+            .where(
+                GenreToBand.band.name == "Pythonistas",
+                GenreToBand.genre.name == "Classical",
+            )
+            .run_sync(),
+            0,
+        )
+
+        # Make sure the other one wasn't removed:
+        self.assertEqual(
+            GenreToBand.count()
+            .where(
+                GenreToBand.band.name == "Pythonistas",
+                GenreToBand.genre.name == "Rock",
+            )
+            .run_sync(),
+            1,
+        )
+
 
 ###############################################################################
 

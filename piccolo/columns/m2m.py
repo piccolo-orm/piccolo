@@ -172,7 +172,7 @@ class M2MAddRelated:
 
         async with rows[0]._meta.db.transaction():
             if unsaved:
-                await rows[0].__class__.insert(*unsaved)
+                await rows[0].__class__.insert(*unsaved).run()
 
             joining_table = self.m2m._meta.resolved_joining_table
 
@@ -198,7 +198,43 @@ class M2MAddRelated:
                 )
                 joining_table_rows.append(joining_table_row)
 
-            return await joining_table.insert(*joining_table_rows)
+            return await joining_table.insert(*joining_table_rows).run()
+
+    def run_sync(self):
+        return run_sync(self.run())
+
+    def __await__(self):
+        return self.run().__await__()
+
+
+@dataclass
+class M2MRemoveRelated:
+
+    target_row: Table
+    m2m: M2M
+    rows: t.Sequence[Table]
+
+    async def run(self):
+        fk = self.m2m._meta.secondary_foreign_key
+        related_table = fk._foreign_key_meta.resolved_references
+
+        row_ids = []
+
+        for row in self.rows:
+            if row.__class__ != related_table:
+                raise ValueError("The row belongs to the wrong table!")
+
+            row_id = getattr(row, row._meta.primary_key._meta.name)
+            if row_id:
+                row_ids.append(row_id)
+
+        if row_ids:
+            joining_table = self.m2m._meta.table
+            return await joining_table.delete().where(
+                joining_table._meta.primary_key.is_in(row_ids)
+            )
+
+        return None
 
     def run_sync(self):
         return run_sync(self.run())

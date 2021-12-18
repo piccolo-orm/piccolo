@@ -114,3 +114,8 @@ get_m2m
 -------
 
 .. automethod:: Table.get_m2m
+
+remove_m2m
+----------
+
+.. automethod:: Table.remove_m2m
