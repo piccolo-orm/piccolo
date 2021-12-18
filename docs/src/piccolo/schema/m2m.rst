@@ -59,7 +59,8 @@ By using ``M2M`` it unlocks some powerful and convenient features.
 Select queries
 ==============
 
-If we want to select each band, along with a list of genres, we can do this:
+If we want to select each band, along with a list of genres that they belong to,
+we can do this:
 
 .. code-block:: python
 
