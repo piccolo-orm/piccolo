@@ -1,4 +1,4 @@
-from tests.base import DBTestCase, postgres_only, sqlite_only
+from tests.base import DBTestCase
 from tests.example_apps.music.tables import Manager
 
 
