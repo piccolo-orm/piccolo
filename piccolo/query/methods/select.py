@@ -6,6 +6,7 @@ import typing as t
 from collections import OrderedDict
 
 from piccolo.columns import Column, Selectable
+from piccolo.columns.column_types import JSON, JSONB, PrimaryKey
 from piccolo.columns.m2m import M2MSelect
 from piccolo.columns.readable import Readable
 from piccolo.engine.base import Batch
@@ -275,87 +276,146 @@ class Select(Query):
         self.offset_delegate.offset(number)
         return self
 
+    async def _splice_m2m_rows(
+        self,
+        response: t.List[t.Dict[str, t.Any]],
+        secondary_table: t.Type[Table],
+        secondary_table_pk: PrimaryKey,
+        m2m_name: str,
+        m2m_select: M2MSelect,
+        as_list: bool = False,
+    ):
+        row_ids = list(
+            {i for i in itertools.chain(*[row[m2m_name] for row in response])}
+        )
+        extra_rows = (
+            (
+                await secondary_table.select(
+                    *m2m_select.columns,
+                    secondary_table_pk.as_alias("mapping_key"),
+                )
+                .where(secondary_table_pk.is_in(row_ids))
+                .output(load_json=m2m_select.load_json)
+                .run()
+            )
+            if row_ids
+            else []
+        )
+        if as_list:
+            column_name = m2m_select.columns[0]._meta.name
+            extra_rows_map = {
+                row["mapping_key"]: row[column_name] for row in extra_rows
+            }
+        else:
+            extra_rows_map = {
+                row["mapping_key"]: {
+                    key: value
+                    for key, value in row.items()
+                    if key != "mapping_key"
+                }
+                for row in extra_rows
+            }
+        for row in response:
+            row[m2m_name] = [extra_rows_map.get(i) for i in row[m2m_name]]
+        return response
+
     async def response_handler(self, response):
         m2m_selects = [
             i
             for i in self.columns_delegate.selected_columns
             if isinstance(i, M2MSelect)
         ]
-        if self.engine_type == "sqlite":
-            # With M2M queries in SQLite, we always get the value back as a
-            # list of strings, so we need to do some type conversion.
-            for m2m_select in m2m_selects:
-                m2m_name = m2m_select.m2m._meta.name
+        for m2m_select in m2m_selects:
+            m2m_name = m2m_select.m2m._meta.name
+            secondary_table = m2m_select.m2m._meta.secondary_table
+            secondary_table_pk = secondary_table._meta.primary_key
 
-                secondary_table = (
-                    m2m_select.m2m._meta.secondary_foreign_key._foreign_key_meta.resolved_references  # noqa: E501
-                )
-                secondary_table_pk = secondary_table._meta.primary_key
-
-                # If the user requested a single column, we just return that
-                # from the database. Otherwise we request the primary key
-                # value, so we can fetch the rest of the data in a subsequent
-                # SQL query - see below.
+            if self.engine_type == "sqlite":
+                # With M2M queries in SQLite, we always get the value back as a
+                # list of strings, so we need to do some type conversion.
                 value_type = (
                     m2m_select.columns[0].__class__.value_type
-                    if m2m_select.as_list
+                    if m2m_select.as_list and m2m_select.serialisation_safe
                     else secondary_table_pk.value_type
                 )
                 try:
                     for row in response:
-                        row[m2m_name] = [value_type(i) for i in row[m2m_name]]
+                        data = row[m2m_name]
+                        row[m2m_name] = (
+                            [value_type(i) for i in row[m2m_name]]
+                            if data
+                            else []
+                        )
                 except ValueError:
                     colored_warning(
                         "Unable to do type conversion for the "
                         f"{m2m_name} relation"
                     )
 
-                if not m2m_select.as_list:
-                    if len(m2m_select.columns) == 1:
+                # If the user requested a single column, we just return that
+                # from the database. Otherwise we request the primary key
+                # value, so we can fetch the rest of the data in a subsequent
+                # SQL query - see below.
+                if m2m_select.as_list:
+                    if m2m_select.serialisation_safe:
+                        pass
+                    else:
+                        response = await self._splice_m2m_rows(
+                            response,
+                            secondary_table,
+                            secondary_table_pk,
+                            m2m_name,
+                            m2m_select,
+                            as_list=True,
+                        )
+                else:
+                    if (
+                        len(m2m_select.columns) == 1
+                        and m2m_select.serialisation_safe
+                    ):
                         column_name = m2m_select.columns[0]._meta.name
                         for row in response:
                             row[m2m_name] = [
                                 {column_name: i} for i in row[m2m_name]
                             ]
                     else:
-                        # I haven't worked out how to replicate Postgres'
-                        # `JSON_AGG` in SQLite, so the workaround is to do
-                        # another SQL query.
-                        row_ids = {
-                            i
-                            for i in itertools.chain(
-                                *[row[m2m_name] for row in response]
-                            )
-                        }
-                        extra_rows = (
-                            await secondary_table.select(
-                                *m2m_select.columns,
-                                secondary_table_pk.as_alias("mapping_key"),
-                            )
-                            .where(secondary_table_pk.is_in(row_ids))
-                            .run()
+                        response = await self._splice_m2m_rows(
+                            response,
+                            secondary_table,
+                            secondary_table_pk,
+                            m2m_name,
+                            m2m_select,
                         )
-                        extra_rows_map = {
-                            row["mapping_key"]: {
-                                key: value
-                                for key, value in row.items()
-                                if key != "mapping_key"
-                            }
-                            for row in extra_rows
-                        }
-                        for row in response:
-                            row[m2m_name] = [
-                                extra_rows_map.get(i) for i in row[m2m_name]
-                            ]
 
-        elif self.engine_type == "postgres":
-            # If we requested the results as objects, then it comes back as a
-            # JSON string, so we need to deserialise it.
-            for m2m_select in m2m_selects:
-                if not m2m_select.as_list:
-                    m2m_name = m2m_select.m2m._meta.name
+            elif self.engine_type == "postgres":
+                if m2m_select.as_list:
+                    # We get the data back as an array, and can just return it
+                    # unless it's JSON.
+                    if (
+                        type(m2m_select.columns[0]) in (JSON, JSONB)
+                        and m2m_select.load_json
+                    ):
+                        for row in response:
+                            data = row[m2m_name]
+                            row[m2m_name] = [load_json(i) for i in data]
+                elif m2m_select.serialisation_safe:
+                    # If the columns requested can be safely serialised, they
+                    # are returned as a JSON string, so we need to deserialise
+                    # it.
                     for row in response:
-                        row[m2m_name] = load_json(row[m2m_name])
+                        data = row[m2m_name]
+                        row[m2m_name] = load_json(data) if data else []
+                else:
+                    # If the data can't be safely serialisd as JSON, we get
+                    # back an array of primary key values, and need to
+                    # splice in the correct values using Python.
+                    response = await self._splice_m2m_rows(
+                        response,
+                        secondary_table,
+                        secondary_table_pk,
+                        m2m_name,
+                        m2m_select,
+                    )
 
         #######################################################################
 

@@ -1,10 +1,30 @@
+import datetime
+import decimal
+import uuid
 from unittest import TestCase
 
+from asyncpg.pgproto.pgproto import UUID as asyncpgUUID
+
 from piccolo.columns.column_types import (
+    JSON,
+    JSONB,
     UUID,
+    Array,
+    BigInt,
+    Boolean,
+    Bytea,
+    Date,
+    DoublePrecision,
     ForeignKey,
+    Integer,
+    Interval,
     LazyTableReference,
+    Numeric,
+    Real,
+    SmallInt,
     Text,
+    Timestamp,
+    Timestamptz,
     Varchar,
 )
 from piccolo.columns.m2m import M2M
@@ -27,12 +47,12 @@ class GenreToBand(Table):
     reason = Text(help_text="For testing additional columns on join tables.")
 
 
-TABLES_1 = [Band, Genre, GenreToBand]
+SIMPLE_SCHEMA = [Band, Genre, GenreToBand]
 
 
 class TestM2M(TestCase):
     def setUp(self):
-        create_tables(*TABLES_1, if_not_exists=True)
+        create_tables(*SIMPLE_SCHEMA, if_not_exists=True)
 
         Band.insert(
             Band(name="Pythonistas"),
@@ -55,7 +75,7 @@ class TestM2M(TestCase):
         ).run_sync()
 
     def tearDown(self):
-        drop_tables(*TABLES_1)
+        drop_tables(*SIMPLE_SCHEMA)
 
     def test_select_name(self):
         response = Band.select(
@@ -80,6 +100,39 @@ class TestM2M(TestCase):
                 {"name": "Rock", "bands": ["Pythonistas", "C-Sharps"]},
                 {"name": "Folk", "bands": ["Pythonistas", "Rustaceans"]},
                 {"name": "Classical", "bands": ["C-Sharps"]},
+            ],
+        )
+
+    def test_no_related(self):
+        """
+        Make sure it still works correctly if there are no related values.
+        """
+        GenreToBand.delete(force=True).run_sync()
+
+        # Try it with a list response
+        response = Band.select(
+            Band.name, Band.genres(Genre.name, as_list=True)
+        ).run_sync()
+
+        self.assertEqual(
+            response,
+            [
+                {"name": "Pythonistas", "genres": []},
+                {"name": "Rustaceans", "genres": []},
+                {"name": "C-Sharps", "genres": []},
+            ],
+        )
+
+        # Also try it with a nested response
+        response = Band.select(
+            Band.name, Band.genres(Genre.id, Genre.name)
+        ).run_sync()
+        self.assertEqual(
+            response,
+            [
+                {"name": "Pythonistas", "genres": []},
+                {"name": "Rustaceans", "genres": []},
+                {"name": "C-Sharps", "genres": []},
             ],
         )
 
@@ -346,7 +399,7 @@ class CustomerToConcert(Table):
     concert = ForeignKey(Concert)
 
 
-TABLES_2 = [Customer, Concert, CustomerToConcert]
+CUSTOM_PK_SCHEMA = [Customer, Concert, CustomerToConcert]
 
 
 class TestM2MCustomPrimaryKey(TestCase):
@@ -356,7 +409,7 @@ class TestM2MCustomPrimaryKey(TestCase):
     """
 
     def setUp(self):
-        create_tables(*TABLES_2, if_not_exists=True)
+        create_tables(*CUSTOM_PK_SCHEMA, if_not_exists=True)
 
         bob = Customer.objects().create(name="Bob").run_sync()
         sally = Customer.objects().create(name="Sally").run_sync()
@@ -375,7 +428,7 @@ class TestM2MCustomPrimaryKey(TestCase):
         ).run_sync()
 
     def tearDown(self):
-        drop_tables(*TABLES_2)
+        drop_tables(*CUSTOM_PK_SCHEMA)
 
     def test_select(self):
         response = Customer.select(
@@ -445,3 +498,173 @@ class TestM2MCustomPrimaryKey(TestCase):
         self.assertCountEqual(
             [i.name for i in concerts], ["Rockfest", "Classicfest"]
         )
+
+
+###############################################################################
+
+# Test a very complex schema
+
+
+class SmallTable(Table):
+    varchar_col = Varchar()
+    mega_rows = M2M(LazyTableReference("SmallToMega", module_path=__name__))
+
+
+class MegaTable(Table):
+    """
+    A table containing all of the column types, and different column kwargs.
+    """
+
+    array_col = Array(Varchar())
+    bigint_col = BigInt()
+    boolean_col = Boolean()
+    bytea_col = Bytea()
+    date_col = Date()
+    double_precision_col = DoublePrecision()
+    integer_col = Integer()
+    interval_col = Interval()
+    json_col = JSON()
+    jsonb_col = JSONB()
+    numeric_col = Numeric(digits=(5, 2))
+    real_col = Real()
+    smallint_col = SmallInt()
+    text_col = Text()
+    timestamp_col = Timestamp()
+    timestamptz_col = Timestamptz()
+    uuid_col = UUID()
+    varchar_col = Varchar()
+
+
+class SmallToMega(Table):
+    small = ForeignKey(MegaTable)
+    mega = ForeignKey(SmallTable)
+
+
+COMPLEX_SCHEMA = [MegaTable, SmallTable, SmallToMega]
+
+
+class TestM2MComplexSchema(TestCase):
+    """
+    By using a very complex schema containing every column type, we can catch
+    more edge cases.
+    """
+
+    def setUp(self):
+        create_tables(*COMPLEX_SCHEMA, if_not_exists=True)
+
+        small_table = SmallTable(varchar_col="Test")
+        small_table.save().run_sync()
+
+        mega_table = MegaTable(
+            array_col=["bob", "sally"],
+            bigint_col=1,
+            boolean_col=True,
+            bytea_col="hello".encode("utf8"),
+            date_col=datetime.date(year=2021, month=1, day=1),
+            double_precision_col=1.344,
+            integer_col=1,
+            interval_col=datetime.timedelta(seconds=10),
+            json_col={"a": 1},
+            jsonb_col={"a": 1},
+            numeric_col=decimal.Decimal("1.1"),
+            real_col=1.1,
+            smallint_col=1,
+            text_col="hello",
+            timestamp_col=datetime.datetime(year=2021, month=1, day=1),
+            timestamptz_col=datetime.datetime(
+                year=2021, month=1, day=1, tzinfo=datetime.timezone.utc
+            ),
+            uuid_col=uuid.UUID("12783854-c012-4c15-8183-8eecb46f2c4e"),
+            varchar_col="hello",
+        )
+        mega_table.save().run_sync()
+
+        SmallToMega(small=small_table, mega=mega_table).save().run_sync()
+
+        self.mega_table = mega_table
+
+    def tearDown(self):
+        drop_tables(*COMPLEX_SCHEMA)
+
+    def test_select_all(self):
+        """
+        Fetch all of the columns from the related table to make sure they're
+        returned correctly.
+        """
+        response = SmallTable.select(
+            SmallTable.varchar_col, SmallTable.mega_rows(load_json=True)
+        ).run_sync()
+
+        self.assertTrue(len(response) == 1)
+        mega_rows = response[0]["mega_rows"]
+
+        self.assertTrue(len(mega_rows) == 1)
+        mega_row = mega_rows[0]
+
+        for key, value in mega_row.items():
+            # Make sure that every value in the response matches what we saved.
+            self.assertAlmostEqual(
+                getattr(self.mega_table, key),
+                value,
+                msg=f"{key} doesn't match",
+            )
+
+    def test_select_single(self):
+        """
+        Make sure each column can be selected one at a time.
+        """
+        for column in MegaTable._meta.columns:
+            response = SmallTable.select(
+                SmallTable.varchar_col,
+                SmallTable.mega_rows(column, load_json=True),
+            ).run_sync()
+
+            data = response[0]["mega_rows"][0]
+            column_name = column._meta.name
+
+            original_value = getattr(self.mega_table, column_name)
+            returned_value = data[column_name]
+
+            if type(column) == UUID:
+                self.assertTrue(
+                    type(returned_value) in (uuid.UUID, asyncpgUUID)
+                )
+            else:
+                self.assertEqual(
+                    type(original_value),
+                    type(returned_value),
+                    msg=f"{column_name} type isn't correct",
+                )
+
+                self.assertAlmostEqual(
+                    original_value,
+                    returned_value,
+                    msg=f"{column_name} doesn't match",
+                )
+
+            # Test it as a list too
+            response = SmallTable.select(
+                SmallTable.varchar_col,
+                SmallTable.mega_rows(column, as_list=True, load_json=True),
+            ).run_sync()
+
+            original_value = getattr(self.mega_table, column_name)
+            returned_value = response[0]["mega_rows"][0]
+
+            if type(column) == UUID:
+                self.assertTrue(
+                    type(returned_value) in (uuid.UUID, asyncpgUUID)
+                )
+                self.assertEqual(str(original_value), str(returned_value))
+            else:
+                self.assertEqual(
+                    type(original_value),
+                    type(returned_value),
+                    msg=f"{column_name} type isn't correct",
+                )
+
+                self.assertAlmostEqual(
+                    original_value,
+                    returned_value,
+                    msg=f"{column_name} doesn't match",
+                )

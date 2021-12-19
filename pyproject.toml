@@ -11,7 +11,8 @@ line_length = 79
 module = [
     "orjson",
     "jinja2",
-    "dateutil"
+    "dateutil",
+    "asyncpg.pgproto.pgproto"
 ]
 ignore_missing_imports = true
 

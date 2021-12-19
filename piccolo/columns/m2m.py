@@ -5,7 +5,13 @@ import typing as t
 from dataclasses import dataclass
 
 from piccolo.columns.base import Selectable
-from piccolo.columns.column_types import Column, ForeignKey, LazyTableReference
+from piccolo.columns.column_types import (
+    JSON,
+    JSONB,
+    Column,
+    ForeignKey,
+    LazyTableReference,
+)
 from piccolo.utils.sync import run_sync
 
 if t.TYPE_CHECKING:
@@ -17,18 +23,37 @@ class M2MSelect(Selectable):
     This is a subquery used within a select to fetch data via an M2M table.
     """
 
-    def __init__(self, *columns: Column, m2m: M2M, as_list: bool = False):
+    def __init__(
+        self,
+        *columns: Column,
+        m2m: M2M,
+        as_list: bool = False,
+        load_json: bool = False,
+    ):
         """
         :param columns:
             Which columns to include from the related table.
         :param as_list:
             If a single column is provided, and ``as_list`` is ``True`` a
             flattened list will be returned, rather than a list of objects.
+        :param load_json:
+            If ``True``, any JSON strings are loaded as Python objects.
 
         """
         self.as_list = as_list
         self.columns = columns
         self.m2m = m2m
+        self.load_json = load_json
+
+        safe_types = [int, str]
+
+        # If the columns can be serialised / deserialise as JSON, then we
+        # can fetch the data all in one go.
+        self.serialisation_safe = all(
+            (column.__class__.value_type in safe_types)
+            and (type(column) not in (JSON, JSONB))
+            for column in columns
+        )
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         m2m_table_name = self.m2m._meta.resolved_joining_table._meta.tablename
@@ -67,6 +92,15 @@ class M2MSelect(Selectable):
                         FROM {inner_select}
                     ) AS "{m2m_relationship_name}"
                 """
+            elif not self.serialisation_safe:
+                column_name = table_2_pk_name
+                return f"""
+                    ARRAY(
+                        SELECT
+                            "inner_{table_2_name}"."{column_name}"
+                        FROM {inner_select}
+                    ) AS "{m2m_relationship_name}"
+                """
             else:
                 column_names = ", ".join(
                     f'"inner_{table_2_name}"."{column._meta.db_column_name}"'
@@ -81,7 +115,7 @@ class M2MSelect(Selectable):
                     ) AS "{m2m_relationship_name}"
                 """
         elif engine_type == "sqlite":
-            if len(self.columns) > 1:
+            if len(self.columns) > 1 or not self.serialisation_safe:
                 column_name = table_2_pk_name
             else:
                 column_name = self.columns[0]._meta.db_column_name
@@ -154,7 +188,7 @@ class M2MMeta:
         return self._foreign_key_columns
 
     @property
-    def primary_foreign_key(self):
+    def primary_foreign_key(self) -> ForeignKey:
         """
         The joining table has two foreign keys. We need a way to distinguish
         between them. The primary is the one which points to the table with
@@ -186,7 +220,11 @@ class M2MMeta:
         raise ValueError("No matching foreign key column found!")
 
     @property
-    def secondary_foreign_key(self):
+    def primary_table(self) -> t.Type[Table]:
+        return self.primary_foreign_key._foreign_key_meta.resolved_references
+
+    @property
+    def secondary_foreign_key(self) -> ForeignKey:
         """
         See ``primary_foreign_key``.
         """
@@ -195,6 +233,10 @@ class M2MMeta:
                 return fk_column
 
         raise ValueError("No matching foreign key column found!")
+
+    @property
+    def secondary_table(self) -> t.Type[Table]:
+        return self.secondary_foreign_key._foreign_key_meta.resolved_references
 
 
 @dataclass
@@ -302,9 +344,7 @@ class M2MGetRelated:
     async def run(self):
         joining_table = self.m2m._meta.resolved_joining_table
 
-        secondary_table = (
-            self.m2m._meta.secondary_foreign_key._foreign_key_meta.resolved_references  # noqa: E501
-        )
+        secondary_table = self.m2m._meta.secondary_table
 
         # TODO - replace this with a subquery in the future.
         ids = (
@@ -356,7 +396,9 @@ class M2M:
             _foreign_key_columns=foreign_key_columns,
         )
 
-    def __call__(self, *columns: Column, as_list: bool = False) -> M2MSelect:
+    def __call__(
+        self, *columns: Column, as_list: bool = False, load_json: bool = False
+    ) -> M2MSelect:
         """
         :param columns:
             Which columns to include from the related table. If none are
@@ -364,16 +406,17 @@ class M2M:
         :param as_list:
             If a single column is provided, and ``as_list`` is ``True`` a
             flattened list will be returned, rather than a list of objects.
-
+        :param load_json:
+            If ``True``, any JSON strings are loaded as Python objects.
         """
         if len(columns) == 0:
-            columns = (
-                self._meta.secondary_foreign_key._foreign_key_meta.resolved_references._meta.columns  # noqa: E501
-            )
+            columns = tuple(self._meta.secondary_table._meta.columns)
 
         if as_list and len(columns) != 1:
             raise ValueError(
                 "`as_list` is only valid with a single column argument"
             )
 
-        return M2MSelect(*columns, m2m=self, as_list=as_list)
+        return M2MSelect(
+            *columns, m2m=self, as_list=as_list, load_json=load_json
+        )
