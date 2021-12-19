@@ -3,7 +3,12 @@ import decimal
 import uuid
 from unittest import TestCase
 
-from asyncpg.pgproto.pgproto import UUID as asyncpgUUID
+try:
+    from asyncpg.pgproto.pgproto import UUID as asyncpgUUID
+except ImportError:
+    # In case someone is running the tests for SQLite and doesn't have asyncpg
+    # installed.
+    from uuid import UUID as asyncpgUUID
 
 from piccolo.columns.column_types import (
     JSON,
