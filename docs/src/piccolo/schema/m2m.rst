@@ -120,7 +120,7 @@ given genre:
 
 .. code-block:: python
 
-    >>> await Genre.select(Genre.name, Genre.bands(Band.name))
+    >>> await Genre.select(Genre.name, Genre.bands(Band.name, as_list=True))
     [
         {"name": "Rock", "bands": ["Pythonistas", "C-Sharps"]},
         {"name": "Folk", "bands": ["Pythonistas", "Rustaceans"]},
