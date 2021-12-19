@@ -16,6 +16,12 @@ from piccolo.columns.column_types import (
 )
 from piccolo.columns.defaults.base import Default
 from piccolo.columns.indexes import IndexMethod
+from piccolo.columns.m2m import (
+    M2M,
+    M2MAddRelated,
+    M2MGetRelated,
+    M2MRemoveRelated,
+)
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
 from piccolo.engine import Engine, engine_finder
@@ -66,6 +72,7 @@ class TableMeta:
     tags: t.List[str] = field(default_factory=list)
     help_text: t.Optional[str] = None
     _db: t.Optional[Engine] = None
+    m2m_relationships: t.List[M2M] = field(default_factory=list)
 
     # Records reverse foreign key relationships - i.e. when the current table
     # is the target of a foreign key. Used by external libraries such as
@@ -178,6 +185,7 @@ class Table(metaclass=TableMetaclass):
         secret_columns: t.List[Secret] = []
         json_columns: t.List[t.Union[JSON, JSONB]] = []
         primary_key: t.Optional[Column] = None
+        m2m_relationships: t.List[M2M] = []
 
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]
@@ -215,6 +223,11 @@ class Table(metaclass=TableMetaclass):
                 if isinstance(column, (JSON, JSONB)):
                     json_columns.append(column)
 
+            if isinstance(attribute, M2M):
+                attribute._meta._name = attribute_name
+                attribute._meta._table = cls
+                m2m_relationships.append(attribute)
+
         if not primary_key:
             primary_key = cls._create_serial_primary_key()
             setattr(cls, "id", primary_key)
@@ -234,6 +247,7 @@ class Table(metaclass=TableMetaclass):
             tags=tags,
             help_text=help_text,
             _db=db,
+            m2m_relationships=m2m_relationships,
         )
 
         for foreign_key_column in foreign_key_columns:
@@ -366,7 +380,7 @@ class Table(metaclass=TableMetaclass):
 
     def get_related(self, foreign_key: t.Union[ForeignKey, str]) -> Objects:
         """
-        Used to fetch a Table instance, for the target of a foreign key.
+        Used to fetch a ``Table`` instance, for the target of a foreign key.
 
         .. code-block:: python
 
@@ -405,6 +419,90 @@ class Table(metaclass=TableMetaclass):
                 == getattr(self, column_name)
             )
             .first()
+        )
+
+    def get_m2m(self, m2m: M2M) -> M2MGetRelated:
+        """
+        Get all matching rows via the join table.
+
+        .. code-block:: python
+
+            >>> band = await Band.objects().get(Band.name == "Pythonistas")
+            >>> await band.get_m2m(Band.genres)
+            [<Genre: 1>, <Genre: 2>]
+
+        """
+        return M2MGetRelated(row=self, m2m=m2m)
+
+    def add_m2m(
+        self,
+        *rows: Table,
+        m2m: M2M,
+        extra_column_values: t.Dict[t.Union[Column, str], t.Any] = {},
+    ) -> M2MAddRelated:
+        """
+        Save the row if it doesn't already exist in the database, and insert
+        an entry into the joining table.
+
+        .. code-block:: python
+
+            >>> band = await Band.objects().get(Band.name == "Pythonistas")
+            >>> await band.add_m2m(
+            >>>     Genre(name="Punk rock"),
+            >>>     m2m=Band.genres
+            >>> )
+            [{'id': 1}]
+
+        :param extra_column_values:
+            If the joining table has additional columns besides the two
+            required foreign keys, you can specify the values for those
+            additional columns. For example, if this is our joining table:
+
+            .. code-block:: python
+
+                class GenreToBand(Table):
+                    band = ForeignKey(Band)
+                    genre = ForeignKey(Genre)
+                    reason = Text()
+
+            We can provide the ``reason`` value:
+
+            .. code-block:: python
+
+                await band.add_m2m(
+                    Genre(name="Punk rock"),
+                    m2m=Band.genres,
+                    extra_column_values={
+                        "reason": "Their second album was very punk."
+                    }
+                )
+
+        """
+        return M2MAddRelated(
+            target_row=self,
+            rows=rows,
+            m2m=m2m,
+            extra_column_values=extra_column_values,
+        )
+
+    def remove_m2m(self, *rows: Table, m2m: M2M) -> M2MRemoveRelated:
+        """
+        Remove the rows from the joining table.
+
+        .. code-block:: python
+
+            >>> band = await Band.objects().get(Band.name == "Pythonistas")
+            >>> genre = await Genre.objects().get(Genre.name == "Rock")
+            >>> await band.remove_m2m(
+            >>>     genre,
+            >>>     m2m=Band.genres
+            >>> )
+
+        """
+        return M2MRemoveRelated(
+            target_row=self,
+            rows=rows,
+            m2m=m2m,
         )
 
     def to_dict(self, *columns: Column) -> t.Dict[str, t.Any]:
@@ -528,8 +626,12 @@ class Table(metaclass=TableMetaclass):
         return self.querystring.__str__()
 
     def __repr__(self) -> str:
-        _pk = self._meta.primary_key or None
-        return f"<{self.__class__.__name__}: {_pk}>"
+        pk = (
+            None
+            if not self._exists_in_db
+            else getattr(self, self._meta.primary_key._meta.name, None)
+        )
+        return f"<{self.__class__.__name__}: {pk}>"
 
     ###########################################################################
     # Classmethods

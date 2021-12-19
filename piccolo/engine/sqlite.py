@@ -165,6 +165,11 @@ def convert_array_out(value: bytes) -> t.List:
     return load_json(value.decode("utf8"))
 
 
+def convert_M2M_out(value: bytes) -> t.List:
+    _value = value.decode("utf8")
+    return _value.split(",")
+
+
 sqlite3.register_converter("Numeric", convert_numeric_out)
 sqlite3.register_converter("Integer", convert_int_out)
 sqlite3.register_converter("UUID", convert_uuid_out)
@@ -175,6 +180,7 @@ sqlite3.register_converter("Boolean", convert_boolean_out)
 sqlite3.register_converter("Timestamp", convert_timestamp_out)
 sqlite3.register_converter("Timestamptz", convert_timestamptz_out)
 sqlite3.register_converter("Array", convert_array_out)
+sqlite3.register_converter("M2M", convert_M2M_out)
 
 sqlite3.register_adapter(Decimal, convert_numeric_in)
 sqlite3.register_adapter(uuid.UUID, convert_uuid_in)
@@ -351,7 +357,7 @@ class SQLiteEngine(Engine):
     def __init__(
         self,
         path: str = "piccolo.sqlite",
-        detect_types=sqlite3.PARSE_DECLTYPES,
+        detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
         isolation_level=None,
         **connection_kwargs,
     ) -> None:

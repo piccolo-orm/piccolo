@@ -25,5 +25,16 @@ class TestGetRelated(TestCase):
         band.save().run_sync()
 
         _manager = band.get_related(Band.manager).run_sync()
-
         self.assertTrue(_manager.name == "Guido")
+
+        # Test non-ForeignKey
+        with self.assertRaises(ValueError):
+            band.get_related(Band.name)
+
+        # Make sure it also works using a string
+        _manager = band.get_related("manager").run_sync()
+        self.assertTrue(_manager.name == "Guido")
+
+        # Test an invalid string
+        with self.assertRaises(ValueError):
+            band.get_related("abc123")

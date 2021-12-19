@@ -27,4 +27,5 @@ from .column_types import (
     Varchar,
 )
 from .combination import And, Or, Where
+from .m2m import M2M
 from .reference import LazyTableReference
