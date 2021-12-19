@@ -64,7 +64,7 @@ we can do this:
 
 .. code-block:: python
 
-    >>> await Band.select(Band.name, Band.genres(Genre.name))
+    >>> await Band.select(Band.name, Band.genres(Genre.name, as_list=True))
     [
         {"name": "Pythonistas", "genres": ["Rock", "Folk"]},
         {"name": "Rustaceans", "genres": ["Folk"]},
@@ -75,12 +75,45 @@ You can request whichever column you like from the related table:
 
 .. code-block:: python
 
-    >>> await Band.select(Band.name, Band.genres(Genre.id))
+    >>> await Band.select(Band.name, Band.genres(Genre.id, as_list=True))
     [
         {"name": "Pythonistas", "genres": [1, 2]},
         {"name": "Rustaceans", "genres": [2]},
         {"name": "C-Sharps", "genres": [1, 3]},
     ]
+
+You can also request multiple columns from the related table:
+
+.. code-block:: python
+
+    >>> await Band.select(Band.name, Band.genres(Genre.id, Genre.name))
+    [
+        {
+            'name': 'Pythonistas',
+            'genres': [
+                {'id': 1, 'name': 'Rock'},
+                {'id': 2, 'name': 'Folk'}
+            ]
+        },
+        ...
+    ]
+
+If you omit the columns argument, then all of the columns are returned.
+
+.. code-block:: python
+
+    >>> await Band.select(Band.name, Band.genres())
+    [
+        {
+            'name': 'Pythonistas',
+            'genres': [
+                {'id': 1, 'name': 'Rock'},
+                {'id': 2, 'name': 'Folk'}
+            ]
+        },
+        ...
+    ]
+
 
 As we defined ``M2M`` on the ``Genre`` table too, we can get each band in a
 given genre:

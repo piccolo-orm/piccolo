@@ -58,7 +58,9 @@ class TestM2M(TestCase):
         drop_tables(*TABLES_1)
 
     def test_select_name(self):
-        response = Band.select(Band.name, Band.genres(Genre.name)).run_sync()
+        response = Band.select(
+            Band.name, Band.genres(Genre.name, as_list=True)
+        ).run_sync()
         self.assertEqual(
             response,
             [
@@ -69,7 +71,9 @@ class TestM2M(TestCase):
         )
 
         # Now try it in reverse.
-        response = Genre.select(Genre.name, Genre.bands(Band.name)).run_sync()
+        response = Genre.select(
+            Genre.name, Genre.bands(Band.name, as_list=True)
+        ).run_sync()
         self.assertEqual(
             response,
             [
@@ -79,8 +83,65 @@ class TestM2M(TestCase):
             ],
         )
 
+    def test_select_multiple(self):
+        response = Band.select(
+            Band.name, Band.genres(Genre.id, Genre.name)
+        ).run_sync()
+
+        self.assertEqual(
+            response,
+            [
+                {
+                    "name": "Pythonistas",
+                    "genres": [
+                        {"id": 1, "name": "Rock"},
+                        {"id": 2, "name": "Folk"},
+                    ],
+                },
+                {"name": "Rustaceans", "genres": [{"id": 2, "name": "Folk"}]},
+                {
+                    "name": "C-Sharps",
+                    "genres": [
+                        {"id": 1, "name": "Rock"},
+                        {"id": 3, "name": "Classical"},
+                    ],
+                },
+            ],
+        )
+
+        # Now try it in reverse.
+        response = Genre.select(
+            Genre.name, Genre.bands(Band.id, Band.name)
+        ).run_sync()
+
+        self.assertEqual(
+            response,
+            [
+                {
+                    "name": "Rock",
+                    "bands": [
+                        {"id": 1, "name": "Pythonistas"},
+                        {"id": 3, "name": "C-Sharps"},
+                    ],
+                },
+                {
+                    "name": "Folk",
+                    "bands": [
+                        {"id": 1, "name": "Pythonistas"},
+                        {"id": 2, "name": "Rustaceans"},
+                    ],
+                },
+                {
+                    "name": "Classical",
+                    "bands": [{"id": 3, "name": "C-Sharps"}],
+                },
+            ],
+        )
+
     def test_select_id(self):
-        response = Band.select(Band.name, Band.genres(Genre.id)).run_sync()
+        response = Band.select(
+            Band.name, Band.genres(Genre.id, as_list=True)
+        ).run_sync()
         self.assertEqual(
             response,
             [
@@ -91,7 +152,9 @@ class TestM2M(TestCase):
         )
 
         # Now try it in reverse.
-        response = Genre.select(Genre.name, Genre.bands(Band.id)).run_sync()
+        response = Genre.select(
+            Genre.name, Genre.bands(Band.id, as_list=True)
+        ).run_sync()
         self.assertEqual(
             response,
             [
@@ -316,7 +379,7 @@ class TestM2MCustomPrimaryKey(TestCase):
 
     def test_select(self):
         response = Customer.select(
-            Customer.name, Customer.concerts(Concert.name)
+            Customer.name, Customer.concerts(Concert.name, as_list=True)
         ).run_sync()
 
         self.assertListEqual(
@@ -330,7 +393,7 @@ class TestM2MCustomPrimaryKey(TestCase):
 
         # Now try it in reverse.
         response = Concert.select(
-            Concert.name, Concert.customers(Customer.name)
+            Concert.name, Concert.customers(Customer.name, as_list=True)
         ).run_sync()
 
         self.assertListEqual(

@@ -17,13 +17,17 @@ class M2MSelect(Selectable):
     This is a subquery used within a select to fetch data via an M2M table.
     """
 
-    def __init__(self, column: Column, m2m: M2M):
+    def __init__(self, *columns: Column, m2m: M2M, as_list: bool = False):
         """
-        :param column:
-            Which column to include from the related table.
+        :param columns:
+            Which columns to include from the related table.
+        :param as_list:
+            If a single column is provided, and ``as_list`` is ``True`` a
+            flattened list will be returned, rather than a list of objects.
 
         """
-        self.column = column
+        self.as_list = as_list
+        self.columns = columns
         self.m2m = m2m
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
@@ -42,8 +46,6 @@ class M2MSelect(Selectable):
         table_2_name = table_2._meta.tablename
         table_2_pk_name = table_2._meta.primary_key._meta.db_column_name
 
-        column_name = self.column._meta.db_column_name
-
         inner_select = f"""
             "{m2m_table_name}"
             JOIN "{table_1_name}" "inner_{table_1_name}" ON (
@@ -56,14 +58,34 @@ class M2MSelect(Selectable):
         """  # noqa: E501
 
         if engine_type == "postgres":
-            return f"""
-                ARRAY(
-                    SELECT
-                        "inner_{table_2_name}"."{column_name}"
-                    FROM {inner_select}
-                ) AS "{m2m_relationship_name}"
-            """
+            if self.as_list:
+                column_name = self.columns[0]._meta.db_column_name
+                return f"""
+                    ARRAY(
+                        SELECT
+                            "inner_{table_2_name}"."{column_name}"
+                        FROM {inner_select}
+                    ) AS "{m2m_relationship_name}"
+                """
+            else:
+                column_names = ", ".join(
+                    f'"inner_{table_2_name}"."{column._meta.db_column_name}"'
+                    for column in self.columns
+                )
+                return f"""
+                    (
+                        SELECT JSON_AGG({m2m_relationship_name}_results)
+                        FROM (
+                            SELECT {column_names} FROM {inner_select}
+                        ) AS "{m2m_relationship_name}_results"
+                    ) AS "{m2m_relationship_name}"
+                """
         elif engine_type == "sqlite":
+            if len(self.columns) > 1:
+                column_name = table_2_pk_name
+            else:
+                column_name = self.columns[0]._meta.db_column_name
+
             return f"""
                 (
                     SELECT group_concat(
@@ -334,10 +356,24 @@ class M2M:
             _foreign_key_columns=foreign_key_columns,
         )
 
-    def __call__(self, column: Column) -> M2MSelect:
+    def __call__(self, *columns: Column, as_list: bool = False) -> M2MSelect:
         """
-        :param column:
-            Which column to include from the related table.
+        :param columns:
+            Which columns to include from the related table. If none are
+            specified, then all of the columns are returned.
+        :param as_list:
+            If a single column is provided, and ``as_list`` is ``True`` a
+            flattened list will be returned, rather than a list of objects.
 
         """
-        return M2MSelect(column, m2m=self)
+        if len(columns) == 0:
+            columns = (
+                self._meta.secondary_foreign_key._foreign_key_meta.resolved_references._meta.columns  # noqa: E501
+            )
+
+        if as_list and len(columns) != 1:
+            raise ValueError(
+                "`as_list` is only valid with a single column argument"
+            )
+
+        return M2MSelect(*columns, m2m=self, as_list=as_list)

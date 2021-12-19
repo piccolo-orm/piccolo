@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import decimal
+import itertools
 import typing as t
 from collections import OrderedDict
 
@@ -21,6 +22,7 @@ from piccolo.query.mixins import (
 )
 from piccolo.querystring import QueryString
 from piccolo.utils.dictionary import make_nested
+from piccolo.utils.encoding import load_json
 from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -274,25 +276,88 @@ class Select(Query):
         return self
 
     async def response_handler(self, response):
-        # With M2M queries in SQLite, we always get the value back as a list
-        # of strings, so we need to do some type conversion.
+        m2m_selects = [
+            i
+            for i in self.columns_delegate.selected_columns
+            if isinstance(i, M2MSelect)
+        ]
         if self.engine_type == "sqlite":
-            m2m_selects = [
-                i
-                for i in self.columns_delegate.selected_columns
-                if isinstance(i, M2MSelect)
-            ]
+            # With M2M queries in SQLite, we always get the value back as a
+            # list of strings, so we need to do some type conversion.
             for m2m_select in m2m_selects:
                 m2m_name = m2m_select.m2m._meta.name
-                value_type = m2m_select.column.__class__.value_type
+
+                secondary_table = (
+                    m2m_select.m2m._meta.secondary_foreign_key._foreign_key_meta.resolved_references  # noqa: E501
+                )
+                secondary_table_pk = secondary_table._meta.primary_key
+
+                # If the user requested a single column, we just return that
+                # from the database. Otherwise we request the primary key
+                # value, so we can fetch the rest of the data in a subsequent
+                # SQL query - see below.
+                value_type = (
+                    m2m_select.columns[0].__class__.value_type
+                    if m2m_select.as_list
+                    else secondary_table_pk.value_type
+                )
                 try:
                     for row in response:
                         row[m2m_name] = [value_type(i) for i in row[m2m_name]]
                 except ValueError:
                     colored_warning(
-                        "Unable to do type converstion for the "
+                        "Unable to do type conversion for the "
                         f"{m2m_name} relation"
                     )
+
+                if not m2m_select.as_list:
+                    if len(m2m_select.columns) == 1:
+                        column_name = m2m_select.columns[0]._meta.name
+                        for row in response:
+                            row[m2m_name] = [
+                                {column_name: i} for i in row[m2m_name]
+                            ]
+                    else:
+                        # I haven't worked out how to replicate Postgres'
+                        # `JSON_AGG` in SQLite, so the workaround is to do
+                        # another SQL query.
+                        row_ids = {
+                            i
+                            for i in itertools.chain(
+                                *[row[m2m_name] for row in response]
+                            )
+                        }
+                        extra_rows = (
+                            await secondary_table.select(
+                                *m2m_select.columns,
+                                secondary_table_pk.as_alias("mapping_key"),
+                            )
+                            .where(secondary_table_pk.is_in(row_ids))
+                            .run()
+                        )
+                        extra_rows_map = {
+                            row["mapping_key"]: {
+                                key: value
+                                for key, value in row.items()
+                                if key != "mapping_key"
+                            }
+                            for row in extra_rows
+                        }
+                        for row in response:
+                            row[m2m_name] = [
+                                extra_rows_map.get(i) for i in row[m2m_name]
+                            ]
+
+        elif self.engine_type == "postgres":
+            # If we requested the results as objects, then it comes back as a
+            # JSON string, so we need to deserialise it.
+            for m2m_select in m2m_selects:
+                if not m2m_select.as_list:
+                    m2m_name = m2m_select.m2m._meta.name
+                    for row in response:
+                        row[m2m_name] = load_json(row[m2m_name])
+
+        #######################################################################
 
         # If no columns were specified, it's a select *, so we know that
         # no columns were selected from related tables.
