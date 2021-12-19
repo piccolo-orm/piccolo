@@ -406,7 +406,7 @@ class Select(Query):
                         data = row[m2m_name]
                         row[m2m_name] = load_json(data) if data else []
                 else:
-                    # If the data can't be safely serialisd as JSON, we get
+                    # If the data can't be safely serialised as JSON, we get
                     # back an array of primary key values, and need to
                     # splice in the correct values using Python.
                     response = await self._splice_m2m_rows(
