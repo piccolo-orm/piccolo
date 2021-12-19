@@ -1,6 +1,52 @@
 Changes
 =======
 
+0.62.0
+------
+
+Added Many-To-Many support.
+
+.. code-block:: python
+
+    from piccolo.columns.column_types import (
+        ForeignKey,
+        LazyTableReference,
+        Varchar
+    )
+    from piccolo.columns.m2m import M2M
+
+
+    class Band(Table):
+        name = Varchar()
+        genres = M2M(LazyTableReference("GenreToBand", module_path=__name__))
+
+
+    class Genre(Table):
+        name = Varchar()
+        bands = M2M(LazyTableReference("GenreToBand", module_path=__name__))
+
+
+    # This is our joining table:
+    class GenreToBand(Table):
+        band = ForeignKey(Band)
+        genre = ForeignKey(Genre)
+
+
+    >>> await Band.select(Band.name, Band.genres(Band.name, as_list=True))
+    [
+      {
+        "name": "Pythonistas",
+        "genres": ["Rock", "Folk"]
+      },
+      ...
+    ]
+
+See the docs for more details.
+
+Many thanks to @sinisaos and @yezz123 for all the input.
+
+-------------------------------------------------------------------------------
+
 0.61.2
 ------
 
