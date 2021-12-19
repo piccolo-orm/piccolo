@@ -32,7 +32,7 @@ Added Many-To-Many support.
         genre = ForeignKey(Genre)
 
 
-    >>> await Band.select(Band.name, Band.genres(Band.name, as_list=True))
+    >>> await Band.select(Band.name, Band.genres(Genre.name, as_list=True))
     [
       {
         "name": "Pythonistas",
