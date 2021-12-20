@@ -153,5 +153,5 @@ remove_m2m
 
 .. automethod:: Table.remove_m2m
 
-.. hint:: All of these methods can be run syncronously as well - for example,
+.. hint:: All of these methods can be run synchronously as well - for example,
     ``band.get_m2m(Band.genres).run_sync()``.
