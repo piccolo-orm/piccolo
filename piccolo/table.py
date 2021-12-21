@@ -575,13 +575,20 @@ class Table(metaclass=TableMetaclass):
             column._foreign_key_meta.resolved_references.get_readable()
         )
 
-        columns = [getattr(column, i._meta.name) for i in readable.columns]
+        output_columns = []
+
+        for readable_column in readable.columns:
+            output_column = column
+            for fk in readable_column._meta.call_chain:
+                output_column = getattr(column, fk._meta.name)
+            output_column = getattr(output_column, readable_column._meta.name)
+            output_columns.append(output_column)
 
         output_name = f"{column._meta.name}_readable"
 
         return Readable(
             template=readable.template,
-            columns=columns,
+            columns=output_columns,
             output_name=output_name,
         )
 
