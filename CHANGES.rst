@@ -1,6 +1,16 @@
 Changes
 =======
 
+0.62.1
+------
+
+Fixed a bug with ``Readable`` when it contains lots of joins.
+
+``Readable`` is used to create a user friendly representation of a row in
+Piccolo Admin.
+
+-------------------------------------------------------------------------------
+
 0.62.0
 ------
 
