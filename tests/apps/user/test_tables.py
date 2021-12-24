@@ -1,5 +1,6 @@
-import asyncio
+import secrets
 from unittest import TestCase
+from unittest.mock import MagicMock, patch
 
 from piccolo.apps.user.tables import BaseUser
 
@@ -23,9 +24,23 @@ class TestCreateUserTable(TestCase):
         self.assertFalse(exception)
 
 
-class TestHashPassword(TestCase):
-    def test_hash_password(self):
-        pass
+class TestInstantiateUser(TestCase):
+    def setUp(self):
+        BaseUser.create_table().run_sync()
+
+    def tearDown(self):
+        BaseUser.alter().drop_table().run_sync()
+
+    def test_valid_credentials(self):
+        BaseUser(username="bob", password="abc123%£1pscl")
+
+    def test_malicious_password(self):
+        malicious_password = secrets.token_urlsafe(1000)
+        with self.assertRaises(ValueError) as manager:
+            BaseUser(username="bob", password=malicious_password)
+        self.assertEqual(
+            manager.exception.__str__(), "The password is too long."
+        )
 
 
 class TestLogin(TestCase):
@@ -35,22 +50,41 @@ class TestLogin(TestCase):
     def tearDown(self):
         BaseUser.alter().drop_table().run_sync()
 
-    def test_login(self):
+    @patch("piccolo.apps.user.tables.logger")
+    def test_login(self, logger: MagicMock):
         username = "bob"
         password = "Bob123$$$"
         email = "bob@bob.com"
 
         user = BaseUser(username=username, password=password, email=email)
+        user.save().run_sync()
 
-        save_query = user.save()
+        # Test correct password
+        authenticated = BaseUser.login_sync(username, password)
+        self.assertTrue(authenticated == user.id)  # type: ignore
 
-        save_query.run_sync()
+        # Test incorrect password
+        authenticated = BaseUser.login_sync(username, "blablabla")
+        self.assertTrue(authenticated is None)
 
-        authenticated = asyncio.run(BaseUser.login(username, password))
-        self.assertTrue(authenticated is not None)
+        # Test ultra long password
+        malicious_password = secrets.token_urlsafe(1000)
+        authenticated = BaseUser.login_sync(username, malicious_password)
+        self.assertTrue(authenticated is None)
+        self.assertEqual(
+            logger.method_calls[0].args,
+            ("Excessively long password provided.",),
+        )
 
-        authenticated = asyncio.run(BaseUser.login(username, "blablabla"))
-        self.assertTrue(not authenticated)
+        # Test ulta long username
+        logger.reset_mock()
+        malicious_username = secrets.token_urlsafe(1000)
+        authenticated = BaseUser.login_sync(malicious_username, password)
+        self.assertTrue(authenticated is None)
+        self.assertEqual(
+            logger.method_calls[0].args,
+            ("Excessively long username provided.",),
+        )
 
     def test_update_password(self):
         username = "bob"
@@ -63,7 +97,17 @@ class TestLogin(TestCase):
         authenticated = BaseUser.login_sync(username, password)
         self.assertTrue(authenticated is not None)
 
+        # Test success
         new_password = "XXX111"
         BaseUser.update_password_sync(username, new_password)
         authenticated = BaseUser.login_sync(username, new_password)
         self.assertTrue(authenticated is not None)
+
+        # Test ultra long password
+        malicious_password = secrets.token_urlsafe(1000)
+        with self.assertRaises(ValueError) as manager:
+            BaseUser.update_password_sync(username, malicious_password)
+        self.assertEqual(
+            manager.exception.__str__(),
+            "The password is too long.",
+        )

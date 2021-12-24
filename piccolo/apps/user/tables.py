@@ -4,6 +4,7 @@ A User model, used for authentication.
 from __future__ import annotations
 
 import hashlib
+import logging
 import secrets
 import typing as t
 
@@ -11,6 +12,11 @@ from piccolo.columns import Boolean, Secret, Timestamp, Varchar
 from piccolo.columns.readable import Readable
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
+
+logger = logging.getLogger(__file__)
+
+
+MAX_PASSWORD_LENGTH = 128
 
 
 class BaseUser(Table, tablename="piccolo_user"):
@@ -81,7 +87,7 @@ class BaseUser(Table, tablename="piccolo_user"):
             )
 
         password = cls.hash_password(password)
-        await cls.update().values({cls.password: password}).where(clause).run()
+        await cls.update({cls.password: password}).where(clause).run()
 
     ###########################################################################
 
@@ -92,7 +98,15 @@ class BaseUser(Table, tablename="piccolo_user"):
         """
         Hashes the password, ready for storage, and for comparing during
         login.
+
+        :raises ValueError:
+            If an excessively long password is provided.
+
         """
+        if len(password) > MAX_PASSWORD_LENGTH:
+            logger.warning("Excessively long password provided.")
+            raise ValueError("The password is too long.")
+
         if salt == "":
             salt = cls.get_salt()
         hashed = hashlib.pbkdf2_hmac(
@@ -131,13 +145,20 @@ class BaseUser(Table, tablename="piccolo_user"):
         """
         Returns the user_id if a match is found.
         """
-        query = (
-            cls.select()
-            .columns(cls._meta.primary_key, cls.password)
-            .where((cls.username == username))
+        if len(username) > cls.username.length:
+            logger.warning("Excessively long username provided.")
+            return None
+
+        if len(password) > MAX_PASSWORD_LENGTH:
+            logger.warning("Excessively long password provided.")
+            return None
+
+        response = (
+            await cls.select(cls._meta.primary_key, cls.password)
+            .where(cls.username == username)
             .first()
+            .run()
         )
-        response = await query.run()
         if not response:
             # No match found
             return None
