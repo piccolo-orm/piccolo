@@ -1,6 +1,6 @@
 import secrets
 from unittest import TestCase
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 from piccolo.apps.user.tables import BaseUser
 
@@ -72,8 +72,8 @@ class TestLogin(TestCase):
         authenticated = BaseUser.login_sync(username, malicious_password)
         self.assertTrue(authenticated is None)
         self.assertEqual(
-            logger.method_calls[0].args,
-            ("Excessively long password provided.",),
+            logger.method_calls,
+            [call.warning("Excessively long password provided.")],
         )
 
         # Test ulta long username
@@ -82,8 +82,8 @@ class TestLogin(TestCase):
         authenticated = BaseUser.login_sync(malicious_username, password)
         self.assertTrue(authenticated is None)
         self.assertEqual(
-            logger.method_calls[0].args,
-            ("Excessively long username provided.",),
+            logger.method_calls,
+            [call.warning("Excessively long username provided.")],
         )
 
     def test_update_password(self):
