@@ -16,9 +16,6 @@ from piccolo.utils.sync import run_sync
 logger = logging.getLogger(__file__)
 
 
-MAX_PASSWORD_LENGTH = 128
-
-
 class BaseUser(Table, tablename="piccolo_user"):
     """
     Provides a basic user, with authentication support.
@@ -46,6 +43,8 @@ class BaseUser(Table, tablename="piccolo_user"):
         required=False,
         help_text="When this user last logged in.",
     )
+
+    _max_password_length = 128
 
     def __init__(self, **kwargs):
         # Generating passwords upfront is expensive, so might need reworking.
@@ -103,7 +102,7 @@ class BaseUser(Table, tablename="piccolo_user"):
             If an excessively long password is provided.
 
         """
-        if len(password) > MAX_PASSWORD_LENGTH:
+        if len(password) > cls._max_password_length:
             logger.warning("Excessively long password provided.")
             raise ValueError("The password is too long.")
 
@@ -149,7 +148,7 @@ class BaseUser(Table, tablename="piccolo_user"):
             logger.warning("Excessively long username provided.")
             return None
 
-        if len(password) > MAX_PASSWORD_LENGTH:
+        if len(password) > cls._max_password_length:
             logger.warning("Excessively long password provided.")
             return None
 
