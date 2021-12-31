@@ -1,6 +1,14 @@
 Changes
 =======
 
+0.62.2
+------
+
+Added a max password length to the ``BaseUser`` table. By default it's set to
+128 characters.
+
+-------------------------------------------------------------------------------
+
 0.62.1
 ------
 
