@@ -111,3 +111,11 @@ To change a user's password:
 
 .. warning:: Don't use bulk updates for passwords - use ``update_password`` /
    ``update_password_sync``, and they'll correctly hash the password.
+
+-------------------------------------------------------------------------------
+
+Limits
+------
+
+The maximum password length allowed is 128 characters. This should be
+sufficiently long for most use cases.
