@@ -23,8 +23,8 @@ Commands
 
 The app comes with some useful commands.
 
-user create
-~~~~~~~~~~~
+create
+~~~~~~
 
 Creates a new user. It presents an interactive prompt, asking for the username,
 password etc.
@@ -43,8 +43,8 @@ script), you can pass all of the arguments in as follows:
 If you choose this approach then be careful, as the password will be in the
 shell's history.
 
-user change_password
-~~~~~~~~~~~~~~~~~~~~
+change_password
+~~~~~~~~~~~~~~~
 
 Change a user's password.
 
@@ -52,8 +52,8 @@ Change a user's password.
 
     piccolo user change_password
 
-user change_permissions
-~~~~~~~~~~~~~~~~~~~~~~~
+change_permissions
+~~~~~~~~~~~~~~~~~~
 
 Change a user's permissions. The options are ``--admin``, ``--superuser`` and
 ``--active``, which change the corresponding attributes on ``BaseUser``.

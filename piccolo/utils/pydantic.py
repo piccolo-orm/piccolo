@@ -32,7 +32,7 @@ else:
 
 
 class Config(pydantic.BaseConfig):
-    json_encoders = JSON_ENCODERS
+    json_encoders: t.Dict[t.Any, t.Callable] = JSON_ENCODERS
     arbitrary_types_allowed = True
 
 
