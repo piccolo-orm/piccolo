@@ -97,7 +97,7 @@ class BackwardsMigrationManager(BaseMigrationManager):
                     Migration.name == migration_id
                 ).run()
 
-                if self.clean:
+                if self.clean and migration_module.__file__:
                     os.unlink(migration_module.__file__)
 
                 print("ok! ✔️")
