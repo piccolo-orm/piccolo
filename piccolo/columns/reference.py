@@ -69,8 +69,8 @@ class LazyTableReference:
                 return table
             else:
                 raise ValueError(
-                    f"Can't find a Table subclass called {self.app_name} "
-                    f"in {self.module_path}"
+                    "Can't find a Table subclass called "
+                    f"{self.table_class_name} in {self.module_path}"
                 )
 
         raise ValueError("You must specify either app_name or module_path.")
