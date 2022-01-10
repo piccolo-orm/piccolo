@@ -512,7 +512,20 @@ class TestNestedModel(TestCase):
 
         #######################################################################
         # Test with `model_name` arg
-        # TODO
+
+        MyConcertModel = create_pydantic_model(
+            Concert,
+            nested=(Concert.band_1.manager,),
+            model_name="MyConcertModel",
+        )
+
+        BandModel = MyConcertModel.__fields__["band_1"].type_
+        self.assertEqual(BandModel.__qualname__, "MyConcertModel.band_1")
+
+        ManagerModel = BandModel.__fields__["manager"].type_
+        self.assertEqual(
+            ManagerModel.__qualname__, "MyConcertModel.band_1.manager"
+        )
 
     def test_cascaded_args(self):
         """
