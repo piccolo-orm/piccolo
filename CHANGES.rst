@@ -1,6 +1,22 @@
 Changes
 =======
 
+0.62.3
+------
+
+Fixed the error message in ``LazyTableReference``.
+
+Fixed a bug with ``create_pydantic_model`` with nested models. For example:
+
+.. code-block:: python
+
+  create_pydantic_model(Band, nested=(Band.manager,))
+
+Sometimes Pydantic couldn't uniquely identify the nested models. Thanks to
+@wmshort and @sinisaos for their help with this.
+
+-------------------------------------------------------------------------------
+
 0.62.2
 ------
 
