@@ -451,6 +451,7 @@ class TestNestedModel(TestCase):
         self.assertEqual(
             [i for i in ManagerModel.__fields__.keys()], ["name", "country"]
         )
+        self.assertEqual(ManagerModel.__qualname__, "Band.manager")
 
         AssistantManagerType = BandModel.__fields__["assistant_manager"].type_
         self.assertTrue(AssistantManagerType is int)
@@ -467,6 +468,7 @@ class TestNestedModel(TestCase):
         self.assertEqual(
             [i for i in ManagerModel.__fields__.keys()], ["name", "country"]
         )
+        self.assertEqual(ManagerModel.__qualname__, "Band.manager")
 
         AssistantManagerType = BandModel.__fields__["assistant_manager"].type_
         self.assertTrue(AssistantManagerType is int)
@@ -474,6 +476,7 @@ class TestNestedModel(TestCase):
         CountryModel = ManagerModel.__fields__["country"].type_
         self.assertTrue(issubclass(CountryModel, pydantic.BaseModel))
         self.assertEqual([i for i in CountryModel.__fields__.keys()], ["name"])
+        self.assertEqual(CountryModel.__qualname__, "Band.manager.country")
 
         #######################################################################
         # Test three levels deep
@@ -491,6 +494,7 @@ class TestNestedModel(TestCase):
             [i for i in BandModel.__fields__.keys()],
             ["name", "manager", "assistant_manager"],
         )
+        self.assertEqual(BandModel.__qualname__, "Concert.band_1")
 
         ManagerModel = BandModel.__fields__["manager"].type_
         self.assertTrue(issubclass(ManagerModel, pydantic.BaseModel))
@@ -498,12 +502,17 @@ class TestNestedModel(TestCase):
             [i for i in ManagerModel.__fields__.keys()],
             ["name", "country"],
         )
+        self.assertEqual(ManagerModel.__qualname__, "Concert.band_1.manager")
 
         AssistantManagerType = BandModel.__fields__["assistant_manager"].type_
         self.assertTrue(AssistantManagerType is int)
 
         CountryModel = ManagerModel.__fields__["country"].type_
         self.assertTrue(CountryModel is int)
+
+        #######################################################################
+        # Test with `model_name` arg
+        # TODO
 
     def test_cascaded_args(self):
         """
