@@ -198,6 +198,8 @@ def create_pydantic_model(
             )
         )
 
+    model_name = model_name or table.__name__
+
     for column in piccolo_columns:
         column_name = column._meta.name
 
@@ -255,6 +257,7 @@ def create_pydantic_model(
                     )
                 )
             ):
+                nested_model_name = f"{model_name}.{column._meta.name}"
                 _type = create_pydantic_model(
                     table=column._foreign_key_meta.resolved_references,
                     nested=nested,
@@ -266,6 +269,7 @@ def create_pydantic_model(
                     deserialize_json=deserialize_json,
                     recursion_depth=recursion_depth + 1,
                     max_recursion_depth=max_recursion_depth,
+                    model_name=nested_model_name,
                 )
 
             tablename = (
@@ -288,17 +292,18 @@ def create_pydantic_model(
 
         columns[column_name] = (_type, field)
 
-    model_name = model_name or table.__name__
-
     class CustomConfig(Config):
         schema_extra = {
             "help_text": table._meta.help_text,
             **schema_extra_kwargs,
         }
 
-    return pydantic.create_model(
+    model = pydantic.create_model(
         model_name,
         __config__=CustomConfig,
         __validators__=validators,
         **columns,
     )
+    model.__qualname__ = model_name
+
+    return model
