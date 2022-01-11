@@ -1,6 +1,37 @@
 Changes
 =======
 
+0.63.0
+------
+
+Added an ``exclude_imported`` option to ``table_finder``.
+
+.. code-block:: python
+
+  APP_CONFIG = AppConfig(
+      table_classes=table_finder(['music.tables'], exclude_imported=True)
+  )
+
+It's useful when we want to import ``Table`` subclasses defined within a
+module itself, but not imported ones:
+
+.. code-block:: python
+
+  # tables.py
+  from piccolo.apps.user.tables import BaseUser # excluded
+  from piccolo.columns.column_types import ForeignKey, Varchar
+  from piccolo.table import Table
+
+
+  class Musician(Table): # included
+      name = Varchar()
+      user = ForeignKey(BaseUser)
+
+This was also possible using tags, but was less convenient. Thanks to @sinisaos
+for reporting this issue.
+
+-------------------------------------------------------------------------------
+
 0.62.3
 ------
 
