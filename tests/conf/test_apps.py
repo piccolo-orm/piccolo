@@ -177,6 +177,31 @@ class TestTableFinder(TestCase):
             ],
         )
 
+    def test_exclude_imported(self):
+        """
+        Make sure we can excluded imported Tables.
+        """
+        filtered_tables = table_finder(
+            modules=["tests.conf.example"],
+            exclude_imported=True,
+        )
+
+        self.assertEqual(
+            [i.__name__ for i in filtered_tables],
+            ["Musician"],
+        )
+
+        # Now try without filtering:
+        all_tables = table_finder(
+            modules=["tests.conf.example"],
+            exclude_imported=False,
+        )
+
+        self.assertEqual(
+            sorted([i.__name__ for i in all_tables]),
+            ["BaseUser", "Musician"],
+        )
+
 
 class TestFinder(TestCase):
     def test_get_table_classes(self):

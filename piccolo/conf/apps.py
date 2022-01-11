@@ -33,26 +33,41 @@ def table_finder(
     modules: t.Sequence[str],
     include_tags: t.Sequence[str] = ["__all__"],
     exclude_tags: t.Sequence[str] = [],
+    exclude_imported: bool = False,
 ) -> t.List[t.Type[Table]]:
     """
     Rather than explicitly importing and registering table classes with the
-    AppConfig, ``table_finder`` can be used instead. It imports any ``Table``
+    ``AppConfig``, ``table_finder`` can be used instead. It imports any ``Table``
     subclasses in the given modules. Tags can be used to limit which ``Table``
     subclasses are imported.
 
     :param modules:
         The module paths to check for ``Table`` subclasses. For example,
-        ['blog.tables']. The path should be from the root of your project,
+        ``['blog.tables']``. The path should be from the root of your project,
         not a relative path.
     :param include_tags:
         If the ``Table`` subclass has one of these tags, it will be
-        imported. The special tag '__all__' will import all ``Table``
+        imported. The special tag ``'__all__'`` will import all ``Table``
         subclasses found.
     :param exclude_tags:
         If the ``Table`` subclass has any of these tags, it won't be
-        imported. `exclude_tags` overrides `include_tags`.
+        imported. ``exclude_tags`` overrides ``include_tags``.
+    :param exclude_imported:
+        If ``True``, only ``Table`` subclasses defined within the module are
+        used. Any ``Table`` subclasses imported by that module from other
+        modules are ignored. For example:
 
-    """
+        .. code-block:: python
+
+            from piccolo.table import Table
+            from piccolo.column import Varchar, ForeignKey
+            from piccolo.apps.user.tables import BaseUser # excluded
+
+            class Task(Table): # included
+                title = Varchar()
+                creator = ForeignKey(BaseUser)
+
+    """  # noqa: E501
     if isinstance(modules, str):
         # Guard against the user just entering a string, for example
         # 'blog.tables', instead of ['blog.tables'].
@@ -77,6 +92,10 @@ def table_finder(
                 and _object is not Table
             ):
                 table: Table = _object  # type: ignore
+
+                if exclude_imported and table.__module__ != module_path:
+                    continue
+
                 if exclude_tags and set(table._meta.tags).intersection(
                     set(exclude_tags)
                 ):
