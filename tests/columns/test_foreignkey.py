@@ -1,7 +1,14 @@
 import time
+import uuid
 from unittest import TestCase
 
-from piccolo.columns import Column, ForeignKey, LazyTableReference, Varchar
+from piccolo.columns import (
+    UUID,
+    Column,
+    ForeignKey,
+    LazyTableReference,
+    Varchar,
+)
 from piccolo.columns.base import OnDelete, OnUpdate
 from piccolo.table import Table
 from tests.base import postgres_only
@@ -44,6 +51,25 @@ class Band5(Table):
         on_delete=OnDelete.set_null,
         on_update=OnUpdate.set_null,
     )
+
+
+class ManagerUUID(Table):
+    pk = UUID(primary_key=True)
+
+
+class Band6(Table):
+    manager = ForeignKey(references=ManagerUUID)
+
+
+class TestValueType(TestCase):
+    """
+    The `value_type` of the `ForeignKey` should depend on the `PrimaryKey` of
+    the referenced table.
+    """
+
+    def test_value_type(self):
+        self.assertTrue(Band1.manager.value_type is int)
+        self.assertTrue(Band6.manager.value_type is uuid.UUID)
 
 
 class TestForeignKeyMeta(TestCase):
