@@ -1177,7 +1177,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
     @property
     def column_type(self):
         """
-        A ForeignKey column needs to have the same type as the primary key
+        A ``ForeignKey`` column needs to have the same type as the primary key
         column of the table being referenced.
         """
         referenced_table = self._foreign_key_meta.resolved_references
@@ -1186,6 +1186,15 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
             return Integer().column_type
         else:
             return pk_column.column_type
+
+    @property
+    def value_type(self):
+        """
+        The value type matches that of the primary key being referenced.
+        """
+        referenced_table = self._foreign_key_meta.resolved_references
+        pk_column = referenced_table._meta.primary_key
+        return pk_column.value_type
 
     def __init__(
         self,
