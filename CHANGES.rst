@@ -1,6 +1,14 @@
 Changes
 =======
 
+0.63.1
+------
+
+Fixed an issue with the ``value_type`` of ``ForeignKey`` columns when
+referencing a table with a custom primary key column (such as a ``UUID``).
+
+-------------------------------------------------------------------------------
+
 0.63.0
 ------
 
