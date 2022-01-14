@@ -1239,6 +1239,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
                 "on_delete": on_delete,
                 "on_update": on_update,
                 "null": null,
+                "target_column": target_column,
             }
         )
 
