@@ -42,6 +42,18 @@ class TestInstantiateUser(TestCase):
             manager.exception.__str__(), "The password is too long."
         )
 
+    @patch("piccolo.apps.user.tables.logger")
+    def test_hashed_password(self, logger: MagicMock):
+        with self.assertRaises(ValueError) as manager:
+            BaseUser(username="John", password="pbkdf2_sha256$10000")
+        self.assertEqual(
+            manager.exception.__str__(), "Do not pass hashed password."
+        )
+        self.assertEqual(
+            logger.method_calls,
+            [call.warning("Hashed password passed to the constructor.")],
+        )
+
 
 class TestLogin(TestCase):
     def setUp(self):
@@ -111,3 +123,30 @@ class TestLogin(TestCase):
             manager.exception.__str__(),
             "The password is too long.",
         )
+
+
+class TestCreateUserFromFixture(TestCase):
+    def setUp(self):
+        BaseUser.create_table().run_sync()
+
+    def tearDown(self):
+        BaseUser.alter().drop_table().run_sync()
+
+    def test_create_user_from_fixture(self):
+        the_data = {
+            "id": 2,
+            "username": "",
+            "password": "pbkdf2_sha256$10000$19ed2c0d6cbe0868a70be6"
+            "446b93ed5b$c862974665ccc25b334ed42fa7e96a41"
+            "04d5ddff0c2e56e0e5b1d0efc67e9d03",
+            "first_name": "",
+            "last_name": "",
+            "email": "",
+            "active": False,
+            "admin": False,
+            "superuser": False,
+            "last_login": None,
+        }
+        user = BaseUser.from_dict(the_data)
+        self.assertIsInstance(user, BaseUser)
+        self.assertEqual(user.password, the_data["password"])

@@ -310,6 +310,10 @@ class Table(metaclass=TableMetaclass):
 
         return pk
 
+    @classmethod
+    def from_dict(cls, data: t.Dict[str, t.Any]) -> Table:
+        return cls(**data)
+
     ###########################################################################
 
     def save(
