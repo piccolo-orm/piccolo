@@ -866,3 +866,20 @@ class TestTargetColumn(MigrationTestCase):
 
         for table_class in [TableA, TableB]:
             self.assertTrue(table_class.table_exists().run_sync())
+
+        # Make sure the constraint was created correctly.
+        response = TableA.raw(
+            """
+            SELECT EXISTS(
+                SELECT 1
+                FROM INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE CCU
+                JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS TC ON
+                    CCU.CONSTRAINT_NAME = TC.CONSTRAINT_NAME
+                WHERE CONSTRAINT_TYPE = 'FOREIGN KEY'
+                    AND TC.TABLE_NAME = 'table_b'
+                    AND CCU.TABLE_NAME = 'table_a'
+                    AND CCU.COLUMN_NAME = 'name'
+            )
+            """
+        ).run_sync()
+        self.assertTrue(response[0]["exists"])
