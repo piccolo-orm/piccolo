@@ -7,7 +7,7 @@ build/
 .doctrees/
 .vscode/
 piccolo.egg-info/
-build/
+.idea/
 dist/
 piccolo.sqlite
 _build/
