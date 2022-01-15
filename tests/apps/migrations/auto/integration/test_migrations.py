@@ -834,3 +834,35 @@ class TestM2MMigrations(MigrationTestCase):
 
         for table_class in [Band, Genre, GenreToBand]:
             self.assertTrue(table_class.table_exists().run_sync())
+
+
+###############################################################################
+
+
+class TableA(Table):
+    name = Varchar(unique=True)
+
+
+class TableB(Table):
+    table_a = ForeignKey(TableA, target_column="name")
+
+
+@postgres_only
+class TestTargetColumn(MigrationTestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        drop_tables(Migration, TableA, TableB)
+
+    def test_target_column(self):
+        """
+        Make sure migrations still work when a foreign key references a column
+        other than the primary key.
+        """
+        self._test_migrations(
+            table_snapshots=[[TableA, TableB]],
+        )
+
+        for table_class in [TableA, TableB]:
+            self.assertTrue(table_class.table_exists().run_sync())

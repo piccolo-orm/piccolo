@@ -101,7 +101,9 @@ class ForeignKeyMeta:
         if self.target_column is None:
             return self.resolved_references._meta.primary_key
         elif isinstance(self.target_column, Column):
-            return self.target_column
+            return self.resolved_references._meta.get_column_by_name(
+                self.target_column._meta.name
+            )
         elif isinstance(self.target_column, str):
             return self.resolved_references._meta.get_column_by_name(
                 self.target_column

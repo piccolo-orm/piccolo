@@ -363,11 +363,49 @@ class SerialisedTableType(Definition):
             serialised_params=serialise_params(params=pk_column._meta.params),
         )
 
-        return (
+        #######################################################################
+
+        # When creating a ForeignKey, the user can specify a column other than
+        # the primary key to reference.
+        serialised_target_columns: t.Set[SerialisedColumnInstance] = set()
+
+        for fk_column in self.table_type._meta._foreign_key_references:
+            target_column = fk_column._foreign_key_meta.target_column
+            if target_column is None:
+                # Just references the primary key
+                continue
+            elif type(target_column) is str:
+                column = self.table_type._meta.get_column_by_name(
+                    target_column
+                )
+            elif type(target_column) is Column:
+                column = self.table_type._meta.get_column_by_name(
+                    target_column._meta.name
+                )
+            else:
+                raise ValueError("Unrecognised `target_column` value.")
+
+            serialised_target_columns.add(
+                SerialisedColumnInstance(
+                    column,
+                    serialised_params=serialise_params(
+                        params=column._meta.params
+                    ),
+                )
+            )
+
+        #######################################################################
+
+        definition = (
             f"class {self.table_class_name}"
             f'({UniqueGlobalNames.TABLE}, tablename="{tablename}"): '
             f"{pk_column_name} = {serialised_pk_column}"
         )
+
+        for serialised_target_column in serialised_target_columns:
+            definition += f"; {serialised_target_column.instance._meta.name} = {serialised_target_column}"  # noqa: E501
+
+        return definition
 
     def __lt__(self, other):
         return repr(self) < repr(other)
