@@ -34,7 +34,7 @@ class TestVarcharColumn(TestCase):
 
 class TestNumericColumn(TestCase):
     """
-    Numeric and Decimal are the same - so we'll just Numeric.
+    Numeric and Decimal are the same - so we'll just test Numeric.
     """
 
     def test_numeric_digits(self):
@@ -93,6 +93,46 @@ class TestArrayColumn(TestCase):
         self.assertEqual(
             pydantic_model.schema()["properties"]["members"]["items"]["type"],
             "string",
+        )
+
+
+class TestForeignKeyColumn(TestCase):
+    def test_target_column(self):
+        """
+        Make sure the target_column is correctly set in the Pydantic schema.
+        """
+
+        class Manager(Table):
+            name = Varchar(unique=True)
+
+        class BandA(Table):
+            manager = ForeignKey(Manager, target_column=Manager.name)
+
+        class BandB(Table):
+            manager = ForeignKey(Manager, target_column="name")
+
+        class BandC(Table):
+            manager = ForeignKey(Manager)
+
+        self.assertEqual(
+            create_pydantic_model(table=BandA).schema()["properties"][
+                "manager"
+            ]["extra"]["target_column"],
+            "name",
+        )
+
+        self.assertEqual(
+            create_pydantic_model(table=BandB).schema()["properties"][
+                "manager"
+            ]["extra"]["target_column"],
+            "name",
+        )
+
+        self.assertEqual(
+            create_pydantic_model(table=BandC).schema()["properties"][
+                "manager"
+            ]["extra"]["target_column"],
+            "id",
         )
 
 

@@ -276,7 +276,12 @@ def create_pydantic_model(
                 column._foreign_key_meta.resolved_references._meta.tablename
             )
             field = pydantic.Field(
-                extra={"foreign_key": True, "to": tablename, **extra},
+                extra={
+                    "foreign_key": True,
+                    "to": tablename,
+                    "target_column": column._foreign_key_meta.resolved_target_column._meta.name,  # noqa: E501
+                    **extra,
+                },
                 **params,
             )
             if include_readable:

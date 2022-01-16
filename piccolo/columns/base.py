@@ -72,15 +72,16 @@ class ForeignKeyMeta:
     references: t.Union[t.Type[Table], LazyTableReference]
     on_delete: OnDelete
     on_update: OnUpdate
+    target_column: t.Union[Column, str, None]
     proxy_columns: t.List[Column] = field(default_factory=list)
 
     @property
     def resolved_references(self) -> t.Type[Table]:
         """
-        Evaluates the ``references`` attribute if it's a LazyTableReference,
+        Evaluates the ``references`` attribute if it's a ``LazyTableReference``,
         raising a ``ValueError`` if it fails, otherwise returns a ``Table``
         subclass.
-        """
+        """  # noqa: E501
         from piccolo.table import Table
 
         if isinstance(self.references, LazyTableReference):
@@ -94,6 +95,21 @@ class ForeignKeyMeta:
                 "The references attribute is neither a Table subclass or a "
                 "LazyTableReference instance."
             )
+
+    @property
+    def resolved_target_column(self) -> Column:
+        if self.target_column is None:
+            return self.resolved_references._meta.primary_key
+        elif isinstance(self.target_column, Column):
+            return self.resolved_references._meta.get_column_by_name(
+                self.target_column._meta.name
+            )
+        elif isinstance(self.target_column, str):
+            return self.resolved_references._meta.get_column_by_name(
+                self.target_column
+            )
+        else:
+            raise ValueError("Unable to resolve target_column.")
 
     def copy(self) -> ForeignKeyMeta:
         kwargs = self.__dict__.copy()
@@ -783,9 +799,11 @@ class Column(Selectable):
             tablename = references._meta.tablename
             on_delete = foreign_key_meta.on_delete.value
             on_update = foreign_key_meta.on_update.value
-            primary_key_name = references._meta.primary_key._meta.name
+            target_column_name = (
+                foreign_key_meta.resolved_target_column._meta.name
+            )
             query += (
-                f" REFERENCES {tablename} ({primary_key_name})"
+                f" REFERENCES {tablename} ({target_column_name})"
                 f" ON DELETE {on_delete}"
                 f" ON UPDATE {on_update}"
             )

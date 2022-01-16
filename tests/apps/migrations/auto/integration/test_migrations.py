@@ -834,3 +834,94 @@ class TestM2MMigrations(MigrationTestCase):
 
         for table_class in [Band, Genre, GenreToBand]:
             self.assertTrue(table_class.table_exists().run_sync())
+
+
+###############################################################################
+
+
+class TableA(Table):
+    name = Varchar(unique=True)
+
+
+class TableB(Table):
+    table_a = ForeignKey(TableA, target_column="name")
+
+
+class TableC(Table):
+    table_a = ForeignKey(TableA, target_column=TableA.name)
+
+
+@postgres_only
+class TestTargetColumn(MigrationTestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        drop_tables(Migration, TableA, TableC)
+
+    def test_target_column(self):
+        """
+        Make sure migrations still work when a foreign key references a column
+        other than the primary key.
+        """
+        self._test_migrations(
+            table_snapshots=[[TableA, TableC]],
+        )
+
+        for table_class in [TableA, TableC]:
+            self.assertTrue(table_class.table_exists().run_sync())
+
+        # Make sure the constraint was created correctly.
+        response = TableA.raw(
+            """
+            SELECT EXISTS(
+                SELECT 1
+                FROM INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE CCU
+                JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS TC ON
+                    CCU.CONSTRAINT_NAME = TC.CONSTRAINT_NAME
+                WHERE CONSTRAINT_TYPE = 'FOREIGN KEY'
+                    AND TC.TABLE_NAME = 'table_c'
+                    AND CCU.TABLE_NAME = 'table_a'
+                    AND CCU.COLUMN_NAME = 'name'
+            )
+            """
+        ).run_sync()
+        self.assertTrue(response[0]["exists"])
+
+
+@postgres_only
+class TestTargetColumnString(MigrationTestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        drop_tables(Migration, TableA, TableB)
+
+    def test_target_column(self):
+        """
+        Make sure migrations still work when a foreign key references a column
+        other than the primary key.
+        """
+        self._test_migrations(
+            table_snapshots=[[TableA, TableB]],
+        )
+
+        for table_class in [TableA, TableB]:
+            self.assertTrue(table_class.table_exists().run_sync())
+
+        # Make sure the constraint was created correctly.
+        response = TableA.raw(
+            """
+            SELECT EXISTS(
+                SELECT 1
+                FROM INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE CCU
+                JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS TC ON
+                    CCU.CONSTRAINT_NAME = TC.CONSTRAINT_NAME
+                WHERE CONSTRAINT_TYPE = 'FOREIGN KEY'
+                    AND TC.TABLE_NAME = 'table_b'
+                    AND CCU.TABLE_NAME = 'table_a'
+                    AND CCU.COLUMN_NAME = 'name'
+            )
+            """
+        ).run_sync()
+        self.assertTrue(response[0]["exists"])

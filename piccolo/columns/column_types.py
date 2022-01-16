@@ -1170,6 +1170,19 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
                     on_update=OnUpdate.cascade
                 )
 
+    :param target_column:
+        By default the ``ForeignKey`` references the primary key column on the
+        related table. You can specify an alternative column (it must have a
+        unique constraint on it though). For example:
+
+        .. code-block:: python
+
+            # Passing in a column reference:
+            ForeignKey(references=Manager, target_column=Manager.passport_number)
+
+            # Or just the column name:
+            ForeignKey(references=Manager, target_column='passport_number')
+
     """  # noqa: E501
 
     _foreign_key_meta: ForeignKeyMeta
@@ -1180,21 +1193,19 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
         A ``ForeignKey`` column needs to have the same type as the primary key
         column of the table being referenced.
         """
-        referenced_table = self._foreign_key_meta.resolved_references
-        pk_column = referenced_table._meta.primary_key
-        if isinstance(pk_column, Serial):
+        target_column = self._foreign_key_meta.resolved_target_column
+        if isinstance(target_column, Serial):
             return Integer().column_type
         else:
-            return pk_column.column_type
+            return target_column.column_type
 
     @property
     def value_type(self):
         """
         The value type matches that of the primary key being referenced.
         """
-        referenced_table = self._foreign_key_meta.resolved_references
-        pk_column = referenced_table._meta.primary_key
-        return pk_column.value_type
+        target_column = self._foreign_key_meta.resolved_target_column
+        return target_column.value_type
 
     def __init__(
         self,
@@ -1203,6 +1214,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
         null: bool = True,
         on_delete: OnDelete = OnDelete.cascade,
         on_update: OnUpdate = OnUpdate.cascade,
+        target_column: t.Union[str, Column, None] = None,
         **kwargs,
     ) -> None:
         from piccolo.table import Table
@@ -1227,6 +1239,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
                 "on_delete": on_delete,
                 "on_update": on_update,
                 "null": null,
+                "target_column": target_column,
             }
         )
 
@@ -1238,6 +1251,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
             references=Table if isinstance(references, str) else references,
             on_delete=on_delete,
             on_update=on_update,
+            target_column=target_column,
         )
 
     def _setup(self, table_class: t.Type[Table]) -> ForeignKeySetupResponse:
