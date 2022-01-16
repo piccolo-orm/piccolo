@@ -514,7 +514,7 @@ class Select(Query):
 
                 pk_name = column._meta.call_chain[
                     index
-                ]._foreign_key_meta.resolved_references._meta.primary_key._meta.name  # noqa: E501
+                ]._foreign_key_meta.resolved_target_column._meta.name
 
                 _joins.append(
                     f"LEFT JOIN {right_tablename} {table_alias}"
