@@ -1,6 +1,25 @@
 Changes
 =======
 
+0.64.0
+------
+
+Added initial support for ``ForeignKey`` columns referencing non-primary key
+columns. For example:
+
+.. code-block:: python
+
+  class Manager(Table):
+      name = Varchar()
+      email = Varchar(unique=True)
+
+  class Band(Table):
+      manager = ForeignKey(Manager, target_column=Manager.email)
+
+Thanks to @theelderbeever for suggesting this feature, and with help testing.
+
+-------------------------------------------------------------------------------
+
 0.63.1
 ------
 
