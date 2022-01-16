@@ -378,7 +378,7 @@ class SerialisedTableType(Definition):
                 column = self.table_type._meta.get_column_by_name(
                     target_column
                 )
-            elif type(target_column) is Column:
+            elif isinstance(target_column, Column):
                 column = self.table_type._meta.get_column_by_name(
                     target_column._meta.name
                 )
@@ -497,8 +497,20 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
             params[key] = SerialisedBuiltin(builtin=value)
             continue
 
-        # Column instances, which are used by Array definitions.
+        # Column instances
         if isinstance(value, Column):
+
+            # For target_column (which is used by ForeignKey), we can just
+            # serialise it as the column name:
+            if key == "target_column":
+                params[key] = value._meta.name
+                continue
+
+            ###################################################################
+
+            # For Array definitions, we want to serialise the full column
+            # definition:
+
             column: Column = value
             serialised_params: SerialisedParams = serialise_params(
                 params=column._meta.params
