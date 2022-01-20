@@ -18,7 +18,7 @@ it looks something like:
   }
 
 When we load the fixture (using ``piccolo fixtures load``) we need to be
-careful in case ``BaseUser`` tries to hash it again (it would then be a hash of
+careful in case ``BaseUser`` tries to hash the password again (it would then be a hash of
 a hash, and hence incorrect). We now have additional checks in place to prevent
 this.
 
