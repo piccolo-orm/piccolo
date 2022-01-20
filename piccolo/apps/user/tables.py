@@ -50,8 +50,20 @@ class BaseUser(Table, tablename="piccolo_user"):
         # Generating passwords upfront is expensive, so might need reworking.
         password = kwargs.get("password", None)
         if password:
+            if password.startswith("pbkdf2_sha256"):
+                logger.warning("Hashed password passed to the constructor.")
+                raise ValueError("Do not pass hashed password.")
+
             kwargs["password"] = self.__class__.hash_password(password)
         super().__init__(**kwargs)
+
+    @classmethod
+    def from_dict(cls, data: t.Dict[str, t.Any]) -> BaseUser:
+        """Create a BaseUser instance from fixture"""
+        password = data.get("password")
+        user = cls(**{k: v for k, v in data.items() if k != "password"})
+        user.__setattr__("password", password)
+        return user
 
     @classmethod
     def get_salt(cls):

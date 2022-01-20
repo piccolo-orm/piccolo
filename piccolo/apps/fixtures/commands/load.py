@@ -56,7 +56,7 @@ async def load_json_string(json_string: str):
 
                 await table_class.insert(
                     *[
-                        table_class(**row.__dict__)
+                        table_class.from_dict(row.__dict__)
                         for row in model_instance_list
                     ]
                 ).run()
