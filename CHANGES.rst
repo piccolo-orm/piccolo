@@ -1,6 +1,31 @@
 Changes
 =======
 
+0.65.0
+------
+
+The ``BaseUser`` table hashes passwords before storing them in the database.
+
+When we create a fixture from the ``BaseUser`` table (using ``piccolo fixtures dump``),
+it looks something like:
+
+.. code-block:: json
+
+  {
+    "id": 11,
+    "username": "bob",
+    "password": "pbkdf2_sha256$10000$abc123",
+  }
+
+When we load the fixture (using ``piccolo fixtures load``) we need to be
+careful in case ``BaseUser`` tries to hash it again (it would then be a hash of
+a hash, and hence incorrect). We now have additional checks in place to prevent
+this.
+
+Thanks to @mrbazzan for implementing this, and @sinisaos for help reviewing.
+
+-------------------------------------------------------------------------------
+
 0.64.0
 ------
 
