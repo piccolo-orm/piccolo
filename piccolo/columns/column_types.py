@@ -198,6 +198,12 @@ class Varchar(Column):
             reverse=True,
         )
 
+    def __get__(self, obj, objtype=None) -> t.Union[Varchar, str]:
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: str):
+        obj.__dict__[self._meta.name] = value
+
 
 class Secret(Varchar):
     """
