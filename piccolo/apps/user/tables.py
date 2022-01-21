@@ -9,6 +9,7 @@ import secrets
 import typing as t
 
 from piccolo.columns import Boolean, Secret, Timestamp, Varchar
+from piccolo.columns.column_types import Serial
 from piccolo.columns.readable import Readable
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
@@ -21,6 +22,7 @@ class BaseUser(Table, tablename="piccolo_user"):
     Provides a basic user, with authentication support.
     """
 
+    id: Serial
     username = Varchar(length=100, unique=True)
     password = Secret(length=255)
     first_name = Varchar(null=True)
@@ -80,7 +82,7 @@ class BaseUser(Table, tablename="piccolo_user"):
         if isinstance(user, str):
             clause = cls.username == user
         elif isinstance(user, int):
-            clause = cls.id == user  # type: ignore
+            clause = cls.id == user
         else:
             raise ValueError(
                 "The `user` arg must be a user id, or a username."
