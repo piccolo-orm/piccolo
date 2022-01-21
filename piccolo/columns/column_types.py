@@ -198,10 +198,22 @@ class Varchar(Column):
             reverse=True,
         )
 
-    def __get__(self, obj, objtype=None) -> t.Union[Varchar, str]:
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> str:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Varchar:
+        ...
+
+    def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: str):
+    def __set__(self, obj, value: t.Union[str, None]):
+        """
+        This is Python's descriptor protocol. It lets us signal to MyPy that
+        you can override the Varchar with a string value.
+        """
         obj.__dict__[self._meta.name] = value
 
 
