@@ -42,18 +42,6 @@ class TestInstantiateUser(TestCase):
             manager.exception.__str__(), "The password is too long."
         )
 
-    @patch("piccolo.apps.user.tables.logger")
-    def test_hashed_password(self, logger: MagicMock):
-        with self.assertRaises(ValueError) as manager:
-            BaseUser(username="John", password="pbkdf2_sha256$10000")
-        self.assertEqual(
-            manager.exception.__str__(), "Do not pass hashed password."
-        )
-        self.assertEqual(
-            logger.method_calls,
-            [call.warning("Hashed password passed to the constructor.")],
-        )
-
 
 class TestLogin(TestCase):
     def setUp(self):
