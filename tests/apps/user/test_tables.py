@@ -61,7 +61,7 @@ class TestLogin(TestCase):
 
         # Test correct password
         authenticated = BaseUser.login_sync(username, password)
-        self.assertTrue(authenticated == user.id)  # type: ignore
+        self.assertTrue(authenticated == user.id)
 
         # Test incorrect password
         authenticated = BaseUser.login_sync(username, "blablabla")
