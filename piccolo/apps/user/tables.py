@@ -50,11 +50,8 @@ class BaseUser(Table, tablename="piccolo_user"):
         # Generating passwords upfront is expensive, so might need reworking.
         password = kwargs.get("password", None)
         if password:
-            if password.startswith("pbkdf2_sha256"):
-                logger.warning("Hashed password passed to the constructor.")
-                raise ValueError("Do not pass hashed password.")
-
-            kwargs["password"] = self.__class__.hash_password(password)
+            if not password.startswith("pbkdf2_sha256"):
+                kwargs["password"] = self.__class__.hash_password(password)
         super().__init__(**kwargs)
 
     @classmethod
