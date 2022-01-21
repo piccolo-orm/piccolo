@@ -1,3 +1,29 @@
+"""
+Notes for devs
+==============
+
+Descriptors
+-----------
+
+Each column type implements the descriptor protocol (the ``__get__`` and
+``__set__`` methods).
+
+This is to signal to MyPy that the following is allowed:
+
+.. code-block:: python
+
+    class Band(Table):
+        name = Varchar()
+
+    band = Band()
+    band.name = 'Pythonistas'  # Without descriptors, this would be an error
+
+In the above example, descriptors allow us to tell MyPy that ``name`` is a
+``Varchar`` when accessed on a class, but is a ``str`` when accessed on a class
+instance.
+
+"""
+
 from __future__ import annotations
 
 import copy
@@ -198,6 +224,9 @@ class Varchar(Column):
             reverse=True,
         )
 
+    ###########################################################################
+    # Descriptors
+
     @t.overload
     def __get__(self, obj: Table, objtype=None) -> str:
         ...
@@ -210,10 +239,6 @@ class Varchar(Column):
         return obj.__dict__[self._meta.name] if obj else self
 
     def __set__(self, obj, value: t.Union[str, None]):
-        """
-        This is Python's descriptor protocol. It lets us signal to MyPy that
-        you can override the Varchar with a string value.
-        """
         obj.__dict__[self._meta.name] = value
 
 
@@ -226,6 +251,23 @@ class Secret(Varchar):
     def __init__(self, *args, **kwargs):
         kwargs["secret"] = True
         super().__init__(*args, **kwargs)
+
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> str:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Secret:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[str, None]):
+        obj.__dict__[self._meta.name] = value
 
 
 class Text(Column):
@@ -279,6 +321,23 @@ class Text(Column):
             reverse=True,
         )
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> str:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Text:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[str, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 class UUID(Column):
     """
@@ -326,6 +385,23 @@ class UUID(Column):
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
+
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> uuid.UUID:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> UUID:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[uuid.UUID, None]):
+        obj.__dict__[self._meta.name] = value
 
 
 class Integer(Column):
@@ -427,6 +503,23 @@ class Integer(Column):
             reverse=True,
         )
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> int:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Integer:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[int, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 ###############################################################################
 # BigInt and SmallInt only exist on Postgres. SQLite treats them the same as
@@ -464,6 +557,23 @@ class BigInt(Integer):
             return "INTEGER"
         raise Exception("Unrecognized engine type")
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> int:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> BigInt:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[int, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 class SmallInt(Integer):
     """
@@ -495,6 +605,23 @@ class SmallInt(Integer):
             return "INTEGER"
         raise Exception("Unrecognized engine type")
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> int:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> SmallInt:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[int, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 ###############################################################################
 
@@ -525,6 +652,23 @@ class Serial(Column):
             return NULL
         raise Exception("Unrecognized engine type")
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> int:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Serial:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[int, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 class BigSerial(Serial):
     """
@@ -539,6 +683,23 @@ class BigSerial(Serial):
         elif engine_type == "sqlite":
             return "INTEGER"
         raise Exception("Unrecognized engine type")
+
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> int:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> BigSerial:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[int, None]):
+        obj.__dict__[self._meta.name] = value
 
 
 class PrimaryKey(Serial):
@@ -557,6 +718,23 @@ class PrimaryKey(Serial):
         )
 
         super().__init__(**kwargs)
+
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> int:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> PrimaryKey:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[int, None]):
+        obj.__dict__[self._meta.name] = value
 
 
 ###############################################################################
@@ -607,6 +785,23 @@ class Timestamp(Column):
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
+
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> datetime:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Timestamp:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[datetime, None]):
+        obj.__dict__[self._meta.name] = value
 
 
 class Timestamptz(Column):
@@ -660,6 +855,23 @@ class Timestamptz(Column):
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> datetime:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Timestamptz:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[datetime, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 class Date(Column):
     """
@@ -700,6 +912,23 @@ class Date(Column):
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> date:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Date:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[date, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 class Time(Column):
     """
@@ -736,6 +965,23 @@ class Time(Column):
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
+
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> time:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Time:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[time, None]):
+        obj.__dict__[self._meta.name] = value
 
 
 class Interval(Column):  # lgtm [py/missing-equals]
@@ -787,6 +1033,23 @@ class Interval(Column):  # lgtm [py/missing-equals]
             # https://sqlite.org/datatype3.html#determination_of_column_affinity
             return "SECONDS"
         raise Exception("Unrecognized engine type")
+
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> timedelta:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Interval:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[timedelta, None]):
+        obj.__dict__[self._meta.name] = value
 
 
 ###############################################################################
@@ -863,6 +1126,23 @@ class Boolean(Column):
         See the ``eq`` method for more details.
         """
         return self.__ne__(value)
+
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> bool:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Boolean:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[bool, None]):
+        obj.__dict__[self._meta.name] = value
 
 
 ###############################################################################
@@ -948,13 +1228,45 @@ class Numeric(Column):
         kwargs.update({"default": default, "digits": digits})
         super().__init__(**kwargs)
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> decimal.Decimal:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Numeric:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[decimal.Decimal, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 class Decimal(Numeric):
     """
     An alias for Numeric.
     """
 
-    pass
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> decimal.Decimal:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Decimal:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[decimal.Decimal, None]):
+        obj.__dict__[self._meta.name] = value
 
 
 class Real(Column):
@@ -990,13 +1302,45 @@ class Real(Column):
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> float:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Real:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[float, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 class Float(Real):
     """
     An alias for Real.
     """
 
-    pass
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> float:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Float:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[float, None]):
+        obj.__dict__[self._meta.name] = value
 
 
 class DoublePrecision(Real):
@@ -1007,6 +1351,23 @@ class DoublePrecision(Real):
     @property
     def column_type(self):
         return "DOUBLE PRECISION"
+
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> float:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> DoublePrecision:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[float, None]):
+        obj.__dict__[self._meta.name] = value
 
 
 ###############################################################################
@@ -1529,6 +1890,27 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
         else:
             return value
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> t.Any:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> ForeignKey:
+        ...
+
+    @t.overload
+    def __get__(self, obj: t.Any, objtype=None) -> t.Any:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Any):
+        obj.__dict__[self._meta.name] = value
+
 
 ###############################################################################
 
@@ -1569,6 +1951,23 @@ class JSON(Column):  # lgtm[py/missing-equals]
 
         self.json_operator: t.Optional[str] = None
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> str:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> JSON:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[str, t.Dict]):
+        obj.__dict__[self._meta.name] = value
+
 
 class JSONB(JSON):
     """
@@ -1603,6 +2002,23 @@ class JSONB(JSON):
                 return f"{select_string} {self.json_operator}"
             else:
                 return f"{select_string} {self.json_operator} AS {self.alias}"
+
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> str:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> JSONB:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[str, t.Dict]):
+        obj.__dict__[self._meta.name] = value
 
 
 ###############################################################################
@@ -1660,13 +2076,45 @@ class Bytea(Column):
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> bytes:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Bytea:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: bytes):
+        obj.__dict__[self._meta.name] = value
+
 
 class Blob(Bytea):
     """
     An alias for Bytea.
     """
 
-    pass
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> bytes:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Blob:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: bytes):
+        obj.__dict__[self._meta.name] = value
 
 
 ###############################################################################
@@ -1807,3 +2255,20 @@ class Array(Column):
             raise ValueError("Unsupported by SQLite")
         else:
             raise ValueError("Unrecognised engine type")
+
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> t.List[t.Any]:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Array:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.List[t.Any]):
+        obj.__dict__[self._meta.name] = value
