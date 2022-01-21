@@ -1,6 +1,29 @@
 Changes
 =======
 
+0.66.0
+------
+
+Using descriptors to improve MyPy support (`PR 399 <https://github.com/piccolo-orm/piccolo/pull/399>`_).
+
+MyPy is now able to correctly infer the type in lots of different scenarios:
+
+.. code-block:: python
+
+  class Band(Table):
+      name = Varchar()
+
+  # MyPy knows this is a Varchar
+  Band.name
+
+  band = Band()
+  band.name = "Pythonistas"  # MyPy knows we can assign strings when it's a class instance
+  band.name  # MyPy knows we will get a string back
+
+  band.name = 1  # MyPy knows this is an error, as we should only be allowed to assign strings
+
+-------------------------------------------------------------------------------
+
 0.65.1
 ------
 
