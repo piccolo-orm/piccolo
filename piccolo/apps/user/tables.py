@@ -47,6 +47,7 @@ class BaseUser(Table, tablename="piccolo_user"):
         help_text="When this user last logged in.",
     )
 
+    _min_password_length = 6
     _max_password_length = 128
 
     def __init__(self, **kwargs):
@@ -229,8 +230,11 @@ class BaseUser(Table, tablename="piccolo_user"):
         if not password:
             raise ValueError("A password must be provided.")
 
-        if len(password) < 4:
-            raise ValueError("The password is too short")
+        if len(password) < cls._min_password_length:
+            raise ValueError("The password is too short.")
+
+        if len(password) > cls._max_password_length:
+            raise ValueError("The password is too long.")
 
         if password.startswith("pbkdf2_sha256"):
             logger.warning(
