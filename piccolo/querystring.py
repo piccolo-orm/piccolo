@@ -10,6 +10,7 @@ if t.TYPE_CHECKING:
     from piccolo.table import Table
 
 from uuid import UUID
+
 if find_spec("asyncpg"):
     from asyncpg.pgproto.pgproto import UUID as apgUUID
 else:
