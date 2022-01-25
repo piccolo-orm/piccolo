@@ -1,12 +1,20 @@
 from __future__ import annotations
 
-import datetime
 import typing as t
 from dataclasses import dataclass
+from datetime import datetime
+from importlib.util import find_spec
 from string import Formatter
 
 if t.TYPE_CHECKING:
     from piccolo.table import Table
+
+from uuid import UUID
+
+if find_spec("asyncpg"):
+    from asyncpg.pgproto.pgproto import UUID as apgUUID
+else:
+    apgUUID = UUID
 
 
 @dataclass
@@ -91,8 +99,10 @@ class QueryString:
             if _type == str:
                 converted_args.append(f"'{arg}'")
             elif _type == datetime:
-                dt_string = arg.isoformat().replace("T", " ")
+                dt_string = arg.isoformat()
                 converted_args.append(f"'{dt_string}'")
+            elif _type == UUID or _type == apgUUID:
+                converted_args.append(f"'{arg}'")
             elif arg is None:
                 converted_args.append("null")
             else:
