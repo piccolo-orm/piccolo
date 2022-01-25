@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime
 import typing as t
 from dataclasses import dataclass
-from string import Formatter
+from datetime import datetime
 from importlib.util import find_spec
+from string import Formatter
 
 if t.TYPE_CHECKING:
     from piccolo.table import Table
@@ -13,6 +13,7 @@ if find_spec("asyncpg"):
     from asyncpg.pgproto.pgproto import UUID
 else:
     from uuid import UUID
+
 
 @dataclass
 class Unquoted:
