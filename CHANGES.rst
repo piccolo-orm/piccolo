@@ -1,6 +1,21 @@
 Changes
 =======
 
+0.66.1
+------
+
+In Piccolo you can print out any query to see the SQL which will be generated:
+
+.. code-block:: python
+
+  >>> print(Band.select())
+  SELECT "band"."id", "band"."name", "band"."manager", "band"."popularity" FROM band
+
+It didn't represent ``UUID`` and ``datetime`` values correctly, which is now fixed (courtesy @theelderbeever).
+See `PR 405 <https://github.com/piccolo-orm/piccolo/pull/405>`_.
+
+-------------------------------------------------------------------------------
+
 0.66.0
 ------
 
