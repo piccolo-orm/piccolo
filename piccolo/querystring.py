@@ -9,10 +9,11 @@ from string import Formatter
 if t.TYPE_CHECKING:
     from piccolo.table import Table
 
+from uuid import UUID
 if find_spec("asyncpg"):
-    from asyncpg.pgproto.pgproto import UUID
+    from asyncpg.pgproto.pgproto import UUID as apgUUID
 else:
-    from uuid import UUID
+    apgUUID = UUID
 
 
 @dataclass
@@ -99,7 +100,7 @@ class QueryString:
             elif _type == datetime:
                 dt_string = arg.isoformat()
                 converted_args.append(f"'{dt_string}'")
-            elif _type == UUID:
+            elif _type == UUID or _type == apgUUID:
                 converted_args.append(f"'{arg}'")
             elif arg is None:
                 converted_args.append("null")
