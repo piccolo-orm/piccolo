@@ -147,11 +147,18 @@ class TestCreateUser(TestCase):
     def tearDown(self):
         BaseUser.alter().drop_table().run_sync()
 
+    def test_success(self):
+        user = BaseUser.create_user_sync(username="bob", password="abc123")
+        self.assertTrue(isinstance(user, BaseUser))
+        self.assertEqual(
+            BaseUser.login_sync(username="bob", password="abc123"), user.id
+        )
+
     @patch("piccolo.apps.user.tables.logger")
-    def test_create_user(self, logger: MagicMock):
+    def test_hashed_password_error(self, logger: MagicMock):
         with self.assertRaises(ValueError) as manager:
             BaseUser.create_user_sync(
-                username="John", password="pbkdf2_sha256$10000"
+                username="bob", password="pbkdf2_sha256$10000"
             )
 
         self.assertEqual(
@@ -164,4 +171,39 @@ class TestCreateUser(TestCase):
                     "Tried to create a user with an already hashed password."
                 )
             ],
+        )
+
+    def test_short_password_error(self):
+        with self.assertRaises(ValueError) as manager:
+            BaseUser.create_user_sync(username="bob", password="abc")
+
+        self.assertEqual(
+            manager.exception.__str__(), "The password is too short."
+        )
+
+    def test_long_password_error(self):
+        with self.assertRaises(ValueError) as manager:
+            BaseUser.create_user_sync(
+                username="bob",
+                password="x" * (BaseUser._max_password_length + 1),
+            )
+
+        self.assertEqual(
+            manager.exception.__str__(), "The password is too long."
+        )
+
+    def test_no_username_error(self):
+        with self.assertRaises(ValueError) as manager:
+            BaseUser.create_user_sync(username=None, password="abc123")
+
+        self.assertEqual(
+            manager.exception.__str__(), "A username must be provided."
+        )
+
+    def test_no_password_error(self):
+        with self.assertRaises(ValueError) as manager:
+            BaseUser.create_user_sync(username="bob", password=None)
+
+        self.assertEqual(
+            manager.exception.__str__(), "A password must be provided."
         )
