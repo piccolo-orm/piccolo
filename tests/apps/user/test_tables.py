@@ -138,3 +138,30 @@ class TestCreateUserFromFixture(TestCase):
         user = BaseUser.from_dict(the_data)
         self.assertIsInstance(user, BaseUser)
         self.assertEqual(user.password, the_data["password"])
+
+
+class TestCreateUser(TestCase):
+    def setUp(self):
+        BaseUser.create_table().run_sync()
+
+    def tearDown(self):
+        BaseUser.alter().drop_table().run_sync()
+
+    @patch("piccolo.apps.user.tables.logger")
+    def test_create_user(self, logger: MagicMock):
+        with self.assertRaises(ValueError) as manager:
+            BaseUser.create_user_sync(
+                username="John", password="pbkdf2_sha256$10000"
+            )
+
+        self.assertEqual(
+            manager.exception.__str__(), "Do not pass a hashed password."
+        )
+        self.assertEqual(
+            logger.method_calls,
+            [
+                call.warning(
+                    "Tried to create a user with an already hashed password."
+                )
+            ],
+        )
