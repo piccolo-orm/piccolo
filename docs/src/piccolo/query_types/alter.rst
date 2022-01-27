@@ -16,7 +16,7 @@ Used to add a column to an existing table.
 
 .. code-block:: python
 
-    Band.alter().add_column('members', Integer()).run_sync()
+    await Band.alter().add_column('members', Integer())
 
 -------------------------------------------------------------------------------
 
@@ -27,7 +27,7 @@ Used to drop an existing column.
 
 .. code-block:: python
 
-    Band.alter().drop_column('popularity').run_sync()
+    await Band.alter().drop_column('popularity')
 
 -------------------------------------------------------------------------------
 
@@ -38,7 +38,7 @@ Used to drop the table - use with caution!
 
 .. code-block:: python
 
-    Band.alter().drop_table().run_sync()
+    await Band.alter().drop_table()
 
 If you have several tables which you want to drop, you can use ``drop_tables``
 instead. It will drop them in the correct order.
@@ -58,7 +58,7 @@ Used to rename an existing column.
 
 .. code-block:: python
 
-    Band.alter().rename_column(Band.popularity, 'rating').run_sync()
+    await Band.alter().rename_column(Band.popularity, 'rating')
 
 -------------------------------------------------------------------------------
 
@@ -70,10 +70,10 @@ Set whether a column is nullable or not.
 .. code-block:: python
 
     # To make a row nullable:
-    Band.alter().set_null(Band.name, True).run_sync()
+    await Band.alter().set_null(Band.name, True)
 
     # To stop a row being nullable:
-    Band.alter().set_null(Band.name, False).run_sync()
+    await Band.alter().set_null(Band.name, False)
 
 -------------------------------------------------------------------------------
 
@@ -85,7 +85,7 @@ Used to change whether a column is unique or not.
 .. code-block:: python
 
     # To make a row unique:
-    Band.alter().set_unique(Band.name, True).run_sync()
+    await Band.alter().set_unique(Band.name, True)
 
     # To stop a row being unique:
-    Band.alter().set_unique(Band.name, False).run_sync()
+    await Band.alter().set_unique(Band.name, False)

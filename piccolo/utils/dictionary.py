@@ -12,7 +12,7 @@ def make_nested(dictionary: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
 
     .. code-block:: python
 
-        response = Band.select(Band.name, Band.manager.name).run_sync()
+        response = await Band.select(Band.name, Band.manager.name)
         >>> print(response)
         [{'name': 'Pythonistas', 'band.name': 'Guido'}]
 

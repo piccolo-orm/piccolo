@@ -12,24 +12,24 @@ To order the results by a certain column (ascending):
 
 .. code-block:: python
 
-    Band.select().order_by(
+    await Band.select().order_by(
         Band.name
-    ).run_sync()
+    )
 
 To order by descending:
 
 .. code-block:: python
 
-    Band.select().order_by(
+    await Band.select().order_by(
         Band.name,
         ascending=False
-    ).run_sync()
+    )
 
 You can order by multiple columns, and even use joins:
 
 .. code-block:: python
 
-    Band.select().order_by(
+    await Band.select().order_by(
         Band.name,
         Band.manager.name
-    ).run_sync()
+    )

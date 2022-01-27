@@ -7,7 +7,7 @@ This deletes any matching rows from the table.
 
 .. code-block:: python
 
-    >>> Band.delete().where(Band.name == 'Rustaceans').run_sync()
+    >>> await Band.delete().where(Band.name == 'Rustaceans')
     []
 
 -------------------------------------------------------------------------------
@@ -21,11 +21,11 @@ the data from a table.
 
 .. code-block:: python
 
-    >>> Band.delete().run_sync()
+    >>> await Band.delete()
     Raises: DeletionError
 
     # Works fine:
-    >>> Band.delete(force=True).run_sync()
+    >>> await Band.delete(force=True)
     []
 
 -------------------------------------------------------------------------------

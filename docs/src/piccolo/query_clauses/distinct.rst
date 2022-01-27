@@ -9,7 +9,7 @@ You can use ``distinct`` clauses with the following queries:
 
 .. code-block:: python
 
-    >>> Band.select(Band.name).distinct().run_sync()
+    >>> await Band.select(Band.name).distinct()
     [{'title': 'Pythonistas'}]
 
 This is equivalent to ``SELECT DISTINCT name FROM band`` in SQL.

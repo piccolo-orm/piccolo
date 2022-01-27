@@ -32,7 +32,7 @@ tooling - you can also use it your own queries.
 
 .. code-block:: python
 
-    Band.select(Band.get_readable()).run_sync()
+    await Band.select(Band.get_readable())
 
 Here is an example of a more complex ``Readable``.
 
@@ -111,9 +111,9 @@ We can then use the ``Enum`` in our queries.
 
 .. code-block:: python
 
-    >>> Shirt(size=Shirt.Size.large).save().run_sync()
+    >>> await Shirt(size=Shirt.Size.large).save()
 
-    >>> Shirt.select().run_sync()
+    >>> await Shirt.select()
     [{'id': 1, 'size': 'l'}]
 
 Note how the value stored in the database is the ``Enum`` value (in this case ``'l'``).
@@ -123,12 +123,12 @@ where a query requires a value.
 
 .. code-block:: python
 
-    >>> Shirt.insert(
+    >>> await Shirt.insert(
     >>>     Shirt(size=Shirt.Size.small),
     >>>     Shirt(size=Shirt.Size.medium)
-    >>> ).run_sync()
+    >>> )
 
-    >>> Shirt.select().where(Shirt.size == Shirt.Size.small).run_sync()
+    >>> await Shirt.select().where(Shirt.size == Shirt.Size.small)
     [{'id': 1, 'size': 's'}]
 
 Advantages
@@ -184,7 +184,7 @@ Then you can use them like your normal ``Table`` classes:
 
 .. code-block:: python
 
-    >>> Band.select().run_sync()
+    >>> await Band.select()
     [{'id': 1, 'name': 'Pythonistas', 'manager': 1}, ...]
 
 

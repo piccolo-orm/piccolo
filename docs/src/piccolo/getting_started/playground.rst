@@ -52,10 +52,10 @@ Give these queries a go:
 
 .. code-block:: python
 
-    Band.select().run_sync()
-    Band.objects().run_sync()
-    Band.select(Band.name).run_sync()
-    Band.select(Band.name, Band.manager.name).run_sync()
+    await Band.select()
+    await Band.objects()
+    await Band.select(Band.name)
+    await Band.select(Band.name, Band.manager.name)
 
 -------------------------------------------------------------------------------
 

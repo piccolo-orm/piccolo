@@ -173,10 +173,10 @@ class Varchar(Column):
             name = Varchar(length=100)
 
         # Create
-        >>> Band(name='Pythonistas').save().run_sync()
+        >>> await Band(name='Pythonistas').save()
 
         # Query
-        >>> Band.select(Band.name).run_sync()
+        >>> await Band.select(Band.name)
         {'name': 'Pythonistas'}
 
     :param length:
@@ -283,10 +283,10 @@ class Text(Column):
             name = Text()
 
         # Create
-        >>> Band(name='Pythonistas').save().run_sync()
+        >>> await Band(name='Pythonistas').save()
 
         # Query
-        >>> Band.select(Band.name).run_sync()
+        >>> await Band.select(Band.name)
         {'name': 'Pythonistas'}
 
     """
@@ -354,10 +354,10 @@ class UUID(Column):
             uuid = UUID()
 
         # Create
-        >>> DiscountCode(code=uuid.uuid4()).save().run_sync()
+        >>> await DiscountCode(code=uuid.uuid4()).save()
 
         # Query
-        >>> DiscountCode.select(DiscountCode.code).run_sync()
+        >>> await DiscountCode.select(DiscountCode.code)
         {'code': UUID('09c4c17d-af68-4ce7-9955-73dcd892e462')}
 
     """
@@ -416,10 +416,10 @@ class Integer(Column):
             popularity = Integer()
 
         # Create
-        >>> Band(popularity=1000).save().run_sync()
+        >>> await Band(popularity=1000).save()
 
         # Query
-        >>> Band.select(Band.popularity).run_sync()
+        >>> await Band.select(Band.popularity)
         {'popularity': 1000}
 
     """
@@ -540,10 +540,10 @@ class BigInt(Integer):
             value = BigInt()
 
         # Create
-        >>> Band(popularity=1000000).save().run_sync()
+        >>> await Band(popularity=1000000).save()
 
         # Query
-        >>> Band.select(Band.popularity).run_sync()
+        >>> await Band.select(Band.popularity)
         {'popularity': 1000000}
 
     """
@@ -588,10 +588,10 @@ class SmallInt(Integer):
             value = SmallInt()
 
         # Create
-        >>> Band(popularity=1000).save().run_sync()
+        >>> await Band(popularity=1000).save()
 
         # Query
-        >>> Band.select(Band.popularity).run_sync()
+        >>> await Band.select(Band.popularity)
         {'popularity': 1000}
 
     """
@@ -754,12 +754,12 @@ class Timestamp(Column):
             starts = Timestamp()
 
         # Create
-        >>> Concert(
+        >>> await Concert(
         >>>    starts=datetime.datetime(year=2050, month=1, day=1)
-        >>> ).save().run_sync()
+        >>> ).save()
 
         # Query
-        >>> Concert.select(Concert.starts).run_sync()
+        >>> await Concert.select(Concert.starts)
         {'starts': datetime.datetime(2050, 1, 1, 0, 0)}
 
     """
@@ -820,14 +820,14 @@ class Timestamptz(Column):
             starts = Timestamptz()
 
         # Create
-        >>> Concert(
+        >>> await Concert(
         >>>    starts=datetime.datetime(
         >>>        year=2050, month=1, day=1, tzinfo=datetime.timezone.tz
         >>>    )
-        >>> ).save().run_sync()
+        >>> ).save()
 
         # Query
-        >>> Concert.select(Concert.starts).run_sync()
+        >>> await Concert.select(Concert.starts)
         {
             'starts': datetime.datetime(
                 2050, 1, 1, 0, 0, tzinfo=datetime.timezone.utc
@@ -887,12 +887,12 @@ class Date(Column):
             starts = Date()
 
         # Create
-        >>> Concert(
+        >>> await Concert(
         >>>     starts=datetime.date(year=2020, month=1, day=1)
-        >>> ).save().run_sync()
+        >>> ).save()
 
         # Query
-        >>> Concert.select(Concert.starts).run_sync()
+        >>> await Concert.select(Concert.starts)
         {'starts': datetime.date(2020, 1, 1)}
 
     """
@@ -944,12 +944,12 @@ class Time(Column):
             starts = Time()
 
         # Create
-        >>> Concert(
+        >>> await Concert(
         >>>    starts=datetime.time(hour=20, minute=0, second=0)
-        >>> ).save().run_sync()
+        >>> ).save()
 
         # Query
-        >>> Concert.select(Concert.starts).run_sync()
+        >>> await Concert.select(Concert.starts)
         {'starts': datetime.time(20, 0, 0)}
 
     """
@@ -998,12 +998,12 @@ class Interval(Column):  # lgtm [py/missing-equals]
             duration = Interval()
 
         # Create
-        >>> Concert(
+        >>> await Concert(
         >>>    duration=timedelta(hours=2)
-        >>> ).save().run_sync()
+        >>> ).save()
 
         # Query
-        >>> Concert.select(Concert.duration).run_sync()
+        >>> await Concert.select(Concert.duration)
         {'duration': datetime.timedelta(seconds=7200)}
 
     """
@@ -1067,10 +1067,10 @@ class Boolean(Column):
             has_drummer = Boolean()
 
         # Create
-        >>> Band(has_drummer=True).save().run_sync()
+        >>> await Band(has_drummer=True).save()
 
         # Query
-        >>> Band.select(Band.has_drummer).run_sync()
+        >>> await Band.select(Band.has_drummer)
         {'has_drummer': True}
 
     """
@@ -1096,7 +1096,7 @@ class Boolean(Column):
 
             await MyTable.select().where(
                 MyTable.some_boolean_column == True
-            ).run()
+            )
 
         It's more Pythonic to use ``is True`` rather than ``== True``, which is
         why linters complain. The work around is to do the following instead:
@@ -1105,7 +1105,7 @@ class Boolean(Column):
 
             await MyTable.select().where(
                 MyTable.some_boolean_column.__eq__(True)
-            ).run()
+            )
 
         Using the ``__eq__`` magic method is a bit untidy, which is why this
         ``eq`` method exists.
@@ -1114,7 +1114,7 @@ class Boolean(Column):
 
             await MyTable.select().where(
                 MyTable.some_boolean_column.eq(True)
-            ).run()
+            )
 
         The ``ne`` method exists for the same reason, for ``!=``.
 
@@ -1163,10 +1163,10 @@ class Numeric(Column):
             price = Numeric(digits=(5,2))
 
         # Create
-        >>> Ticket(price=Decimal('50.0')).save().run_sync()
+        >>> await Ticket(price=Decimal('50.0')).save()
 
         # Query
-        >>> Ticket.select(Ticket.price).run_sync()
+        >>> await Ticket.select(Ticket.price)
         {'price': Decimal('50.0')}
 
     :param digits:
@@ -1282,10 +1282,10 @@ class Real(Column):
             rating = Real()
 
         # Create
-        >>> Concert(rating=7.8).save().run_sync()
+        >>> await Concert(rating=7.8).save()
 
         # Query
-        >>> Concert.select(Concert.rating).run_sync()
+        >>> await Concert.select(Concert.rating)
         {'rating': 7.8}
 
     """
@@ -1391,14 +1391,14 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
             manager = ForeignKey(references=Manager)
 
         # Create
-        >>> Band(manager=1).save().run_sync()
+        >>> await Band(manager=1).save()
 
         # Query
-        >>> Band.select(Band.manager).run_sync()
+        >>> await Band.select(Band.manager)
         {'manager': 1}
 
         # Query object
-        >>> band = await Band.objects().first().run()
+        >>> band = await Band.objects().first()
         >>> band.manager
         1
 
@@ -1408,14 +1408,14 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
 
     .. code-block:: python
 
-        >>> await Band.select(Band.name, Band.manager.name).first().run()
+        >>> await Band.select(Band.name, Band.manager.name).first()
         {'name': 'Pythonistas', 'manager.name': 'Guido'}
 
     To retrieve all of the columns in the related table:
 
     .. code-block:: python
 
-        >>> await Band.select(Band.name, *Band.manager.all_columns()).first().run()
+        >>> await Band.select(Band.name, *Band.manager.all_columns()).first()
         {'name': 'Pythonistas', 'manager.id': 1, 'manager.name': 'Guido'}
 
     To get a referenced row as an object:
@@ -1424,21 +1424,21 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
 
         manager = await Manager.objects().where(
             Manager.id == some_band.manager
-        ).run()
+        )
 
     Or use either of the following, which are just a proxy to the above:
 
     .. code-block:: python
 
-        manager = await band.get_related('manager').run()
-        manager = await band.get_related(Band.manager).run()
+        manager = await band.get_related('manager')
+        manager = await band.get_related(Band.manager)
 
     To change the manager:
 
     .. code-block:: python
 
         band.manager = some_manager_id
-        await band.save().run()
+        await band.save()
 
     :param references:
         The ``Table`` being referenced.
@@ -1710,25 +1710,25 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
 
         .. code-block:: python
 
-            Band.select(Band.name, Band.manager.all_columns()).run_sync()
+            await Band.select(Band.name, Band.manager.all_columns())
 
             # Equivalent to:
-            Band.select(
+            await Band.select(
                 Band.name,
                 Band.manager.id,
                 Band.manager.name
-            ).run_sync()
+            )
 
         To exclude certain columns:
 
         .. code-block:: python
 
-            Band.select(
+            await Band.select(
                 Band.name,
                 Band.manager.all_columns(
                     exclude=[Band.manager.id]
                 )
-            ).run_sync()
+            )
 
         :param exclude:
             Columns to exclude - can be the name of a column, or a column
@@ -1771,14 +1771,14 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
                 name = Varchar()
                 concert = ForeignKey(Concert)
 
-            Tour.objects(Tour.concert, Tour.concert.all_related()).run_sync()
+            await Tour.objects(Tour.concert, Tour.concert.all_related())
 
             # Equivalent to
-            Tour.objects(
+            await Tour.objects(
                 Tour.concert,
                 Tour.concert.band_1,
                 Tour.concert.band_2
-            ).run_sync()
+            )
 
         :param exclude:
             Columns to exclude - can be the name of a column, or a
@@ -2036,10 +2036,10 @@ class Bytea(Column):
             token = Bytea(default=b'token123')
 
         # Create
-        >>> Token(token=b'my-token').save().run_sync()
+        >>> await Token(token=b'my-token').save()
 
         # Query
-        >>> Token.select(Token.token).run_sync()
+        >>> await Token.select(Token.token)
         {'token': b'my-token'}
 
     """
@@ -2132,10 +2132,10 @@ class Array(Column):
             seat_numbers = Array(base_column=Integer())
 
         # Create
-        >>> Ticket(seat_numbers=[34, 35, 36]).save().run_sync()
+        >>> await Ticket(seat_numbers=[34, 35, 36]).save()
 
         # Query
-        >>> Ticket.select(Ticket.seat_numbers).run_sync()
+        >>> await Ticket.select(Ticket.seat_numbers)
         {'seat_numbers': [34, 35, 36]}
 
     """
@@ -2186,7 +2186,7 @@ class Array(Column):
 
         .. code-block:: python
 
-            >>> Ticket.select(Ticket.seat_numbers[0]).first().run_sync
+            >>> await Ticket.select(Ticket.seat_numbers[0]).first()
             {'seat_numbers': 325}
 
 
@@ -2226,7 +2226,7 @@ class Array(Column):
 
         .. code-block:: python
 
-            >>> Ticket.select().where(Ticket.seat_numbers.any(510)).run_sync()
+            >>> await Ticket.select().where(Ticket.seat_numbers.any(510))
 
         """
         engine_type = self._meta.table._meta.db.engine_type
@@ -2244,7 +2244,7 @@ class Array(Column):
 
         .. code-block:: python
 
-            >>> Ticket.select().where(Ticket.seat_numbers.all(510)).run_sync()
+            >>> await Ticket.select().where(Ticket.seat_numbers.all(510))
 
         """
         engine_type = self._meta.table._meta.db.engine_type

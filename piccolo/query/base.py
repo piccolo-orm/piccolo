@@ -264,7 +264,7 @@ class Query:
             # In the corresponding view/endpoint of whichever web framework
             # you're using:
             async def top_bands(self, request):
-                return await TOP_BANDS.run()
+                return await TOP_BANDS
 
         It means that Piccolo doesn't have to work as hard each time the query
         is run to generate the corresponding SQL - some of it is cached. If the

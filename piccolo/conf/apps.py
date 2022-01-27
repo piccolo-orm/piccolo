@@ -187,10 +187,11 @@ class AppConfig:
 @dataclass
 class AppRegistry:
     """
-    Records all of the Piccolo apps in your project. Kept in piccolo_conf.py.
+    Records all of the Piccolo apps in your project. Kept in
+    ``piccolo_conf.py``.
 
     :param apps:
-        A list of paths to Piccolo apps, e.g. ['blog.piccolo_app']
+        A list of paths to Piccolo apps, e.g. ``['blog.piccolo_app']``.
 
     """
 

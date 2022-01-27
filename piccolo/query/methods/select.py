@@ -79,18 +79,18 @@ class Count(Selectable):
 
     .. code-block:: python
 
-        Band.select(Band.name, Count()).group_by(Band.name).run()
+        await Band.select(Band.name, Count()).group_by(Band.name)
 
         # We can use an alias. These two are equivalent:
 
-        Band.select(
+        await Band.select(
             Band.name, Count(alias="total")
-        ).group_by(Band.name).run()
+        ).group_by(Band.name)
 
-        Band.select(
+        await Band.select(
             Band.name,
             Count().as_alias("total")
-        ).group_by(Band.name).run()
+        ).group_by(Band.name)
 
     """
 
