@@ -3,6 +3,7 @@ A User model, used for authentication.
 """
 from __future__ import annotations
 
+import datetime
 import hashlib
 import logging
 import secrets
@@ -46,6 +47,7 @@ class BaseUser(Table, tablename="piccolo_user"):
         help_text="When this user last logged in.",
     )
 
+    _min_password_length = 6
     _max_password_length = 128
 
     def __init__(self, **kwargs):
@@ -71,12 +73,15 @@ class BaseUser(Table, tablename="piccolo_user"):
 
     @classmethod
     def update_password_sync(cls, user: t.Union[str, int], password: str):
+        """
+        A sync equivalent of ``update_password``.
+        """
         return run_sync(cls.update_password(user, password))
 
     @classmethod
     async def update_password(cls, user: t.Union[str, int], password: str):
         """
-        The password is the raw password string e.g. password123.
+        The password is the raw password string e.g. ``'password123'``.
         The user can be a user ID, or a username.
         """
         if isinstance(user, str):
@@ -135,17 +140,24 @@ class BaseUser(Table, tablename="piccolo_user"):
             raise ValueError("Unable to split hashed password")
         return elements
 
+    ###########################################################################
+
     @classmethod
     def login_sync(cls, username: str, password: str) -> t.Optional[int]:
         """
-        Returns the user_id if a match is found.
+        A sync equivalent of ``login``.
         """
         return run_sync(cls.login(username, password))
 
     @classmethod
     async def login(cls, username: str, password: str) -> t.Optional[int]:
         """
-        Returns the user_id if a match is found.
+        Make sure the user exists and the password is valid. If so, the
+        ``last_login`` value is updated in the database.
+
+        :returns:
+            The id of the user if a match is found, otherwise ``None``.
+
         """
         if len(username) > cls.username.length:
             logger.warning("Excessively long username provided.")
@@ -175,6 +187,61 @@ class BaseUser(Table, tablename="piccolo_user"):
             cls.hash_password(password, salt, int(iterations))
             == stored_password
         ):
+            await cls.update({cls.last_login: datetime.datetime.now()}).where(
+                cls.username == username
+            )
             return response["id"]
         else:
             return None
+
+    ###########################################################################
+
+    @classmethod
+    def create_user_sync(
+        cls, username: str, password: str, **extra_params
+    ) -> BaseUser:
+        """
+        A sync equivalent of ``create_user``.
+        """
+        return run_sync(
+            cls.create_user(
+                username=username, password=password, **extra_params
+            )
+        )
+
+    @classmethod
+    async def create_user(
+        cls, username: str, password: str, **extra_params
+    ) -> BaseUser:
+        """
+        Creates a new user, and saves it in the database. It is recommended to
+        use this rather than instantiating and saving ``BaseUser`` directly, as
+        we add extra validation.
+
+        :raises ValueError:
+            If the username or password is invalid.
+        :returns:
+            The created ``BaseUser`` instance.
+
+        """
+        if not username:
+            raise ValueError("A username must be provided.")
+
+        if not password:
+            raise ValueError("A password must be provided.")
+
+        if len(password) < cls._min_password_length:
+            raise ValueError("The password is too short.")
+
+        if len(password) > cls._max_password_length:
+            raise ValueError("The password is too long.")
+
+        if password.startswith("pbkdf2_sha256"):
+            logger.warning(
+                "Tried to create a user with an already hashed password."
+            )
+            raise ValueError("Do not pass a hashed password.")
+
+        user = cls(username=username, password=password, **extra_params)
+        await user.save()
+        return user

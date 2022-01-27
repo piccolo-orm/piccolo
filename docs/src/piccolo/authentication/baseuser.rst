@@ -76,8 +76,27 @@ can login and what they can do.
 Within your code
 ----------------
 
-login
-~~~~~
+create_user / create_user_sync
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To create a new user:
+
+.. code-block:: python
+
+    # From within a coroutine:
+    await BaseUser.create_user(username="bob", password="abc123", active=True)
+
+    # When not in an event loop:
+    BaseUser.create_user_sync(username="bob", password="abc123", active=True)
+
+It saves the user in the database, and returns the created ``BaseUser``
+instance.
+
+.. note:: It is preferable to use this rather than instantiating and saving
+    ``BaseUser`` directly, as we add additional validation.
+
+login / login_sync
+~~~~~~~~~~~~~~~~~~
 
 To check a user's credentials, do the following:
 
@@ -119,3 +138,13 @@ Limits
 
 The maximum password length allowed is 128 characters. This should be
 sufficiently long for most use cases.
+
+-------------------------------------------------------------------------------
+
+Source
+------
+
+.. currentmodule:: piccolo.apps.user.tables
+
+.. autoclass:: BaseUser
+    :members: create_user, create_user_sync, login, login_sync, update_password, update_password_sync

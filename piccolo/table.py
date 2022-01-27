@@ -312,6 +312,11 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def from_dict(cls, data: t.Dict[str, t.Any]) -> Table:
+        """
+        Used when loading fixtures. It can be overriden by subclasses in case
+        they have specific logic / validation which needs running when loading
+        fixtures.
+        """
         return cls(**data)
 
     ###########################################################################
