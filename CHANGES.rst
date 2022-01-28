@@ -1,6 +1,48 @@
 Changes
 =======
 
+0.67.0
+------
+
+create_user
+~~~~~~~~~~~
+
+``BaseUser`` now has a ``create_user`` method, which adds some extra password
+validation vs just instantiating and saving ``BaseUser`` directly.
+
+.. code-block:: python
+
+  >>> await BaseUser.create_user(username='bob', password='abc123XYZ')
+  <BaseUser: 1>
+
+We check that passwords are a reasonable length, and aren't already hashed.
+See `PR 402 <https://github.com/piccolo-orm/piccolo/pull/402>`_.
+
+async first
+~~~~~~~~~~~
+
+All of the docs have been updated to show the async version of queries.
+
+For example:
+
+.. code-block:: python
+
+  # Previous:
+  Band.select().run_sync()
+
+  # Now:
+  await Band.select()
+
+Most people use Piccolo in async apps, and the playground supports top level
+await, so you can just paste in ``await Band.select()`` and it will still work.
+See `PR 407 <https://github.com/piccolo-orm/piccolo/pull/407>`_.
+
+We decided to use ``await Band.select()`` instead of ``await Band.select().run()``.
+Both work, and have their merits, but the simpler version is probably easier
+for newcomers.
+
+-------------------------------------------------------------------------------
+
 0.66.1
 ------
 
