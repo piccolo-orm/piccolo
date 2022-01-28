@@ -333,9 +333,9 @@ class Table(metaclass=TableMetaclass):
 
             .. code-block:: python
 
-                band = Band.objects().first().run_sync()
+                band = await Band.objects().first()
                 band.popularity = 2000
-                band.save(columns=[Band.popularity]).run_sync()
+                await band.save(columns=[Band.popularity])
 
             If ``columns=None`` (the default) then all columns will be synced
             back to the database.

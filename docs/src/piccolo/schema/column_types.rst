@@ -204,23 +204,23 @@ a subset of the JSON data, and for filtering in a where clause.
     class Booking(Table):
         data = JSONB()
 
-    Booking.create_table().run_sync()
+    await Booking.create_table()
 
     # Example data:
-    Booking.insert(
+    await Booking.insert(
         Booking(data='{"name": "Alison"}'),
         Booking(data='{"name": "Bob"}')
-    ).run_sync()
+    )
 
     # Example queries
-    >>> Booking.select(
+    >>> await Booking.select(
     >>>     Booking.id, Booking.data.arrow('name').as_alias('name')
-    >>> ).run_sync()
+    >>> )
     [{'id': 1, 'name': '"Alison"'}, {'id': 2, 'name': '"Bob"'}]
 
-    >>> Booking.select(Booking.id).where(
+    >>> await Booking.select(Booking.id).where(
     >>>     Booking.data.arrow('name') == '"Alison"'
-    >>> ).run_sync()
+    >>> )
     [{'id': 1}]
 
 -------------------------------------------------------------------------------

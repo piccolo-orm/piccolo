@@ -10,5 +10,5 @@ Getting Started
     ./installing_piccolo
     ./playground
     ./setup_postgres
-    ./sync_and_async
     ./example_schema
+    ./sync_and_async

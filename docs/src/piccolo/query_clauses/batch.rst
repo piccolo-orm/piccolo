@@ -20,10 +20,6 @@ responses.
         async for _batch in batch:
             print(_batch)
 
-.. note:: ``batch`` is one of the few query clauses which doesn't require
-    .run() to be used after it in order to execute. ``batch`` effectively
-    replaces ``run``.
-
 There's currently no synchronous version. However, it's easy enough to achieve:
 
 .. code-block:: python

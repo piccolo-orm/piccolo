@@ -138,18 +138,18 @@ class Where(CombinableMixin):
 
         .. code-block:: python
 
-            manager = Manager.objects.where(
+            manager = await Manager.objects.where(
                 Manager.name == 'Guido'
-            ).first().run_sync()
+            ).first()
 
             # The where clause should be:
-            Band.select().where(Band.manager.id == guido.id).run_sync()
+            await Band.select().where(Band.manager.id == guido.id)
             # Or
-            Band.select().where(Band.manager == guido.id).run_sync()
+            await Band.select().where(Band.manager == guido.id)
 
             # If the object is passed in, i.e. `guido` instead of `guido.id`,
             # it should still work.
-            Band.select().where(Band.manager == guido).run_sync()
+            await Band.select().where(Band.manager == guido)
 
         Also, convert Enums to their underlying values, and serialise any JSON.
 

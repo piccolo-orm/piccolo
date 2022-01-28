@@ -385,7 +385,7 @@ class Column(Selectable):
             class MyTable(Table):
                 class_ = Varchar(db_column_name="class")
 
-            >>> MyTable.select(MyTable.class_).run_sync()
+            >>> await MyTable.select(MyTable.class_)
             [{'id': 1, 'class': 'test'}]
 
         This is an advanced feature which you should only need in niche
@@ -402,7 +402,7 @@ class Column(Selectable):
                 name = Varchar()
                 net_worth = Integer(secret=True)
 
-            >>> Property.select(exclude_secrets=True).run_sync()
+            >>> await Band.select(exclude_secrets=True)
             [{'name': 'Pythonistas'}]
 
     """
@@ -598,7 +598,7 @@ class Column(Selectable):
 
         .. code-block:: python
 
-            Band.select().where(Band.name == 'Pythonistas').run_sync()
+            await Band.select().where(Band.name == 'Pythonistas')
 
         But this means that comparisons such as this can give unexpected
         results:

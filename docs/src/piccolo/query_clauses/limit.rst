@@ -13,10 +13,10 @@ number you ask for.
 
 .. code-block:: python
 
-    Band.select().limit(2).run_sync()
+    await Band.select().limit(2)
 
 Likewise, with objects:
 
 .. code-block:: python
 
-    Band.objects().limit(2).run_sync()
+    await Band.objects().limit(2)

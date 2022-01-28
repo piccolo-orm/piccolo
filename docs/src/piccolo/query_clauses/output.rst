@@ -20,8 +20,8 @@ To return the data as a JSON string:
 
 .. code-block:: python
 
-    >>> Band.select().output(as_json=True).run_sync()
-    '[{"name":"Pythonistas","manager":1,"popularity":1000,"id":1},{"name":"Rustaceans","manager":2,"popularity":500,"id":2}]'
+    >>> await Band.select(Band.name).output(as_json=True)
+    '[{"name":"Pythonistas"}]'
 
 Piccolo can use `orjson <https://github.com/ijl/orjson>`_ for JSON serialisation,
 which is blazing fast, and can handle most Python types, including dates,
@@ -36,7 +36,7 @@ If you're just querying a single column from a database table, you can use
 
 .. code-block:: python
 
-    >>> Band.select(Band.id).output(as_list=True).run_sync()
+    >>> await Band.select(Band.id).output(as_list=True)
     [1, 2]
 
 nested
@@ -46,7 +46,7 @@ Output any data from related tables in nested dictionaries.
 
 .. code-block:: python
 
-    >>> Band.select(Band.name, Band.manager.name).first().output(nested=True).run_sync()
+    >>> await Band.select(Band.name, Band.manager.name).first().output(nested=True)
     {'name': 'Pythonistas', 'manager': {'name': 'Guido'}}
 
 -------------------------------------------------------------------------------
@@ -62,9 +62,9 @@ values automatically.
 
 .. code-block:: python
 
-    >>> RecordingStudio.select().output(load_json=True).run_sync()
+    >>> await RecordingStudio.select().output(load_json=True)
     [{'id': 1, 'name': 'Abbey Road', 'facilities': {'restaurant': True, 'mixing_desk': True}}]
 
-    >>> studio = RecordingStudio.objects().first().output(load_json=True).run_sync()
+    >>> studio = await RecordingStudio.objects().first().output(load_json=True)
     >>> studio.facilities
     {'restaurant': True, 'mixing_desk': True}
