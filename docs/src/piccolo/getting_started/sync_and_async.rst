@@ -22,14 +22,16 @@ You can await a query to run it:
     >>> await Band.select(Band.name)
     [{'name': 'Pythonistas'}]
 
-If you need more control over how the query is executed, you can await the
-``run`` method of a query:
+Alternatively, you can await a query's ``run`` method:
 
 .. code-block:: python
 
-    >>> await Band.select(Band.name).run(in_pool=False)
-    [{'name': 'Pythonistas'}]
+    # This makes it extra explicit that a database query is being made:
+    >>> await Band.select(Band.name).run()
 
+    # It also gives you more control over how the query is run.
+    # For example, if we wanted to bypass the connection pool for some reason:
+    >>> await Band.select(Band.name).run(in_pool=False)
 
 Using the async version is useful for applications which require high
 throughput. Piccolo makes building an ASGI web app really simple - see
