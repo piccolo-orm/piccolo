@@ -668,14 +668,14 @@ class Column(Selectable):
     def is_null(self) -> Where:
         """
         Can be used instead of ``MyTable.column != None``, because some linters
-        don't like a comparison to None.
+        don't like a comparison to ``None``.
         """
         return Where(column=self, operator=IsNull)
 
     def is_not_null(self) -> Where:
         """
         Can be used instead of ``MyTable.column == None``, because some linters
-        don't like a comparison to None.
+        don't like a comparison to ``None``.
         """
         return Where(column=self, operator=IsNotNull)
 
