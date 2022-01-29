@@ -46,7 +46,7 @@ class TestReservedColumnNames(TestCase):
         )
 
         # Update
-        Concert.update({Concert.order: 3}).run_sync()
+        Concert.update({Concert.order: 3}, force=True).run_sync()
         self.assertEqual(
             Concert.select(Concert.order).run_sync(),
             [{"order": 3}],
