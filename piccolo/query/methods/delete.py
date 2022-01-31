@@ -37,7 +37,8 @@ class Delete(Query):
             classname = self.table.__name__
             raise DeletionError(
                 "Do you really want to delete all the data from "
-                f"{classname}? If so, use {classname}.delete(force=True)."
+                f"{classname}? If so, use {classname}.delete(force=True). "
+                "Otherwise, add a where clause."
             )
 
     @property

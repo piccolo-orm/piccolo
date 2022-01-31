@@ -114,7 +114,7 @@ class TestDBColumnName(DBTestCase):
         """
         Band.objects().create(name="Pythonistas", popularity=1000).run_sync()
 
-        Band.update({Band.name: "Pythonistas 2"}).run_sync()
+        Band.update({Band.name: "Pythonistas 2"}, force=True).run_sync()
 
         bands = Band.select().run_sync()
         self.assertEqual(
@@ -128,7 +128,7 @@ class TestDBColumnName(DBTestCase):
             ],
         )
 
-        Band.update({"name": "Pythonistas 3"}).run_sync()
+        Band.update({"name": "Pythonistas 3"}, force=True).run_sync()
 
         bands = Band.select().run_sync()
         self.assertEqual(

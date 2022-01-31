@@ -14,13 +14,30 @@ This is used to update any rows in the table which match the criteria.
     >>> )
     []
 
-As well as replacing values with new ones, you can also modify existing values, for
-instance by adding to an integer.
+-------------------------------------------------------------------------------
+
+force
+-----
+
+Piccolo won't let you run an update query without a where clause, unless you
+explicitly tell it to do so. This is to prevent accidentally overwriting
+the data in a table.
+
+.. code-block:: python
+
+    >>> await Band.update()
+    Raises: UpdateError
+
+    # Works fine:
+    >>> await Band.update({Band.popularity: 0}, force=True)
 
 -------------------------------------------------------------------------------
 
 Modifying values
 ----------------
+
+As well as replacing values with new ones, you can also modify existing values, for
+instance by adding to an integer.
 
 Integer columns
 ~~~~~~~~~~~~~~~
@@ -78,6 +95,22 @@ You can concatenate values:
 
 
 You can currently only combine two values together at a time.
+
+-------------------------------------------------------------------------------
+
+Kwarg values
+------------
+
+Rather than passing in a dictionary of values, you can use kwargs instead if
+you prefer:
+
+.. code-block:: python
+
+    >>> await Band.update(
+    >>>     name='Pythonistas 2'
+    >>> ).where(
+    >>>     Band.name == 'Pythonistas'
+    >>> )
 
 -------------------------------------------------------------------------------
 

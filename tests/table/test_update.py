@@ -93,7 +93,9 @@ class TestIntUpdateOperators(DBTestCase):
     def test_add(self):
         self.insert_row()
 
-        Band.update({Band.popularity: Band.popularity + 10}).run_sync()
+        Band.update(
+            {Band.popularity: Band.popularity + 10}, force=True
+        ).run_sync()
 
         response = Band.select(Band.popularity).first().run_sync()
 
@@ -103,7 +105,7 @@ class TestIntUpdateOperators(DBTestCase):
         self.insert_row()
 
         Band.update(
-            {Band.popularity: Band.popularity + Band.popularity}
+            {Band.popularity: Band.popularity + Band.popularity}, force=True
         ).run_sync()
 
         response = Band.select(Band.popularity).first().run_sync()
@@ -113,7 +115,9 @@ class TestIntUpdateOperators(DBTestCase):
     def test_radd(self):
         self.insert_row()
 
-        Band.update({Band.popularity: 10 + Band.popularity}).run_sync()
+        Band.update(
+            {Band.popularity: 10 + Band.popularity}, force=True
+        ).run_sync()
 
         response = Band.select(Band.popularity).first().run_sync()
 
@@ -122,7 +126,9 @@ class TestIntUpdateOperators(DBTestCase):
     def test_sub(self):
         self.insert_row()
 
-        Band.update({Band.popularity: Band.popularity - 10}).run_sync()
+        Band.update(
+            {Band.popularity: Band.popularity - 10}, force=True
+        ).run_sync()
 
         response = Band.select(Band.popularity).first().run_sync()
 
@@ -131,7 +137,9 @@ class TestIntUpdateOperators(DBTestCase):
     def test_rsub(self):
         self.insert_row()
 
-        Band.update({Band.popularity: 1100 - Band.popularity}).run_sync()
+        Band.update(
+            {Band.popularity: 1100 - Band.popularity}, force=True
+        ).run_sync()
 
         response = Band.select(Band.popularity).first().run_sync()
 
@@ -140,7 +148,9 @@ class TestIntUpdateOperators(DBTestCase):
     def test_mul(self):
         self.insert_row()
 
-        Band.update({Band.popularity: Band.popularity * 2}).run_sync()
+        Band.update(
+            {Band.popularity: Band.popularity * 2}, force=True
+        ).run_sync()
 
         response = Band.select(Band.popularity).first().run_sync()
 
@@ -149,7 +159,9 @@ class TestIntUpdateOperators(DBTestCase):
     def test_rmul(self):
         self.insert_row()
 
-        Band.update({Band.popularity: 2 * Band.popularity}).run_sync()
+        Band.update(
+            {Band.popularity: 2 * Band.popularity}, force=True
+        ).run_sync()
 
         response = Band.select(Band.popularity).first().run_sync()
 
@@ -158,7 +170,9 @@ class TestIntUpdateOperators(DBTestCase):
     def test_div(self):
         self.insert_row()
 
-        Band.update({Band.popularity: Band.popularity / 10}).run_sync()
+        Band.update(
+            {Band.popularity: Band.popularity / 10}, force=True
+        ).run_sync()
 
         response = Band.select(Band.popularity).first().run_sync()
 
@@ -167,7 +181,9 @@ class TestIntUpdateOperators(DBTestCase):
     def test_rdiv(self):
         self.insert_row()
 
-        Band.update({Band.popularity: 1000 / Band.popularity}).run_sync()
+        Band.update(
+            {Band.popularity: 1000 / Band.popularity}, force=True
+        ).run_sync()
 
         response = Band.select(Band.popularity).first().run_sync()
 
@@ -178,7 +194,7 @@ class TestVarcharUpdateOperators(DBTestCase):
     def test_add(self):
         self.insert_row()
 
-        Band.update({Band.name: Band.name + "!!!"}).run_sync()
+        Band.update({Band.name: Band.name + "!!!"}, force=True).run_sync()
 
         response = Band.select(Band.name).first().run_sync()
 
@@ -187,7 +203,7 @@ class TestVarcharUpdateOperators(DBTestCase):
     def test_add_column(self):
         self.insert_row()
 
-        Band.update({Band.name: Band.name + Band.name}).run_sync()
+        Band.update({Band.name: Band.name + Band.name}, force=True).run_sync()
 
         response = Band.select(Band.name).first().run_sync()
 
@@ -196,7 +212,7 @@ class TestVarcharUpdateOperators(DBTestCase):
     def test_radd(self):
         self.insert_row()
 
-        Band.update({Band.name: "!!!" + Band.name}).run_sync()
+        Band.update({Band.name: "!!!" + Band.name}, force=True).run_sync()
 
         response = Band.select(Band.name).first().run_sync()
 
@@ -209,7 +225,9 @@ class TestTextUpdateOperators(DBTestCase):
         Poster(content="Join us for this amazing show").save().run_sync()
 
     def test_add(self):
-        Poster.update({Poster.content: Poster.content + "!!!"}).run_sync()
+        Poster.update(
+            {Poster.content: Poster.content + "!!!"}, force=True
+        ).run_sync()
 
         response = Poster.select(Poster.content).first().run_sync()
 
@@ -221,7 +239,7 @@ class TestTextUpdateOperators(DBTestCase):
         self.insert_row()
 
         Poster.update(
-            {Poster.content: Poster.content + Poster.content}
+            {Poster.content: Poster.content + Poster.content}, force=True
         ).run_sync()
 
         response = Poster.select(Poster.content).first().run_sync()
@@ -234,7 +252,9 @@ class TestTextUpdateOperators(DBTestCase):
     def test_radd(self):
         self.insert_row()
 
-        Poster.update({Poster.content: "!!!" + Poster.content}).run_sync()
+        Poster.update(
+            {Poster.content: "!!!" + Poster.content}, force=True
+        ).run_sync()
 
         response = Poster.select(Poster.content).first().run_sync()
 

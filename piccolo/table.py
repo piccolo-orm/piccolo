@@ -955,7 +955,10 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def update(
-        cls, values: t.Dict[t.Union[Column, str], t.Any] = {}, **kwargs
+        cls,
+        values: t.Dict[t.Union[Column, str], t.Any] = {},
+        force: bool = False,
+        **kwargs,
     ) -> Update:
         """
         Update rows.
@@ -982,9 +985,13 @@ class Table(metaclass=TableMetaclass):
                 Band.name=="Pythonistas"
             ).run()
 
+        :param force:
+            Unless set to ``True``, updates aren't allowed without a
+            ``where`` clause, to prevent accidental mass overriding of data.
+
         """
         values = dict(values, **kwargs)
-        return Update(table=cls).values(values)
+        return Update(table=cls, force=force).values(values)
 
     @classmethod
     def indexes(cls) -> Indexes:
