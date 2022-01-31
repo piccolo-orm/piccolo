@@ -1,6 +1,6 @@
 black==22.1.0
 ipdb==0.13.9
-ipython==8.0.1
+ipython>=7.31.1
 flake8==4.0.1
 isort==5.10.1
 twine==3.7.1
