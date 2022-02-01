@@ -54,6 +54,8 @@ Output any data from related tables in nested dictionaries.
 Select and Objects queries
 --------------------------
 
+.. _load_json:
+
 load_json
 ~~~~~~~~~
 

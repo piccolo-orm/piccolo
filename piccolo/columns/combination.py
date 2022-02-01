@@ -122,7 +122,11 @@ class Where(CombinableMixin):
         omitted, vs None, which is a valid value for a where clause.
         """
         self.column = column
-        self.value = self.clean_value(value)
+
+        if value == UNDEFINED:
+            self.value = value
+        else:
+            self.value = self.clean_value(value)
 
         if values == UNDEFINED:
             self.values = values
@@ -133,7 +137,7 @@ class Where(CombinableMixin):
 
     def clean_value(self, value: t.Any) -> t.Any:
         """
-        If a where clause contains a Table instance, we should convert that
+        If a where clause contains a ``Table`` instance, we should convert that
         to a column reference. For example:
 
         .. code-block:: python

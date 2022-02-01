@@ -75,7 +75,7 @@ In your terminal:
 
     export PICCOLO_CONF=piccolo_conf_test
 
-Or at the entypoint of your app, before any other imports:
+Or at the entrypoint of your app, before any other imports:
 
 .. code-block:: python
 

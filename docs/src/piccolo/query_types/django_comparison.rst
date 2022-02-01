@@ -173,7 +173,7 @@ Piccolo has something similar:
 .. code-block:: python
 
     # Piccolo
-    band = Band.objects(Band.manager).get(name='Pythonistas')
+    band = Band.objects(Band.manager).get(Band.name == 'Pythonistas').run_sync()
     >>> band.manager
     <Manager: 1>
 

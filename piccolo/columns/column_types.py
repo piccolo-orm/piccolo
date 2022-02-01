@@ -1996,12 +1996,27 @@ class JSONB(JSON):
             just_alias=just_alias, include_quotes=True
         )
         if self.json_operator is None:
-            return select_string
+            if self.alias is None:
+                return select_string
+            else:
+                return f"{select_string} AS {self.alias}"
         else:
             if self.alias is None:
                 return f"{select_string} {self.json_operator}"
             else:
                 return f"{select_string} {self.json_operator} AS {self.alias}"
+
+    def eq(self, value) -> Where:
+        """
+        See ``Boolean.eq`` for more details.
+        """
+        return self.__eq__(value)
+
+    def ne(self, value) -> Where:
+        """
+        See ``Boolean.ne`` for more details.
+        """
+        return self.__ne__(value)
 
     ###########################################################################
     # Descriptors

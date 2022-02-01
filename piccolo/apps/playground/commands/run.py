@@ -58,7 +58,7 @@ class DiscountCode(Table):
 
 class RecordingStudio(Table):
     name = Varchar(length=100)
-    facilities = JSON()
+    facilities = JSON(null=True)
 
 
 TABLES = (Manager, Band, Venue, Concert, Ticket, DiscountCode, RecordingStudio)
