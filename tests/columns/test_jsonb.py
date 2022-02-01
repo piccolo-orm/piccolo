@@ -28,6 +28,27 @@ class TestJSONB(TestCase):
         row.save().run_sync()
         self.assertEqual(row.facilities, '{"mixing_desk": true}')
 
+    def test_raw(self):
+        """
+        Make sure raw queries convert the Python value into a JSON string.
+        """
+        RecordingStudio.raw(
+            "INSERT INTO recording_studio (name, facilities) VALUES ({}, {})",
+            "Abbey Road",
+            '{"mixing_desk": true}',
+        ).run_sync()
+
+        self.assertEqual(
+            RecordingStudio.select().run_sync(),
+            [
+                {
+                    "id": 1,
+                    "name": "Abbey Road",
+                    "facilities": '{"mixing_desk": true}',
+                }
+            ],
+        )
+
     def test_where(self):
         """
         Test using the where clause to match a subset of rows.
