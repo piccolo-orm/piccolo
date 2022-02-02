@@ -1,6 +1,49 @@
 Changes
 =======
 
+0.68.0
+------
+
+``Update`` queries without a ``where`` clause
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you try and perform an update query without a ``where`` clause you will now
+get an error:
+
+.. code-block:: python
+
+  >>> await Band.update({Band.name: 'New Band'})
+  UpdateError
+
+If you want to update all rows in the table, you can still do so, but you must
+pass ``force=True``.
+
+.. code-block:: python
+
+  >>> await Band.update({Band.name: 'New Band'}, force=True)
+
+This is a similar to ``delete`` queries, which require a ``where`` clause or
+``force=True``.
+
+It was pointed out by @theelderbeever that an accidental mass update is almost
+as bad as a mass deletion, which is why this safety measure has been added.
+
+See `PR 412 <https://github.com/piccolo-orm/piccolo/pull/412>`_.
+
+.. warning:: This is a breaking change. It you're doing update queries without
+  a where clause, you will need to add ``force=True``.
+
+``JSONB`` improvements
+~~~~~~~~~~~~~~~~~~~~~~
+
+Fixed some bugs with nullable ``JSONB`` columns. A value of ``None`` is now
+stored as ``null`` in the database, instead of the JSON string ``'null'``.
+Thanks to @theelderbeever for reporting this.
+
+See `PR 413 <https://github.com/piccolo-orm/piccolo/pull/413>`_.
+
+-------------------------------------------------------------------------------
+
 0.67.0
 ------
 
