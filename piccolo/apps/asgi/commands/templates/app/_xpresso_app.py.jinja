@@ -1,4 +1,5 @@
 import typing as t
+from contextlib import asynccontextmanager
 
 from piccolo.engine import engine_finder
 from piccolo.utils.pydantic import create_pydantic_model
@@ -11,47 +12,52 @@ from home.endpoints import home
 from home.piccolo_app import APP_CONFIG
 from home.tables import Task
 
-TaskModelIn: t.Any = create_pydantic_model(
-    table=Task, model_name="TaskModelIn"
-)
+TaskModelIn: t.Any = create_pydantic_model(table=Task, model_name="TaskModelIn")
 TaskModelOut: t.Any = create_pydantic_model(
     table=Task, include_default_columns=True, model_name="TaskModelOut"
 )
 
 
 async def tasks() -> t.List[TaskModelOut]:
-    return await Task.select().order_by(Task.id).run()
+    return await Task.select().order_by(Task.id)
 
 
 async def create_task(task_model: FromJson[TaskModelIn]) -> TaskModelOut:
     task = Task(**task_model.__dict__)
-    await task.save().run()
+    await task.save()
     return task.to_dict()
 
 
 async def update_task(
     task_id: FromPath[int], task_model: FromJson[TaskModelIn]
 ) -> TaskModelOut:
-    task = await Task.objects().where(Task.id == task_id).first().run()
+    task = await Task.objects().where(Task.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404)
 
     for key, value in task_model.__dict__.items():
         setattr(task, key, value)
 
-    await task.save().run()
+    await task.save()
 
     return task.to_dict()
 
 
 async def delete_task(task_id: FromPath[int]):
-    task = await Task.objects().where(Task.id == task_id).first().run()
+    task = await Task.objects().where(Task.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404)
 
-    await task.remove().run()
+    await task.remove()
 
     return {}
+
+
+@asynccontextmanager
+async def lifespan():
+    await open_database_connection_pool()
+    yield
+    await close_database_connection_pool()
 
 
 app = App(
@@ -85,6 +91,7 @@ app = App(
         ),
         Mount("/static/", StaticFiles(directory="static")),
     ],
+    lifespan=lifespan,
 )
 
 
