@@ -23,7 +23,7 @@ async def tasks() -> t.List[TaskModelOut]:
 
 
 async def create_task(task_model: FromJson[TaskModelIn]) -> TaskModelOut:
-    task = Task(**task_model.__dict__)
+    task = Task(**task_model.dict())
     await task.save()
     return task.to_dict()
 
@@ -35,7 +35,7 @@ async def update_task(
     if not task:
         raise HTTPException(status_code=404)
 
-    for key, value in task_model.__dict__.items():
+    for key, value in task_model.dict().items():
         setattr(task, key, value)
 
     await task.save()
@@ -56,8 +56,10 @@ async def delete_task(task_id: FromPath[int]):
 @asynccontextmanager
 async def lifespan():
     await open_database_connection_pool()
-    yield
-    await close_database_connection_pool()
+    try:
+        yield
+    finally:
+        await close_database_connection_pool()
 
 
 app = App(

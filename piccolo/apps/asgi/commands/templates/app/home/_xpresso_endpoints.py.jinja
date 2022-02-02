@@ -1,8 +1,7 @@
 import os
 
 import jinja2
-from starlette.endpoints import HTTPEndpoint
-from starlette.responses import HTMLResponse
+from xpresso.responses import HTMLResponse
 
 ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(
