@@ -10,7 +10,7 @@ from jinja2 import Environment, FileSystemLoader
 
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates/app/")
 SERVERS = ["uvicorn", "Hypercorn"]
-ROUTERS = ["starlette", "fastapi", "blacksheep"]
+ROUTERS = ["starlette", "fastapi", "blacksheep", "xpresso"]
 
 
 def print_instruction(message: str):

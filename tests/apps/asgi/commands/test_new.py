@@ -56,38 +56,40 @@ class TestNewAppRuns(TestCase):
         """
         Test that the ASGI app actually runs.
         """
-        router = "fastapi"
+        for router in ROUTERS:
+            with patch(
+                "piccolo.apps.asgi.commands.new.get_routing_framework",
+                return_value=router,
+            ), patch(
+                "piccolo.apps.asgi.commands.new.get_server",
+                return_value=SERVERS[0],
+            ):
+                root = os.path.join(tempfile.gettempdir(), "asgi_app")
 
-        with patch(
-            "piccolo.apps.asgi.commands.new.get_routing_framework",
-            return_value=router,
-        ), patch(
-            "piccolo.apps.asgi.commands.new.get_server",
-            return_value=SERVERS[0],
-        ):
-            root = os.path.join(tempfile.gettempdir(), "asgi_app")
+                if os.path.exists(root):
+                    shutil.rmtree(root)
 
-            if os.path.exists(root):
-                shutil.rmtree(root)
+                os.mkdir(root)
+                new(root=root)
 
-            os.mkdir(root)
-            new(root=root)
+                # Copy a dummy ASGI server, so we can test that the server
+                # works.
+                shutil.copyfile(
+                    os.path.join(
+                        os.path.dirname(__file__),
+                        "files",
+                        "dummy_server.py",
+                    ),
+                    os.path.join(root, "dummy_server.py"),
+                )
 
-            # Copy a dummy ASGI server, so we can test that the server works.
-            shutil.copyfile(
-                os.path.join(
-                    os.path.dirname(__file__),
-                    "files",
-                    "dummy_server.py",
-                ),
-                os.path.join(root, "dummy_server.py"),
-            )
-
-            response = subprocess.run(
-                f"cd {root} && "
-                "python -m venv venv && "
-                "./venv/bin/pip install -r requirements.txt && "
-                "./venv/bin/python dummy_server.py",
-                shell=True,
-            )
-            self.assertEqual(response.returncode, 0, msg=f"{router} failed")
+                response = subprocess.run(
+                    f"cd {root} && "
+                    "python -m venv venv && "
+                    "./venv/bin/pip install -r requirements.txt && "
+                    "./venv/bin/python dummy_server.py",
+                    shell=True,
+                )
+                self.assertEqual(
+                    response.returncode, 0, msg=f"{router} failed"
+                )
