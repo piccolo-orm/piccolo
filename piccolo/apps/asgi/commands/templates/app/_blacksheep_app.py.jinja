@@ -47,56 +47,56 @@ TaskModelPartial: t.Any = create_pydantic_model(
 
 @app.router.get("/tasks/")
 async def tasks() -> t.List[TaskModelOut]:
-    return await Task.select().order_by(Task.id).run()
+    return await Task.select().order_by(Task.id)
 
 
 @app.router.post("/tasks/")
-async def create_task(task: FromJSON[TaskModelIn]) -> TaskModelOut:
-    task = Task(**task.value.__dict__)
-    await task.save().run()
-    return TaskModelOut(**task.__dict__)
+async def create_task(task_model: FromJSON[TaskModelIn]) -> TaskModelOut:
+    task = Task(**task_model.value.dict())
+    await task.save()
+    return TaskModelOut(**task.to_dict())
 
 
 @app.router.put("/tasks/{task_id}/")
 async def put_task(
-    task_id: int, task: FromJSON[TaskModelIn]
+    task_id: int, task_model: FromJSON[TaskModelIn]
 ) -> TaskModelOut:
-    _task = await Task.objects().where(Task.id == task_id).first().run()
-    if not _task:
+    task = await Task.objects().get(Task.id == task_id)
+    if not task:
         return json({}, status=404)
 
-    for key, value in task.value.__dict__.items():
-        setattr(_task, key, value)
+    for key, value in task_model.value.dict().items():
+        setattr(task, key, value)
 
-    await _task.save().run()
+    await task.save()
 
-    return TaskModelOut(**_task.__dict__)
+    return TaskModelOut(**task.to_dict())
 
 
 @app.router.patch("/tasks/{task_id}/")
 async def patch_task(
-    task_id: int, task: FromJSON[TaskModelPartial]
+    task_id: int, task_model: FromJSON[TaskModelPartial]
 ) -> TaskModelOut:
-    _task = await Task.objects().where(Task.id == task_id).first().run()
-    if not _task:
+    task = await Task.objects().get(Task.id == task_id)
+    if not task:
         return json({}, status=404)
 
-    for key, value in task.value.__dict__.items():
-        if  value is not None:
-            setattr(_task, key, value)
+    for key, value in task_model.value.dict().items():
+        if value is not None:
+            setattr(task, key, value)
 
-    await _task.save().run()
+    await task.save()
 
-    return TaskModelOut(**_task.__dict__)
+    return TaskModelOut(**task.to_dict())
 
 
 @app.router.delete("/tasks/{task_id}/")
 async def delete_task(task_id: int):
-    task = await Task.objects().where(Task.id == task_id).first().run()
+    task = await Task.objects().get(Task.id == task_id)
     if not task:
         return json({}, status=404)
 
-    await task.remove().run()
+    await task.remove()
 
     return json({})
 

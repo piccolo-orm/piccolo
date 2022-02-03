@@ -31,7 +31,7 @@ async def create_task(task_model: FromJson[TaskModelIn]) -> TaskModelOut:
 async def update_task(
     task_id: FromPath[int], task_model: FromJson[TaskModelIn]
 ) -> TaskModelOut:
-    task = await Task.objects().where(Task.id == task_id).first()
+    task = await Task.objects().get(Task.id == task_id)
     if not task:
         raise HTTPException(status_code=404)
 
@@ -44,7 +44,7 @@ async def update_task(
 
 
 async def delete_task(task_id: FromPath[int]):
-    task = await Task.objects().where(Task.id == task_id).first()
+    task = await Task.objects().get(Task.id == task_id)
     if not task:
         raise HTTPException(status_code=404)
 
