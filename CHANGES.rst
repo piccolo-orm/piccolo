@@ -1,6 +1,15 @@
 Changes
 =======
 
+0.69.1
+------
+
+Fixed a bug with auto migrations which rename columns - see
+`PR 423 <https://github.com/piccolo-orm/piccolo/pull/423>`_. Thanks to
+@theelderbeever for reporting this, and @sinisaos for help investigating.
+
+-------------------------------------------------------------------------------
+
 0.69.0
 ------
 
