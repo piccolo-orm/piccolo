@@ -84,6 +84,12 @@ autodoc_typehints = "signature"
 html_theme = "sphinx_rtd_theme"
 html_logo = "logo.png"
 html_theme_options = {"logo_only": True}
+html_static_path = ["_static"]
+html_css_files = [
+    "css/custom.css",
+]
+html_show_sphinx = False
+html_show_sourcelink = False
 
 # -- Options for HTMLHelp output ---------------------------------------------
 

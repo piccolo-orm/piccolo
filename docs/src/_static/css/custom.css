@@ -1,0 +1,48 @@
+@font-face {
+    font-family: "OpenSans";
+    src: url("./OpenSans/OpenSans-Regular.ttf");
+}
+
+h1, h2, h3, p, li {
+    font-family: 'OpenSans', sans-serif !important;
+}
+
+nav.wy-nav-side {
+    background: #333548 !important;
+}
+
+.wy-nav-content-wrap, .wy-nav-content {
+    background-color: white;
+}
+
+.btn {
+    box-shadow: none !important;
+    background-color: white !important;
+}
+
+.wy-nav-content {
+    max-width: 100%;
+}
+
+div.document, div.rst-footer-buttons {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+div.document h1 {
+    margin-top: 2rem;
+}
+
+footer hr {
+    border: none;
+}
+
+div[role=navigation] hr {
+    border: none;
+}
+
+div[role=contentinfo] p {
+    font-size: 0.7rem;
+    text-align: center;
+    text-transform: uppercase;
+}
