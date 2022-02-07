@@ -1,10 +1,17 @@
 @font-face {
     font-family: "OpenSans";
-    src: url("./OpenSans/OpenSans-Regular.ttf");
+    src: url("./OpenSans/OpenSans-Regular.ttf") font-weight-normal,
+         url("./OpenSans/OpenSans-SemiBold.ttf") font-weight-bold,
+         url("./OpenSans/OpenSans-Italic.ttf") font-italic;
+
 }
 
-h1, h2, h3, p, li {
+h1, h2, h3, h4, h5, h6, legend, p, li {
     font-family: 'OpenSans', sans-serif !important;
+}
+
+h1,h2,h3,h4 {
+    font-weight: normal !important;
 }
 
 nav.wy-nav-side {
@@ -25,6 +32,7 @@ nav.wy-nav-side {
 }
 
 div.document, div.rst-footer-buttons {
+    width: 100%;
     max-width: 800px;
     margin: 0 auto;
 }
