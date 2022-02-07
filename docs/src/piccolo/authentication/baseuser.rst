@@ -141,11 +141,12 @@ sufficiently long for most use cases.
 
 -------------------------------------------------------------------------------
 
-Custom BaseUser 
----------------
+Extending ``BaseUser``
+----------------------
 
-If you want to extend ``BaseUser`` with additional fields, create a ``Profile`` 
-table with a ``ForeignKey`` to ``BaseUser``, which can include any custom fields. 
+If you want to extend ``BaseUser`` with additional fields, we recommend creating
+a ``Profile`` table with a ``ForeignKey`` to ``BaseUser``, which can include
+any custom fields.
 
 .. code-block:: python
 
@@ -157,6 +158,9 @@ table with a ``ForeignKey`` to ``BaseUser``, which can include any custom fields
         custom_user = ForeignKey(BaseUser)
         phone_number = Varchar()
         bio = Text()
+
+Alternatively, you can copy the entire `user app <https://github.com/piccolo-orm/piccolo/tree/master/piccolo/apps/user>`_ into your
+project, and customise it to fit your needs.
 
 ----------------------------------------------------------------------------------
 
