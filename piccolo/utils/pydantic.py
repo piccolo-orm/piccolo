@@ -125,9 +125,9 @@ def create_pydantic_model(
         By default, the values of any Piccolo ``JSON`` or ``JSONB`` columns are
         returned as strings. By setting this parameter to True, they will be
         returned as objects.
-    :recursion_depth:
+    :param recursion_depth:
         Not to be set by the user - used internally to track recursion.
-    :max_recursion_depth:
+    :param max_recursion_depth:
         If using nested models, this specifies the max amount of recursion.
     :param schema_extra_kwargs:
         This can be used to add additional fields to the schema. This is
