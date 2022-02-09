@@ -12,6 +12,9 @@ if t.TYPE_CHECKING:
 
 
 class CombinableMixin(object):
+
+    __slots__ = ()
+
     def __and__(self, value: Combinable) -> "And":
         return And(self, value)  # type: ignore
 
