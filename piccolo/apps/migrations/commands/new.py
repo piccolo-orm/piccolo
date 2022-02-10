@@ -199,8 +199,8 @@ async def new(
     :param auto:
         Auto create the migration contents.
     :param desc:
-        A description of what the migration does, for example 'adding name
-        column'.
+        A description of what the migration does, for example --desc='adding
+        name column'.
     :param auto_input:
         If provided, all prompts for user input will automatically have this
         entered. For example, --auto_input='y'.
