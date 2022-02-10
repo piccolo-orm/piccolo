@@ -72,7 +72,7 @@ class DropColumn(AlterColumnStatement):
 
 @dataclass
 class AddColumn(AlterColumnStatement):
-    __slots__ = ("column", "name")
+    __slots__ = ("name",)
 
     column: Column
     name: str
@@ -120,7 +120,7 @@ class SetColumnType(AlterStatement):
 
 @dataclass
 class SetDefault(AlterColumnStatement):
-    __slots__ = ("column", "value")
+    __slots__ = ("value",)
 
     column: Column
     value: t.Any
