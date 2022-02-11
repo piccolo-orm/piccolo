@@ -140,9 +140,8 @@ class TableMetaclass(type):
 
 
 class Table(metaclass=TableMetaclass):
-    # These are just placeholder values, so type inference isn't confused - the
-    # actual values are set in __init_subclass__.
-    _meta = TableMeta()
+    # The value is set in __init_subclass__:
+    _meta: TableMeta
 
     def __init_subclass__(
         cls,
