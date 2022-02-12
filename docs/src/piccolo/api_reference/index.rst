@@ -8,3 +8,13 @@ Table
 
 .. autoclass:: Table
     :members:
+
+-------------------------------------------------------------------------------
+
+LazyTableReference
+------------------
+
+.. currentmodule:: piccolo.columns
+
+.. autoclass:: LazyTableReference
+    :members:
