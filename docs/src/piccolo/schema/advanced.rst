@@ -136,9 +136,9 @@ Advantages
 
 By using choices, you get the following benefits:
 
- * Signalling to other programmers what values are acceptable for the column.
- * Improved storage efficiency (we can store ``'l'`` instead of ``'large'``).
- * Piccolo Admin support
+* Signalling to other programmers what values are acceptable for the column.
+* Improved storage efficiency (we can store ``'l'`` instead of ``'large'``).
+* Piccolo Admin support
 
 -------------------------------------------------------------------------------
 
@@ -155,9 +155,9 @@ can dynamically create them at run time, by inspecting the database. These
 
 Some example use cases:
 
- * You have a very dynamic database, where new tables are being created
-   constantly, so updating a ``tables.py`` is impractical.
- * You use Piccolo on the command line to explore databases.
+* You have a very dynamic database, where new tables are being created
+  constantly, so updating a ``tables.py`` is impractical.
+* You use Piccolo on the command line to explore databases.
 
 Full reflection
 ~~~~~~~~~~~~~~~
