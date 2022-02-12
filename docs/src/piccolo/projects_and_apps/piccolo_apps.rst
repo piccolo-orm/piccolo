@@ -191,7 +191,10 @@ list of modules.
 
     APP_CONFIG = AppConfig(
         app_name='blog',
-        migrations_folder_path=os.path.join(CURRENT_DIRECTORY, 'piccolo_migrations'),
+        migrations_folder_path=os.path.join(
+            CURRENT_DIRECTORY,
+            'piccolo_migrations'
+        ),
         table_classes=table_finder(modules=['blog.tables']),
         migration_dependencies=[],
         commands=[]
