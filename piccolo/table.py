@@ -993,19 +993,19 @@ class Table(metaclass=TableMetaclass):
             await Band.update(
                 {Band.name: "Spamalot"}
             ).where(
-                Band.name=="Pythonistas"
+                Band.name == "Pythonistas"
             ).run()
 
             await Band.update(
                 {"name": "Spamalot"}
             ).where(
-                Band.name=="Pythonistas"
+                Band.name == "Pythonistas"
             ).run()
 
             await Band.update(
                 name="Spamalot"
             ).where(
-                Band.name=="Pythonistas"
+                Band.name == "Pythonistas"
             ).run()
 
         :param force:
