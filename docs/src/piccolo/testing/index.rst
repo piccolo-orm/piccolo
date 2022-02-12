@@ -34,7 +34,8 @@ You can build a random ``Band`` which will also build and save a random ``Manage
 
     from piccolo.testing.model_builder import ModelBuilder
 
-    band = await ModelBuilder.build(Band)  # Band instance with random values persisted
+    # Band instance with random values persisted:
+    band = await ModelBuilder.build(Band)
 
 .. note:: ``ModelBuilder.build(Band)`` persists the record into the database by default.
 
@@ -51,11 +52,17 @@ To specify any attribute, pass the ``defaults`` dictionary to the ``build`` meth
 
     manager = ModelBuilder.build(Manager)
 
-    # Using table columns
-    band = await ModelBuilder.build(Band, defaults={Band.name: "Guido", Band.manager: manager})
+    # Using table columns:
+    band = await ModelBuilder.build(
+        Band,
+        defaults={Band.name: "Guido", Band.manager: manager}
+    )
 
-    # Or using strings as keys
-    band = await ModelBuilder.build(Band, defaults={"name": "Guido", "manager": manager})
+    # Or using strings as keys:
+    band = await ModelBuilder.build(
+        Band,
+        defaults={"name": "Guido", "manager": manager}
+    )
 
 To build objects without persisting them into the database:
 
@@ -67,7 +74,8 @@ To build object with minimal attributes, leaving nullable fields empty:
 
 .. code-block:: python
 
-    band = await ModelBuilder.build(Band, minimal=True)  # Leaves manager empty
+    # Leaves manager empty:
+    band = await ModelBuilder.build(Band, minimal=True)
 
 -------------------------------------------------------------------------------
 
