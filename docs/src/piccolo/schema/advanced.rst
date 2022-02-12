@@ -56,7 +56,7 @@ Table Tags
 ----------
 
 ``Table`` subclasses can be given tags. The tags can be used for filtering,
-for example with ``table_finder`` (see :ref:`TableFinder`).
+for example with :ref:`table_finder <TableFinder>`.
 
 .. code-block:: python
 

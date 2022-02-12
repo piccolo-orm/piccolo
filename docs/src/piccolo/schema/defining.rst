@@ -3,8 +3,8 @@
 Defining a Schema
 =================
 
-The schema is usually defined within the ``tables.py`` file of your Piccolo
-app (see :ref:`PiccoloApps`).
+The schema is usually defined within the ``tables.py`` file of your
+:ref:`Piccolo app <PiccoloApps>`.
 
 This reflects the tables in your database. Each table consists of several
 columns. Here's a very simple schema:
