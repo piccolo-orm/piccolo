@@ -141,7 +141,7 @@ class TableMetaclass(type):
 
 class Table(metaclass=TableMetaclass):
     """
-    The class sepresents a database table. An instance represents a row.
+    The class represents a database table. An instance represents a row.
     """
 
     # These are just placeholder values, so type inference isn't confused - the
