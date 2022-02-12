@@ -7,7 +7,7 @@ Readable
 --------
 
 Sometimes Piccolo needs a succinct representation of a row - for example, when
-displaying a link in the Piccolo Admin GUI (see :ref:`Ecosystem`). Rather than
+displaying a link in the :ref:`Piccolo Admin <PiccoloAdmin>`. Rather than
 just displaying the row ID, we can specify something more user friendly using
 ``Readable``.
 
