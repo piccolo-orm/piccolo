@@ -123,8 +123,8 @@ def create_pydantic_model(
         same Piccolo table.
     :param deserialize_json:
         By default, the values of any Piccolo ``JSON`` or ``JSONB`` columns are
-        returned as strings. By setting this parameter to True, they will be
-        returned as objects.
+        returned as strings. By setting this parameter to ``True``, they will
+        be returned as objects.
     :param recursion_depth:
         Not to be set by the user - used internally to track recursion.
     :param max_recursion_depth:
