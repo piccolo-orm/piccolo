@@ -100,7 +100,7 @@ You can exclude some columns if you like:
 
     >>> await Band.select(
     >>>     Band.name,
-    >>>     Band.manager.all_columns(exclude=[Band.manager.id)
+    >>>     Band.manager.all_columns(exclude=[Band.manager.id])
     >>> )
     [
         {'name': 'Pythonistas', 'manager.name': 'Guido'},
