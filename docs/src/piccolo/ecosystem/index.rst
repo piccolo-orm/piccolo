@@ -9,15 +9,17 @@ Piccolo API
 Provides some handy utilities for creating an API around your Piccolo tables.
 Examples include:
 
- * Easily creating CRUD endpoints for ASGI apps, based on Piccolo tables.
- * Automatically creating Pydantic models from your Piccolo tables.
- * Great FastAPI integration.
- * Authentication and rate limiting.
+* Easily creating CRUD endpoints for ASGI apps, based on Piccolo tables.
+* Automatically creating Pydantic models from your Piccolo tables.
+* Great FastAPI integration.
+* Authentication and rate limiting.
 
 `See the docs <https://piccolo-api.readthedocs.io/en/latest/index.html>`_ for
 more information.
 
 -------------------------------------------------------------------------------
+
+.. _PiccoloAdmin:
 
 Piccolo Admin
 -------------

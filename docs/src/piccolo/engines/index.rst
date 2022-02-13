@@ -4,7 +4,7 @@ Engines
 =======
 
 Engines are what execute the SQL queries. Each supported backend has its own
-engine (see  :ref:`EngineTypes`).
+:ref:`engine <EngineTypes>`.
 
 It's important that each ``Table`` class knows which engine to use. There are
 two ways of doing this - setting it explicitly via the ``db`` argument, or

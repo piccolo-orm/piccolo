@@ -142,17 +142,19 @@ add_m2m
 .. currentmodule:: piccolo.table
 
 .. automethod:: Table.add_m2m
-
+    :noindex:
 
 get_m2m
 -------
 
 .. automethod:: Table.get_m2m
+    :noindex:
 
 remove_m2m
 ----------
 
 .. automethod:: Table.remove_m2m
+    :noindex:
 
 .. hint:: All of these methods can be run synchronously as well - for example,
     ``band.get_m2m(Band.genres).run_sync()``.

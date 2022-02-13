@@ -16,17 +16,18 @@ if t.TYPE_CHECKING:  # pragma: no cover
 @dataclass
 class LazyTableReference:
     """
-    Holds a reference to a ``Table`` subclass. Used to avoid circular
-    dependencies in the ``references`` argument of ``ForeignKey`` columns.
+    Holds a reference to a :class:`Table <piccolo.table.Table>` subclass. Used
+    to avoid circular dependencies in the ``references`` argument of
+    :class:`ForeignKey <piccolo.columns.column_types.ForeignKey>` columns.
 
     :param table_class_name:
-        The name of the ``Table`` subclass. For example, 'Manager'.
+        The name of the ``Table`` subclass. For example, ``'Manager'``.
     :param app_name:
         If specified, the ``Table`` subclass is imported from a Piccolo app
         with the given name.
     :param module_path:
         If specified, the ``Table`` subclass is imported from this path.
-        For example, 'my_app.tables'.
+        For example, ``'my_app.tables'``.
 
     """
 

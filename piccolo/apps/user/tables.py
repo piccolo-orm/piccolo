@@ -74,7 +74,7 @@ class BaseUser(Table, tablename="piccolo_user"):
     @classmethod
     def update_password_sync(cls, user: t.Union[str, int], password: str):
         """
-        A sync equivalent of ``update_password``.
+        A sync equivalent of :meth:`update_password`.
         """
         return run_sync(cls.update_password(user, password))
 
@@ -145,7 +145,7 @@ class BaseUser(Table, tablename="piccolo_user"):
     @classmethod
     def login_sync(cls, username: str, password: str) -> t.Optional[int]:
         """
-        A sync equivalent of ``login``.
+        A sync equivalent of :meth:`login`.
         """
         return run_sync(cls.login(username, password))
 
@@ -201,7 +201,7 @@ class BaseUser(Table, tablename="piccolo_user"):
         cls, username: str, password: str, **extra_params
     ) -> BaseUser:
         """
-        A sync equivalent of ``create_user``.
+        A sync equivalent of :meth:`create_user`.
         """
         return run_sync(
             cls.create_user(

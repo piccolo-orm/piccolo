@@ -29,7 +29,9 @@ Or use an alias to make it shorter:
     [{'id': 1, 'name': 'Pythonistas', 'manager': 1, 'popularity': 1000},
      {'id': 2, 'name': 'Rustaceans', 'manager': 2, 'popularity': 500}]
 
-.. hint:: All of these examples also work with async by using .run() inside coroutines - see :ref:`SyncAndAsync`.
+.. hint::
+   All of these examples also work synchronously using ``run_sync`` -
+   see :ref:`SyncAndAsync`.
 
 -------------------------------------------------------------------------------
 
@@ -98,7 +100,7 @@ You can exclude some columns if you like:
 
     >>> await Band.select(
     >>>     Band.name,
-    >>>     Band.manager.all_columns(exclude=[Band.manager.id)
+    >>>     Band.manager.all_columns(exclude=[Band.manager.id])
     >>> )
     [
         {'name': 'Pythonistas', 'manager.name': 'Guido'},

@@ -140,6 +140,10 @@ class TableMetaclass(type):
 
 
 class Table(metaclass=TableMetaclass):
+    """
+    The class represents a database table. An instance represents a row.
+    """
+
     # These are just placeholder values, so type inference isn't confused - the
     # actual values are set in __init_subclass__.
     _meta = TableMeta()
@@ -271,6 +275,13 @@ class Table(metaclass=TableMetaclass):
     ):
         """
         Assigns any default column values to the class.
+
+        :param ignore_missing:
+            If ``False`` a ``ValueError`` will be raised if any column values
+            haven't been provided.
+        :param exists_in_db:
+            Used internally to track whether this row exists in the database.
+
         """
         self._exists_in_db = exists_in_db
 
@@ -742,7 +753,9 @@ class Table(metaclass=TableMetaclass):
         ever need to do this, but other libraries built on top of Piccolo may
         need this functionality.
 
-        Example: Band.ref('manager.name')
+        .. code-block:: python
+
+            Band.ref('manager.name')
 
         """
         local_column_name, reference_column_name = column_name.split(".")
@@ -766,9 +779,14 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def insert(cls, *rows: "Table") -> Insert:
         """
-        await Band.insert(
-            Band(name="Pythonistas", popularity=500, manager=1)
-        ).run()
+        Insert rows into the database.
+
+        .. code-block:: python
+
+            await Band.insert(
+                Band(name="Pythonistas", popularity=500, manager=1)
+            ).run()
+
         """
         query = Insert(table=cls)
         if rows:
@@ -780,11 +798,16 @@ class Table(metaclass=TableMetaclass):
         """
         Execute raw SQL queries on the underlying engine - use with caution!
 
-        await Band.raw('select * from band').run()
+        .. code-block:: python
+
+            await Band.raw('select * from band').run()
 
         Or passing in parameters:
 
-        await Band.raw("select * from band where name = {}", 'Pythonistas')
+        .. code-block:: python
+
+            await Band.raw("select * from band where name = {}", 'Pythonistas')
+
         """
         return Raw(table=cls, querystring=QueryString(sql, *args))
 
@@ -970,19 +993,19 @@ class Table(metaclass=TableMetaclass):
             await Band.update(
                 {Band.name: "Spamalot"}
             ).where(
-                Band.name=="Pythonistas"
+                Band.name == "Pythonistas"
             ).run()
 
             await Band.update(
                 {"name": "Spamalot"}
             ).where(
-                Band.name=="Pythonistas"
+                Band.name == "Pythonistas"
             ).run()
 
             await Band.update(
                 name="Spamalot"
             ).where(
-                Band.name=="Pythonistas"
+                Band.name == "Pythonistas"
             ).run()
 
         :param force:

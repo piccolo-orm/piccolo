@@ -67,7 +67,7 @@ The percentage operator is required to designate where the match should occur.
     )
 
     await Band.select().where(
-        Band.name.like('%is%')  # Matches anywhere in string
+        Band.name.like('%is%')  # Matches anywhere in the string
     )
 
     await Band.select().where(
@@ -126,7 +126,8 @@ with None:
         Band.manager == None
     )
 
-To avoid the linter errors, you can use `is_null` and `is_not_null` instead.
+To avoid the linter errors, you can use ``is_null`` and ``is_not_null``
+instead.
 
 .. code-block:: python
 

@@ -40,8 +40,9 @@ script), you can pass all of the arguments in as follows:
 
     piccolo user create --username=bob --password=bob123 --email=foo@bar.com  --is_admin=t --is_superuser=t --is_active=t
 
-If you choose this approach then be careful, as the password will be in the
-shell's history.
+.. warning::
+   If you choose this approach then be careful, as the password will be in the
+   shell's history.
 
 change_password
 ~~~~~~~~~~~~~~~

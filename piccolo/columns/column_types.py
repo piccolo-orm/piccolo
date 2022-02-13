@@ -1057,7 +1057,8 @@ class Interval(Column):  # lgtm [py/missing-equals]
 
 class Boolean(Column):
     """
-    Used for storing True / False values. Uses the ``bool`` type for values.
+    Used for storing ``True`` / ``False`` values. Uses the ``bool`` type for
+    values.
 
     **Example**
 
