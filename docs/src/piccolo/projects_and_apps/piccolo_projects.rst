@@ -18,8 +18,8 @@ A project requires a ``piccolo_conf.py`` file. To create this, use the following
 
 The file serves two important purposes:
 
- * Contains your database settings.
- * Is used for registering :ref:`PiccoloApps`.
+* Contains your database settings.
+* Is used for registering :ref:`PiccoloApps`.
 
 Location
 ~~~~~~~~

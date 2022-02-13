@@ -9,8 +9,8 @@ closely as possible.
 
 For example:
 
- * In other ORMs, you define models - in Piccolo you define tables.
- * Rather than using a filter method, you use a `where` method like in SQL.
+* In other ORMs, you define models - in Piccolo you define tables.
+* Rather than using a filter method, you use a `where` method like in SQL.
 
 -------------------------------------------------------------------------------
 
