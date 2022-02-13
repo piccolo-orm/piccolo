@@ -67,7 +67,7 @@ The percentage operator is required to designate where the match should occur.
     )
 
     await Band.select().where(
-        Band.name.like('%is%')  # Matches anywhere in string
+        Band.name.like('%is%')  # Matches anywhere in the string
     )
 
     await Band.select().where(
