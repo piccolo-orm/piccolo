@@ -404,8 +404,8 @@ class Table(metaclass=TableMetaclass):
 
         .. code-block:: python
 
-            band = await Band.objects().first().run()
-            manager = await band.get_related(Band.manager).run()
+            band = await Band.objects().first()
+            manager = await band.get_related(Band.manager)
             >>> print(manager.name)
             'Guido'
 
@@ -534,7 +534,7 @@ class Table(metaclass=TableMetaclass):
 
             instance = await Manager.objects().get(
                 Manager.name == 'Guido'
-            ).run()
+            )
 
             >>> instance.to_dict()
             {'id': 1, 'name': 'Guido'}
@@ -677,7 +677,7 @@ class Table(metaclass=TableMetaclass):
 
             concert = await Concert.objects(
                 Concert.all_related()
-            ).run()
+            )
 
             >>> concert.band_1
             <Band: 1>
@@ -695,7 +695,7 @@ class Table(metaclass=TableMetaclass):
                 Concert.venue,
                 Concert.band_1,
                 Concert.band_2
-            ).run()
+            )
 
         :param exclude:
             You can request all columns, except these.
@@ -726,7 +726,7 @@ class Table(metaclass=TableMetaclass):
             await Band.select(
                 Band.all_columns(),
                 Band.manager.all_columns()
-            ).run()
+            )
 
         This is mostly useful when the table has a lot of columns, and typing
         them out by hand would be tedious.
@@ -785,7 +785,7 @@ class Table(metaclass=TableMetaclass):
 
             await Band.insert(
                 Band(name="Pythonistas", popularity=500, manager=1)
-            ).run()
+            )
 
         """
         query = Insert(table=cls)
@@ -800,7 +800,7 @@ class Table(metaclass=TableMetaclass):
 
         .. code-block:: python
 
-            await Band.raw('select * from band').run()
+            await Band.raw('select * from band')
 
         Or passing in parameters:
 
@@ -839,9 +839,9 @@ class Table(metaclass=TableMetaclass):
 
         .. code-block:: python
 
-            await Band.select().columns(Band.name).run()
-            await Band.select(Band.name).run()
-            await Band.select('name').run()
+            await Band.select().columns(Band.name)
+            await Band.select(Band.name)
+            await Band.select('name')
 
         :param exclude_secrets:
             If ``True``, any password fields are omitted from the response.
@@ -861,7 +861,7 @@ class Table(metaclass=TableMetaclass):
 
         .. code-block:: python
 
-            await Band.delete().where(Band.name == 'Pythonistas').run()
+            await Band.delete().where(Band.name == 'Pythonistas')
 
         :param force:
             Unless set to ``True``, deletions aren't allowed without a
@@ -879,7 +879,7 @@ class Table(metaclass=TableMetaclass):
 
         .. code-block:: python
 
-            await Band.create_table().run()
+            await Band.create_table()
 
         """
         return Create(
@@ -895,7 +895,7 @@ class Table(metaclass=TableMetaclass):
 
         .. code-block:: python
 
-            await Band.alter().rename_column(Band.popularity, 'rating').run()
+            await Band.alter().rename_column(Band.popularity, 'rating')
 
         """
         return Alter(table=cls)
@@ -912,11 +912,11 @@ class Table(metaclass=TableMetaclass):
 
             pythonistas = await Band.objects().where(
                 Band.name == 'Pythonistas'
-            ).first().run()
+            ).first()
 
             pythonistas.name = 'Pythonistas Reborn'
 
-            await pythonistas.save().run()
+            await pythonistas.save()
 
             # Or to remove it from the database:
             await pythonistas.remove()
@@ -928,12 +928,12 @@ class Table(metaclass=TableMetaclass):
             .. code-block:: python
 
                 # Without nested
-                band = await Band.objects().first().run()
+                band = await Band.objects().first()
                 >>> band.manager
                 1
 
                 # With nested
-                band = await Band.objects(Band.manager).first().run()
+                band = await Band.objects(Band.manager).first()
                 >>> band.manager
                 <Band 1>
 
@@ -947,7 +947,7 @@ class Table(metaclass=TableMetaclass):
 
         .. code-block:: python
 
-            await Band.count().where(Band.popularity > 1000).run()
+            await Band.count().where(Band.popularity > 1000)
 
         """
         return Count(table=cls)
@@ -959,7 +959,7 @@ class Table(metaclass=TableMetaclass):
 
         .. code-block:: python
 
-            await Band.exists().where(Band.name == 'Pythonistas').run()
+            await Band.exists().where(Band.name == 'Pythonistas')
 
         """
         return Exists(table=cls)
@@ -971,7 +971,7 @@ class Table(metaclass=TableMetaclass):
 
         .. code-block:: python
 
-            await Band.table_exists().run()
+            await Band.table_exists()
 
         """
         return TableExists(table=cls)
@@ -994,19 +994,19 @@ class Table(metaclass=TableMetaclass):
                 {Band.name: "Spamalot"}
             ).where(
                 Band.name == "Pythonistas"
-            ).run()
+            )
 
             await Band.update(
                 {"name": "Spamalot"}
             ).where(
                 Band.name == "Pythonistas"
-            ).run()
+            )
 
             await Band.update(
                 name="Spamalot"
             ).where(
                 Band.name == "Pythonistas"
-            ).run()
+            )
 
         :param force:
             Unless set to ``True``, updates aren't allowed without a
@@ -1023,7 +1023,7 @@ class Table(metaclass=TableMetaclass):
 
         .. code-block:: python
 
-            await Band.indexes().run()
+            await Band.indexes()
 
         """
         return Indexes(table=cls)
@@ -1041,7 +1041,7 @@ class Table(metaclass=TableMetaclass):
 
         .. code-block:: python
 
-            await Band.create_index([Band.name]).run()
+            await Band.create_index([Band.name])
 
         """
         return CreateIndex(
@@ -1061,7 +1061,7 @@ class Table(metaclass=TableMetaclass):
 
         .. code-block:: python
 
-            await Band.drop_index([Band.name]).run()
+            await Band.drop_index([Band.name])
 
         """
         return DropIndex(table=cls, columns=columns, if_exists=if_exists)
