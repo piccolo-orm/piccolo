@@ -9,7 +9,7 @@ Changes
  * Fixed a bug with creating indexes when the column name clashes with a SQL
    keyword (e.g. ``'order'``). See `Pr 433 <https://github.com/piccolo-orm/piccolo/pull/433>`_.
    Thanks to @wmshort for reporting this issue.
- * Fixed an issue where some slots which incorrectly configured (courtesy
+ * Fixed an issue where some slots were incorrectly configured (courtesy
    @ariebovenberg). See `PR 426 <https://github.com/piccolo-orm/piccolo/pull/426>`_.
 
 -------------------------------------------------------------------------------
