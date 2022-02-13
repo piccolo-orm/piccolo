@@ -126,7 +126,8 @@ with None:
         Band.manager == None
     )
 
-To avoid the linter errors, you can use `is_null` and `is_not_null` instead.
+To avoid the linter errors, you can use ``is_null`` and ``is_not_null``
+instead.
 
 .. code-block:: python
 
