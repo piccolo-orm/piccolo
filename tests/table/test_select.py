@@ -493,8 +493,7 @@ class TestSelect(DBTestCase):
 
         response = query.run_sync()
         self.assertEqual(
-            response,
-            [{"name": "Pythonistas"}, {"name": "Pythonistas"}]
+            response, [{"name": "Pythonistas"}, {"name": "Pythonistas"}]
         )
 
         query = query.distinct()
@@ -523,7 +522,7 @@ class TestSelect(DBTestCase):
                 {"name": "CSharps", "count": 2},
                 {"name": "Pythonistas", "count": 2},
                 {"name": "Rustaceans", "count": 2},
-            ]
+            ],
         )
 
     def test_count_with_alias_group_by(self):
@@ -546,7 +545,7 @@ class TestSelect(DBTestCase):
                 {"name": "CSharps", "total": 2},
                 {"name": "Pythonistas", "total": 2},
                 {"name": "Rustaceans", "total": 2},
-            ]
+            ],
         )
 
     def test_count_with_as_alias_group_by(self):
@@ -569,7 +568,7 @@ class TestSelect(DBTestCase):
                 {"name": "CSharps", "total": 2},
                 {"name": "Pythonistas", "total": 2},
                 {"name": "Rustaceans", "total": 2},
-            ]
+            ],
         )
 
     def test_count_column_group_by(self):
@@ -610,7 +609,7 @@ class TestSelect(DBTestCase):
                 {"manager.name": "Graydon", "count": 2},
                 {"manager.name": "Guido", "count": 2},
                 {"manager.name": "Mads", "count": 2},
-            ]
+            ],
         )
 
         # This time the nulls should be counted, as we omit the column argument
@@ -631,7 +630,7 @@ class TestSelect(DBTestCase):
                 {"manager.name": "Graydon", "count": 2},
                 {"manager.name": "Guido", "count": 2},
                 {"manager.name": "Mads", "count": 2},
-            ]
+            ],
         )
 
     def test_avg(self):
@@ -650,10 +649,7 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertEqual(
-            float(response["popularity_avg"]),
-            1003.3333333333334
-        )
+        self.assertEqual(float(response["popularity_avg"]), 1003.3333333333334)
 
     def test_avg_as_alias_method(self):
         self.insert_rows()
@@ -664,10 +660,7 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertEqual(
-            float(response["popularity_avg"]),
-            1003.3333333333334
-        )
+        self.assertEqual(float(response["popularity_avg"]), 1003.3333333333334)
 
     def test_avg_with_where_clause(self):
         self.insert_rows()
@@ -868,10 +861,7 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertEqual(
-            float(response["popularity_avg"]),
-            1003.3333333333334
-        )
+        self.assertEqual(float(response["popularity_avg"]), 1003.3333333333334)
         self.assertEqual(response["popularity_sum"], 3010)
 
     def test_avg_validation(self):

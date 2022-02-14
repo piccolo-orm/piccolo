@@ -97,7 +97,7 @@ class TestFreeze(DBTestCase):
         # Remove the outliers before comparing
         self.assertGreater(
             sum(sorted(query_duration)[5:-5]),
-            sum(sorted(frozen_query_duration)[5:-5])
+            sum(sorted(frozen_query_duration)[5:-5]),
         )
 
     def test_attribute_access(self):

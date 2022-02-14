@@ -631,10 +631,7 @@ class TestM2MComplexSchema(TestCase):
             returned_value = data[column_name]
 
             if type(column) == UUID:
-                self.assertIn(
-                    type(returned_value),
-                    (uuid.UUID, asyncpgUUID)
-                )
+                self.assertIn(type(returned_value), (uuid.UUID, asyncpgUUID))
             else:
                 self.assertEqual(
                     type(original_value),
@@ -658,10 +655,7 @@ class TestM2MComplexSchema(TestCase):
             returned_value = response[0]["mega_rows"][0]
 
             if type(column) == UUID:
-                self.assertIn(
-                    type(returned_value),
-                    (uuid.UUID, asyncpgUUID)
-                )
+                self.assertIn(type(returned_value), (uuid.UUID, asyncpgUUID))
                 self.assertEqual(str(original_value), str(returned_value))
             else:
                 self.assertEqual(

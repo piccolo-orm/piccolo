@@ -22,7 +22,7 @@ class TestObjects(DBTestCase):
 
         self.assertEqual(
             Band.select(Band.name).output(as_list=True).run_sync()[0],
-            "Rustaceans"
+            "Rustaceans",
         )
 
     @postgres_only

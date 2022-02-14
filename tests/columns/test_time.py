@@ -57,5 +57,5 @@ class TestTimeDefault(TestCase):
                 minute=created_on.minute,
                 second=created_on.second,
             ),
-            datetime.timedelta(seconds=1)
+            datetime.timedelta(seconds=1),
         )
