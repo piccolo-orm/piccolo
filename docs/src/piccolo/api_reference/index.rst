@@ -37,3 +37,12 @@ Foreign Keys
     :members:
     :undoc-members:
 
+.. currentmodule:: piccolo.columns.indexes
+
+Indexes
+~~~~~~~
+
+.. autoclass:: IndexMethod
+    :members:
+    :undoc-members:
+
