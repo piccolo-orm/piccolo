@@ -309,8 +309,8 @@ instead.
 Array
 *****
 
-Arrays of data can be stored, which can be useful when you want store lots of
-values without using foreign keys.
+Arrays of data can be stored, which can be useful when you want to store lots
+of values without using foreign keys.
 
 .. autoclass:: Array
 
