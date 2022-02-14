@@ -73,6 +73,11 @@ exclude_patterns: t.List[str] = []
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = None
 
+# -- Intersphinx -------------------------------------------------------------
+
+intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
+extensions += ["sphinx.ext.intersphinx"]
+
 # -- Autodoc -----------------------------------------------------------------
 
 extensions += ["sphinx.ext.autodoc"]
