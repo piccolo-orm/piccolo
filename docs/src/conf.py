@@ -42,10 +42,8 @@ release = piccolo.__VERSION__
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "sphinx.ext.autodoc",
     "sphinx.ext.todo",
     "sphinx.ext.coverage",
-    "sphinx.ext.githubpages",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -75,9 +73,17 @@ exclude_patterns: t.List[str] = []
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = None
 
+# -- Intersphinx -------------------------------------------------------------
+
+intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
+extensions += ["sphinx.ext.intersphinx"]
+
 # -- Autodoc -----------------------------------------------------------------
 
+extensions += ["sphinx.ext.autodoc"]
 autodoc_typehints = "signature"
+autodoc_typehints_format = "short"
+autoclass_content = "both"
 
 # -- Options for HTML output -------------------------------------------------
 

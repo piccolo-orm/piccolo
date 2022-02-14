@@ -8,10 +8,10 @@ This is used to update any rows in the table which match the criteria.
 .. code-block:: python
 
     >>> await Band.update({
-    >>>     Band.name: 'Pythonistas 2'
-    >>> }).where(
-    >>>     Band.name == 'Pythonistas'
-    >>> )
+    ...     Band.name: 'Pythonistas 2'
+    ... }).where(
+    ...     Band.name == 'Pythonistas'
+    ... )
     []
 
 -------------------------------------------------------------------------------
@@ -107,10 +107,10 @@ you prefer:
 .. code-block:: python
 
     >>> await Band.update(
-    >>>     name='Pythonistas 2'
-    >>> ).where(
-    >>>     Band.name == 'Pythonistas'
-    >>> )
+    ...     name='Pythonistas 2'
+    ... ).where(
+    ...     Band.name == 'Pythonistas'
+    ... )
 
 -------------------------------------------------------------------------------
 

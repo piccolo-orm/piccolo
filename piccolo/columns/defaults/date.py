@@ -8,7 +8,26 @@ from .base import Default
 
 
 class DateOffset(Default):
+    """
+    This makes the default value for a
+    :class:`Date <piccolo.columns.column_types.Date>` column the current date,
+    but offset by a number of days.
+
+    For example, if you wanted the default to be tomorrow, you can specify
+    ``DateOffset(days=1)``:
+
+    .. code-block:: python
+
+        class DiscountCode(Table):
+            expires = Date(default=DateOffset(days=1))
+
+    """
+
     def __init__(self, days: int):
+        """
+        :param days:
+            The number of days to offset.
+        """
         self.days = days
 
     @property

@@ -99,9 +99,9 @@ You can exclude some columns if you like:
 .. code-block:: python
 
     >>> await Band.select(
-    >>>     Band.name,
-    >>>     Band.manager.all_columns(exclude=[Band.manager.id])
-    >>> )
+    ...     Band.name,
+    ...     Band.manager.all_columns(exclude=[Band.manager.id])
+    ... )
     [
         {'name': 'Pythonistas', 'manager.name': 'Guido'},
         {'name': 'Rustaceans', 'manager.name': 'Graydon'}
@@ -113,9 +113,9 @@ Strings are supported too if you prefer:
 .. code-block:: python
 
     >>> await Band.select(
-    >>>     Band.name,
-    >>>     Band.manager.all_columns(exclude=['id'])
-    >>> )
+    ...     Band.name,
+    ...     Band.manager.all_columns(exclude=['id'])
+    ... )
     [
         {'name': 'Pythonistas', 'manager.name': 'Guido'},
         {'name': 'Rustaceans', 'manager.name': 'Graydon'}
@@ -127,9 +127,9 @@ you have lots of columns. It works identically to related tables:
 .. code-block:: python
 
     >>> await Band.select(
-    >>>     Band.all_columns(exclude=[Band.id]),
-    >>>     Band.manager.all_columns(exclude=[Band.manager.id])
-    >>> )
+    ...     Band.all_columns(exclude=[Band.id]),
+    ...     Band.manager.all_columns(exclude=[Band.manager.id])
+    ... )
     [
         {'name': 'Pythonistas', 'popularity': 1000, 'manager.name': 'Guido'},
         {'name': 'Rustaceans', 'popularity': 500, 'manager.name': 'Graydon'}
