@@ -26,7 +26,7 @@ class TestPool(DBTestCase):
 
         await Manager(name="Bob").save().run()
         response = await Manager.select().run()
-        self.assertTrue("Bob" in [i["name"] for i in response])
+        self.assertIn("Bob", [i["name"] for i in response])
 
         await Manager._meta.db.close_connection_pool()
 

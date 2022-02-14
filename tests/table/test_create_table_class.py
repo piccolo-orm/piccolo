@@ -21,7 +21,7 @@ class TestCreateTableClass(TestCase):
         _Table = create_table_class(
             class_name="MyTable", class_members={"name": column}
         )
-        self.assertTrue(column in _Table._meta.columns)
+        self.assertIn(column, _Table._meta.columns)
 
     def test_protected_tablenames(self):
         """

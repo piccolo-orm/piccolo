@@ -600,10 +600,10 @@ class TestM2MComplexSchema(TestCase):
             SmallTable.varchar_col, SmallTable.mega_rows(load_json=True)
         ).run_sync()
 
-        self.assertTrue(len(response) == 1)
+        self.assertEqual(len(response), 1)
         mega_rows = response[0]["mega_rows"]
 
-        self.assertTrue(len(mega_rows) == 1)
+        self.assertEqual(len(mega_rows), 1)
         mega_row = mega_rows[0]
 
         for key, value in mega_row.items():
@@ -631,9 +631,7 @@ class TestM2MComplexSchema(TestCase):
             returned_value = data[column_name]
 
             if type(column) == UUID:
-                self.assertTrue(
-                    type(returned_value) in (uuid.UUID, asyncpgUUID)
-                )
+                self.assertIn(type(returned_value), (uuid.UUID, asyncpgUUID))
             else:
                 self.assertEqual(
                     type(original_value),
@@ -657,9 +655,7 @@ class TestM2MComplexSchema(TestCase):
             returned_value = response[0]["mega_rows"][0]
 
             if type(column) == UUID:
-                self.assertTrue(
-                    type(returned_value) in (uuid.UUID, asyncpgUUID)
-                )
+                self.assertIn(type(returned_value), (uuid.UUID, asyncpgUUID))
                 self.assertEqual(str(original_value), str(returned_value))
             else:
                 self.assertEqual(

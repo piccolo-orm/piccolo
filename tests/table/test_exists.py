@@ -8,4 +8,4 @@ class TestExists(DBTestCase):
 
         response = Band.exists().where(Band.name == "Pythonistas").run_sync()
 
-        self.assertTrue(response is True)
+        self.assertTrue(response)

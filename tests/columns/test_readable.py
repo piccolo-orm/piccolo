@@ -23,7 +23,7 @@ class TestReadable(unittest.TestCase):
 
     def test_readable(self):
         response = MyTable.select(MyTable.get_readable()).run_sync()
-        self.assertTrue(response[0]["readable"] == "Guido van Rossum")
+        self.assertEqual(response[0]["readable"], "Guido van Rossum")
 
     def tearDown(self):
         MyTable.alter().drop_table().run_sync()

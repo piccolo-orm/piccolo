@@ -8,4 +8,4 @@ class TestCount(DBTestCase):
 
         response = Band.count().where(Band.name == "Pythonistas").run_sync()
 
-        self.assertTrue(response == 1)
+        self.assertEqual(response, 1)

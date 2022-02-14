@@ -11,7 +11,7 @@ class TestInsert(DBTestCase):
         response = Band.select(Band.name).run_sync()
         names = [i["name"] for i in response]
 
-        self.assertTrue("Rustaceans" in names)
+        self.assertIn("Rustaceans", names)
 
     def test_add(self):
         self.insert_rows()
@@ -21,7 +21,7 @@ class TestInsert(DBTestCase):
         response = Band.select(Band.name).run_sync()
         names = [i["name"] for i in response]
 
-        self.assertTrue("Rustaceans" in names)
+        self.assertIn("Rustaceans", names)
 
     def test_incompatible_type(self):
         """
@@ -41,4 +41,4 @@ class TestInsert(DBTestCase):
         response = Band.select(Band.name).run_sync()
         names = [i["name"] for i in response]
 
-        self.assertTrue("{}" in names)
+        self.assertIn("{}", names)

@@ -19,12 +19,12 @@ class TestAppRegistry(TestCase):
     def test_get_app_config(self):
         app_registry = AppRegistry(apps=["piccolo.apps.user.piccolo_app"])
         app_config = app_registry.get_app_config(app_name="user")
-        self.assertTrue(isinstance(app_config, AppConfig))
+        self.assertIsInstance(app_config, AppConfig)
 
     def test_get_table_classes(self):
         app_registry = AppRegistry(apps=["piccolo.apps.user.piccolo_app"])
         table_classes = app_registry.get_table_classes(app_name="user")
-        self.assertTrue(BaseUser in table_classes)
+        self.assertIn(BaseUser, table_classes)
 
         with self.assertRaises(ValueError):
             app_registry.get_table_classes(app_name="Foo")

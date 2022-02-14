@@ -23,8 +23,8 @@ class TestNumeric(TestCase):
 
         _row = MyTable.objects().first().run_sync()
 
-        self.assertTrue(type(_row.column_a) == Decimal)
-        self.assertTrue(type(_row.column_b) == Decimal)
+        self.assertEqual(type(_row.column_a), Decimal)
+        self.assertEqual(type(_row.column_b), Decimal)
 
         self.assertAlmostEqual(_row.column_a, Decimal(1.23))
         self.assertEqual(_row.column_b, Decimal("1.23"))

@@ -64,7 +64,7 @@ class TestInterval(TestCase):
             .first()
             .run_sync()
         )
-        self.assertTrue(result is not None)
+        self.assertIsNotNone(result)
 
         result = (
             MyTable.objects()
@@ -72,7 +72,7 @@ class TestInterval(TestCase):
             .first()
             .run_sync()
         )
-        self.assertTrue(result is not None)
+        self.assertIsNotNone(result)
 
         result = (
             MyTable.objects()
@@ -80,7 +80,7 @@ class TestInterval(TestCase):
             .first()
             .run_sync()
         )
-        self.assertTrue(result is not None)
+        self.assertIsNotNone(result)
 
         result = (
             MyTable.exists()
@@ -102,4 +102,4 @@ class TestIntervalDefault(TestCase):
         row.save().run_sync()
 
         result = MyTableDefault.objects().first().run_sync()
-        self.assertTrue(result.interval.days == 1)
+        self.assertEqual(result.interval.days, 1)

@@ -45,11 +45,11 @@ class TestDifferentDB(TestCase):
 
         self.assertTrue(await Musician.table_exists().run())
         musician = await Musician.select("name").first().run()
-        self.assertTrue(musician["name"] == "Bob")
+        self.assertEqual(musician["name"], "Bob")
 
         self.assertTrue(await Roadie.table_exists().run())
         roadie = await Roadie.select("name").first().run()
-        self.assertTrue(roadie["name"] == "Dave")
+        self.assertEqual(roadie["name"], "Dave")
 
     def test_nested(self):
         asyncio.run(self.run_nested())

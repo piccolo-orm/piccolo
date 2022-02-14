@@ -8,21 +8,21 @@ class TestObjects(DBTestCase):
 
         response = Band.objects().run_sync()
 
-        self.assertTrue(len(response) == 1)
+        self.assertEqual(len(response), 1)
 
         instance = response[0]
 
-        self.assertTrue(isinstance(instance, Band))
-        self.assertTrue(instance.name == "Pythonistas")
+        self.assertIsInstance(instance, Band)
+        self.assertEqual(instance.name, "Pythonistas")
 
         # Now try changing the value and saving it.
         instance.name = "Rustaceans"
         save_query = instance.save()
         save_query.run_sync()
 
-        self.assertTrue(
-            Band.select(Band.name).output(as_list=True).run_sync()[0]
-            == "Rustaceans"
+        self.assertEqual(
+            Band.select(Band.name).output(as_list=True).run_sync()[0],
+            "Rustaceans",
         )
 
     @postgres_only
@@ -60,7 +60,7 @@ class TestObjects(DBTestCase):
 
         band = Band.objects().get(Band.name == "Pythonistas").run_sync()
 
-        self.assertTrue(band.name == "Pythonistas")
+        self.assertEqual(band.name, "Pythonistas")
 
     def test_get__prefetch(self):
         self.insert_rows()
@@ -96,8 +96,8 @@ class TestObjects(DBTestCase):
         )
 
         self.assertIsInstance(instance, Band)
-        self.assertTrue(instance.name == "Pink Floyd")
-        self.assertTrue(instance.popularity == 100)
+        self.assertEqual(instance.name, "Pink Floyd")
+        self.assertEqual(instance.popularity, 100)
 
         # When the row already exists in the db:
         Band.objects().get_or_create(
@@ -109,8 +109,8 @@ class TestObjects(DBTestCase):
         )
 
         self.assertIsInstance(instance, Band)
-        self.assertTrue(instance.name == "Pink Floyd")
-        self.assertTrue(instance.popularity == 100)
+        self.assertEqual(instance.name, "Pink Floyd")
+        self.assertEqual(instance.popularity, 100)
 
     def test_get_or_create_complex(self):
         """

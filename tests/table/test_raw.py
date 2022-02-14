@@ -20,7 +20,7 @@ class TestRaw(DBTestCase):
             "select * from band where name = {}", "Pythonistas"
         ).run_sync()
 
-        self.assertTrue(len(response) == 1)
+        self.assertEqual(len(response), 1)
         self.assertDictEqual(
             response[0],
             {"id": 1, "name": "Pythonistas", "manager": 1, "popularity": 1000},

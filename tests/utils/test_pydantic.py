@@ -494,7 +494,7 @@ class TestNestedModel(TestCase):
         self.assertEqual(ManagerModel.__qualname__, "Band.manager")
 
         AssistantManagerType = BandModel.__fields__["assistant_manager"].type_
-        self.assertTrue(AssistantManagerType is int)
+        self.assertIs(AssistantManagerType, int)
 
         #######################################################################
         # Test two levels deep
@@ -511,7 +511,7 @@ class TestNestedModel(TestCase):
         self.assertEqual(ManagerModel.__qualname__, "Band.manager")
 
         AssistantManagerType = BandModel.__fields__["assistant_manager"].type_
-        self.assertTrue(AssistantManagerType is int)
+        self.assertIs(AssistantManagerType, int)
 
         CountryModel = ManagerModel.__fields__["country"].type_
         self.assertTrue(issubclass(CountryModel, pydantic.BaseModel))
@@ -526,7 +526,7 @@ class TestNestedModel(TestCase):
         )
 
         VenueModel = ConcertModel.__fields__["venue"].type_
-        self.assertTrue(VenueModel is int)
+        self.assertIs(VenueModel, int)
 
         BandModel = ConcertModel.__fields__["band_1"].type_
         self.assertTrue(issubclass(BandModel, pydantic.BaseModel))
@@ -545,10 +545,10 @@ class TestNestedModel(TestCase):
         self.assertEqual(ManagerModel.__qualname__, "Concert.band_1.manager")
 
         AssistantManagerType = BandModel.__fields__["assistant_manager"].type_
-        self.assertTrue(AssistantManagerType is int)
+        self.assertIs(AssistantManagerType, int)
 
         CountryModel = ManagerModel.__fields__["country"].type_
-        self.assertTrue(CountryModel is int)
+        self.assertIs(CountryModel, int)
 
         #######################################################################
         # Test with `model_name` arg
@@ -638,7 +638,7 @@ class TestRecursionDepth(TestCase):
 
         # We should have hit the recursion depth:
         CountryModel = ManagerModel.__fields__["country"].type_
-        self.assertTrue(CountryModel is int)
+        self.assertIs(CountryModel, int)
 
 
 class TestDBColumnName(TestCase):
@@ -655,7 +655,7 @@ class TestDBColumnName(TestCase):
 
         model = BandModel(regrettable_column_name="test")
 
-        self.assertTrue(model.name == "test")
+        self.assertEqual(model.name, "test")
 
 
 class TestSchemaExtraKwargs(TestCase):
