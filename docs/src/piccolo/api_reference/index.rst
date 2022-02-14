@@ -46,3 +46,15 @@ Indexes
     :members:
     :undoc-members:
 
+-------------------------------------------------------------------------------
+
+Column defaults
+---------------
+
+.. currentmodule:: piccolo.columns.defaults
+
+Date
+~~~~
+
+.. autoclass:: DateOffset
+    :members:
