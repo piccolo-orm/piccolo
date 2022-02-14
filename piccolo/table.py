@@ -468,9 +468,9 @@ class Table(metaclass=TableMetaclass):
 
             >>> band = await Band.objects().get(Band.name == "Pythonistas")
             >>> await band.add_m2m(
-            >>>     Genre(name="Punk rock"),
-            >>>     m2m=Band.genres
-            >>> )
+            ...     Genre(name="Punk rock"),
+            ...     m2m=Band.genres
+            ... )
             [{'id': 1}]
 
         :param extra_column_values:
@@ -514,9 +514,9 @@ class Table(metaclass=TableMetaclass):
             >>> band = await Band.objects().get(Band.name == "Pythonistas")
             >>> genre = await Genre.objects().get(Genre.name == "Rock")
             >>> await band.remove_m2m(
-            >>>     genre,
-            >>>     m2m=Band.genres
-            >>> )
+            ...     genre,
+            ...     m2m=Band.genres
+            ... )
 
         """
         return M2MRemoveRelated(

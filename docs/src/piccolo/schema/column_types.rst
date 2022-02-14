@@ -231,10 +231,10 @@ However, we can ask Piccolo to deserialise the JSON automatically (see :ref:`loa
 .. code-block:: python
 
     >>> await RecordingStudio.select(
-    >>>     RecordingStudio.facilities
-    >>> ).output(
-    >>>     load_json=True
-    >>> )
+    ...     RecordingStudio.facilities
+    ... ).output(
+    ...     load_json=True
+    ... )
     [facilities: {"restaurant": True, "mixing_desk": True}}]
 
 With ``objects`` queries, we can modify the returned JSON, and then save it:
@@ -257,9 +257,9 @@ a subset of the JSON data:
 .. code-block:: python
 
     >>> await RecordingStudio.select(
-    >>>     RecordingStudio.name,
-    >>>     RecordingStudio.facilities.arrow('mixing_desk').as_alias('mixing_desk')
-    >>> ).output(load_json=True)
+    ...     RecordingStudio.name,
+    ...     RecordingStudio.facilities.arrow('mixing_desk').as_alias('mixing_desk')
+    ... ).output(load_json=True)
     [{'name': 'Abbey Road', 'mixing_desk': True}]
 
 It can also be used for filtering in a where clause:
@@ -267,8 +267,8 @@ It can also be used for filtering in a where clause:
 .. code-block:: python
 
     >>> await RecordingStudio.select(RecordingStudio.name).where(
-    >>>     RecordingStudio.facilities.arrow('mixing_desk') == True
-    >>> )
+    ...     RecordingStudio.facilities.arrow('mixing_desk') == True
+    ... )
     [{'name': 'Abbey Road'}]
 
 Handling null
@@ -282,10 +282,10 @@ treated as null in the database.
     await RecordingStudio(name="ABC Studios", facilities=None).save()
 
     >>> await RecordingStudio.select(
-    >>>     RecordingStudio.facilities
-    >>> ).where(
-    >>>     RecordingStudio.name == "ABC Studios"
-    >>> )
+    ...     RecordingStudio.facilities
+    ... ).where(
+    ...     RecordingStudio.name == "ABC Studios"
+    ... )
     [{'facilities': None}]
 
 
@@ -297,10 +297,10 @@ instead.
     await RecordingStudio(name="ABC Studios", facilities='null').save()
 
     >>> await RecordingStudio.select(
-    >>>     RecordingStudio.facilities
-    >>> ).where(
-    >>>     RecordingStudio.name == "ABC Studios"
-    >>> )
+    ...     RecordingStudio.facilities
+    ... ).where(
+    ...     RecordingStudio.name == "ABC Studios"
+    ... )
     [{'facilities': 'null'}]
 
 -------------------------------------------------------------------------------

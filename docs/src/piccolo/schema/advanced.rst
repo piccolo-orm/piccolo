@@ -124,9 +124,9 @@ where a query requires a value.
 .. code-block:: python
 
     >>> await Shirt.insert(
-    >>>     Shirt(size=Shirt.Size.small),
-    >>>     Shirt(size=Shirt.Size.medium)
-    >>> )
+    ...     Shirt(size=Shirt.Size.small),
+    ...     Shirt(size=Shirt.Size.medium)
+    ... )
 
     >>> await Shirt.select().where(Shirt.size == Shirt.Size.small)
     [{'id': 1, 'size': 's'}]

@@ -755,8 +755,8 @@ class Timestamp(Column):
 
         # Create
         >>> await Concert(
-        >>>    starts=datetime.datetime(year=2050, month=1, day=1)
-        >>> ).save()
+        ...    starts=datetime.datetime(year=2050, month=1, day=1)
+        ... ).save()
 
         # Query
         >>> await Concert.select(Concert.starts)
@@ -821,10 +821,10 @@ class Timestamptz(Column):
 
         # Create
         >>> await Concert(
-        >>>    starts=datetime.datetime(
-        >>>        year=2050, month=1, day=1, tzinfo=datetime.timezone.tz
-        >>>    )
-        >>> ).save()
+        ...    starts=datetime.datetime(
+        ...        year=2050, month=1, day=1, tzinfo=datetime.timezone.tz
+        ...    )
+        ... ).save()
 
         # Query
         >>> await Concert.select(Concert.starts)
@@ -888,8 +888,8 @@ class Date(Column):
 
         # Create
         >>> await Concert(
-        >>>     starts=datetime.date(year=2020, month=1, day=1)
-        >>> ).save()
+        ...     starts=datetime.date(year=2020, month=1, day=1)
+        ... ).save()
 
         # Query
         >>> await Concert.select(Concert.starts)
@@ -945,8 +945,8 @@ class Time(Column):
 
         # Create
         >>> await Concert(
-        >>>    starts=datetime.time(hour=20, minute=0, second=0)
-        >>> ).save()
+        ...    starts=datetime.time(hour=20, minute=0, second=0)
+        ... ).save()
 
         # Query
         >>> await Concert.select(Concert.starts)
@@ -999,8 +999,8 @@ class Interval(Column):  # lgtm [py/missing-equals]
 
         # Create
         >>> await Concert(
-        >>>    duration=timedelta(hours=2)
-        >>> ).save()
+        ...    duration=timedelta(hours=2)
+        ... ).save()
 
         # Query
         >>> await Concert.select(Concert.duration)
