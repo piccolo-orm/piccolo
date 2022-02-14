@@ -10,12 +10,12 @@ class TestBatchSelect(DBTestCase):
         """
         Make sure the data is returned in the correct format.
         """
-        self.assertTrue(type(batch) == list)
+        self.assertEqual(type(batch), list)
         if len(batch) > 0:
             row = batch[0]
-            self.assertTrue(type(row) == dict)
-            self.assertTrue("name" in row.keys())
-            self.assertTrue("id" in row.keys())
+            self.assertEqual(type(row), dict)
+            self.assertIn("name", row.keys())
+            self.assertIn("id", row.keys())
 
     async def run_batch(self, batch_size):
         row_count = 0
@@ -44,8 +44,8 @@ class TestBatchSelect(DBTestCase):
 
         _iterations = math.ceil(row_count / batch_size)
 
-        self.assertTrue(_row_count == row_count)
-        self.assertTrue(iterations == _iterations)
+        self.assertEqual(_row_count, row_count)
+        self.assertEqual(iterations, _iterations)
 
 
 class TestBatchObjects(DBTestCase):
@@ -53,10 +53,10 @@ class TestBatchObjects(DBTestCase):
         """
         Make sure the data is returned in the correct format.
         """
-        self.assertTrue(type(batch) == list)
+        self.assertEqual(type(batch), list)
         if len(batch) > 0:
             row = batch[0]
-            self.assertTrue(isinstance(row, Manager))
+            self.assertIsInstance(row, Manager)
 
     async def run_batch(self, batch_size):
         row_count = 0
@@ -85,5 +85,5 @@ class TestBatchObjects(DBTestCase):
 
         _iterations = math.ceil(row_count / batch_size)
 
-        self.assertTrue(_row_count == row_count)
-        self.assertTrue(iterations == _iterations)
+        self.assertEqual(_row_count, row_count)
+        self.assertEqual(iterations, _iterations)

@@ -27,7 +27,7 @@ class TestCreateWithIndexes(TestCase):
     def test_create_table_with_indexes(self):
         index_names = BandMember.indexes().run_sync()
         index_name = BandMember._get_index_name(["name"])
-        self.assertTrue(index_name in index_names)
+        self.assertIn(index_name, index_names)
 
     def test_create_if_not_exists_with_indexes(self):
         """

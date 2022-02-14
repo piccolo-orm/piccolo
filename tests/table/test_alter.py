@@ -86,7 +86,7 @@ class TestDropColumn(DBTestCase):
         response = Band.raw("SELECT * FROM band").run_sync()
 
         column_names = response[0].keys()
-        self.assertTrue("popularity" not in column_names)
+        self.assertNotIn("popularity", column_names)
 
     def test_drop_string(self):
         self._test_drop(Band.popularity)
@@ -105,7 +105,7 @@ class TestAddColumn(DBTestCase):
         response = Band.raw("SELECT * FROM band").run_sync()
 
         column_names = response[0].keys()
-        self.assertTrue(column_name in column_names)
+        self.assertIn(column_name, column_names)
 
         self.assertEqual(response[0][column_name], expected_value)
 
@@ -158,7 +158,7 @@ class TestUnique(DBTestCase):
             Manager(name="Bob").save().run_sync()
 
         response = Manager.select().run_sync()
-        self.assertTrue(len(response) == 2)
+        self.assertEqual(len(response), 2)
 
         # Now remove the constraint, and add a row.
         not_unique_query = Manager.alter().set_unique(Manager.name, False)
@@ -188,8 +188,8 @@ class TestMultiple(DBTestCase):
         response = Band.raw("SELECT * FROM manager").run_sync()
 
         column_names = response[0].keys()
-        self.assertTrue("column_a" in column_names)
-        self.assertTrue("column_b" in column_names)
+        self.assertIn("column_a", column_names)
+        self.assertIn("column_b", column_names)
 
 
 # TODO - test more conversions.
@@ -271,11 +271,11 @@ class TestSetNull(DBTestCase):
 
         Band.alter().set_null(Band.popularity, boolean=True).run_sync()
         response = Band.raw(query).run_sync()
-        self.assertTrue(response[0]["is_nullable"] == "YES")
+        self.assertEqual(response[0]["is_nullable"], "YES")
 
         Band.alter().set_null(Band.popularity, boolean=False).run_sync()
         response = Band.raw(query).run_sync()
-        self.assertTrue(response[0]["is_nullable"] == "NO")
+        self.assertEqual(response[0]["is_nullable"], "NO")
 
 
 @postgres_only
@@ -291,7 +291,7 @@ class TestSetLength(DBTestCase):
         for length in (5, 20, 50):
             Band.alter().set_length(Band.name, length=length).run_sync()
             response = Band.raw(query).run_sync()
-            self.assertTrue(response[0]["character_maximum_length"] == length)
+            self.assertEqual(response[0]["character_maximum_length"], length)
 
 
 @postgres_only
@@ -305,7 +305,7 @@ class TestSetDefault(DBTestCase):
         ).run_sync()
 
         manager = Manager.objects().first().run_sync()
-        self.assertTrue(manager.name == "Pending")
+        self.assertEqual(manager.name, "Pending")
 
 
 ###############################################################################
@@ -336,10 +336,10 @@ class TestSetDigits(TestCase):
             column=Ticket.price, digits=(6, 2)
         ).run_sync()
         response = Ticket.raw(query).run_sync()
-        self.assertTrue(response[0]["numeric_precision"] == 6)
-        self.assertTrue(response[0]["numeric_scale"] == 2)
+        self.assertEqual(response[0]["numeric_precision"], 6)
+        self.assertEqual(response[0]["numeric_scale"], 2)
 
         Ticket.alter().set_digits(column=Ticket.price, digits=None).run_sync()
         response = Ticket.raw(query).run_sync()
-        self.assertTrue(response[0]["numeric_precision"] is None)
-        self.assertTrue(response[0]["numeric_scale"] is None)
+        self.assertIsNone(response[0]["numeric_precision"])
+        self.assertIsNone(response[0]["numeric_scale"])

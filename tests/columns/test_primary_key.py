@@ -139,7 +139,7 @@ class TestPrimaryKeyQueries(TestCase):
             ["pk", "name"],
         )
 
-        self.assertTrue(isinstance(manager_dict["pk"], uuid.UUID))
+        self.assertIsInstance(manager_dict["pk"], uuid.UUID)
 
         #######################################################################
         # Make sure we can create rows with foreign keys to tables with a
@@ -155,8 +155,8 @@ class TestPrimaryKeyQueries(TestCase):
         self.assertEqual(
             [i for i in band_dict.keys()], ["pk", "name", "manager"]
         )
-        self.assertTrue(isinstance(band_dict["pk"], uuid.UUID))
-        self.assertTrue(isinstance(band_dict["manager"], uuid.UUID))
+        self.assertIsInstance(band_dict["pk"], uuid.UUID)
+        self.assertIsInstance(band_dict["manager"], uuid.UUID)
 
         #######################################################################
         # Make sure foreign key values can be specified as the primary key's

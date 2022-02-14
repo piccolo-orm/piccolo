@@ -27,11 +27,11 @@ class TestIndexes(TestCase):
             )
 
             index_names = Manager.indexes().run_sync()
-            self.assertTrue(index_name in index_names)
+            self.assertIn(index_name, index_names)
 
             Manager.drop_index(columns).run_sync()
             index_names = Manager.indexes().run_sync()
-            self.assertTrue(index_name not in index_names)
+            self.assertNotIn(index_name, index_names)
 
 
 class Concert(Table):
@@ -55,11 +55,11 @@ class TestProblematicColumnName(TestCase):
         index_name = Concert._get_index_name([i._meta.name for i in columns])
 
         index_names = Concert.indexes().run_sync()
-        self.assertTrue(index_name in index_names)
+        self.assertIn(index_name, index_names)
 
         Concert.drop_index(columns).run_sync()
         index_names = Concert.indexes().run_sync()
-        self.assertTrue(index_name not in index_names)
+        self.assertNotIn(index_name, index_names)
 
 
 class TestIndexName(TestCase):

@@ -9,7 +9,7 @@ class TestTableExists(TestCase):
 
     def test_table_exists(self):
         response = Manager.table_exists().run_sync()
-        self.assertTrue(response is True)
+        self.assertTrue(response)
 
     def tearDown(self):
         Manager.alter().drop_table().run_sync()

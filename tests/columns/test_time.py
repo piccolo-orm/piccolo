@@ -46,7 +46,7 @@ class TestTimeDefault(TestCase):
         _datetime = partial(datetime.datetime, year=2020, month=1, day=1)
 
         result = MyTableDefault.objects().first().run_sync()
-        self.assertTrue(
+        self.assertLess(
             _datetime(
                 hour=result.created_on.hour,
                 minute=result.created_on.minute,
@@ -56,6 +56,6 @@ class TestTimeDefault(TestCase):
                 hour=created_on.hour,
                 minute=created_on.minute,
                 second=created_on.second,
-            )
-            < datetime.timedelta(seconds=1)
+            ),
+            datetime.timedelta(seconds=1)
         )
