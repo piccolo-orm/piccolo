@@ -18,3 +18,22 @@ LazyTableReference
 
 .. autoclass:: LazyTableReference
     :members:
+
+-------------------------------------------------------------------------------
+
+Enums
+-----
+
+Foreign Keys
+~~~~~~~~~~~~
+
+.. currentmodule:: piccolo.columns
+
+.. autoclass:: OnDelete
+    :members:
+    :undoc-members:
+
+.. autoclass:: OnUpdate
+    :members:
+    :undoc-members:
+

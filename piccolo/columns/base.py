@@ -40,6 +40,11 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 
 class OnDelete(str, Enum):
+    """
+    Used by :class:`ForeignKey <piccolo.columns.column_types.ForeignKey>` to
+    specify the behaviour when a related row is deleted.
+    """
+
     cascade = "CASCADE"
     restrict = "RESTRICT"
     no_action = "NO ACTION"
@@ -54,6 +59,11 @@ class OnDelete(str, Enum):
 
 
 class OnUpdate(str, Enum):
+    """
+    Used by :class:`ForeignKey <piccolo.columns.column_types.ForeignKey>` to
+    specify the behaviour when a related row is updated.
+    """
+
     cascade = "CASCADE"
     restrict = "RESTRICT"
     no_action = "NO ACTION"
