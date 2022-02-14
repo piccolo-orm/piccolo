@@ -2,7 +2,7 @@ Creating migrations
 ===================
 
 Migrations are Python files which are used to modify the database schema in a
-controlled way. Each migration belongs to a Piccolo app (see :ref:`PiccoloApps`).
+controlled way. Each migration belongs to a :ref:`Piccolo app <PiccoloApps>`.
 
 You can either manually populate migrations, or allow Piccolo to do it for you
 automatically. To create an empty migration:
