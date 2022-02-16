@@ -68,8 +68,8 @@ For example:
 The Piccolo Admin (see :ref:`Ecosystem`) uses these attributes to control who
 can login and what they can do.
 
- * **active** and **admin** - must be true for a user to be able to login.
- * **superuser** - must be true for a user to be able to change other user's
+* **active** and **admin** - must be true for a user to be able to login.
+* **superuser** - must be true for a user to be able to change other user's
    passwords.
 
 -------------------------------------------------------------------------------

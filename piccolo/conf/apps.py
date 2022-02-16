@@ -336,8 +336,8 @@ class Finder:
         Searches the path for a 'piccolo_conf.py' module to import. The
         location searched can be overriden by:
 
-         * Explicitly passing a module name into this method.
-         * Setting the PICCOLO_CONF environment variable.
+        * Explicitly passing a module name into this method.
+        * Setting the PICCOLO_CONF environment variable.
 
         An example override is 'my_folder.piccolo_conf'.
 
