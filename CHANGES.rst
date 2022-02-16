@@ -4,13 +4,13 @@ Changes
 0.69.2
 ------
 
- * Lots of documentation improvements, including how to customise ``BaseUser``
-   (courtesy @sinisaos).
- * Fixed a bug with creating indexes when the column name clashes with a SQL
-   keyword (e.g. ``'order'``). See `Pr 433 <https://github.com/piccolo-orm/piccolo/pull/433>`_.
-   Thanks to @wmshort for reporting this issue.
- * Fixed an issue where some slots were incorrectly configured (courtesy
-   @ariebovenberg). See `PR 426 <https://github.com/piccolo-orm/piccolo/pull/426>`_.
+* Lots of documentation improvements, including how to customise ``BaseUser``
+  (courtesy @sinisaos).
+* Fixed a bug with creating indexes when the column name clashes with a SQL
+  keyword (e.g. ``'order'``). See `Pr 433 <https://github.com/piccolo-orm/piccolo/pull/433>`_.
+  Thanks to @wmshort for reporting this issue.
+* Fixed an issue where some slots were incorrectly configured (courtesy
+  @ariebovenberg). See `PR 426 <https://github.com/piccolo-orm/piccolo/pull/426>`_.
 
 -------------------------------------------------------------------------------
 

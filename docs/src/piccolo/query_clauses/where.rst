@@ -94,16 +94,20 @@ Usage is the same as ``like`` excepts it excludes matching rows.
 is_in / not_in
 --------------
 
+You can get all rows with a value contained in the list:
+
 .. code-block:: python
 
     await Band.select().where(
-        Band.name.is_in(['Pythonistas'])
+        Band.name.is_in(['Pythonistas', 'Rustaceans'])
     )
 
+And all rows with a value not contained in the list:
+
 .. code-block:: python
 
     await Band.select().where(
-        Band.name.not_in(['Rustaceans'])
+        Band.name.not_in(['Terrible Band', 'Awful Band'])
     )
 
 -------------------------------------------------------------------------------

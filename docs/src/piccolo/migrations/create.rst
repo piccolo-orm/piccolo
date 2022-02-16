@@ -12,12 +12,14 @@ automatically. To create an empty migration:
     piccolo migrations new my_app
 
 This creates a new migration file in the migrations folder of the app. The
-migration filename is a timestamp, which also serves as the migration ID.
+migration filename is a timestamp:
 
 .. code-block:: bash
 
     piccolo_migrations/
         2021-08-06T16-22-51-415781.py
+
+.. hint:: You can rename this file if you like to make it more memorable.
 
 The contents of an empty migration file looks like this:
 
@@ -39,6 +41,9 @@ The contents of an empty migration file looks like this:
 
         manager.add_raw(run)
         return manager
+
+The ``ID`` is very important - it uniquely identifies the migration, and
+shouldn't be changed.
 
 Replace the ``run`` function with whatever you want the migration to do -
 typically running some SQL. It can be a function or a coroutine.
