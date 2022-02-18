@@ -11,7 +11,7 @@ You need `Python 3.7 <https://www.python.org/downloads/>`_ or above installed on
 Pip
 ---
 
-Now install piccolo, ideally inside a `virtualenv <https://docs.python-guide.org/dev/virtualenvs/>`_:
+Now install Piccolo, ideally inside a `virtualenv <https://docs.python-guide.org/dev/virtualenvs/>`_:
 
 .. code-block:: python
 

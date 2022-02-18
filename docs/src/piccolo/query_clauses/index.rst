@@ -7,7 +7,7 @@ Query clauses are used to modify a query by making it more specific, or
 by modifying the return values.
 
 .. toctree::
-    :maxdepth: 0
+    :maxdepth: 1
 
     ./first
     ./distinct
