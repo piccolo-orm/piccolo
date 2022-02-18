@@ -366,7 +366,8 @@ class Column(Selectable):
         the speed of selects, but can slow down inserts.
 
     :param index_method:
-        If index is set to True, this specifies what type of index is created.
+        If index is set to ``True``, this specifies what type of index is
+        created.
 
     :param required:
         This isn't used by the database - it's to indicate to other tools that

@@ -1506,11 +1506,11 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
 
         Options:
 
-            * ``OnDelete.cascade`` (default)
-            * ``OnDelete.restrict``
-            * ``OnDelete.no_action``
-            * ``OnDelete.set_null``
-            * ``OnDelete.set_default``
+        * ``OnDelete.cascade`` (default)
+        * ``OnDelete.restrict``
+        * ``OnDelete.no_action``
+        * ``OnDelete.set_null``
+        * ``OnDelete.set_default``
 
         To learn more about the different options, see the `Postgres docs <https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-FK>`_.
 
@@ -1532,11 +1532,11 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
 
         Options:
 
-            * ``OnUpdate.cascade`` (default)
-            * ``OnUpdate.restrict``
-            * ``OnUpdate.no_action``
-            * ``OnUpdate.set_null``
-            * ``OnUpdate.set_default``
+        * ``OnUpdate.cascade`` (default)
+        * ``OnUpdate.restrict``
+        * ``OnUpdate.no_action``
+        * ``OnUpdate.set_null``
+        * ``OnUpdate.set_default``
 
         To learn more about the different options, see the `Postgres docs <https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-FK>`_.
 
@@ -1815,7 +1815,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
             setattr(self, _column._meta.name, _column)
             _fk_meta.proxy_columns.append(_column)
 
-    def __getattribute__(self, name: str):
+    def __getattribute__(self, name: str) -> t.Union[Column, t.Any]:
         """
         Returns attributes unmodified unless they're Column instances, in which
         case a copy is returned with an updated call_chain (which records the
