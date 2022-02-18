@@ -32,7 +32,7 @@ The docs are written using Sphinx. To get them running locally:
 * Install the requirements: ``pip install -r requirements/doc-requirements.txt``
 * ``cd docs``
 * Do an initial build of the docs: ``make html``
-* Serve the docs: ``python serve_docs.py``
+* Serve the docs: ``./scripts/run-docs.sh``
 * The docs will auto rebuild as you make changes.
 
 -------------------------------------------------------------------------------

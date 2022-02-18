@@ -87,9 +87,9 @@ autoclass_content = "both"
 
 # -- Options for HTML output -------------------------------------------------
 
-html_theme = "sphinx_rtd_theme"
-html_logo = "logo.png"
-html_theme_options = {"logo_only": True}
+html_theme = "piccolo_theme"
+html_show_sphinx = False
+globaltoc_maxdepth = 3
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
