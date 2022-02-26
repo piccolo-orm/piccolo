@@ -26,7 +26,7 @@ migration filename is a timestamp:
 .. code-block:: bash
 
     piccolo_migrations/
-        2021-08-06T16-22-51-415781.py
+        2022-02-26T17-38-44-758593.py
 
 .. hint:: You can rename this file if you like to make it more memorable.
 
