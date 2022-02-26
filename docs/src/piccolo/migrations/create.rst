@@ -5,7 +5,16 @@ Migrations are Python files which are used to modify the database schema in a
 controlled way. Each migration belongs to a :ref:`Piccolo app <PiccoloApps>`.
 
 You can either manually populate migrations, or allow Piccolo to do it for you
-automatically. To create an empty migration:
+automatically.
+
+We recommend using automatic migrations where possible, as it saves you time.
+
+-------------------------------------------------------------------------------
+
+Manual migrations
+-----------------
+
+First, let's create an empty migration:
 
 .. code-block:: bash
 
@@ -28,15 +37,20 @@ The contents of an empty migration file looks like this:
     from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 
 
-    ID = '2021-08-06T16:22:51:415781'
-    VERSION = "0.29.0" # The version of Piccolo used to create it
+    ID = "2022-02-26T17:38:44:758593"
+    VERSION = "0.69.2" # The version of Piccolo used to create it
     DESCRIPTION = "Optional description"
 
 
     async def forwards():
-        manager = MigrationManager(migration_id=ID, app_name="my_app", description=DESCRIPTION)
+        manager = MigrationManager(
+            migration_id=ID,
+            app_name="my_app",
+            description=DESCRIPTION
+        )
 
         def run():
+            # Replace this with something useful:
             print(f"running {ID}")
 
         manager.add_raw(run)
@@ -48,37 +62,119 @@ shouldn't be changed.
 Replace the ``run`` function with whatever you want the migration to do -
 typically running some SQL. It can be a function or a coroutine.
 
--------------------------------------------------------------------------------
+Running raw SQL
+~~~~~~~~~~~~~~~
 
-The golden rule
----------------
-
-Never import your tables directly into a migration, and run methods on them.
-
-This is a **bad example**:
+If you want to run raw SQL within your migration, you can do so as follows:
 
 .. code-block:: python
 
-    from ..tables import Band
+    from piccolo.apps.migrations.auto.migration_manager import MigrationManager
+    from piccolo.table import Table
 
-    ID = '2021-08-06T16:22:51:415781'
-    VERSION = "0.29.0" # The version of Piccolo used to create it
-    DESCRIPTION = "Optional description"
+
+    ID = "2022-02-26T17:38:44:758593"
+    VERSION = "0.69.2"
+    DESCRIPTION = "Updating each band's popularity"
+
+
+    # This is just a dummy table we use to execute raw SQL with:
+    class RawTable(Table):
+        pass
 
 
     async def forwards():
-        manager = MigrationManager(migration_id=ID)
+        manager = MigrationManager(
+            migration_id=ID,
+            app_name="my_app",
+            description=DESCRIPTION
+        )
 
         async def run():
-            await Band.create_table().run()
+            await RawTable.raw('UPDATE band SET popularity={}', 1000)
 
         manager.add_raw(run)
         return manager
 
-The reason you don't want to do this, is your tables will change over time. If
-someone runs your migrations in the future, they will get different results.
-Make your migrations completely independent of other code, so they're
-self contained and repeatable.
+.. hint:: You can learn more about :ref:`raw queries here <Raw>`.
+
+Using your ``Table`` classes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the above example, we executed raw SQL, but what if we wanted to use the
+``Table`` classes from our project instead?
+
+We have to be quite careful with this. Here's an example:
+
+.. code-block:: python
+
+    from piccolo.apps.migrations.auto.migration_manager import MigrationManager
+
+    # We're importing a table from our project:
+    from music.tables import Band
+
+
+    ID = "2022-02-26T17:38:44:758593"
+    VERSION = "0.69.2"
+    DESCRIPTION = "Updating each band's popularity"
+
+
+    async def forwards():
+        manager = MigrationManager(
+            migration_id=ID,
+            app_name="my_app",
+            description=DESCRIPTION
+        )
+
+        async def run():
+            await Band.update({Band.popularity: 1000})
+
+        manager.add_raw(run)
+        return manager
+
+We want our migrations to be repeatable - so if someone runs them a year from
+now, they will get the same results.
+
+By directly importing our tables, we have the following risks:
+
+* If the ``Band`` class is deleted from the codebase, it could break old
+  migrations.
+* If we modify the ``Band`` class, perhaps by removing columns, this could also
+  break old migrations.
+
+Try and make your migration files independent of other application code, so
+they're self contained and repeatable. Even though it goes against `DRY <https://en.wikipedia.org/wiki/Don%27t_repeat_yourself>`_,
+it's better to copy the relevant tables into your migration file:
+
+.. code-block:: python
+
+    from piccolo.apps.migrations.auto.migration_manager import MigrationManager
+    from piccolo.columns.column_types import Integer
+    from piccolo.table import Table
+
+
+    ID = "2022-02-26T17:38:44:758593"
+    VERSION = "0.69.2"
+    DESCRIPTION = "Updating each band's popularity"
+
+
+    # We defined the table within the file, rather than importing it.
+    class Band(Table):
+        popularity = Integer()
+
+
+    async def forwards():
+        manager = MigrationManager(
+            migration_id=ID,
+            app_name="my_app",
+            description=DESCRIPTION
+        )
+
+        async def run():
+            await Band.update({Band.popularity: 1000})
+
+        manager.add_raw(run)
+        return manager
 
 -------------------------------------------------------------------------------
 
