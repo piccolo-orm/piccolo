@@ -116,6 +116,14 @@ class WhereDelegate:
 
     def where(self, *where: Combinable):
         for arg in where:
+            if isinstance(arg, bool):
+                raise ValueError(
+                    "A boolean value has been passed in to a where clause. "
+                    "This is probably a mistake. For example "
+                    "`.where(MyTable.some_column is None)` instead of "
+                    "`.where(MyTable.some_column.is_null())`."
+                )
+
             self._where = And(self._where, arg) if self._where else arg
 
 

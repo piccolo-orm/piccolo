@@ -239,6 +239,15 @@ class TestSelect(DBTestCase):
             response = query.run_sync()
             self.assertEqual(response, [{"name": "Managerless"}])
 
+    def test_where_bool(self):
+        """
+        If passing a boolean into a where clause, an exception should be
+        raised. It's possible for a user to do this by accident, for example
+        ``where(Band.has_drummer is None)``, which evaluates to a boolean.
+        """
+        with self.assertRaises(ValueError):
+            Band.select().where(False)
+
     def test_where_is_not_null(self):
         self.insert_rows()
 
