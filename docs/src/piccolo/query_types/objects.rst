@@ -164,7 +164,7 @@ database, just as you would expect:
 .. code-block:: python
 
     ticket.concert.band_1.name = 'Pythonistas 2'
-    ticket.concert.band_1.save().run_sync()
+    await ticket.concert.band_1.save()
 
 Instead of passing the ``ForeignKey`` columns into the ``objects`` method, you
 can use the ``prefetch`` clause if you prefer.
