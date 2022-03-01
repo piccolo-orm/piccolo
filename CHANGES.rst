@@ -1,6 +1,25 @@
 Changes
 =======
 
+0.69.3
+------
+
+The ``where`` clause now raises a ``ValueError`` if a boolean value is
+passed in by accident. This was possible in the following situation:
+
+.. code-block:: python
+
+  await Band.select().where(Band.has_drummer is None)
+
+Piccolo can't override the ``is`` operator because Python doesn't allow it,
+so ``Band.has_drummer is None`` will always equal ``False``. Thanks to
+@trondhindenes for reporting this issue.
+
+We've also put a lot of effort into improving documentation throughout the
+project.
+
+-------------------------------------------------------------------------------
+
 0.69.2
 ------
 
