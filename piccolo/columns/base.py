@@ -661,13 +661,13 @@ class Column(Selectable):
 
         return False
 
-    def __eq__(self, value) -> Where:  # type: ignore
+    def __eq__(self, value) -> Where:  # type: ignore[override]
         if value is None:
             return Where(column=self, operator=IsNull)
         else:
             return Where(column=self, value=value, operator=Equal)
 
-    def __ne__(self, value) -> Where:  # type: ignore
+    def __ne__(self, value) -> Where:  # type: ignore[override]
         if value is None:
             return Where(column=self, operator=IsNotNull)
         else:
