@@ -828,7 +828,8 @@ async def get_output_schema(
         raise GenerateError(
             [
                 type(e)(
-                    f"Exception occurred while generating `{tables[index]}` table: {e}"
+                    f"Exception occurred while generating"
+                    f" `{tables[index]}` table: {e}"
                 )
                 for index, e in exceptions
             ]
