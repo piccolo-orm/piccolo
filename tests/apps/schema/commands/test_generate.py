@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import ast
+import asyncio
 import typing as t
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
+from piccolo.apps.schema.commands.exceptions import GenerateError
 from piccolo.apps.schema.commands.generate import (
     OutputSchema,
     generate,
@@ -260,3 +262,24 @@ class TestGenerateWithSchema(TestCase):
         # Make sure foreign key values are correct.
         self.assertEqual(writer.publication, publication)
         self.assertEqual(book.writer, writer)
+
+
+@postgres_only
+class TestGenerateWithException(TestCase):
+    def setUp(self):
+        Concert.create_table().run_sync()
+
+    def tearDown(self):
+        Concert.alter().drop_table(if_exists=True).run_sync()
+
+    @patch("piccolo.apps.schema.commands.generate.create_table_class_from_db")
+    def test_exception(self, create_table_class_from_db_mock: MagicMock):
+        """
+        Make sure that a GenerateError exception is raised with all the exceptions gathered.
+        """
+        create_table_class_from_db_mock.side_effect = Exception("Test")
+
+        with self.assertRaises(GenerateError):
+            loop = asyncio.new_event_loop()
+            loop.run_until_complete(get_output_schema())
+            loop.close()

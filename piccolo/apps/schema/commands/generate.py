@@ -12,6 +12,7 @@ import black
 from typing_extensions import Literal
 
 from piccolo.apps.migrations.auto.serialisation import serialise_params
+from piccolo.apps.schema.commands.exceptions import GenerateError
 from piccolo.columns import defaults
 from piccolo.columns.base import Column, OnDelete, OnUpdate
 from piccolo.columns.column_types import (
@@ -806,14 +807,32 @@ async def get_output_schema(
     if not include:
         include = await get_tablenames(Schema, schema_name=schema_name)
 
+    tables = [tablename for tablename in include if tablename not in exclude]
     table_coroutines = (
         create_table_class_from_db(
             table_class=Schema, tablename=tablename, schema_name=schema_name
         )
-        for tablename in include
-        if tablename not in exclude
+        for tablename in tables
     )
-    output_schemas = await asyncio.gather(*table_coroutines)
+    output_schemas = await asyncio.gather(
+        *table_coroutines, return_exceptions=True
+    )
+
+    # handle exceptions
+    exceptions = []
+    for index, schema in enumerate(output_schemas):
+        if isinstance(schema, Exception):
+            exceptions.append((index, schema))
+
+    if exceptions:
+        raise GenerateError(
+            [
+                type(e)(
+                    f"Exception occurred while generating `{tables[index]}` table: {e}"
+                )
+                for index, e in exceptions
+            ]
+        )
 
     # Merge all the output schemas to a single OutputSchema object
     output_schema: OutputSchema = sum(output_schemas)  # type: ignore
