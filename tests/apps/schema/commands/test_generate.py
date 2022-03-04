@@ -268,9 +268,11 @@ class TestGenerateWithSchema(TestCase):
 class TestGenerateWithException(TestCase):
     def setUp(self):
         Concert.create_table().run_sync()
+        self.loop = asyncio.new_event_loop()
 
     def tearDown(self):
         Concert.alter().drop_table(if_exists=True).run_sync()
+        self.loop.close()
 
     @patch("piccolo.apps.schema.commands.generate.create_table_class_from_db")
     def test_exception(self, create_table_class_from_db_mock: MagicMock):
@@ -280,6 +282,4 @@ class TestGenerateWithException(TestCase):
         create_table_class_from_db_mock.side_effect = Exception("Test")
 
         with self.assertRaises(GenerateError):
-            loop = asyncio.new_event_loop()
-            loop.run_until_complete(get_output_schema())
-            loop.close()
+            self.loop.run_until_complete(get_output_schema())
