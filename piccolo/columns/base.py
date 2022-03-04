@@ -458,12 +458,6 @@ class Column(Selectable):
             }
         )
 
-        if kwargs.get("default", ...) is None and not null:
-            raise ValueError(
-                "A default value of None isn't allowed if the column is "
-                "not nullable."
-            )
-
         if choices is not None:
             self._validate_choices(choices, allowed_type=self.value_type)
 
