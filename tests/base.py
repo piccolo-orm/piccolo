@@ -85,7 +85,7 @@ class DBTestCase(TestCase):
     # Postgres specific utils
 
     def get_postgres_column_definition(
-            self, tablename: str, column_name: str
+        self, tablename: str, column_name: str
     ) -> RowMeta:
         query = """
             SELECT {columns} FROM information_schema.columns
@@ -104,7 +104,7 @@ class DBTestCase(TestCase):
             raise ValueError("No such column")
 
     def get_postgres_column_type(
-            self, tablename: str, column_name: str
+        self, tablename: str, column_name: str
     ) -> str:
         """
         Fetches the column type as a string, from the database.
@@ -118,14 +118,14 @@ class DBTestCase(TestCase):
         Fetches whether the column is defined as nullable, from the database.
         """
         return (
-                self.get_postgres_column_definition(
-                    tablename=tablename, column_name=column_name
-                ).is_nullable.upper()
-                == "YES"
+            self.get_postgres_column_definition(
+                tablename=tablename, column_name=column_name
+            ).is_nullable.upper()
+            == "YES"
         )
 
     def get_postgres_varchar_length(
-            self, tablename, column_name: str
+        self, tablename, column_name: str
     ) -> t.Optional[int]:
         """
         Fetches whether the column is defined as nullable, from the database.
