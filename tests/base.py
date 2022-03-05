@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import sys
 import typing as t
-from typing import Type
 from unittest import TestCase
 from unittest.mock import MagicMock
 
@@ -31,21 +30,13 @@ unix_only = pytest.mark.skipif(
 
 class AsyncMock(MagicMock):
     """
-    Async MagicMock for python 3.7
+    Async MagicMock for python 3.7+.
+    This is a workaround for the fact that MagicMock
+     is not async compatible in python 3.7.
     """
 
     async def __call__(self, *args, **kwargs):
         return super(AsyncMock, self).__call__(*args, **kwargs)
-
-
-def get_async_mock() -> Type[AsyncMock | MagicMock]:
-    """
-    Returns an AsyncMock for python 3.7+
-    """
-    if sys.version_info == (3, 7):
-        return AsyncMock
-    elif sys.version_info >= (3, 8):
-        return MagicMock
 
 
 def set_mock_return_value(magic_mock: MagicMock, return_value: t.Any):

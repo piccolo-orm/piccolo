@@ -23,7 +23,7 @@ from piccolo.columns.indexes import IndexMethod
 from piccolo.engine import Engine, engine_finder
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
-from tests.base import get_async_mock, postgres_only
+from tests.base import AsyncMock, postgres_only
 from tests.example_apps.mega.tables import MegaTable, SmallTable
 
 
@@ -276,9 +276,9 @@ class TestGenerateWithException(TestCase):
 
     @patch(
         "piccolo.apps.schema.commands.generate.create_table_class_from_db",
-        new_callable=get_async_mock,
+        new_callable=AsyncMock,
     )
-    def test_exception(self, create_table_class_from_db_mock: MagicMock):
+    def test_exception(self, create_table_class_from_db_mock: AsyncMock):
         """
         Make sure that a GenerateError exception
          is raised with all the exceptions gathered.
