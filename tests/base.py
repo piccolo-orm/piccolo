@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 import typing as t
+from typing import Type
 from unittest import TestCase
 from unittest.mock import MagicMock
 
@@ -15,20 +16,36 @@ from piccolo.table import Table, create_table_class
 
 ENGINE = engine_finder()
 
-
 postgres_only = pytest.mark.skipif(
     not isinstance(ENGINE, PostgresEngine), reason="Only running for Postgres"
 )
-
 
 sqlite_only = pytest.mark.skipif(
     not isinstance(ENGINE, SQLiteEngine), reason="Only running for SQLite"
 )
 
-
 unix_only = pytest.mark.skipif(
     sys.platform.startswith("win"), reason="Only running on a Unix system"
 )
+
+
+class AsyncMock(MagicMock):
+    """
+    Async MagicMock for python 3.7
+    """
+
+    async def __call__(self, *args, **kwargs):
+        return super(AsyncMock, self).__call__(*args, **kwargs)
+
+
+def get_async_mock() -> Type[AsyncMock | MagicMock]:
+    """
+    Returns an AsyncMock for python 3.7+
+    """
+    if sys.version_info == (3, 7):
+        return AsyncMock
+    elif sys.version_info >= (3, 8):
+        return MagicMock
 
 
 def set_mock_return_value(magic_mock: MagicMock, return_value: t.Any):
@@ -68,7 +85,7 @@ class DBTestCase(TestCase):
     # Postgres specific utils
 
     def get_postgres_column_definition(
-        self, tablename: str, column_name: str
+            self, tablename: str, column_name: str
     ) -> RowMeta:
         query = """
             SELECT {columns} FROM information_schema.columns
@@ -87,7 +104,7 @@ class DBTestCase(TestCase):
             raise ValueError("No such column")
 
     def get_postgres_column_type(
-        self, tablename: str, column_name: str
+            self, tablename: str, column_name: str
     ) -> str:
         """
         Fetches the column type as a string, from the database.
@@ -101,14 +118,14 @@ class DBTestCase(TestCase):
         Fetches whether the column is defined as nullable, from the database.
         """
         return (
-            self.get_postgres_column_definition(
-                tablename=tablename, column_name=column_name
-            ).is_nullable.upper()
-            == "YES"
+                self.get_postgres_column_definition(
+                    tablename=tablename, column_name=column_name
+                ).is_nullable.upper()
+                == "YES"
         )
 
     def get_postgres_varchar_length(
-        self, tablename, column_name: str
+            self, tablename, column_name: str
     ) -> t.Optional[int]:
         """
         Fetches whether the column is defined as nullable, from the database.
