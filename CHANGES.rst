@@ -1,6 +1,16 @@
 Changes
 =======
 
+0.69.4
+------
+
+We used to raise a ``ValueError`` if a column was both ``null=False`` and
+``default=None``. This has now been removed, as there are situations where
+it's valid for columns to be configured that way. Thanks to @gmos for
+suggesting this change.
+
+-------------------------------------------------------------------------------
+
 0.69.3
 ------
 
