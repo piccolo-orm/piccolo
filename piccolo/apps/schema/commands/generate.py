@@ -820,18 +820,18 @@ async def get_output_schema(
 
     # handle exceptions
     exceptions = []
-    for index, schema in enumerate(output_schemas):
-        if isinstance(schema, Exception):
-            exceptions.append((index, schema))
+    for obj, tablename in zip(output_schemas, tables):
+        if isinstance(obj, Exception):
+            exceptions.append((obj, tablename))
 
     if exceptions:
         raise GenerateError(
             [
                 type(e)(
                     f"Exception occurred while generating"
-                    f" `{tables[index]}` table: {e}"
+                    f" `{tablename}` table: {e}"
                 )
-                for index, e in exceptions
+                for e, tablename in exceptions
             ]
         )
 

@@ -38,7 +38,7 @@ class TestGenerate(TestCase):
             table_class.alter().drop_table().run_sync()
 
     def _compare_table_columns(
-        self, table_1: t.Type[Table], table_2: t.Type[Table]
+            self, table_1: t.Type[Table], table_2: t.Type[Table]
     ):
         """
         Make sure that for each column in table_1, there is a corresponding
@@ -267,11 +267,13 @@ class TestGenerateWithSchema(TestCase):
 @postgres_only
 class TestGenerateWithException(TestCase):
     def setUp(self):
-        Concert.create_table().run_sync()
+        for table_class in (SmallTable, MegaTable):
+            table_class.create_table().run_sync()
         self.loop = asyncio.new_event_loop()
 
     def tearDown(self):
-        Concert.alter().drop_table(if_exists=True).run_sync()
+        for table_class in (MegaTable, SmallTable):
+            table_class.alter().drop_table(if_exists=True).run_sync()
         self.loop.close()
 
     @patch(
@@ -283,7 +285,20 @@ class TestGenerateWithException(TestCase):
         Make sure that a GenerateError exception
          is raised with all the exceptions gathered.
         """
-        create_table_class_from_db_mock.side_effect = Exception("Test")
+        create_table_class_from_db_mock.side_effect = [ValueError("Test"), TypeError("Test")]
 
-        with self.assertRaises(GenerateError):
+        # Make sure the exception is raised.
+        with self.assertRaises(GenerateError) as e:
             self.loop.run_until_complete(get_output_schema())
+
+        # Make sure the exception contains the correct number of errors.
+        self.assertEqual(len(e.exception.args[0]), 2)
+        # assert that the two exceptions are ValueError and TypeError
+        exception_types = [type(e) for e in e.exception.args[0]]
+        self.assertIn(ValueError, exception_types)
+        self.assertIn(TypeError, exception_types)
+
+        # Make sure the exception contains the correct error messages.
+        exception_messages = [str(e) for e in e.exception.args[0]]
+        self.assertIn("Exception occurred while generating `small_table` table: Test", exception_messages)
+        self.assertIn("Exception occurred while generating `mega_table` table: Test", exception_messages)
