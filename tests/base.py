@@ -31,28 +31,13 @@ unix_only = pytest.mark.skipif(
 class AsyncMock(MagicMock):
     """
     Async MagicMock for python 3.7+.
-    This is a workaround for the fact that MagicMock
-     is not async compatible in python 3.7.
+
+    This is a workaround for the fact that MagicMock is not async compatible in
+    Python 3.7.
     """
 
     async def __call__(self, *args, **kwargs):
         return super(AsyncMock, self).__call__(*args, **kwargs)
-
-
-def set_mock_return_value(magic_mock: MagicMock, return_value: t.Any):
-    """
-    Python 3.8 has good support for mocking coroutines. For older versions,
-    we must set the return value to be an awaitable explicitly.
-    """
-    if magic_mock.__class__.__name__ == "AsyncMock":
-        # Python 3.8 and above
-        magic_mock.return_value = return_value
-    else:
-
-        async def coroutine(*args, **kwargs):
-            return return_value
-
-        magic_mock.return_value = coroutine()
 
 
 class DBTestCase(TestCase):
