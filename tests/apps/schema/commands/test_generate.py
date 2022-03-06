@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import ast
+import asyncio
 import typing as t
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
+from piccolo.apps.schema.commands.exceptions import GenerateError
 from piccolo.apps.schema.commands.generate import (
     OutputSchema,
     generate,
@@ -21,7 +23,7 @@ from piccolo.columns.indexes import IndexMethod
 from piccolo.engine import Engine, engine_finder
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
-from tests.base import postgres_only
+from tests.base import AsyncMock, postgres_only
 from tests.example_apps.mega.tables import MegaTable, SmallTable
 
 
@@ -260,3 +262,50 @@ class TestGenerateWithSchema(TestCase):
         # Make sure foreign key values are correct.
         self.assertEqual(writer.publication, publication)
         self.assertEqual(book.writer, writer)
+
+
+@postgres_only
+class TestGenerateWithException(TestCase):
+    def setUp(self):
+        for table_class in (SmallTable, MegaTable):
+            table_class.create_table().run_sync()
+
+    def tearDown(self):
+        for table_class in (MegaTable, SmallTable):
+            table_class.alter().drop_table(if_exists=True).run_sync()
+
+    @patch(
+        "piccolo.apps.schema.commands.generate.create_table_class_from_db",
+        new_callable=AsyncMock,
+    )
+    def test_exception(self, create_table_class_from_db_mock: AsyncMock):
+        """
+        Make sure that a GenerateError exception
+         is raised with all the exceptions gathered.
+        """
+        create_table_class_from_db_mock.side_effect = [
+            ValueError("Test"),
+            TypeError("Test"),
+        ]
+
+        # Make sure the exception is raised.
+        with self.assertRaises(GenerateError) as e:
+            asyncio.run(get_output_schema())
+
+        # Make sure the exception contains the correct number of errors.
+        self.assertEqual(len(e.exception.args[0]), 2)
+        # assert that the two exceptions are ValueError and TypeError
+        exception_types = [type(e) for e in e.exception.args[0]]
+        self.assertIn(ValueError, exception_types)
+        self.assertIn(TypeError, exception_types)
+
+        # Make sure the exception contains the correct error messages.
+        exception_messages = [str(e) for e in e.exception.args[0]]
+        self.assertIn(
+            "Exception occurred while generating `small_table` table: Test",
+            exception_messages,
+        )
+        self.assertIn(
+            "Exception occurred while generating `mega_table` table: Test",
+            exception_messages,
+        )

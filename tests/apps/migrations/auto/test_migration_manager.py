@@ -10,7 +10,7 @@ from piccolo.columns.column_types import ForeignKey
 from piccolo.conf.apps import AppConfig
 from piccolo.table import Table, sort_table_classes
 from piccolo.utils.lazy_loader import LazyLoader
-from tests.base import DBTestCase, postgres_only, set_mock_return_value
+from tests.base import AsyncMock, DBTestCase, postgres_only
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
 asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")
@@ -321,7 +321,9 @@ class TestMigrationManager(DBTestCase):
         asyncio.run(manager.run())
 
     @postgres_only
-    @patch.object(BaseMigrationManager, "get_migration_managers")
+    @patch.object(
+        BaseMigrationManager, "get_migration_managers", new_callable=AsyncMock
+    )
     @patch.object(BaseMigrationManager, "get_app_config")
     def test_drop_column(
         self, get_app_config: MagicMock, get_migration_managers: MagicMock
@@ -355,7 +357,7 @@ class TestMigrationManager(DBTestCase):
         self.assertEqual(response, [{"id": 1}])
 
         # Reverse
-        set_mock_return_value(get_migration_managers, [manager_1])
+        get_migration_managers.return_value = [manager_1]
         app_config = AppConfig(app_name="music", migrations_folder_path="")
         get_app_config.return_value = app_config
         asyncio.run(manager_2.run_backwards())
@@ -672,7 +674,9 @@ class TestMigrationManager(DBTestCase):
         )
 
     @postgres_only
-    @patch.object(BaseMigrationManager, "get_migration_managers")
+    @patch.object(
+        BaseMigrationManager, "get_migration_managers", new_callable=AsyncMock
+    )
     @patch.object(BaseMigrationManager, "get_app_config")
     def test_drop_table(
         self, get_app_config: MagicMock, get_migration_managers: MagicMock
@@ -695,7 +699,7 @@ class TestMigrationManager(DBTestCase):
         self.assertTrue(not self.table_exists("musician"))
 
         # Reverse
-        set_mock_return_value(get_migration_managers, [manager_1])
+        get_migration_managers.return_value = [manager_1]
         app_config = AppConfig(app_name="music", migrations_folder_path="")
         get_app_config.return_value = app_config
         asyncio.run(manager_2.run_backwards())
