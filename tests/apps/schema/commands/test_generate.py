@@ -38,7 +38,7 @@ class TestGenerate(TestCase):
             table_class.alter().drop_table().run_sync()
 
     def _compare_table_columns(
-            self, table_1: t.Type[Table], table_2: t.Type[Table]
+        self, table_1: t.Type[Table], table_2: t.Type[Table]
     ):
         """
         Make sure that for each column in table_1, there is a corresponding
@@ -285,7 +285,10 @@ class TestGenerateWithException(TestCase):
         Make sure that a GenerateError exception
          is raised with all the exceptions gathered.
         """
-        create_table_class_from_db_mock.side_effect = [ValueError("Test"), TypeError("Test")]
+        create_table_class_from_db_mock.side_effect = [
+            ValueError("Test"),
+            TypeError("Test"),
+        ]
 
         # Make sure the exception is raised.
         with self.assertRaises(GenerateError) as e:
@@ -300,5 +303,11 @@ class TestGenerateWithException(TestCase):
 
         # Make sure the exception contains the correct error messages.
         exception_messages = [str(e) for e in e.exception.args[0]]
-        self.assertIn("Exception occurred while generating `small_table` table: Test", exception_messages)
-        self.assertIn("Exception occurred while generating `mega_table` table: Test", exception_messages)
+        self.assertIn(
+            "Exception occurred while generating `small_table` table: Test",
+            exception_messages,
+        )
+        self.assertIn(
+            "Exception occurred while generating `mega_table` table: Test",
+            exception_messages,
+        )
