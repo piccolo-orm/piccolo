@@ -1,6 +1,22 @@
 Changes
 =======
 
+0.69.5
+------
+
+Made improvements to ``piccolo schema generate``, which automatically generates
+Piccolo ``Table`` classes from an existing database.
+
+There were situations where it would fail ungracefully when it couldn't parse
+an index definition. It no longer crashes, and we print out the problematic
+index definitions. See `PR 449 <https://github.com/piccolo-orm/piccolo/pull/449>`_.
+Thanks to @gmos for originally reporting this issue.
+
+We also improved the error messages if schema generation fails for some reason
+by letting the user know which table caused the error. Courtesy @AliSayyah.
+
+-------------------------------------------------------------------------------
+
 0.69.4
 ------
 
