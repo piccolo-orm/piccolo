@@ -458,12 +458,6 @@ class Column(Selectable):
             }
         )
 
-        if kwargs.get("default", ...) is None and not null:
-            raise ValueError(
-                "A default value of None isn't allowed if the column is "
-                "not nullable."
-            )
-
         if choices is not None:
             self._validate_choices(choices, allowed_type=self.value_type)
 
@@ -661,13 +655,13 @@ class Column(Selectable):
 
         return False
 
-    def __eq__(self, value) -> Where:  # type: ignore
+    def __eq__(self, value) -> Where:  # type: ignore[override]
         if value is None:
             return Where(column=self, operator=IsNull)
         else:
             return Where(column=self, value=value, operator=Equal)
 
-    def __ne__(self, value) -> Where:  # type: ignore
+    def __ne__(self, value) -> Where:  # type: ignore[override]
         if value is None:
             return Where(column=self, operator=IsNotNull)
         else:
