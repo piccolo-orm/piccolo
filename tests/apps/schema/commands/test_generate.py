@@ -269,12 +269,10 @@ class TestGenerateWithException(TestCase):
     def setUp(self):
         for table_class in (SmallTable, MegaTable):
             table_class.create_table().run_sync()
-        self.loop = asyncio.new_event_loop()
 
     def tearDown(self):
         for table_class in (MegaTable, SmallTable):
             table_class.alter().drop_table(if_exists=True).run_sync()
-        self.loop.close()
 
     @patch(
         "piccolo.apps.schema.commands.generate.create_table_class_from_db",
@@ -292,7 +290,7 @@ class TestGenerateWithException(TestCase):
 
         # Make sure the exception is raised.
         with self.assertRaises(GenerateError) as e:
-            self.loop.run_until_complete(get_output_schema())
+            asyncio.run(get_output_schema())
 
         # Make sure the exception contains the correct number of errors.
         self.assertEqual(len(e.exception.args[0]), 2)
