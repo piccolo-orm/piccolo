@@ -182,15 +182,17 @@ class Query:
                 "_meta"
             )
 
-        if len(self.querystrings) == 1:
+        querystrings = self.querystrings
+
+        if len(querystrings) == 1:
             results = await engine.run_querystring(
-                self.querystrings[0], in_pool=in_pool
+                querystrings[0], in_pool=in_pool
             )
             return await self._process_results(results)
         else:
             responses = []
             # TODO - run in a transaction
-            for querystring in self.querystrings:
+            for querystring in querystrings:
                 results = await engine.run_querystring(
                     querystring, in_pool=in_pool
                 )
