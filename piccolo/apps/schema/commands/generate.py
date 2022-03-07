@@ -231,12 +231,9 @@ class TableIndexes:
         return None
 
     def get_warnings(self) -> t.List[str]:
-        return [
-            i
-            for i in itertools.chain(
-                *[index.warnings for index in self.indexes]
-            )
-        ]
+        return list(
+            itertools.chain(*[index.warnings for index in self.indexes])
+        )
 
 
 @dataclasses.dataclass
