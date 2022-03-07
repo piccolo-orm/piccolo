@@ -17,8 +17,8 @@ from piccolo.columns.defaults.base import Default
 from piccolo.columns.reference import LazyTableReference
 from piccolo.table import Table
 from piccolo.utils.repr import repr_class_instance
-
 from .serialisation_legacy import deserialise_legacy_params
+
 
 ###############################################################################
 
@@ -52,11 +52,11 @@ class UniqueGlobalNamesMeta(type):
             bases,
             mcs.merge_class_attributes(
                 class_attributes_with_columns,
-                dict(
-                    unique_names=mcs.get_unique_class_attribute_values(
+                {
+                    "unique_names": mcs.get_unique_class_attribute_values(
                         class_attributes_with_columns
                     )
-                ),
+                },
             ),
         )
 
@@ -706,10 +706,10 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
 
         # All other types can remain as is.
 
-    unique_extra_imports = [i for i in set(extra_imports)]
+    unique_extra_imports = list(set(extra_imports))
     UniqueGlobalNames.warn_if_are_conflicting_objects(unique_extra_imports)
 
-    unique_extra_definitions = [i for i in set(extra_definitions)]
+    unique_extra_definitions = list(set(extra_definitions))
     UniqueGlobalNames.warn_if_are_conflicting_objects(unique_extra_definitions)
 
     return SerialisedParams(

@@ -8,7 +8,7 @@ from piccolo.querystring import QueryString
 
 class TableExists(Query):
 
-    __slots__: t.Tuple = tuple()
+    __slots__: t.Tuple = ()
 
     async def response_handler(self, response):
         return bool(response[0]["exists"])
