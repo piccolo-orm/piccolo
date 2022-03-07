@@ -49,7 +49,7 @@ class Query:
         if results:
             keys = results[0].keys()
             keys = [i.replace("$", ".") for i in keys]
-            raw = [dict(zip(keys, i.values())) for i in results]
+            raw = [dict(zip(keys, i)) for i in results]
         else:
             raw = []
 

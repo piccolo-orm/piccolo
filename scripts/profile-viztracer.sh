@@ -1,3 +1,3 @@
 #!/bin/bash
 python profiling/setup.py
-viztracer profiling/profile_select.py
+viztracer --log_async profiling/profile_select.py && vizviewer result.json

@@ -4,7 +4,8 @@ from tables import Band
 
 
 async def run_queries():
-    await Band.select()
+    results = await Band.select()
+    print(results)
 
 
 if __name__ == "__main__":
