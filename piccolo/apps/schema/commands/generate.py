@@ -869,7 +869,7 @@ async def get_output_schema(
     output_schema.tables = sort_table_classes(
         sorted(output_schema.tables, key=lambda x: x._meta.tablename)
     )
-    output_schema.imports = sorted(list(set(output_schema.imports)))
+    output_schema.imports = sorted(set(output_schema.imports))
 
     return output_schema
 

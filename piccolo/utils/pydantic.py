@@ -174,12 +174,11 @@ def create_pydantic_model(
     )
 
     if include_columns:
-        include_columns_plus_ancestors = [
-            i
-            for i in itertools.chain(
+        include_columns_plus_ancestors = list(
+            itertools.chain(
                 include_columns, *[i._meta.call_chain for i in include_columns]
             )
-        ]
+        )
         piccolo_columns = tuple(
             i
             for i in piccolo_columns
