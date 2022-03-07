@@ -49,7 +49,15 @@ class Query:
         if results:
             keys = results[0].keys()
             keys = [i.replace("$", ".") for i in keys]
-            raw = [dict(zip(keys, i.values())) for i in results]
+            if self.engine_type == "postgres":
+                # asyncpg returns a special Record object. We can pass it
+                # directly into zip without calling `values` on it. This can
+                # save us hundreds of microseconds, depending on the number of
+                # results.
+                raw = [dict(zip(keys, i)) for i in results]
+            else:
+                # SQLite returns a list of dictionaries.
+                raw = [dict(zip(keys, i.values())) for i in results]
         else:
             raw = []
 
@@ -174,15 +182,17 @@ class Query:
                 "_meta"
             )
 
-        if len(self.querystrings) == 1:
+        querystrings = self.querystrings
+
+        if len(querystrings) == 1:
             results = await engine.run_querystring(
-                self.querystrings[0], in_pool=in_pool
+                querystrings[0], in_pool=in_pool
             )
             return await self._process_results(results)
         else:
             responses = []
             # TODO - run in a transaction
-            for querystring in self.querystrings:
+            for querystring in querystrings:
                 results = await engine.run_querystring(
                     querystring, in_pool=in_pool
                 )
@@ -291,7 +301,7 @@ class Query:
 
         # Copy the query, so we don't store any references to the original.
         query = self.__class__(
-            table=self.table, frozen_querystrings=self.querystrings
+            table=self.table, frozen_querystrings=querystrings
         )
 
         if hasattr(self, "limit_delegate"):
