@@ -49,7 +49,15 @@ class Query:
         if results:
             keys = results[0].keys()
             keys = [i.replace("$", ".") for i in keys]
-            raw = [dict(zip(keys, i)) for i in results]
+            if self.engine_type == "postgres":
+                # asyncpg returns a special Record object. We can pass it
+                # directly into zip without calling `values` on it. This can
+                # save us hundreds of microseconds, depending on the number of
+                # results.
+                raw = [dict(zip(keys, i)) for i in results]
+            else:
+                # SQLite returns a list of dictionaries.
+                raw = [dict(zip(keys, i.values())) for i in results]
         else:
             raw = []
 
