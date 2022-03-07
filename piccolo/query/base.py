@@ -301,7 +301,7 @@ class Query:
 
         # Copy the query, so we don't store any references to the original.
         query = self.__class__(
-            table=self.table, frozen_querystrings=self.querystrings
+            table=self.table, frozen_querystrings=querystrings
         )
 
         if hasattr(self, "limit_delegate"):
