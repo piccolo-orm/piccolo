@@ -61,3 +61,15 @@ You can configure `VSCode <https://code.visualstudio.com/>`_ by modifying
     }
 
 Type hints are used throughout the project.
+
+-------------------------------------------------------------------------------
+
+Profiling
+---------
+
+This isn't required to contribute to Piccolo, but is useful when investigating
+performance problems.
+
+ * Install the dependencies: ``pip install requirements/profile-requirements.txt``
+ * Make sure a Postgres database called ``piccolo_profile`` exists.
+ * Run ``./scripts/profile.sh`` to get performance data.
