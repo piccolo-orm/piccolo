@@ -17,8 +17,8 @@ from piccolo.columns.defaults.base import Default
 from piccolo.columns.reference import LazyTableReference
 from piccolo.table import Table
 from piccolo.utils.repr import repr_class_instance
-from .serialisation_legacy import deserialise_legacy_params
 
+from .serialisation_legacy import deserialise_legacy_params
 
 ###############################################################################
 
