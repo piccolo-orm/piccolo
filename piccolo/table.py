@@ -310,7 +310,7 @@ class Table(metaclass=TableMetaclass):
 
         unrecognized = kwargs.keys()
         if unrecognized:
-            unrecognised_list = [i for i in unrecognized]
+            unrecognised_list = list(unrecognized)
             raise ValueError(f"Unrecognized columns - {unrecognised_list}")
 
     @classmethod

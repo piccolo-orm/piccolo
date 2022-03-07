@@ -107,11 +107,11 @@ async def _create_new_migration(
             chain(*[i.statements for i in alter_statements])
         )
         extra_imports = sorted(
-            list(set(chain(*[i.extra_imports for i in alter_statements]))),
+            set(chain(*[i.extra_imports for i in alter_statements])),
             key=lambda x: x.__repr__(),
         )
         extra_definitions = sorted(
-            list(set(chain(*[i.extra_definitions for i in alter_statements]))),
+            set(chain(*[i.extra_definitions for i in alter_statements])),
         )
 
         if sum(len(i.statements) for i in alter_statements) == 0:

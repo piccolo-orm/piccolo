@@ -211,7 +211,6 @@ class Sum(Selectable):
 
 
 class Select(Query):
-
     __slots__ = (
         "columns_list",
         "exclude_secrets",
@@ -286,7 +285,7 @@ class Select(Query):
         as_list: bool = False,
     ):
         row_ids = list(
-            {i for i in itertools.chain(*[row[m2m_name] for row in response])}
+            set(itertools.chain(*[row[m2m_name] for row in response]))
         )
         extra_rows = (
             (

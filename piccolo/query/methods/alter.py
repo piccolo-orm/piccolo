@@ -15,7 +15,7 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 
 class AlterStatement:
-    __slots__ = tuple()  # type: ignore
+    __slots__ = ()  # type: ignore
 
     @property
     def ddl(self) -> str:
@@ -168,7 +168,6 @@ class SetNull(AlterColumnStatement):
 
 @dataclass
 class SetLength(AlterColumnStatement):
-
     __slots__ = ("length",)
 
     length: int
@@ -222,7 +221,6 @@ class AddForeignKeyConstraint(AlterStatement):
 
 @dataclass
 class SetDigits(AlterColumnStatement):
-
     __slots__ = ("digits", "column_type")
 
     digits: t.Optional[t.Tuple[int, int]]
@@ -263,7 +261,6 @@ class DropTable:
 
 
 class Alter(DDL):
-
     __slots__ = (
         "_add_foreign_key_constraint",
         "_add",

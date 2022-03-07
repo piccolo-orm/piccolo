@@ -229,7 +229,7 @@ class AppRegistry:
         app_names.sort()
         grouped = itertools.groupby(app_names)
         for key, value in grouped:
-            count = len([i for i in value])
+            count = len(list(value))
             if count > 1:
                 raise ValueError(
                     f"There are {count} apps with the name `{key}`. This can "
@@ -303,7 +303,7 @@ class Finder:
         Remove all duplicates - just leaving the first instance.
         """
         # Deduplicate, but preserve order - which is why set() isn't used.
-        return list(dict([(c, None) for c in config_modules]).keys())
+        return list({c: None for c in config_modules}.keys())
 
     def _import_app_modules(
         self, config_module_paths: t.List[str]
