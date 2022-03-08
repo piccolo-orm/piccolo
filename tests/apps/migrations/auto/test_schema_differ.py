@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 from unittest import TestCase
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 from piccolo.apps.migrations.auto import DiffableTable, SchemaDiffer
 from piccolo.columns.column_types import Numeric, Varchar
@@ -278,6 +278,18 @@ class TestSchemaDiffer(TestCase):
             [
                 "manager.rename_column(table_class_name='Band', tablename='band', old_column_name='a1', new_column_name='a2', old_db_column_name='a1', new_db_column_name='a2')",  # noqa: E501
                 "manager.rename_column(table_class_name='Band', tablename='band', old_column_name='b1', new_column_name='b2', old_db_column_name='b1', new_db_column_name='b2')",  # noqa: E501
+            ],
+        )
+
+        self.assertEqual(
+            input.call_args_list,
+            [
+                call(
+                    "Did you rename the `a1` column to `a2` on the `Band` table? (y/N)"  # noqa: E501
+                ),
+                call(
+                    "Did you rename the `b1` column to `b2` on the `Band` table? (y/N)"  # noqa: E501
+                ),
             ],
         )
 
