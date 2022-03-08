@@ -131,19 +131,18 @@ async def run_backwards(
             )
         )
 
-        if _continue in "yY":
-            for _app_name in sorted_app_names:
-                print(f"\n{_app_name.upper():^64}")
-                print("-" * 64)
-                manager = BackwardsMigrationManager(
-                    app_name=_app_name,
-                    migration_id="all",
-                    auto_agree=auto_agree,
-                )
-                await manager.run()
-            return MigrationResult(success=True)
-        else:
+        if _continue not in "yY":
             return MigrationResult(success=False, message="user cancelled")
+        for _app_name in sorted_app_names:
+            print(f"\n{_app_name.upper():^64}")
+            print("-" * 64)
+            manager = BackwardsMigrationManager(
+                app_name=_app_name,
+                migration_id="all",
+                auto_agree=auto_agree,
+            )
+            await manager.run()
+        return MigrationResult(success=True)
     else:
         manager = BackwardsMigrationManager(
             app_name=app_name,

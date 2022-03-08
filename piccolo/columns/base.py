@@ -205,8 +205,7 @@ class ColumnMeta:
 
     @property
     def engine_type(self) -> str:
-        engine = self.table._meta.db
-        if engine:
+        if engine := self.table._meta.db:
             return engine.engine_type
         else:
             raise ValueError("The table has no engine defined.")
@@ -287,10 +286,7 @@ class ColumnMeta:
         else:
             alias = f"{self.call_chain[-1]._meta.table_alias}.{self.name}"
 
-        if just_alias:
-            return alias
-        else:
-            return f'{alias} AS "{column_name}"'
+        return alias if just_alias else f'{alias} AS "{column_name}"'
 
     ###########################################################################
 

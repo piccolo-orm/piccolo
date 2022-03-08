@@ -40,10 +40,7 @@ class RenameTableCollection:
         rename = [
             i for i in self.rename_tables if i.new_class_name == new_class_name
         ]
-        if len(rename) > 0:
-            return rename[0].old_class_name
-        else:
-            return None
+        return rename[0].old_class_name if rename else None
 
 
 @dataclass
@@ -207,14 +204,10 @@ class SchemaDiffer:
                     continue
 
                 for drop_column in delta.drop_columns:
-                    user_response = (
-                        self.auto_input
-                        if self.auto_input
-                        else input(
-                            f"Did you rename the `{drop_column.db_column_name}` "  # noqa: E501
-                            f"column to `{add_column.db_column_name}` on the "
-                            f"`{ add_column.table_class_name }` table? (y/N)"
-                        )
+                    user_response = self.auto_input or input(
+                        f"Did you rename the `{drop_column.db_column_name}` "  # noqa: E501
+                        f"column to `{add_column.db_column_name}` on the "
+                        f"`{ add_column.table_class_name }` table? (y/N)"
                     )
                     if user_response.lower() == "y":
                         renamed_column_names.append(
@@ -291,21 +284,17 @@ class SchemaDiffer:
     def _get_snapshot_table(
         self, table_class_name: str
     ) -> t.Optional[DiffableTable]:
-        snapshot_table = self.schema_snapshot_map.get(table_class_name, None)
-        if snapshot_table:
+        if snapshot_table := self.schema_snapshot_map.get(
+            table_class_name, None
+        ):
             return snapshot_table
-        else:
-            if (
+        if table_class_name in self.rename_tables_collection.new_class_names:
+            class_name = self.rename_tables_collection.renamed_from(
                 table_class_name
-                in self.rename_tables_collection.new_class_names
-            ):
-                class_name = self.rename_tables_collection.renamed_from(
-                    table_class_name
-                )
-                snapshot_table = self.schema_snapshot_map.get(class_name)
-                if snapshot_table:
-                    snapshot_table.class_name = table_class_name
-                    return snapshot_table
+            )
+            if snapshot_table := self.schema_snapshot_map.get(class_name):
+                snapshot_table.class_name = table_class_name
+                return snapshot_table
         return None
 
     @property
@@ -314,8 +303,7 @@ class SchemaDiffer:
         extra_imports: t.List[Import] = []
         extra_definitions: t.List[Definition] = []
         for table in self.schema:
-            snapshot_table = self._get_snapshot_table(table.class_name)
-            if snapshot_table:
+            if snapshot_table := self._get_snapshot_table(table.class_name):
                 delta: TableDelta = table - snapshot_table
             else:
                 continue
@@ -403,8 +391,7 @@ class SchemaDiffer:
         extra_imports: t.List[Import] = []
         extra_definitions: t.List[Definition] = []
         for table in self.schema:
-            snapshot_table = self._get_snapshot_table(table.class_name)
-            if snapshot_table:
+            if snapshot_table := self._get_snapshot_table(table.class_name):
                 delta: TableDelta = table - snapshot_table
             else:
                 continue

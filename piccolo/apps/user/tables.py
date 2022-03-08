@@ -52,8 +52,7 @@ class BaseUser(Table, tablename="piccolo_user"):
 
     def __init__(self, **kwargs):
         # Generating passwords upfront is expensive, so might need reworking.
-        password = kwargs.get("password", None)
-        if password:
+        if password := kwargs.get("password", None):
             if not password.startswith("pbkdf2_sha256"):
                 kwargs["password"] = self.__class__.hash_password(password)
         super().__init__(**kwargs)
@@ -114,7 +113,7 @@ class BaseUser(Table, tablename="piccolo_user"):
             logger.warning("Excessively long password provided.")
             raise ValueError("The password is too long.")
 
-        if salt == "":
+        if not salt:
             salt = cls.get_salt()
         hashed = hashlib.pbkdf2_hmac(
             "sha256",

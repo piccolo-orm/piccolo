@@ -96,7 +96,7 @@ def new(root: str = ".", name: str = "piccolo_project"):
                         )
                     except Exception as exception:
                         print(f"Problem processing {output_file_name}")
-                        raise exception
+                        raise exception from exception
 
                 with open(
                     os.path.join(output_dir_path, output_file_name), "w"

@@ -81,10 +81,7 @@ class TableMeta:
 
     @property
     def foreign_key_references(self) -> t.List[ForeignKey]:
-        foreign_keys: t.List[ForeignKey] = []
-        for reference in self._foreign_key_references:
-            foreign_keys.append(reference)
-
+        foreign_keys: t.List[ForeignKey] = list(self._foreign_key_references)
         lazy_column_references = LAZY_COLUMN_REFERENCES.for_tablename(
             tablename=self.tablename
         )
@@ -126,10 +123,10 @@ class TableMeta:
             for reference_name in components[1:]:
                 try:
                     column_object = getattr(column_object, reference_name)
-                except AttributeError:
+                except AttributeError as e:
                     raise ValueError(
                         f"Unable to find column - {reference_name}"
-                    )
+                    ) from e
 
         return column_object
 
@@ -152,9 +149,9 @@ class Table(metaclass=TableMetaclass):
         cls,
         tablename: t.Optional[str] = None,
         db: t.Optional[Engine] = None,
-        tags: t.List[str] = [],
+        tags: t.List[str] = None,
         help_text: t.Optional[str] = None,
-    ):
+    ):  # sourcery no-metrics
         """
         Automatically populate the _meta, which includes the tablename, and
         columns.
@@ -174,6 +171,8 @@ class Table(metaclass=TableMetaclass):
             Admin for tooltips.
 
         """
+        if tags is None:
+            tags = []
         tablename = tablename or _camel_to_snake(cls.__name__)
 
         if tablename in PROTECTED_TABLENAMES:
@@ -665,7 +664,7 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def all_related(
-        cls, exclude: t.List[t.Union[str, ForeignKey]] = []
+        cls, exclude: t.List[t.Union[str, ForeignKey]] = None
     ) -> t.List[Column]:
         """
         Used in conjunction with ``objects`` queries. Just as we can use
@@ -701,6 +700,8 @@ class Table(metaclass=TableMetaclass):
             You can request all columns, except these.
 
         """
+        if exclude is None:
+            exclude = []
         excluded_column_names = [
             i._meta.name if isinstance(i, ForeignKey) else i for i in exclude
         ]
@@ -713,7 +714,7 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def all_columns(
-        cls, exclude: t.List[t.Union[str, Column]] = []
+        cls, exclude: t.List[t.Union[str, Column]] = None
     ) -> t.List[Column]:
         """
         Used in conjunction with ``select`` queries. Just as we can use
@@ -735,6 +736,8 @@ class Table(metaclass=TableMetaclass):
             You can request all columns, except these.
 
         """
+        if exclude is None:
+            exclude = []
         excluded_column_names = [
             i._meta.name if isinstance(i, Column) else i for i in exclude
         ]
@@ -979,7 +982,7 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def update(
         cls,
-        values: t.Dict[t.Union[Column, str], t.Any] = {},
+        values: t.Dict[t.Union[Column, str], t.Any] = None,
         force: bool = False,
         **kwargs,
     ) -> Update:
@@ -1013,6 +1016,8 @@ class Table(metaclass=TableMetaclass):
             ``where`` clause, to prevent accidental mass overriding of data.
 
         """
+        if values is None:
+            values = {}
         values = dict(values, **kwargs)
         return Update(table=cls, force=force).values(values)
 
@@ -1078,7 +1083,9 @@ class Table(metaclass=TableMetaclass):
     ###########################################################################
 
     @classmethod
-    def _table_str(cls, abbreviated=False, excluded_params: t.List[str] = []):
+    def _table_str(
+        cls, abbreviated=False, excluded_params: t.List[str] = None
+    ):
         """
         Returns a basic string representation of the table and its columns.
         Used by the playground.
@@ -1091,6 +1098,8 @@ class Table(metaclass=TableMetaclass):
             `['index_method']`, if we want to show all kwargs but index_method.
 
         """
+        if excluded_params is None:
+            excluded_params = []
         spacer = "\n    "
         columns = []
         for col in cls._meta.columns:

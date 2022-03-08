@@ -39,8 +39,7 @@ class Query:
 
     @property
     def engine_type(self) -> str:
-        engine = self.table._meta.db
-        if engine:
+        if engine := self.table._meta.db:
             return engine.engine_type
         else:
             raise ValueError("Engine isn't defined.")
@@ -132,9 +131,7 @@ class Query:
                             self.table(**columns, exists_in_db=True)
                             for columns in raw
                         ]
-                elif raw is None:
-                    pass
-                else:
+                elif raw is not None:
                     if output._output.nested:
                         raw = make_nested_object(raw, self.table)
                     else:
@@ -143,15 +140,12 @@ class Query:
                 if output._output.as_list:
                     if len(raw) == 0:
                         return []
+                    if len(raw[0].keys()) != 1:
+                        raise ValueError(
+                            "Each row returned more than one value"
+                        )
                     else:
-                        if len(raw[0].keys()) != 1:
-                            raise ValueError(
-                                "Each row returned more than one value"
-                            )
-                        else:
-                            raw = list(
-                                itertools.chain(*[j.values() for j in raw])
-                            )
+                        raw = list(itertools.chain(*[j.values() for j in raw]))
                 if output._output.as_json:
                     raw = dump_json(raw)
 
@@ -205,10 +199,9 @@ class Query:
         """
         coroutine = self.run(*args, **kwargs, in_pool=False)
 
-        if timed:
-            with Timer():
-                return run_sync(coroutine)
-        else:
+        if not timed:
+            return run_sync(coroutine)
+        with Timer():
             return run_sync(coroutine)
 
     async def response_handler(self, response):
@@ -352,8 +345,7 @@ class DDL:
 
     @property
     def engine_type(self) -> str:
-        engine = self.table._meta.db
-        if engine:
+        if engine := self.table._meta.db:
             return engine.engine_type
         else:
             raise ValueError("Engine isn't defined.")
@@ -408,13 +400,12 @@ class DDL:
 
         if len(self.ddl) == 1:
             return await engine.run_ddl(self.ddl[0], in_pool=in_pool)
-        else:
-            responses = []
-            # TODO - run in a transaction
-            for ddl in self.ddl:
-                response = await engine.run_ddl(ddl, in_pool=in_pool)
-                responses.append(response)
-            return responses
+        responses = []
+        # TODO - run in a transaction
+        for ddl in self.ddl:
+            response = await engine.run_ddl(ddl, in_pool=in_pool)
+            responses.append(response)
+        return responses
 
     def run_sync(self, timed=False, *args, **kwargs):
         """
@@ -422,10 +413,9 @@ class DDL:
         """
         coroutine = self.run(*args, **kwargs, in_pool=False)
 
-        if timed:
-            with Timer():
-                return run_sync(coroutine)
-        else:
+        if not timed:
+            return run_sync(coroutine)
+        with Timer():
             return run_sync(coroutine)
 
     def __str__(self) -> str:

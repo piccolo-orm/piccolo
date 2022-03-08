@@ -176,8 +176,10 @@ class Objects(Query):
     def get_or_create(
         self,
         where: Combinable,
-        defaults: t.Dict[t.Union[Column, str], t.Any] = {},
+        defaults: t.Dict[t.Union[Column, str], t.Any] = None,
     ):
+        if defaults is None:
+            defaults = {}
         return GetOrCreate(query=self, where=where, defaults=defaults)
 
     def create(self, **columns: t.Any):

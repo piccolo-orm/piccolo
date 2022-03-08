@@ -198,12 +198,10 @@ class DiffableTable:
         """
         Converts the DiffableTable into a Table subclass.
         """
-        _Table: t.Type[Table] = create_table_class(
+        return create_table_class(
             class_name=self.class_name,
             class_kwargs={"tablename": self.tablename},
             class_members={
                 column._meta.name: column for column in self.columns
             },
         )
-
-        return _Table

@@ -5,7 +5,7 @@ import typing as t
 
 from piccolo.columns.column_types import OnDelete, OnUpdate
 from piccolo.columns.defaults.timestamp import TimestampNow
-from piccolo.table import Table, create_table_class
+from piccolo.table import create_table_class
 
 
 def deserialise_legacy_params(name: str, value: str) -> t.Any:
@@ -26,25 +26,10 @@ def deserialise_legacy_params(name: str, value: str) -> t.Any:
                 "`SomeClassName` or `SomeClassName|some_table_name`."
             )
 
-        _Table: t.Type[Table] = create_table_class(
+        return create_table_class(
             class_name=class_name,
             class_kwargs={"tablename": tablename} if tablename else {},
         )
-        return _Table
-
-    ###########################################################################
-
-    if name == "on_delete":
-        enum_name, item_name = value.split(".")
-        if enum_name == "OnDelete":
-            return getattr(OnDelete, item_name)
-
-    ###########################################################################
-
-    elif name == "on_update":
-        enum_name, item_name = value.split(".")
-        if enum_name == "OnUpdate":
-            return getattr(OnUpdate, item_name)
 
     ###########################################################################
 
@@ -57,5 +42,15 @@ def deserialise_legacy_params(name: str, value: str) -> t.Any:
             pass
         else:
             return _value
+
+    elif name == "on_delete":
+        enum_name, item_name = value.split(".")
+        if enum_name == "OnDelete":
+            return getattr(OnDelete, item_name)
+
+    elif name == "on_update":
+        enum_name, item_name = value.split(".")
+        if enum_name == "OnUpdate":
+            return getattr(OnUpdate, item_name)
 
     return value

@@ -45,9 +45,7 @@ class CleanMigrationManager(BaseMigrationManager):
         # Make sure the migration table exists, otherwise we'll get an error.
         await self.create_migration_table()
 
-        migration_ids_to_remove = self.get_migration_ids_to_remove()
-
-        if migration_ids_to_remove:
+        if migration_ids_to_remove := self.get_migration_ids_to_remove():
             id_string = "\n".join(migration_ids_to_remove)
             print(
                 "The following migrations exist in the table, not not in "

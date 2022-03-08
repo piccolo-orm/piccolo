@@ -110,10 +110,9 @@ def main():
             # command, as this information is redundant.
 
             try:
-                havent_ran_count = run_sync(
+                if havent_ran_count := run_sync(
                     CheckMigrationManager(app_name="all").havent_ran_count()
-                )
-                if havent_ran_count:
+                ):
                     message = (
                         f"{havent_ran_count} migration hasn't"
                         if havent_ran_count == 1

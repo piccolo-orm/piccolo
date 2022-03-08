@@ -209,7 +209,7 @@ class Index:
             groups = match.groupdict()
 
             self.column_name = groups["column_name"].lstrip('"').rstrip('"')
-            self.unique = True if "unique" in groups else False
+            self.unique = "unique" in groups
             self.method = INDEX_METHOD_MAP[groups["method"]]
             self.warnings = []
 
@@ -224,11 +224,9 @@ class TableIndexes:
     indexes: t.List[Index]
 
     def get_column_index(self, column_name: str) -> t.Optional[Index]:
-        for i in self.indexes:
-            if i.column_name == column_name:
-                return i
-
-        return None
+        return next(
+            (i for i in self.indexes if i.column_name == column_name), None
+        )
 
     def get_warnings(self) -> t.List[str]:
         return list(
@@ -371,67 +369,64 @@ def get_column_default(
 
     if pat is None:
         return None
-    else:
-        match = re.match(pat, column_default)
-        if match is not None:
-            value = match.groupdict()
+    match = re.match(pat, column_default)
+    if match is not None:
+        value = match.groupdict()
 
-            if column_type is Boolean:
-                return value["value"] == "true"
-            elif column_type is Interval:
-                kwargs = {}
-                for period in [
-                    "years",
-                    "months",
-                    "weeks",
-                    "days",
-                    "hours",
-                    "minutes",
-                    "seconds",
-                ]:
-                    period_match = value.get(period, 0)
-                    if period_match:
-                        kwargs[period] = int(period_match)
-                digits = value["digits"]
-                if digits:
-                    kwargs.update(
-                        dict(
-                            zip(
-                                ["hours", "minutes", "seconds"],
-                                [int(v) for v in digits.split(":")],
-                            )
+        if column_type is Boolean:
+            return value["value"] == "true"
+        elif column_type is Interval:
+            kwargs = {}
+            for period in [
+                "years",
+                "months",
+                "weeks",
+                "days",
+                "hours",
+                "minutes",
+                "seconds",
+            ]:
+                if period_match := value.get(period, 0):
+                    kwargs[period] = int(period_match)
+            if digits := value["digits"]:
+                kwargs.update(
+                    dict(
+                        zip(
+                            ["hours", "minutes", "seconds"],
+                            [int(v) for v in digits.split(":")],
                         )
                     )
+                )
 
-                return IntervalCustom(**kwargs)
-            elif column_type is JSON or column_type is JSONB:
-                return json.loads(value["value"])
-            elif column_type is UUID:
-                return uuid.uuid4
-            elif column_type is Date:
-                return (
-                    date.today
-                    if value["value"] == "CURRENT_DATE"
-                    else defaults.date.DateCustom(
-                        *[int(v) for v in value["value"].split("-")]
-                    )
+            return IntervalCustom(**kwargs)
+        elif column_type is JSON or column_type is JSONB:
+            return json.loads(value["value"])
+        elif column_type is UUID:
+            return uuid.uuid4
+        elif column_type is Date:
+            return (
+                date.today
+                if value["value"] == "CURRENT_DATE"
+                else defaults.date.DateCustom(
+                    *[int(v) for v in value["value"].split("-")]
                 )
-            elif column_type is Bytea:
-                return value["value"].encode("utf8")
-            elif column_type is Timestamp:
-                return (
-                    datetime.now
-                    if value["value"] == "CURRENT_TIMESTAMP"
-                    else datetime.fromtimestamp(float(value["value"]))
-                )
-            elif column_type is Timestamptz:
-                return (
-                    datetime.now
-                    if value["value"] == "CURRENT_TIMESTAMP"
-                    else datetime.fromtimestamp(float(value["value"]))
-                )
-            else:
-                return column_type.value_type(value["value"])
+            )
+        elif column_type is Bytea:
+            return value["value"].encode("utf8")
+        elif column_type is Timestamp:
+            return (
+                datetime.now
+                if value["value"] == "CURRENT_TIMESTAMP"
+                else datetime.fromtimestamp(float(value["value"]))
+            )
+        elif column_type is Timestamptz:
+            return (
+                datetime.now
+                if value["value"] == "CURRENT_TIMESTAMP"
+                else datetime.fromtimestamp(float(value["value"]))
+            )
+        else:
+            return column_type.value_type(value["value"])
 
 
 INDEX_METHOD_MAP: t.Dict[str, IndexMethod] = {
@@ -579,7 +574,7 @@ async def get_tablenames(
         A list of tablenames for the given schema.
 
     """
-    tablenames: t.List[str] = [
+    return [
         i["tablename"]
         for i in await table_class.raw(
             (
@@ -589,7 +584,6 @@ async def get_tablenames(
             schema_name,
         ).run()
     ]
-    return tablenames
 
 
 async def get_table_schema(
@@ -647,9 +641,7 @@ async def get_foreign_key_reference(
 
 
 def get_table_name(name: str, schema: str) -> str:
-    if schema == "public":
-        return name
-    return f"{schema}.{name}"
+    return name if schema == "public" else f"{schema}.{name}"
 
 
 async def create_table_class_from_db(
@@ -735,10 +727,9 @@ async def create_table_class_from_db(
                     else ForeignKeyPlaceholder
                 )
 
-                trigger = triggers.get_column_ref_trigger(
+                if trigger := triggers.get_column_ref_trigger(
                     column_name, constraint_table.name
-                )
-                if trigger:
+                ):
                     kwargs["on_update"] = ONUPDATE_MAP[trigger.on_update]
                     kwargs["on_delete"] = ONDELETE_MAP[trigger.on_delete]
 
@@ -761,8 +752,9 @@ async def create_table_class_from_db(
             kwargs["digits"] = (precision, scale)
 
         if column_default:
-            default_value = get_column_default(column_type, column_default)
-            if default_value:
+            if default_value := get_column_default(
+                column_type, column_default
+            ):
                 kwargs["default"] = default_value
 
         column = column_type(**kwargs)
@@ -842,13 +834,11 @@ async def get_output_schema(
         *table_coroutines, return_exceptions=True
     )
 
-    # handle exceptions
-    exceptions = []
-    for obj, tablename in zip(output_schemas, tablenames):
-        if isinstance(obj, Exception):
-            exceptions.append((obj, tablename))
-
-    if exceptions:
+    if exceptions := [
+        (obj, tablename)
+        for obj, tablename in zip(output_schemas, tablenames)
+        if isinstance(obj, Exception)
+    ]:
         raise GenerateError(
             [
                 type(e)(
@@ -898,7 +888,7 @@ async def generate(schema_name: str = "public"):
         output.append('"""')
 
     if output_schema.index_warnings:
-        warning_str = "\n".join(i for i in set(output_schema.index_warnings))
+        warning_str = "\n".join(set(output_schema.index_warnings))
 
         output.append('"""')
         output.append("WARNING: Unable to parse the following indexes:")

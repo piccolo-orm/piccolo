@@ -28,7 +28,4 @@ def dump_json(data: t.Any, pretty: bool = False) -> str:
 
 
 def load_json(data: str) -> t.Any:
-    if ORJSON:
-        return orjson.loads(data)
-    else:
-        return json.loads(data)
+    return orjson.loads(data) if ORJSON else json.loads(data)

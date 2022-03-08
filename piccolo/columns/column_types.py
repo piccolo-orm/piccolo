@@ -141,10 +141,7 @@ class MathDelegate:
                     "Adding values across joins isn't currently supported."
                 )
             column_name = column._meta.db_column_name
-            if reverse:
-                return QueryString(f"{column_name} {operator} {column_name}")
-            else:
-                return QueryString(f"{column_name} {operator} {column_name}")
+            return QueryString(f"{column_name} {operator} {column_name}")
         elif isinstance(value, (int, float)):
             if reverse:
                 return QueryString(f"{{}} {operator} {column_name}", value)
@@ -202,10 +199,7 @@ class Varchar(Column):
 
     @property
     def column_type(self):
-        if self.length:
-            return f"VARCHAR({self.length})"
-        else:
-            return "VARCHAR"
+        return f"VARCHAR({self.length})" if self.length else "VARCHAR"
 
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         engine_type = self._meta.table._meta.db.engine_type
@@ -377,10 +371,10 @@ class UUID(Column):
         if isinstance(default, str):
             try:
                 default = uuid.UUID(default)
-            except ValueError:
+            except ValueError as e:
                 raise ValueError(
                     "The default is a string, but not a valid uuid."
-                )
+                ) from e
 
         self.default = default
         kwargs.update({"default": default})
@@ -1218,9 +1212,8 @@ class Numeric(Column):
                     "with the first value being the precision, and the second "
                     "value being the scale."
                 )
-        else:
-            if digits is not None:
-                raise ValueError("The digits argument should be a tuple.")
+        elif digits is not None:
+            raise ValueError("The digits argument should be a tuple.")
 
         self._validate_default(default, (decimal.Decimal, None))
 
@@ -1700,7 +1693,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
         return column
 
     def all_columns(
-        self, exclude: t.List[t.Union[Column, str]] = []
+        self, exclude: t.List[t.Union[Column, str]] = None
     ) -> t.List[Column]:
         """
         Allow a user to access all of the columns on the related table. This is
@@ -1736,6 +1729,8 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
             instance. For example ``['id']`` or ``[Band.manager.id]``.
 
         """
+        if exclude is None:
+            exclude = []
         _fk_meta = object.__getattribute__(self, "_foreign_key_meta")
 
         excluded_column_names = [
@@ -1749,7 +1744,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
         ]
 
     def all_related(
-        self, exclude: t.List[t.Union[ForeignKey, str]] = []
+        self, exclude: t.List[t.Union[ForeignKey, str]] = None
     ) -> t.List[ForeignKey]:
         """
         Returns each ``ForeignKey`` column on the related table. This is
@@ -1787,6 +1782,8 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
             ``[Tour.concert.band_1]``.
 
         """
+        if exclude is None:
+            exclude = []
         _fk_meta: ForeignKeyMeta = object.__getattribute__(
             self, "_foreign_key_meta"
         )
@@ -1994,16 +1991,17 @@ class JSONB(JSON):
         select_string = self._meta.get_full_name(
             just_alias=just_alias, include_quotes=True
         )
-        if self.json_operator is None:
-            if self.alias is None:
-                return select_string
-            else:
-                return f"{select_string} AS {self.alias}"
+        if self.json_operator is not None:
+            return (
+                f"{select_string} {self.json_operator}"
+                if self.alias is None
+                else f"{select_string} {self.json_operator} AS {self.alias}"
+            )
+
+        if self.alias is None:
+            return select_string
         else:
-            if self.alias is None:
-                return f"{select_string} {self.json_operator}"
-            else:
-                return f"{select_string} {self.json_operator} AS {self.alias}"
+            return f"{select_string} AS {self.alias}"
 
     def eq(self, value) -> Where:
         """

@@ -31,8 +31,8 @@ class PiccoloAppModule(ModuleType):
 
 def table_finder(
     modules: t.Sequence[str],
-    include_tags: t.Sequence[str] = ["__all__"],
-    exclude_tags: t.Sequence[str] = [],
+    include_tags: t.Sequence[str] = None,
+    exclude_tags: t.Sequence[str] = None,
     exclude_imported: bool = False,
 ) -> t.List[t.Type[Table]]:
     """
@@ -68,6 +68,10 @@ def table_finder(
                 creator = ForeignKey(BaseUser)
 
     """  # noqa: E501
+    if include_tags is None:
+        include_tags = ["__all__"]
+    if exclude_tags is None:
+        exclude_tags = []
     if isinstance(modules, str):
         # Guard against the user just entering a string, for example
         # 'blog.tables', instead of ['blog.tables'].
@@ -80,7 +84,7 @@ def table_finder(
             module = import_module(module_path)
         except ImportError as exception:
             print(f"Unable to import {module_path}")
-            raise exception
+            raise exception from exception
 
         object_names = [i for i in dir(module) if not i.startswith("_")]
 
@@ -207,7 +211,7 @@ class AppRegistry:
                 app_config: AppConfig = getattr(app_conf_module, "APP_CONFIG")
             except (ImportError, AttributeError) as e:
                 if app.endswith(".piccolo_app"):
-                    raise e
+                    raise e from e
                 app += ".piccolo_app"
                 app_conf_module = import_module(app)
                 app_config: AppConfig = getattr(app_conf_module, "APP_CONFIG")
@@ -319,8 +323,10 @@ class Finder:
                 config_module = t.cast(
                     PiccoloAppModule, import_module(config_module_path)
                 )
-            except ImportError:
-                raise Exception(f"Unable to import {config_module_path}")
+            except ImportError as e:
+                raise Exception(
+                    f"Unable to import {config_module_path}"
+                ) from e
             app_config: AppConfig = getattr(config_module, "APP_CONFIG")
             dependency_config_modules = self._import_app_modules(
                 app_config.migration_dependencies
@@ -367,14 +373,14 @@ class Finder:
                 raise ModuleNotFoundError(
                     "PostgreSQL driver not found. "
                     "Try running `pip install 'piccolo[postgres]'`"
-                )
+                ) from exc
             elif str(exc) == "No module named 'aiosqlite'":
                 raise ModuleNotFoundError(
                     "SQLite driver not found. "
                     "Try running `pip install 'piccolo[sqlite]'`"
-                )
+                ) from exc
             else:
-                raise exc
+                raise exc from exc
         else:
             return module
 

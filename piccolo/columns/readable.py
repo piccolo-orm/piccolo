@@ -44,7 +44,7 @@ class Readable(Selectable):
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
         try:
             return getattr(self, f"{engine_type}_string")
-        except AttributeError:
+        except AttributeError as e:
             raise ValueError(
                 f"Unrecognised engine_type - received {engine_type}"
-            )
+            ) from e

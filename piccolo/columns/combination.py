@@ -128,11 +128,7 @@ class Where(CombinableMixin):
         """
         self.column = column
 
-        if value == UNDEFINED:
-            self.value = value
-        else:
-            self.value = self.clean_value(value)
-
+        self.value = value if value == UNDEFINED else self.clean_value(value)
         if values == UNDEFINED:
             self.values = values
         else:

@@ -55,8 +55,7 @@ class BaseMigrationManager(Finder):
             for name in migration_names
         ]
         for m in modules:
-            _id = getattr(m, "ID", None)
-            if _id:
+            if _id := getattr(m, "ID", None):
                 migration_modules[_id] = m
 
         return migration_modules
@@ -110,7 +109,7 @@ class BaseMigrationManager(Finder):
                 "Positive offset values aren't currently supported"
             )
         elif offset < 0:
-            return migration_managers[0:offset]
+            return migration_managers[:offset]
         else:
             return migration_managers
 

@@ -193,7 +193,7 @@ class MigrationManager:
         db_column_name: t.Optional[str] = None,
         column_class_name: str = "",
         column_class: t.Optional[t.Type[Column]] = None,
-        params: t.Dict[str, t.Any] = {},
+        params: t.Dict[str, t.Any] = None,
     ):
         """
         Add a new column to the table.
@@ -207,6 +207,8 @@ class MigrationManager:
             A direct reference to a ``Column`` subclass.
 
         """
+        if params is None:
+            params = {}
         column_class = column_class or getattr(column_types, column_class_name)
 
         if column_class is None:
@@ -267,14 +269,18 @@ class MigrationManager:
         tablename: str,
         column_name: str,
         db_column_name: t.Optional[str] = None,
-        params: t.Dict[str, t.Any] = {},
-        old_params: t.Dict[str, t.Any] = {},
+        params: t.Dict[str, t.Any] = None,
+        old_params: t.Dict[str, t.Any] = None,
         column_class: t.Optional[t.Type[Column]] = None,
         old_column_class: t.Optional[t.Type[Column]] = None,
     ):
         """
         All possible alterations aren't currently supported.
         """
+        if params is None:
+            params = {}
+        if old_params is None:
+            old_params = {}
         self.alter_columns.append(
             AlterColumn(
                 table_class_name=table_class_name,
@@ -521,16 +527,15 @@ class MigrationManager:
                     ).run()
 
     async def _run_drop_tables(self, backwards=False):
-        if backwards:
-            for diffable_table in self.drop_tables:
+        for diffable_table in self.drop_tables:
+            if backwards:
                 _Table = await self.get_table_from_snaphot(
                     table_class_name=diffable_table.class_name,
                     app_name=self.app_name,
                     offset=-1,
                 )
                 await _Table.create_table().run()
-        else:
-            for diffable_table in self.drop_tables:
+            else:
                 await (
                     diffable_table.to_table_class().alter().drop_table().run()
                 )

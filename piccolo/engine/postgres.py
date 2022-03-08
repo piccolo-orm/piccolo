@@ -242,9 +242,11 @@ class PostgresEngine(Engine):
     def __init__(
         self,
         config: t.Dict[str, t.Any],
-        extensions: t.Sequence[str] = ["uuid-ossp"],
+        extensions: t.Sequence[str] = None,
         log_queries: bool = False,
     ) -> None:
+        if extensions is None:
+            extensions = ["uuid-ossp"]
         self.config = config
         self.extensions = extensions
         self.log_queries = log_queries
@@ -361,7 +363,9 @@ class PostgresEngine(Engine):
 
     ###########################################################################
 
-    async def _run_in_pool(self, query: str, args: t.Sequence[t.Any] = []):
+    async def _run_in_pool(self, query: str, args: t.Sequence[t.Any] = None):
+        if args is None:
+            args = []
         if not self.pool:
             raise ValueError("A pool isn't currently running.")
 
@@ -371,8 +375,10 @@ class PostgresEngine(Engine):
         return response
 
     async def _run_in_new_connection(
-        self, query: str, args: t.Sequence[t.Any] = []
+        self, query: str, args: t.Sequence[t.Any] = None
     ):
+        if args is None:
+            args = []
         connection = await self.get_new_connection()
         results = await connection.fetch(query, *args)
         await connection.close()
@@ -389,8 +395,7 @@ class PostgresEngine(Engine):
             print(querystring)
 
         # If running inside a transaction:
-        connection = self.transaction_connection.get()
-        if connection:
+        if connection := self.transaction_connection.get():
             return await connection.fetch(query, *query_args)
         elif in_pool and self.pool:
             return await self._run_in_pool(query, query_args)
@@ -402,8 +407,7 @@ class PostgresEngine(Engine):
             print(ddl)
 
         # If running inside a transaction:
-        connection = self.transaction_connection.get()
-        if connection:
+        if connection := self.transaction_connection.get():
             return await connection.fetch(ddl)
         elif in_pool and self.pool:
             return await self._run_in_pool(ddl)

@@ -312,8 +312,7 @@ class M2MRemoveRelated:
             if row.__class__ != related_table:
                 raise ValueError("The row belongs to the wrong table!")
 
-            row_id = getattr(row, row._meta.primary_key._meta.name)
-            if row_id:
+            if row_id := getattr(row, row._meta.primary_key._meta.name):
                 row_ids.append(row_id)
 
         if row_ids:
@@ -409,7 +408,7 @@ class M2M:
         :param load_json:
             If ``True``, any JSON strings are loaded as Python objects.
         """
-        if len(columns) == 0:
+        if not columns:
             columns = tuple(self._meta.secondary_table._meta.columns)
 
         if as_list and len(columns) != 1:
