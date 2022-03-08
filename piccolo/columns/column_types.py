@@ -1,3 +1,29 @@
+"""
+Notes for devs
+==============
+
+Descriptors
+-----------
+
+Each column type implements the descriptor protocol (the ``__get__`` and
+``__set__`` methods).
+
+This is to signal to MyPy that the following is allowed:
+
+.. code-block:: python
+
+    class Band(Table):
+        name = Varchar()
+
+    band = Band()
+    band.name = 'Pythonistas'  # Without descriptors, this would be an error
+
+In the above example, descriptors allow us to tell MyPy that ``name`` is a
+``Varchar`` when accessed on a class, but is a ``str`` when accessed on a class
+instance.
+
+"""
+
 from __future__ import annotations
 
 import copy
@@ -147,10 +173,10 @@ class Varchar(Column):
             name = Varchar(length=100)
 
         # Create
-        >>> Band(name='Pythonistas').save().run_sync()
+        >>> await Band(name='Pythonistas').save()
 
         # Query
-        >>> Band.select(Band.name).run_sync()
+        >>> await Band.select(Band.name)
         {'name': 'Pythonistas'}
 
     :param length:
@@ -198,6 +224,23 @@ class Varchar(Column):
             reverse=True,
         )
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> str:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Varchar:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[str, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 class Secret(Varchar):
     """
@@ -208,6 +251,23 @@ class Secret(Varchar):
     def __init__(self, *args, **kwargs):
         kwargs["secret"] = True
         super().__init__(*args, **kwargs)
+
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> str:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Secret:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[str, None]):
+        obj.__dict__[self._meta.name] = value
 
 
 class Text(Column):
@@ -223,10 +283,10 @@ class Text(Column):
             name = Text()
 
         # Create
-        >>> Band(name='Pythonistas').save().run_sync()
+        >>> await Band(name='Pythonistas').save()
 
         # Query
-        >>> Band.select(Band.name).run_sync()
+        >>> await Band.select(Band.name)
         {'name': 'Pythonistas'}
 
     """
@@ -261,6 +321,23 @@ class Text(Column):
             reverse=True,
         )
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> str:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Text:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[str, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 class UUID(Column):
     """
@@ -277,10 +354,10 @@ class UUID(Column):
             uuid = UUID()
 
         # Create
-        >>> DiscountCode(code=uuid.uuid4()).save().run_sync()
+        >>> await DiscountCode(code=uuid.uuid4()).save()
 
         # Query
-        >>> DiscountCode.select(DiscountCode.code).run_sync()
+        >>> await DiscountCode.select(DiscountCode.code)
         {'code': UUID('09c4c17d-af68-4ce7-9955-73dcd892e462')}
 
     """
@@ -309,6 +386,23 @@ class UUID(Column):
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> uuid.UUID:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> UUID:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[uuid.UUID, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 class Integer(Column):
     """
@@ -322,10 +416,10 @@ class Integer(Column):
             popularity = Integer()
 
         # Create
-        >>> Band(popularity=1000).save().run_sync()
+        >>> await Band(popularity=1000).save()
 
         # Query
-        >>> Band.select(Band.popularity).run_sync()
+        >>> await Band.select(Band.popularity)
         {'popularity': 1000}
 
     """
@@ -409,6 +503,23 @@ class Integer(Column):
             reverse=True,
         )
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> int:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Integer:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[int, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 ###############################################################################
 # BigInt and SmallInt only exist on Postgres. SQLite treats them the same as
@@ -429,10 +540,10 @@ class BigInt(Integer):
             value = BigInt()
 
         # Create
-        >>> Band(popularity=1000000).save().run_sync()
+        >>> await Band(popularity=1000000).save()
 
         # Query
-        >>> Band.select(Band.popularity).run_sync()
+        >>> await Band.select(Band.popularity)
         {'popularity': 1000000}
 
     """
@@ -445,6 +556,23 @@ class BigInt(Integer):
         elif engine_type == "sqlite":
             return "INTEGER"
         raise Exception("Unrecognized engine type")
+
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> int:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> BigInt:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[int, None]):
+        obj.__dict__[self._meta.name] = value
 
 
 class SmallInt(Integer):
@@ -460,10 +588,10 @@ class SmallInt(Integer):
             value = SmallInt()
 
         # Create
-        >>> Band(popularity=1000).save().run_sync()
+        >>> await Band(popularity=1000).save()
 
         # Query
-        >>> Band.select(Band.popularity).run_sync()
+        >>> await Band.select(Band.popularity)
         {'popularity': 1000}
 
     """
@@ -476,6 +604,23 @@ class SmallInt(Integer):
         elif engine_type == "sqlite":
             return "INTEGER"
         raise Exception("Unrecognized engine type")
+
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> int:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> SmallInt:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[int, None]):
+        obj.__dict__[self._meta.name] = value
 
 
 ###############################################################################
@@ -507,6 +652,23 @@ class Serial(Column):
             return NULL
         raise Exception("Unrecognized engine type")
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> int:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Serial:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[int, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 class BigSerial(Serial):
     """
@@ -521,6 +683,23 @@ class BigSerial(Serial):
         elif engine_type == "sqlite":
             return "INTEGER"
         raise Exception("Unrecognized engine type")
+
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> int:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> BigSerial:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[int, None]):
+        obj.__dict__[self._meta.name] = value
 
 
 class PrimaryKey(Serial):
@@ -540,6 +719,23 @@ class PrimaryKey(Serial):
 
         super().__init__(**kwargs)
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> int:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> PrimaryKey:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[int, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 ###############################################################################
 
@@ -558,12 +754,12 @@ class Timestamp(Column):
             starts = Timestamp()
 
         # Create
-        >>> Concert(
-        >>>    starts=datetime.datetime(year=2050, month=1, day=1)
-        >>> ).save().run_sync()
+        >>> await Concert(
+        ...    starts=datetime.datetime(year=2050, month=1, day=1)
+        ... ).save()
 
         # Query
-        >>> Concert.select(Concert.starts).run_sync()
+        >>> await Concert.select(Concert.starts)
         {'starts': datetime.datetime(2050, 1, 1, 0, 0)}
 
     """
@@ -590,6 +786,23 @@ class Timestamp(Column):
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> datetime:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Timestamp:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[datetime, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 class Timestamptz(Column):
     """
@@ -607,14 +820,14 @@ class Timestamptz(Column):
             starts = Timestamptz()
 
         # Create
-        >>> Concert(
-        >>>    starts=datetime.datetime(
-        >>>        year=2050, month=1, day=1, tzinfo=datetime.timezone.tz
-        >>>    )
-        >>> ).save().run_sync()
+        >>> await Concert(
+        ...    starts=datetime.datetime(
+        ...        year=2050, month=1, day=1, tzinfo=datetime.timezone.tz
+        ...    )
+        ... ).save()
 
         # Query
-        >>> Concert.select(Concert.starts).run_sync()
+        >>> await Concert.select(Concert.starts)
         {
             'starts': datetime.datetime(
                 2050, 1, 1, 0, 0, tzinfo=datetime.timezone.utc
@@ -642,6 +855,23 @@ class Timestamptz(Column):
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> datetime:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Timestamptz:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[datetime, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 class Date(Column):
     """
@@ -657,12 +887,12 @@ class Date(Column):
             starts = Date()
 
         # Create
-        >>> Concert(
-        >>>     starts=datetime.date(year=2020, month=1, day=1)
-        >>> ).save().run_sync()
+        >>> await Concert(
+        ...     starts=datetime.date(year=2020, month=1, day=1)
+        ... ).save()
 
         # Query
-        >>> Concert.select(Concert.starts).run_sync()
+        >>> await Concert.select(Concert.starts)
         {'starts': datetime.date(2020, 1, 1)}
 
     """
@@ -682,6 +912,23 @@ class Date(Column):
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> date:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Date:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[date, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 class Time(Column):
     """
@@ -697,12 +944,12 @@ class Time(Column):
             starts = Time()
 
         # Create
-        >>> Concert(
-        >>>    starts=datetime.time(hour=20, minute=0, second=0)
-        >>> ).save().run_sync()
+        >>> await Concert(
+        ...    starts=datetime.time(hour=20, minute=0, second=0)
+        ... ).save()
 
         # Query
-        >>> Concert.select(Concert.starts).run_sync()
+        >>> await Concert.select(Concert.starts)
         {'starts': datetime.time(20, 0, 0)}
 
     """
@@ -719,6 +966,23 @@ class Time(Column):
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> time:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Time:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[time, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 class Interval(Column):  # lgtm [py/missing-equals]
     """
@@ -734,12 +998,12 @@ class Interval(Column):  # lgtm [py/missing-equals]
             duration = Interval()
 
         # Create
-        >>> Concert(
-        >>>    duration=timedelta(hours=2)
-        >>> ).save().run_sync()
+        >>> await Concert(
+        ...    duration=timedelta(hours=2)
+        ... ).save()
 
         # Query
-        >>> Concert.select(Concert.duration).run_sync()
+        >>> await Concert.select(Concert.duration)
         {'duration': datetime.timedelta(seconds=7200)}
 
     """
@@ -770,13 +1034,31 @@ class Interval(Column):  # lgtm [py/missing-equals]
             return "SECONDS"
         raise Exception("Unrecognized engine type")
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> timedelta:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Interval:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[timedelta, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 ###############################################################################
 
 
 class Boolean(Column):
     """
-    Used for storing True / False values. Uses the ``bool`` type for values.
+    Used for storing ``True`` / ``False`` values. Uses the ``bool`` type for
+    values.
 
     **Example**
 
@@ -786,10 +1068,10 @@ class Boolean(Column):
             has_drummer = Boolean()
 
         # Create
-        >>> Band(has_drummer=True).save().run_sync()
+        >>> await Band(has_drummer=True).save()
 
         # Query
-        >>> Band.select(Band.has_drummer).run_sync()
+        >>> await Band.select(Band.has_drummer)
         {'has_drummer': True}
 
     """
@@ -815,7 +1097,7 @@ class Boolean(Column):
 
             await MyTable.select().where(
                 MyTable.some_boolean_column == True
-            ).run()
+            )
 
         It's more Pythonic to use ``is True`` rather than ``== True``, which is
         why linters complain. The work around is to do the following instead:
@@ -824,7 +1106,7 @@ class Boolean(Column):
 
             await MyTable.select().where(
                 MyTable.some_boolean_column.__eq__(True)
-            ).run()
+            )
 
         Using the ``__eq__`` magic method is a bit untidy, which is why this
         ``eq`` method exists.
@@ -833,7 +1115,7 @@ class Boolean(Column):
 
             await MyTable.select().where(
                 MyTable.some_boolean_column.eq(True)
-            ).run()
+            )
 
         The ``ne`` method exists for the same reason, for ``!=``.
 
@@ -845,6 +1127,23 @@ class Boolean(Column):
         See the ``eq`` method for more details.
         """
         return self.__ne__(value)
+
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> bool:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Boolean:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[bool, None]):
+        obj.__dict__[self._meta.name] = value
 
 
 ###############################################################################
@@ -865,19 +1164,19 @@ class Numeric(Column):
             price = Numeric(digits=(5,2))
 
         # Create
-        >>> Ticket(price=Decimal('50.0')).save().run_sync()
+        >>> await Ticket(price=Decimal('50.0')).save()
 
         # Query
-        >>> Ticket.select(Ticket.price).run_sync()
+        >>> await Ticket.select(Ticket.price)
         {'price': Decimal('50.0')}
 
-    :arg digits:
+    :param digits:
         When creating the column, you specify how many digits are allowed
-        using a tuple. The first value is the `precision`, which is the
-        total number of digits allowed. The second value is the `range`,
+        using a tuple. The first value is the ``precision``, which is the
+        total number of digits allowed. The second value is the ``range``,
         which specifies how many of those digits are after the decimal
         point. For example, to store monetary values up to £999.99, the
-        digits argument is `(5,2)`.
+        digits argument is ``(5,2)``.
 
     """
 
@@ -930,13 +1229,45 @@ class Numeric(Column):
         kwargs.update({"default": default, "digits": digits})
         super().__init__(**kwargs)
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> decimal.Decimal:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Numeric:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[decimal.Decimal, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 class Decimal(Numeric):
     """
     An alias for Numeric.
     """
 
-    pass
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> decimal.Decimal:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Decimal:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[decimal.Decimal, None]):
+        obj.__dict__[self._meta.name] = value
 
 
 class Real(Column):
@@ -952,10 +1283,10 @@ class Real(Column):
             rating = Real()
 
         # Create
-        >>> Concert(rating=7.8).save().run_sync()
+        >>> await Concert(rating=7.8).save()
 
         # Query
-        >>> Concert.select(Concert.rating).run_sync()
+        >>> await Concert.select(Concert.rating)
         {'rating': 7.8}
 
     """
@@ -972,13 +1303,45 @@ class Real(Column):
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> float:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Real:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[float, None]):
+        obj.__dict__[self._meta.name] = value
+
 
 class Float(Real):
     """
     An alias for Real.
     """
 
-    pass
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> float:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Float:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[float, None]):
+        obj.__dict__[self._meta.name] = value
 
 
 class DoublePrecision(Real):
@@ -989,6 +1352,23 @@ class DoublePrecision(Real):
     @property
     def column_type(self):
         return "DOUBLE PRECISION"
+
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> float:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> DoublePrecision:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[float, None]):
+        obj.__dict__[self._meta.name] = value
 
 
 ###############################################################################
@@ -1012,14 +1392,14 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
             manager = ForeignKey(references=Manager)
 
         # Create
-        >>> Band(manager=1).save().run_sync()
+        >>> await Band(manager=1).save()
 
         # Query
-        >>> Band.select(Band.manager).run_sync()
+        >>> await Band.select(Band.manager)
         {'manager': 1}
 
         # Query object
-        >>> band = await Band.objects().first().run()
+        >>> band = await Band.objects().first()
         >>> band.manager
         1
 
@@ -1029,14 +1409,14 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
 
     .. code-block:: python
 
-        >>> await Band.select(Band.name, Band.manager.name).first().run()
+        >>> await Band.select(Band.name, Band.manager.name).first()
         {'name': 'Pythonistas', 'manager.name': 'Guido'}
 
     To retrieve all of the columns in the related table:
 
     .. code-block:: python
 
-        >>> await Band.select(Band.name, *Band.manager.all_columns()).first().run()
+        >>> await Band.select(Band.name, *Band.manager.all_columns()).first()
         {'name': 'Pythonistas', 'manager.id': 1, 'manager.name': 'Guido'}
 
     To get a referenced row as an object:
@@ -1045,21 +1425,21 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
 
         manager = await Manager.objects().where(
             Manager.id == some_band.manager
-        ).run()
+        )
 
     Or use either of the following, which are just a proxy to the above:
 
     .. code-block:: python
 
-        manager = await band.get_related('manager').run()
-        manager = await band.get_related(Band.manager).run()
+        manager = await band.get_related('manager')
+        manager = await band.get_related(Band.manager)
 
     To change the manager:
 
     .. code-block:: python
 
         band.manager = some_manager_id
-        await band.save().run()
+        await band.save()
 
     :param references:
         The ``Table`` being referenced.
@@ -1126,11 +1506,11 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
 
         Options:
 
-            * ``OnDelete.cascade`` (default)
-            * ``OnDelete.restrict``
-            * ``OnDelete.no_action``
-            * ``OnDelete.set_null``
-            * ``OnDelete.set_default``
+        * ``OnDelete.cascade`` (default)
+        * ``OnDelete.restrict``
+        * ``OnDelete.no_action``
+        * ``OnDelete.set_null``
+        * ``OnDelete.set_default``
 
         To learn more about the different options, see the `Postgres docs <https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-FK>`_.
 
@@ -1152,11 +1532,11 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
 
         Options:
 
-            * ``OnUpdate.cascade`` (default)
-            * ``OnUpdate.restrict``
-            * ``OnUpdate.no_action``
-            * ``OnUpdate.set_null``
-            * ``OnUpdate.set_default``
+        * ``OnUpdate.cascade`` (default)
+        * ``OnUpdate.restrict``
+        * ``OnUpdate.no_action``
+        * ``OnUpdate.set_null``
+        * ``OnUpdate.set_default``
 
         To learn more about the different options, see the `Postgres docs <https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-FK>`_.
 
@@ -1170,6 +1550,19 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
                     on_update=OnUpdate.cascade
                 )
 
+    :param target_column:
+        By default the ``ForeignKey`` references the primary key column on the
+        related table. You can specify an alternative column (it must have a
+        unique constraint on it though). For example:
+
+        .. code-block:: python
+
+            # Passing in a column reference:
+            ForeignKey(references=Manager, target_column=Manager.passport_number)
+
+            # Or just the column name:
+            ForeignKey(references=Manager, target_column='passport_number')
+
     """  # noqa: E501
 
     _foreign_key_meta: ForeignKeyMeta
@@ -1177,15 +1570,22 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
     @property
     def column_type(self):
         """
-        A ForeignKey column needs to have the same type as the primary key
+        A ``ForeignKey`` column needs to have the same type as the primary key
         column of the table being referenced.
         """
-        referenced_table = self._foreign_key_meta.resolved_references
-        pk_column = referenced_table._meta.primary_key
-        if isinstance(pk_column, Serial):
+        target_column = self._foreign_key_meta.resolved_target_column
+        if isinstance(target_column, Serial):
             return Integer().column_type
         else:
-            return pk_column.column_type
+            return target_column.column_type
+
+    @property
+    def value_type(self):
+        """
+        The value type matches that of the primary key being referenced.
+        """
+        target_column = self._foreign_key_meta.resolved_target_column
+        return target_column.value_type
 
     def __init__(
         self,
@@ -1194,6 +1594,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
         null: bool = True,
         on_delete: OnDelete = OnDelete.cascade,
         on_update: OnUpdate = OnUpdate.cascade,
+        target_column: t.Union[str, Column, None] = None,
         **kwargs,
     ) -> None:
         from piccolo.table import Table
@@ -1218,6 +1619,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
                 "on_delete": on_delete,
                 "on_update": on_update,
                 "null": null,
+                "target_column": target_column,
             }
         )
 
@@ -1229,6 +1631,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
             references=Table if isinstance(references, str) else references,
             on_delete=on_delete,
             on_update=on_update,
+            target_column=target_column,
         )
 
     def _setup(self, table_class: t.Type[Table]) -> ForeignKeySetupResponse:
@@ -1308,25 +1711,25 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
 
         .. code-block:: python
 
-            Band.select(Band.name, Band.manager.all_columns()).run_sync()
+            await Band.select(Band.name, Band.manager.all_columns())
 
             # Equivalent to:
-            Band.select(
+            await Band.select(
                 Band.name,
                 Band.manager.id,
                 Band.manager.name
-            ).run_sync()
+            )
 
         To exclude certain columns:
 
         .. code-block:: python
 
-            Band.select(
+            await Band.select(
                 Band.name,
                 Band.manager.all_columns(
                     exclude=[Band.manager.id]
                 )
-            ).run_sync()
+            )
 
         :param exclude:
             Columns to exclude - can be the name of a column, or a column
@@ -1369,14 +1772,14 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
                 name = Varchar()
                 concert = ForeignKey(Concert)
 
-            Tour.objects(Tour.concert, Tour.concert.all_related()).run_sync()
+            await Tour.objects(Tour.concert, Tour.concert.all_related())
 
             # Equivalent to
-            Tour.objects(
+            await Tour.objects(
                 Tour.concert,
                 Tour.concert.band_1,
                 Tour.concert.band_2
-            ).run_sync()
+            )
 
         :param exclude:
             Columns to exclude - can be the name of a column, or a
@@ -1412,7 +1815,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
             setattr(self, _column._meta.name, _column)
             _fk_meta.proxy_columns.append(_column)
 
-    def __getattribute__(self, name: str):
+    def __getattribute__(self, name: str) -> t.Union[Column, t.Any]:
         """
         Returns attributes unmodified unless they're Column instances, in which
         case a copy is returned with an updated call_chain (which records the
@@ -1470,9 +1873,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
                 column
             ) in value._foreign_key_meta.resolved_references._meta.columns:
                 _column: Column = column.copy()
-                _column._meta.call_chain = [
-                    i for i in new_column._meta.call_chain
-                ]
+                _column._meta.call_chain = list(new_column._meta.call_chain)
                 setattr(new_column, _column._meta.name, _column)
                 foreign_key_meta.proxy_columns.append(_column)
 
@@ -1487,6 +1888,27 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
             return new_column
         else:
             return value
+
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> t.Any:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> ForeignKey:
+        ...
+
+    @t.overload
+    def __get__(self, obj: t.Any, objtype=None) -> t.Any:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Any):
+        obj.__dict__[self._meta.name] = value
 
 
 ###############################################################################
@@ -1528,6 +1950,23 @@ class JSON(Column):  # lgtm[py/missing-equals]
 
         self.json_operator: t.Optional[str] = None
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> str:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> JSON:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[str, t.Dict]):
+        obj.__dict__[self._meta.name] = value
+
 
 class JSONB(JSON):
     """
@@ -1552,14 +1991,48 @@ class JSONB(JSON):
         return instance
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        select_string = self._meta.get_full_name(just_alias=just_alias)
+        select_string = self._meta.get_full_name(
+            just_alias=just_alias, include_quotes=True
+        )
         if self.json_operator is None:
-            return select_string
+            if self.alias is None:
+                return select_string
+            else:
+                return f"{select_string} AS {self.alias}"
         else:
             if self.alias is None:
                 return f"{select_string} {self.json_operator}"
             else:
                 return f"{select_string} {self.json_operator} AS {self.alias}"
+
+    def eq(self, value) -> Where:
+        """
+        See ``Boolean.eq`` for more details.
+        """
+        return self.__eq__(value)
+
+    def ne(self, value) -> Where:
+        """
+        See ``Boolean.ne`` for more details.
+        """
+        return self.__ne__(value)
+
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> str:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> JSONB:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.Union[str, t.Dict]):
+        obj.__dict__[self._meta.name] = value
 
 
 ###############################################################################
@@ -1577,10 +2050,10 @@ class Bytea(Column):
             token = Bytea(default=b'token123')
 
         # Create
-        >>> Token(token=b'my-token').save().run_sync()
+        >>> await Token(token=b'my-token').save()
 
         # Query
-        >>> Token.select(Token.token).run_sync()
+        >>> await Token.select(Token.token)
         {'token': b'my-token'}
 
     """
@@ -1617,13 +2090,45 @@ class Bytea(Column):
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> bytes:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Bytea:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: bytes):
+        obj.__dict__[self._meta.name] = value
+
 
 class Blob(Bytea):
     """
     An alias for Bytea.
     """
 
-    pass
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> bytes:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Blob:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: bytes):
+        obj.__dict__[self._meta.name] = value
 
 
 ###############################################################################
@@ -1641,10 +2146,10 @@ class Array(Column):
             seat_numbers = Array(base_column=Integer())
 
         # Create
-        >>> Ticket(seat_numbers=[34, 35, 36]).save().run_sync()
+        >>> await Ticket(seat_numbers=[34, 35, 36]).save()
 
         # Query
-        >>> Ticket.select(Ticket.seat_numbers).run_sync()
+        >>> await Ticket.select(Ticket.seat_numbers)
         {'seat_numbers': [34, 35, 36]}
 
     """
@@ -1695,7 +2200,7 @@ class Array(Column):
 
         .. code-block:: python
 
-            >>> Ticket.select(Ticket.seat_numbers[0]).first().run_sync
+            >>> await Ticket.select(Ticket.seat_numbers[0]).first()
             {'seat_numbers': 325}
 
 
@@ -1720,7 +2225,9 @@ class Array(Column):
             raise ValueError("Only integers can be used for indexing.")
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        select_string = self._meta.get_full_name(just_alias=just_alias)
+        select_string = self._meta.get_full_name(
+            just_alias=just_alias, include_quotes=True
+        )
 
         if isinstance(self.index, int):
             return f"{select_string}[{self.index}]"
@@ -1733,7 +2240,7 @@ class Array(Column):
 
         .. code-block:: python
 
-            >>> Ticket.select().where(Ticket.seat_numbers.any(510)).run_sync()
+            >>> await Ticket.select().where(Ticket.seat_numbers.any(510))
 
         """
         engine_type = self._meta.table._meta.db.engine_type
@@ -1751,7 +2258,7 @@ class Array(Column):
 
         .. code-block:: python
 
-            >>> Ticket.select().where(Ticket.seat_numbers.all(510)).run_sync()
+            >>> await Ticket.select().where(Ticket.seat_numbers.all(510))
 
         """
         engine_type = self._meta.table._meta.db.engine_type
@@ -1762,3 +2269,20 @@ class Array(Column):
             raise ValueError("Unsupported by SQLite")
         else:
             raise ValueError("Unrecognised engine type")
+
+    ###########################################################################
+    # Descriptors
+
+    @t.overload
+    def __get__(self, obj: Table, objtype=None) -> t.List[t.Any]:
+        ...
+
+    @t.overload
+    def __get__(self, obj: None, objtype=None) -> Array:
+        ...
+
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__[self._meta.name] if obj else self
+
+    def __set__(self, obj, value: t.List[t.Any]):
+        obj.__dict__[self._meta.name] = value

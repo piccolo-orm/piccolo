@@ -107,11 +107,11 @@ async def _create_new_migration(
             chain(*[i.statements for i in alter_statements])
         )
         extra_imports = sorted(
-            list(set(chain(*[i.extra_imports for i in alter_statements]))),
+            set(chain(*[i.extra_imports for i in alter_statements])),
             key=lambda x: x.__repr__(),
         )
         extra_definitions = sorted(
-            list(set(chain(*[i.extra_definitions for i in alter_statements]))),
+            set(chain(*[i.extra_definitions for i in alter_statements])),
         )
 
         if sum(len(i.statements) for i in alter_statements) == 0:
@@ -199,8 +199,8 @@ async def new(
     :param auto:
         Auto create the migration contents.
     :param desc:
-        A description of what the migration does, for example 'adding name
-        column'.
+        A description of what the migration does, for example --desc='adding
+        name column'.
     :param auto_input:
         If provided, all prompts for user input will automatically have this
         entered. For example, --auto_input='y'.

@@ -192,36 +192,116 @@ JSONB
 
 .. autoclass:: JSONB
 
+Serialising
+===========
+
+Piccolo automatically converts Python values into JSON strings:
+
+.. code-block:: python
+
+    studio = RecordingStudio(
+        name="Abbey Road",
+        facilities={"restaurant": True, "mixing_desk": True}  # Automatically serialised
+    )
+    await studio.save()
+
+You can also pass in a JSON string if you prefer:
+
+.. code-block:: python
+
+    studio = RecordingStudio(
+        name="Abbey Road",
+        facilities='{"restaurant": true, "mixing_desk": true}'
+    )
+    await studio.save()
+
+Deserialising
+=============
+
+The contents of a ``JSON`` / ``JSONB`` column are returned as a string by
+default:
+
+.. code-block:: python
+
+    >>> await RecordingStudio.select(RecordingStudio.facilities)
+    [{facilities: '{"restaurant": true, "mixing_desk": true}'}]
+
+However, we can ask Piccolo to deserialise the JSON automatically (see :ref:`load_json`):
+
+.. code-block:: python
+
+    >>> await RecordingStudio.select(
+    ...     RecordingStudio.facilities
+    ... ).output(
+    ...     load_json=True
+    ... )
+    [facilities: {"restaurant": True, "mixing_desk": True}}]
+
+With ``objects`` queries, we can modify the returned JSON, and then save it:
+
+.. code-block:: python
+
+    studio = await RecordingStudio.objects().get(
+        RecordingStudio.name == 'Abbey Road'
+    ).output(load_json=True)
+
+    studio['facilities']['restaurant'] = False
+    await studio.save()
+
 arrow
 =====
 
 ``JSONB`` columns have an ``arrow`` function, which is useful for retrieving
-a subset of the JSON data, and for filtering in a where clause.
+a subset of the JSON data:
 
 .. code-block:: python
 
-    # Example schema:
-    class Booking(Table):
-        data = JSONB()
+    >>> await RecordingStudio.select(
+    ...     RecordingStudio.name,
+    ...     RecordingStudio.facilities.arrow('mixing_desk').as_alias('mixing_desk')
+    ... ).output(load_json=True)
+    [{'name': 'Abbey Road', 'mixing_desk': True}]
 
-    Booking.create_table().run_sync()
+It can also be used for filtering in a where clause:
 
-    # Example data:
-    Booking.insert(
-        Booking(data='{"name": "Alison"}'),
-        Booking(data='{"name": "Bob"}')
-    ).run_sync()
+.. code-block:: python
 
-    # Example queries
-    >>> Booking.select(
-    >>>     Booking.id, Booking.data.arrow('name').as_alias('name')
-    >>> ).run_sync()
-    [{'id': 1, 'name': '"Alison"'}, {'id': 2, 'name': '"Bob"'}]
+    >>> await RecordingStudio.select(RecordingStudio.name).where(
+    ...     RecordingStudio.facilities.arrow('mixing_desk') == True
+    ... )
+    [{'name': 'Abbey Road'}]
 
-    >>> Booking.select(Booking.id).where(
-    >>>     Booking.data.arrow('name') == '"Alison"'
-    >>> ).run_sync()
-    [{'id': 1}]
+Handling null
+=============
+
+When assigning a value of ``None`` to a ``JSON`` or ``JSONB`` column, this is
+treated as null in the database.
+
+.. code-block:: python
+
+    await RecordingStudio(name="ABC Studios", facilities=None).save()
+
+    >>> await RecordingStudio.select(
+    ...     RecordingStudio.facilities
+    ... ).where(
+    ...     RecordingStudio.name == "ABC Studios"
+    ... )
+    [{'facilities': None}]
+
+
+If instead you want to store JSON null in the database, assign a value of ``'null'``
+instead.
+
+.. code-block:: python
+
+    await RecordingStudio(name="ABC Studios", facilities='null').save()
+
+    >>> await RecordingStudio.select(
+    ...     RecordingStudio.facilities
+    ... ).where(
+    ...     RecordingStudio.name == "ABC Studios"
+    ... )
+    [{'facilities': 'null'}]
 
 -------------------------------------------------------------------------------
 
@@ -229,8 +309,8 @@ a subset of the JSON data, and for filtering in a where clause.
 Array
 *****
 
-Arrays of data can be stored, which can be useful when you want store lots of
-values without using foreign keys.
+Arrays of data can be stored, which can be useful when you want to store lots
+of values without using foreign keys.
 
 .. autoclass:: Array
 

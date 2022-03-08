@@ -102,5 +102,8 @@ class SchemaSnapshot:
                     for column in table.columns:
                         if column._meta.name == rename_column.old_column_name:
                             column._meta.name = rename_column.new_column_name
+                            column._meta.db_column_name = (
+                                rename_column.new_db_column_name
+                            )
 
         return tables

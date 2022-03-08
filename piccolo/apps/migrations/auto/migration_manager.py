@@ -53,7 +53,7 @@ class AddColumnCollection:
 
     @property
     def table_class_names(self) -> t.List[str]:
-        return list(set([i.table_class_name for i in self.add_columns]))
+        return list({i.table_class_name for i in self.add_columns})
 
 
 @dataclass
@@ -74,7 +74,7 @@ class DropColumnCollection:
 
     @property
     def table_class_names(self) -> t.List[str]:
-        return list(set([i.table_class_name for i in self.drop_columns]))
+        return list({i.table_class_name for i in self.drop_columns})
 
 
 @dataclass
@@ -95,7 +95,7 @@ class RenameColumnCollection:
 
     @property
     def table_class_names(self) -> t.List[str]:
-        return list(set([i.table_class_name for i in self.rename_columns]))
+        return list({i.table_class_name for i in self.rename_columns})
 
 
 @dataclass
@@ -116,7 +116,7 @@ class AlterColumnCollection:
 
     @property
     def table_class_names(self) -> t.List[str]:
-        return list(set([i.table_class_name for i in self.alter_columns]))
+        return list({i.table_class_name for i in self.alter_columns})
 
 
 @dataclass

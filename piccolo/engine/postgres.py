@@ -206,17 +206,17 @@ class PostgresEngine(Engine):
         The config dictionary is passed to the underlying database adapter,
         asyncpg. Common arguments you're likely to need are:
 
-            * host
-            * port
-            * user
-            * password
-            * database
+        * host
+        * port
+        * user
+        * password
+        * database
 
         For example, ``{'host': 'localhost', 'port': 5432}``.
 
         To see all available options:
 
-            * https://magicstack.github.io/asyncpg/current/api/index.html#connection
+        * https://magicstack.github.io/asyncpg/current/api/index.html#connection
 
     :param extensions:
         When the engine starts, it will try and create these extensions

@@ -5,9 +5,8 @@ from piccolo.columns.column_types import Varchar
 from piccolo.engine.exceptions import TransactionError
 from piccolo.engine.sqlite import SQLiteEngine
 from piccolo.table import Table
+from tests.base import DBTestCase, sqlite_only
 from tests.example_apps.music.tables import Manager
-
-from ..base import DBTestCase, sqlite_only
 
 ENGINE_1 = SQLiteEngine(path="engine1.sqlite")
 ENGINE_2 = SQLiteEngine(path="engine2.sqlite")
@@ -46,11 +45,11 @@ class TestDifferentDB(TestCase):
 
         self.assertTrue(await Musician.table_exists().run())
         musician = await Musician.select("name").first().run()
-        self.assertTrue(musician["name"] == "Bob")
+        self.assertEqual(musician["name"], "Bob")
 
         self.assertTrue(await Roadie.table_exists().run())
         roadie = await Roadie.select("name").first().run()
-        self.assertTrue(roadie["name"] == "Dave")
+        self.assertEqual(roadie["name"], "Dave")
 
     def test_nested(self):
         asyncio.run(self.run_nested())

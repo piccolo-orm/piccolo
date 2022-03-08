@@ -20,15 +20,15 @@ Equal / Not Equal
 
 .. code-block:: python
 
-    Band.select().where(
+    await Band.select().where(
         Band.name == 'Pythonistas'
-    ).run_sync()
+    )
 
 .. code-block:: python
 
-    Band.select().where(
+    await Band.select().where(
         Band.name != 'Rustaceans'
-    ).run_sync()
+    )
 
 .. hint:: With ``Boolean`` columns, some linters will complain if you write
     ``SomeTable.some_column == True`` (because it's more Pythonic to do
@@ -45,9 +45,9 @@ You can use the ``<, >, <=, >=`` operators, which work as you expect.
 
 .. code-block:: python
 
-    Band.select().where(
+    await Band.select().where(
         Band.popularity >= 100
-    ).run_sync()
+    )
 
 -------------------------------------------------------------------------------
 
@@ -58,21 +58,21 @@ The percentage operator is required to designate where the match should occur.
 
 .. code-block:: python
 
-    Band.select().where(
+    await Band.select().where(
         Band.name.like('Py%')  # Matches the start of the string
-    ).run_sync()
+    )
 
-    Band.select().where(
+    await Band.select().where(
         Band.name.like('%istas')  # Matches the end of the string
-    ).run_sync()
+    )
 
-    Band.select().where(
-        Band.name.like('%is%')  # Matches anywhere in string
-    ).run_sync()
+    await Band.select().where(
+        Band.name.like('%is%')  # Matches anywhere in the string
+    )
 
-    Band.select().where(
+    await Band.select().where(
         Band.name.like('Pythonistas')  # Matches the entire string
-    ).run_sync()
+    )
 
 ``ilike`` is identical, except it's Postgres specific and case insensitive.
 
@@ -85,26 +85,30 @@ Usage is the same as ``like`` excepts it excludes matching rows.
 
 .. code-block:: python
 
-    Band.select().where(
+    await Band.select().where(
         Band.name.not_like('Py%')
-    ).run_sync()
+    )
 
 -------------------------------------------------------------------------------
 
 is_in / not_in
 --------------
 
-.. code-block:: python
-
-    Band.select().where(
-        Band.name.is_in(['Pythonistas'])
-    ).run_sync()
+You can get all rows with a value contained in the list:
 
 .. code-block:: python
 
-    Band.select().where(
-        Band.name.not_in(['Rustaceans'])
-    ).run_sync()
+    await Band.select().where(
+        Band.name.is_in(['Pythonistas', 'Rustaceans'])
+    )
+
+And all rows with a value not contained in the list:
+
+.. code-block:: python
+
+    await Band.select().where(
+        Band.name.not_in(['Terrible Band', 'Awful Band'])
+    )
 
 -------------------------------------------------------------------------------
 
@@ -117,28 +121,29 @@ with None:
 .. code-block:: python
 
     # Fetch all bands with a manager
-    Band.select().where(
+    await Band.select().where(
         Band.manager != None
-    ).run_sync()
+    )
 
     # Fetch all bands without a manager
-    Band.select().where(
+    await Band.select().where(
         Band.manager == None
-    ).run_sync()
+    )
 
-To avoid the linter errors, you can use `is_null` and `is_not_null` instead.
+To avoid the linter errors, you can use ``is_null`` and ``is_not_null``
+instead.
 
 .. code-block:: python
 
     # Fetch all bands with a manager
-    Band.select().where(
+    await Band.select().where(
         Band.manager.is_not_null()
-    ).run_sync()
+    )
 
     # Fetch all bands without a manager
-    Band.select().where(
+    await Band.select().where(
         Band.manager.is_null()
-    ).run_sync()
+    )
 
 -------------------------------------------------------------------------------
 
@@ -149,13 +154,13 @@ You can make complex ``where`` queries using ``&`` for AND, and ``|`` for OR.
 
 .. code-block:: python
 
-    Band.select().where(
+    await Band.select().where(
         (Band.popularity >= 100) & (Band.popularity < 1000)
-    ).run_sync()
+    )
 
-    Band.select().where(
+    await Band.select().where(
         (Band.popularity >= 100) | (Band.name ==  'Pythonistas')
-    ).run_sync()
+    )
 
 You can make really complex ``where`` clauses if you so choose - just be
 careful to include brackets in the correct place.
@@ -169,28 +174,28 @@ Using multiple ``where`` clauses is equivalent to an AND.
 .. code-block:: python
 
     # These are equivalent:
-    Band.select().where(
+    await Band.select().where(
         (Band.popularity >= 100) & (Band.popularity < 1000)
-    ).run_sync()
+    )
 
-    Band.select().where(
+    await Band.select().where(
         Band.popularity >= 100
     ).where(
         Band.popularity < 1000
-    ).run_sync()
+    )
 
 Also, multiple arguments inside ``where`` clause is equivalent to an AND.
 
 .. code-block:: python
 
     # These are equivalent:
-    Band.select().where(
+    await Band.select().where(
         (Band.popularity >= 100) & (Band.popularity < 1000)
-    ).run_sync()
+    )
 
-    Band.select().where(
+    await Band.select().where(
         Band.popularity >= 100, Band.popularity < 1000
-    ).run_sync()
+    )
 
 Using And / Or directly
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -202,12 +207,12 @@ Rather than using the ``|`` and ``&`` characters, you can use the ``And`` and
 
     from piccolo.columns.combination import And, Or
 
-    Band.select().where(
+    await Band.select().where(
         Or(
             And(Band.popularity >= 100, Band.popularity < 1000),
             Band.name == 'Pythonistas'
         )
-    ).run_sync()
+    )
 
 -------------------------------------------------------------------------------
 
@@ -220,9 +225,9 @@ In certain situations you may want to have raw SQL in your where clause.
 
     from piccolo.columns.combination import WhereRaw
 
-    Band.select().where(
+    await Band.select().where(
         WhereRaw("name = 'Pythonistas'")
-    ).run_sync()
+    )
 
 It's important to parameterise your SQL statements if the values come from an
 untrusted source, otherwise it could lead to a SQL injection attack.
@@ -233,9 +238,9 @@ untrusted source, otherwise it could lead to a SQL injection attack.
 
     value = "Could be dangerous"
 
-    Band.select().where(
+    await Band.select().where(
         WhereRaw("name = {}", value)
-    ).run_sync()
+    )
 
 ``WhereRaw`` can be combined into complex queries, just as you'd expect:
 
@@ -243,6 +248,6 @@ untrusted source, otherwise it could lead to a SQL injection attack.
 
     from piccolo.columns.combination import WhereRaw
 
-    Band.select().where(
+    await Band.select().where(
         WhereRaw("name = 'Pythonistas'") | (Band.popularity > 1000)
-    ).run_sync()
+    )

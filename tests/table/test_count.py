@@ -1,6 +1,5 @@
+from tests.base import DBTestCase
 from tests.example_apps.music.tables import Band
-
-from ..base import DBTestCase
 
 
 class TestCount(DBTestCase):
@@ -9,4 +8,4 @@ class TestCount(DBTestCase):
 
         response = Band.count().where(Band.name == "Pythonistas").run_sync()
 
-        self.assertTrue(response == 1)
+        self.assertEqual(response, 1)

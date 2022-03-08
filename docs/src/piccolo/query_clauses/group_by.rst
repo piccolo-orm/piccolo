@@ -21,12 +21,12 @@ In the following query, we get a count of the number of bands per manager:
 
     >>> from piccolo.query.methods.select import Count
 
-    >>> Band.select(
-    >>>     Band.manager.name,
-    >>>     Count(Band.manager)
-    >>> ).group_by(
-    >>>     Band.manager
-    >>> ).run_sync()
+    >>> await Band.select(
+    ...     Band.manager.name,
+    ...     Count(Band.manager)
+    ... ).group_by(
+    ...     Band.manager
+    ... )
 
     [
         {"manager.name": "Graydon", "count": 1},

@@ -116,6 +116,14 @@ class WhereDelegate:
 
     def where(self, *where: Combinable):
         for arg in where:
+            if isinstance(arg, bool):
+                raise ValueError(
+                    "A boolean value has been passed in to a where clause. "
+                    "This is probably a mistake. For example "
+                    "`.where(MyTable.some_column is None)` instead of "
+                    "`.where(MyTable.some_column.is_null())`."
+                )
+
             self._where = And(self._where, arg) if self._where else arg
 
 
@@ -287,9 +295,12 @@ class ColumnsDelegate:
         self.selected_columns = combined
 
     def remove_secret_columns(self):
-        self.selected_columns = [
-            i for i in self.selected_columns if not i._meta.secret
-        ]
+        non_secret = []
+        for i in self.selected_columns:
+            if isinstance(i, Column) and i._meta.secret:
+                continue
+            non_secret.append(i)
+        self.selected_columns = non_secret
 
 
 @dataclass

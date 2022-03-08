@@ -67,7 +67,7 @@ class BaseMigrationManager(Finder):
         """
         Returns a list of migration IDs, from the Python migration files.
         """
-        return sorted(list(migration_module_dict.keys()))
+        return sorted(migration_module_dict.keys())
 
     async def get_migration_managers(
         self,

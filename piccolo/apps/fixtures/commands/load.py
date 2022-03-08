@@ -24,9 +24,7 @@ async def load_json_string(json_string: str):
     fixture_configs = [
         FixtureConfig(
             app_name=app_name,
-            table_class_names=[
-                i for i in deserialised_contents[app_name].keys()
-            ],
+            table_class_names=list(deserialised_contents[app_name].keys()),
         )
         for app_name in app_names
     ]
@@ -56,7 +54,7 @@ async def load_json_string(json_string: str):
 
                 await table_class.insert(
                     *[
-                        table_class(**row.__dict__)
+                        table_class.from_dict(row.__dict__)
                         for row in model_instance_list
                     ]
                 ).run()

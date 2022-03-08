@@ -1,8 +1,7 @@
 .. _PiccoloApps:
 
-############
 Piccolo Apps
-############
+============
 
 By leveraging Piccolo apps you can:
 
@@ -12,9 +11,8 @@ By leveraging Piccolo apps you can:
 
 -------------------------------------------------------------------------------
 
-***************
 Creating an app
-***************
+---------------
 
 Run the following command within your project:
 
@@ -49,9 +47,8 @@ operations on your app, such as :ref:`Migrations`.
 
 -------------------------------------------------------------------------------
 
-*********
 AppConfig
-*********
+---------
 
 Inside your app's ``piccolo_app.py`` file is an ``AppConfig`` instance. This is
 how you customise your app's settings.
@@ -75,14 +72,17 @@ how you customise your app's settings.
 
     APP_CONFIG = AppConfig(
         app_name='blog',
-        migrations_folder_path=os.path.join(CURRENT_DIRECTORY, 'piccolo_migrations'),
+        migrations_folder_path=os.path.join(
+            CURRENT_DIRECTORY,
+            'piccolo_migrations'
+        ),
         table_classes=[Author, Post, Category, CategoryToPost],
         migration_dependencies=[],
         commands=[]
     )
 
 app_name
-========
+~~~~~~~~
 
 This is used to identify your app, when using the ``piccolo`` CLI, for example:
 
@@ -91,62 +91,28 @@ This is used to identify your app, when using the ``piccolo`` CLI, for example:
     piccolo migrations forwards blog
 
 migrations_folder_path
-======================
+~~~~~~~~~~~~~~~~~~~~~~
 
 Specifies where your app's migrations are stored. By default, a folder called
 ``piccolo_migrations`` is used.
 
 table_classes
-=============
+~~~~~~~~~~~~~
 
 Use this to register your app's ``Table`` subclasses. This is important for
-auto migrations (see :ref:`Migrations`).
+:ref:`auto migrations <Migrations>`.
 
-You can register them manually, see the example above, or can use
-``table_finder``.
-
-.. _TableFinder:
-
-table_finder
-------------
-
-Instead of manually registering ``Table`` subclasses, you can use
-``table_finder`` to automatically import any ``Table`` subclasses from a given
-list of modules.
-
-.. code-block:: python
-
-    from piccolo.conf.apps import table_finder
-
-    APP_CONFIG = AppConfig(
-        app_name='blog',
-        migrations_folder_path=os.path.join(CURRENT_DIRECTORY, 'piccolo_migrations'),
-        table_classes=table_finder(modules=['blog.tables']),
-        migration_dependencies=[],
-        commands=[]
-    )
-
-The module path should be from the root of the project (the same directory as
-your ``piccolo_conf.py`` file, rather than a relative path).
-
-You can filter the ``Table`` subclasses returned using tags (see :ref:`TableTags`).
-
-Source
-~~~~~~
-
-.. currentmodule:: piccolo.conf.apps
-
-.. autofunction:: table_finder
-
+You can register them manually (see the example above), or can use
+:ref:`table_finder <TableFinder>`.
 
 migration_dependencies
-======================
+~~~~~~~~~~~~~~~~~~~~~~
 
 Used to specify other Piccolo apps whose migrations need to be run before the
 current app's migrations.
 
 commands
-========
+~~~~~~~~
 
 You can register functions and coroutines, which are automatically added to
 the ``piccolo`` CLI.
@@ -210,9 +176,46 @@ for inspiration.
 
 -------------------------------------------------------------------------------
 
-************
+.. _TableFinder:
+
+table_finder
+------------
+
+Instead of manually registering ``Table`` subclasses, you can use
+``table_finder`` to automatically import any ``Table`` subclasses from a given
+list of modules.
+
+.. code-block:: python
+
+    from piccolo.conf.apps import table_finder
+
+    APP_CONFIG = AppConfig(
+        app_name='blog',
+        migrations_folder_path=os.path.join(
+            CURRENT_DIRECTORY,
+            'piccolo_migrations'
+        ),
+        table_classes=table_finder(modules=['blog.tables']),
+        migration_dependencies=[],
+        commands=[]
+    )
+
+The module path should be from the root of the project (the same directory as
+your ``piccolo_conf.py`` file, rather than a relative path).
+
+You can filter the ``Table`` subclasses returned using :ref:`tags <TableTags>`.
+
+Source
+~~~~~~
+
+.. currentmodule:: piccolo.conf.apps
+
+.. autofunction:: table_finder
+
+-------------------------------------------------------------------------------
+
 Sharing Apps
-************
+------------
 
 By breaking up your project into apps, the project becomes more maintainable.
 You can also share these apps between projects, and they can even be installed

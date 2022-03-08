@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import dataclasses
+import itertools
 import json
 import re
 import typing as t
@@ -12,6 +13,7 @@ import black
 from typing_extensions import Literal
 
 from piccolo.apps.migrations.auto.serialisation import serialise_params
+from piccolo.apps.schema.commands.exceptions import GenerateError
 from piccolo.columns import defaults
 from piccolo.columns.base import Column, OnDelete, OnUpdate
 from piccolo.columns.column_types import (
@@ -197,11 +199,19 @@ class Index:
                  \(\"?(?P<column_name>\w+?\"?)\)""",
             re.VERBOSE,
         )
-        groups = re.match(pat, self.indexdef).groupdict()
+        match = re.match(pat, self.indexdef)
+        if match is None:
+            self.column_name = None
+            self.unique = None
+            self.method = None
+            self.warnings = [f"{self.indexdef};"]
+        else:
+            groups = match.groupdict()
 
-        self.column_name = groups["column_name"].lstrip('"').rstrip('"')
-        self.unique = True if "unique" in groups else False
-        self.method = INDEX_METHOD_MAP[groups["method"]]
+            self.column_name = groups["column_name"].lstrip('"').rstrip('"')
+            self.unique = True if "unique" in groups else False
+            self.method = INDEX_METHOD_MAP[groups["method"]]
+            self.warnings = []
 
 
 @dataclasses.dataclass
@@ -220,6 +230,11 @@ class TableIndexes:
 
         return None
 
+    def get_warnings(self) -> t.List[str]:
+        return list(
+            itertools.chain(*[index.warnings for index in self.indexes])
+        )
+
 
 @dataclasses.dataclass
 class OutputSchema:
@@ -229,12 +244,15 @@ class OutputSchema:
         e.g. ["from piccolo.table import Table"]
     :param warnings:
         e.g. ["some_table.some_column unrecognised_type"]
+    :param index_warnings:
+        Warnings if column indexes can't be parsed.
     :param tables:
         e.g. ["class MyTable(Table): ..."]
     """
 
     imports: t.List[str] = dataclasses.field(default_factory=list)
     warnings: t.List[str] = dataclasses.field(default_factory=list)
+    index_warnings: t.List[str] = dataclasses.field(default_factory=list)
     tables: t.List[t.Type[Table]] = dataclasses.field(default_factory=list)
 
     def get_table_with_name(self, tablename: str) -> t.Optional[t.Type[Table]]:
@@ -254,12 +272,14 @@ class OutputSchema:
             return self
         value.imports.extend(self.imports)
         value.warnings.extend(self.warnings)
+        value.index_warnings.extend(self.index_warnings)
         value.tables.extend(self.tables)
         return value
 
     def __add__(self, value: OutputSchema) -> OutputSchema:
         self.imports.extend(value.imports)
         self.warnings.extend(value.warnings)
+        self.index_warnings.extend(value.index_warnings)
         self.tables.extend(value.tables)
         return self
 
@@ -347,9 +367,11 @@ COLUMN_DEFAULT_PARSER = {
 def get_column_default(
     column_type: t.Type[Column], column_default: str
 ) -> t.Any:
-    pat = COLUMN_DEFAULT_PARSER[column_type]
+    pat = COLUMN_DEFAULT_PARSER.get(column_type)
 
-    if pat is not None:
+    if pat is None:
+        return None
+    else:
         match = re.match(pat, column_default)
         if match is not None:
             value = match.groupdict()
@@ -524,7 +546,6 @@ async def get_constraints(
     :param schema_name:
         Name of the schema.
 
-
     """
     constraints = await table_class.raw(
         (
@@ -634,9 +655,13 @@ def get_table_name(name: str, schema: str) -> str:
 async def create_table_class_from_db(
     table_class: t.Type[Table], tablename: str, schema_name: str
 ) -> OutputSchema:
+    output_schema = OutputSchema()
+
     indexes = await get_indexes(
         table_class=table_class, tablename=tablename, schema_name=schema_name
     )
+    output_schema.index_warnings.extend(indexes.get_warnings())
+
     constraints = await get_constraints(
         table_class=table_class, tablename=tablename, schema_name=schema_name
     )
@@ -646,7 +671,7 @@ async def create_table_class_from_db(
     table_schema = await get_table_schema(
         table_class=table_class, tablename=tablename, schema_name=schema_name
     )
-    output_schema = OutputSchema()
+
     columns: t.Dict[str, Column] = {}
 
     for pg_row_meta in table_schema:
@@ -804,14 +829,35 @@ async def get_output_schema(
     if not include:
         include = await get_tablenames(Schema, schema_name=schema_name)
 
+    tablenames = [
+        tablename for tablename in include if tablename not in exclude
+    ]
     table_coroutines = (
         create_table_class_from_db(
             table_class=Schema, tablename=tablename, schema_name=schema_name
         )
-        for tablename in include
-        if tablename not in exclude
+        for tablename in tablenames
     )
-    output_schemas = await asyncio.gather(*table_coroutines)
+    output_schemas = await asyncio.gather(
+        *table_coroutines, return_exceptions=True
+    )
+
+    # handle exceptions
+    exceptions = []
+    for obj, tablename in zip(output_schemas, tablenames):
+        if isinstance(obj, Exception):
+            exceptions.append((obj, tablename))
+
+    if exceptions:
+        raise GenerateError(
+            [
+                type(e)(
+                    f"Exception occurred while generating"
+                    f" `{tablename}` table: {e}"
+                )
+                for e, tablename in exceptions
+            ]
+        )
 
     # Merge all the output schemas to a single OutputSchema object
     output_schema: OutputSchema = sum(output_schemas)  # type: ignore
@@ -820,7 +866,7 @@ async def get_output_schema(
     output_schema.tables = sort_table_classes(
         sorted(output_schema.tables, key=lambda x: x._meta.tablename)
     )
-    output_schema.imports = sorted(list(set(output_schema.imports)))
+    output_schema.imports = sorted(set(output_schema.imports))
 
     return output_schema
 
@@ -848,6 +894,14 @@ async def generate(schema_name: str = "public"):
             "WARNING: Unrecognised column types, added `Column` as a "
             "placeholder:"
         )
+        output.append(warning_str)
+        output.append('"""')
+
+    if output_schema.index_warnings:
+        warning_str = "\n".join(i for i in set(output_schema.index_warnings))
+
+        output.append('"""')
+        output.append("WARNING: Unable to parse the following indexes:")
         output.append(warning_str)
         output.append('"""')
 

@@ -3,9 +3,8 @@ from unittest import TestCase
 from piccolo.apps.user.tables import BaseUser
 from piccolo.columns.combination import WhereRaw
 from piccolo.query.methods.select import Avg, Count, Max, Min, Sum
+from tests.base import DBTestCase, postgres_only, sqlite_only
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
-
-from ..base import DBTestCase, postgres_only, sqlite_only
 
 
 class TestSelect(DBTestCase):
@@ -240,6 +239,15 @@ class TestSelect(DBTestCase):
             response = query.run_sync()
             self.assertEqual(response, [{"name": "Managerless"}])
 
+    def test_where_bool(self):
+        """
+        If passing a boolean into a where clause, an exception should be
+        raised. It's possible for a user to do this by accident, for example
+        ``where(Band.has_drummer is None)``, which evaluates to a boolean.
+        """
+        with self.assertRaises(ValueError):
+            Band.select().where(False)
+
     def test_where_is_not_null(self):
         self.insert_rows()
 
@@ -382,7 +390,7 @@ class TestSelect(DBTestCase):
         response = query.run_sync()
 
         self.assertEqual(response, [{"name": "Rustaceans"}])
-        self.assertTrue("AND" in query.__str__())
+        self.assertIn("AND", query.__str__())
 
     def test_complex_where(self):
         """
@@ -490,18 +498,18 @@ class TestSelect(DBTestCase):
         self.insert_rows()
 
         query = Band.select(Band.name).where(Band.name == "Pythonistas")
-        self.assertTrue("DISTINCT" not in query.__str__())
+        self.assertNotIn("DISTINCT", query.__str__())
 
         response = query.run_sync()
-        self.assertTrue(
-            response == [{"name": "Pythonistas"}, {"name": "Pythonistas"}]
+        self.assertEqual(
+            response, [{"name": "Pythonistas"}, {"name": "Pythonistas"}]
         )
 
         query = query.distinct()
-        self.assertTrue("DISTINCT" in query.__str__())
+        self.assertIn("DISTINCT", query.__str__())
 
         response = query.run_sync()
-        self.assertTrue(response == [{"name": "Pythonistas"}])
+        self.assertEqual(response, [{"name": "Pythonistas"}])
 
     def test_count_group_by(self):
         """
@@ -517,13 +525,13 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertTrue(
-            response
-            == [
+        self.assertEqual(
+            response,
+            [
                 {"name": "CSharps", "count": 2},
                 {"name": "Pythonistas", "count": 2},
                 {"name": "Rustaceans", "count": 2},
-            ]
+            ],
         )
 
     def test_count_with_alias_group_by(self):
@@ -540,13 +548,13 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertTrue(
-            response
-            == [
+        self.assertEqual(
+            response,
+            [
                 {"name": "CSharps", "total": 2},
                 {"name": "Pythonistas", "total": 2},
                 {"name": "Rustaceans", "total": 2},
-            ]
+            ],
         )
 
     def test_count_with_as_alias_group_by(self):
@@ -563,13 +571,13 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertTrue(
-            response
-            == [
+        self.assertEqual(
+            response,
+            [
                 {"name": "CSharps", "total": 2},
                 {"name": "Pythonistas", "total": 2},
                 {"name": "Rustaceans", "total": 2},
-            ]
+            ],
         )
 
     def test_count_column_group_by(self):
@@ -603,14 +611,14 @@ class TestSelect(DBTestCase):
         # differently when sorting.
         response = sorted(response, key=lambda x: x["manager.name"] or "")
 
-        self.assertTrue(
-            response
-            == [
+        self.assertEqual(
+            response,
+            [
                 {"manager.name": None, "count": 0},
                 {"manager.name": "Graydon", "count": 2},
                 {"manager.name": "Guido", "count": 2},
                 {"manager.name": "Mads", "count": 2},
-            ]
+            ],
         )
 
         # This time the nulls should be counted, as we omit the column argument
@@ -624,14 +632,14 @@ class TestSelect(DBTestCase):
 
         response = sorted(response, key=lambda x: x["manager.name"] or "")
 
-        self.assertTrue(
-            response
-            == [
+        self.assertEqual(
+            response,
+            [
                 {"manager.name": None, "count": 1},
                 {"manager.name": "Graydon", "count": 2},
                 {"manager.name": "Guido", "count": 2},
                 {"manager.name": "Mads", "count": 2},
-            ]
+            ],
         )
 
     def test_avg(self):
@@ -639,7 +647,7 @@ class TestSelect(DBTestCase):
 
         response = Band.select(Avg(Band.popularity)).first().run_sync()
 
-        self.assertTrue(float(response["avg"]) == 1003.3333333333334)
+        self.assertEqual(float(response["avg"]), 1003.3333333333334)
 
     def test_avg_alias(self):
         self.insert_rows()
@@ -650,9 +658,7 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertTrue(
-            float(response["popularity_avg"]) == 1003.3333333333334
-        )
+        self.assertEqual(float(response["popularity_avg"]), 1003.3333333333334)
 
     def test_avg_as_alias_method(self):
         self.insert_rows()
@@ -663,9 +669,7 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertTrue(
-            float(response["popularity_avg"]) == 1003.3333333333334
-        )
+        self.assertEqual(float(response["popularity_avg"]), 1003.3333333333334)
 
     def test_avg_with_where_clause(self):
         self.insert_rows()
@@ -677,7 +681,7 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertTrue(response["avg"] == 1500)
+        self.assertEqual(response["avg"], 1500)
 
     def test_avg_alias_with_where_clause(self):
         """
@@ -693,7 +697,7 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertTrue(response["popularity_avg"] == 1500)
+        self.assertEqual(response["popularity_avg"], 1500)
 
     def test_avg_as_alias_method_with_where_clause(self):
         """
@@ -709,14 +713,14 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertTrue(response["popularity_avg"] == 1500)
+        self.assertEqual(response["popularity_avg"], 1500)
 
     def test_max(self):
         self.insert_rows()
 
         response = Band.select(Max(Band.popularity)).first().run_sync()
 
-        self.assertTrue(response["max"] == 2000)
+        self.assertEqual(response["max"], 2000)
 
     def test_max_alias(self):
         self.insert_rows()
@@ -727,7 +731,7 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertTrue(response["popularity_max"] == 2000)
+        self.assertEqual(response["popularity_max"], 2000)
 
     def test_max_as_alias_method(self):
         self.insert_rows()
@@ -738,14 +742,14 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertTrue(response["popularity_max"] == 2000)
+        self.assertEqual(response["popularity_max"], 2000)
 
     def test_min(self):
         self.insert_rows()
 
         response = Band.select(Min(Band.popularity)).first().run_sync()
 
-        self.assertTrue(response["min"] == 10)
+        self.assertEqual(response["min"], 10)
 
     def test_min_alias(self):
         self.insert_rows()
@@ -756,7 +760,7 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertTrue(response["popularity_min"] == 10)
+        self.assertEqual(response["popularity_min"], 10)
 
     def test_min_as_alias_method(self):
         self.insert_rows()
@@ -767,14 +771,14 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertTrue(response["popularity_min"] == 10)
+        self.assertEqual(response["popularity_min"], 10)
 
     def test_sum(self):
         self.insert_rows()
 
         response = Band.select(Sum(Band.popularity)).first().run_sync()
 
-        self.assertTrue(response["sum"] == 3010)
+        self.assertEqual(response["sum"], 3010)
 
     def test_sum_alias(self):
         self.insert_rows()
@@ -785,7 +789,7 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertTrue(response["popularity_sum"] == 3010)
+        self.assertEqual(response["popularity_sum"], 3010)
 
     def test_sum_as_alias_method(self):
         self.insert_rows()
@@ -796,7 +800,7 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertTrue(response["popularity_sum"] == 3010)
+        self.assertEqual(response["popularity_sum"], 3010)
 
     def test_sum_with_where_clause(self):
         self.insert_rows()
@@ -808,7 +812,7 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertTrue(response["sum"] == 3000)
+        self.assertEqual(response["sum"], 3000)
 
     def test_sum_alias_with_where_clause(self):
         """
@@ -824,7 +828,7 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertTrue(response["popularity_sum"] == 3000)
+        self.assertEqual(response["popularity_sum"], 3000)
 
     def test_sum_as_alias_method_with_where_clause(self):
         """
@@ -840,7 +844,7 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertTrue(response["popularity_sum"] == 3000)
+        self.assertEqual(response["popularity_sum"], 3000)
 
     def test_chain_different_functions(self):
         self.insert_rows()
@@ -851,8 +855,8 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertTrue(float(response["avg"]) == 1003.3333333333334)
-        self.assertTrue(response["sum"] == 3010)
+        self.assertEqual(float(response["avg"]), 1003.3333333333334)
+        self.assertEqual(response["sum"], 3010)
 
     def test_chain_different_functions_alias(self):
         self.insert_rows()
@@ -866,10 +870,8 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertTrue(
-            float(response["popularity_avg"]) == 1003.3333333333334
-        )
-        self.assertTrue(response["popularity_sum"] == 3010)
+        self.assertEqual(float(response["popularity_avg"]), 1003.3333333333334)
+        self.assertEqual(response["popularity_sum"], 3010)
 
     def test_avg_validation(self):
         with self.assertRaises(ValueError):
@@ -893,7 +895,7 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
-        self.assertTrue(response == {"name": "Pythonistas"})
+        self.assertEqual(response, {"name": "Pythonistas"})
 
         # Multiple calls to 'columns' should be additive.
         response = (
@@ -904,7 +906,7 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
-        self.assertTrue(response == {"id": 1, "name": "Pythonistas"})
+        self.assertEqual(response, {"id": 1, "name": "Pythonistas"})
 
     def test_call_chain(self):
         """
@@ -964,7 +966,7 @@ class TestSelectSecret(TestCase):
         user.save().run_sync()
 
         user_dict = BaseUser.select(exclude_secrets=True).first().run_sync()
-        self.assertTrue("password" not in user_dict.keys())
+        self.assertNotIn("password", user_dict.keys())
 
 
 class TestSelectSecretParameter(TestCase):
@@ -984,4 +986,4 @@ class TestSelectSecretParameter(TestCase):
 
         venue_dict = Venue.select(exclude_secrets=True).first().run_sync()
         self.assertTrue(venue_dict, {"id": 1, "name": "The Garage"})
-        self.assertTrue("capacity" not in venue_dict.keys())
+        self.assertNotIn("capacity", venue_dict.keys())

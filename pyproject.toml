@@ -11,6 +11,16 @@ line_length = 79
 module = [
     "orjson",
     "jinja2",
-    "dateutil"
+    "dateutil",
+    "asyncpg.pgproto.pgproto"
 ]
 ignore_missing_imports = true
+
+
+[tool.pytest.ini_options]
+markers = [
+    "integration",
+]
+
+[tool.coverage.run]
+omit = ["*.jinja", "**/piccolo_migrations/*", "**/piccolo_app.py"]

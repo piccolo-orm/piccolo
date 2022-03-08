@@ -7,7 +7,7 @@ Readable
 --------
 
 Sometimes Piccolo needs a succinct representation of a row - for example, when
-displaying a link in the Piccolo Admin GUI (see :ref:`Ecosystem`). Rather than
+displaying a link in the :ref:`Piccolo Admin <PiccoloAdmin>`. Rather than
 just displaying the row ID, we can specify something more user friendly using
 ``Readable``.
 
@@ -32,7 +32,7 @@ tooling - you can also use it your own queries.
 
 .. code-block:: python
 
-    Band.select(Band.get_readable()).run_sync()
+    await Band.select(Band.get_readable())
 
 Here is an example of a more complex ``Readable``.
 
@@ -56,7 +56,7 @@ Table Tags
 ----------
 
 ``Table`` subclasses can be given tags. The tags can be used for filtering,
-for example with ``table_finder`` (see :ref:`TableFinder`).
+for example with :ref:`table_finder <TableFinder>`.
 
 .. code-block:: python
 
@@ -111,9 +111,9 @@ We can then use the ``Enum`` in our queries.
 
 .. code-block:: python
 
-    >>> Shirt(size=Shirt.Size.large).save().run_sync()
+    >>> await Shirt(size=Shirt.Size.large).save()
 
-    >>> Shirt.select().run_sync()
+    >>> await Shirt.select()
     [{'id': 1, 'size': 'l'}]
 
 Note how the value stored in the database is the ``Enum`` value (in this case ``'l'``).
@@ -123,12 +123,12 @@ where a query requires a value.
 
 .. code-block:: python
 
-    >>> Shirt.insert(
-    >>>     Shirt(size=Shirt.Size.small),
-    >>>     Shirt(size=Shirt.Size.medium)
-    >>> ).run_sync()
+    >>> await Shirt.insert(
+    ...     Shirt(size=Shirt.Size.small),
+    ...     Shirt(size=Shirt.Size.medium)
+    ... )
 
-    >>> Shirt.select().where(Shirt.size == Shirt.Size.small).run_sync()
+    >>> await Shirt.select().where(Shirt.size == Shirt.Size.small)
     [{'id': 1, 'size': 's'}]
 
 Advantages
@@ -136,9 +136,9 @@ Advantages
 
 By using choices, you get the following benefits:
 
- * Signalling to other programmers what values are acceptable for the column.
- * Improved storage efficiency (we can store ``'l'`` instead of ``'large'``).
- * Piccolo Admin support
+* Signalling to other programmers what values are acceptable for the column.
+* Improved storage efficiency (we can store ``'l'`` instead of ``'large'``).
+* Piccolo Admin support
 
 -------------------------------------------------------------------------------
 
@@ -155,9 +155,9 @@ can dynamically create them at run time, by inspecting the database. These
 
 Some example use cases:
 
- * You have a very dynamic database, where new tables are being created
-   constantly, so updating a ``tables.py`` is impractical.
- * You use Piccolo on the command line to explore databases.
+* You have a very dynamic database, where new tables are being created
+  constantly, so updating a ``tables.py`` is impractical.
+* You use Piccolo on the command line to explore databases.
 
 Full reflection
 ~~~~~~~~~~~~~~~
@@ -184,7 +184,7 @@ Then you can use them like your normal ``Table`` classes:
 
 .. code-block:: python
 
-    >>> Band.select().run_sync()
+    >>> await Band.select()
     [{'id': 1, 'name': 'Pythonistas', 'manager': 1}, ...]
 
 

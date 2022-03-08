@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import sys
 
-from piccolo.apps.migrations.auto import MigrationManager
+from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.apps.migrations.commands.base import (
     BaseMigrationManager,
     MigrationResult,
@@ -97,7 +97,7 @@ class BackwardsMigrationManager(BaseMigrationManager):
                     Migration.name == migration_id
                 ).run()
 
-                if self.clean:
+                if self.clean and migration_module.__file__:
                     os.unlink(migration_module.__file__)
 
                 print("ok! ✔️")

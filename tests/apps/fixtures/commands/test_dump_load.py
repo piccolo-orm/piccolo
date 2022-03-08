@@ -18,6 +18,8 @@ class TestDumpLoad(TestCase):
     together.
     """
 
+    maxDiff = None
+
     def setUp(self):
         for table_class in (SmallTable, MegaTable):
             table_class.create_table().run_sync()
@@ -46,7 +48,9 @@ class TestDumpLoad(TestCase):
             smallint_col=1,
             text_col="hello",
             timestamp_col=datetime.datetime(year=2021, month=1, day=1),
-            timestamptz_col=datetime.datetime(year=2021, month=1, day=1),
+            timestamptz_col=datetime.datetime(
+                year=2021, month=1, day=1, tzinfo=datetime.timezone.utc
+            ),
             uuid_col=uuid.UUID("12783854-c012-4c15-8183-8eecb46f2c4e"),
             varchar_col="hello",
             unique_col="hello",

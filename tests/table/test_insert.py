@@ -1,6 +1,5 @@
+from tests.base import DBTestCase
 from tests.example_apps.music.tables import Band, Manager
-
-from ..base import DBTestCase
 
 
 class TestInsert(DBTestCase):
@@ -12,7 +11,7 @@ class TestInsert(DBTestCase):
         response = Band.select(Band.name).run_sync()
         names = [i["name"] for i in response]
 
-        self.assertTrue("Rustaceans" in names)
+        self.assertIn("Rustaceans", names)
 
     def test_add(self):
         self.insert_rows()
@@ -22,7 +21,7 @@ class TestInsert(DBTestCase):
         response = Band.select(Band.name).run_sync()
         names = [i["name"] for i in response]
 
-        self.assertTrue("Rustaceans" in names)
+        self.assertIn("Rustaceans", names)
 
     def test_incompatible_type(self):
         """
@@ -42,4 +41,4 @@ class TestInsert(DBTestCase):
         response = Band.select(Band.name).run_sync()
         names = [i["name"] for i in response]
 
-        self.assertTrue("{}" in names)
+        self.assertIn("{}", names)

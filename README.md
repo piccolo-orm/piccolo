@@ -33,23 +33,23 @@ await Band.select(
     Band.name
 ).where(
     Band.popularity > 100
-).run()
+)
 
 # Join:
 await Band.select(
     Band.name,
     Band.manager.name
-).run()
+)
 
 # Delete:
 await Band.delete().where(
     Band.popularity < 1000
-).run()
+)
 
 # Update:
 await Band.update({Band.popularity: 10000}).where(
     Band.name == 'Pythonistas'
-).run()
+)
 ```
 
 Or like a typical ORM:
@@ -57,15 +57,15 @@ Or like a typical ORM:
 ```python
 # To create a new object:
 b = Band(name='C-Sharps', popularity=100)
-await b.save().run()
+await b.save()
 
 # To fetch an object from the database, and update it:
-b = await Band.objects().get(Band.name == 'Pythonistas').run()
+b = await Band.objects().get(Band.name == 'Pythonistas')
 b.popularity = 10000
-await b.save().run()
+await b.save()
 
 # To delete:
-await b.remove().run()
+await b.remove()
 ```
 
 ## Installation
@@ -96,7 +96,7 @@ Let Piccolo scaffold you an ASGI web app, using Piccolo as the ORM:
 piccolo asgi new
 ```
 
-[Starlette](https://www.starlette.io/), [FastAPI](https://fastapi.tiangolo.com/), and [BlackSheep](https://www.neoteroi.dev/blacksheep/) are currently supported.
+[Starlette](https://www.starlette.io/), [FastAPI](https://fastapi.tiangolo.com/), [BlackSheep](https://www.neoteroi.dev/blacksheep/) and [Xpresso](https://xpresso-api.dev/) are currently supported.
 
 ## Are you a Django user?
 

@@ -16,6 +16,12 @@ from piccolo.columns.column_types import (
 )
 from piccolo.columns.defaults.base import Default
 from piccolo.columns.indexes import IndexMethod
+from piccolo.columns.m2m import (
+    M2M,
+    M2MAddRelated,
+    M2MGetRelated,
+    M2MRemoveRelated,
+)
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
 from piccolo.engine import Engine, engine_finder
@@ -66,6 +72,7 @@ class TableMeta:
     tags: t.List[str] = field(default_factory=list)
     help_text: t.Optional[str] = None
     _db: t.Optional[Engine] = None
+    m2m_relationships: t.List[M2M] = field(default_factory=list)
 
     # Records reverse foreign key relationships - i.e. when the current table
     # is the target of a foreign key. Used by external libraries such as
@@ -133,6 +140,10 @@ class TableMetaclass(type):
 
 
 class Table(metaclass=TableMetaclass):
+    """
+    The class represents a database table. An instance represents a row.
+    """
+
     # These are just placeholder values, so type inference isn't confused - the
     # actual values are set in __init_subclass__.
     _meta = TableMeta()
@@ -178,6 +189,7 @@ class Table(metaclass=TableMetaclass):
         secret_columns: t.List[Secret] = []
         json_columns: t.List[t.Union[JSON, JSONB]] = []
         primary_key: t.Optional[Column] = None
+        m2m_relationships: t.List[M2M] = []
 
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]
@@ -215,6 +227,11 @@ class Table(metaclass=TableMetaclass):
                 if isinstance(column, (JSON, JSONB)):
                     json_columns.append(column)
 
+            if isinstance(attribute, M2M):
+                attribute._meta._name = attribute_name
+                attribute._meta._table = cls
+                m2m_relationships.append(attribute)
+
         if not primary_key:
             primary_key = cls._create_serial_primary_key()
             setattr(cls, "id", primary_key)
@@ -234,6 +251,7 @@ class Table(metaclass=TableMetaclass):
             tags=tags,
             help_text=help_text,
             _db=db,
+            m2m_relationships=m2m_relationships,
         )
 
         for foreign_key_column in foreign_key_columns:
@@ -257,6 +275,13 @@ class Table(metaclass=TableMetaclass):
     ):
         """
         Assigns any default column values to the class.
+
+        :param ignore_missing:
+            If ``False`` a ``ValueError`` will be raised if any column values
+            haven't been provided.
+        :param exists_in_db:
+            Used internally to track whether this row exists in the database.
+
         """
         self._exists_in_db = exists_in_db
 
@@ -285,7 +310,7 @@ class Table(metaclass=TableMetaclass):
 
         unrecognized = kwargs.keys()
         if unrecognized:
-            unrecognised_list = [i for i in unrecognized]
+            unrecognised_list = list(unrecognized)
             raise ValueError(f"Unrecognized columns - {unrecognised_list}")
 
     @classmethod
@@ -296,26 +321,62 @@ class Table(metaclass=TableMetaclass):
 
         return pk
 
+    @classmethod
+    def from_dict(cls, data: t.Dict[str, t.Any]) -> Table:
+        """
+        Used when loading fixtures. It can be overriden by subclasses in case
+        they have specific logic / validation which needs running when loading
+        fixtures.
+        """
+        return cls(**data)
+
     ###########################################################################
 
-    def save(self) -> t.Union[Insert, Update]:
+    def save(
+        self, columns: t.Optional[t.List[t.Union[Column, str]]] = None
+    ) -> t.Union[Insert, Update]:
         """
         A proxy to an insert or update query.
+
+        :param columns:
+            Only the specified columns will be synced back to the database
+            when doing an update. For example:
+
+            .. code-block:: python
+
+                band = await Band.objects().first()
+                band.popularity = 2000
+                await band.save(columns=[Band.popularity])
+
+            If ``columns=None`` (the default) then all columns will be synced
+            back to the database.
+
         """
         cls = self.__class__
 
         if not self._exists_in_db:
             return cls.insert().add(self)
 
-        # pre-existing row
-        kwargs: t.Dict[Column, t.Any] = {
-            i: getattr(self, i._meta.name, None)
-            for i in cls._meta.columns
-            if i._meta.name != self._meta.primary_key._meta.name
+        # Pre-existing row - update
+        if columns is None:
+            column_instances = [
+                i
+                for i in cls._meta.columns
+                if i._meta.name != self._meta.primary_key._meta.name
+            ]
+        else:
+            column_instances = [
+                self._meta.get_column_by_name(i) if isinstance(i, str) else i
+                for i in columns
+            ]
+
+        values: t.Dict[Column, t.Any] = {
+            i: getattr(self, i._meta.name, None) for i in column_instances
         }
+
         return (
             cls.update()
-            .values(kwargs)  # type: ignore
+            .values(values)  # type: ignore
             .where(
                 cls._meta.primary_key
                 == getattr(self, self._meta.primary_key._meta.name)
@@ -339,12 +400,12 @@ class Table(metaclass=TableMetaclass):
 
     def get_related(self, foreign_key: t.Union[ForeignKey, str]) -> Objects:
         """
-        Used to fetch a Table instance, for the target of a foreign key.
+        Used to fetch a ``Table`` instance, for the target of a foreign key.
 
         .. code-block:: python
 
-            band = await Band.objects().first().run()
-            manager = await band.get_related(Band.manager).run()
+            band = await Band.objects().first()
+            manager = await band.get_related(Band.manager)
             >>> print(manager.name)
             'Guido'
 
@@ -380,6 +441,90 @@ class Table(metaclass=TableMetaclass):
             .first()
         )
 
+    def get_m2m(self, m2m: M2M) -> M2MGetRelated:
+        """
+        Get all matching rows via the join table.
+
+        .. code-block:: python
+
+            >>> band = await Band.objects().get(Band.name == "Pythonistas")
+            >>> await band.get_m2m(Band.genres)
+            [<Genre: 1>, <Genre: 2>]
+
+        """
+        return M2MGetRelated(row=self, m2m=m2m)
+
+    def add_m2m(
+        self,
+        *rows: Table,
+        m2m: M2M,
+        extra_column_values: t.Dict[t.Union[Column, str], t.Any] = {},
+    ) -> M2MAddRelated:
+        """
+        Save the row if it doesn't already exist in the database, and insert
+        an entry into the joining table.
+
+        .. code-block:: python
+
+            >>> band = await Band.objects().get(Band.name == "Pythonistas")
+            >>> await band.add_m2m(
+            ...     Genre(name="Punk rock"),
+            ...     m2m=Band.genres
+            ... )
+            [{'id': 1}]
+
+        :param extra_column_values:
+            If the joining table has additional columns besides the two
+            required foreign keys, you can specify the values for those
+            additional columns. For example, if this is our joining table:
+
+            .. code-block:: python
+
+                class GenreToBand(Table):
+                    band = ForeignKey(Band)
+                    genre = ForeignKey(Genre)
+                    reason = Text()
+
+            We can provide the ``reason`` value:
+
+            .. code-block:: python
+
+                await band.add_m2m(
+                    Genre(name="Punk rock"),
+                    m2m=Band.genres,
+                    extra_column_values={
+                        "reason": "Their second album was very punk."
+                    }
+                )
+
+        """
+        return M2MAddRelated(
+            target_row=self,
+            rows=rows,
+            m2m=m2m,
+            extra_column_values=extra_column_values,
+        )
+
+    def remove_m2m(self, *rows: Table, m2m: M2M) -> M2MRemoveRelated:
+        """
+        Remove the rows from the joining table.
+
+        .. code-block:: python
+
+            >>> band = await Band.objects().get(Band.name == "Pythonistas")
+            >>> genre = await Genre.objects().get(Genre.name == "Rock")
+            >>> await band.remove_m2m(
+            ...     genre,
+            ...     m2m=Band.genres
+            ... )
+
+        """
+        return M2MRemoveRelated(
+            target_row=self,
+            rows=rows,
+            m2m=m2m,
+        )
+
     def to_dict(self, *columns: Column) -> t.Dict[str, t.Any]:
         """
         A convenience method which returns a dictionary, mapping column names
@@ -389,7 +534,7 @@ class Table(metaclass=TableMetaclass):
 
             instance = await Manager.objects().get(
                 Manager.name == 'Guido'
-            ).run()
+            )
 
             >>> instance.to_dict()
             {'id': 1, 'name': 'Guido'}
@@ -450,13 +595,20 @@ class Table(metaclass=TableMetaclass):
             column._foreign_key_meta.resolved_references.get_readable()
         )
 
-        columns = [getattr(column, i._meta.name) for i in readable.columns]
+        output_columns = []
+
+        for readable_column in readable.columns:
+            output_column = column
+            for fk in readable_column._meta.call_chain:
+                output_column = getattr(column, fk._meta.name)
+            output_column = getattr(output_column, readable_column._meta.name)
+            output_columns.append(output_column)
 
         output_name = f"{column._meta.name}_readable"
 
         return Readable(
             template=readable.template,
-            columns=columns,
+            columns=output_columns,
             output_name=output_name,
         )
 
@@ -501,8 +653,12 @@ class Table(metaclass=TableMetaclass):
         return self.querystring.__str__()
 
     def __repr__(self) -> str:
-        _pk = self._meta.primary_key or None
-        return f"<{self.__class__.__name__}: {_pk}>"
+        pk = (
+            None
+            if not self._exists_in_db
+            else getattr(self, self._meta.primary_key._meta.name, None)
+        )
+        return f"<{self.__class__.__name__}: {pk}>"
 
     ###########################################################################
     # Classmethods
@@ -521,7 +677,7 @@ class Table(metaclass=TableMetaclass):
 
             concert = await Concert.objects(
                 Concert.all_related()
-            ).run()
+            )
 
             >>> concert.band_1
             <Band: 1>
@@ -539,7 +695,7 @@ class Table(metaclass=TableMetaclass):
                 Concert.venue,
                 Concert.band_1,
                 Concert.band_2
-            ).run()
+            )
 
         :param exclude:
             You can request all columns, except these.
@@ -570,7 +726,7 @@ class Table(metaclass=TableMetaclass):
             await Band.select(
                 Band.all_columns(),
                 Band.manager.all_columns()
-            ).run()
+            )
 
         This is mostly useful when the table has a lot of columns, and typing
         them out by hand would be tedious.
@@ -597,7 +753,9 @@ class Table(metaclass=TableMetaclass):
         ever need to do this, but other libraries built on top of Piccolo may
         need this functionality.
 
-        Example: Band.ref('manager.name')
+        .. code-block:: python
+
+            Band.ref('manager.name')
 
         """
         local_column_name, reference_column_name = column_name.split(".")
@@ -621,9 +779,14 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def insert(cls, *rows: "Table") -> Insert:
         """
-        await Band.insert(
-            Band(name="Pythonistas", popularity=500, manager=1)
-        ).run()
+        Insert rows into the database.
+
+        .. code-block:: python
+
+            await Band.insert(
+                Band(name="Pythonistas", popularity=500, manager=1)
+            )
+
         """
         query = Insert(table=cls)
         if rows:
@@ -635,11 +798,16 @@ class Table(metaclass=TableMetaclass):
         """
         Execute raw SQL queries on the underlying engine - use with caution!
 
-        await Band.raw('select * from band').run()
+        .. code-block:: python
+
+            await Band.raw('select * from band')
 
         Or passing in parameters:
 
-        await Band.raw("select * from band where name = {}", 'Pythonistas')
+        .. code-block:: python
+
+            await Band.raw("select * from band where name = {}", 'Pythonistas')
+
         """
         return Raw(table=cls, querystring=QueryString(sql, *args))
 
@@ -669,13 +837,17 @@ class Table(metaclass=TableMetaclass):
 
         These are all equivalent:
 
-        await Band.select().columns(Band.name).run()
-        await Band.select(Band.name).run()
-        await Band.select('name').run()
+        .. code-block:: python
 
-        :param exclude_secrets: If True, any password fields are omitted from
-        the response. Even though passwords are hashed, you still don't want
-        them being passed over the network if avoidable.
+            await Band.select().columns(Band.name)
+            await Band.select(Band.name)
+            await Band.select('name')
+
+        :param exclude_secrets:
+            If ``True``, any password fields are omitted from the response.
+            Even though passwords are hashed, you still don't want them being
+            passed over the network if avoidable.
+
         """
         _columns = cls._process_column_args(*columns)
         return Select(
@@ -687,10 +859,14 @@ class Table(metaclass=TableMetaclass):
         """
         Delete rows from the table.
 
-        await Band.delete().where(Band.name == 'Pythonistas').run()
+        .. code-block:: python
 
-        Unless 'force' is set to True, deletions aren't allowed without a
-        'where' clause, to prevent accidental mass deletions.
+            await Band.delete().where(Band.name == 'Pythonistas')
+
+        :param force:
+            Unless set to ``True``, deletions aren't allowed without a
+            ``where`` clause, to prevent accidental mass deletions.
+
         """
         return Delete(table=cls, force=force)
 
@@ -701,7 +877,10 @@ class Table(metaclass=TableMetaclass):
         """
         Create table, along with all columns.
 
-        await Band.create_table().run()
+        .. code-block:: python
+
+            await Band.create_table()
+
         """
         return Create(
             table=cls,
@@ -714,7 +893,10 @@ class Table(metaclass=TableMetaclass):
         """
         Used to modify existing tables and columns.
 
-        await Band.alter().rename_column(Band.popularity, 'rating').run()
+        .. code-block:: python
+
+            await Band.alter().rename_column(Band.popularity, 'rating')
+
         """
         return Alter(table=cls)
 
@@ -730,11 +912,11 @@ class Table(metaclass=TableMetaclass):
 
             pythonistas = await Band.objects().where(
                 Band.name == 'Pythonistas'
-            ).first().run()
+            ).first()
 
             pythonistas.name = 'Pythonistas Reborn'
 
-            await pythonistas.save().run()
+            await pythonistas.save()
 
             # Or to remove it from the database:
             await pythonistas.remove()
@@ -746,12 +928,12 @@ class Table(metaclass=TableMetaclass):
             .. code-block:: python
 
                 # Without nested
-                band = await Band.objects().first().run()
+                band = await Band.objects().first()
                 >>> band.manager
                 1
 
                 # With nested
-                band = await Band.objects(Band.manager).first().run()
+                band = await Band.objects(Band.manager).first()
                 >>> band.manager
                 <Band 1>
 
@@ -763,7 +945,10 @@ class Table(metaclass=TableMetaclass):
         """
         Count the number of matching rows.
 
-        await Band.count().where(Band.popularity > 1000).run()
+        .. code-block:: python
+
+            await Band.count().where(Band.popularity > 1000)
+
         """
         return Count(table=cls)
 
@@ -772,7 +957,10 @@ class Table(metaclass=TableMetaclass):
         """
         Use it to check if a row exists, not if the table exists.
 
-        await Band.exists().where(Band.name == 'Pythonistas').run()
+        .. code-block:: python
+
+            await Band.exists().where(Band.name == 'Pythonistas')
+
         """
         return Exists(table=cls)
 
@@ -781,13 +969,19 @@ class Table(metaclass=TableMetaclass):
         """
         Check if the table exists in the database.
 
-        await Band.table_exists().run()
+        .. code-block:: python
+
+            await Band.table_exists()
+
         """
         return TableExists(table=cls)
 
     @classmethod
     def update(
-        cls, values: t.Dict[t.Union[Column, str], t.Any] = {}, **kwargs
+        cls,
+        values: t.Dict[t.Union[Column, str], t.Any] = {},
+        force: bool = False,
+        **kwargs,
     ) -> Update:
         """
         Update rows.
@@ -799,31 +993,38 @@ class Table(metaclass=TableMetaclass):
             await Band.update(
                 {Band.name: "Spamalot"}
             ).where(
-                Band.name=="Pythonistas"
-            ).run()
+                Band.name == "Pythonistas"
+            )
 
             await Band.update(
                 {"name": "Spamalot"}
             ).where(
-                Band.name=="Pythonistas"
-            ).run()
+                Band.name == "Pythonistas"
+            )
 
             await Band.update(
                 name="Spamalot"
             ).where(
-                Band.name=="Pythonistas"
-            ).run()
+                Band.name == "Pythonistas"
+            )
+
+        :param force:
+            Unless set to ``True``, updates aren't allowed without a
+            ``where`` clause, to prevent accidental mass overriding of data.
 
         """
         values = dict(values, **kwargs)
-        return Update(table=cls).values(values)
+        return Update(table=cls, force=force).values(values)
 
     @classmethod
     def indexes(cls) -> Indexes:
         """
         Returns a list of the indexes for this tables.
 
-        await Band.indexes().run()
+        .. code-block:: python
+
+            await Band.indexes()
+
         """
         return Indexes(table=cls)
 
@@ -838,7 +1039,10 @@ class Table(metaclass=TableMetaclass):
         Create a table index. If multiple columns are specified, this refers
         to a multicolumn index, rather than multiple single column indexes.
 
-        await Band.create_index([Band.name]).run()
+        .. code-block:: python
+
+            await Band.create_index([Band.name])
+
         """
         return CreateIndex(
             table=cls,
@@ -855,7 +1059,10 @@ class Table(metaclass=TableMetaclass):
         Drop a table index. If multiple columns are specified, this refers
         to a multicolumn index, rather than multiple single column indexes.
 
-        await Band.drop_index([Band.name]).run()
+        .. code-block:: python
+
+            await Band.drop_index([Band.name])
+
         """
         return DropIndex(table=cls, columns=columns, if_exists=if_exists)
 

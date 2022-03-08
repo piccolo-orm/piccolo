@@ -4,7 +4,7 @@ Query Types
 There are many different queries you can perform using Piccolo.
 
 The main ways to query data are with :ref:`Select`, which returns data as
-dictionaries, and :ref:`Objects` , which returns data as class instances, like a
+dictionaries, and :ref:`Objects`, which returns data as class instances, like a
 typical ORM.
 
 .. toctree::

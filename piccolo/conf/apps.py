@@ -33,26 +33,41 @@ def table_finder(
     modules: t.Sequence[str],
     include_tags: t.Sequence[str] = ["__all__"],
     exclude_tags: t.Sequence[str] = [],
+    exclude_imported: bool = False,
 ) -> t.List[t.Type[Table]]:
     """
     Rather than explicitly importing and registering table classes with the
-    AppConfig, ``table_finder`` can be used instead. It imports any ``Table``
+    ``AppConfig``, ``table_finder`` can be used instead. It imports any ``Table``
     subclasses in the given modules. Tags can be used to limit which ``Table``
     subclasses are imported.
 
     :param modules:
         The module paths to check for ``Table`` subclasses. For example,
-        ['blog.tables']. The path should be from the root of your project,
+        ``['blog.tables']``. The path should be from the root of your project,
         not a relative path.
     :param include_tags:
         If the ``Table`` subclass has one of these tags, it will be
-        imported. The special tag '__all__' will import all ``Table``
+        imported. The special tag ``'__all__'`` will import all ``Table``
         subclasses found.
     :param exclude_tags:
         If the ``Table`` subclass has any of these tags, it won't be
-        imported. `exclude_tags` overrides `include_tags`.
+        imported. ``exclude_tags`` overrides ``include_tags``.
+    :param exclude_imported:
+        If ``True``, only ``Table`` subclasses defined within the module are
+        used. Any ``Table`` subclasses imported by that module from other
+        modules are ignored. For example:
 
-    """
+        .. code-block:: python
+
+            from piccolo.table import Table
+            from piccolo.column import Varchar, ForeignKey
+            from piccolo.apps.user.tables import BaseUser # excluded
+
+            class Task(Table): # included
+                title = Varchar()
+                creator = ForeignKey(BaseUser)
+
+    """  # noqa: E501
     if isinstance(modules, str):
         # Guard against the user just entering a string, for example
         # 'blog.tables', instead of ['blog.tables'].
@@ -76,7 +91,11 @@ def table_finder(
                 and issubclass(_object, Table)
                 and _object is not Table
             ):
-                table: Table = _object
+                table: Table = _object  # type: ignore
+
+                if exclude_imported and table.__module__ != module_path:
+                    continue
+
                 if exclude_tags and set(table._meta.tags).intersection(
                     set(exclude_tags)
                 ):
@@ -168,10 +187,11 @@ class AppConfig:
 @dataclass
 class AppRegistry:
     """
-    Records all of the Piccolo apps in your project. Kept in piccolo_conf.py.
+    Records all of the Piccolo apps in your project. Kept in
+    ``piccolo_conf.py``.
 
     :param apps:
-        A list of paths to Piccolo apps, e.g. ['blog.piccolo_app']
+        A list of paths to Piccolo apps, e.g. ``['blog.piccolo_app']``.
 
     """
 
@@ -209,7 +229,7 @@ class AppRegistry:
         app_names.sort()
         grouped = itertools.groupby(app_names)
         for key, value in grouped:
-            count = len([i for i in value])
+            count = len(list(value))
             if count > 1:
                 raise ValueError(
                     f"There are {count} apps with the name `{key}`. This can "
@@ -283,7 +303,7 @@ class Finder:
         Remove all duplicates - just leaving the first instance.
         """
         # Deduplicate, but preserve order - which is why set() isn't used.
-        return list(dict([(c, None) for c in config_modules]).keys())
+        return list({c: None for c in config_modules}.keys())
 
     def _import_app_modules(
         self, config_module_paths: t.List[str]
@@ -316,8 +336,8 @@ class Finder:
         Searches the path for a 'piccolo_conf.py' module to import. The
         location searched can be overriden by:
 
-         * Explicitly passing a module name into this method.
-         * Setting the PICCOLO_CONF environment variable.
+        * Explicitly passing a module name into this method.
+        * Setting the PICCOLO_CONF environment variable.
 
         An example override is 'my_folder.piccolo_conf'.
 
@@ -369,8 +389,7 @@ class Finder:
         self, module_name: t.Optional[str] = None
     ) -> t.Optional[Engine]:
         piccolo_conf = self.get_piccolo_conf_module(module_name=module_name)
-        engine: t.Optional[Engine] = None
-        engine = getattr(piccolo_conf, ENGINE_VAR, None)
+        engine: t.Optional[Engine] = getattr(piccolo_conf, ENGINE_VAR, None)
 
         if not engine:
             colored_warning(

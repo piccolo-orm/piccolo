@@ -7,20 +7,37 @@ This is used to update any rows in the table which match the criteria.
 
 .. code-block:: python
 
-    >>> Band.update({
-    >>>     Band.name: 'Pythonistas 2'
-    >>> }).where(
-    >>>     Band.name == 'Pythonistas'
-    >>> ).run_sync()
+    >>> await Band.update({
+    ...     Band.name: 'Pythonistas 2'
+    ... }).where(
+    ...     Band.name == 'Pythonistas'
+    ... )
     []
 
-As well as replacing values with new ones, you can also modify existing values, for
-instance by adding to an integer.
+-------------------------------------------------------------------------------
+
+force
+-----
+
+Piccolo won't let you run an update query without a where clause, unless you
+explicitly tell it to do so. This is to prevent accidentally overwriting
+the data in a table.
+
+.. code-block:: python
+
+    >>> await Band.update()
+    Raises: UpdateError
+
+    # Works fine:
+    >>> await Band.update({Band.popularity: 0}, force=True)
 
 -------------------------------------------------------------------------------
 
 Modifying values
 ----------------
+
+As well as replacing values with new ones, you can also modify existing values, for
+instance by adding to an integer.
 
 Integer columns
 ~~~~~~~~~~~~~~~
@@ -30,29 +47,29 @@ You can add / subtract / multiply / divide values:
 .. code-block:: python
 
     # Add 100 to the popularity of each band:
-    Band.update({
+    await Band.update({
         Band.popularity: Band.popularity + 100
-    }).run_sync()
+    })
 
     # Decrease the popularity of each band by 100.
-    Band.update({
+    await Band.update({
         Band.popularity: Band.popularity - 100
-    }).run_sync()
+    })
 
     # Multiply the popularity of each band by 10.
-    Band.update({
+    await Band.update({
         Band.popularity: Band.popularity * 10
-    }).run_sync()
+    })
 
     # Divide the popularity of each band by 10.
-    Band.update({
+    await Band.update({
         Band.popularity: Band.popularity / 10
-    }).run_sync()
+    })
 
     # You can also use the operators in reverse:
-    Band.update({
+    await Band.update({
         Band.popularity: 2000 - Band.popularity
-    }).run_sync()
+    })
 
 Varchar / Text columns
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -62,22 +79,38 @@ You can concatenate values:
 .. code-block:: python
 
     # Append "!!!" to each band name.
-    Band.update({
+    await Band.update({
         Band.name: Band.name + "!!!"
-    }).run_sync()
+    })
 
     # Concatenate the values in each column:
-    Band.update({
+    await Band.update({
         Band.name: Band.name + Band.name
-    }).run_sync()
+    })
 
     # Prepend "!!!" to each band name.
-    Band.update({
+    await Band.update({
         Band.popularity: "!!!" + Band.popularity
-    }).run_sync()
+    })
 
 
 You can currently only combine two values together at a time.
+
+-------------------------------------------------------------------------------
+
+Kwarg values
+------------
+
+Rather than passing in a dictionary of values, you can use kwargs instead if
+you prefer:
+
+.. code-block:: python
+
+    >>> await Band.update(
+    ...     name='Pythonistas 2'
+    ... ).where(
+    ...     Band.name == 'Pythonistas'
+    ... )
 
 -------------------------------------------------------------------------------
 

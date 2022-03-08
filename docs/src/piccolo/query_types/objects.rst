@@ -20,28 +20,28 @@ To get all objects:
 
 .. code-block:: python
 
-    >>> Band.objects().run_sync()
+    >>> await Band.objects()
     [<Band: 1>, <Band: 2>]
 
 To get certain rows:
 
 .. code-block:: python
 
-    >>> Band.objects().where(Band.name == 'Pythonistas').run_sync()
+    >>> await Band.objects().where(Band.name == 'Pythonistas')
     [<Band: 1>]
 
 To get a single row (or ``None`` if it doesn't exist):
 
 .. code-block:: python
 
-    >>> Band.objects().get(Band.name == 'Pythonistas').run_sync()
+    >>> await Band.objects().get(Band.name == 'Pythonistas')
     <Band: 1>
 
 To get the first row:
 
 .. code-block:: python
 
-    >>> Band.objects().first().run_sync()
+    >>> await Band.objects().first()
     <Band: 1>
 
 You'll notice that the API is similar to :ref:`Select` - except it returns all
@@ -55,13 +55,13 @@ Creating objects
 .. code-block:: python
 
     >>> band = Band(name="C-Sharps", popularity=100)
-    >>> band.save().run_sync()
+    >>> await band.save()
 
 This can also be done like this:
 
 .. code-block:: python
 
-    >>> band = Band.objects().create(name="C-Sharps", popularity=100).run_sync()
+    >>> band = await Band.objects().create(name="C-Sharps", popularity=100)
 
 -------------------------------------------------------------------------------
 
@@ -72,12 +72,17 @@ Objects have a ``save`` method, which is convenient for updating values:
 
 .. code-block:: python
 
-    band = Band.objects().where(
+    band = await Band.objects().where(
         Band.name == 'Pythonistas'
-    ).first().run_sync()
+    ).first()
 
     band.popularity = 100000
-    band.save().run_sync()
+
+    # This saves all values back to the database.
+    await band.save()
+
+    # Or specify specific columns to save:
+    await band.save([Band.popularity])
 
 -------------------------------------------------------------------------------
 
@@ -88,11 +93,11 @@ Similarly, we can delete objects, using the ``remove`` method.
 
 .. code-block:: python
 
-    band = Band.objects().where(
+    band = await Band.objects().where(
         Band.name == 'Pythonistas'
-    ).first().run_sync()
+    ).first()
 
-    band.remove().run_sync()
+    await band.remove()
 
 -------------------------------------------------------------------------------
 
@@ -107,11 +112,11 @@ to fetch the related row as an object, you can do so using ``get_related``.
 
 .. code-block:: python
 
-    band = Band.objects().where(
+    band = await Band.objects().where(
         Band.name == 'Pythonistas'
-    ).first().run_sync()
+    ).first()
 
-    manager = band.get_related(Band.manager).run_sync()
+    manager = await band.get_related(Band.manager)
     >>> manager
     <Manager: 1>
     >>> manager.name
@@ -126,9 +131,9 @@ refer to the related rows you want to load.
 
 .. code-block:: python
 
-    band = Band.objects(Band.manager).where(
+    band = await Band.objects(Band.manager).where(
         Band.name == 'Pythonistas'
-    ).first().run_sync()
+    ).first()
 
     >>> band.manager
     <Manager: 1>
@@ -140,9 +145,9 @@ prefetch them all you can do so using ``all_related``.
 
 .. code-block:: python
 
-    ticket = Ticket.objects(
+    ticket = await Ticket.objects(
         Ticket.concert.all_related()
-    ).first().run_sync()
+    ).first()
 
     # Any intermediate objects will also be loaded:
     >>> ticket.concert
@@ -159,7 +164,7 @@ database, just as you would expect:
 .. code-block:: python
 
     ticket.concert.band_1.name = 'Pythonistas 2'
-    ticket.concert.band_1.save().run_sync()
+    await ticket.concert.band_1.save()
 
 Instead of passing the ``ForeignKey`` columns into the ``objects`` method, you
 can use the ``prefetch`` clause if you prefer.
@@ -167,13 +172,13 @@ can use the ``prefetch`` clause if you prefer.
 .. code-block:: python
 
     # These are equivalent:
-    ticket = Ticket.objects(
+    ticket = await Ticket.objects(
         Ticket.concert.all_related()
-    ).first().run_sync()
+    ).first()
 
-    ticket = Ticket.objects().prefetch(
+    ticket = await Ticket.objects().prefetch(
         Ticket.concert.all_related()
-    ).run_sync()
+    )
 
 -------------------------------------------------------------------------------
 
@@ -185,22 +190,22 @@ or create a new one with the ``defaults`` arguments:
 
 .. code-block:: python
 
-    band = Band.objects().get_or_create(
+    band = await Band.objects().get_or_create(
         Band.name == 'Pythonistas', defaults={Band.popularity: 100}
-    ).run_sync()
+    )
 
     # Or using string column names
-    band = Band.objects().get_or_create(
+    band = await Band.objects().get_or_create(
         Band.name == 'Pythonistas', defaults={'popularity': 100}
-    ).run_sync()
+    )
 
 You can find out if an existing row was found, or if a new row was created:
 
 .. code-block:: python
 
-    band = Band.objects.get_or_create(
+    band = await Band.objects.get_or_create(
         Band.name == 'Pythonistas'
-    ).run_sync()
+    )
     band._was_created  # True if it was created, otherwise False if it was already in the db
 
 Complex where clauses are supported, but only within reason. For example:
@@ -208,16 +213,16 @@ Complex where clauses are supported, but only within reason. For example:
 .. code-block:: python
 
     # This works OK:
-    band = Band.objects().get_or_create(
+    band = await Band.objects().get_or_create(
         (Band.name == 'Pythonistas') & (Band.popularity == 1000),
-    ).run_sync()
+    )
 
     # This is problematic, as it's unclear what the name should be if we
     # need to create the row:
-    band = Band.objects().get_or_create(
+    band = await Band.objects().get_or_create(
         (Band.name == 'Pythonistas') | (Band.name == 'Rustaceans'),
         defaults={'popularity': 100}
-    ).run_sync()
+    )
 
 -------------------------------------------------------------------------------
 
@@ -229,7 +234,7 @@ If you need to convert an object into a dictionary, you can do so using the
 
 .. code-block:: python
 
-    band = Band.objects().first().run_sync()
+    band = await Band.objects().first()
 
     >>> band.to_dict()
     {'id': 1, 'name': 'Pythonistas', 'manager': 1, 'popularity': 1000}
@@ -239,7 +244,7 @@ the columns:
 
 .. code-block:: python
 
-    band = Band.objects().first().run_sync()
+    band = await Band.objects().first()
 
     >>> band.to_dict(Band.id, Band.name.as_alias('title'))
     {'id': 1, 'title': 'Pythonistas'}
@@ -257,27 +262,27 @@ See :ref:`batch`.
 limit
 ~~~~~
 
-See  :ref:`limit`.
+See :ref:`limit`.
 
 offset
 ~~~~~~
 
-See  :ref:`offset`.
+See :ref:`offset`.
 
 first
 ~~~~~
 
-See  :ref:`first`.
+See :ref:`first`.
 
 order_by
 ~~~~~~~~
 
-See  :ref:`order_by`.
+See :ref:`order_by`.
 
 output
 ~~~~~~
 
-See  :ref:`output`.
+See :ref:`output`.
 
 where
 ~~~~~

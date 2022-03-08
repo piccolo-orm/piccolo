@@ -40,14 +40,12 @@ We can then create model instances from data we fetch from the database:
 .. code-block:: python
 
     # If using objects:
-    model = BandModel(
-        **Band.objects().get(Band.name == 'Pythonistas').run_sync().to_dict()
-    )
+    band = await Band.objects().get(Band.name == 'Pythonistas')
+    model = BandModel(**band.to_dict())
 
     # If using select:
-    model = BandModel(
-        **Band.select().where(Band.name == 'Pythonistas').first().run_sync()
-    )
+    band = await Band.select().where(Band.name == 'Pythonistas').first()
+    model = BandModel(**band)
 
     >>> model.name
     'Pythonistas'
@@ -103,21 +101,19 @@ To populate a nested Pydantic model with data from the database:
 .. code-block:: python
 
     # If using objects:
-    model = BandModel(
-        **Band.objects(Band.manager).get(Band.name == 'Pythonistas').run_sync().to_dict()
-    )
+    band = await Band.objects(Band.manager).get(Band.name == 'Pythonistas')
+    model = BandModel(**band.to_dict())
 
     # If using select:
-    model = BandModel(
-        **Band.select(
-            Band.all_columns(),
-            Band.manager.all_columns()
-        ).where(
-            Band.name == 'Pythonistas'
-        ).first().output(
-            nested=True
-        ).run_sync()
+    band = await Band.select(
+        Band.all_columns(),
+        Band.manager.all_columns()
+    ).where(
+        Band.name == 'Pythonistas'
+    ).first().output(
+        nested=True
     )
+    model = BandModel(**band)
 
     >>> model.manager.name
     'Guido'

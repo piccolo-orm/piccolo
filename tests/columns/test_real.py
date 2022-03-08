@@ -20,5 +20,5 @@ class TestReal(TestCase):
         row.save().run_sync()
 
         _row = MyTable.objects().first().run_sync()
-        self.assertTrue(type(_row.column_a) == float)
+        self.assertEqual(type(_row.column_a), float)
         self.assertAlmostEqual(_row.column_a, 1.23)

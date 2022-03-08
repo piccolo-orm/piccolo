@@ -12,7 +12,7 @@ def make_nested(dictionary: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
 
     .. code-block:: python
 
-        response = Band.select(Band.name, Band.manager.name).run_sync()
+        response = await Band.select(Band.name, Band.manager.name)
         >>> print(response)
         [{'name': 'Pythonistas', 'band.name': 'Guido'}]
 
@@ -22,7 +22,7 @@ def make_nested(dictionary: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     """
     output: t.Dict[str, t.Any] = {}
 
-    items = [i for i in dictionary.items()]
+    items = list(dictionary.items())
     items.sort(key=lambda x: x[0])
 
     for key, value in items:

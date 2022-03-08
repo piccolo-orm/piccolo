@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 import typing as t
 
-from piccolo.apps.migrations.auto import MigrationManager
+from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.apps.migrations.commands.base import (
     BaseMigrationManager,
     MigrationResult,

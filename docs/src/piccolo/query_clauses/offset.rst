@@ -15,12 +15,12 @@ otherwise the results returned could be different each time.
 
 .. code-block:: python
 
-    >>> Band.select(Band.name).offset(1).order_by(Band.name).run_sync()
+    >>> await Band.select(Band.name).offset(1).order_by(Band.name)
     [{'name': 'Pythonistas'}, {'name': 'Rustaceans'}]
 
 Likewise, with objects:
 
 .. code-block:: python
 
-    >>> Band.objects().offset(1).order_by(Band.name).run_sync()
+    >>> await Band.objects().offset(1).order_by(Band.name)
     [Band2, Band3]

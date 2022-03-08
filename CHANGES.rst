@@ -1,19 +1,536 @@
 Changes
 =======
 
+0.69.5
+------
+
+Made improvements to ``piccolo schema generate``, which automatically generates
+Piccolo ``Table`` classes from an existing database.
+
+There were situations where it would fail ungracefully when it couldn't parse
+an index definition. It no longer crashes, and we print out the problematic
+index definitions. See `PR 449 <https://github.com/piccolo-orm/piccolo/pull/449>`_.
+Thanks to @gmos for originally reporting this issue.
+
+We also improved the error messages if schema generation fails for some reason
+by letting the user know which table caused the error. Courtesy @AliSayyah.
+
+-------------------------------------------------------------------------------
+
+0.69.4
+------
+
+We used to raise a ``ValueError`` if a column was both ``null=False`` and
+``default=None``. This has now been removed, as there are situations where
+it's valid for columns to be configured that way. Thanks to @gmos for
+suggesting this change.
+
+-------------------------------------------------------------------------------
+
+0.69.3
+------
+
+The ``where`` clause now raises a ``ValueError`` if a boolean value is
+passed in by accident. This was possible in the following situation:
+
+.. code-block:: python
+
+  await Band.select().where(Band.has_drummer is None)
+
+Piccolo can't override the ``is`` operator because Python doesn't allow it,
+so ``Band.has_drummer is None`` will always equal ``False``. Thanks to
+@trondhindenes for reporting this issue.
+
+We've also put a lot of effort into improving documentation throughout the
+project.
+
+-------------------------------------------------------------------------------
+
+0.69.2
+------
+
+* Lots of documentation improvements, including how to customise ``BaseUser``
+  (courtesy @sinisaos).
+* Fixed a bug with creating indexes when the column name clashes with a SQL
+  keyword (e.g. ``'order'``). See `Pr 433 <https://github.com/piccolo-orm/piccolo/pull/433>`_.
+  Thanks to @wmshort for reporting this issue.
+* Fixed an issue where some slots were incorrectly configured (courtesy
+  @ariebovenberg). See `PR 426 <https://github.com/piccolo-orm/piccolo/pull/426>`_.
+
+-------------------------------------------------------------------------------
+
+0.69.1
+------
+
+Fixed a bug with auto migrations which rename columns - see
+`PR 423 <https://github.com/piccolo-orm/piccolo/pull/423>`_. Thanks to
+@theelderbeever for reporting this, and @sinisaos for help investigating.
+
+-------------------------------------------------------------------------------
+
+0.69.0
+------
+
+Added `Xpresso <https://xpresso-api.dev/>`_ as a supported ASGI framework when
+using ``piccolo asgi new`` to generate a web app.
+
+Thanks to @sinisaos for adding this template, and @adriangb for reviewing.
+
+We also took this opportunity to update our FastAPI and BlackSheep ASGI
+templates.
+
+-------------------------------------------------------------------------------
+
+0.68.0
+------
+
+``Update`` queries without a ``where`` clause
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you try and perform an update query without a ``where`` clause you will now
+get an error:
+
+.. code-block:: python
+
+  >>> await Band.update({Band.name: 'New Band'})
+  UpdateError
+
+If you want to update all rows in the table, you can still do so, but you must
+pass ``force=True``.
+
+.. code-block:: python
+
+  >>> await Band.update({Band.name: 'New Band'}, force=True)
+
+This is a similar to ``delete`` queries, which require a ``where`` clause or
+``force=True``.
+
+It was pointed out by @theelderbeever that an accidental mass update is almost
+as bad as a mass deletion, which is why this safety measure has been added.
+
+See `PR 412 <https://github.com/piccolo-orm/piccolo/pull/412>`_.
+
+.. warning:: This is a breaking change. It you're doing update queries without
+  a where clause, you will need to add ``force=True``.
+
+``JSONB`` improvements
+~~~~~~~~~~~~~~~~~~~~~~
+
+Fixed some bugs with nullable ``JSONB`` columns. A value of ``None`` is now
+stored as ``null`` in the database, instead of the JSON string ``'null'``.
+Thanks to @theelderbeever for reporting this.
+
+See `PR 413 <https://github.com/piccolo-orm/piccolo/pull/413>`_.
+
+-------------------------------------------------------------------------------
+
+0.67.0
+------
+
+create_user
+~~~~~~~~~~~
+
+``BaseUser`` now has a ``create_user`` method, which adds some extra password
+validation vs just instantiating and saving ``BaseUser`` directly.
+
+.. code-block:: python
+
+  >>> await BaseUser.create_user(username='bob', password='abc123XYZ')
+  <BaseUser: 1>
+
+We check that passwords are a reasonable length, and aren't already hashed.
+See `PR 402 <https://github.com/piccolo-orm/piccolo/pull/402>`_.
+
+async first
+~~~~~~~~~~~
+
+All of the docs have been updated to show the async version of queries.
+
+For example:
+
+.. code-block:: python
+
+  # Previous:
+  Band.select().run_sync()
+
+  # Now:
+  await Band.select()
+
+Most people use Piccolo in async apps, and the playground supports top level
+await, so you can just paste in ``await Band.select()`` and it will still work.
+See `PR 407 <https://github.com/piccolo-orm/piccolo/pull/407>`_.
+
+We decided to use ``await Band.select()`` instead of ``await Band.select().run()``.
+Both work, and have their merits, but the simpler version is probably easier
+for newcomers.
+
+-------------------------------------------------------------------------------
+
+0.66.1
+------
+
+In Piccolo you can print out any query to see the SQL which will be generated:
+
+.. code-block:: python
+
+  >>> print(Band.select())
+  SELECT "band"."id", "band"."name", "band"."manager", "band"."popularity" FROM band
+
+It didn't represent ``UUID`` and ``datetime`` values correctly, which is now fixed (courtesy @theelderbeever).
+See `PR 405 <https://github.com/piccolo-orm/piccolo/pull/405>`_.
+
+-------------------------------------------------------------------------------
+
+0.66.0
+------
+
+Using descriptors to improve MyPy support (`PR 399 <https://github.com/piccolo-orm/piccolo/pull/399>`_).
+
+MyPy is now able to correctly infer the type in lots of different scenarios:
+
+.. code-block:: python
+
+  class Band(Table):
+      name = Varchar()
+
+  # MyPy knows this is a Varchar
+  Band.name
+
+  band = Band()
+  band.name = "Pythonistas"  # MyPy knows we can assign strings when it's a class instance
+  band.name  # MyPy knows we will get a string back
+
+  band.name = 1  # MyPy knows this is an error, as we should only be allowed to assign strings
+
+-------------------------------------------------------------------------------
+
+0.65.1
+------
+
+Fixed bug with ``BaseUser`` and Piccolo API.
+
+-------------------------------------------------------------------------------
+
+0.65.0
+------
+
+The ``BaseUser`` table hashes passwords before storing them in the database.
+
+When we create a fixture from the ``BaseUser`` table (using ``piccolo fixtures dump``),
+it looks something like:
+
+.. code-block:: json
+
+  {
+    "id": 11,
+    "username": "bob",
+    "password": "pbkdf2_sha256$10000$abc123",
+  }
+
+When we load the fixture (using ``piccolo fixtures load``) we need to be
+careful in case ``BaseUser`` tries to hash the password again (it would then be a hash of
+a hash, and hence incorrect). We now have additional checks in place to prevent
+this.
+
+Thanks to @mrbazzan for implementing this, and @sinisaos for help reviewing.
+
+-------------------------------------------------------------------------------
+
+0.64.0
+------
+
+Added initial support for ``ForeignKey`` columns referencing non-primary key
+columns. For example:
+
+.. code-block:: python
+
+  class Manager(Table):
+      name = Varchar()
+      email = Varchar(unique=True)
+
+  class Band(Table):
+      manager = ForeignKey(Manager, target_column=Manager.email)
+
+Thanks to @theelderbeever for suggesting this feature, and with help testing.
+
+-------------------------------------------------------------------------------
+
+0.63.1
+------
+
+Fixed an issue with the ``value_type`` of ``ForeignKey`` columns when
+referencing a table with a custom primary key column (such as a ``UUID``).
+
+-------------------------------------------------------------------------------
+
+0.63.0
+------
+
+Added an ``exclude_imported`` option to ``table_finder``.
+
+.. code-block:: python
+
+  APP_CONFIG = AppConfig(
+      table_classes=table_finder(['music.tables'], exclude_imported=True)
+  )
+
+It's useful when we want to import ``Table`` subclasses defined within a
+module itself, but not imported ones:
+
+.. code-block:: python
+
+  # tables.py
+  from piccolo.apps.user.tables import BaseUser # excluded
+  from piccolo.columns.column_types import ForeignKey, Varchar
+  from piccolo.table import Table
+
+
+  class Musician(Table): # included
+      name = Varchar()
+      user = ForeignKey(BaseUser)
+
+This was also possible using tags, but was less convenient. Thanks to @sinisaos
+for reporting this issue.
+
+-------------------------------------------------------------------------------
+
+0.62.3
+------
+
+Fixed the error message in ``LazyTableReference``.
+
+Fixed a bug with ``create_pydantic_model`` with nested models. For example:
+
+.. code-block:: python
+
+  create_pydantic_model(Band, nested=(Band.manager,))
+
+Sometimes Pydantic couldn't uniquely identify the nested models. Thanks to
+@wmshort and @sinisaos for their help with this.
+
+-------------------------------------------------------------------------------
+
+0.62.2
+------
+
+Added a max password length to the ``BaseUser`` table. By default it's set to
+128 characters.
+
+-------------------------------------------------------------------------------
+
+0.62.1
+------
+
+Fixed a bug with ``Readable`` when it contains lots of joins.
+
+``Readable`` is used to create a user friendly representation of a row in
+Piccolo Admin.
+
+-------------------------------------------------------------------------------
+
+0.62.0
+------
+
+Added Many-To-Many support.
+
+.. code-block:: python
+
+    from piccolo.columns.column_types import (
+        ForeignKey,
+        LazyTableReference,
+        Varchar
+    )
+    from piccolo.columns.m2m import M2M
+
+
+    class Band(Table):
+        name = Varchar()
+        genres = M2M(LazyTableReference("GenreToBand", module_path=__name__))
+
+
+    class Genre(Table):
+        name = Varchar()
+        bands = M2M(LazyTableReference("GenreToBand", module_path=__name__))
+
+
+    # This is our joining table:
+    class GenreToBand(Table):
+        band = ForeignKey(Band)
+        genre = ForeignKey(Genre)
+
+
+    >>> await Band.select(Band.name, Band.genres(Genre.name, as_list=True))
+    [
+      {
+        "name": "Pythonistas",
+        "genres": ["Rock", "Folk"]
+      },
+      ...
+    ]
+
+See the docs for more details.
+
+Many thanks to @sinisaos and @yezz123 for all the input.
+
+-------------------------------------------------------------------------------
+
+0.61.2
+------
+
+Fixed some edge cases where migrations would fail if a column name clashed with
+a reserved Postgres keyword (for example ``order`` or ``select``).
+
+We now have more robust tests for ``piccolo asgi new`` - as part of our CI we
+actually run the generated ASGI app to make sure it works (thanks to @AliSayyah
+and @yezz123 for their help with this).
+
+We also improved docstrings across the project.
+
+-------------------------------------------------------------------------------
+
+0.61.1
+------
+
+Nicer ASGI template
+~~~~~~~~~~~~~~~~~~~
+
+When using ``piccolo asgi new`` to generate a web app, it now has a nicer home
+page template, with improved styles.
+
+Improved schema generation
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Fixed a bug with ``piccolo schema generate`` where it would crash if the column
+type was unrecognised, due to failing to parse the column's default value.
+Thanks to @gmos for reporting this issue, and figuring out the fix.
+
+Fix Pylance error
+~~~~~~~~~~~~~~~~~
+
+Added ``start_connection_pool`` and ``close_connection_pool`` methods to the
+base ``Engine`` class (courtesy @gmos).
+
+-------------------------------------------------------------------------------
+
+0.61.0
+------
+
+The ``save`` method now supports a ``columns`` argument, so when updating a
+row you can specify which values to sync back. For example:
+
+.. code-block:: python
+
+  band = await Band.objects().get(Band.name == "Pythonistas")
+  band.name = "Super Pythonistas"
+  await band.save([Band.name])
+
+  # Alternatively, strings are also supported:
+  await band.save(['name'])
+
+Thanks to @trondhindenes for suggesting this feature.
+
+-------------------------------------------------------------------------------
+
+0.60.2
+------
+
+Fixed a bug with ``asyncio.gather`` not working with some query types. It was
+due to them being dataclasses, and they couldn't be hashed properly. Thanks to
+@brnosouza for reporting this issue.
+
+-------------------------------------------------------------------------------
+
+0.60.1
+------
+
+Modified the import path for ``MigrationManager`` in migration files. It was
+confusing Pylance (VSCode's type checker). Thanks to @gmos for reporting and
+investigating this issue.
+
+-------------------------------------------------------------------------------
+
+0.60.0
+------
+
+Secret columns
+~~~~~~~~~~~~~~
+
+All column types can now be secret, rather than being limited to the
+``Secret`` column type which is a ``Varchar`` under the hood (courtesy
+@sinisaos).
+
+.. code-block:: python
+
+  class Manager(Table):
+      name = Varchar()
+      net_worth = Integer(secret=True)
+
+The reason this is useful is you can do queries such as:
+
+.. code-block:: python
+
+  >>> Manager.select(exclude_secrets=True).run_sync()
+  [{'id': 1, 'name': 'Guido'}]
+
+In the Piccolo API project we have ``PiccoloCRUD`` which is an incredibly
+powerful way of building an API with very little code. ``PiccoloCRUD`` has an
+``exclude_secrets`` option which lets you safely expose your data without
+leaking sensitive information.
+
+Pydantic improvements
+~~~~~~~~~~~~~~~~~~~~~
+
+max_recursion_depth
+*******************
+
+``create_pydantic_model`` now has a ``max_recursion_depth`` argument, which is
+useful when using ``nested=True`` on large database schemas.
+
+.. code-block:: python
+
+  >>> create_pydantic_model(MyTable, nested=True, max_recursion_depth=3)
+
+Nested tuple
+************
+
+You can now pass a tuple of columns as the argument to ``nested``:
+
+.. code-block:: python
+
+  >>> create_pydantic_model(Band, nested=(Band.manager,))
+
+This gives you more control than just using ``nested=True``.
+
+include_columns / exclude_columns
+*********************************
+
+You can now include / exclude columns from related tables. For example:
+
+.. code-block:: python
+
+  >>> create_pydantic_model(Band, nested=(Band.manager,), exclude_columns=(Band.manager.country))
+
+Similarly:
+
+.. code-block:: python
+
+  >>> create_pydantic_model(Band, nested=(Band.manager,), include_columns=(Band.name, Band.manager.name))
+
+-------------------------------------------------------------------------------
+
 0.59.0
 ------
 
- * When using ``piccolo asgi new`` to generate a FastAPI app, the generated code
-   is now cleaner. It also contains a ``conftest.py`` file, which encourages
-   people to use ``piccolo tester run`` rather than using ``pytest`` directly.
- * Tidied up docs, and added logo.
- * Clarified the use of the ``PICCOLO_CONF`` environment variable in the docs
-   (courtesy @theelderbeever).
- * ``create_pydantic_model`` now accepts an ``include_columns`` argument, in
-   case you only want a few columns in your model, it's faster than using
-   ``exclude_columns`` (courtesy @sinisaos).
- * Updated linters, and fixed new errors.
+* When using ``piccolo asgi new`` to generate a FastAPI app, the generated code
+  is now cleaner. It also contains a ``conftest.py`` file, which encourages
+  people to use ``piccolo tester run`` rather than using ``pytest`` directly.
+* Tidied up docs, and added logo.
+* Clarified the use of the ``PICCOLO_CONF`` environment variable in the docs
+  (courtesy @theelderbeever).
+* ``create_pydantic_model`` now accepts an ``include_columns`` argument, in
+  case you only want a few columns in your model, it's faster than using
+  ``exclude_columns`` (courtesy @sinisaos).
+* Updated linters, and fixed new errors.
 
 -------------------------------------------------------------------------------
 
@@ -107,8 +624,8 @@ Fixed schema generation bug
 When using ``piccolo schema generate`` to auto generate Piccolo ``Table``
 classes from an existing database, it would fail in this situation:
 
- * A table has a column with an index.
- * The column name clashed with a Postgres type.
+* A table has a column with an index.
+* The column name clashed with a Postgres type.
 
 For example, we couldn't auto generate this ``Table`` class:
 
@@ -298,15 +815,15 @@ Here's an example:
 ------
 Lots of improvements to ``piccolo schema generate``:
 
- * Dramatically improved performance, by executing more queries in parallel
-   (courtesy @AliSayyah).
- * If a table in the database has a foreign key to a table in another
-   schema, this will now work (courtesy @AliSayyah).
- * The column defaults are now extracted from the database (courtesy @wmshort).
- * The ``scale`` and ``precision`` values for ``Numeric`` / ``Decimal`` column
-   types are extracted from the database (courtesy @wmshort).
- * The ``ON DELETE`` and ``ON UPDATE`` values for ``ForeignKey`` columns are
-   now extracted from the database (courtesy @wmshort).
+* Dramatically improved performance, by executing more queries in parallel
+  (courtesy @AliSayyah).
+* If a table in the database has a foreign key to a table in another
+  schema, this will now work (courtesy @AliSayyah).
+* The column defaults are now extracted from the database (courtesy @wmshort).
+* The ``scale`` and ``precision`` values for ``Numeric`` / ``Decimal`` column
+  types are extracted from the database (courtesy @wmshort).
+* The ``ON DELETE`` and ``ON UPDATE`` values for ``ForeignKey`` columns are
+  now extracted from the database (courtesy @wmshort).
 
 Added ``BigSerial`` column type (courtesy @aliereno).
 
@@ -711,13 +1228,13 @@ Thanks to @wmshort for reporting this issue.
 
 0.35.0
 ------
- * Improved ``PrimaryKey`` deprecation warning (courtesy @tonybaloney).
- * Added ``piccolo schema generate`` which creates a Piccolo schema from an
-   existing database.
- * Added ``piccolo tester run`` which is a wrapper around pytest, and
-   temporarily sets ``PICCOLO_CONF``, so a test database is used.
- * Added the ``get`` convenience method (courtesy @aminalaee). It returns the
-   first matching record, or ``None`` if there's no match. For example:
+* Improved ``PrimaryKey`` deprecation warning (courtesy @tonybaloney).
+* Added ``piccolo schema generate`` which creates a Piccolo schema from an
+  existing database.
+* Added ``piccolo tester run`` which is a wrapper around pytest, and
+  temporarily sets ``PICCOLO_CONF``, so a test database is used.
+* Added the ``get`` convenience method (courtesy @aminalaee). It returns the
+  first matching record, or ``None`` if there's no match. For example:
 
   .. code-block:: python
 
@@ -743,11 +1260,11 @@ usage:
 
 0.33.1
 ------
- * Bug fix, where ``compare_dicts`` was failing in migrations if any ``Column``
-   had an unhashable type as an argument. For example: ``Array(default=[])``.
-   Thanks to @hipertracker for reporting this problem.
- * Increased the minimum version of orjson, so binaries are available for Macs
-   running on Apple silicon (courtesy @hipertracker).
+* Bug fix, where ``compare_dicts`` was failing in migrations if any ``Column``
+  had an unhashable type as an argument. For example: ``Array(default=[])``.
+  Thanks to @hipertracker for reporting this problem.
+* Increased the minimum version of orjson, so binaries are available for Macs
+  running on Apple silicon (courtesy @hipertracker).
 
 -------------------------------------------------------------------------------
 
@@ -803,7 +1320,7 @@ example:
     class RecordingStudio(Table):
         pk = UUID(primary_key=True)
 
-The BlackSheep template generated by `piccolo asgi new` now supports mounting
+The BlackSheep template generated by ``piccolo asgi new`` now supports mounting
 of the Piccolo Admin (courtesy @sinisaos).
 
 -------------------------------------------------------------------------------
@@ -834,10 +1351,10 @@ if linters complain about using ``SomeTable.some_column == True``.
 
 0.25.0
 ------
- * Changed the migration IDs, so the timestamp now includes microseconds. This
-   is to make clashing migration IDs much less likely.
- * Added a lot of end-to-end tests for migrations, which revealed some bugs
-   in ``Column`` defaults.
+* Changed the migration IDs, so the timestamp now includes microseconds. This
+  is to make clashing migration IDs much less likely.
+* Added a lot of end-to-end tests for migrations, which revealed some bugs
+  in ``Column`` defaults.
 
 -------------------------------------------------------------------------------
 
@@ -894,16 +1411,16 @@ for more details).
 
 0.22.0
 ------
- * An error is now raised if a user tries to create a Piccolo app using
-   ``piccolo app new`` with the same name as a builtin Python module, as it
-   will cause strange bugs.
- * Fixing a strange bug where using an expression such as
-   ``Concert.band_1.manager.id`` in a query would cause an error. It only
-   happened if multiple joins were involved, and the last column in the chain
-   was ``id``.
- * ``where`` clauses can now accept ``Table`` instances. For example:
-   ``await Band.select().where(Band.manager == some_manager).run()``, instead
-   of having to explicity reference the ``id``.
+* An error is now raised if a user tries to create a Piccolo app using
+  ``piccolo app new`` with the same name as a builtin Python module, as it
+  will cause strange bugs.
+* Fixing a strange bug where using an expression such as
+  ``Concert.band_1.manager.id`` in a query would cause an error. It only
+  happened if multiple joins were involved, and the last column in the chain
+  was ``id``.
+* ``where`` clauses can now accept ``Table`` instances. For example:
+  ``await Band.select().where(Band.manager == some_manager).run()``, instead
+  of having to explicity reference the ``id``.
 
 -------------------------------------------------------------------------------
 
@@ -922,8 +1439,8 @@ Fix missing imports in FastAPI and Starlette app templates.
 
 0.21.0
 ------
- * Added a ``freeze`` method to ``Query``.
- * Added BlackSheep as an option to ``piccolo asgi new``.
+* Added a ``freeze`` method to ``Query``.
+* Added BlackSheep as an option to ``piccolo asgi new``.
 
 -------------------------------------------------------------------------------
 
@@ -935,8 +1452,8 @@ Added ``choices`` option to ``Column``.
 
 0.19.1
 ------
- * Added ``piccolo user change_permissions`` command.
- * Added aliases for CLI commands.
+* Added ``piccolo user change_permissions`` command.
+* Added aliases for CLI commands.
 
 -------------------------------------------------------------------------------
 
@@ -960,15 +1477,15 @@ following DDL statements:
 
 0.18.4
 ------
- * Fixed a bug when multiple tables inherit from the same mixin (thanks to
-   @brnosouza).
- * Added a ``log_queries`` option to ``PostgresEngine``, which is useful during
-   debugging.
- * Added the `inflection` library for converting ``Table`` class names to
-   database table names. Previously, a class called ``TableA`` would wrongly
-   have a table called ``table`` instead of ``table_a``.
- * Fixed a bug with ``SerialisedBuiltin.__hash__`` not returning a number,
-   which could break migrations (thanks to @sinisaos).
+* Fixed a bug when multiple tables inherit from the same mixin (thanks to
+  @brnosouza).
+* Added a ``log_queries`` option to ``PostgresEngine``, which is useful during
+  debugging.
+* Added the `inflection` library for converting ``Table`` class names to
+  database table names. Previously, a class called ``TableA`` would wrongly
+  have a table called ``table`` instead of ``table_a``.
+* Fixed a bug with ``SerialisedBuiltin.__hash__`` not returning a number,
+  which could break migrations (thanks to @sinisaos).
 
 -------------------------------------------------------------------------------
 
@@ -992,11 +1509,11 @@ Add the ``Array`` column type as a top level import in ``piccolo.columns``.
 
 0.18.0
 ------
- * Refactored ``forwards`` and ``backwards`` commands for migrations, to make
-   them easier to run programatically.
- * Added a simple ``Array`` column type.
- * ``table_finder`` now works if just a string is passed in, instead of having
-   to pass in an array of strings.
+* Refactored ``forwards`` and ``backwards`` commands for migrations, to make
+  them easier to run programatically.
+* Added a simple ``Array`` column type.
+* ``table_finder`` now works if just a string is passed in, instead of having
+  to pass in an array of strings.
 
 -------------------------------------------------------------------------------
 
@@ -1024,10 +1541,10 @@ Piccolo Admin to show tooltips.
 
 0.17.2
 ------
- * Exposing ``index_type`` in the ``Column`` constructor.
- * Fixing a typo with ``start_connection_pool` and ``close_connection_pool`` -
-   thanks to paolodina for finding this.
- * Fixing a typo in the ``PostgresEngine`` docs - courtesy of paolodina.
+* Exposing ``index_type`` in the ``Column`` constructor.
+* Fixing a typo with ``start_connection_pool` and ``close_connection_pool`` -
+  thanks to paolodina for finding this.
+* Fixing a typo in the ``PostgresEngine`` docs - courtesy of paolodina.
 
 -------------------------------------------------------------------------------
 
@@ -1040,11 +1557,11 @@ Fixing a bug with ``SchemaSnapshot`` if column types were changed in migrations
 
 0.17.0
 ------
- * Migrations now directly import ``Column`` classes - this allows users to
-   create custom ``Column`` subclasses. Migrations previously only worked with
-   the builtin column types.
- * Migrations now detect if the column type has changed, and will try and
-   convert it automatically.
+* Migrations now directly import ``Column`` classes - this allows users to
+  create custom ``Column`` subclasses. Migrations previously only worked with
+  the builtin column types.
+* Migrations now detect if the column type has changed, and will try and
+  convert it automatically.
 
 -------------------------------------------------------------------------------
 
@@ -1057,16 +1574,16 @@ can now be configured.
 
 0.16.4
 ------
- * Fixed a bug with ``MyTable.column != None``
- * Added ``is_null`` and ``is_not_null`` methods, to avoid linting issues when
-   comparing with None.
+* Fixed a bug with ``MyTable.column != None``
+* Added ``is_null`` and ``is_not_null`` methods, to avoid linting issues when
+  comparing with None.
 
 -------------------------------------------------------------------------------
 
 0.16.3
 ------
- * Added ``WhereRaw``, so raw SQL can be used in where clauses.
- * ``piccolo shell run`` now uses syntax highlighting - courtesy of Fingel.
+* Added ``WhereRaw``, so raw SQL can be used in where clauses.
+* ``piccolo shell run`` now uses syntax highlighting - courtesy of Fingel.
 
 -------------------------------------------------------------------------------
 
@@ -1086,10 +1603,10 @@ aware.
 
 0.16.0
 ------
- * Fixed a bug with creating a ``ForeignKey`` column with ``references="self"``
-   in auto migrations.
- * Changed migration file naming, so there are no characters in there which
-   are unsupported on Windows.
+* Fixed a bug with creating a ``ForeignKey`` column with ``references="self"``
+  in auto migrations.
+* Changed migration file naming, so there are no characters in there which
+  are unsupported on Windows.
 
 -------------------------------------------------------------------------------
 
@@ -1114,11 +1631,11 @@ Fixing a bug with migrations which drop column defaults.
 
 0.14.12
 -------
- * Fixing a bug where re-running ``Table.create(if_not_exists=True)`` would
-   fail if it contained columns with indexes.
- * Raising a ``ValueError`` if a relative path is provided to ``ForeignKey``
-   ``references``. For example, ``.tables.Manager``. The paths must be absolute
-   for now.
+* Fixing a bug where re-running ``Table.create(if_not_exists=True)`` would
+  fail if it contained columns with indexes.
+* Raising a ``ValueError`` if a relative path is provided to ``ForeignKey``
+  ``references``. For example, ``.tables.Manager``. The paths must be absolute
+  for now.
 
 -------------------------------------------------------------------------------
 
@@ -1131,14 +1648,14 @@ metaclass not being explicit enough when checking falsy values.
 
 0.14.10
 -------
- * The ``ForeignKey`` ``references`` argument can now be specified using a
-   string, or a ``LazyTableReference`` instance, rather than just a ``Table``
-   subclass. This allows a ``Table`` to be specified which is in a Piccolo app,
-   or Python module. The ``Table`` is only loaded after imports have completed,
-   which prevents circular import issues.
- * Faster column copying, which is important when specifying joins, e.g.
-   ``await Band.select(Band.manager.name).run()``.
- * Fixed a bug with migrations and foreign key contraints.
+* The ``ForeignKey`` ``references`` argument can now be specified using a
+  string, or a ``LazyTableReference`` instance, rather than just a ``Table``
+  subclass. This allows a ``Table`` to be specified which is in a Piccolo app,
+  or Python module. The ``Table`` is only loaded after imports have completed,
+  which prevents circular import issues.
+* Faster column copying, which is important when specifying joins, e.g.
+  ``await Band.select(Band.manager.name).run()``.
+* Fixed a bug with migrations and foreign key contraints.
 
 -------------------------------------------------------------------------------
 
@@ -1151,76 +1668,76 @@ migrations are left to run / reverse. Otherwise build scripts may fail.
 
 0.14.8
 ------
- * Improved the method signature of the ``output`` query clause (explicitly
-   added args, instead of using ``**kwargs``).
- * Fixed a bug where ``output(as_list=True)`` would fail if no rows were found.
- * Made ``piccolo migrations forwards`` command output more legible.
- * Improved renamed table detection in migrations.
- * Added the ``piccolo migrations clean`` command for removing orphaned rows
-   from the migrations table.
- * Fixed a bug where ``get_migration_managers`` wasn't inclusive.
- * Raising a ``ValueError`` if ``is_in`` or ``not_in`` query clauses are passed
-   an empty list.
- * Changed the migration commands to be top level async.
- * Combined ``print`` and ``sys.exit`` statements.
+* Improved the method signature of the ``output`` query clause (explicitly
+  added args, instead of using ``**kwargs``).
+* Fixed a bug where ``output(as_list=True)`` would fail if no rows were found.
+* Made ``piccolo migrations forwards`` command output more legible.
+* Improved renamed table detection in migrations.
+* Added the ``piccolo migrations clean`` command for removing orphaned rows
+  from the migrations table.
+* Fixed a bug where ``get_migration_managers`` wasn't inclusive.
+* Raising a ``ValueError`` if ``is_in`` or ``not_in`` query clauses are passed
+  an empty list.
+* Changed the migration commands to be top level async.
+* Combined ``print`` and ``sys.exit`` statements.
 
 -------------------------------------------------------------------------------
 
 0.14.7
 ------
- * Added missing type annotation for ``run_sync``.
- * Updating type annotations for column default values - allowing callables.
- * Replaced instances of ``asyncio.run`` with ``run_sync``.
- * Tidied up aiosqlite imports.
+* Added missing type annotation for ``run_sync``.
+* Updating type annotations for column default values - allowing callables.
+* Replaced instances of ``asyncio.run`` with ``run_sync``.
+* Tidied up aiosqlite imports.
 
 -------------------------------------------------------------------------------
 
 0.14.6
 ------
- * Added JSON and JSONB column types, and the arrow function for JSONB.
- * Fixed a bug with the distinct clause.
- * Added ``as_alias``, so select queries can override column names in the
-   response (i.e. SELECT foo AS bar from baz).
- * Refactored JSON encoding into a separate utils file.
+* Added JSON and JSONB column types, and the arrow function for JSONB.
+* Fixed a bug with the distinct clause.
+* Added ``as_alias``, so select queries can override column names in the
+  response (i.e. SELECT foo AS bar from baz).
+* Refactored JSON encoding into a separate utils file.
 
 -------------------------------------------------------------------------------
 
 0.14.5
 ------
- * Removed old iPython version recommendation in the ``piccolo shell run`` and
-   ``piccolo playground run``, and enabled top level await.
- * Fixing outstanding mypy warnings.
- * Added optional requirements for the playground to setup.py
+* Removed old iPython version recommendation in the ``piccolo shell run`` and
+  ``piccolo playground run``, and enabled top level await.
+* Fixing outstanding mypy warnings.
+* Added optional requirements for the playground to setup.py
 
 -------------------------------------------------------------------------------
 
 0.14.4
 ------
- * Added ``piccolo sql_shell run`` command, which launches the psql or sqlite3
-   shell, using the connection parameters defined in ``piccolo_conf.py``.
-   This is convenient when you want to run raw SQL on your database.
- * ``run_sync`` now handles more edge cases, for example if there's already
-   an event loop in the current thread.
- * Removed asgiref dependency.
+* Added ``piccolo sql_shell run`` command, which launches the psql or sqlite3
+  shell, using the connection parameters defined in ``piccolo_conf.py``.
+  This is convenient when you want to run raw SQL on your database.
+* ``run_sync`` now handles more edge cases, for example if there's already
+  an event loop in the current thread.
+* Removed asgiref dependency.
 
 -------------------------------------------------------------------------------
 
 0.14.3
 ------
- * Queries can be directly awaited - ``await MyTable.select()``, as an
-   alternative to using the run method ``await MyTable.select().run()``.
- * The ``piccolo asgi new`` command now accepts a ``name`` argument, which is
-   used to populate the default database name within the template.
+* Queries can be directly awaited - ``await MyTable.select()``, as an
+  alternative to using the run method ``await MyTable.select().run()``.
+* The ``piccolo asgi new`` command now accepts a ``name`` argument, which is
+  used to populate the default database name within the template.
 
 -------------------------------------------------------------------------------
 
 0.14.2
 ------
- * Centralised code for importing Piccolo apps and tables - laying the
-   foundation for fixtures.
- * Made orjson an optional dependency, installable using
-   ``pip install piccolo[orjson]``.
- * Improved version number parsing in Postgres.
+* Centralised code for importing Piccolo apps and tables - laying the
+  foundation for fixtures.
+* Made orjson an optional dependency, installable using
+  ``pip install piccolo[orjson]``.
+* Improved version number parsing in Postgres.
 
 -------------------------------------------------------------------------------
 
@@ -1238,15 +1755,15 @@ Added ``Interval`` column type.
 
 0.13.5
 ------
- * Added ``allowed_hosts`` to ``create_admin`` in ASGI template.
- * Fixing bug with default ``root`` argument in some piccolo commands.
+* Added ``allowed_hosts`` to ``create_admin`` in ASGI template.
+* Fixing bug with default ``root`` argument in some piccolo commands.
 
 -------------------------------------------------------------------------------
 
 0.13.4
 ------
- * Fixed bug with ``SchemaSnapshot`` when dropping columns.
- * Added custom ``__repr__`` method to ``Table``.
+* Fixed bug with ``SchemaSnapshot`` when dropping columns.
+* Added custom ``__repr__`` method to ``Table``.
 
 -------------------------------------------------------------------------------
 
@@ -1258,9 +1775,9 @@ Added ``piccolo shell run`` command for running adhoc queries using Piccolo.
 
 0.13.2
 ------
- * Fixing bug with auto migrations when dropping columns.
- * Added a ``root`` argument to ``piccolo asgi new``, ``piccolo app new`` and
-   ``piccolo project new`` commands, to override where the files are placed.
+* Fixing bug with auto migrations when dropping columns.
+* Added a ``root`` argument to ``piccolo asgi new``, ``piccolo app new`` and
+  ``piccolo project new`` commands, to override where the files are placed.
 
 -------------------------------------------------------------------------------
 
@@ -1280,19 +1797,19 @@ generating forms and serialisers.
 
 0.12.6
 ------
- * Fixing a typo in ``TimestampCustom`` arguments.
- * Fixing bug in ``TimestampCustom`` SQL representation.
- * Added more extensive deserialisation for migrations.
+* Fixing a typo in ``TimestampCustom`` arguments.
+* Fixing bug in ``TimestampCustom`` SQL representation.
+* Added more extensive deserialisation for migrations.
 
 -------------------------------------------------------------------------------
 
 0.12.5
 ------
- * Improved ``PostgresEngine`` docstring.
- * Resolving rename migrations before adding columns.
- * Fixed bug serialising ``TimestampCustom``.
- * Fixed bug with altering column defaults to be non-static values.
- * Removed ``response_handler`` from ``Alter`` query.
+* Improved ``PostgresEngine`` docstring.
+* Resolving rename migrations before adding columns.
+* Fixed bug serialising ``TimestampCustom``.
+* Fixed bug with altering column defaults to be non-static values.
+* Removed ``response_handler`` from ``Alter`` query.
 
 -------------------------------------------------------------------------------
 
@@ -1318,19 +1835,19 @@ Fixing bug when sorting ``extra_definitions`` in auto migrations.
 
 0.12.1
 ------
- * Fixed typos.
- * Bumped requirements.
+* Fixed typos.
+* Bumped requirements.
 
 -------------------------------------------------------------------------------
 
 0.12.0
 ------
- * Added ``Date`` and ``Time`` columns.
- * Improved support for column default values.
- * Auto migrations can now serialise more Python types.
- * Added ``Table.indexes`` method for listing table indexes.
- * Auto migrations can handle adding / removing indexes.
- * Improved ASGI template for FastAPI.
+* Added ``Date`` and ``Time`` columns.
+* Improved support for column default values.
+* Auto migrations can now serialise more Python types.
+* Added ``Table.indexes`` method for listing table indexes.
+* Auto migrations can handle adding / removing indexes.
+* Improved ASGI template for FastAPI.
 
 -------------------------------------------------------------------------------
 
@@ -1342,10 +1859,10 @@ ASGI template fix.
 
 0.11.7
 ------
- * Improved ``UUID`` columns in SQLite - prepending 'uuid:' to the stored value
-   to make the type more explicit for the engine.
- * Removed SQLite as an option for ``piccolo asgi new`` until auto migrations
-   are supported.
+* Improved ``UUID`` columns in SQLite - prepending 'uuid:' to the stored value
+  to make the type more explicit for the engine.
+* Removed SQLite as an option for ``piccolo asgi new`` until auto migrations
+  are supported.
 
 -------------------------------------------------------------------------------
 
@@ -1364,9 +1881,9 @@ excluding non-Python files well enough.
 
 0.11.4
 ------
- * Stopped ``piccolo migrations new`` from creating a config.py file - was
-   legacy.
- * Added a README file to the `piccolo_migrations` folder in the ASGI template.
+* Stopped ``piccolo migrations new`` from creating a config.py file - was
+  legacy.
+* Added a README file to the `piccolo_migrations` folder in the ASGI template.
 
 -------------------------------------------------------------------------------
 
@@ -1378,21 +1895,21 @@ Fixed `__pycache__` bug when using ``piccolo asgi new``.
 
 0.11.2
 ------
- * Showing a warning if trying auto migrations with SQLite.
- * Added a command for creating a new ASGI app - ``piccolo asgi new``.
- * Added a meta app for printing out the Piccolo version -
-   ``piccolo meta version``.
- * Added example queries to the playground.
+* Showing a warning if trying auto migrations with SQLite.
+* Added a command for creating a new ASGI app - ``piccolo asgi new``.
+* Added a meta app for printing out the Piccolo version -
+  ``piccolo meta version``.
+* Added example queries to the playground.
 
 -------------------------------------------------------------------------------
 
 0.11.1
 ------
- * Added ``table_finder``, for use in ``AppConfig``.
- * Added support for concatenating strings using an update query.
- * Added more tables to the playground, with more column types.
- * Improved consistency between SQLite and Postgres with ``UUID`` columns,
-   ``Integer`` columns, and ``exists`` queries.
+* Added ``table_finder``, for use in ``AppConfig``.
+* Added support for concatenating strings using an update query.
+* Added more tables to the playground, with more column types.
+* Improved consistency between SQLite and Postgres with ``UUID`` columns,
+  ``Integer`` columns, and ``exists`` queries.
 
 -------------------------------------------------------------------------------
 

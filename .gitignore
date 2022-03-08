@@ -7,7 +7,7 @@ build/
 .doctrees/
 .vscode/
 piccolo.egg-info/
-build/
+.idea/
 dist/
 piccolo.sqlite
 _build/
@@ -18,3 +18,4 @@ htmlcov/
 prof/
 .env/
 .venv/
+result.json

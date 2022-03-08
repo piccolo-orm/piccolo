@@ -48,7 +48,7 @@ class TestDBColumnName(DBTestCase):
         band.save().run_sync()
 
         band_from_db = Band.objects().first().run_sync()
-        self.assertTrue(band_from_db.name == "Pythonistas")
+        self.assertEqual(band_from_db.name, "Pythonistas")
 
     def test_create(self):
         """
@@ -59,10 +59,10 @@ class TestDBColumnName(DBTestCase):
             .create(name="Pythonistas", popularity=1000)
             .run_sync()
         )
-        self.assertTrue(band.name == "Pythonistas")
+        self.assertEqual(band.name, "Pythonistas")
 
         band_from_db = Band.objects().first().run_sync()
-        self.assertTrue(band_from_db.name == "Pythonistas")
+        self.assertEqual(band_from_db.name, "Pythonistas")
 
     def test_select(self):
         """
@@ -114,7 +114,7 @@ class TestDBColumnName(DBTestCase):
         """
         Band.objects().create(name="Pythonistas", popularity=1000).run_sync()
 
-        Band.update({Band.name: "Pythonistas 2"}).run_sync()
+        Band.update({Band.name: "Pythonistas 2"}, force=True).run_sync()
 
         bands = Band.select().run_sync()
         self.assertEqual(
@@ -128,7 +128,7 @@ class TestDBColumnName(DBTestCase):
             ],
         )
 
-        Band.update({"name": "Pythonistas 3"}).run_sync()
+        Band.update({"name": "Pythonistas 3"}, force=True).run_sync()
 
         bands = Band.select().run_sync()
         self.assertEqual(

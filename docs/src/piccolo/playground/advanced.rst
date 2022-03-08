@@ -13,7 +13,7 @@ first.
 Install Postgres
 ~~~~~~~~~~~~~~~~
 
-See :ref:`setting_up_postgres`.
+See :ref:`the docs on settings up Postgres <setting_up_postgres>`.
 
 Create database
 ~~~~~~~~~~~~~~~

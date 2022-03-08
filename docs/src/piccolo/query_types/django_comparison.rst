@@ -173,15 +173,24 @@ Piccolo has something similar:
 .. code-block:: python
 
     # Piccolo
-    band = Band.objects(Band.manager).get(name='Pythonistas')
+    band = Band.objects(Band.manager).get(Band.name == 'Pythonistas').run_sync()
     >>> band.manager
     <Manager: 1>
 
 
 -------------------------------------------------------------------------------
 
-Database Settings
+Database settings
 -----------------
 
 In Django you configure your database in ``settings.py``. With Piccolo, you
 define an ``Engine`` in ``piccolo_conf.py``. See :ref:`Engines`.
+
+-------------------------------------------------------------------------------
+
+Creating a new project
+----------------------
+
+With Django you use ``django-admin startproject mysite``.
+
+In Piccolo you use ``piccolo asgi new`` (see :ref:`ASGICommand`).

@@ -40,6 +40,11 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 
 class OnDelete(str, Enum):
+    """
+    Used by :class:`ForeignKey <piccolo.columns.column_types.ForeignKey>` to
+    specify the behaviour when a related row is deleted.
+    """
+
     cascade = "CASCADE"
     restrict = "RESTRICT"
     no_action = "NO ACTION"
@@ -54,6 +59,11 @@ class OnDelete(str, Enum):
 
 
 class OnUpdate(str, Enum):
+    """
+    Used by :class:`ForeignKey <piccolo.columns.column_types.ForeignKey>` to
+    specify the behaviour when a related row is updated.
+    """
+
     cascade = "CASCADE"
     restrict = "RESTRICT"
     no_action = "NO ACTION"
@@ -72,15 +82,16 @@ class ForeignKeyMeta:
     references: t.Union[t.Type[Table], LazyTableReference]
     on_delete: OnDelete
     on_update: OnUpdate
+    target_column: t.Union[Column, str, None]
     proxy_columns: t.List[Column] = field(default_factory=list)
 
     @property
     def resolved_references(self) -> t.Type[Table]:
         """
-        Evaluates the ``references`` attribute if it's a LazyTableReference,
+        Evaluates the ``references`` attribute if it's a ``LazyTableReference``,
         raising a ``ValueError`` if it fails, otherwise returns a ``Table``
         subclass.
-        """
+        """  # noqa: E501
         from piccolo.table import Table
 
         if isinstance(self.references, LazyTableReference):
@@ -94,6 +105,21 @@ class ForeignKeyMeta:
                 "The references attribute is neither a Table subclass or a "
                 "LazyTableReference instance."
             )
+
+    @property
+    def resolved_target_column(self) -> Column:
+        if self.target_column is None:
+            return self.resolved_references._meta.primary_key
+        elif isinstance(self.target_column, Column):
+            return self.resolved_references._meta.get_column_by_name(
+                self.target_column._meta.name
+            )
+        elif isinstance(self.target_column, str):
+            return self.resolved_references._meta.get_column_by_name(
+                self.target_column
+            )
+        else:
+            raise ValueError("Unable to resolve target_column.")
 
     def copy(self) -> ForeignKeyMeta:
         kwargs = self.__dict__.copy()
@@ -208,14 +234,46 @@ class ColumnMeta:
 
         return output
 
-    def get_full_name(self, just_alias=False) -> str:
+    def get_full_name(
+        self, just_alias: bool = False, include_quotes: bool = False
+    ) -> str:
         """
         Returns the full column name, taking into account joins.
+
+        :param just_alias:
+            Examples:
+
+            .. code-block python::
+
+                >>> Band.manager.name._meta.get_full_name(just_alias=True)
+                'band$manager.name'
+
+                >>> Band.manager.name._meta.get_full_name(just_alias=False)
+                'band$manager.name AS "manager$name"'
+
+        :param include_quotes:
+            If you're using the name in a SQL query, each component needs to be
+            surrounded by double quotes, in case the table or column name
+            clashes with a reserved SQL keyword (for example, a column called
+            ``order``).
+
+            .. code-block python::
+
+                >>> column._meta.get_full_name(include_quotes=True)
+                '"my_table_name"."my_column_name"'
+
+                >>> column._meta.get_full_name(include_quotes=False)
+                'my_table_name.my_column_name'
+
+
         """
         column_name = self.db_column_name
 
         if not self.call_chain:
-            return f"{self.table._meta.tablename}.{column_name}"
+            if include_quotes:
+                return f'"{self.table._meta.tablename}"."{column_name}"'
+            else:
+                return f"{self.table._meta.tablename}.{column_name}"
 
         column_name = (
             "$".join(
@@ -224,7 +282,11 @@ class ColumnMeta:
             + f"${column_name}"
         )
 
-        alias = f"{self.call_chain[-1]._meta.table_alias}.{self.name}"
+        if include_quotes:
+            alias = f'"{self.call_chain[-1]._meta.table_alias}"."{self.name}"'
+        else:
+            alias = f"{self.call_chain[-1]._meta.table_alias}.{self.name}"
+
         if just_alias:
             return alias
         else:
@@ -304,7 +366,8 @@ class Column(Selectable):
         the speed of selects, but can slow down inserts.
 
     :param index_method:
-        If index is set to True, this specifies what type of index is created.
+        If index is set to ``True``, this specifies what type of index is
+        created.
 
     :param required:
         This isn't used by the database - it's to indicate to other tools that
@@ -333,7 +396,7 @@ class Column(Selectable):
             class MyTable(Table):
                 class_ = Varchar(db_column_name="class")
 
-            >>> MyTable.select(MyTable.class_).run_sync()
+            >>> await MyTable.select(MyTable.class_)
             [{'id': 1, 'class': 'test'}]
 
         This is an advanced feature which you should only need in niche
@@ -350,7 +413,7 @@ class Column(Selectable):
                 name = Varchar()
                 net_worth = Integer(secret=True)
 
-            >>> Property.select(exclude_secrets=True).run_sync()
+            >>> await Band.select(exclude_secrets=True)
             [{'name': 'Pythonistas'}]
 
     """
@@ -394,12 +457,6 @@ class Column(Selectable):
                 "secret": secret,
             }
         )
-
-        if kwargs.get("default", ...) is None and not null:
-            raise ValueError(
-                "A default value of None isn't allowed if the column is "
-                "not nullable."
-            )
 
         if choices is not None:
             self._validate_choices(choices, allowed_type=self.value_type)
@@ -540,13 +597,71 @@ class Column(Selectable):
     def __ge__(self, value) -> Where:
         return Where(column=self, value=value, operator=GreaterEqualThan)
 
-    def __eq__(self, value) -> Where:  # type: ignore
+    def _equals(self, column: Column, including_joins: bool = False) -> bool:
+        """
+        We override ``__eq__``, in order to do queries such as:
+
+        .. code-block:: python
+
+            await Band.select().where(Band.name == 'Pythonistas')
+
+        But this means that comparisons such as this can give unexpected
+        results:
+
+        .. code-block:: python
+
+            # We would expect the answer to be `True`, but we get `Where`
+            # instead:
+            >>> MyTable.some_column == MyTable.some_column
+            <Where>
+
+        Also, column comparison is sometimes more complex than it appears. This
+        is why we have this custom method for comparing columns.
+
+        Take this example:
+
+        .. code-block:: python
+
+            Band.manager.name == Manager.name
+
+        They both refer to the ``name`` column on the ``Manager`` table, except
+        one has joins and the other doesn't.
+
+        :param including_joins:
+            If ``True``, then we check if the columns are the same, as well as
+            their joins, i.e. ``Band.manager.name`` != ``Manager.name``.
+
+        """
+        if isinstance(column, Column):
+            if (
+                self._meta.name == column._meta.name
+                and self._meta.table._meta.tablename
+                == column._meta.table._meta.tablename
+            ):
+                if including_joins:
+                    if len(column._meta.call_chain) == len(
+                        self._meta.call_chain
+                    ):
+                        return all(
+                            column_a._equals(column_b, including_joins=False)
+                            for column_a, column_b in zip(
+                                column._meta.call_chain,
+                                self._meta.call_chain,
+                            )
+                        )
+
+                else:
+                    return True
+
+        return False
+
+    def __eq__(self, value) -> Where:  # type: ignore[override]
         if value is None:
             return Where(column=self, operator=IsNull)
         else:
             return Where(column=self, value=value, operator=Equal)
 
-    def __ne__(self, value) -> Where:  # type: ignore
+    def __ne__(self, value) -> Where:  # type: ignore[override]
         if value is None:
             return Where(column=self, operator=IsNotNull)
         else:
@@ -557,15 +672,15 @@ class Column(Selectable):
 
     def is_null(self) -> Where:
         """
-        Can be used instead of ``MyTable.column != None``, because some linters
-        don't like a comparison to None.
+        Can be used instead of ``MyTable.column == None``, because some linters
+        don't like a comparison to ``None``.
         """
         return Where(column=self, operator=IsNull)
 
     def is_not_null(self) -> Where:
         """
-        Can be used instead of ``MyTable.column == None``, because some linters
-        don't like a comparison to None.
+        Can be used instead of ``MyTable.column != None``, because some linters
+        don't like a comparison to ``None``.
         """
         return Where(column=self, operator=IsNotNull)
 
@@ -594,7 +709,7 @@ class Column(Selectable):
         if default is not ...:
             default = default.value if isinstance(default, Enum) else default
             is_callable = hasattr(default, "__call__")
-            return default() if is_callable else default
+            return default() if is_callable else default  # type: ignore
         return None
 
     def get_select_string(self, engine_type: str, just_alias=False) -> str:
@@ -602,8 +717,12 @@ class Column(Selectable):
         How to refer to this column in a SQL query.
         """
         if self.alias is None:
-            return self._meta.get_full_name(just_alias=just_alias)
-        original_name = self._meta.get_full_name(just_alias=True)
+            return self._meta.get_full_name(
+                just_alias=just_alias, include_quotes=True
+            )
+        original_name = self._meta.get_full_name(
+            just_alias=True, include_quotes=True
+        )
         return f"{original_name} AS {self.alias}"
 
     def get_where_string(self, engine_type: str) -> str:
@@ -685,9 +804,11 @@ class Column(Selectable):
             tablename = references._meta.tablename
             on_delete = foreign_key_meta.on_delete.value
             on_update = foreign_key_meta.on_update.value
-            primary_key_name = references._meta.primary_key._meta.name
+            target_column_name = (
+                foreign_key_meta.resolved_target_column._meta.name
+            )
             query += (
-                f" REFERENCES {tablename} ({primary_key_name})"
+                f" REFERENCES {tablename} ({target_column_name})"
                 f" ON DELETE {on_delete}"
                 f" ON UPDATE {on_update}"
             )

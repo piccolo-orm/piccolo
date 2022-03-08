@@ -138,7 +138,9 @@ class TestJSONUpdate(TestCase):
         Test updating a JSON field using a string.
         """
         self.add_row()
-        MyTable.update({MyTable.json: '{"message": "updated"}'}).run_sync()
+        MyTable.update(
+            {MyTable.json: '{"message": "updated"}'}, force=True
+        ).run_sync()
         self.check_response()
 
     def test_json_update_object(self):
@@ -146,5 +148,7 @@ class TestJSONUpdate(TestCase):
         Test updating a JSON field using an object.
         """
         self.add_row()
-        MyTable.update({MyTable.json: {"message": "updated"}}).run_sync()
+        MyTable.update(
+            {MyTable.json: {"message": "updated"}}, force=True
+        ).run_sync()
         self.check_response()

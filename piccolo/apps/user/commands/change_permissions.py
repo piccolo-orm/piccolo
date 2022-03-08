@@ -3,7 +3,7 @@ import typing as t
 from piccolo.apps.user.tables import BaseUser
 from piccolo.utils.warnings import Level, colored_string
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
 
 
@@ -45,6 +45,12 @@ async def change_permissions(
     if active is not None:
         params[BaseUser.active] = active
 
-    await BaseUser.update(params).where(BaseUser.username == username).run()
+    if params:
+        await BaseUser.update(params).where(
+            BaseUser.username == username
+        ).run()
+    else:
+        print(colored_string("No changes detected", level=Level.medium))
+        return
 
     print(f"Updated permissions for {username}")

@@ -10,7 +10,7 @@ class TestOutputList(DBTestCase):
         self.insert_row()
 
         response = Band.select(Band.name).output(as_list=True).run_sync()
-        self.assertTrue(response == ["Pythonistas"])
+        self.assertEqual(response, ["Pythonistas"])
 
         # Make sure that if no rows are found, an empty list is returned.
         empty_response = (
@@ -19,7 +19,7 @@ class TestOutputList(DBTestCase):
             .output(as_list=True)
             .run_sync()
         )
-        self.assertTrue(empty_response == [])
+        self.assertEqual(empty_response, [])
 
 
 class TestOutputJSON(DBTestCase):
@@ -28,7 +28,7 @@ class TestOutputJSON(DBTestCase):
 
         response = Band.select(Band.name).output(as_json=True).run_sync()
 
-        self.assertTrue(json.loads(response) == [{"name": "Pythonistas"}])
+        self.assertEqual(json.loads(response), [{"name": "Pythonistas"}])
 
 
 class TestOutputLoadJSON(TestCase):

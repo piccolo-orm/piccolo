@@ -519,4 +519,4 @@ class SchemaDiffer:
             count = len(statements.statements)
             print(f"{_message} {count}")
 
-        return [i for i in alter_statements.values()]
+        return list(alter_statements.values())

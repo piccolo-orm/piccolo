@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import json
 import typing as t
 import uuid
@@ -31,7 +32,7 @@ else:
 
 
 class Config(pydantic.BaseConfig):
-    json_encoders = JSON_ENCODERS
+    json_encoders: t.Dict[t.Any, t.Callable] = JSON_ENCODERS
     arbitrary_types_allowed = True
 
 
@@ -76,7 +77,7 @@ def validate_columns(
 @lru_cache()
 def create_pydantic_model(
     table: t.Type[Table],
-    nested: bool = False,
+    nested: t.Union[bool, t.Tuple[ForeignKey, ...]] = False,
     exclude_columns: t.Tuple[Column, ...] = (),
     include_columns: t.Tuple[Column, ...] = (),
     include_default_columns: bool = False,
@@ -84,6 +85,8 @@ def create_pydantic_model(
     all_optional: bool = False,
     model_name: t.Optional[str] = None,
     deserialize_json: bool = False,
+    recursion_depth: int = 0,
+    max_recursion_depth: int = 5,
     **schema_extra_kwargs,
 ) -> t.Type[pydantic.BaseModel]:
     """
@@ -94,12 +97,17 @@ def create_pydantic_model(
         for.
     :param nested:
         Whether ``ForeignKey`` columns are converted to nested Pydantic models.
+        If ``False``, none are converted. If ``True``, they all are converted.
+        If a tuple of ``ForeignKey`` columns is passed in, then only those are
+        converted.
     :param exclude_columns:
         A tuple of ``Column`` instances that should be excluded from the
-        Pydantic model. Only specify ``include_column`` or ``exclude_column``.
+        Pydantic model. Only specify ``include_columns`` or
+        ``exclude_columns``.
     :param include_columns:
         A tuple of ``Column`` instances that should be included in the
-        Pydantic model. Only specify ``include_column`` or ``exclude_column``.
+        Pydantic model. Only specify ``include_columns`` or
+        ``exclude_columns``.
     :param include_default_columns:
         Whether to include columns like ``id`` in the serialiser. You will
         typically include these columns in GET requests, but don't require
@@ -115,8 +123,12 @@ def create_pydantic_model(
         same Piccolo table.
     :param deserialize_json:
         By default, the values of any Piccolo ``JSON`` or ``JSONB`` columns are
-        returned as strings. By setting this parameter to True, they will be
-        returned as objects.
+        returned as strings. By setting this parameter to ``True``, they will
+        be returned as objects.
+    :param recursion_depth:
+        Not to be set by the user - used internally to track recursion.
+    :param max_recursion_depth:
+        If using nested models, this specifies the max amount of recursion.
     :param schema_extra_kwargs:
         This can be used to add additional fields to the schema. This is
         very useful when using Pydantic's JSON Schema features. For example:
@@ -137,51 +149,62 @@ def create_pydantic_model(
             "same time."
         )
 
-    if exclude_columns:
-        if not validate_columns(columns=exclude_columns, table=table):
-            raise ValueError(
-                f"`exclude_columns` are invalid: ({exclude_columns!r})"
-            )
+    if recursion_depth == 0:
+        if exclude_columns:
+            if not validate_columns(columns=exclude_columns, table=table):
+                raise ValueError(
+                    f"`exclude_columns` are invalid: {exclude_columns!r}"
+                )
 
-    if include_columns:
-        if not validate_columns(columns=include_columns, table=table):
-            raise ValueError(
-                f"`include_columns` are invalid: ({include_columns!r})"
-            )
+        if include_columns:
+            if not validate_columns(columns=include_columns, table=table):
+                raise ValueError(
+                    f"`include_columns` are invalid: {include_columns!r}"
+                )
 
     ###########################################################################
 
     columns: t.Dict[str, t.Any] = {}
     validators: t.Dict[str, classmethod] = {}
-    piccolo_columns = (
-        include_columns
-        if include_columns
-        else tuple(
-            table._meta.columns
-            if include_default_columns
-            else table._meta.non_default_columns
-        )
+
+    piccolo_columns = tuple(
+        table._meta.columns
+        if include_default_columns
+        else table._meta.non_default_columns
     )
 
-    for column in piccolo_columns:
-        # normal __contains__ checks __eq__ as well which returns ``Where``
-        # instance which always evaluates to ``True``
-        if exclude_columns and any(column is obj for obj in exclude_columns):
-            continue
-
-        column_name = (
-            ".".join(
-                [i._meta.name for i in column._meta.call_chain]
-                + [column._meta.name]
+    if include_columns:
+        include_columns_plus_ancestors = list(
+            itertools.chain(
+                include_columns, *[i._meta.call_chain for i in include_columns]
             )
-            if column._meta.call_chain
-            else column._meta.name
         )
+        piccolo_columns = tuple(
+            i
+            for i in piccolo_columns
+            if any(
+                i._equals(include_column)
+                for include_column in include_columns_plus_ancestors
+            )
+        )
+
+    if exclude_columns:
+        piccolo_columns = tuple(
+            i
+            for i in piccolo_columns
+            if not any(
+                i._equals(exclude_column) for exclude_column in exclude_columns
+            )
+        )
+
+    model_name = model_name or table.__name__
+
+    for column in piccolo_columns:
+        column_name = column._meta.name
 
         is_optional = True if all_optional else not column._meta.required
 
         #######################################################################
-
         # Work out the column type
 
         if isinstance(column, (Decimal, Numeric)):
@@ -221,21 +244,43 @@ def create_pydantic_model(
         }
 
         if isinstance(column, ForeignKey):
-            if nested:
+            if recursion_depth < max_recursion_depth and (
+                (nested is True)
+                or (
+                    isinstance(nested, tuple)
+                    and any(
+                        column._equals(i)
+                        for i in itertools.chain(
+                            nested, *[i._meta.call_chain for i in nested]
+                        )
+                    )
+                )
+            ):
+                nested_model_name = f"{model_name}.{column._meta.name}"
                 _type = create_pydantic_model(
                     table=column._foreign_key_meta.resolved_references,
-                    nested=True,
+                    nested=nested,
+                    include_columns=include_columns,
+                    exclude_columns=exclude_columns,
                     include_default_columns=include_default_columns,
                     include_readable=include_readable,
                     all_optional=all_optional,
                     deserialize_json=deserialize_json,
+                    recursion_depth=recursion_depth + 1,
+                    max_recursion_depth=max_recursion_depth,
+                    model_name=nested_model_name,
                 )
 
             tablename = (
                 column._foreign_key_meta.resolved_references._meta.tablename
             )
             field = pydantic.Field(
-                extra={"foreign_key": True, "to": tablename, **extra},
+                extra={
+                    "foreign_key": True,
+                    "to": tablename,
+                    "target_column": column._foreign_key_meta.resolved_target_column._meta.name,  # noqa: E501
+                    **extra,
+                },
                 **params,
             )
             if include_readable:
@@ -251,17 +296,18 @@ def create_pydantic_model(
 
         columns[column_name] = (_type, field)
 
-    model_name = model_name or table.__name__
-
     class CustomConfig(Config):
         schema_extra = {
             "help_text": table._meta.help_text,
             **schema_extra_kwargs,
         }
 
-    return pydantic.create_model(
+    model = pydantic.create_model(
         model_name,
         __config__=CustomConfig,
         __validators__=validators,
         **columns,
     )
+    model.__qualname__ = model_name
+
+    return model

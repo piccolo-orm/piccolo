@@ -94,5 +94,5 @@ class TestTimestamptzDefault(TestCase):
 
         result = MyTableDefault.objects().first().run_sync()
         delta = result.created_on - created_on
-        self.assertTrue(delta < datetime.timedelta(seconds=1))
+        self.assertLess(delta, datetime.timedelta(seconds=1))
         self.assertEqual(result.created_on.tzinfo, datetime.timezone.utc)

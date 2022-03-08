@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import typing as t
-from dataclasses import dataclass
 
 from piccolo.query.base import Query
 from piccolo.query.mixins import AddDelegate
@@ -11,7 +10,6 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
-@dataclass
 class Insert(Query):
     __slots__ = ("add_delegate",)
 
@@ -41,7 +39,7 @@ class Insert(Query):
     def sqlite_querystrings(self) -> t.Sequence[QueryString]:
         base = f"INSERT INTO {self.table._meta.tablename}"
         columns = ",".join(
-            i._meta.db_column_name for i in self.table._meta.columns
+            f'"{i._meta.db_column_name}"' for i in self.table._meta.columns
         )
         values = ",".join("{}" for _ in self.add_delegate._add)
         query = f"{base} ({columns}) VALUES {values}"
@@ -60,7 +58,7 @@ class Insert(Query):
         columns = ",".join(
             f'"{i._meta.db_column_name}"' for i in self.table._meta.columns
         )
-        values = ",".join("{}" for i in self.add_delegate._add)
+        values = ",".join("{}" for _ in self.add_delegate._add)
         primary_key_name = self.table._meta.primary_key._meta.name
         query = (
             f"{base} ({columns}) VALUES {values} RETURNING {primary_key_name}"

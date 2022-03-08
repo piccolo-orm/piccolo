@@ -15,7 +15,7 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 
 class AlterStatement:
-    __slots__ = tuple()  # type: ignore
+    __slots__ = ()  # type: ignore
 
     @property
     def ddl(self) -> str:
@@ -60,19 +60,19 @@ class RenameColumn(AlterColumnStatement):
 
     @property
     def ddl(self) -> str:
-        return f"RENAME COLUMN {self.column_name} TO {self.new_name}"
+        return f'RENAME COLUMN "{self.column_name}" TO "{self.new_name}"'
 
 
 @dataclass
 class DropColumn(AlterColumnStatement):
     @property
     def ddl(self) -> str:
-        return f"DROP COLUMN {self.column_name}"
+        return f'DROP COLUMN "{self.column_name}"'
 
 
 @dataclass
 class AddColumn(AlterColumnStatement):
-    __slots__ = ("column", "name")
+    __slots__ = ("name",)
 
     column: Column
     name: str
@@ -87,7 +87,7 @@ class AddColumn(AlterColumnStatement):
 class DropDefault(AlterColumnStatement):
     @property
     def ddl(self) -> str:
-        return f"ALTER COLUMN {self.column_name} DROP DEFAULT"
+        return f'ALTER COLUMN "{self.column_name}" DROP DEFAULT'
 
 
 @dataclass
@@ -111,7 +111,7 @@ class SetColumnType(AlterStatement):
 
         column_name = self.old_column._meta.db_column_name
         query = (
-            f"ALTER COLUMN {column_name} TYPE {self.new_column.column_type}"
+            f'ALTER COLUMN "{column_name}" TYPE {self.new_column.column_type}'
         )
         if self.using_expression is not None:
             query += f" USING {self.using_expression}"
@@ -120,7 +120,7 @@ class SetColumnType(AlterStatement):
 
 @dataclass
 class SetDefault(AlterColumnStatement):
-    __slots__ = ("column", "value")
+    __slots__ = ("value",)
 
     column: Column
     value: t.Any
@@ -128,7 +128,7 @@ class SetDefault(AlterColumnStatement):
     @property
     def ddl(self) -> str:
         sql_value = self.column.get_sql_value(self.value)
-        return f"ALTER COLUMN {self.column_name} SET DEFAULT {sql_value}"
+        return f'ALTER COLUMN "{self.column_name}" SET DEFAULT {sql_value}'
 
 
 @dataclass
@@ -140,7 +140,7 @@ class SetUnique(AlterColumnStatement):
     @property
     def ddl(self) -> str:
         if self.boolean:
-            return f"ADD UNIQUE ({self.column_name})"
+            return f'ADD UNIQUE ("{self.column_name}")'
         if isinstance(self.column, str):
             raise ValueError(
                 "Removing a unique constraint requires a Column instance "
@@ -161,21 +161,20 @@ class SetNull(AlterColumnStatement):
     @property
     def ddl(self) -> str:
         if self.boolean:
-            return f"ALTER COLUMN {self.column_name} DROP NOT NULL"
+            return f'ALTER COLUMN "{self.column_name}" DROP NOT NULL'
         else:
-            return f"ALTER COLUMN {self.column_name} SET NOT NULL"
+            return f'ALTER COLUMN "{self.column_name}" SET NOT NULL'
 
 
 @dataclass
 class SetLength(AlterColumnStatement):
-
     __slots__ = ("length",)
 
     length: int
 
     @property
     def ddl(self) -> str:
-        return f"ALTER COLUMN {self.column_name} TYPE VARCHAR({self.length})"
+        return f'ALTER COLUMN "{self.column_name}" TYPE VARCHAR({self.length})'
 
 
 @dataclass
@@ -209,9 +208,9 @@ class AddForeignKeyConstraint(AlterStatement):
     @property
     def ddl(self) -> str:
         query = (
-            f"ADD CONSTRAINT {self.constraint_name} FOREIGN KEY "
-            f"({self.foreign_key_column_name}) REFERENCES "
-            f"{self.referenced_table_name} ({self.referenced_column_name})"
+            f'ADD CONSTRAINT "{self.constraint_name}" FOREIGN KEY '
+            f'("{self.foreign_key_column_name}") REFERENCES '
+            f'"{self.referenced_table_name}" ("{self.referenced_column_name}")'
         )
         if self.on_delete:
             query += f" ON DELETE {self.on_delete.value}"
@@ -222,7 +221,6 @@ class AddForeignKeyConstraint(AlterStatement):
 
 @dataclass
 class SetDigits(AlterColumnStatement):
-
     __slots__ = ("digits", "column_type")
 
     digits: t.Optional[t.Tuple[int, int]]
@@ -231,12 +229,12 @@ class SetDigits(AlterColumnStatement):
     @property
     def ddl(self) -> str:
         if self.digits is None:
-            return f"ALTER COLUMN {self.column_name} TYPE {self.column_type}"
+            return f'ALTER COLUMN "{self.column_name}" TYPE {self.column_type}'
 
         precision = self.digits[0]
         scale = self.digits[1]
         return (
-            f"ALTER COLUMN {self.column_name} TYPE "
+            f'ALTER COLUMN "{self.column_name}" TYPE '
             f"{self.column_type}({precision}, {scale})"
         )
 
@@ -263,7 +261,6 @@ class DropTable:
 
 
 class Alter(DDL):
-
     __slots__ = (
         "_add_foreign_key_constraint",
         "_add",

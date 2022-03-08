@@ -15,14 +15,28 @@ def convert_to_sql_value(value: t.Any, column: Column) -> t.Any:
     database. For example, Enums, Table instances, and dictionaries for JSON
     columns.
     """
-    from piccolo.columns.column_types import JSON, JSONB
+    from piccolo.columns.column_types import JSON, JSONB, ForeignKey
     from piccolo.table import Table
 
     if isinstance(value, Table):
-        return getattr(value, value._meta.primary_key._meta.name)
+        if isinstance(column, ForeignKey):
+            return getattr(
+                value,
+                column._foreign_key_meta.resolved_target_column._meta.name,
+            )
+        elif column._meta.primary_key:
+            return getattr(value, column._meta.name)
+        else:
+            raise ValueError(
+                "Table instance provided, and the column isn't a ForeignKey, "
+                "or primary key column."
+            )
     elif isinstance(value, Enum):
         return value.value
     elif isinstance(column, (JSON, JSONB)) and not isinstance(value, str):
-        return dump_json(value)
+        if value is None:
+            return None
+        else:
+            return dump_json(value)
     else:
         return value

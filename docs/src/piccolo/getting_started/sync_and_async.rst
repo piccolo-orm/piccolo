@@ -3,81 +3,60 @@
 Sync and Async
 ==============
 
-One of the main motivations for making Piccolo was the lack of options for
-ORMs which support asyncio.
+One of the motivations for making Piccolo was the lack of ORMs and query
+builders which support asyncio.
 
-However, you can use Piccolo in synchronous apps as well, whether that be a
-WSGI web app, or a data science script.
-
--------------------------------------------------------------------------------
-
-Sync example
-------------
-
-.. code-block:: python
-
-    from my_schema import Band
-
-
-    def main():
-        print(Band.select().run_sync())
-
-
-    if __name__ == '__main__':
-        main()
+Piccolo is designed to be async first. However, you can use Piccolo in
+synchronous apps as well, whether that be a WSGI web app, or a data science
+script.
 
 -------------------------------------------------------------------------------
 
 Async example
 -------------
 
-.. code-block:: python
-
-    import asyncio
-    from my_schema import Band
-
-
-    async def main():
-        print(await Band.select().run())
-
-
-    if __name__ == '__main__':
-        asyncio.run(main())
-
-Direct await
-~~~~~~~~~~~~
-
-You can directly await a query if you prefer. For example:
+You can await a query to run it:
 
 .. code-block:: python
 
-    >>> await Band.select()
-    [{'id': 1, 'name': 'Pythonistas', 'manager': 1, 'popularity': 1000},
-    {'id': 2, 'name': 'Rustaceans', 'manager': 2, 'popularity': 500}]
+    >>> await Band.select(Band.name)
+    [{'name': 'Pythonistas'}]
 
-By convention, we await the ``run`` method (``await Band.select().run()``), but
-you can use this shorter form if you prefer.
+Alternatively, you can await a query's ``run`` method:
+
+.. code-block:: python
+
+    # This makes it extra explicit that a database query is being made:
+    >>> await Band.select(Band.name).run()
+
+    # It also gives you more control over how the query is run.
+    # For example, if we wanted to bypass the connection pool for some reason:
+    >>> await Band.select(Band.name).run(in_pool=False)
+
+Using the async version is useful for applications which require high
+throughput. Piccolo makes building an ASGI web app really simple - see
+:ref:`ASGICommand`.
 
 -------------------------------------------------------------------------------
 
-Which to use?
--------------
+Sync example
+------------
 
-A lot of the time, using the sync version works perfectly fine. Many of the
-examples use the sync version.
+This lets you execute a query in an application which isn't using asyncio:
 
-Using the async version is useful for web applications which require high
-throughput, based on `ASGI frameworks <https://piccolo-orm.com/blog/introduction-to-asgi>`_.
-Piccolo makes building an ASGI web app really simple - see :ref:`ASGICommand`.
+.. code-block:: python
+
+    >>> Band.select(Band.name).run_sync()
+    [{'name': 'Pythonistas'}]
 
 -------------------------------------------------------------------------------
 
 Explicit
 --------
 
-By using ``run`` and ``run_sync``, it makes it very explicit when a query is
+By using ``await`` and ``run_sync``, it makes it very explicit when a query is
 actually being executed.
 
-Until you execute one of those methods, you can chain as many methods onto your
+Until you execute ``await`` or ``run_sync``, you can chain as many methods onto your
 query as you like, safe in the knowledge that no database queries are being
 made.

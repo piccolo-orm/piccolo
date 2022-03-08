@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import typing as t
-from dataclasses import dataclass
 
 from piccolo.custom_types import Combinable
 from piccolo.query.base import Query
@@ -13,13 +12,17 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
-@dataclass
+class UpdateError(Exception):
+    pass
+
+
 class Update(Query):
 
-    __slots__ = ("values_delegate", "where_delegate")
+    __slots__ = ("force", "values_delegate", "where_delegate")
 
-    def __init__(self, table: t.Type[Table], **kwargs):
+    def __init__(self, table: t.Type[Table], force: bool = False, **kwargs):
         super().__init__(table, **kwargs)
+        self.force = force
         self.values_delegate = ValuesDelegate(table=table)
         self.where_delegate = WhereDelegate()
 
@@ -34,24 +37,28 @@ class Update(Query):
         self.where_delegate.where(*where)
         return self
 
-    def validate(self):
+    def _validate(self):
         if len(self.values_delegate._values) == 0:
-            raise ValueError(
-                "No values were specified to update - please use .values"
-            )
+            raise ValueError("No values were specified to update.")
 
         for column, _ in self.values_delegate._values.items():
             if len(column._meta.call_chain) > 0:
                 raise ValueError(
-                    "Related values can't be updated via an update"
+                    "Related values can't be updated via an update."
                 )
+
+        if (not self.where_delegate._where) and (not self.force):
+            classname = self.table.__name__
+            raise UpdateError(
+                "Do you really want to update all rows in "
+                f"{classname}? If so, use pass `force=True` into "
+                f"`{classname}.update`. Otherwise, add a where clause."
+            )
 
     @property
     def default_querystrings(self) -> t.Sequence[QueryString]:
-        self.validate()
-
         columns_str = ", ".join(
-            f"{col._meta.db_column_name} = {{}}"
+            f'"{col._meta.db_column_name}" = {{}}'
             for col, _ in self.values_delegate._values.items()
         )
 
