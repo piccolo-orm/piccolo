@@ -109,6 +109,12 @@ class DiffableTable:
                 "The two tables don't appear to have the same name."
             )
 
+        #######################################################################
+
+        # Because we're using sets here, the order is indeterminate. We sort
+        # them, otherwise it's difficult to write good unit tests if the order
+        # constantly changes.
+
         add_columns = [
             AddColumn(
                 table_class_name=self.class_name,
@@ -118,9 +124,12 @@ class DiffableTable:
                 column_class=i.column.__class__,
                 params=i.column._meta.params,
             )
-            for i in (
+            for i in sorted(
                 {ColumnComparison(column=column) for column in self.columns}
-                - {ColumnComparison(column=column) for column in value.columns}
+                - {
+                    ColumnComparison(column=column) for column in value.columns
+                },
+                key=lambda x: x.column._meta.name,
             )
         ]
 
@@ -131,11 +140,14 @@ class DiffableTable:
                 db_column_name=i.column._meta.db_column_name,
                 tablename=value.tablename,
             )
-            for i in (
+            for i in sorted(
                 {ColumnComparison(column=column) for column in value.columns}
-                - {ColumnComparison(column=column) for column in self.columns}
+                - {ColumnComparison(column=column) for column in self.columns},
+                key=lambda x: x.column._meta.name,
             )
         ]
+
+        #######################################################################
 
         alter_columns: t.List[AlterColumn] = []
 
