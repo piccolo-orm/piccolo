@@ -1,6 +1,15 @@
 Changes
 =======
 
+0.70.1
+------
+
+Fixed a bug with auto migrations. If renaming multiple columns at once, it
+could get confused. Thanks to @theelderbeever for reporting this issue, and
+@sinisaos for helping to replicate it. See `PR 457 <https://github.com/piccolo-orm/piccolo/pull/457>`_.
+
+-------------------------------------------------------------------------------
+
 0.70.0
 ------
 
