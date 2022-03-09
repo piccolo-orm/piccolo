@@ -52,7 +52,8 @@ class BaseUser(Table, tablename="piccolo_user"):
 
     def __init__(self, **kwargs):
         # Generating passwords upfront is expensive, so might need reworking.
-        if password := kwargs.get("password", None):
+        password = kwargs.get("password", None)
+        if password:
             if not password.startswith("pbkdf2_sha256"):
                 kwargs["password"] = self.__class__.hash_password(password)
         super().__init__(**kwargs)

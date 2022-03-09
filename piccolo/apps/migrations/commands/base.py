@@ -55,7 +55,8 @@ class BaseMigrationManager(Finder):
             for name in migration_names
         ]
         for m in modules:
-            if _id := getattr(m, "ID", None):
+            _id = getattr(m, "ID", None)
+            if _id:
                 migration_modules[_id] = m
 
         return migration_modules

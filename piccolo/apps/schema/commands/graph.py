@@ -68,7 +68,8 @@ def graph(
 
     if apps != "all":
         given_app_names = [i.strip() for i in apps.split(",")]
-        if delta := set(given_app_names) - set(app_names):
+        delta = set(given_app_names) - set(app_names)
+        if delta:
             sys.exit(f"These apps aren't recognised: {', '.join(delta)}.")
         app_names = given_app_names
 

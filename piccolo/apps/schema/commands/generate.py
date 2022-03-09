@@ -369,64 +369,67 @@ def get_column_default(
 
     if pat is None:
         return None
-    match = re.match(pat, column_default)
-    if match is not None:
-        value = match.groupdict()
+    else:
+        match = re.match(pat, column_default)
+        if match is not None:
+            value = match.groupdict()
 
-        if column_type is Boolean:
-            return value["value"] == "true"
-        elif column_type is Interval:
-            kwargs = {}
-            for period in [
-                "years",
-                "months",
-                "weeks",
-                "days",
-                "hours",
-                "minutes",
-                "seconds",
-            ]:
-                if period_match := value.get(period, 0):
-                    kwargs[period] = int(period_match)
-            if digits := value["digits"]:
-                kwargs.update(
-                    dict(
-                        zip(
-                            ["hours", "minutes", "seconds"],
-                            [int(v) for v in digits.split(":")],
+            if column_type is Boolean:
+                return value["value"] == "true"
+            elif column_type is Interval:
+                kwargs = {}
+                for period in [
+                    "years",
+                    "months",
+                    "weeks",
+                    "days",
+                    "hours",
+                    "minutes",
+                    "seconds",
+                ]:
+                    period_match = value.get(period, 0)
+                    if period_match:
+                        kwargs[period] = int(period_match)
+                digits = value["digits"]
+                if digits:
+                    kwargs.update(
+                        dict(
+                            zip(
+                                ["hours", "minutes", "seconds"],
+                                [int(v) for v in digits.split(":")],
+                            )
                         )
                     )
-                )
 
-            return IntervalCustom(**kwargs)
-        elif column_type is JSON or column_type is JSONB:
-            return json.loads(value["value"])
-        elif column_type is UUID:
-            return uuid.uuid4
-        elif column_type is Date:
-            return (
-                date.today
-                if value["value"] == "CURRENT_DATE"
-                else defaults.date.DateCustom(
-                    *[int(v) for v in value["value"].split("-")]
+                return IntervalCustom(**kwargs)
+            elif column_type is JSON or column_type is JSONB:
+                return json.loads(value["value"])
+            elif column_type is UUID:
+                return uuid.uuid4
+            elif column_type is Date:
+                return (
+                    date.today
+                    if value["value"] == "CURRENT_DATE"
+                    else defaults.date.DateCustom(
+                        *[int(v) for v in value["value"].split("-")]
+                    )
                 )
-            )
-        elif column_type is Bytea:
-            return value["value"].encode("utf8")
-        elif column_type is Timestamp:
-            return (
-                datetime.now
-                if value["value"] == "CURRENT_TIMESTAMP"
-                else datetime.fromtimestamp(float(value["value"]))
-            )
-        elif column_type is Timestamptz:
-            return (
-                datetime.now
-                if value["value"] == "CURRENT_TIMESTAMP"
-                else datetime.fromtimestamp(float(value["value"]))
-            )
-        else:
-            return column_type.value_type(value["value"])
+            elif column_type is Bytea:
+                return value["value"].encode("utf8")
+            elif column_type is Timestamp:
+                return (
+                    datetime.now
+                    if value["value"] == "CURRENT_TIMESTAMP"
+                    else datetime.fromtimestamp(float(value["value"]))
+                )
+            elif column_type is Timestamptz:
+                return (
+                    datetime.now
+                    if value["value"] == "CURRENT_TIMESTAMP"
+                    else datetime.fromtimestamp(float(value["value"]))
+                )
+            else:
+                return column_type.value_type(value["value"])
 
 
 INDEX_METHOD_MAP: t.Dict[str, IndexMethod] = {
@@ -727,9 +730,10 @@ async def create_table_class_from_db(
                     else ForeignKeyPlaceholder
                 )
 
-                if trigger := triggers.get_column_ref_trigger(
+                trigger = triggers.get_column_ref_trigger(
                     column_name, constraint_table.name
-                ):
+                )
+                if trigger:
                     kwargs["on_update"] = ONUPDATE_MAP[trigger.on_update]
                     kwargs["on_delete"] = ONDELETE_MAP[trigger.on_delete]
 
@@ -752,9 +756,8 @@ async def create_table_class_from_db(
             kwargs["digits"] = (precision, scale)
 
         if column_default:
-            if default_value := get_column_default(
-                column_type, column_default
-            ):
+            default_value = get_column_default(column_type, column_default)
+            if default_value:
                 kwargs["default"] = default_value
 
         column = column_type(**kwargs)
@@ -834,11 +837,13 @@ async def get_output_schema(
         *table_coroutines, return_exceptions=True
     )
 
-    if exceptions := [
-        (obj, tablename)
-        for obj, tablename in zip(output_schemas, tablenames)
-        if isinstance(obj, Exception)
-    ]:
+    # handle exceptions
+    exceptions = []
+    for obj, tablename in zip(output_schemas, tablenames):
+        if isinstance(obj, Exception):
+            exceptions.append((obj, tablename))
+
+    if exceptions:
         raise GenerateError(
             [
                 type(e)(

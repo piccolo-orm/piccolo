@@ -39,7 +39,8 @@ class Query:
 
     @property
     def engine_type(self) -> str:
-        if engine := self.table._meta.db:
+        engine = self.table._meta.db
+        if engine:
             return engine.engine_type
         else:
             raise ValueError("Engine isn't defined.")
@@ -345,7 +346,8 @@ class DDL:
 
     @property
     def engine_type(self) -> str:
-        if engine := self.table._meta.db:
+        engine = self.table._meta.db
+        if engine:
             return engine.engine_type
         else:
             raise ValueError("Engine isn't defined.")

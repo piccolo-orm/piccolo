@@ -107,7 +107,8 @@ class TopologicalSorter:
         # if the user wants to catch the CycleError, that's fine,
         # they can continue using the instance to grab as many
         # nodes as possible before cycles block more progress
-        if cycle := self._find_cycle():
+        cycle = self._find_cycle()
+        if cycle:
             raise CycleError("nodes are in a cycle", cycle)
 
     def get_ready(self):

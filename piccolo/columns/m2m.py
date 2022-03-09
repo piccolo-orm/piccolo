@@ -312,7 +312,8 @@ class M2MRemoveRelated:
             if row.__class__ != related_table:
                 raise ValueError("The row belongs to the wrong table!")
 
-            if row_id := getattr(row, row._meta.primary_key._meta.name):
+            row_id = getattr(row, row._meta.primary_key._meta.name)
+            if row_id:
                 row_ids.append(row_id)
 
         if row_ids:

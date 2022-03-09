@@ -512,7 +512,8 @@ class SQLiteEngine(Engine):
         )
 
         # If running inside a transaction:
-        if connection := self.transaction_connection.get():
+        connection = self.transaction_connection.get()
+        if connection:
             return await self._run_in_existing_connection(
                 connection=connection,
                 query=query,
@@ -534,7 +535,8 @@ class SQLiteEngine(Engine):
         for consistency with other engines.
         """
         # If running inside a transaction:
-        if connection := self.transaction_connection.get():
+        connection = self.transaction_connection.get()
+        if connection:
             return await self._run_in_existing_connection(
                 connection=connection,
                 query=ddl,

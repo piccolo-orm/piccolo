@@ -205,7 +205,8 @@ class ColumnMeta:
 
     @property
     def engine_type(self) -> str:
-        if engine := self.table._meta.db:
+        engine = self.table._meta.db
+        if engine:
             return engine.engine_type
         else:
             raise ValueError("The table has no engine defined.")
