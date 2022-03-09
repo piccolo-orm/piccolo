@@ -1,6 +1,41 @@
 Changes
 =======
 
+0.70.1
+------
+
+Fixed a bug with auto migrations. If renaming multiple columns at once, it
+could get confused. Thanks to @theelderbeever for reporting this issue, and
+@sinisaos for helping to replicate it. See `PR 457 <https://github.com/piccolo-orm/piccolo/pull/457>`_.
+
+-------------------------------------------------------------------------------
+
+0.70.0
+------
+
+We ran a profiler on the Piccolo codebase and identified some optimisations.
+For example, we were calling ``self.querystring`` multiple times in a method,
+rather than assigning it to a local variable.
+
+We also ran a linter which identified when list / set / dict comprehensions
+could be more efficient.
+
+The performance is now slightly improved (especially when fetching large
+numbers of rows from the database).
+
+Example query times on a MacBook, when fetching 1000 rows from a local Postgres
+database (using ``await SomeTable.select()``):
+
+* 8 ms without a connection pool
+* 2 ms with a connection pool
+
+As you can see, having a connection pool is the main thing you can do to
+improve performance.
+
+Thanks to @AliSayyah for all his work on this.
+
+-------------------------------------------------------------------------------
+
 0.69.5
 ------
 

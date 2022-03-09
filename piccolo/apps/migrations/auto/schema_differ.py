@@ -197,22 +197,28 @@ class SchemaDiffer:
             # type. For now, each time a column is added and removed from a
             # table, ask if it's a rename.
 
-            renamed_column_names: t.List[str] = []
+            # We track which dropped columns have already been identified by
+            # the user as renames, so we don't ask them if another column
+            # was also renamed from it.
+            used_drop_column_names: t.List[str] = []
 
             for add_column in delta.add_columns:
-                if add_column.table_class_name in renamed_column_names:
-                    continue
 
                 for drop_column in delta.drop_columns:
-                    user_response = self.auto_input or input(
-                        f"Did you rename the `{drop_column.db_column_name}` "  # noqa: E501
-                        f"column to `{add_column.db_column_name}` on the "
-                        f"`{ add_column.table_class_name }` table? (y/N)"
+                    if drop_column.column_name in used_drop_column_names:
+                        continue
+
+                    user_response = (
+                        self.auto_input
+                        if self.auto_input
+                        else input(
+                            f"Did you rename the `{drop_column.db_column_name}` "  # noqa: E501
+                            f"column to `{add_column.db_column_name}` on the "
+                            f"`{ add_column.table_class_name }` table? (y/N)"
+                        )
                     )
                     if user_response.lower() == "y":
-                        renamed_column_names.append(
-                            add_column.table_class_name
-                        )
+                        used_drop_column_names.append(drop_column.column_name)
                         collection.append(
                             RenameColumn(
                                 table_class_name=add_column.table_class_name,
@@ -223,6 +229,7 @@ class SchemaDiffer:
                                 new_db_column_name=add_column.db_column_name,
                             )
                         )
+                        break
 
         return collection
 

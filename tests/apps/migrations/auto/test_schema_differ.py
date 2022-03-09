@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as t
 from unittest import TestCase
+from unittest.mock import MagicMock, call, patch
 
 from piccolo.apps.migrations.auto import DiffableTable, SchemaDiffer
 from piccolo.columns.column_types import Numeric, Varchar
@@ -164,19 +165,13 @@ class TestSchemaDiffer(TestCase):
         """
         Test renaming a column in an existing table.
         """
+        # We're going to rename the 'name' column to 'title'
         name_column = Varchar()
         name_column._meta.name = "name"
 
         title_column = Varchar()
         title_column._meta.name = "title"
 
-        schema: t.List[DiffableTable] = [
-            DiffableTable(
-                class_name="Band",
-                tablename="band",
-                columns=[name_column],
-            )
-        ]
         schema_snapshot: t.List[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
@@ -184,15 +179,202 @@ class TestSchemaDiffer(TestCase):
                 columns=[title_column],
             )
         ]
+        schema: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[name_column],
+            )
+        ]
 
+        # Test 1 - Tell Piccolo the column was renamed
         schema_differ = SchemaDiffer(
             schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
         )
-
-        self.assertTrue(len(schema_differ.rename_columns.statements) == 1)
+        self.assertEqual(schema_differ.add_columns.statements, [])
+        self.assertEqual(schema_differ.drop_columns.statements, [])
         self.assertEqual(
-            schema_differ.rename_columns.statements[0],
-            "manager.rename_column(table_class_name='Band', tablename='band', old_column_name='title', new_column_name='name', old_db_column_name='title', new_db_column_name='name')",  # noqa
+            schema_differ.rename_columns.statements,
+            [
+                "manager.rename_column(table_class_name='Band', tablename='band', old_column_name='title', new_column_name='name', old_db_column_name='title', new_db_column_name='name')"  # noqa
+            ],
+        )
+
+        # Test 2 - Tell Piccolo the column wasn't renamed
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot, auto_input="n"
+        )
+        self.assertEqual(
+            schema_differ.add_columns.statements,
+            [
+                "manager.add_column(table_class_name='Band', tablename='band', column_name='name', db_column_name='name', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None, 'secret': False})"  # noqa: E501
+            ],
+        )
+        self.assertEqual(
+            schema_differ.drop_columns.statements,
+            [
+                "manager.drop_column(table_class_name='Band', tablename='band', column_name='title', db_column_name='title')"  # noqa: E501
+            ],
+        )
+        self.assertTrue(schema_differ.rename_columns.statements == [])
+
+    @patch("piccolo.apps.migrations.auto.schema_differ.input")
+    def test_rename_multiple_columns(self, input: MagicMock):
+        """
+        Make sure renaming columns works when several columns have been
+        renamed.
+        """
+        # We're going to rename a1 to a2, and b1 to b2.
+        a1 = Varchar()
+        a1._meta.name = "a1"
+
+        a2 = Varchar()
+        a2._meta.name = "a2"
+
+        b1 = Varchar()
+        b1._meta.name = "b1"
+
+        b2 = Varchar()
+        b2._meta.name = "b2"
+
+        schema_snapshot: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[a1, b1],
+            )
+        ]
+        schema: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[a2, b2],
+            )
+        ]
+
+        def mock_input(value: str):
+            """
+            We need to dynamically set the return value based on what's passed
+            in.
+            """
+            return (
+                "y"
+                if value
+                in (
+                    "Did you rename the `a1` column to `a2` on the `Band` table? (y/N)",  # noqa: E501
+                    "Did you rename the `b1` column to `b2` on the `Band` table? (y/N)",  # noqa: E501
+                )
+                else "n"
+            )
+
+        input.side_effect = mock_input
+
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot
+        )
+        self.assertEqual(schema_differ.add_columns.statements, [])
+        self.assertEqual(schema_differ.drop_columns.statements, [])
+        self.assertEqual(
+            schema_differ.rename_columns.statements,
+            [
+                "manager.rename_column(table_class_name='Band', tablename='band', old_column_name='a1', new_column_name='a2', old_db_column_name='a1', new_db_column_name='a2')",  # noqa: E501
+                "manager.rename_column(table_class_name='Band', tablename='band', old_column_name='b1', new_column_name='b2', old_db_column_name='b1', new_db_column_name='b2')",  # noqa: E501
+            ],
+        )
+
+        self.assertEqual(
+            input.call_args_list,
+            [
+                call(
+                    "Did you rename the `a1` column to `a2` on the `Band` table? (y/N)"  # noqa: E501
+                ),
+                call(
+                    "Did you rename the `b1` column to `b2` on the `Band` table? (y/N)"  # noqa: E501
+                ),
+            ],
+        )
+
+    @patch("piccolo.apps.migrations.auto.schema_differ.input")
+    def test_rename_some_columns(self, input: MagicMock):
+        """
+        Make sure that some columns can be marked as renamed, and others are
+        dropped / created.
+        """
+        # We're going to rename a1 to a2, but want b1 to be dropped, and b2 to
+        # be created.
+        a1 = Varchar()
+        a1._meta.name = "a1"
+
+        a2 = Varchar()
+        a2._meta.name = "a2"
+
+        b1 = Varchar()
+        b1._meta.name = "b1"
+
+        b2 = Varchar()
+        b2._meta.name = "b2"
+
+        schema_snapshot: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[a1, b1],
+            )
+        ]
+        schema: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[a2, b2],
+            )
+        ]
+
+        def mock_input(value: str):
+            """
+            We need to dynamically set the return value based on what's passed
+            in.
+            """
+            return (
+                "y"
+                if value
+                == "Did you rename the `a1` column to `a2` on the `Band` table? (y/N)"  # noqa: E501
+                else "n"
+            )
+
+        input.side_effect = mock_input
+
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot
+        )
+        self.assertEqual(
+            schema_differ.add_columns.statements,
+            [
+                "manager.add_column(table_class_name='Band', tablename='band', column_name='b2', db_column_name='b2', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None, 'secret': False})"  # noqa: E501
+            ],
+        )
+        self.assertEqual(
+            schema_differ.drop_columns.statements,
+            [
+                "manager.drop_column(table_class_name='Band', tablename='band', column_name='b1', db_column_name='b1')"  # noqa: E501
+            ],
+        )
+        self.assertEqual(
+            schema_differ.rename_columns.statements,
+            [
+                "manager.rename_column(table_class_name='Band', tablename='band', old_column_name='a1', new_column_name='a2', old_db_column_name='a1', new_db_column_name='a2')",  # noqa: E501
+            ],
+        )
+
+        self.assertEqual(
+            input.call_args_list,
+            [
+                call(
+                    "Did you rename the `a1` column to `a2` on the `Band` table? (y/N)"  # noqa: E501
+                ),
+                call(
+                    "Did you rename the `b1` column to `b2` on the `Band` table? (y/N)"  # noqa: E501
+                ),
+            ],
         )
 
     def test_alter_column_precision(self):
