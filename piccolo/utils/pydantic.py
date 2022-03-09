@@ -39,8 +39,8 @@ class Config(pydantic.BaseConfig):
 def pydantic_json_validator(cls, value):
     try:
         load_json(value)
-    except json.JSONDecodeError:
-        raise ValueError("Unable to parse the JSON.")
+    except json.JSONDecodeError as e:
+        raise ValueError("Unable to parse the JSON.") from e
     else:
         return value
 
@@ -302,7 +302,7 @@ def create_pydantic_model(
             **schema_extra_kwargs,
         }
 
-    model = pydantic.create_model(
+    model = pydantic.create_model(  # type: ignore
         model_name,
         __config__=CustomConfig,
         __validators__=validators,

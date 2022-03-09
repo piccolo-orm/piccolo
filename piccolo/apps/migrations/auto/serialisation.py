@@ -225,11 +225,7 @@ class Import(CanConflictWithGlobalNames):
         return repr(self) < repr(other)
 
     def warn_if_is_conflicting_with_global_name(self):
-        if self.target is None:
-            name = self.module
-        else:
-            name = self.target
-
+        name = self.module if self.target is None else self.target
         if name == self.expect_conflict_with_global_name:
             return
 

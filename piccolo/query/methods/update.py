@@ -27,8 +27,10 @@ class Update(Query):
         self.where_delegate = WhereDelegate()
 
     def values(
-        self, values: t.Dict[t.Union[Column, str], t.Any] = {}, **kwargs
+        self, values: t.Dict[t.Union[Column, str], t.Any] = None, **kwargs
     ) -> Update:
+        if values is None:
+            values = {}
         values = dict(values, **kwargs)
         self.values_delegate.values(values)
         return self
@@ -62,7 +64,7 @@ class Update(Query):
             for col, _ in self.values_delegate._values.items()
         )
 
-        query = f"UPDATE {self.table._meta.tablename} SET " + columns_str
+        query = f"UPDATE {self.table._meta.tablename} SET {columns_str}"
 
         querystring = QueryString(
             query, *self.values_delegate.get_sql_values()

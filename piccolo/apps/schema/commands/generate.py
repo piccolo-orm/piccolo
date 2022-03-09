@@ -209,7 +209,7 @@ class Index:
             groups = match.groupdict()
 
             self.column_name = groups["column_name"].lstrip('"').rstrip('"')
-            self.unique = True if "unique" in groups else False
+            self.unique = "unique" in groups
             self.method = INDEX_METHOD_MAP[groups["method"]]
             self.warnings = []
 
@@ -224,11 +224,9 @@ class TableIndexes:
     indexes: t.List[Index]
 
     def get_column_index(self, column_name: str) -> t.Optional[Index]:
-        for i in self.indexes:
-            if i.column_name == column_name:
-                return i
-
-        return None
+        return next(
+            (i for i in self.indexes if i.column_name == column_name), None
+        )
 
     def get_warnings(self) -> t.List[str]:
         return list(
@@ -579,7 +577,7 @@ async def get_tablenames(
         A list of tablenames for the given schema.
 
     """
-    tablenames: t.List[str] = [
+    return [
         i["tablename"]
         for i in await table_class.raw(
             (
@@ -589,7 +587,6 @@ async def get_tablenames(
             schema_name,
         ).run()
     ]
-    return tablenames
 
 
 async def get_table_schema(
@@ -647,9 +644,7 @@ async def get_foreign_key_reference(
 
 
 def get_table_name(name: str, schema: str) -> str:
-    if schema == "public":
-        return name
-    return f"{schema}.{name}"
+    return name if schema == "public" else f"{schema}.{name}"
 
 
 async def create_table_class_from_db(
@@ -898,7 +893,7 @@ async def generate(schema_name: str = "public"):
         output.append('"""')
 
     if output_schema.index_warnings:
-        warning_str = "\n".join(i for i in set(output_schema.index_warnings))
+        warning_str = "\n".join(set(output_schema.index_warnings))
 
         output.append('"""')
         output.append("WARNING: Unable to parse the following indexes:")

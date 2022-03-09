@@ -189,10 +189,7 @@ class TableStorage(metaclass=Singleton):
 
     @staticmethod
     def _get_table_name(name: str, schema: str):
-        if schema == "public":
-            return name
-        else:
-            return schema + "." + name
+        return name if schema == "public" else f"{schema}.{name}"
 
     def __repr__(self):
         return f"{[tablename for tablename, _ in self.tables.items()]}"

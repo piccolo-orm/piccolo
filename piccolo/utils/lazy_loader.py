@@ -39,14 +39,14 @@ class LazyLoader(types.ModuleType):
                 raise ModuleNotFoundError(
                     "PostgreSQL driver not found. "
                     "Try running `pip install 'piccolo[postgres]'`"
-                )
+                ) from exc
             elif str(exc) == "No module named 'aiosqlite'":
                 raise ModuleNotFoundError(
                     "SQLite driver not found. "
                     "Try running `pip install 'piccolo[sqlite]'`"
-                )
+                ) from exc
             else:
-                raise exc
+                raise exc from exc
 
     def __getattr__(self, item) -> t.Any:
         module = self._load()

@@ -50,8 +50,4 @@ def create_pydantic_fixture_model(fixture_configs: t.List[FixtureConfig]):
 
         columns[fixture_config.app_name] = (app_model, ...)
 
-    model: t.Type[pydantic.BaseModel] = pydantic.create_model(
-        "FixtureModel", **columns
-    )
-
-    return model
+    return pydantic.create_model("FixtureModel", **columns)

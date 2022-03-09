@@ -110,7 +110,7 @@ class BaseMigrationManager(Finder):
                 "Positive offset values aren't currently supported"
             )
         elif offset < 0:
-            return migration_managers[0:offset]
+            return migration_managers[:offset]
         else:
             return migration_managers
 

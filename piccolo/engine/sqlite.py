@@ -280,7 +280,7 @@ class Atomic:
             await connection.execute("ROLLBACK")
             await connection.close()
             self.queries = []
-            raise exception
+            raise exception from exception
         else:
             await connection.execute("COMMIT")
             await connection.close()
@@ -454,10 +454,12 @@ class SQLiteEngine(Engine):
     async def _run_in_new_connection(
         self,
         query: str,
-        args: t.List[t.Any] = [],
+        args: t.List[t.Any] = None,
         query_type: str = "generic",
         table: t.Optional[t.Type[Table]] = None,
     ):
+        if args is None:
+            args = []
         async with aiosqlite.connect(**self.connection_kwargs) as connection:
             await connection.execute("PRAGMA foreign_keys = 1")
 
@@ -476,13 +478,15 @@ class SQLiteEngine(Engine):
         self,
         connection,
         query: str,
-        args: t.List[t.Any] = [],
+        args: t.List[t.Any] = None,
         query_type: str = "generic",
         table: t.Optional[t.Type[Table]] = None,
     ):
         """
         This is used when a transaction is currently active.
         """
+        if args is None:
+            args = []
         await connection.execute("PRAGMA foreign_keys = 1")
 
         connection.row_factory = dict_factory

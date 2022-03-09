@@ -114,7 +114,7 @@ class BaseUser(Table, tablename="piccolo_user"):
             logger.warning("Excessively long password provided.")
             raise ValueError("The password is too long.")
 
-        if salt == "":
+        if not salt:
             salt = cls.get_salt()
         hashed = hashlib.pbkdf2_hmac(
             "sha256",

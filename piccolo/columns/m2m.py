@@ -409,7 +409,7 @@ class M2M:
         :param load_json:
             If ``True``, any JSON strings are loaded as Python objects.
         """
-        if len(columns) == 0:
+        if not columns:
             columns = tuple(self._meta.secondary_table._meta.columns)
 
         if as_list and len(columns) != 1:

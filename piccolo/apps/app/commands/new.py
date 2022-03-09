@@ -56,7 +56,7 @@ def new_app(app_name: str, root: str = "."):
 
     for filename, context in templates.items():
         with open(os.path.join(app_root, filename), "w") as f:
-            template = JINJA_ENV.get_template(filename + ".jinja")
+            template = JINJA_ENV.get_template(f"{filename}.jinja")
             file_contents = template.render(**context)
             file_contents = black.format_str(
                 file_contents, mode=black.FileMode(line_length=80)

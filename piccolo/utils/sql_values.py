@@ -34,9 +34,6 @@ def convert_to_sql_value(value: t.Any, column: Column) -> t.Any:
     elif isinstance(value, Enum):
         return value.value
     elif isinstance(column, (JSON, JSONB)) and not isinstance(value, str):
-        if value is None:
-            return None
-        else:
-            return dump_json(value)
+        return None if value is None else dump_json(value)
     else:
         return value

@@ -287,10 +287,7 @@ class ColumnMeta:
         else:
             alias = f"{self.call_chain[-1]._meta.table_alias}.{self.name}"
 
-        if just_alias:
-            return alias
-        else:
-            return f'{alias} AS "{column_name}"'
+        return alias if just_alias else f'{alias} AS "{column_name}"'
 
     ###########################################################################
 

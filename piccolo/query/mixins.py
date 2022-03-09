@@ -295,11 +295,12 @@ class ColumnsDelegate:
         self.selected_columns = combined
 
     def remove_secret_columns(self):
-        non_secret = []
-        for i in self.selected_columns:
-            if isinstance(i, Column) and i._meta.secret:
-                continue
-            non_secret.append(i)
+        non_secret = [
+            i
+            for i in self.selected_columns
+            if not isinstance(i, Column) or not i._meta.secret
+        ]
+
         self.selected_columns = non_secret
 
 

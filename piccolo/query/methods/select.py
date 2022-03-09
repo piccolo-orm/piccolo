@@ -227,10 +227,12 @@ class Select(Query):
     def __init__(
         self,
         table: t.Type[Table],
-        columns_list: t.Sequence[t.Union[Selectable, str]] = [],
+        columns_list: t.Sequence[t.Union[Selectable, str]] = None,
         exclude_secrets: bool = False,
         **kwargs,
     ):
+        if columns_list is None:
+            columns_list = []
         super().__init__(table, **kwargs)
         self.exclude_secrets = exclude_secrets
 
