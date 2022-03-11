@@ -1,6 +1,8 @@
 import asyncio
 import unittest
 
+from piccolo.columns import Array, Boolean, Integer, Varchar
+from piccolo.table import Table
 from piccolo.testing.model_builder import ModelBuilder
 from tests.example_apps.music.tables import (
     Band,
@@ -12,6 +14,12 @@ from tests.example_apps.music.tables import (
     Ticket,
     Venue,
 )
+
+
+class TableWithArrayField(Table):
+    strings = Array(Varchar(30))
+    numbers = Array(Integer())
+    booleans = Array(Boolean())
 
 
 class TestModelBuilder(unittest.TestCase):
@@ -27,12 +35,14 @@ class TestModelBuilder(unittest.TestCase):
             Venue,
             Concert,
             Ticket,
+            TableWithArrayField,
         ):
             table_class.create_table().run_sync()
 
     @classmethod
     def tearDownClass(cls) -> None:
         for table_class in (
+            TableWithArrayField,
             Ticket,
             Concert,
             Venue,
@@ -52,12 +62,14 @@ class TestModelBuilder(unittest.TestCase):
         asyncio.run(build_model(Ticket))
         asyncio.run(build_model(Poster))
         asyncio.run(build_model(RecordingStudio))
+        asyncio.run(build_model(TableWithArrayField))
 
     def test_model_builder_sync(self):
         ModelBuilder.build_sync(Manager)
         ModelBuilder.build_sync(Ticket)
         ModelBuilder.build_sync(Poster)
         ModelBuilder.build_sync(RecordingStudio)
+        ModelBuilder.build_sync(TableWithArrayField)
 
     def test_model_builder_with_choices(self):
         shirt = ModelBuilder.build_sync(Shirt)
