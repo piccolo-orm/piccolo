@@ -4,7 +4,7 @@ from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from uuid import UUID
 
-from piccolo.columns.base import Column
+from piccolo.columns import Array, Column
 from piccolo.table import Table
 from piccolo.testing.random_builder import RandomBuilder
 from piccolo.utils.sync import run_sync
@@ -139,11 +139,18 @@ class ModelBuilder:
             Column class to randomize.
 
         """
+        random_value: t.Any
         if column.value_type == Decimal:
             precision, scale = column._meta.params["digits"]
             random_value = RandomBuilder.next_float(
                 maximum=10 ** (precision - scale), scale=scale
             )
+        elif column.value_type == list:
+            length = RandomBuilder.next_int(maximum=10)
+            base_type = t.cast(Array, column).base_column.value_type
+            random_value = [
+                cls.__DEFAULT_MAPPER[base_type]() for _ in range(length)
+            ]
         elif column._meta.choices:
             random_value = RandomBuilder.next_enum(column._meta.choices)
         else:
