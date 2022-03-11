@@ -1,6 +1,20 @@
 Changes
 =======
 
+0.71.0
+------
+
+The ``ModelBuilder`` class, which is used to generate mock data in tests, now
+supports ``Array`` columns. Courtesy @backwardspy.
+
+Lots of internal code optimisations and clean up. Courtesy @yezz123.
+
+Added docs for troubleshooting common MyPy errors.
+
+Also thanks to @adriangb for helping us with our dependency issues.
+
+-------------------------------------------------------------------------------
+
 0.70.1
 ------
 
