@@ -1,7 +1,7 @@
 import asyncio
 import unittest
 
-from piccolo.columns import Array, Boolean, Integer, Varchar
+from piccolo.columns import Array, Integer, Real, Varchar
 from piccolo.table import Table
 from piccolo.testing.model_builder import ModelBuilder
 from tests.example_apps.music.tables import (
@@ -18,8 +18,8 @@ from tests.example_apps.music.tables import (
 
 class TableWithArrayField(Table):
     strings = Array(Varchar(30))
-    numbers = Array(Integer())
-    booleans = Array(Boolean())
+    integers = Array(Integer())
+    floats = Array(Real())
 
 
 class TestModelBuilder(unittest.TestCase):
