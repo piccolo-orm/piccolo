@@ -1,6 +1,14 @@
 Changes
 =======
 
+0.71.1
+------
+
+Fixed a bug with ``ModelBuilder`` and nullable columns (see `PR 462 <https://github.com/piccolo-orm/piccolo/pull/462>`_).
+Thanks to @fiolet069 for reporting this issue.
+
+-------------------------------------------------------------------------------
+
 0.71.0
 ------
 
