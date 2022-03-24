@@ -457,7 +457,7 @@ class MigrationManager:
 
                 unique = params.get("unique")
                 if unique is not None:
-                    # When modifying unique contraints, we need to pass in
+                    # When modifying unique constraints, we need to pass in
                     # a column type, and not just the column name.
                     column = Column()
                     column._meta._table = _Table

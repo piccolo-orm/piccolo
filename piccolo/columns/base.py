@@ -356,7 +356,7 @@ class Column(Selectable):
         The column value to use if not specified by the user.
 
     :param unique:
-        If set, a unique contraint will be added to the column.
+        If set, a unique constraint will be added to the column.
 
     :param index:
         Whether an index is created for the column, which can improve
