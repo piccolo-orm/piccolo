@@ -264,7 +264,7 @@ class Alter(DDL):
     __slots__ = (
         "_add_foreign_key_constraint",
         "_add",
-        "_drop_contraint",
+        "_drop_constraint",
         "_drop_default",
         "_drop_table",
         "_drop",
@@ -282,7 +282,7 @@ class Alter(DDL):
         super().__init__(table, **kwargs)
         self._add_foreign_key_constraint: t.List[AddForeignKeyConstraint] = []
         self._add: t.List[AddColumn] = []
-        self._drop_contraint: t.List[DropConstraint] = []
+        self._drop_constraint: t.List[DropConstraint] = []
         self._drop_default: t.List[DropDefault] = []
         self._drop_table: t.Optional[DropTable] = None
         self._drop: t.List[DropColumn] = []
@@ -434,7 +434,7 @@ class Alter(DDL):
         return f"{tablename}_{column_name}_fk"
 
     def drop_constraint(self, constraint_name: str) -> Alter:
-        self._drop_contraint.append(
+        self._drop_constraint.append(
             DropConstraint(constraint_name=constraint_name)
         )
         return self
