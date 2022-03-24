@@ -207,8 +207,10 @@ def create_pydantic_model(
         #######################################################################
         # Work out the column type
 
-        if isinstance(column, (Decimal, Numeric)):
-            value_type: t.Type = pydantic.condecimal(
+        if column._meta.choices:
+            value_type: t.Type = column._meta.choices
+        elif isinstance(column, (Decimal, Numeric)):
+            value_type = pydantic.condecimal(
                 max_digits=column.precision, decimal_places=column.scale
             )
         elif isinstance(column, Varchar):
