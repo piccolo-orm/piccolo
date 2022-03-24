@@ -61,6 +61,7 @@ autoclass_content = "both"
 # -- Options for HTML output -------------------------------------------------
 
 html_theme = "piccolo_theme"
+html_short_title = "Piccolo"
 html_show_sphinx = False
 globaltoc_maxdepth = 3
 
