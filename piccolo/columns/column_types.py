@@ -2132,6 +2132,28 @@ class Blob(Bytea):
 ###############################################################################
 
 
+class List:
+    """
+    This is a hack. Sphinx's autodoc fails if we have this function signature::
+
+        class Array(Column):
+
+            def __init__(default=list):
+                ...
+
+    We can't use ``list`` as a default value without breaking autodoc, so
+    instead we assign an instance of this class, which effectively acts like
+    the builtin ``list`` function, without breaking autodoc.
+
+    """
+
+    def __call__(self):
+        return []
+
+    def __repr__(self):
+        return "list"
+
+
 class Array(Column):
     """
     Used for storing lists of data.
@@ -2157,7 +2179,7 @@ class Array(Column):
     def __init__(
         self,
         base_column: Column,
-        default: t.Union[t.List, Enum, t.Callable[[], t.List], None] = list,
+        default: t.Union[t.List, Enum, t.Callable[[], t.List], None] = List(),
         **kwargs,
     ) -> None:
         if isinstance(base_column, ForeignKey):
