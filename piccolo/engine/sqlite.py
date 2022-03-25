@@ -344,10 +344,10 @@ class SQLiteEngine(Engine):
     """
     Any connection kwargs are passed into the database adapter.
 
-    See here for more info:
-    https://docs.python.org/3/library/sqlite3.html#sqlite3.connect
+    See the `SQLite docs <https://docs.python.org/3/library/sqlite3.html#sqlite3.connect>`_
+    for more info.
 
-    """
+    """  # noqa: E501
 
     __slots__ = ("connection_kwargs", "transaction_connection")
 
