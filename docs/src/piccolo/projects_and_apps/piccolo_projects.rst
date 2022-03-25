@@ -87,8 +87,7 @@ Here's an example:
 DB
 --
 
-The DB setting is an ``Engine`` instance. To learn more Engines, see
-:ref:`Engines`.
+The DB setting is an ``Engine`` instance (see the :ref:`Engine docs <Engines>`).
 
 -------------------------------------------------------------------------------
 
