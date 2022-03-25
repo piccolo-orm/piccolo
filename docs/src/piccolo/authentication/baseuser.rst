@@ -70,7 +70,7 @@ can login and what they can do.
 
 * **active** and **admin** - must be true for a user to be able to login.
 * **superuser** - must be true for a user to be able to change other user's
-   passwords.
+  passwords.
 
 -------------------------------------------------------------------------------
 
