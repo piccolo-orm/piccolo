@@ -116,7 +116,7 @@ is_null / is_not_null
 ---------------------
 
 These queries work, but some linters will complain about doing a comparison
-with None:
+with ``None``:
 
 .. code-block:: python
 
