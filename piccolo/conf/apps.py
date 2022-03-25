@@ -188,7 +188,6 @@ class AppConfig:
         return filtered[0]
 
 
-@dataclass
 class AppRegistry:
     """
     Records all of the Piccolo apps in your project. Kept in
@@ -199,9 +198,8 @@ class AppRegistry:
 
     """
 
-    apps: t.List[str] = field(default_factory=list)
-
-    def __post_init__(self):
+    def __init__(self, apps: t.List[str] = None):
+        self.apps = apps or []
         self.app_configs: t.Dict[str, AppConfig] = {}
         app_names = []
 
@@ -214,7 +212,7 @@ class AppRegistry:
                     raise e from e
                 app += ".piccolo_app"
                 app_conf_module = import_module(app)
-                app_config: AppConfig = getattr(app_conf_module, "APP_CONFIG")
+                app_config = getattr(app_conf_module, "APP_CONFIG")
                 colored_warning(
                     f"App {app[:-12]} should end with `.piccolo_app`",
                     level=Level.medium,
