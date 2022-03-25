@@ -2132,6 +2132,28 @@ class Blob(Bytea):
 ###############################################################################
 
 
+class List:
+    """
+    This is a hack. Sphinx's autodoc fails if we have this function signature::
+
+        class Array(Column):
+
+            def __init__(default=list):
+                ...
+
+    We can't use ``list`` as a default value without breaking autodoc, so
+    instead we assign an instance of this class, which effectively acts like
+    the builtin ``list`` function, without breaking autodoc.
+
+    """
+
+    def __call__(self):
+        return []
+
+    def __repr__(self):
+        return "list"
+
+
 class Array(Column):
     """
     Used for storing lists of data.
@@ -2157,7 +2179,7 @@ class Array(Column):
     def __init__(
         self,
         base_column: Column,
-        default: t.Union[t.List, Enum, t.Callable[[], t.List], None] = list,
+        default: t.Union[t.List, Enum, t.Callable[[], t.List], None] = List(),
         **kwargs,
     ) -> None:
         if isinstance(base_column, ForeignKey):
@@ -2188,9 +2210,7 @@ class Array(Column):
         """
         Allows queries which retrieve an item from the array. The index starts
         with 0 for the first value. If you were to write the SQL by hand, the
-        first index would be 1 instead:
-
-        https://www.postgresql.org/docs/current/arrays.html
+        first index would be 1 instead (see `Postgres docs <https://www.postgresql.org/docs/current/arrays.html>`_).
 
         However, we keep the first index as 0 to fit better with Python.
 
@@ -2202,7 +2222,7 @@ class Array(Column):
             {'seat_numbers': 325}
 
 
-        """
+        """  # noqa: E501
         engine_type = self._meta.table._meta.db.engine_type
         if engine_type != "postgres":
             raise ValueError(

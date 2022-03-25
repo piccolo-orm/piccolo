@@ -107,8 +107,9 @@ Fetching related objects
 get_related
 ~~~~~~~~~~~
 
-If you have an object from a table with a ``ForeignKey`` column, and you want
-to fetch the related row as an object, you can do so using ``get_related``.
+If you have an object from a table with a :class:`ForeignKey <piccolo.columns.column_types.ForeignKey>`
+column, and you want to fetch the related row as an object, you can do so
+using ``get_related``.
 
 .. code-block:: python
 
@@ -126,8 +127,8 @@ Prefetching related objects
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can also prefetch the rows from related tables, and store them as child
-objects. To do this, pass ``ForeignKey`` columns into ``objects``, which
-refer to the related rows you want to load.
+objects. To do this, pass :class:`ForeignKey <piccolo.columns.column_types.ForeignKey>`
+columns into ``objects``, which refer to the related rows you want to load.
 
 .. code-block:: python
 
@@ -166,8 +167,9 @@ database, just as you would expect:
     ticket.concert.band_1.name = 'Pythonistas 2'
     await ticket.concert.band_1.save()
 
-Instead of passing the ``ForeignKey`` columns into the ``objects`` method, you
-can use the ``prefetch`` clause if you prefer.
+Instead of passing the :class:`ForeignKey <piccolo.columns.column_types.ForeignKey>`
+columns into the ``objects`` method, you can use the ``prefetch`` clause if you
+prefer.
 
 .. code-block:: python
 

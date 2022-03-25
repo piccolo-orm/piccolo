@@ -214,9 +214,8 @@ class PostgresEngine(Engine):
 
         For example, ``{'host': 'localhost', 'port': 5432}``.
 
-        To see all available options:
-
-        * https://magicstack.github.io/asyncpg/current/api/index.html#connection
+        See the `asyncpg docs <https://magicstack.github.io/asyncpg/current/api/index.html#connection>`_
+        for all available options.
 
     :param extensions:
         When the engine starts, it will try and create these extensions

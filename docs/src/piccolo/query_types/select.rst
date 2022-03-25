@@ -235,7 +235,10 @@ You also can have multiple different aggregate functions in one query:
 .. code-block:: python
 
     >>> from piccolo.query import Avg, Sum
-    >>> response = await Band.select(Avg(Band.popularity), Sum(Band.popularity)).first()
+    >>> response = await Band.select(
+    ...     Avg(Band.popularity),
+    ...     Sum(Band.popularity)
+    ... ).first()
     >>> response
     {"avg": 750.0, "sum": 1500}
 
@@ -244,7 +247,9 @@ And can use aliases for aggregate functions like this:
 .. code-block:: python
 
     # Alternatively, you can use the `as_alias` method.
-    >>> response = await Band.select(Avg(Band.popularity).as_alias("popularity_avg")).first()
+    >>> response = await Band.select(
+    ...     Avg(Band.popularity).as_alias("popularity_avg")
+    ... ).first()
     >>> response["popularity_avg"]
     750.0
 

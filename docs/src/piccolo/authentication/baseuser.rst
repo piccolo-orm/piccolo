@@ -65,12 +65,12 @@ For example:
 
     piccolo user change_permissions some_user --active=true
 
-The Piccolo Admin (see :ref:`Ecosystem`) uses these attributes to control who
+The :ref:`Piccolo Admin<PiccoloAdmin>` uses these attributes to control who
 can login and what they can do.
 
 * **active** and **admin** - must be true for a user to be able to login.
 * **superuser** - must be true for a user to be able to change other user's
-   passwords.
+  passwords.
 
 -------------------------------------------------------------------------------
 
@@ -172,3 +172,4 @@ Source
 
 .. autoclass:: BaseUser
     :members: create_user, create_user_sync, login, login_sync, update_password, update_password_sync
+    :class-doc-from: class
