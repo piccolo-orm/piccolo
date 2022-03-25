@@ -30,11 +30,12 @@ Equal / Not Equal
         Band.name != 'Rustaceans'
     )
 
-.. hint:: With ``Boolean`` columns, some linters will complain if you write
-    ``SomeTable.some_column == True`` (because it's more Pythonic to do
-    ``is True``). To work around this, you can do
-    ``SomeTable.some_column.eq(True)``. Likewise, with ``!=`` you can use
-    ``SomeTable.some_column.ne(True)``
+.. hint:: With :class:`Boolean <piccolo.columns.column_types.Boolean>` columns,
+   some linters will complain if you write
+   ``SomeTable.some_column == True`` (because it's more Pythonic to do
+   ``is True``). To work around this, you can do
+   ``SomeTable.some_column.eq(True)``. Likewise, with ``!=`` you can use
+   ``SomeTable.some_column.ne(True)``
 
 -------------------------------------------------------------------------------
 
