@@ -59,8 +59,8 @@ Select and Objects queries
 load_json
 ~~~~~~~~~
 
-If querying JSON or JSONB columns, you can tell Piccolo to deserialise the JSON
-values automatically.
+If querying :class:`JSON <piccolo.columns.column_types.JSON>` or :class:`JSONB <piccolo.columns.column_types.JSONB>`
+columns, you can tell Piccolo to deserialise the JSON values automatically.
 
 .. code-block:: python
 
