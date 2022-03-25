@@ -89,7 +89,7 @@ use mixins to reduce the amount of repetition.
 Choices
 -------
 
-You can specify choices for a column, using Python's ``Enum`` support.
+You can specify choices for a column, using Python's :class:`Enum <enum.Enum>` support.
 
 .. code-block:: python
 
