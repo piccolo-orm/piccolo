@@ -172,3 +172,4 @@ Source
 
 .. autoclass:: BaseUser
     :members: create_user, create_user_sync, login, login_sync, update_password, update_password_sync
+    :class-doc-from: class
