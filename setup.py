@@ -37,14 +37,13 @@ def extras_require() -> t.Dict[str, t.List[str]]:
     Parse requirements in requirements/extras directory
     """
     extra_requirements = {
-        extra: parse_requirement(os.path.join("extras", f'{extra}.txt'))
+        extra: parse_requirement(os.path.join("extras", f"{extra}.txt"))
         for extra in extras
     }
 
     extra_requirements["all"] = list(
         itertools.chain.from_iterable(extra_requirements.values())
     )
-
 
     return extra_requirements
 
@@ -70,6 +69,13 @@ setup(
             "templates/**/**/**/*",
         ],
         "piccolo": ["py.typed"],
+    },
+    project_urls={
+        "Documentation": (
+            "https://piccolo-orm.readthedocs.io/en/latest/index.html"
+        ),
+        "Source": "https://github.com/piccolo-orm/piccolo",
+        "Tracker": "https://github.com/piccolo-orm/piccolo/issues",
     },
     install_requires=parse_requirement("requirements.txt"),
     extras_require=extras_require(),
