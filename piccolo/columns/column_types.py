@@ -2132,19 +2132,19 @@ class Blob(Bytea):
 ###############################################################################
 
 
-class List:
+class ListProxy:
     """
-    This is a hack. Sphinx's autodoc fails if we have this function signature::
+    Sphinx's autodoc fails if we have this function signature::
 
         class Array(Column):
 
             def __init__(default=list):
                 ...
 
-    We can't use ``list`` as a default value without breaking autodoc, so
-    instead we assign an instance of this class, which effectively acts like
-    the builtin ``list`` function, without breaking autodoc.
-
+    We can't use ``list`` as a default value without breaking autodoc (it
+    doesn't seem to like it when a class type is used as a default), so
+    instead we assign an instance of this class. It keeps both autodoc and MyPy
+    happy. In ``Array.__init__`` we then swap it out for ``list``.
     """
 
     def __call__(self):
@@ -2179,11 +2179,18 @@ class Array(Column):
     def __init__(
         self,
         base_column: Column,
-        default: t.Union[t.List, Enum, t.Callable[[], t.List], None] = List(),
+        default: t.Union[
+            t.List, Enum, t.Callable[[], t.List], None
+        ] = ListProxy(),
         **kwargs,
     ) -> None:
         if isinstance(base_column, ForeignKey):
             raise ValueError("Arrays of ForeignKeys aren't allowed.")
+
+        # This is a workaround because having `list` as a default breaks
+        # Sphinx's autodoc.
+        if isinstance(default, ListProxy):
+            default = list
 
         self._validate_default(default, (list, None))
 
@@ -2210,7 +2217,7 @@ class Array(Column):
         """
         Allows queries which retrieve an item from the array. The index starts
         with 0 for the first value. If you were to write the SQL by hand, the
-        first index would be 1 instead (see `Postgres docs <https://www.postgresql.org/docs/current/arrays.html>`_).
+        first index would be 1 instead (see `Postgres array docs <https://www.postgresql.org/docs/current/arrays.html>`_).
 
         However, we keep the first index as 0 to fit better with Python.
 

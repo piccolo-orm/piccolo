@@ -9,6 +9,17 @@ class MyTable(Table):
     value = Array(base_column=Integer())
 
 
+class TestArrayDefault(TestCase):
+    def test_array_default(self):
+        """
+        We use ``ListProxy`` instead of ``list`` as a default, because of
+        issues with Sphinx's autodoc. Make sure it's correctly converted to a
+        plain ``list`` in ``Array.__init__``.
+        """
+        column = Array(base_column=Integer())
+        self.assertTrue(column.default is list)
+
+
 class TestArrayPostgres(TestCase):
     """
     Make sure an Array column can be created.
