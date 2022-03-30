@@ -4,6 +4,7 @@ import functools
 import inspect
 import itertools
 import os
+import pathlib
 import traceback
 import typing as t
 from dataclasses import dataclass, field
@@ -154,6 +155,9 @@ class AppConfig:
         self.commands = [
             i if isinstance(i, Command) else Command(i) for i in self.commands
         ]
+
+        if isinstance(self.migrations_folder_path, pathlib.Path):
+            self.migrations_folder_path = str(self.migrations_folder_path)
 
     def register_table(self, table_class: t.Type[Table]):
         self.table_classes.append(table_class)

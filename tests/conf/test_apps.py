@@ -1,3 +1,4 @@
+import pathlib
 from unittest import TestCase
 
 from piccolo.apps.user.tables import BaseUser
@@ -73,11 +74,21 @@ class TestAppRegistry(TestCase):
 
 
 class TestAppConfig(TestCase):
+    def test_pathlib(self):
+        """
+        Make sure a ``pathlib.Path`` instance can be passed in as a
+        ``migrations_folder_path`` argument.
+        """
+        config = AppConfig(
+            app_name="music", migrations_folder_path=pathlib.Path(__file__)
+        )
+        self.assertEqual(config.migrations_folder_path, __file__)
+
     def test_get_table_with_name(self):
         """
         Register a table, then test retrieving it.
         """
-        config = AppConfig(app_name="Music", migrations_folder_path="")
+        config = AppConfig(app_name="music", migrations_folder_path="")
         config.register_table(table_class=Manager)
         self.assertEqual(config.get_table_with_name("Manager"), Manager)
 
