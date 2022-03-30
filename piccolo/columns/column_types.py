@@ -2132,7 +2132,7 @@ class Blob(Bytea):
 ###############################################################################
 
 
-class List:
+class ListProxy:
     """
     Sphinx's autodoc fails if we have this function signature::
 
@@ -2179,7 +2179,9 @@ class Array(Column):
     def __init__(
         self,
         base_column: Column,
-        default: t.Union[t.List, Enum, t.Callable[[], t.List], None] = List(),
+        default: t.Union[
+            t.List, Enum, t.Callable[[], t.List], None
+        ] = ListProxy(),
         **kwargs,
     ) -> None:
         if isinstance(base_column, ForeignKey):
@@ -2187,7 +2189,7 @@ class Array(Column):
 
         # This is a workaround because having `list` as a default breaks
         # Sphinx's autodoc.
-        if isinstance(default, List):
+        if isinstance(default, ListProxy):
             default = list
 
         self._validate_default(default, (list, None))
