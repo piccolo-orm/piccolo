@@ -1,6 +1,31 @@
 Changes
 =======
 
+0.72.0
+------
+
+Fixed typos with ``drop_constraints``. Courtesy @smythp.
+
+Lots of documentation improvements, such as fixing Sphinx's autodoc for the
+``Array`` column.
+
+``AppConfig`` now accepts a ``pathlib.Path`` instance. For example:
+
+.. code-block:: python
+
+  # piccolo_app.py
+
+  import pathlib
+
+  APP_CONFIG = AppConfig(
+      app_name="blog",
+      migrations_folder_path=pathlib.Path(__file__) /  "piccolo_migrations"
+  )
+
+Thanks to @theelderbeever for recommending this feature.
+
+-------------------------------------------------------------------------------
+
 0.71.1
 ------
 
