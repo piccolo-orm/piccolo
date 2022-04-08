@@ -193,7 +193,7 @@ class Query:
             from piccolo.engine.postgres import PostgresEngine
 
             if isinstance(engine, PostgresEngine):
-                engine = engine.extra_nodes["node"]
+                engine = engine.extra_nodes[node]
 
         querystrings = self.querystrings
 
