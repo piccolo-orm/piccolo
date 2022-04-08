@@ -1,6 +1,41 @@
 Changes
 =======
 
+0.73.0
+------
+
+You can now specify extra nodes for a database. For example, if you have a
+read replica.
+
+.. code-block:: python
+
+  DB = PostgresEngine(
+      config={'database': 'main_db'},
+      extra_nodes={
+          'read_replica_1': PostgresEngine(
+              config={
+                  'database': 'main_db',
+                  'host': 'read_replica_1.my_db.com'
+              }
+          )
+      }
+  )
+
+And can then run queries on these other nodes:
+
+.. code-block:: python
+
+  >>> await MyTable.select().run(node="read_replica_1")
+
+See `PR 481 <https://github.com/piccolo-orm/piccolo/pull/481>`_. Thanks to
+@dashsatish for suggesting this feature.
+
+Also, the ``targ`` library has been updated so it tells users about the
+``--trace`` argument which can be used to get a full traceback when a CLI
+command fails.
+
+-------------------------------------------------------------------------------
+
 0.72.0
 ------
 
