@@ -1,7 +1,7 @@
 black
 colorama>=0.4.0
 Jinja2>=2.11.0
-targ>=0.3.3
+targ>=0.3.7
 inflection>=0.5.1
 typing-extensions>=3.10.0.0
 pydantic>=1.6
