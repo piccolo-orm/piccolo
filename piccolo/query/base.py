@@ -167,15 +167,33 @@ class Query:
         """
         return self.run().__await__()
 
-    async def run(self, in_pool=True):
+    async def run(self, node: t.Optional[str] = None, in_pool: bool = True):
+        """
+        Run the query on the database.
+
+        :param node:
+            If specified, run this query against another database node. Only
+            available in Postgres. See :class:`PostgresEngine <piccolo.engine.postgres.PostgresEngine>`.
+        :param in_pool:
+            Whether to run this in a connection pool if one is running. This is
+            mostly just for debugging - use a connection pool where possible.
+
+        """  # noqa: E501
         self._validate()
 
         engine = self.table._meta.db
+
         if not engine:
             raise ValueError(
                 f"Table {self.table._meta.tablename} has no db defined in "
                 "_meta"
             )
+
+        if node is not None:
+            from piccolo.engine.postgres import PostgresEngine
+
+            if isinstance(engine, PostgresEngine):
+                engine = engine.extra_nodes[node]
 
         querystrings = self.querystrings
 
@@ -186,7 +204,6 @@ class Query:
             return await self._process_results(results)
         else:
             responses = []
-            # TODO - run in a transaction
             for querystring in querystrings:
                 results = await engine.run_querystring(
                     querystring, in_pool=in_pool
@@ -197,8 +214,13 @@ class Query:
     def run_sync(self, timed=False, *args, **kwargs):
         """
         A convenience method for running the coroutine synchronously.
+
+        :param timed:
+            If ``True``, the time taken to run the query is printed out. Useful
+            for debugging.
+
         """
-        coroutine = self.run(*args, **kwargs, in_pool=False)
+        coroutine = self.run(*args, **kwargs)
 
         if not timed:
             return run_sync(coroutine)

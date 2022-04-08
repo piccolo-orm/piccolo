@@ -222,8 +222,30 @@ class PostgresEngine(Engine):
         in Postgres.
 
     :param log_queries:
-        If True, all SQL and DDL statements are printed out before being run.
-        Useful for debugging.
+        If ``True``, all SQL and DDL statements are printed out before being
+        run. Useful for debugging.
+
+    :param extra_nodes:
+        If you have additional database nodes (e.g. read replicas) for the
+        server, you can specify them here. It's a mapping of a memorable name
+        to a ``PostgresEngine`` instance. For example::
+
+            DB = PostgresEngine(
+                config={'database': 'main_db'},
+                extra_nodes={
+                    'read_replica_1': PostgresEngine(
+                        config={
+                            'database': 'main_db',
+                            host: 'read_replicate.my_db.com'
+                        }
+                    )
+                }
+            )
+
+        When executing a query, you can specify one of these nodes instead
+        of the main database. For example::
+
+            >>> await MyTable.select().run(node="read_replica_1")
 
     """  # noqa: E501
 
@@ -231,6 +253,7 @@ class PostgresEngine(Engine):
         "config",
         "extensions",
         "log_queries",
+        "extra_nodes",
         "pool",
         "transaction_connection",
     )
@@ -243,12 +266,17 @@ class PostgresEngine(Engine):
         config: t.Dict[str, t.Any],
         extensions: t.Sequence[str] = None,
         log_queries: bool = False,
+        extra_nodes: t.Dict[str, PostgresEngine] = None,
     ) -> None:
         if extensions is None:
             extensions = ["uuid-ossp"]
+        if extra_nodes is None:
+            extra_nodes = {}
+
         self.config = config
         self.extensions = extensions
         self.log_queries = log_queries
+        self.extra_nodes = extra_nodes
         self.pool: t.Optional[Pool] = None
         database_name = config.get("database", "Unknown")
         self.transaction_connection = contextvars.ContextVar(
