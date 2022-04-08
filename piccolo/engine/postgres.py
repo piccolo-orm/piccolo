@@ -231,12 +231,12 @@ class PostgresEngine(Engine):
         to a ``PostgresEngine`` instance. For example::
 
             DB = PostgresEngine(
-                config={'database': 'main_db}:
+                config={'database': 'main_db},
                 extra_nodes={
                     'read_replica_1': PostgresEngine(
                         config={
                             'database': 'main_db',
-                            host="read_replicate.my_db.com"
+                            host: 'read_replicate.my_db.com'
                         }
                     )
                 }
