@@ -2,6 +2,7 @@ from unittest import TestCase
 from unittest.mock import MagicMock
 
 from piccolo.columns.column_types import Varchar
+from piccolo.engine import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.table import Table
 from tests.base import AsyncMock, postgres_only
@@ -13,10 +14,15 @@ class TestExtraNodes(TestCase):
         """
         Make sure that other nodes can be queried.
         """
-        EXTRA_NODE = MagicMock(spec=PostgresEngine(config={}))
+        # Get the test database credentials:
+        test_engine = engine_finder()
+
+        EXTRA_NODE = MagicMock(spec=PostgresEngine(config=test_engine.config))
         EXTRA_NODE.run_querystring = AsyncMock(return_value=[])
 
-        DB = PostgresEngine(config={}, extra_nodes={"read_1": EXTRA_NODE})
+        DB = PostgresEngine(
+            config=test_engine.config, extra_nodes={"read_1": EXTRA_NODE}
+        )
 
         class Manager(Table, db=DB):
             name = Varchar()
