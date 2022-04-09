@@ -197,7 +197,7 @@ class TimedeltaDelegate:
         if isinstance(value, timedelta):
             value_string = self.get_interval_string(interval=value)
             return QueryString(
-                f'"{column_name}" {operator} INTERVAL \'{value_string}\'',
+                f"\"{column_name}\" {operator} INTERVAL '{value_string}'",
             )
         else:
             raise ValueError("Only timedelta values can be added.")
