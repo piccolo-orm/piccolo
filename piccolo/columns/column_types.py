@@ -70,7 +70,7 @@ class ConcatDelegate:
     """
     Used in update queries to concatenate two strings - for example::
 
-        await Band.update({Band.name: Band.name + 'abc'}).run()
+        await Band.update({Band.name: Band.name + 'abc'})
 
     """
 
@@ -125,7 +125,7 @@ class MathDelegate:
     """
     Used in update queries to perform math operations on columns, for example::
 
-        await Band.update({Band.popularity: Band.popularity + 100}).run()
+        await Band.update({Band.popularity: Band.popularity + 100})
 
     """
 
