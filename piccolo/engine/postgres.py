@@ -78,14 +78,15 @@ class Atomic:
     This is useful if you want to build up a transaction programatically, by
     adding queries to it.
 
-    Usage:
+    Usage::
 
-    transaction = engine.atomic()
-    transaction.add(Foo.create_table())
+        transaction = engine.atomic()
+        transaction.add(Foo.create_table())
 
-    # Either:
-    transaction.run_sync()
-    await transaction.run()
+        # Either:
+        transaction.run_sync()
+        await transaction.run()
+
     """
 
     __slots__ = ("engine", "queries")
@@ -145,11 +146,11 @@ class Transaction:
     Used for wrapping queries in a transaction, using a context manager.
     Currently it's async only.
 
-    Usage:
+    Usage::
 
-    async with engine.transaction():
-        # Run some queries:
-        await Band.select().run()
+        async with engine.transaction():
+            # Run some queries:
+            await Band.select().run()
 
     """
 
