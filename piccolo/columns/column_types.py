@@ -35,6 +35,8 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from enum import Enum
 
+from typing_extensions import Literal
+
 from piccolo.columns.base import Column, ForeignKeyMeta, OnDelete, OnUpdate
 from piccolo.columns.combination import Where
 from piccolo.columns.defaults.date import DateArg, DateCustom, DateNow
@@ -132,7 +134,7 @@ class MathDelegate:
     def get_querystring(
         self,
         column_name: str,
-        operator: t.Literal["+", "-", "/", "*"],
+        operator: Literal["+", "-", "/", "*"],
         value: t.Union[int, float, Integer],
         reverse: bool = False,
     ) -> QueryString:
