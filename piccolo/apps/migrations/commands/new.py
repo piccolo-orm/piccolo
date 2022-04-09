@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from itertools import chain
 from types import ModuleType
 
-import black  # type: ignore
+import black
 import jinja2
 
 from piccolo import __VERSION__

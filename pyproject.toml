@@ -9,10 +9,12 @@ line_length = 79
 [tool.mypy]
 [[tool.mypy.overrides]]
 module = [
-    "orjson",
-    "jinja2",
+    "asyncpg.*",
+    "colorama",
     "dateutil",
-    "asyncpg.pgproto.pgproto"
+    "IPython",
+    "jinja2",
+    "orjson"
 ]
 ignore_missing_imports = true
 

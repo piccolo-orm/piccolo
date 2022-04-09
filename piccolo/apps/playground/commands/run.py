@@ -142,7 +142,7 @@ def run(
         Postgres port
     """
     try:
-        import IPython  # type: ignore
+        import IPython
     except ImportError:
         sys.exit(
             "Install iPython using `pip install 'piccolo[playground,sqlite]'` "

@@ -4,8 +4,8 @@ import os
 import shutil
 import typing as t
 
-import black  # type: ignore
-import colorama  # type: ignore
+import black
+import colorama
 from jinja2 import Environment, FileSystemLoader
 
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates/app/")

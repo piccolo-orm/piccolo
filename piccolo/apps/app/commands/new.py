@@ -5,7 +5,7 @@ import os
 import sys
 import typing as t
 
-import black  # type: ignore
+import black
 import jinja2
 
 TEMPLATE_DIRECTORY = os.path.join(

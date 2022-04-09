@@ -1,7 +1,7 @@
 import os
 import sys
 
-from targ import CLI  # type: ignore
+from targ import CLI
 
 try:
     import uvloop  # type: ignore
