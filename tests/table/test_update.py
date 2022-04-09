@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from piccolo.columns.column_types import Timestamp, Varchar
 from piccolo.table import Table
-from tests.base import DBTestCase
+from tests.base import DBTestCase, postgres_only
 from tests.example_apps.music.tables import Band, Poster
 
 
@@ -273,6 +273,8 @@ class Concert(Table):
     starts = Timestamp()
 
 
+# TODO - add SQLite support
+@postgres_only
 class TestTimestampUpdateOperators(TestCase):
     def setUp(self):
         Concert.create_table().run_sync()
