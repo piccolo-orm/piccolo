@@ -79,7 +79,7 @@ class ConcatDelegate:
         column_name: str,
         value: t.Union[str, Varchar, Text],
         engine_type: str,
-        reverse=False,
+        reverse: bool = False,
     ) -> QueryString:
         Concat = ConcatPostgres if engine_type == "postgres" else ConcatSQLite
 
@@ -132,9 +132,9 @@ class MathDelegate:
     def get_querystring(
         self,
         column_name: str,
-        operator: str,
+        operator: t.Literal["+", "-", "/", "*"],
         value: t.Union[int, float, Integer],
-        reverse=False,
+        reverse: bool = False,
     ) -> QueryString:
         if isinstance(value, Integer):
             column: Integer = value
@@ -154,6 +154,53 @@ class MathDelegate:
                 "Only integers, floats, and other Integer columns can be "
                 "added."
             )
+
+
+class TimedeltaDelegate:
+    """
+    Used in update queries to add a timedelta to these columns:
+
+    * ``Timestamp``
+    * ``Timestamptz``
+    * ``Date``
+    * ``Interval``
+
+    Example::
+
+        # Lets us increase all of the matching values by 1 day:
+        await Concert.update({
+            Concert.starts: Concert.starts + datetime.timedelta(days=1)
+        })
+
+    """
+
+    # Maps the attribute name in Python's timedelta to what it's called in
+    # Postgres.
+    attr_map: t.Dict[str, str] = {
+        "days": "DAYS",
+        "seconds": "SECONDS",
+        "microseconds": "MICROSECONDS",
+    }
+
+    def get_interval_string(self, interval: timedelta) -> str:
+        output = []
+        for timedelta_key, postgres_name in self.attr_map.items():
+            timestamp_value = getattr(interval, timedelta_key)
+            if timestamp_value:
+                output.append(f"{timestamp_value} {postgres_name}")
+
+        return " ".join(output)
+
+    def get_querystring(
+        self, column_name: str, operator: t.Literal["+", "-"], value: timedelta
+    ) -> QueryString:
+        if isinstance(value, timedelta):
+            value_string = self.get_interval_string(interval=value)
+            return QueryString(
+                f'"{column_name}" {operator} INTERVAL \'{value_string}\'',
+            )
+        else:
+            raise ValueError("Only timedelta values can be added.")
 
 
 ###############################################################################
@@ -761,6 +808,7 @@ class Timestamp(Column):
     """
 
     value_type = datetime
+    timedelta_delta = TimedeltaDelegate()
 
     def __init__(
         self, default: TimestampArg = TimestampNow(), **kwargs
@@ -781,6 +829,16 @@ class Timestamp(Column):
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
+
+    def __add__(self, value: timedelta) -> QueryString:
+        return self.timedelta_delta.get_querystring(
+            column_name=self._meta.db_column_name, operator="+", value=value
+        )
+
+    def __sub__(self, value: timedelta) -> QueryString:
+        return self.timedelta_delta.get_querystring(
+            column_name=self._meta.db_column_name, operator="-", value=value
+        )
 
     ###########################################################################
     # Descriptors

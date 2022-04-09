@@ -17,7 +17,7 @@ class TestVarchar(TestCase):
 
     https://www.sqlite.org/faq.html#q9
 
-    Might consider enforncing this at the ORM level instead in the future.
+    Might consider enforcing this at the ORM level instead in the future.
     """
 
     def setUp(self):

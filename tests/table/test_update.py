@@ -1,3 +1,8 @@
+import datetime
+from unittest import TestCase
+
+from piccolo.columns.column_types import Timestamp, Varchar
+from piccolo.table import Table
 from tests.base import DBTestCase
 from tests.example_apps.music.tables import Band, Poster
 
@@ -260,4 +265,56 @@ class TestTextUpdateOperators(DBTestCase):
 
         self.assertEqual(
             response["content"], "!!!Join us for this amazing show"
+        )
+
+
+class Concert(Table):
+    name = Varchar()
+    starts = Timestamp()
+
+
+class TestTimestampUpdateOperators(TestCase):
+    def setUp(self):
+        Concert.create_table().run_sync()
+        Concert.insert(
+            Concert(
+                name="Royal Albert Hall",
+                starts=datetime.datetime(
+                    year=2022, month=1, day=1, hour=21, minute=0
+                ),
+            )
+        ).run_sync()
+
+    def tearDown(self):
+        Concert.alter().drop_table().run_sync()
+
+    # TODO - test all timedelta attributes (i.e. days / seconds / microseconds)
+    def test_add(self):
+        query = Concert.update(
+            {Concert.starts: Concert.starts + datetime.timedelta(hours=1)},
+            force=True,
+        )
+        query.run_sync()
+
+        new_start_value = (
+            Concert.select(Concert.starts).first().run_sync()["starts"]
+        )
+        self.assertEqual(
+            new_start_value,
+            datetime.datetime(year=2022, month=1, day=1, hour=22, minute=0),
+        )
+
+    def test_substract(self):
+        query = Concert.update(
+            {Concert.starts: Concert.starts - datetime.timedelta(hours=1)},
+            force=True,
+        )
+        query.run_sync()
+
+        new_start_value = (
+            Concert.select(Concert.starts).first().run_sync()["starts"]
+        )
+        self.assertEqual(
+            new_start_value,
+            datetime.datetime(year=2022, month=1, day=1, hour=20, minute=0),
         )
