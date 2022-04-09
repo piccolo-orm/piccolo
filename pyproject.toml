@@ -1,6 +1,6 @@
 [tool.black]
 line-length = 79
-target-version = ['py37', 'py38', 'py39']
+target-version = ['py37', 'py38', 'py39', 'py310']
 
 [tool.isort]
 profile = "black"
@@ -9,10 +9,12 @@ line_length = 79
 [tool.mypy]
 [[tool.mypy.overrides]]
 module = [
-    "orjson",
-    "jinja2",
+    "asyncpg.*",
+    "colorama",
     "dateutil",
-    "asyncpg.pgproto.pgproto"
+    "IPython",
+    "jinja2",
+    "orjson"
 ]
 ignore_missing_imports = true
 
