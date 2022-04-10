@@ -837,6 +837,9 @@ class Timestamp(Column):
             column_name=self._meta.db_column_name, operator="+", value=value
         )
 
+    def __radd__(self, value: timedelta) -> QueryString:
+        return self.__add__(value)
+
     def __sub__(self, value: timedelta) -> QueryString:
         return self.timedelta_delta.get_querystring(
             column_name=self._meta.db_column_name, operator="-", value=value

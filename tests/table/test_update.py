@@ -306,6 +306,21 @@ class TestTimestampUpdateOperators(TestCase):
             datetime.datetime(year=2022, month=1, day=1, hour=22, minute=0),
         )
 
+    def test_radd(self):
+        query = Concert.update(
+            {Concert.starts: datetime.timedelta(hours=1) + Concert.starts},
+            force=True,
+        )
+        query.run_sync()
+
+        new_start_value = (
+            Concert.select(Concert.starts).first().run_sync()["starts"]
+        )
+        self.assertEqual(
+            new_start_value,
+            datetime.datetime(year=2022, month=1, day=1, hour=22, minute=0),
+        )
+
     def test_substract(self):
         query = Concert.update(
             {Concert.starts: Concert.starts - datetime.timedelta(hours=1)},
