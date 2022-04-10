@@ -276,6 +276,11 @@ class Concert(Table):
 # TODO - add SQLite support
 @postgres_only
 class TestTimestampUpdateOperators(TestCase):
+
+    delta = datetime.timedelta(
+        days=1, hours=1, minutes=1, seconds=30, microseconds=500
+    )
+
     def setUp(self):
         Concert.create_table().run_sync()
         Concert.insert(
@@ -290,10 +295,9 @@ class TestTimestampUpdateOperators(TestCase):
     def tearDown(self):
         Concert.alter().drop_table().run_sync()
 
-    # TODO - test all timedelta attributes (i.e. days / seconds / microseconds)
     def test_add(self):
         query = Concert.update(
-            {Concert.starts: Concert.starts + datetime.timedelta(hours=1)},
+            {Concert.starts: Concert.starts + self.delta},
             force=True,
         )
         query.run_sync()
@@ -303,12 +307,20 @@ class TestTimestampUpdateOperators(TestCase):
         )
         self.assertEqual(
             new_start_value,
-            datetime.datetime(year=2022, month=1, day=1, hour=22, minute=0),
+            datetime.datetime(
+                year=2022,
+                month=1,
+                day=2,
+                hour=22,
+                minute=1,
+                second=30,
+                microsecond=500,
+            ),
         )
 
     def test_radd(self):
         query = Concert.update(
-            {Concert.starts: datetime.timedelta(hours=1) + Concert.starts},
+            {Concert.starts: self.delta + Concert.starts},
             force=True,
         )
         query.run_sync()
@@ -318,12 +330,20 @@ class TestTimestampUpdateOperators(TestCase):
         )
         self.assertEqual(
             new_start_value,
-            datetime.datetime(year=2022, month=1, day=1, hour=22, minute=0),
+            datetime.datetime(
+                year=2022,
+                month=1,
+                day=2,
+                hour=22,
+                minute=1,
+                second=30,
+                microsecond=500,
+            ),
         )
 
     def test_substract(self):
         query = Concert.update(
-            {Concert.starts: Concert.starts - datetime.timedelta(hours=1)},
+            {Concert.starts: Concert.starts - self.delta},
             force=True,
         )
         query.run_sync()
@@ -333,5 +353,13 @@ class TestTimestampUpdateOperators(TestCase):
         )
         self.assertEqual(
             new_start_value,
-            datetime.datetime(year=2022, month=1, day=1, hour=20, minute=0),
+            datetime.datetime(
+                year=2021,
+                month=12,
+                day=31,
+                hour=19,
+                minute=58,
+                second=29,
+                microsecond=999500,
+            ),
         )
