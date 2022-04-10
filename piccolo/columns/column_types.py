@@ -194,7 +194,7 @@ class TimedeltaDelegate:
         return " ".join(output)
 
     def get_querystring(
-        self, column_name: str, operator: t.Literal["+", "-"], value: timedelta
+        self, column_name: str, operator: Literal["+", "-"], value: timedelta
     ) -> QueryString:
         if isinstance(value, timedelta):
             value_string = self.get_interval_string(interval=value)
