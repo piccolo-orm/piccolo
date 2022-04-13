@@ -1,3 +1,4 @@
+
 .. _Update:
 
 Update
@@ -149,6 +150,45 @@ Likewise, we can decrease the values by 1 day:
             Concert.starts: Concert.starts - datetime.timedelta(days=1)
         },
         force=True
+    )
+
+What about null values?
+~~~~~~~~~~~~~~~~~~~~~~~
+
+If we have a table with a nullable column:
+
+.. code-block:: python
+
+    class Band(Table):
+        name = Varchar(null=True)
+
+Any rows with a value of null aren't modified by an update:
+
+.. code-block:: python
+
+    >>> await Band.insert(Band(name="Pythonistas"), Band(name=None))
+    >>> await Band.update(
+    ...     {
+    ...         Band.name: Band.name + '!!!'
+    ...     },
+    ...     force=True
+    ... )
+    >>> await Band.select()
+    # Note how the second row's name value is still `None`:
+    [{'id': 1, 'name': 'Pythonistas!!!'}, {'id': 2, 'name': None}]
+
+It's more efficient to exclude any rows with a value of null using a
+:ref:`where clause <where>`:
+
+.. code-block:: python
+
+    await Band.update(
+        {
+            Band.name + '!!!'
+        },
+        force=True
+    ).where(
+        Band.name.is_not_null()
     )
 
 -------------------------------------------------------------------------------

@@ -54,7 +54,7 @@ from piccolo.columns.defaults.timestamptz import (
 )
 from piccolo.columns.defaults.uuid import UUID4, UUIDArg
 from piccolo.columns.operators.comparison import ArrayAll, ArrayAny
-from piccolo.columns.operators.string import ConcatPostgres, ConcatSQLite
+from piccolo.columns.operators.string import Concat
 from piccolo.columns.reference import LazyTableReference
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils.encoding import dump_json
@@ -80,11 +80,8 @@ class ConcatDelegate:
         self,
         column_name: str,
         value: t.Union[str, Varchar, Text],
-        engine_type: str,
         reverse: bool = False,
     ) -> QueryString:
-        Concat = ConcatPostgres if engine_type == "postgres" else ConcatSQLite
-
         if isinstance(value, (Varchar, Text)):
             column: Column = value
             if len(column._meta.call_chain) > 0:
@@ -245,7 +242,6 @@ class TimedeltaDelegate:
                 f'"{column_name}" {operator} INTERVAL {value_string}',
             )
         elif engine_type == "sqlite":
-
             if isinstance(column, Interval):
                 # SQLite doesn't have a proper Interval type. Instead we store
                 # the number of seconds.
@@ -275,10 +271,10 @@ class TimedeltaDelegate:
 
             value_string = self.get_sqlite_interval_string(interval=value)
 
-            # We use `STRFTIME` instead of `datetime`, because `datetime`
+            # We use `strftime` instead of `datetime`, because `datetime`
             # doesn't return microseconds.
             return QueryString(
-                f"STRFTIME('{strftime_format}', \"{column_name}\", {value_string})"  # noqa: E501
+                f"strftime('{strftime_format}', \"{column_name}\", {value_string})"  # noqa: E501
             )
         else:
             raise ValueError("Unrecognised engine")
@@ -336,16 +332,13 @@ class Varchar(Column):
 
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.db_column_name,
-            value=value,
-            engine_type=self._meta.engine_type,
+            column_name=self._meta.db_column_name, value=value
         )
 
     def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         return self.concat_delegate.get_querystring(
             column_name=self._meta.db_column_name,
             value=value,
-            engine_type=self._meta.engine_type,
             reverse=True,
         )
 
@@ -434,16 +427,13 @@ class Text(Column):
 
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.db_column_name,
-            value=value,
-            engine_type=self._meta.engine_type,
+            column_name=self._meta.db_column_name, value=value
         )
 
     def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         return self.concat_delegate.get_querystring(
             column_name=self._meta.db_column_name,
             value=value,
-            engine_type=self._meta.engine_type,
             reverse=True,
         )
 

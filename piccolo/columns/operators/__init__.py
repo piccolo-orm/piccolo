@@ -16,4 +16,4 @@ from .comparison import (
     NotLike,
 )
 from .math import Add, Divide, Multiply, Subtract
-from .string import ConcatPostgres, ConcatSQLite
+from .string import Concat

@@ -111,13 +111,13 @@ class TestUpdate(DBTestCase):
 
 
 class MyTable(Table):
-    integer = Integer()
-    timestamp = Timestamp()
-    timestamptz = Timestamptz()
-    date = Date()
-    interval = Interval()
-    varchar = Varchar()
-    text = Text()
+    integer = Integer(null=True)
+    timestamp = Timestamp(null=True)
+    timestamptz = Timestamptz(null=True)
+    date = Date(null=True)
+    interval = Interval(null=True)
+    varchar = Varchar(null=True)
+    text = Text(null=True)
 
 
 INITIAL_DATETIME = datetime.datetime(
@@ -163,6 +163,20 @@ TEST_CASES = [
         querystring="!!!" + MyTable.text,
         expected="!!!Pythonistas",
     ),
+    OperatorTestCase(
+        description="Text is null",
+        column=MyTable.text,
+        initial=None,
+        querystring=MyTable.text + "!!!",
+        expected=None,
+    ),
+    OperatorTestCase(
+        description="Reverse Text is null",
+        column=MyTable.text,
+        initial=None,
+        querystring="!!!" + MyTable.text,
+        expected=None,
+    ),
     # Varchar
     OperatorTestCase(
         description="Add Varchar",
@@ -184,6 +198,20 @@ TEST_CASES = [
         initial="Pythonistas",
         querystring="!!!" + MyTable.varchar,
         expected="!!!Pythonistas",
+    ),
+    OperatorTestCase(
+        description="Varchar is null",
+        column=MyTable.varchar,
+        initial=None,
+        querystring=MyTable.varchar + "!!!",
+        expected=None,
+    ),
+    OperatorTestCase(
+        description="Reverse Varchar is null",
+        column=MyTable.varchar,
+        initial=None,
+        querystring="!!!" + MyTable.varchar,
+        expected=None,
     ),
     # Integer
     OperatorTestCase(
@@ -249,6 +277,20 @@ TEST_CASES = [
         querystring=2000 / MyTable.integer,
         expected=2,
     ),
+    OperatorTestCase(
+        description="Integer is null",
+        column=MyTable.integer,
+        initial=None,
+        querystring=MyTable.integer + 1,
+        expected=None,
+    ),
+    OperatorTestCase(
+        description="Reverse Integer is null",
+        column=MyTable.integer,
+        initial=None,
+        querystring=1 + MyTable.integer,
+        expected=None,
+    ),
     # Timestamp
     OperatorTestCase(
         description="Add Timestamp",
@@ -294,6 +336,13 @@ TEST_CASES = [
             second=29,
             microsecond=999000,
         ),
+    ),
+    OperatorTestCase(
+        description="Timestamp is null",
+        column=MyTable.timestamp,
+        initial=None,
+        querystring=MyTable.timestamp + DATETIME_DELTA,
+        expected=None,
     ),
     # Timestamptz
     OperatorTestCase(
@@ -344,6 +393,13 @@ TEST_CASES = [
             tzinfo=datetime.timezone.utc,
         ),
     ),
+    OperatorTestCase(
+        description="Timestamptz is null",
+        column=MyTable.timestamptz,
+        initial=None,
+        querystring=MyTable.timestamptz + DATETIME_DELTA,
+        expected=None,
+    ),
     # Date
     OperatorTestCase(
         description="Add Date",
@@ -365,6 +421,13 @@ TEST_CASES = [
         initial=INITIAL_DATETIME,
         querystring=MyTable.date - DATE_DELTA,
         expected=datetime.date(year=2021, month=12, day=31),
+    ),
+    OperatorTestCase(
+        description="Date is null",
+        column=MyTable.date,
+        initial=None,
+        querystring=MyTable.date + DATE_DELTA,
+        expected=None,
     ),
     # Interval
     OperatorTestCase(
@@ -389,6 +452,13 @@ TEST_CASES = [
         expected=datetime.timedelta(
             days=-1, seconds=86369, microseconds=999000
         ),
+    ),
+    OperatorTestCase(
+        description="Interval is null",
+        column=MyTable.interval,
+        initial=None,
+        querystring=MyTable.interval + DATETIME_DELTA,
+        expected=None,
     ),
 ]
 
