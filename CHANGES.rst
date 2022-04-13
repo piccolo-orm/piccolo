@@ -1,6 +1,33 @@
 Changes
 =======
 
+0.74.0
+------
+
+We've had the ability to bulk modify rows for a while. Here we append ``'!!!'``
+to each band's name:
+
+.. code-block:: python
+
+  >>> await Band.update({Band.name: Band.name + '!!!'}, force=True)
+
+It only worked for some columns - ``Varchar``, ``Text``, ``Integer`` etc.
+
+We now allow ``Date``, ``Timestamp``, ``Timestamptz`` and ``Interval`` columns
+to be bulk modified using a ``timedelta``. Here we modify each concert's start
+date, so it's one day later:
+
+.. code-block:: python
+
+  >>> Concert.update(
+  ...     {Concert.starts: Concert.starts + timedelta(days=1)},
+  ...     force=True
+  ... )
+
+Thanks to @theelderbeever for suggesting this feature.
+
+-------------------------------------------------------------------------------
+
 0.73.0
 ------
 
