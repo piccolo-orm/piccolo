@@ -19,7 +19,7 @@ date, so it's one day later:
 
 .. code-block:: python
 
-  >>> Concert.update(
+  >>> await Concert.update(
   ...     {Concert.starts: Concert.starts + timedelta(days=1)},
   ...     force=True
   ... )
