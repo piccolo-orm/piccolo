@@ -1,7 +1,11 @@
+import dataclasses
 import datetime
+import typing as t
 from unittest import TestCase
 
-from piccolo.columns.column_types import Timestamp, Varchar
+from piccolo.columns.base import Column
+from piccolo.columns.column_types import Date, Interval, Timestamp, Timestamptz
+from piccolo.querystring import QueryString
 from piccolo.table import Table
 from tests.base import DBTestCase, postgres_only
 from tests.example_apps.music.tables import Band, Poster
@@ -268,98 +272,210 @@ class TestTextUpdateOperators(DBTestCase):
         )
 
 
+###############################################################################
+
+
 class Concert(Table):
-    name = Varchar()
-    starts = Timestamp()
+    timestamp = Timestamp()
+    timestamptz = Timestamptz()
+    date = Date()
+    interval = Interval()
+
+
+INITIAL_DATETIME = datetime.datetime(
+    year=2022, month=1, day=1, hour=21, minute=0
+)
+INITIAL_INTERVAL = datetime.timedelta(days=1, hours=1, minutes=1)
+
+DELTA = datetime.timedelta(
+    days=1, hours=1, minutes=1, seconds=30, microseconds=500
+)
+DATE_DELTA = datetime.timedelta(days=1)
+
+
+@dataclasses.dataclass
+class OperatorTestCase:
+    description: str
+    column: Column
+    initial: t.Any
+    querystring: QueryString
+    expected: t.Any
+
+
+TEST_CASES = [
+    # Timestamp
+    OperatorTestCase(
+        description="Add Timestamp",
+        column=Concert.timestamp,
+        initial=INITIAL_DATETIME,
+        querystring=Concert.timestamp + DELTA,
+        expected=datetime.datetime(
+            year=2022,
+            month=1,
+            day=2,
+            hour=22,
+            minute=1,
+            second=30,
+            microsecond=500,
+        ),
+    ),
+    OperatorTestCase(
+        description="Reverse add Timestamp",
+        column=Concert.timestamp,
+        initial=INITIAL_DATETIME,
+        querystring=DELTA + Concert.timestamp,
+        expected=datetime.datetime(
+            year=2022,
+            month=1,
+            day=2,
+            hour=22,
+            minute=1,
+            second=30,
+            microsecond=500,
+        ),
+    ),
+    OperatorTestCase(
+        description="Subtract Timestamp",
+        column=Concert.timestamp,
+        initial=INITIAL_DATETIME,
+        querystring=Concert.timestamp - DELTA,
+        expected=datetime.datetime(
+            year=2021,
+            month=12,
+            day=31,
+            hour=19,
+            minute=58,
+            second=29,
+            microsecond=999500,
+        ),
+    ),
+    # Timestamptz
+    OperatorTestCase(
+        description="Add Timestamptz",
+        column=Concert.timestamptz,
+        initial=INITIAL_DATETIME,
+        querystring=Concert.timestamptz + DELTA,
+        expected=datetime.datetime(
+            year=2022,
+            month=1,
+            day=2,
+            hour=22,
+            minute=1,
+            second=30,
+            microsecond=500,
+            tzinfo=datetime.timezone.utc,
+        ),
+    ),
+    OperatorTestCase(
+        description="Reverse add Timestamptz",
+        column=Concert.timestamptz,
+        initial=INITIAL_DATETIME,
+        querystring=DELTA + Concert.timestamptz,
+        expected=datetime.datetime(
+            year=2022,
+            month=1,
+            day=2,
+            hour=22,
+            minute=1,
+            second=30,
+            microsecond=500,
+            tzinfo=datetime.timezone.utc,
+        ),
+    ),
+    OperatorTestCase(
+        description="Subtract Timestamptz",
+        column=Concert.timestamptz,
+        initial=INITIAL_DATETIME,
+        querystring=Concert.timestamptz - DELTA,
+        expected=datetime.datetime(
+            year=2021,
+            month=12,
+            day=31,
+            hour=19,
+            minute=58,
+            second=29,
+            microsecond=999500,
+            tzinfo=datetime.timezone.utc,
+        ),
+    ),
+    # Date
+    OperatorTestCase(
+        description="Add Date",
+        column=Concert.date,
+        initial=INITIAL_DATETIME,
+        querystring=Concert.date + DATE_DELTA,
+        expected=datetime.date(year=2022, month=1, day=2),
+    ),
+    OperatorTestCase(
+        description="Reverse add Date",
+        column=Concert.date,
+        initial=INITIAL_DATETIME,
+        querystring=DATE_DELTA + Concert.date,
+        expected=datetime.date(year=2022, month=1, day=2),
+    ),
+    OperatorTestCase(
+        description="Subtract Date",
+        column=Concert.date,
+        initial=INITIAL_DATETIME,
+        querystring=Concert.date - DATE_DELTA,
+        expected=datetime.date(year=2021, month=12, day=31),
+    ),
+    # Interval
+    OperatorTestCase(
+        description="Add Interval",
+        column=Concert.interval,
+        initial=INITIAL_INTERVAL,
+        querystring=Concert.interval + DELTA,
+        expected=datetime.timedelta(days=2, seconds=7350, microseconds=500),
+    ),
+    OperatorTestCase(
+        description="Reverse add Interval",
+        column=Concert.interval,
+        initial=INITIAL_INTERVAL,
+        querystring=DELTA + Concert.interval,
+        expected=datetime.timedelta(days=2, seconds=7350, microseconds=500),
+    ),
+    OperatorTestCase(
+        description="Subtract Interval",
+        column=Concert.interval,
+        initial=INITIAL_INTERVAL,
+        querystring=Concert.interval - DELTA,
+        expected=datetime.timedelta(
+            days=-1, seconds=86369, microseconds=999500
+        ),
+    ),
+]
 
 
 # TODO - add SQLite support
 @postgres_only
-class TestTimestampUpdateOperators(TestCase):
-
-    delta = datetime.timedelta(
-        days=1, hours=1, minutes=1, seconds=30, microseconds=500
-    )
-
+class TestOperators(TestCase):
     def setUp(self):
         Concert.create_table().run_sync()
-        Concert.insert(
-            Concert(
-                name="Royal Albert Hall",
-                starts=datetime.datetime(
-                    year=2022, month=1, day=1, hour=21, minute=0
-                ),
-            )
-        ).run_sync()
 
     def tearDown(self):
         Concert.alter().drop_table().run_sync()
 
-    def test_add(self):
-        query = Concert.update(
-            {Concert.starts: Concert.starts + self.delta},
-            force=True,
-        )
-        query.run_sync()
+    def test_operators(self):
+        for test_case in TEST_CASES:
+            # Create the initial data in the database.
+            concert = Concert()
+            setattr(concert, test_case.column._meta.name, test_case.initial)
+            concert.save().run_sync()
 
-        new_start_value = (
-            Concert.select(Concert.starts).first().run_sync()["starts"]
-        )
-        self.assertEqual(
-            new_start_value,
-            datetime.datetime(
-                year=2022,
-                month=1,
-                day=2,
-                hour=22,
-                minute=1,
-                second=30,
-                microsecond=500,
-            ),
-        )
+            # Apply the update.
+            Concert.update(
+                {test_case.column: test_case.querystring}, force=True
+            ).run_sync()
 
-    def test_radd(self):
-        query = Concert.update(
-            {Concert.starts: self.delta + Concert.starts},
-            force=True,
-        )
-        query.run_sync()
+            # Make sure the value returned from the database is correct.
+            new_value = getattr(
+                Concert.objects().first().run_sync(),
+                test_case.column._meta.name,
+            )
+            self.assertEqual(
+                new_value, test_case.expected, msg=test_case.description
+            )
 
-        new_start_value = (
-            Concert.select(Concert.starts).first().run_sync()["starts"]
-        )
-        self.assertEqual(
-            new_start_value,
-            datetime.datetime(
-                year=2022,
-                month=1,
-                day=2,
-                hour=22,
-                minute=1,
-                second=30,
-                microsecond=500,
-            ),
-        )
-
-    def test_substract(self):
-        query = Concert.update(
-            {Concert.starts: Concert.starts - self.delta},
-            force=True,
-        )
-        query.run_sync()
-
-        new_start_value = (
-            Concert.select(Concert.starts).first().run_sync()["starts"]
-        )
-        self.assertEqual(
-            new_start_value,
-            datetime.datetime(
-                year=2021,
-                month=12,
-                day=31,
-                hour=19,
-                minute=58,
-                second=29,
-                microsecond=999500,
-            ),
-        )
+            # Clean up
+            Concert.delete(force=True).run_sync()

@@ -169,10 +169,13 @@ class TimedeltaDelegate:
 
     Example::
 
+        class Concert(Table):
+            starts = Timestamp()
+
         # Lets us increase all of the matching values by 1 day:
-        await Concert.update({
-            Concert.starts: Concert.starts + datetime.timedelta(days=1)
-        })
+        >>> await Concert.update({
+        ...     Concert.starts: Concert.starts + datetime.timedelta(days=1)
+        ... })
 
     """
 
@@ -251,6 +254,9 @@ class Varchar(Column):
     @property
     def column_type(self):
         return f"VARCHAR({self.length})" if self.length else "VARCHAR"
+
+    ###########################################################################
+    # For update queries
 
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         engine_type = self._meta.table._meta.db.engine_type
@@ -348,6 +354,9 @@ class Text(Column):
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
+
+    ###########################################################################
+    # For update queries
 
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         engine_type = self._meta.table._meta.db.engine_type
@@ -480,6 +489,9 @@ class Integer(Column):
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
+
+    ###########################################################################
+    # For update queries
 
     def __add__(self, value: t.Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
@@ -810,7 +822,7 @@ class Timestamp(Column):
     """
 
     value_type = datetime
-    timedelta_delta = TimedeltaDelegate()
+    timedelta_delegate = TimedeltaDelegate()
 
     def __init__(
         self, default: TimestampArg = TimestampNow(), **kwargs
@@ -832,8 +844,11 @@ class Timestamp(Column):
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
+    ###########################################################################
+    # For update queries
+
     def __add__(self, value: timedelta) -> QueryString:
-        return self.timedelta_delta.get_querystring(
+        return self.timedelta_delegate.get_querystring(
             column_name=self._meta.db_column_name, operator="+", value=value
         )
 
@@ -841,7 +856,7 @@ class Timestamp(Column):
         return self.__add__(value)
 
     def __sub__(self, value: timedelta) -> QueryString:
-        return self.timedelta_delta.get_querystring(
+        return self.timedelta_delegate.get_querystring(
             column_name=self._meta.db_column_name, operator="-", value=value
         )
 
@@ -896,6 +911,7 @@ class Timestamptz(Column):
     """
 
     value_type = datetime
+    timedelta_delegate = TimedeltaDelegate()
 
     def __init__(
         self, default: TimestamptzArg = TimestamptzNow(), **kwargs
@@ -913,6 +929,22 @@ class Timestamptz(Column):
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
+
+    ###########################################################################
+    # For update queries
+
+    def __add__(self, value: timedelta) -> QueryString:
+        return self.timedelta_delegate.get_querystring(
+            column_name=self._meta.db_column_name, operator="+", value=value
+        )
+
+    def __radd__(self, value: timedelta) -> QueryString:
+        return self.__add__(value)
+
+    def __sub__(self, value: timedelta) -> QueryString:
+        return self.timedelta_delegate.get_querystring(
+            column_name=self._meta.db_column_name, operator="-", value=value
+        )
 
     ###########################################################################
     # Descriptors
@@ -957,6 +989,7 @@ class Date(Column):
     """
 
     value_type = date
+    timedelta_delegate = TimedeltaDelegate()
 
     def __init__(self, default: DateArg = DateNow(), **kwargs) -> None:
         self._validate_default(default, DateArg.__args__)  # type: ignore
@@ -970,6 +1003,22 @@ class Date(Column):
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
+
+    ###########################################################################
+    # For update queries
+
+    def __add__(self, value: timedelta) -> QueryString:
+        return self.timedelta_delegate.get_querystring(
+            column_name=self._meta.db_column_name, operator="+", value=value
+        )
+
+    def __radd__(self, value: timedelta) -> QueryString:
+        return self.__add__(value)
+
+    def __sub__(self, value: timedelta) -> QueryString:
+        return self.timedelta_delegate.get_querystring(
+            column_name=self._meta.db_column_name, operator="-", value=value
+        )
 
     ###########################################################################
     # Descriptors
@@ -1014,6 +1063,7 @@ class Time(Column):
     """
 
     value_type = time
+    timedelta_delegate = TimedeltaDelegate()
 
     def __init__(self, default: TimeArg = TimeNow(), **kwargs) -> None:
         self._validate_default(default, TimeArg.__args__)  # type: ignore
@@ -1024,6 +1074,22 @@ class Time(Column):
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
+
+    ###########################################################################
+    # For update queries
+
+    def __add__(self, value: timedelta) -> QueryString:
+        return self.timedelta_delegate.get_querystring(
+            column_name=self._meta.db_column_name, operator="+", value=value
+        )
+
+    def __radd__(self, value: timedelta) -> QueryString:
+        return self.__add__(value)
+
+    def __sub__(self, value: timedelta) -> QueryString:
+        return self.timedelta_delegate.get_querystring(
+            column_name=self._meta.db_column_name, operator="-", value=value
+        )
 
     ###########################################################################
     # Descriptors
@@ -1068,6 +1134,7 @@ class Interval(Column):  # lgtm [py/missing-equals]
     """
 
     value_type = timedelta
+    timedelta_delegate = TimedeltaDelegate()
 
     def __init__(
         self, default: IntervalArg = IntervalCustom(), **kwargs
@@ -1092,6 +1159,22 @@ class Interval(Column):  # lgtm [py/missing-equals]
             # https://sqlite.org/datatype3.html#determination_of_column_affinity
             return "SECONDS"
         raise Exception("Unrecognized engine type")
+
+    ###########################################################################
+    # For update queries
+
+    def __add__(self, value: timedelta) -> QueryString:
+        return self.timedelta_delegate.get_querystring(
+            column_name=self._meta.db_column_name, operator="+", value=value
+        )
+
+    def __radd__(self, value: timedelta) -> QueryString:
+        return self.__add__(value)
+
+    def __sub__(self, value: timedelta) -> QueryString:
+        return self.timedelta_delegate.get_querystring(
+            column_name=self._meta.db_column_name, operator="-", value=value
+        )
 
     ###########################################################################
     # Descriptors
