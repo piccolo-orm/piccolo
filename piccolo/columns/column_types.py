@@ -188,6 +188,13 @@ class TimedeltaDelegate:
     }
 
     def get_postgres_interval_string(self, interval: timedelta) -> str:
+        """
+        :returns:
+            A string like::
+
+                "'1 DAYS 5 SECONDS 1000 MICROSECONDS'"
+
+        """
         output = []
         for timedelta_key, postgres_name in self.postgres_attr_map.items():
             timestamp_value = getattr(interval, timedelta_key)
@@ -198,6 +205,13 @@ class TimedeltaDelegate:
         return f"'{output_string}'"
 
     def get_sqlite_interval_string(self, interval: timedelta) -> str:
+        """
+        :returns:
+            A string like::
+
+                "'+1 DAYS', '+5.001 SECONDS'"
+
+        """
         output = []
 
         data = {
