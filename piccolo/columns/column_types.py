@@ -231,16 +231,22 @@ class TimedeltaDelegate:
                 f'"{column_name}" {operator} INTERVAL {value_string}',
             )
         elif engine_type == "sqlite":
-            if operator == "-":
-                value = value * -1
 
-            if round(value.microseconds / 1000) * 1000 != value.microseconds:
-                raise ValueError(
-                    "timedeltas with such high precision won't save "
-                    "accurately - the max resolution is 1000 microseconds."
+            if isinstance(column, Interval):
+                # SQLite doesn't have a proper Interval type. Instead we store
+                # the number of seconds.
+                return QueryString(
+                    f'CAST("{column_name}" AS REAL) {operator} {value.total_seconds()}'  # noqa: E501
                 )
-
-            if isinstance(column, (Timestamp, Timestamptz)):
+            elif isinstance(column, (Timestamp, Timestamptz)):
+                if (
+                    round(value.microseconds / 1000) * 1000
+                    != value.microseconds
+                ):
+                    raise ValueError(
+                        "timedeltas with such high precision won't save "
+                        "accurately - the max resolution is 1 millisecond."
+                    )
                 strftime_format = "%Y-%m-%d %H:%M:%f"
             elif isinstance(column, Date):
                 strftime_format = "%Y-%m-%d"
@@ -250,12 +256,15 @@ class TimedeltaDelegate:
                     "addition currently."
                 )
 
+            if operator == "-":
+                value = value * -1
+
             value_string = self.get_sqlite_interval_string(interval=value)
 
             # We use `STRFTIME` instead of `datetime`, because `datetime`
             # doesn't return microseconds.
             return QueryString(
-                f"STRFTIME('{strftime_format}', {column_name}, {value_string})"
+                f"STRFTIME('{strftime_format}', \"{column_name}\", {value_string})"  # noqa: E501
             )
         else:
             raise ValueError("Unrecognised engine")

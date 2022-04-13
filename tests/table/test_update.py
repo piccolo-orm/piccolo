@@ -15,7 +15,7 @@ from piccolo.columns.column_types import (
 )
 from piccolo.querystring import QueryString
 from piccolo.table import Table
-from tests.base import DBTestCase, is_running_postgres, sqlite_only
+from tests.base import DBTestCase, sqlite_only
 from tests.example_apps.music.tables import Band
 
 
@@ -366,42 +366,31 @@ TEST_CASES = [
         querystring=MyTable.date - DATE_DELTA,
         expected=datetime.date(year=2021, month=12, day=31),
     ),
+    # Interval
+    OperatorTestCase(
+        description="Add Interval",
+        column=MyTable.interval,
+        initial=INITIAL_INTERVAL,
+        querystring=MyTable.interval + DATETIME_DELTA,
+        expected=datetime.timedelta(days=2, seconds=7350, microseconds=1000),
+    ),
+    OperatorTestCase(
+        description="Reverse add Interval",
+        column=MyTable.interval,
+        initial=INITIAL_INTERVAL,
+        querystring=DATETIME_DELTA + MyTable.interval,
+        expected=datetime.timedelta(days=2, seconds=7350, microseconds=1000),
+    ),
+    OperatorTestCase(
+        description="Subtract Interval",
+        column=MyTable.interval,
+        initial=INITIAL_INTERVAL,
+        querystring=MyTable.interval - DATETIME_DELTA,
+        expected=datetime.timedelta(
+            days=-1, seconds=86369, microseconds=999000
+        ),
+    ),
 ]
-
-
-if is_running_postgres():
-    TEST_CASES.extend(
-        [
-            # Interval
-            OperatorTestCase(
-                description="Add Interval",
-                column=MyTable.interval,
-                initial=INITIAL_INTERVAL,
-                querystring=MyTable.interval + DATETIME_DELTA,
-                expected=datetime.timedelta(
-                    days=2, seconds=7350, microseconds=1000
-                ),
-            ),
-            OperatorTestCase(
-                description="Reverse add Interval",
-                column=MyTable.interval,
-                initial=INITIAL_INTERVAL,
-                querystring=DATETIME_DELTA + MyTable.interval,
-                expected=datetime.timedelta(
-                    days=2, seconds=7350, microseconds=1000
-                ),
-            ),
-            OperatorTestCase(
-                description="Subtract Interval",
-                column=MyTable.interval,
-                initial=INITIAL_INTERVAL,
-                querystring=MyTable.interval - DATETIME_DELTA,
-                expected=datetime.timedelta(
-                    days=-1, seconds=86369, microseconds=999000
-                ),
-            ),
-        ]
-    )
 
 
 class TestOperators(TestCase):
@@ -444,11 +433,6 @@ class TestOperators(TestCase):
         Some usecases aren't supported by SQLite, and should raise a
         ``ValueError``.
         """
-        with self.assertRaises(ValueError):
-            # We don't currently support this, because there isn't really an
-            # interval type in SQLite. We're
-            MyTable.interval + datetime.timedelta(hours=1)
-
         with self.assertRaises(ValueError):
             # An error should be raised because we can't save at this level
             # of resolution - 1 millisecond is the minimum.
