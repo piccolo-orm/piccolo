@@ -4,11 +4,19 @@ import typing as t
 from unittest import TestCase
 
 from piccolo.columns.base import Column
-from piccolo.columns.column_types import Date, Interval, Timestamp, Timestamptz
+from piccolo.columns.column_types import (
+    Date,
+    Integer,
+    Interval,
+    Text,
+    Timestamp,
+    Timestamptz,
+    Varchar,
+)
 from piccolo.querystring import QueryString
 from piccolo.table import Table
 from tests.base import DBTestCase, postgres_only
-from tests.example_apps.music.tables import Band, Poster
+from tests.example_apps.music.tables import Band
 
 
 class TestUpdate(DBTestCase):
@@ -98,188 +106,18 @@ class TestUpdate(DBTestCase):
         self.check_response()
 
 
-class TestIntUpdateOperators(DBTestCase):
-    def test_add(self):
-        self.insert_row()
-
-        Band.update(
-            {Band.popularity: Band.popularity + 10}, force=True
-        ).run_sync()
-
-        response = Band.select(Band.popularity).first().run_sync()
-
-        self.assertEqual(response["popularity"], 1010)
-
-    def test_add_column(self):
-        self.insert_row()
-
-        Band.update(
-            {Band.popularity: Band.popularity + Band.popularity}, force=True
-        ).run_sync()
-
-        response = Band.select(Band.popularity).first().run_sync()
-
-        self.assertEqual(response["popularity"], 2000)
-
-    def test_radd(self):
-        self.insert_row()
-
-        Band.update(
-            {Band.popularity: 10 + Band.popularity}, force=True
-        ).run_sync()
-
-        response = Band.select(Band.popularity).first().run_sync()
-
-        self.assertEqual(response["popularity"], 1010)
-
-    def test_sub(self):
-        self.insert_row()
-
-        Band.update(
-            {Band.popularity: Band.popularity - 10}, force=True
-        ).run_sync()
-
-        response = Band.select(Band.popularity).first().run_sync()
-
-        self.assertEqual(response["popularity"], 990)
-
-    def test_rsub(self):
-        self.insert_row()
-
-        Band.update(
-            {Band.popularity: 1100 - Band.popularity}, force=True
-        ).run_sync()
-
-        response = Band.select(Band.popularity).first().run_sync()
-
-        self.assertEqual(response["popularity"], 100)
-
-    def test_mul(self):
-        self.insert_row()
-
-        Band.update(
-            {Band.popularity: Band.popularity * 2}, force=True
-        ).run_sync()
-
-        response = Band.select(Band.popularity).first().run_sync()
-
-        self.assertEqual(response["popularity"], 2000)
-
-    def test_rmul(self):
-        self.insert_row()
-
-        Band.update(
-            {Band.popularity: 2 * Band.popularity}, force=True
-        ).run_sync()
-
-        response = Band.select(Band.popularity).first().run_sync()
-
-        self.assertEqual(response["popularity"], 2000)
-
-    def test_div(self):
-        self.insert_row()
-
-        Band.update(
-            {Band.popularity: Band.popularity / 10}, force=True
-        ).run_sync()
-
-        response = Band.select(Band.popularity).first().run_sync()
-
-        self.assertEqual(response["popularity"], 100)
-
-    def test_rdiv(self):
-        self.insert_row()
-
-        Band.update(
-            {Band.popularity: 1000 / Band.popularity}, force=True
-        ).run_sync()
-
-        response = Band.select(Band.popularity).first().run_sync()
-
-        self.assertEqual(response["popularity"], 1)
-
-
-class TestVarcharUpdateOperators(DBTestCase):
-    def test_add(self):
-        self.insert_row()
-
-        Band.update({Band.name: Band.name + "!!!"}, force=True).run_sync()
-
-        response = Band.select(Band.name).first().run_sync()
-
-        self.assertEqual(response["name"], "Pythonistas!!!")
-
-    def test_add_column(self):
-        self.insert_row()
-
-        Band.update({Band.name: Band.name + Band.name}, force=True).run_sync()
-
-        response = Band.select(Band.name).first().run_sync()
-
-        self.assertEqual(response["name"], "PythonistasPythonistas")
-
-    def test_radd(self):
-        self.insert_row()
-
-        Band.update({Band.name: "!!!" + Band.name}, force=True).run_sync()
-
-        response = Band.select(Band.name).first().run_sync()
-
-        self.assertEqual(response["name"], "!!!Pythonistas")
-
-
-class TestTextUpdateOperators(DBTestCase):
-    def setUp(self):
-        super().setUp()
-        Poster(content="Join us for this amazing show").save().run_sync()
-
-    def test_add(self):
-        Poster.update(
-            {Poster.content: Poster.content + "!!!"}, force=True
-        ).run_sync()
-
-        response = Poster.select(Poster.content).first().run_sync()
-
-        self.assertEqual(
-            response["content"], "Join us for this amazing show!!!"
-        )
-
-    def test_add_column(self):
-        self.insert_row()
-
-        Poster.update(
-            {Poster.content: Poster.content + Poster.content}, force=True
-        ).run_sync()
-
-        response = Poster.select(Poster.content).first().run_sync()
-
-        self.assertEqual(
-            response["content"],
-            "Join us for this amazing show" * 2,
-        )
-
-    def test_radd(self):
-        self.insert_row()
-
-        Poster.update(
-            {Poster.content: "!!!" + Poster.content}, force=True
-        ).run_sync()
-
-        response = Poster.select(Poster.content).first().run_sync()
-
-        self.assertEqual(
-            response["content"], "!!!Join us for this amazing show"
-        )
-
-
 ###############################################################################
+# Test operators
 
 
-class Concert(Table):
+class MyTable(Table):
+    integer = Integer()
     timestamp = Timestamp()
     timestamptz = Timestamptz()
     date = Date()
     interval = Interval()
+    varchar = Varchar()
+    text = Text()
 
 
 INITIAL_DATETIME = datetime.datetime(
@@ -287,7 +125,7 @@ INITIAL_DATETIME = datetime.datetime(
 )
 INITIAL_INTERVAL = datetime.timedelta(days=1, hours=1, minutes=1)
 
-DELTA = datetime.timedelta(
+DATETIME_DELTA = datetime.timedelta(
     days=1, hours=1, minutes=1, seconds=30, microseconds=500
 )
 DATE_DELTA = datetime.timedelta(days=1)
@@ -303,12 +141,120 @@ class OperatorTestCase:
 
 
 TEST_CASES = [
+    # Text
+    OperatorTestCase(
+        description="Add Text",
+        column=MyTable.text,
+        initial="Pythonistas",
+        querystring=MyTable.text + "!!!",
+        expected="Pythonistas!!!",
+    ),
+    OperatorTestCase(
+        description="Add Text columns",
+        column=MyTable.text,
+        initial="Pythonistas",
+        querystring=MyTable.text + MyTable.text,
+        expected="PythonistasPythonistas",
+    ),
+    OperatorTestCase(
+        description="Reverse add Text",
+        column=MyTable.text,
+        initial="Pythonistas",
+        querystring="!!!" + MyTable.text,
+        expected="!!!Pythonistas",
+    ),
+    # Varchar
+    OperatorTestCase(
+        description="Add Varchar",
+        column=MyTable.varchar,
+        initial="Pythonistas",
+        querystring=MyTable.varchar + "!!!",
+        expected="Pythonistas!!!",
+    ),
+    OperatorTestCase(
+        description="Add Varchar columns",
+        column=MyTable.varchar,
+        initial="Pythonistas",
+        querystring=MyTable.varchar + MyTable.varchar,
+        expected="PythonistasPythonistas",
+    ),
+    OperatorTestCase(
+        description="Reverse add Varchar",
+        column=MyTable.varchar,
+        initial="Pythonistas",
+        querystring="!!!" + MyTable.varchar,
+        expected="!!!Pythonistas",
+    ),
+    # Integer
+    OperatorTestCase(
+        description="Add Integer",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=MyTable.integer + 10,
+        expected=1010,
+    ),
+    OperatorTestCase(
+        description="Reverse add Integer",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=10 + MyTable.integer,
+        expected=1010,
+    ),
+    OperatorTestCase(
+        description="Add Integer colums together",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=MyTable.integer + MyTable.integer,
+        expected=2000,
+    ),
+    OperatorTestCase(
+        description="Subtract Integer",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=MyTable.integer - 10,
+        expected=990,
+    ),
+    OperatorTestCase(
+        description="Reverse subtract Integer",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=2000 - MyTable.integer,
+        expected=1000,
+    ),
+    OperatorTestCase(
+        description="Multiply Integer",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=MyTable.integer * 2,
+        expected=2000,
+    ),
+    OperatorTestCase(
+        description="Reverse multiply Integer",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=2 * MyTable.integer,
+        expected=2000,
+    ),
+    OperatorTestCase(
+        description="Divide Integer",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=MyTable.integer / 10,
+        expected=100,
+    ),
+    OperatorTestCase(
+        description="Reverse divide Integer",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=2000 / MyTable.integer,
+        expected=2,
+    ),
     # Timestamp
     OperatorTestCase(
         description="Add Timestamp",
-        column=Concert.timestamp,
+        column=MyTable.timestamp,
         initial=INITIAL_DATETIME,
-        querystring=Concert.timestamp + DELTA,
+        querystring=MyTable.timestamp + DATETIME_DELTA,
         expected=datetime.datetime(
             year=2022,
             month=1,
@@ -321,9 +267,9 @@ TEST_CASES = [
     ),
     OperatorTestCase(
         description="Reverse add Timestamp",
-        column=Concert.timestamp,
+        column=MyTable.timestamp,
         initial=INITIAL_DATETIME,
-        querystring=DELTA + Concert.timestamp,
+        querystring=DATETIME_DELTA + MyTable.timestamp,
         expected=datetime.datetime(
             year=2022,
             month=1,
@@ -336,9 +282,9 @@ TEST_CASES = [
     ),
     OperatorTestCase(
         description="Subtract Timestamp",
-        column=Concert.timestamp,
+        column=MyTable.timestamp,
         initial=INITIAL_DATETIME,
-        querystring=Concert.timestamp - DELTA,
+        querystring=MyTable.timestamp - DATETIME_DELTA,
         expected=datetime.datetime(
             year=2021,
             month=12,
@@ -352,9 +298,9 @@ TEST_CASES = [
     # Timestamptz
     OperatorTestCase(
         description="Add Timestamptz",
-        column=Concert.timestamptz,
+        column=MyTable.timestamptz,
         initial=INITIAL_DATETIME,
-        querystring=Concert.timestamptz + DELTA,
+        querystring=MyTable.timestamptz + DATETIME_DELTA,
         expected=datetime.datetime(
             year=2022,
             month=1,
@@ -368,9 +314,9 @@ TEST_CASES = [
     ),
     OperatorTestCase(
         description="Reverse add Timestamptz",
-        column=Concert.timestamptz,
+        column=MyTable.timestamptz,
         initial=INITIAL_DATETIME,
-        querystring=DELTA + Concert.timestamptz,
+        querystring=DATETIME_DELTA + MyTable.timestamptz,
         expected=datetime.datetime(
             year=2022,
             month=1,
@@ -384,9 +330,9 @@ TEST_CASES = [
     ),
     OperatorTestCase(
         description="Subtract Timestamptz",
-        column=Concert.timestamptz,
+        column=MyTable.timestamptz,
         initial=INITIAL_DATETIME,
-        querystring=Concert.timestamptz - DELTA,
+        querystring=MyTable.timestamptz - DATETIME_DELTA,
         expected=datetime.datetime(
             year=2021,
             month=12,
@@ -401,45 +347,45 @@ TEST_CASES = [
     # Date
     OperatorTestCase(
         description="Add Date",
-        column=Concert.date,
+        column=MyTable.date,
         initial=INITIAL_DATETIME,
-        querystring=Concert.date + DATE_DELTA,
+        querystring=MyTable.date + DATE_DELTA,
         expected=datetime.date(year=2022, month=1, day=2),
     ),
     OperatorTestCase(
         description="Reverse add Date",
-        column=Concert.date,
+        column=MyTable.date,
         initial=INITIAL_DATETIME,
-        querystring=DATE_DELTA + Concert.date,
+        querystring=DATE_DELTA + MyTable.date,
         expected=datetime.date(year=2022, month=1, day=2),
     ),
     OperatorTestCase(
         description="Subtract Date",
-        column=Concert.date,
+        column=MyTable.date,
         initial=INITIAL_DATETIME,
-        querystring=Concert.date - DATE_DELTA,
+        querystring=MyTable.date - DATE_DELTA,
         expected=datetime.date(year=2021, month=12, day=31),
     ),
     # Interval
     OperatorTestCase(
         description="Add Interval",
-        column=Concert.interval,
+        column=MyTable.interval,
         initial=INITIAL_INTERVAL,
-        querystring=Concert.interval + DELTA,
+        querystring=MyTable.interval + DATETIME_DELTA,
         expected=datetime.timedelta(days=2, seconds=7350, microseconds=500),
     ),
     OperatorTestCase(
         description="Reverse add Interval",
-        column=Concert.interval,
+        column=MyTable.interval,
         initial=INITIAL_INTERVAL,
-        querystring=DELTA + Concert.interval,
+        querystring=DATETIME_DELTA + MyTable.interval,
         expected=datetime.timedelta(days=2, seconds=7350, microseconds=500),
     ),
     OperatorTestCase(
         description="Subtract Interval",
-        column=Concert.interval,
+        column=MyTable.interval,
         initial=INITIAL_INTERVAL,
-        querystring=Concert.interval - DELTA,
+        querystring=MyTable.interval - DATETIME_DELTA,
         expected=datetime.timedelta(
             days=-1, seconds=86369, microseconds=999500
         ),
@@ -451,26 +397,26 @@ TEST_CASES = [
 @postgres_only
 class TestOperators(TestCase):
     def setUp(self):
-        Concert.create_table().run_sync()
+        MyTable.create_table().run_sync()
 
     def tearDown(self):
-        Concert.alter().drop_table().run_sync()
+        MyTable.alter().drop_table().run_sync()
 
     def test_operators(self):
         for test_case in TEST_CASES:
             # Create the initial data in the database.
-            concert = Concert()
+            concert = MyTable()
             setattr(concert, test_case.column._meta.name, test_case.initial)
             concert.save().run_sync()
 
             # Apply the update.
-            Concert.update(
+            MyTable.update(
                 {test_case.column: test_case.querystring}, force=True
             ).run_sync()
 
             # Make sure the value returned from the database is correct.
             new_value = getattr(
-                Concert.objects().first().run_sync(),
+                MyTable.objects().first().run_sync(),
                 test_case.column._meta.name,
             )
             self.assertEqual(
@@ -478,4 +424,4 @@ class TestOperators(TestCase):
             )
 
             # Clean up
-            Concert.delete(force=True).run_sync()
+            MyTable.delete(force=True).run_sync()
