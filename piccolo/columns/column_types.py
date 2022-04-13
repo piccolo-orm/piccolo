@@ -181,31 +181,84 @@ class TimedeltaDelegate:
 
     # Maps the attribute name in Python's timedelta to what it's called in
     # Postgres.
-    attr_map: t.Dict[str, str] = {
+    postgres_attr_map: t.Dict[str, str] = {
         "days": "DAYS",
         "seconds": "SECONDS",
         "microseconds": "MICROSECONDS",
     }
 
-    def get_interval_string(self, interval: timedelta) -> str:
+    def get_postgres_interval_string(self, interval: timedelta) -> str:
         output = []
-        for timedelta_key, postgres_name in self.attr_map.items():
+        for timedelta_key, postgres_name in self.postgres_attr_map.items():
             timestamp_value = getattr(interval, timedelta_key)
             if timestamp_value:
                 output.append(f"{timestamp_value} {postgres_name}")
 
-        return " ".join(output)
+        output_string = " ".join(output)
+        return f"'{output_string}'"
+
+    def get_sqlite_interval_string(self, interval: timedelta) -> str:
+        output = []
+
+        data = {
+            "DAYS": interval.days,
+            "SECONDS": interval.seconds + (interval.microseconds / 10**6),
+        }
+
+        for key, value in data.items():
+            if value:
+                operator = "+" if value >= 0 else ""
+                output.append(f"'{operator}{value} {key}'")
+
+        output_string = ", ".join(output)
+        return output_string
 
     def get_querystring(
-        self, column_name: str, operator: Literal["+", "-"], value: timedelta
+        self,
+        column: Column,
+        operator: Literal["+", "-"],
+        value: timedelta,
+        engine_type: str,
     ) -> QueryString:
-        if isinstance(value, timedelta):
-            value_string = self.get_interval_string(interval=value)
+        column_name = column._meta.name
+
+        if not isinstance(value, timedelta):
+            raise ValueError("Only timedelta values can be added.")
+
+        if engine_type == "postgres":
+            value_string = self.get_postgres_interval_string(interval=value)
             return QueryString(
-                f"\"{column_name}\" {operator} INTERVAL '{value_string}'",
+                f'"{column_name}" {operator} INTERVAL {value_string}',
+            )
+        elif engine_type == "sqlite":
+            if operator == "-":
+                value = value * -1
+
+            if round(value.microseconds / 1000) * 1000 != value.microseconds:
+                raise ValueError(
+                    "timedeltas with such high precision won't save "
+                    "accurately - the max resolution is 1000 microseconds."
+                )
+
+            if isinstance(column, (Timestamp, Timestamptz)):
+                strftime_format = "%Y-%m-%d %H:%M:%f"
+            elif isinstance(column, Date):
+                strftime_format = "%Y-%m-%d"
+            else:
+                raise ValueError(
+                    f"{column.__class__.__name__} doesn't support timedelta "
+                    "addition currently."
+                )
+
+            value_string = self.get_sqlite_interval_string(interval=value)
+
+            # We use `STRFTIME` instead of `datetime`, because `datetime`
+            # doesn't return microseconds.
+            return QueryString(
+                f"STRFTIME('{strftime_format}', {column_name}, {value_string})"
             )
         else:
-            raise ValueError("Only timedelta values can be added.")
+            raise ValueError("Unrecognised engine")
 
 
 ###############################################################################
@@ -259,19 +312,17 @@ class Varchar(Column):
     # For update queries
 
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
-        engine_type = self._meta.table._meta.db.engine_type
         return self.concat_delegate.get_querystring(
             column_name=self._meta.db_column_name,
             value=value,
-            engine_type=engine_type,
+            engine_type=self._meta.engine_type,
         )
 
     def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
-        engine_type = self._meta.table._meta.db.engine_type
         return self.concat_delegate.get_querystring(
             column_name=self._meta.db_column_name,
             value=value,
-            engine_type=engine_type,
+            engine_type=self._meta.engine_type,
             reverse=True,
         )
 
@@ -359,19 +410,17 @@ class Text(Column):
     # For update queries
 
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
-        engine_type = self._meta.table._meta.db.engine_type
         return self.concat_delegate.get_querystring(
             column_name=self._meta.db_column_name,
             value=value,
-            engine_type=engine_type,
+            engine_type=self._meta.engine_type,
         )
 
     def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
-        engine_type = self._meta.table._meta.db.engine_type
         return self.concat_delegate.get_querystring(
             column_name=self._meta.db_column_name,
             value=value,
-            engine_type=engine_type,
+            engine_type=self._meta.engine_type,
             reverse=True,
         )
 
@@ -607,7 +656,7 @@ class BigInt(Integer):
 
     @property
     def column_type(self):
-        engine_type = self._meta.table._meta.db.engine_type
+        engine_type = self._meta.engine_type
         if engine_type == "postgres":
             return "BIGINT"
         elif engine_type == "sqlite":
@@ -655,7 +704,7 @@ class SmallInt(Integer):
 
     @property
     def column_type(self):
-        engine_type = self._meta.table._meta.db.engine_type
+        engine_type = self._meta.engine_type
         if engine_type == "postgres":
             return "SMALLINT"
         elif engine_type == "sqlite":
@@ -694,7 +743,7 @@ class Serial(Column):
 
     @property
     def column_type(self):
-        engine_type = self._meta.table._meta.db.engine_type
+        engine_type = self._meta.engine_type
         if engine_type == "postgres":
             return "SERIAL"
         elif engine_type == "sqlite":
@@ -702,7 +751,7 @@ class Serial(Column):
         raise Exception("Unrecognized engine type")
 
     def default(self):
-        engine_type = self._meta.table._meta.db.engine_type
+        engine_type = self._meta.engine_type
         if engine_type == "postgres":
             return DEFAULT
         elif engine_type == "sqlite":
@@ -734,7 +783,7 @@ class BigSerial(Serial):
 
     @property
     def column_type(self):
-        engine_type = self._meta.table._meta.db.engine_type
+        engine_type = self._meta.engine_type
         if engine_type == "postgres":
             return "BIGSERIAL"
         elif engine_type == "sqlite":
@@ -849,7 +898,10 @@ class Timestamp(Column):
 
     def __add__(self, value: timedelta) -> QueryString:
         return self.timedelta_delegate.get_querystring(
-            column_name=self._meta.db_column_name, operator="+", value=value
+            column=self,
+            operator="+",
+            value=value,
+            engine_type=self._meta.engine_type,
         )
 
     def __radd__(self, value: timedelta) -> QueryString:
@@ -857,7 +909,10 @@ class Timestamp(Column):
 
     def __sub__(self, value: timedelta) -> QueryString:
         return self.timedelta_delegate.get_querystring(
-            column_name=self._meta.db_column_name, operator="-", value=value
+            column=self,
+            operator="-",
+            value=value,
+            engine_type=self._meta.engine_type,
         )
 
     ###########################################################################
@@ -935,7 +990,10 @@ class Timestamptz(Column):
 
     def __add__(self, value: timedelta) -> QueryString:
         return self.timedelta_delegate.get_querystring(
-            column_name=self._meta.db_column_name, operator="+", value=value
+            column=self,
+            operator="+",
+            value=value,
+            engine_type=self._meta.engine_type,
         )
 
     def __radd__(self, value: timedelta) -> QueryString:
@@ -943,7 +1001,10 @@ class Timestamptz(Column):
 
     def __sub__(self, value: timedelta) -> QueryString:
         return self.timedelta_delegate.get_querystring(
-            column_name=self._meta.db_column_name, operator="-", value=value
+            column=self,
+            operator="-",
+            value=value,
+            engine_type=self._meta.engine_type,
         )
 
     ###########################################################################
@@ -1009,7 +1070,10 @@ class Date(Column):
 
     def __add__(self, value: timedelta) -> QueryString:
         return self.timedelta_delegate.get_querystring(
-            column_name=self._meta.db_column_name, operator="+", value=value
+            column=self,
+            operator="+",
+            value=value,
+            engine_type=self._meta.engine_type,
         )
 
     def __radd__(self, value: timedelta) -> QueryString:
@@ -1017,7 +1081,10 @@ class Date(Column):
 
     def __sub__(self, value: timedelta) -> QueryString:
         return self.timedelta_delegate.get_querystring(
-            column_name=self._meta.db_column_name, operator="-", value=value
+            column=self,
+            operator="-",
+            value=value,
+            engine_type=self._meta.engine_type,
         )
 
     ###########################################################################
@@ -1080,7 +1147,10 @@ class Time(Column):
 
     def __add__(self, value: timedelta) -> QueryString:
         return self.timedelta_delegate.get_querystring(
-            column_name=self._meta.db_column_name, operator="+", value=value
+            column=self,
+            operator="+",
+            value=value,
+            engine_type=self._meta.engine_type,
         )
 
     def __radd__(self, value: timedelta) -> QueryString:
@@ -1088,7 +1158,10 @@ class Time(Column):
 
     def __sub__(self, value: timedelta) -> QueryString:
         return self.timedelta_delegate.get_querystring(
-            column_name=self._meta.db_column_name, operator="-", value=value
+            column=self,
+            operator="-",
+            value=value,
+            engine_type=self._meta.engine_type,
         )
 
     ###########################################################################
@@ -1150,12 +1223,12 @@ class Interval(Column):  # lgtm [py/missing-equals]
 
     @property
     def column_type(self):
-        engine_type = self._meta.table._meta.db.engine_type
+        engine_type = self._meta.engine_type
         if engine_type == "postgres":
             return "INTERVAL"
         elif engine_type == "sqlite":
             # We can't use 'INTERVAL' because the type affinity in SQLite would
-            # make it an integer - but we need a numeric field.
+            # make it an integer - but we need a text field.
             # https://sqlite.org/datatype3.html#determination_of_column_affinity
             return "SECONDS"
         raise Exception("Unrecognized engine type")
@@ -1165,7 +1238,10 @@ class Interval(Column):  # lgtm [py/missing-equals]
 
     def __add__(self, value: timedelta) -> QueryString:
         return self.timedelta_delegate.get_querystring(
-            column_name=self._meta.db_column_name, operator="+", value=value
+            column=self,
+            operator="+",
+            value=value,
+            engine_type=self._meta.engine_type,
         )
 
     def __radd__(self, value: timedelta) -> QueryString:
@@ -1173,7 +1249,10 @@ class Interval(Column):  # lgtm [py/missing-equals]
 
     def __sub__(self, value: timedelta) -> QueryString:
         return self.timedelta_delegate.get_querystring(
-            column_name=self._meta.db_column_name, operator="-", value=value
+            column=self,
+            operator="-",
+            value=value,
+            engine_type=self._meta.engine_type,
         )
 
     ###########################################################################
@@ -2208,7 +2287,7 @@ class Bytea(Column):
 
     @property
     def column_type(self):
-        engine_type = self._meta.table._meta.db.engine_type
+        engine_type = self._meta.engine_type
         if engine_type == "postgres":
             return "BYTEA"
         elif engine_type == "sqlite":
@@ -2354,7 +2433,7 @@ class Array(Column):
 
     @property
     def column_type(self):
-        engine_type = self._meta.table._meta.db.engine_type
+        engine_type = self._meta.engine_type
         if engine_type == "postgres":
             return f"{self.base_column.column_type}[]"
         elif engine_type == "sqlite":
@@ -2378,7 +2457,7 @@ class Array(Column):
 
 
         """  # noqa: E501
-        engine_type = self._meta.table._meta.db.engine_type
+        engine_type = self._meta.engine_type
         if engine_type != "postgres":
             raise ValueError(
                 "Only Postgres supports array indexing currently."
@@ -2416,7 +2495,7 @@ class Array(Column):
             >>> await Ticket.select().where(Ticket.seat_numbers.any(510))
 
         """
-        engine_type = self._meta.table._meta.db.engine_type
+        engine_type = self._meta.engine_type
 
         if engine_type == "postgres":
             return Where(column=self, value=value, operator=ArrayAny)
@@ -2434,7 +2513,7 @@ class Array(Column):
             >>> await Ticket.select().where(Ticket.seat_numbers.all(510))
 
         """
-        engine_type = self._meta.table._meta.db.engine_type
+        engine_type = self._meta.engine_type
 
         if engine_type == "postgres":
             return Where(column=self, value=value, operator=ArrayAll)

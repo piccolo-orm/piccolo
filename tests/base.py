@@ -15,12 +15,21 @@ from piccolo.table import Table, create_table_class
 
 ENGINE = engine_finder()
 
+
+def is_running_postgres():
+    return isinstance(ENGINE, PostgresEngine)
+
+
+def is_running_sqlite():
+    return isinstance(ENGINE, SQLiteEngine)
+
+
 postgres_only = pytest.mark.skipif(
-    not isinstance(ENGINE, PostgresEngine), reason="Only running for Postgres"
+    not is_running_postgres(), reason="Only running for Postgres"
 )
 
 sqlite_only = pytest.mark.skipif(
-    not isinstance(ENGINE, SQLiteEngine), reason="Only running for SQLite"
+    not is_running_sqlite(), reason="Only running for SQLite"
 )
 
 unix_only = pytest.mark.skipif(

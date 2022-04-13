@@ -15,7 +15,7 @@ from piccolo.columns.column_types import (
 )
 from piccolo.querystring import QueryString
 from piccolo.table import Table
-from tests.base import DBTestCase, postgres_only
+from tests.base import DBTestCase, is_running_postgres, sqlite_only
 from tests.example_apps.music.tables import Band
 
 
@@ -126,7 +126,7 @@ INITIAL_DATETIME = datetime.datetime(
 INITIAL_INTERVAL = datetime.timedelta(days=1, hours=1, minutes=1)
 
 DATETIME_DELTA = datetime.timedelta(
-    days=1, hours=1, minutes=1, seconds=30, microseconds=500
+    days=1, hours=1, minutes=1, seconds=30, microseconds=1000
 )
 DATE_DELTA = datetime.timedelta(days=1)
 
@@ -262,7 +262,7 @@ TEST_CASES = [
             hour=22,
             minute=1,
             second=30,
-            microsecond=500,
+            microsecond=1000,
         ),
     ),
     OperatorTestCase(
@@ -277,7 +277,7 @@ TEST_CASES = [
             hour=22,
             minute=1,
             second=30,
-            microsecond=500,
+            microsecond=1000,
         ),
     ),
     OperatorTestCase(
@@ -292,7 +292,7 @@ TEST_CASES = [
             hour=19,
             minute=58,
             second=29,
-            microsecond=999500,
+            microsecond=999000,
         ),
     ),
     # Timestamptz
@@ -308,7 +308,7 @@ TEST_CASES = [
             hour=22,
             minute=1,
             second=30,
-            microsecond=500,
+            microsecond=1000,
             tzinfo=datetime.timezone.utc,
         ),
     ),
@@ -324,7 +324,7 @@ TEST_CASES = [
             hour=22,
             minute=1,
             second=30,
-            microsecond=500,
+            microsecond=1000,
             tzinfo=datetime.timezone.utc,
         ),
     ),
@@ -340,7 +340,7 @@ TEST_CASES = [
             hour=19,
             minute=58,
             second=29,
-            microsecond=999500,
+            microsecond=999000,
             tzinfo=datetime.timezone.utc,
         ),
     ),
@@ -366,35 +366,44 @@ TEST_CASES = [
         querystring=MyTable.date - DATE_DELTA,
         expected=datetime.date(year=2021, month=12, day=31),
     ),
-    # Interval
-    OperatorTestCase(
-        description="Add Interval",
-        column=MyTable.interval,
-        initial=INITIAL_INTERVAL,
-        querystring=MyTable.interval + DATETIME_DELTA,
-        expected=datetime.timedelta(days=2, seconds=7350, microseconds=500),
-    ),
-    OperatorTestCase(
-        description="Reverse add Interval",
-        column=MyTable.interval,
-        initial=INITIAL_INTERVAL,
-        querystring=DATETIME_DELTA + MyTable.interval,
-        expected=datetime.timedelta(days=2, seconds=7350, microseconds=500),
-    ),
-    OperatorTestCase(
-        description="Subtract Interval",
-        column=MyTable.interval,
-        initial=INITIAL_INTERVAL,
-        querystring=MyTable.interval - DATETIME_DELTA,
-        expected=datetime.timedelta(
-            days=-1, seconds=86369, microseconds=999500
-        ),
-    ),
 ]
 
 
-# TODO - add SQLite support
-@postgres_only
+if is_running_postgres():
+    TEST_CASES.extend(
+        [
+            # Interval
+            OperatorTestCase(
+                description="Add Interval",
+                column=MyTable.interval,
+                initial=INITIAL_INTERVAL,
+                querystring=MyTable.interval + DATETIME_DELTA,
+                expected=datetime.timedelta(
+                    days=2, seconds=7350, microseconds=1000
+                ),
+            ),
+            OperatorTestCase(
+                description="Reverse add Interval",
+                column=MyTable.interval,
+                initial=INITIAL_INTERVAL,
+                querystring=DATETIME_DELTA + MyTable.interval,
+                expected=datetime.timedelta(
+                    days=2, seconds=7350, microseconds=1000
+                ),
+            ),
+            OperatorTestCase(
+                description="Subtract Interval",
+                column=MyTable.interval,
+                initial=INITIAL_INTERVAL,
+                querystring=MyTable.interval - DATETIME_DELTA,
+                expected=datetime.timedelta(
+                    days=-1, seconds=86369, microseconds=999000
+                ),
+            ),
+        ]
+    )
+
+
 class TestOperators(TestCase):
     def setUp(self):
         MyTable.create_table().run_sync()
@@ -404,10 +413,12 @@ class TestOperators(TestCase):
 
     def test_operators(self):
         for test_case in TEST_CASES:
+            print(test_case.description)
+
             # Create the initial data in the database.
-            concert = MyTable()
-            setattr(concert, test_case.column._meta.name, test_case.initial)
-            concert.save().run_sync()
+            instance = MyTable()
+            setattr(instance, test_case.column._meta.name, test_case.initial)
+            instance.save().run_sync()
 
             # Apply the update.
             MyTable.update(
@@ -419,9 +430,26 @@ class TestOperators(TestCase):
                 MyTable.objects().first().run_sync(),
                 test_case.column._meta.name,
             )
+
             self.assertEqual(
                 new_value, test_case.expected, msg=test_case.description
             )
 
             # Clean up
             MyTable.delete(force=True).run_sync()
+
+    @sqlite_only
+    def test_edge_cases(self):
+        """
+        Some usecases aren't supported by SQLite, and should raise a
+        ``ValueError``.
+        """
+        with self.assertRaises(ValueError):
+            # We don't currently support this, because there isn't really an
+            # interval type in SQLite. We're
+            MyTable.interval + datetime.timedelta(hours=1)
+
+        with self.assertRaises(ValueError):
+            # An error should be raised because we can't save at this level
+            # of resolution - 1 millisecond is the minimum.
+            MyTable.timestamp + datetime.timedelta(microseconds=1)
