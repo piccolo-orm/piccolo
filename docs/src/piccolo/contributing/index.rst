@@ -42,7 +42,7 @@ Code style
 
 Piccolo uses `Black <https://black.readthedocs.io/en/stable/>`_  for
 formatting, preferably with a max line length of 79, to keep it consistent
-with `PEP8 <python.org/dev/peps/pep-0008/>`_ .
+with `PEP8 <https://python.org/dev/peps/pep-0008/>`_ .
 
 You can configure `VSCode <https://code.visualstudio.com/>`_ by modifying
 ``settings.json`` as follows:
