@@ -1,6 +1,14 @@
 Changes
 =======
 
+0.74.1
+------
+
+When using ``pip install piccolo[all]`` on Windows it would fail because uvloop
+isn't supported. Thanks to @jack1142 for reporting this issue.
+
+-------------------------------------------------------------------------------
+
 0.74.0
 ------
 
