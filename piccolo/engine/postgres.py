@@ -220,7 +220,8 @@ class PostgresEngine(Engine):
 
     :param extensions:
         When the engine starts, it will try and create these extensions
-        in Postgres.
+        in Postgres. If you're using a read only database, set this value to an
+        empty tuple ``()``.
 
     :param log_queries:
         If ``True``, all SQL and DDL statements are printed out before being
@@ -238,10 +239,13 @@ class PostgresEngine(Engine):
                         config={
                             'database': 'main_db',
                             host: 'read_replicate.my_db.com'
-                        }
+                        },
+                        extensions=()
                     )
                 }
             )
+
+        Note how we set ``extensions=()``, because it's a read only database.
 
         When executing a query, you can specify one of these nodes instead
         of the main database. For example::
@@ -265,12 +269,10 @@ class PostgresEngine(Engine):
     def __init__(
         self,
         config: t.Dict[str, t.Any],
-        extensions: t.Sequence[str] = None,
+        extensions: t.Sequence[str] = ("uuid-ossp",),
         log_queries: bool = False,
         extra_nodes: t.Dict[str, PostgresEngine] = None,
     ) -> None:
-        if extensions is None:
-            extensions = ["uuid-ossp"]
         if extra_nodes is None:
             extra_nodes = {}
 
