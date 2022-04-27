@@ -345,6 +345,7 @@ class SchemaDiffer:
                             expect_conflict_with_global_name=getattr(
                                 UniqueGlobalNames,
                                 f"COLUMN_{alter_column.column_class.__name__.upper()}",  # noqa: E501
+                                None,
                             ),
                         )
                     )
@@ -425,6 +426,7 @@ class SchemaDiffer:
                         expect_conflict_with_global_name=getattr(
                             UniqueGlobalNames,
                             f"COLUMN_{column_class.__name__.upper()}",
+                            None,
                         ),
                     )
                 )
@@ -480,6 +482,7 @@ class SchemaDiffer:
                         expect_conflict_with_global_name=getattr(
                             UniqueGlobalNames,
                             f"COLUMN_{column.__class__.__name__.upper()}",
+                            None,
                         ),
                     )
                 )
