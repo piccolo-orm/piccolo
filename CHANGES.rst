@@ -1,6 +1,28 @@
 Changes
 =======
 
+0.74.2
+------
+
+If a user created a custom ``Column`` subclass, then migrations would fail.
+For example:
+
+.. code-block:: python
+
+  class CustomColumn(Varchar):
+      def __init__(self, custom_arg: str = '', *args, **kwargs):
+          self.custom_arg = custom_arg
+          super().__init__(*args, **kwargs)
+
+      @property
+      def column_type(self):
+          return 'VARCHAR'
+
+See `PR 497 <https://github.com/piccolo-orm/piccolo/pull/497>`_. Thanks to
+@WintonLi for reporting this issue.
+
+-------------------------------------------------------------------------------
+
 0.74.1
 ------
 
