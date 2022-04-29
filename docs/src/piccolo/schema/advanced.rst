@@ -235,7 +235,7 @@ is not present, it will be reflected and returned.
 -------------------------------------------------------------------------------
 
 How to create custom column types
-------
+---------------------------------
 
 Sometimes, the column types shipped with Piccolo don't meet your requirements, and you
 will need to define your own column types.
