@@ -242,7 +242,7 @@ will need to define your own column types.
 
 Generally there are two ways to define your own column types:
 
-* Create a subclass of an existing column type.
+* Create a subclass of an existing column type; or
 * Directly subclass the :ref:`Column <ColumnTypes>` class.
 
 Try to use the first method whenever possible because it is more straightforward and
