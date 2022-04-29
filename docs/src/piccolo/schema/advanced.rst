@@ -231,3 +231,58 @@ is not present, it will be reflected and returned.
 .. hint:: Reflection will automatically create ``Table`` classes for referenced
     tables too. For example, if ``Table1`` references ``Table2``, then
     ``Table2`` will automatically be added to ``TableStorage``.
+
+-------------------------------------------------------------------------------
+
+How to create custom column types
+------
+
+Sometimes, the column types shipped with Piccolo don't meet your requirements, and you
+will need to define your own column types.
+
+Generally there are two ways to define your own column types:
+
+* Create a subclass of an existing column type.
+* Directly subclass the :ref:`Column <ColumnTypes>` class.
+
+Try to use the first method whenever possible because it is more straightforward and
+can often save you some work. Otherwise, subclass :ref:`Column <ColumnTypes>`.
+
+**Example**
+
+In this example, we create a column type called ``MyColumn``, which is fundamentally
+an ``Integer`` type but has a custom attribute ``custom_attr``:
+
+.. code-block:: python
+
+    from piccolo.columns import Integer
+
+    class MyColumn(Integer):
+        def __init__(self, *args, custom_attr: str = '', **kwargs):
+            self.custom_attr = custom_attr
+            super().__init__(*args, **kwargs)
+
+        @property
+        def column_type(self):
+            return 'INTEGER'
+
+.. hint:: It is **important** to specify the ``column_type`` property, which
+    tells the database engine the **actual** storage type of the custom
+    column.
+
+Now we can use ``MyColumn`` in our table:
+
+.. code-block:: python
+
+    from piccolo.table import Table
+
+    class MyTable(Table):
+        my_col = MyColumn(custom_attr='foo')
+        ...
+
+And later we can retrieve the value of the attribute:
+
+.. code-block:: python
+
+    >>> MyTable.my_col.custom_attr
+    'foo'
