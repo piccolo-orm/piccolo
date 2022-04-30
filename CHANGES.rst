@@ -1,6 +1,27 @@
 Changes
 =======
 
+0.74.3
+------
+
+If you had a table containing an array of ``BigInt``, then migrations could
+fail:
+
+.. code-block:: python
+
+  from piccolo.table import Table
+  from piccolo.columns.column_types import Array, BigInt
+
+  class MyTable(Table):
+      my_column = Array(base_column=BigInt())
+
+It's because the ``BigInt`` base column needs access to the parent table to
+know if it's targeting Postgres or SQLite. See `PR 501 <https://github.com/piccolo-orm/piccolo/pull/501>`_.
+
+Thanks to @cheesycod for reporting this issue.
+
+-------------------------------------------------------------------------------
+
 0.74.2
 ------
 
