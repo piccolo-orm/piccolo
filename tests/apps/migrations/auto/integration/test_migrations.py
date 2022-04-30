@@ -598,6 +598,21 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    def test_array_column_bigint(self):
+        """
+        There was a bug with using an array of ``BigInt`` - see issue 500 on
+        GitHub. It's because ``BigInt`` requires access to the parent table to
+        determine what the column type is.
+        """
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Array(base_column=BigInt()),
+                ]
+            ]
+        )
+
     ###########################################################################
 
     # We deliberately don't test setting JSON or JSONB columns as indexes, as

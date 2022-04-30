@@ -10,6 +10,7 @@ from piccolo.columns import Column
 from piccolo.columns.column_types import (
     JSON,
     JSONB,
+    Array,
     ForeignKey,
     Secret,
     Serial,
@@ -216,6 +217,9 @@ class Table(metaclass=TableMetaclass):
 
                 column._meta._name = attribute_name
                 column._meta._table = cls
+
+                if isinstance(column, Array):
+                    column.base_column._meta._table = cls
 
                 if isinstance(column, Secret):
                     secret_columns.append(column)
