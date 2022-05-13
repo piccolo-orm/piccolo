@@ -1,6 +1,22 @@
 Changes
 =======
 
+0.74.4
+------
+
+``piccolo schema generate`` now outputs a warning when it can't detect the
+``ON DELETE`` and ``ON UPDATE`` for a ``ForeignKey``, rather than raising an
+exception. Thanks to @theelderbeever for reporting this issue.
+
+``run_sync`` doesn't use the connection pool by default anymore. It was causing
+issues when an app contained sync and async code. Thanks to @WintonLi for
+reporting this issue.
+
+Added a tutorial to the docs for using Piccolo with an existing project and
+database. Thanks to @virajkanwade for reporting this issue.
+
+-------------------------------------------------------------------------------
+
 0.74.3
 ------
 
