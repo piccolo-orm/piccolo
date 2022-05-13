@@ -175,8 +175,9 @@ class Query:
             If specified, run this query against another database node. Only
             available in Postgres. See :class:`PostgresEngine <piccolo.engine.postgres.PostgresEngine>`.
         :param in_pool:
-            Whether to run this in a connection pool if one is running. This is
-            mostly just for debugging - use a connection pool where possible.
+            Whether to run this in a connection pool if one is available. This
+            is mostly just for debugging - use a connection pool where
+            possible.
 
         """  # noqa: E501
         self._validate()
@@ -211,16 +212,21 @@ class Query:
                 responses.append(await self._process_results(results))
             return responses
 
-    def run_sync(self, timed=False, *args, **kwargs):
+    def run_sync(self, timed=False, in_pool=False, *args, **kwargs):
         """
         A convenience method for running the coroutine synchronously.
 
         :param timed:
             If ``True``, the time taken to run the query is printed out. Useful
             for debugging.
+        :param in_pool:
+            Whether to run this in a connection pool if one is available. Set
+            to ``False`` by default, because if an app uses ``run`` and
+            ``run_sync`` in the same app, it can cause errors. See
+            `issue 505 <https://github.com/piccolo-orm/piccolo/issues/505>`_.
 
         """
-        coroutine = self.run(*args, **kwargs)
+        coroutine = self.run(in_pool=in_pool, *args, **kwargs)
 
         if not timed:
             return run_sync(coroutine)
