@@ -261,7 +261,7 @@ class Table(metaclass=TableMetaclass):
             help_text=help_text,
             _db=db,
             m2m_relationships=m2m_relationships,
-            tablespace=tablespace
+            tablespace=tablespace,
         )
 
         for foreign_key_column in foreign_key_columns:
