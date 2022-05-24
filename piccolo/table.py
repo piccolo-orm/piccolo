@@ -74,6 +74,7 @@ class TableMeta:
     help_text: t.Optional[str] = None
     _db: t.Optional[Engine] = None
     m2m_relationships: t.List[M2M] = field(default_factory=list)
+    tablespace: t.Optional[str] = None
 
     # Records reverse foreign key relationships - i.e. when the current table
     # is the target of a foreign key. Used by external libraries such as
@@ -152,6 +153,7 @@ class Table(metaclass=TableMetaclass):
         db: t.Optional[Engine] = None,
         tags: t.List[str] = None,
         help_text: t.Optional[str] = None,
+        tablespace: t.Optional[str] = None,
     ):  # sourcery no-metrics
         """
         Automatically populate the _meta, which includes the tablename, and
@@ -170,6 +172,10 @@ class Table(metaclass=TableMetaclass):
             A user friendly description of what the table is used for. It isn't
             used in the database, but will be used by tools such a Piccolo
             Admin for tooltips.
+        :param tablespace:
+            Which tablespace to create the table in. This is an advanced
+            feature that most users won't need, and is only applicable to
+            Postgres.
 
         """
         if tags is None:
@@ -255,6 +261,7 @@ class Table(metaclass=TableMetaclass):
             help_text=help_text,
             _db=db,
             m2m_relationships=m2m_relationships,
+            tablespace=tablespace
         )
 
         for foreign_key_column in foreign_key_columns:
