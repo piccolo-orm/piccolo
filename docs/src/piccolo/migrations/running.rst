@@ -13,6 +13,27 @@ When the migration is run, the forwards function is executed. To do this:
 
     piccolo migrations forwards my_app
 
+Migrations table
+~~~~~~~~~~~~~~~~
+
+When running the migrations, Piccolo will automatically create a database table
+called 'migration' if it doesn't already exist. Each time a migration is
+succesfully ran, a new row is added to this table.
+
+Faking
+~~~~~~
+
+Sometimes you'll want to 'fake' run a migration. Piccolo will store a record in
+the 'migration' table marking it as a successfuly ran, without actually
+applying the migration.
+
+The reason you may want to do this is if you use ``piccolo schema generate`` (see :ref:`docs <SchemaApp>`)
+to create your Piccolo ``Table`` classes from an existing database.
+
+.. code-block:: bash
+
+    piccolo migrations forwards my_app some_migration_id --fake
+
 -------------------------------------------------------------------------------
 
 Reversing migrations
