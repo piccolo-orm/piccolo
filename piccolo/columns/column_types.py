@@ -2052,7 +2052,9 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
             setattr(self, _column._meta.name, _column)
             _fk_meta.proxy_columns.append(_column)
 
-    def __getattribute__(self, name: str) -> t.Union[Column, t.Any]:
+    def __getattribute__(
+        self, name: str
+    ) -> t.Union[Column, ForeignKey, t.Any]:
         """
         Returns attributes unmodified unless they're Column instances, in which
         case a copy is returned with an updated call_chain (which records the
