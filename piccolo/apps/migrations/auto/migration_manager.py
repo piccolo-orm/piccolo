@@ -154,13 +154,17 @@ class MigrationManager:
         class_name: str,
         tablename: str,
         columns: t.Optional[t.List[Column]] = None,
+        tablespace: t.Optional[str] = None,
     ):
         if not columns:
             columns = []
 
         self.add_tables.append(
             DiffableTable(
-                class_name=class_name, tablename=tablename, columns=columns
+                class_name=class_name,
+                tablename=tablename,
+                columns=columns,
+                tablespace=tablespace,
             )
         )
 

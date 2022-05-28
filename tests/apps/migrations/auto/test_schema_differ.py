@@ -32,7 +32,7 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(create_tables.statements) == 1)
         self.assertEqual(
             create_tables.statements[0],
-            "manager.add_table('Band', tablename='band')",
+            "manager.add_table('Band', tablename='band', tablespace=None)",
         )
 
         new_table_columns = schema_differ.new_table_columns

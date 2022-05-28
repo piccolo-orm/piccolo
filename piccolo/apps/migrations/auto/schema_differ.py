@@ -245,12 +245,14 @@ class SchemaDiffer:
             not in self.rename_tables_collection.new_class_names
         ]
 
-        return AlterStatements(
-            statements=[
-                f"manager.add_table('{i.class_name}', tablename='{i.tablename}')"  # noqa: E501
-                for i in new_tables
-            ]
-        )
+        statements = []
+        for i in new_tables:
+            tablespace = f"'{i.tablespace}'" if i.tablespace else "None"
+            statements.append(
+                f"manager.add_table('{i.class_name}', tablename='{i.tablename}', tablespace={tablespace})"  # noqa: E501
+            )
+
+        return AlterStatements(statements=statements)
 
     @property
     def drop_tables(self) -> AlterStatements:
