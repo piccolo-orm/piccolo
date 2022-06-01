@@ -851,9 +851,11 @@ class Table(metaclass=TableMetaclass):
             await Band.select('name')
 
         :param exclude_secrets:
-            If ``True``, any password fields are omitted from the response.
-            Even though passwords are hashed, you still don't want them being
-            passed over the network if avoidable.
+            If ``True``, any columns with ``secret=True`` are omitted from the
+            response. For example, we use this for the password column of
+            :class:`BaseUser <piccolo.apps.user.tables.BaseUser>`. Even though
+            the passwords are hashed, you still don't want them being passed
+            over the network if avoidable.
 
         """
         _columns = cls._process_column_args(*columns)
