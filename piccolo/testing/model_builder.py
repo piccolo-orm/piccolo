@@ -33,18 +33,39 @@ class ModelBuilder:
         minimal: bool = False,
     ) -> Table:
         """
-        Build Table instance with random data and save async.
-        This can build relationships, supported data types and parameters.
+        Build a ``Table`` instance with random data and save async.
+        If the ``Table`` has any foreign keys, then the related rows are also
+        created automatically.
 
         :param table_class:
             Table class to randomize.
+        :param defaults:
+            Any values specified here will be used instead of random values.
+        :param persist:
+            Whether to save the new instance in the database.
+        :param minimal:
+            If ``True`` then any columns with ``null=True`` are assigned
+            a value of ``None``.
 
-        Examples:
+        Examples::
+
+            # Create a new instance with all random values:
             manager = await ModelBuilder.build(Manager)
-            manager = await ModelBuilder.build(Manager, name='Guido')
-            manager = await ModelBuilder(persist=False).build(Manager)
-            manager = await ModelBuilder(minimal=True).build(Manager)
-            band = await ModelBuilder.build(Band, manager=manager)
+
+            # Create a new instance, with certain defaults:
+            manager = await ModelBuilder.build(
+                Manager,
+                {Manager.name: 'Guido'}
+            )
+
+            # Create a new instance, but don't save it in the database:
+            manager = await ModelBuilder.build(Manager, persist=False)
+
+            # Create a new instance, with all null values set to None:
+            manager = await ModelBuilder.build(Manager, minimal=True)
+
+            # We can pass other table instances in as default values:
+            band = await ModelBuilder.build(Band, {Band.manager: manager})
 
         """
         return await cls._build(
@@ -63,19 +84,7 @@ class ModelBuilder:
         minimal: bool = False,
     ) -> Table:
         """
-        Build Table instance with random data and save sync.
-        This can build relationships, supported data types and parameters.
-
-        :param table_class:
-            Table class to randomize.
-
-        Examples:
-            manager = ModelBuilder.build_sync(Manager)
-            manager = ModelBuilder.build_sync(Manager, name='Guido')
-            manager = ModelBuilder(persist=False).build_sync(Manager)
-            manager = ModelBuilder(minimal=True).build_sync(Manager)
-            band = ModelBuilder.build_sync(Band, manager=manager)
-
+        A sync wrapper around :meth:`build`.
         """
         return run_sync(
             cls.build(

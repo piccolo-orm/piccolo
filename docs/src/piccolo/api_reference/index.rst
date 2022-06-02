@@ -58,3 +58,16 @@ Date
 
 .. autoclass:: DateOffset
     :members:
+
+-------------------------------------------------------------------------------
+
+Testing
+-------
+
+.. currentmodule:: piccolo.testing.model_builder
+
+ModelBuilder
+~~~~~~~~~~~~
+
+.. autoclass:: ModelBuilder
+    :members:
