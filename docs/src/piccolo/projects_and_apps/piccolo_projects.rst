@@ -7,6 +7,8 @@ A Piccolo project is a collection of apps.
 
 -------------------------------------------------------------------------------
 
+.. _PiccoloConf:
+
 piccolo_conf.py
 ---------------
 
