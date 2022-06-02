@@ -177,7 +177,8 @@ like this:
         rows = await MyTable.select()
         assert len(rows) == 1
 
-If you prefer class based tests, then have a look at :class:`IsolatedAsyncioTestCase <unittest.IsolatedAsyncioTestCase>`
+If you prefer class based tests, and are using Python 3.8 or above, then have
+a look at :class:`IsolatedAsyncioTestCase <unittest.IsolatedAsyncioTestCase>`
 from Python's standard library. You can then write tests like this:
 
 .. code-block:: python
