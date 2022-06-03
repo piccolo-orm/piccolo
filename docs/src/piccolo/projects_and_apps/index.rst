@@ -12,3 +12,7 @@ application.
     ./piccolo_projects
     ./piccolo_apps
     ./included_apps
+
+.. note::
+
+   There is a `video tutorial on YouTube <https://youtu.be/vciBNQapoFk>`_.

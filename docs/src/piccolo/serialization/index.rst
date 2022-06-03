@@ -118,6 +118,10 @@ To populate a nested Pydantic model with data from the database:
     >>> model.manager.name
     'Guido'
 
+.. note::
+
+   There is a `video tutorial on YouTube <https://youtu.be/NRO0HyFCCCI>`_.
+
 include_default_columns
 ~~~~~~~~~~~~~~~~~~~~~~~
 
