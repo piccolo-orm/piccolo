@@ -166,6 +166,10 @@ Here's an example of a generated image:
 .. image:: ./images/schema_graph_output.png
     :target: /_images/schema_graph_output.png
 
+.. note::
+
+   There is a `video tutorial on YouTube <https://youtu.be/Y9vaS4nnQGE>`_.
+
 -------------------------------------------------------------------------------
 
 shell
@@ -177,6 +181,10 @@ Launches an iPython shell, and automatically imports all of your registered
 .. code-block:: bash
 
     piccolo shell run
+
+.. note::
+
+   There is a `video tutorial on YouTube <https://youtu.be/NvLFN6Gg7b8>`_.
 
 -------------------------------------------------------------------------------
 
@@ -193,6 +201,10 @@ need to run raw SQL queries on your database.
 
 For it to work, the underlying command needs to be on the path (i.e. ``psql``
 or ``sqlite3`` depending on which you're using).
+
+.. note::
+
+   There is a `video tutorial on YouTube <https://youtu.be/NvLFN6Gg7b8>`_.
 
 -------------------------------------------------------------------------------
 
