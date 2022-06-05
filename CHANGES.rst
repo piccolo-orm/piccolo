@@ -1,6 +1,17 @@
 Changes
 =======
 
+0.75.0
+------
+
+Changed how ``piccolo.utils.sync.run_sync`` works, to prevent a warning on
+Python 3.10. Thanks to @Drapersniper for reporting this issue.
+
+Lots of documentation improvements - particularly around testing, and Docker
+deployment.
+
+-------------------------------------------------------------------------------
+
 0.74.4
 ------
 
