@@ -112,6 +112,33 @@ class TestLogin(TestCase):
             "The password is too long.",
         )
 
+        # Test short passwords
+        short_password = "abc"
+        with self.assertRaises(ValueError) as manager:
+            BaseUser.update_password_sync(username, short_password)
+        self.assertEqual(
+            manager.exception.__str__(),
+            "The password is too short.",
+        )
+
+        # Test no password
+        empty_password = ""
+        with self.assertRaises(ValueError) as manager:
+            BaseUser.update_password_sync(username, empty_password)
+        self.assertEqual(
+            manager.exception.__str__(),
+            "A password must be provided.",
+        )
+
+        # Test hashed password
+        hashed_password = "pbkdf2_sha256$abc123"
+        with self.assertRaises(ValueError) as manager:
+            BaseUser.update_password_sync(username, hashed_password)
+        self.assertEqual(
+            manager.exception.__str__(),
+            "Do not pass a hashed password.",
+        )
+
 
 class TestCreateUserFromFixture(TestCase):
     def setUp(self):

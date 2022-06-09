@@ -72,6 +72,35 @@ class BaseUser(Table, tablename="piccolo_user"):
     ###########################################################################
 
     @classmethod
+    def _validate_password(cls, password: str):
+        """
+        Validate the raw password. Used by :meth:`update_password` and
+        :meth:`create_user`.
+
+        :param password:
+            The raw password e.g. ``'hello123'``.
+        :raises ValueError:
+            If the password fails any of the criteria.
+
+        """
+        if not password:
+            raise ValueError("A password must be provided.")
+
+        if len(password) < cls._min_password_length:
+            raise ValueError("The password is too short.")
+
+        if len(password) > cls._max_password_length:
+            raise ValueError("The password is too long.")
+
+        if password.startswith("pbkdf2_sha256"):
+            logger.warning(
+                "Tried to create a user with an already hashed password."
+            )
+            raise ValueError("Do not pass a hashed password.")
+
+    ###########################################################################
+
+    @classmethod
     def update_password_sync(cls, user: t.Union[str, int], password: str):
         """
         A sync equivalent of :meth:`update_password`.
@@ -92,6 +121,8 @@ class BaseUser(Table, tablename="piccolo_user"):
             raise ValueError(
                 "The `user` arg must be a user id, or a username."
             )
+
+        cls._validate_password(password=password)
 
         password = cls.hash_password(password)
         await cls.update({cls.password: password}).where(clause).run()
@@ -227,20 +258,7 @@ class BaseUser(Table, tablename="piccolo_user"):
         if not username:
             raise ValueError("A username must be provided.")
 
-        if not password:
-            raise ValueError("A password must be provided.")
-
-        if len(password) < cls._min_password_length:
-            raise ValueError("The password is too short.")
-
-        if len(password) > cls._max_password_length:
-            raise ValueError("The password is too long.")
-
-        if password.startswith("pbkdf2_sha256"):
-            logger.warning(
-                "Tried to create a user with an already hashed password."
-            )
-            raise ValueError("Do not pass a hashed password.")
+        cls._validate_password(password=password)
 
         user = cls(username=username, password=password, **extra_params)
         await user.save()
