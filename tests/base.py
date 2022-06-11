@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import sys
 import typing as t
 from unittest import TestCase
@@ -44,6 +45,12 @@ class AsyncMock(MagicMock):
     This is a workaround for the fact that MagicMock is not async compatible in
     Python 3.7.
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # this makes asyncio.iscoroutinefunction(AsyncMock()) return True
+        self._is_coroutine = asyncio.coroutines._is_coroutine
 
     async def __call__(self, *args, **kwargs):
         return super(AsyncMock, self).__call__(*args, **kwargs)

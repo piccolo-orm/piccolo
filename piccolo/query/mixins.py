@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import typing as t
 from dataclasses import dataclass, field
 
@@ -235,6 +236,49 @@ class OutputDelegate:
     def copy(self) -> OutputDelegate:
         _output = self._output.copy() if self._output is not None else None
         return self.__class__(_output=_output)
+
+
+class SyncCallback(t.Protocol):
+    def __call__(self, success: bool, results: t.Any):
+        ...
+
+
+class AsyncCallback(t.Protocol):
+    async def __call__(self, success: bool, results: t.Any):
+        ...
+
+
+Callback = t.Union[SyncCallback, AsyncCallback]
+
+
+@dataclass
+class CallbackDelegate:
+    """
+    Example usage:
+
+    .callback(my_handler_function)
+    .callback(my_handler_coroutine)
+    .callback(lambda success, row: print(row))
+    """
+
+    _callback: t.Optional[Callback] = None
+
+    def callback(self, callback: Callback):
+        self._callback = callback
+
+    async def invoke(self, success: bool, results: t.Any):
+        """
+        Utility function that invokes the registered callback in the correct
+        way, handling both sync and async callbacks. If no callback is
+        registered, this function does nothing.
+        """
+        if self._callback is None:
+            return
+
+        if asyncio.iscoroutinefunction(self._callback):
+            await self._callback(success, results)
+        else:
+            self._callback(success, results)
 
 
 @dataclass
