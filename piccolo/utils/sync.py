@@ -15,11 +15,14 @@ def run_sync(coroutine: t.Coroutine):
         current thread.
     """
     try:
-        asyncio.get_running_loop()
+        loop = asyncio.get_event_loop_policy().get_event_loop()
     except RuntimeError:
         # No current event loop, so it's safe to use:
         return asyncio.run(coroutine)
     else:
+        if not loop.is_running():
+            return loop.run_until_complete(coroutine)
+
         # We're already inside a running event loop, so run the coroutine in a
         # new thread:
         new_loop = asyncio.new_event_loop()
