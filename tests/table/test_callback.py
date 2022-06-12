@@ -8,7 +8,7 @@ class TestNoCallback(DBTestCase):
     def test_no_callback(self):
         """
         Just check we don't get any "NoneType is not callable" kind of errors
-        when we run a query without setting the callback.
+        when we run a query without setting any callbacks.
         """
         self.insert_row()
         Band.select(Band.name).run_sync()

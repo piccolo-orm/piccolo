@@ -12,6 +12,7 @@ from piccolo.columns.readable import Readable
 from piccolo.engine.base import Batch
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
+    Callback,
     CallbackDelegate,
     ColumnsDelegate,
     DistinctDelegate,
@@ -29,7 +30,6 @@ from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.custom_types import Combinable
-    from piccolo.query.mixins import Callback
     from piccolo.table import Table  # noqa
 
 
@@ -466,9 +466,12 @@ class Select(Query):
         return self
 
     def callback(
-        self, callbacks: t.Union[Callback, t.List[Callback]]
+        self,
+        callbacks: t.Union[t.Callable, t.List[t.Callable]],
+        *,
+        on: Callback = Callback.success,
     ) -> Select:
-        self.callback_delegate.callback(callbacks)
+        self.callback_delegate.callback(callbacks, on=on)
         return self
 
     def where(self, *where: Combinable) -> Select:

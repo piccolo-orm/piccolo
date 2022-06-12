@@ -3,8 +3,7 @@ from __future__ import annotations
 import asyncio
 import typing as t
 from dataclasses import dataclass, field
-
-from typing_extensions import Protocol
+from enum import Enum, auto
 
 from piccolo.columns import And, Column, Or, Where
 from piccolo.columns.column_types import ForeignKey
@@ -15,16 +14,6 @@ from piccolo.utils.sql_values import convert_to_sql_value
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import Selectable
     from piccolo.table import Table  # noqa
-
-    class SyncCallback(Protocol):
-        def __call__(self, results: t.Any):
-            ...
-
-    class AsyncCallback(Protocol):
-        async def __call__(self, results: t.Any):
-            ...
-
-    Callback = t.Union[SyncCallback, AsyncCallback]
 
 
 @dataclass
@@ -103,6 +92,16 @@ class Output:
             load_json=self.load_json,
             nested=self.nested,
         )
+
+
+class Callback(Enum):
+    success = auto()
+
+
+@dataclass
+class RegisteredCallback:
+    kind: Callback
+    target: t.Callable
 
 
 @dataclass
@@ -256,32 +255,43 @@ class CallbackDelegate:
     Example usage:
 
     .callback(my_handler_function)
+    .callback(print, on=Callback.success)
     .callback(my_handler_coroutine)
-    .callback(lambda success, row: print(row))
+    .callback([handler1, handler2])
     """
 
-    _callbacks: t.List[Callback] = field(default_factory=list)
+    _callbacks: t.List[RegisteredCallback] = field(default_factory=list)
 
-    def callback(self, callbacks: t.Union[Callback, t.List[Callback]]):
+    def callback(
+        self,
+        callbacks: t.Union[t.Callable, t.List[t.Callable]],
+        *,
+        on: Callback,
+    ):
         if isinstance(callbacks, list):
-            self._callbacks.extend(callbacks)
+            self._callbacks.extend(
+                RegisteredCallback(kind=on, target=callback)
+                for callback in callbacks
+            )
         else:
-            self._callbacks.append(callbacks)
+            self._callbacks.append(
+                RegisteredCallback(kind=on, target=callbacks)
+            )
 
-    async def invoke(self, results: t.Any):
+    async def invoke(self, results: t.Any, *, kind: Callback):
         """
         Utility function that invokes the registered callbacks in the correct
-        way, handling both sync and async callbacks. If no callbacks are
-        registered, this function does nothing.
+        way, handling both sync and async callbacks. Only callbacks of the
+        given kind are invoked.
         """
-        if not self._callbacks:
-            return
-
         for callback in self._callbacks:
-            if asyncio.iscoroutinefunction(callback):
-                await callback(results)
+            if callback.kind != kind:
+                continue
+
+            if asyncio.iscoroutinefunction(callback.target):
+                await callback.target(results)
             else:
-                callback(results)
+                callback.target(results)
 
 
 @dataclass
