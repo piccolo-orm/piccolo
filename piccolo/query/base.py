@@ -209,7 +209,7 @@ class Query:
             processed_results = await self._process_results(results)
 
             if callback:
-                await callback.invoke(True, processed_results)
+                await callback.invoke(processed_results)
 
             return processed_results
         else:
@@ -221,7 +221,7 @@ class Query:
                 processed_results = await self._process_results(results)
 
                 if callback:
-                    await callback.invoke(True, processed_results)
+                    await callback.invoke(processed_results)
 
                 responses.append(processed_results)
             return responses

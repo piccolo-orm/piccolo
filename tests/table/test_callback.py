@@ -20,15 +20,86 @@ class TestCallbackSuccesses(DBTestCase):
 
         callback_handler = Mock()
         Band.select(Band.name).callback(callback_handler).run_sync()
-        callback_handler.assert_called_once_with(
-            True, [{"name": "Pythonistas"}]
-        )
+        callback_handler.assert_called_once_with([{"name": "Pythonistas"}])
 
     def test_callback_async(self):
         self.insert_row()
 
         callback_handler = AsyncMock()
         Band.select(Band.name).callback(callback_handler).run_sync()
-        callback_handler.assert_called_once_with(
-            True, [{"name": "Pythonistas"}]
+        callback_handler.assert_called_once_with([{"name": "Pythonistas"}])
+
+
+class TestMultipleCallbacks(DBTestCase):
+    def test_all_sync(self):
+        self.insert_row()
+
+        handlers = [Mock(), Mock(), Mock()]
+        Band.select(Band.name).callback(handlers).run_sync()
+
+        for handler in handlers:
+            handler.assert_called_once_with([{"name": "Pythonistas"}])
+
+    def test_all_sync_chained(self):
+        self.insert_row()
+
+        handlers = [Mock(), Mock(), Mock()]
+
+        (
+            Band.select(Band.name)
+            .callback(handlers[0])
+            .callback(handlers[1])
+            .callback(handlers[2])
+            .run_sync()
         )
+
+        for handler in handlers:
+            handler.assert_called_once_with([{"name": "Pythonistas"}])
+
+    def test_all_async(self):
+        self.insert_row()
+
+        handlers = [AsyncMock(), AsyncMock(), AsyncMock()]
+        Band.select(Band.name).callback(handlers).run_sync()
+
+        for handler in handlers:
+            handler.assert_called_once_with([{"name": "Pythonistas"}])
+
+    def test_all_async_chained(self):
+        self.insert_row()
+
+        handlers = [AsyncMock(), AsyncMock(), AsyncMock()]
+        (
+            Band.select(Band.name)
+            .callback(handlers[0])
+            .callback(handlers[1])
+            .callback(handlers[2])
+            .run_sync()
+        )
+        for handler in handlers:
+            handler.assert_called_once_with([{"name": "Pythonistas"}])
+
+    def test_mixed(self):
+        self.insert_row()
+
+        handlers = [Mock(), AsyncMock(), Mock()]
+        Band.select(Band.name).callback(handlers).run_sync()
+
+        for handler in handlers:
+            handler.assert_called_once_with([{"name": "Pythonistas"}])
+
+    def test_mixed_chained(self):
+        self.insert_row()
+
+        handlers = [Mock(), AsyncMock(), Mock()]
+
+        (
+            Band.select(Band.name)
+            .callback(handlers[0])
+            .callback(handlers[1])
+            .callback(handlers[2])
+            .run_sync()
+        )
+
+        for handler in handlers:
+            handler.assert_called_once_with([{"name": "Pythonistas"}])

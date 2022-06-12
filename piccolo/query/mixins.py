@@ -4,6 +4,8 @@ import asyncio
 import typing as t
 from dataclasses import dataclass, field
 
+from typing_extensions import Protocol
+
 from piccolo.columns import And, Column, Or, Where
 from piccolo.columns.column_types import ForeignKey
 from piccolo.custom_types import Combinable
@@ -13,6 +15,16 @@ from piccolo.utils.sql_values import convert_to_sql_value
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import Selectable
     from piccolo.table import Table  # noqa
+
+    class SyncCallback(Protocol):
+        def __call__(self, results: t.Any):
+            ...
+
+    class AsyncCallback(Protocol):
+        async def __call__(self, results: t.Any):
+            ...
+
+    Callback = t.Union[SyncCallback, AsyncCallback]
 
 
 @dataclass
@@ -238,19 +250,6 @@ class OutputDelegate:
         return self.__class__(_output=_output)
 
 
-class SyncCallback(t.Protocol):
-    def __call__(self, success: bool, results: t.Any):
-        ...
-
-
-class AsyncCallback(t.Protocol):
-    async def __call__(self, success: bool, results: t.Any):
-        ...
-
-
-Callback = t.Union[SyncCallback, AsyncCallback]
-
-
 @dataclass
 class CallbackDelegate:
     """
@@ -261,24 +260,28 @@ class CallbackDelegate:
     .callback(lambda success, row: print(row))
     """
 
-    _callback: t.Optional[Callback] = None
+    _callbacks: t.List[Callback] = field(default_factory=list)
 
-    def callback(self, callback: Callback):
-        self._callback = callback
+    def callback(self, callbacks: t.Union[Callback, t.List[Callback]]):
+        if isinstance(callbacks, list):
+            self._callbacks.extend(callbacks)
+        else:
+            self._callbacks.append(callbacks)
 
-    async def invoke(self, success: bool, results: t.Any):
+    async def invoke(self, results: t.Any):
         """
-        Utility function that invokes the registered callback in the correct
-        way, handling both sync and async callbacks. If no callback is
+        Utility function that invokes the registered callbacks in the correct
+        way, handling both sync and async callbacks. If no callbacks are
         registered, this function does nothing.
         """
-        if self._callback is None:
+        if not self._callbacks:
             return
 
-        if asyncio.iscoroutinefunction(self._callback):
-            await self._callback(success, results)
-        else:
-            self._callback(success, results)
+        for callback in self._callbacks:
+            if asyncio.iscoroutinefunction(callback):
+                await callback(results)
+            else:
+                callback(results)
 
 
 @dataclass

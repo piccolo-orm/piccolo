@@ -465,8 +465,10 @@ class Select(Query):
         )
         return self
 
-    def callback(self, callback: Callback) -> Select:
-        self.callback_delegate.callback(callback)
+    def callback(
+        self, callbacks: t.Union[Callback, t.List[Callback]]
+    ) -> Select:
+        self.callback_delegate.callback(callbacks)
         return self
 
     def where(self, *where: Combinable) -> Select:
