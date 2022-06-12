@@ -4,6 +4,24 @@ from tests.base import AsyncMock, DBTestCase
 from tests.example_apps.music.tables import Band
 
 
+def identity(x):
+    """Returns the input. Used as the side effect for mock callbacks."""
+    return x
+
+
+def get_name(results):
+    return results["name"]
+
+
+async def uppercase(name):
+    """Async to ensure coroutines are called correctly."""
+    return name.upper()
+
+
+def limit(name):
+    return name[:6]
+
+
 class TestNoCallback(DBTestCase):
     def test_no_callback(self):
         """
@@ -18,23 +36,29 @@ class TestCallbackSuccesses(DBTestCase):
     def test_callback_sync(self):
         self.insert_row()
 
-        callback_handler = Mock()
-        Band.select(Band.name).callback(callback_handler).run_sync()
+        callback_handler = Mock(return_value="it worked")
+        result = Band.select(Band.name).callback(callback_handler).run_sync()
         callback_handler.assert_called_once_with([{"name": "Pythonistas"}])
+        self.assertEqual(result, "it worked")
 
     def test_callback_async(self):
         self.insert_row()
 
-        callback_handler = AsyncMock()
-        Band.select(Band.name).callback(callback_handler).run_sync()
+        callback_handler = AsyncMock(return_value="it worked")
+        result = Band.select(Band.name).callback(callback_handler).run_sync()
         callback_handler.assert_called_once_with([{"name": "Pythonistas"}])
+        self.assertEqual(result, "it worked")
 
 
 class TestMultipleCallbacks(DBTestCase):
     def test_all_sync(self):
         self.insert_row()
 
-        handlers = [Mock(), Mock(), Mock()]
+        handlers = [
+            Mock(side_effect=identity),
+            Mock(side_effect=identity),
+            Mock(side_effect=identity),
+        ]
         Band.select(Band.name).callback(handlers).run_sync()
 
         for handler in handlers:
@@ -43,7 +67,11 @@ class TestMultipleCallbacks(DBTestCase):
     def test_all_sync_chained(self):
         self.insert_row()
 
-        handlers = [Mock(), Mock(), Mock()]
+        handlers = [
+            Mock(side_effect=identity),
+            Mock(side_effect=identity),
+            Mock(side_effect=identity),
+        ]
 
         (
             Band.select(Band.name)
@@ -59,7 +87,11 @@ class TestMultipleCallbacks(DBTestCase):
     def test_all_async(self):
         self.insert_row()
 
-        handlers = [AsyncMock(), AsyncMock(), AsyncMock()]
+        handlers = [
+            AsyncMock(side_effect=identity),
+            AsyncMock(side_effect=identity),
+            AsyncMock(side_effect=identity),
+        ]
         Band.select(Band.name).callback(handlers).run_sync()
 
         for handler in handlers:
@@ -68,7 +100,11 @@ class TestMultipleCallbacks(DBTestCase):
     def test_all_async_chained(self):
         self.insert_row()
 
-        handlers = [AsyncMock(), AsyncMock(), AsyncMock()]
+        handlers = [
+            AsyncMock(side_effect=identity),
+            AsyncMock(side_effect=identity),
+            AsyncMock(side_effect=identity),
+        ]
         (
             Band.select(Band.name)
             .callback(handlers[0])
@@ -82,7 +118,11 @@ class TestMultipleCallbacks(DBTestCase):
     def test_mixed(self):
         self.insert_row()
 
-        handlers = [Mock(), AsyncMock(), Mock()]
+        handlers = [
+            Mock(side_effect=identity),
+            AsyncMock(side_effect=identity),
+            Mock(side_effect=identity),
+        ]
         Band.select(Band.name).callback(handlers).run_sync()
 
         for handler in handlers:
@@ -91,7 +131,11 @@ class TestMultipleCallbacks(DBTestCase):
     def test_mixed_chained(self):
         self.insert_row()
 
-        handlers = [Mock(), AsyncMock(), Mock()]
+        handlers = [
+            Mock(side_effect=identity),
+            AsyncMock(side_effect=identity),
+            Mock(side_effect=identity),
+        ]
 
         (
             Band.select(Band.name)
@@ -103,3 +147,44 @@ class TestMultipleCallbacks(DBTestCase):
 
         for handler in handlers:
             handler.assert_called_once_with([{"name": "Pythonistas"}])
+
+
+class TestCallbackTransformData(DBTestCase):
+    def test_transform(self):
+        self.insert_row()
+
+        result = (
+            Band.select(Band.name)
+            .first()
+            .callback([get_name, uppercase, limit])
+            .run_sync()
+        )
+
+        self.assertEqual(result, "PYTHON")
+
+    def test_transform_chain(self):
+        self.insert_row()
+
+        result = (
+            Band.select(Band.name)
+            .first()
+            .callback(get_name)
+            .callback(uppercase)
+            .callback(limit)
+            .run_sync()
+        )
+
+        self.assertEqual(result, "PYTHON")
+
+    def test_transform_mixed(self):
+        self.insert_row()
+
+        result = (
+            Band.select(Band.name)
+            .first()
+            .callback([get_name, uppercase])
+            .callback(limit)
+            .run_sync()
+        )
+
+        self.assertEqual(result, "PYTHON")

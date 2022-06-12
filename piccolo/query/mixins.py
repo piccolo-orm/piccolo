@@ -278,20 +278,25 @@ class CallbackDelegate:
                 RegisteredCallback(kind=on, target=callbacks)
             )
 
-    async def invoke(self, results: t.Any, *, kind: Callback):
+    async def invoke(self, results: t.Any, *, kind: Callback) -> t.Any:
         """
         Utility function that invokes the registered callbacks in the correct
         way, handling both sync and async callbacks. Only callbacks of the
         given kind are invoked.
+        Results are passed through the callbacks in the order they were added,
+        with each callback able to transform them. This function returns the
+        transformed results.
         """
         for callback in self._callbacks:
             if callback.kind != kind:
                 continue
 
             if asyncio.iscoroutinefunction(callback.target):
-                await callback.target(results)
+                results = await callback.target(results)
             else:
-                callback.target(results)
+                results = callback.target(results)
+
+        return results
 
 
 @dataclass
