@@ -15,15 +15,10 @@ def run_sync(coroutine: t.Coroutine):
         current thread.
     """
     try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        # No current event loop, so it's safe to use:
+        # We try this first, as in most situations this will work.
         return asyncio.run(coroutine)
-    else:
-        # We're already inside a running event loop, so run the coroutine in a
-        # new thread:
-        new_loop = asyncio.new_event_loop()
-
+    except RuntimeError:
+        # An event loop already exists.
         with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(new_loop.run_until_complete, coroutine)
+            future = executor.submit(asyncio.run, coroutine)
             return future.result()

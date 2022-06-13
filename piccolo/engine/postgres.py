@@ -126,7 +126,13 @@ class Atomic:
 
     async def _run_in_new_connection(self):
         connection = await asyncpg.connect(**self.engine.config)
-        await self._run_queries(connection)
+        try:
+            await self._run_queries(connection)
+        except asyncpg.exceptions.PostgresError as exception:
+            await connection.close()
+            raise exception
+
+        await connection.close()
 
     async def run(self, in_pool=True):
         if in_pool and self.engine.pool:
@@ -410,7 +416,13 @@ class PostgresEngine(Engine):
         if args is None:
             args = []
         connection = await self.get_new_connection()
-        results = await connection.fetch(query, *args)
+
+        try:
+            results = await connection.fetch(query, *args)
+        except asyncpg.exceptions.PostgresError as exception:
+            await connection.close()
+            raise exception
+
         await connection.close()
         return results
 
