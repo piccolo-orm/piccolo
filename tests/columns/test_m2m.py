@@ -33,7 +33,7 @@ from piccolo.columns.column_types import (
     Varchar,
 )
 from piccolo.columns.m2m import M2M
-from piccolo.table import Table, create_tables, drop_tables
+from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
 
 
 class Band(Table):
@@ -57,7 +57,7 @@ SIMPLE_SCHEMA = [Band, Genre, GenreToBand]
 
 class TestM2M(TestCase):
     def setUp(self):
-        create_tables(*SIMPLE_SCHEMA, if_not_exists=True)
+        create_db_tables_sync(*SIMPLE_SCHEMA, if_not_exists=True)
 
         Band.insert(
             Band(name="Pythonistas"),
@@ -80,7 +80,7 @@ class TestM2M(TestCase):
         ).run_sync()
 
     def tearDown(self):
-        drop_tables(*SIMPLE_SCHEMA)
+        drop_db_tables_sync(*SIMPLE_SCHEMA)
 
     def test_select_name(self):
         response = Band.select(
@@ -414,7 +414,7 @@ class TestM2MCustomPrimaryKey(TestCase):
     """
 
     def setUp(self):
-        create_tables(*CUSTOM_PK_SCHEMA, if_not_exists=True)
+        create_db_tables_sync(*CUSTOM_PK_SCHEMA, if_not_exists=True)
 
         bob = Customer.objects().create(name="Bob").run_sync()
         sally = Customer.objects().create(name="Sally").run_sync()
@@ -433,7 +433,7 @@ class TestM2MCustomPrimaryKey(TestCase):
         ).run_sync()
 
     def tearDown(self):
-        drop_tables(*CUSTOM_PK_SCHEMA)
+        drop_db_tables_sync(*CUSTOM_PK_SCHEMA)
 
     def test_select(self):
         response = Customer.select(
@@ -555,7 +555,7 @@ class TestM2MComplexSchema(TestCase):
     """
 
     def setUp(self):
-        create_tables(*COMPLEX_SCHEMA, if_not_exists=True)
+        create_db_tables_sync(*COMPLEX_SCHEMA, if_not_exists=True)
 
         small_table = SmallTable(varchar_col="Test")
         small_table.save().run_sync()
@@ -589,7 +589,7 @@ class TestM2MComplexSchema(TestCase):
         self.mega_table = mega_table
 
     def tearDown(self):
-        drop_tables(*COMPLEX_SCHEMA)
+        drop_db_tables_sync(*COMPLEX_SCHEMA)
 
     def test_select_all(self):
         """

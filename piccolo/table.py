@@ -46,6 +46,8 @@ from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
 from piccolo.utils.graphlib import TopologicalSorter
 from piccolo.utils.sql_values import convert_to_sql_value
+from piccolo.utils.sync import run_sync
+from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:
     from piccolo.columns import Selectable
@@ -1171,10 +1173,23 @@ def create_table_class(
     )
 
 
-def create_tables(*tables: t.Type[Table], if_not_exists: bool = False) -> None:
+###############################################################################
+# Quickly create or drop database tables from Piccolo `Table` clases.
+
+
+async def create_db_tables(
+    *tables: t.Type[Table], if_not_exists: bool = False
+) -> None:
     """
-    Creates the tables passed to it in the correct order, based on their
-    foreign keys.
+    Creates the database table for each ``Table`` class passed in. The tables
+    are created in the correct order, based on their foreign keys.
+
+    :param tables:
+        The tables to create in the database.
+    :param if_not_exists:
+        No errors will be raised if any of the tables already exist in the
+        database.
+
     """
     if tables:
         engine = tables[0]._meta.db
@@ -1190,13 +1205,42 @@ def create_tables(*tables: t.Type[Table], if_not_exists: bool = False) -> None:
             for table in sorted_table_classes
         ]
     )
-    atomic.run_sync()
+    await atomic.run()
 
 
-def drop_tables(*tables: t.Type[Table]) -> None:
+def create_db_tables_sync(
+    *tables: t.Type[Table], if_not_exists: bool = False
+) -> None:
     """
-    Drops the tables passed to it in the correct order, based on their foreign
-    keys.
+    A sync wrapper around :func:`create_db_tables`.
+    """
+    run_sync(create_db_tables(*tables, if_not_exists=if_not_exists))
+
+
+def create_tables(*tables: t.Type[Table], if_not_exists: bool = False) -> None:
+    """
+    This original implementation has been replaced, because it was synchronous,
+    and felt at odds with the rest of the Piccolo codebase which is async
+    first.
+    """
+    colored_warning(
+        "`create_tables` is deprecated and will be removed in v1 of Piccolo. "
+        "Use `await create_db_tables(...)` or `create_db_tables_sync(...)` "
+        "instead.",
+        category=DeprecationWarning,
+    )
+
+    return create_db_tables_sync(*tables, if_not_exists=if_not_exists)
+
+
+async def drop_db_tables(*tables: t.Type[Table]) -> None:
+    """
+    Drops the database table for each ``Table`` class passed in. The tables
+    are dropped in the correct order, based on their foreign keys.
+
+    :param tables:
+        The tables to delete from the database.
+
     """
     if tables:
         engine = tables[0]._meta.db
@@ -1223,7 +1267,33 @@ def drop_tables(*tables: t.Type[Table]) -> None:
             ]
         )
 
-    atomic.run_sync()
+    await atomic.run()
+
+
+def drop_db_tables_sync(*tables: t.Type[Table]) -> None:
+    """
+    A sync wrapper around :func:`drop_db_tables`.
+    """
+    run_sync(drop_db_tables(*tables))
+
+
+def drop_tables(*tables: t.Type[Table]) -> None:
+    """
+    This original implementation has been replaced, because it was synchronous,
+    and felt at odds with the rest of the Piccolo codebase which is async
+    first.
+    """
+    colored_warning(
+        "`drop_tables` is deprecated and will be removed in v1 of Piccolo. "
+        "Use `await drop_db_tables(...)` or `drop_db_tables_sync(...)` "
+        "instead.",
+        category=DeprecationWarning,
+    )
+
+    return drop_db_tables_sync(*tables)
+
+
+###############################################################################
 
 
 def sort_table_classes(

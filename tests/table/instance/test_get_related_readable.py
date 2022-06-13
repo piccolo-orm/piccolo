@@ -1,7 +1,7 @@
 import decimal
 from unittest import TestCase
 
-from piccolo.table import create_tables, drop_tables
+from piccolo.table import create_db_tables_sync, drop_db_tables_sync
 from tests.example_apps.music.tables import (
     Band,
     Concert,
@@ -15,7 +15,7 @@ TABLES = [Band, Concert, Manager, Venue, Ticket]
 
 class TestGetRelatedReadable(TestCase):
     def setUp(self):
-        create_tables(*TABLES)
+        create_db_tables_sync(*TABLES)
 
         manager_1 = Manager.objects().create(name="Guido").run_sync()
         manager_2 = Manager.objects().create(name="Graydon").run_sync()
@@ -45,7 +45,7 @@ class TestGetRelatedReadable(TestCase):
         ).run_sync()
 
     def tearDown(self):
-        drop_tables(*TABLES)
+        drop_db_tables_sync(*TABLES)
 
     def test_get_related_readable(self):
         """

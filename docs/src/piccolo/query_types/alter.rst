@@ -40,14 +40,23 @@ Used to drop the table - use with caution!
 
     await Band.alter().drop_table()
 
-If you have several tables which you want to drop, you can use ``drop_tables``
-instead. It will drop them in the correct order.
+drop_db_tables / drop_db_tables_sync
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you have several tables which you want to drop, you can use
+:func:`drop_db_tables <piccolo.table.drop_db_tables>` or
+:func:`drop_db_tables_sync <piccolo.table.drop_db_tables_sync>`. The tables
+will be dropped in the correct order based on their foreign keys.
 
 .. code-block:: python
 
-    from piccolo.table import drop_tables
+    # async version
+    >>> from piccolo.table import drop_db_tables
+    >>> await drop_db_tables(Band, Manager)
 
-    drop_tables(Band, Manager)
+    # sync version
+    >>> from piccolo.table import drop_db_tables_sync
+    >>> drop_db_tables_sync(Band, Manager)
 
 -------------------------------------------------------------------------------
 

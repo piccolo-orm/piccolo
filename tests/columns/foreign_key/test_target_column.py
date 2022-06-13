@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from piccolo.columns import ForeignKey, Varchar
-from piccolo.table import Table, create_tables, drop_tables
+from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
 
 
 class Manager(Table):
@@ -20,10 +20,10 @@ class TestTargetColumnWithString(TestCase):
     """
 
     def setUp(self):
-        create_tables(Manager, Band)
+        create_db_tables_sync(Manager, Band)
 
     def tearDown(self):
-        drop_tables(Manager, Band)
+        drop_db_tables_sync(Manager, Band)
 
     def test_queries(self):
         manager_1 = Manager.objects().create(name="Guido").run_sync()
@@ -63,10 +63,10 @@ class TestTargetColumnWithColumnRef(TestCase):
     """
 
     def setUp(self):
-        create_tables(ManagerA, BandA)
+        create_db_tables_sync(ManagerA, BandA)
 
     def tearDown(self):
-        drop_tables(ManagerA, BandA)
+        drop_db_tables_sync(ManagerA, BandA)
 
     def test_queries(self):
         manager_1 = ManagerA.objects().create(name="Guido").run_sync()

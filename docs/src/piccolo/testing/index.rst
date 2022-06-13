@@ -101,23 +101,28 @@ When running your unit tests, you usually start with a blank test database,
 create the tables, and then install test data.
 
 To create the tables, there are a few different approaches you can take. Here
-we use ``create_tables`` and ``drop_tables``:
+we use :func:`create_db_tables_sync <piccolo.table.create_db_tables_sync>` and
+:func:`drop_db_tables_sync <piccolo.table.drop_db_tables_sync>`.
+
+.. note::
+    The async equivalents are :func:`create_db_tables <piccolo.table.create_db_tables>`
+    and :func:`drop_db_tables <piccolo.table.drop_db_tables>`.
 
 .. code-block:: python
 
     from unittest import TestCase
 
-    from piccolo.table import create_tables, drop_tables
+    from piccolo.table import create_db_tables_sync, drop_db_tables_sync
     from piccolo.conf.apps import Finder
 
     TABLES = Finder().get_table_classes()
 
     class TestApp(TestCase):
         def setUp(self):
-            create_tables(*TABLES)
+            create_db_tables_sync(*TABLES)
 
         def tearDown(self):
-            drop_tables(*TABLES)
+            drop_db_tables_sync(*TABLES)
 
         def test_app(self):
             # Do some testing ...
