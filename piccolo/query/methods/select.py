@@ -12,8 +12,8 @@ from piccolo.columns.readable import Readable
 from piccolo.engine.base import Batch
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
-    Callback,
     CallbackDelegate,
+    CallbackType,
     ColumnsDelegate,
     DistinctDelegate,
     GroupByDelegate,
@@ -469,7 +469,7 @@ class Select(Query):
         self,
         callbacks: t.Union[t.Callable, t.List[t.Callable]],
         *,
-        on: Callback = Callback.success,
+        on: CallbackType = CallbackType.success,
     ) -> Select:
         self.callback_delegate.callback(callbacks, on=on)
         return self

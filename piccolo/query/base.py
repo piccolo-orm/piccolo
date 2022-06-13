@@ -5,7 +5,7 @@ import typing as t
 from time import time
 
 from piccolo.columns.column_types import JSON, JSONB
-from piccolo.query.mixins import Callback, ColumnsDelegate
+from piccolo.query.mixins import CallbackType, ColumnsDelegate
 from piccolo.querystring import QueryString
 from piccolo.utils.encoding import dump_json, load_json
 from piccolo.utils.objects import make_nested_object
@@ -210,7 +210,7 @@ class Query:
 
             if callback:
                 processed_results = await callback.invoke(
-                    processed_results, kind=Callback.success
+                    processed_results, kind=CallbackType.success
                 )
 
             return processed_results
@@ -224,7 +224,7 @@ class Query:
 
                 if callback:
                     processed_results = await callback.invoke(
-                        processed_results, kind=Callback.success
+                        processed_results, kind=CallbackType.success
                     )
 
                 responses.append(processed_results)

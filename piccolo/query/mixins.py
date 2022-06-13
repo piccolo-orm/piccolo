@@ -94,13 +94,13 @@ class Output:
         )
 
 
-class Callback(Enum):
+class CallbackType(Enum):
     success = auto()
 
 
 @dataclass
-class RegisteredCallback:
-    kind: Callback
+class Callback:
+    kind: CallbackType
     target: t.Callable
 
 
@@ -255,30 +255,29 @@ class CallbackDelegate:
     Example usage:
 
     .callback(my_handler_function)
-    .callback(print, on=Callback.success)
+    .callback(print, on=CallbackType.success)
     .callback(my_handler_coroutine)
     .callback([handler1, handler2])
     """
 
-    _callbacks: t.List[RegisteredCallback] = field(default_factory=list)
+    _callbacks: t.Dict[CallbackType, t.List[Callback]] = field(
+        default_factory=lambda: {kind: [] for kind in CallbackType}
+    )
 
     def callback(
         self,
         callbacks: t.Union[t.Callable, t.List[t.Callable]],
         *,
-        on: Callback,
+        on: CallbackType,
     ):
         if isinstance(callbacks, list):
-            self._callbacks.extend(
-                RegisteredCallback(kind=on, target=callback)
-                for callback in callbacks
+            self._callbacks[on].extend(
+                Callback(kind=on, target=callback) for callback in callbacks
             )
         else:
-            self._callbacks.append(
-                RegisteredCallback(kind=on, target=callbacks)
-            )
+            self._callbacks[on].append(Callback(kind=on, target=callbacks))
 
-    async def invoke(self, results: t.Any, *, kind: Callback) -> t.Any:
+    async def invoke(self, results: t.Any, *, kind: CallbackType) -> t.Any:
         """
         Utility function that invokes the registered callbacks in the correct
         way, handling both sync and async callbacks. Only callbacks of the
@@ -287,10 +286,7 @@ class CallbackDelegate:
         with each callback able to transform them. This function returns the
         transformed results.
         """
-        for callback in self._callbacks:
-            if callback.kind != kind:
-                continue
-
+        for callback in self._callbacks[kind]:
             if asyncio.iscoroutinefunction(callback.target):
                 results = await callback.target(results)
             else:
