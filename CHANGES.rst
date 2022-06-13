@@ -1,6 +1,41 @@
 Changes
 =======
 
+0.76.0
+------
+
+create_db_tables / drop_db_tables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Added ``create_db_tables`` and ``create_db_tables_sync`` to replace
+``create_tables``. The problem was ``create_tables`` was sync only, and was
+inconsistent with the rest of Piccolo's API, which is async first.
+``create_tables`` will continue to work for now, but is deprecated, and will be
+removed in version 1.0.
+
+Likewise, ``drop_db_tables`` and ``drop_db_tables_sync`` have replaced
+``drop_tables``.
+
+When calling ``create_tables`` / ``drop_tables`` within other async libraries
+(such as `ward <https://github.com/darrenburns/ward>`_) it was sometimes
+unreliable - the best solution was just to make async versions of these
+functions. Thanks to @backwardspy for reporting this issue.
+
+``BaseUser`` password validation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We centralised the password validation logic in ``BaseUser`` into a method
+called ``_validate_password``. This is needed by Piccolo API, but also makes it
+easier for users to override this logic if subclassing ``BaseUser``.
+
+More ``run_sync`` refinements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``run_sync``, which is the main utility function which Piccolo uses to run
+async code, has been further simplified for Python > v3.10 compatibility.
+
+-------------------------------------------------------------------------------
+
 0.75.0
 ------
 
