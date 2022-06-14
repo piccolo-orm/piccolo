@@ -114,15 +114,11 @@ class Atomic:
         self.queries = []
 
     async def _run_in_pool(self):
-        pool = await self.engine.get_pool()
-        connection = await pool.acquire()
+        if not self.engine.pool:
+            raise ValueError("No pool is currently active.")
 
-        try:
+        async with self.engine.pool.acquire() as connection:
             await self._run_queries(connection)
-        except Exception:
-            pass
-        finally:
-            await pool.release(connection)
 
     async def _run_in_new_connection(self):
         connection = await asyncpg.connect(**self.engine.config)
