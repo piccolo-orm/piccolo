@@ -1,6 +1,24 @@
 Changes
 =======
 
+0.76.1
+------
+
+Fixed a bug with ``atomic`` when run async with a connection pool.
+
+For example:
+
+.. code-block:: python
+
+  atomic = Band._meta.db.atomic()
+  atomic.add(query_1, query_1)
+  # This was failing:
+  await atomic.run()
+
+Thanks to @Anton-Karpenko for reporting this issue.
+
+-------------------------------------------------------------------------------
+
 0.76.0
 ------
 
