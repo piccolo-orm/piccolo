@@ -42,7 +42,12 @@ class TestRefresh(DBTestCase):
         ).where(Band.name == "Pythonistas").run_sync()
 
         # Refresh `band`, and make sure it has the correct data.
-        band.refresh(include_columns=[Band.name]).run_sync()
+        query = band.refresh(include_columns=[Band.name])
+        self.assertEqual(
+            [i._meta.name for i in query._columns],
+            ["name"],
+        )
+        query.run_sync()
 
         self.assertTrue(band.name == "Pythonistas!!!")
         self.assertTrue(band.popularity == initial_data["popularity"])
@@ -63,12 +68,10 @@ class TestRefresh(DBTestCase):
 
         # Refresh `band`, and make sure it has the correct data.
         query = band.refresh(exclude_columns=[Band.name])
-
         self.assertEqual(
             [i._meta.name for i in query._columns],
-            ["id", "manager", "popularity"],
+            ["manager", "popularity"],
         )
-
         query.run_sync()
 
         self.assertTrue(band.name == initial_data["name"])

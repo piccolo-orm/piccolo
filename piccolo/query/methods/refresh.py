@@ -42,13 +42,16 @@ class Refresh:
             return [
                 i
                 for i in self.instance._meta.columns
-                if not any(
+                if not i._meta.primary_key
+                and not any(
                     i._equals(exclude_column)
                     for exclude_column in self.exclude_columns
                 )
             ]
 
-        return self.instance._meta.columns
+        return [
+            i for i in self.instance._meta.columns if not i._meta.primary_key
+        ]
 
     async def run(self) -> Table:
         """
