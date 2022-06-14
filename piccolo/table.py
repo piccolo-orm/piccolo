@@ -42,6 +42,7 @@ from piccolo.query import (
 )
 from piccolo.query.methods.create_index import CreateIndex
 from piccolo.query.methods.indexes import Indexes
+from piccolo.query.methods.refresh import Refresh
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
 from piccolo.utils.graphlib import TopologicalSorter
@@ -401,6 +402,51 @@ class Table(metaclass=TableMetaclass):
 
         return self.__class__.delete().where(
             self.__class__._meta.primary_key == primary_key_value
+        )
+
+    def refresh(
+        self,
+        include_columns: t.Sequence[Column] = None,
+        exclude_columns: t.Sequence[Column] = None,
+    ) -> Refresh:
+        """
+        Fetch the latest data for this instance from the database. Modifies the
+        instance in place, but also returns it as a convenience.
+
+        :param include_columns:
+            If you only want to refresh certain columns, specify them here.
+        :param exclude_columns:
+            If you want to refresh all columns except these, specify them here.
+
+        .. note::
+            If neither ``include_columns`` or ``exclude_columns`` are
+            specified, then all columns are refreshed.
+
+        Example usage::
+
+            # Get an instance from the database.
+            instance = await Band.objects.first()
+
+            # Later on we can refresh this instance with the latest data
+            # from the database, in case it has gotten stale.
+            await instance.refresh()
+
+            # Alternatively, running it synchronously:
+            instance.refresh().run_sync()
+
+        """
+        include_columns = include_columns or []
+        exclude_columns = exclude_columns or []
+
+        if include_columns and exclude_columns:
+            raise ValueError(
+                "Please only specify `include_columns` or `exclude_columns`."
+            )
+
+        return Refresh(
+            instance=self,
+            include_columns=include_columns,
+            exclude_columns=exclude_columns,
         )
 
     def get_related(self, foreign_key: t.Union[ForeignKey, str]) -> Objects:

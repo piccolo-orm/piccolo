@@ -253,6 +253,23 @@ the columns:
 
 -------------------------------------------------------------------------------
 
+refresh
+-------
+
+If you have an object which has gotten stale, and want to refresh it, so it
+has the latest data from the database, you can use the
+:meth:`refresh <piccolo.table.Table.refresh>` method.
+
+.. code-block:: python
+
+    # If we have an instance:
+    band = await Band.objects().first()
+
+    # And it has gotten stale, we can refresh it:
+    await band.refresh()
+
+-------------------------------------------------------------------------------
+
 Query clauses
 -------------
 

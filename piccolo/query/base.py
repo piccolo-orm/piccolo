@@ -61,8 +61,8 @@ class Query:
         else:
             raw = []
 
-        if hasattr(self, "run_callback"):
-            self.run_callback(raw)
+        if hasattr(self, "_raw_response_callback"):
+            self._raw_response_callback(raw)
 
         output: t.Optional[OutputDelegate] = getattr(
             self, "output_delegate", None

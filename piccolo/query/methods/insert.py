@@ -22,7 +22,7 @@ class Insert(Query):
         self.add_delegate.add(*instances, table_class=self.table)
         return self
 
-    def run_callback(self, results):
+    def _raw_response_callback(self, results):
         """
         Assign the ids of the created rows to the model instances.
         """
