@@ -19,35 +19,22 @@ class Refresh:
 
     :param instance:
         The instance to refresh.
-    :param include_columns:
-        If you just want to refresh some columns.
-    :param exclude_columns:
-        If you want to refresh all columns except these ones.
+    :param columns:
+        Which columns to refresh - it not specified, then all columns are
+        refreshed.
 
     """
 
     instance: Table
-    include_columns: t.Sequence[Column]
-    exclude_columns: t.Sequence[Column]
+    columns: t.Optional[t.Sequence[Column]] = None
 
     @property
     def _columns(self) -> t.Sequence[Column]:
         """
         Works out which columns the user wants to refresh.
         """
-        if self.include_columns:
-            return self.include_columns
-
-        if self.exclude_columns:
-            return [
-                i
-                for i in self.instance._meta.columns
-                if not i._meta.primary_key
-                and not any(
-                    i._equals(exclude_column)
-                    for exclude_column in self.exclude_columns
-                )
-            ]
+        if self.columns:
+            return self.columns
 
         return [
             i for i in self.instance._meta.columns if not i._meta.primary_key
@@ -83,7 +70,7 @@ class Refresh:
             raise ValueError("No columns to fetch.")
 
         updated_values = (
-            await instance.select(*self._columns)
+            await instance.select(*columns)
             .where(pk_column == primary_key_value)
             .first()
         )

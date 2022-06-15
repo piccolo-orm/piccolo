@@ -339,7 +339,7 @@ class Table(metaclass=TableMetaclass):
     ###########################################################################
 
     def save(
-        self, columns: t.Optional[t.List[t.Union[Column, str]]] = None
+        self, columns: t.Optional[t.Sequence[t.Union[Column, str]]] = None
     ) -> t.Union[Insert, Update]:
         """
         A proxy to an insert or update query.
@@ -366,9 +366,7 @@ class Table(metaclass=TableMetaclass):
         # Pre-existing row - update
         if columns is None:
             column_instances = [
-                i
-                for i in cls._meta.columns
-                if i._meta.name != self._meta.primary_key._meta.name
+                i for i in cls._meta.columns if not i._meta.primary_key
             ]
         else:
             column_instances = [
@@ -405,22 +403,15 @@ class Table(metaclass=TableMetaclass):
         )
 
     def refresh(
-        self,
-        include_columns: t.Sequence[Column] = None,
-        exclude_columns: t.Sequence[Column] = None,
+        self, columns: t.Optional[t.Sequence[Column]] = None
     ) -> Refresh:
         """
         Fetch the latest data for this instance from the database. Modifies the
         instance in place, but also returns it as a convenience.
 
-        :param include_columns:
+        :param columns:
             If you only want to refresh certain columns, specify them here.
-        :param exclude_columns:
-            If you want to refresh all columns except these, specify them here.
-
-        .. note::
-            If neither ``include_columns`` or ``exclude_columns`` are
-            specified, then all columns are refreshed.
+            Otherwise all columns are refreshed.
 
         Example usage::
 
@@ -435,19 +426,7 @@ class Table(metaclass=TableMetaclass):
             instance.refresh().run_sync()
 
         """
-        include_columns = include_columns or []
-        exclude_columns = exclude_columns or []
-
-        if include_columns and exclude_columns:
-            raise ValueError(
-                "Please only specify `include_columns` or `exclude_columns`."
-            )
-
-        return Refresh(
-            instance=self,
-            include_columns=include_columns,
-            exclude_columns=exclude_columns,
-        )
+        return Refresh(instance=self, columns=columns)
 
     def get_related(self, foreign_key: t.Union[ForeignKey, str]) -> Objects:
         """
@@ -766,7 +745,7 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def all_columns(
-        cls, exclude: t.List[t.Union[str, Column]] = None
+        cls, exclude: t.Sequence[t.Union[str, Column]] = None
     ) -> t.List[Column]:
         """
         Used in conjunction with ``select`` queries. Just as we can use
