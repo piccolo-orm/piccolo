@@ -406,8 +406,8 @@ class Table(metaclass=TableMetaclass):
         self, columns: t.Optional[t.Sequence[Column]] = None
     ) -> Refresh:
         """
-        Fetch the latest data for this instance from the database. Modifies the
-        instance in place, but also returns it as a convenience.
+        Used to fetch the latest data for this instance from the database.
+        Modifies the instance in place, but also returns it as a convenience.
 
         :param columns:
             If you only want to refresh certain columns, specify them here.
