@@ -22,17 +22,27 @@ def limit(name):
     return name[:6]
 
 
-class TestNoCallback(DBTestCase):
+class TestNoCallbackSelect(DBTestCase):
     def test_no_callback(self):
         """
         Just check we don't get any "NoneType is not callable" kind of errors
-        when we run a query without setting any callbacks.
+        when we run a select query without setting any callbacks.
         """
         self.insert_row()
         Band.select(Band.name).run_sync()
 
 
-class TestCallbackSuccesses(DBTestCase):
+class TestNoCallbackObjects(DBTestCase):
+    def test_no_callback(self):
+        """
+        Just check we don't get any "NoneType is not callable" kind of errors
+        when we run an objects query without setting any callbacks.
+        """
+        self.insert_row()
+        Band.objects().run_sync()
+
+
+class TestCallbackSuccessesSelect(DBTestCase):
     def test_callback_sync(self):
         self.insert_row()
 
@@ -50,7 +60,35 @@ class TestCallbackSuccesses(DBTestCase):
         self.assertEqual(result, "it worked")
 
 
-class TestMultipleCallbacks(DBTestCase):
+class TestCallbackSuccessesObjects(DBTestCase):
+    def test_callback_sync(self):
+        self.insert_row()
+
+        callback_handler = Mock(return_value="it worked")
+        result = Band.objects().callback(callback_handler).run_sync()
+        callback_handler.assert_called_once()
+
+        args = callback_handler.call_args.args[0]
+        self.assertIsInstance(args, list)
+        self.assertIsInstance(args[0], Band)
+        self.assertEqual(args[0].name, "Pythonistas")
+        self.assertEqual(result, "it worked")
+
+    def test_callback_async(self):
+        self.insert_row()
+
+        callback_handler = AsyncMock(return_value="it worked")
+        result = Band.objects().callback(callback_handler).run_sync()
+        callback_handler.assert_called_once()
+
+        args = callback_handler.call_args.args[0]
+        self.assertIsInstance(args, list)
+        self.assertIsInstance(args[0], Band)
+        self.assertEqual(args[0].name, "Pythonistas")
+        self.assertEqual(result, "it worked")
+
+
+class TestMultipleCallbacksSelect(DBTestCase):
     def test_all_sync(self):
         self.insert_row()
 
@@ -149,7 +187,7 @@ class TestMultipleCallbacks(DBTestCase):
             handler.assert_called_once_with([{"name": "Pythonistas"}])
 
 
-class TestCallbackTransformData(DBTestCase):
+class TestCallbackTransformDataSelect(DBTestCase):
     def test_transform(self):
         self.insert_row()
 

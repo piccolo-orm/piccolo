@@ -9,6 +9,8 @@ from piccolo.custom_types import Combinable
 from piccolo.engine.base import Batch
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
+    CallbackDelegate,
+    CallbackType,
     LimitDelegate,
     OffsetDelegate,
     OrderByDelegate,
@@ -124,6 +126,7 @@ class Objects(Query):
         "offset_delegate",
         "order_by_delegate",
         "output_delegate",
+        "callback_delegate",
         "prefetch_delegate",
         "where_delegate",
     )
@@ -140,6 +143,7 @@ class Objects(Query):
         self.order_by_delegate = OrderByDelegate()
         self.output_delegate = OutputDelegate()
         self.output_delegate._output.as_objects = True
+        self.callback_delegate = CallbackDelegate()
         self.prefetch_delegate = PrefetchDelegate()
         self.prefetch(*prefetch)
         self.where_delegate = WhereDelegate()
@@ -148,6 +152,15 @@ class Objects(Query):
         self.output_delegate.output(
             as_list=False, as_json=False, load_json=load_json
         )
+        return self
+
+    def callback(
+        self,
+        callbacks: t.Union[t.Callable, t.List[t.Callable]],
+        *,
+        on: CallbackType = CallbackType.success,
+    ) -> Objects:
+        self.callback_delegate.callback(callbacks, on=on)
         return self
 
     def limit(self, number: int) -> Objects:
