@@ -252,3 +252,15 @@ untrusted source, otherwise it could lead to a SQL injection attack.
     await Band.select().where(
         WhereRaw("name = 'Pythonistas'") | (Band.popularity > 1000)
     )
+
+-------------------------------------------------------------------------------
+
+Joins
+-----
+
+The ``where`` clause has full support for joins. For example:
+
+.. code-block:: python
+
+    >>> await Band.select(Band.name).where(Band.manager.name == 'Guido')
+    [{'name': 'Pythonistas'}]
