@@ -42,6 +42,7 @@ from piccolo.query import (
 )
 from piccolo.query.methods.create_index import CreateIndex
 from piccolo.query.methods.indexes import Indexes
+from piccolo.query.methods.refresh import Refresh
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
 from piccolo.utils.graphlib import TopologicalSorter
@@ -338,7 +339,7 @@ class Table(metaclass=TableMetaclass):
     ###########################################################################
 
     def save(
-        self, columns: t.Optional[t.List[t.Union[Column, str]]] = None
+        self, columns: t.Optional[t.Sequence[t.Union[Column, str]]] = None
     ) -> t.Union[Insert, Update]:
         """
         A proxy to an insert or update query.
@@ -365,9 +366,7 @@ class Table(metaclass=TableMetaclass):
         # Pre-existing row - update
         if columns is None:
             column_instances = [
-                i
-                for i in cls._meta.columns
-                if i._meta.name != self._meta.primary_key._meta.name
+                i for i in cls._meta.columns if not i._meta.primary_key
             ]
         else:
             column_instances = [
@@ -402,6 +401,32 @@ class Table(metaclass=TableMetaclass):
         return self.__class__.delete().where(
             self.__class__._meta.primary_key == primary_key_value
         )
+
+    def refresh(
+        self, columns: t.Optional[t.Sequence[Column]] = None
+    ) -> Refresh:
+        """
+        Used to fetch the latest data for this instance from the database.
+        Modifies the instance in place, but also returns it as a convenience.
+
+        :param columns:
+            If you only want to refresh certain columns, specify them here.
+            Otherwise all columns are refreshed.
+
+        Example usage::
+
+            # Get an instance from the database.
+            instance = await Band.objects.first()
+
+            # Later on we can refresh this instance with the latest data
+            # from the database, in case it has gotten stale.
+            await instance.refresh()
+
+            # Alternatively, running it synchronously:
+            instance.refresh().run_sync()
+
+        """
+        return Refresh(instance=self, columns=columns)
 
     def get_related(self, foreign_key: t.Union[ForeignKey, str]) -> Objects:
         """
@@ -720,7 +745,7 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def all_columns(
-        cls, exclude: t.List[t.Union[str, Column]] = None
+        cls, exclude: t.Sequence[t.Union[str, Column]] = None
     ) -> t.List[Column]:
         """
         Used in conjunction with ``select`` queries. Just as we can use
