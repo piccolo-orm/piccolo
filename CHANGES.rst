@@ -1,6 +1,25 @@
 Changes
 =======
 
+0.77.0
+------
+
+Added the ``refresh`` method. If you have an object which has gotten stale, and
+want to refresh it, so it has the latest data from the database, you can now do
+this:
+
+.. code-block:: python
+
+    # If we have an instance:
+    band = await Band.objects().first()
+
+    # And it has gotten stale, we can refresh it:
+    await band.refresh()
+
+Thanks to @trondhindenes for suggesting this feature.
+
+-------------------------------------------------------------------------------
+
 0.76.1
 ------
 
