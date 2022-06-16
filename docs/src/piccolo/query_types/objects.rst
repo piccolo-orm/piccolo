@@ -274,9 +274,19 @@ Query clauses
 -------------
 
 batch
-~~~~~~~
+~~~~~
 
 See :ref:`batch`.
+
+callback
+~~~~~~~~
+
+See :ref:`callback`.
+
+first
+~~~~~
+
+See :ref:`first`.
 
 limit
 ~~~~~
@@ -288,11 +298,6 @@ offset
 
 See :ref:`offset`.
 
-first
-~~~~~
-
-See :ref:`first`.
-
 order_by
 ~~~~~~~~
 
@@ -302,11 +307,6 @@ output
 ~~~~~~
 
 See :ref:`output`.
-
-callback
-~~~~~~~~
-
-See :ref:`callback`.
 
 where
 ~~~~~
