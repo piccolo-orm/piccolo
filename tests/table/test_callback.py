@@ -68,7 +68,7 @@ class TestCallbackSuccessesObjects(DBTestCase):
         result = Band.objects().callback(callback_handler).run_sync()
         callback_handler.assert_called_once()
 
-        args = callback_handler.call_args.args[0]
+        args = callback_handler.call_args[0][0]
         self.assertIsInstance(args, list)
         self.assertIsInstance(args[0], Band)
         self.assertEqual(args[0].name, "Pythonistas")
@@ -81,7 +81,7 @@ class TestCallbackSuccessesObjects(DBTestCase):
         result = Band.objects().callback(callback_handler).run_sync()
         callback_handler.assert_called_once()
 
-        args = callback_handler.call_args.args[0]
+        args = callback_handler.call_args[0][0]
         self.assertIsInstance(args, list)
         self.assertIsInstance(args[0], Band)
         self.assertEqual(args[0].name, "Pythonistas")
