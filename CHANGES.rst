@@ -25,7 +25,7 @@ where we modify the query's output:
   ...
   ...    return Band.select(Band.name).callback(make_uppercase)
 
-  >>> await get_uppercase_names().where(Band.name == 'Pythonistas')
+  >>> await get_uppercase_names().where(Band.manager.name == 'Guido')
   [{'name': 'PYTHONISTAS'}]
 
 Here's another example, where we perform validation on the query's output:
