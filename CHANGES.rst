@@ -1,6 +1,54 @@
 Changes
 =======
 
+0.78.0
+------
+
+Added the ``callback`` clause to ``select`` and ``objects`` queries (courtesy
+@backwardspy). For example:
+
+.. code-block:: python
+
+  >>> await Band.select().callback(my_callback)
+
+The callback can be a normal function or async function, which is called when
+the query is successful. The callback can be used to modify the query's output.
+
+It allows for some interesting and powerful code. Here's a very simple example
+where we modify the query's output:
+
+.. code-block:: python
+
+  >>> def get_uppercase_names() -> Select:
+  ...     def make_uppercase(response):
+  ...         return [{'name': i['name'].upper()} for i in response]
+  ...
+  ...    return Band.select(Band.name).callback(make_uppercase)
+
+  >>> await get_uppercase_names().where(Band.name == 'Pythonistas')
+  [{'name': 'PYTHONISTAS'}]
+
+Here's another example, where we perform validation on the query's output:
+
+.. code-block:: python
+
+  >>> def get_concerts() -> Select:
+  ...     def check_length(response):
+  ...         if len(response) == 0:
+  ...             raise ValueError('No concerts!')
+  ...         return response
+  ...
+  ...     return Concert.select().callback(check_length)
+
+  >>> await get_concerts().where(Concert.band_1.name == 'Terrible Band')
+  ValueError: No concerts!
+
+At the moment, callbacks are just triggered when a query is successful, but in
+the future other callbacks will be added, to hook into more of Piccolo's
+internals.
+
+-------------------------------------------------------------------------------
+
 0.77.0
 ------
 
