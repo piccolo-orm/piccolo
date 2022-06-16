@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import typing as t
 from dataclasses import dataclass, field
+from enum import Enum, auto
 
 from piccolo.columns import And, Column, Or, Where
 from piccolo.columns.column_types import ForeignKey
@@ -90,6 +92,16 @@ class Output:
             load_json=self.load_json,
             nested=self.nested,
         )
+
+
+class CallbackType(Enum):
+    success = auto()
+
+
+@dataclass
+class Callback:
+    kind: CallbackType
+    target: t.Callable
 
 
 @dataclass
@@ -235,6 +247,52 @@ class OutputDelegate:
     def copy(self) -> OutputDelegate:
         _output = self._output.copy() if self._output is not None else None
         return self.__class__(_output=_output)
+
+
+@dataclass
+class CallbackDelegate:
+    """
+    Example usage:
+
+    .callback(my_handler_function)
+    .callback(print, on=CallbackType.success)
+    .callback(my_handler_coroutine)
+    .callback([handler1, handler2])
+    """
+
+    _callbacks: t.Dict[CallbackType, t.List[Callback]] = field(
+        default_factory=lambda: {kind: [] for kind in CallbackType}
+    )
+
+    def callback(
+        self,
+        callbacks: t.Union[t.Callable, t.List[t.Callable]],
+        *,
+        on: CallbackType,
+    ):
+        if isinstance(callbacks, list):
+            self._callbacks[on].extend(
+                Callback(kind=on, target=callback) for callback in callbacks
+            )
+        else:
+            self._callbacks[on].append(Callback(kind=on, target=callbacks))
+
+    async def invoke(self, results: t.Any, *, kind: CallbackType) -> t.Any:
+        """
+        Utility function that invokes the registered callbacks in the correct
+        way, handling both sync and async callbacks. Only callbacks of the
+        given kind are invoked.
+        Results are passed through the callbacks in the order they were added,
+        with each callback able to transform them. This function returns the
+        transformed results.
+        """
+        for callback in self._callbacks[kind]:
+            if asyncio.iscoroutinefunction(callback.target):
+                results = await callback.target(results)
+            else:
+                results = callback.target(results)
+
+        return results
 
 
 @dataclass

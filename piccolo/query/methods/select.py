@@ -12,6 +12,8 @@ from piccolo.columns.readable import Readable
 from piccolo.engine.base import Batch
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
+    CallbackDelegate,
+    CallbackType,
     ColumnsDelegate,
     DistinctDelegate,
     GroupByDelegate,
@@ -221,6 +223,7 @@ class Select(Query):
         "offset_delegate",
         "order_by_delegate",
         "output_delegate",
+        "callback_delegate",
         "where_delegate",
     )
 
@@ -243,6 +246,7 @@ class Select(Query):
         self.offset_delegate = OffsetDelegate()
         self.order_by_delegate = OrderByDelegate()
         self.output_delegate = OutputDelegate()
+        self.callback_delegate = CallbackDelegate()
         self.where_delegate = WhereDelegate()
 
         self.columns(*columns_list)
@@ -459,6 +463,15 @@ class Select(Query):
             load_json=load_json,
             nested=nested,
         )
+        return self
+
+    def callback(
+        self,
+        callbacks: t.Union[t.Callable, t.List[t.Callable]],
+        *,
+        on: CallbackType = CallbackType.success,
+    ) -> Select:
+        self.callback_delegate.callback(callbacks, on=on)
         return self
 
     def where(self, *where: Combinable) -> Select:

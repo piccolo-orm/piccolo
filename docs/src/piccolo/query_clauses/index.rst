@@ -16,6 +16,7 @@ by modifying the return values.
     ./offset
     ./order_by
     ./output
+    ./callback
     ./where
     ./batch
     ./freeze

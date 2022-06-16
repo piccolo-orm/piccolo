@@ -303,6 +303,11 @@ output
 
 See :ref:`output`.
 
+callback
+~~~~~~~~
+
+See :ref:`callback`.
+
 where
 ~~~~~
 

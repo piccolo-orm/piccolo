@@ -5,14 +5,14 @@ import typing as t
 from time import time
 
 from piccolo.columns.column_types import JSON, JSONB
-from piccolo.query.mixins import ColumnsDelegate
+from piccolo.query.mixins import CallbackType, ColumnsDelegate
 from piccolo.querystring import QueryString
 from piccolo.utils.encoding import dump_json, load_json
 from piccolo.utils.objects import make_nested_object
 from piccolo.utils.sync import run_sync
 
 if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.query.mixins import OutputDelegate
+    from piccolo.query.mixins import CallbackDelegate, OutputDelegate
     from piccolo.table import Table  # noqa
 
 
@@ -198,18 +198,36 @@ class Query:
 
         querystrings = self.querystrings
 
+        callback: t.Optional[CallbackDelegate] = getattr(
+            self, "callback_delegate", None
+        )
+
         if len(querystrings) == 1:
             results = await engine.run_querystring(
                 querystrings[0], in_pool=in_pool
             )
-            return await self._process_results(results)
+            processed_results = await self._process_results(results)
+
+            if callback:
+                processed_results = await callback.invoke(
+                    processed_results, kind=CallbackType.success
+                )
+
+            return processed_results
         else:
             responses = []
             for querystring in querystrings:
                 results = await engine.run_querystring(
                     querystring, in_pool=in_pool
                 )
-                responses.append(await self._process_results(results))
+                processed_results = await self._process_results(results)
+
+                if callback:
+                    processed_results = await callback.invoke(
+                        processed_results, kind=CallbackType.success
+                    )
+
+                responses.append(processed_results)
             return responses
 
     def run_sync(self, timed=False, in_pool=False, *args, **kwargs):
