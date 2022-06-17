@@ -1,6 +1,16 @@
 Changes
 =======
 
+0.79.0
+------
+
+Added a custom ``__repr__`` method to ``Table``'s metaclass. It's needed to
+improve the appearance of our Sphinx docs. See
+`issue 549 <https://github.com/piccolo-orm/piccolo/issues/549>`_ for more
+details.
+
+-------------------------------------------------------------------------------
+
 0.78.0
 ------
 
