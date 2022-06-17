@@ -141,7 +141,8 @@ class TableMetaclass(type):
 
     def __repr__(cls):
         """
-        We override this, because by default Python will output something::
+        We override this, because by default Python will output something
+        like::
 
             >>> repr(MyTable)
             <class 'my_app.tables.MyTable'>
