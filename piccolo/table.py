@@ -139,6 +139,30 @@ class TableMetaclass(type):
     def __str__(cls):
         return cls._table_str()
 
+    def __repr__(cls):
+        """
+        We override this, because by default Python will output something::
+
+            >>> repr(MyTable)
+            <class 'my_app.tables.MyTable'>
+
+        It's a very common pattern in Piccolo and its sister libraries to
+        have ``Table`` class types as default values::
+
+            # `SessionsBase` is a `Table` subclass:
+            def session_auth(
+                session_table: t.Type[SessionsBase] = SessionsBase
+            ):
+                ...
+
+        This looks terrible in Sphinx's autodoc output, as Python's default
+        repr contains angled brackets, which breaks the HTML output. So we just
+        output the name instead. The user can still easily find which module a
+        ``Table`` subclass belongs to by using ``MyTable.__module__``.
+
+        """
+        return cls.__name__
+
 
 class Table(metaclass=TableMetaclass):
     """
