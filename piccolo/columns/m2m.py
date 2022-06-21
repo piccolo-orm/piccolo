@@ -55,7 +55,7 @@ class M2MSelect(Selectable):
             for column in columns
         )
 
-    def get_select_string(self, engine_type: str, just_alias=False) -> str:
+    def get_select_string(self, engine_type: str, with_alias=True) -> str:
         m2m_table_name = self.m2m._meta.resolved_joining_table._meta.tablename
         m2m_relationship_name = self.m2m._meta.name
 

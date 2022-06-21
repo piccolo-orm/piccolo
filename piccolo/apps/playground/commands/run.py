@@ -6,6 +6,7 @@ import datetime
 import sys
 import uuid
 from decimal import Decimal
+from enum import Enum
 
 from piccolo.columns import (
     JSON,
@@ -47,8 +48,14 @@ class Concert(Table):
 
 
 class Ticket(Table):
+    class TicketType(Enum):
+        sitting = "sitting"
+        standing = "standing"
+        premium = "premium"
+
     concert = ForeignKey(Concert)
     price = Numeric(digits=(5, 2))
+    ticket_type = Varchar(choices=TicketType, default=TicketType.standing)
 
 
 class DiscountCode(Table):

@@ -62,13 +62,13 @@ class Avg(Selectable):
             self.column = column
         else:
             raise ValueError("Column type must be numeric to run the query.")
-        self.alias = alias
+        self._alias = alias
 
-    def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        column_name = self.column._meta.get_full_name(
-            just_alias=just_alias, include_quotes=True
-        )
-        return f"AVG({column_name}) AS {self.alias}"
+    def get_select_string(
+        self, engine_type: str, with_alias: bool = True
+    ) -> str:
+        column_name = self.column._meta.get_full_name(with_alias=False)
+        return f'AVG({column_name}) AS "{self._alias}"'
 
 
 class Count(Selectable):
@@ -100,16 +100,16 @@ class Count(Selectable):
         self, column: t.Optional[Column] = None, alias: str = "count"
     ):
         self.column = column
-        self.alias = alias
+        self._alias = alias
 
-    def get_select_string(self, engine_type: str, just_alias=False) -> str:
+    def get_select_string(
+        self, engine_type: str, with_alias: bool = True
+    ) -> str:
         if self.column is None:
             column_name = "*"
         else:
-            column_name = self.column._meta.get_full_name(
-                just_alias=just_alias, include_quotes=True
-            )
-        return f"COUNT({column_name}) AS {self.alias}"
+            column_name = self.column._meta.get_full_name(with_alias=False)
+        return f'COUNT({column_name}) AS "{self._alias}"'
 
 
 class Max(Selectable):
@@ -136,13 +136,13 @@ class Max(Selectable):
 
     def __init__(self, column: Column, alias: str = "max"):
         self.column = column
-        self.alias = alias
+        self._alias = alias
 
-    def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        column_name = self.column._meta.get_full_name(
-            just_alias=just_alias, include_quotes=True
-        )
-        return f"MAX({column_name}) AS {self.alias}"
+    def get_select_string(
+        self, engine_type: str, with_alias: bool = True
+    ) -> str:
+        column_name = self.column._meta.get_full_name(with_alias=False)
+        return f'MAX({column_name}) AS "{self._alias}"'
 
 
 class Min(Selectable):
@@ -167,13 +167,13 @@ class Min(Selectable):
 
     def __init__(self, column: Column, alias: str = "min"):
         self.column = column
-        self.alias = alias
+        self._alias = alias
 
-    def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        column_name = self.column._meta.get_full_name(
-            just_alias=just_alias, include_quotes=True
-        )
-        return f"MIN({column_name}) AS {self.alias}"
+    def get_select_string(
+        self, engine_type: str, with_alias: bool = True
+    ) -> str:
+        column_name = self.column._meta.get_full_name(with_alias=False)
+        return f'MIN({column_name}) AS "{self._alias}"'
 
 
 class Sum(Selectable):
@@ -203,13 +203,13 @@ class Sum(Selectable):
             self.column = column
         else:
             raise ValueError("Column type must be numeric to run the query.")
-        self.alias = alias
+        self._alias = alias
 
-    def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        column_name = self.column._meta.get_full_name(
-            just_alias=just_alias, include_quotes=True
-        )
-        return f"SUM({column_name}) AS {self.alias}"
+    def get_select_string(
+        self, engine_type: str, with_alias: bool = True
+    ) -> str:
+        column_name = self.column._meta.get_full_name(with_alias=False)
+        return f'SUM({column_name}) AS "{self._alias}"'
 
 
 class Select(Query):

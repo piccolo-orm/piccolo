@@ -618,8 +618,7 @@ class Table(metaclass=TableMetaclass):
                         break
 
         alias_names = {
-            column._meta.name: getattr(column, "alias", None)
-            for column in filtered_columns
+            column._meta.name: column._alias for column in filtered_columns
         }
 
         output = {}
