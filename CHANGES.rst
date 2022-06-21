@@ -1,6 +1,38 @@
 Changes
 =======
 
+0.80.0
+------
+
+There was a bug when doing joins with a ``JSONB`` column with ``as_alias``.
+
+.. code-block:: python
+
+  class User(Table, tablename="my_user"):
+      name = Varchar(length=120)
+      config = JSONB(default={})
+
+
+  class Subscriber(Table, tablename="subscriber"):
+      name = Varchar(length=120)
+      user = ForeignKey(references=User)
+
+
+  async def main():
+      # This was failing:
+      await Subscriber.select(
+          Subscriber.name,
+          Subscriber.user.config.as_alias("config")
+      )
+
+Thanks to @Anton-Karpenko for reporting this issue.
+
+Even though this is a bug fix, the minor version number has been bumped because
+the fix resulted in some refactoring of Piccolo's internals, so is a fairly big
+change.
+
+-------------------------------------------------------------------------------
+
 0.79.0
 ------
 
