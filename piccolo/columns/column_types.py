@@ -2227,21 +2227,19 @@ class JSONB(JSON):
         instance.json_operator = f"-> '{key}'"
         return instance
 
-    def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        select_string = self._meta.get_full_name(
-            just_alias=just_alias, include_quotes=True
-        )
-        if self.json_operator is not None:
-            return (
-                f"{select_string} {self.json_operator}"
-                if self.alias is None
-                else f"{select_string} {self.json_operator} AS {self.alias}"
-            )
+    def get_select_string(
+        self, engine_type: str, with_alias: bool = True
+    ) -> str:
+        select_string = self._meta.get_full_name(with_alias=False)
 
-        if self.alias is None:
-            return select_string
-        else:
-            return f"{select_string} AS {self.alias}"
+        if self.json_operator is not None:
+            select_string += f" {self.json_operator}"
+
+        if with_alias:
+            alias = self._alias or self._meta.get_default_alias()
+            select_string += f' AS "{alias}"'
+
+        return select_string
 
     def eq(self, value) -> Where:
         """
@@ -2489,15 +2487,17 @@ class Array(Column):
         else:
             raise ValueError("Only integers can be used for indexing.")
 
-    def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        select_string = self._meta.get_full_name(
-            just_alias=just_alias, include_quotes=True
-        )
+    def get_select_string(self, engine_type: str, with_alias=True) -> str:
+        select_string = self._meta.get_full_name(with_alias=False)
 
         if isinstance(self.index, int):
-            return f"{select_string}[{self.index}]"
-        else:
-            return select_string
+            select_string += f"[{self.index}]"
+
+        if with_alias:
+            alias = self._alias or self._meta.get_default_alias()
+            select_string += f' AS "{alias}"'
+
+        return select_string
 
     def any(self, value: t.Any) -> Where:
         """

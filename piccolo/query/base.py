@@ -86,13 +86,10 @@ class Query:
 
             json_column_names = []
             for column in json_columns:
-                if column.alias is not None:
-                    json_column_names.append(column.alias)
+                if column._alias is not None:
+                    json_column_names.append(column._alias)
                 elif column.json_operator is not None:
-                    # If no alias is specified, then the default column name
-                    # that Postgres gives when using the `->` operator is
-                    # `?column?`.
-                    json_column_names.append("?column?")
+                    json_column_names.append(column._meta.name)
                 elif len(column._meta.call_chain) > 0:
                     json_column_names.append(
                         column.get_select_string(

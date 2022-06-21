@@ -24,7 +24,7 @@ class Readable(Selectable):
     @property
     def _columns_string(self) -> str:
         return ", ".join(
-            i._meta.get_full_name(just_alias=True) for i in self.columns
+            i._meta.get_full_name(with_alias=False) for i in self.columns
         )
 
     def _get_string(self, operator: str) -> str:
@@ -41,7 +41,7 @@ class Readable(Selectable):
     def postgres_string(self) -> str:
         return self._get_string(operator="FORMAT")
 
-    def get_select_string(self, engine_type: str, just_alias=False) -> str:
+    def get_select_string(self, engine_type: str, with_alias=True) -> str:
         try:
             return getattr(self, f"{engine_type}_string")
         except AttributeError as e:

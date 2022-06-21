@@ -66,7 +66,7 @@ class OrderBy:
     def querystring(self) -> QueryString:
         order = "ASC" if self.ascending else "DESC"
         columns_names = ", ".join(
-            i._meta.get_full_name(just_alias=True) for i in self.columns
+            i._meta.get_full_name(with_alias=False) for i in self.columns
         )
 
         return QueryString(f" ORDER BY {columns_names} {order}")
@@ -438,7 +438,7 @@ class GroupBy:
     @property
     def querystring(self) -> QueryString:
         columns_names = ", ".join(
-            i._meta.get_full_name(just_alias=True) for i in self.columns
+            i._meta.get_full_name(with_alias=False) for i in self.columns
         )
 
         return QueryString(f" GROUP BY {columns_names}")

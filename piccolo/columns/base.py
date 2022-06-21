@@ -203,6 +203,8 @@ class ColumnMeta:
     call_chain: t.List["ForeignKey"] = field(default_factory=list)
     table_alias: t.Optional[str] = None
 
+    ###########################################################################
+
     @property
     def engine_type(self) -> str:
         engine = self.table._meta.db
@@ -234,21 +236,52 @@ class ColumnMeta:
 
         return output
 
+    ###########################################################################
+
+    def get_default_alias(self):
+        column_name = self.db_column_name
+
+        if self.call_chain:
+            column_name = (
+                "$".join(
+                    t.cast(str, i._meta.db_column_name)
+                    for i in self.call_chain
+                )
+                + f"${column_name}"
+            )
+
+        return column_name
+
+    def _get_path(self, include_quotes: bool = False):
+        column_name = self.db_column_name
+
+        if self.call_chain:
+            table_alias = self.call_chain[-1]._meta.table_alias
+            if include_quotes:
+                return f'"{table_alias}"."{column_name}"'
+            else:
+                return f"{table_alias}.{column_name}"
+        else:
+            if include_quotes:
+                return f'"{self.table._meta.tablename}"."{column_name}"'
+            else:
+                return f"{self.table._meta.tablename}.{column_name}"
+
     def get_full_name(
-        self, just_alias: bool = False, include_quotes: bool = False
+        self, with_alias: bool = True, include_quotes: bool = True
     ) -> str:
         """
         Returns the full column name, taking into account joins.
 
-        :param just_alias:
+        :param with_alias:
             Examples:
 
             .. code-block python::
 
-                >>> Band.manager.name._meta.get_full_name(just_alias=True)
+                >>> Band.manager.name._meta.get_full_name(with_alias=False)
                 'band$manager.name'
 
-                >>> Band.manager.name._meta.get_full_name(just_alias=False)
+                >>> Band.manager.name._meta.get_full_name(with_alias=True)
                 'band$manager.name AS "manager$name"'
 
         :param include_quotes:
@@ -267,27 +300,16 @@ class ColumnMeta:
 
 
         """
-        column_name = self.db_column_name
+        full_name = self._get_path(include_quotes=include_quotes)
 
-        if not self.call_chain:
+        if with_alias and self.call_chain:
+            alias = self.get_default_alias()
             if include_quotes:
-                return f'"{self.table._meta.tablename}"."{column_name}"'
+                full_name += f' AS "{alias}"'
             else:
-                return f"{self.table._meta.tablename}.{column_name}"
+                full_name += f" AS {alias}"
 
-        column_name = (
-            "$".join(
-                t.cast(str, i._meta.db_column_name) for i in self.call_chain
-            )
-            + f"${column_name}"
-        )
-
-        if include_quotes:
-            alias = f'"{self.call_chain[-1]._meta.table_alias}"."{self.name}"'
-        else:
-            alias = f"{self.call_chain[-1]._meta.table_alias}.{self.name}"
-
-        return alias if just_alias else f'{alias} AS "{column_name}"'
+        return full_name
 
     ###########################################################################
 
@@ -321,22 +343,24 @@ class ColumnMeta:
 
 
 class Selectable(metaclass=ABCMeta):
-    alias: t.Optional[str]
+    _alias: t.Optional[str]
 
     @abstractmethod
-    def get_select_string(self, engine_type: str, just_alias=False) -> str:
+    def get_select_string(
+        self, engine_type: str, with_alias: bool = True
+    ) -> str:
         """
         In a query, what to output after the select statement - could be a
         column name, a sub query, a function etc. For a column it will be the
         column name.
         """
-        pass
+        raise NotImplementedError()
 
     def as_alias(self, alias: str) -> Selectable:
         """
         Allows column names to be changed in the result of a select.
         """
-        self.alias = alias
+        self._alias = alias
         return self
 
 
@@ -472,7 +496,7 @@ class Column(Selectable):
             secret=secret,
         )
 
-        self.alias: t.Optional[str] = None
+        self._alias: t.Optional[str] = None
 
     def _validate_default(
         self,
@@ -694,7 +718,7 @@ class Column(Selectable):
 
         """
         column = copy.deepcopy(self)
-        column.alias = name
+        column._alias = name
         return column
 
     def get_default_value(self) -> t.Any:
@@ -709,21 +733,30 @@ class Column(Selectable):
             return default() if is_callable else default  # type: ignore
         return None
 
-    def get_select_string(self, engine_type: str, just_alias=False) -> str:
+    def get_select_string(
+        self, engine_type: str, with_alias: bool = True
+    ) -> str:
         """
-        How to refer to this column in a SQL query.
+        How to refer to this column in a SQL query, taking account of any joins
+        and aliases.
         """
-        if self.alias is None:
-            return self._meta.get_full_name(
-                just_alias=just_alias, include_quotes=True
-            )
-        original_name = self._meta.get_full_name(
-            just_alias=True, include_quotes=True
-        )
-        return f"{original_name} AS {self.alias}"
+        if with_alias:
+            if self._alias:
+                original_name = self._meta.get_full_name(
+                    with_alias=False,
+                )
+                return f'{original_name} AS "{self._alias}"'
+            else:
+                return self._meta.get_full_name(
+                    with_alias=True,
+                )
+
+        return self._meta.get_full_name(with_alias=False)
 
     def get_where_string(self, engine_type: str) -> str:
-        return self.get_select_string(engine_type=engine_type, just_alias=True)
+        return self.get_select_string(
+            engine_type=engine_type, with_alias=False
+        )
 
     def get_sql_value(self, value: t.Any) -> t.Any:
         """
