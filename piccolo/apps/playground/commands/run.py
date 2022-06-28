@@ -4,6 +4,7 @@ for interacting with the data using Piccolo.
 """
 import datetime
 import sys
+import typing as t
 import uuid
 from decimal import Decimal
 from enum import Enum
@@ -19,6 +20,7 @@ from piccolo.columns import (
     Timestamp,
     Varchar,
 )
+from piccolo.columns.readable import Readable
 from piccolo.engine import PostgresEngine, SQLiteEngine
 from piccolo.engine.base import Engine
 from piccolo.table import Table
@@ -27,16 +29,37 @@ from piccolo.table import Table
 class Manager(Table):
     name = Varchar(length=50)
 
+    @classmethod
+    def get_readable(cls) -> Readable:
+        return Readable(
+            template="%s",
+            columns=[cls.name],
+        )
+
 
 class Band(Table):
     name = Varchar(length=50)
     manager = ForeignKey(references=Manager, null=True)
     popularity = Integer()
 
+    @classmethod
+    def get_readable(cls) -> Readable:
+        return Readable(
+            template="%s",
+            columns=[cls.name],
+        )
+
 
 class Venue(Table):
     name = Varchar(length=100)
     capacity = Integer(default=0)
+
+    @classmethod
+    def get_readable(cls) -> Readable:
+        return Readable(
+            template="%s",
+            columns=[cls.name],
+        )
 
 
 class Concert(Table):
@@ -45,6 +68,17 @@ class Concert(Table):
     venue = ForeignKey(Venue)
     starts = Timestamp()
     duration = Interval()
+
+    @classmethod
+    def get_readable(cls) -> Readable:
+        return Readable(
+            template="%s and %s at %s",
+            columns=[
+                cls.band_1.name,
+                cls.band_2.name,
+                cls.venue.name,
+            ],
+        )
 
 
 class Ticket(Table):
@@ -57,15 +91,39 @@ class Ticket(Table):
     price = Numeric(digits=(5, 2))
     ticket_type = Varchar(choices=TicketType, default=TicketType.standing)
 
+    @classmethod
+    def get_readable(cls) -> Readable:
+        return Readable(
+            template="%s - %s",
+            columns=[
+                t.cast(t.Type[Venue], cls.concert.venue).name,
+                cls.ticket_type,
+            ],
+        )
+
 
 class DiscountCode(Table):
     code = UUID()
     active = Boolean(default=True, null=True)
 
+    @classmethod
+    def get_readable(cls) -> Readable:
+        return Readable(
+            template="%s - %s",
+            columns=[cls.code, cls.active],
+        )
+
 
 class RecordingStudio(Table):
     name = Varchar(length=100)
     facilities = JSON(null=True)
+
+    @classmethod
+    def get_readable(cls) -> Readable:
+        return Readable(
+            template="%s",
+            columns=[cls.name],
+        )
 
 
 TABLES = (Manager, Band, Venue, Concert, Ticket, DiscountCode, RecordingStudio)
