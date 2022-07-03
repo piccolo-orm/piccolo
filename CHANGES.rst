@@ -1,6 +1,16 @@
 Changes
 =======
 
+0.80.1
+------
+
+Fixed a bug with Piccolo Admin and ``_get_related_readable``, which is used
+to show a human friendly identifier for a row, rather than just the ID.
+
+Thanks to @ethagnawl and @sinisaos for their help with this.
+
+-------------------------------------------------------------------------------
+
 0.80.0
 ------
 
