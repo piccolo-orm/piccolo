@@ -654,7 +654,7 @@ class Table(metaclass=TableMetaclass):
         for readable_column in readable.columns:
             output_column = column
             for fk in readable_column._meta.call_chain:
-                output_column = getattr(column, fk._meta.name)
+                output_column = getattr(output_column, fk._meta.name)
             output_column = getattr(output_column, readable_column._meta.name)
             output_columns.append(output_column)
 
