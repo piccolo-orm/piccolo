@@ -1,6 +1,15 @@
 Changes
 =======
 
+0.80.2
+------
+
+Fixed a bug with ``Combination.__str__``, which meant that when printing out a
+query for debugging purposes it was wasn't showing correctly (courtesy
+@destos).
+
+-------------------------------------------------------------------------------
+
 0.80.1
 ------
 
