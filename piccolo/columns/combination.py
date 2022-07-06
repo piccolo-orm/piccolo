@@ -41,7 +41,7 @@ class Combination(CombinableMixin):
         )
 
     def __str__(self):
-        self.querystring.__str__()
+        return self.querystring.__str__()
 
 
 class And(Combination):
