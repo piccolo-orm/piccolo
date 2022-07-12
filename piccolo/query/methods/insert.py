@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from piccolo.query.base import Query
-from piccolo.query.mixins import AddDelegate
+from piccolo.query.mixins import AddDelegate, OnConflictDelegate, Conflict
 from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -11,12 +11,18 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 
 class Insert(Query):
-    __slots__ = ("add_delegate",)
+    __slots__ = ("add_delegate","on_conflict_delegate")
 
-    def __init__(self, table: t.Type[Table], *instances: Table, **kwargs):
+    def __init__(self, table: t.Type[Table], *instances: Table, on_conflict: t.Optional[Conflict] = None, **kwargs):
         super().__init__(table, **kwargs)
         self.add_delegate = AddDelegate()
+        self.on_conflict_delegate = OnConflictDelegate()
+        self.on_conflict(on_conflict)
         self.add(*instances)
+
+    def on_conflict(self, conflict: Conflict) -> Insert:
+        self.on_conflict_delgate.on_conflict(conflict)
+        return self
 
     def add(self, *instances: Table) -> Insert:
         self.add_delegate.add(*instances, table_class=self.table)

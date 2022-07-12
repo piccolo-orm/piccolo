@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import typing as t
+from enum import Enum
 from dataclasses import dataclass, field
 from enum import Enum, auto
 
@@ -54,6 +55,11 @@ class Offset:
     def __str__(self) -> str:
         return self.querystring.__str__()
 
+@dataclass
+class on_conflict:
+    __slots__ = ("number", )
+
+    
 
 @dataclass
 class OrderBy:
@@ -459,3 +465,25 @@ class GroupByDelegate:
 
     def group_by(self, *columns: Column):
         self._group_by = GroupBy(columns=columns)
+
+
+class Conflict(Enum):
+    do_nothing = 'DO NOTHING'
+    do_update = 'DO UPDATE'
+    
+
+@dataclass
+class OnConflict:
+
+    _on_conflict: t.Optional[Conflict] = None
+
+    def on_conflict(self, conflict: Conflict):
+        self._on_conflict = conflict
+
+@dataclass
+class OnConflictDelegate:
+    on_conflict: t.Optional[Conflict] = None
+
+    def On_Conflict(self, *columns: Column):
+        self._on_conflict=  OnConflict(columns)
+        return None
