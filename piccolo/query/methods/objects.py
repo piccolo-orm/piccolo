@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from piccolo.columns.column_types import ForeignKey
 from piccolo.columns.combination import And, Where
-from piccolo.custom_types import Combinable
+from piccolo.custom_types import Combinable, TableInstance
 from piccolo.engine.base import Batch
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
@@ -114,7 +114,7 @@ class Create:
         return run_sync(self.run())
 
 
-class Objects(Query):
+class Objects(Query, t.Generic[TableInstance]):
     """
     Almost identical to select, except you have to select all fields, and
     table instances are returned, rather than just data.
@@ -148,66 +148,66 @@ class Objects(Query):
         self.prefetch(*prefetch)
         self.where_delegate = WhereDelegate()
 
-    def output(self, load_json: bool = False) -> Objects:
+    def output(self: Self, load_json: bool = False) -> Self:
         self.output_delegate.output(
             as_list=False, as_json=False, load_json=load_json
         )
         return self
 
     def callback(
-        self,
+        self: Self,
         callbacks: t.Union[t.Callable, t.List[t.Callable]],
         *,
         on: CallbackType = CallbackType.success,
-    ) -> Objects:
+    ) -> Self:
         self.callback_delegate.callback(callbacks, on=on)
         return self
 
-    def limit(self, number: int) -> Objects:
+    def limit(self: Self, number: int) -> Self:
         self.limit_delegate.limit(number)
         return self
 
-    def first(self) -> Objects:
+    def first(self: Self) -> ObjectsFirst[TableInstance]:
         self.limit_delegate.first()
-        return self
+        return t.cast(ObjectsFirst[TableInstance], self)
 
     def prefetch(
-        self, *fk_columns: t.Union[ForeignKey, t.List[ForeignKey]]
-    ) -> Objects:
+        self: Self, *fk_columns: t.Union[ForeignKey, t.List[ForeignKey]]
+    ) -> Self:
         self.prefetch_delegate.prefetch(*fk_columns)
         return self
 
-    def get(self, where: Combinable) -> Objects:
+    def get(self: Self, where: Combinable) -> ObjectsFirst[TableInstance]:
         self.where_delegate.where(where)
         self.limit_delegate.first()
-        return self
+        return t.cast(ObjectsFirst[TableInstance], self)
 
-    def offset(self, number: int) -> Objects:
+    def offset(self: Self, number: int) -> Self:
         self.offset_delegate.offset(number)
         return self
 
     def get_or_create(
-        self,
+        self: Self,
         where: Combinable,
         defaults: t.Dict[t.Union[Column, str], t.Any] = None,
-    ):
+    ) -> GetOrCreate:
         if defaults is None:
             defaults = {}
         return GetOrCreate(query=self, where=where, defaults=defaults)
 
-    def create(self, **columns: t.Any):
+    def create(self: Self, **columns: t.Any) -> Create:
         return Create(query=self, columns=columns)
 
-    def order_by(self, *columns: Column, ascending=True) -> Objects:
+    def order_by(self: Self, *columns: Column, ascending=True) -> Self:
         self.order_by_delegate.order_by(*columns, ascending=ascending)
         return self
 
-    def where(self, *where: Combinable) -> Objects:
+    def where(self: Self, *where: Combinable) -> Self:
         self.where_delegate.where(*where)
         return self
 
     async def batch(
-        self, batch_size: t.Optional[int] = None, **kwargs
+        self: Self, batch_size: t.Optional[int] = None, **kwargs
     ) -> Batch:
         if batch_size:
             kwargs.update(batch_size=batch_size)
@@ -254,3 +254,23 @@ class Objects(Query):
             select.output_delegate.output(nested=True)
 
         return select.querystrings
+
+
+class ObjectsFirst(Objects, t.Generic[TableInstance]):
+    async def run(
+        self, node: t.Optional[str] = None, in_pool: bool = True
+    ) -> t.Optional[TableInstance]:
+        return await super().run(node=node, in_pool=in_pool)
+
+    def __await__(
+        self,
+    ) -> t.Generator[None, None, t.Optional[TableInstance]]:
+        return super().__await__()
+
+    def run_sync(
+        self, timed=False, in_pool=False, *args, **kwargs
+    ) -> t.Optional[TableInstance]:
+        return super().run_sync(timed, in_pool, *args, **kwargs)
+
+
+Self = t.TypeVar("Self", bound=t.Union[Objects, ObjectsFirst])

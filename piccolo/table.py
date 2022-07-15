@@ -25,6 +25,7 @@ from piccolo.columns.m2m import (
 )
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
+from piccolo.custom_types import TableInstance
 from piccolo.engine import Engine, engine_finder
 from piccolo.query import (
     Alter,
@@ -962,8 +963,9 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def objects(
-        cls, *prefetch: t.Union[ForeignKey, t.List[ForeignKey]]
-    ) -> Objects:
+        cls: t.Type[TableInstance],
+        *prefetch: t.Union[ForeignKey, t.List[ForeignKey]],
+    ) -> Objects[TableInstance]:
         """
         Returns a list of table instances (each representing a row), which you
         can modify and then call 'save' on, or can delete by calling 'remove'.
@@ -998,7 +1000,7 @@ class Table(metaclass=TableMetaclass):
                 <Band 1>
 
         """
-        return Objects(table=cls, prefetch=prefetch)
+        return Objects[TableInstance](table=cls, prefetch=prefetch)
 
     @classmethod
     def count(cls) -> Count:
