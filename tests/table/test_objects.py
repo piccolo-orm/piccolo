@@ -1,3 +1,8 @@
+import typing as t
+
+# Ironically, mypy complains about this - it does exist though:
+from typing_extensions import assert_type  # type: ignore
+
 from tests.base import DBTestCase, postgres_only, sqlite_only
 from tests.example_apps.music.tables import Band, Manager
 
@@ -218,3 +223,13 @@ class TestObjects(DBTestCase):
             .run_sync()
         )
         self.assertIsInstance(band.manager, Manager)
+
+
+if t.TYPE_CHECKING:
+    # Making sure the types are inferred correctly by MyPy.
+
+    band_1 = Band.objects().first().run_sync()
+    assert_type(band_1, t.Optional[Band])
+
+    band_2 = Band.objects().get(Band.name == "Pythonistas").run_sync()
+    assert_type(band_2, t.Optional[Band])
