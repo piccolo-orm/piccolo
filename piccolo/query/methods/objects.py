@@ -148,6 +148,20 @@ class Objects(Query, t.Generic[TableInstance]):
         self.prefetch(*prefetch)
         self.where_delegate = WhereDelegate()
 
+    def __new__(
+        cls,
+        table: t.Type[Table],
+        prefetch: t.Sequence[t.Union[ForeignKey, t.List[ForeignKey]]] = (),
+    ) -> ObjectsList[TableInstance]:
+        """
+        This is for MyPy, so we can tell it what values to expect when the
+        query is run. By default it will be a list of objects. If the
+        :meth:`first` or :meth:`get` methods are called, then a single object
+        is returned instead.
+        """
+        instance = super().__new__(cls)
+        return t.cast(ObjectsList[TableInstance], instance)
+
     def output(self: Self, load_json: bool = False) -> Self:
         self.output_delegate.output(
             as_list=False, as_json=False, load_json=load_json
@@ -167,9 +181,9 @@ class Objects(Query, t.Generic[TableInstance]):
         self.limit_delegate.limit(number)
         return self
 
-    def first(self: Self) -> ObjectsFirst[TableInstance]:
+    def first(self: Self) -> ObjectsSingle[TableInstance]:
         self.limit_delegate.first()
-        return t.cast(ObjectsFirst[TableInstance], self)
+        return t.cast(ObjectsSingle[TableInstance], self)
 
     def prefetch(
         self: Self, *fk_columns: t.Union[ForeignKey, t.List[ForeignKey]]
@@ -177,10 +191,10 @@ class Objects(Query, t.Generic[TableInstance]):
         self.prefetch_delegate.prefetch(*fk_columns)
         return self
 
-    def get(self: Self, where: Combinable) -> ObjectsFirst[TableInstance]:
+    def get(self: Self, where: Combinable) -> ObjectsSingle[TableInstance]:
         self.where_delegate.where(where)
         self.limit_delegate.first()
-        return t.cast(ObjectsFirst[TableInstance], self)
+        return t.cast(ObjectsSingle[TableInstance], self)
 
     def offset(self: Self, number: int) -> Self:
         self.offset_delegate.offset(number)
@@ -255,6 +269,12 @@ class Objects(Query, t.Generic[TableInstance]):
 
         return select.querystrings
 
+
+class ObjectsList(Objects, t.Generic[TableInstance]):
+    """
+    This is for MyPy.
+    """
+
     async def run(
         self, node: t.Optional[str] = None, in_pool: bool = True
     ) -> t.List[TableInstance]:
@@ -271,7 +291,7 @@ class Objects(Query, t.Generic[TableInstance]):
         return super().run_sync(timed, in_pool, *args, **kwargs)
 
 
-class ObjectsFirst(Objects, t.Generic[TableInstance]):
+class ObjectsSingle(Objects, t.Generic[TableInstance]):
     """
     This is for MyPy.
     """
@@ -279,17 +299,17 @@ class ObjectsFirst(Objects, t.Generic[TableInstance]):
     async def run(
         self, node: t.Optional[str] = None, in_pool: bool = True
     ) -> t.Optional[TableInstance]:
-        return await super().run(node=node, in_pool=in_pool)
+        return await super(Objects, self).run(node=node, in_pool=in_pool)
 
     def __await__(
         self,
     ) -> t.Generator[None, None, t.Optional[TableInstance]]:
-        return super().__await__()
+        return super(Objects, self).__await__()
 
     def run_sync(
         self, timed=False, in_pool=False, *args, **kwargs
     ) -> t.Optional[TableInstance]:
-        return super().run_sync(timed, in_pool, *args, **kwargs)
+        return super(Objects, self).run_sync(timed, in_pool, *args, **kwargs)
 
 
-Self = t.TypeVar("Self", bound=t.Union[Objects, ObjectsFirst])
+Self = t.TypeVar("Self", bound=t.Union[Objects, ObjectsSingle, ObjectsList])
