@@ -255,8 +255,27 @@ class Objects(Query, t.Generic[TableInstance]):
 
         return select.querystrings
 
+    async def run(
+        self, node: t.Optional[str] = None, in_pool: bool = True
+    ) -> t.List[TableInstance]:
+        return await super().run(node=node, in_pool=in_pool)
+
+    def __await__(
+        self,
+    ) -> t.Generator[None, None, t.List[TableInstance]]:
+        return super().__await__()
+
+    def run_sync(
+        self, timed=False, in_pool=False, *args, **kwargs
+    ) -> t.List[TableInstance]:
+        return super().run_sync(timed, in_pool, *args, **kwargs)
+
 
 class ObjectsFirst(Objects, t.Generic[TableInstance]):
+    """
+    This is for MyPy.
+    """
+
     async def run(
         self, node: t.Optional[str] = None, in_pool: bool = True
     ) -> t.Optional[TableInstance]:

@@ -228,8 +228,14 @@ class TestObjects(DBTestCase):
 if t.TYPE_CHECKING:
     # Making sure the types are inferred correctly by MyPy.
 
-    band_1 = Band.objects().first().run_sync()
-    assert_type(band_1, t.Optional[Band])
+    assert_type(Band.objects().first().run_sync(), t.Optional[Band])
 
-    band_2 = Band.objects().get(Band.name == "Pythonistas").run_sync()
-    assert_type(band_2, t.Optional[Band])
+    assert_type(
+        Band.objects().get(Band.name == "Pythonistas").run_sync(),
+        t.Optional[Band],
+    )
+
+    assert_type(
+        Band.objects().run_sync(),
+        t.List[Band],
+    )
