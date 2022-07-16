@@ -304,12 +304,12 @@ class ObjectsSingle(Objects, t.Generic[TableInstance]):
     def __await__(
         self,
     ) -> t.Generator[None, None, t.Optional[TableInstance]]:
-        return super(Objects, self).__await__()
+        return super().__await__()
 
     def run_sync(
         self, timed=False, in_pool=False, *args, **kwargs
     ) -> t.Optional[TableInstance]:
-        return super(Objects, self).run_sync(timed, in_pool, *args, **kwargs)
+        return super().run_sync(timed, in_pool, *args, **kwargs)
 
 
 Self = t.TypeVar("Self", bound=t.Union[Objects, ObjectsSingle, ObjectsList])
