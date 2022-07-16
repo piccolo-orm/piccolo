@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import typing as t
-from dataclasses import dataclass
 
 from piccolo.columns.column_types import ForeignKey
 from piccolo.columns.combination import And, Where
@@ -26,22 +25,31 @@ from .select import Select
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
-    from piccolo.table import Table
 
 
-@dataclass
-class GetOrCreate:
-    query: Objects
-    where: Combinable
-    defaults: t.Dict[t.Union[Column, str], t.Any]
+###############################################################################
 
-    async def run(self):
+
+class GetOrCreate(t.Generic[TableInstance]):
+    def __init__(
+        self,
+        query: Objects[TableInstance],
+        table_class: t.Type[TableInstance],
+        where: Combinable,
+        defaults: t.Dict[t.Union[Column, str], t.Any],
+    ):
+        self.query = query
+        self.table_class = table_class
+        self.where = where
+        self.defaults = defaults
+
+    async def run(self) -> TableInstance:
         instance = await self.query.get(self.where).run()
         if instance:
             instance._was_created = False
             return instance
 
-        instance = self.query.table()
+        instance = self.table_class()
 
         # If it's a complex `where`, there can be several column values to
         # extract e.g. (Band.name == 'Pythonistas') & (Band.popularity == 1000)
@@ -69,17 +77,17 @@ class GetOrCreate:
 
         return instance
 
-    def __await__(self):
+    def __await__(self) -> t.Generator[None, None, TableInstance]:
         """
         If the user doesn't explicity call .run(), proxy to it as a
         convenience.
         """
         return self.run().__await__()
 
-    def run_sync(self):
+    def run_sync(self) -> TableInstance:
         return run_sync(self.run())
 
-    def prefetch(self, *fk_columns) -> GetOrCreate:
+    def prefetch(self, *fk_columns) -> GetOrCreate[TableInstance]:
         self.query.prefetch(*fk_columns)
         return self
 
@@ -87,14 +95,16 @@ class GetOrCreate:
 class Create(t.Generic[TableInstance]):
     def __init__(
         self,
-        table: t.Type[TableInstance],
+        table_class: t.Type[TableInstance],
         columns: t.Dict[str, t.Any],
     ):
-        self.table = table
+        self.table_class = table_class
         self.columns = columns
 
+    # TODO - can simplify this by just passing data directly into self.table()
+    # rather than using setattr.
     async def run(self) -> TableInstance:
-        instance = self.table()
+        instance = self.table_class()
 
         for column_name, value in self.columns.items():
             column: Column
@@ -118,8 +128,11 @@ class Create(t.Generic[TableInstance]):
         """
         return self.run().__await__()
 
-    def run_sync(self):
+    def run_sync(self) -> TableInstance:
         return run_sync(self.run())
+
+
+###############################################################################
 
 
 class Objects(Query, t.Generic[TableInstance]):
@@ -141,7 +154,7 @@ class Objects(Query, t.Generic[TableInstance]):
 
     def __init__(
         self,
-        table: t.Type[Table],
+        table: t.Type[TableInstance],
         prefetch: t.Sequence[t.Union[ForeignKey, t.List[ForeignKey]]] = (),
         **kwargs,
     ):
@@ -156,19 +169,19 @@ class Objects(Query, t.Generic[TableInstance]):
         self.prefetch(*prefetch)
         self.where_delegate = WhereDelegate()
 
-    def __new__(
-        cls,
-        table: t.Type[Table],
-        prefetch: t.Sequence[t.Union[ForeignKey, t.List[ForeignKey]]] = (),
-    ) -> ObjectsList[TableInstance]:
-        """
-        This is for MyPy, so we can tell it what values to expect when the
-        query is run. By default it will be a list of objects. If the
-        :meth:`first` or :meth:`get` methods are called, then a single object
-        is returned instead.
-        """
-        instance = super().__new__(cls)
-        return t.cast(ObjectsList[TableInstance], instance)
+    # def __new__(
+    #     cls,
+    #     table: t.Type[Table],
+    #     prefetch: t.Sequence[t.Union[ForeignKey, t.List[ForeignKey]]] = (),
+    # ) -> ObjectsList[TableInstance]:
+    #     """
+    #     This is for MyPy, so we can tell it what values to expect when the
+    #     query is run. By default it will be a list of objects. If the
+    #     :meth:`first` or :meth:`get` methods are called, then a single object
+    #     is returned instead.
+    #     """
+    #     instance = super().__new__(cls)
+    #     return t.cast(ObjectsList[TableInstance], instance)
 
     def output(self: Self, load_json: bool = False) -> Self:
         self.output_delegate.output(
@@ -189,6 +202,7 @@ class Objects(Query, t.Generic[TableInstance]):
         self.limit_delegate.limit(number)
         return self
 
+    # TODO - I might remove this - but add a deprecation for now.
     def first(self: Self) -> ObjectsSingle[TableInstance]:
         self.limit_delegate.first()
         return t.cast(ObjectsSingle[TableInstance], self)
@@ -199,15 +213,24 @@ class Objects(Query, t.Generic[TableInstance]):
         self.prefetch_delegate.prefetch(*fk_columns)
         return self
 
+    def offset(self: Self, number: int) -> Self:
+        self.offset_delegate.offset(number)
+        return self
+
+    ###########################################################################
+
+    # TODO - Proxy this to a method on Table instead called get_object, with
+    # a deprecation warning.
+    # This should just returnd a Get class instead, which is a different type
+    # of query - when using get, none of the other clauses are really valid
+    # any more, right?
     def get(self: Self, where: Combinable) -> ObjectsSingle[TableInstance]:
         self.where_delegate.where(where)
         self.limit_delegate.first()
         return t.cast(ObjectsSingle[TableInstance], self)
 
-    def offset(self: Self, number: int) -> Self:
-        self.offset_delegate.offset(number)
-        return self
-
+    # TODO - Proxy this to a method on Table instead called
+    # get_or_create_object, with a deprecation warning.
     def get_or_create(
         self: Self,
         where: Combinable,
@@ -215,10 +238,14 @@ class Objects(Query, t.Generic[TableInstance]):
     ) -> GetOrCreate:
         if defaults is None:
             defaults = {}
-        return GetOrCreate(query=self, where=where, defaults=defaults)
+        return GetOrCreate(
+            query=self, table_class=self.table, where=where, defaults=defaults
+        )
 
+    # TODO - Proxy this to a method on Table instead called
+    # create_object, with a deprecation warning.
     def create(self: Self, **columns: t.Any) -> Create:
-        return Create(table=self.table, columns=columns)
+        return Create(table_class=self.table, columns=columns)
 
     ###########################################################################
 

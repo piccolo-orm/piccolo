@@ -317,6 +317,10 @@ class Table(metaclass=TableMetaclass):
         """
         self._exists_in_db = exists_in_db
 
+        # This is used by get_or_create to indicate to the user whether it
+        # was an existing row or not.
+        self._was_created: t.Optional[bool] = None
+
         for column in self._meta.columns:
             value = kwargs.pop(column._meta.name, ...)
 
