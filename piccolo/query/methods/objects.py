@@ -84,26 +84,34 @@ class GetOrCreate:
         return self
 
 
-@dataclass
-class Create:
-    query: Objects
-    columns: t.Dict[str, t.Any]
+class Create(t.Generic[TableInstance]):
+    def __init__(
+        self,
+        table: t.Type[TableInstance],
+        columns: t.Dict[str, t.Any],
+    ):
+        self.table = table
+        self.columns = columns
 
-    async def run(self):
-        instance = self.query.table()
+    async def run(self) -> TableInstance:
+        instance = self.table()
 
-        for column, value in self.columns.items():
-            if isinstance(column, str):
-                column = instance._meta.get_column_by_name(column)
+        for column_name, value in self.columns.items():
+            column: Column
+            if isinstance(column_name, str):
+                column = instance._meta.get_column_by_name(column_name)
+            elif isinstance(column_name, Column):
+                column = column_name
+            else:
+                raise ValueError("Unrecognised column identifier")
+
             setattr(instance, column._meta.name, value)
 
         await instance.save().run()
 
-        instance._was_created = True
-
         return instance
 
-    def __await__(self):
+    def __await__(self) -> t.Generator[None, None, TableInstance]:
         """
         If the user doesn't explicity call .run(), proxy to it as a
         convenience.
@@ -210,7 +218,9 @@ class Objects(Query, t.Generic[TableInstance]):
         return GetOrCreate(query=self, where=where, defaults=defaults)
 
     def create(self: Self, **columns: t.Any) -> Create:
-        return Create(query=self, columns=columns)
+        return Create(table=self.table, columns=columns)
+
+    ###########################################################################
 
     def order_by(self: Self, *columns: Column, ascending=True) -> Self:
         self.order_by_delegate.order_by(*columns, ascending=ascending)
