@@ -301,33 +301,54 @@ class Table(metaclass=TableMetaclass):
 
     def __init__(
         self,
-        ignore_missing: bool = False,
-        exists_in_db: bool = False,
+        _data: t.Dict[Column, t.Any] = None,
+        _ignore_missing: bool = False,
+        _exists_in_db: bool = False,
         **kwargs,
     ):
         """
         Assigns any default column values to the class.
 
-        :param ignore_missing:
+        :param _data:
+            There's two ways of passing in the data for each column. Firstly,
+            you can use kwargs::
+
+                Band(name="Pythonistas")
+
+            Secondly, you can pass in a dictionary which maps column classes to
+            values::
+
+                Band({Band.name: 'Pythonistas'})
+
+            The advantage of this second approach is it's more strongly typed,
+            and linters such as flake8 or MyPy will more easily detect typos.
+
+        :param _ignore_missing:
             If ``False`` a ``ValueError`` will be raised if any column values
             haven't been provided.
-        :param exists_in_db:
+        :param _exists_in_db:
             Used internally to track whether this row exists in the database.
 
         """
-        self._exists_in_db = exists_in_db
+        _data = _data or {}
+
+        self._exists_in_db = _exists_in_db
 
         # This is used by get_or_create to indicate to the user whether it
         # was an existing row or not.
         self._was_created: t.Optional[bool] = None
 
         for column in self._meta.columns:
-            value = kwargs.pop(column._meta.name, ...)
+            value = _data.get(column, ...)
 
-            if value is ...:
-                value = kwargs.pop(
-                    t.cast(str, column._meta.db_column_name), ...
-                )
+            if kwargs:
+                if value is ...:
+                    value = kwargs.pop(column._meta.name, ...)
+
+                if value is ...:
+                    value = kwargs.pop(
+                        t.cast(str, column._meta.db_column_name), ...
+                    )
 
             if value is ...:
                 value = column.get_default_value()
@@ -338,7 +359,7 @@ class Table(metaclass=TableMetaclass):
                 if (
                     (value is None)
                     and (not column._meta.null)
-                    and not ignore_missing
+                    and not _ignore_missing
                 ):
                     raise ValueError(f"{column._meta.name} wasn't provided")
 
