@@ -347,9 +347,13 @@ class SQLiteEngine(Engine):
     See the `SQLite docs <https://docs.python.org/3/library/sqlite3.html#sqlite3.connect>`_
     for more info.
 
+    :param log_queries:
+        If ``True``, all SQL and DDL statements are printed out before being
+        run. Useful for debugging.
+
     """  # noqa: E501
 
-    __slots__ = ("connection_kwargs", "transaction_connection")
+    __slots__ = ("connection_kwargs", "transaction_connection", "log_queries")
 
     engine_type = "sqlite"
     min_version_number = 3.25
@@ -357,6 +361,7 @@ class SQLiteEngine(Engine):
     def __init__(
         self,
         path: str = "piccolo.sqlite",
+        log_queries: bool = False,
         detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
         isolation_level=None,
         **connection_kwargs,
@@ -368,6 +373,7 @@ class SQLiteEngine(Engine):
                 "isolation_level": isolation_level,
             }
         )
+        self.log_queries = log_queries
         self.connection_kwargs = connection_kwargs
 
         self.transaction_connection = contextvars.ContextVar(
@@ -385,9 +391,9 @@ class SQLiteEngine(Engine):
         self.connection_kwargs["database"] = value
 
     async def get_version(self) -> float:
-        """
-        Warn if the version of SQLite isn't supported.
-        """
+        return self.get_version_sync()
+
+    def get_version_sync(self) -> float:
         major, minor, _ = sqlite3.sqlite_version_info
         return float(f"{major}.{minor}")
 
@@ -443,13 +449,12 @@ class SQLiteEngine(Engine):
         different types. Need to query by `lastrowid` to get `pk`s in SQLite
         prior to 3.35.0.
         """
-        # TODO: Add RETURNING clause for sqlite > 3.35.0
         await cursor.execute(
-            f"SELECT {table._meta.primary_key._meta.name} FROM "
+            f"SELECT {table._meta.primary_key._meta.db_column_name} FROM "
             f"{table._meta.tablename} WHERE ROWID = {cursor.lastrowid}"
         )
         response = await cursor.fetchone()
-        return response[table._meta.primary_key._meta.name]
+        return response[table._meta.primary_key._meta.db_column_name]
 
     async def _run_in_new_connection(
         self,
@@ -467,12 +472,14 @@ class SQLiteEngine(Engine):
             async with connection.execute(query, args) as cursor:
                 await connection.commit()
 
-                if query_type != "insert":
+                if query_type == "insert" and self.get_version_sync() < 3.35:
+                    # We can't use the RETURNING clause on older versions
+                    # of SQLite.
+                    assert table is not None
+                    pk = await self._get_inserted_pk(cursor, table)
+                    return [{table._meta.primary_key._meta.db_column_name: pk}]
+                else:
                     return await cursor.fetchall()
-
-                assert table is not None
-                pk = await self._get_inserted_pk(cursor, table)
-                return [{table._meta.primary_key._meta.name: pk}]
 
     async def _run_in_existing_connection(
         self,
@@ -493,12 +500,14 @@ class SQLiteEngine(Engine):
         async with connection.execute(query, args) as cursor:
             response = await cursor.fetchall()
 
-            if query_type != "insert":
+            if query_type == "insert" and self.get_version_sync() < 3.35:
+                # We can't use the RETURNING clause on older versions
+                # of SQLite.
+                assert table is not None
+                pk = await self._get_inserted_pk(cursor, table)
+                return [{table._meta.primary_key._meta.db_column_name: pk}]
+            else:
                 return response
-
-            assert table is not None
-            pk = await self._get_inserted_pk(cursor, table)
-            return [{table._meta.primary_key._meta.name: pk}]
 
     async def run_querystring(
         self, querystring: QueryString, in_pool: bool = False
@@ -507,6 +516,9 @@ class SQLiteEngine(Engine):
         Connection pools aren't currently supported - the argument is there
         for consistency with other engines.
         """
+        if self.log_queries:
+            print(querystring)
+
         query, query_args = querystring.compile_string(
             engine_type=self.engine_type
         )
@@ -534,6 +546,9 @@ class SQLiteEngine(Engine):
         Connection pools aren't currently supported - the argument is there
         for consistency with other engines.
         """
+        if self.log_queries:
+            print(ddl)
+
         # If running inside a transaction:
         connection = self.transaction_connection.get()
         if connection:

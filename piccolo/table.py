@@ -386,7 +386,7 @@ class Table(metaclass=TableMetaclass):
         cls = self.__class__
 
         if not self._exists_in_db:
-            return cls.insert().add(self)
+            return cls.insert(self).returning(cls._meta.primary_key)
 
         # Pre-existing row - update
         if columns is None:
@@ -846,7 +846,7 @@ class Table(metaclass=TableMetaclass):
             )
 
         """
-        query = Insert(table=cls)
+        query = Insert(table=cls).returning(cls._meta.primary_key)
         if rows:
             query.add(*rows)
         return query

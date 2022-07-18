@@ -321,6 +321,9 @@ class PostgresEngine(Engine):
                 version_string=version_string
             )
 
+    def get_version_sync(self) -> float:
+        return run_sync(self.get_version())
+
     async def prep_database(self):
         for extension in self.extensions:
             try:
