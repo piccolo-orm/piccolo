@@ -109,24 +109,30 @@ class TestUpdate(DBTestCase):
         """
         Make sure update works with the `returning` clause.
         """
+        self.insert_rows()
+
         response = (
             Band.update({Band.name: "Pythonistas 2"})
             .where(Band.name == "Pythonistas")
             .returning(Band.name)
             .run_sync()
         )
+
         self.assertEqual(response, [{"name": "Pythonistas 2"}])
 
     def test_update_returning_alias(self):
         """
         Make sure update works with the `returning` clause.
         """
+        self.insert_rows()
+
         response = (
             Band.update({Band.name: "Pythonistas 2"})
             .where(Band.name == "Pythonistas")
             .returning(Band.name.as_alias("band name"))
             .run_sync()
         )
+
         self.assertEqual(response, [{"band name": "Pythonistas 2"}])
 
 
