@@ -42,6 +42,10 @@ class Engine(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def get_version_sync(self) -> float:
+        pass
+
+    @abstractmethod
     async def prep_database(self):
         pass
 

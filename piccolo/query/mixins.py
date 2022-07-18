@@ -79,7 +79,7 @@ class OrderBy:
 class Returning:
     __slots__ = ("columns",)
 
-    columns: t.Iterable[Column]
+    columns: t.List[Column]
 
     @property
     def querystring(self) -> QueryString:
@@ -207,7 +207,7 @@ class ReturningDelegate:
     _returning: t.Optional[Returning] = None
 
     def returning(self, columns: t.Sequence[Column]):
-        self._returning = Returning(columns=columns)
+        self._returning = Returning(columns=list(columns))
 
 
 @dataclass

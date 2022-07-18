@@ -385,9 +385,9 @@ class SQLiteEngine(Engine):
         self.connection_kwargs["database"] = value
 
     async def get_version(self) -> float:
-        """
-        Warn if the version of SQLite isn't supported.
-        """
+        return self.get_version_sync()
+
+    def get_version_sync(self) -> float:
         major, minor, _ = sqlite3.sqlite_version_info
         return float(f"{major}.{minor}")
 
@@ -443,13 +443,12 @@ class SQLiteEngine(Engine):
         different types. Need to query by `lastrowid` to get `pk`s in SQLite
         prior to 3.35.0.
         """
-        # TODO: Add RETURNING clause for sqlite > 3.35.0
         await cursor.execute(
-            f"SELECT {table._meta.primary_key._meta.name} FROM "
+            f"SELECT {table._meta.primary_key._meta.db_column_name} FROM "
             f"{table._meta.tablename} WHERE ROWID = {cursor.lastrowid}"
         )
         response = await cursor.fetchone()
-        return response[table._meta.primary_key._meta.name]
+        return response[table._meta.primary_key._meta.db_column_name]
 
     async def _run_in_new_connection(
         self,
@@ -467,12 +466,14 @@ class SQLiteEngine(Engine):
             async with connection.execute(query, args) as cursor:
                 await connection.commit()
 
-                if query_type != "insert":
+                if query_type == "insert" and self.get_version_sync() < 3.35:
+                    # We can't use the RETURNING clause on older versions
+                    # of SQLite.
+                    assert table is not None
+                    pk = await self._get_inserted_pk(cursor, table)
+                    return [{table._meta.primary_key._meta.name: pk}]
+                else:
                     return await cursor.fetchall()
-
-                assert table is not None
-                pk = await self._get_inserted_pk(cursor, table)
-                return [{table._meta.primary_key._meta.name: pk}]
 
     async def _run_in_existing_connection(
         self,
@@ -491,14 +492,14 @@ class SQLiteEngine(Engine):
 
         connection.row_factory = dict_factory
         async with connection.execute(query, args) as cursor:
-            response = await cursor.fetchall()
-
-            if query_type != "insert":
-                return response
-
-            assert table is not None
-            pk = await self._get_inserted_pk(cursor, table)
-            return [{table._meta.primary_key._meta.name: pk}]
+            if query_type == "insert" and self.get_version_sync() < 3.35:
+                # We can't use the RETURNING clause on older versions
+                # of SQLite.
+                assert table is not None
+                pk = await self._get_inserted_pk(cursor, table)
+                return [{table._meta.primary_key._meta.name: pk}]
+            else:
+                return await cursor.fetchall()
 
     async def run_querystring(
         self, querystring: QueryString, in_pool: bool = False

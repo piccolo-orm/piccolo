@@ -3,24 +3,35 @@ from __future__ import annotations
 import typing as t
 
 from piccolo.query.base import Query
-from piccolo.query.mixins import AddDelegate
+from piccolo.query.mixins import AddDelegate, ReturningDelegate
 from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:  # pragma: no cover
+    from piccolo.columns.base import Column
     from piccolo.table import Table
 
 
 class Insert(Query):
-    __slots__ = ("add_delegate",)
+    __slots__ = ("add_delegate", "returning_delegate")
 
     def __init__(self, table: t.Type[Table], *instances: Table, **kwargs):
         super().__init__(table, **kwargs)
         self.add_delegate = AddDelegate()
+        self.returning_delegate = ReturningDelegate()
         self.add(*instances)
+
+    ###########################################################################
+    # Clauses
 
     def add(self, *instances: Table) -> Insert:
         self.add_delegate.add(*instances, table_class=self.table)
         return self
+
+    def returning(self, *columns: Column) -> Insert:
+        self.returning_delegate.returning(columns)
+        return self
+
+    ###########################################################################
 
     def _raw_response_callback(self, results):
         """
@@ -31,42 +42,38 @@ class Insert(Query):
             setattr(
                 table_instance,
                 self.table._meta.primary_key._meta.name,
-                row[self.table._meta.primary_key._meta.name],
+                row.get(self.table._meta.primary_key._meta.name, None),
             )
             table_instance._exists_in_db = True
 
     @property
-    def sqlite_querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> t.Sequence[QueryString]:
         base = f"INSERT INTO {self.table._meta.tablename}"
         columns = ",".join(
             f'"{i._meta.db_column_name}"' for i in self.table._meta.columns
         )
         values = ",".join("{}" for _ in self.add_delegate._add)
         query = f"{base} ({columns}) VALUES {values}"
-        return [
-            QueryString(
-                query,
-                *[i.querystring for i in self.add_delegate._add],
-                query_type="insert",
-                table=self.table,
-            )
-        ]
+        querystring = QueryString(
+            query,
+            *[i.querystring for i in self.add_delegate._add],
+            query_type="insert",
+        )
 
-    @property
-    def postgres_querystrings(self) -> t.Sequence[QueryString]:
-        base = f"INSERT INTO {self.table._meta.tablename}"
-        columns = ",".join(
-            f'"{i._meta.db_column_name}"' for i in self.table._meta.columns
-        )
-        values = ",".join("{}" for _ in self.add_delegate._add)
-        primary_key_name = self.table._meta.primary_key._meta.name
-        query = (
-            f"{base} ({columns}) VALUES {values} RETURNING {primary_key_name}"
-        )
-        return [
-            QueryString(
-                query,
-                *[i.querystring for i in self.add_delegate._add],
-                query_type="insert",
-            )
-        ]
+        engine_type = self.engine_type
+
+        if engine_type == "postgres" or (
+            engine_type == "sqlite"
+            and self.table._meta.db.get_version_sync() >= 3.35
+        ):
+            if self.returning_delegate._returning:
+                return [
+                    QueryString(
+                        "{}{}",
+                        querystring,
+                        self.returning_delegate._returning.querystring,
+                        query_type="insert",
+                    )
+                ]
+
+        return [querystring]
