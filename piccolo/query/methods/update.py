@@ -4,7 +4,11 @@ import typing as t
 
 from piccolo.custom_types import Combinable
 from piccolo.query.base import Query
-from piccolo.query.mixins import ValuesDelegate, WhereDelegate
+from piccolo.query.mixins import (
+    ReturningDelegate,
+    ValuesDelegate,
+    WhereDelegate,
+)
 from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -18,13 +22,22 @@ class UpdateError(Exception):
 
 class Update(Query):
 
-    __slots__ = ("force", "values_delegate", "where_delegate")
+    __slots__ = (
+        "force",
+        "returning_delegate",
+        "values_delegate",
+        "where_delegate",
+    )
 
     def __init__(self, table: t.Type[Table], force: bool = False, **kwargs):
         super().__init__(table, **kwargs)
         self.force = force
+        self.returning_delegate = ReturningDelegate()
         self.values_delegate = ValuesDelegate(table=table)
         self.where_delegate = WhereDelegate()
+
+    ###########################################################################
+    # Clauses
 
     def values(
         self, values: t.Dict[t.Union[Column, str], t.Any] = None, **kwargs
@@ -39,7 +52,17 @@ class Update(Query):
         self.where_delegate.where(*where)
         return self
 
+    def returning(self, *columns: Column) -> Update:
+        self.returning_delegate.returning(columns)
+        return self
+
+    ###########################################################################
+
     def _validate(self):
+        """
+        Called at the start of :meth:`piccolo.query.base.Query.run` to make
+        sure the user has configured the query correctly before running it.
+        """
         if len(self.values_delegate._values) == 0:
             raise ValueError("No values were specified to update.")
 
@@ -57,6 +80,8 @@ class Update(Query):
                 f"`{classname}.update`. Otherwise, add a where clause."
             )
 
+    ###########################################################################
+
     @property
     def default_querystrings(self) -> t.Sequence[QueryString]:
         columns_str = ", ".join(
@@ -70,12 +95,18 @@ class Update(Query):
             query, *self.values_delegate.get_sql_values()
         )
 
-        if not self.where_delegate._where:
-            return [querystring]
+        if self.where_delegate._where:
+            querystring = QueryString(
+                "{} WHERE {}",
+                querystring,
+                self.where_delegate._where.querystring,
+            )
 
-        where_querystring = QueryString(
-            "{} WHERE {}",
-            querystring,
-            self.where_delegate._where.querystring,
-        )
-        return [where_querystring]
+        if self.returning_delegate._returning:
+            querystring = QueryString(
+                "{}{}",
+                querystring,
+                self.returning_delegate._returning.querystring,
+            )
+
+        return [querystring]
