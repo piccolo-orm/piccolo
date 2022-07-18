@@ -73,6 +73,7 @@ class Insert(Query):
                         querystring,
                         self.returning_delegate._returning.querystring,
                         query_type="insert",
+                        table=self.table,
                     )
                 ]
 
