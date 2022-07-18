@@ -236,6 +236,11 @@ if t.TYPE_CHECKING:
     )
 
     assert_type(
+        Band.objects().get_or_create(Band.name == "Pythonistas").run_sync(),
+        Band,
+    )
+
+    assert_type(
         Band.objects().run_sync(),
         t.List[Band],
     )
