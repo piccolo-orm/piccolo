@@ -76,6 +76,30 @@ class OrderBy:
 
 
 @dataclass
+class Returning:
+    __slots__ = ("columns",)
+
+    columns: t.Iterable[Column]
+
+    @property
+    def querystring(self) -> QueryString:
+        column_names = []
+        for column in self.columns:
+            column_names.append(
+                f'"{column._meta.db_column_name}" AS "{column._alias}"'
+                if column._alias
+                else f'"{column._meta.db_column_name}"'
+            )
+
+        columns_string = ", ".join(column_names)
+
+        return QueryString(f" RETURNING {columns_string}")
+
+    def __str__(self):
+        return self.querystring.__str__()
+
+
+@dataclass
 class Output:
 
     as_json: bool = False
@@ -176,6 +200,14 @@ class DistinctDelegate:
 
     def distinct(self):
         self._distinct = True
+
+
+@dataclass
+class ReturningDelegate:
+    _returning: t.Optional[Returning] = None
+
+    def returning(self, columns: t.Sequence[Column]):
+        self._returning = Returning(columns=columns)
 
 
 @dataclass

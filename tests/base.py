@@ -13,8 +13,13 @@ from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
 from piccolo.table import Table, create_table_class
+from piccolo.utils.sync import run_sync
 
 ENGINE = engine_finder()
+
+
+def engine_version_lt(version: float):
+    return ENGINE and run_sync(ENGINE.get_version()) < version
 
 
 def is_running_postgres():

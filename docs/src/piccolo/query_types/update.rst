@@ -212,6 +212,12 @@ you prefer:
 Query clauses
 -------------
 
+returning
+~~~~~~~~~
+
+See :ref:`Returning`.
+
+
 where
 ~~~~~
 
