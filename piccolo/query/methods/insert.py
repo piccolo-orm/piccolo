@@ -58,6 +58,7 @@ class Insert(Query):
             query,
             *[i.querystring for i in self.add_delegate._add],
             query_type="insert",
+            table=self.table,
         )
 
         engine_type = self.engine_type
