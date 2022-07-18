@@ -3,14 +3,25 @@ from __future__ import annotations
 import typing as t
 from unittest import TestCase
 
+import pytest
+
 from piccolo.columns import BigInt, Integer, Numeric, Varchar
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import ForeignKey, Text
 from piccolo.table import Table
-from tests.base import DBTestCase, postgres_only
+from tests.base import (
+    DBTestCase,
+    engine_version_lt,
+    is_running_sqlite,
+    postgres_only,
+)
 from tests.example_apps.music.tables import Band, Manager
 
 
+@pytest.mark.skipif(
+    is_running_sqlite() and engine_version_lt(3.25),
+    reason="SQLite version not supported",
+)
 class TestRenameColumn(DBTestCase):
     def _test_rename(
         self,
