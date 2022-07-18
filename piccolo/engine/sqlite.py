@@ -471,7 +471,7 @@ class SQLiteEngine(Engine):
                     # of SQLite.
                     assert table is not None
                     pk = await self._get_inserted_pk(cursor, table)
-                    return [{table._meta.primary_key._meta.name: pk}]
+                    return [{table._meta.primary_key._meta.db_column_name: pk}]
                 else:
                     return await cursor.fetchall()
 
@@ -492,14 +492,16 @@ class SQLiteEngine(Engine):
 
         connection.row_factory = dict_factory
         async with connection.execute(query, args) as cursor:
+            response = await cursor.fetchall()
+
             if query_type == "insert" and self.get_version_sync() < 3.35:
                 # We can't use the RETURNING clause on older versions
                 # of SQLite.
                 assert table is not None
                 pk = await self._get_inserted_pk(cursor, table)
-                return [{table._meta.primary_key._meta.name: pk}]
+                return [{table._meta.primary_key._meta.db_column_name: pk}]
             else:
-                return await cursor.fetchall()
+                return response
 
     async def run_querystring(
         self, querystring: QueryString, in_pool: bool = False

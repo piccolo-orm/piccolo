@@ -42,7 +42,9 @@ class Insert(Query):
             setattr(
                 table_instance,
                 self.table._meta.primary_key._meta.name,
-                row.get(self.table._meta.primary_key._meta.name, None),
+                row.get(
+                    self.table._meta.primary_key._meta.db_column_name, None
+                ),
             )
             table_instance._exists_in_db = True
 
