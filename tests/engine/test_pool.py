@@ -2,7 +2,7 @@ import asyncio
 import os
 import tempfile
 from unittest import TestCase
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import call, patch
 
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
