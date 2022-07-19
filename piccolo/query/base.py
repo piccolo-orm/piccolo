@@ -126,14 +126,14 @@ class Query:
                         ]
                     else:
                         raw = [
-                            self.table(**columns, exists_in_db=True)
+                            self.table(**columns, _exists_in_db=True)
                             for columns in raw
                         ]
                 elif raw is not None:
                     if output._output.nested:
                         raw = make_nested_object(raw, self.table)
                     else:
-                        raw = self.table(**raw, exists_in_db=True)
+                        raw = self.table(**raw, _exists_in_db=True)
             elif type(raw) is list:
                 if output._output.as_list:
                     if len(raw) == 0:

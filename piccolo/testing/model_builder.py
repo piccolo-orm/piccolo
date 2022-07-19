@@ -103,7 +103,7 @@ class ModelBuilder:
         minimal: bool = False,
         persist: bool = True,
     ) -> Table:
-        model = table_class(ignore_missing=True)
+        model = table_class(_ignore_missing=True)
         defaults = {} if not defaults else defaults
 
         for column, value in defaults.items():
