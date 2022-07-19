@@ -1,6 +1,29 @@
 Changes
 =======
 
+0.81.0
+------
+
+Added the ``returning`` clause to ``insert`` and ``update`` queries.
+
+This can be used to retrieve data from the inserted / modified rows.
+
+Here's an example, where we update the unpopular bands, and retrieve their
+names, in a single query:
+
+.. code-block:: python
+
+  >>> await Band.update({
+  ...     Band.popularity: Band.popularity + 5
+  ... }).where(
+  ...     Band.popularity < 10
+  ... ).returning(
+  ...     Band.name
+  ... )
+  [{'name': 'Bad sound band'}, {'name': 'Tone deaf band'}]
+
+-------------------------------------------------------------------------------
+
 0.80.2
 ------
 
