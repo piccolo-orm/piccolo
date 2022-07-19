@@ -306,7 +306,12 @@ class Table(metaclass=TableMetaclass):
         **kwargs,
     ):
         """
-        Assigns any default column values to the class.
+        The constructor can be used to assign column values.
+
+        .. note::
+            The ``_data``, ``_ignore_missing``, and ``_exists_in_db``
+            arguments are prefixed with an underscore to help prevent a clash
+            with a column name which might be passed in via kwargs.
 
         :param _data:
             There's two ways of passing in the data for each column. Firstly,
