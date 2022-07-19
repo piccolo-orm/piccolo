@@ -52,12 +52,22 @@ columns.
 Creating objects
 ----------------
 
+You can pass the column values using kwargs:
+
 .. code-block:: python
 
     >>> band = Band(name="C-Sharps", popularity=100)
     >>> await band.save()
 
-This can also be done like this:
+Alternatively, you can pass in a dictionary, which is friendlier to static
+analysis tools like Mypy (it can easily detect typos in the column names):
+
+.. code-block:: python
+
+    >>> band = Band({Band.name: "C-Sharps", Band.popularity: 100})
+    >>> await band.save()
+
+We also have this shortcut which combines the above into a single line:
 
 .. code-block:: python
 
