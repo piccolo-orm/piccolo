@@ -1,6 +1,27 @@
 Changes
 =======
 
+0.82.0
+------
+
+Traditionally, when instantiating a ``Table``, you passed in column values
+using kwargs:
+
+.. code-block:: python
+
+  >>> await Manager(name='Guido').save()
+
+You can now pass in a dictionary instead, which makes it easier for static
+typing analysis tools like Mypy to detect typos.
+
+.. code-block:: python
+
+  >>> await Manager({Manager.name: 'Guido'}).save()
+
+See `PR 565 <https://github.com/piccolo-orm/piccolo/pull/565>`_ for more info.
+
+-------------------------------------------------------------------------------
+
 0.81.0
 ------
 
@@ -21,6 +42,9 @@ names, in a single query:
   ...     Band.name
   ... )
   [{'name': 'Bad sound band'}, {'name': 'Tone deaf band'}]
+
+See `PR 564 <https://github.com/piccolo-orm/piccolo/pull/564>`_ and
+`PR 563 <https://github.com/piccolo-orm/piccolo/pull/563>`_ for more info.
 
 -------------------------------------------------------------------------------
 
