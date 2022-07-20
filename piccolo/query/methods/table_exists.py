@@ -24,9 +24,10 @@ class TableExists(Query):
 
     @property
     def postgres_querystrings(self) -> t.Sequence[QueryString]:
+        tablename = self.table._meta.get_formatted_tablename(quoted=False)
         return [
             QueryString(
                 "SELECT EXISTS(SELECT * FROM information_schema.tables WHERE "
-                f"table_name = '{self.table._meta.tablename}')"
-            )
+                f"table_name = '{tablename}')",
+            ),
         ]

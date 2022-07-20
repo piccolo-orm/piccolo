@@ -594,7 +594,7 @@ class Select(Query):
         select = (
             "SELECT DISTINCT" if self.distinct_delegate._distinct else "SELECT"
         )
-        query = f"{select} {columns_str} FROM {self.table._meta.tablename}"
+        query = f"{select} {columns_str} FROM {self.table._meta.get_formatted_tablename()}"  # noqa: E501
 
         for join in joins:
             query += f" {join}"

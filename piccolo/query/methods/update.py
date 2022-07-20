@@ -89,7 +89,7 @@ class Update(Query):
             for col, _ in self.values_delegate._values.items()
         )
 
-        query = f"UPDATE {self.table._meta.tablename} SET {columns_str}"
+        query = f"UPDATE {self.table._meta.get_formatted_tablename()} SET {columns_str}"  # noqa: E501
 
         querystring = QueryString(
             query, *self.values_delegate.get_sql_values()

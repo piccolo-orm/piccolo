@@ -38,7 +38,7 @@ class Create(DDL):
         else:
             columns = self.table._meta.columns
 
-        base = f"{prefix} {self.table._meta.tablename}"
+        base = f"{prefix} {self.table._meta.get_formatted_tablename()}"
         columns_sql = ", ".join(i.ddl for i in columns)
         create_table_ddl = f"{base} ({columns_sql})"
 

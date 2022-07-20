@@ -504,7 +504,7 @@ class Alter(DDL):
         if self._drop_table is not None:
             return [self._drop_table.ddl]
 
-        query = f"ALTER TABLE {self.table._meta.tablename}"
+        query = f"ALTER TABLE {self.table._meta.get_formatted_tablename()}"
 
         alterations = [
             i.ddl

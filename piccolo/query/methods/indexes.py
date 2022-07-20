@@ -17,7 +17,7 @@ class Indexes(Query):
             QueryString(
                 "SELECT indexname AS name FROM pg_indexes "
                 "WHERE tablename = {}",
-                self.table._meta.tablename,
+                self.table._meta.get_formatted_tablename(quoted=False),
             )
         ]
 
