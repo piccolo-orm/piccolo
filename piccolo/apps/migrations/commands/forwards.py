@@ -64,16 +64,16 @@ class ForwardsMigrationManager(BaseMigrationManager):
             print(f"🚀 Running {n} migration{'s' if n != 1 else ''}:")
 
             for _id in subset:
-                if self.fake:
-                    print(f"- {_id}: faked! ⏭️")
-                else:
-                    migration_module = migration_modules[_id]
-                    response = await migration_module.forwards()
+                migration_module = migration_modules[_id]
+                response = await migration_module.forwards()
 
-                    if isinstance(response, MigrationManager):
+                if isinstance(response, MigrationManager):
+                    if response.fake or self.fake:
+                        print(f"- {_id}: faked! ⏭️")
+                    else:
                         await response.run()
 
-                    print("ok! ✔️")
+                print("ok! ✔️")
 
                 await Migration.insert().add(
                     Migration(name=_id, app_name=app_config.app_name)

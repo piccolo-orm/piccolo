@@ -148,6 +148,7 @@ class MigrationManager:
     raw_backwards: t.List[t.Union[t.Callable, t.Coroutine]] = field(
         default_factory=list
     )
+    fake: bool = False
 
     def add_table(
         self,
