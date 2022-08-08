@@ -390,8 +390,14 @@ class PostgresEngine(Engine):
 
     ###########################################################################
 
-    async def batch(self, query: Query, batch_size: int = 100) -> AsyncBatch:
-        connection = await self.get_new_connection()
+    async def batch(
+        self,
+        query: Query,
+        batch_size: int = 100,
+        node: t.Optional[str] = None,
+    ) -> AsyncBatch:
+        engine: t.Any = self.extra_nodes.get(node) if node else self
+        connection = await engine.get_new_connection()
         return AsyncBatch(
             connection=connection, query=query, batch_size=batch_size
         )

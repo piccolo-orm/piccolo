@@ -20,6 +20,19 @@ responses.
         async for _batch in batch:
             print(_batch)
 
+There is also an option to pass a additional database nodes (e.g. read replicas) as a 
+node argument to ``batch`` method.
+
+.. code-block:: python
+
+    # Returns 100 rows at a time from read_replica_db
+    async with await Manager.select().batch(
+        batch_size=100,
+        node="read_replica_db",
+    ) as batch:
+        async for _batch in batch:
+            print(_batch)
+
 There's currently no synchronous version. However, it's easy enough to achieve:
 
 .. code-block:: python
