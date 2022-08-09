@@ -4,8 +4,6 @@ import math
 from tests.base import DBTestCase, postgres_only
 from tests.example_apps.music.tables import Manager
 
-from ..postgres_conf import DB
-
 
 @postgres_only
 class TestBatchSelect(DBTestCase):
@@ -66,6 +64,8 @@ class TestBatchSelect(DBTestCase):
         self.assertEqual(iterations, _iterations)
 
     def test_batch_extra_node(self):
+        from ..postgres_conf import DB
+
         row_count = 1000
         self.insert_many_rows(row_count)
 

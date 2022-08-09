@@ -14,7 +14,8 @@ module = [
     "dateutil",
     "IPython",
     "jinja2",
-    "orjson"
+    "orjson",
+    "aiosqlite"
 ]
 ignore_missing_imports = true
 
