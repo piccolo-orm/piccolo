@@ -21,7 +21,7 @@ responses.
             print(_batch)
 
 There is also an option to pass a additional database nodes (e.g. read replicas) as a 
-node argument to ``batch`` method.
+node argument to ``batch`` method. (only in Postgres)
 
 .. code-block:: python
 
