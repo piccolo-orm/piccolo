@@ -87,6 +87,7 @@ class TestBatchSelect(DBTestCase):
         self.assertEqual(iterations, _iterations)
 
 
+@postgres_only
 class TestBatchObjects(DBTestCase):
     def _check_results(self, batch):
         """
