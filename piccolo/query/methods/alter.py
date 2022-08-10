@@ -176,6 +176,17 @@ class SetLength(AlterColumnStatement):
     def ddl(self) -> str:
         return f'ALTER COLUMN "{self.column_name}" TYPE VARCHAR({self.length})'
 
+@dataclass
+class AddUniqueConstraint(AlterStatement):
+    __slots__ = ("constraint_name","columns")
+
+    constraint_name: str
+    columns: list[str]
+
+    @property
+    def ddl(self) -> str:
+        columns_str: str = ",".join(self.columns)
+        return f"ADD CONSTRAINT {self.constraint_name} UNIQUE ({columns_str})"
 
 @dataclass
 class DropConstraint(AlterStatement):
@@ -264,6 +275,7 @@ class Alter(DDL):
     __slots__ = (
         "_add_foreign_key_constraint",
         "_add",
+        "_add_unique_constraint",
         "_drop_constraint",
         "_drop_default",
         "_drop_table",
@@ -282,6 +294,7 @@ class Alter(DDL):
         super().__init__(table, **kwargs)
         self._add_foreign_key_constraint: t.List[AddForeignKeyConstraint] = []
         self._add: t.List[AddColumn] = []
+        self._add_unique_constraint: t.List[AddUniqueConstraint] = []
         self._drop_constraint: t.List[DropConstraint] = []
         self._drop_default: t.List[DropDefault] = []
         self._drop_table: t.Optional[DropTable] = None
@@ -433,6 +446,12 @@ class Alter(DDL):
         tablename = self.table._meta.tablename
         return f"{tablename}_{column_name}_fk"
 
+    def add_unique_constraint(self, constraint_name: str, columns: list[str]):
+        self._add_unique_constraint.append(
+            AddUniqueConstraint(constraint_name=constraint_name,columns=columns)
+        )
+        return self
+
     def drop_constraint(self, constraint_name: str) -> Alter:
         self._drop_constraint.append(
             DropConstraint(constraint_name=constraint_name)
@@ -520,6 +539,8 @@ class Alter(DDL):
                 self._set_length,
                 self._set_default,
                 self._set_digits,
+                self._add_unique_constraint,
+                self._drop_constraint,
             )
         ]
 

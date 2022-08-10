@@ -14,10 +14,11 @@ from piccolo.apps.migrations.auto.operations import (
 from piccolo.apps.migrations.auto.serialisation import deserialise_params
 from piccolo.columns import Column, column_types
 from piccolo.columns.column_types import Serial
+from piccolo.columns.constraints import UniqueConstraint
 from piccolo.engine import engine_finder
 from piccolo.table import Table, create_table_class, sort_table_classes
 from piccolo.utils.warnings import colored_warning
-
+from piccolo.query.methods.alter import AddUniqueConstraint, DropConstraint
 
 @dataclass
 class AddColumnClass:
@@ -144,6 +145,8 @@ class MigrationManager:
     alter_columns: AlterColumnCollection = field(
         default_factory=AlterColumnCollection
     )
+    add_unique_constraints: t.List[AddUniqueConstraint] = field(default_factory=list)
+    drop_unique_constraints: t.List[DropConstraint] = field(default_factory=list)
     raw: t.List[t.Union[t.Callable, t.Coroutine]] = field(default_factory=list)
     raw_backwards: t.List[t.Union[t.Callable, t.Coroutine]] = field(
         default_factory=list
@@ -214,18 +217,30 @@ class MigrationManager:
         if column_class is None:
             raise ValueError("Unrecognised column type")
 
-        cleaned_params = deserialise_params(params=params)
-        column = column_class(**cleaned_params)
+        if column_class is UniqueConstraint:
+            column = column_class(**params)
+        else:
+            cleaned_params = deserialise_params(params=params)
+            column = column_class(**cleaned_params)
+            
         column._meta.name = column_name
         column._meta.db_column_name = db_column_name
 
-        self.add_columns.append(
-            AddColumnClass(
-                column=column,
-                tablename=tablename,
-                table_class_name=table_class_name,
+        if isinstance(column_class,UniqueConstraint):
+            self.add_unique_constraints.append(
+                AddUniqueConstraint(
+                    constraint_name=column_name,
+                    columns=params.get('unique_columns') #type: ignore
+                )
             )
-        )
+        else:
+            self.add_columns.append(
+                AddColumnClass(
+                    column=column,
+                    tablename=tablename,
+                    table_class_name=table_class_name,
+                )
+            )
 
     def drop_column(
         self,
@@ -233,13 +248,17 @@ class MigrationManager:
         tablename: str,
         column_name: str,
         db_column_name: t.Optional[str] = None,
+        column_class: t.Optional[t.Type[Column]] = None,
     ):
+        print(500000)
+        print(column_class)
         self.drop_columns.append(
             DropColumn(
                 table_class_name=table_class_name,
                 column_name=column_name,
                 db_column_name=db_column_name or column_name,
                 tablename=tablename,
+                column_class=column_class
             )
         )
 
@@ -569,9 +588,17 @@ class MigrationManager:
                 )
 
                 for column in columns:
-                    await _Table.alter().drop_column(
-                        column=column.column_name
-                    ).run()
+                    print('============')
+                    print(column.column_class)
+                    print('============')
+                    if column.column_class==UniqueConstraint:
+                        await _Table.alter().drop_constraint(
+                            constraint_name=column.db_column_name
+                        ).run()
+                    else:
+                        await _Table.alter().drop_column(
+                            column=column.column_name
+                        ).run()
 
     async def _run_rename_tables(self, backwards=False):
         for rename_table in self.rename_tables:
@@ -699,11 +726,17 @@ class MigrationManager:
                     column = _Table._meta.get_column_by_name(
                         add_column.column._meta.name
                     )
-                    await _Table.alter().add_column(
-                        name=column._meta.name, column=column
-                    ).run()
-                    if add_column.column._meta.index:
-                        await _Table.create_index([add_column.column]).run()
+                    if isinstance(add_column.column,UniqueConstraint):
+                        await _Table.alter().add_unique_constraint(
+                            add_column.column._meta.name,
+                            add_column.column.unique_columns
+                        ).run()
+                    else:
+                        await _Table.alter().add_column(
+                            name=column._meta.name, column=column
+                        ).run()
+                        if add_column.column._meta.index:
+                            await _Table.create_index([add_column.column]).run()
 
     async def run(self):
         print(f"  - {self.migration_id} [forwards]... ", end="")

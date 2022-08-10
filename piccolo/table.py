@@ -7,6 +7,7 @@ import typing as t
 from dataclasses import dataclass, field
 
 from piccolo.columns import Column
+from piccolo.columns.constraints import UniqueConstraint
 from piccolo.columns.column_types import (
     JSON,
     JSONB,
@@ -73,6 +74,7 @@ class TableMeta:
     primary_key: Column = field(default_factory=Column)
     json_columns: t.List[t.Union[JSON, JSONB]] = field(default_factory=list)
     secret_columns: t.List[Secret] = field(default_factory=list)
+    unique_constraints: t.List[UniqueConstraint] = field(default_factory=list)
     tags: t.List[str] = field(default_factory=list)
     help_text: t.Optional[str] = None
     _db: t.Optional[Engine] = None
@@ -218,6 +220,7 @@ class Table(metaclass=TableMetaclass):
         json_columns: t.List[t.Union[JSON, JSONB]] = []
         primary_key: t.Optional[Column] = None
         m2m_relationships: t.List[M2M] = []
+        unique_constraints: t.List[UniqueConstraint] = []
 
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]
@@ -258,6 +261,9 @@ class Table(metaclass=TableMetaclass):
                 if isinstance(column, (JSON, JSONB)):
                     json_columns.append(column)
 
+            if isinstance(attribute, UniqueConstraint):
+                unique_constraints.append(attribute)
+
             if isinstance(attribute, M2M):
                 attribute._meta._name = attribute_name
                 attribute._meta._table = cls
@@ -279,6 +285,7 @@ class Table(metaclass=TableMetaclass):
             foreign_key_columns=foreign_key_columns,
             json_columns=json_columns,
             secret_columns=secret_columns,
+            unique_constraints=unique_constraints,
             tags=tags,
             help_text=help_text,
             _db=db,
