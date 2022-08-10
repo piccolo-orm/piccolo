@@ -588,9 +588,6 @@ class MigrationManager:
                 )
 
                 for column in columns:
-                    print('============')
-                    print(column.column_class)
-                    print('============')
                     if column.column_class==UniqueConstraint:
                         await _Table.alter().drop_constraint(
                             constraint_name=column.db_column_name

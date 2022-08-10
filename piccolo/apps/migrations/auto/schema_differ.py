@@ -15,6 +15,7 @@ from piccolo.apps.migrations.auto.serialisation import (
     UniqueGlobalNames,
     serialise_params,
 )
+from piccolo.columns.constraints import UniqueConstraint
 from piccolo.utils.printing import get_fixed_length_string
 
 
@@ -351,6 +352,9 @@ class SchemaDiffer:
                     )
 
                 if alter_column.old_column_class is not None:
+                    if alter_column.old_column_class==UniqueConstraint:
+                        print('You cannot ALTER UniqueConstraint! At first, delete it, then create the new one')
+                        continue
                     extra_imports.append(
                         Import(
                             module=alter_column.old_column_class.__module__,

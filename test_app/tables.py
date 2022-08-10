@@ -7,5 +7,5 @@ class FooTable(Table):
     field_2 = Text()
     field_3 = Text()
 
-    #my_test_constraint_1 = UniqueConstraint(['field_1','field_2'])
+    my_test_constraint_1 = UniqueConstraint(['field_1','field_2'])
 
