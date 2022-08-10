@@ -26,7 +26,7 @@ class UniqueConstraint(Constraint):
         Used when creating tables.
         """
         unique_columns_string = ",".join(self.unique_columns)
-        query = f'"{self._meta.db_column_name}" {self.column_type} UNIQUE ({unique_columns_string})'
+        query = f'{self.column_type} "{self._meta.db_column_name}" UNIQUE ({unique_columns_string})'
         return query
     
     def get_select_string(
