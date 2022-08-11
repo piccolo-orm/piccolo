@@ -1,6 +1,26 @@
 Changes
 =======
 
+0.83.0
+------
+
+We added support for Postgres read-slaves a few releases ago, but the ``batch``
+clause didn't support it until now. Thanks to @guruvignesh01 for reporting
+this issue, and @sinisaos for help implementing it.
+
+.. code-block:: python
+
+    # Returns 100 rows at a time from read_replica_db
+    async with await Manager.select().batch(
+        batch_size=100,
+        node="read_replica_db",
+    ) as batch:
+        async for _batch in batch:
+            print(_batch)
+
+
+-------------------------------------------------------------------------------
+
 0.82.0
 ------
 
