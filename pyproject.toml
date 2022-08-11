@@ -27,15 +27,12 @@ markers = [
 
 [tool.coverage.run]
 omit = [
-    "*.jinja", 
-    "**/piccolo_migrations/*", 
+    "*.jinja",
+    "**/piccolo_migrations/*",
     "**/piccolo_app.py"
 ]
 
 [tool.coverage.report]
 exclude_lines = [
-    "pragma: no cover",
-    "raise NotImplementedError",
-    "raise ValueError",
-    "pass"
+    "raise NotImplementedError"
 ]
