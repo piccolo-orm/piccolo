@@ -6,7 +6,7 @@ from datetime import datetime
 from importlib.util import find_spec
 from string import Formatter
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 from uuid import UUID

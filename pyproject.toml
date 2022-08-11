@@ -14,7 +14,8 @@ module = [
     "dateutil",
     "IPython",
     "jinja2",
-    "orjson"
+    "orjson",
+    "aiosqlite"
 ]
 ignore_missing_imports = true
 
@@ -25,4 +26,17 @@ markers = [
 ]
 
 [tool.coverage.run]
-omit = ["*.jinja", "**/piccolo_migrations/*", "**/piccolo_app.py"]
+omit = [
+    "*.jinja",
+    "**/piccolo_migrations/*",
+    "**/piccolo_app.py"
+]
+
+[tool.coverage.report]
+# Note, we have to re-specify "pragma: no cover"
+# https://coverage.readthedocs.io/en/6.3.3/excluding.html#advanced-exclusion
+exclude_lines = [
+    "raise NotImplementedError",
+    "pragma: no cover",
+    "pass"
+]
