@@ -33,6 +33,9 @@ omit = [
 ]
 
 [tool.coverage.report]
+# Note, we have to re-specify "pragma: no cover"
+# https://coverage.readthedocs.io/en/6.3.3/excluding.html#advanced-exclusion
 exclude_lines = [
-    "raise NotImplementedError"
+    "raise NotImplementedError",
+    "pragma: no cover"
 ]
