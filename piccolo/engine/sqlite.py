@@ -427,7 +427,18 @@ class SQLiteEngine(Engine):
 
     ###########################################################################
 
-    async def batch(self, query: Query, batch_size: int = 100) -> AsyncBatch:
+    async def batch(
+        self, query: Query, batch_size: int = 100, node: t.Optional[str] = None
+    ) -> AsyncBatch:
+        """
+        :param query:
+            The database query to run.
+        :param batch_size:
+            How many rows to fetch on each iteration.
+        :param node:
+            This is ignored currently, as SQLite runs off a single node. The
+            value is here so the API is consistent with Postgres.
+        """
         connection = await self.get_connection()
         return AsyncBatch(
             connection=connection, query=query, batch_size=batch_size
