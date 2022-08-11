@@ -1,14 +1,13 @@
 import asyncio
 import math
 from unittest import TestCase
-from unittest.mock import MagicMock
 
 from piccolo.columns import Varchar
 from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import AsyncBatch, PostgresEngine
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
-from tests.base import DBTestCase, postgres_only
+from tests.base import AsyncMock, DBTestCase, postgres_only
 from tests.example_apps.music.tables import Manager
 
 
@@ -108,7 +107,7 @@ class TestBatchNodeArg(TestCase):
         # Get the test database credentials:
         test_engine = engine_finder()
 
-        EXTRA_NODE = MagicMock(spec=PostgresEngine(config=test_engine.config))
+        EXTRA_NODE = AsyncMock(spec=PostgresEngine(config=test_engine.config))
 
         DB = PostgresEngine(
             config=test_engine.config,
