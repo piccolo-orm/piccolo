@@ -349,7 +349,8 @@ class MigrationManager:
     ###########################################################################
     async def _run_query(self, query: t.Union[DDL, Query]) -> t.Optional[str]:
         """
-        If MigrationManager is not in the preview mode, executes the queries. else, prints the query.
+        If MigrationManager is not in the preview mode,
+         executes the queries. else, prints the query.
         """
         if self.preview:
             return pprint(query)
