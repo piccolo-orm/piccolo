@@ -132,13 +132,13 @@ class DiffableTable:
                 key=lambda x: x.column._meta.name,
             )
         ]
-
         drop_columns = [
             DropColumn(
                 table_class_name=self.class_name,
                 column_name=i.column._meta.name,
                 db_column_name=i.column._meta.db_column_name,
                 tablename=value.tablename,
+                column_class=i.column.__class__
             )
             for i in sorted(
                 {ColumnComparison(column=column) for column in value.columns}
@@ -146,7 +146,6 @@ class DiffableTable:
                 key=lambda x: x.column._meta.name,
             )
         ]
-
         #######################################################################
 
         alter_columns: t.List[AlterColumn] = []

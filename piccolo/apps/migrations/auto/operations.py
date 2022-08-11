@@ -40,6 +40,7 @@ class DropColumn:
     column_name: str
     db_column_name: str
     tablename: str
+    column_class: t.Optional[t.Type[Column]] = None
 
 
 @dataclass

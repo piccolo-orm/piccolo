@@ -15,6 +15,7 @@ from piccolo.apps.migrations.auto.serialisation import (
     UniqueGlobalNames,
     serialise_params,
 )
+from piccolo.columns.constraints import UniqueConstraint
 from piccolo.utils.printing import get_fixed_length_string
 
 
@@ -351,6 +352,9 @@ class SchemaDiffer:
                     )
 
                 if alter_column.old_column_class is not None:
+                    if alter_column.old_column_class==UniqueConstraint:
+                        print('You cannot ALTER UniqueConstraint! At first, delete it, then create the new one')
+                        continue
                     extra_imports.append(
                         Import(
                             module=alter_column.old_column_class.__module__,
@@ -375,6 +379,7 @@ class SchemaDiffer:
     @property
     def drop_columns(self) -> AlterStatements:
         response = []
+        extra_imports: t.List[Import] = []
         for table in self.schema:
             snapshot_table = self._get_snapshot_table(table.class_name)
             if snapshot_table:
@@ -388,11 +393,26 @@ class SchemaDiffer:
                     in self.rename_columns_collection.old_column_names
                 ):
                     continue
+                column_class = column.column_class
+                extra_imports.append(
+                    Import(
+                        module=column_class.__module__,
+                        target=column_class.__name__, #type: ignore
+                        expect_conflict_with_global_name=getattr(
+                            UniqueGlobalNames,
+                            f"COLUMN_{column_class.__name__.upper()}", #type: ignore
+                            None,
+                        ),
+                    )
+                )
 
                 response.append(
-                    f"manager.drop_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column.column_name}', db_column_name='{column.db_column_name}')"  # noqa: E501
+                    f"manager.drop_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column.column_name}', db_column_name='{column.db_column_name}', column_class={column.column_class.__name__})"  # noqa: E501
                 )
-        return AlterStatements(statements=response)
+        return AlterStatements(
+            statements=response,
+            extra_imports=extra_imports
+        )
 
     @property
     def add_columns(self) -> AlterStatements:

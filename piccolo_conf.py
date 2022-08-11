@@ -1,11 +1,8 @@
 """
 This piccolo_conf file is just here so migrations can be made for Piccolo's own
 internal apps.
-
 For example:
-
 python -m piccolo.main migration new user --auto
-
 """
 
 from piccolo.conf.apps import AppRegistry
