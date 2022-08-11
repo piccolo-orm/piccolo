@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import typing as t
 from dataclasses import dataclass, field
+from pprint import pprint
 
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
 from piccolo.apps.migrations.auto.operations import (
@@ -347,8 +348,11 @@ class MigrationManager:
 
     ###########################################################################
     async def _run_query(self, query: t.Union[DDL, Query]) -> t.Optional[str]:
+        """
+        If MigrationManager is not in the preview mode, executes the queries. else, prints the query.
+        """
         if self.preview:
-            return str(query)
+            return pprint(query)
         await query.run()
 
     async def _run_alter_columns(self, backwards=False):
