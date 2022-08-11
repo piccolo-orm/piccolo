@@ -1,21 +1,33 @@
-from .base import Selectable, ColumnMeta, Column
+from .base import ColumnMeta, Column
 
 class Constraint(Column):
     def __init__(self) -> None:
         pass
 
 class UniqueConstraint(Constraint):
+    """
+    This class represents UNIQUE CONSTRAINT, which can be use to create
+    many complex (multi-field) constraints for the Table
+    All manipulations with the Constraint are like anything about Columns
+    
+    Usage:
+        class FooTable(Table):
+            foo_field = Text()
+            bar_field = Text()
+            my_constraint_1 = UniqueConstraint(['foo_field','bar_field'])
+
+    SQL queries for creating and dropping constrains are similar to:
+        ALTER TABLE foo_table ADD CONSTRAINT my_constraint_1 UNIQUE (foo_field, bar_field);
+        ALTER TABLE foo_table DROP IF EXIST CONSTRAINT my_constraint_1;
+    """
     def __init__(self, unique_columns: list[str]) -> None:
         super().__init__()
-        
         self._meta = ColumnMeta()
         self.unique_columns = unique_columns
         self._meta.params.update({
              'unique_columns':self.unique_columns
         })
 
-#ALTER TABLE policies ADD CONSTRAINT constraint_test_1 UNIQUE (permission, role);
-#ALTER TABLE policies DROP CONSTRAINT constraint_test_1;
     @property
     def column_type(self):
         return "CONSTRAINT"
@@ -28,23 +40,3 @@ class UniqueConstraint(Constraint):
         unique_columns_string = ",".join(self.unique_columns)
         query = f'{self.column_type} "{self._meta.db_column_name}" UNIQUE ({unique_columns_string})'
         return query
-    
-    def get_select_string(
-        self, engine_type: str, with_alias: bool = True
-    ) -> str:
-        """
-        How to refer to this column in a SQL query, taking account of any joins
-        and aliases.
-        """
-        if with_alias:
-            if self._alias:
-                original_name = self._meta.get_full_name(
-                    with_alias=False,
-                )
-                return f'{original_name} AS "{self._alias}"'
-            else:
-                return self._meta.get_full_name(
-                    with_alias=True,
-                )
-
-        return self._meta.get_full_name(with_alias=False)

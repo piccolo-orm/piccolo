@@ -250,8 +250,6 @@ class MigrationManager:
         db_column_name: t.Optional[str] = None,
         column_class: t.Optional[t.Type[Column]] = None,
     ):
-        print(500000)
-        print(column_class)
         self.drop_columns.append(
             DropColumn(
                 table_class_name=table_class_name,

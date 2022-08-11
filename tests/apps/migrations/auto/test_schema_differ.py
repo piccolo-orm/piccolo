@@ -158,7 +158,7 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(schema_differ.drop_columns.statements) == 1)
         self.assertEqual(
             schema_differ.drop_columns.statements[0],
-            "manager.drop_column(table_class_name='Band', tablename='band', column_name='genre', db_column_name='genre')",  # noqa
+            "manager.drop_column(table_class_name='Band', tablename='band', column_name='genre', db_column_name='genre', column_class=Varchar)",  # noqa
         )
 
     def test_rename_column(self):
@@ -213,7 +213,7 @@ class TestSchemaDiffer(TestCase):
         self.assertEqual(
             schema_differ.drop_columns.statements,
             [
-                "manager.drop_column(table_class_name='Band', tablename='band', column_name='title', db_column_name='title')"  # noqa: E501
+                "manager.drop_column(table_class_name='Band', tablename='band', column_name='title', db_column_name='title', column_class=Varchar)"  # noqa: E501
             ],
         )
         self.assertTrue(schema_differ.rename_columns.statements == [])
@@ -355,7 +355,7 @@ class TestSchemaDiffer(TestCase):
         self.assertEqual(
             schema_differ.drop_columns.statements,
             [
-                "manager.drop_column(table_class_name='Band', tablename='band', column_name='b1', db_column_name='b1')"  # noqa: E501
+                "manager.drop_column(table_class_name='Band', tablename='band', column_name='b1', db_column_name='b1', column_class=Varchar)"  # noqa: E501
             ],
         )
         self.assertEqual(
