@@ -347,14 +347,15 @@ class MigrationManager:
         return diffable_table.to_table_class()
 
     ###########################################################################
-    async def _run_query(self, query: t.Union[DDL, Query]) -> t.Optional[str]:
+    async def _run_query(self, query: t.Union[DDL, Query]):
         """
         If MigrationManager is not in the preview mode,
          executes the queries. else, prints the query.
         """
         if self.preview:
-            return pprint(query)
-        await query.run()
+            pprint(query)
+        else:
+            await query.run()
 
     async def _run_alter_columns(self, backwards=False):
         for table_class_name in self.alter_columns.table_class_names:
