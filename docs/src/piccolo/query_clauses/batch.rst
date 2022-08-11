@@ -8,6 +8,9 @@ You can use ``batch`` clauses with the following queries:
 * :ref:`Objects`
 * :ref:`Select`
 
+Example
+-------
+
 By default, a query will return as many rows as you ask it for. The problem is
 when you have a table containing millions of rows - you might not want to
 load them all into memory at once. To get around this, you can batch the
@@ -20,8 +23,11 @@ responses.
         async for _batch in batch:
             print(_batch)
 
-There is also an option to pass a additional database nodes (e.g. read replicas) as a 
-node argument to ``batch`` method. (only in Postgres)
+Node
+----
+
+If you're using ``extra_nodes`` with :class:`PostgresEngine <piccolo.engine.postgres.PostgresEngine>`,
+you can specify which node to query:
 
 .. code-block:: python
 
@@ -32,6 +38,9 @@ node argument to ``batch`` method. (only in Postgres)
     ) as batch:
         async for _batch in batch:
             print(_batch)
+
+Synchronous version
+-------------------
 
 There's currently no synchronous version. However, it's easy enough to achieve:
 
