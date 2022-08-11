@@ -91,7 +91,7 @@ class BackwardsMigrationManager(BaseMigrationManager):
                 response = await migration_module.forwards()
 
                 if isinstance(response, MigrationManager):
-                    await response.run_backwards()
+                    await response.run(backwards=True)
 
                 await Migration.delete().where(
                     Migration.name == migration_id
