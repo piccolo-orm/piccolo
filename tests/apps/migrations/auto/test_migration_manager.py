@@ -107,7 +107,7 @@ class TestMigrationManager(DBTestCase):
             asyncio.run(manager.run())
             self.assertEqual(
                 fake_out.getvalue(),
-                """  -  [preview forwards]... \n ALTER TABLE band RENAME COLUMN "name" TO "title"\n""",  # noqa: E501
+                """  -  [preview forwards]... \n ALTER TABLE band RENAME COLUMN "name" TO "title";\n""",  # noqa: E501
             )
         response = self.run_sync("SELECT * FROM band;")
         self.assertTrue("title" not in response[0].keys())
