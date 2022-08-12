@@ -1,4 +1,5 @@
 import asyncio
+from io import StringIO
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
@@ -96,6 +97,18 @@ class TestMigrationManager(DBTestCase):
 
         # Reverse
         asyncio.run(manager.run(backwards=True))
+        response = self.run_sync("SELECT * FROM band;")
+        self.assertTrue("title" not in response[0].keys())
+        self.assertTrue("name" in response[0].keys())
+
+        # Preview
+        manager.preview = True
+        with patch("sys.stdout", new=StringIO()) as fake_out:
+            asyncio.run(manager.run())
+            self.assertEqual(
+                fake_out.getvalue(),
+                """  -  [preview forwards]... \n ALTER TABLE band RENAME COLUMN "name" TO "title"\n""",  # noqa: E501
+            )
         response = self.run_sync("SELECT * FROM band;")
         self.assertTrue("title" not in response[0].keys())
         self.assertTrue("name" in response[0].keys())
