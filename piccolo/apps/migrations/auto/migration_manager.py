@@ -337,7 +337,7 @@ class MigrationManager:
         if app_name is None:
             app_name = self.app_name
 
-        diffable_table = await BaseMigrationManager().get_table_from_snaphot(
+        diffable_table = await BaseMigrationManager().get_table_from_snapshot(
             app_name=app_name,
             table_class_name=table_class_name,
             max_migration_id=migration_id,
