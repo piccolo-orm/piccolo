@@ -3,6 +3,8 @@ Running migrations
 
 .. hint:: To see all available options for these commands, use the ``--help``
     flag, for example ``piccolo migrations forwards --help``.
+.. hint:: To see the SQL queries of a migration without actually running them , use the ``--preview``
+    flag, for example: ``piccolo migrations forwards my_app --preview``  or  ``piccolo migrations backwards 2018-09-04T19:44:09 --preview``.
 
 Forwards
 --------
