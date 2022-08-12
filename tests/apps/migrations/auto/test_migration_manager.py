@@ -361,7 +361,7 @@ class TestMigrationManager(DBTestCase):
     )
     @patch.object(BaseMigrationManager, "get_app_config")
     def test_drop_column(
-            self, get_app_config: MagicMock, get_migration_managers: MagicMock
+        self, get_app_config: MagicMock, get_migration_managers: MagicMock
     ):
         """
         Test dropping a column with MigrationManager.
@@ -487,7 +487,7 @@ class TestMigrationManager(DBTestCase):
         )
 
     def _get_column_precision_and_scale(
-            self, tablename="ticket", column_name="price"
+        self, tablename="ticket", column_name="price"
     ):
         return self.run_sync(
             "SELECT numeric_precision, numeric_scale "
@@ -714,7 +714,7 @@ class TestMigrationManager(DBTestCase):
     )
     @patch.object(BaseMigrationManager, "get_app_config")
     def test_drop_table(
-            self, get_app_config: MagicMock, get_migration_managers: MagicMock
+        self, get_app_config: MagicMock, get_migration_managers: MagicMock
     ):
         self.run_sync("DROP TABLE IF EXISTS musician;")
 
