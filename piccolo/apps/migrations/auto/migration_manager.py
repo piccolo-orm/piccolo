@@ -3,7 +3,6 @@ from __future__ import annotations
 import inspect
 import typing as t
 from dataclasses import dataclass, field
-from pprint import pprint
 
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
 from piccolo.apps.migrations.auto.operations import (
@@ -347,13 +346,21 @@ class MigrationManager:
         return diffable_table.to_table_class()
 
     ###########################################################################
+
+    @staticmethod
+    async def _print_query(query: t.Union[DDL, Query]):
+        if isinstance(query, DDL):
+            print("\n", ";".join(query.ddl))
+        else:
+            print(str(query))
+
     async def _run_query(self, query: t.Union[DDL, Query]):
         """
         If MigrationManager is not in the preview mode,
          executes the queries. else, prints the query.
         """
         if self.preview:
-            pprint(query)
+            await self._print_query(query)
         else:
             await query.run()
 
@@ -752,6 +759,8 @@ class MigrationManager:
 
     async def run(self, backwards=False):
         direction = "backwards" if backwards else "forwards"
+        if self.preview:
+            direction = "preview " + direction
         print(f"  - {self.migration_id} [{direction}]... ", end="")
 
         engine = engine_finder()
