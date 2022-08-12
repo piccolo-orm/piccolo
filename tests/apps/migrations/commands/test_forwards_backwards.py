@@ -52,6 +52,7 @@ class TestForwardsBackwards(TestCase):
             # Check the tables exist
             for table_class in TABLE_CLASSES:
                 self.assertTrue(table_class.table_exists().run_sync())
+            self.assertNotEqual(Migration.count().run_sync(), 0)
 
             run_sync(
                 backwards(
@@ -62,13 +63,14 @@ class TestForwardsBackwards(TestCase):
             # Check the tables don't exist
             for table_class in TABLE_CLASSES:
                 self.assertTrue(not table_class.table_exists().run_sync())
-
+            self.assertEqual(Migration.count().run_sync(), 0)
             # Preview
             run_sync(
                 forwards(app_name=app_name, migration_id="all", preview=True)
             )
             for table_class in TABLE_CLASSES:
                 self.assertTrue(not table_class.table_exists().run_sync())
+            self.assertEqual(Migration.count().run_sync(), 0)
 
     def test_forwards_backwards_single_migration(self):
         """
@@ -83,6 +85,12 @@ class TestForwardsBackwards(TestCase):
             for table_class in table_classes:
                 self.assertTrue(table_class.table_exists().run_sync())
 
+            self.assertTrue(
+                Migration.exists()
+                .where(Migration.name == "2020-12-17T18:44:30")
+                .run_sync()
+            )
+
             run_sync(
                 backwards(
                     app_name="music",
@@ -94,6 +102,11 @@ class TestForwardsBackwards(TestCase):
             # Check the tables don't exist
             for table_class in table_classes:
                 self.assertTrue(not table_class.table_exists().run_sync())
+            self.assertFalse(
+                Migration.exists()
+                .where(Migration.name == "2020-12-17T18:44:30")
+                .run_sync()
+            )
 
             # Preview
             run_sync(
@@ -103,6 +116,11 @@ class TestForwardsBackwards(TestCase):
             )
             for table_class in table_classes:
                 self.assertTrue(not table_class.table_exists().run_sync())
+            self.assertFalse(
+                Migration.exists()
+                .where(Migration.name == "2020-12-17T18:44:30")
+                .run_sync()
+            )
 
     @patch("piccolo.apps.migrations.commands.forwards.print")
     def test_forwards_unknown_migration(self, print_: MagicMock):
