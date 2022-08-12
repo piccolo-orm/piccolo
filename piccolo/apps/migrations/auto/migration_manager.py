@@ -350,7 +350,7 @@ class MigrationManager:
     @staticmethod
     async def _print_query(query: t.Union[DDL, Query]):
         if isinstance(query, DDL):
-            print("\n", ";".join(query.ddl))
+            print("\n", ";".join(query.ddl) + ";")
         else:
             print(str(query))
 
