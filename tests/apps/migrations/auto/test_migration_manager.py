@@ -239,7 +239,6 @@ class TestMigrationManager(DBTestCase):
 
         # Preview
         manager.preview = True
-        asyncio.run(manager.run())
         with patch("sys.stdout", new=StringIO()) as fake_out:
             asyncio.run(manager.run())
             self.assertEqual(
@@ -278,6 +277,19 @@ class TestMigrationManager(DBTestCase):
 
         # Reverse
         asyncio.run(manager.run(backwards=True))
+        self.assertTrue(index_name not in Manager.indexes().run_sync())
+
+        # Preview
+        manager.preview = True
+        with patch("sys.stdout", new=StringIO()) as fake_out:
+            asyncio.run(manager.run())
+            self.assertEqual(
+                fake_out.getvalue(),
+                (
+                    """  -  [preview forwards]... \n ALTER TABLE manager ADD COLUMN "email" VARCHAR(100) UNIQUE DEFAULT '';\n"""  # noqa: E501
+                    """\n CREATE INDEX manager_email ON manager USING btree ("email");\n"""  # noqa: E501
+                ),
+            )
         self.assertTrue(index_name not in Manager.indexes().run_sync())
 
     @postgres_only
