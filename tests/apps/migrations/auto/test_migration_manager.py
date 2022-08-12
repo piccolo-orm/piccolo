@@ -189,6 +189,16 @@ class TestMigrationManager(DBTestCase):
         self.assertEqual(self.table_exists("musician"), False)
         self.run_sync("DROP TABLE IF EXISTS musician;")
 
+        # Preview
+        manager.preview = True
+        with patch("sys.stdout", new=StringIO()) as fake_out:
+            asyncio.run(manager.run())
+            self.assertEqual(
+                fake_out.getvalue(),
+                """  -  [preview forwards]... \n CREATE TABLE musician ("id" SERIAL PRIMARY KEY NOT NULL, "name" VARCHAR(255) NOT NULL DEFAULT '');\n""",  # noqa: E501
+            )
+        self.assertEqual(self.table_exists("musician"), False)
+
     @postgres_only
     def test_add_column(self):
         """
@@ -224,6 +234,18 @@ class TestMigrationManager(DBTestCase):
 
         # Reverse
         asyncio.run(manager.run(backwards=True))
+        response = self.run_sync("SELECT * FROM manager;")
+        self.assertEqual(response, [{"id": 1, "name": "Dave"}])
+
+        # Preview
+        manager.preview = True
+        asyncio.run(manager.run())
+        with patch("sys.stdout", new=StringIO()) as fake_out:
+            asyncio.run(manager.run())
+            self.assertEqual(
+                fake_out.getvalue(),
+                """  -  [preview forwards]... \n ALTER TABLE manager ADD COLUMN "email" VARCHAR(100) UNIQUE DEFAULT '';\n""",  # noqa: E501
+            )
         response = self.run_sync("SELECT * FROM manager;")
         self.assertEqual(response, [{"id": 1, "name": "Dave"}])
 
@@ -339,7 +361,7 @@ class TestMigrationManager(DBTestCase):
     )
     @patch.object(BaseMigrationManager, "get_app_config")
     def test_drop_column(
-        self, get_app_config: MagicMock, get_migration_managers: MagicMock
+            self, get_app_config: MagicMock, get_migration_managers: MagicMock
     ):
         """
         Test dropping a column with MigrationManager.
@@ -465,7 +487,7 @@ class TestMigrationManager(DBTestCase):
         )
 
     def _get_column_precision_and_scale(
-        self, tablename="ticket", column_name="price"
+            self, tablename="ticket", column_name="price"
     ):
         return self.run_sync(
             "SELECT numeric_precision, numeric_scale "
@@ -692,7 +714,7 @@ class TestMigrationManager(DBTestCase):
     )
     @patch.object(BaseMigrationManager, "get_app_config")
     def test_drop_table(
-        self, get_app_config: MagicMock, get_migration_managers: MagicMock
+            self, get_app_config: MagicMock, get_migration_managers: MagicMock
     ):
         self.run_sync("DROP TABLE IF EXISTS musician;")
 
