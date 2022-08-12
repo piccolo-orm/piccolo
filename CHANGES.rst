@@ -1,6 +1,19 @@
 Changes
 =======
 
+0.84.0
+------
+
+You can now preview the DDL statements which will be run by Piccolo migrations.
+
+.. code-block:: bash
+
+  piccolo migrations forwards my_app --preview
+
+Thanks to @AliSayyah for adding this feature.
+
+-------------------------------------------------------------------------------
+
 0.83.0
 ------
 
