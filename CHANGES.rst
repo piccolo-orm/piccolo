@@ -1,6 +1,22 @@
 Changes
 =======
 
+0.85.0
+------
+
+You can now append items to an array in an update query:
+
+.. code-block:: python
+
+  await Ticket.update({
+      Ticket.seat_numbers: Ticket.seat_numbers + [1000]
+  }).where(Ticket.id == 1)
+
+Currently Postgres only. Thanks to @sumitsharansatsangi for suggesting this
+feature.
+
+-------------------------------------------------------------------------------
+
 0.84.0
 ------
 
