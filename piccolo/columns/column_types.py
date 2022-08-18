@@ -2535,6 +2535,40 @@ class Array(Column):
         else:
             raise ValueError("Unrecognised engine type")
 
+    def cat(self, value: t.List[t.Any]) -> QueryString:
+        """
+        Used in an ``update`` query to append items to an array.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.cat([1000])
+            ... }).where(Ticket.id == 1)
+
+        You can also use the ``+`` symbol if you prefer:
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers + [1000]
+            ... }).where(Ticket.id == 1)
+
+        """
+        engine_type = self._meta.engine_type
+        if engine_type != "postgres":
+            raise ValueError(
+                "Only Postgres supports array appending currently."
+            )
+
+        if not isinstance(value, list):
+            value = [value]
+
+        db_column_name = self._meta.db_column_name
+        return QueryString(f'array_cat("{db_column_name}", {{}})', value)
+
+    def __add__(self, value: t.List[t.Any]) -> QueryString:
+        return self.cat(value)
+
     ###########################################################################
     # Descriptors
 
