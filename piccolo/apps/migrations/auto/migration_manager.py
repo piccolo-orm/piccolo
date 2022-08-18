@@ -771,7 +771,12 @@ class MigrationManager:
         async with engine.transaction():
 
             if not self.preview:
-                for raw in self.raw:
+                if direction == "backwards":
+                    raw_list = self.raw_backwards
+                else:
+                    raw_list = self.raw
+
+                for raw in raw_list:
                     if inspect.iscoroutinefunction(raw):
                         await raw()
                     else:

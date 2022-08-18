@@ -121,18 +121,24 @@ class TestMigrationManager(DBTestCase):
         class HasRun(Exception):
             pass
 
+        class HasRunBackwards(Exception):
+            pass
+
         def run():
             raise HasRun("I was run!")
 
+        def run_back():
+            raise HasRunBackwards("I was run backwards!")
+
         manager = MigrationManager()
         manager.add_raw(run)
-        manager.add_raw_backwards(run)
+        manager.add_raw_backwards(run_back)
 
         with self.assertRaises(HasRun):
             asyncio.run(manager.run())
 
         # Reverse
-        with self.assertRaises(HasRun):
+        with self.assertRaises(HasRunBackwards):
             asyncio.run(manager.run(backwards=True))
 
     def test_raw_coroutine(self):
@@ -143,18 +149,24 @@ class TestMigrationManager(DBTestCase):
         class HasRun(Exception):
             pass
 
+        class HasRunBackwards(Exception):
+            pass
+
         async def run():
             raise HasRun("I was run!")
 
+        async def run_back():
+            raise HasRunBackwards("I was run backwards!")
+
         manager = MigrationManager()
         manager.add_raw(run)
-        manager.add_raw_backwards(run)
+        manager.add_raw_backwards(run_back)
 
         with self.assertRaises(HasRun):
             asyncio.run(manager.run())
 
         # Reverse
-        with self.assertRaises(HasRun):
+        with self.assertRaises(HasRunBackwards):
             asyncio.run(manager.run(backwards=True))
 
     @postgres_only
