@@ -116,11 +116,22 @@ class TestArray(TestCase):
         # Try plus symbol
 
         MyTable.update(
-            {MyTable.value: MyTable.value.cat([3])}, force=True
+            {MyTable.value: MyTable.value + [3]}, force=True
         ).run_sync()
 
         self.assertEqual(
             MyTable.select().run_sync(), [{"id": 1, "value": [1, 1, 1, 2, 3]}]
+        )
+
+        # Make sure non-list values work
+
+        MyTable.update(
+            {MyTable.value: MyTable.value + 4}, force=True
+        ).run_sync()
+
+        self.assertEqual(
+            MyTable.select().run_sync(),
+            [{"id": 1, "value": [1, 1, 1, 2, 3, 4]}],
         )
 
     @sqlite_only
