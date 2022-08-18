@@ -1,6 +1,14 @@
 Changes
 =======
 
+0.85.1
+------
+
+Fixed a bug with migrations - when run backwards, ``raw`` was being called
+instead of ``raw_backwards``. Thanks to @translunar for the fix.
+
+-------------------------------------------------------------------------------
+
 0.85.0
 ------
 
