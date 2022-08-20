@@ -213,7 +213,7 @@ class TimedeltaDelegate:
 
         data = {
             "DAYS": interval.days,
-            "SECONDS": interval.seconds + (interval.microseconds / 10**6),
+            "SECONDS": interval.seconds + (interval.microseconds / 10 ** 6),
         }
 
         for key, value in data.items():
@@ -358,6 +358,16 @@ class Varchar(Column):
 
     def __set__(self, obj, value: t.Union[str, None]):
         obj.__dict__[self._meta.name] = value
+
+
+class Email(Varchar):
+    """
+    Use when you want to store email. For values ​​it uses type ``str``. In
+    ``create_pydantic_model`` ``Email`` column use pydantic email validator
+    which is useful for email validation in Piccolo API and Piccolo Admin.
+    """
+
+    pass
 
 
 class Secret(Varchar):

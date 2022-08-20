@@ -5,3 +5,4 @@ targ>=0.3.7
 inflection>=0.5.1
 typing-extensions>=3.10.0.0
 pydantic>=1.6
+email-validator>=1.2.1
