@@ -362,10 +362,11 @@ class Varchar(Column):
 
 class Email(Varchar):
     """
-    Use when you want to store email. For values ​​it uses type ``str``. In
-    ``create_pydantic_model`` ``Email`` column use pydantic email validator
-    which is useful for email validation in Piccolo API and Piccolo Admin.
-    """
+    Used for storing email addresses. It's identical to :class:`Varchar`,
+    except when using :func:`create_pydantic_model <piccolo.utils.pydantic.create_pydantic_model>` -
+    we add email validation to the Pydantic model. This means that :ref:`PiccoloAdmin`
+    also validates emails addresses.
+    """  # noqa: E501
 
     pass
 
