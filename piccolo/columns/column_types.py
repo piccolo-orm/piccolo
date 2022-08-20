@@ -213,7 +213,7 @@ class TimedeltaDelegate:
 
         data = {
             "DAYS": interval.days,
-            "SECONDS": interval.seconds + (interval.microseconds / 10 ** 6),
+            "SECONDS": interval.seconds + (interval.microseconds / 10**6),
         }
 
         for key, value in data.items():
