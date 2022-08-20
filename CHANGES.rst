@@ -1,6 +1,33 @@
 Changes
 =======
 
+0.86.0
+------
+
+Added the ``Email`` column type. It's basically identical to ``Varchar``,
+except that when we use ``create_pydantic_model`` we add email validation
+to the generated Pydantic model.
+
+.. code-block:: python
+
+  from piccolo.columns.column_types import Email
+  from piccolo.table import Table
+  from piccolo.utils.pydantic import create_pydantic_model
+
+
+  class MyTable(Table):
+      email = Email()
+
+
+  model = create_pydantic_model(MyTable)
+
+  model(email="not a valid email")
+  # ValidationError!
+
+Thanks to @sinisaos for implementing this feature.
+
+-------------------------------------------------------------------------------
+
 0.85.1
 ------
 
