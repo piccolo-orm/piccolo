@@ -45,6 +45,12 @@ class TestEmailColumn(TestCase):
             "email",
         )
 
+        with self.assertRaises(ValidationError):
+            pydantic_model(email="not a valid email")
+
+        # Shouldn't raise an exception:
+        pydantic_model(email="test@gmail.com")
+
 
 class TestNumericColumn(TestCase):
     """
