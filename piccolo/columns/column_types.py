@@ -360,6 +360,17 @@ class Varchar(Column):
         obj.__dict__[self._meta.name] = value
 
 
+class Email(Varchar):
+    """
+    Used for storing email addresses. It's identical to :class:`Varchar`,
+    except when using :func:`create_pydantic_model <piccolo.utils.pydantic.create_pydantic_model>` -
+    we add email validation to the Pydantic model. This means that :ref:`PiccoloAdmin`
+    also validates emails addresses.
+    """  # noqa: E501
+
+    pass
+
+
 class Secret(Varchar):
     """
     This is just an alias to ``Varchar(secret=True)``. It's here for backwards

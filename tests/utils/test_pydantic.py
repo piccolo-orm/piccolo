@@ -8,6 +8,7 @@ from piccolo.columns import (
     JSON,
     JSONB,
     Array,
+    Email,
     Integer,
     Numeric,
     Secret,
@@ -30,6 +31,25 @@ class TestVarcharColumn(TestCase):
             pydantic_model(name="This is a really long name")
 
         pydantic_model(name="short name")
+
+
+class TestEmailColumn(TestCase):
+    def test_email(self):
+        class Director(Table):
+            email = Email()
+
+        pydantic_model = create_pydantic_model(table=Director)
+
+        self.assertEqual(
+            pydantic_model.schema()["properties"]["email"]["format"],
+            "email",
+        )
+
+        with self.assertRaises(ValidationError):
+            pydantic_model(email="not a valid email")
+
+        # Shouldn't raise an exception:
+        pydantic_model(email="test@gmail.com")
 
 
 class TestNumericColumn(TestCase):
