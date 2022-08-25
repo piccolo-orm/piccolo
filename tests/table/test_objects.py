@@ -2,7 +2,7 @@ from tests.base import DBTestCase, postgres_only, sqlite_only
 from tests.example_apps.music.tables import Band, Manager
 
 
-class TestObjects(DBTestCase):
+class TestGetAll(DBTestCase):
     def test_get_all(self):
         self.insert_row()
 
@@ -25,6 +25,8 @@ class TestObjects(DBTestCase):
             "Rustaceans",
         )
 
+
+class TestOffset(DBTestCase):
     @postgres_only
     def test_offset_postgres(self):
         """
@@ -55,6 +57,8 @@ class TestObjects(DBTestCase):
             [i.name for i in response], ["Pythonistas", "Rustaceans"]
         )
 
+
+class TestGet(DBTestCase):
     def test_get(self):
         self.insert_row()
 
@@ -62,7 +66,7 @@ class TestObjects(DBTestCase):
 
         self.assertEqual(band.name, "Pythonistas")
 
-    def test_get__prefetch(self):
+    def test_get_prefetch(self):
         self.insert_rows()
 
         # With prefetch clause
@@ -82,7 +86,9 @@ class TestObjects(DBTestCase):
         )
         self.assertIsInstance(band.manager, Manager)
 
-    def test_get_or_create(self):
+
+class TestGetOrCreate(DBTestCase):
+    def test_simple_where_clause(self):
         """
         Make sure `get_or_create` works for simple where clauses.
         """
@@ -112,7 +118,7 @@ class TestObjects(DBTestCase):
         self.assertEqual(instance.name, "Pink Floyd")
         self.assertEqual(instance.popularity, 100)
 
-    def test_get_or_create_complex(self):
+    def test_complex_where_clause(self):
         """
         Make sure `get_or_create` works with complex where clauses.
         """
@@ -140,7 +146,7 @@ class TestObjects(DBTestCase):
         self.assertIsInstance(instance, Band)
         self.assertEqual(instance._was_created, True)
 
-    def test_get_or_create_very_complex(self):
+    def test_very_complex_where_clause(self):
         """
         Make sure `get_or_create` works with very complex where clauses.
         """
@@ -176,7 +182,7 @@ class TestObjects(DBTestCase):
         # be used for the column.
         self.assertEqual(instance.popularity, 0)
 
-    def test_get_or_create_with_joins(self):
+    def test_joins(self):
         """
         Make sure that that `get_or_create` creates rows correctly when using
         joins.
@@ -196,9 +202,10 @@ class TestObjects(DBTestCase):
         # mistake.
         self.assertEqual(Band.name, "My new band")
 
-    def test_get_or_create__prefetch(self):
+    def test_prefetch_existing_object(self):
         """
-        Make sure that that `get_or_create` works with the `prefetch` clause.
+        Make sure that that `get_or_create` works with the `prefetch` clause,
+        when it's an existing row in the database.
         """
         self.insert_rows()
 
@@ -210,6 +217,7 @@ class TestObjects(DBTestCase):
             .run_sync()
         )
         self.assertIsInstance(band.manager, Manager)
+        self.assertEqual(band.manager.name, "Guido")
 
         # Just passing it straight into objects
         band = (
@@ -218,3 +226,36 @@ class TestObjects(DBTestCase):
             .run_sync()
         )
         self.assertIsInstance(band.manager, Manager)
+        self.assertEqual(band.manager.name, "Guido")
+
+    def test_prefetch_new_object(self):
+        """
+        Make sure that that `get_or_create` works with the `prefetch` clause,
+        when the row is being created in the database.
+        """
+        manager = Manager({Manager.name: "Guido"})
+        manager.save().run_sync()
+
+        # With prefetch clause
+        band = (
+            Band.objects()
+            .get_or_create(
+                (Band.name == "New Band") & (Band.manager == manager)
+            )
+            .prefetch(Band.manager)
+            .run_sync()
+        )
+        self.assertIsInstance(band.manager, Manager)
+        self.assertEqual(band.name, "New Band")
+
+        # Just passing it straight into objects
+        band = (
+            Band.objects(Band.manager)
+            .get_or_create(
+                (Band.name == "New Band 2") & (Band.manager == manager)
+            )
+            .run_sync()
+        )
+        self.assertIsInstance(band.manager, Manager)
+        self.assertEqual(band.name, "New Band 2")
+        self.assertEqual(band.manager.name, "Guido")

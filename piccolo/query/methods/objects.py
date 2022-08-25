@@ -65,8 +65,25 @@ class GetOrCreate:
 
         await instance.save().run()
 
-        instance._was_created = True
+        # If the user wants us to prefetch related objects, for example:
+        #
+        # await Band.objects(Band.manager).get_or_create(
+        #   (Band.name == 'Pythonistas') & (Band.manager == 1)
+        # )
+        #
+        # Then we need to fetch the related objects.
+        # See https://github.com/piccolo-orm/piccolo/issues/597
+        prefetch = self.query.prefetch_delegate.fk_columns
+        if prefetch:
+            table = instance.__class__
+            primary_key = table._meta.primary_key
+            instance = (
+                await table.objects(*prefetch)
+                .get(primary_key == getattr(instance, primary_key._meta.name))
+                .run()
+            )
 
+        instance._was_created = True
         return instance
 
     def __await__(self):
