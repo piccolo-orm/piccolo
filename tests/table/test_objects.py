@@ -246,6 +246,7 @@ class TestGetOrCreate(DBTestCase):
             .run_sync()
         )
         self.assertIsInstance(band.manager, Manager)
+        self.assertEqual(band.name, "New Band")
 
         # Just passing it straight into objects
         band = (
@@ -256,4 +257,5 @@ class TestGetOrCreate(DBTestCase):
             .run_sync()
         )
         self.assertIsInstance(band.manager, Manager)
+        self.assertEqual(band.name, "New Band 2")
         self.assertEqual(band.manager.name, "Guido")
