@@ -1,6 +1,28 @@
 Changes
 =======
 
+0.87.0
+------
+
+When using ``get_or_create`` with ``prefetch`` the behaviour was inconsistent -
+it worked as expected when the row already existed, but prefetch wasn't working
+if the row was being created. This now works as expected:
+
+.. code-block:: python
+
+  >>> band = Band.objects(Band.manager).get_or_create(
+  ...     (Band.name == "New Band 2") & (Band.manager == 1)
+  ... )
+
+  >>> band.manager
+  <Manager: 1>
+  >>> band.manager.name
+  "Mr Manager"
+
+Thanks to @backwardspy for reporting this issue.
+
+-------------------------------------------------------------------------------
+
 0.86.0
 ------
 
