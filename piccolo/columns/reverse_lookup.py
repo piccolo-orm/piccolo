@@ -18,7 +18,7 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 class ReverseLookupSelect(Selectable):
     """
-    This is a subquery used within a select to fetch data via an M2M table.
+    This is a subquery used within a select to fetch reverse lookup data.
     """
 
     def __init__(

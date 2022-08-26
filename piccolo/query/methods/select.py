@@ -435,8 +435,9 @@ class Select(Query):
             reverse_lookup_table_name = reverse_table._meta.tablename
 
             if self.engine_type == "sqlite":
-                # With M2M queries in SQLite, we always get the value back as a
-                # list of strings, so we need to do some type conversion.
+                # With ReverseLookup queries in SQLite, we always get
+                # the value back as a list of strings, so we need to
+                # do some type conversion.
                 value_type = (
                     reverse_lookup_select.columns[0].__class__.value_type
                     if reverse_lookup_select.as_list
