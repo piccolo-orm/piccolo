@@ -11,8 +11,8 @@ issue.
 .. code-block:: python
 
   class Concert(Table):
-      # We use `db_column_name`` when the column name is problematic - e.g. if
-      # it clashes with a Python ketword.
+      # We use `db_column_name` when the column name is problematic - e.g. if
+      # it clashes with a Python keyword.
       in_ = Varchar(db_column_name='in')
 
 -------------------------------------------------------------------------------
