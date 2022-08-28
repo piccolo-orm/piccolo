@@ -1,6 +1,22 @@
 Changes
 =======
 
+0.88.0
+------
+
+Fixed a bug with migrations - when using ``db_column_name`` it wasn't being
+used in some alter statements. Thanks to @theelderbeever for reporting this
+issue.
+
+.. code-block:: python
+
+  class Concert(Table):
+      # We use `db_column_name` when the column name is problematic - e.g. if
+      # it clashes with a Python keyword.
+      in_ = Varchar(db_column_name='in')
+
+-------------------------------------------------------------------------------
+
 0.87.0
 ------
 

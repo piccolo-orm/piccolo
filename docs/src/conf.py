@@ -64,6 +64,7 @@ html_theme = "piccolo_theme"
 html_short_title = "Piccolo"
 html_show_sphinx = False
 globaltoc_maxdepth = 3
+html_theme_options = {"source_url": "https://github.com/piccolo-orm/piccolo/"}
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
