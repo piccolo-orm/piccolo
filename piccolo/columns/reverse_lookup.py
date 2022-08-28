@@ -27,6 +27,7 @@ class ReverseLookupSelect(Selectable):
         reverse_lookup: ReverseLookup,
         as_list: bool = False,
         load_json: bool = False,
+        table: t.Type[Table],
     ):
         """
         :param columns:
@@ -42,6 +43,7 @@ class ReverseLookupSelect(Selectable):
         self.columns = columns
         self.reverse_lookup = reverse_lookup
         self.load_json = load_json
+        self.table = table
 
         safe_types = [int, str]
 
@@ -55,11 +57,6 @@ class ReverseLookupSelect(Selectable):
 
     @property
     def foreign_key_columns_index(self) -> int:
-        # If we have multiple FK columns per table, we need to know which
-        # column we are using for reverse lookup and use that column's index
-        # TODO - find better way to this because user must set
-        # reverse_lookup_name (have to be exact table name
-        # otherwise we get error)
         reverse_lookup_table = (
             self.reverse_lookup._meta.resolved_reverse_joining_table
         )
@@ -67,7 +64,7 @@ class ReverseLookupSelect(Selectable):
             i._meta.name
             for i in reverse_lookup_table._meta.foreign_key_columns
         ]
-        return fk_columns.index(self.reverse_lookup._meta.reverse_lookup_name)
+        return fk_columns.index(self.table._meta.tablename)
 
     def get_select_string(self, engine_type: str, with_alias=True) -> str:
         reverse_lookup_table = (
@@ -156,7 +153,6 @@ class ReverseLookupSelect(Selectable):
 @dataclass
 class ReverseLookupMeta:
     reverse_joining_table: t.Union[t.Type[Table], LazyTableReference]
-    reverse_lookup_name: str
 
     @property
     def resolved_reverse_joining_table(self) -> t.Type[Table]:
@@ -184,23 +180,21 @@ class ReverseLookup:
     def __init__(
         self,
         reverse_joining_table: t.Union[t.Type[Table], LazyTableReference],
-        reverse_lookup_name: str,
     ):
         """
         :param reverse_joining_table:
             A ``Table`` for reverse lookup.
-        :param reverse_lookup_name:
-            Must be set with reverse table name because if we have
-            multiple FK columns per table, we need to know which column
-            we are using for reverse lookup and use that column's index.
         """
         self._meta = ReverseLookupMeta(
             reverse_joining_table=reverse_joining_table,
-            reverse_lookup_name=reverse_lookup_name,
         )
 
     def __call__(
-        self, *columns: Column, as_list: bool = False, load_json: bool = False
+        self,
+        *columns: Column,
+        as_list: bool = False,
+        load_json: bool = False,
+        table: t.Type[Table],
     ) -> ReverseLookupSelect:
         """
         :param columns:
@@ -219,5 +213,9 @@ class ReverseLookup:
             )
 
         return ReverseLookupSelect(
-            *columns, reverse_lookup=self, as_list=as_list, load_json=load_json
+            *columns,
+            reverse_lookup=self,
+            as_list=as_list,
+            load_json=load_json,
+            table=table,
         )

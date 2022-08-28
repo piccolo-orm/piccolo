@@ -14,7 +14,6 @@ class Manager(Table):
     name = Varchar()
     bands = ReverseLookup(
         LazyTableReference("Band", module_path=__name__),
-        reverse_lookup_name="manager",
     )
 
 
@@ -47,7 +46,7 @@ class TestReverseLookup(TestCase):
 
     def test_select_name(self):
         response = Manager.select(
-            Manager.name, Manager.bands(Band.name, as_list=True)
+            Manager.name, Manager.bands(Band.name, as_list=True, table=Manager)
         ).run_sync()
         self.assertEqual(
             response,
@@ -60,7 +59,7 @@ class TestReverseLookup(TestCase):
 
     def test_select_multiple(self):
         response = Manager.select(
-            Manager.name, Manager.bands(Band.id, Band.name)
+            Manager.name, Manager.bands(Band.id, Band.name, table=Manager)
         ).run_sync()
 
         self.assertEqual(
@@ -82,7 +81,9 @@ class TestReverseLookup(TestCase):
         )
 
     def test_select_multiple_all_columns(self):
-        response = Manager.select(Manager.name, Manager.bands()).run_sync()
+        response = Manager.select(
+            Manager.name, Manager.bands(table=Manager)
+        ).run_sync()
 
         self.assertEqual(
             response,
@@ -107,7 +108,7 @@ class TestReverseLookup(TestCase):
 
     def test_select_id(self):
         response = Manager.select(
-            Manager.name, Manager.bands(Band.id, as_list=True)
+            Manager.name, Manager.bands(Band.id, as_list=True, table=Manager)
         ).run_sync()
 
         self.assertEqual(
@@ -123,7 +124,8 @@ class TestReverseLookup(TestCase):
 
         with self.assertRaises(ValueError):
             Manager.select(
-                Manager.name, Manager.bands(Band.id, Band.name, as_list=True)
+                Manager.name,
+                Manager.bands(Band.id, Band.name, as_list=True, table=Manager),
             ).run_sync()
 
 
@@ -137,7 +139,6 @@ class Customer(Table):
     name = Varchar()
     concerts = ReverseLookup(
         LazyTableReference("Concert", module_path=__name__),
-        reverse_lookup_name="customer",
     )
 
 
@@ -191,7 +192,8 @@ class TestReverseLookupCustomPrimaryKey(TestCase):
         ).run_sync()
 
         response = Customer.select(
-            Customer.name, Customer.concerts(Concert.name, as_list=True)
+            Customer.name,
+            Customer.concerts(Concert.name, as_list=True, table=Customer),
         ).run_sync()
 
         self.assertListEqual(
@@ -204,7 +206,7 @@ class TestReverseLookupCustomPrimaryKey(TestCase):
         )
 
         response = Customer.select(
-            Customer.name, Customer.concerts(Concert.name)
+            Customer.name, Customer.concerts(Concert.name, table=Customer)
         ).run_sync()
 
         self.assertEqual(
