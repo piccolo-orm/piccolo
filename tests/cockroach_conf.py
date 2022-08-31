@@ -1,17 +1,16 @@
 import os
 
 from piccolo.conf.apps import AppRegistry
-from piccolo.engine.postgres import PostgresEngine
+from piccolo.engine.cockroachdb import CockroachDBEngine
 
-DB = PostgresEngine(
+DB = CockroachDBEngine(
     config={
         "host": os.environ.get("PG_HOST", "localhost"),
         "port": os.environ.get("PG_PORT", "26257"),
         "user": os.environ.get("PG_USER", "root"),
         "password": os.environ.get("PG_PASSWORD", ""),
         "database": os.environ.get("PG_DATABASE", "piccolo"),
-    },
-    extensions=[]
+    }
 )
 
 
