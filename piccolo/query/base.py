@@ -266,6 +266,10 @@ class Query:
         raise NotImplementedError
 
     @property
+    def cockroachdb_querystrings(self) -> t.Sequence[QueryString]:
+        raise NotImplementedError
+
+    @property
     def default_querystrings(self) -> t.Sequence[QueryString]:
         raise NotImplementedError
 
@@ -288,6 +292,14 @@ class Query:
                 return self.sqlite_querystrings
             except NotImplementedError:
                 return self.default_querystrings
+        elif engine_type == "cockroachdb":
+            try:
+                return self.cockroachdb_querystrings
+            except NotImplementedError:
+                try:
+                    return self.postgres_querystrings
+                except NotImplementedError:
+                    return self.default_querystrings
         else:
             raise Exception(
                 f"No querystring found for the {engine_type} engine."
