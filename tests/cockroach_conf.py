@@ -3,6 +3,7 @@ import os
 from piccolo.conf.apps import AppRegistry
 from piccolo.engine.cockroachdb import CockroachDBEngine
 
+
 DB = CockroachDBEngine(
     config={
         "host": os.environ.get("PG_HOST", "localhost"),
