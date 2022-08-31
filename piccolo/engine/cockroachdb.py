@@ -99,7 +99,7 @@ class CockroachDBEngine(PostgresEngine):
     An extension of the Postgresql backend.
     """
 
-    engine_type = "cockroachdb"
+    engine_type = "postgres"
     #min_version_number = 9.6
 
     def __init__(
@@ -121,4 +121,4 @@ class CockroachDBEngine(PostgresEngine):
         self.transaction_connection = contextvars.ContextVar(
             f"pg_transaction_connection_{database_name}", default=None
         )
-        super().__init__()
+        #super().__init__()
