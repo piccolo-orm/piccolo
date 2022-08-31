@@ -2,7 +2,7 @@ name: Test Suite
 
 on:
     push:
-        branches: ["master"]
+        branches: ["master", "cockroachdb"]
     pull_request:
         branches: ["master"]
 
