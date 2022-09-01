@@ -108,4 +108,17 @@ class CockroachEngine(PostgresEngine):
         self.transaction_connection = contextvars.ContextVar(
             f"pg_transaction_connection_{database_name}", default=None
         )
-        super(CockroachEngine, self).__init__(config, extensions, log_queries, extra_nodes)
+        super(PostgresEngine, self).__init__()
+
+    async def prep_database(self):
+        try:
+            await self._run_in_new_connection("SET CLUSTER SETTING sql.defaults.experimental_alter_column_type.enabled = true;")
+            #await self._run_in_new_connection("SET CLUSTER SETTING  enable_experimental_alter_column_type_general = true;")
+        except asyncpg.exceptions.InsufficientPrivilegeError:
+            colored_warning(
+                f"=> Unable to set up Cockroach DB "
+                "functionality may not behave as expected. Make sure "
+                "your database user has permission to set cluster options.",
+                level=Level.medium,
+            )
+
