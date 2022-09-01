@@ -525,6 +525,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
                     expect_conflict_with_global_name=getattr(
                         UniqueGlobalNames,
                         f"COLUMN_{column_class_name.upper()}",
+                        None,
                     ),
                 )
             )
@@ -679,6 +680,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
                     expect_conflict_with_global_name=getattr(
                         UniqueGlobalNames,
                         f"COLUMN_{primary_key_class.__name__.upper()}",
+                        None,
                     ),
                 )
             )

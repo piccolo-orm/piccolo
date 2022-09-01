@@ -10,6 +10,8 @@ from piccolo.columns import Column
 from piccolo.columns.column_types import (
     JSON,
     JSONB,
+    Array,
+    Email,
     ForeignKey,
     Secret,
     Serial,
@@ -41,12 +43,15 @@ from piccolo.query import (
 )
 from piccolo.query.methods.create_index import CreateIndex
 from piccolo.query.methods.indexes import Indexes
+from piccolo.query.methods.refresh import Refresh
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
 from piccolo.utils.graphlib import TopologicalSorter
 from piccolo.utils.sql_values import convert_to_sql_value
+from piccolo.utils.sync import run_sync
+from piccolo.utils.warnings import colored_warning
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Selectable
 
 PROTECTED_TABLENAMES = ("user",)
@@ -65,6 +70,7 @@ class TableMeta:
     columns: t.List[Column] = field(default_factory=list)
     default_columns: t.List[Column] = field(default_factory=list)
     non_default_columns: t.List[Column] = field(default_factory=list)
+    email_columns: t.List[Email] = field(default_factory=list)
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
     primary_key: Column = field(default_factory=Column)
     json_columns: t.List[t.Union[JSON, JSONB]] = field(default_factory=list)
@@ -135,6 +141,31 @@ class TableMetaclass(type):
     def __str__(cls):
         return cls._table_str()
 
+    def __repr__(cls):
+        """
+        We override this, because by default Python will output something
+        like::
+
+            >>> repr(MyTable)
+            <class 'my_app.tables.MyTable'>
+
+        It's a very common pattern in Piccolo and its sister libraries to
+        have ``Table`` class types as default values::
+
+            # `SessionsBase` is a `Table` subclass:
+            def session_auth(
+                session_table: t.Type[SessionsBase] = SessionsBase
+            ):
+                ...
+
+        This looks terrible in Sphinx's autodoc output, as Python's default
+        repr contains angled brackets, which breaks the HTML output. So we just
+        output the name instead. The user can still easily find which module a
+        ``Table`` subclass belongs to by using ``MyTable.__module__``.
+
+        """
+        return cls.__name__
+
 
 class Table(metaclass=TableMetaclass):
     """
@@ -187,6 +218,7 @@ class Table(metaclass=TableMetaclass):
         foreign_key_columns: t.List[ForeignKey] = []
         secret_columns: t.List[Secret] = []
         json_columns: t.List[t.Union[JSON, JSONB]] = []
+        email_columns: t.List[Email] = []
         primary_key: t.Optional[Column] = None
         m2m_relationships: t.List[M2M] = []
 
@@ -217,6 +249,12 @@ class Table(metaclass=TableMetaclass):
                 column._meta._name = attribute_name
                 column._meta._table = cls
 
+                if isinstance(column, Array):
+                    column.base_column._meta._table = cls
+
+                if isinstance(column, Email):
+                    email_columns.append(column)
+
                 if isinstance(column, Secret):
                     secret_columns.append(column)
 
@@ -243,6 +281,7 @@ class Table(metaclass=TableMetaclass):
             columns=columns,
             default_columns=default_columns,
             non_default_columns=non_default_columns,
+            email_columns=email_columns,
             primary_key=primary_key,
             foreign_key_columns=foreign_key_columns,
             json_columns=json_columns,
@@ -268,29 +307,55 @@ class Table(metaclass=TableMetaclass):
 
     def __init__(
         self,
-        ignore_missing: bool = False,
-        exists_in_db: bool = False,
+        _data: t.Dict[Column, t.Any] = None,
+        _ignore_missing: bool = False,
+        _exists_in_db: bool = False,
         **kwargs,
     ):
         """
-        Assigns any default column values to the class.
+        The constructor can be used to assign column values.
 
-        :param ignore_missing:
+        .. note::
+            The ``_data``, ``_ignore_missing``, and ``_exists_in_db``
+            arguments are prefixed with an underscore to help prevent a clash
+            with a column name which might be passed in via kwargs.
+
+        :param _data:
+            There's two ways of passing in the data for each column. Firstly,
+            you can use kwargs::
+
+                Band(name="Pythonistas")
+
+            Secondly, you can pass in a dictionary which maps column classes to
+            values::
+
+                Band({Band.name: 'Pythonistas'})
+
+            The advantage of this second approach is it's more strongly typed,
+            and linters such as flake8 or MyPy will more easily detect typos.
+
+        :param _ignore_missing:
             If ``False`` a ``ValueError`` will be raised if any column values
             haven't been provided.
-        :param exists_in_db:
+        :param _exists_in_db:
             Used internally to track whether this row exists in the database.
 
         """
-        self._exists_in_db = exists_in_db
+        _data = _data or {}
+
+        self._exists_in_db = _exists_in_db
 
         for column in self._meta.columns:
-            value = kwargs.pop(column._meta.name, ...)
+            value = _data.get(column, ...)
 
-            if value is ...:
-                value = kwargs.pop(
-                    t.cast(str, column._meta.db_column_name), ...
-                )
+            if kwargs:
+                if value is ...:
+                    value = kwargs.pop(column._meta.name, ...)
+
+                if value is ...:
+                    value = kwargs.pop(
+                        t.cast(str, column._meta.db_column_name), ...
+                    )
 
             if value is ...:
                 value = column.get_default_value()
@@ -301,7 +366,7 @@ class Table(metaclass=TableMetaclass):
                 if (
                     (value is None)
                     and (not column._meta.null)
-                    and not ignore_missing
+                    and not _ignore_missing
                 ):
                     raise ValueError(f"{column._meta.name} wasn't provided")
 
@@ -332,7 +397,7 @@ class Table(metaclass=TableMetaclass):
     ###########################################################################
 
     def save(
-        self, columns: t.Optional[t.List[t.Union[Column, str]]] = None
+        self, columns: t.Optional[t.Sequence[t.Union[Column, str]]] = None
     ) -> t.Union[Insert, Update]:
         """
         A proxy to an insert or update query.
@@ -354,14 +419,12 @@ class Table(metaclass=TableMetaclass):
         cls = self.__class__
 
         if not self._exists_in_db:
-            return cls.insert().add(self)
+            return cls.insert(self).returning(cls._meta.primary_key)
 
         # Pre-existing row - update
         if columns is None:
             column_instances = [
-                i
-                for i in cls._meta.columns
-                if i._meta.name != self._meta.primary_key._meta.name
+                i for i in cls._meta.columns if not i._meta.primary_key
             ]
         else:
             column_instances = [
@@ -396,6 +459,32 @@ class Table(metaclass=TableMetaclass):
         return self.__class__.delete().where(
             self.__class__._meta.primary_key == primary_key_value
         )
+
+    def refresh(
+        self, columns: t.Optional[t.Sequence[Column]] = None
+    ) -> Refresh:
+        """
+        Used to fetch the latest data for this instance from the database.
+        Modifies the instance in place, but also returns it as a convenience.
+
+        :param columns:
+            If you only want to refresh certain columns, specify them here.
+            Otherwise all columns are refreshed.
+
+        Example usage::
+
+            # Get an instance from the database.
+            instance = await Band.objects.first()
+
+            # Later on we can refresh this instance with the latest data
+            # from the database, in case it has gotten stale.
+            await instance.refresh()
+
+            # Alternatively, running it synchronously:
+            instance.refresh().run_sync()
+
+        """
+        return Refresh(instance=self, columns=columns)
 
     def get_related(self, foreign_key: t.Union[ForeignKey, str]) -> Objects:
         """
@@ -562,8 +651,7 @@ class Table(metaclass=TableMetaclass):
                         break
 
         alias_names = {
-            column._meta.name: getattr(column, "alias", None)
-            for column in filtered_columns
+            column._meta.name: column._alias for column in filtered_columns
         }
 
         output = {}
@@ -599,7 +687,7 @@ class Table(metaclass=TableMetaclass):
         for readable_column in readable.columns:
             output_column = column
             for fk in readable_column._meta.call_chain:
-                output_column = getattr(column, fk._meta.name)
+                output_column = getattr(output_column, fk._meta.name)
             output_column = getattr(output_column, readable_column._meta.name)
             output_columns.append(output_column)
 
@@ -714,7 +802,7 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def all_columns(
-        cls, exclude: t.List[t.Union[str, Column]] = None
+        cls, exclude: t.Sequence[t.Union[str, Column]] = None
     ) -> t.List[Column]:
         """
         Used in conjunction with ``select`` queries. Just as we can use
@@ -791,7 +879,7 @@ class Table(metaclass=TableMetaclass):
             )
 
         """
-        query = Insert(table=cls)
+        query = Insert(table=cls).returning(cls._meta.primary_key)
         if rows:
             query.add(*rows)
         return query
@@ -847,9 +935,11 @@ class Table(metaclass=TableMetaclass):
             await Band.select('name')
 
         :param exclude_secrets:
-            If ``True``, any password fields are omitted from the response.
-            Even though passwords are hashed, you still don't want them being
-            passed over the network if avoidable.
+            If ``True``, any columns with ``secret=True`` are omitted from the
+            response. For example, we use this for the password column of
+            :class:`BaseUser <piccolo.apps.user.tables.BaseUser>`. Even though
+            the passwords are hashed, you still don't want them being passed
+            over the network if avoidable.
 
         """
         _columns = cls._process_column_args(*columns)
@@ -1165,10 +1255,23 @@ def create_table_class(
     )
 
 
-def create_tables(*tables: t.Type[Table], if_not_exists: bool = False) -> None:
+###############################################################################
+# Quickly create or drop database tables from Piccolo `Table` clases.
+
+
+async def create_db_tables(
+    *tables: t.Type[Table], if_not_exists: bool = False
+) -> None:
     """
-    Creates the tables passed to it in the correct order, based on their
-    foreign keys.
+    Creates the database table for each ``Table`` class passed in. The tables
+    are created in the correct order, based on their foreign keys.
+
+    :param tables:
+        The tables to create in the database.
+    :param if_not_exists:
+        No errors will be raised if any of the tables already exist in the
+        database.
+
     """
     if tables:
         engine = tables[0]._meta.db
@@ -1184,13 +1287,42 @@ def create_tables(*tables: t.Type[Table], if_not_exists: bool = False) -> None:
             for table in sorted_table_classes
         ]
     )
-    atomic.run_sync()
+    await atomic.run()
 
 
-def drop_tables(*tables: t.Type[Table]) -> None:
+def create_db_tables_sync(
+    *tables: t.Type[Table], if_not_exists: bool = False
+) -> None:
     """
-    Drops the tables passed to it in the correct order, based on their foreign
-    keys.
+    A sync wrapper around :func:`create_db_tables`.
+    """
+    run_sync(create_db_tables(*tables, if_not_exists=if_not_exists))
+
+
+def create_tables(*tables: t.Type[Table], if_not_exists: bool = False) -> None:
+    """
+    This original implementation has been replaced, because it was synchronous,
+    and felt at odds with the rest of the Piccolo codebase which is async
+    first.
+    """
+    colored_warning(
+        "`create_tables` is deprecated and will be removed in v1 of Piccolo. "
+        "Use `await create_db_tables(...)` or `create_db_tables_sync(...)` "
+        "instead.",
+        category=DeprecationWarning,
+    )
+
+    return create_db_tables_sync(*tables, if_not_exists=if_not_exists)
+
+
+async def drop_db_tables(*tables: t.Type[Table]) -> None:
+    """
+    Drops the database table for each ``Table`` class passed in. The tables
+    are dropped in the correct order, based on their foreign keys.
+
+    :param tables:
+        The tables to delete from the database.
+
     """
     if tables:
         engine = tables[0]._meta.db
@@ -1217,7 +1349,33 @@ def drop_tables(*tables: t.Type[Table]) -> None:
             ]
         )
 
-    atomic.run_sync()
+    await atomic.run()
+
+
+def drop_db_tables_sync(*tables: t.Type[Table]) -> None:
+    """
+    A sync wrapper around :func:`drop_db_tables`.
+    """
+    run_sync(drop_db_tables(*tables))
+
+
+def drop_tables(*tables: t.Type[Table]) -> None:
+    """
+    This original implementation has been replaced, because it was synchronous,
+    and felt at odds with the rest of the Piccolo codebase which is async
+    first.
+    """
+    colored_warning(
+        "`drop_tables` is deprecated and will be removed in v1 of Piccolo. "
+        "Use `await drop_db_tables(...)` or `drop_db_tables_sync(...)` "
+        "instead.",
+        category=DeprecationWarning,
+    )
+
+    return drop_db_tables_sync(*tables)
+
+
+###############################################################################
 
 
 def sort_table_classes(

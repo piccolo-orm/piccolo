@@ -11,6 +11,7 @@ from .column_types import (
     Date,
     Decimal,
     DoublePrecision,
+    Email,
     Float,
     ForeignKey,
     Integer,

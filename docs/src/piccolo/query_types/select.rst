@@ -263,6 +263,11 @@ batch
 
 See :ref:`batch`.
 
+callback
+~~~~~~~~
+
+See :ref:`callback`.
+
 columns
 ~~~~~~~
 
@@ -294,6 +299,10 @@ columns.
     # Or just define it one go:
     await Band.select().columns(Band.name, Band.manager)
 
+distinct
+~~~~~~~~
+
+See :ref:`distinct`.
 
 first
 ~~~~~
@@ -314,11 +323,6 @@ offset
 ~~~~~~
 
 See :ref:`offset`.
-
-distinct
-~~~~~~~~
-
-See :ref:`distinct`.
 
 order_by
 ~~~~~~~~

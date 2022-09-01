@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import sys
 import typing as t
 from unittest import TestCase
@@ -12,8 +13,13 @@ from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
 from piccolo.table import Table, create_table_class
+from piccolo.utils.sync import run_sync
 
 ENGINE = engine_finder()
+
+
+def engine_version_lt(version: float):
+    return ENGINE and run_sync(ENGINE.get_version()) < version
 
 
 def is_running_postgres():
@@ -44,6 +50,12 @@ class AsyncMock(MagicMock):
     This is a workaround for the fact that MagicMock is not async compatible in
     Python 3.7.
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # this makes asyncio.iscoroutinefunction(AsyncMock()) return True
+        self._is_coroutine = asyncio.coroutines._is_coroutine
 
     async def __call__(self, *args, **kwargs):
         return super(AsyncMock, self).__call__(*args, **kwargs)

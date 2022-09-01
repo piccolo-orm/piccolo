@@ -8,6 +8,7 @@ from .exists import Exists
 from .insert import Insert
 from .objects import Objects
 from .raw import Raw
+from .refresh import Refresh
 from .select import Avg, Max, Min, Select, Sum
 from .table_exists import TableExists
 from .update import Update

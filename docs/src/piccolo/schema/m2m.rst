@@ -4,6 +4,10 @@
 M2M
 ###
 
+.. note::
+
+   There is a `video tutorial on YouTube <https://youtu.be/J9YFt8Hxm4I>`_.
+
 Sometimes in database design you need `many-to-many (M2M) <https://en.wikipedia.org/wiki/Many-to-many_(data_model)>`_
 relationships.
 

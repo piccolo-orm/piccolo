@@ -2,7 +2,7 @@ import asyncio
 import os
 import tempfile
 from unittest import TestCase
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import call, patch
 
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
@@ -89,28 +89,29 @@ class TestConnectionPoolWarning(TestCase):
     async def _create_pool(self):
         sqlite_file = os.path.join(tempfile.gettempdir(), "engine.sqlite")
         engine = SQLiteEngine(path=sqlite_file)
-        await engine.start_connection_pool()
-        await engine.close_connection_pool()
 
-    @patch("piccolo.engine.base.colored_warning")
-    def test_warnings(self, colored_warning: MagicMock):
+        with patch("piccolo.engine.base.colored_warning") as colored_warning:
+            await engine.start_connection_pool()
+            await engine.close_connection_pool()
+
+            self.assertEqual(
+                colored_warning.call_args_list,
+                [
+                    call(
+                        "Connection pooling is not supported for sqlite.",
+                        stacklevel=3,
+                    ),
+                    call(
+                        "Connection pooling is not supported for sqlite.",
+                        stacklevel=3,
+                    ),
+                ],
+            )
+
+    def test_warnings(self):
         """
         Make sure that when trying to start and close a connection pool with
         SQLite, a warning is printed out, as connection pools aren't currently
         supported.
         """
         asyncio.run(self._create_pool())
-
-        self.assertEqual(
-            colored_warning.call_args_list,
-            [
-                call(
-                    "Connection pooling is not supported for sqlite.",
-                    stacklevel=3,
-                ),
-                call(
-                    "Connection pooling is not supported for sqlite.",
-                    stacklevel=3,
-                ),
-            ],
-        )

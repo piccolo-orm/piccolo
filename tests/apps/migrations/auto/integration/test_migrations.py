@@ -45,7 +45,7 @@ from piccolo.columns.defaults.uuid import UUID4
 from piccolo.columns.m2m import M2M
 from piccolo.columns.reference import LazyTableReference
 from piccolo.conf.apps import AppConfig
-from piccolo.table import Table, create_table_class, drop_tables
+from piccolo.table import Table, create_table_class, drop_db_tables_sync
 from piccolo.utils.sync import run_sync
 from tests.base import DBTestCase, postgres_only
 
@@ -598,6 +598,21 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    def test_array_column_bigint(self):
+        """
+        There was a bug with using an array of ``BigInt`` - see issue 500 on
+        GitHub. It's because ``BigInt`` requires access to the parent table to
+        determine what the column type is.
+        """
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Array(base_column=BigInt()),
+                ]
+            ]
+        )
+
     ###########################################################################
 
     # We deliberately don't test setting JSON or JSONB columns as indexes, as
@@ -821,7 +836,7 @@ class TestM2MMigrations(MigrationTestCase):
         pass
 
     def tearDown(self):
-        drop_tables(Migration, Band, Genre, GenreToBand)
+        drop_db_tables_sync(Migration, Band, Genre, GenreToBand)
 
     def test_m2m(self):
         """
@@ -857,7 +872,7 @@ class TestTargetColumn(MigrationTestCase):
         pass
 
     def tearDown(self):
-        drop_tables(Migration, TableA, TableC)
+        drop_db_tables_sync(Migration, TableA, TableC)
 
     def test_target_column(self):
         """
@@ -895,7 +910,7 @@ class TestTargetColumnString(MigrationTestCase):
         pass
 
     def tearDown(self):
-        drop_tables(Migration, TableA, TableB)
+        drop_db_tables_sync(Migration, TableA, TableB)
 
     def test_target_column(self):
         """

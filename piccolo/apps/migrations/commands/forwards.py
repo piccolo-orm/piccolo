@@ -14,11 +14,16 @@ from piccolo.conf.apps import AppConfig, MigrationModule
 
 class ForwardsMigrationManager(BaseMigrationManager):
     def __init__(
-        self, app_name: str, migration_id: str = "all", fake: bool = False
+        self,
+        app_name: str,
+        migration_id: str = "all",
+        fake: bool = False,
+        preview: bool = False,
     ):
         self.app_name = app_name
         self.migration_id = migration_id
         self.fake = fake
+        self.preview = preview
         super().__init__()
 
     async def run_migrations(self, app_config: AppConfig) -> MigrationResult:
@@ -71,13 +76,15 @@ class ForwardsMigrationManager(BaseMigrationManager):
                     response = await migration_module.forwards()
 
                     if isinstance(response, MigrationManager):
+                        if self.preview:
+                            response.preview = True
                         await response.run()
 
                     print("ok! ✔️")
-
-                await Migration.insert().add(
-                    Migration(name=_id, app_name=app_config.app_name)
-                ).run()
+                if not self.preview:
+                    await Migration.insert().add(
+                        Migration(name=_id, app_name=app_config.app_name)
+                    ).run()
 
         return MigrationResult(success=True, message="migration succeeded")
 
@@ -90,7 +97,10 @@ class ForwardsMigrationManager(BaseMigrationManager):
 
 
 async def run_forwards(
-    app_name: str, migration_id: str = "all", fake: bool = False
+    app_name: str,
+    migration_id: str = "all",
+    fake: bool = False,
+    preview: bool = False,
 ) -> MigrationResult:
     """
     Run the migrations. This function can be used to programatically run
@@ -102,7 +112,10 @@ async def run_forwards(
             print(f"\n{_app_name.upper():^64}")
             print("-" * 64)
             manager = ForwardsMigrationManager(
-                app_name=_app_name, migration_id="all", fake=fake
+                app_name=_app_name,
+                migration_id="all",
+                fake=fake,
+                preview=preview,
             )
             response = await manager.run()
             if not response.success:
@@ -112,13 +125,19 @@ async def run_forwards(
 
     else:
         manager = ForwardsMigrationManager(
-            app_name=app_name, migration_id=migration_id, fake=fake
+            app_name=app_name,
+            migration_id=migration_id,
+            fake=fake,
+            preview=preview,
         )
         return await manager.run()
 
 
 async def forwards(
-    app_name: str, migration_id: str = "all", fake: bool = False
+    app_name: str,
+    migration_id: str = "all",
+    fake: bool = False,
+    preview: bool = False,
 ):
     """
     Runs any migrations which haven't been run yet.
@@ -133,9 +152,15 @@ async def forwards(
     :param fake:
         If set, will record the migrations as being run without actually
         running them.
+    :param preview:
+        If true, don't actually run the migration, just print the SQL queries
+
     """
     response = await run_forwards(
-        app_name=app_name, migration_id=migration_id, fake=fake
+        app_name=app_name,
+        migration_id=migration_id,
+        fake=fake,
+        preview=preview,
     )
 
     if not response.success:

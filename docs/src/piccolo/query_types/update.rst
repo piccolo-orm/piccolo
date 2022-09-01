@@ -152,6 +152,12 @@ Likewise, we can decrease the values by 1 day:
         force=True
     )
 
+Array columns
+~~~~~~~~~~~~~
+
+You can append values to an array (Postgres only). See :meth:`cat <piccolo.columns.column_types.Array.cat>`.
+
+
 What about null values?
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -211,6 +217,12 @@ you prefer:
 
 Query clauses
 -------------
+
+returning
+~~~~~~~~~
+
+See :ref:`Returning`.
+
 
 where
 ~~~~~

@@ -360,6 +360,17 @@ class Varchar(Column):
         obj.__dict__[self._meta.name] = value
 
 
+class Email(Varchar):
+    """
+    Used for storing email addresses. It's identical to :class:`Varchar`,
+    except when using :func:`create_pydantic_model <piccolo.utils.pydantic.create_pydantic_model>` -
+    we add email validation to the Pydantic model. This means that :ref:`PiccoloAdmin`
+    also validates emails addresses.
+    """  # noqa: E501
+
+    pass
+
+
 class Secret(Varchar):
     """
     This is just an alias to ``Varchar(secret=True)``. It's here for backwards
@@ -2227,21 +2238,19 @@ class JSONB(JSON):
         instance.json_operator = f"-> '{key}'"
         return instance
 
-    def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        select_string = self._meta.get_full_name(
-            just_alias=just_alias, include_quotes=True
-        )
-        if self.json_operator is not None:
-            return (
-                f"{select_string} {self.json_operator}"
-                if self.alias is None
-                else f"{select_string} {self.json_operator} AS {self.alias}"
-            )
+    def get_select_string(
+        self, engine_type: str, with_alias: bool = True
+    ) -> str:
+        select_string = self._meta.get_full_name(with_alias=False)
 
-        if self.alias is None:
-            return select_string
-        else:
-            return f"{select_string} AS {self.alias}"
+        if self.json_operator is not None:
+            select_string += f" {self.json_operator}"
+
+        if with_alias:
+            alias = self._alias or self._meta.get_default_alias()
+            select_string += f' AS "{alias}"'
+
+        return select_string
 
     def eq(self, value) -> Where:
         """
@@ -2489,15 +2498,17 @@ class Array(Column):
         else:
             raise ValueError("Only integers can be used for indexing.")
 
-    def get_select_string(self, engine_type: str, just_alias=False) -> str:
-        select_string = self._meta.get_full_name(
-            just_alias=just_alias, include_quotes=True
-        )
+    def get_select_string(self, engine_type: str, with_alias=True) -> str:
+        select_string = self._meta.get_full_name(with_alias=False)
 
         if isinstance(self.index, int):
-            return f"{select_string}[{self.index}]"
-        else:
-            return select_string
+            select_string += f"[{self.index}]"
+
+        if with_alias:
+            alias = self._alias or self._meta.get_default_alias()
+            select_string += f' AS "{alias}"'
+
+        return select_string
 
     def any(self, value: t.Any) -> Where:
         """
@@ -2534,6 +2545,40 @@ class Array(Column):
             raise ValueError("Unsupported by SQLite")
         else:
             raise ValueError("Unrecognised engine type")
+
+    def cat(self, value: t.List[t.Any]) -> QueryString:
+        """
+        Used in an ``update`` query to append items to an array.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.cat([1000])
+            ... }).where(Ticket.id == 1)
+
+        You can also use the ``+`` symbol if you prefer:
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers + [1000]
+            ... }).where(Ticket.id == 1)
+
+        """
+        engine_type = self._meta.engine_type
+        if engine_type != "postgres":
+            raise ValueError(
+                "Only Postgres supports array appending currently."
+            )
+
+        if not isinstance(value, list):
+            value = [value]
+
+        db_column_name = self._meta.db_column_name
+        return QueryString(f'array_cat("{db_column_name}", {{}})', value)
+
+    def __add__(self, value: t.List[t.Any]) -> QueryString:
+        return self.cat(value)
 
     ###########################################################################
     # Descriptors

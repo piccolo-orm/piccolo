@@ -8,7 +8,7 @@ import pydantic
 from piccolo.conf.apps import Finder
 from piccolo.utils.pydantic import create_pydantic_model
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 

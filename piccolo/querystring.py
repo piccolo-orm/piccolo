@@ -6,7 +6,7 @@ from datetime import datetime
 from importlib.util import find_spec
 from string import Formatter
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 from uuid import UUID
@@ -66,10 +66,21 @@ class QueryString:
         table: t.Optional[t.Type[Table]] = None,
     ) -> None:
         """
-        Example template: "WHERE {} = {}"
+        :param template:
+            The SQL query, with curly brackets as placeholders for any values::
 
-        The query type is sometimes used by the engine to modify how the query
-        is run.
+                "WHERE {} = {}"
+
+        :param args:
+            The values to insert (one value is needed for each set of curly
+            braces in the template).
+        :param query_type:
+            The query type is sometimes used by the engine to modify how the
+            query is run. For example, INSERT queries on old SQLite versions.
+        :param table:
+            Sometimes the ``piccolo.engine.base.Engine`` needs access to the
+            table that the query is being run on.
+
         """
         self.template = template
         self.args = args

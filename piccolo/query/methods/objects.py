@@ -9,6 +9,8 @@ from piccolo.custom_types import Combinable
 from piccolo.engine.base import Batch
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
+    CallbackDelegate,
+    CallbackType,
     LimitDelegate,
     OffsetDelegate,
     OrderByDelegate,
@@ -63,8 +65,25 @@ class GetOrCreate:
 
         await instance.save().run()
 
-        instance._was_created = True
+        # If the user wants us to prefetch related objects, for example:
+        #
+        # await Band.objects(Band.manager).get_or_create(
+        #   (Band.name == 'Pythonistas') & (Band.manager == 1)
+        # )
+        #
+        # Then we need to fetch the related objects.
+        # See https://github.com/piccolo-orm/piccolo/issues/597
+        prefetch = self.query.prefetch_delegate.fk_columns
+        if prefetch:
+            table = instance.__class__
+            primary_key = table._meta.primary_key
+            instance = (
+                await table.objects(*prefetch)
+                .get(primary_key == getattr(instance, primary_key._meta.name))
+                .run()
+            )
 
+        instance._was_created = True
         return instance
 
     def __await__(self):
@@ -124,6 +143,7 @@ class Objects(Query):
         "offset_delegate",
         "order_by_delegate",
         "output_delegate",
+        "callback_delegate",
         "prefetch_delegate",
         "where_delegate",
     )
@@ -140,6 +160,7 @@ class Objects(Query):
         self.order_by_delegate = OrderByDelegate()
         self.output_delegate = OutputDelegate()
         self.output_delegate._output.as_objects = True
+        self.callback_delegate = CallbackDelegate()
         self.prefetch_delegate = PrefetchDelegate()
         self.prefetch(*prefetch)
         self.where_delegate = WhereDelegate()
@@ -148,6 +169,15 @@ class Objects(Query):
         self.output_delegate.output(
             as_list=False, as_json=False, load_json=load_json
         )
+        return self
+
+    def callback(
+        self,
+        callbacks: t.Union[t.Callable, t.List[t.Callable]],
+        *,
+        on: CallbackType = CallbackType.success,
+    ) -> Objects:
+        self.callback_delegate.callback(callbacks, on=on)
         return self
 
     def limit(self, number: int) -> Objects:
@@ -194,10 +224,15 @@ class Objects(Query):
         return self
 
     async def batch(
-        self, batch_size: t.Optional[int] = None, **kwargs
+        self,
+        batch_size: t.Optional[int] = None,
+        node: t.Optional[str] = None,
+        **kwargs,
     ) -> Batch:
         if batch_size:
             kwargs.update(batch_size=batch_size)
+        if node:
+            kwargs.update(node=node)
         return await self.table._meta.db.batch(self, **kwargs)
 
     async def response_handler(self, response):

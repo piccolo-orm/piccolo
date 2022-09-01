@@ -33,7 +33,8 @@ Which to use?
 =============
 
 All are great choices. FastAPI is built on top of Starlette, so they're
-very similar. FastAPI is useful if you want to document a REST API.
+very similar. FastAPI and BlackSheep are great if you want to document a REST
+API, as they have built-in OpenAPI support.
 
 -------------------------------------------------------------------------------
 

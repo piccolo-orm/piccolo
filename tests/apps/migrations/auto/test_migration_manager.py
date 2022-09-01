@@ -1,4 +1,5 @@
 import asyncio
+from io import StringIO
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
@@ -95,7 +96,19 @@ class TestMigrationManager(DBTestCase):
         self.assertTrue("name" not in response[0].keys())
 
         # Reverse
-        asyncio.run(manager.run_backwards())
+        asyncio.run(manager.run(backwards=True))
+        response = self.run_sync("SELECT * FROM band;")
+        self.assertTrue("title" not in response[0].keys())
+        self.assertTrue("name" in response[0].keys())
+
+        # Preview
+        manager.preview = True
+        with patch("sys.stdout", new=StringIO()) as fake_out:
+            asyncio.run(manager.run())
+            self.assertEqual(
+                fake_out.getvalue(),
+                """  -  [preview forwards]... \n ALTER TABLE band RENAME COLUMN "name" TO "title";\n""",  # noqa: E501
+            )
         response = self.run_sync("SELECT * FROM band;")
         self.assertTrue("title" not in response[0].keys())
         self.assertTrue("name" in response[0].keys())
@@ -108,19 +121,25 @@ class TestMigrationManager(DBTestCase):
         class HasRun(Exception):
             pass
 
+        class HasRunBackwards(Exception):
+            pass
+
         def run():
             raise HasRun("I was run!")
 
+        def run_back():
+            raise HasRunBackwards("I was run backwards!")
+
         manager = MigrationManager()
         manager.add_raw(run)
-        manager.add_raw_backwards(run)
+        manager.add_raw_backwards(run_back)
 
         with self.assertRaises(HasRun):
             asyncio.run(manager.run())
 
         # Reverse
-        with self.assertRaises(HasRun):
-            asyncio.run(manager.run_backwards())
+        with self.assertRaises(HasRunBackwards):
+            asyncio.run(manager.run(backwards=True))
 
     def test_raw_coroutine(self):
         """
@@ -130,19 +149,25 @@ class TestMigrationManager(DBTestCase):
         class HasRun(Exception):
             pass
 
+        class HasRunBackwards(Exception):
+            pass
+
         async def run():
             raise HasRun("I was run!")
 
+        async def run_back():
+            raise HasRunBackwards("I was run backwards!")
+
         manager = MigrationManager()
         manager.add_raw(run)
-        manager.add_raw_backwards(run)
+        manager.add_raw_backwards(run_back)
 
         with self.assertRaises(HasRun):
             asyncio.run(manager.run())
 
         # Reverse
-        with self.assertRaises(HasRun):
-            asyncio.run(manager.run_backwards())
+        with self.assertRaises(HasRunBackwards):
+            asyncio.run(manager.run(backwards=True))
 
     @postgres_only
     @patch.object(BaseMigrationManager, "get_app_config")
@@ -172,9 +197,19 @@ class TestMigrationManager(DBTestCase):
         get_app_config.return_value = AppConfig(
             app_name="music", migrations_folder_path=""
         )
-        asyncio.run(manager.run_backwards())
+        asyncio.run(manager.run(backwards=True))
         self.assertEqual(self.table_exists("musician"), False)
         self.run_sync("DROP TABLE IF EXISTS musician;")
+
+        # Preview
+        manager.preview = True
+        with patch("sys.stdout", new=StringIO()) as fake_out:
+            asyncio.run(manager.run())
+            self.assertEqual(
+                fake_out.getvalue(),
+                """  -  [preview forwards]... \n CREATE TABLE musician ("id" SERIAL PRIMARY KEY NOT NULL, "name" VARCHAR(255) NOT NULL DEFAULT '');\n""",  # noqa: E501
+            )
+        self.assertEqual(self.table_exists("musician"), False)
 
     @postgres_only
     def test_add_column(self):
@@ -210,7 +245,18 @@ class TestMigrationManager(DBTestCase):
         )
 
         # Reverse
-        asyncio.run(manager.run_backwards())
+        asyncio.run(manager.run(backwards=True))
+        response = self.run_sync("SELECT * FROM manager;")
+        self.assertEqual(response, [{"id": 1, "name": "Dave"}])
+
+        # Preview
+        manager.preview = True
+        with patch("sys.stdout", new=StringIO()) as fake_out:
+            asyncio.run(manager.run())
+            self.assertEqual(
+                fake_out.getvalue(),
+                """  -  [preview forwards]... \n ALTER TABLE manager ADD COLUMN "email" VARCHAR(100) UNIQUE DEFAULT '';\n""",  # noqa: E501
+            )
         response = self.run_sync("SELECT * FROM manager;")
         self.assertEqual(response, [{"id": 1, "name": "Dave"}])
 
@@ -242,7 +288,20 @@ class TestMigrationManager(DBTestCase):
         self.assertTrue(index_name in Manager.indexes().run_sync())
 
         # Reverse
-        asyncio.run(manager.run_backwards())
+        asyncio.run(manager.run(backwards=True))
+        self.assertTrue(index_name not in Manager.indexes().run_sync())
+
+        # Preview
+        manager.preview = True
+        with patch("sys.stdout", new=StringIO()) as fake_out:
+            asyncio.run(manager.run())
+            self.assertEqual(
+                fake_out.getvalue(),
+                (
+                    """  -  [preview forwards]... \n ALTER TABLE manager ADD COLUMN "email" VARCHAR(100) UNIQUE DEFAULT '';\n"""  # noqa: E501
+                    """\n CREATE INDEX manager_email ON manager USING btree ("email");\n"""  # noqa: E501
+                ),
+            )
         self.assertTrue(index_name not in Manager.indexes().run_sync())
 
     @postgres_only
@@ -285,7 +344,7 @@ class TestMigrationManager(DBTestCase):
         )
 
         # Reverse
-        asyncio.run(manager.run_backwards())
+        asyncio.run(manager.run(backwards=True))
         response = self.run_sync("SELECT * FROM manager;")
         self.assertEqual(
             response,
@@ -360,7 +419,7 @@ class TestMigrationManager(DBTestCase):
         get_migration_managers.return_value = [manager_1]
         app_config = AppConfig(app_name="music", migrations_folder_path="")
         get_app_config.return_value = app_config
-        asyncio.run(manager_2.run_backwards())
+        asyncio.run(manager_2.run(backwards=True))
         response = self.run_sync("SELECT * FROM musician;")
         self.assertEqual(response, [{"id": 1, "name": ""}])
 
@@ -386,7 +445,7 @@ class TestMigrationManager(DBTestCase):
         self.assertEqual(response, [{"id": 1, "name": "Dave"}])
 
         # Reverse
-        asyncio.run(manager.run_backwards())
+        asyncio.run(manager.run(backwards=True))
         response = self.run_sync("SELECT * FROM manager;")
         self.assertEqual(response, [{"id": 1, "name": "Dave"}])
 
@@ -414,7 +473,7 @@ class TestMigrationManager(DBTestCase):
             )
 
         # Reverse
-        asyncio.run(manager.run_backwards())
+        asyncio.run(manager.run(backwards=True))
         self.run_sync(
             "INSERT INTO manager VALUES (default, 'Dave'), (default, 'Dave');"
         )
@@ -444,7 +503,7 @@ class TestMigrationManager(DBTestCase):
         )
 
         # Reverse
-        asyncio.run(manager.run_backwards())
+        asyncio.run(manager.run(backwards=True))
         self.assertFalse(
             self.get_postgres_is_nullable(
                 tablename="manager", column_name="name"
@@ -490,7 +549,7 @@ class TestMigrationManager(DBTestCase):
             [{"numeric_precision": 6, "numeric_scale": 2}],
         )
 
-        asyncio.run(manager.run_backwards())
+        asyncio.run(manager.run(backwards=True))
         self.assertEqual(
             self._get_column_precision_and_scale(),
             [{"numeric_precision": 5, "numeric_scale": 2}],
@@ -517,7 +576,7 @@ class TestMigrationManager(DBTestCase):
             [{"column_default": "'Unknown'::character varying"}],
         )
 
-        asyncio.run(manager.run_backwards())
+        asyncio.run(manager.run(backwards=True))
         self.assertEqual(
             self._get_column_default(),
             [{"column_default": "''::character varying"}],
@@ -567,19 +626,19 @@ class TestMigrationManager(DBTestCase):
         )
 
         # Run them all backwards
-        asyncio.run(manager_3.run_backwards())
+        asyncio.run(manager_3.run(backwards=True))
         self.assertEqual(
             self._get_column_default(),
             [{"column_default": None}],
         )
 
-        asyncio.run(manager_2.run_backwards())
+        asyncio.run(manager_2.run(backwards=True))
         self.assertEqual(
             self._get_column_default(),
             [{"column_default": "'Mr Manager'::character varying"}],
         )
 
-        asyncio.run(manager_1.run_backwards())
+        asyncio.run(manager_1.run(backwards=True))
         self.assertEqual(
             self._get_column_default(),
             [{"column_default": None}],
@@ -605,7 +664,7 @@ class TestMigrationManager(DBTestCase):
             Manager._get_index_name(["name"]) in Manager.indexes().run_sync()
         )
 
-        asyncio.run(manager.run_backwards())
+        asyncio.run(manager.run(backwards=True))
         self.assertTrue(
             Manager._get_index_name(["name"])
             not in Manager.indexes().run_sync()
@@ -634,7 +693,7 @@ class TestMigrationManager(DBTestCase):
         )
         self.assertEqual(column_type_str, "TEXT")
 
-        asyncio.run(manager.run_backwards())
+        asyncio.run(manager.run(backwards=True))
         column_type_str = self.get_postgres_column_type(
             tablename="manager", column_name="name"
         )
@@ -665,7 +724,7 @@ class TestMigrationManager(DBTestCase):
             500,
         )
 
-        asyncio.run(manager.run_backwards())
+        asyncio.run(manager.run(backwards=True))
         self.assertEqual(
             self.get_postgres_varchar_length(
                 tablename="manager", column_name="name"
@@ -702,7 +761,7 @@ class TestMigrationManager(DBTestCase):
         get_migration_managers.return_value = [manager_1]
         app_config = AppConfig(app_name="music", migrations_folder_path="")
         get_app_config.return_value = app_config
-        asyncio.run(manager_2.run_backwards())
+        asyncio.run(manager_2.run(backwards=True))
 
         get_migration_managers.assert_called_with(
             app_config=app_config, max_migration_id="2", offset=-1

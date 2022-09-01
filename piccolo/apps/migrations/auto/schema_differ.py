@@ -345,6 +345,7 @@ class SchemaDiffer:
                             expect_conflict_with_global_name=getattr(
                                 UniqueGlobalNames,
                                 f"COLUMN_{alter_column.column_class.__name__.upper()}",  # noqa: E501
+                                None,
                             ),
                         )
                     )
@@ -362,7 +363,7 @@ class SchemaDiffer:
                     )
 
                 response.append(
-                    f"manager.alter_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{alter_column.column_name}', params={new_params.params}, old_params={old_params.params}, column_class={column_class}, old_column_class={old_column_class})"  # noqa: E501
+                    f"manager.alter_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{alter_column.column_name}', db_column_name='{alter_column.db_column_name}', params={new_params.params}, old_params={old_params.params}, column_class={column_class}, old_column_class={old_column_class})"  # noqa: E501
                 )
 
         return AlterStatements(
@@ -425,6 +426,7 @@ class SchemaDiffer:
                         expect_conflict_with_global_name=getattr(
                             UniqueGlobalNames,
                             f"COLUMN_{column_class.__name__.upper()}",
+                            None,
                         ),
                     )
                 )
@@ -480,6 +482,7 @@ class SchemaDiffer:
                         expect_conflict_with_global_name=getattr(
                             UniqueGlobalNames,
                             f"COLUMN_{column.__class__.__name__.upper()}",
+                            None,
                         ),
                     )
                 )

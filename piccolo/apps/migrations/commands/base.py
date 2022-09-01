@@ -114,7 +114,7 @@ class BaseMigrationManager(Finder):
         else:
             return migration_managers
 
-    async def get_table_from_snaphot(
+    async def get_table_from_snapshot(
         self,
         app_name: str,
         table_class_name: str,

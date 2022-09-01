@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from piccolo.columns.column_types import JSONB, Varchar
+from piccolo.columns.column_types import JSONB, ForeignKey, Varchar
 from piccolo.table import Table
 from tests.base import postgres_only
 
@@ -10,12 +10,19 @@ class RecordingStudio(Table):
     facilities = JSONB(null=True)
 
 
+class Instrument(Table):
+    name = Varchar()
+    studio = ForeignKey(RecordingStudio)
+
+
 @postgres_only
 class TestJSONB(TestCase):
     def setUp(self):
         RecordingStudio.create_table().run_sync()
+        Instrument.create_table().run_sync()
 
     def tearDown(self):
+        Instrument.alter().drop_table().run_sync()
         RecordingStudio.alter().drop_table().run_sync()
 
     def test_json(self):
@@ -88,6 +95,32 @@ class TestJSONB(TestCase):
             [{"name": "Abbey Road"}],
         )
 
+    def test_as_alias_join(self):
+        """
+        Make sure that ``as_alias`` performs correctly when used via a join.
+        """
+        studio = (
+            RecordingStudio.objects()
+            .create(name="Abbey Road", facilities={"mixing_desk": True})
+            .run_sync()
+        )
+
+        Instrument.objects().create(name="Guitar", studio=studio).run_sync()
+
+        response = (
+            Instrument.select(
+                Instrument.name,
+                Instrument.studio.facilities.as_alias("studio_facilities"),
+            )
+            .output(load_json=True)
+            .run_sync()
+        )
+
+        self.assertListEqual(
+            response,
+            [{"name": "Guitar", "studio_facilities": {"mixing_desk": True}}],
+        )
+
     def test_arrow(self):
         """
         Test using the arrow function to retrieve a subset of the JSON.
@@ -103,7 +136,7 @@ class TestJSONB(TestCase):
             .first()
             .run_sync()
         )
-        self.assertEqual(row["?column?"], "true")
+        self.assertEqual(row["facilities"], "true")
 
         row = (
             RecordingStudio.select(
@@ -113,7 +146,7 @@ class TestJSONB(TestCase):
             .first()
             .run_sync()
         )
-        self.assertEqual(row["?column?"], True)
+        self.assertEqual(row["facilities"], True)
 
     def test_arrow_as_alias(self):
         """

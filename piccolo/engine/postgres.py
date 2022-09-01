@@ -114,19 +114,21 @@ class Atomic:
         self.queries = []
 
     async def _run_in_pool(self):
-        pool = await self.engine.get_pool()
-        connection = await pool.acquire()
+        if not self.engine.pool:
+            raise ValueError("No pool is currently active.")
 
-        try:
+        async with self.engine.pool.acquire() as connection:
             await self._run_queries(connection)
-        except Exception:
-            pass
-        finally:
-            await pool.release(connection)
 
     async def _run_in_new_connection(self):
         connection = await asyncpg.connect(**self.engine.config)
-        await self._run_queries(connection)
+        try:
+            await self._run_queries(connection)
+        except asyncpg.exceptions.PostgresError as exception:
+            await connection.close()
+            raise exception
+
+        await connection.close()
 
     async def run(self, in_pool=True):
         if in_pool and self.engine.pool:
@@ -328,6 +330,9 @@ class PostgresEngine(Engine):
                 version_string=version_string
             )
 
+    def get_version_sync(self) -> float:
+        return run_sync(self.get_version())
+
     async def prep_database(self):
         for extension in self.extensions:
             try:
@@ -394,8 +399,23 @@ class PostgresEngine(Engine):
 
     ###########################################################################
 
-    async def batch(self, query: Query, batch_size: int = 100) -> AsyncBatch:
-        connection = await self.get_new_connection()
+    async def batch(
+        self,
+        query: Query,
+        batch_size: int = 100,
+        node: t.Optional[str] = None,
+    ) -> AsyncBatch:
+        """
+        :param query:
+            The database query to run.
+        :param batch_size:
+            How many rows to fetch on each iteration.
+        :param node:
+            Which node to run the query on (see ``extra_nodes``). If not
+            specified, it runs on the main Postgres node.
+        """
+        engine: t.Any = self.extra_nodes.get(node) if node else self
+        connection = await engine.get_new_connection()
         return AsyncBatch(
             connection=connection, query=query, batch_size=batch_size
         )
@@ -419,7 +439,13 @@ class PostgresEngine(Engine):
         if args is None:
             args = []
         connection = await self.get_new_connection()
-        results = await connection.fetch(query, *args)
+
+        try:
+            results = await connection.fetch(query, *args)
+        except asyncpg.exceptions.PostgresError as exception:
+            await connection.close()
+            raise exception
+
         await connection.close()
         return results
 

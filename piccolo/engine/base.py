@@ -42,11 +42,20 @@ class Engine(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def get_version_sync(self) -> float:
+        pass
+
+    @abstractmethod
     async def prep_database(self):
         pass
 
     @abstractmethod
-    async def batch(self, query: Query, batch_size: int = 100) -> Batch:
+    async def batch(
+        self,
+        query: Query,
+        batch_size: int = 100,
+        node: t.Optional[str] = None,
+    ) -> Batch:
         pass
 
     @abstractmethod

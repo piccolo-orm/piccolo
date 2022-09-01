@@ -1,6 +1,440 @@
 Changes
 =======
 
+0.89.0
+------
+
+Made it easier to access the ``Email`` columns on a table.
+
+.. code-block:: python
+
+  >>> MyTable._meta.email_columns
+  [MyTable.email_column_1, MyTable.email_column_2]
+
+This was added for Piccolo Admin.
+
+-------------------------------------------------------------------------------
+
+0.88.0
+------
+
+Fixed a bug with migrations - when using ``db_column_name`` it wasn't being
+used in some alter statements. Thanks to @theelderbeever for reporting this
+issue.
+
+.. code-block:: python
+
+  class Concert(Table):
+      # We use `db_column_name` when the column name is problematic - e.g. if
+      # it clashes with a Python keyword.
+      in_ = Varchar(db_column_name='in')
+
+-------------------------------------------------------------------------------
+
+0.87.0
+------
+
+When using ``get_or_create`` with ``prefetch`` the behaviour was inconsistent -
+it worked as expected when the row already existed, but prefetch wasn't working
+if the row was being created. This now works as expected:
+
+.. code-block:: python
+
+  >>> band = Band.objects(Band.manager).get_or_create(
+  ...     (Band.name == "New Band 2") & (Band.manager == 1)
+  ... )
+
+  >>> band.manager
+  <Manager: 1>
+  >>> band.manager.name
+  "Mr Manager"
+
+Thanks to @backwardspy for reporting this issue.
+
+-------------------------------------------------------------------------------
+
+0.86.0
+------
+
+Added the ``Email`` column type. It's basically identical to ``Varchar``,
+except that when we use ``create_pydantic_model`` we add email validation
+to the generated Pydantic model.
+
+.. code-block:: python
+
+  from piccolo.columns.column_types import Email
+  from piccolo.table import Table
+  from piccolo.utils.pydantic import create_pydantic_model
+
+
+  class MyTable(Table):
+      email = Email()
+
+
+  model = create_pydantic_model(MyTable)
+
+  model(email="not a valid email")
+  # ValidationError!
+
+Thanks to @sinisaos for implementing this feature.
+
+-------------------------------------------------------------------------------
+
+0.85.1
+------
+
+Fixed a bug with migrations - when run backwards, ``raw`` was being called
+instead of ``raw_backwards``. Thanks to @translunar for the fix.
+
+-------------------------------------------------------------------------------
+
+0.85.0
+------
+
+You can now append items to an array in an update query:
+
+.. code-block:: python
+
+  await Ticket.update({
+      Ticket.seat_numbers: Ticket.seat_numbers + [1000]
+  }).where(Ticket.id == 1)
+
+Currently Postgres only. Thanks to @sumitsharansatsangi for suggesting this
+feature.
+
+-------------------------------------------------------------------------------
+
+0.84.0
+------
+
+You can now preview the DDL statements which will be run by Piccolo migrations.
+
+.. code-block:: bash
+
+  piccolo migrations forwards my_app --preview
+
+Thanks to @AliSayyah for adding this feature.
+
+-------------------------------------------------------------------------------
+
+0.83.0
+------
+
+We added support for Postgres read-slaves a few releases ago, but the ``batch``
+clause didn't support it until now. Thanks to @guruvignesh01 for reporting
+this issue, and @sinisaos for help implementing it.
+
+.. code-block:: python
+
+    # Returns 100 rows at a time from read_replica_db
+    async with await Manager.select().batch(
+        batch_size=100,
+        node="read_replica_db",
+    ) as batch:
+        async for _batch in batch:
+            print(_batch)
+
+
+-------------------------------------------------------------------------------
+
+0.82.0
+------
+
+Traditionally, when instantiating a ``Table``, you passed in column values
+using kwargs:
+
+.. code-block:: python
+
+  >>> await Manager(name='Guido').save()
+
+You can now pass in a dictionary instead, which makes it easier for static
+typing analysis tools like Mypy to detect typos.
+
+.. code-block:: python
+
+  >>> await Manager({Manager.name: 'Guido'}).save()
+
+See `PR 565 <https://github.com/piccolo-orm/piccolo/pull/565>`_ for more info.
+
+-------------------------------------------------------------------------------
+
+0.81.0
+------
+
+Added the ``returning`` clause to ``insert`` and ``update`` queries.
+
+This can be used to retrieve data from the inserted / modified rows.
+
+Here's an example, where we update the unpopular bands, and retrieve their
+names, in a single query:
+
+.. code-block:: python
+
+  >>> await Band.update({
+  ...     Band.popularity: Band.popularity + 5
+  ... }).where(
+  ...     Band.popularity < 10
+  ... ).returning(
+  ...     Band.name
+  ... )
+  [{'name': 'Bad sound band'}, {'name': 'Tone deaf band'}]
+
+See `PR 564 <https://github.com/piccolo-orm/piccolo/pull/564>`_ and
+`PR 563 <https://github.com/piccolo-orm/piccolo/pull/563>`_ for more info.
+
+-------------------------------------------------------------------------------
+
+0.80.2
+------
+
+Fixed a bug with ``Combination.__str__``, which meant that when printing out a
+query for debugging purposes it was wasn't showing correctly (courtesy
+@destos).
+
+-------------------------------------------------------------------------------
+
+0.80.1
+------
+
+Fixed a bug with Piccolo Admin and ``_get_related_readable``, which is used
+to show a human friendly identifier for a row, rather than just the ID.
+
+Thanks to @ethagnawl and @sinisaos for their help with this.
+
+-------------------------------------------------------------------------------
+
+0.80.0
+------
+
+There was a bug when doing joins with a ``JSONB`` column with ``as_alias``.
+
+.. code-block:: python
+
+  class User(Table, tablename="my_user"):
+      name = Varchar(length=120)
+      config = JSONB(default={})
+
+
+  class Subscriber(Table, tablename="subscriber"):
+      name = Varchar(length=120)
+      user = ForeignKey(references=User)
+
+
+  async def main():
+      # This was failing:
+      await Subscriber.select(
+          Subscriber.name,
+          Subscriber.user.config.as_alias("config")
+      )
+
+Thanks to @Anton-Karpenko for reporting this issue.
+
+Even though this is a bug fix, the minor version number has been bumped because
+the fix resulted in some refactoring of Piccolo's internals, so is a fairly big
+change.
+
+-------------------------------------------------------------------------------
+
+0.79.0
+------
+
+Added a custom ``__repr__`` method to ``Table``'s metaclass. It's needed to
+improve the appearance of our Sphinx docs. See
+`issue 549 <https://github.com/piccolo-orm/piccolo/issues/549>`_ for more
+details.
+
+-------------------------------------------------------------------------------
+
+0.78.0
+------
+
+Added the ``callback`` clause to ``select`` and ``objects`` queries (courtesy
+@backwardspy). For example:
+
+.. code-block:: python
+
+  >>> await Band.select().callback(my_callback)
+
+The callback can be a normal function or async function, which is called when
+the query is successful. The callback can be used to modify the query's output.
+
+It allows for some interesting and powerful code. Here's a very simple example
+where we modify the query's output:
+
+.. code-block:: python
+
+  >>> def get_uppercase_names() -> Select:
+  ...     def make_uppercase(response):
+  ...         return [{'name': i['name'].upper()} for i in response]
+  ...
+  ...    return Band.select(Band.name).callback(make_uppercase)
+
+  >>> await get_uppercase_names().where(Band.manager.name == 'Guido')
+  [{'name': 'PYTHONISTAS'}]
+
+Here's another example, where we perform validation on the query's output:
+
+.. code-block:: python
+
+  >>> def get_concerts() -> Select:
+  ...     def check_length(response):
+  ...         if len(response) == 0:
+  ...             raise ValueError('No concerts!')
+  ...         return response
+  ...
+  ...     return Concert.select().callback(check_length)
+
+  >>> await get_concerts().where(Concert.band_1.name == 'Terrible Band')
+  ValueError: No concerts!
+
+At the moment, callbacks are just triggered when a query is successful, but in
+the future other callbacks will be added, to hook into more of Piccolo's
+internals.
+
+-------------------------------------------------------------------------------
+
+0.77.0
+------
+
+Added the ``refresh`` method. If you have an object which has gotten stale, and
+want to refresh it, so it has the latest data from the database, you can now do
+this:
+
+.. code-block:: python
+
+    # If we have an instance:
+    band = await Band.objects().first()
+
+    # And it has gotten stale, we can refresh it:
+    await band.refresh()
+
+Thanks to @trondhindenes for suggesting this feature.
+
+-------------------------------------------------------------------------------
+
+0.76.1
+------
+
+Fixed a bug with ``atomic`` when run async with a connection pool.
+
+For example:
+
+.. code-block:: python
+
+  atomic = Band._meta.db.atomic()
+  atomic.add(query_1, query_1)
+  # This was failing:
+  await atomic.run()
+
+Thanks to @Anton-Karpenko for reporting this issue.
+
+-------------------------------------------------------------------------------
+
+0.76.0
+------
+
+create_db_tables / drop_db_tables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Added ``create_db_tables`` and ``create_db_tables_sync`` to replace
+``create_tables``. The problem was ``create_tables`` was sync only, and was
+inconsistent with the rest of Piccolo's API, which is async first.
+``create_tables`` will continue to work for now, but is deprecated, and will be
+removed in version 1.0.
+
+Likewise, ``drop_db_tables`` and ``drop_db_tables_sync`` have replaced
+``drop_tables``.
+
+When calling ``create_tables`` / ``drop_tables`` within other async libraries
+(such as `ward <https://github.com/darrenburns/ward>`_) it was sometimes
+unreliable - the best solution was just to make async versions of these
+functions. Thanks to @backwardspy for reporting this issue.
+
+``BaseUser`` password validation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We centralised the password validation logic in ``BaseUser`` into a method
+called ``_validate_password``. This is needed by Piccolo API, but also makes it
+easier for users to override this logic if subclassing ``BaseUser``.
+
+More ``run_sync`` refinements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``run_sync``, which is the main utility function which Piccolo uses to run
+async code, has been further simplified for Python > v3.10 compatibility.
+
+-------------------------------------------------------------------------------
+
+0.75.0
+------
+
+Changed how ``piccolo.utils.sync.run_sync`` works, to prevent a warning on
+Python 3.10. Thanks to @Drapersniper for reporting this issue.
+
+Lots of documentation improvements - particularly around testing, and Docker
+deployment.
+
+-------------------------------------------------------------------------------
+
+0.74.4
+------
+
+``piccolo schema generate`` now outputs a warning when it can't detect the
+``ON DELETE`` and ``ON UPDATE`` for a ``ForeignKey``, rather than raising an
+exception. Thanks to @theelderbeever for reporting this issue.
+
+``run_sync`` doesn't use the connection pool by default anymore. It was causing
+issues when an app contained sync and async code. Thanks to @WintonLi for
+reporting this issue.
+
+Added a tutorial to the docs for using Piccolo with an existing project and
+database. Thanks to @virajkanwade for reporting this issue.
+
+-------------------------------------------------------------------------------
+
+0.74.3
+------
+
+If you had a table containing an array of ``BigInt``, then migrations could
+fail:
+
+.. code-block:: python
+
+  from piccolo.table import Table
+  from piccolo.columns.column_types import Array, BigInt
+
+  class MyTable(Table):
+      my_column = Array(base_column=BigInt())
+
+It's because the ``BigInt`` base column needs access to the parent table to
+know if it's targeting Postgres or SQLite. See `PR 501 <https://github.com/piccolo-orm/piccolo/pull/501>`_.
+
+Thanks to @cheesycod for reporting this issue.
+
+-------------------------------------------------------------------------------
+
+0.74.2
+------
+
+If a user created a custom ``Column`` subclass, then migrations would fail.
+For example:
+
+.. code-block:: python
+
+  class CustomColumn(Varchar):
+      def __init__(self, custom_arg: str = '', *args, **kwargs):
+          self.custom_arg = custom_arg
+          super().__init__(*args, **kwargs)
+
+      @property
+      def column_type(self):
+          return 'VARCHAR'
+
+See `PR 497 <https://github.com/piccolo-orm/piccolo/pull/497>`_. Thanks to
+@WintonLi for reporting this issue.
+
+-------------------------------------------------------------------------------
+
 0.74.1
 ------
 

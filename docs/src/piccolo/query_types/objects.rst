@@ -52,12 +52,22 @@ columns.
 Creating objects
 ----------------
 
+You can pass the column values using kwargs:
+
 .. code-block:: python
 
     >>> band = Band(name="C-Sharps", popularity=100)
     >>> await band.save()
 
-This can also be done like this:
+Alternatively, you can pass in a dictionary, which is friendlier to static
+analysis tools like Mypy (it can easily detect typos in the column names):
+
+.. code-block:: python
+
+    >>> band = Band({Band.name: "C-Sharps", Band.popularity: 100})
+    >>> await band.save()
+
+We also have this shortcut which combines the above into a single line:
 
 .. code-block:: python
 
@@ -253,13 +263,40 @@ the columns:
 
 -------------------------------------------------------------------------------
 
+refresh
+-------
+
+If you have an object which has gotten stale, and want to refresh it, so it
+has the latest data from the database, you can use the
+:meth:`refresh <piccolo.table.Table.refresh>` method.
+
+.. code-block:: python
+
+    # If we have an instance:
+    band = await Band.objects().first()
+
+    # And it has gotten stale, we can refresh it:
+    await band.refresh()
+
+-------------------------------------------------------------------------------
+
 Query clauses
 -------------
 
 batch
-~~~~~~~
+~~~~~
 
 See :ref:`batch`.
+
+callback
+~~~~~~~~
+
+See :ref:`callback`.
+
+first
+~~~~~
+
+See :ref:`first`.
 
 limit
 ~~~~~
@@ -270,11 +307,6 @@ offset
 ~~~~~~
 
 See :ref:`offset`.
-
-first
-~~~~~
-
-See :ref:`first`.
 
 order_by
 ~~~~~~~~

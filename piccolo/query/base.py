@@ -5,14 +5,14 @@ import typing as t
 from time import time
 
 from piccolo.columns.column_types import JSON, JSONB
-from piccolo.query.mixins import ColumnsDelegate
+from piccolo.query.mixins import CallbackType, ColumnsDelegate
 from piccolo.querystring import QueryString
 from piccolo.utils.encoding import dump_json, load_json
 from piccolo.utils.objects import make_nested_object
 from piccolo.utils.sync import run_sync
 
 if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.query.mixins import OutputDelegate
+    from piccolo.query.mixins import CallbackDelegate, OutputDelegate
     from piccolo.table import Table  # noqa
 
 
@@ -61,8 +61,8 @@ class Query:
         else:
             raw = []
 
-        if hasattr(self, "run_callback"):
-            self.run_callback(raw)
+        if hasattr(self, "_raw_response_callback"):
+            self._raw_response_callback(raw)
 
         output: t.Optional[OutputDelegate] = getattr(
             self, "output_delegate", None
@@ -86,13 +86,10 @@ class Query:
 
             json_column_names = []
             for column in json_columns:
-                if column.alias is not None:
-                    json_column_names.append(column.alias)
+                if column._alias is not None:
+                    json_column_names.append(column._alias)
                 elif column.json_operator is not None:
-                    # If no alias is specified, then the default column name
-                    # that Postgres gives when using the `->` operator is
-                    # `?column?`.
-                    json_column_names.append("?column?")
+                    json_column_names.append(column._meta.name)
                 elif len(column._meta.call_chain) > 0:
                     json_column_names.append(
                         column.get_select_string(
@@ -129,14 +126,14 @@ class Query:
                         ]
                     else:
                         raw = [
-                            self.table(**columns, exists_in_db=True)
+                            self.table(**columns, _exists_in_db=True)
                             for columns in raw
                         ]
                 elif raw is not None:
                     if output._output.nested:
                         raw = make_nested_object(raw, self.table)
                     else:
-                        raw = self.table(**raw, exists_in_db=True)
+                        raw = self.table(**raw, _exists_in_db=True)
             elif type(raw) is list:
                 if output._output.as_list:
                     if len(raw) == 0:
@@ -175,8 +172,9 @@ class Query:
             If specified, run this query against another database node. Only
             available in Postgres. See :class:`PostgresEngine <piccolo.engine.postgres.PostgresEngine>`.
         :param in_pool:
-            Whether to run this in a connection pool if one is running. This is
-            mostly just for debugging - use a connection pool where possible.
+            Whether to run this in a connection pool if one is available. This
+            is mostly just for debugging - use a connection pool where
+            possible.
 
         """  # noqa: E501
         self._validate()
@@ -197,30 +195,53 @@ class Query:
 
         querystrings = self.querystrings
 
+        callback: t.Optional[CallbackDelegate] = getattr(
+            self, "callback_delegate", None
+        )
+
         if len(querystrings) == 1:
             results = await engine.run_querystring(
                 querystrings[0], in_pool=in_pool
             )
-            return await self._process_results(results)
+            processed_results = await self._process_results(results)
+
+            if callback:
+                processed_results = await callback.invoke(
+                    processed_results, kind=CallbackType.success
+                )
+
+            return processed_results
         else:
             responses = []
             for querystring in querystrings:
                 results = await engine.run_querystring(
                     querystring, in_pool=in_pool
                 )
-                responses.append(await self._process_results(results))
+                processed_results = await self._process_results(results)
+
+                if callback:
+                    processed_results = await callback.invoke(
+                        processed_results, kind=CallbackType.success
+                    )
+
+                responses.append(processed_results)
             return responses
 
-    def run_sync(self, timed=False, *args, **kwargs):
+    def run_sync(self, timed=False, in_pool=False, *args, **kwargs):
         """
         A convenience method for running the coroutine synchronously.
 
         :param timed:
             If ``True``, the time taken to run the query is printed out. Useful
             for debugging.
+        :param in_pool:
+            Whether to run this in a connection pool if one is available. Set
+            to ``False`` by default, because if an app uses ``run`` and
+            ``run_sync`` in the same app, it can cause errors. See
+            `issue 505 <https://github.com/piccolo-orm/piccolo/issues/505>`_.
 
         """
-        coroutine = self.run(*args, **kwargs)
+        coroutine = self.run(in_pool=in_pool, *args, **kwargs)
 
         if not timed:
             return run_sync(coroutine)

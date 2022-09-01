@@ -162,7 +162,7 @@ class TableTriggers:
 
     def get_column_ref_trigger(
         self, column_name: str, references_table: str
-    ) -> Trigger:
+    ) -> t.Optional[Trigger]:
         for trigger in self.triggers:
             if (
                 trigger.column_name == column_name
@@ -170,7 +170,7 @@ class TableTriggers:
             ):
                 return trigger
 
-        raise ValueError("No matching trigger found")
+        return None
 
 
 @dataclasses.dataclass
@@ -244,6 +244,8 @@ class OutputSchema:
         e.g. ["some_table.some_column unrecognised_type"]
     :param index_warnings:
         Warnings if column indexes can't be parsed.
+    :param trigger_warnings:
+        Warnings if triggers for certain columns can't be found.
     :param tables:
         e.g. ["class MyTable(Table): ..."]
     """
@@ -251,6 +253,7 @@ class OutputSchema:
     imports: t.List[str] = dataclasses.field(default_factory=list)
     warnings: t.List[str] = dataclasses.field(default_factory=list)
     index_warnings: t.List[str] = dataclasses.field(default_factory=list)
+    trigger_warnings: t.List[str] = dataclasses.field(default_factory=list)
     tables: t.List[t.Type[Table]] = dataclasses.field(default_factory=list)
 
     def get_table_with_name(self, tablename: str) -> t.Optional[t.Type[Table]]:
@@ -271,6 +274,7 @@ class OutputSchema:
         value.imports.extend(self.imports)
         value.warnings.extend(self.warnings)
         value.index_warnings.extend(self.index_warnings)
+        value.trigger_warnings.extend(self.trigger_warnings)
         value.tables.extend(self.tables)
         return value
 
@@ -278,6 +282,7 @@ class OutputSchema:
         self.imports.extend(value.imports)
         self.warnings.extend(value.warnings)
         self.index_warnings.extend(value.index_warnings)
+        self.trigger_warnings.extend(value.trigger_warnings)
         self.tables.extend(value.tables)
         return self
 
@@ -736,6 +741,10 @@ async def create_table_class_from_db(
                 if trigger:
                     kwargs["on_update"] = ONUPDATE_MAP[trigger.on_update]
                     kwargs["on_delete"] = ONDELETE_MAP[trigger.on_delete]
+                else:
+                    output_schema.trigger_warnings.append(
+                        f"{tablename}.{column_name}"
+                    )
 
                 output_schema = sum(  # type: ignore
                     [output_schema, referenced_output_schema]  # type: ignore
@@ -897,6 +906,17 @@ async def generate(schema_name: str = "public"):
 
         output.append('"""')
         output.append("WARNING: Unable to parse the following indexes:")
+        output.append(warning_str)
+        output.append('"""')
+
+    if output_schema.trigger_warnings:
+        warning_str = "\n".join(set(output_schema.trigger_warnings))
+
+        output.append('"""')
+        output.append(
+            "WARNING: Unable to find triggers for the following (used for "
+            "ON UPDATE, ON DELETE):"
+        )
         output.append(warning_str)
         output.append('"""')
 

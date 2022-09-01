@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import typing as t
 from dataclasses import dataclass, field
+from enum import Enum, auto
 
 from piccolo.columns import And, Column, Or, Where
 from piccolo.columns.column_types import ForeignKey
@@ -64,10 +66,34 @@ class OrderBy:
     def querystring(self) -> QueryString:
         order = "ASC" if self.ascending else "DESC"
         columns_names = ", ".join(
-            i._meta.get_full_name(just_alias=True) for i in self.columns
+            i._meta.get_full_name(with_alias=False) for i in self.columns
         )
 
         return QueryString(f" ORDER BY {columns_names} {order}")
+
+    def __str__(self):
+        return self.querystring.__str__()
+
+
+@dataclass
+class Returning:
+    __slots__ = ("columns",)
+
+    columns: t.List[Column]
+
+    @property
+    def querystring(self) -> QueryString:
+        column_names = []
+        for column in self.columns:
+            column_names.append(
+                f'"{column._meta.db_column_name}" AS "{column._alias}"'
+                if column._alias
+                else f'"{column._meta.db_column_name}"'
+            )
+
+        columns_string = ", ".join(column_names)
+
+        return QueryString(f" RETURNING {columns_string}")
 
     def __str__(self):
         return self.querystring.__str__()
@@ -90,6 +116,16 @@ class Output:
             load_json=self.load_json,
             nested=self.nested,
         )
+
+
+class CallbackType(Enum):
+    success = auto()
+
+
+@dataclass
+class Callback:
+    kind: CallbackType
+    target: t.Callable
 
 
 @dataclass
@@ -167,6 +203,14 @@ class DistinctDelegate:
 
 
 @dataclass
+class ReturningDelegate:
+    _returning: t.Optional[Returning] = None
+
+    def returning(self, columns: t.Sequence[Column]):
+        self._returning = Returning(columns=list(columns))
+
+
+@dataclass
 class CountDelegate:
 
     _count: bool = False
@@ -235,6 +279,52 @@ class OutputDelegate:
     def copy(self) -> OutputDelegate:
         _output = self._output.copy() if self._output is not None else None
         return self.__class__(_output=_output)
+
+
+@dataclass
+class CallbackDelegate:
+    """
+    Example usage:
+
+    .callback(my_handler_function)
+    .callback(print, on=CallbackType.success)
+    .callback(my_handler_coroutine)
+    .callback([handler1, handler2])
+    """
+
+    _callbacks: t.Dict[CallbackType, t.List[Callback]] = field(
+        default_factory=lambda: {kind: [] for kind in CallbackType}
+    )
+
+    def callback(
+        self,
+        callbacks: t.Union[t.Callable, t.List[t.Callable]],
+        *,
+        on: CallbackType,
+    ):
+        if isinstance(callbacks, list):
+            self._callbacks[on].extend(
+                Callback(kind=on, target=callback) for callback in callbacks
+            )
+        else:
+            self._callbacks[on].append(Callback(kind=on, target=callbacks))
+
+    async def invoke(self, results: t.Any, *, kind: CallbackType) -> t.Any:
+        """
+        Utility function that invokes the registered callbacks in the correct
+        way, handling both sync and async callbacks. Only callbacks of the
+        given kind are invoked.
+        Results are passed through the callbacks in the order they were added,
+        with each callback able to transform them. This function returns the
+        transformed results.
+        """
+        for callback in self._callbacks[kind]:
+            if asyncio.iscoroutinefunction(callback.target):
+                results = await callback.target(results)
+            else:
+                results = callback.target(results)
+
+        return results
 
 
 @dataclass
@@ -380,7 +470,7 @@ class GroupBy:
     @property
     def querystring(self) -> QueryString:
         columns_names = ", ".join(
-            i._meta.get_full_name(just_alias=True) for i in self.columns
+            i._meta.get_full_name(with_alias=False) for i in self.columns
         )
 
         return QueryString(f" GROUP BY {columns_names}")
