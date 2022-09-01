@@ -1,7 +1,13 @@
 from unittest import TestCase
 
 from piccolo.columns import Secret
-from piccolo.columns.column_types import JSON, JSONB, ForeignKey
+from piccolo.columns.column_types import (
+    JSON,
+    JSONB,
+    Email,
+    ForeignKey,
+    Varchar,
+)
 from piccolo.table import Table
 from tests.example_apps.music.tables import Band
 
@@ -75,6 +81,17 @@ class TestMetaClass(TestCase):
         self.assertEqual(
             MyTable._meta.json_columns, [MyTable.column_a, MyTable.column_b]
         )
+
+    def test_email_columns(self):
+        """
+        Make sure ``TableMeta.email_columns`` are setup correctly.
+        """
+
+        class MyTable(Table):
+            column_a = Email()
+            column_b = Varchar()
+
+        self.assertEqual(MyTable._meta.email_columns, [MyTable.column_a])
 
     def test_id_column(self):
         """
