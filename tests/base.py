@@ -22,7 +22,6 @@ ENGINE = engine_finder()
 def engine_version_lt(version: float):
     return ENGINE and run_sync(ENGINE.get_version()) < version
 
-
 def is_running_postgres():
     return isinstance(ENGINE, PostgresEngine)
 
@@ -42,10 +41,20 @@ def for_engines(*engine_names: str):
                 )(func)
             return wrapper
         else:
-
             def wrapper(func):
                 return func
             return wrapper
+    else:
+        raise ValueError("Engine not found")
+
+# For shallow inline assert branching. If the changes warrant their own function, use for_engines()
+def is_engine(*engine_names: str):
+    if ENGINE:
+        current_engine_name = ENGINE.engine_type
+        if current_engine_name not in engine_names:
+            return False
+        else:
+            return True
     else:
         raise ValueError("Engine not found")
 
@@ -61,8 +70,8 @@ cockroach_only = pytest.mark.skipif(
     not is_running_cockroach(), reason="Only running for Cockroach"
 )
 
-no_cockroach = pytest.mark.skipif(
-    is_running_cockroach(), reason="Not running for Cockroach"
+cockroach_skip = pytest.mark.skipif(
+    is_running_cockroach(), reason="Not yet available for Cockroach"
 )
 
 unix_only = pytest.mark.skipif(
@@ -245,26 +254,48 @@ class DBTestCase(TestCase):
             raise Exception("Unrecognised engine")
 
     def insert_row(self):
-        self.run_sync(
-            """
-            INSERT INTO manager (
-                name
-            ) VALUES (
-                'Guido'
-            );"""
-        )
-        self.run_sync(
-            """
-            INSERT INTO band (
-                name,
-                manager,
-                popularity
-            ) VALUES (
-                'Pythonistas',
-                1,
-                1000
-            );"""
-        )
+        if ENGINE.engine_type == "cockroach":
+            id = self.run_sync(
+                """
+                INSERT INTO manager (
+                    name
+                ) VALUES (
+                    'Guido'
+                ) RETURNING id;"""
+            )
+            self.run_sync(
+                f"""
+                INSERT INTO band (
+                    name,
+                    manager,
+                    popularity
+                ) VALUES (
+                    'Pythonistas',
+                    {first_id(id)},
+                    1000
+                );"""
+            )
+        else:
+            self.run_sync(
+                """
+                INSERT INTO manager (
+                    name
+                ) VALUES (
+                    'Guido'
+                );"""
+            )
+            self.run_sync(
+                """
+                INSERT INTO band (
+                    name,
+                    manager,
+                    popularity
+                ) VALUES (
+                    'Pythonistas',
+                    1,
+                    1000
+                );"""
+            )
 
     def insert_rows(self):
         self.run_sync(

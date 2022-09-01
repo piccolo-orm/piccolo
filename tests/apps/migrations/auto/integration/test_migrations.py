@@ -47,7 +47,7 @@ from piccolo.columns.reference import LazyTableReference
 from piccolo.conf.apps import AppConfig
 from piccolo.table import Table, create_table_class, drop_db_tables_sync
 from piccolo.utils.sync import run_sync
-from tests.base import DBTestCase, postgres_only
+from tests.base import DBTestCase, postgres_only, cockroach_skip
 
 if t.TYPE_CHECKING:
     from piccolo.columns.base import Column
@@ -548,7 +548,11 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @cockroach_skip
     def test_array_column_integer(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/35730 "column my_column is of type int[] and thus is not indexable"
+        """
         self._test_migrations(
             table_snapshots=[
                 [self.table(column)]
@@ -573,7 +577,11 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @cockroach_skip
     def test_array_column_varchar(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/35730 "column my_column is of type varchar[] and thus is not indexable"
+        """
         self._test_migrations(
             table_snapshots=[
                 [self.table(column)]
