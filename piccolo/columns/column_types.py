@@ -776,7 +776,9 @@ class Serial(Column):
 
     def default(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres" or engine_type == "cockroach":
+        if engine_type == "postgres":
+            return DEFAULT
+        elif engine_type == "cockroach":
             return DEFAULT
         elif engine_type == "sqlite":
             return NULL

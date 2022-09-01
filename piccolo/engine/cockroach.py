@@ -15,7 +15,7 @@ from piccolo.utils.warnings import Level, colored_warning
 from .postgres import PostgresEngine
 from .postgres import Transaction as PostgresTransaction
 from .postgres import Atomic as PostgresAtomic
-from .postgres import AsyncBatch as PostgresAsyncBatch
+from .postgres import AsyncBatch as AsyncBatch
 
 asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")
 
@@ -25,16 +25,7 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from asyncpg.pool import Pool
 
 
-@dataclass
-class AsyncBatch(PostgresAsyncBatch):
 
-    connection: Connection
-    query: Query
-    batch_size: int
-
-    # Set internally
-    _transaction = None
-    _cursor: t.Optional[Cursor] = None
 
 
 ###############################################################################
@@ -56,13 +47,10 @@ class Atomic(PostgresAtomic):
 
     """
 
-    __slots__ = ("engine", "queries")
-
     def __init__(self, engine: CockroachDBEngine):
         self.engine = engine
         self.queries: t.List[Query] = []
-        super().__init__()
-
+        super(Atomic, self).__init__(engine)
 
 ###############################################################################
 
@@ -80,16 +68,15 @@ class Transaction(PostgresTransaction):
 
     """
 
-    __slots__ = ("engine", "transaction", "context", "connection")
-
-    def __init__(self, engine: PostgresEngine):
+    def __init__(self, engine: CockroachEngine):
         self.engine = engine
         if self.engine.transaction_connection.get():
             raise TransactionError(
                 "A transaction is already active - nested transactions aren't "
                 "currently supported."
             )
-        super().__init__()
+        super(Transaction, self).__init__(engine)
+
 
 ###############################################################################
 
@@ -99,8 +86,8 @@ class CockroachEngine(PostgresEngine):
     An extension of the Postgresql backend.
     """
 
-    engine_type = "postgres"
-    #min_version_number = 9.6
+    engine_type = "cockroach"
+    min_version_number = 21
 
     def __init__(
         self,
@@ -121,4 +108,4 @@ class CockroachEngine(PostgresEngine):
         self.transaction_connection = contextvars.ContextVar(
             f"pg_transaction_connection_{database_name}", default=None
         )
-        #super().__init__()
+        super(CockroachEngine, self).__init__(config, extensions, log_queries, extra_nodes)

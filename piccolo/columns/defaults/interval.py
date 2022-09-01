@@ -54,6 +54,21 @@ class IntervalCustom(Default):  # lgtm [py/missing-equals]
         return f"'{value}'"
 
     @property
+    def cockroach(self):
+        value = self.get_postgres_interval_string(
+            attributes=[
+                "weeks",
+                "days",
+                "hours",
+                "minutes",
+                "seconds",
+                "milliseconds",
+                "microseconds",
+            ]
+        )
+        return f"'{value}'"
+
+    @property
     def sqlite(self):
         return self.timedelta.total_seconds()
 

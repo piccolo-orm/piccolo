@@ -32,6 +32,22 @@ def is_running_sqlite():
 def is_running_cockroach():
     return isinstance(ENGINE, CockroachEngine)
 
+def for_engines(*engine_names: str):
+    if ENGINE:
+        current_engine_name = ENGINE.engine_type
+        if current_engine_name not in engine_names:
+            def wrapper(func):
+                return pytest.mark.skip(
+                    f"Not running for {current_engine_name}"
+                )(func)
+            return wrapper
+        else:
+
+            def wrapper(func):
+                return func
+            return wrapper
+    else:
+        raise ValueError("Engine not found")
 
 postgres_only = pytest.mark.skipif(
     not is_running_postgres(), reason="Only running for Postgres"
@@ -52,6 +68,10 @@ no_cockroach = pytest.mark.skipif(
 unix_only = pytest.mark.skipif(
     sys.platform.startswith("win"), reason="Only running on a Unix system"
 )
+
+# Helper for databases with non-sequential ids (cockroach).
+def first_id(result=[]):
+    return result[0].get('id')
 
 
 class AsyncMock(MagicMock):
