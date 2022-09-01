@@ -4,7 +4,7 @@ Changes
 0.89.0
 ------
 
-Made it easier to access the ``Email`` columns on table.
+Made it easier to access the ``Email`` columns on a table.
 
 .. code-block:: python
 
