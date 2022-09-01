@@ -24,6 +24,13 @@ class TimestampOffset(Default):
         return f"CURRENT_TIMESTAMP + INTERVAL '{interval_string}'"
 
     @property
+    def cockroach(self):
+        interval_string = self.get_postgres_interval_string(
+            ["days", "hours", "minutes", "seconds"]
+        )
+        return f"CURRENT_TIMESTAMP::TIMESTAMP + INTERVAL '{interval_string}'"
+
+    @property
     def sqlite(self):
         interval_string = self.get_sqlite_interval_string(
             ["days", "hours", "minutes", "seconds"]
@@ -43,6 +50,10 @@ class TimestampNow(Default):
     @property
     def postgres(self):
         return "current_timestamp"
+
+    @property
+    def cockroach(self):
+        return "current_timestamp::TIMESTAMP"
 
     @property
     def sqlite(self):
