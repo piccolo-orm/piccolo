@@ -1,6 +1,20 @@
 Changes
 =======
 
+0.89.0
+------
+
+Made it easier to access the ``Email`` columns on table.
+
+.. code-block:: python
+
+  >>> MyTable._meta.email_columns
+  [MyTable.email_column_1, MyTable.email_column_2]
+
+This was added for Piccolo Admin.
+
+-------------------------------------------------------------------------------
+
 0.88.0
 ------
 
