@@ -1,10 +1,10 @@
 import os
 
 from piccolo.conf.apps import AppRegistry
-from piccolo.engine.cockroachdb import CockroachDBEngine
+from piccolo.engine.cockroach import CockroachEngine
 
 
-DB = CockroachDBEngine(
+DB = CockroachEngine(
     config={
         "host": os.environ.get("PG_HOST", "localhost"),
         "port": os.environ.get("PG_PORT", "26257"),

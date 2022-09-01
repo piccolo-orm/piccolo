@@ -151,7 +151,7 @@ jobs:
                   pip install -r requirements/requirements.txt
                   pip install -r requirements/test-requirements.txt
                   pip install -r requirements/extras/postgres.txt
-            - name: Setup cockroachdb
+            - name: Setup CockroachDB
               run: |
                   wget -qO- https://binaries.cockroachdb.com/cockroach-v22.1.6.linux-amd64.tgz | tar xz
                   ./cockroach-v22.1.6.linux-amd64/cockroach start-single-node --insecure --background

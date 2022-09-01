@@ -594,7 +594,7 @@ class Column(Selectable):
         For SQLite, it's just proxied to a LIKE query instead.
 
         """
-        if self._meta.engine_type == "postgres":
+        if self._meta.engine_type == "postgres" or self._meta.engine_type == "cockroach":
             operator: t.Type[ComparisonOperator] = ILike
         else:
             colored_warning(

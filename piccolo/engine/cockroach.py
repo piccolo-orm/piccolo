@@ -94,7 +94,7 @@ class Transaction(PostgresTransaction):
 ###############################################################################
 
 
-class CockroachDBEngine(PostgresEngine):
+class CockroachEngine(PostgresEngine):
     """
     An extension of the Postgresql backend.
     """

@@ -12,6 +12,7 @@ from piccolo.apps.schema.commands.generate import RowMeta
 from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
+from piccolo.engine.cockroach import CockroachEngine
 from piccolo.table import Table, create_table_class
 from piccolo.utils.sync import run_sync
 
@@ -25,9 +26,11 @@ def engine_version_lt(version: float):
 def is_running_postgres():
     return isinstance(ENGINE, PostgresEngine)
 
-
 def is_running_sqlite():
     return isinstance(ENGINE, SQLiteEngine)
+
+def is_running_cockroach():
+    return isinstance(ENGINE, CockroachEngine)
 
 
 postgres_only = pytest.mark.skipif(
@@ -36,6 +39,14 @@ postgres_only = pytest.mark.skipif(
 
 sqlite_only = pytest.mark.skipif(
     not is_running_sqlite(), reason="Only running for SQLite"
+)
+
+cockroach_only = pytest.mark.skipif(
+    not is_running_cockroach(), reason="Only running for Cockroach"
+)
+
+no_cockroach = pytest.mark.skipif(
+    is_running_cockroach(), reason="Not running for Cockroach"
 )
 
 unix_only = pytest.mark.skipif(
@@ -134,7 +145,7 @@ class DBTestCase(TestCase):
     ###########################################################################
 
     def create_tables(self):
-        if ENGINE.engine_type == "postgres":
+        if ENGINE.engine_type == "postgres" or ENGINE.engine_type == "cockroach":
             self.run_sync(
                 """
                 CREATE TABLE manager (
@@ -278,7 +289,7 @@ class DBTestCase(TestCase):
         self.run_sync(f"INSERT INTO manager (name) VALUES {values_string};")
 
     def drop_tables(self):
-        if ENGINE.engine_type == "postgres":
+        if ENGINE.engine_type == "postgres" or ENGINE.engine_type == "cockroach":
             self.run_sync("DROP TABLE IF EXISTS band CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS manager CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS ticket CASCADE;")

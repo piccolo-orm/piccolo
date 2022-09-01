@@ -49,7 +49,7 @@ class Query:
         if results:
             keys = results[0].keys()
             keys = [i.replace("$", ".") for i in keys]
-            if self.engine_type == "postgres":
+            if self.engine_type == "postgres" or engine_type == "cockroach":
                 # asyncpg returns a special Record object. We can pass it
                 # directly into zip without calling `values` on it. This can
                 # save us hundreds of microseconds, depending on the number of
@@ -266,7 +266,7 @@ class Query:
         raise NotImplementedError
 
     @property
-    def cockroachdb_querystrings(self) -> t.Sequence[QueryString]:
+    def cockroach_querystrings(self) -> t.Sequence[QueryString]:
         raise NotImplementedError
 
     @property
@@ -292,9 +292,9 @@ class Query:
                 return self.sqlite_querystrings
             except NotImplementedError:
                 return self.default_querystrings
-        elif engine_type == "cockroachdb":
+        elif engine_type == "cockroach":
             try:
-                return self.cockroachdb_querystrings
+                return self.cockroach_querystrings
             except NotImplementedError:
                 try:
                     return self.postgres_querystrings
@@ -425,7 +425,7 @@ class DDL:
         Calls the correct underlying method, depending on the current engine.
         """
         engine_type = self.engine_type
-        if engine_type == "postgres":
+        if engine_type == "postgres" or engine_type == "cockroach":
             try:
                 return self.postgres_ddl
             except NotImplementedError:

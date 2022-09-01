@@ -236,7 +236,7 @@ class TimedeltaDelegate:
         if not isinstance(value, timedelta):
             raise ValueError("Only timedelta values can be added.")
 
-        if engine_type == "postgres":
+        if engine_type == "postgres" or engine_type == "cockroach":
             value_string = self.get_postgres_interval_string(interval=value)
             return QueryString(
                 f'"{column_name}" {operator} INTERVAL {value_string}',
@@ -681,7 +681,7 @@ class BigInt(Integer):
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres":
+        if engine_type == "postgres" or engine_type == "cockroach":
             return "BIGINT"
         elif engine_type == "sqlite":
             return "INTEGER"
@@ -729,7 +729,7 @@ class SmallInt(Integer):
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres":
+        if engine_type == "postgres" or engine_type == "cockroach":
             return "SMALLINT"
         elif engine_type == "sqlite":
             return "INTEGER"
@@ -768,7 +768,7 @@ class Serial(Column):
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres":
+        if engine_type == "postgres" or engine_type == "cockroach":
             return "SERIAL"
         elif engine_type == "sqlite":
             return "INTEGER"
@@ -776,7 +776,7 @@ class Serial(Column):
 
     def default(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres":
+        if engine_type == "postgres" or engine_type == "cockroach":
             return DEFAULT
         elif engine_type == "sqlite":
             return NULL
@@ -808,7 +808,7 @@ class BigSerial(Serial):
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres":
+        if engine_type == "postgres" or engine_type == "cockroach":
             return "BIGSERIAL"
         elif engine_type == "sqlite":
             return "INTEGER"
@@ -1248,7 +1248,7 @@ class Interval(Column):  # lgtm [py/missing-equals]
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres":
+        if engine_type == "postgres" or engine_type == "cockroach":
             return "INTERVAL"
         elif engine_type == "sqlite":
             # We can't use 'INTERVAL' because the type affinity in SQLite would
@@ -2310,7 +2310,7 @@ class Bytea(Column):
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres":
+        if engine_type == "postgres" or engine_type == "cockroach":
             return "BYTEA"
         elif engine_type == "sqlite":
             return "BLOB"
@@ -2456,7 +2456,7 @@ class Array(Column):
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres":
+        if engine_type == "postgres" or engine_type == "cockroach":
             return f"{self.base_column.column_type}[]"
         elif engine_type == "sqlite":
             return "ARRAY"
@@ -2521,7 +2521,7 @@ class Array(Column):
         """
         engine_type = self._meta.engine_type
 
-        if engine_type == "postgres":
+        if engine_type == "postgres" or engine_type == "cockroach":
             return Where(column=self, value=value, operator=ArrayAny)
         elif engine_type == "sqlite":
             return self.like(f"%{value}%")
@@ -2539,7 +2539,7 @@ class Array(Column):
         """
         engine_type = self._meta.engine_type
 
-        if engine_type == "postgres":
+        if engine_type == "postgres" or engine_type == "cockroach":
             return Where(column=self, value=value, operator=ArrayAll)
         elif engine_type == "sqlite":
             raise ValueError("Unsupported by SQLite")
