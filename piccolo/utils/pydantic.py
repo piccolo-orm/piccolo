@@ -14,6 +14,7 @@ from piccolo.columns.column_types import (
     JSONB,
     Array,
     Decimal,
+    Email,
     ForeignKey,
     Numeric,
     Secret,
@@ -211,6 +212,8 @@ def create_pydantic_model(
             value_type: t.Type = pydantic.condecimal(
                 max_digits=column.precision, decimal_places=column.scale
             )
+        elif isinstance(column, Email):
+            value_type = pydantic.EmailStr
         elif isinstance(column, Varchar):
             value_type = pydantic.constr(max_length=column.length)
         elif isinstance(column, Array):

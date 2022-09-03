@@ -5,7 +5,7 @@ from enum import Enum
 
 from piccolo.utils.encoding import dump_json
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
 
 

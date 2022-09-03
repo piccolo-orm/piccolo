@@ -1,6 +1,189 @@
 Changes
 =======
 
+0.89.0
+------
+
+Made it easier to access the ``Email`` columns on a table.
+
+.. code-block:: python
+
+  >>> MyTable._meta.email_columns
+  [MyTable.email_column_1, MyTable.email_column_2]
+
+This was added for Piccolo Admin.
+
+-------------------------------------------------------------------------------
+
+0.88.0
+------
+
+Fixed a bug with migrations - when using ``db_column_name`` it wasn't being
+used in some alter statements. Thanks to @theelderbeever for reporting this
+issue.
+
+.. code-block:: python
+
+  class Concert(Table):
+      # We use `db_column_name` when the column name is problematic - e.g. if
+      # it clashes with a Python keyword.
+      in_ = Varchar(db_column_name='in')
+
+-------------------------------------------------------------------------------
+
+0.87.0
+------
+
+When using ``get_or_create`` with ``prefetch`` the behaviour was inconsistent -
+it worked as expected when the row already existed, but prefetch wasn't working
+if the row was being created. This now works as expected:
+
+.. code-block:: python
+
+  >>> band = Band.objects(Band.manager).get_or_create(
+  ...     (Band.name == "New Band 2") & (Band.manager == 1)
+  ... )
+
+  >>> band.manager
+  <Manager: 1>
+  >>> band.manager.name
+  "Mr Manager"
+
+Thanks to @backwardspy for reporting this issue.
+
+-------------------------------------------------------------------------------
+
+0.86.0
+------
+
+Added the ``Email`` column type. It's basically identical to ``Varchar``,
+except that when we use ``create_pydantic_model`` we add email validation
+to the generated Pydantic model.
+
+.. code-block:: python
+
+  from piccolo.columns.column_types import Email
+  from piccolo.table import Table
+  from piccolo.utils.pydantic import create_pydantic_model
+
+
+  class MyTable(Table):
+      email = Email()
+
+
+  model = create_pydantic_model(MyTable)
+
+  model(email="not a valid email")
+  # ValidationError!
+
+Thanks to @sinisaos for implementing this feature.
+
+-------------------------------------------------------------------------------
+
+0.85.1
+------
+
+Fixed a bug with migrations - when run backwards, ``raw`` was being called
+instead of ``raw_backwards``. Thanks to @translunar for the fix.
+
+-------------------------------------------------------------------------------
+
+0.85.0
+------
+
+You can now append items to an array in an update query:
+
+.. code-block:: python
+
+  await Ticket.update({
+      Ticket.seat_numbers: Ticket.seat_numbers + [1000]
+  }).where(Ticket.id == 1)
+
+Currently Postgres only. Thanks to @sumitsharansatsangi for suggesting this
+feature.
+
+-------------------------------------------------------------------------------
+
+0.84.0
+------
+
+You can now preview the DDL statements which will be run by Piccolo migrations.
+
+.. code-block:: bash
+
+  piccolo migrations forwards my_app --preview
+
+Thanks to @AliSayyah for adding this feature.
+
+-------------------------------------------------------------------------------
+
+0.83.0
+------
+
+We added support for Postgres read-slaves a few releases ago, but the ``batch``
+clause didn't support it until now. Thanks to @guruvignesh01 for reporting
+this issue, and @sinisaos for help implementing it.
+
+.. code-block:: python
+
+    # Returns 100 rows at a time from read_replica_db
+    async with await Manager.select().batch(
+        batch_size=100,
+        node="read_replica_db",
+    ) as batch:
+        async for _batch in batch:
+            print(_batch)
+
+
+-------------------------------------------------------------------------------
+
+0.82.0
+------
+
+Traditionally, when instantiating a ``Table``, you passed in column values
+using kwargs:
+
+.. code-block:: python
+
+  >>> await Manager(name='Guido').save()
+
+You can now pass in a dictionary instead, which makes it easier for static
+typing analysis tools like Mypy to detect typos.
+
+.. code-block:: python
+
+  >>> await Manager({Manager.name: 'Guido'}).save()
+
+See `PR 565 <https://github.com/piccolo-orm/piccolo/pull/565>`_ for more info.
+
+-------------------------------------------------------------------------------
+
+0.81.0
+------
+
+Added the ``returning`` clause to ``insert`` and ``update`` queries.
+
+This can be used to retrieve data from the inserted / modified rows.
+
+Here's an example, where we update the unpopular bands, and retrieve their
+names, in a single query:
+
+.. code-block:: python
+
+  >>> await Band.update({
+  ...     Band.popularity: Band.popularity + 5
+  ... }).where(
+  ...     Band.popularity < 10
+  ... ).returning(
+  ...     Band.name
+  ... )
+  [{'name': 'Bad sound band'}, {'name': 'Tone deaf band'}]
+
+See `PR 564 <https://github.com/piccolo-orm/piccolo/pull/564>`_ and
+`PR 563 <https://github.com/piccolo-orm/piccolo/pull/563>`_ for more info.
+
+-------------------------------------------------------------------------------
+
 0.80.2
 ------
 

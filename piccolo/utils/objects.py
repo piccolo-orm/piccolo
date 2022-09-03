@@ -4,7 +4,7 @@ import typing as t
 
 from piccolo.columns.column_types import ForeignKey
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 

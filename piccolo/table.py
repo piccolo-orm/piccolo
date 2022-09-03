@@ -11,6 +11,7 @@ from piccolo.columns.column_types import (
     JSON,
     JSONB,
     Array,
+    Email,
     ForeignKey,
     Secret,
     Serial,
@@ -51,7 +52,7 @@ from piccolo.utils.sql_values import convert_to_sql_value
 from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import colored_warning
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Selectable
 
 PROTECTED_TABLENAMES = ("user",)
@@ -70,6 +71,7 @@ class TableMeta:
     columns: t.List[Column] = field(default_factory=list)
     default_columns: t.List[Column] = field(default_factory=list)
     non_default_columns: t.List[Column] = field(default_factory=list)
+    email_columns: t.List[Email] = field(default_factory=list)
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
     primary_key: Column = field(default_factory=Column)
     json_columns: t.List[t.Union[JSON, JSONB]] = field(default_factory=list)
@@ -217,6 +219,7 @@ class Table(metaclass=TableMetaclass):
         foreign_key_columns: t.List[ForeignKey] = []
         secret_columns: t.List[Secret] = []
         json_columns: t.List[t.Union[JSON, JSONB]] = []
+        email_columns: t.List[Email] = []
         primary_key: t.Optional[Column] = None
         m2m_relationships: t.List[M2M] = []
 
@@ -250,6 +253,9 @@ class Table(metaclass=TableMetaclass):
                 if isinstance(column, Array):
                     column.base_column._meta._table = cls
 
+                if isinstance(column, Email):
+                    email_columns.append(column)
+
                 if isinstance(column, Secret):
                     secret_columns.append(column)
 
@@ -276,6 +282,7 @@ class Table(metaclass=TableMetaclass):
             columns=columns,
             default_columns=default_columns,
             non_default_columns=non_default_columns,
+            email_columns=email_columns,
             primary_key=primary_key,
             foreign_key_columns=foreign_key_columns,
             json_columns=json_columns,
@@ -307,7 +314,12 @@ class Table(metaclass=TableMetaclass):
         **kwargs,
     ):
         """
-        Assigns any default column values to the class.
+        The constructor can be used to assign column values.
+
+        .. note::
+            The ``_data``, ``_ignore_missing``, and ``_exists_in_db``
+            arguments are prefixed with an underscore to help prevent a clash
+            with a column name which might be passed in via kwargs.
 
         :param _data:
             There's two ways of passing in the data for each column. Firstly,
@@ -412,7 +424,7 @@ class Table(metaclass=TableMetaclass):
         cls = self.__class__
 
         if not self._exists_in_db:
-            return cls.insert().add(self)
+            return cls.insert(self).returning(cls._meta.primary_key)
 
         # Pre-existing row - update
         if columns is None:
@@ -872,7 +884,7 @@ class Table(metaclass=TableMetaclass):
             )
 
         """
-        query = Insert(table=cls)
+        query = Insert(table=cls).returning(cls._meta.primary_key)
         if rows:
             query.add(*rows)
         return query

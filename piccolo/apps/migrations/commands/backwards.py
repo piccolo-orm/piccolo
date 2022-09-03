@@ -18,11 +18,13 @@ class BackwardsMigrationManager(BaseMigrationManager):
         migration_id: str,
         auto_agree: bool = False,
         clean: bool = False,
+        preview: bool = False,
     ):
         self.migration_id = migration_id
         self.app_name = app_name
         self.auto_agree = auto_agree
         self.clean = clean
+        self.preview = preview
         super().__init__()
 
     async def run(self) -> MigrationResult:
@@ -91,14 +93,16 @@ class BackwardsMigrationManager(BaseMigrationManager):
                 response = await migration_module.forwards()
 
                 if isinstance(response, MigrationManager):
-                    await response.run_backwards()
+                    if self.preview:
+                        response.preview = True
+                    await response.run(backwards=True)
+                if not self.preview:
+                    await Migration.delete().where(
+                        Migration.name == migration_id
+                    ).run()
 
-                await Migration.delete().where(
-                    Migration.name == migration_id
-                ).run()
-
-                if self.clean and migration_module.__file__:
-                    os.unlink(migration_module.__file__)
+                    if self.clean and migration_module.__file__:
+                        os.unlink(migration_module.__file__)
 
                 print("ok! ✔️")
             return MigrationResult(success=True)
@@ -114,6 +118,7 @@ async def run_backwards(
     migration_id: str = "1",
     auto_agree: bool = False,
     clean: bool = False,
+    preview: bool = False,
 ) -> MigrationResult:
     if app_name == "all":
         sorted_app_names = BaseMigrationManager().get_sorted_app_names()
@@ -140,6 +145,7 @@ async def run_backwards(
                 app_name=_app_name,
                 migration_id="all",
                 auto_agree=auto_agree,
+                preview=preview,
             )
             await manager.run()
         return MigrationResult(success=True)
@@ -149,6 +155,7 @@ async def run_backwards(
             migration_id=migration_id,
             auto_agree=auto_agree,
             clean=clean,
+            preview=preview,
         )
         return await manager.run()
 
@@ -158,6 +165,7 @@ async def backwards(
     migration_id: str = "1",
     auto_agree: bool = False,
     clean: bool = False,
+    preview: bool = False,
 ):
     """
     Undo migrations up to a specific migration.
@@ -174,6 +182,8 @@ async def backwards(
     :param clean:
         If true, the migration files which have been run backwards are deleted
         from the disk after completing.
+    :param preview:
+        If true, don't actually run the migration, just print the SQL queries.
 
     """
     response = await run_backwards(
@@ -181,6 +191,7 @@ async def backwards(
         migration_id=migration_id,
         auto_agree=auto_agree,
         clean=clean,
+        preview=preview,
     )
 
     if not response.success:

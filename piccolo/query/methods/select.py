@@ -479,10 +479,15 @@ class Select(Query):
         return self
 
     async def batch(
-        self, batch_size: t.Optional[int] = None, **kwargs
+        self,
+        batch_size: t.Optional[int] = None,
+        node: t.Optional[str] = None,
+        **kwargs,
     ) -> Batch:
         if batch_size:
             kwargs.update(batch_size=batch_size)
+        if node:
+            kwargs.update(node=node)
         return await self.table._meta.db.batch(self, **kwargs)
 
     ###########################################################################

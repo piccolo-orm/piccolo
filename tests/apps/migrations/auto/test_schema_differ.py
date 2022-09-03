@@ -406,7 +406,45 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(schema_differ.alter_columns.statements) == 1)
         self.assertEqual(
             schema_differ.alter_columns.statements[0],
-            "manager.alter_column(table_class_name='Ticket', tablename='ticket', column_name='price', params={'digits': (4, 2)}, old_params={'digits': (5, 2)}, column_class=Numeric, old_column_class=Numeric)",  # noqa
+            "manager.alter_column(table_class_name='Ticket', tablename='ticket', column_name='price', db_column_name='price', params={'digits': (4, 2)}, old_params={'digits': (5, 2)}, column_class=Numeric, old_column_class=Numeric)",  # noqa
+        )
+
+    def test_db_column_name(self):
+        """
+        Make sure alter statements use the ``db_column_name`` if provided.
+
+        https://github.com/piccolo-orm/piccolo/issues/513
+
+        """
+        price_1 = Numeric(digits=(4, 2), db_column_name="custom")
+        price_1._meta.name = "price"
+
+        price_2 = Numeric(digits=(5, 2), db_column_name="custom")
+        price_2._meta.name = "price"
+
+        schema: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Ticket",
+                tablename="ticket",
+                columns=[price_1],
+            )
+        ]
+        schema_snapshot: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Ticket",
+                tablename="ticket",
+                columns=[price_2],
+            )
+        ]
+
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
+        )
+
+        self.assertTrue(len(schema_differ.alter_columns.statements) == 1)
+        self.assertEqual(
+            schema_differ.alter_columns.statements[0],
+            "manager.alter_column(table_class_name='Ticket', tablename='ticket', column_name='price', db_column_name='custom', params={'digits': (4, 2)}, old_params={'digits': (5, 2)}, column_class=Numeric, old_column_class=Numeric)",  # noqa
         )
 
     def test_alter_default(self):

@@ -360,6 +360,17 @@ class Varchar(Column):
         obj.__dict__[self._meta.name] = value
 
 
+class Email(Varchar):
+    """
+    Used for storing email addresses. It's identical to :class:`Varchar`,
+    except when using :func:`create_pydantic_model <piccolo.utils.pydantic.create_pydantic_model>` -
+    we add email validation to the Pydantic model. This means that :ref:`PiccoloAdmin`
+    also validates emails addresses.
+    """  # noqa: E501
+
+    pass
+
+
 class Secret(Varchar):
     """
     This is just an alias to ``Varchar(secret=True)``. It's here for backwards
@@ -2534,6 +2545,40 @@ class Array(Column):
             raise ValueError("Unsupported by SQLite")
         else:
             raise ValueError("Unrecognised engine type")
+
+    def cat(self, value: t.List[t.Any]) -> QueryString:
+        """
+        Used in an ``update`` query to append items to an array.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.cat([1000])
+            ... }).where(Ticket.id == 1)
+
+        You can also use the ``+`` symbol if you prefer:
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers + [1000]
+            ... }).where(Ticket.id == 1)
+
+        """
+        engine_type = self._meta.engine_type
+        if engine_type != "postgres":
+            raise ValueError(
+                "Only Postgres supports array appending currently."
+            )
+
+        if not isinstance(value, list):
+            value = [value]
+
+        db_column_name = self._meta.db_column_name
+        return QueryString(f'array_cat("{db_column_name}", {{}})', value)
+
+    def __add__(self, value: t.List[t.Any]) -> QueryString:
+        return self.cat(value)
 
     ###########################################################################
     # Descriptors
