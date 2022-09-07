@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import decimal
 import os
+import random
 import shutil
 import tempfile
 import time
@@ -890,9 +891,13 @@ class TestForeignKeys(MigrationTestCase):
         https://github.com/piccolo-orm/piccolo/issues/616
 
         """
+        # We'll shuffle them, to make it a more thorough test.
+        table_classes = random.sample(
+            self.table_classes, len(self.table_classes)
+        )
 
-        self._test_migrations(table_snapshots=[self.table_classes])
-        for table_class in self.table_classes:
+        self._test_migrations(table_snapshots=[table_classes])
+        for table_class in table_classes:
             self.assertTrue(table_class.table_exists().run_sync())
 
 
