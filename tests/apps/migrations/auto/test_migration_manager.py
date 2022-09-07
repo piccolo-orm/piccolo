@@ -1,4 +1,5 @@
 import asyncio
+import random
 from io import StringIO
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
@@ -19,8 +20,15 @@ asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")
 
 class TestSortTableClasses(TestCase):
     def test_sort_table_classes(self):
-        self.assertEqual(sort_table_classes([Manager, Band]), [Manager, Band])
-        self.assertEqual(sort_table_classes([Band, Manager]), [Manager, Band])
+        """
+        Make sure simple use cases work correctly.
+        """
+        self.assertListEqual(
+            sort_table_classes([Manager, Band]), [Manager, Band]
+        )
+        self.assertListEqual(
+            sort_table_classes([Band, Manager]), [Manager, Band]
+        )
 
         sorted_tables = sort_table_classes([Manager, Venue, Concert, Band])
         self.assertTrue(
@@ -45,7 +53,7 @@ class TestSortTableClasses(TestCase):
         class TableB(Table):
             pass
 
-        self.assertEqual(
+        self.assertListEqual(
             sort_table_classes([TableA, TableB]), [TableA, TableB]
         )
 
@@ -54,7 +62,7 @@ class TestSortTableClasses(TestCase):
         Make sure that sorting a list with only a single table in it still
         works.
         """
-        self.assertEqual(sort_table_classes([Band]), [Band])
+        self.assertListEqual(sort_table_classes([Band]), [Band])
 
     def test_recursive_table(self):
         """
@@ -68,9 +76,39 @@ class TestSortTableClasses(TestCase):
         class TableB(Table):
             table_a = ForeignKey(TableA)
 
-        self.assertEqual(
+        self.assertListEqual(
             sort_table_classes([TableA, TableB]), [TableA, TableB]
         )
+
+    def test_long_chain(self):
+        """
+        Make sure sorting works when there are a lot of tables with foreign
+        keys to each other.
+
+        https://github.com/piccolo-orm/piccolo/issues/616
+
+        """
+
+        class TableA(Table):
+            pass
+
+        class TableB(Table):
+            fk = ForeignKey(TableA)
+
+        class TableC(Table):
+            fk = ForeignKey(TableB)
+
+        class TableD(Table):
+            fk = ForeignKey(TableC)
+
+        class TableE(Table):
+            fk = ForeignKey(TableD)
+
+        tables = [TableA, TableB, TableC, TableD, TableE]
+
+        shuffled_tables = random.sample(tables, len(tables))
+
+        self.assertListEqual(sort_table_classes(shuffled_tables), tables)
 
 
 class TestMigrationManager(DBTestCase):
