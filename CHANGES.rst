@@ -1,6 +1,36 @@
 Changes
 =======
 
+0.90.0
+------
+
+Fixed an edge case, where a migration could fail if:
+
+* 5 or more tables were being created at once.
+* They all contained foreign keys to each other, as shown below.
+
+.. code-block:: python
+
+  class TableA(Table):
+      pass
+
+  class TableB(Table):
+      fk = ForeignKey(TableA)
+
+  class TableC(Table):
+      fk = ForeignKey(TableB)
+
+  class TableD(Table):
+      fk = ForeignKey(TableC)
+
+  class TableE(Table):
+      fk = ForeignKey(TableD)
+
+
+Thanks to @sumitsharansatsangi for reporting this issue.
+
+-------------------------------------------------------------------------------
+
 0.89.0
 ------
 
