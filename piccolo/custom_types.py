@@ -12,6 +12,7 @@ Iterable = t.Iterable[t.Any]
 
 
 TableInstance = t.TypeVar("TableInstance", bound="Table")
+QueryResponseType = t.TypeVar("QueryResponseType", bound=t.Any)
 
 
 ###############################################################################

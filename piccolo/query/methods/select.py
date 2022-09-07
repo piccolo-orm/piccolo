@@ -26,6 +26,7 @@ from piccolo.query.mixins import (
 from piccolo.querystring import QueryString
 from piccolo.utils.dictionary import make_nested
 from piccolo.utils.encoding import load_json
+from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -212,6 +213,37 @@ class Sum(Selectable):
         return f'SUM({column_name}) AS "{self._alias}"'
 
 
+OptionalDict = t.Optional[t.Dict[str, t.Any]]
+
+
+class First:
+    def __init__(self, query: Select):
+        self.query = query
+
+    async def run(self, *args, **kwargs) -> OptionalDict:
+        rows = await self.query.run(*args, **kwargs)
+        return rows[0] if rows else None
+
+    def run_sync(self, *args, **kwargs) -> OptionalDict:
+        return run_sync(self.run(*args, **kwargs))
+
+    def __await__(
+        self,
+    ) -> t.Generator[None, None, OptionalDict]:
+        """
+        If the user doesn't explicity call .run(), proxy to it as a
+        convenience.
+        """
+        return self.run().__await__()
+
+    def __getattr__(self, name: str):
+        """
+        Proxy any attributes to the underlying query, so all of the query
+        clauses continue to work.
+        """
+        return getattr(self.query, name)
+
+
 class Select(Query):
     __slots__ = (
         "columns_list",
@@ -273,9 +305,9 @@ class Select(Query):
         self.limit_delegate.limit(number)
         return self
 
-    def first(self) -> Select:
-        self.limit_delegate.first()
-        return self
+    def first(self) -> First:
+        self.limit_delegate.limit(1)
+        return First(query=self)
 
     def offset(self, number: int) -> Select:
         self.offset_delegate.offset(number)
@@ -428,15 +460,7 @@ class Select(Query):
         # no columns were selected from related tables.
         was_select_star = len(self.columns_delegate.selected_columns) == 0
 
-        if self.limit_delegate._first:
-            if len(response) == 0:
-                return None
-
-            if self.output_delegate._output.nested and not was_select_star:
-                return make_nested(response[0])
-            else:
-                return response[0]
-        elif self.output_delegate._output.nested and not was_select_star:
+        if self.output_delegate._output.nested and not was_select_star:
             return [make_nested(i) for i in response]
         else:
             return response
@@ -641,3 +665,12 @@ class Select(Query):
         querystring = QueryString(query, *args)
 
         return [querystring]
+
+    async def run(self, use_callbacks: bool = True, *args, **kwargs):
+        results = await super().run(*args, **kwargs)
+        if use_callbacks:
+            return await self.callback_delegate.invoke(
+                results, kind=CallbackType.success
+            )
+        else:
+            return results

@@ -20,9 +20,14 @@ class Count(Query):
         super().__init__(table, **kwargs)
         self.where_delegate = WhereDelegate()
 
+    ###########################################################################
+    # Clauses
+
     def where(self, *where: Combinable) -> Count:
         self.where_delegate.where(*where)
         return self
+
+    ###########################################################################
 
     async def response_handler(self, response) -> bool:
         return response[0]["count"]

@@ -36,7 +36,7 @@ class GetOrCreate(t.Generic[TableInstance]):
         query: Objects[TableInstance],
         table_class: t.Type[TableInstance],
         where: Combinable,
-        defaults: t.Dict[t.Union[Column, str], t.Any],
+        defaults: t.Dict[Column, t.Any],
     ):
         self.query = query
         self.table_class = table_class
@@ -44,12 +44,17 @@ class GetOrCreate(t.Generic[TableInstance]):
         self.defaults = defaults
 
     async def run(self) -> TableInstance:
+        """
+        :raises ValueError:
+            If more than one matching row is found.
+
+        """
         instance = await self.query.get(self.where).run()
         if instance:
             instance._was_created = False
             return instance
 
-        instance = self.table_class()
+        instance = self.table_class(_data=self.defaults)
 
         # If it's a complex `where`, there can be several column values to
         # extract e.g. (Band.name == 'Pythonistas') & (Band.popularity == 1000)
@@ -65,11 +70,6 @@ class GetOrCreate(t.Generic[TableInstance]):
                     # Make sure we only set the value if the column belongs
                     # to this table.
                     setattr(instance, column._meta.name, value)
-
-        for column, value in self.defaults.items():
-            if isinstance(column, str):
-                column = instance._meta.get_column_by_name(column)
-            setattr(instance, column._meta.name, value)
 
         await instance.save().run()
 
@@ -104,12 +104,92 @@ class GetOrCreate(t.Generic[TableInstance]):
     def run_sync(self) -> TableInstance:
         return run_sync(self.run())
 
-    def prefetch(self, *fk_columns) -> GetOrCreate[TableInstance]:
-        self.query.prefetch(*fk_columns)
-        return self
+    def __getattr__(self, name: str):
+        """
+        Proxy any attributes to the underlying query, so all of the query
+        clauses continue to work.
+        """
+        return getattr(self.query, name)
+
+
+class Get(t.Generic[TableInstance]):
+    def __init__(
+        self,
+        query: First[TableInstance],
+    ):
+        self.query = query
+
+    async def run(self) -> t.Optional[TableInstance]:
+        return await self.query.run()
+
+    def __await__(self) -> t.Generator[None, None, t.Optional[TableInstance]]:
+        """
+        If the user doesn't explicity call .run(), proxy to it as a
+        convenience.
+        """
+        return self.run().__await__()
+
+    def run_sync(self) -> t.Optional[TableInstance]:
+        return run_sync(self.run())
+
+    def __getattr__(self, name: str):
+        """
+        Proxy any attributes to the underlying query, so all of the query
+        clauses continue to work.
+        """
+        return getattr(self.query, name)
+
+
+class First(t.Generic[TableInstance]):
+    def __init__(
+        self,
+        query: Objects[TableInstance],
+    ):
+        self.query = query
+
+    async def run(self) -> t.Optional[TableInstance]:
+        objects = await self.query.run(use_callbacks=False)
+
+        results = objects[0] if objects else None
+
+        modified_response: t.Optional[
+            TableInstance
+        ] = await self.query.callback_delegate.invoke(
+            results=results, kind=CallbackType.success
+        )
+        return modified_response
+
+    def __await__(self) -> t.Generator[None, None, t.Optional[TableInstance]]:
+        """
+        If the user doesn't explicity call .run(), proxy to it as a
+        convenience.
+        """
+        return self.run().__await__()
+
+    def run_sync(self) -> t.Optional[TableInstance]:
+        return run_sync(self.run())
+
+    def __getattr__(self, name: str):
+        """
+        Proxy any attributes to the underlying query, so all of the query
+        clauses continue to work.
+        """
+        return getattr(self.query, name)
 
 
 class Create(t.Generic[TableInstance]):
+    """
+    This is provided as a simple convenience. Rather than running::
+
+        band = Band(name='Pythonistas')
+        await band.save()
+
+    We can instead do it in a single line::
+
+        band = Band.objects().create(name='Pythonistas')
+
+    """
+
     def __init__(
         self,
         table_class: t.Type[TableInstance],
@@ -118,24 +198,9 @@ class Create(t.Generic[TableInstance]):
         self.table_class = table_class
         self.columns = columns
 
-    # TODO - can simplify this by just passing data directly into self.table()
-    # rather than using setattr.
     async def run(self) -> TableInstance:
-        instance = self.table_class()
-
-        for column_name, value in self.columns.items():
-            column: Column
-            if isinstance(column_name, str):
-                column = instance._meta.get_column_by_name(column_name)
-            elif isinstance(column_name, Column):
-                column = column_name
-            else:
-                raise ValueError("Unrecognised column identifier")
-
-            setattr(instance, column._meta.name, value)
-
+        instance = self.table_class(**self.columns)
         await instance.save().run()
-
         return instance
 
     def __await__(self) -> t.Generator[None, None, TableInstance]:
@@ -148,11 +213,20 @@ class Create(t.Generic[TableInstance]):
     def run_sync(self) -> TableInstance:
         return run_sync(self.run())
 
+    def __getattr__(self, name: str):
+        """
+        Proxy any attributes to the underlying query, so all of the query
+        clauses continue to work.
+        """
+        return getattr(self.query, name)
+
 
 ###############################################################################
 
 
-class Objects(Query, t.Generic[TableInstance]):
+class Objects(
+    Query[TableInstance, t.List[TableInstance]], t.Generic[TableInstance]
+):
     """
     Almost identical to select, except you have to select all fields, and
     table instances are returned, rather than just data.
@@ -186,20 +260,6 @@ class Objects(Query, t.Generic[TableInstance]):
         self.prefetch(*prefetch)
         self.where_delegate = WhereDelegate()
 
-    # def __new__(
-    #     cls,
-    #     table: t.Type[Table],
-    #     prefetch: t.Sequence[t.Union[ForeignKey, t.List[ForeignKey]]] = (),
-    # ) -> ObjectsList[TableInstance]:
-    #     """
-    #     This is for MyPy, so we can tell it what values to expect when the
-    #     query is run. By default it will be a list of objects. If the
-    #     :meth:`first` or :meth:`get` methods are called, then a single object
-    #     is returned instead.
-    #     """
-    #     instance = super().__new__(cls)
-    #     return t.cast(ObjectsList[TableInstance], instance)
-
     def output(self: Self, load_json: bool = False) -> Self:
         self.output_delegate.output(
             as_list=False, as_json=False, load_json=load_json
@@ -219,11 +279,6 @@ class Objects(Query, t.Generic[TableInstance]):
         self.limit_delegate.limit(number)
         return self
 
-    # TODO - I might remove this - but add a deprecation for now.
-    def first(self: Self) -> ObjectsSingle[TableInstance]:
-        self.limit_delegate.first()
-        return t.cast(ObjectsSingle[TableInstance], self)
-
     def prefetch(
         self: Self, *fk_columns: t.Union[ForeignKey, t.List[ForeignKey]]
     ) -> Self:
@@ -234,38 +289,6 @@ class Objects(Query, t.Generic[TableInstance]):
         self.offset_delegate.offset(number)
         return self
 
-    ###########################################################################
-
-    # TODO - Proxy this to a method on Table instead called get_object, with
-    # a deprecation warning.
-    # This should just returnd a Get class instead, which is a different type
-    # of query - when using get, none of the other clauses are really valid
-    # any more, right?
-    def get(self: Self, where: Combinable) -> ObjectsSingle[TableInstance]:
-        self.where_delegate.where(where)
-        self.limit_delegate.first()
-        return t.cast(ObjectsSingle[TableInstance], self)
-
-    # TODO - Proxy this to a method on Table instead called
-    # get_or_create_object, with a deprecation warning.
-    def get_or_create(
-        self: Self,
-        where: Combinable,
-        defaults: t.Dict[t.Union[Column, str], t.Any] = None,
-    ) -> GetOrCreate:
-        if defaults is None:
-            defaults = {}
-        return GetOrCreate(
-            query=self, table_class=self.table, where=where, defaults=defaults
-        )
-
-    # TODO - Proxy this to a method on Table instead called
-    # create_object, with a deprecation warning.
-    def create(self: Self, **columns: t.Any) -> Create:
-        return Create(table_class=self.table, columns=columns)
-
-    ###########################################################################
-
     def order_by(self: Self, *columns: Column, ascending=True) -> Self:
         self.order_by_delegate.order_by(*columns, ascending=ascending)
         return self
@@ -273,6 +296,33 @@ class Objects(Query, t.Generic[TableInstance]):
     def where(self: Self, *where: Combinable) -> Self:
         self.where_delegate.where(*where)
         return self
+
+    ###########################################################################
+
+    def first(self: Self) -> First[TableInstance]:
+        self.limit_delegate.limit(1)
+        return First[TableInstance](query=self)
+
+    def get(self: Self, where: Combinable) -> Get[TableInstance]:
+        self.where_delegate.where(where)
+        self.limit_delegate.limit(1)
+        return Get[TableInstance](query=First[TableInstance](query=self))
+
+    def get_or_create(
+        self: Self,
+        where: Combinable,
+        defaults: t.Dict[Column, t.Any] = None,
+    ) -> GetOrCreate[TableInstance]:
+        if defaults is None:
+            defaults = {}
+        return GetOrCreate[TableInstance](
+            query=self, table_class=self.table, where=where, defaults=defaults
+        )
+
+    def create(self: Self, **columns: t.Any) -> Create[TableInstance]:
+        return Create[TableInstance](table_class=self.table, columns=columns)
+
+    ###########################################################################
 
     async def batch(
         self: Self,
@@ -287,14 +337,7 @@ class Objects(Query, t.Generic[TableInstance]):
         return await self.table._meta.db.batch(self, **kwargs)
 
     async def response_handler(self, response):
-        if self.limit_delegate._first:
-            if len(response) == 0:
-                return None
-            if self.output_delegate._output.nested:
-                return make_nested(response[0])
-            else:
-                return response[0]
-        elif self.output_delegate._output.nested:
+        if self.output_delegate._output.nested:
             return [make_nested(i) for i in response]
         else:
             return response
@@ -328,47 +371,33 @@ class Objects(Query, t.Generic[TableInstance]):
 
         return select.querystrings
 
-
-class ObjectsList(Objects, t.Generic[TableInstance]):
-    """
-    This is for MyPy.
-    """
+    ###########################################################################
 
     async def run(
-        self, node: t.Optional[str] = None, in_pool: bool = True
+        self,
+        node: t.Optional[str] = None,
+        in_pool: bool = True,
+        use_callbacks: bool = True,
     ) -> t.List[TableInstance]:
-        return await super().run(node=node, in_pool=in_pool)
+        results = await super().run(node=node, in_pool=in_pool)
+
+        if use_callbacks:
+            # With callbacks, the user can return any data that they want.
+            # Assume that most of the time they will still return a list of
+            # Table instances.
+            modified: t.List[
+                TableInstance
+            ] = await self.callback_delegate.invoke(
+                results, kind=CallbackType.success
+            )
+            return modified
+        else:
+            return results
 
     def __await__(
         self,
     ) -> t.Generator[None, None, t.List[TableInstance]]:
         return super().__await__()
 
-    def run_sync(
-        self, timed=False, in_pool=False, *args, **kwargs
-    ) -> t.List[TableInstance]:
-        return super().run_sync(timed, in_pool, *args, **kwargs)
 
-
-class ObjectsSingle(Objects, t.Generic[TableInstance]):
-    """
-    This is for MyPy.
-    """
-
-    async def run(
-        self, node: t.Optional[str] = None, in_pool: bool = True
-    ) -> t.Optional[TableInstance]:
-        return await super(Objects, self).run(node=node, in_pool=in_pool)
-
-    def __await__(
-        self,
-    ) -> t.Generator[None, None, t.Optional[TableInstance]]:
-        return super().__await__()
-
-    def run_sync(
-        self, timed=False, in_pool=False, *args, **kwargs
-    ) -> t.Optional[TableInstance]:
-        return super().run_sync(timed, in_pool, *args, **kwargs)
-
-
-Self = t.TypeVar("Self", bound=t.Union[Objects, ObjectsSingle, ObjectsList])
+Self = t.TypeVar("Self", bound=Objects)

@@ -1,8 +1,5 @@
 import typing as t
 
-# Ironically, mypy complains about this - it does exist though:
-from typing_extensions import assert_type  # type: ignore
-
 from tests.base import DBTestCase, postgres_only, sqlite_only
 from tests.example_apps.music.tables import Band, Manager
 
@@ -231,7 +228,6 @@ class TestGetOrCreate(DBTestCase):
             .run_sync()
         )
         self.assertIsInstance(band.manager, Manager)
-
         self.assertEqual(band.manager.name, "Guido")
 
     def test_prefetch_new_object(self):
@@ -286,4 +282,3 @@ if t.TYPE_CHECKING:
         Band.objects().run_sync(),
         t.List[Band],
     )
-
