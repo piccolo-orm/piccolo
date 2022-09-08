@@ -340,38 +340,72 @@ class DBTestCase(TestCase):
             )
 
     def insert_rows(self):
-        self.run_sync(
-            """
-            INSERT INTO manager (
-                name
-            ) VALUES (
-                'Guido'
-            ),(
-                'Graydon'
-            ),(
-                'Mads'
-            );"""
-        )
-        self.run_sync(
-            """
-            INSERT INTO band (
-                name,
-                manager,
-                popularity
-            ) VALUES (
-                'Pythonistas',
-                1,
-                1000
-            ),(
-                'Rustaceans',
-                2,
-                2000
-            ),(
-                'CSharps',
-                3,
-                10
-            );"""
-        )
+        if ENGINE.engine_type == "cockroach":
+            id = self.run_sync(
+                """
+                INSERT INTO manager (
+                    name
+                ) VALUES (
+                    'Guido'
+                ),(
+                    'Graydon'
+                ),(
+                    'Mads'
+                ) RETURNING id;"""
+            )
+            self.run_sync(
+                f"""
+                INSERT INTO band (
+                    name,
+                    manager,
+                    popularity
+                ) VALUES (
+                    'Pythonistas',
+                    {id[0]["id"]},
+                    1000
+                ),(
+                    'Rustaceans',
+                    {id[1]["id"]},
+                    2000
+                ),(
+                    'CSharps',
+                    {id[2]["id"]},
+                    10
+                );"""
+            )
+        else:
+            self.run_sync(
+                """
+                INSERT INTO manager (
+                    name
+                ) VALUES (
+                    'Guido'
+                ),(
+                    'Graydon'
+                ),(
+                    'Mads'
+                );"""
+            )
+            self.run_sync(
+                """
+                INSERT INTO band (
+                    name,
+                    manager,
+                    popularity
+                ) VALUES (
+                    'Pythonistas',
+                    1,
+                    1000
+                ),(
+                    'Rustaceans',
+                    2,
+                    2000
+                ),(
+                    'CSharps',
+                    3,
+                    10
+                );"""
+            )
 
     def insert_many_rows(self, row_count=10000):
         """
