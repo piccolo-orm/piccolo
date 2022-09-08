@@ -24,7 +24,7 @@ from tests.base import (
     sqlite_only,
 )
 from tests.example_apps.music.tables import Band
-
+from tests.base import cockroach_skip, engines_only, engine_is
 
 class TestUpdate(DBTestCase):
     def check_response(self):
@@ -515,6 +515,7 @@ class TestOperators(TestCase):
     def tearDown(self):
         MyTable.alter().drop_table().run_sync()
 
+    @cockroach_skip
     def test_operators(self):
         for test_case in TEST_CASES:
             print(test_case.description)
