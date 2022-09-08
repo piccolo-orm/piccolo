@@ -31,33 +31,6 @@ def is_running_sqlite():
 def is_running_cockroach():
     return isinstance(ENGINE, CockroachEngine)
 
-def for_engines(*engine_names: str):
-    if ENGINE:
-        current_engine_name = ENGINE.engine_type
-        if current_engine_name not in engine_names:
-            def wrapper(func):
-                return pytest.mark.skip(
-                    f"Not running for {current_engine_name}"
-                )(func)
-            return wrapper
-        else:
-            def wrapper(func):
-                return func
-            return wrapper
-    else:
-        raise ValueError("Engine not found")
-
-# For shallow inline assert branching. If the changes warrant their own function, use for_engines()
-def is_engine(*engine_names: str):
-    if ENGINE:
-        current_engine_name = ENGINE.engine_type
-        if current_engine_name not in engine_names:
-            return False
-        else:
-            return True
-    else:
-        raise ValueError("Engine not found")
-
 postgres_only = pytest.mark.skipif(
     not is_running_postgres(), reason="Only running for Postgres"
 )
@@ -78,8 +51,77 @@ unix_only = pytest.mark.skipif(
     sys.platform.startswith("win"), reason="Only running on a Unix system"
 )
 
-# Helper for databases with non-sequential ids (cockroach).
+def for_engines(*engine_names: str):
+    """
+    Test decorator. Choose what engines can run a test.
+
+    Example
+        @for_engines('cockroach', 'postgres')
+        def test_unknown_column_type(...):
+            self.assertTrue(...)
+    """
+    if ENGINE:
+        current_engine_name = ENGINE.engine_type
+        if current_engine_name not in engine_names:
+            def wrapper(func):
+                return pytest.mark.skip(
+                    f"Not running for {current_engine_name}"
+                )(func)
+            return wrapper
+        else:
+            def wrapper(func):
+                return func
+            return wrapper
+    else:
+        raise ValueError("Engine not found")
+
+def engines_skip(*engine_names: str):
+    """
+    Test decorator. Choose what engines can run a test.
+
+    Example
+        @for_engines('cockroach', 'postgres')
+        def test_unknown_column_type(...):
+            self.assertTrue(...)
+    """
+    if ENGINE:
+        current_engine_name = ENGINE.engine_type
+        if current_engine_name in engine_names:
+            def wrapper(func):
+                return pytest.mark.skip(
+                    f"Not running for {current_engine_name}"
+                )(func)
+            return wrapper
+        else:
+            def wrapper(func):
+                return func
+            return wrapper
+    else:
+        raise ValueError("Engine not found")
+
+
+
+def is_engine(*engine_names: str):
+    """
+    Assert branching. Choose what engines can run an assert.
+    If branching becomes too complex, make a new test with @for_engines()
+
+    Example
+        def test_unknown_column_type(...):
+            if is_engine('cockroach', 'sqlite'):
+                self.assertTrue(...)
+    """
+    if ENGINE:
+        current_engine_name = ENGINE.engine_type
+        if current_engine_name not in engine_names:
+            return False
+        else:
+            return True
+    else:
+        raise ValueError("Engine not found")
+
 def first_id(result=[]):
+    """ Primery key helper for databases with non-sequential ids (Example: cockroach). """
     return result[0].get('id')
 
 
