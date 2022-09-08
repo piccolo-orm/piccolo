@@ -6,7 +6,7 @@ from piccolo.table import drop_db_tables_sync
 from piccolo.utils.sync import run_sync
 from tests.example_apps.music.tables import Band, Manager
 
-from ..base import postgres_only
+from tests.base import DBTestCase, sqlite_only, postgres_only, cockroach_skip, engine_is, engines_only
 
 
 class TestAtomic(TestCase):
@@ -108,7 +108,7 @@ class TestTransaction(TestCase):
         self.assertTrue(Band.table_exists().run_sync())
         self.assertTrue(Manager.table_exists().run_sync())
 
-    @postgres_only
+    @engines_only("postgres")
     def test_transaction_id(self):
         """
         An extra sanity check, that the transaction id is the same for each
