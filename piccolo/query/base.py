@@ -296,10 +296,7 @@ class Query:
             try:
                 return self.cockroach_querystrings
             except NotImplementedError:
-                try:
-                    return self.postgres_querystrings
-                except NotImplementedError:
-                    return self.default_querystrings
+                return self.default_querystrings
         else:
             raise Exception(
                 f"No querystring found for the {engine_type} engine."
