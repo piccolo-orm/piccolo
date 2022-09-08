@@ -6,7 +6,7 @@ from unittest.mock import call, patch
 
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
-from tests.base import DBTestCase, postgres_only, sqlite_only
+from tests.base import DBTestCase, sqlite_only, postgres_only, cockroach_skip, engine_is, engines_only
 from tests.example_apps.music.tables import Manager
 
 
@@ -37,7 +37,10 @@ class TestPool(DBTestCase):
 
         async def get_data():
             response = await Manager.select().run()
-            self.assertEqual(response, [{"id": 1, "name": "Bob"}])
+            if engine_is('cockroach'):
+                self.assertEqual(response, [{"id": response[0]['id'], "name": "Bob"}])
+            else:
+                self.assertEqual(response, [{"id": 1, "name": "Bob"}])
 
         await asyncio.gather(*[get_data() for _ in range(500)])
 
