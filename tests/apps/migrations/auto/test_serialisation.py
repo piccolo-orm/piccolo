@@ -20,6 +20,7 @@ from piccolo.columns.column_types import Varchar
 from piccolo.columns.defaults import UUID4, DateNow, TimeNow, TimestampNow
 from piccolo.columns.reference import LazyTableReference
 
+from tests.base import engine_is
 
 class TestUniqueGlobalNamesMeta:
     def test_duplicate_class_attribute_values_raises_error(self):
@@ -241,15 +242,28 @@ class TestSerialiseParams(TestCase):
             )
 
             self.assertTrue(len(serialised.extra_definitions) == 1)
-            self.assertEqual(
-                serialised.extra_definitions[0].__str__(),
-                (
-                    'class Manager(Table, tablename="manager"): '
-                    "id = Serial(null=False, primary_key=True, unique=False, "
-                    "index=False, index_method=IndexMethod.btree, "
-                    "choices=None, db_column_name='id', secret=False)"
-                ),
-            )
+
+            if engine_is('postgres'):
+                self.assertEqual(
+                    serialised.extra_definitions[0].__str__(),
+                    (
+                        'class Manager(Table, tablename="manager"): '
+                        "id = Serial(null=False, primary_key=True, unique=False, "
+                        "index=False, index_method=IndexMethod.btree, "
+                        "choices=None, db_column_name='id', secret=False)"
+                    ),
+                )
+
+            if engine_is('cockroach'):
+                self.assertEqual(
+                    serialised.extra_definitions[0].__str__(),
+                    (
+                        'class Manager(Table, tablename="manager"): '
+                        "id = Serial(default='unique_rowid()', null=False, primary_key=True, unique=False, "
+                        "index=False, index_method=IndexMethod.btree, "
+                        "choices=None, db_column_name='id', secret=False)"
+                    ),
+                )
 
     def test_function(self):
         serialised = serialise_params(params={"default": example_function})
