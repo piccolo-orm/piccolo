@@ -2,6 +2,7 @@ import datetime
 import decimal
 import uuid
 from unittest import TestCase
+from tests.base import DBTestCase, postgres_only, sqlite_only, engine_is, engines_skip
 
 try:
     from asyncpg.pgproto.pgproto import UUID as asyncpgUUID
@@ -59,30 +60,55 @@ class TestM2M(TestCase):
     def setUp(self):
         create_db_tables_sync(*SIMPLE_SCHEMA, if_not_exists=True)
 
-        Band.insert(
-            Band(name="Pythonistas"),
-            Band(name="Rustaceans"),
-            Band(name="C-Sharps"),
-        ).run_sync()
+        if engine_is('cockroach'):
+            bands = Band.insert(
+                Band(name="Pythonistas"),
+                Band(name="Rustaceans"),
+                Band(name="C-Sharps"),
+            ).returning(Band.id).run_sync()
 
-        Genre.insert(
-            Genre(name="Rock"),
-            Genre(name="Folk"),
-            Genre(name="Classical"),
-        ).run_sync()
+            genres = Genre.insert(
+                Genre(name="Rock"),
+                Genre(name="Folk"),
+                Genre(name="Classical"),
+            ).returning(Genre.id).run_sync()
 
-        GenreToBand.insert(
-            GenreToBand(band=1, genre=1),
-            GenreToBand(band=1, genre=2),
-            GenreToBand(band=2, genre=2),
-            GenreToBand(band=3, genre=1),
-            GenreToBand(band=3, genre=3),
-        ).run_sync()
+            GenreToBand.insert(
+                GenreToBand(band=bands[0]["id"], genre=genres[0]["id"]),
+                GenreToBand(band=bands[0]["id"], genre=genres[1]["id"]),
+                GenreToBand(band=bands[1]["id"], genre=genres[1]["id"]),
+                GenreToBand(band=bands[2]["id"], genre=genres[0]["id"]),
+                GenreToBand(band=bands[2]["id"], genre=genres[2]["id"]),
+            ).run_sync()
+        else:
+            Band.insert(
+                Band(name="Pythonistas"),
+                Band(name="Rustaceans"),
+                Band(name="C-Sharps"),
+            ).run_sync()
+
+            Genre.insert(
+                Genre(name="Rock"),
+                Genre(name="Folk"),
+                Genre(name="Classical"),
+            ).run_sync()
+
+            GenreToBand.insert(
+                GenreToBand(band=1, genre=1),
+                GenreToBand(band=1, genre=2),
+                GenreToBand(band=2, genre=2),
+                GenreToBand(band=3, genre=1),
+                GenreToBand(band=3, genre=3),
+            ).run_sync()
 
     def tearDown(self):
         drop_db_tables_sync(*SIMPLE_SCHEMA)
 
+    @engines_skip('cockroach')
     def test_select_name(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """
         response = Band.select(
             Band.name, Band.genres(Genre.name, as_list=True)
         ).run_sync()
@@ -108,9 +134,13 @@ class TestM2M(TestCase):
             ],
         )
 
+    @engines_skip('cockroach')
     def test_no_related(self):
         """
         Make sure it still works correctly if there are no related values.
+        """
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
         """
         GenreToBand.delete(force=True).run_sync()
 
@@ -141,7 +171,11 @@ class TestM2M(TestCase):
             ],
         )
 
+    @engines_skip('cockroach')
     def test_select_multiple(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """
         response = Band.select(
             Band.name, Band.genres(Genre.id, Genre.name)
         ).run_sync()
@@ -196,7 +230,11 @@ class TestM2M(TestCase):
             ],
         )
 
+    @engines_skip('cockroach')
     def test_select_id(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """
         response = Band.select(
             Band.name, Band.genres(Genre.id, as_list=True)
         ).run_sync()
@@ -435,7 +473,11 @@ class TestM2MCustomPrimaryKey(TestCase):
     def tearDown(self):
         drop_db_tables_sync(*CUSTOM_PK_SCHEMA)
 
+    @engines_skip('cockroach')
     def test_select(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """
         response = Customer.select(
             Customer.name, Customer.concerts(Concert.name, as_list=True)
         ).run_sync()
@@ -591,10 +633,14 @@ class TestM2MComplexSchema(TestCase):
     def tearDown(self):
         drop_db_tables_sync(*COMPLEX_SCHEMA)
 
+    @engines_skip('cockroach')
     def test_select_all(self):
         """
         Fetch all of the columns from the related table to make sure they're
         returned correctly.
+        """
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
         """
         response = SmallTable.select(
             SmallTable.varchar_col, SmallTable.mega_rows(load_json=True)
@@ -614,9 +660,13 @@ class TestM2MComplexSchema(TestCase):
                 msg=f"{key} doesn't match",
             )
 
+    @engines_skip('cockroach')
     def test_select_single(self):
         """
         Make sure each column can be selected one at a time.
+        """
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
         """
         for column in MegaTable._meta.columns:
             response = SmallTable.select(
