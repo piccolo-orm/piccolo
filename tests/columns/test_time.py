@@ -6,6 +6,7 @@ from piccolo.columns.column_types import Time
 from piccolo.columns.defaults.time import TimeNow
 from piccolo.table import Table
 
+from tests.base import engines_skip
 
 class MyTable(Table):
     created_on = Time()
@@ -22,6 +23,7 @@ class TestTime(TestCase):
     def tearDown(self):
         MyTable.alter().drop_table().run_sync()
 
+    @engines_skip('cockroach')
     def test_timestamp(self):
         created_on = datetime.datetime.now().time()
         row = MyTable(created_on=created_on)
@@ -38,6 +40,7 @@ class TestTimeDefault(TestCase):
     def tearDown(self):
         MyTableDefault.alter().drop_table().run_sync()
 
+    @engines_skip('cockroach')
     def test_timestamp(self):
         created_on = datetime.datetime.now().time()
         row = MyTableDefault()
