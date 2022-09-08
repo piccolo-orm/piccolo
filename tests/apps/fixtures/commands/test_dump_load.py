@@ -10,7 +10,7 @@ from piccolo.apps.fixtures.commands.dump import (
 from piccolo.apps.fixtures.commands.load import load_json_string
 from piccolo.utils.sync import run_sync
 from tests.example_apps.mega.tables import MegaTable, SmallTable
-from tests.base import for_engines
+from tests.base import engines_only
 
 
 class TestDumpLoad(TestCase):
@@ -60,7 +60,7 @@ class TestDumpLoad(TestCase):
         )
         mega_table.save().run_sync()
 
-    @for_engines('postgres', 'sqlite')
+    @engines_only('postgres', 'sqlite')
     def test_dump_load(self):
         """
         Make sure we can dump some rows into a JSON fixture, then load them
@@ -138,7 +138,7 @@ class TestDumpLoad(TestCase):
             },
         )
 
-    @for_engines('cockroach')
+    @engines_only('cockroach')
     def test_dump_load(self):
         """
         Make sure we can dump some rows into a JSON fixture, then load them
