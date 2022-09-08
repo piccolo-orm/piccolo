@@ -1454,6 +1454,9 @@ class Numeric(Column):
 
     @property
     def column_type(self):
+        engine_type = self._meta.engine_type
+        if engine_type == "cockroach":
+            return "NUMERIC" # All Numeric is the same for Cockroach.
         if self.digits:
             return f"NUMERIC({self.precision}, {self.scale})"
         else:
