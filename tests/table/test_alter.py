@@ -16,7 +16,7 @@ from tests.base import (
     postgres_only,
 )
 from tests.example_apps.music.tables import Band, Manager
-
+from tests.base import AsyncMock, DBTestCase, postgres_only, cockroach_skip, engines_only, engine_is, first_id
 
 @pytest.mark.skipif(
     is_running_sqlite() and engine_version_lt(3.25),
@@ -153,9 +153,13 @@ class TestAddColumn(DBTestCase):
         )
 
 
-@postgres_only
 class TestUnique(DBTestCase):
+    @engines_only('postgres')
     def test_unique(self):
+        """
+        Test altering a column uniqueness with MigrationManager.
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/42840 "unimplemented: cannot drop UNIQUE constraint "manager_name_key" using ALTER TABLE DROP CONSTRAINT, use DROP INDEX CASCADE instead"
+        """
         unique_query = Manager.alter().set_unique(Manager.name, True)
         unique_query.run_sync()
 
@@ -326,7 +330,6 @@ class Ticket(Table):
     price = Numeric(digits=(5, 2))
 
 
-@postgres_only
 class TestSetDigits(TestCase):
     def setUp(self):
         Ticket.create_table().run_sync()
@@ -334,6 +337,7 @@ class TestSetDigits(TestCase):
     def tearDown(self):
         Ticket.alter().drop_table().run_sync()
 
+    @engines_only('postgres')
     def test_set_digits(self):
         query = """
             SELECT numeric_precision, numeric_scale
