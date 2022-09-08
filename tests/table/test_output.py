@@ -3,6 +3,7 @@ from unittest import TestCase
 
 from tests.base import DBTestCase
 from tests.example_apps.music.tables import Band, RecordingStudio
+from tests.base import engine_is
 
 
 class TestOutputList(DBTestCase):
@@ -45,10 +46,16 @@ class TestOutputLoadJSON(TestCase):
 
         results = RecordingStudio.select().output(load_json=True).run_sync()
 
-        self.assertEqual(
-            results,
-            [{"id": 1, "facilities": {"a": 123}, "facilities_b": {"a": 123}}],
-        )
+        if engine_is('cockroach'):
+            self.assertEqual(
+                results,
+                [{"id": results[0]["id"], "facilities": {"a": 123}, "facilities_b": {"a": 123}}],
+            )
+        else:
+            self.assertEqual(
+                results,
+                [{"id": 1, "facilities": {"a": 123}, "facilities_b": {"a": 123}}],
+            )
 
     def test_objects(self):
         json = {"a": 123}
