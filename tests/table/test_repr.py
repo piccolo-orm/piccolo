@@ -11,4 +11,4 @@ class TestTableRepr(DBTestCase):
 
         self.insert_row()
         manager = Manager.objects().first().run_sync()
-        self.assertEqual(manager.__repr__(), "<Manager: 1>")
+        self.assertEqual(manager.__repr__(), f"<Manager: {manager.id}>")
