@@ -1,7 +1,6 @@
 from piccolo.columns.column_types import Integer, Varchar
 from piccolo.table import Table
-from tests.base import DBTestCase, postgres_only
-
+from tests.base import DBTestCase, postgres_only, cockroach_skip, engine_is, engines_only, engines_skip, first_id
 
 class Band(Table):
     name = Varchar(db_column_name="regrettable_column_name")
@@ -75,16 +74,28 @@ class TestDBColumnName(DBTestCase):
 
         # Make sure we can select all columns
         bands = Band.select().run_sync()
-        self.assertEqual(
-            bands,
-            [
-                {
-                    "id": 1,
-                    "regrettable_column_name": "Pythonistas",
-                    "popularity": 1000,
-                }
-            ],
-        )
+        if engine_is('cockroach'):
+            self.assertEqual(
+                bands,
+                [
+                    {
+                        "id": first_id(bands),
+                        "regrettable_column_name": "Pythonistas",
+                        "popularity": 1000,
+                    }
+                ],
+            )
+        else:
+            self.assertEqual(
+                bands,
+                [
+                    {
+                        "id": 1,
+                        "regrettable_column_name": "Pythonistas",
+                        "popularity": 1000,
+                    }
+                ],
+            )
 
         # Make sure we can select a single column
         bands = Band.select(Band.name).run_sync()
@@ -117,31 +128,56 @@ class TestDBColumnName(DBTestCase):
         Band.update({Band.name: "Pythonistas 2"}, force=True).run_sync()
 
         bands = Band.select().run_sync()
-        self.assertEqual(
-            bands,
-            [
-                {
-                    "id": 1,
-                    "regrettable_column_name": "Pythonistas 2",
-                    "popularity": 1000,
-                }
-            ],
-        )
+        if engine_is('cockroach'):
+            self.assertEqual(
+                bands,
+                [
+                    {
+                        "id": first_id(bands),
+                        "regrettable_column_name": "Pythonistas 2",
+                        "popularity": 1000,
+                    }
+                ],
+            )
+        else:
+            self.assertEqual(
+                bands,
+                [
+                    {
+                        "id": 1,
+                        "regrettable_column_name": "Pythonistas 2",
+                        "popularity": 1000,
+                    }
+                ],
+            )
 
         Band.update({"name": "Pythonistas 3"}, force=True).run_sync()
 
         bands = Band.select().run_sync()
-        self.assertEqual(
-            bands,
-            [
-                {
-                    "id": 1,
-                    "regrettable_column_name": "Pythonistas 3",
-                    "popularity": 1000,
-                }
-            ],
-        )
+        if engine_is('cockroach'):
+            self.assertEqual(
+                bands,
+                [
+                    {
+                        "id": first_id(bands),
+                        "regrettable_column_name": "Pythonistas 3",
+                        "popularity": 1000,
+                    }
+                ],
+            )
+        else:
+            self.assertEqual(
+                bands,
+                [
+                    {
+                        "id": 1,
+                        "regrettable_column_name": "Pythonistas 3",
+                        "popularity": 1000,
+                    }
+                ],
+            )
 
+    @engines_skip('cockroach')
     def test_delete(self):
         """
         Make sure delete queries work correctly.
@@ -176,6 +212,47 @@ class TestDBColumnName(DBTestCase):
             [
                 {
                     "id": 1,
+                    "regrettable_column_name": "Pythonistas",
+                    "popularity": 1000,
+                }
+            ],
+        )
+
+    @engines_only('cockroach')
+    def test_delete(self):
+        """
+        Make sure delete queries work correctly.
+        """
+        result = Band.insert(
+            Band(name="Pythonistas", popularity=1000),
+            Band(name="Rustaceans", popularity=500),
+        ).returning(Band.id).run_sync()
+
+        bands = Band.select().run_sync()
+        self.assertEqual(
+            bands,
+            [
+                {
+                    "id": result[0]['id'],
+                    "regrettable_column_name": "Pythonistas",
+                    "popularity": 1000,
+                },
+                {
+                    "id": result[1]['id'],
+                    "regrettable_column_name": "Rustaceans",
+                    "popularity": 500,
+                },
+            ],
+        )
+
+        Band.delete().where(Band.name == "Rustaceans").run_sync()
+
+        bands = Band.select().run_sync()
+        self.assertEqual(
+            bands,
+            [
+                {
+                    "id": result[0]['id'],
                     "regrettable_column_name": "Pythonistas",
                     "popularity": 1000,
                 }
