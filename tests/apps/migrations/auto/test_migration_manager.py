@@ -11,7 +11,7 @@ from piccolo.columns.column_types import ForeignKey
 from piccolo.conf.apps import AppConfig
 from piccolo.table import Table, sort_table_classes
 from piccolo.utils.lazy_loader import LazyLoader
-from tests.base import AsyncMock, DBTestCase, postgres_only, cockroach_skip, for_engines, is_engine, first_id
+from tests.base import AsyncMock, DBTestCase, postgres_only, cockroach_skip, engines_only, engine_is, first_id
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
 asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")
@@ -74,7 +74,7 @@ class TestSortTableClasses(TestCase):
 
 
 class TestMigrationManager(DBTestCase):
-    @for_engines('postgres', 'cockroach')
+    @engines_only('postgres', 'cockroach')
     def test_rename_column(self):
         """
         Test running a MigrationManager which contains a column rename
@@ -169,7 +169,7 @@ class TestMigrationManager(DBTestCase):
         with self.assertRaises(HasRunBackwards):
             asyncio.run(manager.run(backwards=True))
 
-    @for_engines('postgres', 'cockroach')
+    @engines_only('postgres', 'cockroach')
     @patch.object(BaseMigrationManager, "get_app_config")
     def test_add_table(self, get_app_config: MagicMock):
         """
@@ -187,12 +187,12 @@ class TestMigrationManager(DBTestCase):
         )
         asyncio.run(manager.run())
 
-        if is_engine('postgres'):
+        if engine_is('postgres'):
             self.run_sync("INSERT INTO musician VALUES (default, 'Bob Jones');")
             response = self.run_sync("SELECT * FROM musician;")
             self.assertEqual(response, [{"id": 1, "name": "Bob Jones"}])
 
-        if is_engine('cockroach'):
+        if engine_is('cockroach'):
             id = self.run_sync("INSERT INTO musician VALUES (default, 'Bob Jones') RETURNING id;")
             response = self.run_sync("SELECT * FROM musician;")
             self.assertEqual(response, [{"id": first_id(id), "name": "Bob Jones"}])
@@ -209,13 +209,20 @@ class TestMigrationManager(DBTestCase):
         manager.preview = True
         with patch("sys.stdout", new=StringIO()) as fake_out:
             asyncio.run(manager.run())
-            self.assertEqual(
-                fake_out.getvalue(),
-                """  -  [preview forwards]... \n CREATE TABLE musician ("id" SERIAL PRIMARY KEY NOT NULL, "name" VARCHAR(255) NOT NULL DEFAULT '');\n""",  # noqa: E501
-            )
+
+            if engine_is('postgres'):
+                self.assertEqual(
+                    fake_out.getvalue(),
+                    """  -  [preview forwards]... \n CREATE TABLE musician ("id" SERIAL PRIMARY KEY NOT NULL, "name" VARCHAR(255) NOT NULL DEFAULT '');\n""",  # noqa: E501
+                )
+            if engine_is('cockroach'):
+                self.assertEqual(
+                    fake_out.getvalue(),
+                    """  -  [preview forwards]... \n CREATE TABLE musician ("id" BIGINT PRIMARY KEY DEFAULT unique_rowid(), "name" VARCHAR(255) NOT NULL DEFAULT '');\n""",  # noqa: E501
+                )
         self.assertEqual(self.table_exists("musician"), False)
 
-    @for_engines('postgres', 'cockroach')
+    @engines_only('postgres', 'cockroach')
     def test_add_column(self):
         """
         Test adding a column to a MigrationManager.
@@ -239,7 +246,7 @@ class TestMigrationManager(DBTestCase):
         )
         asyncio.run(manager.run())
 
-        if is_engine('postgres'):
+        if engine_is('postgres'):
             self.run_sync("INSERT INTO manager VALUES (default, 'Dave', 'dave@me.com');")
             response = self.run_sync("SELECT * FROM manager;")
             self.assertEqual(
@@ -252,7 +259,7 @@ class TestMigrationManager(DBTestCase):
             self.assertEqual(response, [{"id": 1, "name": "Dave"}])
 
         id = 0
-        if is_engine('cockroach'):
+        if engine_is('cockroach'):
             id = self.run_sync("INSERT INTO manager VALUES (default, 'Dave', 'dave@me.com') RETURNING id;")
             response = self.run_sync("SELECT * FROM manager;")
             self.assertEqual(
@@ -273,9 +280,9 @@ class TestMigrationManager(DBTestCase):
                 """  -  [preview forwards]... \n ALTER TABLE manager ADD COLUMN "email" VARCHAR(100) UNIQUE DEFAULT '';\n""",  # noqa: E501
             )
         response = self.run_sync("SELECT * FROM manager;")
-        if is_engine('postgres'):
+        if engine_is('postgres'):
             self.assertEqual(response, [{"id": 1, "name": "Dave"}])
-        if is_engine('cockroach'):
+        if engine_is('cockroach'):
             self.assertEqual(response, [{"id": first_id(id), "name": "Dave"}])
 
     @postgres_only
@@ -322,7 +329,7 @@ class TestMigrationManager(DBTestCase):
             )
         self.assertTrue(index_name not in Manager.indexes().run_sync())
 
-    @for_engines('postgres')
+    @engines_only('postgres')
     def test_add_foreign_key_self_column(self):
         """
         Test adding a ForeignKey column to a MigrationManager, with a
@@ -369,7 +376,7 @@ class TestMigrationManager(DBTestCase):
             [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Dave"}],
         )
 
-    @for_engines('cockroach')
+    @engines_only('cockroach')
     def test_add_foreign_key_self_column(self):
         """
         Test adding a ForeignKey column to a MigrationManager, with a
@@ -444,7 +451,7 @@ class TestMigrationManager(DBTestCase):
         )
         asyncio.run(manager.run())
 
-    @for_engines('postgres', 'cockroach')
+    @engines_only('postgres', 'cockroach')
     @patch.object(
         BaseMigrationManager, "get_migration_managers", new_callable=AsyncMock
     )
@@ -465,13 +472,13 @@ class TestMigrationManager(DBTestCase):
         )
         asyncio.run(manager_1.run())
 
-        if is_engine('postgres'):
+        if engine_is('postgres'):
             self.run_sync("INSERT INTO musician VALUES (default, 'Dave');")
             response = self.run_sync("SELECT * FROM musician;")
             self.assertEqual(response, [{"id": 1, "name": "Dave"}])
 
         id = 0
-        if is_engine('cockroach'):
+        if engine_is('cockroach'):
             id = self.run_sync("INSERT INTO musician VALUES (default, 'Dave') RETURNING id;")
             response = self.run_sync("SELECT * FROM musician;")
             self.assertEqual(response, [{"id": first_id(id), "name": "Dave"}])
@@ -484,11 +491,11 @@ class TestMigrationManager(DBTestCase):
         )
         asyncio.run(manager_2.run())
 
-        if is_engine('postgres'):
+        if engine_is('postgres'):
             response = self.run_sync("SELECT * FROM musician;")
             self.assertEqual(response, [{"id": 1}])
 
-        if is_engine('cockroach'):
+        if engine_is('cockroach'):
             response = self.run_sync("SELECT * FROM musician;")
             self.assertEqual(response, [{"id": first_id(id)}])
 
@@ -498,14 +505,14 @@ class TestMigrationManager(DBTestCase):
         get_app_config.return_value = app_config
         asyncio.run(manager_2.run(backwards=True))
         response = self.run_sync("SELECT * FROM musician;")
-        if is_engine('postgres'):
+        if engine_is('postgres'):
             self.assertEqual(response, [{"id": 1, "name": ""}])
 
-        if is_engine('cockroach'):
+        if engine_is('cockroach'):
             self.assertEqual(response, [{"id": first_id(id), "name": ""}])
 
 
-    @for_engines('postgres', 'cockroach')
+    @engines_only('postgres', 'cockroach')
     def test_rename_table(self):
         """
         Test renaming a table with MigrationManager.
@@ -521,7 +528,7 @@ class TestMigrationManager(DBTestCase):
 
         asyncio.run(manager.run())
 
-        if is_engine('postgres'):
+        if engine_is('postgres'):
             self.run_sync("INSERT INTO director VALUES (default, 'Dave');")
 
             response = self.run_sync("SELECT * FROM director;")
@@ -532,7 +539,7 @@ class TestMigrationManager(DBTestCase):
             response = self.run_sync("SELECT * FROM manager;")
             self.assertEqual(response, [{"id": 1, "name": "Dave"}])
 
-        if is_engine('cockroach'):
+        if engine_is('cockroach'):
             id = 0
             id = self.run_sync("INSERT INTO director VALUES (default, 'Dave') RETURNING id;")
 
@@ -544,8 +551,7 @@ class TestMigrationManager(DBTestCase):
             response = self.run_sync("SELECT * FROM manager;")
             self.assertEqual(response, [{"id": first_id(id), "name": "Dave"}])
 
-    @cockroach_skip
-    @for_engines('postgres', 'cockroach')
+    @engines_only('postgres')
     def test_alter_column_unique(self):
         """
         Test altering a column uniqueness with MigrationManager.
@@ -625,7 +631,7 @@ class TestMigrationManager(DBTestCase):
             f"AND column_name = '{column_name}';"
         )
 
-    @for_engines('postgres')
+    @engines_only('postgres')
     def test_alter_column_digits(self):
         """
         Test altering a column digits with MigrationManager.
@@ -653,7 +659,7 @@ class TestMigrationManager(DBTestCase):
             [{"numeric_precision": 5, "numeric_scale": 2}],
         )
 
-    @for_engines('postgres')
+    @engines_only('postgres')
     def test_alter_column_set_default(self):
         """
         Test altering a column default with MigrationManager.
@@ -680,7 +686,7 @@ class TestMigrationManager(DBTestCase):
             [{"column_default": "''::character varying"}],
         )
 
-    @for_engines('cockroach')
+    @engines_only('cockroach')
     def test_alter_column_set_default(self):
         """
         Test altering a column default with MigrationManager.
@@ -707,7 +713,7 @@ class TestMigrationManager(DBTestCase):
             [{"column_default": "'':::STRING"}],
         )
 
-    @for_engines('postgres')
+    @engines_only('postgres')
     def test_alter_column_drop_default(self):
         """
         Test setting a column default to None with MigrationManager.
@@ -769,7 +775,7 @@ class TestMigrationManager(DBTestCase):
             [{"column_default": None}],
         )
 
-    @for_engines('cockroach')
+    @engines_only('cockroach')
     def test_alter_column_drop_default(self):
         """
         Test setting a column default to None with MigrationManager.
@@ -886,7 +892,7 @@ class TestMigrationManager(DBTestCase):
         )
         self.assertEqual(column_type_str, "CHARACTER VARYING")
 
-    @for_engines('postgres')
+    @engines_only('postgres')
     def test_alter_column_set_length(self):
         """
         Test altering a Varchar column's length with MigrationManager.
