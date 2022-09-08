@@ -3,7 +3,7 @@ from unittest import TestCase
 from piccolo.apps.user.tables import BaseUser
 from piccolo.columns.combination import WhereRaw
 from piccolo.query.methods.select import Avg, Count, Max, Min, Sum
-from tests.base import DBTestCase, postgres_only, sqlite_only
+from tests.base import DBTestCase, postgres_only, sqlite_only, first_id, engine_is, cockroach_skip
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
 
@@ -13,10 +13,16 @@ class TestSelect(DBTestCase):
 
         response = Band.select().run_sync()
 
-        self.assertDictEqual(
-            response[0],
-            {"id": 1, "name": "Pythonistas", "manager": 1, "popularity": 1000},
-        )
+        if engine_is('cockroach'):
+            self.assertDictEqual(
+                response[0],
+                {"id": response[0]['id'], "name": "Pythonistas", "manager": response[0]['manager'], "popularity": 1000},
+            )
+        else:
+            self.assertDictEqual(
+                response[0],
+                {"id": 1, "name": "Pythonistas", "manager": 1, "popularity": 1000},
+            )
 
     def test_query_some_columns(self):
         self.insert_row()
@@ -375,6 +381,7 @@ class TestSelect(DBTestCase):
             response, [{"name": "CSharps"}, {"name": "Rustaceans"}]
         )
 
+    @cockroach_skip
     def test_multiple_where(self):
         """
         Test that chaining multiple where clauses works results in an AND.
@@ -392,6 +399,7 @@ class TestSelect(DBTestCase):
         self.assertEqual(response, [{"name": "Rustaceans"}])
         self.assertIn("AND", query.__str__())
 
+    @cockroach_skip
     def test_complex_where(self):
         """
         Test a complex where clause - combining AND, and OR.
@@ -906,7 +914,11 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
-        self.assertEqual(response, {"id": 1, "name": "Pythonistas"})
+
+        if engine_is('cockroach'):
+            self.assertEqual(response, {"id": response['id'], "name": "Pythonistas"})
+        else:
+            self.assertEqual(response, {"id": 1, "name": "Pythonistas"})
 
     def test_call_chain(self):
         """
@@ -985,5 +997,8 @@ class TestSelectSecretParameter(TestCase):
         venue.save().run_sync()
 
         venue_dict = Venue.select(exclude_secrets=True).first().run_sync()
-        self.assertTrue(venue_dict, {"id": 1, "name": "The Garage"})
+        if engine_is('cockroach'):
+            self.assertTrue(venue_dict, {"id": venue_dict["id"], "name": "The Garage"})
+        else:
+            self.assertTrue(venue_dict, {"id": 1, "name": "The Garage"})
         self.assertNotIn("capacity", venue_dict.keys())
