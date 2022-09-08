@@ -51,12 +51,12 @@ unix_only = pytest.mark.skipif(
     sys.platform.startswith("win"), reason="Only running on a Unix system"
 )
 
-def for_engines(*engine_names: str):
+def engines_only(*engine_names: str):
     """
     Test decorator. Choose what engines can run a test.
 
     Example
-        @for_engines('cockroach', 'postgres')
+        @engines_only('cockroach', 'postgres')
         def test_unknown_column_type(...):
             self.assertTrue(...)
     """
@@ -80,7 +80,7 @@ def engines_skip(*engine_names: str):
     Test decorator. Choose what engines can run a test.
 
     Example
-        @for_engines('cockroach', 'postgres')
+        @engines_skip('cockroach', 'postgres')
         def test_unknown_column_type(...):
             self.assertTrue(...)
     """
@@ -101,14 +101,14 @@ def engines_skip(*engine_names: str):
 
 
 
-def is_engine(*engine_names: str):
+def engine_is(*engine_names: str):
     """
     Assert branching. Choose what engines can run an assert.
-    If branching becomes too complex, make a new test with @for_engines()
+    If branching becomes too complex, make a new test with @engines_only() or engines_skip()
 
     Example
         def test_unknown_column_type(...):
-            if is_engine('cockroach', 'sqlite'):
+            if engine_is('cockroach', 'sqlite'):
                 self.assertTrue(...)
     """
     if ENGINE:
