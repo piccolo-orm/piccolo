@@ -83,11 +83,11 @@ class Transaction(PostgresTransaction):
 
 class CockroachEngine(PostgresEngine):
     """
-    An extension of the Postgresql backend.
+    An extension of the cockroach backend.
     """
 
     engine_type = "cockroach"
-    min_version_number = 21
+    min_version_number = 0 # Doesn't seem to work with cockroach versioning.
 
     def __init__(
         self,
