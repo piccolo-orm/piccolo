@@ -41,6 +41,10 @@ class Readable(Selectable):
     def postgres_string(self) -> str:
         return self._get_string(operator="FORMAT")
 
+    @property
+    def cockroach_string(self) -> str:
+        return self._get_string(operator="FORMAT")
+
     def get_select_string(self, engine_type: str, with_alias=True) -> str:
         try:
             return getattr(self, f"{engine_type}_string")

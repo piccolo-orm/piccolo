@@ -848,6 +848,12 @@ class Column(Selectable):
             sql_value = self.get_sql_value(value=default)
             query += f" DEFAULT {sql_value}"
 
+
+        # Cockroach needs to define this default at table creation time so we can use DEFAULT in other places "as-is".
+        if self._meta.engine_type == "cockroach" and self.__class__.__name__ in ("Serial", "BigSerial"):
+            query = query.replace(' NOT NULL', '') # Cockroach complains about this.
+            query += f" DEFAULT unique_rowid()"
+
         return query
 
     def copy(self) -> Column:
