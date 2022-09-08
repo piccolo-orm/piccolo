@@ -23,7 +23,7 @@ from piccolo.columns.indexes import IndexMethod
 from piccolo.engine import Engine, engine_finder
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
-from tests.base import AsyncMock, postgres_only
+from tests.base import AsyncMock, postgres_only, cockroach_skip, engines_only
 from tests.example_apps.mega.tables import MegaTable, SmallTable
 
 
@@ -52,7 +52,8 @@ class TestGenerate(TestCase):
             col_2 = table_2._meta.get_column_by_name(column_name)
 
             # Make sure they're the same type
-            self.assertEqual(type(col_1), type(col_2))
+            self.assertEqual(col_1.column_type, col_2.column_type)
+            #self.assertEqual(type(col_1), type(col_2)) # Please see: https://github.com/piccolo-orm/piccolo/issues/607
 
             # Make sure they're both nullable or not
             self.assertEqual(col_1._meta.null, col_2._meta.null)
@@ -92,6 +93,8 @@ class TestGenerate(TestCase):
         # exception otherwise).
         ast.parse(file_contents)
 
+    # Cockroach throws FeatureNotSupportedError, which does not pass this test.
+    @cockroach_skip
     def test_unknown_column_type(self):
         """
         Make sure unknown column types are handled gracefully.
@@ -143,6 +146,7 @@ class TestGenerate(TestCase):
         SmallTable_ = output_schema.get_table_with_name("SmallTable")
         self._compare_table_columns(SmallTable, SmallTable_)
 
+    @cockroach_skip
     def test_self_referencing_fk(self):
         """
         Make sure self-referencing foreign keys are handled correctly.
@@ -179,7 +183,7 @@ class Concert(Table):
     capacity = Integer(index=False)
 
 
-@postgres_only
+@engines_only('postgres')
 class TestGenerateWithIndexes(TestCase):
     def setUp(self):
         Concert.create_table().run_sync()
@@ -224,7 +228,7 @@ class Book(Table):
     popularity = Integer(default=0)
 
 
-@postgres_only
+@engines_only('postgres')
 class TestGenerateWithSchema(TestCase):
     def setUp(self) -> None:
         engine: t.Optional[Engine] = engine_finder()
