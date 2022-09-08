@@ -9,6 +9,8 @@ from tests.example_apps.music.tables import (
     Venue,
 )
 
+from tests.base import DBTestCase, postgres_only, cockroach_skip, engine_is, engines_only, engines_skip, first_id
+
 TABLES = [Manager, Band, Venue, Concert]
 
 
@@ -66,17 +68,31 @@ class TestJoin(TestCase):
             Concert.band_1.manager,
         )
         response = select_query.run_sync()
-        self.assertEqual(
-            response,
-            [
-                {
-                    "band_1.name": "Pythonistas",
-                    "band_2.name": "Rustaceans",
-                    "venue.name": "Grand Central",
-                    "band_1.manager": 1,
-                }
-            ],
-        )
+
+        if engine_is('cockroach'):
+            self.assertEqual(
+                response,
+                [
+                    {
+                        "band_1.name": "Pythonistas",
+                        "band_2.name": "Rustaceans",
+                        "venue.name": "Grand Central",
+                        "band_1.manager": response[0]["band_1.manager"],
+                    }
+                ],
+            )
+        else:
+            self.assertEqual(
+                response,
+                [
+                    {
+                        "band_1.name": "Pythonistas",
+                        "band_2.name": "Rustaceans",
+                        "venue.name": "Grand Central",
+                        "band_1.manager": 1,
+                    }
+                ],
+            )
 
         # Now make sure that even deeper joins work:
         select_query = Concert.select(Concert.band_1.manager.name)
@@ -93,14 +109,25 @@ class TestJoin(TestCase):
             .first()
             .run_sync()
         )
-        self.assertDictEqual(
-            result,
-            {
-                "name": "Pythonistas",
-                "manager.id": 1,
-                "manager.name": "Guido",
-            },
-        )
+
+        if engine_is('cockroach'):
+            self.assertDictEqual(
+                result,
+                {
+                    "name": "Pythonistas",
+                    "manager.id": result["manager.id"],
+                    "manager.name": "Guido",
+                },
+            )
+        else:
+            self.assertDictEqual(
+                result,
+                {
+                    "name": "Pythonistas",
+                    "manager.id": 1,
+                    "manager.name": "Guido",
+                },
+            )
 
     def test_select_all_columns_deep(self):
         """
@@ -116,18 +143,32 @@ class TestJoin(TestCase):
             .run_sync()
         )
 
-        self.assertDictEqual(
-            result,
-            {
-                "venue.id": 1,
-                "venue.name": "Grand Central",
-                "venue.capacity": 1000,
-                "band_1.manager.id": 1,
-                "band_1.manager.name": "Guido",
-                "band_2.manager.id": 2,
-                "band_2.manager.name": "Graydon",
-            },
-        )
+        if engine_is('cockroach'):
+            self.assertDictEqual(
+                result,
+                {
+                    "venue.id": result["venue.id"],
+                    "venue.name": "Grand Central",
+                    "venue.capacity": 1000,
+                    "band_1.manager.id": result["band_1.manager.id"],
+                    "band_1.manager.name": "Guido",
+                    "band_2.manager.id": result["band_2.manager.id"],
+                    "band_2.manager.name": "Graydon",
+                },
+            )
+        else:
+            self.assertDictEqual(
+                result,
+                {
+                    "venue.id": 1,
+                    "venue.name": "Grand Central",
+                    "venue.capacity": 1000,
+                    "band_1.manager.id": 1,
+                    "band_1.manager.name": "Guido",
+                    "band_2.manager.id": 2,
+                    "band_2.manager.name": "Graydon",
+                },
+            )
 
     def test_select_all_columns_root(self):
         """
@@ -142,17 +183,31 @@ class TestJoin(TestCase):
             .first()
             .run_sync()
         )
-        self.assertDictEqual(
-            result,
-            {
-                "id": 1,
-                "name": "Pythonistas",
-                "manager": 1,
-                "popularity": 1000,
-                "manager.id": 1,
-                "manager.name": "Guido",
-            },
-        )
+
+        if engine_is('cockroach'):
+            self.assertDictEqual(
+                result,
+                {
+                    "id": result["id"],
+                    "name": "Pythonistas",
+                    "manager": result["manager"],
+                    "popularity": 1000,
+                    "manager.id": result["manager.id"],
+                    "manager.name": "Guido",
+                },
+            )
+        else:
+            self.assertDictEqual(
+                result,
+                {
+                    "id": 1,
+                    "name": "Pythonistas",
+                    "manager": 1,
+                    "popularity": 1000,
+                    "manager.id": 1,
+                    "manager.name": "Guido",
+                },
+            )
 
     def test_select_all_columns_root_nested(self):
         """
@@ -166,15 +221,26 @@ class TestJoin(TestCase):
             .run_sync()
         )
 
-        self.assertDictEqual(
-            result,
-            {
-                "id": 1,
-                "name": "Pythonistas",
-                "manager": {"id": 1, "name": "Guido"},
-                "popularity": 1000,
-            },
-        )
+        if engine_is('cockroach'):
+            self.assertDictEqual(
+                result,
+                {
+                    "id": result["id"],
+                    "name": "Pythonistas",
+                    "manager": {"id": result["manager"]["id"], "name": "Guido"},
+                    "popularity": 1000,
+                },
+            )
+        else:
+            self.assertDictEqual(
+                result,
+                {
+                    "id": 1,
+                    "name": "Pythonistas",
+                    "manager": {"id": 1, "name": "Guido"},
+                    "popularity": 1000,
+                },
+            )
 
     def test_select_all_columns_exclude(self):
         """
