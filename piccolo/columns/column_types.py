@@ -754,8 +754,10 @@ class SmallInt(Integer):
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres" or engine_type == "cockroach":
+        if engine_type == "postgres":
             return "SMALLINT"
+        elif engine_type == "cockroach":
+            return "BIGINT"
         elif engine_type == "sqlite":
             return "INTEGER"
         raise Exception("Unrecognized engine type")
@@ -793,10 +795,10 @@ class Serial(Column):
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type == "cockroach":
-            return "BIGINT"
-        elif engine_type == "postgres":
+        if engine_type == "postgres":
             return "SERIAL"
+        elif engine_type == "cockroach":
+            return "BIGINT"
         elif engine_type == "sqlite":
             return "INTEGER"
         raise Exception("Unrecognized engine type")
@@ -804,9 +806,9 @@ class Serial(Column):
     def default(self):
         engine_type = self._meta.engine_type
 
-        if engine_type == "cockroach":
+        if engine_type == "postgres":
             return DEFAULT
-        elif engine_type == "postgres":
+        elif engine_type == "cockroach":
             return DEFAULT
         elif engine_type == "sqlite":
             return NULL
