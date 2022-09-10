@@ -586,6 +586,10 @@ class Integer(Column):
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
+    #@property
+    #def column_type(self):
+    #    return "BIGINT"
+
     ###########################################################################
     # For update queries
 
@@ -757,7 +761,7 @@ class SmallInt(Integer):
         if engine_type == "postgres":
             return "SMALLINT"
         elif engine_type == "cockroach":
-            return "BIGINT"
+            return "SMALLINT"
         elif engine_type == "sqlite":
             return "INTEGER"
         raise Exception("Unrecognized engine type")
@@ -2234,6 +2238,14 @@ class JSON(Column):  # lgtm[py/missing-equals]
         super().__init__(**kwargs)
 
         self.json_operator: t.Optional[str] = None
+
+    @property
+    def column_type(self):
+        engine_type = self._meta.engine_type
+        if engine_type == "cockroach":
+            return "JSONB" # Cockroach is always JSONB.
+        else:
+            return "JSON"
 
     ###########################################################################
     # Descriptors
