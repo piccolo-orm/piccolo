@@ -216,7 +216,7 @@ class DBTestCase(TestCase):
     ###########################################################################
 
     def create_tables(self):
-        if ENGINE.engine_type == "postgres" or ENGINE.engine_type == "cockroach":
+        if ENGINE.engine_type in ("postgres", "cockroach"):
             self.run_sync(
                 """
                 CREATE TABLE manager (
@@ -416,7 +416,7 @@ class DBTestCase(TestCase):
         self.run_sync(f"INSERT INTO manager (name) VALUES {values_string};")
 
     def drop_tables(self):
-        if ENGINE.engine_type == "postgres" or ENGINE.engine_type == "cockroach":
+        if ENGINE.engine_type in ("postgres", "cockroach"):
             self.run_sync("DROP TABLE IF EXISTS band CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS manager CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS ticket CASCADE;")

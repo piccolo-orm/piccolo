@@ -236,7 +236,7 @@ class TimedeltaDelegate:
         if not isinstance(value, timedelta):
             raise ValueError("Only timedelta values can be added.")
 
-        if engine_type == "postgres" or engine_type == "cockroach":
+        if engine_type in ("postgres", "cockroach"):
             value_string = self.get_postgres_interval_string(interval=value)
             return QueryString(
                 f'"{column_name}" {operator} INTERVAL {value_string}',
@@ -1259,7 +1259,7 @@ class Interval(Column):  # lgtm [py/missing-equals]
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres" or engine_type == "cockroach":
+        if engine_type in ("postgres", "cockroach"):
             return "INTERVAL"
         elif engine_type == "sqlite":
             # We can't use 'INTERVAL' because the type affinity in SQLite would
@@ -2335,7 +2335,7 @@ class Bytea(Column):
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres" or engine_type == "cockroach":
+        if engine_type in ("postgres", "cockroach"):
             return "BYTEA"
         elif engine_type == "sqlite":
             return "BLOB"
@@ -2481,7 +2481,7 @@ class Array(Column):
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres" or engine_type == "cockroach":
+        if engine_type in ("postgres", "cockroach"):
             return f"{self.base_column.column_type}[]"
         elif engine_type == "sqlite":
             return "ARRAY"
@@ -2546,7 +2546,7 @@ class Array(Column):
         """
         engine_type = self._meta.engine_type
 
-        if engine_type == "postgres" or engine_type == "cockroach":
+        if engine_type in ("postgres", "cockroach"):
             return Where(column=self, value=value, operator=ArrayAny)
         elif engine_type == "sqlite":
             return self.like(f"%{value}%")
@@ -2564,7 +2564,7 @@ class Array(Column):
         """
         engine_type = self._meta.engine_type
 
-        if engine_type == "postgres" or engine_type == "cockroach":
+        if engine_type in ("postgres", "cockroach"):
             return Where(column=self, value=value, operator=ArrayAll)
         elif engine_type == "sqlite":
             raise ValueError("Unsupported by SQLite")

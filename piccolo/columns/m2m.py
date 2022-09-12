@@ -82,7 +82,7 @@ class M2MSelect(Selectable):
             WHERE "{m2m_table_name}"."{fk_1_name}" = "{table_1_name}"."{table_1_pk_name}"
         """  # noqa: E501
 
-        if engine_type == "postgres" or engine_type == "cockroach":
+        if engine_type in ("postgres", "cockroach"):
             if self.as_list:
                 column_name = self.columns[0]._meta.db_column_name
                 return f"""

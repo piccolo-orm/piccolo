@@ -49,7 +49,7 @@ class Query:
         if results:
             keys = results[0].keys()
             keys = [i.replace("$", ".") for i in keys]
-            if self.engine_type == "postgres" or self.engine_type == "cockroach":
+            if self.engine_type in ("postgres", "cockroach"):
                 # asyncpg returns a special Record object. We can pass it
                 # directly into zip without calling `values` on it. This can
                 # save us hundreds of microseconds, depending on the number of

@@ -392,7 +392,7 @@ class Select(Query):
                             m2m_select,
                         )
 
-            elif self.engine_type == "postgres" or self.engine_type == "cockroach":
+            elif self.engine_type in ("postgres", "cockroach"):
                 if m2m_select.as_list:
                     # We get the data back as an array, and can just return it
                     # unless it's JSON.
