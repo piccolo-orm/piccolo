@@ -220,7 +220,6 @@ class TimedeltaDelegate:
             timestamp_value = getattr(interval, timedelta_key)
             if timestamp_value:
                 output.append(f"{timestamp_value} {cockroach_name}")
-        print(f">>>> {output_string}")
         output_string = " ".join(output)
         return f"'{output_string}'"
 
@@ -585,10 +584,6 @@ class Integer(Column):
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
-
-    #@property
-    #def column_type(self):
-    #    return "BIGINT"
 
     ###########################################################################
     # For update queries
