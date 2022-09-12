@@ -1890,17 +1890,14 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
         if inspect.isclass(references):
             references = t.cast(t.Type, references)
             if issubclass(references, Table):
-                pass # Not working in CRDB?
                 # Using this to validate the default value - will raise a
                 # ValueError if incorrect.
-                '''
                 if isinstance(references._meta.primary_key, Serial):
                     Integer(default=default, null=null)
                 else:
                     references._meta.primary_key.__class__(
                         default=default, null=null
                     )
-                '''
 
         self.default = default
 
