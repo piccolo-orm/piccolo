@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import decimal
 import os
+import random
 import shutil
 import tempfile
 import time
@@ -182,6 +183,9 @@ class TestMigrations(MigrationTestCase):
     ###########################################################################
 
     def table(self, column: Column):
+        """
+        A utility for creating Piccolo tables with the given column.
+        """
         return create_table_class(
             class_name="MyTable", class_members={"my_column": column}
         )
@@ -882,25 +886,60 @@ class TestM2MMigrations(MigrationTestCase):
 ###############################################################################
 
 
-class TableA(Table):
-    name = Varchar(unique=True)
+@postgres_only
+class TestForeignKeys(MigrationTestCase):
+    def setUp(self):
+        class TableA(Table):
+            pass
 
+        class TableB(Table):
+            fk = ForeignKey(TableA)
 
-class TableB(Table):
-    table_a = ForeignKey(TableA, target_column="name")
+        class TableC(Table):
+            fk = ForeignKey(TableB)
 
+        class TableD(Table):
+            fk = ForeignKey(TableC)
 
-class TableC(Table):
-    table_a = ForeignKey(TableA, target_column=TableA.name)
+        class TableE(Table):
+            fk = ForeignKey(TableD)
+
+        self.table_classes = [TableA, TableB, TableC, TableD, TableE]
+
+    def tearDown(self):
+        drop_db_tables_sync(Migration, *self.table_classes)
+
+    def test_foreign_keys(self):
+        """
+        Make sure that if we try creating tables with lots of foreign keys
+        to each other it runs successfully.
+
+        https://github.com/piccolo-orm/piccolo/issues/616
+
+        """
+        # We'll shuffle them, to make it a more thorough test.
+        table_classes = random.sample(
+            self.table_classes, len(self.table_classes)
+        )
+
+        self._test_migrations(table_snapshots=[table_classes])
+        for table_class in table_classes:
+            self.assertTrue(table_class.table_exists().run_sync())
 
 
 @postgres_only
 class TestTargetColumn(MigrationTestCase):
     def setUp(self):
-        pass
+        class TableA(Table):
+            name = Varchar(unique=True)
+
+        class TableB(Table):
+            table_a = ForeignKey(TableA, target_column=TableA.name)
+
+        self.table_classes = [TableA, TableB]
 
     def tearDown(self):
-        drop_db_tables_sync(Migration, TableA, TableC)
+        drop_db_tables_sync(Migration, *self.table_classes)
 
     def test_target_column(self):
         """
@@ -908,52 +947,14 @@ class TestTargetColumn(MigrationTestCase):
         other than the primary key.
         """
         self._test_migrations(
-            table_snapshots=[[TableA, TableC]],
+            table_snapshots=[self.table_classes],
         )
 
-        for table_class in [TableA, TableC]:
+        for table_class in self.table_classes:
             self.assertTrue(table_class.table_exists().run_sync())
 
         # Make sure the constraint was created correctly.
-        response = TableA.raw(
-            """
-            SELECT EXISTS(
-                SELECT 1
-                FROM INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE CCU
-                JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS TC ON
-                    CCU.CONSTRAINT_NAME = TC.CONSTRAINT_NAME
-                WHERE CONSTRAINT_TYPE = 'FOREIGN KEY'
-                    AND TC.TABLE_NAME = 'table_c'
-                    AND CCU.TABLE_NAME = 'table_a'
-                    AND CCU.COLUMN_NAME = 'name'
-            )
-            """
-        ).run_sync()
-        self.assertTrue(response[0]["exists"])
-
-
-@postgres_only
-class TestTargetColumnString(MigrationTestCase):
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        drop_db_tables_sync(Migration, TableA, TableB)
-
-    def test_target_column(self):
-        """
-        Make sure migrations still work when a foreign key references a column
-        other than the primary key.
-        """
-        self._test_migrations(
-            table_snapshots=[[TableA, TableB]],
-        )
-
-        for table_class in [TableA, TableB]:
-            self.assertTrue(table_class.table_exists().run_sync())
-
-        # Make sure the constraint was created correctly.
-        response = TableA.raw(
+        response = self.run_sync(
             """
             SELECT EXISTS(
                 SELECT 1
@@ -966,5 +967,49 @@ class TestTargetColumnString(MigrationTestCase):
                     AND CCU.COLUMN_NAME = 'name'
             )
             """
-        ).run_sync()
+        )
+        self.assertTrue(response[0]["exists"])
+
+
+@postgres_only
+class TestTargetColumnString(MigrationTestCase):
+    def setUp(self):
+        class TableA(Table):
+            name = Varchar(unique=True)
+
+        class TableB(Table):
+            table_a = ForeignKey(TableA, target_column="name")
+
+        self.table_classes = [TableA, TableB]
+
+    def tearDown(self):
+        drop_db_tables_sync(Migration, *self.table_classes)
+
+    def test_target_column(self):
+        """
+        Make sure migrations still work when a foreign key references a column
+        other than the primary key.
+        """
+        self._test_migrations(
+            table_snapshots=[self.table_classes],
+        )
+
+        for table_class in self.table_classes:
+            self.assertTrue(table_class.table_exists().run_sync())
+
+        # Make sure the constraint was created correctly.
+        response = self.run_sync(
+            """
+            SELECT EXISTS(
+                SELECT 1
+                FROM INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE CCU
+                JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS TC ON
+                    CCU.CONSTRAINT_NAME = TC.CONSTRAINT_NAME
+                WHERE CONSTRAINT_TYPE = 'FOREIGN KEY'
+                    AND TC.TABLE_NAME = 'table_b'
+                    AND CCU.TABLE_NAME = 'table_a'
+                    AND CCU.COLUMN_NAME = 'name'
+            )
+            """
+        )
         self.assertTrue(response[0]["exists"])
