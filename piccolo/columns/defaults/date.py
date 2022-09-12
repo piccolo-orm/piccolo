@@ -57,7 +57,7 @@ class DateNow(Default):
 
     @property
     def cockroach(self):
-        return "CURRENT_DATE"
+        return self.postgres
 
     @property
     def sqlite(self):

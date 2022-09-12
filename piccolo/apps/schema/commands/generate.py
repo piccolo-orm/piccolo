@@ -47,8 +47,6 @@ from piccolo.utils.naming import _snake_to_camel
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.engine.base import Engine
 
-engine = engine_finder()
-
 class ForeignKeyPlaceholder(Table):
     pass
 

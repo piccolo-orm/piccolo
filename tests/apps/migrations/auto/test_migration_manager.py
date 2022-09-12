@@ -258,13 +258,6 @@ class TestMigrationManager(DBTestCase):
                     fake_out.getvalue(),
                     """  -  [preview forwards]... \n CREATE TABLE musician ("id" INTEGER PRIMARY KEY DEFAULT unique_rowid(), "name" VARCHAR(255) NOT NULL DEFAULT '');\n""",  # noqa: E501
                 )
-            '''
-            if engine_is('cockroach'):
-                self.assertEqual(
-                    fake_out.getvalue(),
-                    """  -  [preview forwards]... \n CREATE TABLE musician ("id" BIGINT PRIMARY KEY DEFAULT unique_rowid(), "name" VARCHAR(255) NOT NULL DEFAULT '');\n""",  # noqa: E501
-                )
-            '''
         self.assertEqual(self.table_exists("musician"), False)
 
     @engines_only('postgres', 'cockroach')
