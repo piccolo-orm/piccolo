@@ -5,12 +5,15 @@ from piccolo.columns import (
     JSONB,
     ForeignKey,
     Integer,
+    BigInt,
     Numeric,
     Text,
     Varchar,
 )
 from piccolo.columns.readable import Readable
 from piccolo.table import Table
+from piccolo.engine.finder import engine_finder
+engine = engine_finder()
 
 ###############################################################################
 # Simple example
@@ -23,16 +26,27 @@ class Manager(Table):
     def get_readable(cls) -> Readable:
         return Readable(template="%s", columns=[cls.name])
 
+if engine.engine_type != 'cockroach':
+    class Band(Table):
+        name = Varchar(length=50)
+        manager = ForeignKey(Manager, null=True)
+        popularity = Integer(default=0)
 
-class Band(Table):
-    name = Varchar(length=50)
-    manager = ForeignKey(Manager, null=True)
-    popularity = Integer(default=0)
+        @classmethod
+        def get_readable(cls) -> Readable:
+            return Readable(template="%s", columns=[cls.name])
+else:
+    class Band(Table):
+        """
+        Special version for Cockroach.
+        """
+        name = Varchar(length=50)
+        manager = ForeignKey(Manager, null=True)
+        popularity = BigInt(default=0)
 
-    @classmethod
-    def get_readable(cls) -> Readable:
-        return Readable(template="%s", columns=[cls.name])
-
+        @classmethod
+        def get_readable(cls) -> Readable:
+            return Readable(template="%s", columns=[cls.name])
 
 ###############################################################################
 # More complex
