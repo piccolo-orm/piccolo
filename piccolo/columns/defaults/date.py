@@ -86,7 +86,7 @@ class DateCustom(Default):
 
     @property
     def cockroach(self):
-        return f"'{self.date.isoformat()}'"
+        return self.postgres
 
     @property
     def sqlite(self):
