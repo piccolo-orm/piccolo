@@ -603,7 +603,7 @@ else:
         jsonb_col = JSONB()
         numeric_col = Numeric(digits=(5, 2))
         real_col = Real()
-        smallint_col = BigInt()
+        smallint_col = SmallInt()
         text_col = Text()
         timestamp_col = Timestamp()
         timestamptz_col = Timestamptz()

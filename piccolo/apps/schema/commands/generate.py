@@ -313,7 +313,6 @@ COLUMN_TYPE_MAP_COCKROACH = dict(
     COLUMN_TYPE_MAP,
     integer=BigInt,
     json=JSONB,
-    smallint=BigInt
 )
 
 COLUMN_DEFAULT_PARSER = {
@@ -379,7 +378,6 @@ COLUMN_DEFAULT_PARSER = {
 COLUMN_DEFAULT_PARSER_COCKROACH = dict(
     COLUMN_DEFAULT_PARSER,
     BigInt=re.compile(r"^(?P<value>-?\d+)$"),
-    SmallInt=re.compile(r"^'?(?P<value>-?[0-9]\d*)'?(?:::smallint)?$")
 )
 
 def get_column_default(
