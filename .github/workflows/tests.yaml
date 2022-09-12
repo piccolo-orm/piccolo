@@ -153,9 +153,9 @@ jobs:
                   pip install -r requirements/extras/postgres.txt
             - name: Setup CockroachDB
               run: |
-                  wget -qO- https://binaries.cockroachdb.com/cockroach-${{ matrix.python-version }}.linux-amd64.tgz | tar xz
-                  ./cockroach-${{ matrix.python-version }}.linux-amd64/cockroach start-single-node --insecure --background
-                  ./cockroach-${{ matrix.python-version }}.linux-amd64/cockroach sql --insecure -e 'create database piccolo;'
+                  wget -qO- https://binaries.cockroachdb.com/cockroach-${{ matrix.cockroachdb-version }}.linux-amd64.tgz | tar xz
+                  ./cockroach-${{ matrix.cockroachdb-version }}.linux-amd64/cockroach start-single-node --insecure --background
+                  ./cockroach-${{ matrix.cockroachdb-version }}.linux-amd64/cockroach sql --insecure -e 'create database piccolo;'
 
             - name: Test with pytest, CockroachDB
               run: ./scripts/test-cockroach.sh
