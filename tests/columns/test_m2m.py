@@ -35,6 +35,9 @@ from piccolo.columns.column_types import (
 )
 from piccolo.columns.m2m import M2M
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
+from piccolo.engine.finder import engine_finder
+engine = engine_finder()
+
 
 
 class Band(Table):
@@ -557,30 +560,55 @@ class SmallTable(Table):
     mega_rows = M2M(LazyTableReference("SmallToMega", module_path=__name__))
 
 
-class MegaTable(Table):
-    """
-    A table containing all of the column types, and different column kwargs.
-    """
+if engine.engine_type != 'cockroach':
+    class MegaTable(Table):
+        """
+        A table containing all of the column types, and different column kwargs.
+        """
 
-    array_col = Array(Varchar())
-    bigint_col = BigInt()
-    boolean_col = Boolean()
-    bytea_col = Bytea()
-    date_col = Date()
-    double_precision_col = DoublePrecision()
-    integer_col = Integer()
-    interval_col = Interval()
-    json_col = JSON()
-    jsonb_col = JSONB()
-    numeric_col = Numeric(digits=(5, 2))
-    real_col = Real()
-    smallint_col = SmallInt()
-    text_col = Text()
-    timestamp_col = Timestamp()
-    timestamptz_col = Timestamptz()
-    uuid_col = UUID()
-    varchar_col = Varchar()
+        array_col = Array(Varchar())
+        bigint_col = BigInt()
+        boolean_col = Boolean()
+        bytea_col = Bytea()
+        date_col = Date()
+        double_precision_col = DoublePrecision()
+        integer_col = Integer()
+        interval_col = Interval()
+        json_col = JSON()
+        jsonb_col = JSONB()
+        numeric_col = Numeric(digits=(5, 2))
+        real_col = Real()
+        smallint_col = SmallInt()
+        text_col = Text()
+        timestamp_col = Timestamp()
+        timestamptz_col = Timestamptz()
+        uuid_col = UUID()
+        varchar_col = Varchar()
+else:
+    class MegaTable(Table):
+        """
+        Special version for Cockroach.
+        A table containing all of the column types, and different column kwargs.
+        """
 
+        array_col = Array(Varchar())
+        bigint_col = BigInt()
+        boolean_col = Boolean()
+        bytea_col = Bytea()
+        date_col = Date()
+        double_precision_col = DoublePrecision()
+        integer_col = BigInt()
+        interval_col = Interval()
+        json_col = JSONB()
+        jsonb_col = JSONB()
+        numeric_col = Numeric(digits=(5, 2))
+        real_col = Real()
+        smallint_col = BigInt()
+        text_col = Text()
+        timestamp_col = Timestamp()
+        timestamptz_col = Timestamptz()
+        uuid_col = UUID()
+        varchar_col = Varchar()
 
 class SmallToMega(Table):
     small = ForeignKey(MegaTable)
