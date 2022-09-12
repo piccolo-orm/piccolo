@@ -11,6 +11,7 @@ from piccolo.columns.column_types import (
     JSON,
     JSONB,
     Array,
+    Email,
     ForeignKey,
     Secret,
     Serial,
@@ -69,6 +70,7 @@ class TableMeta:
     columns: t.List[Column] = field(default_factory=list)
     default_columns: t.List[Column] = field(default_factory=list)
     non_default_columns: t.List[Column] = field(default_factory=list)
+    email_columns: t.List[Email] = field(default_factory=list)
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
     primary_key: Column = field(default_factory=Column)
     json_columns: t.List[t.Union[JSON, JSONB]] = field(default_factory=list)
@@ -216,6 +218,7 @@ class Table(metaclass=TableMetaclass):
         foreign_key_columns: t.List[ForeignKey] = []
         secret_columns: t.List[Secret] = []
         json_columns: t.List[t.Union[JSON, JSONB]] = []
+        email_columns: t.List[Email] = []
         primary_key: t.Optional[Column] = None
         m2m_relationships: t.List[M2M] = []
 
@@ -249,6 +252,9 @@ class Table(metaclass=TableMetaclass):
                 if isinstance(column, Array):
                     column.base_column._meta._table = cls
 
+                if isinstance(column, Email):
+                    email_columns.append(column)
+
                 if isinstance(column, Secret):
                     secret_columns.append(column)
 
@@ -275,6 +281,7 @@ class Table(metaclass=TableMetaclass):
             columns=columns,
             default_columns=default_columns,
             non_default_columns=non_default_columns,
+            email_columns=email_columns,
             primary_key=primary_key,
             foreign_key_columns=foreign_key_columns,
             json_columns=json_columns,
@@ -1435,12 +1442,13 @@ def _get_graph(
 
             # We also recursively check the related tables to get a fuller
             # picture of the schema and relationships.
-            output.update(
-                _get_graph(
-                    [referenced_table],
-                    iterations=iterations + 1,
+            if referenced_table._meta.tablename not in output:
+                output.update(
+                    _get_graph(
+                        [referenced_table],
+                        iterations=iterations + 1,
+                    )
                 )
-            )
 
         output[table_class._meta.tablename] = dependents
 
