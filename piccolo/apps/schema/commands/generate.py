@@ -309,10 +309,12 @@ COLUMN_TYPE_MAP: t.Dict[str, t.Type[Column]] = {
 }
 
 # Re-map for Cockroach compatibility.
-if engine.engine_type == 'cockroach':
-    COLUMN_TYPE_MAP["integer"] = BigInt
-    COLUMN_TYPE_MAP["json"] = JSONB
-    COLUMN_TYPE_MAP["smallint"] = BigInt
+COLUMN_TYPE_MAP_COCKROACH = dict(
+    COLUMN_TYPE_MAP,
+    integer=BigInt,
+    json=JSONB,
+    smallint=BigInt
+)
 
 COLUMN_DEFAULT_PARSER = {
     BigInt: re.compile(r"^'?(?P<value>-?[0-9]\d*)'?(?:::bigint)?$"),
@@ -374,15 +376,20 @@ COLUMN_DEFAULT_PARSER = {
 }
 
 # Re-map for Cockroach compatibility.
-if engine.engine_type == 'cockroach':
-    COLUMN_DEFAULT_PARSER[BigInt] = re.compile(r"^(?P<value>-?\d+)$")
-    COLUMN_DEFAULT_PARSER[SmallInt] = re.compile(r"^'?(?P<value>-?[0-9]\d*)'?(?:::smallint)?$")
-
+COLUMN_DEFAULT_PARSER_COCKROACH = dict(
+    COLUMN_DEFAULT_PARSER,
+    BigInt=re.compile(r"^(?P<value>-?\d+)$"),
+    SmallInt=re.compile(r"^'?(?P<value>-?[0-9]\d*)'?(?:::smallint)?$")
+)
 
 def get_column_default(
-    column_type: t.Type[Column], column_default: str
+    column_type: t.Type[Column], column_default: str, engine_type: str
 ) -> t.Any:
-    pat = COLUMN_DEFAULT_PARSER.get(column_type)
+
+    if engine_type == 'cockroach':
+        pat = COLUMN_DEFAULT_PARSER_COCKROACH.get(column_type)
+    else:
+        pat = COLUMN_DEFAULT_PARSER.get(column_type)
 
     # Strip extra, incorrect typing stuff from Cockroach.
     column_default = column_default.split(":::", 1)[0]
@@ -668,7 +675,7 @@ def get_table_name(name: str, schema: str) -> str:
 
 
 async def create_table_class_from_db(
-    table_class: t.Type[Table], tablename: str, schema_name: str
+    table_class: t.Type[Table], tablename: str, schema_name: str, engine_type: str
 ) -> OutputSchema:
     output_schema = OutputSchema()
 
@@ -691,7 +698,12 @@ async def create_table_class_from_db(
 
     for pg_row_meta in table_schema:
         data_type = pg_row_meta.data_type
-        column_type = COLUMN_TYPE_MAP.get(data_type, None)
+
+        if engine_type == 'cockroach':
+            column_type = COLUMN_TYPE_MAP_COCKROACH.get(data_type, None)
+        else:
+            column_type = COLUMN_TYPE_MAP.get(data_type, None)
+
         column_name = pg_row_meta.column_name
         column_default = pg_row_meta.column_default
         if not column_type:
@@ -739,6 +751,7 @@ async def create_table_class_from_db(
                             table_class=table_class,
                             tablename=constraint_table.name,
                             schema_name=constraint_table.schema,
+                            engine_type=engine_type,
                         )
                     )
                     referenced_table = (
@@ -782,7 +795,7 @@ async def create_table_class_from_db(
             kwargs["digits"] = (precision, scale)
 
         if column_default:
-            default_value = get_column_default(column_type, column_default)
+            default_value = get_column_default(column_type, column_default, engine_type)
             if default_value:
                 kwargs["default"] = default_value
 
@@ -855,7 +868,7 @@ async def get_output_schema(
     ]
     table_coroutines = (
         create_table_class_from_db(
-            table_class=Schema, tablename=tablename, schema_name=schema_name
+            table_class=Schema, tablename=tablename, schema_name=schema_name, engine_type=engine.engine_type
         )
         for tablename in tablenames
     )
