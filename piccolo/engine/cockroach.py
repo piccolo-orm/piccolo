@@ -20,11 +20,7 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from asyncpg.pool import Pool
 
 
-
-
-
 ###############################################################################
-
 
 class Atomic(PostgresAtomic):
     """
@@ -49,7 +45,6 @@ class Atomic(PostgresAtomic):
 
 ###############################################################################
 
-
 class Transaction(PostgresTransaction):
     """
     Used for wrapping queries in a transaction, using a context manager.
@@ -72,9 +67,7 @@ class Transaction(PostgresTransaction):
             )
         super(Transaction, self).__init__(engine)
 
-
 ###############################################################################
-
 
 class CockroachEngine(PostgresEngine):
     """
@@ -108,7 +101,6 @@ class CockroachEngine(PostgresEngine):
     async def prep_database(self):
         try:
             await self._run_in_new_connection("SET CLUSTER SETTING sql.defaults.experimental_alter_column_type.enabled = true;")
-            #await self._run_in_new_connection("SET CLUSTER SETTING  enable_experimental_alter_column_type_general = true;")
         except asyncpg.exceptions.InsufficientPrivilegeError:
             colored_warning(
                 f"=> Unable to set up Cockroach DB "

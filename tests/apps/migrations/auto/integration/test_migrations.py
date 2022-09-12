@@ -323,7 +323,7 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "smallint",
                     x.is_nullable == "NO",
-                    x.column_default in ("0", "0:::INT8", "1:::INT8"), # Cockroach DB.
+                    x.column_default in ("0", "0:::INT8"), # Cockroach DB.
                 ]
             ),
         )
