@@ -37,8 +37,7 @@ class DateOffset(Default):
 
     @property
     def cockroach(self):
-        interval_string = self.get_postgres_interval_string(["days"])
-        return f"CURRENT_DATE + INTERVAL '{interval_string}'"
+        return self.postgres
 
     @property
     def sqlite(self):
