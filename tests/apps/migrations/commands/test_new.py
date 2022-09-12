@@ -11,7 +11,7 @@ from piccolo.apps.migrations.commands.new import (
 )
 from piccolo.conf.apps import AppConfig
 from piccolo.utils.sync import run_sync
-from tests.base import postgres_only
+from tests.base import engines_only
 from tests.example_apps.music.tables import Manager
 
 
@@ -42,7 +42,7 @@ class TestNewMigrationCommand(TestCase):
 
         self.assertTrue(len(migration_modules.keys()) == 1)
 
-    @postgres_only
+    @engines_only('postgres')
     @patch("piccolo.apps.migrations.commands.new.print")
     def test_new_command(self, print_: MagicMock):
         """
