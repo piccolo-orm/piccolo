@@ -137,8 +137,8 @@ jobs:
         timeout-minutes: 30
         strategy:
             matrix:
-                python-version: ["3.7", "3.8", "3.9", "3.10"]
-                cockroachdb-version: ["v22.1.6"]
+                python-version: ["3.8", "3.9", "3.10"]
+                cockroachdb-version: ["v22.2.0-alpha.2"]
         steps:
             - uses: actions/checkout@v3
             - name: Set up Python ${{ matrix.python-version }}
@@ -153,9 +153,9 @@ jobs:
                   pip install -r requirements/extras/postgres.txt
             - name: Setup CockroachDB
               run: |
-                  wget -qO- https://binaries.cockroachdb.com/cockroach-v22.1.6.linux-amd64.tgz | tar xz
-                  ./cockroach-v22.1.6.linux-amd64/cockroach start-single-node --insecure --background
-                  ./cockroach-v22.1.6.linux-amd64/cockroach sql --insecure -e 'create database piccolo;'
+                  wget -qO- https://binaries.cockroachdb.com/cockroach-${{ matrix.python-version }}.linux-amd64.tgz | tar xz
+                  ./cockroach-${{ matrix.python-version }}.linux-amd64/cockroach start-single-node --insecure --background
+                  ./cockroach-${{ matrix.python-version }}.linux-amd64/cockroach sql --insecure -e 'create database piccolo;'
 
             - name: Test with pytest, CockroachDB
               run: ./scripts/test-cockroach.sh
