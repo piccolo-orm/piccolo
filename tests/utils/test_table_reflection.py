@@ -36,8 +36,7 @@ class TestTableStorage(TestCase):
             col_2 = table_2._meta.get_column_by_name(column_name)
 
             # Make sure they're the same type
-            self.assertEqual(col_1.column_type, col_2.column_type)
-            #self.assertEqual(type(col_1), type(col_2)) # Please see: https://github.com/piccolo-orm/piccolo/issues/607
+            self.assertEqual(type(col_1), type(col_2))
 
             # Make sure they're both nullable or not
             self.assertEqual(col_1._meta.null, col_2._meta.null)
