@@ -250,9 +250,9 @@ class TestMigrations(MigrationTestCase):
             ],
             test_function=lambda x: all(
                 [
-                    x.data_type in ("integer", "bigint"),
+                    x.data_type in ("integer", "bigint"), # Cockroach DB.
                     x.is_nullable == "NO",
-                    x.column_default in ("0", "0:::INT8"),
+                    x.column_default in ("0", "0:::INT8"), # Cockroach DB.
                 ]
             ),
         )
@@ -319,7 +319,7 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "smallint",
                     x.is_nullable == "NO",
-                    x.column_default in ("0", "0:::INT8", "1:::INT8"),
+                    x.column_default in ("0", "0:::INT8", "1:::INT8"), # Cockroach DB.
                 ]
             ),
         )
@@ -342,7 +342,7 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "bigint",
                     x.is_nullable == "NO",
-                    x.column_default in ("0", "0:::INT8"),
+                    x.column_default in ("0", "0:::INT8"), # Cockroach DB.
                 ]
             ),
         )

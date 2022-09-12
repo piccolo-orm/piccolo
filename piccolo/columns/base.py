@@ -843,16 +843,17 @@ class Column(Selectable):
                 f" ON UPDATE {on_update}"
             )
 
-        if self.__class__.__name__ not in ("Serial", "BigSerial"):
-            default = self.get_default_value()
-            sql_value = self.get_sql_value(value=default)
-            query += f" DEFAULT {sql_value}"
-
-
         # Cockroach needs to define this default at table creation time so we can use DEFAULT in other places "as-is".
-        if self._meta.engine_type == "cockroach" and self.__class__.__name__ in ("Serial", "BigSerial"):
+        if self._meta.engine_type == "cockroach" and self.__class__.__name__ in ("Serial"):
             query = query.replace(' NOT NULL', '') # Cockroach complains about this.
             query += f" DEFAULT unique_rowid()"
+        else:
+            if self.__class__.__name__ not in ("Serial", "BigSerial"):
+                default = self.get_default_value()
+                sql_value = self.get_sql_value(value=default)
+                query += f" DEFAULT {sql_value}"
+
+
 
         return query
 

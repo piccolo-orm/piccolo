@@ -47,6 +47,7 @@ from piccolo.utils.naming import _snake_to_camel
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.engine.base import Engine
 
+engine = engine_finder()
 
 class ForeignKeyPlaceholder(Table):
     pass
@@ -307,6 +308,12 @@ COLUMN_TYPE_MAP: t.Dict[str, t.Type[Column]] = {
     "uuid": UUID,
 }
 
+# Re-map for Cockroach compatibility.
+if engine.engine_type == 'cockroach':
+    COLUMN_TYPE_MAP["integer"] = BigInt
+    COLUMN_TYPE_MAP["json"] = JSONB
+    COLUMN_TYPE_MAP["smallint"] = BigInt
+
 COLUMN_DEFAULT_PARSER = {
     BigInt: re.compile(r"^'?(?P<value>-?[0-9]\d*)'?(?:::bigint)?$"),
     Boolean: re.compile(r"^(?P<value>true|false)$"),
@@ -366,11 +373,19 @@ COLUMN_DEFAULT_PARSER = {
     ForeignKey: None,
 }
 
+# Re-map for Cockroach compatibility.
+if engine.engine_type == 'cockroach':
+    COLUMN_DEFAULT_PARSER[BigInt] = re.compile(r"^(?P<value>-?\d+)$")
+    COLUMN_DEFAULT_PARSER[SmallInt] = re.compile(r"^'?(?P<value>-?[0-9]\d*)'?(?:::smallint)?$")
+
 
 def get_column_default(
     column_type: t.Type[Column], column_default: str
 ) -> t.Any:
     pat = COLUMN_DEFAULT_PARSER.get(column_type)
+
+    # Strip extra, incorrect typing stuff from Cockroach.
+    column_default = column_default.split(":::", 1)[0]
 
     if pat is None:
         return None
@@ -698,7 +713,9 @@ async def create_table_class_from_db(
         if constraints.is_primary_key(column_name=column_name):
             kwargs["primary_key"] = True
             if column_type == Integer:
-                column_type = Serial
+               column_type = Serial
+            if column_type == BigInt:
+               column_type = Serial
 
         if constraints.is_foreign_key(column_name=column_name):
             fk_constraint_table = constraints.get_foreign_key_constraint_name(
