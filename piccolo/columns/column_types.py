@@ -184,12 +184,6 @@ class TimedeltaDelegate:
         "microseconds": "MICROSECONDS",
     }
 
-    cockroach_attr_map: t.Dict[str, str] = {
-        "days": "DAYS",
-        "seconds": "SECONDS",
-        "microseconds": "MICROSECONDS",
-    }
-
     def get_postgres_interval_string(self, interval: timedelta) -> str:
         """
         :returns:
@@ -204,22 +198,6 @@ class TimedeltaDelegate:
             if timestamp_value:
                 output.append(f"{timestamp_value} {postgres_name}")
 
-        output_string = " ".join(output)
-        return f"'{output_string}'"
-
-    def get_cockroach_interval_string(self, interval: timedelta) -> str:
-        """
-        :returns:
-            A string like::
-
-                "'1 DAYS 5 SECONDS 1000 MICROSECONDS'"
-
-        """
-        output = []
-        for timedelta_key, cockroach_name in self.cockroach_attr_map.items():
-            timestamp_value = getattr(interval, timedelta_key)
-            if timestamp_value:
-                output.append(f"{timestamp_value} {cockroach_name}")
         output_string = " ".join(output)
         return f"'{output_string}'"
 
