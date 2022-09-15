@@ -1,9 +1,17 @@
 from unittest import TestCase
 
+import pytest
+
 from piccolo.apps.user.tables import BaseUser
 from piccolo.columns.combination import WhereRaw
 from piccolo.query.methods.select import Avg, Count, Max, Min, SelectRaw, Sum
-from tests.base import DBTestCase, postgres_only, sqlite_only
+from tests.base import (
+    DBTestCase,
+    engine_version_lt,
+    is_running_sqlite,
+    postgres_only,
+    sqlite_only,
+)
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
 
@@ -949,6 +957,10 @@ class TestSelect(DBTestCase):
             response, [{"name": "Pythonistas", "manager_name": "Guido"}]
         )
 
+    @pytest.mark.skipif(
+        is_running_sqlite() and engine_version_lt(3.35),
+        reason="SQLite doesn't have math functions in this version.",
+    )
     def test_select_raw(self):
         """
         Make sure ``SelectRaw`` can be used in select queries.
