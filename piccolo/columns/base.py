@@ -343,6 +343,10 @@ class ColumnMeta:
 
 
 class Selectable(metaclass=ABCMeta):
+    """
+    Anything which inherits from this can be used in a select query.
+    """
+
     _alias: t.Optional[str]
 
     @abstractmethod

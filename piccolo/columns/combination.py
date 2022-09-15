@@ -95,15 +95,20 @@ class WhereRaw(CombinableMixin):
         """
         Execute raw SQL queries in your where clause. Use with caution!
 
-        await Band.where(
-            WhereRaw("name = 'Pythonistas'")
-        )
+        .. code-block:: python
+
+            await Band.where(
+                WhereRaw("name = 'Pythonistas'")
+            )
 
         Or passing in parameters:
 
-        await Band.where(
-            WhereRaw("name = {}", 'Pythonistas')
-        )
+        .. code-block:: python
+
+            await Band.where(
+                WhereRaw("name = {}", 'Pythonistas')
+            )
+
         """
         self.querystring = QueryString(sql, *args)
 

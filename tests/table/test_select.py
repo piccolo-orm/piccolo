@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from piccolo.apps.user.tables import BaseUser
 from piccolo.columns.combination import WhereRaw
-from piccolo.query.methods.select import Avg, Count, Max, Min, Sum
+from piccolo.query.methods.select import Avg, Count, Max, Min, SelectRaw, Sum
 from tests.base import DBTestCase, postgres_only, sqlite_only
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
@@ -947,6 +947,18 @@ class TestSelect(DBTestCase):
         )
         self.assertEqual(
             response, [{"name": "Pythonistas", "manager_name": "Guido"}]
+        )
+
+    def test_select_raw(self):
+        """
+        Make sure ``SelectRaw`` can be used in select queries.
+        """
+        self.insert_row()
+        response = Band.select(
+            Band.name, SelectRaw("round(log(popularity)) AS popularity_log")
+        ).run_sync()
+        self.assertListEqual(
+            response, [{"name": "Pythonistas", "popularity_log": 3.0}]
         )
 
 

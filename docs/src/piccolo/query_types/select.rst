@@ -255,6 +255,26 @@ And can use aliases for aggregate functions like this:
 
 -------------------------------------------------------------------------------
 
+SelectRaw
+---------
+
+In certain situations you may want to have raw SQL in your select query.
+
+For example, if there's a Postgres function which you want to access, which
+isn't supported by Piccolo:
+
+.. code-block:: python
+
+    from piccolo.query.methods.select import SelectRaw
+
+    >>> await Band.select(
+    ...     Band.name,
+    ...     SelectRaw("log(popularity) AS log_popularity")
+    ... )
+    [{'name': 'Pythonistas', 'log_popularity': 3.0}]
+
+-------------------------------------------------------------------------------
+
 Query clauses
 -------------
 
