@@ -38,8 +38,6 @@ def is_numeric_column(column: Column) -> bool:
 
 
 class SelectRaw(Selectable):
-    __slots__ = ("querystring",)
-
     def __init__(self, sql: str, *args: t.Any) -> None:
         """
         Execute raw SQL in your select query.
