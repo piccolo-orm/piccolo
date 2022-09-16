@@ -11,7 +11,7 @@ class TestTableStr(TestCase):
                 Manager._table_str(),
                 (
                     "class Manager(Table, tablename='manager'):\n"
-                    "    id = Serial(default='unique_rowid()', null=False, primary_key=True, unique=False, index=False, index_method=IndexMethod.btree, choices=None, db_column_name='id', secret=False)\n"  # noqa: E501
+                    "    id = Serial(null=False, primary_key=True, unique=False, index=False, index_method=IndexMethod.btree, choices=None, db_column_name='id', secret=False)\n"  # noqa: E501
                     "    name = Varchar(length=50, default='', null=False, primary_key=False, unique=False, index=False, index_method=IndexMethod.btree, choices=None, db_column_name=None, secret=False)\n"  # noqa: E501
                 ),
             )

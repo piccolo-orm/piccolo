@@ -379,10 +379,7 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def _create_serial_primary_key(cls) -> Serial:
-        if cls._meta.db.engine_type == "cockroach":
-            pk = Serial(index=False, primary_key=True, db_column_name="id", default="unique_rowid()") # Not sure where else to put "unique_rowid()". Has to be at table creation time.
-        else:
-            pk = Serial(index=False, primary_key=True, db_column_name="id")
+        pk = Serial(index=False, primary_key=True, db_column_name="id")
         pk._meta._name = "id"
         pk._meta._table = cls
 

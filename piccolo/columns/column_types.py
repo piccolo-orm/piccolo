@@ -786,7 +786,7 @@ class Serial(Column):
         if engine_type == "postgres":
             return DEFAULT
         elif engine_type == "cockroach":
-            return DEFAULT
+            return Unquoted('unique_rowid()')
         elif engine_type == "sqlite":
             return NULL
         raise Exception("Unrecognized engine type")
