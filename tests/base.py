@@ -306,7 +306,7 @@ class DBTestCase(TestCase):
                     popularity
                 ) VALUES (
                     'Pythonistas',
-                    {first_id(id)},
+                    {id[0]["id"]},
                     1000
                 );"""
             )
