@@ -12,7 +12,7 @@ from piccolo.columns.column_types import ForeignKey
 from piccolo.conf.apps import AppConfig
 from piccolo.table import Table, sort_table_classes
 from piccolo.utils.lazy_loader import LazyLoader
-from tests.base import AsyncMock, DBTestCase, postgres_only, cockroach_skip, engines_only, engine_is, first_id
+from tests.base import AsyncMock, DBTestCase, postgres_only, cockroach_skip, engines_only, engine_is
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
 asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")
@@ -233,7 +233,7 @@ class TestMigrationManager(DBTestCase):
         if engine_is('cockroach'):
             id = self.run_sync("INSERT INTO musician VALUES (default, 'Bob Jones') RETURNING id;")
             response = self.run_sync("SELECT * FROM musician;")
-            self.assertEqual(response, [{"id": first_id(id), "name": "Bob Jones"}])
+            self.assertEqual(response, [{"id": id[0]["id"], "name": "Bob Jones"}])
         # Reverse
 
         get_app_config.return_value = AppConfig(
@@ -301,13 +301,13 @@ class TestMigrationManager(DBTestCase):
             id = self.run_sync("INSERT INTO manager VALUES (default, 'Dave', 'dave@me.com') RETURNING id;")
             response = self.run_sync("SELECT * FROM manager;")
             self.assertEqual(
-                response, [{"id": first_id(id), "name": "Dave", "email": "dave@me.com"}]
+                response, [{"id": id[0]["id"], "name": "Dave", "email": "dave@me.com"}]
             )
 
             # Reverse
             asyncio.run(manager.run(backwards=True))
             response = self.run_sync("SELECT * FROM manager;")
-            self.assertEqual(response, [{"id": first_id(id), "name": "Dave"}])
+            self.assertEqual(response, [{"id": id[0]["id"], "name": "Dave"}])
 
         # Preview
         manager.preview = True
@@ -321,7 +321,7 @@ class TestMigrationManager(DBTestCase):
         if engine_is('postgres'):
             self.assertEqual(response, [{"id": 1, "name": "Dave"}])
         if engine_is('cockroach'):
-            self.assertEqual(response, [{"id": first_id(id), "name": "Dave"}])
+            self.assertEqual(response, [{"id": id[0]["id"], "name": "Dave"}])
 
     @postgres_only
     def test_add_column_with_index(self):
@@ -442,14 +442,14 @@ class TestMigrationManager(DBTestCase):
         asyncio.run(manager.run())
 
         id = self.run_sync("INSERT INTO manager VALUES (default, 'Alice', null) RETURNING id;")
-        id2 = Manager.raw("INSERT INTO manager VALUES (default, 'Dave', {}) RETURNING id;", first_id(id)).run_sync()
+        id2 = Manager.raw("INSERT INTO manager VALUES (default, 'Dave', {}) RETURNING id;", id[0]["id"]).run_sync()
 
         response = self.run_sync("SELECT * FROM manager;")
         self.assertEqual(
             response,
             [
-                {"id": first_id(id), "name": "Alice", "advisor": None},
-                {"id": first_id(id2), "name": "Dave", "advisor": first_id(id)},
+                {"id": id[0]["id"], "name": "Alice", "advisor": None},
+                {"id": id2[0]["id"], "name": "Dave", "advisor": id[0]["id"]},
             ],
         )
 
@@ -458,7 +458,7 @@ class TestMigrationManager(DBTestCase):
         response = self.run_sync("SELECT * FROM manager;")
         self.assertEqual(
             response,
-            [{"id": first_id(id), "name": "Alice"}, {"id": first_id(id2), "name": "Dave"}],
+            [{"id": id[0]["id"], "name": "Alice"}, {"id": id2[0]["id"], "name": "Dave"}],
         )
 
     @postgres_only
@@ -519,7 +519,7 @@ class TestMigrationManager(DBTestCase):
         if engine_is('cockroach'):
             id = self.run_sync("INSERT INTO musician VALUES (default, 'Dave') RETURNING id;")
             response = self.run_sync("SELECT * FROM musician;")
-            self.assertEqual(response, [{"id": first_id(id), "name": "Dave"}])
+            self.assertEqual(response, [{"id": id[0]["id"], "name": "Dave"}])
 
         manager_2 = MigrationManager()
         manager_2.drop_column(
@@ -535,7 +535,7 @@ class TestMigrationManager(DBTestCase):
 
         if engine_is('cockroach'):
             response = self.run_sync("SELECT * FROM musician;")
-            self.assertEqual(response, [{"id": first_id(id)}])
+            self.assertEqual(response, [{"id": id[0]["id"]}])
 
         # Reverse
         get_migration_managers.return_value = [manager_1]
@@ -547,7 +547,7 @@ class TestMigrationManager(DBTestCase):
             self.assertEqual(response, [{"id": 1, "name": ""}])
 
         if engine_is('cockroach'):
-            self.assertEqual(response, [{"id": first_id(id), "name": ""}])
+            self.assertEqual(response, [{"id": id[0]["id"], "name": ""}])
 
 
     @engines_only('postgres', 'cockroach')
@@ -582,12 +582,12 @@ class TestMigrationManager(DBTestCase):
             id = self.run_sync("INSERT INTO director VALUES (default, 'Dave') RETURNING id;")
 
             response = self.run_sync("SELECT * FROM director;")
-            self.assertEqual(response, [{"id": first_id(id), "name": "Dave"}])
+            self.assertEqual(response, [{"id": id[0]["id"], "name": "Dave"}])
 
             # Reverse
             asyncio.run(manager.run(backwards=True))
             response = self.run_sync("SELECT * FROM manager;")
-            self.assertEqual(response, [{"id": first_id(id), "name": "Dave"}])
+            self.assertEqual(response, [{"id": id[0]["id"], "name": "Dave"}])
 
     @engines_only('postgres')
     def test_alter_column_unique(self):

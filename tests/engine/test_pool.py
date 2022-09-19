@@ -38,7 +38,7 @@ class TestPool(DBTestCase):
         async def get_data():
             response = await Manager.select().run()
             if engine_is('cockroach'):
-                self.assertEqual(response, [{"id": response[0]['id'], "name": "Bob"}])
+                self.assertEqual(response, [{"id": response[0]["id"], "name": "Bob"}])
             else:
                 self.assertEqual(response, [{"id": 1, "name": "Bob"}])
 

@@ -16,7 +16,7 @@ from tests.base import (
     postgres_only,
 )
 from tests.example_apps.music.tables import Band, Manager
-from tests.base import AsyncMock, DBTestCase, postgres_only, cockroach_skip, engines_only, engine_is, first_id
+from tests.base import AsyncMock, DBTestCase, postgres_only, cockroach_skip, engines_only, engine_is
 
 @pytest.mark.skipif(
     is_running_sqlite() and engine_version_lt(3.25),

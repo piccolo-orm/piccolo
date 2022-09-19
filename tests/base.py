@@ -99,8 +99,6 @@ def engines_skip(*engine_names: str):
     else:
         raise ValueError("Engine not found")
 
-
-
 def engine_is(*engine_names: str):
     """
     Assert branching. Choose what engines can run an assert.
@@ -119,11 +117,6 @@ def engine_is(*engine_names: str):
             return True
     else:
         raise ValueError("Engine not found")
-
-def first_id(result=[]):
-    """ Primery key helper for databases with non-sequential ids (Example: cockroach). """
-    return result[0].get('id')
-
 
 class AsyncMock(MagicMock):
     """

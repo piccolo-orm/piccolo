@@ -1,6 +1,6 @@
 from piccolo.columns.column_types import Integer, Varchar
 from piccolo.table import Table
-from tests.base import DBTestCase, postgres_only, cockroach_skip, engine_is, engines_only, engines_skip, first_id
+from tests.base import DBTestCase, postgres_only, cockroach_skip, engine_is, engines_only, engines_skip
 
 class Band(Table):
     name = Varchar(db_column_name="regrettable_column_name")
@@ -79,7 +79,7 @@ class TestDBColumnName(DBTestCase):
                 bands,
                 [
                     {
-                        "id": first_id(bands),
+                        "id": bands[0]["id"],
                         "regrettable_column_name": "Pythonistas",
                         "popularity": 1000,
                     }
@@ -133,7 +133,7 @@ class TestDBColumnName(DBTestCase):
                 bands,
                 [
                     {
-                        "id": first_id(bands),
+                        "id": bands[0]["id"],
                         "regrettable_column_name": "Pythonistas 2",
                         "popularity": 1000,
                     }
@@ -159,7 +159,7 @@ class TestDBColumnName(DBTestCase):
                 bands,
                 [
                     {
-                        "id": first_id(bands),
+                        "id": bands[0]["id"],
                         "regrettable_column_name": "Pythonistas 3",
                         "popularity": 1000,
                     }
@@ -233,7 +233,7 @@ class TestDBColumnName(DBTestCase):
             bands,
             [
                 {
-                    "id": result[0]['id'],
+                    "id": result[0]["id"],
                     "regrettable_column_name": "Pythonistas",
                     "popularity": 1000,
                 },
@@ -252,7 +252,7 @@ class TestDBColumnName(DBTestCase):
             bands,
             [
                 {
-                    "id": result[0]['id'],
+                    "id": result[0]["id"],
                     "regrettable_column_name": "Pythonistas",
                     "popularity": 1000,
                 }
