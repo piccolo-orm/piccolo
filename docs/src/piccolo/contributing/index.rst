@@ -20,6 +20,7 @@ Get the tests running
 * Setup Postgres, and make sure a database called ``piccolo`` exists (see ``tests/postgres_conf.py``).
 * Run the automated code linting/formatting tools: ``./scripts/lint.sh``
 * Run the test suite with Postgres: ``./scripts/test-postgres.sh``
+* Run the test suite with Cockroach: ``./scripts/test-cockroach.sh``
 * Run the test suite with Sqlite: ``./scripts/test-sqlite.sh``
 
 -------------------------------------------------------------------------------

@@ -1,0 +1,42 @@
+.. _setting_up_cockroach:
+
+##############
+Setup Cockroach
+##############
+
+Installation
+************
+
+Follow the  `instructions for your OS <https://www.cockroachlabs.com/docs/stable/install-cockroachdb.html>`_.
+
+-------------------------------------------------------------------------------
+
+Creating a database
+*******************
+
+cockroach sql
+-------------
+
+CockroachDB comes with its own management tooling.
+
+.. code-block:: bash
+
+    cd ~/wherever/you/installed/cockroachdb
+    cockroach sql --insecure
+
+Enter the following:
+
+.. code-block:: bash
+
+    create database piccolo;
+    use piccolo;
+
+Management GUI
+--------------
+
+CockroachDB comes with its own web-based management GUI available on localhost: http://127.0.0.1:8080/
+
+Beekeeper Studio
+----------------
+
+If you prefer a GUI, Beekeeper Studio is recommended and has an  `installer available <https://www.beekeeperstudio.io/>`_.
