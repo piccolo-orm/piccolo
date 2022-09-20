@@ -425,7 +425,7 @@ class DDL:
         """
         Calls the correct underlying method, depending on the current engine.
         """
-        engine_type = self.engine_type
+        engine_type = self.engine_type # noqa
         for ddl in ('postgres_ddl', 'cockroach_ddl', 'default_ddl'):
             try:
                  return getattr(self, ddl)
