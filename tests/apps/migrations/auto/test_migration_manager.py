@@ -256,7 +256,7 @@ class TestMigrationManager(DBTestCase):
             if engine_is('cockroach'):
                 self.assertEqual(
                     fake_out.getvalue(),
-                    """  -  [preview forwards]... \n CREATE TABLE musician ("id" INTEGER PRIMARY KEY DEFAULT unique_rowid(), "name" VARCHAR(255) NOT NULL DEFAULT '');\n""",  # noqa: E501
+                    """  -  [preview forwards]... \n CREATE TABLE musician ("id" INTEGER PRIMARY KEY NOT NULL DEFAULT unique_rowid(), "name" VARCHAR(255) NOT NULL DEFAULT '');\n""",  # noqa: E501
                 )
         self.assertEqual(self.table_exists("musician"), False)
 
@@ -317,13 +317,14 @@ class TestMigrationManager(DBTestCase):
                 fake_out.getvalue(),
                 """  -  [preview forwards]... \n ALTER TABLE manager ADD COLUMN "email" VARCHAR(100) UNIQUE DEFAULT '';\n""",  # noqa: E501
             )
+
         response = self.run_sync("SELECT * FROM manager;")
         if engine_is('postgres'):
             self.assertEqual(response, [{"id": 1, "name": "Dave"}])
         if engine_is('cockroach'):
             self.assertEqual(response, [{"id": id[0]["id"], "name": "Dave"}])
 
-    @postgres_only
+    @engines_only('postgres', 'cockroach')
     def test_add_column_with_index(self):
         """
         Test adding a column with an index to a MigrationManager.
