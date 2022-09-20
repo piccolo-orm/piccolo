@@ -425,7 +425,6 @@ class DDL:
         """
         Calls the correct underlying method, depending on the current engine.
         """
-        engine_type = self.engine_type # lgtm[py/unused-local-variable]
         for ddl in ('postgres_ddl', 'cockroach_ddl', 'default_ddl'):
             try:
                  return getattr(self, ddl)
