@@ -96,7 +96,7 @@ class CockroachEngine(PostgresEngine):
         self.transaction_connection = contextvars.ContextVar(
             f"pg_transaction_connection_{database_name}", default=None
         )
-        super(PostgresEngine, self).__init__() # noqa
+        super(PostgresEngine, self).__init__() # lgtm[py/super-not-enclosing-class]
 
     async def prep_database(self):
         try:
