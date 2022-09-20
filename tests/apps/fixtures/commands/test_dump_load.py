@@ -166,9 +166,8 @@ class TestDumpLoad(TestCase):
         run_sync(load_json_string(json_string))
 
         self.assertDictEqual(
-            SmallTable.select().run_sync()[0] |
-            {"varchar_col": "Test"},
-            SmallTable.select().run_sync()[0]
+            SmallTable.select().run_sync()[0],
+            SmallTable.select().run_sync()[0].update({"varchar_col": "Test"}),
         )
 
         mega_table_data = MegaTable.select().run_sync()
@@ -188,7 +187,8 @@ class TestDumpLoad(TestCase):
         self.assertTrue(len(mega_table_data) == 1)
 
         self.assertDictEqual(
-            mega_table_data[0] |
+            mega_table_data[0],
+            mega_table_data[0].update(
             {
                 "bigint_col": 1,
                 "boolean_col": True,
@@ -212,6 +212,6 @@ class TestDumpLoad(TestCase):
                 "unique_col": "hello",
                 "null_col": None,
                 "not_null_col": "hello",
-            },
-            mega_table_data[0]
+            }),
+
         )
