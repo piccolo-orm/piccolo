@@ -165,9 +165,12 @@ class TestDumpLoad(TestCase):
 
         run_sync(load_json_string(json_string))
 
+        result = SmallTable.select().run_sync()[0]
+        result.pop('id')
+
         self.assertDictEqual(
-            SmallTable.select().run_sync()[0],
-            SmallTable.select().run_sync()[0].update({"varchar_col": "Test"}),
+            result,
+            {"varchar_col": "Test"},
         )
 
         mega_table_data = MegaTable.select().run_sync()
@@ -186,9 +189,12 @@ class TestDumpLoad(TestCase):
 
         self.assertTrue(len(mega_table_data) == 1)
 
+        mega_table_data = mega_table_data[0]
+        mega_table_data.pop('id')
+        mega_table_data.pop('foreignkey_col')
+
         self.assertDictEqual(
-            mega_table_data[0],
-            mega_table_data[0].update(
+            mega_table_data,
             {
                 "bigint_col": 1,
                 "boolean_col": True,
@@ -198,7 +204,7 @@ class TestDumpLoad(TestCase):
                 "interval_col": datetime.timedelta(seconds=10),
                 "json_col": '{"a":1}',
                 "jsonb_col": '{"a":1}',
-                "numeric_col": decimal.Decimal("1.10"),
+                "numeric_col": decimal.Decimal("1.1"),
                 "real_col": 1.1,
                 "double_precision_col": 1.344,
                 "smallint_col": 1,
@@ -212,6 +218,6 @@ class TestDumpLoad(TestCase):
                 "unique_col": "hello",
                 "null_col": None,
                 "not_null_col": "hello",
-            }),
+            },
 
         )
