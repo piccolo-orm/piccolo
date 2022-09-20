@@ -820,7 +820,7 @@ class BigSerial(Serial):
         if engine_type == "postgres":
             return "BIGSERIAL"
         elif engine_type == "cockroach":
-            return "BIGSERIAL"
+            return "BIGINT"
         elif engine_type == "sqlite":
             return "INTEGER"
         raise Exception("Unrecognized engine type")
