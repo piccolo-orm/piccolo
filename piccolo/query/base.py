@@ -425,7 +425,7 @@ class DDL:
         """
         Calls the correct underlying method, depending on the current engine.
         """
-        for ddl in ('postgres_ddl', 'cockroach_ddl', 'default_ddl'):
+        for ddl in ('postgres_ddl', 'cockroach_ddl', 'sqlite_ddl', 'default_ddl'):
             try:
                  return getattr(self, ddl)
             except NotImplementedError:
