@@ -2254,6 +2254,10 @@ class JSONB(JSON):
 
     """
 
+    @property
+    def column_type(self):
+        return "JSONB" # Must be defined because we override column_type() in JSON().
+
     def arrow(self, key: str) -> JSONB:
         """
         Allows part of the JSON structure to be returned - for example,
