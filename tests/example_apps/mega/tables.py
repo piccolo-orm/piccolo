@@ -32,7 +32,7 @@ class SmallTable(Table):
     varchar_col = Varchar()
 
 
-if engine.engine_type != "cockroach":
+if engine.engine_type != "cockroach":  # type: ignore
 
     class MegaTable(Table):  # type: ignore
         """

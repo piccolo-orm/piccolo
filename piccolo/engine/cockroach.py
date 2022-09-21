@@ -85,7 +85,7 @@ class CockroachEngine(PostgresEngine):
         config: t.Dict[str, t.Any],
         extensions: t.Sequence[str] = (),
         log_queries: bool = False,
-        extra_nodes: t.Dict[str, CockroachEngine] = None,
+        extra_nodes: t.Dict[str, PostgresEngine] = None,
     ) -> None:
         if extra_nodes is None:
             extra_nodes = {}

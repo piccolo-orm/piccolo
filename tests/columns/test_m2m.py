@@ -569,7 +569,7 @@ class SmallTable(Table):
     mega_rows = M2M(LazyTableReference("SmallToMega", module_path=__name__))
 
 
-if engine.engine_type != "cockroach":
+if engine.engine_type != "cockroach":  # type: ignore
 
     class MegaTable(Table):  # type: ignore
         """

@@ -28,7 +28,7 @@ class Manager(Table):
         return Readable(template="%s", columns=[cls.name])
 
 
-if engine.engine_type != "cockroach":
+if engine.engine_type != "cockroach":  # type: ignore
 
     class Band(Table):  # type: ignore
         name = Varchar(length=50)
@@ -41,7 +41,7 @@ if engine.engine_type != "cockroach":
 
 else:
 
-    class Band(Table):  # type: ignore
+    class Band(Table):
         """
         Special version for Cockroach.
         """
