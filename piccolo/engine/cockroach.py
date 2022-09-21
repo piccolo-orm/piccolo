@@ -15,8 +15,6 @@ from .postgres import Transaction as PostgresTransaction
 asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")
 
 if t.TYPE_CHECKING:  # pragma: no cover
-    from asyncpg.connection import Connection
-    from asyncpg.cursor import Cursor
     from asyncpg.pool import Pool
 
 
@@ -39,7 +37,7 @@ class Atomic(PostgresAtomic):
 
     """
 
-    def __init__(self, engine: CockroachDBEngine):
+    def __init__(self, engine: CockroachEngine):
         self.engine = engine
         self.queries: t.List[Query] = []
         super(Atomic, self).__init__(engine)
@@ -87,7 +85,7 @@ class CockroachEngine(PostgresEngine):
         config: t.Dict[str, t.Any],
         extensions: t.Sequence[str] = (),
         log_queries: bool = False,
-        extra_nodes: t.Dict[str, CockroachDBEngine] = None,
+        extra_nodes: t.Dict[str, CockroachEngine] = None,
     ) -> None:
         if extra_nodes is None:
             extra_nodes = {}
@@ -108,7 +106,7 @@ class CockroachEngine(PostgresEngine):
     async def prep_database(self):
         try:
             await self._run_in_new_connection(
-                "SET CLUSTER SETTING sql.defaults.experimental_alter_column_type.enabled = true;"
+                "SET CLUSTER SETTING sql.defaults.experimental_alter_column_type.enabled = true;" # noqa: E501
             )
         except asyncpg.exceptions.InsufficientPrivilegeError:
             colored_warning(

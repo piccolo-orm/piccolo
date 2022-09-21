@@ -2256,7 +2256,7 @@ class JSONB(JSON):
 
     @property
     def column_type(self):
-        return "JSONB"  # Must be defined because we override column_type() in JSON().
+        return "JSONB"  # Must be defined, we override column_type() in JSON()
 
     def arrow(self, key: str) -> JSONB:
         """
@@ -2511,7 +2511,7 @@ class Array(Column):
         engine_type = self._meta.engine_type
         if engine_type != "postgres" and engine_type != "cockroach":
             raise ValueError(
-                "Only Postgres and Cockroach supports array indexing currently."
+                "Only Postgres and Cockroach support array indexing."
             )
 
         if isinstance(value, int):
@@ -2597,7 +2597,7 @@ class Array(Column):
         engine_type = self._meta.engine_type
         if engine_type != "postgres" and engine_type != "cockroach":
             raise ValueError(
-                "Only Postgres and Cockroach supports array appending currently."
+                "Only Postgres and Cockroach support array appending."
             )
 
         if not isinstance(value, list):
