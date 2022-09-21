@@ -23,7 +23,7 @@ class TestTime(TestCase):
     def tearDown(self):
         MyTable.alter().drop_table().run_sync()
 
-    @engines_skip('cockroach')
+    @engines_skip("cockroach")
     def test_timestamp(self):
         created_on = datetime.datetime.now().time()
         row = MyTable(created_on=created_on)
@@ -40,7 +40,7 @@ class TestTimeDefault(TestCase):
     def tearDown(self):
         MyTableDefault.alter().drop_table().run_sync()
 
-    @engines_skip('cockroach')
+    @engines_skip("cockroach")
     def test_timestamp(self):
         created_on = datetime.datetime.now().time()
         row = MyTableDefault()

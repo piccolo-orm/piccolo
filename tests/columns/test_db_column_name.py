@@ -81,7 +81,7 @@ class TestDBColumnName(DBTestCase):
 
         # Make sure we can select all columns
         bands = Band.select().run_sync()
-        if engine_is('cockroach'):
+        if engine_is("cockroach"):
             self.assertEqual(
                 bands,
                 [
@@ -135,7 +135,7 @@ class TestDBColumnName(DBTestCase):
         Band.update({Band.name: "Pythonistas 2"}, force=True).run_sync()
 
         bands = Band.select().run_sync()
-        if engine_is('cockroach'):
+        if engine_is("cockroach"):
             self.assertEqual(
                 bands,
                 [
@@ -161,7 +161,7 @@ class TestDBColumnName(DBTestCase):
         Band.update({"name": "Pythonistas 3"}, force=True).run_sync()
 
         bands = Band.select().run_sync()
-        if engine_is('cockroach'):
+        if engine_is("cockroach"):
             self.assertEqual(
                 bands,
                 [
@@ -184,7 +184,7 @@ class TestDBColumnName(DBTestCase):
                 ],
             )
 
-    @engines_skip('cockroach')
+    @engines_skip("cockroach")
     def test_delete(self):
         """
         Make sure delete queries work correctly.
@@ -225,15 +225,19 @@ class TestDBColumnName(DBTestCase):
             ],
         )
 
-    @engines_only('cockroach')
+    @engines_only("cockroach")
     def test_delete(self):
         """
         Make sure delete queries work correctly.
         """
-        result = Band.insert(
-            Band(name="Pythonistas", popularity=1000),
-            Band(name="Rustaceans", popularity=500),
-        ).returning(Band.id).run_sync()
+        result = (
+            Band.insert(
+                Band(name="Pythonistas", popularity=1000),
+                Band(name="Rustaceans", popularity=500),
+            )
+            .returning(Band.id)
+            .run_sync()
+        )
 
         bands = Band.select().run_sync()
         self.assertEqual(
@@ -245,7 +249,7 @@ class TestDBColumnName(DBTestCase):
                     "popularity": 1000,
                 },
                 {
-                    "id": result[1]['id'],
+                    "id": result[1]["id"],
                     "regrettable_column_name": "Rustaceans",
                     "popularity": 500,
                 },

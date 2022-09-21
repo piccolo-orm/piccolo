@@ -845,7 +845,9 @@ class Column(Selectable):
 
         # Always ran for Cockroach because unique_rowid() is directly defined for Cockroach Serial and BigSerial.
         # Postgres and SQLite will not run this for Serial and BigSerial.
-        if self._meta.engine_type in ("cockroach") or self.__class__.__name__ not in ("Serial", "BigSerial"):
+        if self._meta.engine_type in (
+            "cockroach"
+        ) or self.__class__.__name__ not in ("Serial", "BigSerial"):
             default = self.get_default_value()
             sql_value = self.get_sql_value(value=default)
             query += f" DEFAULT {sql_value}"

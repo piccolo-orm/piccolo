@@ -243,7 +243,7 @@ class TestSerialiseParams(TestCase):
 
             self.assertTrue(len(serialised.extra_definitions) == 1)
 
-            if engine_is('postgres'):
+            if engine_is("postgres"):
                 self.assertEqual(
                     serialised.extra_definitions[0].__str__(),
                     (
@@ -254,7 +254,7 @@ class TestSerialiseParams(TestCase):
                     ),
                 )
 
-            if engine_is('cockroach'):
+            if engine_is("cockroach"):
                 self.assertEqual(
                     serialised.extra_definitions[0].__str__(),
                     (

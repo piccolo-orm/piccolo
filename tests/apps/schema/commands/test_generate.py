@@ -183,7 +183,7 @@ class Concert(Table):
     capacity = Integer(index=False)
 
 
-@engines_only('postgres')
+@engines_only("postgres")
 class TestGenerateWithIndexes(TestCase):
     def setUp(self):
         Concert.create_table().run_sync()
@@ -228,7 +228,7 @@ class Book(Table):
     popularity = Integer(default=0)
 
 
-@engines_only('postgres')
+@engines_only("postgres")
 class TestGenerateWithSchema(TestCase):
     def setUp(self) -> None:
         engine: t.Optional[Engine] = engine_finder()

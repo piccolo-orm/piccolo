@@ -31,7 +31,7 @@ class TestArray(TestCase):
     def tearDown(self):
         MyTable.alter().drop_table().run_sync()
 
-    @engines_only('postgres', 'sqlite')
+    @engines_only("postgres", "sqlite")
     def test_storage(self):
         """
         Make sure data can be stored and retrieved.
@@ -44,7 +44,7 @@ class TestArray(TestCase):
         row = MyTable.objects().first().run_sync()
         self.assertEqual(row.value, [1, 2, 3])
 
-    @engines_only('postgres')
+    @engines_only("postgres")
     def test_index(self):
         """
         Indexes should allow individual array elements to be queried.
@@ -58,7 +58,7 @@ class TestArray(TestCase):
             MyTable.select(MyTable.value[0]).first().run_sync(), {"value": 1}
         )
 
-    @engines_only('postgres')
+    @engines_only("postgres")
     def test_all(self):
         """
         Make sure rows can be retrieved where all items in an array match a
@@ -85,7 +85,7 @@ class TestArray(TestCase):
             None,
         )
 
-    @engines_only('postgres')
+    @engines_only("postgres")
     def test_any(self):
         """
         Make sure rows can be retrieved where any items in an array match a
@@ -112,7 +112,7 @@ class TestArray(TestCase):
             None,
         )
 
-    @engines_only('postgres')
+    @engines_only("postgres")
     def test_cat(self):
         """
         Make sure values can be appended to an array.

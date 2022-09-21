@@ -47,7 +47,6 @@ from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
 engine = engine_finder()
 
 
-
 class Band(Table):
     name = Varchar()
     genres = M2M(LazyTableReference("GenreToBand", module_path=__name__))
@@ -71,18 +70,26 @@ class TestM2M(TestCase):
     def setUp(self):
         create_db_tables_sync(*SIMPLE_SCHEMA, if_not_exists=True)
 
-        if engine_is('cockroach'):
-            bands = Band.insert(
-                Band(name="Pythonistas"),
-                Band(name="Rustaceans"),
-                Band(name="C-Sharps"),
-            ).returning(Band.id).run_sync()
+        if engine_is("cockroach"):
+            bands = (
+                Band.insert(
+                    Band(name="Pythonistas"),
+                    Band(name="Rustaceans"),
+                    Band(name="C-Sharps"),
+                )
+                .returning(Band.id)
+                .run_sync()
+            )
 
-            genres = Genre.insert(
-                Genre(name="Rock"),
-                Genre(name="Folk"),
-                Genre(name="Classical"),
-            ).returning(Genre.id).run_sync()
+            genres = (
+                Genre.insert(
+                    Genre(name="Rock"),
+                    Genre(name="Folk"),
+                    Genre(name="Classical"),
+                )
+                .returning(Genre.id)
+                .run_sync()
+            )
 
             GenreToBand.insert(
                 GenreToBand(band=bands[0]["id"], genre=genres[0]["id"]),
@@ -115,7 +122,7 @@ class TestM2M(TestCase):
     def tearDown(self):
         drop_db_tables_sync(*SIMPLE_SCHEMA)
 
-    @engines_skip('cockroach')
+    @engines_skip("cockroach")
     def test_select_name(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
@@ -145,7 +152,7 @@ class TestM2M(TestCase):
             ],
         )
 
-    @engines_skip('cockroach')
+    @engines_skip("cockroach")
     def test_no_related(self):
         """
         Make sure it still works correctly if there are no related values.
@@ -182,7 +189,7 @@ class TestM2M(TestCase):
             ],
         )
 
-    @engines_skip('cockroach')
+    @engines_skip("cockroach")
     def test_select_multiple(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
@@ -241,7 +248,7 @@ class TestM2M(TestCase):
             ],
         )
 
-    @engines_skip('cockroach')
+    @engines_skip("cockroach")
     def test_select_id(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
@@ -484,7 +491,7 @@ class TestM2MCustomPrimaryKey(TestCase):
     def tearDown(self):
         drop_db_tables_sync(*CUSTOM_PK_SCHEMA)
 
-    @engines_skip('cockroach')
+    @engines_skip("cockroach")
     def test_select(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
@@ -568,7 +575,8 @@ class SmallTable(Table):
     mega_rows = M2M(LazyTableReference("SmallToMega", module_path=__name__))
 
 
-if engine.engine_type != 'cockroach':
+if engine.engine_type != "cockroach":
+
     class MegaTable(Table):
         """
         A table containing all of the column types, and different column kwargs.
@@ -592,7 +600,9 @@ if engine.engine_type != 'cockroach':
         timestamptz_col = Timestamptz()
         uuid_col = UUID()
         varchar_col = Varchar()
+
 else:
+
     class MegaTable(Table):
         """
         Special version for Cockroach.
@@ -617,6 +627,7 @@ else:
         timestamptz_col = Timestamptz()
         uuid_col = UUID()
         varchar_col = Varchar()
+
 
 class SmallToMega(Table):
     small = ForeignKey(MegaTable)
@@ -669,7 +680,7 @@ class TestM2MComplexSchema(TestCase):
     def tearDown(self):
         drop_db_tables_sync(*COMPLEX_SCHEMA)
 
-    @engines_skip('cockroach')
+    @engines_skip("cockroach")
     def test_select_all(self):
         """
         Fetch all of the columns from the related table to make sure they're
@@ -696,7 +707,7 @@ class TestM2MComplexSchema(TestCase):
                 msg=f"{key} doesn't match",
             )
 
-    @engines_skip('cockroach')
+    @engines_skip("cockroach")
     def test_select_single(self):
         """
         Make sure each column can be selected one at a time.

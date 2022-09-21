@@ -36,6 +36,7 @@ class Limit:
     def copy(self) -> Limit:
         return self.__class__(number=self.number)
 
+
 @dataclass
 class AsOf:
     __slots__ = ("interval",)
@@ -52,6 +53,7 @@ class AsOf:
 
     def __str__(self) -> str:
         return self.querystring.__str__()
+
 
 @dataclass
 class Offset:
@@ -208,16 +210,19 @@ class LimitDelegate:
         _limit = self._limit.copy() if self._limit is not None else None
         return self.__class__(_limit=_limit, _first=self._first)
 
+
 @dataclass
 class AsOfDelegate:
     """
     Time travel queries using "As Of" syntax.
     Currently supports Cockroach using AS OF SYSTEM TIME.
     """
+
     _as_of: t.Optional[AsOf] = None
 
     def as_of(self, interval: str = "-1s"):
         self._as_of = AsOf(interval)
+
 
 @dataclass
 class DistinctDelegate:

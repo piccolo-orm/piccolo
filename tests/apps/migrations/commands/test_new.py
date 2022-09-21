@@ -42,7 +42,7 @@ class TestNewMigrationCommand(TestCase):
 
         self.assertTrue(len(migration_modules.keys()) == 1)
 
-    @engines_only('postgres')
+    @engines_only("postgres")
     @patch("piccolo.apps.migrations.commands.new.print")
     def test_new_command(self, print_: MagicMock):
         """

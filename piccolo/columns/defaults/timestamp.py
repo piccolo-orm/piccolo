@@ -97,7 +97,9 @@ class TimestampCustom(Default):
 
     @property
     def cockroach(self):
-        return "'{}'::TIMESTAMP".format(self.datetime.isoformat().replace("T", " "))
+        return "'{}'::TIMESTAMP".format(
+            self.datetime.isoformat().replace("T", " ")
+        )
 
     @property
     def sqlite(self):

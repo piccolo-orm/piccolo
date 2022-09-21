@@ -47,6 +47,7 @@ from piccolo.utils.naming import _snake_to_camel
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.engine.base import Engine
 
+
 class ForeignKeyPlaceholder(Table):
     pass
 
@@ -378,11 +379,12 @@ COLUMN_DEFAULT_PARSER_COCKROACH = dict(
     BigInt=re.compile(r"^(?P<value>-?\d+)$"),
 )
 
+
 def get_column_default(
     column_type: t.Type[Column], column_default: str, engine_type: str
 ) -> t.Any:
 
-    if engine_type == 'cockroach':
+    if engine_type == "cockroach":
         pat = COLUMN_DEFAULT_PARSER_COCKROACH.get(column_type)
     else:
         pat = COLUMN_DEFAULT_PARSER.get(column_type)
@@ -461,7 +463,6 @@ INDEX_METHOD_MAP: t.Dict[str, IndexMethod] = {
     "gist": IndexMethod.gist,
     "gin": IndexMethod.gin,
 }
-
 
 # 'Indices' seems old-fashioned and obscure in this context.
 async def get_indexes(
@@ -671,7 +672,10 @@ def get_table_name(name: str, schema: str) -> str:
 
 
 async def create_table_class_from_db(
-    table_class: t.Type[Table], tablename: str, schema_name: str, engine_type: str
+    table_class: t.Type[Table],
+    tablename: str,
+    schema_name: str,
+    engine_type: str,
 ) -> OutputSchema:
     output_schema = OutputSchema()
 
@@ -695,7 +699,7 @@ async def create_table_class_from_db(
     for pg_row_meta in table_schema:
         data_type = pg_row_meta.data_type
 
-        if engine_type == 'cockroach':
+        if engine_type == "cockroach":
             column_type = COLUMN_TYPE_MAP_COCKROACH.get(data_type, None)
         else:
             column_type = COLUMN_TYPE_MAP.get(data_type, None)
@@ -721,9 +725,10 @@ async def create_table_class_from_db(
         if constraints.is_primary_key(column_name=column_name):
             kwargs["primary_key"] = True
             if column_type == Integer:
-               column_type = Serial
+                column_type = Serial
             if column_type == BigInt:
-               column_type = Serial
+                column_type = Serial
+                # column_type = BigSerial
 
         if constraints.is_foreign_key(column_name=column_name):
             fk_constraint_table = constraints.get_foreign_key_constraint_name(
@@ -791,7 +796,9 @@ async def create_table_class_from_db(
             kwargs["digits"] = (precision, scale)
 
         if column_default:
-            default_value = get_column_default(column_type, column_default, engine_type)
+            default_value = get_column_default(
+                column_type, column_default, engine_type
+            )
             if default_value:
                 kwargs["default"] = default_value
 
@@ -864,7 +871,10 @@ async def get_output_schema(
     ]
     table_coroutines = (
         create_table_class_from_db(
-            table_class=Schema, tablename=tablename, schema_name=schema_name, engine_type=engine.engine_type
+            table_class=Schema,
+            tablename=tablename,
+            schema_name=schema_name,
+            engine_type=engine.engine_type,
         )
         for tablename in tablenames
     )

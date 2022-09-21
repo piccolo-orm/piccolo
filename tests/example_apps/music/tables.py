@@ -27,7 +27,9 @@ class Manager(Table):
     def get_readable(cls) -> Readable:
         return Readable(template="%s", columns=[cls.name])
 
-if engine.engine_type != 'cockroach':
+
+if engine.engine_type != "cockroach":
+
     class Band(Table):
         name = Varchar(length=50)
         manager = ForeignKey(Manager, null=True)
@@ -36,11 +38,14 @@ if engine.engine_type != 'cockroach':
         @classmethod
         def get_readable(cls) -> Readable:
             return Readable(template="%s", columns=[cls.name])
+
 else:
+
     class Band(Table):
         """
         Special version for Cockroach.
         """
+
         name = Varchar(length=50)
         manager = ForeignKey(Manager, null=True)
         popularity = BigInt(default=0)
@@ -48,6 +53,7 @@ else:
         @classmethod
         def get_readable(cls) -> Readable:
             return Readable(template="%s", columns=[cls.name])
+
 
 ###############################################################################
 # More complex

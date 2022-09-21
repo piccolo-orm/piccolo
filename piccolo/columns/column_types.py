@@ -786,7 +786,7 @@ class Serial(Column):
         if engine_type == "postgres":
             return DEFAULT
         elif engine_type == "cockroach":
-            return Unquoted('unique_rowid()')
+            return Unquoted("unique_rowid()")
         elif engine_type == "sqlite":
             return NULL
         raise Exception("Unrecognized engine type")
@@ -1442,7 +1442,7 @@ class Numeric(Column):
     def column_type(self):
         engine_type = self._meta.engine_type
         if engine_type == "cockroach":
-            return "NUMERIC" # All Numeric is the same for Cockroach.
+            return "NUMERIC"  # All Numeric is the same for Cockroach.
         if self.digits:
             return f"NUMERIC({self.precision}, {self.scale})"
         else:
@@ -2219,7 +2219,7 @@ class JSON(Column):  # lgtm[py/missing-equals]
     def column_type(self):
         engine_type = self._meta.engine_type
         if engine_type == "cockroach":
-            return "JSONB" # Cockroach is always JSONB.
+            return "JSONB"  # Cockroach is always JSONB.
         else:
             return "JSON"
 
@@ -2256,7 +2256,7 @@ class JSONB(JSON):
 
     @property
     def column_type(self):
-        return "JSONB" # Must be defined because we override column_type() in JSON().
+        return "JSONB"  # Must be defined because we override column_type() in JSON().
 
     def arrow(self, key: str) -> JSONB:
         """

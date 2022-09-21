@@ -60,7 +60,7 @@ class TestDumpLoad(TestCase):
         )
         mega_table.save().run_sync()
 
-    @engines_only('postgres', 'sqlite')
+    @engines_only("postgres", "sqlite")
     def test_dump_load(self):
         """
         Make sure we can dump some rows into a JSON fixture, then load them
@@ -138,7 +138,7 @@ class TestDumpLoad(TestCase):
             },
         )
 
-    @engines_only('cockroach')
+    @engines_only("cockroach")
     def test_dump_load(self):
         """
         Make sure we can dump some rows into a JSON fixture, then load them
@@ -166,7 +166,7 @@ class TestDumpLoad(TestCase):
         run_sync(load_json_string(json_string))
 
         result = SmallTable.select().run_sync()[0]
-        result.pop('id')
+        result.pop("id")
 
         self.assertDictEqual(
             result,
@@ -190,8 +190,8 @@ class TestDumpLoad(TestCase):
         self.assertTrue(len(mega_table_data) == 1)
 
         mega_table_data = mega_table_data[0]
-        mega_table_data.pop('id')
-        mega_table_data.pop('foreignkey_col')
+        mega_table_data.pop("id")
+        mega_table_data.pop("foreignkey_col")
 
         self.assertDictEqual(
             mega_table_data,
@@ -219,5 +219,4 @@ class TestDumpLoad(TestCase):
                 "null_col": None,
                 "not_null_col": "hello",
             },
-
         )

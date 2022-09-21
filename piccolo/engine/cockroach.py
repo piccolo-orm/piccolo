@@ -22,6 +22,7 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 ###############################################################################
 
+
 class Atomic(PostgresAtomic):
     """
     This is useful if you want to build up a transaction programatically, by
@@ -43,7 +44,9 @@ class Atomic(PostgresAtomic):
         self.queries: t.List[Query] = []
         super(Atomic, self).__init__(engine)
 
+
 ###############################################################################
+
 
 class Transaction(PostgresTransaction):
     """
@@ -67,7 +70,9 @@ class Transaction(PostgresTransaction):
             )
         super(Transaction, self).__init__(engine)
 
+
 ###############################################################################
+
 
 class CockroachEngine(PostgresEngine):
     """
@@ -75,7 +80,7 @@ class CockroachEngine(PostgresEngine):
     """
 
     engine_type = "cockroach"
-    min_version_number = 0 # Doesn't seem to work with cockroach versioning.
+    min_version_number = 0  # Doesn't seem to work with cockroach versioning.
 
     def __init__(
         self,
@@ -96,11 +101,15 @@ class CockroachEngine(PostgresEngine):
         self.transaction_connection = contextvars.ContextVar(
             f"pg_transaction_connection_{database_name}", default=None
         )
-        super(PostgresEngine, self).__init__() # lgtm[py/super-not-enclosing-class]
+        super(
+            PostgresEngine, self
+        ).__init__()  # lgtm[py/super-not-enclosing-class]
 
     async def prep_database(self):
         try:
-            await self._run_in_new_connection("SET CLUSTER SETTING sql.defaults.experimental_alter_column_type.enabled = true;")
+            await self._run_in_new_connection(
+                "SET CLUSTER SETTING sql.defaults.experimental_alter_column_type.enabled = true;"
+            )
         except asyncpg.exceptions.InsufficientPrivilegeError:
             colored_warning(
                 f"=> Unable to set up Cockroach DB "
@@ -108,4 +117,3 @@ class CockroachEngine(PostgresEngine):
                 "your database user has permission to set cluster options.",
                 level=Level.medium,
             )
-

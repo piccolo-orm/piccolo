@@ -210,7 +210,8 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "character varying",
                     x.is_nullable == "NO",
-                    x.column_default in ("''::character varying", "'':::STRING"),
+                    x.column_default
+                    in ("''::character varying", "'':::STRING"),
                 ]
             ),
         )
@@ -254,9 +255,9 @@ class TestMigrations(MigrationTestCase):
             ],
             test_function=lambda x: all(
                 [
-                    x.data_type in ("integer", "bigint"), # Cockroach DB.
+                    x.data_type in ("integer", "bigint"),  # Cockroach DB.
                     x.is_nullable == "NO",
-                    x.column_default in ("0", "0:::INT8"), # Cockroach DB.
+                    x.column_default in ("0", "0:::INT8"),  # Cockroach DB.
                 ]
             ),
         )
@@ -323,7 +324,7 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "smallint",
                     x.is_nullable == "NO",
-                    x.column_default in ("0", "0:::INT8"), # Cockroach DB.
+                    x.column_default in ("0", "0:::INT8"),  # Cockroach DB.
                 ]
             ),
         )
@@ -346,7 +347,7 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "bigint",
                     x.is_nullable == "NO",
-                    x.column_default in ("0", "0:::INT8"), # Cockroach DB.
+                    x.column_default in ("0", "0:::INT8"),  # Cockroach DB.
                 ]
             ),
         )
@@ -402,7 +403,12 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "timestamp without time zone",
                     x.is_nullable == "NO",
-                    x.column_default in ("now()", "CURRENT_TIMESTAMP", "current_timestamp():::TIMESTAMPTZ::TIMESTAMP"),
+                    x.column_default
+                    in (
+                        "now()",
+                        "CURRENT_TIMESTAMP",
+                        "current_timestamp():::TIMESTAMPTZ::TIMESTAMP",
+                    ),
                 ]
             ),
         )
@@ -453,7 +459,11 @@ class TestMigrations(MigrationTestCase):
                     x.data_type == "date",
                     x.is_nullable == "NO",
                     x.column_default
-                    in ("('now'::text)::date", "CURRENT_DATE", "current_date()"),
+                    in (
+                        "('now'::text)::date",
+                        "CURRENT_DATE",
+                        "current_date()",
+                    ),
                 ]
             ),
         )
@@ -476,7 +486,8 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "interval",
                     x.is_nullable == "NO",
-                    x.column_default in ("'00:00:00'::interval", "'00:00:00':::INTERVAL"),
+                    x.column_default
+                    in ("'00:00:00'::interval", "'00:00:00':::INTERVAL"),
                 ]
             ),
         )
@@ -609,7 +620,8 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "ARRAY",
                     x.is_nullable == "NO",
-                    x.column_default in ("'{}'::character varying[]", "'':::STRING"),
+                    x.column_default
+                    in ("'{}'::character varying[]", "'':::STRING"),
                 ]
             ),
         )
@@ -699,7 +711,8 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "character varying",
                     x.is_nullable == "NO",
-                    x.column_default in ("''::character varying", "'':::STRING"),
+                    x.column_default
+                    in ("''::character varying", "'':::STRING"),
                 ]
             ),
         )
@@ -720,7 +733,8 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "character varying",
                     x.is_nullable == "NO",
-                    x.column_default  in ("''::character varying", "'':::STRING"),
+                    x.column_default
+                    in ("''::character varying", "'':::STRING"),
                 ]
             ),
         )

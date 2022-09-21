@@ -187,7 +187,7 @@ class TestForwardsBackwards(TestCase):
             print_.mock_calls[-1] == call("🏁 No migrations need to be run")
         )
 
-    @engines_only('postgres')
+    @engines_only("postgres")
     def test_forwards_fake(self):
         """
         Test running the migrations if they've already run.

@@ -4,4 +4,10 @@ from .finder import engine_finder
 from .postgres import PostgresEngine
 from .sqlite import SQLiteEngine
 
-__all__ = ["Engine", "PostgresEngine", "SQLiteEngine", "CockroachEngine", "engine_finder"]
+__all__ = [
+    "Engine",
+    "PostgresEngine",
+    "SQLiteEngine",
+    "CockroachEngine",
+    "engine_finder",
+]

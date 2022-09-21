@@ -27,10 +27,13 @@ from piccolo.table import Table
 
 engine = engine_finder()
 
+
 class SmallTable(Table):
     varchar_col = Varchar()
 
-if engine.engine_type != 'cockroach':
+
+if engine.engine_type != "cockroach":
+
     class MegaTable(Table):
         """
         A table containing all of the column types, and different column kwargs.
@@ -58,7 +61,9 @@ if engine.engine_type != 'cockroach':
         unique_col = Varchar(unique=True)
         null_col = Varchar(null=True)
         not_null_col = Varchar(null=False)
+
 else:
+
     class MegaTable(Table):
         """
         Special version for Cockroach.
