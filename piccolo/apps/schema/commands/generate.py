@@ -310,7 +310,7 @@ COLUMN_TYPE_MAP: t.Dict[str, t.Type[Column]] = {
 # Re-map for Cockroach compatibility.
 COLUMN_TYPE_MAP_COCKROACH = {
     **COLUMN_TYPE_MAP,
-    **{integer: BigInt, json: JSONB},
+    **{"integer": BigInt, "json": JSONB},
 }
 
 COLUMN_DEFAULT_PARSER = {
