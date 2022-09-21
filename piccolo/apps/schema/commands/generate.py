@@ -376,7 +376,7 @@ COLUMN_DEFAULT_PARSER = {
 # Re-map for Cockroach compatibility.
 COLUMN_DEFAULT_PARSER_COCKROACH = dict(
     COLUMN_DEFAULT_PARSER,
-    BigInt=re.compile(r"^(?P<value>-?\d+)$"),
+    BigInt: re.compile(r"^(?P<value>-?\d+)$"),
 )
 
 
@@ -784,7 +784,8 @@ async def create_table_class_from_db(
                 kwargs["references"] = ForeignKeyPlaceholder
 
         output_schema.imports.append(
-            "from piccolo.columns.column_types import " + column_type.__name__
+            "from piccolo.columns.column_types import " +
+            column_type.__name__  # type: ignore
         )
 
         if column_type is Varchar:
@@ -802,7 +803,7 @@ async def create_table_class_from_db(
             if default_value:
                 kwargs["default"] = default_value
 
-        column = column_type(**kwargs)
+        column = column_type(**kwargs)  # type: ignore
 
         serialised_params = serialise_params(column._meta.params)
         for extra_import in serialised_params.extra_imports:
