@@ -161,5 +161,5 @@ class TestArray(TestCase):
 
         self.assertEqual(
             str(manager.exception),
-            "Only Postgres supports array appending currently.",
+            "Only Postgres and Cockroach supports array appending currently.",
         )
