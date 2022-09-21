@@ -465,7 +465,7 @@ INDEX_METHOD_MAP: t.Dict[str, IndexMethod] = {
 }
 
 # 'Indices' seems old-fashioned and obscure in this context.
-async def get_indexes(
+async def get_indexes(  # noqa: E302
     table_class: t.Type[Table], tablename: str, schema_name: str = "public"
 ) -> TableIndexes:
     """

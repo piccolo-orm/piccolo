@@ -185,7 +185,7 @@ class TestDBColumnName(DBTestCase):
             )
 
     @engines_skip("cockroach")
-    def test_delete(self):
+    def test_delete(self):  # noqa: F811
         """
         Make sure delete queries work correctly.
         """
@@ -226,7 +226,7 @@ class TestDBColumnName(DBTestCase):
         )
 
     @engines_only("cockroach")
-    def test_delete(self):
+    def test_delete(self):  # noqa: F811
         """
         Make sure delete queries work correctly.
         """
