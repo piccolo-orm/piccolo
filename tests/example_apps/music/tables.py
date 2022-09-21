@@ -41,7 +41,7 @@ if engine.engine_type != "cockroach":  # type: ignore
 
 else:
 
-    class Band(Table):
+    class Band(Table):  # type: ignore
         """
         Special version for Cockroach.
         """
