@@ -158,7 +158,7 @@ class TestAddColumn(DBTestCase):
 
 
 class TestUnique(DBTestCase):
-    @engines_only('postgres')
+    @engines_only("postgres")
     def test_unique(self):
         """
         Test altering a column uniqueness with MigrationManager.
@@ -341,7 +341,7 @@ class TestSetDigits(TestCase):
     def tearDown(self):
         Ticket.alter().drop_table().run_sync()
 
-    @engines_only('postgres')
+    @engines_only("postgres")
     def test_set_digits(self):
         query = """
             SELECT numeric_precision, numeric_scale

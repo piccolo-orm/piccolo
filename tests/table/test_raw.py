@@ -8,15 +8,25 @@ class TestRaw(DBTestCase):
 
         response = Band.raw("select * from band").run_sync()
 
-        if engine_is('cockroach'):
+        if engine_is("cockroach"):
             self.assertDictEqual(
                 response[0],
-                {"id": response[0]["id"], "name": "Pythonistas", "manager": response[0]["manager"], "popularity": 1000},
+                {
+                    "id": response[0]["id"],
+                    "name": "Pythonistas",
+                    "manager": response[0]["manager"],
+                    "popularity": 1000,
+                },
             )
         else:
             self.assertDictEqual(
                 response[0],
-                {"id": 1, "name": "Pythonistas", "manager": 1, "popularity": 1000},
+                {
+                    "id": 1,
+                    "name": "Pythonistas",
+                    "manager": 1,
+                    "popularity": 1000,
+                },
             )
 
     def test_raw_with_args(self):
@@ -28,13 +38,23 @@ class TestRaw(DBTestCase):
 
         self.assertEqual(len(response), 1)
 
-        if engine_is('cockroach'):
+        if engine_is("cockroach"):
             self.assertDictEqual(
                 response[0],
-                {"id": response[0]["id"], "name": "Pythonistas", "manager": response[0]["manager"], "popularity": 1000},
+                {
+                    "id": response[0]["id"],
+                    "name": "Pythonistas",
+                    "manager": response[0]["manager"],
+                    "popularity": 1000,
+                },
             )
         else:
             self.assertDictEqual(
                 response[0],
-                {"id": 1, "name": "Pythonistas", "manager": 1, "popularity": 1000},
+                {
+                    "id": 1,
+                    "name": "Pythonistas",
+                    "manager": 1,
+                    "popularity": 1000,
+                },
             )

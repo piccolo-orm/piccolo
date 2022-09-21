@@ -7,14 +7,14 @@ class TestInstance(DBTestCase):
     Test instantiating Table instances
     """
 
-    @engines_only('postgres')
+    @engines_only("postgres")
     def test_insert_postgres(self):
         Pythonistas = Band(name="Pythonistas")
         self.assertEqual(
             Pythonistas.__str__(), "(DEFAULT,'Pythonistas',null,0)"
         )
 
-    @engines_only('cockroach')
+    @engines_only("cockroach")
     def test_insert_postgres(self):
         Pythonistas = Band(name="Pythonistas")
         self.assertEqual(

@@ -45,15 +45,27 @@ class TestOutputLoadJSON(TestCase):
 
         results = RecordingStudio.select().output(load_json=True).run_sync()
 
-        if engine_is('cockroach'):
+        if engine_is("cockroach"):
             self.assertEqual(
                 results,
-                [{"id": results[0]["id"], "facilities": {"a": 123}, "facilities_b": {"a": 123}}],
+                [
+                    {
+                        "id": results[0]["id"],
+                        "facilities": {"a": 123},
+                        "facilities_b": {"a": 123},
+                    }
+                ],
             )
         else:
             self.assertEqual(
                 results,
-                [{"id": 1, "facilities": {"a": 123}, "facilities_b": {"a": 123}}],
+                [
+                    {
+                        "id": 1,
+                        "facilities": {"a": 123},
+                        "facilities_b": {"a": 123},
+                    }
+                ],
             )
 
     def test_objects(self):

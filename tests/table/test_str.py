@@ -6,7 +6,7 @@ from tests.example_apps.music.tables import Manager
 
 class TestTableStr(TestCase):
     def test_str(self):
-        if engine_is('cockroach'):
+        if engine_is("cockroach"):
             self.assertEqual(
                 Manager._table_str(),
                 (

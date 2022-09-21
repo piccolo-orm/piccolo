@@ -37,7 +37,7 @@ class TestSave(TestCase):
         self.assertTrue("Maz2" in names)
         self.assertTrue("Maz" not in names)
 
-    @engines_skip('cockroach')
+    @engines_skip("cockroach")
     def test_save_specific_columns(self):
         """
         Make sure that we can save a subset of columns.
@@ -95,7 +95,7 @@ class TestSave(TestCase):
             ],
         )
 
-    @engines_only('cockroach')
+    @engines_only("cockroach")
     def test_save_specific_columns(self):
         """
         Make sure that we can save a subset of columns.

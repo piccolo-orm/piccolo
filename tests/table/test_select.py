@@ -19,15 +19,25 @@ class TestSelect(DBTestCase):
 
         response = Band.select().run_sync()
 
-        if engine_is('cockroach'):
+        if engine_is("cockroach"):
             self.assertDictEqual(
                 response[0],
-                {"id": response[0]["id"], "name": "Pythonistas", "manager": response[0]['manager'], "popularity": 1000},
+                {
+                    "id": response[0]["id"],
+                    "name": "Pythonistas",
+                    "manager": response[0]["manager"],
+                    "popularity": 1000,
+                },
             )
         else:
             self.assertDictEqual(
                 response[0],
-                {"id": 1, "name": "Pythonistas", "manager": 1, "popularity": 1000},
+                {
+                    "id": 1,
+                    "name": "Pythonistas",
+                    "manager": 1,
+                    "popularity": 1000,
+                },
             )
 
     def test_query_some_columns(self):
@@ -921,8 +931,10 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        if engine_is('cockroach'):
-            self.assertEqual(response, {"id": response['id'], "name": "Pythonistas"})
+        if engine_is("cockroach"):
+            self.assertEqual(
+                response, {"id": response["id"], "name": "Pythonistas"}
+            )
         else:
             self.assertEqual(response, {"id": 1, "name": "Pythonistas"})
 
@@ -1003,8 +1015,10 @@ class TestSelectSecretParameter(TestCase):
         venue.save().run_sync()
 
         venue_dict = Venue.select(exclude_secrets=True).first().run_sync()
-        if engine_is('cockroach'):
-            self.assertTrue(venue_dict, {"id": venue_dict["id"], "name": "The Garage"})
+        if engine_is("cockroach"):
+            self.assertTrue(
+                venue_dict, {"id": venue_dict["id"], "name": "The Garage"}
+            )
         else:
             self.assertTrue(venue_dict, {"id": 1, "name": "The Garage"})
         self.assertNotIn("capacity", venue_dict.keys())

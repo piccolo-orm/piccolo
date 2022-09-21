@@ -74,7 +74,7 @@ class TestJoin(TestCase):
         )
         response = select_query.run_sync()
 
-        if engine_is('cockroach'):
+        if engine_is("cockroach"):
             self.assertEqual(
                 response,
                 [
@@ -115,7 +115,7 @@ class TestJoin(TestCase):
             .run_sync()
         )
 
-        if engine_is('cockroach'):
+        if engine_is("cockroach"):
             self.assertDictEqual(
                 result,
                 {
@@ -148,7 +148,7 @@ class TestJoin(TestCase):
             .run_sync()
         )
 
-        if engine_is('cockroach'):
+        if engine_is("cockroach"):
             self.assertDictEqual(
                 result,
                 {
@@ -189,7 +189,7 @@ class TestJoin(TestCase):
             .run_sync()
         )
 
-        if engine_is('cockroach'):
+        if engine_is("cockroach"):
             self.assertDictEqual(
                 result,
                 {
@@ -226,13 +226,16 @@ class TestJoin(TestCase):
             .run_sync()
         )
 
-        if engine_is('cockroach'):
+        if engine_is("cockroach"):
             self.assertDictEqual(
                 result,
                 {
                     "id": result["id"],
                     "name": "Pythonistas",
-                    "manager": {"id": result["manager"]["id"], "name": "Guido"},
+                    "manager": {
+                        "id": result["manager"]["id"],
+                        "name": "Guido",
+                    },
                     "popularity": 1000,
                 },
             )

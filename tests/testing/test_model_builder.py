@@ -22,7 +22,9 @@ class TableWithArrayField(Table):
     integers = Array(Integer())
     floats = Array(Real())
 
-@engines_skip("cockroach") # Cockroach Bug: Can turn ON when resolved: https://github.com/cockroachdb/cockroach/issues/71908
+
+# Cockroach Bug: Can turn ON when resolved: https://github.com/cockroachdb/cockroach/issues/71908
+@engines_skip("cockroach")
 class TestModelBuilder(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

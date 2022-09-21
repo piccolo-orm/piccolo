@@ -125,7 +125,7 @@ class TestGetRelatedReadable(TestCase):
             Ticket._get_related_readable(Ticket.concert),
         ).run_sync()
 
-        if engine_is('cockroach'):
+        if engine_is("cockroach"):
             self.assertEqual(
                 response,
                 [

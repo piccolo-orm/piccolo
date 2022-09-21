@@ -11,8 +11,10 @@ class TestToDict(DBTestCase):
 
         instance = Manager.objects().first().run_sync()
         dictionary = instance.to_dict()
-        if engine_is('cockroach'):
-            self.assertDictEqual(dictionary, {"id": dictionary["id"], "name": "Guido"})
+        if engine_is("cockroach"):
+            self.assertDictEqual(
+                dictionary, {"id": dictionary["id"], "name": "Guido"}
+            )
         else:
             self.assertDictEqual(dictionary, {"id": 1, "name": "Guido"})
 
@@ -25,13 +27,16 @@ class TestToDict(DBTestCase):
 
         instance = Band.objects(Band.manager).first().run_sync()
         dictionary = instance.to_dict()
-        if engine_is('cockroach'):
+        if engine_is("cockroach"):
             self.assertDictEqual(
                 dictionary,
                 {
                     "id": dictionary["id"],
                     "name": "Pythonistas",
-                    "manager": {"id": instance["manager"]["id"], "name": "Guido"},
+                    "manager": {
+                        "id": instance["manager"]["id"],
+                        "name": "Guido",
+                    },
                     "popularity": 1000,
                 },
             )
@@ -65,7 +70,7 @@ class TestToDict(DBTestCase):
 
         instance = Band.objects(Band.manager).first().run_sync()
         dictionary = instance.to_dict(Band.name, Band.manager.id)
-        if engine_is('cockroach'):
+        if engine_is("cockroach"):
             self.assertDictEqual(
                 dictionary,
                 {
@@ -92,7 +97,9 @@ class TestToDict(DBTestCase):
         dictionary = instance.to_dict(
             Manager.id, Manager.name.as_alias("title")
         )
-        if engine_is('cockroach'):
-            self.assertDictEqual(dictionary, {"id": dictionary["id"], "title": "Guido"})
+        if engine_is("cockroach"):
+            self.assertDictEqual(
+                dictionary, {"id": dictionary["id"], "title": "Guido"}
+            )
         else:
-           self.assertDictEqual(dictionary, {"id": 1, "title": "Guido"})
+            self.assertDictEqual(dictionary, {"id": 1, "title": "Guido"})

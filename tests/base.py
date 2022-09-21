@@ -22,14 +22,18 @@ ENGINE = engine_finder()
 def engine_version_lt(version: float):
     return ENGINE and run_sync(ENGINE.get_version()) < version
 
+
 def is_running_postgres():
     return isinstance(ENGINE, PostgresEngine)
+
 
 def is_running_sqlite():
     return isinstance(ENGINE, SQLiteEngine)
 
+
 def is_running_cockroach():
     return isinstance(ENGINE, CockroachEngine)
+
 
 postgres_only = pytest.mark.skipif(
     not is_running_postgres(), reason="Only running for Postgres"
@@ -47,6 +51,7 @@ unix_only = pytest.mark.skipif(
     sys.platform.startswith("win"), reason="Only running on a Unix system"
 )
 
+
 def engines_only(*engine_names: str):
     """
     Test decorator. Choose what engines can run a test.
@@ -59,17 +64,22 @@ def engines_only(*engine_names: str):
     if ENGINE:
         current_engine_name = ENGINE.engine_type
         if current_engine_name not in engine_names:
+
             def wrapper(func):
                 return pytest.mark.skip(
                     f"Not running for {current_engine_name}"
                 )(func)
+
             return wrapper
         else:
+
             def wrapper(func):
                 return func
+
             return wrapper
     else:
         raise ValueError("Engine not found")
+
 
 def engines_skip(*engine_names: str):
     """
@@ -83,17 +93,22 @@ def engines_skip(*engine_names: str):
     if ENGINE:
         current_engine_name = ENGINE.engine_type
         if current_engine_name in engine_names:
+
             def wrapper(func):
                 return pytest.mark.skip(
                     f"Not yet available for {current_engine_name}"
                 )(func)
+
             return wrapper
         else:
+
             def wrapper(func):
                 return func
+
             return wrapper
     else:
         raise ValueError("Engine not found")
+
 
 def engine_is(*engine_names: str):
     """
@@ -113,6 +128,7 @@ def engine_is(*engine_names: str):
             return True
     else:
         raise ValueError("Engine not found")
+
 
 class AsyncMock(MagicMock):
     """
