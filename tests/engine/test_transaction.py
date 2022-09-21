@@ -4,10 +4,7 @@ from unittest import TestCase
 from piccolo.engine.postgres import Atomic
 from piccolo.table import drop_db_tables_sync
 from piccolo.utils.sync import run_sync
-from tests.base import (
-    engines_only,
-    postgres_only,
-)
+from tests.base import engines_only, postgres_only
 from tests.example_apps.music.tables import Band, Manager
 
 

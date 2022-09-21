@@ -3,10 +3,7 @@ import decimal
 import uuid
 from unittest import TestCase
 
-from tests.base import (
-    engine_is,
-    engines_skip,
-)
+from tests.base import engine_is, engines_skip
 
 try:
     from asyncpg.pgproto.pgproto import UUID as asyncpgUUID
