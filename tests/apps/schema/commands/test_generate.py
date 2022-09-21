@@ -18,12 +18,13 @@ from piccolo.columns.column_types import (
     Integer,
     Timestamp,
     Varchar,
+    Serial,
 )
 from piccolo.columns.indexes import IndexMethod
 from piccolo.engine import Engine, engine_finder
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
-from tests.base import AsyncMock, postgres_only, cockroach_skip, engines_only
+from tests.base import AsyncMock, postgres_only, engines_only, engines_skip
 from tests.example_apps.mega.tables import MegaTable, SmallTable
 
 
@@ -93,7 +94,7 @@ class TestGenerate(TestCase):
         ast.parse(file_contents)
 
     # Cockroach throws FeatureNotSupportedError, which does not pass this test.
-    @cockroach_skip
+    @engines_skip("cockroach")
     def test_unknown_column_type(self):
         """
         Make sure unknown column types are handled gracefully.
@@ -145,7 +146,7 @@ class TestGenerate(TestCase):
         SmallTable_ = output_schema.get_table_with_name("SmallTable")
         self._compare_table_columns(SmallTable, SmallTable_)
 
-    @cockroach_skip
+    @engines_skip("cockroach")
     def test_self_referencing_fk(self):
         """
         Make sure self-referencing foreign keys are handled correctly.

@@ -3,7 +3,7 @@ from unittest import TestCase
 from piccolo.apps.user.tables import BaseUser
 from piccolo.columns.combination import WhereRaw
 from piccolo.query.methods.select import Avg, Count, Max, Min, Sum
-from tests.base import DBTestCase, postgres_only, sqlite_only, engine_is, cockroach_skip
+from tests.base import DBTestCase, postgres_only, sqlite_only, engines_skip, engine_is
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
 
@@ -381,7 +381,7 @@ class TestSelect(DBTestCase):
             response, [{"name": "CSharps"}, {"name": "Rustaceans"}]
         )
 
-    @cockroach_skip
+    @engines_skip("cockroach")
     def test_multiple_where(self):
         """
         Test that chaining multiple where clauses works results in an AND.
@@ -399,7 +399,7 @@ class TestSelect(DBTestCase):
         self.assertEqual(response, [{"name": "Rustaceans"}])
         self.assertIn("AND", query.__str__())
 
-    @cockroach_skip
+    @engines_skip("cockroach")
     def test_complex_where(self):
         """
         Test a complex where clause - combining AND, and OR.

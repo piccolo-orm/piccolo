@@ -9,7 +9,7 @@ from tests.example_apps.music.tables import (
     Venue,
 )
 
-from tests.base import DBTestCase, postgres_only, cockroach_skip, engine_is, engines_only, engines_skip
+from tests.base import DBTestCase, postgres_only, engine_is, engines_only, engines_skip
 
 TABLES = [Manager, Band, Venue, Concert]
 

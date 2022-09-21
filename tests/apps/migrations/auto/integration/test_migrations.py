@@ -48,7 +48,7 @@ from piccolo.columns.reference import LazyTableReference
 from piccolo.conf.apps import AppConfig
 from piccolo.table import Table, create_table_class, drop_db_tables_sync
 from piccolo.utils.sync import run_sync
-from tests.base import DBTestCase, postgres_only, cockroach_skip
+from tests.base import DBTestCase, postgres_only, engines_skip
 
 if t.TYPE_CHECKING:
     from piccolo.columns.base import Column
@@ -190,7 +190,7 @@ class TestMigrations(MigrationTestCase):
             class_name="MyTable", class_members={"my_column": column}
         )
 
-    @cockroach_skip
+    @engines_skip("cockroach")
     def test_varchar_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -407,7 +407,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @cockroach_skip
+    @engines_skip("cockroach")
     def test_time_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -504,7 +504,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @cockroach_skip
+    @engines_skip("cockroach")
     def test_numeric_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -530,7 +530,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @cockroach_skip
+    @engines_skip("cockroach")
     def test_decimal_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -556,7 +556,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @cockroach_skip
+    @engines_skip("cockroach")
     def test_array_column_integer(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/35730 "column my_column is of type int[] and thus is not indexable"
@@ -585,7 +585,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @cockroach_skip
+    @engines_skip("cockroach")
     def test_array_column_varchar(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/35730 "column my_column is of type varchar[] and thus is not indexable"
@@ -634,7 +634,7 @@ class TestMigrations(MigrationTestCase):
     # We deliberately don't test setting JSON or JSONB columns as indexes, as
     # we know it'll fail.
 
-    @cockroach_skip
+    @engines_skip("cockroach")
     def test_json_column(self):
         """
         Cockroach sees all json as jsonb, so we can skip this.
@@ -745,7 +745,7 @@ class TestMigrations(MigrationTestCase):
             ]
         )
 
-    @cockroach_skip
+    @engines_skip("cockroach")
     def test_column_type_conversion_integer(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
@@ -763,7 +763,7 @@ class TestMigrations(MigrationTestCase):
             ]
         )
 
-    @cockroach_skip
+    @engines_skip("cockroach")
     def test_column_type_conversion_string_to_integer(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
@@ -779,7 +779,7 @@ class TestMigrations(MigrationTestCase):
             ]
         )
 
-    @cockroach_skip
+    @engines_skip("cockroach")
     def test_column_type_conversion_float_decimal(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"

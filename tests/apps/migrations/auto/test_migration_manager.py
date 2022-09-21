@@ -12,7 +12,7 @@ from piccolo.columns.column_types import ForeignKey
 from piccolo.conf.apps import AppConfig
 from piccolo.table import Table, sort_table_classes
 from piccolo.utils.lazy_loader import LazyLoader
-from tests.base import AsyncMock, DBTestCase, postgres_only, cockroach_skip, engines_only, engine_is
+from tests.base import AsyncMock, DBTestCase, postgres_only, engines_only, engine_is
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
 asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")

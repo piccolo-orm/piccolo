@@ -6,7 +6,7 @@ from piccolo.table import drop_db_tables_sync
 from piccolo.utils.sync import run_sync
 from tests.example_apps.music.tables import Band, Manager
 
-from tests.base import DBTestCase, sqlite_only, postgres_only, cockroach_skip, engine_is, engines_only
+from tests.base import DBTestCase, sqlite_only, postgres_only, engine_is, engines_only
 
 
 class TestAtomic(TestCase):

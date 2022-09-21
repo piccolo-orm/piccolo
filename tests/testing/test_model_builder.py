@@ -14,14 +14,14 @@ from tests.example_apps.music.tables import (
     Ticket,
     Venue,
 )
-from tests.base import cockroach_skip
+from tests.base import engines_skip
 
 class TableWithArrayField(Table):
     strings = Array(Varchar(30))
     integers = Array(Integer())
     floats = Array(Real())
 
-@cockroach_skip # Cockroach Bug: Can turn ON when resolved: https://github.com/cockroachdb/cockroach/issues/71908
+@engines_skip("cockroach") # Cockroach Bug: Can turn ON when resolved: https://github.com/cockroachdb/cockroach/issues/71908
 class TestModelBuilder(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

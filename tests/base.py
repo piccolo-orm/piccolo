@@ -43,10 +43,6 @@ cockroach_only = pytest.mark.skipif(
     not is_running_cockroach(), reason="Only running for Cockroach"
 )
 
-cockroach_skip = pytest.mark.skipif(
-    is_running_cockroach(), reason="Not yet available for Cockroach"
-)
-
 unix_only = pytest.mark.skipif(
     sys.platform.startswith("win"), reason="Only running on a Unix system"
 )
@@ -89,7 +85,7 @@ def engines_skip(*engine_names: str):
         if current_engine_name in engine_names:
             def wrapper(func):
                 return pytest.mark.skip(
-                    f"Not running for {current_engine_name}"
+                    f"Not yet available for {current_engine_name}"
                 )(func)
             return wrapper
         else:
