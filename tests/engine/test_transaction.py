@@ -4,9 +4,14 @@ from unittest import TestCase
 from piccolo.engine.postgres import Atomic
 from piccolo.table import drop_db_tables_sync
 from piccolo.utils.sync import run_sync
+from tests.base import (
+    DBTestCase,
+    engine_is,
+    engines_only,
+    postgres_only,
+    sqlite_only,
+)
 from tests.example_apps.music.tables import Band, Manager
-
-from tests.base import DBTestCase, sqlite_only, postgres_only, engine_is, engines_only
 
 
 class TestAtomic(TestCase):

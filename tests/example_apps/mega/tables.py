@@ -22,8 +22,9 @@ from piccolo.columns.column_types import (
     Timestamptz,
     Varchar,
 )
-from piccolo.table import Table
 from piccolo.engine.finder import engine_finder
+from piccolo.table import Table
+
 engine = engine_finder()
 
 class SmallTable(Table):

@@ -1,6 +1,6 @@
-from tests.base import DBTestCase
+from tests.base import DBTestCase, engine_is
 from tests.example_apps.music.tables import Band
-from tests.base import engine_is
+
 
 class TestRaw(DBTestCase):
     def test_raw_without_args(self):

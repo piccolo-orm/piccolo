@@ -3,16 +3,17 @@ from enum import Enum
 from piccolo.columns import (
     JSON,
     JSONB,
+    BigInt,
     ForeignKey,
     Integer,
-    BigInt,
     Numeric,
     Text,
     Varchar,
 )
 from piccolo.columns.readable import Readable
-from piccolo.table import Table
 from piccolo.engine.finder import engine_finder
+from piccolo.table import Table
+
 engine = engine_finder()
 
 ###############################################################################

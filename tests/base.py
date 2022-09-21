@@ -9,10 +9,10 @@ from unittest.mock import MagicMock
 import pytest
 
 from piccolo.apps.schema.commands.generate import RowMeta
+from piccolo.engine.cockroach import CockroachEngine
 from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
-from piccolo.engine.cockroach import CockroachEngine
 from piccolo.table import Table, create_table_class
 from piccolo.utils.sync import run_sync
 

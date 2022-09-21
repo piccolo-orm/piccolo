@@ -5,8 +5,8 @@ from unittest import TestCase
 from piccolo.columns.column_types import Time
 from piccolo.columns.defaults.time import TimeNow
 from piccolo.table import Table
-
 from tests.base import engines_skip
+
 
 class MyTable(Table):
     created_on = Time()

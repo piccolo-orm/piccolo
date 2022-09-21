@@ -1,6 +1,13 @@
 import decimal
 from unittest import TestCase
 
+from tests.base import (
+    DBTestCase,
+    engine_is,
+    engines_only,
+    engines_skip,
+    postgres_only,
+)
 from tests.example_apps.music.tables import (
     Band,
     Concert,
@@ -8,8 +15,6 @@ from tests.example_apps.music.tables import (
     Ticket,
     Venue,
 )
-
-from tests.base import DBTestCase, postgres_only, engine_is, engines_only, engines_skip
 
 TABLES = [Manager, Band, Venue, Concert]
 

@@ -1,9 +1,8 @@
 import json
 from unittest import TestCase
 
-from tests.base import DBTestCase
+from tests.base import DBTestCase, engine_is
 from tests.example_apps.music.tables import Band, RecordingStudio
-from tests.base import engine_is
 
 
 class TestOutputList(DBTestCase):

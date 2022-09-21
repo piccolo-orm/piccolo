@@ -2,7 +2,14 @@ import datetime
 import decimal
 import uuid
 from unittest import TestCase
-from tests.base import DBTestCase, postgres_only, sqlite_only, engine_is, engines_skip
+
+from tests.base import (
+    DBTestCase,
+    engine_is,
+    engines_skip,
+    postgres_only,
+    sqlite_only,
+)
 
 try:
     from asyncpg.pgproto.pgproto import UUID as asyncpgUUID
@@ -34,8 +41,9 @@ from piccolo.columns.column_types import (
     Varchar,
 )
 from piccolo.columns.m2m import M2M
-from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
 from piccolo.engine.finder import engine_finder
+from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
+
 engine = engine_finder()
 
 

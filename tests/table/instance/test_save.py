@@ -1,8 +1,9 @@
 from unittest import TestCase
 
 from piccolo.table import create_db_tables_sync, drop_db_tables_sync
-from tests.example_apps.music.tables import Band, Manager
 from tests.base import engines_only, engines_skip
+from tests.example_apps.music.tables import Band, Manager
+
 
 class TestSave(TestCase):
     def setUp(self):

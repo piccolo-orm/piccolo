@@ -19,12 +19,15 @@ from piccolo.querystring import QueryString
 from piccolo.table import Table
 from tests.base import (
     DBTestCase,
+    engine_is,
     engine_version_lt,
+    engines_only,
+    engines_skip,
     is_running_sqlite,
     sqlite_only,
 )
 from tests.example_apps.music.tables import Band
-from tests.base import engines_only, engines_skip, engine_is
+
 
 class TestUpdate(DBTestCase):
     def check_response(self):

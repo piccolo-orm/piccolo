@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from piccolo.columns.column_types import JSONB, ForeignKey, Varchar
 from piccolo.table import Table
-from tests.base import postgres_only, engines_only, engines_skip
+from tests.base import engines_only, engines_skip, postgres_only
 
 
 class RecordingStudio(Table):

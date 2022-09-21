@@ -1,9 +1,10 @@
+import time  # For time travel queries.
 from unittest import TestCase
 
 from piccolo.query.mixins import ColumnsDelegate
-from tests.example_apps.music.tables import Band
 from tests.base import DBTestCase, engines_only
-import time # For time travel queries.
+from tests.example_apps.music.tables import Band
+
 
 class TestColumnsDelegate(DBTestCase):
     def test_list_unpacking(self):

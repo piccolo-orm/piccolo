@@ -4,6 +4,7 @@ from unittest import TestCase
 from piccolo.columns import ForeignKey, Varchar
 from piccolo.columns.readable import Readable
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
+from tests.base import engine_is
 from tests.example_apps.music.tables import (
     Band,
     Concert,
@@ -11,7 +12,6 @@ from tests.example_apps.music.tables import (
     Ticket,
     Venue,
 )
-from tests.base import engine_is
 
 
 class ThingOne(Table):

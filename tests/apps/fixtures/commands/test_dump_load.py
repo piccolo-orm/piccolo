@@ -9,8 +9,8 @@ from piccolo.apps.fixtures.commands.dump import (
 )
 from piccolo.apps.fixtures.commands.load import load_json_string
 from piccolo.utils.sync import run_sync
-from tests.example_apps.mega.tables import MegaTable, SmallTable
 from tests.base import engines_only
+from tests.example_apps.mega.tables import MegaTable, SmallTable
 
 
 class TestDumpLoad(TestCase):

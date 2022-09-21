@@ -10,13 +10,17 @@ from piccolo.columns.base import Column
 from piccolo.columns.column_types import ForeignKey, Text
 from piccolo.table import Table
 from tests.base import (
+    AsyncMock,
     DBTestCase,
+    engine_is,
     engine_version_lt,
+    engines_only,
+    engines_skip,
     is_running_sqlite,
     postgres_only,
 )
 from tests.example_apps.music.tables import Band, Manager
-from tests.base import AsyncMock, DBTestCase, postgres_only, engines_only, engines_skip, engine_is
+
 
 @pytest.mark.skipif(
     is_running_sqlite() and engine_version_lt(3.25),

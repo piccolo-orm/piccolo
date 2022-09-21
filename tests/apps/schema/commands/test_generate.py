@@ -16,15 +16,15 @@ from piccolo.columns.base import Column
 from piccolo.columns.column_types import (
     ForeignKey,
     Integer,
+    Serial,
     Timestamp,
     Varchar,
-    Serial,
 )
 from piccolo.columns.indexes import IndexMethod
 from piccolo.engine import Engine, engine_finder
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
-from tests.base import AsyncMock, postgres_only, engines_only, engines_skip
+from tests.base import AsyncMock, engines_only, engines_skip, postgres_only
 from tests.example_apps.mega.tables import MegaTable, SmallTable
 
 

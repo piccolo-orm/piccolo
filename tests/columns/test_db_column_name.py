@@ -1,6 +1,13 @@
 from piccolo.columns.column_types import Integer, Varchar
 from piccolo.table import Table
-from tests.base import DBTestCase, postgres_only, engine_is, engines_only, engines_skip
+from tests.base import (
+    DBTestCase,
+    engine_is,
+    engines_only,
+    engines_skip,
+    postgres_only,
+)
+
 
 class Band(Table):
     name = Varchar(db_column_name="regrettable_column_name")

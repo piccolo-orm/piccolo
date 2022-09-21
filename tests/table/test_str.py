@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from tests.example_apps.music.tables import Manager
 from tests.base import engine_is
+from tests.example_apps.music.tables import Manager
 
 
 class TestTableStr(TestCase):

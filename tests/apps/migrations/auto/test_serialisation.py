@@ -19,8 +19,8 @@ from piccolo.columns.choices import Choice
 from piccolo.columns.column_types import Varchar
 from piccolo.columns.defaults import UUID4, DateNow, TimeNow, TimestampNow
 from piccolo.columns.reference import LazyTableReference
-
 from tests.base import engine_is
+
 
 class TestUniqueGlobalNamesMeta:
     def test_duplicate_class_attribute_values_raises_error(self):

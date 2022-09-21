@@ -4,6 +4,7 @@ import unittest
 from piccolo.columns import Array, Integer, Real, Varchar
 from piccolo.table import Table
 from piccolo.testing.model_builder import ModelBuilder
+from tests.base import engines_skip
 from tests.example_apps.music.tables import (
     Band,
     Concert,
@@ -14,7 +15,7 @@ from tests.example_apps.music.tables import (
     Ticket,
     Venue,
 )
-from tests.base import engines_skip
+
 
 class TableWithArrayField(Table):
     strings = Array(Varchar(30))

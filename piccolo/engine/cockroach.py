@@ -8,9 +8,9 @@ from piccolo.query.base import Query
 from piccolo.utils.lazy_loader import LazyLoader
 from piccolo.utils.warnings import Level, colored_warning
 
+from .postgres import Atomic as PostgresAtomic
 from .postgres import PostgresEngine
 from .postgres import Transaction as PostgresTransaction
-from .postgres import Atomic as PostgresAtomic
 
 asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")
 

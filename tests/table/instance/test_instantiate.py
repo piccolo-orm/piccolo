@@ -1,4 +1,4 @@
-from tests.base import DBTestCase, postgres_only, sqlite_only, engines_only
+from tests.base import DBTestCase, engines_only, postgres_only, sqlite_only
 from tests.example_apps.music.tables import Band
 
 

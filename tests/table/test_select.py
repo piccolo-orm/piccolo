@@ -3,7 +3,13 @@ from unittest import TestCase
 from piccolo.apps.user.tables import BaseUser
 from piccolo.columns.combination import WhereRaw
 from piccolo.query.methods.select import Avg, Count, Max, Min, Sum
-from tests.base import DBTestCase, postgres_only, sqlite_only, engines_skip, engine_is
+from tests.base import (
+    DBTestCase,
+    engine_is,
+    engines_skip,
+    postgres_only,
+    sqlite_only,
+)
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
 
