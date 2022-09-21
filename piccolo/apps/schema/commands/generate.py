@@ -379,7 +379,6 @@ COLUMN_DEFAULT_PARSER_COCKROACH = dict(
     BigInt=re.compile(r"^(?P<value>-?\d+)$"),
 )
 
-
 def get_column_default(
     column_type: t.Type[Column], column_default: str, engine_type: str
 ) -> t.Any:
@@ -455,7 +454,6 @@ def get_column_default(
                 )
             else:
                 return column_type.value_type(value["value"])
-
 
 INDEX_METHOD_MAP: t.Dict[str, IndexMethod] = {
     "btree": IndexMethod.btree,

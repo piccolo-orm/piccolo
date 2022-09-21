@@ -4,11 +4,8 @@ import uuid
 from unittest import TestCase
 
 from tests.base import (
-    DBTestCase,
     engine_is,
     engines_skip,
-    postgres_only,
-    sqlite_only,
 )
 
 try:
@@ -579,7 +576,7 @@ if engine.engine_type != "cockroach":
 
     class MegaTable(Table):
         """
-        A table containing all of the column types, and different column kwargs.
+        A table containing all of the column types and different column kwargs
         """
 
         array_col = Array(Varchar())
@@ -606,7 +603,7 @@ else:
     class MegaTable(Table):
         """
         Special version for Cockroach.
-        A table containing all of the column types, and different column kwargs.
+        A table containing all of the column types and different column kwargs
         """
 
         array_col = Array(Varchar())

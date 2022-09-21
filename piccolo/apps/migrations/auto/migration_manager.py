@@ -788,8 +788,9 @@ class MigrationManager:
             await self._run_drop_columns(backwards=backwards)
             await self._run_drop_tables(backwards=backwards)
             await self._run_rename_columns(backwards=backwards)
-            # CockroachDB: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
-            # We can move _run_alter_columns() for cockroach back here when the issue is resolved.
+            # We can remove this for cockroach when resolved.
+            # https://github.com/cockroachdb/cockroach/issues/49351
+            # "ALTER COLUMN TYPE is not supported inside a transaction"
             if engine.engine_type != "cockroach":
                 await self._run_alter_columns(backwards=backwards)
 
