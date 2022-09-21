@@ -106,7 +106,7 @@ class CockroachEngine(PostgresEngine):
     async def prep_database(self):
         try:
             await self._run_in_new_connection(
-                "SET CLUSTER SETTING sql.defaults.experimental_alter_column_type.enabled = true;" # noqa: E501
+                "SET CLUSTER SETTING sql.defaults.experimental_alter_column_type.enabled = true;"  # noqa: E501
             )
         except asyncpg.exceptions.InsufficientPrivilegeError:
             colored_warning(
