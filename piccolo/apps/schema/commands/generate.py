@@ -374,10 +374,10 @@ COLUMN_DEFAULT_PARSER = {
 }
 
 # Re-map for Cockroach compatibility.
-COLUMN_DEFAULT_PARSER_COCKROACH = dict(
-    COLUMN_DEFAULT_PARSER,
-    {BigInt: re.compile(r"^(?P<value>-?\d+)$")},
-)
+COLUMN_DEFAULT_PARSER_COCKROACH = {
+    **COLUMN_DEFAULT_PARSER,
+    **{BigInt: re.compile(r"^(?P<value>-?\d+)$")},
+}
 
 
 def get_column_default(
