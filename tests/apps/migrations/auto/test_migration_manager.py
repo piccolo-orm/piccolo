@@ -433,7 +433,7 @@ class TestMigrationManager(DBTestCase):
         )
 
     @engines_only("cockroach")
-    def test_add_foreign_key_self_column(self):  # noqa: F811
+    def test_add_foreign_key_self_column_alt(self):
         """
         Test adding a ForeignKey column to a MigrationManager, with a
         references argument of 'self'.
@@ -754,7 +754,7 @@ class TestMigrationManager(DBTestCase):
         )
 
     @engines_only("cockroach")
-    def test_alter_column_set_default(self):  # noqa: F811
+    def test_alter_column_set_default_alt(self):
         """
         Test altering a column default with MigrationManager.
         """
@@ -843,7 +843,7 @@ class TestMigrationManager(DBTestCase):
         )
 
     @engines_only("cockroach")
-    def test_alter_column_drop_default(self):  # noqa: F811
+    def test_alter_column_drop_default_alt(self):
         """
         Test setting a column default to None with MigrationManager.
         """

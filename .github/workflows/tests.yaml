@@ -132,7 +132,7 @@ jobs:
               uses: codecov/codecov-action@v1
               if: matrix.python-version == '3.7'
 
-    cockroachdb:
+    cockroach:
         runs-on: ubuntu-latest
         timeout-minutes: 30
         strategy:
