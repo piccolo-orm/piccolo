@@ -445,13 +445,7 @@ class DDL:
             raise Exception(
                 f"No querystring found for the {engine_type} engine."
             )
-        '''
-        for ddl in ('postgres_ddl', 'cockroach_ddl', 'sqlite_ddl', 'default_ddl'):
-            try:
-                 return getattr(self, ddl)
-            except NotImplementedError:
-                 pass
-        '''
+
     def __await__(self):
         """
         If the user doesn't explicity call .run(), proxy to it as a

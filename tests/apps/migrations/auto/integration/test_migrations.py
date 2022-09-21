@@ -210,7 +210,7 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "character varying",
                     x.is_nullable == "NO",
-                    x.column_default in ("''::character varying[]", "'':::STRING"),
+                    x.column_default in ("''::character varying", "'':::STRING"),
                 ]
             ),
         )
@@ -699,7 +699,7 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "character varying",
                     x.is_nullable == "NO",
-                    x.column_default in ("''::character varying[]", "'':::STRING"),
+                    x.column_default in ("''::character varying", "'':::STRING"),
                 ]
             ),
         )
@@ -720,7 +720,7 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "character varying",
                     x.is_nullable == "NO",
-                    x.column_default  in ("''::character varying[]", "'':::STRING"),
+                    x.column_default  in ("''::character varying", "'':::STRING"),
                 ]
             ),
         )
