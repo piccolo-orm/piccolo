@@ -425,12 +425,33 @@ class DDL:
         """
         Calls the correct underlying method, depending on the current engine.
         """
+        engine_type = self.engine_type
+        if engine_type == "postgres":
+            try:
+                return self.postgres_ddl
+            except NotImplementedError:
+                return self.default_ddl
+        elif engine_type == "sqlite":
+            try:
+                return self.sqlite_ddl
+            except NotImplementedError:
+                return self.default_ddl
+        elif engine_type == "cockroach":
+            try:
+                return self.cockroach_ddl
+            except NotImplementedError:
+                return self.default_ddl
+        else:
+            raise Exception(
+                f"No querystring found for the {engine_type} engine."
+            )
+        '''
         for ddl in ('postgres_ddl', 'cockroach_ddl', 'sqlite_ddl', 'default_ddl'):
             try:
                  return getattr(self, ddl)
             except NotImplementedError:
                  pass
-
+        '''
     def __await__(self):
         """
         If the user doesn't explicity call .run(), proxy to it as a
