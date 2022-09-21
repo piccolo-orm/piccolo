@@ -110,7 +110,7 @@ class CockroachEngine(PostgresEngine):
             )
         except asyncpg.exceptions.InsufficientPrivilegeError:
             colored_warning(
-                f"=> Unable to set up Cockroach DB "
+                "=> Unable to set up Cockroach DB "
                 "functionality may not behave as expected. Make sure "
                 "your database user has permission to set cluster options.",
                 level=Level.medium,

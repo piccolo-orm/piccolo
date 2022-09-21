@@ -623,7 +623,7 @@ class TestMigrationManager(DBTestCase):
         """
         Test altering a column uniqueness with MigrationManager.
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/42840 "unimplemented: cannot drop UNIQUE constraint "manager_name_key" using ALTER TABLE DROP CONSTRAINT, use DROP INDEX CASCADE instead"
-        """
+        """  # noqa: E501
         manager = MigrationManager()
 
         manager.alter_column(
@@ -703,7 +703,7 @@ class TestMigrationManager(DBTestCase):
         """
         Test altering a column digits with MigrationManager.
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
-        """
+        """  # noqa: E501
         manager = MigrationManager()
 
         manager.alter_column(
@@ -964,7 +964,7 @@ class TestMigrationManager(DBTestCase):
         """
         Test altering a Varchar column's length with MigrationManager.
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
-        """
+        """  # noqa: E501
         manager = MigrationManager()
 
         manager.alter_column(

@@ -571,7 +571,7 @@ class TestMigrations(MigrationTestCase):
     def test_array_column_integer(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/35730 "column my_column is of type int[] and thus is not indexable"
-        """
+        """  # noqa: E501
         self._test_migrations(
             table_snapshots=[
                 [self.table(column)]
@@ -600,7 +600,7 @@ class TestMigrations(MigrationTestCase):
     def test_array_column_varchar(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/35730 "column my_column is of type varchar[] and thus is not indexable"
-        """
+        """  # noqa: E501
         self._test_migrations(
             table_snapshots=[
                 [self.table(column)]
@@ -763,7 +763,7 @@ class TestMigrations(MigrationTestCase):
     def test_column_type_conversion_integer(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
-        """
+        """  # noqa: E501
         self._test_migrations(
             table_snapshots=[
                 [self.table(column)]
@@ -781,7 +781,7 @@ class TestMigrations(MigrationTestCase):
     def test_column_type_conversion_string_to_integer(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
-        """
+        """  # noqa: E501
         self._test_migrations(
             table_snapshots=[
                 [self.table(column)]
@@ -797,7 +797,7 @@ class TestMigrations(MigrationTestCase):
     def test_column_type_conversion_float_decimal(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
-        """
+        """  # noqa: E501
         self._test_migrations(
             table_snapshots=[
                 [self.table(column)]

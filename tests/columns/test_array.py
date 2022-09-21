@@ -38,7 +38,7 @@ class TestArray(TestCase):
         """
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """
+        """  # noqa: E501
         MyTable(value=[1, 2, 3]).save().run_sync()
 
         row = MyTable.objects().first().run_sync()
@@ -51,7 +51,7 @@ class TestArray(TestCase):
         """
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """
+        """  # noqa: E501
         MyTable(value=[1, 2, 3]).save().run_sync()
 
         self.assertEqual(
@@ -66,7 +66,7 @@ class TestArray(TestCase):
         """
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """
+        """  # noqa: E501
         MyTable(value=[1, 1, 1]).save().run_sync()
 
         self.assertEqual(
@@ -93,7 +93,7 @@ class TestArray(TestCase):
         """
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """
+        """  # noqa: E501
         MyTable(value=[1, 2, 3]).save().run_sync()
 
         self.assertEqual(
@@ -119,7 +119,7 @@ class TestArray(TestCase):
         """
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """
+        """  # noqa: E501
         MyTable(value=[1, 1, 1]).save().run_sync()
 
         MyTable.update(

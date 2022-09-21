@@ -23,7 +23,7 @@ class TableWithArrayField(Table):
     floats = Array(Real())
 
 
-# Cockroach Bug: Can turn ON when resolved: https://github.com/cockroachdb/cockroach/issues/71908
+# Cockroach Bug: Can turn ON when resolved: https://github.com/cockroachdb/cockroach/issues/71908  # noqa: E501
 @engines_skip("cockroach")
 class TestModelBuilder(unittest.TestCase):
     @classmethod

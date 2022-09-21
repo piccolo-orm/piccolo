@@ -163,7 +163,7 @@ class TestUnique(DBTestCase):
         """
         Test altering a column uniqueness with MigrationManager.
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/42840 "unimplemented: cannot drop UNIQUE constraint "manager_name_key" using ALTER TABLE DROP CONSTRAINT, use DROP INDEX CASCADE instead"
-        """
+        """  # noqa: E501
         unique_query = Manager.alter().set_unique(Manager.name, True)
         unique_query.run_sync()
 

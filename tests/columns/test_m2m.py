@@ -126,7 +126,7 @@ class TestM2M(TestCase):
     def test_select_name(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """
+        """  # noqa: E501
         response = Band.select(
             Band.name, Band.genres(Genre.name, as_list=True)
         ).run_sync()
@@ -159,7 +159,7 @@ class TestM2M(TestCase):
         """
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """
+        """  # noqa: E501
         GenreToBand.delete(force=True).run_sync()
 
         # Try it with a list response
@@ -193,7 +193,7 @@ class TestM2M(TestCase):
     def test_select_multiple(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """
+        """  # noqa: E501
         response = Band.select(
             Band.name, Band.genres(Genre.id, Genre.name)
         ).run_sync()
@@ -252,7 +252,7 @@ class TestM2M(TestCase):
     def test_select_id(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """
+        """  # noqa: E501
         response = Band.select(
             Band.name, Band.genres(Genre.id, as_list=True)
         ).run_sync()
@@ -495,7 +495,7 @@ class TestM2MCustomPrimaryKey(TestCase):
     def test_select(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """
+        """  # noqa: E501
         response = Customer.select(
             Customer.name, Customer.concerts(Concert.name, as_list=True)
         ).run_sync()
@@ -688,7 +688,7 @@ class TestM2MComplexSchema(TestCase):
         """
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """
+        """  # noqa: E501
         response = SmallTable.select(
             SmallTable.varchar_col, SmallTable.mega_rows(load_json=True)
         ).run_sync()
@@ -714,7 +714,7 @@ class TestM2MComplexSchema(TestCase):
         """
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """
+        """  # noqa: E501
         for column in MegaTable._meta.columns:
             response = SmallTable.select(
                 SmallTable.varchar_col,

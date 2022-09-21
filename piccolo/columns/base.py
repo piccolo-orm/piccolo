@@ -843,7 +843,8 @@ class Column(Selectable):
                 f" ON UPDATE {on_update}"
             )
 
-        # Always ran for Cockroach because unique_rowid() is directly defined for Cockroach Serial and BigSerial.
+        # Always ran for Cockroach because unique_rowid() is directly
+        # defined for Cockroach Serial and BigSerial.
         # Postgres and SQLite will not run this for Serial and BigSerial.
         if self._meta.engine_type in (
             "cockroach"
