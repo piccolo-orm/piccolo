@@ -36,7 +36,7 @@ class TestJSONB(TestCase):
         self.assertEqual(row.facilities, '{"mixing_desk": true}')
 
     @engines_skip("cockroach")
-    def test_raw(self):  # noqa: F401,F811
+    def test_raw(self):
         """
         Make sure raw queries convert the Python value into a JSON string.
         """
@@ -58,7 +58,7 @@ class TestJSONB(TestCase):
         )
 
     @engines_only("cockroach")
-    def test_raw(self):  # noqa: F401,F811
+    def test_raw_alt(self):
         """
         Make sure raw queries convert the Python value into a JSON string.
         """
