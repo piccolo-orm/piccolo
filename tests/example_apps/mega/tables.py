@@ -36,7 +36,7 @@ if engine.engine_type != "cockroach":
 
     class MegaTable(Table):
         """
-        A table containing all of the column types, and different column kwargs.
+        A table containing all of the column types, different column kwargs.
         """
 
         bigint_col = BigInt()
@@ -67,7 +67,7 @@ else:
     class MegaTable(Table):
         """
         Special version for Cockroach.
-        A table containing all of the column types, and different column kwargs.
+        A table containing all of the column types, different column kwargs.
         """
 
         bigint_col = BigInt()

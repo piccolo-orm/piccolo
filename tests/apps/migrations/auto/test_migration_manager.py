@@ -240,7 +240,7 @@ class TestMigrationManager(DBTestCase):
 
         if engine_is("cockroach"):
             id = self.run_sync(
-                "INSERT INTO musician VALUES (default, 'Bob Jones') RETURNING id;"
+                "INSERT INTO musician VALUES (default, 'Bob Jones') RETURNING id;"  # noqa: E501
             )
             response = self.run_sync("SELECT * FROM musician;")
             self.assertEqual(
@@ -313,7 +313,7 @@ class TestMigrationManager(DBTestCase):
         id = 0
         if engine_is("cockroach"):
             id = self.run_sync(
-                "INSERT INTO manager VALUES (default, 'Dave', 'dave@me.com') RETURNING id;"
+                "INSERT INTO manager VALUES (default, 'Dave', 'dave@me.com') RETURNING id;"  # noqa: E501
             )
             response = self.run_sync("SELECT * FROM manager;")
             self.assertEqual(

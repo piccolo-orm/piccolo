@@ -36,7 +36,7 @@ class TestJSONB(TestCase):
         self.assertEqual(row.facilities, '{"mixing_desk": true}')
 
     @engines_skip("cockroach")
-    def test_raw(self):
+    def test_raw(self):  # noqa: F401
         """
         Make sure raw queries convert the Python value into a JSON string.
         """
@@ -58,12 +58,12 @@ class TestJSONB(TestCase):
         )
 
     @engines_only("cockroach")
-    def test_raw(self):
+    def test_raw(self):  # noqa: F401
         """
         Make sure raw queries convert the Python value into a JSON string.
         """
         result = RecordingStudio.raw(
-            "INSERT INTO recording_studio (name, facilities) VALUES ({}, {}) returning id",
+            "INSERT INTO recording_studio (name, facilities) VALUES ({}, {}) returning id",  # noqa: E501
             "Abbey Road",
             '{"mixing_desk": true}',
         ).run_sync()

@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from piccolo.columns.column_types import Array, Integer
 from piccolo.table import Table
-from tests.base import engines_only, postgres_only, sqlite_only
+from tests.base import engines_only, sqlite_only
 
 
 class MyTable(Table):

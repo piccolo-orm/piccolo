@@ -113,7 +113,8 @@ def engines_skip(*engine_names: str):
 def engine_is(*engine_names: str):
     """
     Assert branching. Choose what engines can run an assert.
-    If branching becomes too complex, make a new test with @engines_only() or engines_skip()
+    If branching becomes too complex, make a new test with
+    @engines_only() or engines_skip()
 
     Example
         def test_unknown_column_type(...):

@@ -1,5 +1,4 @@
 import time  # For time travel queries.
-from unittest import TestCase
 
 from piccolo.query.mixins import ColumnsDelegate
 from tests.base import DBTestCase, engines_only
