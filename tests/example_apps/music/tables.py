@@ -30,7 +30,7 @@ class Manager(Table):
 
 if engine.engine_type != "cockroach":
 
-    class Band(Table):
+    class Band(Table):  # type: ignore
         name = Varchar(length=50)
         manager = ForeignKey(Manager, null=True)
         popularity = Integer(default=0)
@@ -41,7 +41,7 @@ if engine.engine_type != "cockroach":
 
 else:
 
-    class Band(Table):
+    class Band(Table):  # type: ignore
         """
         Special version for Cockroach.
         """

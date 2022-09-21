@@ -34,7 +34,7 @@ class SmallTable(Table):
 
 if engine.engine_type != "cockroach":
 
-    class MegaTable(Table):
+    class MegaTable(Table):  # type: ignore
         """
         A table containing all of the column types, different column kwargs.
         """
@@ -64,7 +64,7 @@ if engine.engine_type != "cockroach":
 
 else:
 
-    class MegaTable(Table):
+    class MegaTable(Table):  # type: ignore
         """
         Special version for Cockroach.
         A table containing all of the column types, different column kwargs.

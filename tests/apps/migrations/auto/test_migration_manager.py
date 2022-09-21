@@ -547,7 +547,7 @@ class TestMigrationManager(DBTestCase):
                 "INSERT INTO musician VALUES (default, 'Dave') RETURNING id;"
             )
             response = self.run_sync("SELECT * FROM musician;")
-            self.assertEqual(response, [{"id": id[0]["id"], "name": "Dave"}])
+            self.assertEqual(response, [{"id": id[0]["id"], "name": "Dave"}])  # type: ignore
 
         manager_2 = MigrationManager()
         manager_2.drop_column(
@@ -563,7 +563,7 @@ class TestMigrationManager(DBTestCase):
 
         if engine_is("cockroach"):
             response = self.run_sync("SELECT * FROM musician;")
-            self.assertEqual(response, [{"id": id[0]["id"]}])
+            self.assertEqual(response, [{"id": id[0]["id"]}])  # type: ignore
 
         # Reverse
         get_migration_managers.return_value = [manager_1]
@@ -575,7 +575,7 @@ class TestMigrationManager(DBTestCase):
             self.assertEqual(response, [{"id": 1, "name": ""}])
 
         if engine_is("cockroach"):
-            self.assertEqual(response, [{"id": id[0]["id"], "name": ""}])
+            self.assertEqual(response, [{"id": id[0]["id"], "name": ""}])  # type: ignore
 
     @engines_only("postgres", "cockroach")
     def test_rename_table(self):
