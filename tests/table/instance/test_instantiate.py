@@ -8,14 +8,14 @@ class TestInstance(DBTestCase):
     """
 
     @engines_only("postgres")
-    def test_insert_postgres(self):
+    def test_insert_postgres(self):  # noqa: F811
         Pythonistas = Band(name="Pythonistas")
         self.assertEqual(
             Pythonistas.__str__(), "(DEFAULT,'Pythonistas',null,0)"
         )
 
     @engines_only("cockroach")
-    def test_insert_postgres(self):
+    def test_insert_postgres(self):  # noqa: F811
         Pythonistas = Band(name="Pythonistas")
         self.assertEqual(
             Pythonistas.__str__(), "(unique_rowid(),'Pythonistas',null,0)"

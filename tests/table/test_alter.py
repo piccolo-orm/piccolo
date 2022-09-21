@@ -10,12 +10,9 @@ from piccolo.columns.base import Column
 from piccolo.columns.column_types import ForeignKey, Text
 from piccolo.table import Table
 from tests.base import (
-    AsyncMock,
     DBTestCase,
-    engine_is,
     engine_version_lt,
     engines_only,
-    engines_skip,
     is_running_sqlite,
     postgres_only,
 )

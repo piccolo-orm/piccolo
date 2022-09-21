@@ -19,9 +19,7 @@ from piccolo.querystring import QueryString
 from piccolo.table import Table
 from tests.base import (
     DBTestCase,
-    engine_is,
     engine_version_lt,
-    engines_only,
     engines_skip,
     is_running_sqlite,
     sqlite_only,

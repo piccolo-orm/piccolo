@@ -139,7 +139,7 @@ class TestDumpLoad(TestCase):
         )
 
     @engines_only("cockroach")
-    def test_dump_load(self):
+    def test_dump_load(self):  # noqa: F811
         """
         Make sure we can dump some rows into a JSON fixture, then load them
         back into the database.

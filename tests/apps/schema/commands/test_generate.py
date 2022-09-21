@@ -16,7 +16,6 @@ from piccolo.columns.base import Column
 from piccolo.columns.column_types import (
     ForeignKey,
     Integer,
-    Serial,
     Timestamp,
     Varchar,
 )
