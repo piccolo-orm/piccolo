@@ -1,6 +1,17 @@
 Changes
 =======
 
+0.91.0
+------
+
+Added support for Starlite. If you use ``piccolo asgi new`` you'll see it as
+an option for a router.
+
+Thanks to @sinisaos for adding this, and @peterschutt for helping debug ASGI
+mounting.
+
+-------------------------------------------------------------------------------
+
 0.90.0
 ------
 
