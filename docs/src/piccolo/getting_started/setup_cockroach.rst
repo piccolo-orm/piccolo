@@ -9,6 +9,17 @@ Installation
 
 Follow the  `instructions for your OS <https://www.cockroachlabs.com/docs/stable/install-cockroachdb.html>`_.
 
+
+Versions
+--------
+
+We support the latest stable version.
+
+Note: Features using ``format()`` will be available in v22.2 or higher, but we recommend using the stable version so you can upgrade automatically when it becomes generally available.
+
+Cockroach is designed to be a "rolling database": Upgrades are as simple as switching out to the next version of a binary (or changing a number in a ``docker-compose.yml``). This has one caveat: You cannot upgrade an "alpha" release. It is best to stay on the latest stable.
+
+
 -------------------------------------------------------------------------------
 
 Creating a database
