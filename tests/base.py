@@ -24,15 +24,15 @@ def engine_version_lt(version: float):
 
 
 def is_running_postgres():
-    return isinstance(ENGINE, PostgresEngine)
+    return type(ENGINE) is PostgresEngine
 
 
 def is_running_sqlite():
-    return isinstance(ENGINE, SQLiteEngine)
+    return type(ENGINE) is SQLiteEngine
 
 
 def is_running_cockroach():
-    return isinstance(ENGINE, CockroachEngine)
+    return type(ENGINE) is CockroachEngine
 
 
 postgres_only = pytest.mark.skipif(
