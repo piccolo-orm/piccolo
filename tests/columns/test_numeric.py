@@ -28,6 +28,4 @@ class TestNumeric(TestCase):
         self.assertEqual(type(_row.column_b), Decimal)
 
         self.assertAlmostEqual(_row.column_a, Decimal(1.23))
-        # Cockroach returns "1.22999999999999998223643160...."
-        if not engine_is("cockroach"):
-            self.assertEqual(_row.column_b, Decimal("1.23"))
+        self.assertAlmostEqual(_row.column_b, Decimal("1.23"))
