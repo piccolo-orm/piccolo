@@ -52,3 +52,17 @@ Beekeeper Studio
 ----------------
 
 If you prefer a GUI, Beekeeper Studio is recommended and has an  `installer available <https://www.beekeeperstudio.io/>`_.
+
+
+-------------------------------------------------------------------------------
+
+
+Column Types
+************
+
+As of this writing, CockroachDB will always convert ``JSON`` to ``JSONB`` and will always report ``INTEGER`` as ``BIGINT``.
+
+Piccolo will automatically handle these special cases for you, but we recommend being explicit about this to prevent complications in future versions of Piccolo.
+
+* Use ``JSONB()`` instead of ``JSON()``
+* Use ``BigInt()`` instead of ``Integer()``
