@@ -17,7 +17,6 @@ from tests.base import (
     DBTestCase,
     engine_is,
     engines_only,
-    postgres_only,
 )
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
@@ -487,7 +486,7 @@ class TestMigrationManager(DBTestCase):
             ],
         )
 
-    @postgres_only
+    @engines_only("postgres", "cockroach")
     def test_add_non_nullable_column(self):
         """
         Test adding a non nullable column to a MigrationManager.
@@ -654,7 +653,7 @@ class TestMigrationManager(DBTestCase):
         response = self.run_sync("SELECT name FROM manager;")
         self.assertEqual(response, [{"name": "Dave"}, {"name": "Dave"}])
 
-    @postgres_only
+    @engines_only("postgres", "cockroach")
     def test_alter_column_set_null(self):
         """
         Test altering whether a column is nullable with MigrationManager.
@@ -908,7 +907,7 @@ class TestMigrationManager(DBTestCase):
             [{"column_default": None}],
         )
 
-    @postgres_only
+    @engines_only("postgres", "cockroach")
     def test_alter_column_add_index(self):
         """
         Test altering a column to add an index with MigrationManager.
@@ -934,7 +933,7 @@ class TestMigrationManager(DBTestCase):
             not in Manager.indexes().run_sync()
         )
 
-    @postgres_only
+    @engines_only("postgres", "cockroach")
     def test_alter_column_set_type(self):
         """
         Test altering a column to change it's type with MigrationManager.
@@ -997,7 +996,7 @@ class TestMigrationManager(DBTestCase):
             200,
         )
 
-    @postgres_only
+    @engines_only("postgres", "cockroach")
     @patch.object(
         BaseMigrationManager, "get_migration_managers", new_callable=AsyncMock
     )

@@ -14,7 +14,6 @@ from tests.base import (
     engine_version_lt,
     engines_only,
     is_running_sqlite,
-    postgres_only,
 )
 from tests.example_apps.music.tables import Band, Manager
 
@@ -82,7 +81,7 @@ class TestRenameTable(DBTestCase):
         self.run_sync("DROP TABLE IF EXISTS act")
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestDropColumn(DBTestCase):
     """
     Unfortunately this only works with Postgres at the moment.
@@ -185,7 +184,7 @@ class TestUnique(DBTestCase):
         self.assertTrue(len(response), 2)
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestMultiple(DBTestCase):
     """
     Make sure multiple alter statements work correctly.
@@ -209,7 +208,7 @@ class TestMultiple(DBTestCase):
 
 
 # TODO - test more conversions.
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestSetColumnType(DBTestCase):
     def test_integer_to_bigint(self):
         """
@@ -275,7 +274,7 @@ class TestSetColumnType(DBTestCase):
         self.assertEqual(popularity, 1)
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestSetNull(DBTestCase):
     def test_set_null(self):
         query = """
@@ -294,7 +293,7 @@ class TestSetNull(DBTestCase):
         self.assertEqual(response[0]["is_nullable"], "NO")
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestSetLength(DBTestCase):
     def test_set_length(self):
         query = """
@@ -310,7 +309,7 @@ class TestSetLength(DBTestCase):
             self.assertEqual(response[0]["character_maximum_length"], length)
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestSetDefault(DBTestCase):
     def test_set_default(self):
         Manager.alter().set_default(Manager.name, "Pending").run_sync()

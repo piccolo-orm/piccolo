@@ -1,4 +1,4 @@
-from tests.base import DBTestCase, postgres_only, sqlite_only
+from tests.base import DBTestCase, engines_only, sqlite_only
 from tests.example_apps.music.tables import Band, Manager
 
 
@@ -27,7 +27,7 @@ class TestGetAll(DBTestCase):
 
 
 class TestOffset(DBTestCase):
-    @postgres_only
+    @engines_only("postgres", "cockroach")
     def test_offset_postgres(self):
         """
         Postgres can do an offset without a limit clause.

@@ -23,11 +23,11 @@ from piccolo.columns.indexes import IndexMethod
 from piccolo.engine import Engine, engine_finder
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
-from tests.base import AsyncMock, engines_only, engines_skip, postgres_only
+from tests.base import AsyncMock, engines_only, engines_skip
 from tests.example_apps.mega.tables import MegaTable, SmallTable
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestGenerate(TestCase):
     def setUp(self):
         for table_class in (SmallTable, MegaTable):
@@ -267,7 +267,7 @@ class TestGenerateWithSchema(TestCase):
         self.assertEqual(book.writer, writer)
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestGenerateWithException(TestCase):
     def setUp(self):
         for table_class in (SmallTable, MegaTable):

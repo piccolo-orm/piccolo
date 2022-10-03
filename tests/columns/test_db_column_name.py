@@ -5,7 +5,6 @@ from tests.base import (
     engine_is,
     engines_only,
     engines_skip,
-    postgres_only,
 )
 
 
@@ -32,7 +31,7 @@ class TestDBColumnName(DBTestCase):
     def tearDown(self):
         Band.alter().drop_table().run_sync()
 
-    @postgres_only
+    @engines_only("postgres", "cockroach")
     def test_column_name_correct(self):
         """
         Make sure the column has the correct name in the database.

@@ -48,7 +48,7 @@ from piccolo.columns.reference import LazyTableReference
 from piccolo.conf.apps import AppConfig
 from piccolo.table import Table, create_table_class, drop_db_tables_sync
 from piccolo.utils.sync import run_sync
-from tests.base import DBTestCase, engines_skip, postgres_only
+from tests.base import DBTestCase, engines_skip, engines_only
 
 if t.TYPE_CHECKING:
     from piccolo.columns.base import Column
@@ -169,7 +169,7 @@ class MigrationTestCase(DBTestCase):
             )
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestMigrations(MigrationTestCase):
     def setUp(self):
         pass
@@ -876,7 +876,7 @@ class GenreToBand(Table):
     genre = ForeignKey(Genre)
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestM2MMigrations(MigrationTestCase):
     def setUp(self):
         pass
@@ -900,7 +900,7 @@ class TestM2MMigrations(MigrationTestCase):
 ###############################################################################
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestForeignKeys(MigrationTestCase):
     def setUp(self):
         class TableA(Table):
@@ -941,7 +941,7 @@ class TestForeignKeys(MigrationTestCase):
             self.assertTrue(table_class.table_exists().run_sync())
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestTargetColumn(MigrationTestCase):
     def setUp(self):
         class TableA(Table):
@@ -985,7 +985,7 @@ class TestTargetColumn(MigrationTestCase):
         self.assertTrue(response[0]["exists"])
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestTargetColumnString(MigrationTestCase):
     def setUp(self):
         class TableA(Table):

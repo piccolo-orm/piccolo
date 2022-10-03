@@ -6,11 +6,11 @@ from unittest.mock import call, patch
 
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
-from tests.base import DBTestCase, engine_is, postgres_only, sqlite_only
+from tests.base import DBTestCase, engine_is, engines_only, sqlite_only
 from tests.example_apps.music.tables import Manager
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestPool(DBTestCase):
     async def _create_pool(self):
         engine: PostgresEngine = Manager._meta.db
@@ -68,7 +68,7 @@ class TestPool(DBTestCase):
         asyncio.run(self._make_many_queries())
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestPoolProxyMethods(DBTestCase):
     async def _create_pool(self):
         engine: PostgresEngine = Manager._meta.db

@@ -6,8 +6,8 @@ from piccolo.query.methods.select import Avg, Count, Max, Min, Sum
 from tests.base import (
     DBTestCase,
     engine_is,
+    engines_only,
     engines_skip,
-    postgres_only,
     sqlite_only,
 )
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
@@ -96,7 +96,7 @@ class TestSelect(DBTestCase):
         response = Band.select(Band.name).where().run_sync()
         self.assertEqual(response, [{"name": "Pythonistas"}])
 
-    @postgres_only
+    @engines_only("postgres", "cockroach")
     def test_where_like_postgres(self):
         """
         Postgres' LIKE is case sensitive.
@@ -190,7 +190,7 @@ class TestSelect(DBTestCase):
                 .run_sync(),
             )
 
-    @postgres_only
+    @engines_only("postgres", "cockroach")
     def test_where_ilike_postgres(self):
         """
         Only Postgres has ILIKE - it's not in the SQL standard. It's for
@@ -446,7 +446,7 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(response, [{"name": "CSharps"}])
 
-    @postgres_only
+    @engines_only("postgres", "cockroach")
     def test_offset_postgres(self):
         self.insert_rows()
 
