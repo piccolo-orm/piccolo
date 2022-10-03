@@ -1,11 +1,6 @@
 from piccolo.columns.column_types import Integer, Varchar
 from piccolo.table import Table
-from tests.base import (
-    DBTestCase,
-    engine_is,
-    engines_only,
-    engines_skip,
-)
+from tests.base import DBTestCase, engine_is, engines_only, engines_skip
 
 
 class Band(Table):

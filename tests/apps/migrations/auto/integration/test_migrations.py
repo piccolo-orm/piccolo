@@ -48,7 +48,7 @@ from piccolo.columns.reference import LazyTableReference
 from piccolo.conf.apps import AppConfig
 from piccolo.table import Table, create_table_class, drop_db_tables_sync
 from piccolo.utils.sync import run_sync
-from tests.base import DBTestCase, engines_skip, engines_only
+from tests.base import DBTestCase, engines_only, engines_skip
 
 if t.TYPE_CHECKING:
     from piccolo.columns.base import Column
