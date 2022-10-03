@@ -3,7 +3,6 @@ from unittest import TestCase
 
 from piccolo.columns.column_types import Numeric
 from piccolo.table import Table
-from tests.base import engine_is
 
 
 class MyTable(Table):
