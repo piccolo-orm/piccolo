@@ -14,7 +14,7 @@ from piccolo.columns.column_types import (
 )
 from piccolo.utils.sync import run_sync
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 

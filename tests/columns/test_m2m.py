@@ -196,6 +196,13 @@ class TestM2M(TestCase):
             ],
         )
 
+    def test_select_multiple_as_list_error(self):
+
+        with self.assertRaises(ValueError):
+            Band.select(
+                Band.name, Band.genres(Genre.id, Genre.name, as_list=True)
+            ).run_sync()
+
     def test_select_id(self):
         response = Band.select(
             Band.name, Band.genres(Genre.id, as_list=True)
