@@ -1304,6 +1304,9 @@ def create_tables(*tables: t.Type[Table], if_not_exists: bool = False) -> None:
     This original implementation has been replaced, because it was synchronous,
     and felt at odds with the rest of the Piccolo codebase which is async
     first.
+
+    Instead, use create_db_tables for asynchronous code, or
+    create_db_tables_sync for synchronous code
     """
     colored_warning(
         "`create_tables` is deprecated and will be removed in v1 of Piccolo. "
@@ -1364,6 +1367,9 @@ def drop_tables(*tables: t.Type[Table]) -> None:
     This original implementation has been replaced, because it was synchronous,
     and felt at odds with the rest of the Piccolo codebase which is async
     first.
+
+    Instead, use drop_db_tables for asynchronous code, or
+    drop_db_tables_sync for synchronous code
     """
     colored_warning(
         "`drop_tables` is deprecated and will be removed in v1 of Piccolo. "
