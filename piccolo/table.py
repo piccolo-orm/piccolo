@@ -1247,16 +1247,16 @@ def create_table_class(
         For example, `{'my_column': Varchar()}`.
 
     """
-    return types.new_class(
+    return t.cast(t.Type[Table], types.new_class(
         name=class_name,
         bases=bases,
         kwds=class_kwargs,
         exec_body=lambda namespace: namespace.update(class_members),
-    )
+    ))
 
 
 ###############################################################################
-# Quickly create or drop database tables from Piccolo `Table` clases.
+# Quickly create or drop database tables from Piccolo `Table` classes.
 
 
 async def create_db_tables(
