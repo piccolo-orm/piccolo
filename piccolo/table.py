@@ -982,6 +982,17 @@ class Table(metaclass=TableMetaclass):
         )
 
     @classmethod
+    def drop_table(cls):
+        """
+        Drop table, along with all columns.
+
+        .. code-block:: python
+
+            await Band.drop_table()
+        """
+        return drop_db_tables(cls)
+
+    @classmethod
     def alter(cls) -> Alter:
         """
         Used to modify existing tables and columns.
