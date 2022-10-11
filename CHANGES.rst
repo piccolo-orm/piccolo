@@ -1,6 +1,16 @@
 Changes
 =======
 
+0.92.0
+------
+
+Added initial support for Cockroachdb (thanks to @gnat for this massive
+contribution).
+
+Fixed Pylance warnings (thanks to @MiguelGuthridge for this).
+
+-------------------------------------------------------------------------------
+
 0.91.0
 ------
 
