@@ -11,7 +11,7 @@ from jinja2 import Environment, FileSystemLoader
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates/app/")
 SERVERS = ["uvicorn", "Hypercorn"]
 ROUTERS = ["starlette", "fastapi", "blacksheep", "xpresso", "starlite"]
-ROUTER_VERSIONS = {"starlite": "==1.23.0"}
+ROUTER_VERSIONS = {"starlite": "==1.23.0", "xpresso": "==0.43.0"}
 
 
 def print_instruction(message: str):
