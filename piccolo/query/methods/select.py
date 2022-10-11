@@ -12,6 +12,7 @@ from piccolo.columns.readable import Readable
 from piccolo.engine.base import Batch
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
+    AsOfDelegate,
     CallbackDelegate,
     CallbackType,
     ColumnsDelegate,
@@ -216,6 +217,7 @@ class Select(Query):
     __slots__ = (
         "columns_list",
         "exclude_secrets",
+        "as_of_delegate",
         "columns_delegate",
         "distinct_delegate",
         "group_by_delegate",
@@ -239,6 +241,7 @@ class Select(Query):
         super().__init__(table, **kwargs)
         self.exclude_secrets = exclude_secrets
 
+        self.as_of_delegate = AsOfDelegate()
         self.columns_delegate = ColumnsDelegate()
         self.distinct_delegate = DistinctDelegate()
         self.group_by_delegate = GroupByDelegate()
@@ -267,6 +270,10 @@ class Select(Query):
             if isinstance(i, Column)
         ]
         self.group_by_delegate.group_by(*_columns)
+        return self
+
+    def as_of(self, interval: str = "-1s") -> Select:
+        self.as_of_delegate.as_of(interval)
         return self
 
     def limit(self, number: int) -> Select:
@@ -392,7 +399,7 @@ class Select(Query):
                             m2m_select,
                         )
 
-            elif self.engine_type == "postgres":
+            elif self.engine_type in ("postgres", "cockroach"):
                 if m2m_select.as_list:
                     # We get the data back as an array, and can just return it
                     # unless it's JSON.
@@ -607,6 +614,10 @@ class Select(Query):
         #######################################################################
 
         args: t.List[t.Any] = []
+
+        if self.as_of_delegate._as_of:
+            query += " {}"
+            args.append(self.as_of_delegate._as_of.querystring)
 
         if self.where_delegate._where:
             query += " WHERE {}"

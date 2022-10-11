@@ -5,11 +5,11 @@ from piccolo.columns import Varchar
 from piccolo.table import Table
 from piccolo.table_reflection import TableStorage
 from piccolo.utils.sync import run_sync
-from tests.base import postgres_only
+from tests.base import engines_only
 from tests.example_apps.music.tables import Band, Manager
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestTableStorage(TestCase):
     def setUp(self) -> None:
         self.table_storage = TableStorage()

@@ -23,11 +23,11 @@ from piccolo.columns.indexes import IndexMethod
 from piccolo.engine import Engine, engine_finder
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
-from tests.base import AsyncMock, postgres_only
+from tests.base import AsyncMock, engines_only, engines_skip
 from tests.example_apps.mega.tables import MegaTable, SmallTable
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestGenerate(TestCase):
     def setUp(self):
         for table_class in (SmallTable, MegaTable):
@@ -92,6 +92,8 @@ class TestGenerate(TestCase):
         # exception otherwise).
         ast.parse(file_contents)
 
+    # Cockroach throws FeatureNotSupportedError, which does not pass this test.
+    @engines_skip("cockroach")
     def test_unknown_column_type(self):
         """
         Make sure unknown column types are handled gracefully.
@@ -143,6 +145,7 @@ class TestGenerate(TestCase):
         SmallTable_ = output_schema.get_table_with_name("SmallTable")
         self._compare_table_columns(SmallTable, SmallTable_)
 
+    @engines_skip("cockroach")
     def test_self_referencing_fk(self):
         """
         Make sure self-referencing foreign keys are handled correctly.
@@ -179,7 +182,7 @@ class Concert(Table):
     capacity = Integer(index=False)
 
 
-@postgres_only
+@engines_only("postgres")
 class TestGenerateWithIndexes(TestCase):
     def setUp(self):
         Concert.create_table().run_sync()
@@ -224,7 +227,7 @@ class Book(Table):
     popularity = Integer(default=0)
 
 
-@postgres_only
+@engines_only("postgres")
 class TestGenerateWithSchema(TestCase):
     def setUp(self) -> None:
         engine: t.Optional[Engine] = engine_finder()
@@ -264,7 +267,7 @@ class TestGenerateWithSchema(TestCase):
         self.assertEqual(book.writer, writer)
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestGenerateWithException(TestCase):
     def setUp(self):
         for table_class in (SmallTable, MegaTable):

@@ -3,7 +3,13 @@ from unittest import TestCase
 from piccolo.apps.user.tables import BaseUser
 from piccolo.columns.combination import WhereRaw
 from piccolo.query.methods.select import Avg, Count, Max, Min, Sum
-from tests.base import DBTestCase, postgres_only, sqlite_only
+from tests.base import (
+    DBTestCase,
+    engine_is,
+    engines_only,
+    engines_skip,
+    sqlite_only,
+)
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
 
@@ -13,10 +19,26 @@ class TestSelect(DBTestCase):
 
         response = Band.select().run_sync()
 
-        self.assertDictEqual(
-            response[0],
-            {"id": 1, "name": "Pythonistas", "manager": 1, "popularity": 1000},
-        )
+        if engine_is("cockroach"):
+            self.assertDictEqual(
+                response[0],
+                {
+                    "id": response[0]["id"],
+                    "name": "Pythonistas",
+                    "manager": response[0]["manager"],
+                    "popularity": 1000,
+                },
+            )
+        else:
+            self.assertDictEqual(
+                response[0],
+                {
+                    "id": 1,
+                    "name": "Pythonistas",
+                    "manager": 1,
+                    "popularity": 1000,
+                },
+            )
 
     def test_query_some_columns(self):
         self.insert_row()
@@ -74,7 +96,7 @@ class TestSelect(DBTestCase):
         response = Band.select(Band.name).where().run_sync()
         self.assertEqual(response, [{"name": "Pythonistas"}])
 
-    @postgres_only
+    @engines_only("postgres", "cockroach")
     def test_where_like_postgres(self):
         """
         Postgres' LIKE is case sensitive.
@@ -168,7 +190,7 @@ class TestSelect(DBTestCase):
                 .run_sync(),
             )
 
-    @postgres_only
+    @engines_only("postgres", "cockroach")
     def test_where_ilike_postgres(self):
         """
         Only Postgres has ILIKE - it's not in the SQL standard. It's for
@@ -375,6 +397,7 @@ class TestSelect(DBTestCase):
             response, [{"name": "CSharps"}, {"name": "Rustaceans"}]
         )
 
+    @engines_skip("cockroach")
     def test_multiple_where(self):
         """
         Test that chaining multiple where clauses works results in an AND.
@@ -392,6 +415,7 @@ class TestSelect(DBTestCase):
         self.assertEqual(response, [{"name": "Rustaceans"}])
         self.assertIn("AND", query.__str__())
 
+    @engines_skip("cockroach")
     def test_complex_where(self):
         """
         Test a complex where clause - combining AND, and OR.
@@ -422,7 +446,7 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(response, [{"name": "CSharps"}])
 
-    @postgres_only
+    @engines_only("postgres", "cockroach")
     def test_offset_postgres(self):
         self.insert_rows()
 
@@ -906,7 +930,13 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
-        self.assertEqual(response, {"id": 1, "name": "Pythonistas"})
+
+        if engine_is("cockroach"):
+            self.assertEqual(
+                response, {"id": response["id"], "name": "Pythonistas"}
+            )
+        else:
+            self.assertEqual(response, {"id": 1, "name": "Pythonistas"})
 
     def test_call_chain(self):
         """
@@ -985,5 +1015,10 @@ class TestSelectSecretParameter(TestCase):
         venue.save().run_sync()
 
         venue_dict = Venue.select(exclude_secrets=True).first().run_sync()
-        self.assertTrue(venue_dict, {"id": 1, "name": "The Garage"})
+        if engine_is("cockroach"):
+            self.assertTrue(
+                venue_dict, {"id": venue_dict["id"], "name": "The Garage"}
+            )
+        else:
+            self.assertTrue(venue_dict, {"id": 1, "name": "The Garage"})
         self.assertNotIn("capacity", venue_dict.keys())

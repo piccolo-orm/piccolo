@@ -236,7 +236,7 @@ class TimedeltaDelegate:
         if not isinstance(value, timedelta):
             raise ValueError("Only timedelta values can be added.")
 
-        if engine_type == "postgres":
+        if engine_type in ("postgres", "cockroach"):
             value_string = self.get_postgres_interval_string(interval=value)
             return QueryString(
                 f'"{column_name}" {operator} INTERVAL {value_string}',
@@ -683,6 +683,8 @@ class BigInt(Integer):
         engine_type = self._meta.engine_type
         if engine_type == "postgres":
             return "BIGINT"
+        elif engine_type == "cockroach":
+            return "BIGINT"
         elif engine_type == "sqlite":
             return "INTEGER"
         raise Exception("Unrecognized engine type")
@@ -731,6 +733,8 @@ class SmallInt(Integer):
         engine_type = self._meta.engine_type
         if engine_type == "postgres":
             return "SMALLINT"
+        elif engine_type == "cockroach":
+            return "SMALLINT"
         elif engine_type == "sqlite":
             return "INTEGER"
         raise Exception("Unrecognized engine type")
@@ -770,14 +774,19 @@ class Serial(Column):
         engine_type = self._meta.engine_type
         if engine_type == "postgres":
             return "SERIAL"
+        elif engine_type == "cockroach":
+            return "INTEGER"
         elif engine_type == "sqlite":
             return "INTEGER"
         raise Exception("Unrecognized engine type")
 
     def default(self):
         engine_type = self._meta.engine_type
+
         if engine_type == "postgres":
             return DEFAULT
+        elif engine_type == "cockroach":
+            return Unquoted("unique_rowid()")
         elif engine_type == "sqlite":
             return NULL
         raise Exception("Unrecognized engine type")
@@ -810,6 +819,8 @@ class BigSerial(Serial):
         engine_type = self._meta.engine_type
         if engine_type == "postgres":
             return "BIGSERIAL"
+        elif engine_type == "cockroach":
+            return "BIGINT"
         elif engine_type == "sqlite":
             return "INTEGER"
         raise Exception("Unrecognized engine type")
@@ -1248,7 +1259,7 @@ class Interval(Column):  # lgtm [py/missing-equals]
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres":
+        if engine_type in ("postgres", "cockroach"):
             return "INTERVAL"
         elif engine_type == "sqlite":
             # We can't use 'INTERVAL' because the type affinity in SQLite would
@@ -1429,6 +1440,9 @@ class Numeric(Column):
 
     @property
     def column_type(self):
+        engine_type = self._meta.engine_type
+        if engine_type == "cockroach":
+            return "NUMERIC"  # All Numeric is the same for Cockroach.
         if self.digits:
             return f"NUMERIC({self.precision}, {self.scale})"
         else:
@@ -1818,6 +1832,9 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
         column of the table being referenced.
         """
         target_column = self._foreign_key_meta.resolved_target_column
+        engine_type = self._meta.engine_type
+        if engine_type == "cockroach":
+            return target_column.column_type
         if isinstance(target_column, Serial):
             return Integer().column_type
         else:
@@ -2198,6 +2215,14 @@ class JSON(Column):  # lgtm[py/missing-equals]
 
         self.json_operator: t.Optional[str] = None
 
+    @property
+    def column_type(self):
+        engine_type = self._meta.engine_type
+        if engine_type == "cockroach":
+            return "JSONB"  # Cockroach is always JSONB.
+        else:
+            return "JSON"
+
     ###########################################################################
     # Descriptors
 
@@ -2228,6 +2253,10 @@ class JSONB(JSON):
         which is then converted to a JSON string.
 
     """
+
+    @property
+    def column_type(self):
+        return "JSONB"  # Must be defined, we override column_type() in JSON()
 
     def arrow(self, key: str) -> JSONB:
         """
@@ -2310,7 +2339,7 @@ class Bytea(Column):
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres":
+        if engine_type in ("postgres", "cockroach"):
             return "BYTEA"
         elif engine_type == "sqlite":
             return "BLOB"
@@ -2456,7 +2485,7 @@ class Array(Column):
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres":
+        if engine_type in ("postgres", "cockroach"):
             return f"{self.base_column.column_type}[]"
         elif engine_type == "sqlite":
             return "ARRAY"
@@ -2480,9 +2509,9 @@ class Array(Column):
 
         """  # noqa: E501
         engine_type = self._meta.engine_type
-        if engine_type != "postgres":
+        if engine_type != "postgres" and engine_type != "cockroach":
             raise ValueError(
-                "Only Postgres supports array indexing currently."
+                "Only Postgres and Cockroach support array indexing."
             )
 
         if isinstance(value, int):
@@ -2521,7 +2550,7 @@ class Array(Column):
         """
         engine_type = self._meta.engine_type
 
-        if engine_type == "postgres":
+        if engine_type in ("postgres", "cockroach"):
             return Where(column=self, value=value, operator=ArrayAny)
         elif engine_type == "sqlite":
             return self.like(f"%{value}%")
@@ -2539,7 +2568,7 @@ class Array(Column):
         """
         engine_type = self._meta.engine_type
 
-        if engine_type == "postgres":
+        if engine_type in ("postgres", "cockroach"):
             return Where(column=self, value=value, operator=ArrayAll)
         elif engine_type == "sqlite":
             raise ValueError("Unsupported by SQLite")
@@ -2566,9 +2595,9 @@ class Array(Column):
 
         """
         engine_type = self._meta.engine_type
-        if engine_type != "postgres":
+        if engine_type != "postgres" and engine_type != "cockroach":
             raise ValueError(
-                "Only Postgres supports array appending currently."
+                "Only Postgres and Cockroach support array appending."
             )
 
         if not isinstance(value, list):

@@ -9,6 +9,7 @@ from piccolo.custom_types import Combinable
 from piccolo.engine.base import Batch
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
+    AsOfDelegate,
     CallbackDelegate,
     CallbackType,
     LimitDelegate,
@@ -139,6 +140,7 @@ class Objects(Query):
 
     __slots__ = (
         "nested",
+        "as_of_delegate",
         "limit_delegate",
         "offset_delegate",
         "order_by_delegate",
@@ -155,6 +157,7 @@ class Objects(Query):
         **kwargs,
     ):
         super().__init__(table, **kwargs)
+        self.as_of_delegate = AsOfDelegate()
         self.limit_delegate = LimitDelegate()
         self.offset_delegate = OffsetDelegate()
         self.order_by_delegate = OrderByDelegate()
@@ -178,6 +181,10 @@ class Objects(Query):
         on: CallbackType = CallbackType.success,
     ) -> Objects:
         self.callback_delegate.callback(callbacks, on=on)
+        return self
+
+    def as_of(self, interval: str = "-1s") -> Objects:
+        self.as_of_delegate.as_of(interval)
         return self
 
     def limit(self, number: int) -> Objects:
@@ -253,6 +260,7 @@ class Objects(Query):
         select = Select(table=self.table)
 
         for attr in (
+            "as_of_delegate",
             "limit_delegate",
             "where_delegate",
             "offset_delegate",

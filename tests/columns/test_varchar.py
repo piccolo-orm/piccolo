@@ -3,14 +3,14 @@ from unittest import TestCase
 from piccolo.columns.column_types import Varchar
 from piccolo.table import Table
 
-from ..base import postgres_only
+from ..base import engines_only
 
 
 class MyTable(Table):
     name = Varchar(length=10)
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestVarchar(TestCase):
     """
     SQLite doesn't enforce any constraints on max character length.
