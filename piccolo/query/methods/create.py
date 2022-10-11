@@ -51,6 +51,7 @@ class Create(DDL):
                         columns=[column],
                         method=column._meta.index_method,
                         if_not_exists=self.if_not_exists,
+                        sharded=column._meta.sharded,
                     ).ddl
                 )
 

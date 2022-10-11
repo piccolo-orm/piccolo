@@ -1129,6 +1129,7 @@ class Table(metaclass=TableMetaclass):
         columns: t.List[t.Union[Column, str]],
         method: IndexMethod = IndexMethod.btree,
         if_not_exists: bool = False,
+        sharded: bool = False,
     ) -> CreateIndex:
         """
         Create a table index. If multiple columns are specified, this refers
@@ -1144,6 +1145,7 @@ class Table(metaclass=TableMetaclass):
             columns=columns,
             method=method,
             if_not_exists=if_not_exists,
+            sharded=sharded,
         )
 
     @classmethod

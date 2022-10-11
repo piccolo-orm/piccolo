@@ -250,7 +250,7 @@ class TestSerialiseParams(TestCase):
                         'class Manager(Table, tablename="manager"): '
                         "id = Serial(null=False, primary_key=True, unique=False, "  # noqa: E501
                         "index=False, index_method=IndexMethod.btree, "
-                        "choices=None, db_column_name='id', secret=False)"
+                        "choices=None, db_column_name='id', secret=False, sharded=False)"
                     ),
                 )
 
@@ -261,7 +261,7 @@ class TestSerialiseParams(TestCase):
                         'class Manager(Table, tablename="manager"): '
                         "id = Serial(null=False, primary_key=True, unique=False, "  # noqa: E501
                         "index=False, index_method=IndexMethod.btree, "
-                        "choices=None, db_column_name='id', secret=False)"
+                        "choices=None, db_column_name='id', secret=False, sharded=False)"
                     ),
                 )
 
@@ -312,7 +312,7 @@ class TestSerialiseParams(TestCase):
 
         self.assertEqual(
             serialised.params["base_column"].__repr__(),
-            "Varchar(length=255, default='', null=False, primary_key=False, unique=False, index=False, index_method=IndexMethod.btree, choices=None, db_column_name=None, secret=False)",  # noqa: E501
+            "Varchar(length=255, default='', null=False, primary_key=False, unique=False, index=False, index_method=IndexMethod.btree, choices=None, db_column_name=None, secret=False, sharded=False)",  # noqa: E501
         )
 
         self.assertEqual(

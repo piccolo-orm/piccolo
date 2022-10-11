@@ -195,15 +195,19 @@ class Index:
         """
         pat = re.compile(
             r"""^CREATE[ ](?:(?P<unique>UNIQUE)[ ])?INDEX[ ]\w+?[ ]
-                 ON[ ].+?[ ]USING[ ](?P<method>\w+?)[ ]
-                 \(\"?(?P<column_name>\w+?\"?)\)""",
+            ON[ ].+?[ ]USING[ ](?P<method>\w+?)[ ]
+            \(\"?(?P<column_name>\w+?\"?)(?P<sorting>[ ]\w+?)?
+            \)(?P<sharded>[ ]USING[ ]HASH)?""",
             re.VERBOSE,
         )
+
         match = re.match(pat, self.indexdef)
         if match is None:
             self.column_name = None
             self.unique = None
             self.method = None
+            self.sorting = None
+            self.sharded = None
             self.warnings = [f"{self.indexdef};"]
         else:
             groups = match.groupdict()
@@ -211,6 +215,10 @@ class Index:
             self.column_name = groups["column_name"].lstrip('"').rstrip('"')
             self.unique = "unique" in groups
             self.method = INDEX_METHOD_MAP[groups["method"]]
+            self.sorting = groups[
+                "sorting"
+            ]  # ASC or DESC. Not currently used but it does sometimes exist so we should capture it.
+            self.sharded = "sharded" in groups
             self.warnings = []
 
 
@@ -720,6 +728,7 @@ async def create_table_class_from_db(
         if index is not None:
             kwargs["index"] = True
             kwargs["index_method"] = index.method
+            kwargs["sharded"] = index.sharded
 
         if constraints.is_primary_key(column_name=column_name):
             kwargs["primary_key"] = True
