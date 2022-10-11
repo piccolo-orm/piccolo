@@ -20,6 +20,7 @@ by modifying the return values.
     :maxdepth: 1
     :caption: Advanced
 
+    ./as_of
     ./batch
     ./callback
     ./distinct
