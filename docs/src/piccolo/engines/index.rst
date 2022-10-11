@@ -126,3 +126,4 @@ Engine types
 
     ./sqlite_engine
     ./postgres_engine
+    ./cockroach_engine

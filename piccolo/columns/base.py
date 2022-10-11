@@ -594,7 +594,7 @@ class Column(Selectable):
         For SQLite, it's just proxied to a LIKE query instead.
 
         """
-        if self._meta.engine_type == "postgres":
+        if self._meta.engine_type in ("postgres", "cockroach"):
             operator: t.Type[ComparisonOperator] = ILike
         else:
             colored_warning(
@@ -843,7 +843,12 @@ class Column(Selectable):
                 f" ON UPDATE {on_update}"
             )
 
-        if self.__class__.__name__ not in ("Serial", "BigSerial"):
+        # Always ran for Cockroach because unique_rowid() is directly
+        # defined for Cockroach Serial and BigSerial.
+        # Postgres and SQLite will not run this for Serial and BigSerial.
+        if self._meta.engine_type in (
+            "cockroach"
+        ) or self.__class__.__name__ not in ("Serial", "BigSerial"):
             default = self.get_default_value()
             sql_value = self.get_sql_value(value=default)
             query += f" DEFAULT {sql_value}"

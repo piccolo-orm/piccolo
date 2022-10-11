@@ -11,6 +11,10 @@ class UUID4(Default):
         return "uuid_generate_v4()"
 
     @property
+    def cockroach(self):
+        return self.postgres
+
+    @property
     def sqlite(self):
         return "''"
 

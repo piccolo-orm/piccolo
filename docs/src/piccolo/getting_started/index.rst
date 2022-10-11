@@ -10,6 +10,7 @@ Getting Started
     ./installing_piccolo
     ./playground
     ./setup_postgres
+    ./setup_cockroach
     ./setup_sqlite
     ./example_schema
     ./sync_and_async

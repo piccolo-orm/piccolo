@@ -3,7 +3,7 @@ from unittest import TestCase
 from piccolo.columns import ForeignKey, Varchar
 from piccolo.columns.base import OnDelete, OnUpdate
 from piccolo.table import Table
-from tests.base import postgres_only
+from tests.base import engines_only
 
 
 class Manager(Table):
@@ -22,7 +22,7 @@ class Band(Table):
     )
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestOnDeleteOnUpdate(TestCase):
     """
     Make sure that on_delete, and on_update are correctly applied in the

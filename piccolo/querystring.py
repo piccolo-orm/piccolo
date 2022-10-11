@@ -173,7 +173,7 @@ class QueryString:
         _, bundled, combined_args = self.bundle(
             start_index=1, bundled=[], combined_args=[]
         )
-        if engine_type == "postgres":
+        if engine_type in ("postgres", "cockroach"):
             string = "".join(
                 fragment.prefix
                 + ("" if fragment.no_arg else f"${fragment.index}")

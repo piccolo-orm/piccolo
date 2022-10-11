@@ -30,3 +30,12 @@ class TableExists(Query):
                 f"table_name = '{self.table._meta.tablename}')"
             )
         ]
+
+    @property
+    def cockroach_querystrings(self) -> t.Sequence[QueryString]:
+        return [
+            QueryString(
+                "SELECT EXISTS(SELECT * FROM information_schema.tables WHERE "
+                f"table_name = '{self.table._meta.tablename}')"
+            )
+        ]

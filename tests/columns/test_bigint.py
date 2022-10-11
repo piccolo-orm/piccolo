@@ -4,14 +4,14 @@ from unittest import TestCase
 from piccolo.columns.column_types import BigInt
 from piccolo.table import Table
 
-from ..base import postgres_only
+from ..base import engines_only
 
 
 class MyTable(Table):
     value = BigInt()
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestBigIntPostgres(TestCase):
     """
     Make sure a BigInt column in Postgres can store a large number.

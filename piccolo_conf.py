@@ -11,7 +11,6 @@ python -m piccolo.main migration new user --auto
 from piccolo.conf.apps import AppRegistry
 from piccolo.engine.postgres import PostgresEngine
 
-
 DB = PostgresEngine(config={})
 
 

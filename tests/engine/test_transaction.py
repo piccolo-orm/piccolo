@@ -4,9 +4,8 @@ from unittest import TestCase
 from piccolo.engine.postgres import Atomic
 from piccolo.table import drop_db_tables_sync
 from piccolo.utils.sync import run_sync
+from tests.base import engines_only
 from tests.example_apps.music.tables import Band, Manager
-
-from ..base import postgres_only
 
 
 class TestAtomic(TestCase):
@@ -41,7 +40,7 @@ class TestAtomic(TestCase):
 
         drop_db_tables_sync(Band, Manager)
 
-    @postgres_only
+    @engines_only("postgres", "cockroach")
     def test_pool(self):
         """
         Make sure atomic works correctly when a connection pool is active.
@@ -108,7 +107,7 @@ class TestTransaction(TestCase):
         self.assertTrue(Band.table_exists().run_sync())
         self.assertTrue(Manager.table_exists().run_sync())
 
-    @postgres_only
+    @engines_only("postgres")
     def test_transaction_id(self):
         """
         An extra sanity check, that the transaction id is the same for each

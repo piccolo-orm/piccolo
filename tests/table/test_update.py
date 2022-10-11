@@ -20,6 +20,7 @@ from piccolo.table import Table
 from tests.base import (
     DBTestCase,
     engine_version_lt,
+    engines_skip,
     is_running_sqlite,
     sqlite_only,
 )
@@ -515,6 +516,7 @@ class TestOperators(TestCase):
     def tearDown(self):
         MyTable.alter().drop_table().run_sync()
 
+    @engines_skip("cockroach")
     def test_operators(self):
         for test_case in TEST_CASES:
             print(test_case.description)

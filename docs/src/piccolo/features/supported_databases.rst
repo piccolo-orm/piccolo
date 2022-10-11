@@ -8,6 +8,12 @@ will be using in production.
 
 -------------------------------------------------------------------------------
 
+Cockroach DB
+------------
+Cockroach support is in experimental beta.
+
+-------------------------------------------------------------------------------
+
 SQLite
 ------
 SQLite support is not as complete as Postgres, but it is available - mostly
