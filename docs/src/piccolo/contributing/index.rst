@@ -8,6 +8,25 @@ instructions.
 
 -------------------------------------------------------------------------------
 
+Running Cockroach
+-----------------
+
+To get a local Cockroach instance running, you can use:
+
+.. code-block:: console
+
+    cockroach start-single-node --insecure --store=type=mem,size=2GiB
+
+Make sure the test database exists:
+
+.. code-block:: console
+
+    ./cockroach sql --insecure
+    >>> create database piccolo
+    >>> use piccolo
+
+-------------------------------------------------------------------------------
+
 Get the tests running
 ---------------------
 
