@@ -37,8 +37,8 @@ async.
 .. code-block:: python
 
     async with Band._meta.db.transaction():
-        await Manager.create_table().run()
-        await Concert.create_table().run()
+        await Manager.create_table()
+        await Concert.create_table()
 
 If an exception is raised within the body of the context manager, then the
 transaction is automatically rolled back. The exception is still propagated
