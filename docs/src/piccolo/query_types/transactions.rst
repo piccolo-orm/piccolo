@@ -8,6 +8,10 @@ Transactions allow multiple queries to be committed only once successful.
 This is useful for things like migrations, where you can't have it fail in an
 inbetween state.
 
+.. note::
+    In the examples below we use ``MyTable._meta.db`` to access the ``Engine``,
+    which is used to create transactions.
+
 -------------------------------------------------------------------------------
 
 Atomic
