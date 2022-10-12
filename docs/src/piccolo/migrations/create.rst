@@ -7,7 +7,8 @@ controlled way. Each migration belongs to a :ref:`Piccolo app <PiccoloApps>`.
 You can either manually populate migrations, or allow Piccolo to do it for you
 automatically.
 
-We recommend using automatic migrations where possible, as it saves you time.
+We recommend using :ref:`auto migrations <AutoMigrations>` where possible,
+as it saves you time.
 
 -------------------------------------------------------------------------------
 
@@ -90,10 +91,26 @@ If you want to run raw SQL within your migration, you can do so as follows:
             description=DESCRIPTION
         )
 
+        #############################################################
+        # This will get run when using `piccolo migrations forwards`:
+
         async def run():
             await RawTable.raw('UPDATE band SET popularity={}', 1000)
 
         manager.add_raw(run)
+
+        #############################################################
+        # If we want to run some code when reversing the migration,
+        # using `piccolo migrations backwards`:
+
+        async def run_backwards():
+            await RawTable.raw('UPDATE band SET popularity={}', 0)
+
+        manager.add_raw_backwards(run_backwards)
+
+        #############################################################
+        # We must always return the MigrationManager:
+
         return manager
 
 .. hint:: You can learn more about :ref:`raw queries here <Raw>`.
@@ -177,6 +194,8 @@ it's better to copy the relevant tables into your migration file:
         return manager
 
 -------------------------------------------------------------------------------
+
+.. _AutoMigrations:
 
 Auto migrations
 ---------------
