@@ -81,8 +81,8 @@ jobs:
         timeout-minutes: 30
         strategy:
             matrix:
-                python-version: ["3.7", "3.8", "3.9", "3.10"]
-                postgres-version: [9.6, 10, 11, 12, 13, 14]
+                python-version: ["3.7", "3.8", "3.9", "3.10", "3.11-dev"]
+                postgres-version: [10, 11, 12, 13, 14, 15]
 
         # Service containers to run with `container-job`
         services:
