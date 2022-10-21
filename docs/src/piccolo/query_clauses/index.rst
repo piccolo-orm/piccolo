@@ -20,7 +20,6 @@ by modifying the return values.
     :maxdepth: 1
     :caption: Advanced
 
-    ./as_of
     ./batch
     ./callback
     ./distinct
@@ -29,3 +28,9 @@ by modifying the return values.
     ./offset
     ./output
     ./returning
+
+.. toctree::
+    :maxdepth: 1
+    :caption: CockroachDB
+
+    ./as_of
