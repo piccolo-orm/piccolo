@@ -1,6 +1,21 @@
 Changes
 =======
 
+0.93.0
+------
+
+* Fixed a bug with nullable ``JSON`` / ``JSONB`` columns and
+  ``create_pydantic_model`` - thanks to @eneacosta for this fix.
+* Made the ``Time`` column type importable from ``piccolo.columns``.
+* Python 3.11 is now supported.
+* Postgres 9.6 is no longer officially supported, as it's end of life, but
+  Piccolo should continue to work with it just fine for now.
+* Improved docs for transactions, added docs for the ``as_of`` clause in
+  CockroachDB (thanks to @gnat for this), and added docs for
+  ``add_raw_backwards``.
+
+-------------------------------------------------------------------------------
+
 0.92.0
 ------
 
