@@ -1,0 +1,3 @@
+[console_scripts]
+slotscheck=slotscheck.cli:root
+

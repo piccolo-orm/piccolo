@@ -1,0 +1,2 @@
+class TransactionError(Exception):
+    pass

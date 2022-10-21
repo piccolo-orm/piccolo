@@ -1,0 +1,66 @@
+{% extends "base.html.jinja" %}
+
+{% block content %}
+    <div class="hero">
+        <h1>{{ title }}</h1>
+    </div>
+    <div class="content">
+        <section>
+            <h2>Postgres</h2>
+            <p>Make sure you create the database. See the <a href="https://piccolo-orm.readthedocs.io/en/latest/piccolo/getting_started/setup_postgres.html">docs</a> for guidance.</p>
+            <p>See <code>piccolo_conf.py</code> for the database settings.</p>
+        </section>
+
+        <section>
+            <h2>Migrations</h2>
+            <p>To use the admin, first run the migrations. This will create the user and session tables in the database:</p>
+            <p class="code">
+                <span>piccolo migrations forwards session_auth</span>
+                <span>piccolo migrations forwards user</span>
+            </p>
+            <p>Then create a new user, making sure they're an admin.</p>
+            <p class="code">
+                <span>piccolo user create</span>
+            </p>
+        </section>
+
+        <section>
+            <h2>Custom Tables</h2>
+            <p>An example table called <code>Task</code> exists in <code>tables.py</code>.</p>
+            <p>When you're ready, create a migration, and run it to add the table to the database:</p>
+            <p class="code">
+                <span>piccolo migrations new home --auto</span>
+                <span>piccolo migrations forwards home</span>
+            </p>
+        </section>
+
+        <section>
+            <h2>Try it out</h2>
+            <h3>FastAPI</h3>
+            <ul>
+                <li><a href="/admin/">Admin</a></li>
+                <li><a href="/docs/">Swagger API</a></li>
+            </ul>
+            <h3>Starlette</h3>
+            <ul>
+                <li><a href="/admin/">Admin</a></li>
+                <li><a href="/tasks/">JSON endpoint</a></li>
+            </ul>
+            <h3>BlackSheep</h3>
+            <ul>
+                <li><a href="/admin/">Admin</a></li>
+                <li><a href="/docs/">Swagger API</a></li>
+            </ul>
+            <h3>Xpresso</h3>
+            <ul>
+                <li><a href="/admin/">Admin</a></li>
+                <li><a href="/docs/">Swagger API</a></li>
+            </ul>
+            <h3>Starlite</h3>
+            <ul>
+                <li><a href="/admin">Admin</a></li>
+                <li><a href="/schema/swagger">Swagger API</a></li>
+            </ul>
+        </section>
+    </div>
+{% endblock content %}

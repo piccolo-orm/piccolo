@@ -1,0 +1,533 @@
+from __future__ import annotations
+
+import itertools
+import typing as t
+from dataclasses import dataclass
+
+from piccolo.columns.base import Column
+from piccolo.columns.column_types import ForeignKey, Numeric, Varchar
+from piccolo.query.base import DDL
+from piccolo.utils.warnings import Level, colored_warning
+
+if t.TYPE_CHECKING:  # pragma: no cover
+    from piccolo.columns.base import OnDelete, OnUpdate
+    from piccolo.table import Table
+
+
+class AlterStatement:
+    __slots__ = ()  # type: ignore
+
+    @property
+    def ddl(self) -> str:
+        raise NotImplementedError()
+
+    def __str__(self) -> str:
+        return self.ddl
+
+
+@dataclass
+class RenameTable(AlterStatement):
+    __slots__ = ("new_name",)
+
+    new_name: str
+
+    @property
+    def ddl(self) -> str:
+        return f"RENAME TO {self.new_name}"
+
+
+@dataclass
+class AlterColumnStatement(AlterStatement):
+    __slots__ = ("column",)
+
+    column: t.Union[Column, str]
+
+    @property
+    def column_name(self) -> str:
+        if isinstance(self.column, str):
+            return self.column
+        elif isinstance(self.column, Column):
+            return self.column._meta.db_column_name
+        else:
+            raise ValueError("Unrecognised column type")
+
+
+@dataclass
+class RenameColumn(AlterColumnStatement):
+    __slots__ = ("new_name",)
+
+    new_name: str
+
+    @property
+    def ddl(self) -> str:
+        return f'RENAME COLUMN "{self.column_name}" TO "{self.new_name}"'
+
+
+@dataclass
+class DropColumn(AlterColumnStatement):
+    @property
+    def ddl(self) -> str:
+        return f'DROP COLUMN "{self.column_name}"'
+
+
+@dataclass
+class AddColumn(AlterColumnStatement):
+    __slots__ = ("name",)
+
+    column: Column
+    name: str
+
+    @property
+    def ddl(self) -> str:
+        self.column._meta.name = self.name
+        return f"ADD COLUMN {self.column.ddl}"
+
+
+@dataclass
+class DropDefault(AlterColumnStatement):
+    @property
+    def ddl(self) -> str:
+        return f'ALTER COLUMN "{self.column_name}" DROP DEFAULT'
+
+
+@dataclass
+class SetColumnType(AlterStatement):
+    """
+    :param using_expression:
+        Postgres can't automatically convert between certain column types. You
+        can tell Postgres which action to take. For example
+        `my_column_name::integer`.
+
+    """
+
+    old_column: Column
+    new_column: Column
+    using_expression: t.Optional[str] = None
+
+    @property
+    def ddl(self) -> str:
+        if self.new_column._meta._table is None:
+            self.new_column._meta._table = self.old_column._meta.table
+
+        column_name = self.old_column._meta.db_column_name
+        query = (
+            f'ALTER COLUMN "{column_name}" TYPE {self.new_column.column_type}'
+        )
+        if self.using_expression is not None:
+            query += f" USING {self.using_expression}"
+        return query
+
+
+@dataclass
+class SetDefault(AlterColumnStatement):
+    __slots__ = ("value",)
+
+    column: Column
+    value: t.Any
+
+    @property
+    def ddl(self) -> str:
+        sql_value = self.column.get_sql_value(self.value)
+        return f'ALTER COLUMN "{self.column_name}" SET DEFAULT {sql_value}'
+
+
+@dataclass
+class SetUnique(AlterColumnStatement):
+    __slots__ = ("boolean",)
+
+    boolean: bool
+
+    @property
+    def ddl(self) -> str:
+        if self.boolean:
+            return f'ADD UNIQUE ("{self.column_name}")'
+        if isinstance(self.column, str):
+            raise ValueError(
+                "Removing a unique constraint requires a Column instance "
+                "to be passed as the column arg instead of a string."
+            )
+        tablename = self.column._meta.table._meta.tablename
+        column_name = self.column_name
+        key = f"{tablename}_{column_name}_key"
+        return f'DROP CONSTRAINT "{key}"'
+
+
+@dataclass
+class SetNull(AlterColumnStatement):
+    __slots__ = ("boolean",)
+
+    boolean: bool
+
+    @property
+    def ddl(self) -> str:
+        if self.boolean:
+            return f'ALTER COLUMN "{self.column_name}" DROP NOT NULL'
+        else:
+            return f'ALTER COLUMN "{self.column_name}" SET NOT NULL'
+
+
+@dataclass
+class SetLength(AlterColumnStatement):
+    __slots__ = ("length",)
+
+    length: int
+
+    @property
+    def ddl(self) -> str:
+        return f'ALTER COLUMN "{self.column_name}" TYPE VARCHAR({self.length})'
+
+
+@dataclass
+class DropConstraint(AlterStatement):
+    __slots__ = ("constraint_name",)
+
+    constraint_name: str
+
+    @property
+    def ddl(self) -> str:
+        return f"DROP CONSTRAINT IF EXISTS {self.constraint_name}"
+
+
+@dataclass
+class AddForeignKeyConstraint(AlterStatement):
+    __slots__ = (
+        "constraint_name",
+        "foreign_key_column_name",
+        "referenced_table_name",
+        "on_delete",
+        "on_update",
+    )
+
+    constraint_name: str
+    foreign_key_column_name: str
+    referenced_table_name: str
+    on_delete: t.Optional[OnDelete]
+    on_update: t.Optional[OnUpdate]
+    referenced_column_name: str = "id"
+
+    @property
+    def ddl(self) -> str:
+        query = (
+            f'ADD CONSTRAINT "{self.constraint_name}" FOREIGN KEY '
+            f'("{self.foreign_key_column_name}") REFERENCES '
+            f'"{self.referenced_table_name}" ("{self.referenced_column_name}")'
+        )
+        if self.on_delete:
+            query += f" ON DELETE {self.on_delete.value}"
+        if self.on_update:
+            query += f" ON UPDATE {self.on_update.value}"
+        return query
+
+
+@dataclass
+class SetDigits(AlterColumnStatement):
+    __slots__ = ("digits", "column_type")
+
+    digits: t.Optional[t.Tuple[int, int]]
+    column_type: str
+
+    @property
+    def ddl(self) -> str:
+        if self.digits is None:
+            return f'ALTER COLUMN "{self.column_name}" TYPE {self.column_type}'
+
+        precision = self.digits[0]
+        scale = self.digits[1]
+        return (
+            f'ALTER COLUMN "{self.column_name}" TYPE '
+            f"{self.column_type}({precision}, {scale})"
+        )
+
+
+@dataclass
+class DropTable:
+    tablename: str
+    cascade: bool
+    if_exists: bool
+
+    @property
+    def ddl(self) -> str:
+        query = "DROP TABLE"
+
+        if self.if_exists:
+            query += " IF EXISTS"
+
+        query += f" {self.tablename}"
+
+        if self.cascade:
+            query += " CASCADE"
+
+        return query
+
+
+class Alter(DDL):
+    __slots__ = (
+        "_add_foreign_key_constraint",
+        "_add",
+        "_drop_constraint",
+        "_drop_default",
+        "_drop_table",
+        "_drop",
+        "_rename_columns",
+        "_rename_table",
+        "_set_column_type",
+        "_set_default",
+        "_set_digits",
+        "_set_length",
+        "_set_null",
+        "_set_unique",
+    )
+
+    def __init__(self, table: t.Type[Table], **kwargs):
+        super().__init__(table, **kwargs)
+        self._add_foreign_key_constraint: t.List[AddForeignKeyConstraint] = []
+        self._add: t.List[AddColumn] = []
+        self._drop_constraint: t.List[DropConstraint] = []
+        self._drop_default: t.List[DropDefault] = []
+        self._drop_table: t.Optional[DropTable] = None
+        self._drop: t.List[DropColumn] = []
+        self._rename_columns: t.List[RenameColumn] = []
+        self._rename_table: t.List[RenameTable] = []
+        self._set_column_type: t.List[SetColumnType] = []
+        self._set_default: t.List[SetDefault] = []
+        self._set_digits: t.List[SetDigits] = []
+        self._set_length: t.List[SetLength] = []
+        self._set_null: t.List[SetNull] = []
+        self._set_unique: t.List[SetUnique] = []
+
+    def add_column(self, name: str, column: Column) -> Alter:
+        """
+        Band.alter().add_column(‘members’, Integer())
+        """
+        column._meta._table = self.table
+        column._meta._name = name
+        column._meta.db_column_name = name
+
+        if isinstance(column, ForeignKey):
+            column._setup(table_class=self.table)
+
+        self._add.append(AddColumn(column, name))
+        return self
+
+    def drop_column(self, column: t.Union[str, Column]) -> Alter:
+        """
+        Band.alter().drop_column(Band.popularity)
+        """
+        self._drop.append(DropColumn(column))
+        return self
+
+    def drop_default(self, column: t.Union[str, Column]) -> Alter:
+        """
+        Band.alter().drop_default(Band.popularity)
+        """
+        self._drop_default.append(DropDefault(column=column))
+        return self
+
+    def drop_table(
+        self, cascade: bool = False, if_exists: bool = False
+    ) -> Alter:
+        """
+        Band.alter().drop_table()
+        """
+        self._drop_table = DropTable(
+            tablename=self.table._meta.tablename,
+            cascade=cascade,
+            if_exists=if_exists,
+        )
+        return self
+
+    def rename_table(self, new_name: str) -> Alter:
+        """
+        Band.alter().rename_table('musical_group')
+        """
+        # We override the existing one rather than appending.
+        self._rename_table = [RenameTable(new_name=new_name)]
+        return self
+
+    def rename_column(
+        self, column: t.Union[str, Column], new_name: str
+    ) -> Alter:
+        """
+        Band.alter().rename_column(Band.popularity, ‘rating’)
+        Band.alter().rename_column('popularity', ‘rating’)
+        """
+        self._rename_columns.append(RenameColumn(column, new_name))
+        return self
+
+    def set_column_type(
+        self,
+        old_column: Column,
+        new_column: Column,
+        using_expression: t.Optional[str] = None,
+    ) -> Alter:
+        """
+        Change the type of a column.
+        """
+        self._set_column_type.append(
+            SetColumnType(
+                old_column=old_column,
+                new_column=new_column,
+                using_expression=using_expression,
+            )
+        )
+        return self
+
+    def set_default(self, column: Column, value: t.Any) -> Alter:
+        """
+        Set the default for a column.
+
+        Band.alter().set_default(Band.popularity, 0)
+        """
+        self._set_default.append(SetDefault(column=column, value=value))
+        return self
+
+    def set_null(
+        self, column: t.Union[str, Column], boolean: bool = True
+    ) -> Alter:
+        """
+        Band.alter().set_null(Band.name, True)
+        Band.alter().set_null('name', True)
+        """
+        self._set_null.append(SetNull(column, boolean))
+        return self
+
+    def set_unique(
+        self, column: t.Union[str, Column], boolean: bool = True
+    ) -> Alter:
+        """
+        Band.alter().set_unique(Band.name, True)
+        Band.alter().set_unique('name', True)
+        """
+        self._set_unique.append(SetUnique(column, boolean))
+        return self
+
+    def set_length(self, column: t.Union[str, Varchar], length: int) -> Alter:
+        """
+        Change the max length of a varchar column. Unfortunately, this isn't
+        supported by SQLite, but SQLite also doesn't enforce any length limits
+        on varchar columns anyway.
+
+        Band.alter().set_length('name', 512)
+        """
+        if self.engine_type == "sqlite":
+            colored_warning(
+                (
+                    "SQLITE doesn't support changes in length. It also "
+                    "doesn't enforce any length limits, so your code will "
+                    "still work as expected. Skipping."
+                ),
+                level=Level.medium,
+            )
+            return self
+
+        if not isinstance(column, (str, Varchar)):
+            raise ValueError(
+                "Only Varchar columns can have their length changed."
+            )
+
+        self._set_length.append(SetLength(column, length))
+        return self
+
+    def _get_constraint_name(self, column: t.Union[str, ForeignKey]) -> str:
+        column_name = AlterColumnStatement(column=column).column_name
+        tablename = self.table._meta.tablename
+        return f"{tablename}_{column_name}_fk"
+
+    def drop_constraint(self, constraint_name: str) -> Alter:
+        self._drop_constraint.append(
+            DropConstraint(constraint_name=constraint_name)
+        )
+        return self
+
+    def drop_foreign_key_constraint(
+        self, column: t.Union[str, ForeignKey]
+    ) -> Alter:
+        constraint_name = self._get_constraint_name(column=column)
+        return self.drop_constraint(constraint_name=constraint_name)
+
+    def add_foreign_key_constraint(
+        self,
+        column: t.Union[str, ForeignKey],
+        referenced_table_name: str,
+        on_delete: t.Optional[OnDelete] = None,
+        on_update: t.Optional[OnUpdate] = None,
+        referenced_column_name: str = "id",
+    ) -> Alter:
+        """
+        This will add a new foreign key constraint.
+
+        Band.alter().add_foreign_key_constraint(
+            Band.manager,
+            referenced_table_name='manager',
+            on_delete=OnDelete.cascade
+        )
+        """
+        constraint_name = self._get_constraint_name(column=column)
+        column_name = AlterColumnStatement(column=column).column_name
+
+        self._add_foreign_key_constraint.append(
+            AddForeignKeyConstraint(
+                constraint_name=constraint_name,
+                foreign_key_column_name=column_name,
+                referenced_table_name=referenced_table_name,
+                on_delete=on_delete,
+                on_update=on_update,
+                referenced_column_name=referenced_column_name,
+            )
+        )
+        return self
+
+    def set_digits(
+        self,
+        column: t.Union[str, Numeric],
+        digits: t.Optional[t.Tuple[int, int]],
+    ) -> Alter:
+        """
+        Alter the precision and scale for a Numeric column.
+        """
+        column_type = (
+            column.__class__.__name__.upper()
+            if isinstance(column, Numeric)
+            else "NUMERIC"
+        )
+        self._set_digits.append(
+            SetDigits(
+                digits=digits,
+                column=column,
+                column_type=column_type,
+            )
+        )
+        return self
+
+    @property
+    def default_ddl(self) -> t.Sequence[str]:
+        if self._drop_table is not None:
+            return [self._drop_table.ddl]
+
+        query = f"ALTER TABLE {self.table._meta.tablename}"
+
+        alterations = [
+            i.ddl
+            for i in itertools.chain(
+                self._add,
+                self._rename_columns,
+                self._rename_table,
+                self._drop,
+                self._drop_default,
+                self._set_column_type,
+                self._set_unique,
+                self._set_null,
+                self._set_length,
+                self._set_default,
+                self._set_digits,
+            )
+        ]
+
+        if self.engine_type == "sqlite":
+            # Can only perform one alter statement at a time.
+            return [f"{query} {i}" for i in alterations]
+
+        # Postgres can perform them all at once:
+        query += ",".join(f" {i}" for i in alterations)
+
+        return [query]

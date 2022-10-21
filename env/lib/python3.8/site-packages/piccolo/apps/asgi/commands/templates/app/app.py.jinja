@@ -1,0 +1,11 @@
+{% if router == 'fastapi' %}
+    {% include '_fastapi_app.py.jinja' %}
+{% elif router == 'starlette' %}
+    {% include '_starlette_app.py.jinja' %}
+{% elif router == 'blacksheep' %}
+    {% include '_blacksheep_app.py.jinja' %}
+{% elif router == 'xpresso' %}
+    {% include '_xpresso_app.py.jinja' %}
+{% elif router == 'starlite' %}
+    {% include '_starlite_app.py.jinja' %}
+{% endif %}

@@ -1,0 +1,18 @@
+from piccolo.conf.apps import AppRegistry
+{% if engine_name == 'postgres' %}
+from piccolo.engine.postgres import PostgresEngine
+
+
+DB = PostgresEngine(config={})
+{% endif %}
+{% if engine_name == 'sqlite' %}
+from piccolo.engine.sqlite import SQLiteEngine
+
+
+DB = SQLiteEngine(path='project.sqlite')
+{% endif %}
+
+
+# A list of paths to piccolo apps
+# e.g. ['blog.piccolo_app']
+APP_REGISTRY = AppRegistry(apps=[])

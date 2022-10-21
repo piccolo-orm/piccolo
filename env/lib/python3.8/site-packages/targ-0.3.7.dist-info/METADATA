@@ -1,0 +1,91 @@
+Metadata-Version: 2.1
+Name: targ
+Version: 0.3.7
+Summary: Build a Python CLI for your app, just using type hints and docstrings.
+Home-page: https://github.com/piccolo-orm/targ/
+Author: Daniel Townsend
+Author-email: dan@dantownsend.co.uk
+License: MIT
+Platform: UNKNOWN
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Requires-Python: >=3.7.0
+Description-Content-Type: text/markdown
+Requires-Dist: colorama (==0.4.*)
+Requires-Dist: docstring-parser (==0.12)
+Requires-Dist: typing-inspect (==0.6.0) ; python_version < "3.8"
+
+![Logo](https://raw.githubusercontent.com/piccolo-orm/targ/master/docs/logo_hero.png "Targ Logo")
+
+# targ
+
+Build a Python CLI for your app, just using type hints and docstrings.
+
+Just register your type annotated functions, and that's it - there's no special
+syntax to learn, and it's super easy.
+
+```python
+# main.py
+from targ import CLI
+
+
+def add(a: int, b: int):
+    """
+    Add the two numbers.
+
+    :param a:
+        The first number.
+    :param b:
+        The second number.
+    """
+    print(a + b)
+
+
+if __name__ == "__main__":
+    cli = CLI()
+    cli.register(add)
+    cli.run()
+
+```
+
+And from the command line:
+
+```bash
+>>> python main.py add 1 1
+2
+```
+
+To get documentation:
+
+```bash
+>>> python main.py add --help
+
+add
+===
+Add the two numbers.
+
+Usage
+-----
+add a b
+
+Args
+----
+a
+The first number.
+
+b
+The second number.
+
+```
+
+## Documentation
+
+The full documentation is available on [Read the Docs](https://targ.readthedocs.io/en/latest/index.html).
+
+

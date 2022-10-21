@@ -38,9 +38,9 @@ class Config(pydantic.BaseConfig):
 
 
 def pydantic_json_validator(cls, value, field):
+    if not field.required and value is None:
+        return value
     try:
-        if not field.required and value is None:
-            return value
         load_json(value)
     except json.JSONDecodeError as e:
         raise ValueError("Unable to parse the JSON.") from e
