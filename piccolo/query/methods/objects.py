@@ -104,21 +104,12 @@ class GetOrCreate:
 
 @dataclass
 class Create:
-    query: Objects
+    table_class: t.Type[Table]
     columns: t.Dict[str, t.Any]
 
     async def run(self):
-        instance = self.query.table()
-
-        for column, value in self.columns.items():
-            if isinstance(column, str):
-                column = instance._meta.get_column_by_name(column)
-            setattr(instance, column._meta.name, value)
-
+        instance = self.table_class(**self.columns)
         await instance.save().run()
-
-        instance._was_created = True
-
         return instance
 
     def __await__(self):
@@ -220,7 +211,7 @@ class Objects(Query):
         return GetOrCreate(query=self, where=where, defaults=defaults)
 
     def create(self, **columns: t.Any):
-        return Create(query=self, columns=columns)
+        return Create(table_class=self.table, columns=columns)
 
     def order_by(self, *columns: Column, ascending=True) -> Objects:
         self.order_by_delegate.order_by(*columns, ascending=ascending)
