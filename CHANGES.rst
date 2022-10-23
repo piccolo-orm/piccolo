@@ -1,6 +1,18 @@
 Changes
 =======
 
+0.94.0
+------
+
+Fixed a bug with ``MyTable.objects().create()`` and columns which are not
+nullable. Thanks to @metakot for reporting this issue.
+
+We used to use ``logging.getLogger(__file__)``, but as @Drapersniper pointed
+out, the Python docs recommend ``logging.getLogger(__name__)``, so it has been
+changed.
+
+-------------------------------------------------------------------------------
+
 0.93.0
 ------
 
