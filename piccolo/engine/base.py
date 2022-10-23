@@ -12,7 +12,7 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.query.base import Query
 
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class Batch:
