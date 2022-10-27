@@ -255,15 +255,15 @@ def run(
     populate()
 
     from IPython.core.interactiveshell import _asyncio_runner  # type: ignore
-    from traitlets.config import get_config
 
-    if not ipython_profile:
-        conf = get_config()
-        conf.InteractiveShellEmbed.colors = "Neutral"
-    else:
+    if ipython_profile:
         print("Using user ipython profile")
-        print("For details, see: https://ipython.org/ipython-doc/3/config/intro.html#ipythondir")
+        print(
+            "More info: https://ipython.org/ipython-doc/3/config/intro.html#"
+        )
         print("\n")
-        conf = None
+        conf_args = {}
+    else:
+        conf_args = {"colors": "Neutral", "mouse_support": True}
 
-    IPython.embed(using=_asyncio_runner, config=conf)
+    IPython.embed(using=_asyncio_runner, **conf_args)
