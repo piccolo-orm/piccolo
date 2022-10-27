@@ -189,6 +189,7 @@ def run(
     database: str = "piccolo_playground",
     host: str = "localhost",
     port: int = 5432,
+    ipython_profile: bool = False,
 ):
     """
     Creates a test database to play with.
@@ -205,6 +206,8 @@ def run(
         Postgres host
     :param port:
         Postgres port
+    :param ipython_profile:
+        Make this True to use your own IPython profile. Located at ~/.ipython/
     """
     try:
         import IPython
@@ -252,5 +255,15 @@ def run(
     populate()
 
     from IPython.core.interactiveshell import _asyncio_runner  # type: ignore
+    from traitlets.config import get_config
 
-    IPython.embed(using=_asyncio_runner)
+    if not ipython_profile:
+        conf = get_config()
+        conf.InteractiveShellEmbed.colors = "Neutral"
+    else:
+        print("Using user ipython profile")
+        print("For details, see: https://ipython.org/ipython-doc/3/config/intro.html#ipythondir")
+        print("\n")
+        conf = None
+
+    IPython.embed(using=_asyncio_runner, config=conf)
