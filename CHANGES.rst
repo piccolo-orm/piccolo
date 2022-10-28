@@ -1,6 +1,22 @@
 Changes
 =======
 
+0.95.0
+------
+
+Made improvements to the Piccolo playground.
+
+* Syntax highlighting is now enabled.
+* The example queries are now async (iPython supports top level await, so
+  this works fine).
+* You can optionally use your own iPython configuration
+  ``piccolo playground run --ipython_profile`` (for example if you want a
+  specific colour scheme, rather than the one we use by default).
+
+Thanks to @haffi96 for this. See `PR 656 <https://github.com/piccolo-orm/piccolo/pull/656>`_.
+
+-------------------------------------------------------------------------------
+
 0.94.0
 ------
 
