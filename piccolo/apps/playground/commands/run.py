@@ -24,6 +24,7 @@ from piccolo.columns.readable import Readable
 from piccolo.engine import PostgresEngine, SQLiteEngine
 from piccolo.engine.base import Engine
 from piccolo.table import Table
+from piccolo.utils.warnings import colored_string
 
 
 class Manager(Table):
@@ -231,25 +232,23 @@ def run(
         db = SQLiteEngine()
     for _table in TABLES:
         _table._meta._db = db
-    print("Tables:\n")
+
+    print(colored_string("\nTables:\n"))
 
     for _table in TABLES:
         print(_table._table_str(abbreviated=True))
-        print("\n")
+        print("")
 
-    print("Try it as a query builder:")
-    print("Band.select().run_sync()")
-    print("Band.select(Band.name).run_sync()")
-    print("Band.select(Band.name, Band.manager.name).run_sync()")
+    print(colored_string("Try it as a query builder:"))
+    print("await Band.select()")
+    print("await Band.select(Band.name)")
+    print("await Band.select(Band.name, Band.manager.name)")
     print("\n")
 
-    print("Try it as an ORM:")
-    print(
-        "b = Band.objects().where(Band.name == 'Pythonistas').first()."
-        "run_sync()"
-    )
+    print(colored_string("Try it as an ORM:"))
+    print("b = await Band.objects().where(Band.name == 'Pythonistas').first()")
     print("b.popularity = 10000")
-    print("b.save().run_sync()")
+    print("await b.save()")
     print("\n")
 
     populate()
