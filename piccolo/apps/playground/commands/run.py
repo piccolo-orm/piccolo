@@ -208,7 +208,9 @@ def run(
     :param port:
         Postgres port
     :param ipython_profile:
-        Make this True to use your own IPython profile. Located at ~/.ipython/
+        Set to true to use your own IPython profile. Located at ~/.ipython/.
+        For more info see the IPython docs
+        https://ipython.readthedocs.io/en/stable/config/intro.html.
     """
     try:
         import IPython
@@ -256,11 +258,7 @@ def run(
     from IPython.core.interactiveshell import _asyncio_runner
 
     if ipython_profile:
-        print("Using user ipython profile")
-        print(
-            "More info: https://ipython.org/ipython-doc/3/config/intro.html#"
-        )
-        print("\n")
+        print(colored_string("Using your IPython profile\n"))
         # To try this out, set `c.TerminalInteractiveShell.colors = "Linux"`
         # in `~/.ipython/profile_default/ipython_config.py` to set the terminal
         # color.
