@@ -13,6 +13,7 @@ module = [
     "colorama",
     "dateutil",
     "IPython",
+    "IPython.core.interactiveshell",
     "jinja2",
     "orjson",
     "aiosqlite"

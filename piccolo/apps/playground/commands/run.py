@@ -254,7 +254,7 @@ def run(
 
     populate()
 
-    from IPython.core.interactiveshell import _asyncio_runner  # type: ignore
+    from IPython.core.interactiveshell import _asyncio_runner
 
     if ipython_profile:
         print("Using user ipython profile")
