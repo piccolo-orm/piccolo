@@ -261,6 +261,9 @@ def run(
             "More info: https://ipython.org/ipython-doc/3/config/intro.html#"
         )
         print("\n")
+        # To try this out, set `c.TerminalInteractiveShell.colors = "Linux"`
+        # in `~/.ipython/profile_default/ipython_config.py` to set the terminal
+        # color.
         conf_args = {}
     else:
         conf_args = {"colors": "neutral"}
