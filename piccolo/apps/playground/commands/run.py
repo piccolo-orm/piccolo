@@ -264,6 +264,6 @@ def run(
         print("\n")
         conf_args = {}
     else:
-        conf_args = {"colors": "Neutral", "mouse_support": True}
+        conf_args = {"colors": "neutral"}
 
     IPython.embed(using=_asyncio_runner, **conf_args)
