@@ -497,6 +497,7 @@ class MigrationManager:
 
                 index = params.get("index")
                 index_method = params.get("index_method")
+                sharded = params.get("sharded")
                 if index is None:
                     if index_method is not None:
                         # If the index value hasn't changed, but the
@@ -513,6 +514,7 @@ class MigrationManager:
                             _Table.create_index(
                                 [column],
                                 method=index_method,
+                                sharded=sharded,
                                 if_not_exists=True,
                             )
                         )
@@ -525,9 +527,11 @@ class MigrationManager:
                     column._meta.db_column_name = alter_column.db_column_name
 
                     if index is True:
-                        kwargs = (
-                            {"method": index_method} if index_method else {}
-                        )
+                        kwargs = {}
+                        if index_method:
+                            kwargs["method"] = index_method
+                        if sharded:
+                            kwargs["sharded"] = sharded
                         await self._run_query(
                             _Table.create_index(
                                 [column], if_not_exists=True, **kwargs

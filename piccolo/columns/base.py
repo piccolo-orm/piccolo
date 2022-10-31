@@ -154,6 +154,7 @@ class ColumnMeta:
     help_text: t.Optional[str] = None
     choices: t.Optional[t.Type[Enum]] = None
     secret: bool = False
+    sharded: bool = False
 
     # Used for representing the table in migrations and the playground.
     params: t.Dict[str, t.Any] = field(default_factory=dict)
@@ -437,6 +438,12 @@ class Column(Selectable):
             >>> await Band.select(exclude_secrets=True)
             [{'name': 'Pythonistas'}]
 
+    :param sharded:
+        If ``True`` and primary_key or index is also set ``True``, this index
+        will automatically use sharding across a cluster. Highly recommended
+        for sequence columns, such as: Serial, Timestamp.
+        Also known as Hash Sharded Index.
+
     """
 
     value_type: t.Type = int
@@ -453,6 +460,7 @@ class Column(Selectable):
         choices: t.Optional[t.Type[Enum]] = None,
         db_column_name: t.Optional[str] = None,
         secret: bool = False,
+        sharded: bool = False,
         **kwargs,
     ) -> None:
         # This is for backwards compatibility - originally there were two
@@ -476,6 +484,7 @@ class Column(Selectable):
                 "choices": choices,
                 "db_column_name": db_column_name,
                 "secret": secret,
+                "sharded": sharded,
             }
         )
 
@@ -494,6 +503,7 @@ class Column(Selectable):
             choices=choices,
             _db_column_name=db_column_name,
             secret=secret,
+            sharded=sharded,
         )
 
         self._alias: t.Optional[str] = None
@@ -823,6 +833,13 @@ class Column(Selectable):
             query += " PRIMARY KEY"
         if self._meta.unique:
             query += " UNIQUE"
+
+        # Sharded Indexes for sequence columns defined as PRIMARY KEY at table creation time.
+        # Currently Cockroach only. Must be before NOT NULL!
+        if self._meta.engine_type in ("cockroach"):
+            if self._meta.sharded and (self._meta.primary_key):
+                query += f" USING HASH"
+
         if not self._meta.null:
             query += " NOT NULL"
 

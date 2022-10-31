@@ -209,6 +209,43 @@ class TestGenerateWithIndexes(TestCase):
         )
 
 
+class ConcertSharded(Table):
+    id = Serial(primary_key=True, sharded=True)
+    name = Varchar(index=True, sharded=True)
+    time = Timestamp(index=True, sharded=True)
+    capacity = Integer(sharded=True)
+
+
+# Sharded indexes only supported on Cockroach for now.
+@engines_only("cockroach")
+class TestGenerateWithShardedIndexes(TestCase):
+    def setUp(self):
+        ConcertSharded.create_table().run_sync()
+
+    def tearDown(self):
+        ConcertSharded.alter().drop_table(if_exists=True).run_sync()
+
+    def test_index(self):
+        """
+        Make sure that a table with an index is reflected correctly.
+        """
+        output_schema: OutputSchema = run_sync(get_output_schema())
+        Concert_ = output_schema.tables[0]
+
+        self.assertEqual(Concert_.id._meta.primary_key, True)
+        self.assertEqual(Concert_.id._meta.sharded, True)
+
+        self.assertEqual(Concert_.name._meta.index, True)
+        self.assertEqual(Concert_.name._meta.sharded, True)
+
+        self.assertEqual(Concert_.time._meta.index, True)
+        self.assertEqual(Concert_.time._meta.sharded, True)
+
+        # Should not shard a non-index.
+        self.assertEqual(Concert_.capacity._meta.index, False)
+        self.assertEqual(Concert_.capacity._meta.sharded, False)
+
+
 ###############################################################################
 
 

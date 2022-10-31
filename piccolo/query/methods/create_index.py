@@ -17,11 +17,13 @@ class CreateIndex(DDL):
         columns: t.List[t.Union[Column, str]],
         method: IndexMethod = IndexMethod.btree,
         if_not_exists: bool = False,
+        sharded: bool = False,
         **kwargs,
     ):
         self.columns = columns
         self.method = method
         self.if_not_exists = if_not_exists
+        self.sharded = sharded
         super().__init__(table, **kwargs)
 
     @property
@@ -59,10 +61,14 @@ class CreateIndex(DDL):
         tablename = self.table._meta.tablename
         method_name = self.method.value
         column_names_str = ", ".join([f'"{i}"' for i in self.column_names])
+        sharded = ""
+        if self.sharded:
+            sharded = " USING HASH "
         return [
             (
                 f"{self.prefix} {index_name} ON {tablename} USING "
                 f"{method_name} ({column_names_str})"
+                f"{sharded}"
             )
         ]
 
