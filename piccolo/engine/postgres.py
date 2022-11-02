@@ -254,6 +254,12 @@ class PostgresEngine(Engine):
 
             >>> await MyTable.select().run(node="read_replica_1")
 
+    :param use_generic_exceptions:
+        Each database driver raises different exceptions. If you want to make
+        your code portable across different databases (e.g. SQLite and
+        Postgres), set this to ``True``. All exceptions raised by the database
+        driver are converted to generic Piccolo exceptions.
+
     """  # noqa: E501
 
     __slots__ = (
@@ -263,6 +269,7 @@ class PostgresEngine(Engine):
         "extra_nodes",
         "pool",
         "transaction_connection",
+        "use_generic_exceptions",
     )
 
     engine_type = "postgres"
@@ -274,10 +281,12 @@ class PostgresEngine(Engine):
         extensions: t.Sequence[str] = ("uuid-ossp",),
         log_queries: bool = False,
         extra_nodes: t.Dict[str, PostgresEngine] = None,
+        use_generic_exceptions: bool = False,
     ) -> None:
         if extra_nodes is None:
             extra_nodes = {}
 
+        self.use_generic_exceptions = use_generic_exceptions
         self.config = config
         self.extensions = extensions
         self.log_queries = log_queries
