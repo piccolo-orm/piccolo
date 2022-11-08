@@ -189,6 +189,24 @@ all fields to be optional.
     # This no longer raises an exception:
     >>> BandModel()
 
+Subclassing the model
+~~~~~~~~~~~~~~~~~~~~~
+
+If the generated model doesn't perfectly fit your needs, you can subclass it to
+add additional fields, and to override existing fields.
+
+.. code-block:: python
+
+    class Band(Table):
+        name = Varchar(required=True)
+    
+    BandModel = create_pydantic_model(Band)
+
+    class CustomBandModel(BandModel):
+        genre: str
+    
+    >>> CustomBandModel(name="Pythonistas", genre="Rock")
+
 Source
 ~~~~~~
 
