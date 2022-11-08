@@ -104,7 +104,9 @@ def main():
                     aliases=command.aliases,
                 )
 
-        if not {"playground", "migrations"}.intersection(set(sys.argv)):
+        if not {"playground", "migrations", "asgi"}.intersection(
+            set(sys.argv)
+        ):
             # Show a warning if any migrations haven't been run.
             # Don't run it if it looks like the user is running a migration
             # command, or using the playground, as this information is
