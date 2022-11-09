@@ -154,6 +154,7 @@ class ColumnMeta:
     help_text: t.Optional[str] = None
     choices: t.Optional[t.Type[Enum]] = None
     secret: bool = False
+    auto_update: t.Any = ...
 
     # Used for representing the table in migrations and the playground.
     params: t.Dict[str, t.Any] = field(default_factory=dict)
@@ -437,6 +438,30 @@ class Column(Selectable):
             >>> await Band.select(exclude_secrets=True)
             [{'name': 'Pythonistas'}]
 
+    :param auto_update:
+        Allows you to specify a value to set this column to each time it is
+        updated (via ``MyTable.update``, or ``MyTable.save`` on an existing
+        row). A common use case is having a ``modified_on`` column.
+
+        .. code-block:: python
+
+            class Band(Table):
+                name = Varchar()
+                popularity = Integer()
+                # The value can be a function or static value:
+                modified_on = Timestamp(auto_update=datetime.datetime.now)
+
+            # This will automatically set the `modified_on` column to the
+            # current timestamp, without having to explicitly set it:
+            >>> await Band.update({
+            ...     Band.popularity: Band.popularity + 100
+            ... }).where(Band.name == 'Pythonistas')
+
+        Note - this feature is implemented purely within the ORM. If you want
+        similar functionality on the database level (i.e. if you plan on using
+        raw SQL to perform updates), then you may be better off creating SQL
+        triggers instead.
+
     """
 
     value_type: t.Type = int
@@ -453,6 +478,7 @@ class Column(Selectable):
         choices: t.Optional[t.Type[Enum]] = None,
         db_column_name: t.Optional[str] = None,
         secret: bool = False,
+        auto_update: t.Any = ...,
         **kwargs,
     ) -> None:
         # This is for backwards compatibility - originally there were two
@@ -462,8 +488,8 @@ class Column(Selectable):
             primary_key = True
 
         # Used for migrations.
-        # We deliberately omit 'required', and 'help_text' as they don't effect
-        # the actual schema.
+        # We deliberately omit 'required', 'auto_update' and 'help_text' as
+        # they don't effect the actual schema.
         # 'choices' isn't used directly in the schema, but may be important
         # for data migrations.
         kwargs.update(
@@ -494,6 +520,7 @@ class Column(Selectable):
             choices=choices,
             _db_column_name=db_column_name,
             secret=secret,
+            auto_update=auto_update,
         )
 
         self._alias: t.Optional[str] = None
