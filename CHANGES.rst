@@ -1,6 +1,37 @@
 Changes
 =======
 
+0.96.0
+------
+
+Added the ``auto_update`` argument to ``Column``. Its main use case is columns
+like ``modified_on`` where we want the value to be updated automatically each
+time the row is saved.
+
+.. code-block:: python
+
+  class Band(Table):
+      name = Varchar()
+      popularity = Integer()
+      modified_on = Timestamp(
+        null=True,
+        default=None,
+        auto_update=datetime.datetime.now
+      )
+    
+    # The `modified_on` column will automatically be updated to the current
+    # timestamp:
+    >>> await Band.update({
+    ...     Band.popularity: Band.popularity + 100
+    ... }).where(
+    ...     Band.name == 'Pythonistas'
+    ... )
+
+It works with ``MyTable.update`` and also when using the ``save`` method on
+an existing row.
+
+-------------------------------------------------------------------------------
+
 0.95.0
 ------
 
