@@ -554,3 +554,77 @@ class TestOperators(TestCase):
             # An error should be raised because we can't save at this level
             # of resolution - 1 millisecond is the minimum.
             MyTable.timestamp + datetime.timedelta(microseconds=1)
+
+
+###############################################################################
+# Test auto_update
+
+
+class AutoUpdateTable(Table, tablename="my_table"):
+    name = Varchar()
+    modified_on = Timestamp(
+        auto_update=datetime.datetime.now, null=True, default=None
+    )
+
+
+class TestAutoUpdate(TestCase):
+    def setUp(self):
+        AutoUpdateTable.create_table().run_sync()
+
+    def tearDown(self):
+        AutoUpdateTable.alter().drop_table().run_sync()
+
+    def test_save(self):
+        """
+        Make sure the ``save`` method uses ``auto_update`` columns correctly.
+        """
+        row = AutoUpdateTable(name="test")
+
+        # Saving for the first time is an INSERT, so `auto_update` shouldn't
+        # be triggered.
+        row.save().run_sync()
+        self.assertIsNone(row.modified_on)
+
+        # A subsequent save is an UPDATE, so `auto_update` should be triggered.
+        row.name = "test 2"
+        row.save().run_sync()
+        self.assertIsInstance(row.modified_on, datetime.datetime)
+
+        # If we save it again, `auto_update` should be applied again.
+        existing_modified_on = row.modified_on
+        row.name = "test 3"
+        row.save().run_sync()
+        self.assertIsInstance(row.modified_on, datetime.datetime)
+        self.assertGreater(row.modified_on, existing_modified_on)
+
+    def test_update(self):
+        """
+        Make sure the update method uses ``auto_update`` columns correctly.
+        """
+        # Insert a row for us to update
+        AutoUpdateTable.insert(AutoUpdateTable(name="test")).run_sync()
+
+        self.assertDictEqual(
+            AutoUpdateTable.select(
+                AutoUpdateTable.name, AutoUpdateTable.modified_on
+            )
+            .first()
+            .run_sync(),
+            {"name": "test", "modified_on": None},
+        )
+
+        # Update the row
+        AutoUpdateTable.update(
+            {AutoUpdateTable.name: "test 2"}, force=True
+        ).run_sync()
+
+        # Retrieve the row
+        updated_row = (
+            AutoUpdateTable.select(
+                AutoUpdateTable.name, AutoUpdateTable.modified_on
+            )
+            .first()
+            .run_sync()
+        )
+        self.assertIsInstance(updated_row["modified_on"], datetime.datetime)
+        self.assertEqual(updated_row["name"], "test 2")
