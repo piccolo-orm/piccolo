@@ -190,6 +190,9 @@ class OrderByDelegate:
         return list(self._order_by.columns) if self._order_by else []
 
     def order_by(self, *columns: Column, ascending=True):
+        if len(columns) < 1:
+            raise TypeError(
+                "At least one columns must be specified to order_by")
         self._order_by = OrderBy(columns, ascending)
 
 
