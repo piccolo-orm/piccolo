@@ -15,6 +15,7 @@ from piccolo.query.mixins import (
     LimitDelegate,
     OffsetDelegate,
     OrderByDelegate,
+    OrderByRaw,
     OutputDelegate,
     PrefetchDelegate,
     WhereDelegate,
@@ -213,8 +214,19 @@ class Objects(Query):
     def create(self, **columns: t.Any):
         return Create(table_class=self.table, columns=columns)
 
-    def order_by(self, *columns: Column, ascending=True) -> Objects:
-        self.order_by_delegate.order_by(*columns, ascending=ascending)
+    def order_by(
+        self,
+        *columns: t.Union[Column, str, OrderByRaw],
+        ascending: bool = True,
+    ) -> Objects:
+        _columns: t.List[t.Union[Column, OrderByRaw]] = []
+        for column in columns:
+            if isinstance(column, str):
+                _columns.append(self.table._meta.get_column_by_name(column))
+            else:
+                _columns.append(column)
+
+        self.order_by_delegate.order_by(*_columns, ascending=ascending)
         return self
 
     def where(self, *where: Combinable) -> Objects:

@@ -2,7 +2,9 @@ from unittest import TestCase
 
 from piccolo.apps.user.tables import BaseUser
 from piccolo.columns.combination import WhereRaw
+from piccolo.query import OrderByRaw
 from piccolo.query.methods.select import Avg, Count, Max, Min, Sum
+from piccolo.table import create_db_tables_sync, drop_db_tables_sync
 from tests.base import (
     DBTestCase,
     engine_is,
@@ -485,27 +487,6 @@ class TestSelect(DBTestCase):
         )
 
         self.assertEqual(response, {"name": "CSharps"})
-
-    def test_order_by_ascending(self):
-        self.insert_rows()
-
-        response = (
-            Band.select(Band.name).order_by(Band.name).limit(1).run_sync()
-        )
-
-        self.assertEqual(response, [{"name": "CSharps"}])
-
-    def test_order_by_decending(self):
-        self.insert_rows()
-
-        response = (
-            Band.select(Band.name)
-            .order_by(Band.name, ascending=False)
-            .limit(1)
-            .run_sync()
-        )
-
-        self.assertEqual(response, [{"name": "Rustaceans"}])
 
     def test_count(self):
         self.insert_rows()
@@ -1022,3 +1003,210 @@ class TestSelectSecretParameter(TestCase):
         else:
             self.assertTrue(venue_dict, {"id": 1, "name": "The Garage"})
         self.assertNotIn("capacity", venue_dict.keys())
+
+
+class TestSelectOrderBy(TestCase):
+    """
+    We use TestCase, rather than DBTestCase, as we want a lot of data to test
+    with.
+    """
+
+    def setUp(self):
+        """
+        Create tables and lots of test data.
+        """
+        create_db_tables_sync(Band, Manager)
+
+        data = [
+            {
+                "band_name": "Pythonistas",
+                "manager_name": "Guido",
+                "popularity": 1000,
+            },
+            {
+                "band_name": "Rustaceans",
+                "manager_name": "Graydon",
+                "popularity": 800,
+            },
+            {
+                "band_name": "C-Sharps",
+                "manager_name": "Anders",
+                "popularity": 800,
+            },
+            {
+                "band_name": "Rubyists",
+                "manager_name": "Matz",
+                "popularity": 820,
+            },
+        ]
+
+        for item in data:
+            manager = (
+                Manager.objects().create(name=item["manager_name"]).run_sync()
+            )
+
+            Band.objects().create(
+                name=item["band_name"],
+                manager=manager,
+                popularity=item["popularity"],
+            ).run_sync()
+
+    def tearDown(self):
+        drop_db_tables_sync(Band, Manager)
+
+    def test_ascending(self):
+        response = Band.select(Band.name).order_by(Band.name).run_sync()
+
+        self.assertEqual(
+            response,
+            [
+                {"name": "C-Sharps"},
+                {"name": "Pythonistas"},
+                {"name": "Rubyists"},
+                {"name": "Rustaceans"},
+            ],
+        )
+
+    def test_descending(self):
+        response = (
+            Band.select(Band.name)
+            .order_by(Band.name, ascending=False)
+            .run_sync()
+        )
+
+        self.assertEqual(
+            response,
+            [
+                {"name": "Rustaceans"},
+                {"name": "Rubyists"},
+                {"name": "Pythonistas"},
+                {"name": "C-Sharps"},
+            ],
+        )
+
+    def test_string(self):
+        """
+        Make sure strings can be used to identify columns if the user prefers.
+        """
+        response = Band.select(Band.name).order_by("name").run_sync()
+
+        self.assertEqual(
+            response,
+            [
+                {"name": "C-Sharps"},
+                {"name": "Pythonistas"},
+                {"name": "Rubyists"},
+                {"name": "Rustaceans"},
+            ],
+        )
+
+    def test_string_unrecognised(self):
+        """
+        Make sure an unrecognised column name raises an Exception.
+        """
+        with self.assertRaises(ValueError) as manager:
+            Band.select(Band.name).order_by("foo")
+
+        self.assertEqual(
+            manager.exception.__str__(),
+            "No matching column found with name == foo",
+        )
+
+    def test_multiple_columns_ascending(self):
+        """
+        Make sure we can order by multiple columns.
+        """
+        response = (
+            Band.select(Band.popularity, Band.name)
+            .order_by(Band.popularity, Band.name)
+            .run_sync()
+        )
+
+        self.assertEqual(
+            response,
+            [
+                {"popularity": 800, "name": "C-Sharps"},
+                {"popularity": 800, "name": "Rustaceans"},
+                {"popularity": 820, "name": "Rubyists"},
+                {"popularity": 1000, "name": "Pythonistas"},
+            ],
+        )
+
+    def test_multiple_columns_descending(self):
+        """
+        Make sure we can order by multiple columns, descending.
+        """
+        response = (
+            Band.select(Band.popularity, Band.name)
+            .order_by(Band.popularity, Band.name, ascending=False)
+            .run_sync()
+        )
+
+        self.assertEqual(
+            response,
+            [
+                {"popularity": 1000, "name": "Pythonistas"},
+                {"popularity": 820, "name": "Rubyists"},
+                {"popularity": 800, "name": "Rustaceans"},
+                {"popularity": 800, "name": "C-Sharps"},
+            ],
+        )
+
+    def test_join(self):
+        """
+        Make sure that we can order using columns in related tables.
+        """
+        response = (
+            Band.select(Band.manager.name.as_alias("manager_name"), Band.name)
+            .order_by(Band.manager.name)
+            .run_sync()
+        )
+        self.assertEqual(
+            response,
+            [
+                {"manager_name": "Anders", "name": "C-Sharps"},
+                {"manager_name": "Graydon", "name": "Rustaceans"},
+                {"manager_name": "Guido", "name": "Pythonistas"},
+                {"manager_name": "Matz", "name": "Rubyists"},
+            ],
+        )
+
+    def test_ascending_descending(self):
+        """
+        Make sure we can combine ascending and descending.
+        """
+        response = (
+            Band.select(Band.popularity, Band.name)
+            .order_by(Band.popularity)
+            .order_by(Band.name, ascending=False)
+            .run_sync()
+        )
+
+        self.assertEqual(
+            response,
+            [
+                {"popularity": 800, "name": "Rustaceans"},
+                {"popularity": 800, "name": "C-Sharps"},
+                {"popularity": 820, "name": "Rubyists"},
+                {"popularity": 1000, "name": "Pythonistas"},
+            ],
+        )
+
+    def test_order_by_raw(self):
+        """
+        Maker sure ``OrderByRaw`` can be used, to order by anything the user
+        wants.
+        """
+        response = (
+            Band.select(Band.name).order_by(OrderByRaw("name")).run_sync()
+        )
+
+        self.assertEqual(
+            response,
+            [
+                {"name": "C-Sharps"},
+                {"name": "Pythonistas"},
+                {"name": "Rubyists"},
+                {"name": "Rustaceans"},
+            ],
+        )
