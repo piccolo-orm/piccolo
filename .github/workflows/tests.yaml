@@ -2,7 +2,7 @@ name: Test Suite
 
 on:
     push:
-        branches: ["master", "cockroachdb"]
+        branches: ["master"]
     pull_request:
         branches: ["master"]
 
@@ -12,7 +12,7 @@ jobs:
         timeout-minutes: 30
         strategy:
             matrix:
-                python-version: ["3.7", "3.8", "3.9", "3.10"]
+                python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
 
         steps:
             - uses: actions/checkout@v3
@@ -137,8 +137,8 @@ jobs:
         timeout-minutes: 30
         strategy:
             matrix:
-                python-version: ["3.7", "3.8", "3.9", "3.10"]
-                cockroachdb-version: ["v22.2.0-beta.2"]
+                python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+                cockroachdb-version: ["v22.2.0-rc.3"]
         steps:
             - uses: actions/checkout@v3
             - name: Set up Python ${{ matrix.python-version }}
@@ -171,7 +171,7 @@ jobs:
         timeout-minutes: 30
         strategy:
             matrix:
-                python-version: ["3.7", "3.8", "3.9", "3.10"]
+                python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
 
         steps:
             - uses: actions/checkout@v3
