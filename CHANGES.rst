@@ -1,6 +1,39 @@
 Changes
 =======
 
+0.97.0
+------
+
+Some big improvements to ``order_by`` clauses.
+
+It's now possible to combine ascending and descending:
+
+.. code-block:: python
+
+  await Band.select(
+      Band.name,
+      Band.popularity
+  ).order_by(
+      Band.name
+  ).order_by(
+      Band.popularity,
+      ascending=False
+  )
+
+You can also order by anything you want using ``OrderByRaw``:
+
+.. code-block:: python
+
+  from piccolo.query import OrderByRaw
+
+  await Band.select(
+      Band.name
+  ).order_by(
+      OrderByRaw('random()')
+  )
+
+-------------------------------------------------------------------------------
+
 0.96.0
 ------
 
@@ -18,7 +51,7 @@ time the row is saved.
         default=None,
         auto_update=datetime.datetime.now
       )
-    
+
     # The `modified_on` column will automatically be updated to the current
     # timestamp:
     >>> await Band.update({
