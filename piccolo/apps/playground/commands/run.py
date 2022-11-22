@@ -159,6 +159,12 @@ def populate():
     rustaceans = Band(name="Rustaceans", manager=graydon.id, popularity=500)
     rustaceans.save().run_sync()
 
+    anders = Manager(name="Anders")
+    anders.save().run_sync()
+
+    c_sharps = Band(name="C-Sharps", popularity=700, manager=anders.id)
+    c_sharps.save().run_sync()
+
     venue = Venue(name="Amazing Venue", capacity=5000)
     venue.save().run_sync()
 

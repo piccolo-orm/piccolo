@@ -21,6 +21,7 @@ from piccolo.query.mixins import (
     LimitDelegate,
     OffsetDelegate,
     OrderByDelegate,
+    OrderByRaw,
     OutputDelegate,
     WhereDelegate,
 )
@@ -263,7 +264,7 @@ class Select(Query):
         self.distinct_delegate.distinct()
         return self
 
-    def group_by(self, *columns: Column) -> Select:
+    def group_by(self, *columns: t.Union[Column, str]) -> Select:
         _columns: t.List[Column] = [
             i
             for i in self.table._process_column_args(*columns)
@@ -448,12 +449,23 @@ class Select(Query):
         else:
             return response
 
-    def order_by(self, *columns: Column, ascending=True) -> Select:
-        _columns: t.List[Column] = [
-            i
-            for i in self.table._process_column_args(*columns)
-            if isinstance(i, Column)
-        ]
+    def order_by(
+        self, *columns: t.Union[Column, str, OrderByRaw], ascending=True
+    ) -> Select:
+        """
+        :param columns:
+            Either a :class:`piccolo.columns.base.Column` instance, a string
+            representing a column name, or :class:`piccolo.query.OrderByRaw`
+            which allows you for complex use cases like
+            ``OrderByRaw('random()')``.
+        """
+        _columns: t.List[t.Union[Column, OrderByRaw]] = []
+        for column in columns:
+            if isinstance(column, str):
+                _columns.append(self.table._meta.get_column_by_name(column))
+            else:
+                _columns.append(column)
+
         self.order_by_delegate.order_by(*_columns, ascending=ascending)
         return self
 
@@ -616,7 +628,7 @@ class Select(Query):
         args: t.List[t.Any] = []
 
         if self.as_of_delegate._as_of:
-            query += " {}"
+            query += "{}"
             args.append(self.as_of_delegate._as_of.querystring)
 
         if self.where_delegate._where:
@@ -624,11 +636,11 @@ class Select(Query):
             args.append(self.where_delegate._where.querystring)
 
         if self.group_by_delegate._group_by:
-            query += " {}"
+            query += "{}"
             args.append(self.group_by_delegate._group_by.querystring)
 
-        if self.order_by_delegate._order_by:
-            query += " {}"
+        if self.order_by_delegate._order_by.order_by_items:
+            query += "{}"
             args.append(self.order_by_delegate._order_by.querystring)
 
         if (
@@ -642,11 +654,11 @@ class Select(Query):
             )
 
         if self.limit_delegate._limit:
-            query += " {}"
+            query += "{}"
             args.append(self.limit_delegate._limit.querystring)
 
         if self.offset_delegate._offset:
-            query += " {}"
+            query += "{}"
             args.append(self.offset_delegate._offset.querystring)
 
         querystring = QueryString(query, *args)
