@@ -602,11 +602,13 @@ class SQLiteEngine(Engine):
             query=ddl,
         )
 
-    def atomic(self) -> Atomic:
-        return Atomic(engine=self)
+    def atomic(
+        self, transaction_type: TransactionType = TransactionType.deferred
+    ) -> Atomic:
+        return Atomic(engine=self, transaction_type=transaction_type)
 
     def transaction(
-        self, transaction_type: TransactionType = TransactionType.immediate
+        self, transaction_type: TransactionType = TransactionType.deferred
     ) -> Transaction:
         """
         Create a new database transaction. See :class:`Transaction`.
