@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextvars
 import datetime
+import enum
 import os
 import sqlite3
 import typing as t
@@ -238,6 +239,17 @@ class AsyncBatch(Batch):
 ###############################################################################
 
 
+class TransactionType(enum.Enum):
+    """
+    See the `SQLite <https://www.sqlite.org/lang_transaction.html>`_ docs for
+    more info.
+    """
+
+    deferred = "DEFERRED"
+    immediate = "IMMEDIATE"
+    exclusive = "EXCLUSIVE"
+
+
 class Atomic:
     """
     Usage:
@@ -250,10 +262,15 @@ class Atomic:
     await transaction.run()
     """
 
-    __slots__ = ("engine", "queries")
+    __slots__ = ("engine", "queries", "transaction_type")
 
-    def __init__(self, engine: SQLiteEngine):
+    def __init__(
+        self,
+        engine: SQLiteEngine,
+        transaction_type: TransactionType = TransactionType.deferred,
+    ):
         self.engine = engine
+        self.transaction_type = transaction_type
         self.queries: t.List[Query] = []
 
     def add(self, *query: Query):
@@ -261,7 +278,7 @@ class Atomic:
 
     async def run(self):
         connection = await self.engine.get_connection()
-        await connection.execute("BEGIN")
+        await connection.execute(f"BEGIN {self.transaction_type.value}")
 
         try:
             for query in self.queries:
@@ -298,18 +315,31 @@ class Transaction:
     Used for wrapping queries in a transaction, using a context manager.
     Currently it's async only.
 
-    Usage:
+    Usage::
 
-    async with engine.transaction():
-        # Run some queries:
-        await Band.select().run()
+        async with engine.transaction():
+            # Run some queries:
+            await Band.select().run()
 
     """
 
-    __slots__ = ("engine", "context", "connection")
+    __slots__ = ("engine", "context", "connection", "transaction_type")
 
-    def __init__(self, engine: SQLiteEngine):
+    def __init__(
+        self,
+        engine: SQLiteEngine,
+        transaction_type: TransactionType = TransactionType.deferred,
+    ):
+        """
+        :param transaction_type:
+            If your transaction just contains ``SELECT`` queries, then use
+            ``TransactionType.deferred``. This will give you the best
+            performance. When performing ``INSERT``, ``UPDATE``, ``DELETE``
+            queries, we recommend using ``TransactionType.immediate`` to
+            avoid database locks.
+        """
         self.engine = engine
+        self.transaction_type = transaction_type
         if self.engine.transaction_connection.get():
             raise TransactionError(
                 "A transaction is already active - nested transactions aren't "
@@ -318,7 +348,7 @@ class Transaction:
 
     async def __aenter__(self):
         self.connection = await self.engine.get_connection()
-        await self.connection.execute("BEGIN")
+        await self.connection.execute(f"BEGIN {self.transaction_type.value}")
         self.context = self.engine.transaction_connection.set(self.connection)
 
     async def __aexit__(self, exception_type, exception, traceback):
@@ -575,5 +605,10 @@ class SQLiteEngine(Engine):
     def atomic(self) -> Atomic:
         return Atomic(engine=self)
 
-    def transaction(self) -> Transaction:
-        return Transaction(engine=self)
+    def transaction(
+        self, transaction_type: TransactionType = TransactionType.immediate
+    ) -> Transaction:
+        """
+        Create a new database transaction. See :class:`Transaction`.
+        """
+        return Transaction(engine=self, transaction_type=transaction_type)
