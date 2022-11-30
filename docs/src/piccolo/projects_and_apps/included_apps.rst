@@ -168,7 +168,7 @@ Here's an example of a generated image:
 
 .. note::
 
-   There is a `video tutorial on YouTube <https://youtu.be/Y9vaS4nnQGE>`_.
+   There is a `video tutorial on YouTube <https://youtu.be/Y9vaS4nnQGE>`__.
 
 -------------------------------------------------------------------------------
 
@@ -184,7 +184,7 @@ Launches an iPython shell, and automatically imports all of your registered
 
 .. note::
 
-   There is a `video tutorial on YouTube <https://youtu.be/NvLFN6Gg7b8>`_.
+   There is a `video tutorial on YouTube <https://youtu.be/NvLFN6Gg7b8>`__.
 
 -------------------------------------------------------------------------------
 
@@ -204,7 +204,7 @@ or ``sqlite3`` depending on which you're using).
 
 .. note::
 
-   There is a `video tutorial on YouTube <https://youtu.be/NvLFN6Gg7b8>`_.
+   There is a `video tutorial on YouTube <https://youtu.be/NvLFN6Gg7b8>`__.
 
 -------------------------------------------------------------------------------
 
