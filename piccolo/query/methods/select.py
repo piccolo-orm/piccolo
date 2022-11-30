@@ -555,9 +555,9 @@ class Select(Query):
                 ]._foreign_key_meta.resolved_target_column._meta.name
 
                 _joins.append(
-                    f"LEFT JOIN {right_tablename} {table_alias}"
+                    f'LEFT JOIN "{right_tablename}" "{table_alias}"'
                     " ON "
-                    f"({left_tablename}.{key._meta.name} = {table_alias}.{pk_name})"  # noqa: E501
+                    f'("{left_tablename}"."{key._meta.name}" = "{table_alias}"."{pk_name}")'  # noqa: E501
                 )
 
             joins.extend(_joins)
