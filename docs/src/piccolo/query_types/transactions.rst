@@ -47,3 +47,14 @@ async.
 If an exception is raised within the body of the context manager, then the
 transaction is automatically rolled back. The exception is still propagated
 though.
+
+-------------------------------------------------------------------------------
+
+Transaction types
+-----------------
+
+SQLite
+~~~~~~
+
+For SQLite you may want to specify the :ref:`transaction type <SQLiteTransactionTypes>`,
+as it can have an effect on how well the database handles concurrent requests.
