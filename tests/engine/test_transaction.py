@@ -1,7 +1,9 @@
 import asyncio
+import typing as t
 from unittest import TestCase
 
 from piccolo.engine.postgres import Atomic
+from piccolo.engine.sqlite import SQLiteEngine, TransactionType
 from piccolo.table import drop_db_tables_sync
 from piccolo.utils.sync import run_sync
 from tests.base import engines_only
@@ -126,8 +128,56 @@ class TestTransaction(TestCase):
             return [i[0]["txid_current"] for i in responses]
 
         txids = asyncio.run(run_transaction())
-        assert len(set(txids)) == 1
+        self.assertEqual(len(set(txids)), 1)
 
         # Now run it again and make sure the transaction ids differ.
         next_txids = asyncio.run(run_transaction())
-        assert txids != next_txids
+        self.assertNotEqual(txids, next_txids)
+
+
+@engines_only("sqlite")
+class TestTransactionType(TestCase):
+    def setUp(self):
+        Manager.create_table().run_sync()
+
+    def tearDown(self):
+        Manager.alter().drop_table().run_sync()
+
+    def test_transaction_type(self):
+        """
+        With SQLite, we can specify the transaction type. This helps when
+        we want to do concurrent writes, to avoid locking the database.
+
+        https://github.com/piccolo-orm/piccolo/issues/687
+        """
+        engine = t.cast(SQLiteEngine, Manager._meta.db)
+
+        async def run_transaction(name: str):
+            async with engine.transaction(
+                transaction_type=TransactionType.immediate
+            ):
+                # This does a SELECT followed by an INSERT, so is a good test.
+                # If using TransactionType.deferred it would fail because
+                # the database will become locked.
+                await Manager.objects().get_or_create(Manager.name == name)
+
+        manager_names = [f"Manager_{i}" for i in range(1, 10)]
+
+        async def run_all():
+            """
+            Run all of the transactions concurrently.
+            """
+            await asyncio.gather(
+                *[run_transaction(name=name) for name in manager_names]
+            )
+
+        asyncio.run(run_all())
+
+        # Make sure it all ran effectively.
+        self.assertListEqual(
+            Manager.select(Manager.name)
+            .order_by(Manager.name)
+            .output(as_list=True)
+            .run_sync(),
+            manager_names,
+        )
