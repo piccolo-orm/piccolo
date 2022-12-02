@@ -8,3 +8,4 @@ help you solve common problems:
     :maxdepth: 1
 
     ./migrate_existing_project
+    ./using_sqlite_and_asyncio_effectively

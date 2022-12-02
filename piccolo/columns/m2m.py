@@ -254,39 +254,50 @@ class M2MAddRelated:
             for i, j in self.extra_column_values.items()
         }
 
-    async def run(self):
+    async def _run(self):
         rows = self.rows
         unsaved = [i for i in rows if not i._exists_in_db]
 
-        async with rows[0]._meta.db.transaction():
-            if unsaved:
-                await rows[0].__class__.insert(*unsaved).run()
+        if unsaved:
+            await rows[0].__class__.insert(*unsaved).run()
 
-            joining_table = self.m2m._meta.resolved_joining_table
+        joining_table = self.m2m._meta.resolved_joining_table
 
-            joining_table_rows = []
+        joining_table_rows = []
 
-            for row in rows:
-                joining_table_row = joining_table(**self.extra_column_values)
-                setattr(
-                    joining_table_row,
-                    self.m2m._meta.primary_foreign_key._meta.name,
-                    getattr(
-                        self.target_row,
-                        self.target_row._meta.primary_key._meta.name,
-                    ),
-                )
-                setattr(
-                    joining_table_row,
-                    self.m2m._meta.secondary_foreign_key._meta.name,
-                    getattr(
-                        row,
-                        row._meta.primary_key._meta.name,
-                    ),
-                )
-                joining_table_rows.append(joining_table_row)
+        for row in rows:
+            joining_table_row = joining_table(**self.extra_column_values)
+            setattr(
+                joining_table_row,
+                self.m2m._meta.primary_foreign_key._meta.name,
+                getattr(
+                    self.target_row,
+                    self.target_row._meta.primary_key._meta.name,
+                ),
+            )
+            setattr(
+                joining_table_row,
+                self.m2m._meta.secondary_foreign_key._meta.name,
+                getattr(
+                    row,
+                    row._meta.primary_key._meta.name,
+                ),
+            )
+            joining_table_rows.append(joining_table_row)
 
-            return await joining_table.insert(*joining_table_rows).run()
+        return await joining_table.insert(*joining_table_rows).run()
+
+    async def run(self):
+        """
+        Run the queries, making sure they are either within an existing
+        transaction, or wrapped in a new transaction.
+        """
+        engine = self.rows[0]._meta.db
+        if engine.transaction_exists():
+            await self._run()
+        else:
+            async with engine.transaction():
+                await self._run()
 
     def run_sync(self):
         return run_sync(self.run())
