@@ -154,6 +154,29 @@ By default the primary key column isn't included - you can add it using:
 
     BandModel = create_pydantic_model(Band, include_default_columns=True)
 
+``pydantic_config_class``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can specify a custom class to use as base for the pydantic model's config.
+This class should be a subclass of ``pydantic.BaseConfig``.
+For example, let's set the ``extra`` parameter to tell pydantic how to treat
+extra fields (that is, fields that would not otherwise be in the generated model).
+The allowed values are::
+
+* ``'ignore'`` (default): silently ignore extra fields
+* ``'allow'``: accept the extra fields and assigns them to the model
+* ``'forbid'``: fail validation if extra fields are present
+
+So if we want to disallow extra fields, we can do:
+
+.. code-block:: python
+
+    class MyPydanticConfig(pydantic.BaseConfig):
+        extra = 'forbid'
+
+    model = create_pydantic_model(table=MyTable, pydantic_config_class=MyPydanticConfig, ...)
+
+
 Required fields
 ~~~~~~~~~~~~~~~
 
