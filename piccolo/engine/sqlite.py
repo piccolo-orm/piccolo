@@ -13,6 +13,7 @@ from decimal import Decimal
 from piccolo.engine.base import Batch, Engine
 from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import DDL, Query
+from piccolo.query.methods.objects import Create, GetOrCreate
 from piccolo.querystring import QueryString
 from piccolo.utils.encoding import dump_json, load_json
 from piccolo.utils.lazy_loader import LazyLoader
@@ -277,40 +278,31 @@ class Atomic:
         self.queries += list(query)
 
     async def run(self):
-        connection = await self.engine.get_connection()
-        await connection.execute(f"BEGIN {self.transaction_type.value}")
-
         try:
-            for query in self.queries:
-                if isinstance(query, Query):
-                    for querystring in query.querystrings:
-                        await connection.execute(
-                            *querystring.compile_string(
-                                engine_type=self.engine.engine_type
-                            )
-                        )
-                elif isinstance(query, DDL):
-                    for ddl in query.ddl:
-                        await connection.execute(ddl)
-
+            async with self.engine.transaction(
+                transaction_type=self.transaction_type
+            ):
+                for query in self.queries:
+                    if isinstance(query, (Query, DDL, Create, GetOrCreate)):
+                        await query.run()
+                    else:
+                        raise ValueError("Unrecognised query")
+            self.queries = []
         except Exception as exception:
-            await connection.execute("ROLLBACK")
-            await connection.close()
             self.queries = []
             raise exception from exception
-        else:
-            await connection.execute("COMMIT")
-            await connection.close()
-            self.queries = []
 
     def run_sync(self):
         return run_sync(self.run())
+
+    def __await__(self):
+        return self.run().__await__()
 
 
 ###############################################################################
 
 
-class Transaction:
+class SQLiteTransaction:
     """
     Used for wrapping queries in a transaction, using a context manager.
     Currently it's async only.
@@ -340,7 +332,7 @@ class Transaction:
         """
         self.engine = engine
         self.transaction_type = transaction_type
-        if self.engine.transaction_connection.get():
+        if self.engine.current_transaction.get():
             raise TransactionError(
                 "A transaction is already active - nested transactions aren't "
                 "currently supported."
@@ -349,7 +341,7 @@ class Transaction:
     async def __aenter__(self):
         self.connection = await self.engine.get_connection()
         await self.connection.execute(f"BEGIN {self.transaction_type.value}")
-        self.context = self.engine.transaction_connection.set(self.connection)
+        self.context = self.engine.current_transaction.set(self)
 
     async def __aexit__(self, exception_type, exception, traceback):
         if exception:
@@ -358,7 +350,7 @@ class Transaction:
             await self.connection.execute("COMMIT")
 
         await self.connection.close()
-        self.engine.transaction_connection.reset(self.context)
+        self.engine.current_transaction.reset(self.context)
 
         return exception is None
 
@@ -370,20 +362,9 @@ def dict_factory(cursor, row) -> t.Dict:
     return {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
 
 
-class SQLiteEngine(Engine):
-    """
-    Any connection kwargs are passed into the database adapter.
+class SQLiteEngine(Engine[t.Optional[SQLiteTransaction]]):
 
-    See the `SQLite docs <https://docs.python.org/3/library/sqlite3.html#sqlite3.connect>`_
-    for more info.
-
-    :param log_queries:
-        If ``True``, all SQL and DDL statements are printed out before being
-        run. Useful for debugging.
-
-    """  # noqa: E501
-
-    __slots__ = ("connection_kwargs", "transaction_connection", "log_queries")
+    __slots__ = ("connection_kwargs", "current_transaction", "log_queries")
 
     engine_type = "sqlite"
     min_version_number = 3.25
@@ -392,22 +373,37 @@ class SQLiteEngine(Engine):
         self,
         path: str = "piccolo.sqlite",
         log_queries: bool = False,
-        detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
-        isolation_level=None,
         **connection_kwargs,
     ) -> None:
-        connection_kwargs.update(
-            {
-                "database": path,
-                "detect_types": detect_types,
-                "isolation_level": isolation_level,
-            }
-        )
-        self.log_queries = log_queries
-        self.connection_kwargs = connection_kwargs
+        """
+        :param path:
+            A relative or absolute path to the the SQLite database file (it
+            will be created if it doesn't already exist).
+        :param log_queries:
+            If ``True``, all SQL and DDL statements are printed out before
+            being run. Useful for debugging.
+        :param connection_kwargs:
+            These are passed directly to the database adapter. We recommend
+            setting ``timeout`` if you expect your application to process a
+            large number of concurrent writes, to prevent queries timing out.
+            See Python's `sqlite3 docs <https://docs.python.org/3/library/sqlite3.html#sqlite3.connect>`_
+            for more info.
 
-        self.transaction_connection = contextvars.ContextVar(
-            f"sqlite_transaction_connection_{path}", default=None
+        """  # noqa: E501
+        default_connection_kwargs = {
+            "database": path,
+            "detect_types": sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
+            "isolation_level": None,
+        }
+
+        self.log_queries = log_queries
+        self.connection_kwargs = {
+            **default_connection_kwargs,
+            **connection_kwargs,
+        }
+
+        self.current_transaction = contextvars.ContextVar(
+            f"sqlite_current_transaction_{path}", default=None
         )
 
         super().__init__()
@@ -434,26 +430,20 @@ class SQLiteEngine(Engine):
 
     def remove_db_file(self):
         """
-        Use with caution - removes the sqlite file. Useful for testing
+        Use with caution - removes the SQLite file. Useful for testing
         purposes.
         """
         if os.path.exists(self.path):
             os.unlink(self.path)
 
-    def create_db(self, migrate=False):
+    def create_db_file(self):
         """
-        Create the database file, with the option to run migrations. Useful
-        for testing purposes.
+        Create the database file. Useful for testing purposes.
         """
         if os.path.exists(self.path):
             raise Exception(f"Database at {self.path} already exists")
         with open(self.path, "w"):
             pass
-            # Commented out for now, as migrations for SQLite aren't as
-            # well supported as Postgres.
-            # from piccolo.commands.migration.forwards import (
-            #     ForwardsMigrationManager,
-            # )
 
     ###########################################################################
 
@@ -565,10 +555,10 @@ class SQLiteEngine(Engine):
         )
 
         # If running inside a transaction:
-        connection = self.transaction_connection.get()
-        if connection:
+        current_transaction = self.current_transaction.get()
+        if current_transaction:
             return await self._run_in_existing_connection(
-                connection=connection,
+                connection=current_transaction.connection,
                 query=query,
                 args=query_args,
                 query_type=querystring.query_type,
@@ -591,10 +581,10 @@ class SQLiteEngine(Engine):
             print(ddl)
 
         # If running inside a transaction:
-        connection = self.transaction_connection.get()
-        if connection:
+        current_transaction = self.current_transaction.get()
+        if current_transaction:
             return await self._run_in_existing_connection(
-                connection=connection,
+                connection=current_transaction.connection,
                 query=ddl,
             )
 
@@ -609,8 +599,10 @@ class SQLiteEngine(Engine):
 
     def transaction(
         self, transaction_type: TransactionType = TransactionType.deferred
-    ) -> Transaction:
+    ) -> SQLiteTransaction:
         """
         Create a new database transaction. See :class:`Transaction`.
         """
-        return Transaction(engine=self, transaction_type=transaction_type)
+        return SQLiteTransaction(
+            engine=self, transaction_type=transaction_type
+        )
