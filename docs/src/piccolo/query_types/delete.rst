@@ -33,6 +33,11 @@ the data from a table.
 Query clauses
 -------------
 
+returning
+~~~~~~~~~
+
+See :ref:`Returning`.
+
 where
 ~~~~~
 
