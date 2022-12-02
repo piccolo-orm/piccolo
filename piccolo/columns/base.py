@@ -570,6 +570,11 @@ class Column(Selectable):
         """
         Make sure the choices value has values of the allowed_type.
         """
+        if getattr(self, "_validated_choices", None):
+            # If it has previously been validated by a subclass, don't
+            # validate again.
+            return True
+
         for element in choices:
             if isinstance(element.value, allowed_type):
                 continue
@@ -581,6 +586,8 @@ class Column(Selectable):
                 raise ValueError(
                     f"{element.name} doesn't have the correct type"
                 )
+
+        self._validated_choices = True
 
         return True
 

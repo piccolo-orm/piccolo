@@ -140,6 +140,42 @@ By using choices, you get the following benefits:
 * Improved storage efficiency (we can store ``'l'`` instead of ``'large'``).
 * Piccolo Admin support
 
+``Array`` columns
+~~~~~~~~~~~~~~~~~
+
+You can also use choices with :class:`Array <piccolo.columns.column_types.Array>`
+columns.
+
+.. code-block:: python
+
+    class Ticket(Table):
+        class Extras(str, enum.Enum):
+            drink = "drink"
+            snack = "snack"
+            program = "program"
+
+        extras = Array(Varchar(), choices=Extras)
+
+Note how you pass ``choices`` to ``Array``, and not the ``base_column``:
+
+.. code-block:: python
+
+    # CORRECT:
+    Array(Varchar(), choices=Extras)
+
+    # INCORRECT:
+    Array(Varchar(choices=Extras))
+
+We can then use the ``Enum`` in our queries:
+
+.. code-block:: python
+
+    >>> await Ticket.insert(
+    ...     Ticket(extras=[Extras.drink, Extras.snack]),
+    ...     Ticket(extras=[Extras.program]),
+    ... )
+
+
 -------------------------------------------------------------------------------
 
 Reflection
