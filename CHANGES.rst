@@ -1,6 +1,33 @@
 Changes
 =======
 
+0.98.0
+------
+
+You can now specify the transaction type for SQLite.
+
+This is useful when using SQLite in production, as it's possible to get
+'database locked' errors if you're running lots of transactions concurrently,
+and don't use the correct transaction type.
+
+In this example we use an ``IMMEDIATE`` transaction:
+
+.. code-block:: python
+
+  from piccolo.engine.sqlite import TransactionType
+
+  async with Band._meta.db.transaction(
+      transaction_type=TransactionType.immediate
+  ):
+      band = await Band.objects().get_or_create(Band.name == 'Pythonistas')
+      ...
+
+We've added a `new tutorial <https://piccolo-orm.readthedocs.io/en/latest/piccolo/tutorials/using_sqlite_and_asyncio_effectively.html>`_
+which explains this in more detail, as well as other tips for using asyncio and
+SQLite together effectively.
+
+-------------------------------------------------------------------------------
+
 0.97.0
 ------
 
