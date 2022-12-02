@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import decimal
 import uuid
@@ -527,6 +528,41 @@ class TestM2MCustomPrimaryKey(TestCase):
         customer.add_m2m(
             Concert(name="Jazzfest"), m2m=Customer.concerts
         ).run_sync()
+
+        self.assertTrue(
+            Concert.exists().where(Concert.name == "Jazzfest").run_sync()
+        )
+
+        self.assertEqual(
+            CustomerToConcert.count()
+            .where(
+                CustomerToConcert.customer.name == "Bob",
+                CustomerToConcert.concert.name == "Jazzfest",
+            )
+            .run_sync(),
+            1,
+        )
+
+    def test_add_m2m_within_transaction(self):
+        """
+        Make sure we can add items to the joining table, when within an
+        existing transaction.
+
+        https://github.com/piccolo-orm/piccolo/issues/674
+
+        """
+        engine = Customer._meta.db
+
+        async def add_m2m_in_transaction():
+            async with engine.transaction():
+                customer: Customer = await Customer.objects().get(
+                    Customer.name == "Bob"
+                )
+                await customer.add_m2m(
+                    Concert(name="Jazzfest"), m2m=Customer.concerts
+                )
+
+        asyncio.run(add_m2m_in_transaction())
 
         self.assertTrue(
             Concert.exists().where(Concert.name == "Jazzfest").run_sync()
