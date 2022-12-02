@@ -1,6 +1,29 @@
 Changes
 =======
 
+0.99.0
+------
+
+You can now use the ``returning`` clause with ``delete`` queries.
+
+For example:
+
+.. code-block:: python
+
+    >>> await Band.delete().where(Band.popularity < 100).returning(Band.name)
+    [{'name': 'Terrible Band'}, {'name': 'Awful Band'}]
+
+This also means you can count the number of deleted rows:
+
+.. code-block:: python
+
+    >>> len(await Band.delete().where(Band.popularity < 100).returning(Band.id))
+    2
+
+Thanks to @waldner for adding this feature.
+
+-------------------------------------------------------------------------------
+
 0.98.0
 ------
 
