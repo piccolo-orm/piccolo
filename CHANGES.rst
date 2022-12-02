@@ -4,10 +4,13 @@ Changes
 0.98.0
 ------
 
+SQLite ``TransactionType``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 You can now specify the transaction type for SQLite.
 
 This is useful when using SQLite in production, as it's possible to get
-'database locked' errors if you're running lots of transactions concurrently,
+``database locked`` errors if you're running lots of transactions concurrently,
 and don't use the correct transaction type.
 
 In this example we use an ``IMMEDIATE`` transaction:
@@ -25,6 +28,17 @@ In this example we use an ``IMMEDIATE`` transaction:
 We've added a `new tutorial <https://piccolo-orm.readthedocs.io/en/latest/piccolo/tutorials/using_sqlite_and_asyncio_effectively.html>`_
 which explains this in more detail, as well as other tips for using asyncio and
 SQLite together effectively.
+
+Thanks to @powellnorma and @sinisaos for their help with this.
+
+Other changes
+~~~~~~~~~~~~~
+
+* Fixed a bug with camelCase column names (we recommend using snake_case, but
+  sometimes it's unavoidable when using Piccolo with an existing schema).
+  Thanks to @sinisaos for this.
+* Fixed a typo in the docs with ``raw`` queries - thanks to @StitiFatah for
+  this.
 
 -------------------------------------------------------------------------------
 
