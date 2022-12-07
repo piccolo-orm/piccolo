@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import typing as t
 from enum import Enum
 
@@ -36,6 +37,8 @@ def convert_to_sql_value(value: t.Any, column: Column) -> t.Any:
     elif isinstance(column, (JSON, JSONB)) and not isinstance(value, str):
         return None if value is None else dump_json(value)
     elif isinstance(value, list):
-        return [convert_to_sql_value(value=i, column=column) for i in value]
+        # Attempt to do this as performantly as possible.
+        func = functools.partial(convert_to_sql_value, column=column)
+        return list(map(func, value))
     else:
         return value

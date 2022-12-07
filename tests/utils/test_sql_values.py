@@ -1,5 +1,8 @@
+import time
 from enum import Enum
 from unittest import TestCase
+
+import pytest
 
 from piccolo.columns.column_types import JSON, JSONB, Array, Integer, Varchar
 from piccolo.table import Table
@@ -80,3 +83,19 @@ class TestConvertToSQLValue(TestCase):
             ),
             ["r", "g", "b"],
         )
+
+    @pytest.mark.speed
+    def test_convert_large_list(self):
+        """
+        Large lists are problematic. We need to check each value in the list,
+        but as efficiently as possible.
+        """
+        start = time.time()
+
+        convert_to_sql_value(
+            value=[i for i in range(1000)],
+            column=Array(Varchar()),
+        )
+
+        duration = time.time() - start
+        print(duration)
