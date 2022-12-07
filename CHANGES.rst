@@ -1,6 +1,34 @@
 Changes
 =======
 
+0.100.0
+-------
+
+``Array`` columns now support choices.
+
+.. code-block:: python
+
+    class Ticket(Table):
+        class Extras(str, enum.Enum):
+            drink = "drink"
+            snack = "snack"
+            program = "program"
+
+        extras = Array(Varchar(), choices=Extras)
+
+We can then use the ``Enum`` in our queries:
+
+.. code-block:: python
+
+    >>> await Ticket.insert(
+    ...     Ticket(extras=[Extras.drink, Extras.snack]),
+    ...     Ticket(extras=[Extras.program]),
+    ... )
+
+This will also be supported in Piccolo Admin in the next release.
+
+-------------------------------------------------------------------------------
+
 0.99.0
 ------
 
