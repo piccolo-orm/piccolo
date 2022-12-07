@@ -3,6 +3,7 @@ from unittest import TestCase
 
 from piccolo.columns.column_types import Array, Varchar
 from piccolo.table import Table
+from tests.base import engines_only
 from tests.example_apps.music.tables import Shirt
 
 
@@ -84,7 +85,12 @@ class Ticket(Table):
     extras = Array(Varchar(), choices=Extras)
 
 
+@engines_only("postgres", "sqlite")
 class TestArrayChoices(TestCase):
+    """
+    🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+    """  # noqa: E501
+
     def setUp(self):
         Ticket.create_table().run_sync()
 
