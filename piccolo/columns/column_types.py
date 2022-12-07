@@ -2472,8 +2472,15 @@ class Array(Column):
 
         self._validate_default(default, (list, None))
 
+        choices = kwargs.get("choices")
+        if choices is not None:
+            self._validate_choices(
+                choices, allowed_type=base_column.value_type
+            )
+            self._validated_choices = True
+
         # Usually columns are given a name by the Table metaclass, but in this
-        # case we have to assign one manually.
+        # case we have to assign one manually to the base column.
         base_column._meta._name = base_column.__class__.__name__
 
         self.base_column = base_column
