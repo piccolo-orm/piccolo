@@ -1,6 +1,14 @@
 Changes
 =======
 
+0.101.0
+-------
+
+``piccolo fixtures load`` is now more intelligent about how it loads data, to
+avoid foreign key constraint errors.
+
+-------------------------------------------------------------------------------
+
 0.100.0
 -------
 
