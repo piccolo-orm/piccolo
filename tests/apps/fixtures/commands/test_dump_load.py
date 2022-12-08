@@ -1,5 +1,6 @@
 import datetime
 import decimal
+import typing as t
 import uuid
 from unittest import TestCase
 
@@ -29,9 +30,11 @@ class TestDumpLoad(TestCase):
         for table_class in (MegaTable, SmallTable):
             table_class.alter().drop_table().run_sync()
 
-    def insert_row(self):
+    def insert_rows(self):
         small_table = SmallTable(varchar_col="Test")
         small_table.save().run_sync()
+
+        SmallTable(varchar_col="Test 2").save().run_sync()
 
         mega_table = MegaTable(
             bigint_col=1,
@@ -60,27 +63,22 @@ class TestDumpLoad(TestCase):
         )
         mega_table.save().run_sync()
 
-    @engines_only("postgres", "sqlite")
-    def test_dump_load(self):
-        """
-        Make sure we can dump some rows into a JSON fixture, then load them
-        back into the database.
-        """
-        self.insert_row()
+    def _run_comparison(self, table_class_names: t.List[str]):
+        self.insert_rows()
 
         json_string = run_sync(
             dump_to_json_string(
                 fixture_configs=[
                     FixtureConfig(
                         app_name="mega",
-                        table_class_names=["SmallTable", "MegaTable"],
+                        table_class_names=table_class_names,
                     )
                 ]
             )
         )
 
         # We need to clear the data out now, otherwise when loading the data
-        # back in, there will be a constraint errors over clashing primary
+        # back in, there will be constraint errors over clashing primary
         # keys.
         SmallTable.delete(force=True).run_sync()
         MegaTable.delete(force=True).run_sync()
@@ -89,7 +87,10 @@ class TestDumpLoad(TestCase):
 
         self.assertEqual(
             SmallTable.select().run_sync(),
-            [{"id": 1, "varchar_col": "Test"}],
+            [
+                {"id": 1, "varchar_col": "Test"},
+                {"id": 2, "varchar_col": "Test 2"},
+            ],
         )
 
         mega_table_data = MegaTable.select().run_sync()
@@ -138,13 +139,32 @@ class TestDumpLoad(TestCase):
             },
         )
 
-    @engines_only("cockroach")
-    def test_dump_load_alt(self):
+        # Make sure subsequent inserts work.
+        SmallTable().save().run_sync()
+
+    @engines_only("postgres", "sqlite")
+    def test_dump_load(self):
         """
         Make sure we can dump some rows into a JSON fixture, then load them
         back into the database.
         """
-        self.insert_row()
+        self._run_comparison(table_class_names=["SmallTable", "MegaTable"])
+
+    @engines_only("postgres", "sqlite")
+    def test_dump_load_ordering(self):
+        """
+        Similar to `test_dump_load` - but we need to make sure it inserts
+        the data in the correct order, so foreign key constraints don't fail.
+        """
+        self._run_comparison(table_class_names=["MegaTable", "SmallTable"])
+
+    @engines_only("cockroach")
+    def test_dump_load_cockroach(self):
+        """
+        Similar to `test_dump_load`, except the schema is slightly different
+        for CockroachDB.
+        """
+        self.insert_rows()
 
         json_string = run_sync(
             dump_to_json_string(
@@ -158,7 +178,7 @@ class TestDumpLoad(TestCase):
         )
 
         # We need to clear the data out now, otherwise when loading the data
-        # back in, there will be a constraint errors over clashing primary
+        # back in, there will be constraint errors over clashing primary
         # keys.
         SmallTable.delete(force=True).run_sync()
         MegaTable.delete(force=True).run_sync()
