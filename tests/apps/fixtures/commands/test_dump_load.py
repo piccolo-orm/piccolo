@@ -30,9 +30,11 @@ class TestDumpLoad(TestCase):
         for table_class in (MegaTable, SmallTable):
             table_class.alter().drop_table().run_sync()
 
-    def insert_row(self):
+    def insert_rows(self):
         small_table = SmallTable(varchar_col="Test")
         small_table.save().run_sync()
+
+        SmallTable(varchar_col="Test 2").save().run_sync()
 
         mega_table = MegaTable(
             bigint_col=1,
@@ -62,7 +64,7 @@ class TestDumpLoad(TestCase):
         mega_table.save().run_sync()
 
     def _run_comparison(self, table_class_names: t.List[str]):
-        self.insert_row()
+        self.insert_rows()
 
         json_string = run_sync(
             dump_to_json_string(
@@ -85,7 +87,10 @@ class TestDumpLoad(TestCase):
 
         self.assertEqual(
             SmallTable.select().run_sync(),
-            [{"id": 1, "varchar_col": "Test"}],
+            [
+                {"id": 1, "varchar_col": "Test"},
+                {"id": 2, "varchar_col": "Test 2"},
+            ],
         )
 
         mega_table_data = MegaTable.select().run_sync()
@@ -134,6 +139,9 @@ class TestDumpLoad(TestCase):
             },
         )
 
+        # Make sure subsequent inserts work.
+        SmallTable().save().run_sync()
+
     @engines_only("postgres", "sqlite")
     def test_dump_load(self):
         """
@@ -156,7 +164,7 @@ class TestDumpLoad(TestCase):
         Similar to `test_dump_load`, except the schema is slightly different
         for CockroachDB.
         """
-        self.insert_row()
+        self.insert_rows()
 
         json_string = run_sync(
             dump_to_json_string(
