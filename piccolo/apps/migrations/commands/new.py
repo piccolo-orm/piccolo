@@ -18,6 +18,7 @@ from piccolo.apps.migrations.auto import (
     SchemaDiffer,
     SchemaSnapshot,
 )
+from piccolo.apps.migrations.tables import Migration
 from piccolo.conf.apps import AppConfig, Finder
 from piccolo.engine import SQLiteEngine
 
@@ -74,7 +75,11 @@ def _generate_migration_meta(app_config: AppConfig) -> NewMigrationMeta:
     # supported in Windows, so we need to sanitize it. We don't want to
     # change the _id format though, as it would break existing migrations.
     # The filename doesn't have any special significance - only the id matters.
-    filename = _id.replace(":", "-")
+    cleaned_id = _id.replace(":", "_").replace("-", "_")
+    app_name = app_config.app_name[
+        : (Migration.name.length - len(cleaned_id) - 1)
+    ]
+    filename = f"{app_name}_{cleaned_id}"
 
     path = os.path.join(app_config.migrations_folder_path, f"{filename}.py")
 
