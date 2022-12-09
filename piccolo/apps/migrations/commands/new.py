@@ -18,7 +18,6 @@ from piccolo.apps.migrations.auto import (
     SchemaDiffer,
     SchemaSnapshot,
 )
-from piccolo.apps.migrations.tables import Migration
 from piccolo.conf.apps import AppConfig, Finder
 from piccolo.engine import SQLiteEngine
 
@@ -61,6 +60,13 @@ class NewMigrationMeta:
     migration_path: str
 
 
+def now():
+    """
+    In a separate function so it's easier to patch in tests.
+    """
+    return datetime.datetime.now()
+
+
 def _generate_migration_meta(app_config: AppConfig) -> NewMigrationMeta:
     """
     Generates the migration ID and filename.
@@ -69,17 +75,14 @@ def _generate_migration_meta(app_config: AppConfig) -> NewMigrationMeta:
     # chance that the IDs would clash if the migrations are generated
     # programatically in quick succession (e.g. in a unit test), so they had
     # to be added. The trade off is a longer ID.
-    _id = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S:%f")
+    _id = now().strftime("%Y-%m-%dT%H:%M:%S:%f")
 
     # Originally we just used the _id as the filename, but colons aren't
     # supported in Windows, so we need to sanitize it. We don't want to
     # change the _id format though, as it would break existing migrations.
     # The filename doesn't have any special significance - only the id matters.
-    cleaned_id = _id.replace(":", "_").replace("-", "_")
-    app_name = app_config.app_name[
-        : (Migration.name.length - len(cleaned_id) - 1)
-    ]
-    filename = f"{app_name}_{cleaned_id}"
+    cleaned_id = _id.replace(":", "_").replace("-", "_").lower()
+    filename = f"{app_config.app_name}_{cleaned_id}"
 
     path = os.path.join(app_config.migrations_folder_path, f"{filename}.py")
 
