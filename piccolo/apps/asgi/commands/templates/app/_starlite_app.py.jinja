@@ -2,7 +2,6 @@ import typing as t
 
 from piccolo.engine import engine_finder
 from piccolo_admin.endpoints import create_admin
-from starlette.routing import Mount, Router
 from starlite import (
     MediaType,
     Response,
@@ -23,18 +22,10 @@ from home.endpoints import home
 from home.piccolo_app import APP_CONFIG
 from home.tables import Task
 
-
-@asgi(path="/{admin:path}")
-async def admin(scope: Scope, receive: Receive, send: Send) -> None:
-    router = Router(
-        [
-            Mount(
-                path="/admin",
-                app=create_admin(tables=APP_CONFIG.table_classes),
-            ),
-        ]
-    )
-    await router(scope=scope, receive=receive, send=send)
+# mounting Piccolo Admin 
+@asgi("/admin/", is_mount=True)
+async def admin(scope: "Scope", receive: "Receive", send: "Send") -> None:
+    await create_admin(tables=APP_CONFIG.table_classes)(scope, receive, send)
 
 
 @get("/tasks", tags=["Task"])
