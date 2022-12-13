@@ -707,8 +707,8 @@ class TestSchemaExtraKwargs(TestCase):
 class TestPydanticExtraFields(TestCase):
     def test_pydantic_extra_fields(self):
         """
-        Make sure that the value of ``pydantic_extra_fields`` is correctly
-        propagated to the generated model.
+        Make sure that the value of ``extra`` in the config class
+        is correctly propagated to the generated model.
         """
 
         class Band(Table):
@@ -724,7 +724,7 @@ class TestPydanticExtraFields(TestCase):
 
     def test_pydantic_invalid_extra_fields(self):
         """
-        Make sure that invalid values for ``pydantic_extra_fields``
+        Make sure that invalid values for ``extra`` in the config class
         are rejected.
         """
 
