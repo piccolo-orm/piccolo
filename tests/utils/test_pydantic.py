@@ -2,6 +2,7 @@ import decimal
 from unittest import TestCase
 
 import pydantic
+import pytest
 from pydantic import ValidationError
 
 from piccolo.columns import (
@@ -701,3 +702,37 @@ class TestSchemaExtraKwargs(TestCase):
 
         model = create_pydantic_model(Band, visible_columns=("name",))
         self.assertEqual(model.schema()["visible_columns"], ("name",))
+
+
+class TestPydanticExtraFields(TestCase):
+    def test_pydantic_extra_fields(self):
+        """
+        Make sure that the value of ``pydantic_extra_fields`` is correctly
+        propagated to the generated model.
+        """
+
+        class Band(Table):
+            name = Varchar()
+
+        for v in ["ignore", "allow", "forbid"]:
+
+            class MyConfig(pydantic.BaseConfig):
+                extra = v
+
+            model = create_pydantic_model(Band, pydantic_config_class=MyConfig)
+            self.assertEqual(model.Config.extra, v)
+
+    def test_pydantic_invalid_extra_fields(self):
+        """
+        Make sure that invalid values for ``pydantic_extra_fields``
+        are rejected.
+        """
+
+        class Band(Table):
+            name = Varchar()
+
+        class MyConfig(pydantic.BaseConfig):
+            extra = "foobar"
+
+        with pytest.raises(ValueError):
+            create_pydantic_model(Band, pydantic_config_class=MyConfig)
