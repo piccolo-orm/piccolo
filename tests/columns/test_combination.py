@@ -36,21 +36,3 @@ class TestWhere(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             Band.name.not_in([])
-
-
-class TestAnd(unittest.TestCase):
-    def test_get_column_values(self):
-        """
-        Make sure that we can extract the column values from an ``And``.
-
-        There was a bug with ``None`` values not working:
-
-        https://github.com/piccolo-orm/piccolo/issues/715
-
-        """
-        And_ = (Band.manager.is_null()) & (Band.name == "Pythonistas")
-        column_values = And_.get_column_values()
-
-        self.assertDictEqual(
-            column_values, {Band.name: "Pythonistas", Band.manager: None}
-        )
