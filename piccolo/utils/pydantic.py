@@ -48,6 +48,12 @@ def pydantic_json_validator(cls, value, field):
         return value
 
 
+def pydantic_empty_string_validator(cls, value):
+    if value == "":
+        raise ValueError("Required field cannot be empty")
+    return value
+
+
 def is_table_column(column: Column, table: t.Type[Table]) -> bool:
     """
     Verify that the given ``Column`` belongs to the given ``Table``.
@@ -221,7 +227,15 @@ def create_pydantic_model(
         elif isinstance(column, Email):
             value_type = pydantic.EmailStr
         elif isinstance(column, Varchar):
-            value_type = pydantic.constr(max_length=column.length)
+            if not column._meta.required:
+                value_type = pydantic.constr(max_length=column.length)
+            else:
+                value_type = column.value_type
+                validators[
+                    f"{column_name}_is_empty_string"
+                ] = pydantic.validator(column_name, allow_reuse=True)(
+                    pydantic_empty_string_validator
+                )
         elif isinstance(column, Array):
             value_type = t.List[column.base_column.value_type]  # type: ignore
         elif isinstance(column, (JSON, JSONB)):

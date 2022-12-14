@@ -33,6 +33,17 @@ class TestVarcharColumn(TestCase):
 
         pydantic_model(name="short name")
 
+    def test_varchar_required(self):
+        class Director(Table):
+            name = Varchar(length=10, required=True)
+
+        pydantic_model = create_pydantic_model(table=Director)
+
+        with self.assertRaises(ValidationError):
+            pydantic_model(name="")
+
+        pydantic_model(name="non-empty")
+
 
 class TestEmailColumn(TestCase):
     def test_email(self):
