@@ -72,9 +72,28 @@ class TestGenerateMigrationMeta(TestCase):
             second=20,
             microsecond=3000,
         )
+
+        # Try with an app name which already contains valid characters for a
+        # Python module.
         migration_meta = _generate_migration_meta(
             app_config=AppConfig(
                 app_name="app_name",
+                migrations_folder_path="/tmp/",
+            )
+        )
+        self.assertEqual(
+            migration_meta.migration_filename,
+            "app_name_2022_01_10t07_15_20_003000",
+        )
+        self.assertEqual(
+            migration_meta.migration_path,
+            "/tmp/app_name_2022_01_10t07_15_20_003000.py",
+        )
+
+        # Try with an app name with invalid characters for a Python module.
+        migration_meta = _generate_migration_meta(
+            app_config=AppConfig(
+                app_name="App-Name!",
                 migrations_folder_path="/tmp/",
             )
         )
