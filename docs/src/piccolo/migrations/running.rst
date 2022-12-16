@@ -3,6 +3,7 @@ Running migrations
 
 .. hint:: To see all available options for these commands, use the ``--help``
     flag, for example ``piccolo migrations forwards --help``.
+
 .. hint:: To see the SQL queries of a migration without actually running them , use the ``--preview``
     flag, for example: ``piccolo migrations forwards my_app --preview``  or  ``piccolo migrations backwards 2018-09-04T19:44:09 --preview``.
 
@@ -20,11 +21,15 @@ When the migration is run, the forwards function is executed. To do this:
 Reversing migrations
 --------------------
 
-To reverse the migration, run this:
+To reverse the migration, run the following command, specifying the ID of a
+migration:
 
 .. code-block:: bash
 
-    piccolo migrations backwards 2018-09-04T19:44:09
+    piccolo migrations backwards my_app 2018-09-04T19:44:09
+
+Piccolo will then reverse the migrations for the given app, starting with the
+most recent migration, up to and including the migration with the specified ID.
 
 You can try going forwards and backwards a few times to make sure it works as
 expected.
