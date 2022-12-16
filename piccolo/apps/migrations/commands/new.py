@@ -90,7 +90,7 @@ def _generate_migration_meta(app_config: AppConfig) -> NewMigrationMeta:
     cleaned_app_name = "".join(
         [
             i
-            for i in app_config.app_name.lower().replace('-', '_')
+            for i in app_config.app_name.lower().replace("-", "_")
             if i in VALID_PYTHON_MODULE_CHARACTERS
         ]
     )
