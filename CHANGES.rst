@@ -1,6 +1,57 @@
 Changes
 =======
 
+0.102.0
+-------
+
+Migration file names
+~~~~~~~~~~~~~~~~~~~~
+
+The naming convention for migrations has changed slightly. It used to be just
+a timestamp - for example:
+
+.. code-block:: text
+
+  2021-09-06T13-58-23-024723.py
+
+By convention Python files should start with a letter, and only contain
+``a-z``, ``0-9`` and ``_``, so the new format is:
+
+.. code-block:: text
+
+  my_app_2021_09_06T13_58_23_024723.py
+
+.. note:: You can name a migration file anything you want (it's the ``ID``
+  value inside it which is important), so this change doesn't break anything.
+
+Enhanced Pydantic configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We now expose all of Pydantic's configuration options to
+``create_pydantic_model``:
+
+.. code-block:: python
+
+  class MyPydanticConfig(pydantic.BaseConfig):
+      extra = 'forbid'
+
+  model = create_pydantic_model(
+      table=MyTable,
+      pydantic_config_class=MyPydanticConfig
+  )
+
+Thanks to @waldner for this.
+
+Other changes
+~~~~~~~~~~~~~
+
+* Fixed a bug with ``get_or_create`` and null columns (thanks to @powellnorma
+  for reporting this issue).
+* Updated the Starlite ASGI template, so it uses the latest syntax for mounting
+  Piccolo Admin (thanks to @sinisaos for this, and the Starlite team).
+
+-------------------------------------------------------------------------------
+
 0.101.0
 -------
 
