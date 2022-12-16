@@ -265,6 +265,17 @@ class TestJSONColumn(TestCase):
             "json",
         )
 
+    def test_null_value(self):
+        class Movie(Table):
+            meta = JSON(null=True)
+            meta_b = JSONB(null=True)
+
+        pydantic_model = create_pydantic_model(table=Movie)
+        movie = pydantic_model(meta=None, meta_b=None)
+
+        self.assertIsNone(movie.meta)
+        self.assertIsNone(movie.meta_b)
+
 
 class TestExcludeColumns(TestCase):
     def test_all(self):

@@ -28,3 +28,9 @@ by modifying the return values.
     ./offset
     ./output
     ./returning
+
+.. toctree::
+    :maxdepth: 1
+    :caption: CockroachDB
+
+    ./as_of

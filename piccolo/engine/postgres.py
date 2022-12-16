@@ -266,7 +266,7 @@ class PostgresEngine(Engine):
     )
 
     engine_type = "postgres"
-    min_version_number = 9.6
+    min_version_number = 10
 
     def __init__(
         self,

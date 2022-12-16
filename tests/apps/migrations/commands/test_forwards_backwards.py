@@ -9,7 +9,7 @@ from piccolo.apps.migrations.commands.backwards import backwards
 from piccolo.apps.migrations.commands.forwards import forwards
 from piccolo.apps.migrations.tables import Migration
 from piccolo.utils.sync import run_sync
-from tests.base import postgres_only
+from tests.base import engines_only
 from tests.example_apps.music.tables import (
     Band,
     Concert,
@@ -36,7 +36,7 @@ TABLE_CLASSES: t.List[t.Type[Table]] = [
 ]
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestForwardsBackwards(TestCase):
     """
     Test the forwards and backwards migration commands.
@@ -187,6 +187,7 @@ class TestForwardsBackwards(TestCase):
             print_.mock_calls[-1] == call("🏁 No migrations need to be run")
         )
 
+    @engines_only("postgres")
     def test_forwards_fake(self):
         """
         Test running the migrations if they've already run.

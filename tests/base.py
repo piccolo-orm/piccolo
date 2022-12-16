@@ -9,6 +9,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from piccolo.apps.schema.commands.generate import RowMeta
+from piccolo.engine.cockroach import CockroachEngine
 from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
@@ -23,11 +24,15 @@ def engine_version_lt(version: float):
 
 
 def is_running_postgres():
-    return isinstance(ENGINE, PostgresEngine)
+    return type(ENGINE) is PostgresEngine
 
 
 def is_running_sqlite():
-    return isinstance(ENGINE, SQLiteEngine)
+    return type(ENGINE) is SQLiteEngine
+
+
+def is_running_cockroach():
+    return type(ENGINE) is CockroachEngine
 
 
 postgres_only = pytest.mark.skipif(
@@ -38,9 +43,92 @@ sqlite_only = pytest.mark.skipif(
     not is_running_sqlite(), reason="Only running for SQLite"
 )
 
+cockroach_only = pytest.mark.skipif(
+    not is_running_cockroach(), reason="Only running for Cockroach"
+)
+
 unix_only = pytest.mark.skipif(
     sys.platform.startswith("win"), reason="Only running on a Unix system"
 )
+
+
+def engines_only(*engine_names: str):
+    """
+    Test decorator. Choose what engines can run a test.
+
+    Example
+        @engines_only('cockroach', 'postgres')
+        def test_unknown_column_type(...):
+            self.assertTrue(...)
+    """
+    if ENGINE:
+        current_engine_name = ENGINE.engine_type
+        if current_engine_name not in engine_names:
+
+            def wrapper(func):
+                return pytest.mark.skip(
+                    f"Not running for {current_engine_name}"
+                )(func)
+
+            return wrapper
+        else:
+
+            def wrapper(func):
+                return func
+
+            return wrapper
+    else:
+        raise ValueError("Engine not found")
+
+
+def engines_skip(*engine_names: str):
+    """
+    Test decorator. Choose what engines can run a test.
+
+    Example
+        @engines_skip('cockroach', 'postgres')
+        def test_unknown_column_type(...):
+            self.assertTrue(...)
+    """
+    if ENGINE:
+        current_engine_name = ENGINE.engine_type
+        if current_engine_name in engine_names:
+
+            def wrapper(func):
+                return pytest.mark.skip(
+                    f"Not yet available for {current_engine_name}"
+                )(func)
+
+            return wrapper
+        else:
+
+            def wrapper(func):
+                return func
+
+            return wrapper
+    else:
+        raise ValueError("Engine not found")
+
+
+def engine_is(*engine_names: str):
+    """
+    Assert branching. Choose what engines can run an assert.
+    If branching becomes too complex, make a new test with
+    @engines_only() or engines_skip()
+
+    Example
+        def test_unknown_column_type(...):
+            if engine_is('cockroach', 'sqlite'):
+                self.assertTrue(...)
+    """
+    if ENGINE:
+        current_engine_name = ENGINE.engine_type
+        if current_engine_name not in engine_names:
+            return False
+        else:
+            return True
+    else:
+        raise ValueError("Engine not found")
 
 
 class AsyncMock(MagicMock):
@@ -134,7 +222,7 @@ class DBTestCase(TestCase):
     ###########################################################################
 
     def create_tables(self):
-        if ENGINE.engine_type == "postgres":
+        if ENGINE.engine_type in ("postgres", "cockroach"):
             self.run_sync(
                 """
                 CREATE TABLE manager (
@@ -214,60 +302,116 @@ class DBTestCase(TestCase):
             raise Exception("Unrecognised engine")
 
     def insert_row(self):
-        self.run_sync(
-            """
-            INSERT INTO manager (
-                name
-            ) VALUES (
-                'Guido'
-            );"""
-        )
-        self.run_sync(
-            """
-            INSERT INTO band (
-                name,
-                manager,
-                popularity
-            ) VALUES (
-                'Pythonistas',
-                1,
-                1000
-            );"""
-        )
+        if ENGINE.engine_type == "cockroach":
+            id = self.run_sync(
+                """
+                INSERT INTO manager (
+                    name
+                ) VALUES (
+                    'Guido'
+                ) RETURNING id;"""
+            )
+            self.run_sync(
+                f"""
+                INSERT INTO band (
+                    name,
+                    manager,
+                    popularity
+                ) VALUES (
+                    'Pythonistas',
+                    {id[0]["id"]},
+                    1000
+                );"""
+            )
+        else:
+            self.run_sync(
+                """
+                INSERT INTO manager (
+                    name
+                ) VALUES (
+                    'Guido'
+                );"""
+            )
+            self.run_sync(
+                """
+                INSERT INTO band (
+                    name,
+                    manager,
+                    popularity
+                ) VALUES (
+                    'Pythonistas',
+                    1,
+                    1000
+                );"""
+            )
 
     def insert_rows(self):
-        self.run_sync(
-            """
-            INSERT INTO manager (
-                name
-            ) VALUES (
-                'Guido'
-            ),(
-                'Graydon'
-            ),(
-                'Mads'
-            );"""
-        )
-        self.run_sync(
-            """
-            INSERT INTO band (
-                name,
-                manager,
-                popularity
-            ) VALUES (
-                'Pythonistas',
-                1,
-                1000
-            ),(
-                'Rustaceans',
-                2,
-                2000
-            ),(
-                'CSharps',
-                3,
-                10
-            );"""
-        )
+        if ENGINE.engine_type == "cockroach":
+            id = self.run_sync(
+                """
+                INSERT INTO manager (
+                    name
+                ) VALUES (
+                    'Guido'
+                ),(
+                    'Graydon'
+                ),(
+                    'Mads'
+                ) RETURNING id;"""
+            )
+            self.run_sync(
+                f"""
+                INSERT INTO band (
+                    name,
+                    manager,
+                    popularity
+                ) VALUES (
+                    'Pythonistas',
+                    {id[0]["id"]},
+                    1000
+                ),(
+                    'Rustaceans',
+                    {id[1]["id"]},
+                    2000
+                ),(
+                    'CSharps',
+                    {id[2]["id"]},
+                    10
+                );"""
+            )
+        else:
+            self.run_sync(
+                """
+                INSERT INTO manager (
+                    name
+                ) VALUES (
+                    'Guido'
+                ),(
+                    'Graydon'
+                ),(
+                    'Mads'
+                );"""
+            )
+            self.run_sync(
+                """
+                INSERT INTO band (
+                    name,
+                    manager,
+                    popularity
+                ) VALUES (
+                    'Pythonistas',
+                    1,
+                    1000
+                ),(
+                    'Rustaceans',
+                    2,
+                    2000
+                ),(
+                    'CSharps',
+                    3,
+                    10
+                );"""
+            )
 
     def insert_many_rows(self, row_count=10000):
         """
@@ -278,7 +422,7 @@ class DBTestCase(TestCase):
         self.run_sync(f"INSERT INTO manager (name) VALUES {values_string};")
 
     def drop_tables(self):
-        if ENGINE.engine_type == "postgres":
+        if ENGINE.engine_type in ("postgres", "cockroach"):
             self.run_sync("DROP TABLE IF EXISTS band CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS manager CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS ticket CASCADE;")

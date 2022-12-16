@@ -15,7 +15,7 @@ from piccolo.columns.readable import Readable
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class BaseUser(Table, tablename="piccolo_user"):

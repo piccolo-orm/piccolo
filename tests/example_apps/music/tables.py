@@ -3,6 +3,7 @@ from enum import Enum
 from piccolo.columns import (
     JSON,
     JSONB,
+    BigInt,
     ForeignKey,
     Integer,
     Numeric,
@@ -10,7 +11,10 @@ from piccolo.columns import (
     Varchar,
 )
 from piccolo.columns.readable import Readable
+from piccolo.engine.finder import engine_finder
 from piccolo.table import Table
+
+engine = engine_finder()
 
 ###############################################################################
 # Simple example
@@ -27,7 +31,11 @@ class Manager(Table):
 class Band(Table):
     name = Varchar(length=50)
     manager = ForeignKey(Manager, null=True)
-    popularity = Integer(default=0)
+    popularity = (
+        BigInt(default=0)
+        if engine and engine.engine_type == "cockroach"
+        else Integer(default=0)
+    )
 
     @classmethod
     def get_readable(cls) -> Readable:

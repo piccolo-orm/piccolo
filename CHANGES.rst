@@ -1,6 +1,123 @@
 Changes
 =======
 
+0.97.0
+------
+
+Some big improvements to ``order_by`` clauses.
+
+It's now possible to combine ascending and descending:
+
+.. code-block:: python
+
+  await Band.select(
+      Band.name,
+      Band.popularity
+  ).order_by(
+      Band.name
+  ).order_by(
+      Band.popularity,
+      ascending=False
+  )
+
+You can also order by anything you want using ``OrderByRaw``:
+
+.. code-block:: python
+
+  from piccolo.query import OrderByRaw
+
+  await Band.select(
+      Band.name
+  ).order_by(
+      OrderByRaw('random()')
+  )
+
+-------------------------------------------------------------------------------
+
+0.96.0
+------
+
+Added the ``auto_update`` argument to ``Column``. Its main use case is columns
+like ``modified_on`` where we want the value to be updated automatically each
+time the row is saved.
+
+.. code-block:: python
+
+  class Band(Table):
+      name = Varchar()
+      popularity = Integer()
+      modified_on = Timestamp(
+        null=True,
+        default=None,
+        auto_update=datetime.datetime.now
+      )
+
+    # The `modified_on` column will automatically be updated to the current
+    # timestamp:
+    >>> await Band.update({
+    ...     Band.popularity: Band.popularity + 100
+    ... }).where(
+    ...     Band.name == 'Pythonistas'
+    ... )
+
+It works with ``MyTable.update`` and also when using the ``save`` method on
+an existing row.
+
+-------------------------------------------------------------------------------
+
+0.95.0
+------
+
+Made improvements to the Piccolo playground.
+
+* Syntax highlighting is now enabled.
+* The example queries are now async (iPython supports top level await, so
+  this works fine).
+* You can optionally use your own iPython configuration
+  ``piccolo playground run --ipython_profile`` (for example if you want a
+  specific colour scheme, rather than the one we use by default).
+
+Thanks to @haffi96 for this. See `PR 656 <https://github.com/piccolo-orm/piccolo/pull/656>`_.
+
+-------------------------------------------------------------------------------
+
+0.94.0
+------
+
+Fixed a bug with ``MyTable.objects().create()`` and columns which are not
+nullable. Thanks to @metakot for reporting this issue.
+
+We used to use ``logging.getLogger(__file__)``, but as @Drapersniper pointed
+out, the Python docs recommend ``logging.getLogger(__name__)``, so it has been
+changed.
+
+-------------------------------------------------------------------------------
+
+0.93.0
+------
+
+* Fixed a bug with nullable ``JSON`` / ``JSONB`` columns and
+  ``create_pydantic_model`` - thanks to @eneacosta for this fix.
+* Made the ``Time`` column type importable from ``piccolo.columns``.
+* Python 3.11 is now supported.
+* Postgres 9.6 is no longer officially supported, as it's end of life, but
+  Piccolo should continue to work with it just fine for now.
+* Improved docs for transactions, added docs for the ``as_of`` clause in
+  CockroachDB (thanks to @gnat for this), and added docs for
+  ``add_raw_backwards``.
+
+-------------------------------------------------------------------------------
+
+0.92.0
+------
+
+Added initial support for Cockroachdb (thanks to @gnat for this massive
+contribution).
+
+Fixed Pylance warnings (thanks to @MiguelGuthridge for this).
+
+-------------------------------------------------------------------------------
+
 0.91.0
 ------
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import itertools
 import typing as t
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -38,6 +39,24 @@ class Limit:
 
 
 @dataclass
+class AsOf:
+    __slots__ = ("interval",)
+
+    interval: str
+
+    def __post_init__(self):
+        if type(self.interval) != str:
+            raise TypeError("As Of must be a string. Example: '-1s'")
+
+    @property
+    def querystring(self) -> QueryString:
+        return QueryString(f" AS OF SYSTEM TIME '{self.interval}'")
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
+
+
+@dataclass
 class Offset:
     __slots__ = ("number",)
 
@@ -56,20 +75,40 @@ class Offset:
 
 
 @dataclass
-class OrderBy:
+class OrderByRaw:
+    __slots__ = ("sql",)
+
+    sql: str
+
+
+@dataclass
+class OrderByItem:
     __slots__ = ("columns", "ascending")
 
-    columns: t.Sequence[Column]
+    columns: t.Sequence[t.Union[Column, OrderByRaw]]
     ascending: bool
+
+
+@dataclass
+class OrderBy:
+    order_by_items: t.List[OrderByItem] = field(default_factory=list)
 
     @property
     def querystring(self) -> QueryString:
-        order = "ASC" if self.ascending else "DESC"
-        columns_names = ", ".join(
-            i._meta.get_full_name(with_alias=False) for i in self.columns
-        )
+        order_by_strings: t.List[str] = []
+        for order_by_item in self.order_by_items:
+            order = "ASC" if order_by_item.ascending else "DESC"
+            for column in order_by_item.columns:
+                if isinstance(column, Column):
+                    expression = column._meta.get_full_name(with_alias=False)
+                elif isinstance(column, OrderByRaw):
+                    expression = column.sql
+                else:
+                    raise ValueError("Unrecognised order_by")
 
-        return QueryString(f" ORDER BY {columns_names} {order}")
+                order_by_strings.append(f"{expression} {order}")
+
+        return QueryString(f" ORDER BY {', '.join(order_by_strings)}")
 
     def __str__(self):
         return self.querystring.__str__()
@@ -166,13 +205,27 @@ class WhereDelegate:
 @dataclass
 class OrderByDelegate:
 
-    _order_by: t.Optional[OrderBy] = None
+    _order_by: OrderBy = field(default_factory=OrderBy)
 
     def get_order_by_columns(self) -> t.List[Column]:
-        return list(self._order_by.columns) if self._order_by else []
+        """
+        Used to work out which columns are needed for joins.
+        """
+        return [
+            i
+            for i in itertools.chain(
+                *[i.columns for i in self._order_by.order_by_items]
+            )
+            if isinstance(i, Column)
+        ]
 
-    def order_by(self, *columns: Column, ascending=True):
-        self._order_by = OrderBy(columns, ascending)
+    def order_by(self, *columns: t.Union[Column, OrderByRaw], ascending=True):
+        if len(columns) < 1:
+            raise ValueError("At least one column must be passed to order_by.")
+
+        self._order_by.order_by_items.append(
+            OrderByItem(columns=columns, ascending=ascending)
+        )
 
 
 @dataclass
@@ -191,6 +244,19 @@ class LimitDelegate:
     def copy(self) -> LimitDelegate:
         _limit = self._limit.copy() if self._limit is not None else None
         return self.__class__(_limit=_limit, _first=self._first)
+
+
+@dataclass
+class AsOfDelegate:
+    """
+    Time travel queries using "As Of" syntax.
+    Currently supports Cockroach using AS OF SYSTEM TIME.
+    """
+
+    _as_of: t.Optional[AsOf] = None
+
+    def as_of(self, interval: str = "-1s"):
+        self._as_of = AsOf(interval)
 
 
 @dataclass

@@ -1,4 +1,6 @@
-{{ router }}{% if router_version %}{{ router_version }}{% endif %}
+{%- for router_dependency in router_dependencies -%}
+{{ router_dependency }}
+{% endfor -%}
 {{ server }}
 jinja2
 piccolo[postgres]
