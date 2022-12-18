@@ -455,11 +455,11 @@ class Select(Query):
                 )
                 try:
                     for row in response:
-                        data = row[f"{reverse_lookup_name}s"]
-                        row[f"{reverse_lookup_name}s"] = (
+                        data = row[f"{reverse_lookup_name}"]
+                        row[f"{reverse_lookup_name}"] = (
                             [
                                 value_type(i)
-                                for i in row[f"{reverse_lookup_name}s"]
+                                for i in row[f"{reverse_lookup_name}"]
                             ]
                             if data
                             else []
@@ -467,7 +467,7 @@ class Select(Query):
                 except ValueError:
                     colored_warning(
                         "Unable to do type conversion for the "
-                        f"{reverse_lookup_name}s relation"
+                        f"{reverse_lookup_name} relation"
                     )
 
                 # If the user requested a single column, we just return that
@@ -482,7 +482,7 @@ class Select(Query):
                             response,
                             reverse_table,
                             reverse_table._meta.primary_key,
-                            f"{reverse_lookup_name}s",
+                            f"{reverse_lookup_name}",
                             reverse_lookup_select,
                             as_list=True,
                         )
@@ -495,11 +495,11 @@ class Select(Query):
                             0
                         ]._meta.name
                         for row in response:
-                            if row[f"{reverse_lookup_name}s"] is None:
-                                row[f"{reverse_lookup_name}s"] = []
-                            row[f"{reverse_lookup_name}s"] = [
+                            if row[f"{reverse_lookup_name}"] is None:
+                                row[f"{reverse_lookup_name}"] = []
+                            row[f"{reverse_lookup_name}"] = [
                                 {column_name: i}
-                                for i in row[f"{reverse_lookup_name}s"]
+                                for i in row[f"{reverse_lookup_name}"]
                             ]
                     elif (
                         len(reverse_lookup_select.columns) == 0
@@ -510,7 +510,7 @@ class Select(Query):
                             set(
                                 itertools.chain(
                                     *[
-                                        row[f"{reverse_lookup_name}s"]
+                                        row[f"{reverse_lookup_name}"]
                                         for row in response
                                     ]
                                 )
@@ -546,16 +546,16 @@ class Select(Query):
                             for row in extra_rows
                         }
                         for row in response:
-                            row[f"{reverse_lookup_name}s"] = [
+                            row[f"{reverse_lookup_name}"] = [
                                 extra_rows_map.get(i)
-                                for i in row[f"{reverse_lookup_name}s"]
+                                for i in row[f"{reverse_lookup_name}"]
                             ]
                     else:
                         response = await self._splice_m2m_rows(
                             response,
                             reverse_table,
                             reverse_table._meta.primary_key,
-                            f"{reverse_lookup_name}s",
+                            f"{reverse_lookup_name}",
                             reverse_lookup_select,
                             as_list=False,
                         )
@@ -578,8 +578,8 @@ class Select(Query):
                     # are returned as a JSON string, so we need to deserialise
                     # it.
                     for row in response:
-                        data = row[f"{reverse_lookup_name}s"]
-                        row[f"{reverse_lookup_name}s"] = (
+                        data = row[f"{reverse_lookup_name}"]
+                        row[f"{reverse_lookup_name}"] = (
                             load_json(data) if data else []
                         )
                 else:
@@ -590,7 +590,7 @@ class Select(Query):
                         response,
                         reverse_table,
                         reverse_table._meta.primary_key,
-                        f"{reverse_lookup_name}s",
+                        f"{reverse_lookup_name}",
                         reverse_lookup_select,
                         as_list=False,
                     )

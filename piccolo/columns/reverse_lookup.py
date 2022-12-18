@@ -79,7 +79,7 @@ class ReverseLookupSelect(Selectable):
                         SELECT
                             "{table2_name}"."{column_name}"
                         FROM {reverse_select}
-                    ) AS "{reverse_lookup_name}s"
+                    ) AS "{reverse_lookup_name}"
                 """
             elif not self.serialisation_safe:
                 column_name = table2_pk
@@ -88,7 +88,7 @@ class ReverseLookupSelect(Selectable):
                         SELECT
                             "{table2_name}"."{column_name}"
                         FROM {reverse_select}
-                    ) AS "{reverse_lookup_name}s"
+                    ) AS "{reverse_lookup_name}"
                 """
             else:
                 if len(self.columns) > 0:
@@ -107,7 +107,7 @@ class ReverseLookupSelect(Selectable):
                         FROM (
                             SELECT {column_names} FROM {reverse_select}
                         ) AS "{table2_name}s"
-                    ) AS "{reverse_lookup_name}s"
+                    ) AS "{reverse_lookup_name}"
                 """
         elif engine_type == "sqlite":
             if len(self.columns) > 1 or not self.serialisation_safe:
