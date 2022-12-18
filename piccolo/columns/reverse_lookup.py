@@ -36,8 +36,6 @@ class ReverseLookupSelect(Selectable):
             flattened list will be returned, rather than a list of objects.
         :param load_json:
             If ``True``, any JSON strings are loaded as Python objects.
-        :param table:
-            Parent table for reverse lookup.
 
         """
         self.as_list = as_list
@@ -189,6 +187,8 @@ class ReverseLookup:
         """
         :param reverse_joining_table:
             A ``Table`` for reverse lookup.
+        :param reverse_fk:
+            The ForeignKey to be used for the reverse lookup.
         """
         self._meta = ReverseLookupMeta(
             reverse_joining_table=reverse_joining_table,
@@ -210,8 +210,6 @@ class ReverseLookup:
             flattened list will be returned, rather than a list of objects.
         :param load_json:
             If ``True``, any JSON strings are loaded as Python objects.
-        :param table:
-            Parent table for reverse lookup.
 
         """
 
