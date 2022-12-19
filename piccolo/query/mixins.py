@@ -10,6 +10,7 @@ from piccolo.columns import And, Column, Or, Where
 from piccolo.columns.column_types import ForeignKey
 from piccolo.custom_types import Combinable
 from piccolo.querystring import QueryString
+from piccolo.utils.list import flatten
 from piccolo.utils.sql_values import convert_to_sql_value
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -440,13 +441,7 @@ class ColumnsDelegate:
             in which case we flatten the list.
 
         """
-        _columns = []
-        for column in columns:
-            if isinstance(column, list):
-                _columns.extend(column)
-            else:
-                _columns.append(column)
-
+        _columns = flatten(columns)
         combined = list(self.selected_columns) + _columns
         self.selected_columns = combined
 

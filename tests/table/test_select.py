@@ -1,15 +1,20 @@
 from unittest import TestCase
 
+import pytest
+
 from piccolo.apps.user.tables import BaseUser
 from piccolo.columns.combination import WhereRaw
 from piccolo.query import OrderByRaw
-from piccolo.query.methods.select import Avg, Count, Max, Min, Sum
+from piccolo.query.methods.select import Avg, Count, Max, Min, SelectRaw, Sum
 from piccolo.table import create_db_tables_sync, drop_db_tables_sync
 from tests.base import (
     DBTestCase,
     engine_is,
+    engine_version_lt,
     engines_only,
     engines_skip,
+    is_running_cockroach,
+    is_running_sqlite,
     sqlite_only,
 )
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
@@ -958,6 +963,28 @@ class TestSelect(DBTestCase):
         )
         self.assertEqual(
             response, [{"name": "Pythonistas", "manager_name": "Guido"}]
+        )
+
+    @pytest.mark.skipif(
+        is_running_sqlite() and engine_version_lt(3.35),
+        reason="SQLite doesn't have math functions in this version.",
+    )
+    @pytest.mark.skipif(
+        is_running_cockroach(),
+        reason=(
+            "Cockroach raises an error when trying to use the log function."
+        ),
+    )
+    def test_select_raw(self):
+        """
+        Make sure ``SelectRaw`` can be used in select queries.
+        """
+        self.insert_row()
+        response = Band.select(
+            Band.name, SelectRaw("round(log(popularity)) AS popularity_log")
+        ).run_sync()
+        self.assertListEqual(
+            response, [{"name": "Pythonistas", "popularity_log": 3.0}]
         )
 
 

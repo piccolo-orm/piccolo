@@ -18,6 +18,7 @@ from .methods import (
     TableExists,
     Update,
 )
+from .methods.select import SelectRaw
 from .mixins import OrderByRaw
 
 __all__ = [
@@ -37,6 +38,7 @@ __all__ = [
     "Query",
     "Raw",
     "Select",
+    "SelectRaw",
     "Sum",
     "TableExists",
     "Update",
