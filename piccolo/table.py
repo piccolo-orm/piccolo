@@ -11,6 +11,7 @@ from piccolo.columns.column_types import (
     JSON,
     JSONB,
     Array,
+    Email,
     ForeignKey,
     Secret,
     Serial,
@@ -23,6 +24,7 @@ from piccolo.columns.m2m import (
     M2MGetRelated,
     M2MRemoveRelated,
 )
+from piccolo.columns.reverse_lookup import ReverseLookup
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
 from piccolo.engine import Engine, engine_finder
@@ -69,10 +71,12 @@ class TableMeta:
     columns: t.List[Column] = field(default_factory=list)
     default_columns: t.List[Column] = field(default_factory=list)
     non_default_columns: t.List[Column] = field(default_factory=list)
+    email_columns: t.List[Email] = field(default_factory=list)
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
     primary_key: Column = field(default_factory=Column)
     json_columns: t.List[t.Union[JSON, JSONB]] = field(default_factory=list)
     secret_columns: t.List[Secret] = field(default_factory=list)
+    auto_update_columns: t.List[Column] = field(default_factory=list)
     tags: t.List[str] = field(default_factory=list)
     help_text: t.Optional[str] = None
     _db: t.Optional[Engine] = None
@@ -133,6 +137,18 @@ class TableMeta:
                     ) from e
 
         return column_object
+
+    def get_auto_update_values(self) -> t.Dict[Column, t.Any]:
+        """
+        If columns have ``auto_update`` defined, then we retrieve these values.
+        """
+        output: t.Dict[Column, t.Any] = {}
+        for column in self.auto_update_columns:
+            value = column._meta.auto_update
+            if callable(value):
+                value = value()
+            output[column] = value
+        return output
 
 
 class TableMetaclass(type):
@@ -216,6 +232,8 @@ class Table(metaclass=TableMetaclass):
         foreign_key_columns: t.List[ForeignKey] = []
         secret_columns: t.List[Secret] = []
         json_columns: t.List[t.Union[JSON, JSONB]] = []
+        email_columns: t.List[Email] = []
+        auto_update_columns: t.List[Column] = []
         primary_key: t.Optional[Column] = None
         m2m_relationships: t.List[M2M] = []
 
@@ -249,6 +267,9 @@ class Table(metaclass=TableMetaclass):
                 if isinstance(column, Array):
                     column.base_column._meta._table = cls
 
+                if isinstance(column, Email):
+                    email_columns.append(column)
+
                 if isinstance(column, Secret):
                     secret_columns.append(column)
 
@@ -258,10 +279,14 @@ class Table(metaclass=TableMetaclass):
                 if isinstance(column, (JSON, JSONB)):
                     json_columns.append(column)
 
-            if isinstance(attribute, M2M):
+                if column._meta.auto_update is not ...:
+                    auto_update_columns.append(column)
+
+            if isinstance(attribute, (M2M, ReverseLookup)):
                 attribute._meta._name = attribute_name
                 attribute._meta._table = cls
-                m2m_relationships.append(attribute)
+                if isinstance(attribute, M2M):
+                    m2m_relationships.append(attribute)
 
         if not primary_key:
             primary_key = cls._create_serial_primary_key()
@@ -275,10 +300,12 @@ class Table(metaclass=TableMetaclass):
             columns=columns,
             default_columns=default_columns,
             non_default_columns=non_default_columns,
+            email_columns=email_columns,
             primary_key=primary_key,
             foreign_key_columns=foreign_key_columns,
             json_columns=json_columns,
             secret_columns=secret_columns,
+            auto_update_columns=auto_update_columns,
             tags=tags,
             help_text=help_text,
             _db=db,
@@ -411,6 +438,7 @@ class Table(metaclass=TableMetaclass):
         """
         cls = self.__class__
 
+        # New row - insert
         if not self._exists_in_db:
             return cls.insert(self).returning(cls._meta.primary_key)
 
@@ -429,13 +457,21 @@ class Table(metaclass=TableMetaclass):
             i: getattr(self, i._meta.name, None) for i in column_instances
         }
 
-        return (
-            cls.update()
-            .values(values)  # type: ignore
-            .where(
-                cls._meta.primary_key
-                == getattr(self, self._meta.primary_key._meta.name)
-            )
+        # Assign any `auto_update` values
+        if cls._meta.auto_update_columns:
+            auto_update_values = cls._meta.get_auto_update_values()
+            values.update(auto_update_values)
+            for column, value in auto_update_values.items():
+                setattr(self, column._meta.name, value)
+
+        return cls.update(
+            values,  # type: ignore
+            # We've already included the `auto_update` columns, so no need
+            # to do it again:
+            use_auto_update=False,
+        ).where(
+            cls._meta.primary_key
+            == getattr(self, self._meta.primary_key._meta.name)
         )
 
     def remove(self) -> Delete:
@@ -1067,6 +1103,7 @@ class Table(metaclass=TableMetaclass):
         cls,
         values: t.Dict[t.Union[Column, str], t.Any] = None,
         force: bool = False,
+        use_auto_update: bool = True,
         **kwargs,
     ) -> Update:
         """
@@ -1098,10 +1135,19 @@ class Table(metaclass=TableMetaclass):
             Unless set to ``True``, updates aren't allowed without a
             ``where`` clause, to prevent accidental mass overriding of data.
 
+        :param use_auto_update:
+            Whether to use the ``auto_update`` values on any columns. See
+            the ``auto_update`` argument on
+            :class:`Column <piccolo.columns.base.Column>` for more information.
+
         """
         if values is None:
             values = {}
         values = dict(values, **kwargs)
+
+        if use_auto_update and cls._meta.auto_update_columns:
+            values.update(cls._meta.get_auto_update_values())  # type: ignore
+
         return Update(table=cls, force=force).values(values)
 
     @classmethod
@@ -1240,16 +1286,19 @@ def create_table_class(
         For example, `{'my_column': Varchar()}`.
 
     """
-    return types.new_class(
-        name=class_name,
-        bases=bases,
-        kwds=class_kwargs,
-        exec_body=lambda namespace: namespace.update(class_members),
+    return t.cast(
+        t.Type[Table],
+        types.new_class(
+            name=class_name,
+            bases=bases,
+            kwds=class_kwargs,
+            exec_body=lambda namespace: namespace.update(class_members),
+        ),
     )
 
 
 ###############################################################################
-# Quickly create or drop database tables from Piccolo `Table` clases.
+# Quickly create or drop database tables from Piccolo `Table` classes.
 
 
 async def create_db_tables(
@@ -1297,6 +1346,9 @@ def create_tables(*tables: t.Type[Table], if_not_exists: bool = False) -> None:
     This original implementation has been replaced, because it was synchronous,
     and felt at odds with the rest of the Piccolo codebase which is async
     first.
+
+    Instead, use create_db_tables for asynchronous code, or
+    create_db_tables_sync for synchronous code
     """
     colored_warning(
         "`create_tables` is deprecated and will be removed in v1 of Piccolo. "
@@ -1357,6 +1409,9 @@ def drop_tables(*tables: t.Type[Table]) -> None:
     This original implementation has been replaced, because it was synchronous,
     and felt at odds with the rest of the Piccolo codebase which is async
     first.
+
+    Instead, use drop_db_tables for asynchronous code, or
+    drop_db_tables_sync for synchronous code
     """
     colored_warning(
         "`drop_tables` is deprecated and will be removed in v1 of Piccolo. "
@@ -1432,12 +1487,13 @@ def _get_graph(
 
             # We also recursively check the related tables to get a fuller
             # picture of the schema and relationships.
-            output.update(
-                _get_graph(
-                    [referenced_table],
-                    iterations=iterations + 1,
+            if referenced_table._meta.tablename not in output:
+                output.update(
+                    _get_graph(
+                        [referenced_table],
+                        iterations=iterations + 1,
+                    )
                 )
-            )
 
         output[table_class._meta.tablename] = dependents
 

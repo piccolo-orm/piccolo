@@ -36,6 +36,10 @@ class DateOffset(Default):
         return f"CURRENT_DATE + INTERVAL '{interval_string}'"
 
     @property
+    def cockroach(self):
+        return self.postgres
+
+    @property
     def sqlite(self):
         interval_string = self.get_sqlite_interval_string(["days"])
         return f"(datetime(CURRENT_TIMESTAMP, {interval_string}))"
@@ -50,6 +54,10 @@ class DateNow(Default):
     @property
     def postgres(self):
         return "CURRENT_DATE"
+
+    @property
+    def cockroach(self):
+        return self.postgres
 
     @property
     def sqlite(self):
@@ -74,6 +82,10 @@ class DateCustom(Default):
     @property
     def postgres(self):
         return f"'{self.date.isoformat()}'"
+
+    @property
+    def cockroach(self):
+        return self.postgres
 
     @property
     def sqlite(self):

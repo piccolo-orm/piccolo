@@ -13,6 +13,7 @@ from piccolo.columns.reverse_lookup import ReverseLookupSelect
 from piccolo.engine.base import Batch
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
+    AsOfDelegate,
     CallbackDelegate,
     CallbackType,
     ColumnsDelegate,
@@ -21,6 +22,7 @@ from piccolo.query.mixins import (
     LimitDelegate,
     OffsetDelegate,
     OrderByDelegate,
+    OrderByRaw,
     OutputDelegate,
     WhereDelegate,
 )
@@ -217,6 +219,7 @@ class Select(Query):
     __slots__ = (
         "columns_list",
         "exclude_secrets",
+        "as_of_delegate",
         "columns_delegate",
         "distinct_delegate",
         "group_by_delegate",
@@ -240,6 +243,7 @@ class Select(Query):
         super().__init__(table, **kwargs)
         self.exclude_secrets = exclude_secrets
 
+        self.as_of_delegate = AsOfDelegate()
         self.columns_delegate = ColumnsDelegate()
         self.distinct_delegate = DistinctDelegate()
         self.group_by_delegate = GroupByDelegate()
@@ -261,13 +265,17 @@ class Select(Query):
         self.distinct_delegate.distinct()
         return self
 
-    def group_by(self, *columns: Column) -> Select:
+    def group_by(self, *columns: t.Union[Column, str]) -> Select:
         _columns: t.List[Column] = [
             i
             for i in self.table._process_column_args(*columns)
             if isinstance(i, Column)
         ]
         self.group_by_delegate.group_by(*_columns)
+        return self
+
+    def as_of(self, interval: str = "-1s") -> Select:
+        self.as_of_delegate.as_of(interval)
         return self
 
     def limit(self, number: int) -> Select:
@@ -398,7 +406,7 @@ class Select(Query):
                             m2m_select,
                         )
 
-            elif self.engine_type == "postgres":
+            elif self.engine_type in ("postgres", "cockroach"):
                 if m2m_select.as_list:
                     # We get the data back as an array, and can just return it
                     # unless it's JSON.
@@ -429,10 +437,11 @@ class Select(Query):
                     )
 
         for reverse_lookup_select in reverse_lookup_selects:
+            reverse_lookup = reverse_lookup_select.reverse_lookup
             reverse_table = (
-                reverse_lookup_select.reverse_lookup._meta.resolved_reverse_joining_table  # noqa: E501
+                reverse_lookup._meta.resolved_reverse_joining_table  # noqa: E501
             )
-            reverse_lookup_table_name = reverse_table._meta.tablename
+            reverse_lookup_name = reverse_lookup._meta.name
 
             if self.engine_type == "sqlite":
                 # With ReverseLookup queries in SQLite, we always get
@@ -446,11 +455,11 @@ class Select(Query):
                 )
                 try:
                     for row in response:
-                        data = row[f"{reverse_lookup_table_name}s"]
-                        row[f"{reverse_lookup_table_name}s"] = (
+                        data = row[f"{reverse_lookup_name}"]
+                        row[f"{reverse_lookup_name}"] = (
                             [
                                 value_type(i)
-                                for i in row[f"{reverse_lookup_table_name}s"]
+                                for i in row[f"{reverse_lookup_name}"]
                             ]
                             if data
                             else []
@@ -458,7 +467,7 @@ class Select(Query):
                 except ValueError:
                     colored_warning(
                         "Unable to do type conversion for the "
-                        f"{reverse_lookup_table_name}s relation"
+                        f"{reverse_lookup_name} relation"
                     )
 
                 # If the user requested a single column, we just return that
@@ -473,7 +482,7 @@ class Select(Query):
                             response,
                             reverse_table,
                             reverse_table._meta.primary_key,
-                            f"{reverse_lookup_table_name}s",
+                            f"{reverse_lookup_name}",
                             reverse_lookup_select,
                             as_list=True,
                         )
@@ -486,11 +495,11 @@ class Select(Query):
                             0
                         ]._meta.name
                         for row in response:
-                            if row[f"{reverse_lookup_table_name}s"] is None:
-                                row[f"{reverse_lookup_table_name}s"] = []
-                            row[f"{reverse_lookup_table_name}s"] = [
+                            if row[f"{reverse_lookup_name}"] is None:
+                                row[f"{reverse_lookup_name}"] = []
+                            row[f"{reverse_lookup_name}"] = [
                                 {column_name: i}
-                                for i in row[f"{reverse_lookup_table_name}s"]
+                                for i in row[f"{reverse_lookup_name}"]
                             ]
                     elif (
                         len(reverse_lookup_select.columns) == 0
@@ -501,7 +510,7 @@ class Select(Query):
                             set(
                                 itertools.chain(
                                     *[
-                                        row[f"{reverse_lookup_table_name}s"]
+                                        row[f"{reverse_lookup_name}"]
                                         for row in response
                                     ]
                                 )
@@ -537,16 +546,16 @@ class Select(Query):
                             for row in extra_rows
                         }
                         for row in response:
-                            row[f"{reverse_lookup_table_name}s"] = [
+                            row[f"{reverse_lookup_name}"] = [
                                 extra_rows_map.get(i)
-                                for i in row[f"{reverse_lookup_table_name}s"]
+                                for i in row[f"{reverse_lookup_name}"]
                             ]
                     else:
                         response = await self._splice_m2m_rows(
                             response,
                             reverse_table,
                             reverse_table._meta.primary_key,
-                            f"{reverse_lookup_table_name}s",
+                            f"{reverse_lookup_name}",
                             reverse_lookup_select,
                             as_list=False,
                         )
@@ -569,8 +578,8 @@ class Select(Query):
                     # are returned as a JSON string, so we need to deserialise
                     # it.
                     for row in response:
-                        data = row[f"{reverse_lookup_table_name}s"]
-                        row[f"{reverse_lookup_table_name}s"] = (
+                        data = row[f"{reverse_lookup_name}"]
+                        row[f"{reverse_lookup_name}"] = (
                             load_json(data) if data else []
                         )
                 else:
@@ -581,7 +590,7 @@ class Select(Query):
                         response,
                         reverse_table,
                         reverse_table._meta.primary_key,
-                        f"{reverse_lookup_table_name}s",
+                        f"{reverse_lookup_name}",
                         reverse_lookup_select,
                         as_list=False,
                     )
@@ -605,12 +614,23 @@ class Select(Query):
         else:
             return response
 
-    def order_by(self, *columns: Column, ascending=True) -> Select:
-        _columns: t.List[Column] = [
-            i
-            for i in self.table._process_column_args(*columns)
-            if isinstance(i, Column)
-        ]
+    def order_by(
+        self, *columns: t.Union[Column, str, OrderByRaw], ascending=True
+    ) -> Select:
+        """
+        :param columns:
+            Either a :class:`piccolo.columns.base.Column` instance, a string
+            representing a column name, or :class:`piccolo.query.OrderByRaw`
+            which allows you for complex use cases like
+            ``OrderByRaw('random()')``.
+        """
+        _columns: t.List[t.Union[Column, OrderByRaw]] = []
+        for column in columns:
+            if isinstance(column, str):
+                _columns.append(self.table._meta.get_column_by_name(column))
+            else:
+                _columns.append(column)
+
         self.order_by_delegate.order_by(*_columns, ascending=ascending)
         return self
 
@@ -772,16 +792,20 @@ class Select(Query):
 
         args: t.List[t.Any] = []
 
+        if self.as_of_delegate._as_of:
+            query += "{}"
+            args.append(self.as_of_delegate._as_of.querystring)
+
         if self.where_delegate._where:
             query += " WHERE {}"
             args.append(self.where_delegate._where.querystring)
 
         if self.group_by_delegate._group_by:
-            query += " {}"
+            query += "{}"
             args.append(self.group_by_delegate._group_by.querystring)
 
-        if self.order_by_delegate._order_by:
-            query += " {}"
+        if self.order_by_delegate._order_by.order_by_items:
+            query += "{}"
             args.append(self.order_by_delegate._order_by.querystring)
 
         if (
@@ -795,11 +819,11 @@ class Select(Query):
             )
 
         if self.limit_delegate._limit:
-            query += " {}"
+            query += "{}"
             args.append(self.limit_delegate._limit.querystring)
 
         if self.offset_delegate._offset:
-            query += " {}"
+            query += "{}"
             args.append(self.offset_delegate._offset.querystring)
 
         querystring = QueryString(query, *args)

@@ -8,6 +8,13 @@ from .timestamp import TimestampCustom, TimestampNow, TimestampOffset
 
 
 class TimestamptzOffset(TimestampOffset):
+    @property
+    def cockroach(self):
+        interval_string = self.get_postgres_interval_string(
+            ["days", "hours", "minutes", "seconds"]
+        )
+        return f"CURRENT_TIMESTAMP + INTERVAL '{interval_string}'"
+
     def python(self):
         return datetime.datetime.now(
             tz=datetime.timezone.utc
@@ -20,11 +27,19 @@ class TimestamptzOffset(TimestampOffset):
 
 
 class TimestamptzNow(TimestampNow):
+    @property
+    def cockroach(self):
+        return "current_timestamp"
+
     def python(self):
         return datetime.datetime.now(tz=datetime.timezone.utc)
 
 
 class TimestamptzCustom(TimestampCustom):
+    @property
+    def cockroach(self):
+        return "'{}'".format(self.datetime.isoformat().replace("T", " "))
+
     @property
     def datetime(self):
         return datetime.datetime(

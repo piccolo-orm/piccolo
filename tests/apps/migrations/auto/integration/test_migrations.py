@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import decimal
 import os
+import random
 import shutil
 import tempfile
 import time
@@ -47,7 +48,7 @@ from piccolo.columns.reference import LazyTableReference
 from piccolo.conf.apps import AppConfig
 from piccolo.table import Table, create_table_class, drop_db_tables_sync
 from piccolo.utils.sync import run_sync
-from tests.base import DBTestCase, postgres_only
+from tests.base import DBTestCase, engines_only, engines_skip
 
 if t.TYPE_CHECKING:
     from piccolo.columns.base import Column
@@ -168,7 +169,7 @@ class MigrationTestCase(DBTestCase):
             )
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestMigrations(MigrationTestCase):
     def setUp(self):
         pass
@@ -182,10 +183,14 @@ class TestMigrations(MigrationTestCase):
     ###########################################################################
 
     def table(self, column: Column):
+        """
+        A utility for creating Piccolo tables with the given column.
+        """
         return create_table_class(
             class_name="MyTable", class_members={"my_column": column}
         )
 
+    @engines_skip("cockroach")
     def test_varchar_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -205,7 +210,8 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "character varying",
                     x.is_nullable == "NO",
-                    x.column_default == "''::character varying",
+                    x.column_default
+                    in ("''::character varying", "'':::STRING"),
                 ]
             ),
         )
@@ -228,7 +234,7 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "text",
                     x.is_nullable == "NO",
-                    x.column_default == "''::text",
+                    x.column_default in ("''::text", "'':::STRING"),
                 ]
             ),
         )
@@ -249,9 +255,9 @@ class TestMigrations(MigrationTestCase):
             ],
             test_function=lambda x: all(
                 [
-                    x.data_type == "integer",
+                    x.data_type in ("integer", "bigint"),  # Cockroach DB.
                     x.is_nullable == "NO",
-                    x.column_default == "0",
+                    x.column_default in ("0", "0:::INT8"),  # Cockroach DB.
                 ]
             ),
         )
@@ -273,7 +279,7 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "real",
                     x.is_nullable == "NO",
-                    x.column_default == "0.0",
+                    x.column_default in ("0.0", "0.0:::FLOAT8"),
                 ]
             ),
         )
@@ -295,7 +301,7 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "double precision",
                     x.is_nullable == "NO",
-                    x.column_default == "0.0",
+                    x.column_default in ("0.0", "0.0:::FLOAT8"),
                 ]
             ),
         )
@@ -318,7 +324,7 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "smallint",
                     x.is_nullable == "NO",
-                    x.column_default == "0",
+                    x.column_default in ("0", "0:::INT8"),  # Cockroach DB.
                 ]
             ),
         )
@@ -341,7 +347,7 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "bigint",
                     x.is_nullable == "NO",
-                    x.column_default == "0",
+                    x.column_default in ("0", "0:::INT8"),  # Cockroach DB.
                 ]
             ),
         )
@@ -397,11 +403,17 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "timestamp without time zone",
                     x.is_nullable == "NO",
-                    x.column_default in ("now()", "CURRENT_TIMESTAMP"),
+                    x.column_default
+                    in (
+                        "now()",
+                        "CURRENT_TIMESTAMP",
+                        "current_timestamp():::TIMESTAMPTZ::TIMESTAMP",
+                    ),
                 ]
             ),
         )
 
+    @engines_skip("cockroach")
     def test_time_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -447,7 +459,11 @@ class TestMigrations(MigrationTestCase):
                     x.data_type == "date",
                     x.is_nullable == "NO",
                     x.column_default
-                    in ("('now'::text)::date", "CURRENT_DATE"),
+                    in (
+                        "('now'::text)::date",
+                        "CURRENT_DATE",
+                        "current_date()",
+                    ),
                 ]
             ),
         )
@@ -470,7 +486,8 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "interval",
                     x.is_nullable == "NO",
-                    x.column_default == "'00:00:00'::interval",
+                    x.column_default
+                    in ("'00:00:00'::interval", "'00:00:00':::INTERVAL"),
                 ]
             ),
         )
@@ -498,6 +515,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @engines_skip("cockroach")
     def test_numeric_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -523,6 +541,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @engines_skip("cockroach")
     def test_decimal_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -548,7 +567,11 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @engines_skip("cockroach")
     def test_array_column_integer(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/35730 "column my_column is of type int[] and thus is not indexable"
+        """  # noqa: E501
         self._test_migrations(
             table_snapshots=[
                 [self.table(column)]
@@ -573,7 +596,11 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @engines_skip("cockroach")
     def test_array_column_varchar(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/35730 "column my_column is of type varchar[] and thus is not indexable"
+        """  # noqa: E501
         self._test_migrations(
             table_snapshots=[
                 [self.table(column)]
@@ -593,7 +620,8 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "ARRAY",
                     x.is_nullable == "NO",
-                    x.column_default == "'{}'::character varying[]",
+                    x.column_default
+                    in ("'{}'::character varying[]", "'':::STRING"),
                 ]
             ),
         )
@@ -618,7 +646,11 @@ class TestMigrations(MigrationTestCase):
     # We deliberately don't test setting JSON or JSONB columns as indexes, as
     # we know it'll fail.
 
+    @engines_skip("cockroach")
     def test_json_column(self):
+        """
+        Cockroach sees all json as jsonb, so we can skip this.
+        """
         self._test_migrations(
             table_snapshots=[
                 [self.table(column)]
@@ -657,7 +689,7 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "jsonb",
                     x.is_nullable == "NO",
-                    x.column_default == "'{}'::jsonb",
+                    x.column_default in ("'{}'::jsonb", "'{}':::JSONB"),
                 ]
             ),
         )
@@ -679,7 +711,8 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "character varying",
                     x.is_nullable == "NO",
-                    x.column_default == "''::character varying",
+                    x.column_default
+                    in ("''::character varying", "'':::STRING"),
                 ]
             ),
         )
@@ -700,7 +733,8 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "character varying",
                     x.is_nullable == "NO",
-                    x.column_default == "''::character varying",
+                    x.column_default
+                    in ("''::character varying", "'':::STRING"),
                 ]
             ),
         )
@@ -725,7 +759,11 @@ class TestMigrations(MigrationTestCase):
             ]
         )
 
+    @engines_skip("cockroach")
     def test_column_type_conversion_integer(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
+        """  # noqa: E501
         self._test_migrations(
             table_snapshots=[
                 [self.table(column)]
@@ -739,7 +777,11 @@ class TestMigrations(MigrationTestCase):
             ]
         )
 
+    @engines_skip("cockroach")
     def test_column_type_conversion_string_to_integer(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
+        """  # noqa: E501
         self._test_migrations(
             table_snapshots=[
                 [self.table(column)]
@@ -751,7 +793,11 @@ class TestMigrations(MigrationTestCase):
             ]
         )
 
+    @engines_skip("cockroach")
     def test_column_type_conversion_float_decimal(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
+        """  # noqa: E501
         self._test_migrations(
             table_snapshots=[
                 [self.table(column)]
@@ -830,7 +876,7 @@ class GenreToBand(Table):
     genre = ForeignKey(Genre)
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestM2MMigrations(MigrationTestCase):
     def setUp(self):
         pass
@@ -854,25 +900,60 @@ class TestM2MMigrations(MigrationTestCase):
 ###############################################################################
 
 
-class TableA(Table):
-    name = Varchar(unique=True)
+@engines_only("postgres", "cockroach")
+class TestForeignKeys(MigrationTestCase):
+    def setUp(self):
+        class TableA(Table):
+            pass
+
+        class TableB(Table):
+            fk = ForeignKey(TableA)
+
+        class TableC(Table):
+            fk = ForeignKey(TableB)
+
+        class TableD(Table):
+            fk = ForeignKey(TableC)
+
+        class TableE(Table):
+            fk = ForeignKey(TableD)
+
+        self.table_classes = [TableA, TableB, TableC, TableD, TableE]
+
+    def tearDown(self):
+        drop_db_tables_sync(Migration, *self.table_classes)
+
+    def test_foreign_keys(self):
+        """
+        Make sure that if we try creating tables with lots of foreign keys
+        to each other it runs successfully.
+
+        https://github.com/piccolo-orm/piccolo/issues/616
+
+        """
+        # We'll shuffle them, to make it a more thorough test.
+        table_classes = random.sample(
+            self.table_classes, len(self.table_classes)
+        )
+
+        self._test_migrations(table_snapshots=[table_classes])
+        for table_class in table_classes:
+            self.assertTrue(table_class.table_exists().run_sync())
 
 
-class TableB(Table):
-    table_a = ForeignKey(TableA, target_column="name")
-
-
-class TableC(Table):
-    table_a = ForeignKey(TableA, target_column=TableA.name)
-
-
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestTargetColumn(MigrationTestCase):
     def setUp(self):
-        pass
+        class TableA(Table):
+            name = Varchar(unique=True)
+
+        class TableB(Table):
+            table_a = ForeignKey(TableA, target_column=TableA.name)
+
+        self.table_classes = [TableA, TableB]
 
     def tearDown(self):
-        drop_db_tables_sync(Migration, TableA, TableC)
+        drop_db_tables_sync(Migration, *self.table_classes)
 
     def test_target_column(self):
         """
@@ -880,52 +961,14 @@ class TestTargetColumn(MigrationTestCase):
         other than the primary key.
         """
         self._test_migrations(
-            table_snapshots=[[TableA, TableC]],
+            table_snapshots=[self.table_classes],
         )
 
-        for table_class in [TableA, TableC]:
+        for table_class in self.table_classes:
             self.assertTrue(table_class.table_exists().run_sync())
 
         # Make sure the constraint was created correctly.
-        response = TableA.raw(
-            """
-            SELECT EXISTS(
-                SELECT 1
-                FROM INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE CCU
-                JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS TC ON
-                    CCU.CONSTRAINT_NAME = TC.CONSTRAINT_NAME
-                WHERE CONSTRAINT_TYPE = 'FOREIGN KEY'
-                    AND TC.TABLE_NAME = 'table_c'
-                    AND CCU.TABLE_NAME = 'table_a'
-                    AND CCU.COLUMN_NAME = 'name'
-            )
-            """
-        ).run_sync()
-        self.assertTrue(response[0]["exists"])
-
-
-@postgres_only
-class TestTargetColumnString(MigrationTestCase):
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        drop_db_tables_sync(Migration, TableA, TableB)
-
-    def test_target_column(self):
-        """
-        Make sure migrations still work when a foreign key references a column
-        other than the primary key.
-        """
-        self._test_migrations(
-            table_snapshots=[[TableA, TableB]],
-        )
-
-        for table_class in [TableA, TableB]:
-            self.assertTrue(table_class.table_exists().run_sync())
-
-        # Make sure the constraint was created correctly.
-        response = TableA.raw(
+        response = self.run_sync(
             """
             SELECT EXISTS(
                 SELECT 1
@@ -938,5 +981,49 @@ class TestTargetColumnString(MigrationTestCase):
                     AND CCU.COLUMN_NAME = 'name'
             )
             """
-        ).run_sync()
+        )
+        self.assertTrue(response[0]["exists"])
+
+
+@engines_only("postgres", "cockroach")
+class TestTargetColumnString(MigrationTestCase):
+    def setUp(self):
+        class TableA(Table):
+            name = Varchar(unique=True)
+
+        class TableB(Table):
+            table_a = ForeignKey(TableA, target_column="name")
+
+        self.table_classes = [TableA, TableB]
+
+    def tearDown(self):
+        drop_db_tables_sync(Migration, *self.table_classes)
+
+    def test_target_column(self):
+        """
+        Make sure migrations still work when a foreign key references a column
+        other than the primary key.
+        """
+        self._test_migrations(
+            table_snapshots=[self.table_classes],
+        )
+
+        for table_class in self.table_classes:
+            self.assertTrue(table_class.table_exists().run_sync())
+
+        # Make sure the constraint was created correctly.
+        response = self.run_sync(
+            """
+            SELECT EXISTS(
+                SELECT 1
+                FROM INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE CCU
+                JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS TC ON
+                    CCU.CONSTRAINT_NAME = TC.CONSTRAINT_NAME
+                WHERE CONSTRAINT_TYPE = 'FOREIGN KEY'
+                    AND TC.TABLE_NAME = 'table_b'
+                    AND CCU.TABLE_NAME = 'table_a'
+                    AND CCU.COLUMN_NAME = 'name'
+            )
+            """
+        )
         self.assertTrue(response[0]["exists"])

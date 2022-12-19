@@ -96,7 +96,7 @@ Let Piccolo scaffold you an ASGI web app, using Piccolo as the ORM:
 piccolo asgi new
 ```
 
-[Starlette](https://www.starlette.io/), [FastAPI](https://fastapi.tiangolo.com/), [BlackSheep](https://www.neoteroi.dev/blacksheep/) and [Xpresso](https://xpresso-api.dev/) are currently supported.
+[Starlette](https://www.starlette.io/), [FastAPI](https://fastapi.tiangolo.com/), [BlackSheep](https://www.neoteroi.dev/blacksheep/), [Xpresso](https://xpresso-api.dev/) and [Starlite](https://starlite-api.github.io/starlite/) are currently supported.
 
 ## Are you a Django user?
 

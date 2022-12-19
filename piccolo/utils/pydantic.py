@@ -37,7 +37,9 @@ class Config(pydantic.BaseConfig):
     arbitrary_types_allowed = True
 
 
-def pydantic_json_validator(cls, value):
+def pydantic_json_validator(cls, value, field):
+    if not field.required and value is None:
+        return value
     try:
         load_json(value)
     except json.JSONDecodeError as e:

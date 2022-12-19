@@ -27,7 +27,6 @@ class ReverseLookupSelect(Selectable):
         reverse_lookup: ReverseLookup,
         as_list: bool = False,
         load_json: bool = False,
-        table: t.Type[Table],
     ):
         """
         :param columns:
@@ -37,15 +36,12 @@ class ReverseLookupSelect(Selectable):
             flattened list will be returned, rather than a list of objects.
         :param load_json:
             If ``True``, any JSON strings are loaded as Python objects.
-        :param table:
-            Parent table for reverse lookup.
 
         """
         self.as_list = as_list
         self.columns = columns
         self.reverse_lookup = reverse_lookup
         self.load_json = load_json
-        self.table = table
 
         safe_types = [int, str]
 
@@ -57,39 +53,22 @@ class ReverseLookupSelect(Selectable):
             for column in columns
         )
 
-    @property
-    def foreign_key_columns_index(self) -> int:
-        reverse_lookup_table = (
-            self.reverse_lookup._meta.resolved_reverse_joining_table
-        )
-        fk_columns = [
-            i._meta.name
-            for i in reverse_lookup_table._meta.foreign_key_columns
-        ]
-        return fk_columns.index(self.table._meta.tablename)
-
     def get_select_string(self, engine_type: str, with_alias=True) -> str:
-        reverse_lookup_table = (
-            self.reverse_lookup._meta.resolved_reverse_joining_table
-        )
-        reverse_lookup_table_name = reverse_lookup_table._meta.tablename
-        reverse_lookup_pk = reverse_lookup_table._meta.primary_key._meta.name
-        reverse_lookup_fk_table_name = (
-            reverse_lookup_table._meta.foreign_key_columns[
-                self.foreign_key_columns_index
-            ]._meta.name
-        )
-        reverse_lookup_fk = reverse_lookup_table._meta.foreign_key_columns[
-            self.foreign_key_columns_index
-        ]._meta.db_column_name
+        reverse_lookup_name = self.reverse_lookup._meta.name
+
+        table1 = self.reverse_lookup._meta.table
+        table1_pk = table1._meta.primary_key._meta.name
+        table1_name = table1._meta.tablename
+
+        table2 = self.reverse_lookup._meta.resolved_reverse_joining_table
+        table2_name = table2._meta.tablename
+        table2_pk = table2._meta.primary_key._meta.name
+        table2_fk = self.reverse_lookup._meta.reverse_fk
 
         reverse_select = f"""
-            "{reverse_lookup_table_name}"
-            JOIN "{reverse_lookup_fk_table_name}" "inner_{reverse_lookup_fk_table_name}" ON (
-                "{reverse_lookup_table_name}"."{reverse_lookup_fk}"
-                = "inner_{reverse_lookup_fk_table_name}"."{reverse_lookup_pk}"
-            ) WHERE "{reverse_lookup_table_name}"."{reverse_lookup_fk}"
-                = "{reverse_lookup_fk_table_name}"."{reverse_lookup_pk}"
+            "{table2_name}"
+            WHERE "{table2_name}"."{table2_fk}"
+                = "{table1_name}"."{table1_pk}"
         """  # noqa: E501
 
         if engine_type == "postgres":
@@ -98,55 +77,55 @@ class ReverseLookupSelect(Selectable):
                 return f"""
                     ARRAY(
                         SELECT
-                            "{reverse_lookup_table_name}"."{column_name}"
+                            "{table2_name}"."{column_name}"
                         FROM {reverse_select}
-                    ) AS "{reverse_lookup_table_name}s"
+                    ) AS "{reverse_lookup_name}"
                 """
             elif not self.serialisation_safe:
-                column_name = reverse_lookup_pk
+                column_name = table2_pk
                 return f"""
                     ARRAY(
                         SELECT
-                            "{reverse_lookup_table_name}"."{column_name}"
+                            "{table2_name}"."{column_name}"
                         FROM {reverse_select}
-                    ) AS "{reverse_lookup_table_name}s"
+                    ) AS "{reverse_lookup_name}"
                 """
             else:
                 if len(self.columns) > 0:
                     column_names = ", ".join(
-                        f'"{reverse_lookup_table_name}"."{column._meta.db_column_name}"'  # noqa: E501
+                        f'"{table2_name}"."{column._meta.db_column_name}"'  # noqa: E501
                         for column in self.columns
                     )
                 else:
                     column_names = ", ".join(
-                        f'"{reverse_lookup_table_name}"."{column._meta.db_column_name}"'  # noqa: E501
-                        for column in reverse_lookup_table._meta.columns
+                        f'"{table2_name}"."{column._meta.db_column_name}"'  # noqa: E501
+                        for column in table2._meta.columns
                     )
                 return f"""
                     (
-                        SELECT JSON_AGG("{reverse_lookup_table_name}s")
+                        SELECT JSON_AGG("{table2_name}s")
                         FROM (
                             SELECT {column_names} FROM {reverse_select}
-                        ) AS "{reverse_lookup_table_name}s"
-                    ) AS "{reverse_lookup_table_name}s"
+                        ) AS "{table2_name}s"
+                    ) AS "{reverse_lookup_name}"
                 """
         elif engine_type == "sqlite":
             if len(self.columns) > 1 or not self.serialisation_safe:
-                column_name = reverse_lookup_pk
+                column_name = table2_pk
             else:
                 try:
                     column_name = self.columns[0]._meta.db_column_name
                 except IndexError:
-                    column_name = reverse_lookup_pk
+                    column_name = table2_pk
 
             return f"""
                 (
                     SELECT group_concat(
-                        "{reverse_lookup_table_name}"."{column_name}"
+                        "{table2_name}"."{column_name}"
                     )
                     FROM {reverse_select}
                 )
-                AS "{reverse_lookup_table_name}s [M2M]"
+                AS "{table2_name}s [M2M]"
             """
         else:
             raise ValueError(f"{engine_type} is an unrecognised engine type")
@@ -155,6 +134,27 @@ class ReverseLookupSelect(Selectable):
 @dataclass
 class ReverseLookupMeta:
     reverse_joining_table: t.Union[t.Type[Table], LazyTableReference]
+    reverse_fk: str
+
+    # Set by the Table Metaclass:
+    _name: t.Optional[str] = None
+    _table: t.Optional[t.Type[Table]] = None
+
+    @property
+    def name(self) -> str:
+        if not self._name:
+            raise ValueError(
+                "`_name` isn't defined - the Table Metaclass should set it."
+            )
+        return self._name
+
+    @property
+    def table(self) -> t.Type[Table]:
+        if not self._table:
+            raise ValueError(
+                "`_table` isn't defined - the Table Metaclass should set it."
+            )
+        return self._table
 
     @property
     def resolved_reverse_joining_table(self) -> t.Type[Table]:
@@ -182,13 +182,17 @@ class ReverseLookup:
     def __init__(
         self,
         reverse_joining_table: t.Union[t.Type[Table], LazyTableReference],
+        reverse_fk: str,
     ):
         """
         :param reverse_joining_table:
             A ``Table`` for reverse lookup.
+        :param reverse_fk:
+            The ForeignKey to be used for the reverse lookup.
         """
         self._meta = ReverseLookupMeta(
             reverse_joining_table=reverse_joining_table,
+            reverse_fk=reverse_fk,
         )
 
     def __call__(
@@ -196,7 +200,6 @@ class ReverseLookup:
         *columns: Column,
         as_list: bool = False,
         load_json: bool = False,
-        table: t.Type[Table],
     ) -> ReverseLookupSelect:
         """
         :param columns:
@@ -207,8 +210,6 @@ class ReverseLookup:
             flattened list will be returned, rather than a list of objects.
         :param load_json:
             If ``True``, any JSON strings are loaded as Python objects.
-        :param table:
-            Parent table for reverse lookup.
 
         """
 
@@ -222,5 +223,4 @@ class ReverseLookup:
             reverse_lookup=self,
             as_list=as_list,
             load_json=load_json,
-            table=table,
         )
