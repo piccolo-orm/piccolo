@@ -24,9 +24,9 @@ from piccolo.columns.m2m import (
     M2MGetRelated,
     M2MRemoveRelated,
 )
-from piccolo.columns.reverse_lookup import ReverseLookup
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
+from piccolo.columns.reverse_lookup import ReverseLookup
 from piccolo.engine import Engine, engine_finder
 from piccolo.query import (
     Alter,

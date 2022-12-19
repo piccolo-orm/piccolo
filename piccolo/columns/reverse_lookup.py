@@ -69,9 +69,9 @@ class ReverseLookupSelect(Selectable):
             "{table2_name}"
             WHERE "{table2_name}"."{table2_fk}"
                 = "{table1_name}"."{table1_pk}"
-        """  # noqa: E501
+        """
 
-        if engine_type == "postgres":
+        if engine_type in ("postgres", "cockroach"):
             if self.as_list:
                 column_name = self.columns[0]._meta.db_column_name
                 return f"""

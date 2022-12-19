@@ -8,12 +8,17 @@ from piccolo.columns.column_types import (
 )
 from piccolo.columns.reverse_lookup import ReverseLookup
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
+from tests.base import engine_is, engines_skip
 
 
 class Manager(Table):
     name = Varchar()
     bands = ReverseLookup(
-        LazyTableReference("Band", module_path=__name__),
+        LazyTableReference(
+            "Band",
+            module_path=__name__,
+        ),
+        reverse_fk="manager",
     )
 
 
@@ -29,24 +34,46 @@ class TestReverseLookup(TestCase):
     def setUp(self):
         create_db_tables_sync(*SIMPLE_SCHEMA, if_not_exists=True)
 
-        Manager.insert(
-            Manager(name="Guido"),
-            Manager(name="Mark"),
-            Manager(name="John"),
-        ).run_sync()
+        if engine_is("cockroach"):
+            managers = (
+                Manager.insert(
+                    Manager(name="Guido"),
+                    Manager(name="Mark"),
+                    Manager(name="John"),
+                )
+                .returning(Manager.id)
+                .run_sync()
+            )
 
-        Band.insert(
-            Band(name="Pythonistas", manager=1),
-            Band(name="Rustaceans", manager=1),
-            Band(name="C-Sharps", manager=2),
-        ).run_sync()
+            Band.insert(
+                Band(name="Pythonistas", manager=managers[0]["id"]),
+                Band(name="Rustaceans", manager=managers[0]["id"]),
+                Band(name="C-Sharps", manager=managers[1]["id"]),
+            ).returning(Band.id).run_sync()
+
+        else:
+            Manager.insert(
+                Manager(name="Guido"),
+                Manager(name="Mark"),
+                Manager(name="John"),
+            ).run_sync()
+
+            Band.insert(
+                Band(name="Pythonistas", manager=1),
+                Band(name="Rustaceans", manager=1),
+                Band(name="C-Sharps", manager=2),
+            ).run_sync()
 
     def tearDown(self):
         drop_db_tables_sync(*SIMPLE_SCHEMA)
 
+    @engines_skip("cockroach")
     def test_select_name(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """  # noqa: E501
         response = Manager.select(
-            Manager.name, Manager.bands(Band.name, as_list=True, table=Manager)
+            Manager.name, Manager.bands(Band.name, as_list=True)
         ).run_sync()
         self.assertEqual(
             response,
@@ -57,9 +84,13 @@ class TestReverseLookup(TestCase):
             ],
         )
 
+    @engines_skip("cockroach")
     def test_select_multiple(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """  # noqa: E501
         response = Manager.select(
-            Manager.name, Manager.bands(Band.id, Band.name, table=Manager)
+            Manager.name, Manager.bands(Band.id, Band.name)
         ).run_sync()
 
         self.assertEqual(
@@ -80,10 +111,12 @@ class TestReverseLookup(TestCase):
             ],
         )
 
+    @engines_skip("cockroach")
     def test_select_multiple_all_columns(self):
-        response = Manager.select(
-            Manager.name, Manager.bands(table=Manager)
-        ).run_sync()
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """  # noqa: E501
+        response = Manager.select(Manager.name, Manager.bands()).run_sync()
 
         self.assertEqual(
             response,
@@ -106,9 +139,13 @@ class TestReverseLookup(TestCase):
             ],
         )
 
+    @engines_skip("cockroach")
     def test_select_id(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """  # noqa: E501
         response = Manager.select(
-            Manager.name, Manager.bands(Band.id, as_list=True, table=Manager)
+            Manager.name, Manager.bands(Band.id, as_list=True)
         ).run_sync()
 
         self.assertEqual(
@@ -125,7 +162,7 @@ class TestReverseLookup(TestCase):
         with self.assertRaises(ValueError):
             Manager.select(
                 Manager.name,
-                Manager.bands(Band.id, Band.name, as_list=True, table=Manager),
+                Manager.bands(Band.id, Band.name, as_list=True),
             ).run_sync()
 
 
@@ -138,7 +175,11 @@ class Customer(Table):
     uuid = UUID(primary_key=True)
     name = Varchar()
     concerts = ReverseLookup(
-        LazyTableReference("Concert", module_path=__name__),
+        LazyTableReference(
+            "Concert",
+            module_path=__name__,
+        ),
+        reverse_fk="customer",
     )
 
 
@@ -163,7 +204,11 @@ class TestReverseLookupCustomPrimaryKey(TestCase):
     def tearDown(self):
         drop_db_tables_sync(*CUSTOM_PK_SCHEMA)
 
+    @engines_skip("cockroach")
     def test_select_custom_primary_key(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """  # noqa: E501
         Customer.objects().create(name="Bob").run_sync()
         Customer.objects().create(name="Sally").run_sync()
         Customer.objects().create(name="Fred").run_sync()
@@ -193,7 +238,7 @@ class TestReverseLookupCustomPrimaryKey(TestCase):
 
         response = Customer.select(
             Customer.name,
-            Customer.concerts(Concert.name, as_list=True, table=Customer),
+            Customer.concerts(Concert.name, as_list=True),
         ).run_sync()
 
         self.assertListEqual(
@@ -206,7 +251,7 @@ class TestReverseLookupCustomPrimaryKey(TestCase):
         )
 
         response = Customer.select(
-            Customer.name, Customer.concerts(Concert.name, table=Customer)
+            Customer.name, Customer.concerts(Concert.name)
         ).run_sync()
 
         self.assertEqual(
