@@ -273,6 +273,8 @@ isn't supported by Piccolo:
     ... )
     [{'name': 'Pythonistas', 'log_popularity': 3.0}]
 
+.. warning:: Only use SQL that you trust.
+
 -------------------------------------------------------------------------------
 
 Query clauses
