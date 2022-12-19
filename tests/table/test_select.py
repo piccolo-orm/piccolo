@@ -13,6 +13,7 @@ from tests.base import (
     engine_version_lt,
     engines_only,
     engines_skip,
+    is_running_cockroach,
     is_running_sqlite,
     sqlite_only,
 )
@@ -967,6 +968,12 @@ class TestSelect(DBTestCase):
     @pytest.mark.skipif(
         is_running_sqlite() and engine_version_lt(3.35),
         reason="SQLite doesn't have math functions in this version.",
+    )
+    @pytest.mark.skipif(
+        is_running_cockroach(),
+        reason=(
+            "Cockroach raises an error when trying to use the log function."
+        ),
     )
     def test_select_raw(self):
         """
