@@ -1,3 +1,4 @@
+import datetime
 import os
 import shutil
 import tempfile
@@ -7,6 +8,7 @@ from unittest.mock import MagicMock, call, patch
 from piccolo.apps.migrations.commands.new import (
     BaseMigrationManager,
     _create_new_migration,
+    _generate_migration_meta,
     new,
 )
 from piccolo.conf.apps import AppConfig
@@ -55,4 +57,51 @@ class TestNewMigrationCommand(TestCase):
 
         self.assertTrue(
             print_.mock_calls[-1] == call("No changes detected - exiting.")
+        )
+
+
+class TestGenerateMigrationMeta(TestCase):
+    @patch("piccolo.apps.migrations.commands.new.now")
+    def test_filename(self, now: MagicMock):
+        now.return_value = datetime.datetime(
+            year=2022,
+            month=1,
+            day=10,
+            hour=7,
+            minute=15,
+            second=20,
+            microsecond=3000,
+        )
+
+        # Try with an app name which already contains valid characters for a
+        # Python module.
+        migration_meta = _generate_migration_meta(
+            app_config=AppConfig(
+                app_name="app_name",
+                migrations_folder_path="/tmp/",
+            )
+        )
+        self.assertEqual(
+            migration_meta.migration_filename,
+            "app_name_2022_01_10t07_15_20_003000",
+        )
+        self.assertEqual(
+            migration_meta.migration_path,
+            "/tmp/app_name_2022_01_10t07_15_20_003000.py",
+        )
+
+        # Try with an app name with invalid characters for a Python module.
+        migration_meta = _generate_migration_meta(
+            app_config=AppConfig(
+                app_name="App-Name!",
+                migrations_folder_path="/tmp/",
+            )
+        )
+        self.assertEqual(
+            migration_meta.migration_filename,
+            "app_name_2022_01_10t07_15_20_003000",
+        )
+        self.assertEqual(
+            migration_meta.migration_path,
+            "/tmp/app_name_2022_01_10t07_15_20_003000.py",
         )

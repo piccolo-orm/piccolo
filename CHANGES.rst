@@ -1,6 +1,157 @@
 Changes
 =======
 
+0.102.0
+-------
+
+Migration file names
+~~~~~~~~~~~~~~~~~~~~
+
+The naming convention for migrations has changed slightly. It used to be just
+a timestamp - for example:
+
+.. code-block:: text
+
+  2021-09-06T13-58-23-024723.py
+
+By convention Python files should start with a letter, and only contain
+``a-z``, ``0-9`` and ``_``, so the new format is:
+
+.. code-block:: text
+
+  my_app_2021_09_06T13_58_23_024723.py
+
+.. note:: You can name a migration file anything you want (it's the ``ID``
+  value inside it which is important), so this change doesn't break anything.
+
+Enhanced Pydantic configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We now expose all of Pydantic's configuration options to
+``create_pydantic_model``:
+
+.. code-block:: python
+
+  class MyPydanticConfig(pydantic.BaseConfig):
+      extra = 'forbid'
+
+  model = create_pydantic_model(
+      table=MyTable,
+      pydantic_config_class=MyPydanticConfig
+  )
+
+Thanks to @waldner for this.
+
+Other changes
+~~~~~~~~~~~~~
+
+* Fixed a bug with ``get_or_create`` and null columns (thanks to @powellnorma
+  for reporting this issue).
+* Updated the Starlite ASGI template, so it uses the latest syntax for mounting
+  Piccolo Admin (thanks to @sinisaos for this, and the Starlite team).
+
+-------------------------------------------------------------------------------
+
+0.101.0
+-------
+
+``piccolo fixtures load`` is now more intelligent about how it loads data, to
+avoid foreign key constraint errors.
+
+-------------------------------------------------------------------------------
+
+0.100.0
+-------
+
+``Array`` columns now support choices.
+
+.. code-block:: python
+
+    class Ticket(Table):
+        class Extras(str, enum.Enum):
+            drink = "drink"
+            snack = "snack"
+            program = "program"
+
+        extras = Array(Varchar(), choices=Extras)
+
+We can then use the ``Enum`` in our queries:
+
+.. code-block:: python
+
+    >>> await Ticket.insert(
+    ...     Ticket(extras=[Extras.drink, Extras.snack]),
+    ...     Ticket(extras=[Extras.program]),
+    ... )
+
+This will also be supported in Piccolo Admin in the next release.
+
+-------------------------------------------------------------------------------
+
+0.99.0
+------
+
+You can now use the ``returning`` clause with ``delete`` queries.
+
+For example:
+
+.. code-block:: python
+
+    >>> await Band.delete().where(Band.popularity < 100).returning(Band.name)
+    [{'name': 'Terrible Band'}, {'name': 'Awful Band'}]
+
+This also means you can count the number of deleted rows:
+
+.. code-block:: python
+
+    >>> len(await Band.delete().where(Band.popularity < 100).returning(Band.id))
+    2
+
+Thanks to @waldner for adding this feature.
+
+-------------------------------------------------------------------------------
+
+0.98.0
+------
+
+SQLite ``TransactionType``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can now specify the transaction type for SQLite.
+
+This is useful when using SQLite in production, as it's possible to get
+``database locked`` errors if you're running lots of transactions concurrently,
+and don't use the correct transaction type.
+
+In this example we use an ``IMMEDIATE`` transaction:
+
+.. code-block:: python
+
+  from piccolo.engine.sqlite import TransactionType
+
+  async with Band._meta.db.transaction(
+      transaction_type=TransactionType.immediate
+  ):
+      band = await Band.objects().get_or_create(Band.name == 'Pythonistas')
+      ...
+
+We've added a `new tutorial <https://piccolo-orm.readthedocs.io/en/latest/piccolo/tutorials/using_sqlite_and_asyncio_effectively.html>`_
+which explains this in more detail, as well as other tips for using asyncio and
+SQLite together effectively.
+
+Thanks to @powellnorma and @sinisaos for their help with this.
+
+Other changes
+~~~~~~~~~~~~~
+
+* Fixed a bug with camelCase column names (we recommend using snake_case, but
+  sometimes it's unavoidable when using Piccolo with an existing schema).
+  Thanks to @sinisaos for this.
+* Fixed a typo in the docs with ``raw`` queries - thanks to @StitiFatah for
+  this.
+
+-------------------------------------------------------------------------------
+
 0.97.0
 ------
 

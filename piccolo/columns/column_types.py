@@ -1217,7 +1217,7 @@ class Time(Column):
         obj.__dict__[self._meta.name] = value
 
 
-class Interval(Column):  # lgtm [py/missing-equals]
+class Interval(Column):
     """
     Used for storing timedeltas. Uses the ``timedelta`` type for values.
 
@@ -1637,7 +1637,7 @@ class ForeignKeySetupResponse:
     is_lazy: bool
 
 
-class ForeignKey(Column):  # lgtm [py/missing-equals]
+class ForeignKey(Column):
     """
     Used to reference another table. Uses the same type as the primary key
     column on the table it references.
@@ -2179,7 +2179,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
 ###############################################################################
 
 
-class JSON(Column):  # lgtm[py/missing-equals]
+class JSON(Column):
     """
     Used for storing JSON strings. The data is stored as text. This can be
     preferable to JSONB if you just want to store and retrieve JSON without
@@ -2472,8 +2472,15 @@ class Array(Column):
 
         self._validate_default(default, (list, None))
 
+        choices = kwargs.get("choices")
+        if choices is not None:
+            self._validate_choices(
+                choices, allowed_type=base_column.value_type
+            )
+            self._validated_choices = True
+
         # Usually columns are given a name by the Table metaclass, but in this
-        # case we have to assign one manually.
+        # case we have to assign one manually to the base column.
         base_column._meta._name = base_column.__class__.__name__
 
         self.base_column = base_column

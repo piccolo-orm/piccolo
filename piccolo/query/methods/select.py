@@ -40,6 +40,28 @@ def is_numeric_column(column: Column) -> bool:
     return column.value_type in (int, decimal.Decimal, float)
 
 
+class SelectRaw(Selectable):
+    def __init__(self, sql: str, *args: t.Any) -> None:
+        """
+        Execute raw SQL in your select query.
+
+        .. code-block:: python
+
+            >>> await Band.select(
+            ...     Band.name,
+            ...     SelectRaw("log(popularity) AS log_popularity")
+            ... )
+            [{'name': 'Pythonistas', 'log_popularity': 3.0}]
+
+        """
+        self.querystring = QueryString(sql, *args)
+
+    def get_select_string(
+        self, engine_type: str, with_alias: bool = True
+    ) -> str:
+        return self.querystring.__str__()
+
+
 class Avg(Selectable):
     """
     ``AVG()`` SQL function. Column type must be numeric to run the query.
@@ -720,9 +742,9 @@ class Select(Query):
                 ]._foreign_key_meta.resolved_target_column._meta.name
 
                 _joins.append(
-                    f"LEFT JOIN {right_tablename} {table_alias}"
+                    f'LEFT JOIN "{right_tablename}" "{table_alias}"'
                     " ON "
-                    f"({left_tablename}.{key._meta.name} = {table_alias}.{pk_name})"  # noqa: E501
+                    f'("{left_tablename}"."{key._meta.name}" = "{table_alias}"."{pk_name}")'  # noqa: E501
                 )
 
             joins.extend(_joins)

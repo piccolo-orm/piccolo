@@ -21,15 +21,20 @@ First, let's create an empty migration:
 
     piccolo migrations new my_app
 
-This creates a new migration file in the migrations folder of the app. The
-migration filename is a timestamp:
+This creates a new migration file in the migrations folder of the app. By
+default, the migration filename is the name of the app, followed by a timestamp,
+but you can rename it to anything you want:
 
 .. code-block:: bash
 
     piccolo_migrations/
-        2022-02-26T17-38-44-758593.py
+        my_app_2022_12_06T13_58_23_024723.py
 
-.. hint:: You can rename this file if you like to make it more memorable.
+.. note::
+    We changed the naming convention for migration files in version ``0.102.0``
+    (previously they were like ``2022-12-06T13-58-23-024723.py``). As mentioned,
+    the name isn't important - change it to anything you want. The new format
+    was chosen because a Python file should start with a letter by convention.
 
 The contents of an empty migration file looks like this:
 
