@@ -273,6 +273,41 @@ class TestM2M(TestCase):
             ],
         )
 
+    @engines_skip("cockroach")
+    def test_select_all_columns(self):
+        """
+        Make sure ``all_columns`` can be passed in as an argument. ``M2M``
+        should flatten the arguments. Reported here:
+
+        https://github.com/piccolo-orm/piccolo/issues/728
+
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+
+        """  # noqa: E501
+        response = Band.select(
+            Band.name, Band.genres(Genre.all_columns(exclude=(Genre.id,)))
+        ).run_sync()
+        self.assertEqual(
+            response,
+            [
+                {
+                    "name": "Pythonistas",
+                    "genres": [
+                        {"name": "Rock"},
+                        {"name": "Folk"},
+                    ],
+                },
+                {"name": "Rustaceans", "genres": [{"name": "Folk"}]},
+                {
+                    "name": "C-Sharps",
+                    "genres": [
+                        {"name": "Rock"},
+                        {"name": "Classical"},
+                    ],
+                },
+            ],
+        )
+
     def test_add_m2m(self):
         """
         Make sure we can add items to the joining table.
