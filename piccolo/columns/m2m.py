@@ -12,6 +12,7 @@ from piccolo.columns.column_types import (
     ForeignKey,
     LazyTableReference,
 )
+from piccolo.utils.list import flatten
 from piccolo.utils.sync import run_sync
 
 if t.TYPE_CHECKING:
@@ -45,9 +46,9 @@ class M2MSelect(Selectable):
         self.m2m = m2m
         self.load_json = load_json
 
-        safe_types = [int, str]
+        safe_types = (int, str)
 
-        # If the columns can be serialised / deserialise as JSON, then we
+        # If the columns can be serialised / deserialised as JSON, then we
         # can fetch the data all in one go.
         self.serialisation_safe = all(
             (column.__class__.value_type in safe_types)
@@ -408,7 +409,10 @@ class M2M:
         )
 
     def __call__(
-        self, *columns: Column, as_list: bool = False, load_json: bool = False
+        self,
+        *columns: t.Union[Column, t.List[Column]],
+        as_list: bool = False,
+        load_json: bool = False,
     ) -> M2MSelect:
         """
         :param columns:
@@ -420,14 +424,16 @@ class M2M:
         :param load_json:
             If ``True``, any JSON strings are loaded as Python objects.
         """
-        if not columns:
-            columns = tuple(self._meta.secondary_table._meta.columns)
+        columns_ = flatten(columns)
 
-        if as_list and len(columns) != 1:
+        if not columns_:
+            columns_ = self._meta.secondary_table._meta.columns
+
+        if as_list and len(columns_) != 1:
             raise ValueError(
                 "`as_list` is only valid with a single column argument"
             )
 
         return M2MSelect(
-            *columns, m2m=self, as_list=as_list, load_json=load_json
+            *columns_, m2m=self, as_list=as_list, load_json=load_json
         )
