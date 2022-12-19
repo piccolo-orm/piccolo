@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from piccolo.columns.column_types import JSONB, ForeignKey, Varchar
 from piccolo.table import Table
-from tests.base import postgres_only
+from tests.base import engines_only, engines_skip
 
 
 class RecordingStudio(Table):
@@ -15,7 +15,7 @@ class Instrument(Table):
     studio = ForeignKey(RecordingStudio)
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestJSONB(TestCase):
     def setUp(self):
         RecordingStudio.create_table().run_sync()
@@ -35,6 +35,7 @@ class TestJSONB(TestCase):
         row.save().run_sync()
         self.assertEqual(row.facilities, '{"mixing_desk": true}')
 
+    @engines_skip("cockroach")
     def test_raw(self):
         """
         Make sure raw queries convert the Python value into a JSON string.
@@ -50,6 +51,28 @@ class TestJSONB(TestCase):
             [
                 {
                     "id": 1,
+                    "name": "Abbey Road",
+                    "facilities": '{"mixing_desk": true}',
+                }
+            ],
+        )
+
+    @engines_only("cockroach")
+    def test_raw_alt(self):
+        """
+        Make sure raw queries convert the Python value into a JSON string.
+        """
+        result = RecordingStudio.raw(
+            "INSERT INTO recording_studio (name, facilities) VALUES ({}, {}) returning id",  # noqa: E501
+            "Abbey Road",
+            '{"mixing_desk": true}',
+        ).run_sync()
+
+        self.assertEqual(
+            RecordingStudio.select().run_sync(),
+            [
+                {
+                    "id": result[0]["id"],
                     "name": "Abbey Road",
                     "facilities": '{"mixing_desk": true}',
                 }

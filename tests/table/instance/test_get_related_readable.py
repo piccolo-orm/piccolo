@@ -4,6 +4,7 @@ from unittest import TestCase
 from piccolo.columns import ForeignKey, Varchar
 from piccolo.columns.readable import Readable
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
+from tests.base import engine_is
 from tests.example_apps.music.tables import (
     Band,
     Concert,
@@ -123,18 +124,33 @@ class TestGetRelatedReadable(TestCase):
             Ticket.id,
             Ticket._get_related_readable(Ticket.concert),
         ).run_sync()
-        self.assertEqual(
-            response,
-            [
-                {
-                    "id": 1,
-                    "concert_readable": (
-                        "Pythonistas and Rustaceans at Royal Albert Hall, "
-                        "capacity 5900"
-                    ),
-                }
-            ],
-        )
+
+        if engine_is("cockroach"):
+            self.assertEqual(
+                response,
+                [
+                    {
+                        "id": response[0]["id"],
+                        "concert_readable": (
+                            "Pythonistas and Rustaceans at Royal Albert Hall, "
+                            "capacity 5900"
+                        ),
+                    }
+                ],
+            )
+        else:
+            self.assertEqual(
+                response,
+                [
+                    {
+                        "id": 1,
+                        "concert_readable": (
+                            "Pythonistas and Rustaceans at Royal Albert Hall, "
+                            "capacity 5900"
+                        ),
+                    }
+                ],
+            )
 
         # A really complex references chain from Piccolo Admin issue #170
         response = ThingFour.select(

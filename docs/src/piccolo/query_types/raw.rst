@@ -7,7 +7,7 @@ Should you need to, you can execute raw SQL.
 
 .. code-block:: python
 
-    >>> await Band.raw('select name from band').run_sync()
+    >>> await Band.raw('select name from band')
     [{'name': 'Pythonistas'}]
 
 It's recommended that you parameterise any values. Use curly braces ``{}`` as

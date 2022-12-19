@@ -21,6 +21,13 @@ class TimeOffset(Default):
         return f"CURRENT_TIME + INTERVAL '{interval_string}'"
 
     @property
+    def cockroach(self):
+        interval_string = self.get_postgres_interval_string(
+            ["hours", "minutes", "seconds"]
+        )
+        return f"CURRENT_TIME::TIMESTAMP + INTERVAL '{interval_string}'"
+
+    @property
     def sqlite(self):
         interval_string = self.get_sqlite_interval_string(
             ["hours", "minutes", "seconds"]
@@ -42,6 +49,10 @@ class TimeNow(Default):
         return "CURRENT_TIME"
 
     @property
+    def cockroach(self):
+        return "CURRENT_TIME::TIMESTAMP"
+
+    @property
     def sqlite(self):
         return "CURRENT_TIME"
 
@@ -59,6 +70,10 @@ class TimeCustom(Default):
     @property
     def postgres(self):
         return f"'{self.time.isoformat()}'"
+
+    @property
+    def cockroach(self):
+        return f"'{self.time.isoformat()}'::TIMESTAMP"
 
     @property
     def sqlite(self):

@@ -1,14 +1,14 @@
 from unittest import TestCase, mock
 
 from piccolo.utils.lazy_loader import LazyLoader
-from tests.base import postgres_only, sqlite_only
+from tests.base import engines_only, sqlite_only
 
 
 class TestLazyLoader(TestCase):
     def test_lazy_loading_database_driver(self):
         _ = LazyLoader("asyncpg", globals(), "asyncpg")
 
-    @postgres_only
+    @engines_only("postgres", "cockroach")
     def test_lazy_loader_asyncpg_exception(self):
         lazy_loader = LazyLoader("asyncpg", globals(), "asyncpg.connect")
 

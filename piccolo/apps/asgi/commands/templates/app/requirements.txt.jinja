@@ -1,5 +1,8 @@
-{{ router }}
+{%- for router_dependency in router_dependencies -%}
+{{ router_dependency }}
+{% endfor -%}
 {{ server }}
 jinja2
 piccolo[postgres]
 piccolo_admin
+requests

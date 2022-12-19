@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from piccolo.engine.base import Batch, Engine
 from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import DDL, Query
+from piccolo.query.methods.objects import Create, GetOrCreate
 from piccolo.querystring import QueryString
 from piccolo.utils.lazy_loader import LazyLoader
 from piccolo.utils.sync import run_sync
@@ -98,52 +99,30 @@ class Atomic:
     def add(self, *query: Query):
         self.queries += list(query)
 
-    async def _run_queries(self, connection):
-        async with connection.transaction():
-            for query in self.queries:
-                if isinstance(query, Query):
-                    for querystring in query.querystrings:
-                        _query, args = querystring.compile_string(
-                            engine_type=self.engine.engine_type
-                        )
-                        await connection.execute(_query, *args)
-                elif isinstance(query, DDL):
-                    for ddl in query.ddl:
-                        await connection.execute(ddl)
-
-        self.queries = []
-
-    async def _run_in_pool(self):
-        if not self.engine.pool:
-            raise ValueError("No pool is currently active.")
-
-        async with self.engine.pool.acquire() as connection:
-            await self._run_queries(connection)
-
-    async def _run_in_new_connection(self):
-        connection = await asyncpg.connect(**self.engine.config)
+    async def run(self):
         try:
-            await self._run_queries(connection)
-        except asyncpg.exceptions.PostgresError as exception:
-            await connection.close()
-            raise exception
-
-        await connection.close()
-
-    async def run(self, in_pool=True):
-        if in_pool and self.engine.pool:
-            await self._run_in_pool()
-        else:
-            await self._run_in_new_connection()
+            async with self.engine.transaction():
+                for query in self.queries:
+                    if isinstance(query, (Query, DDL, Create, GetOrCreate)):
+                        await query.run()
+                    else:
+                        raise ValueError("Unrecognised query")
+            self.queries = []
+        except Exception as exception:
+            self.queries = []
+            raise exception from exception
 
     def run_sync(self):
-        return run_sync(self._run_in_new_connection())
+        return run_sync(self.run())
+
+    def __await__(self):
+        return self.run().__await__()
 
 
 ###############################################################################
 
 
-class Transaction:
+class PostgresTransaction:
     """
     Used for wrapping queries in a transaction, using a context manager.
     Currently it's async only.
@@ -160,7 +139,7 @@ class Transaction:
 
     def __init__(self, engine: PostgresEngine):
         self.engine = engine
-        if self.engine.transaction_connection.get():
+        if self.engine.current_transaction.get():
             raise TransactionError(
                 "A transaction is already active - nested transactions aren't "
                 "currently supported."
@@ -174,7 +153,7 @@ class Transaction:
 
         self.transaction = self.connection.transaction()
         await self.transaction.start()
-        self.context = self.engine.transaction_connection.set(self.connection)
+        self.context = self.engine.current_transaction.set(self)
 
     async def commit(self):
         await self.transaction.commit()
@@ -193,7 +172,7 @@ class Transaction:
         else:
             await self.connection.close()
 
-        self.engine.transaction_connection.reset(self.context)
+        self.engine.current_transaction.reset(self.context)
 
         return exception is None
 
@@ -201,9 +180,9 @@ class Transaction:
 ###############################################################################
 
 
-class PostgresEngine(Engine):
+class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
     """
-    Used to connect to Postgresql.
+    Used to connect to PostgreSQL.
 
     :param config:
         The config dictionary is passed to the underlying database adapter,
@@ -262,18 +241,18 @@ class PostgresEngine(Engine):
         "log_queries",
         "extra_nodes",
         "pool",
-        "transaction_connection",
+        "current_transaction",
     )
 
     engine_type = "postgres"
-    min_version_number = 9.6
+    min_version_number = 10
 
     def __init__(
         self,
         config: t.Dict[str, t.Any],
         extensions: t.Sequence[str] = ("uuid-ossp",),
         log_queries: bool = False,
-        extra_nodes: t.Dict[str, PostgresEngine] = None,
+        extra_nodes: t.Mapping[str, PostgresEngine] = None,
     ) -> None:
         if extra_nodes is None:
             extra_nodes = {}
@@ -284,8 +263,8 @@ class PostgresEngine(Engine):
         self.extra_nodes = extra_nodes
         self.pool: t.Optional[Pool] = None
         database_name = config.get("database", "Unknown")
-        self.transaction_connection = contextvars.ContextVar(
-            f"pg_transaction_connection_{database_name}", default=None
+        self.current_transaction = contextvars.ContextVar(
+            f"pg_current_transaction_{database_name}", default=None
         )
         super().__init__()
 
@@ -451,9 +430,11 @@ class PostgresEngine(Engine):
             print(querystring)
 
         # If running inside a transaction:
-        connection = self.transaction_connection.get()
-        if connection:
-            return await connection.fetch(query, *query_args)
+        current_transaction = self.current_transaction.get()
+        if current_transaction:
+            return await current_transaction.connection.fetch(
+                query, *query_args
+            )
         elif in_pool and self.pool:
             return await self._run_in_pool(query, query_args)
         else:
@@ -464,9 +445,9 @@ class PostgresEngine(Engine):
             print(ddl)
 
         # If running inside a transaction:
-        connection = self.transaction_connection.get()
-        if connection:
-            return await connection.fetch(ddl)
+        current_transaction = self.current_transaction.get()
+        if current_transaction:
+            return await current_transaction.connection.fetch(ddl)
         elif in_pool and self.pool:
             return await self._run_in_pool(ddl)
         else:
@@ -475,5 +456,5 @@ class PostgresEngine(Engine):
     def atomic(self) -> Atomic:
         return Atomic(engine=self)
 
-    def transaction(self) -> Transaction:
-        return Transaction(engine=self)
+    def transaction(self) -> PostgresTransaction:
+        return PostgresTransaction(engine=self)

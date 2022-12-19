@@ -7,7 +7,8 @@ controlled way. Each migration belongs to a :ref:`Piccolo app <PiccoloApps>`.
 You can either manually populate migrations, or allow Piccolo to do it for you
 automatically.
 
-We recommend using automatic migrations where possible, as it saves you time.
+We recommend using :ref:`auto migrations <AutoMigrations>` where possible,
+as it saves you time.
 
 -------------------------------------------------------------------------------
 
@@ -20,15 +21,20 @@ First, let's create an empty migration:
 
     piccolo migrations new my_app
 
-This creates a new migration file in the migrations folder of the app. The
-migration filename is a timestamp:
+This creates a new migration file in the migrations folder of the app. By
+default, the migration filename is the name of the app, followed by a timestamp,
+but you can rename it to anything you want:
 
 .. code-block:: bash
 
     piccolo_migrations/
-        2022-02-26T17-38-44-758593.py
+        my_app_2022_12_06T13_58_23_024723.py
 
-.. hint:: You can rename this file if you like to make it more memorable.
+.. note::
+    We changed the naming convention for migration files in version ``0.102.0``
+    (previously they were like ``2022-12-06T13-58-23-024723.py``). As mentioned,
+    the name isn't important - change it to anything you want. The new format
+    was chosen because a Python file should start with a letter by convention.
 
 The contents of an empty migration file looks like this:
 
@@ -90,10 +96,26 @@ If you want to run raw SQL within your migration, you can do so as follows:
             description=DESCRIPTION
         )
 
+        #############################################################
+        # This will get run when using `piccolo migrations forwards`:
+
         async def run():
             await RawTable.raw('UPDATE band SET popularity={}', 1000)
 
         manager.add_raw(run)
+
+        #############################################################
+        # If we want to run some code when reversing the migration,
+        # using `piccolo migrations backwards`:
+
+        async def run_backwards():
+            await RawTable.raw('UPDATE band SET popularity={}', 0)
+
+        manager.add_raw_backwards(run_backwards)
+
+        #############################################################
+        # We must always return the MigrationManager:
+
         return manager
 
 .. hint:: You can learn more about :ref:`raw queries here <Raw>`.
@@ -177,6 +199,8 @@ it's better to copy the relevant tables into your migration file:
         return manager
 
 -------------------------------------------------------------------------------
+
+.. _AutoMigrations:
 
 Auto migrations
 ---------------

@@ -23,7 +23,7 @@ Now install Piccolo, ideally inside a `virtualenv <https://docs.python-guide.org
     # The important bit:
     pip install piccolo
 
-    # Install Piccolo with PostgreSQL driver:
+    # Install Piccolo with PostgreSQL or CockroachDB driver:
     pip install 'piccolo[postgres]'
 
     # Install Piccolo with SQLite driver:

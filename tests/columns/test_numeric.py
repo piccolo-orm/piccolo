@@ -27,4 +27,4 @@ class TestNumeric(TestCase):
         self.assertEqual(type(_row.column_b), Decimal)
 
         self.assertAlmostEqual(_row.column_a, Decimal(1.23))
-        self.assertEqual(_row.column_b, Decimal("1.23"))
+        self.assertAlmostEqual(_row.column_b, Decimal("1.23"))

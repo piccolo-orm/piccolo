@@ -65,7 +65,7 @@ class Insert(Query):
 
         engine_type = self.engine_type
 
-        if engine_type == "postgres" or (
+        if engine_type in ("postgres", "cockroach") or (
             engine_type == "sqlite"
             and self.table._meta.db.get_version_sync() >= 3.35
         ):

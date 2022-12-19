@@ -7,7 +7,7 @@ from enum import Enum
 from .base import Default
 
 
-class IntervalCustom(Default):  # lgtm [py/missing-equals]
+class IntervalCustom(Default):
     def __init__(
         self,
         weeks: int = 0,
@@ -52,6 +52,10 @@ class IntervalCustom(Default):  # lgtm [py/missing-equals]
             ]
         )
         return f"'{value}'"
+
+    @property
+    def cockroach(self):
+        return self.postgres
 
     @property
     def sqlite(self):
