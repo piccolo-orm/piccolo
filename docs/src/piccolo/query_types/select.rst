@@ -265,7 +265,7 @@ isn't supported by Piccolo:
 
 .. code-block:: python
 
-    from piccolo.query.methods.select import SelectRaw
+    from piccolo.query import SelectRaw
 
     >>> await Band.select(
     ...     Band.name,
