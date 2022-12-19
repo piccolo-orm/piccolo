@@ -227,15 +227,15 @@ def create_pydantic_model(
         elif isinstance(column, Email):
             value_type = pydantic.EmailStr
         elif isinstance(column, Varchar):
-            if not column._meta.required:
+            if column._meta.required:
                 value_type = pydantic.constr(max_length=column.length)
-            else:
-                value_type = column.value_type
                 validators[
                     f"{column_name}_is_empty_string"
                 ] = pydantic.validator(column_name, allow_reuse=True)(
                     pydantic_empty_string_validator
                 )
+            else:
+                value_type = pydantic.constr(max_length=column.length)
         elif isinstance(column, Array):
             value_type = t.List[column.base_column.value_type]  # type: ignore
         elif isinstance(column, (JSON, JSONB)):
@@ -309,7 +309,19 @@ def create_pydantic_model(
             if include_readable:
                 columns[f"{column_name}_readable"] = (str, None)
         elif isinstance(column, Text):
-            field = pydantic.Field(format="text-area", extra=extra, **params)
+            if column._meta.required:
+                field = pydantic.Field(
+                    format="text-area", extra=extra, **params
+                )
+                validators[
+                    f"{column_name}_is_empty_string"
+                ] = pydantic.validator(column_name, allow_reuse=True)(
+                    pydantic_empty_string_validator
+                )
+            else:
+                field = pydantic.Field(
+                    format="text-area", extra=extra, **params
+                )
         elif isinstance(column, (JSON, JSONB)):
             field = pydantic.Field(format="json", extra=extra, **params)
         elif isinstance(column, Secret):

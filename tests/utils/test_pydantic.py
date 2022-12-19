@@ -180,6 +180,17 @@ class TestTextColumn(TestCase):
             "text-area",
         )
 
+    def test_text_required(self):
+        class Director(Table):
+            bio = Text(required=True)
+
+        pydantic_model = create_pydantic_model(table=Director)
+
+        with self.assertRaises(ValidationError):
+            pydantic_model(bio="")
+
+        pydantic_model(bio="non-empty")
+
 
 class TestColumnHelpText(TestCase):
     """
