@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import decimal
+import inspect
 import itertools
 import typing as t
 from collections import OrderedDict
@@ -241,6 +242,10 @@ OptionalDict = t.Optional[t.Dict[str, t.Any]]
 
 
 class First:
+    """
+    This is for static typing purposes.
+    """
+
     def __init__(self, query: Select):
         self.query = query
 
@@ -265,7 +270,22 @@ class First:
         Proxy any attributes to the underlying query, so all of the query
         clauses continue to work.
         """
-        return getattr(self.query, name)
+        attr = getattr(self.query, name)
+
+        if inspect.ismethod(attr):
+            # We do this to preserve the fluent interface.
+
+            def proxy(*args, **kwargs):
+                response = attr(*args, **kwargs)
+                if isinstance(response, Select):
+                    self.query = response
+                    return self
+                else:
+                    return response
+
+            return proxy
+        else:
+            return attr
 
 
 class Select(Query):

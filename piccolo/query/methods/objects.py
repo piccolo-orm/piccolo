@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import typing as t
 
 from piccolo.columns.column_types import ForeignKey
@@ -111,7 +112,22 @@ class GetOrCreate(t.Generic[TableInstance]):
         Proxy any attributes to the underlying query, so all of the query
         clauses continue to work.
         """
-        return getattr(self.query, name)
+        attr = getattr(self.query, name)
+
+        if inspect.ismethod(attr):
+            # We do this to preserve the fluent interface.
+
+            def proxy(*args, **kwargs):
+                response = attr(*args, **kwargs)
+                if isinstance(response, Objects):
+                    self.query = response
+                    return self
+                else:
+                    return response
+
+            return proxy
+        else:
+            return attr
 
 
 class Get(t.Generic[TableInstance]):
@@ -176,7 +192,22 @@ class First(t.Generic[TableInstance]):
         Proxy any attributes to the underlying query, so all of the query
         clauses continue to work.
         """
-        return getattr(self.query, name)
+        attr = getattr(self.query, name)
+
+        if inspect.ismethod(attr):
+            # We do this to preserve the fluent interface.
+
+            def proxy(*args, **kwargs):
+                response = attr(*args, **kwargs)
+                if isinstance(response, Objects):
+                    self.query = response
+                    return self
+                else:
+                    return response
+
+            return proxy
+        else:
+            return attr
 
 
 class Create(t.Generic[TableInstance]):
