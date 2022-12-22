@@ -7,7 +7,7 @@ from piccolo.columns.column_types import ForeignKey
 from piccolo.columns.combination import And, Where
 from piccolo.custom_types import Combinable, TableInstance
 from piccolo.engine.base import Batch
-from piccolo.query.base import Query
+from piccolo.query.base import FrozenQuery, Query
 from piccolo.query.methods.select import Select
 from piccolo.query.mixins import (
     AsOfDelegate,
@@ -187,6 +187,9 @@ class First(t.Generic[TableInstance]):
     def run_sync(self) -> t.Optional[TableInstance]:
         return run_sync(self.run())
 
+    def freeze(self):
+        return FrozenQuery(query=self)
+
     def __getattr__(self, name: str):
         """
         Proxy any attributes to the underlying query, so all of the query
@@ -199,6 +202,7 @@ class First(t.Generic[TableInstance]):
 
             def proxy(*args, **kwargs):
                 response = attr(*args, **kwargs)
+
                 if isinstance(response, Objects):
                     self.query = response
                     return self

@@ -11,7 +11,7 @@ from piccolo.columns.column_types import JSON, JSONB, PrimaryKey
 from piccolo.columns.m2m import M2MSelect
 from piccolo.columns.readable import Readable
 from piccolo.engine.base import Batch
-from piccolo.query.base import Query
+from piccolo.query.base import FrozenQuery, Query
 from piccolo.query.mixins import (
     AsOfDelegate,
     CallbackDelegate,
@@ -275,6 +275,9 @@ class First:
         convenience.
         """
         return self.run().__await__()
+
+    def freeze(self):
+        return FrozenQuery(query=self)
 
     def __getattr__(self, name: str):
         """
