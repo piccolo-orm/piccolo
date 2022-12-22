@@ -1,7 +1,6 @@
 import typing as t
 
-# Ironically, mypy complains about this - it does exist though:
-from typing_extensions import assert_type  # type: ignore
+from typing_extensions import assert_type
 
 from .example_apps.music.tables import Band
 

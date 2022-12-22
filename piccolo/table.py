@@ -44,6 +44,7 @@ from piccolo.query import (
 )
 from piccolo.query.methods.create_index import CreateIndex
 from piccolo.query.methods.indexes import Indexes
+from piccolo.query.methods.objects import First
 from piccolo.query.methods.refresh import Refresh
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
@@ -409,7 +410,9 @@ class Table(metaclass=TableMetaclass):
         return pk
 
     @classmethod
-    def from_dict(cls, data: t.Dict[str, t.Any]) -> Table:
+    def from_dict(
+        cls: t.Type[TableInstance], data: t.Dict[str, t.Any]
+    ) -> TableInstance:
         """
         Used when loading fixtures. It can be overriden by subclasses in case
         they have specific logic / validation which needs running when loading
@@ -518,7 +521,9 @@ class Table(metaclass=TableMetaclass):
         """
         return Refresh(instance=self, columns=columns)
 
-    def get_related(self, foreign_key: t.Union[ForeignKey, str]) -> Objects:
+    def get_related(
+        self: TableInstance, foreign_key: t.Union[ForeignKey, str]
+    ) -> First[Table]:
         """
         Used to fetch a ``Table`` instance, for the target of a foreign key.
 

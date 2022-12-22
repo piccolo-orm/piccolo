@@ -711,9 +711,9 @@ class Select(Query):
 
         return [querystring]
 
-    async def run(self, use_callbacks: bool = True, *args, **kwargs):
+    async def run(self, *args, **kwargs):
         results = await super().run(*args, **kwargs)
-        if use_callbacks:
+        if kwargs.get("use_callbacks") is True:
             return await self.callback_delegate.invoke(
                 results, kind=CallbackType.success
             )
