@@ -34,7 +34,9 @@ if t.TYPE_CHECKING:
         bool,
     )
 
+    assert_type(Band.from_dict(data={}), Band)
+
     assert_type(
         Band.update().run_sync(),
-        bool,
+        t.List,
     )
