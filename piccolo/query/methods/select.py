@@ -249,9 +249,20 @@ class First:
     def __init__(self, query: Select):
         self.query = query
 
-    async def run(self, *args, **kwargs) -> OptionalDict:
-        rows = await self.query.run(*args, **kwargs)
-        return rows[0] if rows else None
+    async def run(
+        self,
+        node: t.Optional[str] = None,
+        in_pool: bool = True,
+    ) -> OptionalDict:
+        rows = await self.query.run(
+            node=node, in_pool=in_pool, use_callbacks=False
+        )
+        results = rows[0] if rows else None
+
+        modified_response = await self.query.callback_delegate.invoke(
+            results=results, kind=CallbackType.success
+        )
+        return modified_response
 
     def run_sync(self, *args, **kwargs) -> OptionalDict:
         return run_sync(self.run(*args, **kwargs))
@@ -731,9 +742,14 @@ class Select(Query):
 
         return [querystring]
 
-    async def run(self, *args, **kwargs):
-        results = await super().run(*args, **kwargs)
-        if kwargs.get("use_callbacks") is True:
+    async def run(
+        self,
+        node: t.Optional[str] = None,
+        in_pool: bool = True,
+        use_callbacks: bool = True,
+    ):
+        results = await super().run(node=node, in_pool=in_pool)
+        if use_callbacks:
             return await self.callback_delegate.invoke(
                 results, kind=CallbackType.success
             )
