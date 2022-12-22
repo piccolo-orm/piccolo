@@ -12,6 +12,7 @@ from piccolo.columns.readable import Readable
 from piccolo.engine.base import Batch
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
+    AsOfDelegate,
     CallbackDelegate,
     CallbackType,
     ColumnsDelegate,
@@ -20,6 +21,7 @@ from piccolo.query.mixins import (
     LimitDelegate,
     OffsetDelegate,
     OrderByDelegate,
+    OrderByRaw,
     OutputDelegate,
     WhereDelegate,
 )
@@ -36,6 +38,28 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 def is_numeric_column(column: Column) -> bool:
     return column.value_type in (int, decimal.Decimal, float)
+
+
+class SelectRaw(Selectable):
+    def __init__(self, sql: str, *args: t.Any) -> None:
+        """
+        Execute raw SQL in your select query.
+
+        .. code-block:: python
+
+            >>> await Band.select(
+            ...     Band.name,
+            ...     SelectRaw("log(popularity) AS log_popularity")
+            ... )
+            [{'name': 'Pythonistas', 'log_popularity': 3.0}]
+
+        """
+        self.querystring = QueryString(sql, *args)
+
+    def get_select_string(
+        self, engine_type: str, with_alias: bool = True
+    ) -> str:
+        return self.querystring.__str__()
 
 
 class Avg(Selectable):
@@ -248,6 +272,7 @@ class Select(Query):
     __slots__ = (
         "columns_list",
         "exclude_secrets",
+        "as_of_delegate",
         "columns_delegate",
         "distinct_delegate",
         "group_by_delegate",
@@ -271,6 +296,7 @@ class Select(Query):
         super().__init__(table, **kwargs)
         self.exclude_secrets = exclude_secrets
 
+        self.as_of_delegate = AsOfDelegate()
         self.columns_delegate = ColumnsDelegate()
         self.distinct_delegate = DistinctDelegate()
         self.group_by_delegate = GroupByDelegate()
@@ -292,13 +318,17 @@ class Select(Query):
         self.distinct_delegate.distinct()
         return self
 
-    def group_by(self, *columns: Column) -> Select:
+    def group_by(self, *columns: t.Union[Column, str]) -> Select:
         _columns: t.List[Column] = [
             i
             for i in self.table._process_column_args(*columns)
             if isinstance(i, Column)
         ]
         self.group_by_delegate.group_by(*_columns)
+        return self
+
+    def as_of(self, interval: str = "-1s") -> Select:
+        self.as_of_delegate.as_of(interval)
         return self
 
     def limit(self, number: int) -> Select:
@@ -424,7 +454,7 @@ class Select(Query):
                             m2m_select,
                         )
 
-            elif self.engine_type == "postgres":
+            elif self.engine_type in ("postgres", "cockroach"):
                 if m2m_select.as_list:
                     # We get the data back as an array, and can just return it
                     # unless it's JSON.
@@ -465,12 +495,23 @@ class Select(Query):
         else:
             return response
 
-    def order_by(self, *columns: Column, ascending=True) -> Select:
-        _columns: t.List[Column] = [
-            i
-            for i in self.table._process_column_args(*columns)
-            if isinstance(i, Column)
-        ]
+    def order_by(
+        self, *columns: t.Union[Column, str, OrderByRaw], ascending=True
+    ) -> Select:
+        """
+        :param columns:
+            Either a :class:`piccolo.columns.base.Column` instance, a string
+            representing a column name, or :class:`piccolo.query.OrderByRaw`
+            which allows you for complex use cases like
+            ``OrderByRaw('random()')``.
+        """
+        _columns: t.List[t.Union[Column, OrderByRaw]] = []
+        for column in columns:
+            if isinstance(column, str):
+                _columns.append(self.table._meta.get_column_by_name(column))
+            else:
+                _columns.append(column)
+
         self.order_by_delegate.order_by(*_columns, ascending=ascending)
         return self
 
@@ -560,9 +601,9 @@ class Select(Query):
                 ]._foreign_key_meta.resolved_target_column._meta.name
 
                 _joins.append(
-                    f"LEFT JOIN {right_tablename} {table_alias}"
+                    f'LEFT JOIN "{right_tablename}" "{table_alias}"'
                     " ON "
-                    f"({left_tablename}.{key._meta.name} = {table_alias}.{pk_name})"  # noqa: E501
+                    f'("{left_tablename}"."{key._meta.name}" = "{table_alias}"."{pk_name}")'  # noqa: E501
                 )
 
             joins.extend(_joins)
@@ -632,16 +673,20 @@ class Select(Query):
 
         args: t.List[t.Any] = []
 
+        if self.as_of_delegate._as_of:
+            query += "{}"
+            args.append(self.as_of_delegate._as_of.querystring)
+
         if self.where_delegate._where:
             query += " WHERE {}"
             args.append(self.where_delegate._where.querystring)
 
         if self.group_by_delegate._group_by:
-            query += " {}"
+            query += "{}"
             args.append(self.group_by_delegate._group_by.querystring)
 
-        if self.order_by_delegate._order_by:
-            query += " {}"
+        if self.order_by_delegate._order_by.order_by_items:
+            query += "{}"
             args.append(self.order_by_delegate._order_by.querystring)
 
         if (
@@ -655,11 +700,11 @@ class Select(Query):
             )
 
         if self.limit_delegate._limit:
-            query += " {}"
+            query += "{}"
             args.append(self.limit_delegate._limit.querystring)
 
         if self.offset_delegate._offset:
-            query += " {}"
+            query += "{}"
             args.append(self.offset_delegate._offset.querystring)
 
         querystring = QueryString(query, *args)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextvars
 import logging
 import typing as t
 from abc import ABCMeta, abstractmethod
@@ -12,14 +13,17 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.query.base import Query
 
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class Batch:
     pass
 
 
-class Engine(metaclass=ABCMeta):
+TransactionClass = t.TypeVar("TransactionClass")
+
+
+class Engine(t.Generic[TransactionClass], metaclass=ABCMeta):
 
     __slots__ = ()
 
@@ -116,3 +120,20 @@ class Engine(metaclass=ABCMeta):
         The database driver doesn't implement connection pooling.
         """
         self._connection_pool_warning()
+
+    ###########################################################################
+
+    current_transaction: contextvars.ContextVar[t.Optional[TransactionClass]]
+
+    def transaction_exists(self) -> bool:
+        """
+        Find out if a transaction is currently active.
+
+        :returns:
+            ``True`` if a transaction is already active for the current
+            asyncio task. This is useful to know, because nested transactions
+            aren't currently supported, so you can check if an existing
+            transaction is already active, before creating a new one.
+
+        """
+        return self.current_transaction.get() is not None

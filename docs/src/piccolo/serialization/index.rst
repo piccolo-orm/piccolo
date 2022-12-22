@@ -4,10 +4,13 @@ Serialization
 Piccolo uses `Pydantic <https://github.com/samuelcolvin/pydantic>`_ internally
 to serialize and deserialize data.
 
+Using ``create_pydantic_model`` you can easily create Pydantic models for your
+application.
+
 -------------------------------------------------------------------------------
 
-create_pydantic_model
----------------------
+``create_pydantic_model``
+-------------------------
 
 Using ``create_pydantic_model`` we can easily create a `Pydantic model <https://pydantic-docs.helpmanual.io/usage/models/>`_
 from a Piccolo ``Table``.
@@ -52,8 +55,8 @@ We can then create model instances from data we fetch from the database:
 
 You have several options for configuring the model, as shown below.
 
-include_columns / exclude_columns
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``include_columns`` / ``exclude_columns``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If we want to exclude the ``popularity`` column from the ``Band`` table:
 
@@ -67,8 +70,8 @@ Conversely, if you only wanted the ``popularity`` column:
 
     BandModel = create_pydantic_model(Band, include_columns=(Band.popularity,))
 
-nested
-~~~~~~
+``nested``
+~~~~~~~~~~
 
 Another great feature is ``nested=True``. For each ``ForeignKey`` in the
 Piccolo ``Table``, the Pydantic model will contain a sub model for the related
@@ -122,8 +125,8 @@ To populate a nested Pydantic model with data from the database:
 
    There is a `video tutorial on YouTube <https://youtu.be/NRO0HyFCCCI>`_.
 
-include_default_columns
-~~~~~~~~~~~~~~~~~~~~~~~
+``include_default_columns``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sometimes you'll want to include the Piccolo ``Table``'s primary key column in
 the generated Pydantic model. For example, in a ``GET`` endpoint, we usually
@@ -150,6 +153,86 @@ By default the primary key column isn't included - you can add it using:
 .. code-block:: python
 
     BandModel = create_pydantic_model(Band, include_default_columns=True)
+
+``pydantic_config_class``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can specify a custom class to use as the base for the Pydantic model's config.
+This class should be a subclass of ``pydantic.BaseConfig``.
+
+For example, let's set the ``extra`` parameter to tell pydantic how to treat
+extra fields (that is, fields that would not otherwise be in the generated model).
+The allowed values are:
+
+* ``'ignore'`` (default): silently ignore extra fields
+* ``'allow'``: accept the extra fields and assigns them to the model
+* ``'forbid'``: fail validation if extra fields are present
+
+So if we want to disallow extra fields, we can do:
+
+.. code-block:: python
+
+    class MyPydanticConfig(pydantic.BaseConfig):
+        extra = 'forbid'
+
+    model = create_pydantic_model(
+        table=MyTable,
+        pydantic_config_class=MyPydanticConfig
+    )
+
+
+Required fields
+~~~~~~~~~~~~~~~
+
+You can specify which fields are required using the ``required``
+argument of :class:`Column <piccolo.columns.base.Column>`. For example:
+
+.. code-block:: python
+
+    class Band(Table):
+        name = Varchar(required=True)
+
+    BandModel = create_pydantic_model(Band)
+
+    # Omitting the field raises an error:
+    >>> BandModel()
+    ValidationError - name field required
+
+You can override this behaviour using the ``all_optional`` argument. An example
+use case is when you have a model which is used for filtering, then you'll want
+all fields to be optional.
+
+.. code-block:: python
+
+    class Band(Table):
+        name = Varchar(required=True)
+
+    BandFilterModel = create_pydantic_model(
+        Band,
+        all_optional=True,
+        model_name='BandFilterModel',
+    )
+
+    # This no longer raises an exception:
+    >>> BandModel()
+
+Subclassing the model
+~~~~~~~~~~~~~~~~~~~~~
+
+If the generated model doesn't perfectly fit your needs, you can subclass it to
+add additional fields, and to override existing fields.
+
+.. code-block:: python
+
+    class Band(Table):
+        name = Varchar(required=True)
+
+    BandModel = create_pydantic_model(Band)
+
+    class CustomBandModel(BandModel):
+        genre: str
+
+    >>> CustomBandModel(name="Pythonistas", genre="Rock")
 
 Source
 ~~~~~~

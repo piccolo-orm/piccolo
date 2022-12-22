@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from piccolo.columns.column_types import Array, Integer
 from piccolo.table import Table
-from tests.base import postgres_only, sqlite_only
+from tests.base import engines_only, sqlite_only
 
 
 class MyTable(Table):
@@ -31,32 +31,42 @@ class TestArray(TestCase):
     def tearDown(self):
         MyTable.alter().drop_table().run_sync()
 
+    @engines_only("postgres", "sqlite")
     def test_storage(self):
         """
         Make sure data can be stored and retrieved.
         """
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """  # noqa: E501
         MyTable(value=[1, 2, 3]).save().run_sync()
 
         row = MyTable.objects().first().run_sync()
         self.assertEqual(row.value, [1, 2, 3])
 
-    @postgres_only
+    @engines_only("postgres")
     def test_index(self):
         """
         Indexes should allow individual array elements to be queried.
         """
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """  # noqa: E501
         MyTable(value=[1, 2, 3]).save().run_sync()
 
         self.assertEqual(
             MyTable.select(MyTable.value[0]).first().run_sync(), {"value": 1}
         )
 
-    @postgres_only
+    @engines_only("postgres")
     def test_all(self):
         """
         Make sure rows can be retrieved where all items in an array match a
         given value.
         """
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """  # noqa: E501
         MyTable(value=[1, 1, 1]).save().run_sync()
 
         self.assertEqual(
@@ -75,11 +85,15 @@ class TestArray(TestCase):
             None,
         )
 
+    @engines_only("postgres")
     def test_any(self):
         """
         Make sure rows can be retrieved where any items in an array match a
         given value.
         """
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """  # noqa: E501
         MyTable(value=[1, 2, 3]).save().run_sync()
 
         self.assertEqual(
@@ -98,11 +112,14 @@ class TestArray(TestCase):
             None,
         )
 
-    @postgres_only
+    @engines_only("postgres")
     def test_cat(self):
         """
         Make sure values can be appended to an array.
         """
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """  # noqa: E501
         MyTable(value=[1, 1, 1]).save().run_sync()
 
         MyTable.update(
@@ -144,5 +161,5 @@ class TestArray(TestCase):
 
         self.assertEqual(
             str(manager.exception),
-            "Only Postgres supports array appending currently.",
+            "Only Postgres and Cockroach support array appending.",
         )

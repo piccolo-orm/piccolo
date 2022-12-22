@@ -1,7 +1,10 @@
+import asyncio
 import datetime
 import decimal
 import uuid
 from unittest import TestCase
+
+from tests.base import engine_is, engines_skip
 
 try:
     from asyncpg.pgproto.pgproto import UUID as asyncpgUUID
@@ -33,7 +36,10 @@ from piccolo.columns.column_types import (
     Varchar,
 )
 from piccolo.columns.m2m import M2M
+from piccolo.engine.finder import engine_finder
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
+
+engine = engine_finder()
 
 
 class Band(Table):
@@ -59,30 +65,63 @@ class TestM2M(TestCase):
     def setUp(self):
         create_db_tables_sync(*SIMPLE_SCHEMA, if_not_exists=True)
 
-        Band.insert(
-            Band(name="Pythonistas"),
-            Band(name="Rustaceans"),
-            Band(name="C-Sharps"),
-        ).run_sync()
+        if engine_is("cockroach"):
+            bands = (
+                Band.insert(
+                    Band(name="Pythonistas"),
+                    Band(name="Rustaceans"),
+                    Band(name="C-Sharps"),
+                )
+                .returning(Band.id)
+                .run_sync()
+            )
 
-        Genre.insert(
-            Genre(name="Rock"),
-            Genre(name="Folk"),
-            Genre(name="Classical"),
-        ).run_sync()
+            genres = (
+                Genre.insert(
+                    Genre(name="Rock"),
+                    Genre(name="Folk"),
+                    Genre(name="Classical"),
+                )
+                .returning(Genre.id)
+                .run_sync()
+            )
 
-        GenreToBand.insert(
-            GenreToBand(band=1, genre=1),
-            GenreToBand(band=1, genre=2),
-            GenreToBand(band=2, genre=2),
-            GenreToBand(band=3, genre=1),
-            GenreToBand(band=3, genre=3),
-        ).run_sync()
+            GenreToBand.insert(
+                GenreToBand(band=bands[0]["id"], genre=genres[0]["id"]),
+                GenreToBand(band=bands[0]["id"], genre=genres[1]["id"]),
+                GenreToBand(band=bands[1]["id"], genre=genres[1]["id"]),
+                GenreToBand(band=bands[2]["id"], genre=genres[0]["id"]),
+                GenreToBand(band=bands[2]["id"], genre=genres[2]["id"]),
+            ).run_sync()
+        else:
+            Band.insert(
+                Band(name="Pythonistas"),
+                Band(name="Rustaceans"),
+                Band(name="C-Sharps"),
+            ).run_sync()
+
+            Genre.insert(
+                Genre(name="Rock"),
+                Genre(name="Folk"),
+                Genre(name="Classical"),
+            ).run_sync()
+
+            GenreToBand.insert(
+                GenreToBand(band=1, genre=1),
+                GenreToBand(band=1, genre=2),
+                GenreToBand(band=2, genre=2),
+                GenreToBand(band=3, genre=1),
+                GenreToBand(band=3, genre=3),
+            ).run_sync()
 
     def tearDown(self):
         drop_db_tables_sync(*SIMPLE_SCHEMA)
 
+    @engines_skip("cockroach")
     def test_select_name(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """  # noqa: E501
         response = Band.select(
             Band.name, Band.genres(Genre.name, as_list=True)
         ).run_sync()
@@ -108,10 +147,14 @@ class TestM2M(TestCase):
             ],
         )
 
+    @engines_skip("cockroach")
     def test_no_related(self):
         """
         Make sure it still works correctly if there are no related values.
         """
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """  # noqa: E501
         GenreToBand.delete(force=True).run_sync()
 
         # Try it with a list response
@@ -141,7 +184,11 @@ class TestM2M(TestCase):
             ],
         )
 
+    @engines_skip("cockroach")
     def test_select_multiple(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """  # noqa: E501
         response = Band.select(
             Band.name, Band.genres(Genre.id, Genre.name)
         ).run_sync()
@@ -196,7 +243,11 @@ class TestM2M(TestCase):
             ],
         )
 
+    @engines_skip("cockroach")
     def test_select_id(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """  # noqa: E501
         response = Band.select(
             Band.name, Band.genres(Genre.id, as_list=True)
         ).run_sync()
@@ -219,6 +270,41 @@ class TestM2M(TestCase):
                 {"name": "Rock", "bands": [1, 3]},
                 {"name": "Folk", "bands": [1, 2]},
                 {"name": "Classical", "bands": [3]},
+            ],
+        )
+
+    @engines_skip("cockroach")
+    def test_select_all_columns(self):
+        """
+        Make sure ``all_columns`` can be passed in as an argument. ``M2M``
+        should flatten the arguments. Reported here:
+
+        https://github.com/piccolo-orm/piccolo/issues/728
+
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+
+        """  # noqa: E501
+        response = Band.select(
+            Band.name, Band.genres(Genre.all_columns(exclude=(Genre.id,)))
+        ).run_sync()
+        self.assertEqual(
+            response,
+            [
+                {
+                    "name": "Pythonistas",
+                    "genres": [
+                        {"name": "Rock"},
+                        {"name": "Folk"},
+                    ],
+                },
+                {"name": "Rustaceans", "genres": [{"name": "Folk"}]},
+                {
+                    "name": "C-Sharps",
+                    "genres": [
+                        {"name": "Rock"},
+                        {"name": "Classical"},
+                    ],
+                },
             ],
         )
 
@@ -435,7 +521,11 @@ class TestM2MCustomPrimaryKey(TestCase):
     def tearDown(self):
         drop_db_tables_sync(*CUSTOM_PK_SCHEMA)
 
+    @engines_skip("cockroach")
     def test_select(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """  # noqa: E501
         response = Customer.select(
             Customer.name, Customer.concerts(Concert.name, as_list=True)
         ).run_sync()
@@ -488,6 +578,41 @@ class TestM2MCustomPrimaryKey(TestCase):
             1,
         )
 
+    def test_add_m2m_within_transaction(self):
+        """
+        Make sure we can add items to the joining table, when within an
+        existing transaction.
+
+        https://github.com/piccolo-orm/piccolo/issues/674
+
+        """
+        engine = Customer._meta.db
+
+        async def add_m2m_in_transaction():
+            async with engine.transaction():
+                customer: Customer = await Customer.objects().get(
+                    Customer.name == "Bob"
+                )
+                await customer.add_m2m(
+                    Concert(name="Jazzfest"), m2m=Customer.concerts
+                )
+
+        asyncio.run(add_m2m_in_transaction())
+
+        self.assertTrue(
+            Concert.exists().where(Concert.name == "Jazzfest").run_sync()
+        )
+
+        self.assertEqual(
+            CustomerToConcert.count()
+            .where(
+                CustomerToConcert.customer.name == "Bob",
+                CustomerToConcert.concert.name == "Jazzfest",
+            )
+            .run_sync(),
+            1,
+        )
+
     def test_get_m2m(self):
         """
         Make sure we can get related items via the joining table.
@@ -515,29 +640,58 @@ class SmallTable(Table):
     mega_rows = M2M(LazyTableReference("SmallToMega", module_path=__name__))
 
 
-class MegaTable(Table):
-    """
-    A table containing all of the column types, and different column kwargs.
-    """
+if engine.engine_type != "cockroach":  # type: ignore
 
-    array_col = Array(Varchar())
-    bigint_col = BigInt()
-    boolean_col = Boolean()
-    bytea_col = Bytea()
-    date_col = Date()
-    double_precision_col = DoublePrecision()
-    integer_col = Integer()
-    interval_col = Interval()
-    json_col = JSON()
-    jsonb_col = JSONB()
-    numeric_col = Numeric(digits=(5, 2))
-    real_col = Real()
-    smallint_col = SmallInt()
-    text_col = Text()
-    timestamp_col = Timestamp()
-    timestamptz_col = Timestamptz()
-    uuid_col = UUID()
-    varchar_col = Varchar()
+    class MegaTable(Table):  # type: ignore
+        """
+        A table containing all of the column types and different column kwargs
+        """
+
+        array_col = Array(Varchar())
+        bigint_col = BigInt()
+        boolean_col = Boolean()
+        bytea_col = Bytea()
+        date_col = Date()
+        double_precision_col = DoublePrecision()
+        integer_col = Integer()
+        interval_col = Interval()
+        json_col = JSON()
+        jsonb_col = JSONB()
+        numeric_col = Numeric(digits=(5, 2))
+        real_col = Real()
+        smallint_col = SmallInt()
+        text_col = Text()
+        timestamp_col = Timestamp()
+        timestamptz_col = Timestamptz()
+        uuid_col = UUID()
+        varchar_col = Varchar()
+
+else:
+
+    class MegaTable(Table):  # type: ignore
+        """
+        Special version for Cockroach.
+        A table containing all of the column types and different column kwargs
+        """
+
+        array_col = Array(Varchar())
+        bigint_col = BigInt()
+        boolean_col = Boolean()
+        bytea_col = Bytea()
+        date_col = Date()
+        double_precision_col = DoublePrecision()
+        integer_col = BigInt()
+        interval_col = Interval()
+        json_col = JSONB()
+        jsonb_col = JSONB()
+        numeric_col = Numeric(digits=(5, 2))
+        real_col = Real()
+        smallint_col = SmallInt()
+        text_col = Text()
+        timestamp_col = Timestamp()
+        timestamptz_col = Timestamptz()
+        uuid_col = UUID()
+        varchar_col = Varchar()
 
 
 class SmallToMega(Table):
@@ -591,11 +745,15 @@ class TestM2MComplexSchema(TestCase):
     def tearDown(self):
         drop_db_tables_sync(*COMPLEX_SCHEMA)
 
+    @engines_skip("cockroach")
     def test_select_all(self):
         """
         Fetch all of the columns from the related table to make sure they're
         returned correctly.
         """
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """  # noqa: E501
         response = SmallTable.select(
             SmallTable.varchar_col, SmallTable.mega_rows(load_json=True)
         ).run_sync()
@@ -614,10 +772,14 @@ class TestM2MComplexSchema(TestCase):
                 msg=f"{key} doesn't match",
             )
 
+    @engines_skip("cockroach")
     def test_select_single(self):
         """
         Make sure each column can be selected one at a time.
         """
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """  # noqa: E501
         for column in MegaTable._meta.columns:
             response = SmallTable.select(
                 SmallTable.varchar_col,

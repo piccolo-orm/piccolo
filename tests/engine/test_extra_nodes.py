@@ -5,10 +5,10 @@ from piccolo.columns.column_types import Varchar
 from piccolo.engine import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.table import Table
-from tests.base import AsyncMock, postgres_only
+from tests.base import AsyncMock, engines_only
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestExtraNodes(TestCase):
     def test_extra_nodes(self):
         """

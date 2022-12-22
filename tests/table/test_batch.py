@@ -7,7 +7,7 @@ from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import AsyncBatch, PostgresEngine
 from piccolo.table import Table
 from piccolo.utils.sync import run_sync
-from tests.base import AsyncMock, DBTestCase, postgres_only
+from tests.base import AsyncMock, DBTestCase, engines_only
 from tests.example_apps.music.tables import Manager
 
 
@@ -95,7 +95,7 @@ class TestBatchObjects(DBTestCase):
         self.assertEqual(iterations, _iterations)
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestBatchNodeArg(TestCase):
     def test_batch_extra_node(self):
         """

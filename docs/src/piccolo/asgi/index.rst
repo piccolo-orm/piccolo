@@ -21,8 +21,8 @@ Routing frameworks
 ******************
 
 Currently, `Starlette <https://www.starlette.io/>`_, `FastAPI <https://fastapi.tiangolo.com/>`_,
-`BlackSheep <https://www.neoteroi.dev/blacksheep/>`_ and `Xpresso <https://xpresso-api.dev/>`_
-are supported.
+`BlackSheep <https://www.neoteroi.dev/blacksheep/>`_, `Xpresso <https://xpresso-api.dev/>`_ and 
+`Starlite <https://starlite-api.github.io/starlite/>`_ are supported.
 
 Other great ASGI routing frameworks exist, and may be supported in the future
 (`Quart <https://pgjones.gitlab.io/quart/>`_ ,

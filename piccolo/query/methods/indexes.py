@@ -22,6 +22,16 @@ class Indexes(Query):
         ]
 
     @property
+    def cockroach_querystrings(self) -> t.Sequence[QueryString]:
+        return [
+            QueryString(
+                "SELECT indexname AS name FROM pg_indexes "
+                "WHERE tablename = {}",
+                self.table._meta.tablename,
+            )
+        ]
+
+    @property
     def sqlite_querystrings(self) -> t.Sequence[QueryString]:
         tablename = self.table._meta.tablename
         return [QueryString(f"PRAGMA index_list({tablename})")]

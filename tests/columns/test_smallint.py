@@ -4,14 +4,14 @@ from unittest import TestCase
 from piccolo.columns.column_types import SmallInt
 from piccolo.table import Table
 
-from ..base import postgres_only
+from ..base import engines_only
 
 
 class MyTable(Table):
     value = SmallInt()
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestSmallIntPostgres(TestCase):
     """
     Make sure a SmallInt column in Postgres can only store small numbers.

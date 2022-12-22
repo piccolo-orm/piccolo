@@ -7,12 +7,15 @@ from piccolo.columns.combination import And, Where
 from piccolo.custom_types import Combinable, TableInstance
 from piccolo.engine.base import Batch
 from piccolo.query.base import Query
+from piccolo.query.methods.select import Select
 from piccolo.query.mixins import (
+    AsOfDelegate,
     CallbackDelegate,
     CallbackType,
     LimitDelegate,
     OffsetDelegate,
     OrderByDelegate,
+    OrderByRaw,
     OutputDelegate,
     PrefetchDelegate,
     WhereDelegate,
@@ -20,8 +23,6 @@ from piccolo.query.mixins import (
 from piccolo.querystring import QueryString
 from piccolo.utils.dictionary import make_nested
 from piccolo.utils.sync import run_sync
-
-from .select import Select
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
@@ -91,6 +92,7 @@ class GetOrCreate(t.Generic[TableInstance]):
                 .run()
             )
 
+        instance = t.cast(TableInstance, instance)
         instance._was_created = True
         return instance
 
@@ -234,6 +236,7 @@ class Objects(
 
     __slots__ = (
         "nested",
+        "as_of_delegate",
         "limit_delegate",
         "offset_delegate",
         "order_by_delegate",
@@ -250,6 +253,7 @@ class Objects(
         **kwargs,
     ):
         super().__init__(table, **kwargs)
+        self.as_of_delegate = AsOfDelegate()
         self.limit_delegate = LimitDelegate()
         self.offset_delegate = OffsetDelegate()
         self.order_by_delegate = OrderByDelegate()
@@ -275,6 +279,10 @@ class Objects(
         self.callback_delegate.callback(callbacks, on=on)
         return self
 
+    def as_of(self, interval: str = "-1s") -> Objects:
+        self.as_of_delegate.as_of(interval)
+        return self
+
     def limit(self: Self, number: int) -> Self:
         self.limit_delegate.limit(number)
         return self
@@ -289,8 +297,17 @@ class Objects(
         self.offset_delegate.offset(number)
         return self
 
-    def order_by(self: Self, *columns: Column, ascending=True) -> Self:
-        self.order_by_delegate.order_by(*columns, ascending=ascending)
+    def order_by(
+        self: Self, *columns: t.Union[Column, str, OrderByRaw], ascending=True
+    ) -> Self:
+        _columns: t.List[t.Union[Column, OrderByRaw]] = []
+        for column in columns:
+            if isinstance(column, str):
+                _columns.append(self.table._meta.get_column_by_name(column))
+            else:
+                _columns.append(column)
+
+        self.order_by_delegate.order_by(*_columns, ascending=ascending)
         return self
 
     def where(self: Self, *where: Combinable) -> Self:
@@ -328,7 +345,7 @@ class Objects(
         self: Self,
         batch_size: t.Optional[int] = None,
         node: t.Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> Batch:
         if batch_size:
             kwargs.update(batch_size=batch_size)
@@ -347,6 +364,7 @@ class Objects(
         select = Select(table=self.table)
 
         for attr in (
+            "as_of_delegate",
             "limit_delegate",
             "where_delegate",
             "offset_delegate",

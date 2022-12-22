@@ -12,6 +12,7 @@ from piccolo.columns.column_types import (
     ForeignKey,
     LazyTableReference,
 )
+from piccolo.utils.list import flatten
 from piccolo.utils.sync import run_sync
 
 if t.TYPE_CHECKING:
@@ -45,9 +46,9 @@ class M2MSelect(Selectable):
         self.m2m = m2m
         self.load_json = load_json
 
-        safe_types = [int, str]
+        safe_types = (int, str)
 
-        # If the columns can be serialised / deserialise as JSON, then we
+        # If the columns can be serialised / deserialised as JSON, then we
         # can fetch the data all in one go.
         self.serialisation_safe = all(
             (column.__class__.value_type in safe_types)
@@ -82,7 +83,7 @@ class M2MSelect(Selectable):
             WHERE "{m2m_table_name}"."{fk_1_name}" = "{table_1_name}"."{table_1_pk_name}"
         """  # noqa: E501
 
-        if engine_type == "postgres":
+        if engine_type in ("postgres", "cockroach"):
             if self.as_list:
                 column_name = self.columns[0]._meta.db_column_name
                 return f"""
@@ -254,39 +255,50 @@ class M2MAddRelated:
             for i, j in self.extra_column_values.items()
         }
 
-    async def run(self):
+    async def _run(self):
         rows = self.rows
         unsaved = [i for i in rows if not i._exists_in_db]
 
-        async with rows[0]._meta.db.transaction():
-            if unsaved:
-                await rows[0].__class__.insert(*unsaved).run()
+        if unsaved:
+            await rows[0].__class__.insert(*unsaved).run()
 
-            joining_table = self.m2m._meta.resolved_joining_table
+        joining_table = self.m2m._meta.resolved_joining_table
 
-            joining_table_rows = []
+        joining_table_rows = []
 
-            for row in rows:
-                joining_table_row = joining_table(**self.extra_column_values)
-                setattr(
-                    joining_table_row,
-                    self.m2m._meta.primary_foreign_key._meta.name,
-                    getattr(
-                        self.target_row,
-                        self.target_row._meta.primary_key._meta.name,
-                    ),
-                )
-                setattr(
-                    joining_table_row,
-                    self.m2m._meta.secondary_foreign_key._meta.name,
-                    getattr(
-                        row,
-                        row._meta.primary_key._meta.name,
-                    ),
-                )
-                joining_table_rows.append(joining_table_row)
+        for row in rows:
+            joining_table_row = joining_table(**self.extra_column_values)
+            setattr(
+                joining_table_row,
+                self.m2m._meta.primary_foreign_key._meta.name,
+                getattr(
+                    self.target_row,
+                    self.target_row._meta.primary_key._meta.name,
+                ),
+            )
+            setattr(
+                joining_table_row,
+                self.m2m._meta.secondary_foreign_key._meta.name,
+                getattr(
+                    row,
+                    row._meta.primary_key._meta.name,
+                ),
+            )
+            joining_table_rows.append(joining_table_row)
 
-            return await joining_table.insert(*joining_table_rows).run()
+        return await joining_table.insert(*joining_table_rows).run()
+
+    async def run(self):
+        """
+        Run the queries, making sure they are either within an existing
+        transaction, or wrapped in a new transaction.
+        """
+        engine = self.rows[0]._meta.db
+        if engine.transaction_exists():
+            await self._run()
+        else:
+            async with engine.transaction():
+                await self._run()
 
     def run_sync(self):
         return run_sync(self.run())
@@ -397,7 +409,10 @@ class M2M:
         )
 
     def __call__(
-        self, *columns: Column, as_list: bool = False, load_json: bool = False
+        self,
+        *columns: t.Union[Column, t.List[Column]],
+        as_list: bool = False,
+        load_json: bool = False,
     ) -> M2MSelect:
         """
         :param columns:
@@ -409,14 +424,16 @@ class M2M:
         :param load_json:
             If ``True``, any JSON strings are loaded as Python objects.
         """
-        if not columns:
-            columns = tuple(self._meta.secondary_table._meta.columns)
+        columns_ = flatten(columns)
 
-        if as_list and len(columns) != 1:
+        if not columns_:
+            columns_ = self._meta.secondary_table._meta.columns
+
+        if as_list and len(columns_) != 1:
             raise ValueError(
                 "`as_list` is only valid with a single column argument"
             )
 
         return M2MSelect(
-            *columns, m2m=self, as_list=as_list, load_json=load_json
+            *columns_, m2m=self, as_list=as_list, load_json=load_json
         )

@@ -104,10 +104,13 @@ def main():
                     aliases=command.aliases,
                 )
 
-        if "migrations" not in sys.argv:
+        if not {"playground", "migrations", "asgi"}.intersection(
+            set(sys.argv)
+        ):
             # Show a warning if any migrations haven't been run.
             # Don't run it if it looks like the user is running a migration
-            # command, as this information is redundant.
+            # command, or using the playground, as this information is
+            # redundant.
 
             try:
                 havent_ran_count = run_sync(
