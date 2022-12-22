@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from piccolo.custom_types import Combinable
+from piccolo.custom_types import Combinable, TableInstance
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
     ReturningDelegate,
