@@ -303,6 +303,9 @@ class First:
         else:
             return attr
 
+    def __str__(self) -> str:
+        return self.query.__str__()
+
 
 class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
     __slots__ = (

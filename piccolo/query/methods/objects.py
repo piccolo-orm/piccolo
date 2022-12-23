@@ -129,6 +129,9 @@ class GetOrCreate(t.Generic[TableInstance]):
         else:
             return attr
 
+    def __str__(self) -> str:
+        return self.query.__str__()
+
 
 class Get(t.Generic[TableInstance]):
     def __init__(
@@ -172,6 +175,9 @@ class Get(t.Generic[TableInstance]):
             return proxy
         else:
             return attr
+
+    def __str__(self) -> str:
+        return self.query.__str__()
 
 
 class First(t.Generic[TableInstance]):
@@ -229,6 +235,9 @@ class First(t.Generic[TableInstance]):
             return proxy
         else:
             return attr
+
+    def __str__(self) -> str:
+        return self.query.__str__()
 
 
 class Create(t.Generic[TableInstance]):
