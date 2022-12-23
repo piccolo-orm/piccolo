@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from unittest import mock
 
 from piccolo.columns import Integer, Varchar
-from piccolo.engine.sqlite import SQLiteEngine
 from piccolo.query.base import Query
 from piccolo.table import Table
 from tests.base import AsyncMock, DBTestCase, sqlite_only
