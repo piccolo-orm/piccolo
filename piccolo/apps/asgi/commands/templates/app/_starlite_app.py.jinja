@@ -15,14 +15,14 @@ from starlite import (
     post,
 )
 from starlite.plugins.piccolo_orm import PiccoloORMPlugin
-from starlite.template.jinja import JinjaTemplateEngine
+from starlite.contrib.jinja import JinjaTemplateEngine
 from starlite.types import Receive, Scope, Send
 
 from home.endpoints import home
 from home.piccolo_app import APP_CONFIG
 from home.tables import Task
 
-# mounting Piccolo Admin 
+# mounting Piccolo Admin
 @asgi("/admin/", is_mount=True)
 async def admin(scope: "Scope", receive: "Receive", send: "Send") -> None:
     await create_admin(tables=APP_CONFIG.table_classes)(scope, receive, send)
