@@ -1,9 +1,13 @@
 import timeit
 import typing as t
 from dataclasses import dataclass
+from unittest import mock
 
+from piccolo.columns import Integer, Varchar
+from piccolo.engine.sqlite import SQLiteEngine
 from piccolo.query.base import Query
-from tests.base import DBTestCase, sqlite_only
+from piccolo.table import Table
+from tests.base import AsyncMock, DBTestCase, sqlite_only
 from tests.example_apps.music.tables import Band
 
 
@@ -79,16 +83,25 @@ class TestFreeze(DBTestCase):
         The frozen query performance should exceed the non-frozen. If not,
         there's a problem.
 
-        Only test this on SQLite, as the latency from the database itself
-        is more predictable than with Postgres, and the test runs quickly.
+        We mock out the database to make the performance more predictable.
 
         """
+        db = mock.MagicMock()
+        db.engine_type = "sqlite"
+        db.run_querystring = AsyncMock()
+        db.run_querystring.return_value = [
+            {"name": "Pythonistas", "popularity": 1000}
+        ]
+
+        class Band(Table, db=db):
+            name = Varchar()
+            popularity = Integer()
+
         iterations = 50
         query = (
-            Band.select()
-            .where(Band.name == "Pythonistas", Band.popularity > 1000)
+            Band.select(Band.name)
+            .where(Band.popularity > 900)
             .order_by(Band.name)
-            .first()
         )
         query_duration = timeit.repeat(
             lambda: query.run_sync(), repeat=iterations, number=1
@@ -101,8 +114,8 @@ class TestFreeze(DBTestCase):
 
         # Remove the outliers before comparing
         self.assertGreater(
-            sum(sorted(query_duration)[5:-5]),
-            sum(sorted(frozen_query_duration)[5:-5]),
+            sum(sorted(query_duration)[10:-10]),
+            sum(sorted(frozen_query_duration)[10:-10]),
         )
 
     def test_attribute_access(self):
