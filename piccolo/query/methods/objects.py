@@ -188,6 +188,7 @@ class First(t.Generic[TableInstance]):
         return run_sync(self.run())
 
     def freeze(self):
+        self.query.freeze()
         return FrozenQuery(query=self)
 
     def __getattr__(self, name: str):

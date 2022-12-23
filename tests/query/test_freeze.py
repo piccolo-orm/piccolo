@@ -84,7 +84,12 @@ class TestFreeze(DBTestCase):
 
         """
         iterations = 50
-        query = Band.select().where(Band.name == "Pythonistas").first()
+        query = (
+            Band.select()
+            .where(Band.name == "Pythonistas", Band.popularity > 1000)
+            .order_by(Band.name)
+            .first()
+        )
         query_duration = timeit.repeat(
             lambda: query.run_sync(), repeat=iterations, number=1
         )

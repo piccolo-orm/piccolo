@@ -278,6 +278,7 @@ class First:
         return self.run().__await__()
 
     def freeze(self):
+        self.query.freeze()
         return FrozenQuery(query=self)
 
     def __getattr__(self, name: str):
