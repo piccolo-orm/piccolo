@@ -10,6 +10,7 @@ from piccolo.columns import Column, Selectable
 from piccolo.columns.column_types import JSON, JSONB, PrimaryKey
 from piccolo.columns.m2m import M2MSelect
 from piccolo.columns.readable import Readable
+from piccolo.custom_types import TableInstance
 from piccolo.engine.base import Batch
 from piccolo.query.base import FrozenQuery, Query
 from piccolo.query.mixins import (
@@ -302,7 +303,7 @@ class First:
             return attr
 
 
-class Select(Query):
+class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
     __slots__ = (
         "columns_list",
         "exclude_secrets",
@@ -320,7 +321,7 @@ class Select(Query):
 
     def __init__(
         self,
-        table: t.Type[Table],
+        table: t.Type[TableInstance],
         columns_list: t.Sequence[t.Union[Selectable, str]] = None,
         exclude_secrets: bool = False,
         **kwargs,
