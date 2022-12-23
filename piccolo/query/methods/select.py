@@ -751,7 +751,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         node: t.Optional[str] = None,
         in_pool: bool = True,
         use_callbacks: bool = True,
-    ):
+    ) -> t.List[t.Dict[str, t.Any]]:
         results = await super().run(node=node, in_pool=in_pool)
         if use_callbacks:
             return await self.callback_delegate.invoke(

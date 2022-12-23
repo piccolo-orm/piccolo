@@ -905,7 +905,7 @@ class Table(metaclass=TableMetaclass):
         return _reference_column
 
     @classmethod
-    def insert(cls, *rows: "Table") -> Insert:
+    def insert(cls: t.Type[TableInstance], *rows: TableInstance) -> Insert:
         """
         Insert rows into the database.
 
