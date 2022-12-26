@@ -7,4 +7,4 @@ slotscheck==0.14.0
 twine==3.8.0
 mypy==0.942
 pip-upgrader==1.4.15
-wheel==0.37.1
+wheel==0.38.1
