@@ -23,6 +23,7 @@ from piccolo.columns import (
 from piccolo.columns.readable import Readable
 from piccolo.engine import PostgresEngine, SQLiteEngine
 from piccolo.engine.base import Engine
+from piccolo.query import SelectRaw
 from piccolo.table import Table
 from piccolo.utils.warnings import colored_string
 
@@ -111,7 +112,12 @@ class DiscountCode(Table):
     def get_readable(cls) -> Readable:
         return Readable(
             template="%s - %s",
-            columns=[cls.code, cls.active],
+            columns=[
+                cls.code,
+                SelectRaw(
+                    "CASE WHEN active THEN 'active' ELSE 'inactive' END"
+                ),
+            ],
         )
 
 
