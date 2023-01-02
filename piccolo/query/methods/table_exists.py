@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import typing as t
 
+from piccolo.custom_types import TableInstance
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 
 
-class TableExists(Query):
+class TableExists(Query[TableInstance, bool]):
 
     __slots__: t.Tuple = ()
 

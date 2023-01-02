@@ -37,7 +37,7 @@ class CleanMigrationManager(BaseMigrationManager):
         if len(migration_ids) > 0:
             query = query.where(Migration.name.not_in(migration_ids))
 
-        return query.run_sync()
+        return t.cast(t.List[str], query.run_sync())
 
     async def run(self):
         print("Checking the migration table ...")

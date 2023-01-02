@@ -13,7 +13,6 @@ from decimal import Decimal
 from piccolo.engine.base import Batch, Engine
 from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import DDL, Query
-from piccolo.query.methods.objects import Create, GetOrCreate
 from piccolo.querystring import QueryString
 from piccolo.utils.encoding import dump_json, load_json
 from piccolo.utils.lazy_loader import LazyLoader
@@ -278,6 +277,8 @@ class Atomic:
         self.queries += list(query)
 
     async def run(self):
+        from piccolo.query.methods.objects import Create, GetOrCreate
+
         try:
             async with self.engine.transaction(
                 transaction_type=self.transaction_type

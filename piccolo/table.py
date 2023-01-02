@@ -26,6 +26,7 @@ from piccolo.columns.m2m import (
 )
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
+from piccolo.custom_types import TableInstance
 from piccolo.engine import Engine, engine_finder
 from piccolo.query import (
     Alter,
@@ -43,6 +44,7 @@ from piccolo.query import (
 )
 from piccolo.query.methods.create_index import CreateIndex
 from piccolo.query.methods.indexes import Indexes
+from piccolo.query.methods.objects import First
 from piccolo.query.methods.refresh import Refresh
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
@@ -363,6 +365,10 @@ class Table(metaclass=TableMetaclass):
 
         self._exists_in_db = _exists_in_db
 
+        # This is used by get_or_create to indicate to the user whether it
+        # was an existing row or not.
+        self._was_created: t.Optional[bool] = None
+
         for column in self._meta.columns:
             value = _data.get(column, ...)
 
@@ -404,7 +410,9 @@ class Table(metaclass=TableMetaclass):
         return pk
 
     @classmethod
-    def from_dict(cls, data: t.Dict[str, t.Any]) -> Table:
+    def from_dict(
+        cls: t.Type[TableInstance], data: t.Dict[str, t.Any]
+    ) -> TableInstance:
         """
         Used when loading fixtures. It can be overriden by subclasses in case
         they have specific logic / validation which needs running when loading
@@ -513,7 +521,9 @@ class Table(metaclass=TableMetaclass):
         """
         return Refresh(instance=self, columns=columns)
 
-    def get_related(self, foreign_key: t.Union[ForeignKey, str]) -> Objects:
+    def get_related(
+        self: TableInstance, foreign_key: t.Union[ForeignKey, str]
+    ) -> First[Table]:
         """
         Used to fetch a ``Table`` instance, for the target of a foreign key.
 
@@ -895,7 +905,9 @@ class Table(metaclass=TableMetaclass):
         return _reference_column
 
     @classmethod
-    def insert(cls, *rows: "Table") -> Insert:
+    def insert(
+        cls: t.Type[TableInstance], *rows: TableInstance
+    ) -> Insert[TableInstance]:
         """
         Insert rows into the database.
 
@@ -1022,8 +1034,9 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def objects(
-        cls, *prefetch: t.Union[ForeignKey, t.List[ForeignKey]]
-    ) -> Objects:
+        cls: t.Type[TableInstance],
+        *prefetch: t.Union[ForeignKey, t.List[ForeignKey]],
+    ) -> Objects[TableInstance]:
         """
         Returns a list of table instances (each representing a row), which you
         can modify and then call 'save' on, or can delete by calling 'remove'.
@@ -1058,7 +1071,7 @@ class Table(metaclass=TableMetaclass):
                 <Band 1>
 
         """
-        return Objects(table=cls, prefetch=prefetch)
+        return Objects[TableInstance](table=cls, prefetch=prefetch)
 
     @classmethod
     def count(cls) -> Count:
