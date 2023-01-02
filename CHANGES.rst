@@ -1,6 +1,23 @@
 Changes
 =======
 
+0.104.0
+-------
+
+Major improvements to Piccolo's typing / auto completion support.
+
+For example:
+
+.. code-block:: python
+
+  >>> bands = await Band.objects()  # List[Band]
+
+  >>> band = await Band.objects().first()  # Optional[Band]
+
+  >>> bands = await Band.select().output(as_json=True)  # str
+
+-------------------------------------------------------------------------------
+
 0.103.0
 -------
 

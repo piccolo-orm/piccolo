@@ -101,6 +101,6 @@ class TestOutputNested(DBTestCase):
             .output(nested=True)
             .run_sync()
         )
-        self.assertEqual(
+        self.assertDictEqual(
             response, {"name": "Pythonistas", "manager": {"name": "Guido"}}
         )
