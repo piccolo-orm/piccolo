@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
+from piccolo.custom_types import TableInstance
 from piccolo.query.base import Query
 from piccolo.query.mixins import AddDelegate, ReturningDelegate
 from piccolo.querystring import QueryString
@@ -11,10 +12,14 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
-class Insert(Query):
+class Insert(
+    t.Generic[TableInstance], Query[TableInstance, t.List[t.Dict[str, t.Any]]]
+):
     __slots__ = ("add_delegate", "returning_delegate")
 
-    def __init__(self, table: t.Type[Table], *instances: Table, **kwargs):
+    def __init__(
+        self, table: t.Type[TableInstance], *instances: TableInstance, **kwargs
+    ):
         super().__init__(table, **kwargs)
         self.add_delegate = AddDelegate()
         self.returning_delegate = ReturningDelegate()
@@ -23,11 +28,11 @@ class Insert(Query):
     ###########################################################################
     # Clauses
 
-    def add(self, *instances: Table) -> Insert:
+    def add(self: Self, *instances: Table) -> Self:
         self.add_delegate.add(*instances, table_class=self.table)
         return self
 
-    def returning(self, *columns: Column) -> Insert:
+    def returning(self: Self, *columns: Column) -> Self:
         self.returning_delegate.returning(columns)
         return self
 
@@ -81,3 +86,6 @@ class Insert(Query):
                 ]
 
         return [querystring]
+
+
+Self = t.TypeVar("Self", bound=Insert)

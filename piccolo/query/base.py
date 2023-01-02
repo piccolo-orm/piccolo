@@ -192,7 +192,7 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
             return t.cast(QueryResponseType, responses)
 
     async def run(
-        self, node: t.Optional[str] = None, in_pool: bool = True, **kwargs
+        self, node: t.Optional[str] = None, in_pool: bool = True
     ) -> QueryResponseType:
         return await self._run(node=node, in_pool=in_pool)
 

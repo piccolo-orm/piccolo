@@ -16,7 +16,7 @@ class Exists(Query[TableInstance, bool]):
         super().__init__(table, **kwargs)
         self.where_delegate = WhereDelegate()
 
-    def where(self, *where: Combinable) -> Exists:
+    def where(self: Self, *where: Combinable) -> Self:
         self.where_delegate.where(*where)
         return self
 
@@ -33,3 +33,6 @@ class Exists(Query[TableInstance, bool]):
                 'SELECT EXISTS({}) AS "exists"', select.querystrings[0]
             )
         ]
+
+
+Self = t.TypeVar("Self", bound=Exists)

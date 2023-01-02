@@ -22,7 +22,7 @@ class Count(Query):
     ###########################################################################
     # Clauses
 
-    def where(self, *where: Combinable) -> Count:
+    def where(self: Self, *where: Combinable) -> Self:
         self.where_delegate.where(*where)
         return self
 
@@ -41,3 +41,6 @@ class Count(Query):
                 select.querystrings[0],
             )
         ]
+
+
+Self = t.TypeVar("Self", bound=Count)

@@ -1,10 +1,18 @@
 import inspect
 import typing as t
 
-from piccolo.query.base import FrozenQuery, Query
+from typing_extensions import Protocol
+
+from piccolo.query.base import FrozenQuery
 from piccolo.utils.sync import run_sync
 
-QueryType = t.TypeVar("QueryType", bound=Query)
+
+class Runnable(Protocol):
+    async def run(self, node: t.Optional[str] = None, in_pool: bool = True):
+        ...
+
+
+QueryType = t.TypeVar("QueryType", bound=Runnable)
 ResponseType = t.TypeVar("ResponseType")
 
 

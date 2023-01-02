@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import inspect
 import typing as t
 
 from piccolo.columns.column_types import ForeignKey
 from piccolo.columns.combination import And, Where
 from piccolo.custom_types import Combinable, TableInstance
 from piccolo.engine.base import Batch
-from piccolo.query.base import FrozenQuery, Query
+from piccolo.query.base import Query
 from piccolo.query.methods.select import Select
 from piccolo.query.mixins import (
     AsOfDelegate,
@@ -21,6 +20,7 @@ from piccolo.query.mixins import (
     PrefetchDelegate,
     WhereDelegate,
 )
+from piccolo.query.proxy import Proxy
 from piccolo.querystring import QueryString
 from piccolo.utils.dictionary import make_nested
 from piccolo.utils.sync import run_sync
@@ -32,7 +32,9 @@ if t.TYPE_CHECKING:  # pragma: no cover
 ###############################################################################
 
 
-class GetOrCreate(t.Generic[TableInstance]):
+class GetOrCreate(
+    Proxy["Objects[TableInstance]", TableInstance], t.Generic[TableInstance]
+):
     def __init__(
         self,
         query: Objects[TableInstance],
@@ -45,13 +47,17 @@ class GetOrCreate(t.Generic[TableInstance]):
         self.where = where
         self.defaults = defaults
 
-    async def run(self) -> TableInstance:
+    async def run(
+        self, node: t.Optional[str] = None, in_pool: bool = True
+    ) -> TableInstance:
         """
         :raises ValueError:
             If more than one matching row is found.
 
         """
-        instance = await self.query.get(self.where).run()
+        instance = await self.query.get(self.where).run(
+            node=node, in_pool=in_pool
+        )
         if instance:
             instance._was_created = False
             return instance
@@ -73,7 +79,7 @@ class GetOrCreate(t.Generic[TableInstance]):
                     # to this table.
                     setattr(instance, column._meta.name, value)
 
-        await instance.save().run()
+        await instance.save().run(node=node, in_pool=in_pool)
 
         # If the user wants us to prefetch related objects, for example:
         #
@@ -97,98 +103,24 @@ class GetOrCreate(t.Generic[TableInstance]):
         instance._was_created = True
         return instance
 
-    def __await__(self) -> t.Generator[None, None, TableInstance]:
-        """
-        If the user doesn't explicity call .run(), proxy to it as a
-        convenience.
-        """
-        return self.run().__await__()
 
-    def run_sync(self) -> TableInstance:
-        return run_sync(self.run())
-
-    def __getattr__(self, name: str):
-        """
-        Proxy any attributes to the underlying query, so all of the query
-        clauses continue to work.
-        """
-        attr = getattr(self.query, name)
-
-        if inspect.ismethod(attr):
-            # We do this to preserve the fluent interface.
-
-            def proxy(*args, **kwargs):
-                response = attr(*args, **kwargs)
-                if isinstance(response, Objects):
-                    self.query = response
-                    return self
-                else:
-                    return response
-
-            return proxy
-        else:
-            return attr
-
-    def __str__(self) -> str:
-        return self.query.__str__()
+class Get(
+    Proxy["First[TableInstance]", t.Optional[TableInstance]],
+    t.Generic[TableInstance],
+):
+    pass
 
 
-class Get(t.Generic[TableInstance]):
-    def __init__(
-        self,
-        query: First[TableInstance],
-    ):
-        self.query = query
-
-    async def run(self) -> t.Optional[TableInstance]:
-        return await self.query.run()
-
-    def __await__(self) -> t.Generator[None, None, t.Optional[TableInstance]]:
-        """
-        If the user doesn't explicity call .run(), proxy to it as a
-        convenience.
-        """
-        return self.run().__await__()
-
-    def run_sync(self) -> t.Optional[TableInstance]:
-        return run_sync(self.run())
-
-    def __getattr__(self, name: str):
-        """
-        Proxy any attributes to the underlying query, so all of the query
-        clauses continue to work.
-        """
-        attr = getattr(self.query, name)
-
-        if inspect.ismethod(attr):
-            # We do this to preserve the fluent interface.
-
-            def proxy(*args, **kwargs):
-                response = attr(*args, **kwargs)
-
-                if isinstance(response, Objects):
-                    self.query = response
-                    return self
-                else:
-                    return response
-
-            return proxy
-        else:
-            return attr
-
-    def __str__(self) -> str:
-        return self.query.__str__()
-
-
-class First(t.Generic[TableInstance]):
-    def __init__(
-        self,
-        query: Objects[TableInstance],
-    ):
-        self.query = query
-
-    async def run(self) -> t.Optional[TableInstance]:
-        objects = await self.query.run(use_callbacks=False)
+class First(
+    Proxy["Objects[TableInstance]", t.Optional[TableInstance]],
+    t.Generic[TableInstance],
+):
+    async def run(
+        self, node: t.Optional[str] = None, in_pool: bool = True
+    ) -> t.Optional[TableInstance]:
+        objects = await self.query.run(
+            node=node, in_pool=in_pool, use_callbacks=False
+        )
 
         results = objects[0] if objects else None
 
@@ -198,46 +130,6 @@ class First(t.Generic[TableInstance]):
             results=results, kind=CallbackType.success
         )
         return modified_response
-
-    def __await__(self) -> t.Generator[None, None, t.Optional[TableInstance]]:
-        """
-        If the user doesn't explicity call .run(), proxy to it as a
-        convenience.
-        """
-        return self.run().__await__()
-
-    def run_sync(self) -> t.Optional[TableInstance]:
-        return run_sync(self.run())
-
-    def freeze(self):
-        self.query.freeze()
-        return FrozenQuery(query=self)
-
-    def __getattr__(self, name: str):
-        """
-        Proxy any attributes to the underlying query, so all of the query
-        clauses continue to work.
-        """
-        attr = getattr(self.query, name)
-
-        if inspect.ismethod(attr):
-            # We do this to preserve the fluent interface.
-
-            def proxy(*args, **kwargs):
-                response = attr(*args, **kwargs)
-
-                if isinstance(response, Objects):
-                    self.query = response
-                    return self
-                else:
-                    return response
-
-            return proxy
-        else:
-            return attr
-
-    def __str__(self) -> str:
-        return self.query.__str__()
 
 
 class Create(t.Generic[TableInstance]):
@@ -261,9 +153,13 @@ class Create(t.Generic[TableInstance]):
         self.table_class = table_class
         self.columns = columns
 
-    async def run(self) -> TableInstance:
+    async def run(
+        self,
+        node: t.Optional[str] = None,
+        in_pool: bool = True,
+    ) -> TableInstance:
         instance = self.table_class(**self.columns)
-        await instance.save().run()
+        await instance.save().run(node=node, in_pool=in_pool)
         return instance
 
     def __await__(self) -> t.Generator[None, None, TableInstance]:
@@ -273,15 +169,8 @@ class Create(t.Generic[TableInstance]):
         """
         return self.run().__await__()
 
-    def run_sync(self) -> TableInstance:
-        return run_sync(self.run())
-
-    def __getattr__(self, name: str):
-        """
-        Proxy any attributes to the underlying query, so all of the query
-        clauses continue to work.
-        """
-        return getattr(self.query, name)
+    def run_sync(self, *args, **kwargs) -> TableInstance:
+        return run_sync(self.run(*args, **kwargs))
 
 
 ###############################################################################
@@ -457,7 +346,6 @@ class Objects(
         node: t.Optional[str] = None,
         in_pool: bool = True,
         use_callbacks: bool = True,
-        **kwargs,
     ) -> t.List[TableInstance]:
         results = await super().run(node=node, in_pool=in_pool)
 
