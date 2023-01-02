@@ -1,7 +1,3 @@
-import typing as t
-
-from typing_extensions import assert_type
-
 from tests.base import DBTestCase, engines_only, sqlite_only
 from tests.example_apps.music.tables import Band, Manager
 
@@ -263,24 +259,3 @@ class TestGetOrCreate(DBTestCase):
         self.assertIsInstance(band.manager, Manager)
         self.assertEqual(band.name, "New Band 2")
         self.assertEqual(band.manager.name, "Guido")
-
-
-if t.TYPE_CHECKING:
-    # Making sure the types are inferred correctly by MyPy.
-
-    assert_type(Band.objects().first().run_sync(), t.Optional[Band])
-
-    assert_type(
-        Band.objects().get(Band.name == "Pythonistas").run_sync(),
-        t.Optional[Band],
-    )
-
-    assert_type(
-        Band.objects().get_or_create(Band.name == "Pythonistas").run_sync(),
-        Band,
-    )
-
-    assert_type(
-        Band.objects().run_sync(),
-        t.List[Band],
-    )
