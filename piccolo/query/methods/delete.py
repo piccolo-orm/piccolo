@@ -30,11 +30,11 @@ class Delete(Query):
         self.returning_delegate = ReturningDelegate()
         self.where_delegate = WhereDelegate()
 
-    def where(self, *where: Combinable) -> Delete:
+    def where(self: Self, *where: Combinable) -> Self:
         self.where_delegate.where(*where)
         return self
 
-    def returning(self, *columns: Column) -> Delete:
+    def returning(self: Self, *columns: Column) -> Self:
         self.returning_delegate.returning(columns)
         return self
 
@@ -72,3 +72,6 @@ class Delete(Query):
             )
 
         return [querystring]
+
+
+Self = t.TypeVar("Self", bound=Delete)
