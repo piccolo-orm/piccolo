@@ -1,5 +1,3 @@
-import typing as t
-
 from tests.base import DBTestCase, engines_only, sqlite_only
 from tests.example_apps.music.tables import Band, Manager
 
