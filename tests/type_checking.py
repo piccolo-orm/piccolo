@@ -49,6 +49,20 @@ if t.TYPE_CHECKING:
         assert_type(await query.run(), t.Optional[t.Dict[str, t.Any]])
         assert_type(query.run_sync(), t.Optional[t.Dict[str, t.Any]])
 
+    async def select_list() -> None:
+        query = Band.select(Band.name).output(as_list=True)
+        assert_type(await query, t.List)
+        assert_type(await query.run(), t.List)
+        assert_type(query.run_sync(), t.List)
+        # The next step would be to detect that it's t.List[str], but might not
+        # be possible.
+
+    async def select_as_json() -> None:
+        query = Band.select(Band.name).output(as_json=True)
+        assert_type(await query, str)
+        assert_type(await query.run(), str)
+        assert_type(query.run_sync(), str)
+
     async def exists() -> None:
         query = Band.exists()
         assert_type(await query, bool)

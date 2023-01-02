@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import decimal
-import inspect
 import itertools
 import typing as t
 from collections import OrderedDict
@@ -12,7 +11,7 @@ from piccolo.columns.m2m import M2MSelect
 from piccolo.columns.readable import Readable
 from piccolo.custom_types import TableInstance
 from piccolo.engine.base import Batch
-from piccolo.query.base import FrozenQuery, Query
+from piccolo.query.base import Query
 from piccolo.query.mixins import (
     AsOfDelegate,
     CallbackDelegate,
@@ -27,10 +26,10 @@ from piccolo.query.mixins import (
     OutputDelegate,
     WhereDelegate,
 )
+from piccolo.query.proxy import Proxy
 from piccolo.querystring import QueryString
 from piccolo.utils.dictionary import make_nested
-from piccolo.utils.encoding import load_json
-from piccolo.utils.sync import run_sync
+from piccolo.utils.encoding import dump_json, load_json
 from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -242,7 +241,7 @@ class Sum(Selectable):
 OptionalDict = t.Optional[t.Dict[str, t.Any]]
 
 
-class First:
+class First(Proxy["Select", OptionalDict]):
     """
     This is for static typing purposes.
     """
@@ -265,46 +264,47 @@ class First:
         )
         return modified_response
 
-    def run_sync(self, *args, **kwargs) -> OptionalDict:
-        return run_sync(self.run(*args, **kwargs))
 
-    def __await__(
+class SelectList(Proxy["Select", t.List]):
+    """
+    This is for static typing purposes.
+    """
+
+    async def run(
         self,
-    ) -> t.Generator[None, None, OptionalDict]:
-        """
-        If the user doesn't explicity call .run(), proxy to it as a
-        convenience.
-        """
-        return self.run().__await__()
+        node: t.Optional[str] = None,
+        in_pool: bool = True,
+    ) -> t.List:
+        rows = await self.query.run(
+            node=node, in_pool=in_pool, use_callbacks=False
+        )
 
-    def freeze(self):
-        self.query.freeze()
-        return FrozenQuery(query=self)
-
-    def __getattr__(self, name: str):
-        """
-        Proxy any attributes to the underlying query, so all of the query
-        clauses continue to work.
-        """
-        attr = getattr(self.query, name)
-
-        if inspect.ismethod(attr):
-            # We do this to preserve the fluent interface.
-
-            def proxy(*args, **kwargs):
-                response = attr(*args, **kwargs)
-                if isinstance(response, Select):
-                    self.query = response
-                    return self
-                else:
-                    return response
-
-            return proxy
+        if len(rows) == 0:
+            response = []
         else:
-            return attr
+            if len(rows[0].keys()) != 1:
+                raise ValueError("Each row returned more than one value")
 
-    def __str__(self) -> str:
-        return self.query.__str__()
+            response = list(itertools.chain(*[j.values() for j in rows]))
+
+        modified_response = await self.query.callback_delegate.invoke(
+            results=response, kind=CallbackType.success
+        )
+        return modified_response
+
+
+class SelectJSON(Proxy["Select", str]):
+    """
+    This is for static typing purposes.
+    """
+
+    async def run(
+        self,
+        node: t.Optional[str] = None,
+        in_pool: bool = True,
+    ) -> str:
+        rows = await self.query.run(node=node, in_pool=in_pool)
+        return dump_json(rows)
 
 
 class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
@@ -348,16 +348,16 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
 
         self.columns(*columns_list)
 
-    def columns(self, *columns: t.Union[Selectable, str]) -> Select:
+    def columns(self: Self, *columns: t.Union[Selectable, str]) -> Self:
         _columns = self.table._process_column_args(*columns)
         self.columns_delegate.columns(*_columns)
         return self
 
-    def distinct(self) -> Select:
+    def distinct(self: Self) -> Self:
         self.distinct_delegate.distinct()
         return self
 
-    def group_by(self, *columns: t.Union[Column, str]) -> Select:
+    def group_by(self: Self, *columns: t.Union[Column, str]) -> Self:
         _columns: t.List[Column] = [
             i
             for i in self.table._process_column_args(*columns)
@@ -366,11 +366,11 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         self.group_by_delegate.group_by(*_columns)
         return self
 
-    def as_of(self, interval: str = "-1s") -> Select:
+    def as_of(self: Self, interval: str = "-1s") -> Self:
         self.as_of_delegate.as_of(interval)
         return self
 
-    def limit(self, number: int) -> Select:
+    def limit(self: Self, number: int) -> Self:
         self.limit_delegate.limit(number)
         return self
 
@@ -378,7 +378,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         self.limit_delegate.limit(1)
         return First(query=self)
 
-    def offset(self, number: int) -> Select:
+    def offset(self: Self, number: int) -> Self:
         self.offset_delegate.offset(number)
         return self
 
@@ -535,8 +535,8 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
             return response
 
     def order_by(
-        self, *columns: t.Union[Column, str, OrderByRaw], ascending=True
-    ) -> Select:
+        self: Self, *columns: t.Union[Column, str, OrderByRaw], ascending=True
+    ) -> Self:
         """
         :param columns:
             Either a :class:`piccolo.columns.base.Column` instance, a string
@@ -554,31 +554,53 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         self.order_by_delegate.order_by(*_columns, ascending=ascending)
         return self
 
+    @t.overload
+    def output(self: Self, *, as_list: bool) -> SelectList:
+        ...
+
+    @t.overload
+    def output(self: Self, *, as_json: bool) -> SelectJSON:
+        ...
+
+    @t.overload
+    def output(self: Self, *, load_json: bool) -> Self:
+        ...
+
+    @t.overload
+    def output(self: Self, *, nested: bool) -> Self:
+        ...
+
     def output(
-        self,
+        self: Self,
+        *,
         as_list: bool = False,
         as_json: bool = False,
         load_json: bool = False,
         nested: bool = False,
-    ) -> Select:
+    ):
         self.output_delegate.output(
             as_list=as_list,
             as_json=as_json,
             load_json=load_json,
             nested=nested,
         )
+        if as_list:
+            return SelectList(query=self)
+        elif as_json:
+            return SelectJSON(query=self)
+
         return self
 
     def callback(
-        self,
+        self: Self,
         callbacks: t.Union[t.Callable, t.List[t.Callable]],
         *,
         on: CallbackType = CallbackType.success,
-    ) -> Select:
+    ) -> Self:
         self.callback_delegate.callback(callbacks, on=on)
         return self
 
-    def where(self, *where: Combinable) -> Select:
+    def where(self: Self, *where: Combinable) -> Self:
         self.where_delegate.where(*where)
         return self
 
@@ -755,6 +777,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         node: t.Optional[str] = None,
         in_pool: bool = True,
         use_callbacks: bool = True,
+        **kwargs,
     ) -> t.List[t.Dict[str, t.Any]]:
         results = await super().run(node=node, in_pool=in_pool)
         if use_callbacks:
@@ -763,3 +786,6 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
             )
         else:
             return results
+
+
+Self = t.TypeVar("Self", bound=Select)

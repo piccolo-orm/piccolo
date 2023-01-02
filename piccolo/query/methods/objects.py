@@ -457,6 +457,7 @@ class Objects(
         node: t.Optional[str] = None,
         in_pool: bool = True,
         use_callbacks: bool = True,
+        **kwargs,
     ) -> t.List[TableInstance]:
         results = await super().run(node=node, in_pool=in_pool)
 

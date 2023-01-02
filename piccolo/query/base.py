@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import itertools
 import typing as t
 from time import time
 
@@ -8,7 +7,7 @@ from piccolo.columns.column_types import JSON, JSONB
 from piccolo.custom_types import QueryResponseType, TableInstance
 from piccolo.query.mixins import ColumnsDelegate
 from piccolo.querystring import QueryString
-from piccolo.utils.encoding import dump_json, load_json
+from piccolo.utils.encoding import load_json
 from piccolo.utils.objects import make_nested_object
 from piccolo.utils.sync import run_sync
 
@@ -125,15 +124,6 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
                         self.table(**columns, _exists_in_db=True)
                         for columns in raw
                     ]
-            elif output._output.as_list:
-                if len(raw) == 0:
-                    return []
-                if len(raw[0].keys()) != 1:
-                    raise ValueError("Each row returned more than one value")
-                else:
-                    raw = list(itertools.chain(*[j.values() for j in raw]))
-            elif output._output.as_json:
-                raw = dump_json(raw)
 
         return raw
 
@@ -202,9 +192,7 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
             return t.cast(QueryResponseType, responses)
 
     async def run(
-        self,
-        node: t.Optional[str] = None,
-        in_pool: bool = True,
+        self, node: t.Optional[str] = None, in_pool: bool = True, **kwargs
     ) -> QueryResponseType:
         return await self._run(node=node, in_pool=in_pool)
 
