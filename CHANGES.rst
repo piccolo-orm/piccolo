@@ -1,6 +1,14 @@
 Changes
 =======
 
+0.105.0
+-------
+
+Improved the performance of select queries with complex joins. Many thanks to
+@powellnorma and @sinisaos for their help with this.
+
+-------------------------------------------------------------------------------
+
 0.104.0
 -------
 
