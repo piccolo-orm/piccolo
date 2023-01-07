@@ -169,6 +169,24 @@ class TestJoin(TestCase):
                 },
             )
 
+    def test_proxy_columns(self):
+        """
+        Make sure that ``proxy_columns`` are set correctly.
+
+        There used to be a bug which meant queries got slower over time:
+
+        https://github.com/piccolo-orm/piccolo/issues/691
+
+        """
+        # We call it multiple times to make sure it doesn't change with time.
+        for _ in range(2):
+            self.assertEqual(
+                len(Concert.band_1.manager._foreign_key_meta.proxy_columns), 2
+            )
+            self.assertEqual(
+                len(Concert.band_1._foreign_key_meta.proxy_columns), 4
+            )
+
     def test_select_all_columns_root(self):
         """
         Make sure that using ``all_columns`` at the root doesn't interfere
