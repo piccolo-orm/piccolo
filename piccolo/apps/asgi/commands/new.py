@@ -14,6 +14,7 @@ ROUTERS = ["starlette", "fastapi", "blacksheep", "xpresso", "starlite"]
 ROUTER_DEPENDENCIES = {
     "starlite": ["starlite>=1.46.0"],
     "xpresso": ["xpresso==0.43.0", "di==0.72.1"],
+    "fastapi": ["fastapi==0.88.0"],
 }
 
 
