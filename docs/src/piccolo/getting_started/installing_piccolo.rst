@@ -40,3 +40,7 @@ Now install Piccolo, ideally inside a `virtualenv <https://docs.python-guide.org
     # If you just want Piccolo with all of it's functionality, you might prefer
     # to use this:
     pip install 'piccolo[all]'
+
+.. hint::
+    On Windows, you may need to use double quotes instead. For example
+    ``pip install "piccolo[all]"``.
