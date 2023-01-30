@@ -13,7 +13,7 @@ Pip
 
 Now install Piccolo, ideally inside a `virtualenv <https://docs.python-guide.org/dev/virtualenvs/>`_:
 
-.. code-block:: python
+.. code-block:: bash
 
     # Optional - creating a virtualenv on Unix:
     python3 -m venv my_project
