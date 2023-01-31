@@ -324,6 +324,7 @@ class Table(metaclass=TableMetaclass):
                 )
 
         TABLE_REGISTRY.append(cls)
+        LAZY_COLUMN_REFERENCES.set_ready(table_class_name=cls.__name__)
 
     def __init__(
         self,

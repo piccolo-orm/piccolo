@@ -44,6 +44,10 @@ class LazyTableReference:
             raise ValueError(
                 "Specify either app_name or module_path - not both."
             )
+        # We should only try resolving it once it is ready. We know it's ready
+        # because the table metaclass sets this to `True` when the
+        # corresponding table has been initialised.
+        self.ready = False
 
     def resolve(self) -> t.Type[Table]:
         if self.app_name is not None:
@@ -87,7 +91,17 @@ class LazyTableReference:
 
 @dataclass
 class LazyColumnReferenceStore:
+    # Foreign key columns which use LazyTableReference.
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
+
+    def set_ready(self, table_class_name: str):
+        for foreign_key_column in self.foreign_key_columns:
+            references = t.cast(
+                LazyTableReference,
+                foreign_key_column._foreign_key_meta.references,
+            )
+            if references.table_class_name == table_class_name:
+                references.ready = True
 
     def for_table(self, table: t.Type[Table]) -> t.List[ForeignKey]:
         return [

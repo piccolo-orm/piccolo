@@ -2097,8 +2097,12 @@ class ForeignKey(Column):
             except AttributeError:
                 pass
             else:
-                if _foreign_key_meta.proxy_columns == [] and isinstance(
-                    _foreign_key_meta.references, LazyTableReference
+                if (
+                    _foreign_key_meta.proxy_columns == []
+                    and isinstance(
+                        _foreign_key_meta.references, LazyTableReference
+                    )
+                    and _foreign_key_meta.references.ready
                 ):
                     object.__getattribute__(self, "set_proxy_columns")()
 
