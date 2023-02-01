@@ -319,13 +319,14 @@ class Table(metaclass=TableMetaclass):
             foreign_key_setup_response = foreign_key_column._setup(
                 table_class=cls, loaded_table_classes=TABLE_REGISTRY
             )
+
             if foreign_key_setup_response.is_lazy:
                 LAZY_COLUMN_REFERENCES.foreign_key_columns.append(
                     foreign_key_column
                 )
 
         TABLE_REGISTRY.append(cls)
-        LAZY_COLUMN_REFERENCES.set_ready(table_class=cls)
+        LAZY_COLUMN_REFERENCES.check_ready(table_class=cls)
 
     def __init__(
         self,

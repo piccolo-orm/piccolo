@@ -1895,6 +1895,18 @@ class ForeignKey(Column):
             target_column=target_column,
         )
 
+    def _on_ready(self):
+        """
+        Once we know the table being referred to has been loaded, we call this
+        method.
+        """
+        # Record the reverse relationship on the target table.
+        referenced_table = self._foreign_key_meta.resolved_references
+        referenced_table._meta._foreign_key_references.append(self)
+        # Allow columns on the referenced table to be accessed via
+        # auto completion.
+        self.set_proxy_columns()
+
     def _setup(
         self,
         table_class: t.Type[Table],
@@ -1942,7 +1954,10 @@ class ForeignKey(Column):
         if is_lazy:
             # We should check if the referenced tables are already
             # available.
-            references.set_ready(table_classes=loaded_table_classes)
+            if references.check_ready(
+                table_classes=loaded_table_classes
+            ).was_changed:
+                self._on_ready()
 
         is_table_class = inspect.isclass(references) and issubclass(
             references, Table
@@ -1957,12 +1972,7 @@ class ForeignKey(Column):
             )
 
         if is_table_class:
-            # Record the reverse relationship on the target table.
-            references._meta._foreign_key_references.append(self)
-
-            # Allow columns on the referenced table to be accessed via
-            # auto completion.
-            self.set_proxy_columns()
+            self._on_ready()
 
         return ForeignKeySetupResponse(is_lazy=is_lazy)
 
@@ -2098,26 +2108,6 @@ class ForeignKey(Column):
         case a copy is returned with an updated call_chain (which records the
         joins required).
         """
-        # If the ForeignKey is using a lazy reference, we need to set the
-        # attributes here. Attributes starting with a double underscore are
-        # unlikely to be column names.
-        if not name.startswith("__"):
-            try:
-                _foreign_key_meta = object.__getattribute__(
-                    self, "_foreign_key_meta"
-                )
-            except AttributeError:
-                pass
-            else:
-                if (
-                    _foreign_key_meta.proxy_columns == []
-                    and isinstance(
-                        _foreign_key_meta.references, LazyTableReference
-                    )
-                    and _foreign_key_meta.references.ready
-                ):
-                    object.__getattribute__(self, "set_proxy_columns")()
-
         try:
             value = object.__getattribute__(self, name)
         except AttributeError:

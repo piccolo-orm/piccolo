@@ -55,7 +55,7 @@ class LazyTableReference:
         # corresponding table has been initialised.
         self.ready = False
 
-    def set_ready(
+    def check_ready(
         self, table_classes: t.List[t.Type[Table]]
     ) -> SetReadyResponse:
         """
@@ -75,7 +75,11 @@ class LazyTableReference:
                         and self.app_name == table_class._meta.app_name
                     ):
                         self.ready = True
-                        break
+                        return SetReadyResponse(
+                            is_ready=True, was_changed=True
+                        )
+
+        return SetReadyResponse(is_ready=False, was_changed=False)
 
     def resolve(self) -> t.Type[Table]:
         if self.app_name is not None:
@@ -122,7 +126,7 @@ class LazyColumnReferenceStore:
     # Foreign key columns which use LazyTableReference.
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
 
-    def set_ready(self, table_class: t.Type[Table]):
+    def check_ready(self, table_class: t.Type[Table]):
         """
         The ``Table`` metaclass calls this once a ``Table`` has been imported.
         It tells each ``LazyTableReference`` which references that table that
@@ -133,7 +137,7 @@ class LazyColumnReferenceStore:
                 LazyTableReference,
                 foreign_key_column._foreign_key_meta.references,
             )
-            if references.set_ready(table_classes=[table_class]).was_changed:
+            if references.check_ready(table_classes=[table_class]).was_changed:
                 foreign_key_column._on_ready()
 
     def for_table(self, table: t.Type[Table]) -> t.List[ForeignKey]:
