@@ -123,6 +123,7 @@ class MigrationTestCase(DBTestCase):
 
         """
         temp_directory_path = tempfile.gettempdir()
+        print(temp_directory_path)
         migrations_folder_path = os.path.join(
             temp_directory_path, "piccolo_migrations"
         )
@@ -900,25 +901,56 @@ class TestM2MMigrations(MigrationTestCase):
 ###############################################################################
 
 
+class TableA(Table):
+    pass
+
+
+class TableB(Table):
+    fk = ForeignKey(TableA)
+
+
+class TableC(Table):
+    fk = ForeignKey(TableB)
+
+
+class TableD(Table):
+    fk = ForeignKey(TableC)
+
+
+class TableE(Table):
+    fk_1 = ForeignKey(TableD)
+    fk_2 = ForeignKey(LazyTableReference("TableF", module_path=__name__))
+    fk_3 = ForeignKey(LazyTableReference("TableG", module_path=__name__))
+
+
+class TableF(Table):
+    """
+    A table with a custom PK.
+    """
+
+    id = UUID(primary_key=True)
+
+
+class TableG(Table):
+    """
+    A table with the default Serial PK.
+    """
+
+    pass
+
+
 @engines_only("postgres", "cockroach")
 class TestForeignKeys(MigrationTestCase):
     def setUp(self):
-        class TableA(Table):
-            pass
-
-        class TableB(Table):
-            fk = ForeignKey(TableA)
-
-        class TableC(Table):
-            fk = ForeignKey(TableB)
-
-        class TableD(Table):
-            fk = ForeignKey(TableC)
-
-        class TableE(Table):
-            fk = ForeignKey(TableD)
-
-        self.table_classes = [TableA, TableB, TableC, TableD, TableE]
+        self.table_classes = [
+            TableA,
+            TableB,
+            TableC,
+            TableD,
+            TableE,
+            TableF,
+            TableG,
+        ]
 
     def tearDown(self):
         drop_db_tables_sync(Migration, *self.table_classes)

@@ -243,18 +243,7 @@ class TestSerialiseParams(TestCase):
 
             self.assertTrue(len(serialised.extra_definitions) == 1)
 
-            if engine_is("postgres"):
-                self.assertEqual(
-                    serialised.extra_definitions[0].__str__(),
-                    (
-                        'class Manager(Table, tablename="manager"): '
-                        "id = Serial(null=False, primary_key=True, unique=False, "  # noqa: E501
-                        "index=False, index_method=IndexMethod.btree, "
-                        "choices=None, db_column_name='id', secret=False)"
-                    ),
-                )
-
-            if engine_is("cockroach"):
+            if engine_is("postgres") or engine_is("cockroach"):
                 self.assertEqual(
                     serialised.extra_definitions[0].__str__(),
                     (

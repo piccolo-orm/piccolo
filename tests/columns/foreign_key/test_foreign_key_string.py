@@ -16,13 +16,13 @@ class BandB(Table):
     manager = ForeignKey(
         references=LazyTableReference(
             table_class_name="Manager",
-            module_path=__module__,  # type: ignore
+            module_path=__name__,
         )
     )
 
 
 class BandC(Table, tablename="band"):
-    manager = ForeignKey(references=f"{__module__}.Manager")  # type: ignore
+    manager = ForeignKey(references=f"{__name__}.Manager")
 
 
 class TestForeignKeyString(TestCase):
