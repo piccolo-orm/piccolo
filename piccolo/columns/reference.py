@@ -14,6 +14,12 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 
 @dataclass
+class SetReadyResponse:
+    is_ready: bool
+    was_changed: bool
+
+
+@dataclass
 class LazyTableReference:
     """
     Holds a reference to a :class:`Table <piccolo.table.Table>` subclass. Used
@@ -49,9 +55,15 @@ class LazyTableReference:
         # corresponding table has been initialised.
         self.ready = False
 
-    def set_ready(self, table_classes: t.List[t.Type[Table]]):
+    def set_ready(
+        self, table_classes: t.List[t.Type[Table]]
+    ) -> SetReadyResponse:
+        """
+        Checks to see if the table being referenced is in the provided list,
+        meaning it has successfully loaded.
+        """
         if self.ready:
-            return
+            return SetReadyResponse(is_ready=True, was_changed=False)
         else:
             for table_class in table_classes:
                 if self.table_class_name == table_class.__name__:
@@ -121,7 +133,8 @@ class LazyColumnReferenceStore:
                 LazyTableReference,
                 foreign_key_column._foreign_key_meta.references,
             )
-            references.set_ready(table_classes=[table_class])
+            if references.set_ready(table_classes=[table_class]).was_changed:
+                foreign_key_column._on_ready()
 
     def for_table(self, table: t.Type[Table]) -> t.List[ForeignKey]:
         return [
