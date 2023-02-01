@@ -79,7 +79,7 @@ class OnUpdate(str, Enum):
 
 @dataclass
 class ForeignKeyMeta:
-    references: t.Union[t.Type[Table], LazyTableReference]
+    references: t.Union[t.Type[Table], LazyTableReference, str]
     on_delete: OnDelete
     on_update: OnUpdate
     target_column: t.Union[Column, str, None]

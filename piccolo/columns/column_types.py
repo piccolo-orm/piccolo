@@ -1889,7 +1889,7 @@ class ForeignKey(Column):
         # The ``TableMetaclass``` sets the actual value for
         # ``ForeignKeyMeta.references``, if the user passed in a string.
         self._foreign_key_meta = ForeignKeyMeta(
-            references=Table if isinstance(references, str) else references,
+            references=references,
             on_delete=on_delete,
             on_update=on_update,
             target_column=target_column,
@@ -1902,7 +1902,8 @@ class ForeignKey(Column):
         """
         # Record the reverse relationship on the target table.
         referenced_table = self._foreign_key_meta.resolved_references
-        referenced_table._meta._foreign_key_references.append(self)
+        if self not in referenced_table._meta._foreign_key_references:
+            referenced_table._meta._foreign_key_references.append(self)
         # Allow columns on the referenced table to be accessed via
         # auto completion.
         self.set_proxy_columns()
@@ -1949,6 +1950,8 @@ class ForeignKey(Column):
                     module_path=module_path,
                 )
 
+        self._foreign_key_meta.references = references
+
         is_lazy = isinstance(references, LazyTableReference)
 
         if is_lazy:
@@ -1963,9 +1966,7 @@ class ForeignKey(Column):
             references, Table
         )
 
-        if is_lazy or is_table_class:
-            self._foreign_key_meta.references = references
-        else:
+        if not (is_lazy or is_table_class):
             raise ValueError(
                 "Error - ``references`` must be a ``Table`` subclass, or "
                 "a ``LazyTableReference`` instance."
