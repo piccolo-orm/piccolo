@@ -1718,15 +1718,9 @@ class ForeignKey(Column):
 
         In certain situations, you may be unable to reference a ``Table`` class
         if it causes a circular dependency. Try and avoid these by refactoring
-        your code. If unavoidable, you can specify a lazy reference. If the
-        ``Table`` is defined in the same file:
-
-        .. code-block:: python
-
-            class Band(Table):
-                manager = ForeignKey(references='Manager')
-
-        If the ``Table`` is defined in a Piccolo app:
+        your code. If unavoidable, you can specify a lazy reference using
+        :class:`LazyTableReference <piccolo.columns.reference.LazyTableReference>`.
+        If the ``Table`` is defined in the same file:
 
         .. code-block:: python
 
@@ -1735,11 +1729,15 @@ class ForeignKey(Column):
             class Band(Table):
                 manager = ForeignKey(
                     references=LazyTableReference(
-                       table_class_name="Manager", app_name="my_app",
+                       table_class_name="Manager",
+                       module_path=__name__,
                     )
+                    # Alternatively, Piccolo will interpret this string the
+                    # same as above:
+                    # references="Manager"
                 )
 
-        If you aren't using Piccolo apps, you can specify a ``Table`` in any
+        Or if the ``Table`` is defined in a different file:
         Python module:
 
         .. code-block:: python
@@ -1752,9 +1750,22 @@ class ForeignKey(Column):
                        table_class_name="Manager",
                        module_path="some_module.tables",
                     )
-                    # Alternatively, Piccolo will interpret this string as
-                    # the same as above:
+                    # Alternatively, Piccolo will interpret this string the
+                    # same as above:
                     # references="some_module.tables.Manager"
+                )
+
+        If the ``Table`` is defined in a Piccolo app, you can also use this:
+
+        .. code-block:: python
+
+            from piccolo.columns.reference import LazyTableReference
+
+            class Band(Table):
+                manager = ForeignKey(
+                    references=LazyTableReference(
+                       table_class_name="Manager", app_name="my_app",
+                    )
                 )
 
     :param on_delete:

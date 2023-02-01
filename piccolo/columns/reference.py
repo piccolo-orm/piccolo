@@ -23,6 +23,7 @@ class LazyTableReference:
     Holds a reference to a :class:`Table <piccolo.table.Table>` subclass. Used
     to avoid circular dependencies in the ``references`` argument of
     :class:`ForeignKey <piccolo.columns.column_types.ForeignKey>` columns.
+    Pass in either ``app_name`` OR ``module_path``.
 
     :param table_class_name:
         The name of the ``Table`` subclass. For example, ``'Manager'``.
