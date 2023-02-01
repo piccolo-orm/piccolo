@@ -133,11 +133,11 @@ class LazyColumnReferenceStore:
         it's ready.
         """
         for foreign_key_column in self.foreign_key_columns:
-            references = t.cast(
+            reference = t.cast(
                 LazyTableReference,
                 foreign_key_column._foreign_key_meta.references,
             )
-            if references.check_ready(table_classes=[table_class]).was_changed:
+            if reference.check_ready(table_classes=[table_class]).was_changed:
                 foreign_key_column._on_ready()
 
     def for_table(self, table: t.Type[Table]) -> t.List[ForeignKey]:
