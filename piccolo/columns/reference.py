@@ -94,14 +94,28 @@ class LazyColumnReferenceStore:
     # Foreign key columns which use LazyTableReference.
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
 
-    def set_ready(self, table_class_name: str):
+    def set_ready(self, table_class: t.Type[Table]):
+        """
+        The ``Table`` metaclass calls this once a ``Table`` has been imported.
+        It tells each ``LazyTableReference`` which references that table that
+        it's ready.
+        """
         for foreign_key_column in self.foreign_key_columns:
             references = t.cast(
                 LazyTableReference,
                 foreign_key_column._foreign_key_meta.references,
             )
-            if references.table_class_name == table_class_name:
-                references.ready = True
+            if references.table_class_name == table_class.__class__.__name__:
+                if (
+                    references.module_path
+                    and references.module_path == table_class.__module__
+                ):
+                    references.ready = True
+                elif (
+                    references.app_name
+                    and references.app_name == table_class._meta.app_name
+                ):
+                    references.ready = True
 
     def for_table(self, table: t.Type[Table]) -> t.List[ForeignKey]:
         return [

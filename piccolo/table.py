@@ -69,6 +69,7 @@ class TableMeta:
     """
 
     tablename: str = ""
+    app_name: t.Optiona[str] = None
     columns: t.List[Column] = field(default_factory=list)
     default_columns: t.List[Column] = field(default_factory=list)
     non_default_columns: t.List[Column] = field(default_factory=list)
@@ -324,7 +325,7 @@ class Table(metaclass=TableMetaclass):
                 )
 
         TABLE_REGISTRY.append(cls)
-        LAZY_COLUMN_REFERENCES.set_ready(table_class_name=cls.__name__)
+        LAZY_COLUMN_REFERENCES.set_ready(table_class=cls)
 
     def __init__(
         self,
