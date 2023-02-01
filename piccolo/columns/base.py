@@ -99,9 +99,9 @@ class ForeignKeyMeta:
                 return self.references.resolve()
             else:
                 raise ValueError(
-                    "The tables haven't fully initialised yet - please "
-                    "refactor your code so all tables have imported before "
-                    "using them."
+                    f"The {self.references.table_class_name} table hasn't "
+                    "fully initialised yet - please refactor your code so all "
+                    "tables have imported before using them."
                 )
         elif inspect.isclass(self.references) and issubclass(
             self.references, Table
