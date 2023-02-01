@@ -1895,13 +1895,19 @@ class ForeignKey(Column):
             target_column=target_column,
         )
 
-    def _setup(self, table_class: t.Type[Table]) -> ForeignKeySetupResponse:
+    def _setup(
+        self,
+        table_class: t.Type[Table],
+        loaded_table_classes: t.List[t.Type[Table]] = [],
+    ) -> ForeignKeySetupResponse:
         """
         This is called by the ``TableMetaclass``. A ``ForeignKey`` column can
         only be completely setup once it's parent ``Table`` is known.
 
         :param table_class:
             The parent ``Table`` class for this column.
+        :param loaded_table_classes:
+            Any ``Table`` classes which have already been loaded.
 
         """
         from piccolo.table import Table
@@ -1932,6 +1938,12 @@ class ForeignKey(Column):
                 )
 
         is_lazy = isinstance(references, LazyTableReference)
+
+        if is_lazy:
+            # We should check if the referenced tables are already
+            # available.
+            references.set_ready(table_classes=loaded_table_classes)
+
         is_table_class = inspect.isclass(references) and issubclass(
             references, Table
         )

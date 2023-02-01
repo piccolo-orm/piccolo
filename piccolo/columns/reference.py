@@ -49,6 +49,25 @@ class LazyTableReference:
         # corresponding table has been initialised.
         self.ready = False
 
+    def set_ready(self, table_classes: t.List[t.Type[Table]]):
+        if self.ready:
+            return
+        else:
+            for table_class in table_classes:
+                if self.table_class_name == table_class.__name__:
+                    if (
+                        self.module_path
+                        and self.module_path == table_class.__module__
+                    ):
+                        self.ready = True
+                        break
+                    elif (
+                        self.app_name
+                        and self.app_name == table_class._meta.app_name
+                    ):
+                        self.ready = True
+                        break
+
     def resolve(self) -> t.Type[Table]:
         if self.app_name is not None:
             from piccolo.conf.apps import Finder
@@ -105,17 +124,7 @@ class LazyColumnReferenceStore:
                 LazyTableReference,
                 foreign_key_column._foreign_key_meta.references,
             )
-            if references.table_class_name == table_class.__class__.__name__:
-                if (
-                    references.module_path
-                    and references.module_path == table_class.__module__
-                ):
-                    references.ready = True
-                elif (
-                    references.app_name
-                    and references.app_name == table_class._meta.app_name
-                ):
-                    references.ready = True
+            references.set_ready(table_classes=[table_class])
 
     def for_table(self, table: t.Type[Table]) -> t.List[ForeignKey]:
         return [

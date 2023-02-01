@@ -317,7 +317,7 @@ class Table(metaclass=TableMetaclass):
             # ForeignKey columns require additional setup based on their
             # parent Table.
             foreign_key_setup_response = foreign_key_column._setup(
-                table_class=cls
+                table_class=cls, loaded_table_classes=TABLE_REGISTRY
             )
             if foreign_key_setup_response.is_lazy:
                 LAZY_COLUMN_REFERENCES.foreign_key_columns.append(
