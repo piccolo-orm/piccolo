@@ -37,7 +37,7 @@ class TestAttributeAccess(TestCase):
         references.
         """
         for band_table in (BandA, BandB, BandC, BandD):
-            self.assertTrue(isinstance(band_table.manager.name, Varchar))
+            self.assertIsInstance(band_table.manager.name, Varchar)
 
     def test_recursion_limit(self):
         """
@@ -47,7 +47,7 @@ class TestAttributeAccess(TestCase):
         # Should be fine:
         column: Column = Manager.manager.name
         self.assertTrue(len(column._meta.call_chain), 1)
-        self.assertTrue(isinstance(column, Varchar))
+        self.assertIsInstance(column, Varchar)
 
         with self.assertRaises(Exception):
             Manager.manager.manager.manager.manager.manager.manager.manager.manager.manager.manager.manager.name  # noqa
@@ -59,4 +59,4 @@ class TestAttributeAccess(TestCase):
         start = time.time()
         Manager.manager.manager.manager.manager.manager.manager.name
         end = time.time()
-        self.assertTrue(end - start < 1.0)
+        self.assertLess(end - start, 1.0)
