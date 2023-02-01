@@ -95,7 +95,14 @@ class ForeignKeyMeta:
         from piccolo.table import Table
 
         if isinstance(self.references, LazyTableReference):
-            return self.references.resolve()
+            if self.references.ready:
+                return self.references.resolve()
+            else:
+                raise ValueError(
+                    "The tables haven't fully initialised yet - please "
+                    "refactor your code so all tables have imported before "
+                    "using them."
+                )
         elif inspect.isclass(self.references) and issubclass(
             self.references, Table
         ):
