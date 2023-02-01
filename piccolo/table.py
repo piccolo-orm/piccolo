@@ -69,7 +69,7 @@ class TableMeta:
     """
 
     tablename: str = ""
-    app_name: t.Optiona[str] = None
+    app_name: t.Optional[str] = None
     columns: t.List[Column] = field(default_factory=list)
     default_columns: t.List[Column] = field(default_factory=list)
     non_default_columns: t.List[Column] = field(default_factory=list)
