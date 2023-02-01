@@ -3,8 +3,6 @@ Dataclasses for storing lazy references between ForeignKey columns and tables.
 """
 from __future__ import annotations
 
-import importlib
-import inspect
 import typing as t
 from dataclasses import dataclass, field
 
@@ -54,6 +52,7 @@ class LazyTableReference:
         # because the table metaclass sets this to `True` when the
         # corresponding table has been initialised.
         self.ready = False
+        self._resolved: t.Optional[t.Table] = None
 
     def check_ready(
         self, table_classes: t.List[t.Type[Table]]
@@ -82,33 +81,34 @@ class LazyTableReference:
         return SetReadyResponse(is_ready=False, was_changed=False)
 
     def resolve(self) -> t.Type[Table]:
+        if self._resolved is not None:
+            return self._resolved
+
         if self.app_name is not None:
             from piccolo.conf.apps import Finder
 
             finder = Finder()
-            return finder.get_table_with_name(
+            table_class = finder.get_table_with_name(
                 app_name=self.app_name, table_class_name=self.table_class_name
             )
+            self._resolved = table_class
+            return table_class
 
         if self.module_path:
-            module = importlib.import_module(self.module_path)
-            table: t.Optional[t.Type[Table]] = getattr(
-                module, self.table_class_name, None
+            from piccolo.table import TABLE_REGISTRY
+
+            for table_class in TABLE_REGISTRY:
+                if (
+                    table_class.__name__ == self.table_class_name
+                    and table_class.__module__ == self.module_path
+                ):
+                    self._resolved = table_class
+                    return table_class
+
+            raise ValueError(
+                "Can't find a Table subclass called "
+                f"{self.table_class_name} in {self.module_path}"
             )
-
-            from piccolo.table import Table
-
-            if (
-                table is not None
-                and inspect.isclass(table)
-                and issubclass(table, Table)
-            ):
-                return table
-            else:
-                raise ValueError(
-                    "Can't find a Table subclass called "
-                    f"{self.table_class_name} in {self.module_path}"
-                )
 
         raise ValueError("You must specify either app_name or module_path.")
 
