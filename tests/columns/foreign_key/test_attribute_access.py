@@ -21,7 +21,8 @@ class BandB(Table):
 class BandC(Table):
     manager = ForeignKey(
         references=LazyTableReference(
-            table_class_name="Manager", module_path=__name__
+            table_class_name="Manager",
+            module_path=__module__,  # type: ignore
         )
     )
 
