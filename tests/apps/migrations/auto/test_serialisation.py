@@ -235,10 +235,13 @@ class TestSerialiseParams(TestCase):
                 serialised.params["references"].__repr__() == "Manager"
             )
 
-            self.assertTrue(len(serialised.extra_imports) == 1)
-            self.assertEqual(
-                serialised.extra_imports[0].__str__(),
-                "from piccolo.table import Table",
+            self.assertListEqual(
+                sorted([i.__str__() for i in serialised.extra_imports]),
+                [
+                    "from piccolo.columns.column_types import Serial",
+                    "from piccolo.columns.indexes import IndexMethod",
+                    "from piccolo.table import Table",
+                ],
             )
 
             self.assertTrue(len(serialised.extra_definitions) == 1)

@@ -918,9 +918,9 @@ class TableD(Table):
 
 
 class TableE(Table):
-    fk_1 = ForeignKey(TableD)
     fk_2 = ForeignKey(LazyTableReference("TableF", module_path=__name__))
     fk_3 = ForeignKey(LazyTableReference("TableG", module_path=__name__))
+    fk_5 = ForeignKey("TableG")
 
 
 class TableF(Table):
@@ -971,6 +971,13 @@ class TestForeignKeys(MigrationTestCase):
         self._test_migrations(table_snapshots=[table_classes])
         for table_class in table_classes:
             self.assertTrue(table_class.table_exists().run_sync())
+
+    def test_subset(self):
+        """
+        Test a smaller subset, just in case there's a bug with importing
+        dependencies.
+        """
+        self._test_migrations(table_snapshots=[[TableE, TableF, TableG]])
 
 
 @engines_only("postgres", "cockroach")
