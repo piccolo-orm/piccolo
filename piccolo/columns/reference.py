@@ -58,10 +58,7 @@ class LazyTableReference:
                     if (
                         self.module_path
                         and self.module_path == table_class.__module__
-                    ):
-                        self.ready = True
-                        break
-                    elif (
+                    ) or (
                         self.app_name
                         and self.app_name == table_class._meta.app_name
                     ):
