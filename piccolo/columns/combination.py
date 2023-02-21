@@ -44,6 +44,14 @@ class Combination(CombinableMixin):
             self.second.querystring,
         )
 
+    @property
+    def querystring_for_update(self) -> QueryString:
+        return QueryString(
+            "({} " + self.operator + " {})",
+            self.first.querystring_for_update,
+            self.second.querystring_for_update,
+        )
+
     def __str__(self):
         return self.querystring.__str__()
 
@@ -121,6 +129,10 @@ class WhereRaw(CombinableMixin):
 
         """
         self.querystring = QueryString(sql, *args)
+
+    @property
+    def querystring_for_update(self):
+        return self.querystring
 
     def __str__(self):
         return self.querystring.__str__()
@@ -204,6 +216,38 @@ class Where(CombinableMixin):
         )
 
         return QueryString(template, *args)
+
+    @property
+    def querystring_for_update(self) -> QueryString:
+        args: t.List[t.Any] = []
+        if self.value != UNDEFINED:
+            args.append(self.value)
+
+        if self.values != UNDEFINED:
+            args.append(self.values_querystring)
+
+        column = self.column
+
+        if column._meta.call_chain:
+            # Use a sub select to find the correct ID.
+            root_column = column._meta.call_chain[0]
+            sub_query = root_column._meta.table.select(root_column).where(self)
+
+            column_name = column._meta.call_chain[0]._meta.name
+            return QueryString(
+                f"{column_name} = ({{}})",
+                sub_query.querystrings[0],
+            )
+        else:
+            template = self.operator.template.format(
+                name=self.column.get_where_string(
+                    engine_type=self.column._meta.engine_type
+                ),
+                value="{}",
+                values="{}",
+            )
+
+            return QueryString(template, *args)
 
     def __str__(self):
         return self.querystring.__str__()
