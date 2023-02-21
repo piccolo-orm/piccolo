@@ -1,6 +1,26 @@
 Changes
 =======
 
+0.106.0
+-------
+
+Joins now work within ``update`` queries. For example:
+
+.. code-block:: python
+
+  await Band.update({
+      Band.name: 'Amazing Band'
+  }).where(
+      Band.manager.name == 'Guido'
+  )
+
+Other changes:
+
+* Improved the template used  by ``piccolo app new`` when creating a new
+  Piccolo app (it now uses ``table_finder``).
+
+-------------------------------------------------------------------------------
+
 0.105.0
 -------
 
