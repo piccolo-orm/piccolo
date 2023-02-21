@@ -97,11 +97,48 @@ class Update(Query[TableInstance, t.List[t.Any]]):
         )
 
         if self.where_delegate._where:
-            querystring = QueryString(
-                "{} WHERE {}",
-                querystring,
-                self.where_delegate._where.querystring,
-            )
+            # The JOIN syntax isn't allowed in SQL UPDATE queries, so we need
+            # to write the WHERE clause differently, using a sub select.
+
+            from piccolo.columns.combination import And, Or, Where, WhereRaw
+
+            if isinstance(self.where_delegate._where, WhereRaw):
+                # Assume that the user knows what they're doing.
+                querystring = QueryString(
+                    "{} WHERE {}",
+                    querystring,
+                    self.where_delegate._where.querystring,
+                )
+            elif isinstance(self.where_delegate._where, Where):
+                column = self.where_delegate._where.column
+                if column._meta.call_chain:
+                    # Use a sub select to find the correct ID.
+                    sub_query = self.table.select(
+                        column._meta.call_chain[0]
+                    ).where(self.where_delegate._where)
+
+                    column_name = column._meta.call_chain[0]._meta.name
+                    querystring = QueryString(
+                        f"{{}} WHERE {column_name} = ({{}})",
+                        querystring,
+                        sub_query.querystrings[0],
+                    )
+                else:
+                    querystring = QueryString(
+                        "{} WHERE {}",
+                        querystring,
+                        self.where_delegate._where.querystring,
+                    )
+            elif isinstance(self.where_delegate._where, (And, Or)):
+                # Try and detect if joins are present, if so, use a subselect.
+
+                if isinstance(self.where_delegate._where.first, Where):
+                    pass
+
+                elif isinstance(self.where_delegate._where.first, Where):
+                    pass
+
+                pass
 
         if self.returning_delegate._returning:
             querystring = QueryString(

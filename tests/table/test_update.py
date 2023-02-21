@@ -113,6 +113,17 @@ class TestUpdate(DBTestCase):
 
         self.check_response()
 
+    def test_update_with_join(self):
+        """
+        Make sure updates work when the where clause needs a join.
+        """
+        self.insert_rows()
+        Band.update({Band.name: "Pythonistas3"}).where(
+            Band.manager.name == "Guido"
+        ).run_sync()
+
+        self.check_response()
+
     @pytest.mark.skipif(
         is_running_sqlite() and engine_version_lt(3.35),
         reason="SQLite version not supported",
