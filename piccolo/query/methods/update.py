@@ -97,10 +97,13 @@ class Update(Query[TableInstance, t.List[t.Any]]):
         )
 
         if self.where_delegate._where:
+            # The JOIN syntax isn't allowed in SQL UPDATE queries, so we need
+            # to write the WHERE clause differently, using a sub select.
+
             querystring = QueryString(
                 "{} WHERE {}",
                 querystring,
-                self.where_delegate._where.querystring,
+                self.where_delegate._where.querystring_for_update,
             )
 
         if self.returning_delegate._returning:
