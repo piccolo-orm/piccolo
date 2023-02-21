@@ -24,7 +24,7 @@ from tests.base import (
     is_running_sqlite,
     sqlite_only,
 )
-from tests.example_apps.music.tables import Band
+from tests.example_apps.music.tables import Band, Manager
 
 
 class TestUpdate(DBTestCase):
@@ -109,17 +109,6 @@ class TestUpdate(DBTestCase):
 
         Band.update().values(name="Pythonistas3").where(
             Band.name == "Pythonistas"
-        ).run_sync()
-
-        self.check_response()
-
-    def test_update_with_join(self):
-        """
-        Make sure updates work when the where clause needs a join.
-        """
-        self.insert_rows()
-        Band.update({Band.name: "Pythonistas3"}).where(
-            Band.manager.name == "Guido"
         ).run_sync()
 
         self.check_response()
@@ -639,3 +628,89 @@ class TestAutoUpdate(TestCase):
         )
         self.assertIsInstance(updated_row["modified_on"], datetime.datetime)
         self.assertEqual(updated_row["name"], "test 2")
+
+
+###############################################################################
+# Test update with joins
+
+
+class TestUpdateWithJoin(DBTestCase):
+    def test_join(self):
+        """
+        Make sure updates work when the where clause needs a join.
+        """
+        self.insert_rows()
+        Band.update({Band.name: "New name"}).where(
+            Band.manager.name == "Guido"
+        ).run_sync()
+
+        self.assertEqual(
+            Band.count().where(Band.name == "New name").run_sync(), 1
+        )
+
+    def test_multiple_matches(self):
+        """
+        Make sure it works when the join has multiple matching values.
+        """
+        self.insert_rows()
+
+        # Create an additional band with the same manager.
+        manager = Manager.objects().get(Manager.name == "Guido").run_sync()
+        band = Band(name="Pythonistas 2", manager=manager)
+        band.save().run_sync()
+
+        Band.update({Band.name: "New name"}).where(
+            Band.manager.name == "Guido"
+        ).run_sync()
+
+        self.assertEqual(
+            Band.count().where(Band.name == "New name").run_sync(), 2
+        )
+
+    def test_no_matches(self):
+        """
+        Make sure it works when the join has no matching values.
+        """
+        self.insert_rows()
+
+        Band.update({Band.name: "New name"}).where(
+            Band.manager.name == "Mr Manager"
+        ).run_sync()
+
+        self.assertEqual(
+            Band.count().where(Band.name == "New name").run_sync(), 0
+        )
+
+    def test_and(self):
+        """
+        Make sure it works when combined with other where clauses using AND.
+        """
+        self.insert_rows()
+
+        # Create an additional band with the same manager, and different
+        # popularity.
+        manager = Manager.objects().get(Manager.name == "Guido").run_sync()
+        band = Band(name="Pythonistas 2", manager=manager, popularity=10000)
+        band.save().run_sync()
+
+        Band.update({Band.name: "New name"}).where(
+            Band.manager.name == "Guido", Band.popularity == 10000
+        ).run_sync()
+
+        self.assertEqual(
+            Band.count().where(Band.name == "New name").run_sync(), 1
+        )
+
+    def test_or(self):
+        """
+        Make sure it works when combined with other where clauses using OR.
+        """
+        self.insert_rows()
+
+        Band.update({Band.name: "New name"}).where(
+            (Band.manager.name == "Guido") | (Band.manager.name == "Graydon")
+        ).run_sync()
+
+        self.assertEqual(
+            Band.count().where(Band.name == "New name").run_sync(), 2
+        )
