@@ -322,7 +322,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
 
     ###########################################################################
     # These typos existed in the codebase for a while, so leaving these proxy
-    # methods for now to ensure backwards compatility.
+    # methods for now to ensure backwards compatibility.
 
     async def start_connnection_pool(self, **kwargs) -> None:
         colored_warning(
