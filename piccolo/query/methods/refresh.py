@@ -72,7 +72,7 @@ class Refresh:
             raise ValueError("No columns to fetch.")
 
         updated_values = (
-            await instance.select(*columns)
+            await instance.__class__.select(*columns)
             .where(pk_column == primary_key_value)
             .first()
             .run(node=node, in_pool=in_pool)
