@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import contextvars
-import pprint
 import typing as t
 from dataclasses import dataclass
 
@@ -11,7 +10,7 @@ from piccolo.query.base import DDL, Query
 from piccolo.querystring import QueryString
 from piccolo.utils.lazy_loader import LazyLoader
 from piccolo.utils.sync import run_sync
-from piccolo.utils.warnings import Level, colored_string, colored_warning
+from piccolo.utils.warnings import Level, colored_warning
 
 asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")
 
