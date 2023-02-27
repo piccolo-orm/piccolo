@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextvars
+import pprint
 import typing as t
 from dataclasses import dataclass
 
@@ -447,7 +448,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         )
 
         if self.log_queries:
-            print(f"Query {query_id}:")
+            print(f"\nQuery {query_id}:")
             print(querystring)
 
         # If running inside a transaction:
@@ -462,8 +463,8 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
             response = await self._run_in_new_connection(query, query_args)
 
         if self.log_responses:
-            print(f"Response {query_id}:")
-            print(response)
+            print(f"\nQuery {query_id} response:")
+            pprint.pp(response)
 
         return response
 
@@ -475,7 +476,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         )
 
         if self.log_queries:
-            print(f"Query {query_id}:")
+            print(f"\nQuery {query_id}:")
             print(ddl)
 
         # If running inside a transaction:
@@ -488,8 +489,8 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
             response = await self._run_in_new_connection(ddl)
 
         if self.log_responses:
-            print(f"Response {query_id}:")
-            print(response)
+            print(f"\nQuery {query_id} response:")
+            pprint.pp(response)
 
         return response
 
