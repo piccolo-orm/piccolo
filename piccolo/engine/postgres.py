@@ -11,7 +11,7 @@ from piccolo.query.base import DDL, Query
 from piccolo.querystring import QueryString
 from piccolo.utils.lazy_loader import LazyLoader
 from piccolo.utils.sync import run_sync
-from piccolo.utils.warnings import Level, colored_warning
+from piccolo.utils.warnings import Level, colored_string, colored_warning
 
 asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")
 
@@ -448,7 +448,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         )
 
         if self.log_queries:
-            print(f"\nQuery {query_id}:")
+            print(colored_string(f"\nQuery {query_id}:"))
             print(querystring)
 
         # If running inside a transaction:
@@ -463,7 +463,11 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
             response = await self._run_in_new_connection(query, query_args)
 
         if self.log_responses:
-            print(f"\nQuery {query_id} response:")
+            print(
+                colored_string(
+                    f"\nQuery {query_id} response:", level=Level.high
+                )
+            )
             pprint.pp(response)
 
         return response
@@ -476,7 +480,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         )
 
         if self.log_queries:
-            print(f"\nQuery {query_id}:")
+            print(colored_string(f"\nQuery {query_id}:"))
             print(ddl)
 
         # If running inside a transaction:
@@ -489,7 +493,11 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
             response = await self._run_in_new_connection(ddl)
 
         if self.log_responses:
-            print(f"\nQuery {query_id} response:")
+            print(
+                colored_string(
+                    f"\nQuery {query_id} response:", level=Level.high
+                )
+            )
             pprint.pp(response)
 
         return response
