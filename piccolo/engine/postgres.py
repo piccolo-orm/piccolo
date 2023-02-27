@@ -209,6 +209,10 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         If ``True``, all SQL and DDL statements are printed out before being
         run. Useful for debugging.
 
+    :param log_responses:
+        If ``True``, the raw response from each query is printed out. Useful
+        for debugging.
+
     :param extra_nodes:
         If you have additional database nodes (e.g. read replicas) for the
         server, you can specify them here. It's a mapping of a memorable name
@@ -240,6 +244,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         "config",
         "extensions",
         "log_queries",
+        "log_responses",
         "extra_nodes",
         "pool",
         "current_transaction",
@@ -253,6 +258,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         config: t.Dict[str, t.Any],
         extensions: t.Sequence[str] = ("uuid-ossp",),
         log_queries: bool = False,
+        log_responses: bool = False,
         extra_nodes: t.Mapping[str, PostgresEngine] = None,
     ) -> None:
         if extra_nodes is None:
@@ -261,6 +267,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         self.config = config
         self.extensions = extensions
         self.log_queries = log_queries
+        self.log_responses = log_responses
         self.extra_nodes = extra_nodes
         self.pool: t.Optional[Pool] = None
         database_name = config.get("database", "Unknown")
@@ -427,32 +434,46 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
             engine_type=self.engine_type
         )
 
+        query_id = self.get_query_id()
+
         if self.log_queries:
-            print(querystring)
+            self.print_query(query_id=query_id, query=querystring.__str__())
 
         # If running inside a transaction:
         current_transaction = self.current_transaction.get()
         if current_transaction:
-            return await current_transaction.connection.fetch(
+            response = await current_transaction.connection.fetch(
                 query, *query_args
             )
         elif in_pool and self.pool:
-            return await self._run_in_pool(query, query_args)
+            response = await self._run_in_pool(query, query_args)
         else:
-            return await self._run_in_new_connection(query, query_args)
+            response = await self._run_in_new_connection(query, query_args)
+
+        if self.log_responses:
+            self.print_response(query_id=query_id, response=response)
+
+        return response
 
     async def run_ddl(self, ddl: str, in_pool: bool = True):
+        query_id = self.get_query_id()
+
         if self.log_queries:
-            print(ddl)
+            self.print_query(query_id=query_id, query=ddl)
 
         # If running inside a transaction:
         current_transaction = self.current_transaction.get()
         if current_transaction:
-            return await current_transaction.connection.fetch(ddl)
+            response = await current_transaction.connection.fetch(ddl)
         elif in_pool and self.pool:
-            return await self._run_in_pool(ddl)
+            response = await self._run_in_pool(ddl)
         else:
-            return await self._run_in_new_connection(ddl)
+            response = await self._run_in_new_connection(ddl)
+
+        if self.log_responses:
+            self.print_response(query_id=query_id, response=response)
+
+        return response
 
     def atomic(self) -> Atomic:
         return Atomic(engine=self)
