@@ -1,6 +1,28 @@
 Changes
 =======
 
+0.107.0
+-------
+
+Added the ``log_responses`` option to the database engines. This makes the
+engine print out the raw response from the database for each query, which
+is useful during debugging.
+
+.. code-block:: python
+
+  # piccolo_conf.py
+
+  DB = PostgresEngine(
+    config={'database': 'my_database'},
+    log_queries=True,
+    log_responses=True
+  )
+
+We also updated the Starlite ASGI template - it now uses the new import paths
+(thanks to @sinisaos for this).
+
+-------------------------------------------------------------------------------
+
 0.106.0
 -------
 
