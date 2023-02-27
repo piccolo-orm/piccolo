@@ -249,7 +249,6 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         "extra_nodes",
         "pool",
         "current_transaction",
-        "query_id",
     )
 
     engine_type = "postgres"
@@ -276,12 +275,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         self.current_transaction = contextvars.ContextVar(
             f"pg_current_transaction_{database_name}", default=None
         )
-        self.query_id = 0
         super().__init__()
-
-    def get_query_id(self) -> int:
-        self.query_id += 1
-        return self.query_id
 
     @staticmethod
     def _parse_raw_version_string(version_string: str) -> float:
@@ -441,15 +435,10 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
             engine_type=self.engine_type
         )
 
-        query_id = (
-            self.get_query_id()
-            if self.log_queries or self.log_responses
-            else None
-        )
+        query_id = self.get_query_id()
 
         if self.log_queries:
-            print(colored_string(f"\nQuery {query_id}:"))
-            print(querystring)
+            self.print_query(query_id=query_id, query=querystring.__str__())
 
         # If running inside a transaction:
         current_transaction = self.current_transaction.get()
@@ -463,25 +452,15 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
             response = await self._run_in_new_connection(query, query_args)
 
         if self.log_responses:
-            print(
-                colored_string(
-                    f"\nQuery {query_id} response:", level=Level.high
-                )
-            )
-            pprint.pprint(response)
+            self.print_response(query_id=query_id, response=response)
 
         return response
 
     async def run_ddl(self, ddl: str, in_pool: bool = True):
-        query_id = (
-            self.get_query_id()
-            if self.log_queries or self.log_responses
-            else None
-        )
+        query_id = self.get_query_id()
 
         if self.log_queries:
-            print(colored_string(f"\nQuery {query_id}:"))
-            print(ddl)
+            self.print_query(query_id=query_id, query=ddl)
 
         # If running inside a transaction:
         current_transaction = self.current_transaction.get()
@@ -493,12 +472,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
             response = await self._run_in_new_connection(ddl)
 
         if self.log_responses:
-            print(
-                colored_string(
-                    f"\nQuery {query_id} response:", level=Level.high
-                )
-            )
-            pprint.pprint(response)
+            self.print_response(query_id=query_id, response=response)
 
         return response
 

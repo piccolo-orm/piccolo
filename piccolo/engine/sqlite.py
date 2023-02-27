@@ -374,6 +374,7 @@ class SQLiteEngine(Engine[t.Optional[SQLiteTransaction]]):
         self,
         path: str = "piccolo.sqlite",
         log_queries: bool = False,
+        log_responses: bool = False,
         **connection_kwargs,
     ) -> None:
         """
@@ -383,6 +384,9 @@ class SQLiteEngine(Engine[t.Optional[SQLiteTransaction]]):
         :param log_queries:
             If ``True``, all SQL and DDL statements are printed out before
             being run. Useful for debugging.
+        :param log_responses:
+            If ``True``, the raw response from each query is printed out.
+            Useful for debugging.
         :param connection_kwargs:
             These are passed directly to the database adapter. We recommend
             setting ``timeout`` if you expect your application to process a
@@ -398,6 +402,7 @@ class SQLiteEngine(Engine[t.Optional[SQLiteTransaction]]):
         }
 
         self.log_queries = log_queries
+        self.log_responses = log_responses
         self.connection_kwargs = {
             **default_connection_kwargs,
             **connection_kwargs,
@@ -548,8 +553,10 @@ class SQLiteEngine(Engine[t.Optional[SQLiteTransaction]]):
         Connection pools aren't currently supported - the argument is there
         for consistency with other engines.
         """
+        query_id = self.get_query_id()
+
         if self.log_queries:
-            print(querystring)
+            self.print_query(query_id=query_id, query=querystring.__str__())
 
         query, query_args = querystring.compile_string(
             engine_type=self.engine_type
@@ -558,40 +565,52 @@ class SQLiteEngine(Engine[t.Optional[SQLiteTransaction]]):
         # If running inside a transaction:
         current_transaction = self.current_transaction.get()
         if current_transaction:
-            return await self._run_in_existing_connection(
+            response = await self._run_in_existing_connection(
                 connection=current_transaction.connection,
                 query=query,
                 args=query_args,
                 query_type=querystring.query_type,
                 table=querystring.table,
             )
+        else:
+            response = await self._run_in_new_connection(
+                query=query,
+                args=query_args,
+                query_type=querystring.query_type,
+                table=querystring.table,
+            )
 
-        return await self._run_in_new_connection(
-            query=query,
-            args=query_args,
-            query_type=querystring.query_type,
-            table=querystring.table,
-        )
+        if self.log_responses:
+            self.print_response(query_id=query_id, response=response)
+
+        return response
 
     async def run_ddl(self, ddl: str, in_pool: bool = False):
         """
         Connection pools aren't currently supported - the argument is there
         for consistency with other engines.
         """
+        query_id = self.get_query_id()
+
         if self.log_queries:
-            print(ddl)
+            self.print_query(query_id=query_id, query=ddl)
 
         # If running inside a transaction:
         current_transaction = self.current_transaction.get()
         if current_transaction:
-            return await self._run_in_existing_connection(
+            response = await self._run_in_existing_connection(
                 connection=current_transaction.connection,
                 query=ddl,
             )
+        else:
+            response = await self._run_in_new_connection(
+                query=ddl,
+            )
 
-        return await self._run_in_new_connection(
-            query=ddl,
-        )
+        if self.log_responses:
+            self.print_response(query_id=query_id, response=response)
+
+        return response
 
     def atomic(
         self, transaction_type: TransactionType = TransactionType.deferred
