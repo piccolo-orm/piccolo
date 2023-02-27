@@ -468,7 +468,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
                     f"\nQuery {query_id} response:", level=Level.high
                 )
             )
-            pprint.pp(response)
+            pprint.pprint(response)
 
         return response
 
@@ -498,7 +498,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
                     f"\nQuery {query_id} response:", level=Level.high
                 )
             )
-            pprint.pp(response)
+            pprint.pprint(response)
 
         return response
 
