@@ -365,7 +365,12 @@ def dict_factory(cursor, row) -> t.Dict:
 
 class SQLiteEngine(Engine[t.Optional[SQLiteTransaction]]):
 
-    __slots__ = ("connection_kwargs", "current_transaction", "log_queries")
+    __slots__ = (
+        "connection_kwargs",
+        "current_transaction",
+        "log_queries",
+        "log_responses",
+    )
 
     engine_type = "sqlite"
     min_version_number = 3.25
