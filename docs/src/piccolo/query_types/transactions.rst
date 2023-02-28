@@ -61,6 +61,42 @@ following:
 
 -------------------------------------------------------------------------------
 
+Savepoints
+----------
+
+Postgres supports savepoints, which is a way of partially rolling back a
+transaction.
+
+.. code-block:: python
+
+    async with Band._meta.db.transaction() as transaction:
+        await Band.insert(Band(name='Pythonistas'))
+
+        savepoint_1 = await transaction.savepoint()
+
+        await Band.insert(Band(name='Terrible band'))
+
+        # Oops, I made a mistake!
+        await savepoint_1.rollback_to()
+
+Named savepoints
+~~~~~~~~~~~~~~~~
+
+By default, we assign a name to the savepoint for you. But you can explicitly
+give it a name:
+
+.. code-block:: python
+
+    await transaction.savepoint('my_savepoint')
+
+This means you can rollback to this savepoint at any point just using the name:
+
+.. code-block:: python
+
+    await transaction.rollback_to('my_savepoint')
+
+-------------------------------------------------------------------------------
+
 Transaction types
 -----------------
 
