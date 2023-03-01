@@ -123,6 +123,22 @@ class Atomic:
 ###############################################################################
 
 
+class Savepoint:
+    def __init__(self, name: str, transaction: PostgresTransaction):
+        self.name = name
+        self.transaction = transaction
+
+    async def rollback_to(self):
+        await self.transaction.connection.execute(
+            f"ROLLBACK TO SAVEPOINT {self.name}"
+        )
+
+    async def release(self):
+        await self.transaction.connection.execute(
+            f"RELEASE SAVEPOINT {self.name}"
+        )
+
+
 class PostgresTransaction:
     """
     Used for wrapping queries in a transaction, using a context manager.
@@ -136,37 +152,107 @@ class PostgresTransaction:
 
     """
 
-    __slots__ = ("engine", "transaction", "context", "connection")
+    __slots__ = (
+        "engine",
+        "transaction",
+        "context",
+        "connection",
+        "_savepoint_id",
+        "_parent",
+        "_committed",
+        "_rolled_back",
+    )
 
-    def __init__(self, engine: PostgresEngine):
+    def __init__(self, engine: PostgresEngine, allow_nested: bool = True):
+        """
+        :param allow_nested:
+            If ``True`` then if we try creating a new transaction when another
+            is already active, we treat this as a no-op::
+
+                async with DB.transaction():
+                    async with DB.transaction():
+                        pass
+
+            If we want to disallow this behaviour, then setting
+            ``allow_nested=False`` will cause a ``TransactionError`` to be
+            raised.
+
+        """
         self.engine = engine
-        if self.engine.current_transaction.get():
-            raise TransactionError(
-                "A transaction is already active - nested transactions aren't "
-                "currently supported."
-            )
+        current_transaction = self.engine.current_transaction.get()
 
-    async def __aenter__(self):
-        if self.engine.pool:
-            self.connection = await self.engine.pool.acquire()
-        else:
-            self.connection = await self.engine.get_new_connection()
+        self._savepoint_id = 0
+        self._parent = None
+        self._committed = False
+        self._rolled_back = False
 
+        if current_transaction:
+            if allow_nested:
+                self._parent = current_transaction
+            else:
+                raise TransactionError(
+                    "A transaction is already active - nested transactions "
+                    "aren't allowed."
+                )
+
+    async def __aenter__(self) -> PostgresTransaction:
+        if self._parent is not None:
+            return self._parent
+
+        self.connection = await self.get_connection()
         self.transaction = self.connection.transaction()
-        await self.transaction.start()
+        await self.begin()
         self.context = self.engine.current_transaction.set(self)
+        return self
+
+    async def get_connection(self):
+        if self.engine.pool:
+            return await self.engine.pool.acquire()
+        else:
+            return await self.engine.get_new_connection()
+
+    async def begin(self):
+        await self.transaction.start()
 
     async def commit(self):
         await self.transaction.commit()
+        self._committed = True
 
     async def rollback(self):
         await self.transaction.rollback()
+        self._rolled_back = True
+
+    async def rollback_to(self, savepoint_name: str):
+        """
+        Used to rollback to a savepoint just using the name.
+        """
+        await Savepoint(name=savepoint_name, transaction=self).rollback_to()
+
+    ###########################################################################
+
+    def get_savepoint_id(self) -> int:
+        self._savepoint_id += 1
+        return self._savepoint_id
+
+    async def savepoint(self, name: t.Optional[str] = None) -> Savepoint:
+        name = name or f"savepoint_{self.get_savepoint_id()}"
+        await self.connection.execute(f"SAVEPOINT {name}")
+        return Savepoint(name=name, transaction=self)
+
+    ###########################################################################
 
     async def __aexit__(self, exception_type, exception, traceback):
+        if self._parent:
+            return exception is None
+
         if exception:
-            await self.rollback()
+            # The user may have manually rolled it back.
+            if not self._rolled_back:
+                await self.rollback()
         else:
-            await self.commit()
+            # The user may have manually committed it.
+            if not self._committed and not self._rolled_back:
+                await self.commit()
 
         if self.engine.pool:
             await self.engine.pool.release(self.connection)
@@ -478,5 +564,5 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
     def atomic(self) -> Atomic:
         return Atomic(engine=self)
 
-    def transaction(self) -> PostgresTransaction:
-        return PostgresTransaction(engine=self)
+    def transaction(self, allow_nested: bool = True) -> PostgresTransaction:
+        return PostgresTransaction(engine=self, allow_nested=allow_nested)

@@ -303,6 +303,22 @@ class Atomic:
 ###############################################################################
 
 
+class Savepoint:
+    def __init__(self, name: str, transaction: SQLiteTransaction):
+        self.name = name
+        self.transaction = transaction
+
+    async def rollback_to(self):
+        await self.transaction.connection.execute(
+            f"ROLLBACK TO SAVEPOINT {self.name}"
+        )
+
+    async def release(self):
+        await self.transaction.connection.execute(
+            f"RELEASE SAVEPOINT {self.name}"
+        )
+
+
 class SQLiteTransaction:
     """
     Used for wrapping queries in a transaction, using a context manager.
@@ -316,12 +332,23 @@ class SQLiteTransaction:
 
     """
 
-    __slots__ = ("engine", "context", "connection", "transaction_type")
+    __slots__ = (
+        "engine",
+        "context",
+        "connection",
+        "transaction_type",
+        "allow_nested",
+        "_savepoint_id",
+        "_parent",
+        "_committed",
+        "_rolled_back",
+    )
 
     def __init__(
         self,
         engine: SQLiteEngine,
         transaction_type: TransactionType = TransactionType.deferred,
+        allow_nested: bool = True,
     ):
         """
         :param transaction_type:
@@ -333,22 +360,76 @@ class SQLiteTransaction:
         """
         self.engine = engine
         self.transaction_type = transaction_type
-        if self.engine.current_transaction.get():
-            raise TransactionError(
-                "A transaction is already active - nested transactions aren't "
-                "currently supported."
-            )
+        current_transaction = self.engine.current_transaction.get()
 
-    async def __aenter__(self):
-        self.connection = await self.engine.get_connection()
-        await self.connection.execute(f"BEGIN {self.transaction_type.value}")
+        self._savepoint_id = 0
+        self._parent = None
+        self._committed = False
+        self._rolled_back = False
+
+        if current_transaction:
+            if allow_nested:
+                self._parent = current_transaction
+            else:
+                raise TransactionError(
+                    "A transaction is already active - nested transactions "
+                    "aren't allowed."
+                )
+
+    async def __aenter__(self) -> SQLiteTransaction:
+        if self._parent is not None:
+            return self._parent
+
+        self.connection = await self.get_connection()
+        await self.begin()
         self.context = self.engine.current_transaction.set(self)
+        return self
+
+    async def get_connection(self):
+        return await self.engine.get_connection()
+
+    async def begin(self):
+        await self.connection.execute(f"BEGIN {self.transaction_type.value}")
+
+    async def commit(self):
+        await self.connection.execute("COMMIT")
+        self._committed = True
+
+    async def rollback(self):
+        await self.connection.execute("ROLLBACK")
+        self._rolled_back = True
+
+    async def rollback_to(self, savepoint_name: str):
+        """
+        Used to rollback to a savepoint just using the name.
+        """
+        await Savepoint(name=savepoint_name, transaction=self).rollback_to()
+
+    ###########################################################################
+
+    def get_savepoint_id(self) -> int:
+        self._savepoint_id += 1
+        return self._savepoint_id
+
+    async def savepoint(self, name: t.Optional[str] = None) -> Savepoint:
+        name = name or f"savepoint_{self.get_savepoint_id()}"
+        await self.connection.execute(f"SAVEPOINT {name}")
+        return Savepoint(name=name, transaction=self)
+
+    ###########################################################################
 
     async def __aexit__(self, exception_type, exception, traceback):
+        if self._parent:
+            return exception is None
+
         if exception:
-            await self.connection.execute("ROLLBACK")
+            # The user may have manually rolled it back.
+            if not self._rolled_back:
+                await self.rollback()
         else:
-            await self.connection.execute("COMMIT")
+            # The user may have manually committed it.
+            if not self._committed and not self._rolled_back:
+                await self.commit()
 
         await self.connection.close()
         self.engine.current_transaction.reset(self.context)
@@ -623,11 +704,15 @@ class SQLiteEngine(Engine[t.Optional[SQLiteTransaction]]):
         return Atomic(engine=self, transaction_type=transaction_type)
 
     def transaction(
-        self, transaction_type: TransactionType = TransactionType.deferred
+        self,
+        transaction_type: TransactionType = TransactionType.deferred,
+        allow_nested: bool = True,
     ) -> SQLiteTransaction:
         """
         Create a new database transaction. See :class:`Transaction`.
         """
         return SQLiteTransaction(
-            engine=self, transaction_type=transaction_type
+            engine=self,
+            transaction_type=transaction_type,
+            allow_nested=allow_nested,
         )
