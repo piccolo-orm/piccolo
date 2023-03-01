@@ -157,8 +157,8 @@ class PostgresTransaction:
         "transaction",
         "context",
         "connection",
-        "savepoint_id",
-        "parent",
+        "_savepoint_id",
+        "_parent",
         "_committed",
         "_rolled_back",
     )
@@ -179,16 +179,16 @@ class PostgresTransaction:
 
         """
         self.engine = engine
-        self.savepoint_id = 0
         current_transaction = self.engine.current_transaction.get()
 
-        self.parent = None
+        self._savepoint_id = 0
+        self._parent = None
         self._committed = False
         self._rolled_back = False
 
         if current_transaction:
             if allow_nested:
-                self.parent = current_transaction
+                self._parent = current_transaction
             else:
                 raise TransactionError(
                     "A transaction is already active - nested transactions "
@@ -196,8 +196,8 @@ class PostgresTransaction:
                 )
 
     async def __aenter__(self) -> PostgresTransaction:
-        if self.parent is not None:
-            return self.parent
+        if self._parent is not None:
+            return self._parent
 
         if self.engine.pool:
             self.connection = await self.engine.pool.acquire()
@@ -226,8 +226,8 @@ class PostgresTransaction:
     ###########################################################################
 
     def get_savepoint_id(self) -> int:
-        self.savepoint_id += 1
-        return self.savepoint_id
+        self._savepoint_id += 1
+        return self._savepoint_id
 
     async def savepoint(self, name: t.Optional[str]) -> Savepoint:
         name = name or f"savepoint_{self.get_savepoint_id()}"
@@ -237,7 +237,7 @@ class PostgresTransaction:
     ###########################################################################
 
     async def __aexit__(self, exception_type, exception, traceback):
-        if self.parent:
+        if self._parent:
             return exception is None
 
         if exception:
