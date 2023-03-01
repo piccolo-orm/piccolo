@@ -1,6 +1,41 @@
 Changes
 =======
 
+0.108.0
+-------
+
+Added support for savepoints within transactions.
+
+.. code-block:: python
+
+  await DB.transaction() as transaction:
+      await Manager.objects().create(name="Great manager")
+      savepoint = await transaction.savepoint()
+      await Manager.objects().create(name="Great manager")
+      await savepoint.rollback_to()
+      # Only the first manager will be inserted.
+
+The behaviour of nested context managers has also been changed slightly.
+
+.. code-block:: python
+
+  await DB.transaction() as transaction:
+      await DB.transaction() as transaction:
+          # This used to raise an exception
+
+We no longer raise an exception if there are nested transaction context
+managers, instead the inner ones do nothing.
+
+If you want the existing behaviour:
+
+.. code-block:: python
+
+  await DB.transaction() as transaction:
+      await DB.transactiona(allow_nested=False) as transaction:
+          # TransactionError!
+
+-------------------------------------------------------------------------------
+
 0.107.0
 -------
 
