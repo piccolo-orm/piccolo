@@ -127,7 +127,6 @@ class TestTransaction(TestCase):
         """
         The context manager will automatically rollback changes if an exception
         is raised, but we also allow the user to do it manually.
-        allow the user to do it manually.
         """
 
         async def run_transaction():

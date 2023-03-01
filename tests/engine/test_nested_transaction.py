@@ -66,13 +66,19 @@ class TestSameDB(DBTestCase):
                 await Manager(name="Bob").save().run()
 
                 async with Manager._meta.db.transaction(allow_nested=False):
-                    await Manager(name="Dave").save().run()
+                    pass
 
         # allow_nested=True
         async with Manager._meta.db.transaction():
             async with Manager._meta.db.transaction():
                 # Shouldn't raise an exception
                 pass
+
+        # Utilise returned transaction.
+        async with Manager._meta.db.transaction():
+            async with Manager._meta.db.transaction() as transaction:
+                await Manager(name="Dave").save().run()
+                await transaction.rollback()
 
     def test_nested(self):
         asyncio.run(self.run_nested())
