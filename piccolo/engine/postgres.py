@@ -123,7 +123,7 @@ class Atomic:
 ###############################################################################
 
 
-class SavepointRef:
+class Savepoint:
     def __init__(self, name: str, transaction: PostgresTransaction):
         self.name = name
         self.transaction = transaction
@@ -159,6 +159,8 @@ class PostgresTransaction:
         "connection",
         "savepoint_id",
         "parent",
+        "_committed",
+        "_rolled_back",
     )
 
     def __init__(self, engine: PostgresEngine, allow_nested: bool = True):
@@ -181,6 +183,8 @@ class PostgresTransaction:
         current_transaction = self.engine.current_transaction.get()
 
         self.parent = None
+        self._committed = False
+        self._rolled_back = False
 
         if current_transaction:
             if allow_nested:
@@ -215,7 +219,7 @@ class PostgresTransaction:
         """
         Used to rollback to a savepoint just using the name.
         """
-        await SavepointRef(
+        await Savepoint(
             name=savepoint_name, transaction=self.transaction
         ).rollback_to()
 
@@ -225,10 +229,10 @@ class PostgresTransaction:
         self.savepoint_id += 1
         return self.savepoint_id
 
-    async def savepoint(self, name: t.Optional[str]) -> SavepointRef:
+    async def savepoint(self, name: t.Optional[str]) -> Savepoint:
         name = name or f"savepoint_{self.get_savepoint_id()}"
         await self.connection.execute(f"SAVEPOINT {name}")
-        return SavepointRef(name=name, transaction=self)
+        return Savepoint(name=name, transaction=self)
 
     ###########################################################################
 
@@ -237,9 +241,13 @@ class PostgresTransaction:
             return exception is None
 
         if exception:
-            await self.rollback()
+            #  The user may have manually rolled it back.
+            if not self._rolled_back:
+                await self.rollback()
         else:
-            await self.commit()
+            #  The user may have manually committed it.
+            if not self._committed and not self._rolled_back:
+                await self.commit()
 
         if self.engine.pool:
             await self.engine.pool.release(self.connection)

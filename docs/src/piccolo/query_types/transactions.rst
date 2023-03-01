@@ -44,12 +44,48 @@ async.
         await Manager.create_table()
         await Concert.create_table()
 
+Commit
+~~~~~~
+
+The transaction is automatically committed when you exit the context manager.
+
+.. code-block:: python
+
+    async with Band._meta.db.transaction():
+        await query_1
+        await query_2
+        # Automatically committed if the code reaches here.
+
+You can manually commit it if you prefer:
+
+.. code-block:: python
+
+    async with Band._meta.db.transaction() as transaction:
+        await query_1
+        await query_2
+        await transaction.commit()
+        print('transaction committed!')
+
+Rollback
+~~~~~~~~
+
 If an exception is raised within the body of the context manager, then the
 transaction is automatically rolled back. The exception is still propagated
 though.
 
+Rather than raising an exception, if you want to rollback a transaction
+manually you can do so as follows:
+
+.. code-block:: python
+
+    async with Band._meta.db.transaction() as transaction:
+        await Manager.create_table()
+        await transaction.rollback()
+
+-------------------------------------------------------------------------------
+
 ``transaction_exists``
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
 You can check whether your code is currently inside a transaction using the
 following:
