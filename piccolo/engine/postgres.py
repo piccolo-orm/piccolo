@@ -192,28 +192,35 @@ class PostgresTransaction:
             else:
                 raise TransactionError(
                     "A transaction is already active - nested transactions "
-                    "allowed."
+                    "aren't allowed."
                 )
 
     async def __aenter__(self) -> PostgresTransaction:
         if self._parent is not None:
             return self._parent
 
-        if self.engine.pool:
-            self.connection = await self.engine.pool.acquire()
-        else:
-            self.connection = await self.engine.get_new_connection()
-
+        self.connection = await self.get_connection()
         self.transaction = self.connection.transaction()
-        await self.transaction.start()
+        await self.begin()
         self.context = self.engine.current_transaction.set(self)
         return self
 
+    async def get_connection(self):
+        if self.engine.pool:
+            return await self.engine.pool.acquire()
+        else:
+            return await self.engine.get_new_connection()
+
+    async def begin(self):
+        await self.transaction.start()
+
     async def commit(self):
         await self.transaction.commit()
+        self._committed = True
 
     async def rollback(self):
         await self.transaction.rollback()
+        self._rolled_back = True
 
     async def rollback_to(self, savepoint_name: str):
         """
@@ -239,11 +246,11 @@ class PostgresTransaction:
             return exception is None
 
         if exception:
-            #  The user may have manually rolled it back.
+            # The user may have manually rolled it back.
             if not self._rolled_back:
                 await self.rollback()
         else:
-            #  The user may have manually committed it.
+            # The user may have manually committed it.
             if not self._committed and not self._rolled_back:
                 await self.commit()
 

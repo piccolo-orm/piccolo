@@ -109,6 +109,35 @@ class TestTransaction(TestCase):
         self.assertTrue(Band.table_exists().run_sync())
         self.assertTrue(Manager.table_exists().run_sync())
 
+    def test_manual_commit(self):
+        """
+        The context manager automatically commits changes, but we also
+        allow the user to do it manually.
+        """
+
+        async def run_transaction():
+            async with Band._meta.db.transaction() as transaction:
+                await Manager.create_table()
+                await transaction.commit()
+
+        asyncio.run(run_transaction())
+        self.assertTrue(Manager.table_exists().run_sync())
+
+    def test_manual_rollback(self):
+        """
+        The context manager will automatically rollback changes if an exception
+        is raised, but we also allow the user to do it manually.
+        allow the user to do it manually.
+        """
+
+        async def run_transaction():
+            async with Band._meta.db.transaction() as transaction:
+                await Manager.create_table()
+                await transaction.rollback()
+
+        asyncio.run(run_transaction())
+        self.assertFalse(Manager.table_exists().run_sync())
+
     @engines_only("postgres")
     def test_transaction_id(self):
         """
