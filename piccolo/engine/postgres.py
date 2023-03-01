@@ -219,9 +219,7 @@ class PostgresTransaction:
         """
         Used to rollback to a savepoint just using the name.
         """
-        await Savepoint(
-            name=savepoint_name, transaction=self.transaction
-        ).rollback_to()
+        await Savepoint(name=savepoint_name, transaction=self).rollback_to()
 
     ###########################################################################
 
@@ -229,7 +227,7 @@ class PostgresTransaction:
         self._savepoint_id += 1
         return self._savepoint_id
 
-    async def savepoint(self, name: t.Optional[str]) -> Savepoint:
+    async def savepoint(self, name: t.Optional[str] = None) -> Savepoint:
         name = name or f"savepoint_{self.get_savepoint_id()}"
         await self.connection.execute(f"SAVEPOINT {name}")
         return Savepoint(name=name, transaction=self)

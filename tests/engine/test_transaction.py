@@ -232,3 +232,39 @@ class TestTransactionType(TestCase):
             .run_sync(),
             manager_names,
         )
+
+
+class TestSavepoint(TestCase):
+    def setUp(self):
+        Manager.create_table().run_sync()
+
+    def tearDown(self):
+        Manager.alter().drop_table().run_sync()
+
+    def test_savepoint(self):
+        async def run_test():
+            async with Manager._meta.db.transaction() as transaction:
+                await Manager.insert(Manager(name="Manager 1"))
+                savepoint = await transaction.savepoint()
+                await Manager.insert(Manager(name="Manager 2"))
+                await savepoint.rollback_to()
+
+        run_sync(run_test())
+
+        self.assertListEqual(
+            Manager.select(Manager.name).run_sync(), [{"name": "Manager 1"}]
+        )
+
+    def test_named_savepoint(self):
+        async def run_test():
+            async with Manager._meta.db.transaction() as transaction:
+                await Manager.insert(Manager(name="Manager 1"))
+                await transaction.savepoint("my_savepoint")
+                await Manager.insert(Manager(name="Manager 2"))
+                await transaction.rollback_to("my_savepoint")
+
+        run_sync(run_test())
+
+        self.assertListEqual(
+            Manager.select(Manager.name).run_sync(), [{"name": "Manager 1"}]
+        )
