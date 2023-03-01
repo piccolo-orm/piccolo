@@ -8,7 +8,7 @@ Added support for savepoints within transactions.
 
 .. code-block:: python
 
-  await DB.transaction() as transaction:
+  async with DB.transaction() as transaction:
       await Manager.objects().create(name="Great manager")
       savepoint = await transaction.savepoint()
       await Manager.objects().create(name="Great manager")
@@ -19,8 +19,8 @@ The behaviour of nested context managers has also been changed slightly.
 
 .. code-block:: python
 
-  await DB.transaction() as transaction:
-      await DB.transaction() as transaction:
+  async with DB.transaction():
+      async with DB.transaction():
           # This used to raise an exception
 
 We no longer raise an exception if there are nested transaction context
@@ -30,8 +30,8 @@ If you want the existing behaviour:
 
 .. code-block:: python
 
-  await DB.transaction() as transaction:
-      await DB.transactiona(allow_nested=False) as transaction:
+  async with DB.transaction():
+      async with DB.transactiona(allow_nested=False):
           # TransactionError!
 
 -------------------------------------------------------------------------------
