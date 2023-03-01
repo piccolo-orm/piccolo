@@ -192,7 +192,7 @@ class PostgresTransaction:
             else:
                 raise TransactionError(
                     "A transaction is already active - nested transactions "
-                    "aren't currently supported."
+                    "allowed."
                 )
 
     async def __aenter__(self) -> PostgresTransaction:
