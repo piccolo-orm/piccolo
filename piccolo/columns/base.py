@@ -759,6 +759,30 @@ class Column(Selectable):
         column._alias = name
         return column
 
+    def join_on(self, column: Column) -> ForeignKey:
+        """
+        Joins are typically performed via foreign key columns. For example:
+
+            Band.manager.name
+
+        Where ``Band.manager`` is a foreign key to the ``Manager`` table, which
+        has a ``name`` column.
+
+        This method lets you join tables even when foreign keys don't exist,
+        by joining on a unique column in another table.
+
+        """
+        from piccolo.columns.column_types import ForeignKey
+
+        virtual_foreign_key = ForeignKey(
+            references=column._meta.table, target_column=column
+        )
+        virtual_foreign_key._meta._name = self._meta.name
+        virtual_foreign_key._meta.call_chain = [*self._meta.call_chain]
+        virtual_foreign_key._meta._table = self._meta.table
+        virtual_foreign_key.set_proxy_columns()
+        return virtual_foreign_key
+
     def get_default_value(self) -> t.Any:
         """
         If the column has a default attribute, return it. If it's callable,
