@@ -1,6 +1,30 @@
 Changes
 =======
 
+0.109.0
+-------
+
+Joins are now possible without foreign keys using ``join_on``.
+
+For example:
+
+.. code-block:: python
+
+    class Manager(Table):
+        name = Varchar(unique=True)
+        email = Varchar()
+
+    class Band(Table):
+        name = Varchar()
+        manager_name = Varchar()
+
+    >>> await Band.select(
+    ...     Band.name,
+    ...     Band.manager_name.join_on(Manager.name).email
+    ... )
+
+-------------------------------------------------------------------------------
+
 0.108.0
 -------
 
