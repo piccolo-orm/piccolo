@@ -78,7 +78,8 @@ We also have this shortcut which combines the above into a single line:
 Updating objects
 ----------------
 
-Objects have a ``save`` method, which is convenient for updating values:
+Objects have a :meth:`save <piccolo.table.Table.save>` method, which is
+convenient for updating values:
 
 .. code-block:: python
 
@@ -277,6 +278,9 @@ has the latest data from the database, you can use the
 
     # And it has gotten stale, we can refresh it:
     await band.refresh()
+
+    # Or just refresh certain columns:
+    await band.refresh([Band.name])
 
 -------------------------------------------------------------------------------
 

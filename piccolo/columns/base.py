@@ -761,15 +761,36 @@ class Column(Selectable):
 
     def join_on(self, column: Column) -> ForeignKey:
         """
-        Joins are typically performed via foreign key columns. For example:
+        Joins are typically performed via foreign key columns. For example,
+        here we get the band's name and the manager's name::
 
-            Band.manager.name
+            class Manager(Table):
+                name = Varchar()
 
-        Where ``Band.manager`` is a foreign key to the ``Manager`` table, which
-        has a ``name`` column.
+            class Band(Table):
+                name = Varchar()
+                manager = ForeignKey(Manager)
 
-        This method lets you join tables even when foreign keys don't exist,
-        by joining on a unique column in another table.
+            >>> await Band.select(Band.name, Band.manager.name)
+
+        The ``join_on`` method lets you join tables even when foreign keys
+        don't exist, by joining on a column in another table.
+
+        For example, here we want to get the manager's email, but no foreign
+        key exists::
+
+            class Manager(Table):
+                name = Varchar(unique=True)
+                email = Varchar()
+
+            class Band(Table):
+                name = Varchar()
+                manager_name = Varchar()
+
+            >>> await Band.select(
+            ...     Band.name,
+            ...     Band.manager_name.join_on(Manager.name).email
+            ... )
 
         """
         from piccolo.columns.column_types import ForeignKey
