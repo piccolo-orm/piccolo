@@ -625,10 +625,10 @@ class Table(metaclass=TableMetaclass):
             return list()
 
     async def join_m2m(
-        self, 
-        include_fields: set[str] | list[str] | None=None, 
-        exclude_fields: set[str] | list[str] | None=None
-        ):
+        self,
+        include_fields: t.Union[set[str], t.List[str], None] = None,
+        exclude_fields: t.Union[set[str], t.List[str], None] = None
+    ):
         """
         Runs get_m2m() method for all M2M fields of object. Can be useful for
         complex PyDantic models in READ actions. Returns empty list() for an
@@ -672,13 +672,13 @@ class Table(metaclass=TableMetaclass):
             exclude_fields (set[str] | list[str] | None, optional): This fields will be excluded from join. 
                 Defaults to None.
         """
-        assert (include_fields==None) or (exclude_fields==None), "Only one of FIELDS arguments can exist"
+        assert (include_fields == None) or (exclude_fields == None), "Only one of FIELDS arguments can exist"
         if not include_fields is None:
-            assert isinstance(include_fields,set | list), "include_fields MUST be set, list or None"
+            assert isinstance(include_fields, t.Union[set, list]), "include_fields MUST be set, list or None"
         if not exclude_fields is None:
-            assert isinstance(exclude_fields,set | list), "exclude_fields MUST be set, list or None"
+            assert isinstance(exclude_fields, t.Union[set, list]), "exclude_fields MUST be set, list or None"
         m2m_fields: set = set([field for field, object in inspect.getmembers(
-                self, 
+                self,
                 lambda a:(
                     isinstance(
                         a,
@@ -697,7 +697,7 @@ class Table(metaclass=TableMetaclass):
             if field in ignore_fields:
                 ignore = True
             self.__setattr__(
-                field, #M2M attr name
+                field,  # M2M attr name
                 await self.__join_field(
                     field=field,
                     ignore=ignore
