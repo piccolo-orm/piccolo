@@ -13,6 +13,7 @@ from piccolo.utils.sql_values import convert_to_sql_value
 
 if t.TYPE_CHECKING:
     from piccolo.columns.base import Column
+    from piccolo.query.methods.select import Select
 
 
 class CombinableMixin(object):
@@ -146,17 +147,21 @@ class Where(CombinableMixin):
         self,
         column: Column,
         value: t.Any = UNDEFINED,
-        values: t.Union[Iterable, Undefined] = UNDEFINED,
+        values: t.Union[Iterable, Undefined, Select] = UNDEFINED,
         operator: t.Type[ComparisonOperator] = ComparisonOperator,
     ) -> None:
         """
         We use the UNDEFINED value to show the value was deliberately
         omitted, vs None, which is a valid value for a where clause.
         """
+        from piccolo.query.methods.select import Select
+
         self.column = column
 
         self.value = value if value == UNDEFINED else self.clean_value(value)
         if values == UNDEFINED:
+            self.values = values
+        elif isinstance(values, Select):
             self.values = values
         else:
             self.values = [self.clean_value(i) for i in values]  # type: ignore
@@ -190,10 +195,15 @@ class Where(CombinableMixin):
 
     @property
     def values_querystring(self) -> QueryString:
+        from piccolo.query.methods.select import Select
+
         values = self.values
 
         if isinstance(values, Undefined):
             raise ValueError("values is undefined")
+
+        if isinstance(values, Select):
+            return values.querystrings[0]
 
         template = ", ".join("{}" for _ in values)
         return QueryString(template, *values)
