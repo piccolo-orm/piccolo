@@ -18,4 +18,3 @@ htmlcov/
 prof/
 .env/
 .venv/
-result.json

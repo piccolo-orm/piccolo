@@ -79,6 +79,7 @@ class TableMeta:
     help_text: t.Optional[str] = None
     _db: t.Optional[Engine] = None
     m2m_relationships: t.List[M2M] = field(default_factory=list)
+    auto_update_columns: t.List[Column] = field(default_factory=list)
 
     # Records reverse foreign key relationships - i.e. when the current table
     # is the target of a foreign key. Used by external libraries such as

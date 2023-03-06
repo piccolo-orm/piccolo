@@ -181,7 +181,7 @@ class AddUniqueConstraint(AlterStatement):
     __slots__ = ("constraint_name","columns")
 
     constraint_name: str
-    columns: list[str]
+    columns: t.List[str]
 
     @property
     def ddl(self) -> str:
@@ -446,7 +446,7 @@ class Alter(DDL):
         tablename = self.table._meta.tablename
         return f"{tablename}_{column_name}_fk"
 
-    def add_unique_constraint(self, constraint_name: str, columns: list[str]):
+    def add_unique_constraint(self, constraint_name: str, columns: t.List[str]):
         self._add_unique_constraint.append(
             AddUniqueConstraint(constraint_name=constraint_name,columns=columns)
         )

@@ -1,4 +1,5 @@
 from .base import ColumnMeta, Column
+import typing as t
 
 class Constraint(Column):
     def __init__(self) -> None:
@@ -20,7 +21,7 @@ class UniqueConstraint(Constraint):
         ALTER TABLE foo_table ADD CONSTRAINT my_constraint_1 UNIQUE (foo_field, bar_field);
         ALTER TABLE foo_table DROP IF EXIST CONSTRAINT my_constraint_1;
     """
-    def __init__(self, unique_columns: list[str]) -> None:
+    def __init__(self, unique_columns: t.List[str]) -> None:
         super().__init__()
         self._meta = ColumnMeta()
         self.unique_columns = unique_columns
