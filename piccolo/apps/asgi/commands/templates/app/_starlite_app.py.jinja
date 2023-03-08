@@ -2,25 +2,18 @@ import typing as t
 
 from piccolo.engine import engine_finder
 from piccolo_admin.endpoints import create_admin
-from starlite import (
-    MediaType,
-    Response,
-    Starlite,
-    StaticFilesConfig,
-    TemplateConfig,
-    asgi,
-    delete,
-    get,
-    patch,
-    post,
-)
-from starlite.plugins.piccolo_orm import PiccoloORMPlugin
+from starlite import Starlite, asgi, delete, get, patch, post
+from starlite.config.static_files import StaticFilesConfig
+from starlite.config.template import TemplateConfig
 from starlite.contrib.jinja import JinjaTemplateEngine
+from starlite.exceptions import NotFoundException
+from starlite.plugins.piccolo_orm import PiccoloORMPlugin
 from starlite.types import Receive, Scope, Send
 
 from home.endpoints import home
 from home.piccolo_app import APP_CONFIG
 from home.tables import Task
+
 
 # mounting Piccolo Admin
 @asgi("/admin/", is_mount=True)
@@ -45,11 +38,7 @@ async def create_task(data: Task) -> Task:
 async def update_task(task_id: int, data: Task) -> Task:
     task = await Task.objects().get(Task.id == task_id)
     if not task:
-        return Response(
-            content={},
-            media_type=MediaType.JSON,
-            status_code=404,
-        )
+        raise NotFoundException("Task does not exist")
     for key, value in data.to_dict().items():
         task.id = task_id
         setattr(task, key, value)
@@ -62,11 +51,7 @@ async def update_task(task_id: int, data: Task) -> Task:
 async def delete_task(task_id: int) -> None:
     task = await Task.objects().get(Task.id == task_id)
     if not task:
-        return Response(
-            content={},
-            media_type=MediaType.JSON,
-            status_code=404,
-        )
+        raise NotFoundException("Task does not exist")
     await task.remove()
 
 

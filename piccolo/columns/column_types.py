@@ -2125,7 +2125,7 @@ class ForeignKey(Column):
                 raise Exception("Call chain too long!")
 
             foreign_key_meta: ForeignKeyMeta = object.__getattribute__(
-                self, "_foreign_key_meta"
+                new_column, "_foreign_key_meta"
             )
 
             for proxy_column in foreign_key_meta.proxy_columns:
@@ -2133,6 +2133,8 @@ class ForeignKey(Column):
                     delattr(new_column, proxy_column._meta.name)
                 except Exception:
                     pass
+
+            foreign_key_meta.proxy_columns = []
 
             for (
                 column
