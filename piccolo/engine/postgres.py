@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from piccolo.engine.base import Batch, Engine
 from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import DDL, Query
-from piccolo.query.methods.objects import Create, GetOrCreate
 from piccolo.querystring import QueryString
 from piccolo.utils.lazy_loader import LazyLoader
 from piccolo.utils.sync import run_sync
@@ -100,6 +99,8 @@ class Atomic:
         self.queries += list(query)
 
     async def run(self):
+        from piccolo.query.methods.objects import Create, GetOrCreate
+
         try:
             async with self.engine.transaction():
                 for query in self.queries:
@@ -122,6 +123,22 @@ class Atomic:
 ###############################################################################
 
 
+class Savepoint:
+    def __init__(self, name: str, transaction: PostgresTransaction):
+        self.name = name
+        self.transaction = transaction
+
+    async def rollback_to(self):
+        await self.transaction.connection.execute(
+            f"ROLLBACK TO SAVEPOINT {self.name}"
+        )
+
+    async def release(self):
+        await self.transaction.connection.execute(
+            f"RELEASE SAVEPOINT {self.name}"
+        )
+
+
 class PostgresTransaction:
     """
     Used for wrapping queries in a transaction, using a context manager.
@@ -135,37 +152,107 @@ class PostgresTransaction:
 
     """
 
-    __slots__ = ("engine", "transaction", "context", "connection")
+    __slots__ = (
+        "engine",
+        "transaction",
+        "context",
+        "connection",
+        "_savepoint_id",
+        "_parent",
+        "_committed",
+        "_rolled_back",
+    )
 
-    def __init__(self, engine: PostgresEngine):
+    def __init__(self, engine: PostgresEngine, allow_nested: bool = True):
+        """
+        :param allow_nested:
+            If ``True`` then if we try creating a new transaction when another
+            is already active, we treat this as a no-op::
+
+                async with DB.transaction():
+                    async with DB.transaction():
+                        pass
+
+            If we want to disallow this behaviour, then setting
+            ``allow_nested=False`` will cause a ``TransactionError`` to be
+            raised.
+
+        """
         self.engine = engine
-        if self.engine.current_transaction.get():
-            raise TransactionError(
-                "A transaction is already active - nested transactions aren't "
-                "currently supported."
-            )
+        current_transaction = self.engine.current_transaction.get()
 
-    async def __aenter__(self):
-        if self.engine.pool:
-            self.connection = await self.engine.pool.acquire()
-        else:
-            self.connection = await self.engine.get_new_connection()
+        self._savepoint_id = 0
+        self._parent = None
+        self._committed = False
+        self._rolled_back = False
 
+        if current_transaction:
+            if allow_nested:
+                self._parent = current_transaction
+            else:
+                raise TransactionError(
+                    "A transaction is already active - nested transactions "
+                    "aren't allowed."
+                )
+
+    async def __aenter__(self) -> PostgresTransaction:
+        if self._parent is not None:
+            return self._parent
+
+        self.connection = await self.get_connection()
         self.transaction = self.connection.transaction()
-        await self.transaction.start()
+        await self.begin()
         self.context = self.engine.current_transaction.set(self)
+        return self
+
+    async def get_connection(self):
+        if self.engine.pool:
+            return await self.engine.pool.acquire()
+        else:
+            return await self.engine.get_new_connection()
+
+    async def begin(self):
+        await self.transaction.start()
 
     async def commit(self):
         await self.transaction.commit()
+        self._committed = True
 
     async def rollback(self):
         await self.transaction.rollback()
+        self._rolled_back = True
+
+    async def rollback_to(self, savepoint_name: str):
+        """
+        Used to rollback to a savepoint just using the name.
+        """
+        await Savepoint(name=savepoint_name, transaction=self).rollback_to()
+
+    ###########################################################################
+
+    def get_savepoint_id(self) -> int:
+        self._savepoint_id += 1
+        return self._savepoint_id
+
+    async def savepoint(self, name: t.Optional[str] = None) -> Savepoint:
+        name = name or f"savepoint_{self.get_savepoint_id()}"
+        await self.connection.execute(f"SAVEPOINT {name}")
+        return Savepoint(name=name, transaction=self)
+
+    ###########################################################################
 
     async def __aexit__(self, exception_type, exception, traceback):
+        if self._parent:
+            return exception is None
+
         if exception:
-            await self.rollback()
+            # The user may have manually rolled it back.
+            if not self._rolled_back:
+                await self.rollback()
         else:
-            await self.commit()
+            # The user may have manually committed it.
+            if not self._committed and not self._rolled_back:
+                await self.commit()
 
         if self.engine.pool:
             await self.engine.pool.release(self.connection)
@@ -208,6 +295,10 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         If ``True``, all SQL and DDL statements are printed out before being
         run. Useful for debugging.
 
+    :param log_responses:
+        If ``True``, the raw response from each query is printed out. Useful
+        for debugging.
+
     :param extra_nodes:
         If you have additional database nodes (e.g. read replicas) for the
         server, you can specify them here. It's a mapping of a memorable name
@@ -239,6 +330,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         "config",
         "extensions",
         "log_queries",
+        "log_responses",
         "extra_nodes",
         "pool",
         "current_transaction",
@@ -252,6 +344,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         config: t.Dict[str, t.Any],
         extensions: t.Sequence[str] = ("uuid-ossp",),
         log_queries: bool = False,
+        log_responses: bool = False,
         extra_nodes: t.Mapping[str, PostgresEngine] = None,
     ) -> None:
         if extra_nodes is None:
@@ -260,6 +353,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         self.config = config
         self.extensions = extensions
         self.log_queries = log_queries
+        self.log_responses = log_responses
         self.extra_nodes = extra_nodes
         self.pool: t.Optional[Pool] = None
         database_name = config.get("database", "Unknown")
@@ -321,7 +415,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
 
     ###########################################################################
     # These typos existed in the codebase for a while, so leaving these proxy
-    # methods for now to ensure backwards compatility.
+    # methods for now to ensure backwards compatibility.
 
     async def start_connnection_pool(self, **kwargs) -> None:
         colored_warning(
@@ -426,35 +520,49 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
             engine_type=self.engine_type
         )
 
+        query_id = self.get_query_id()
+
         if self.log_queries:
-            print(querystring)
+            self.print_query(query_id=query_id, query=querystring.__str__())
 
         # If running inside a transaction:
         current_transaction = self.current_transaction.get()
         if current_transaction:
-            return await current_transaction.connection.fetch(
+            response = await current_transaction.connection.fetch(
                 query, *query_args
             )
         elif in_pool and self.pool:
-            return await self._run_in_pool(query, query_args)
+            response = await self._run_in_pool(query, query_args)
         else:
-            return await self._run_in_new_connection(query, query_args)
+            response = await self._run_in_new_connection(query, query_args)
+
+        if self.log_responses:
+            self.print_response(query_id=query_id, response=response)
+
+        return response
 
     async def run_ddl(self, ddl: str, in_pool: bool = True):
+        query_id = self.get_query_id()
+
         if self.log_queries:
-            print(ddl)
+            self.print_query(query_id=query_id, query=ddl)
 
         # If running inside a transaction:
         current_transaction = self.current_transaction.get()
         if current_transaction:
-            return await current_transaction.connection.fetch(ddl)
+            response = await current_transaction.connection.fetch(ddl)
         elif in_pool and self.pool:
-            return await self._run_in_pool(ddl)
+            response = await self._run_in_pool(ddl)
         else:
-            return await self._run_in_new_connection(ddl)
+            response = await self._run_in_new_connection(ddl)
+
+        if self.log_responses:
+            self.print_response(query_id=query_id, response=response)
+
+        return response
 
     def atomic(self) -> Atomic:
         return Atomic(engine=self)
 
-    def transaction(self) -> PostgresTransaction:
-        return PostgresTransaction(engine=self)
+    def transaction(self, allow_nested: bool = True) -> PostgresTransaction:
+        return PostgresTransaction(engine=self, allow_nested=allow_nested)

@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import contextvars
 import logging
+import pprint
 import typing as t
 from abc import ABCMeta, abstractmethod
 
 from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
-from piccolo.utils.warnings import Level, colored_warning
+from piccolo.utils.warnings import Level, colored_string, colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.query.base import Query
@@ -25,11 +26,12 @@ TransactionClass = t.TypeVar("TransactionClass")
 
 class Engine(t.Generic[TransactionClass], metaclass=ABCMeta):
 
-    __slots__ = ()
+    __slots__ = ("query_id",)
 
     def __init__(self):
         run_sync(self.check_version())
         run_sync(self.prep_database())
+        self.query_id = 0
 
     @property
     @abstractmethod
@@ -137,3 +139,20 @@ class Engine(t.Generic[TransactionClass], metaclass=ABCMeta):
 
         """
         return self.current_transaction.get() is not None
+
+    ###########################################################################
+    # Logging queries and responses
+
+    def get_query_id(self) -> int:
+        self.query_id += 1
+        return self.query_id
+
+    def print_query(self, query_id: int, query: str):
+        print(colored_string(f"\nQuery {query_id}:"))
+        print(query)
+
+    def print_response(self, query_id: int, response: t.List):
+        print(
+            colored_string(f"\nQuery {query_id} response:", level=Level.high)
+        )
+        pprint.pprint(response)

@@ -10,6 +10,7 @@ from piccolo.columns.column_types import JSON, JSONB, PrimaryKey
 from piccolo.columns.m2m import M2MSelect
 from piccolo.columns.readable import Readable
 from piccolo.columns.reverse_lookup import ReverseLookupSelect
+from piccolo.custom_types import TableInstance
 from piccolo.engine.base import Batch
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
@@ -26,9 +27,10 @@ from piccolo.query.mixins import (
     OutputDelegate,
     WhereDelegate,
 )
+from piccolo.query.proxy import Proxy
 from piccolo.querystring import QueryString
 from piccolo.utils.dictionary import make_nested
-from piccolo.utils.encoding import load_json
+from piccolo.utils.encoding import dump_json, load_json
 from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -237,7 +239,76 @@ class Sum(Selectable):
         return f'SUM({column_name}) AS "{self._alias}"'
 
 
-class Select(Query):
+OptionalDict = t.Optional[t.Dict[str, t.Any]]
+
+
+class First(Proxy["Select", OptionalDict]):
+    """
+    This is for static typing purposes.
+    """
+
+    def __init__(self, query: Select):
+        self.query = query
+
+    async def run(
+        self,
+        node: t.Optional[str] = None,
+        in_pool: bool = True,
+    ) -> OptionalDict:
+        rows = await self.query.run(
+            node=node, in_pool=in_pool, use_callbacks=False
+        )
+        results = rows[0] if rows else None
+
+        modified_response = await self.query.callback_delegate.invoke(
+            results=results, kind=CallbackType.success
+        )
+        return modified_response
+
+
+class SelectList(Proxy["Select", t.List]):
+    """
+    This is for static typing purposes.
+    """
+
+    async def run(
+        self,
+        node: t.Optional[str] = None,
+        in_pool: bool = True,
+    ) -> t.List:
+        rows = await self.query.run(
+            node=node, in_pool=in_pool, use_callbacks=False
+        )
+
+        if len(rows) == 0:
+            response = []
+        else:
+            if len(rows[0].keys()) != 1:
+                raise ValueError("Each row returned more than one value")
+
+            response = list(itertools.chain(*[j.values() for j in rows]))
+
+        modified_response = await self.query.callback_delegate.invoke(
+            results=response, kind=CallbackType.success
+        )
+        return modified_response
+
+
+class SelectJSON(Proxy["Select", str]):
+    """
+    This is for static typing purposes.
+    """
+
+    async def run(
+        self,
+        node: t.Optional[str] = None,
+        in_pool: bool = True,
+    ) -> str:
+        rows = await self.query.run(node=node, in_pool=in_pool)
+        return dump_json(rows)
+
+
+class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
     __slots__ = (
         "columns_list",
         "exclude_secrets",
@@ -255,7 +326,7 @@ class Select(Query):
 
     def __init__(
         self,
-        table: t.Type[Table],
+        table: t.Type[TableInstance],
         columns_list: t.Sequence[t.Union[Selectable, str]] = None,
         exclude_secrets: bool = False,
         **kwargs,
@@ -278,16 +349,16 @@ class Select(Query):
 
         self.columns(*columns_list)
 
-    def columns(self, *columns: t.Union[Selectable, str]) -> Select:
+    def columns(self: Self, *columns: t.Union[Selectable, str]) -> Self:
         _columns = self.table._process_column_args(*columns)
         self.columns_delegate.columns(*_columns)
         return self
 
-    def distinct(self) -> Select:
+    def distinct(self: Self) -> Self:
         self.distinct_delegate.distinct()
         return self
 
-    def group_by(self, *columns: t.Union[Column, str]) -> Select:
+    def group_by(self: Self, *columns: t.Union[Column, str]) -> Self:
         _columns: t.List[Column] = [
             i
             for i in self.table._process_column_args(*columns)
@@ -296,19 +367,19 @@ class Select(Query):
         self.group_by_delegate.group_by(*_columns)
         return self
 
-    def as_of(self, interval: str = "-1s") -> Select:
+    def as_of(self: Self, interval: str = "-1s") -> Self:
         self.as_of_delegate.as_of(interval)
         return self
 
-    def limit(self, number: int) -> Select:
+    def limit(self: Self, number: int) -> Self:
         self.limit_delegate.limit(number)
         return self
 
-    def first(self) -> Select:
-        self.limit_delegate.first()
-        return self
+    def first(self) -> First:
+        self.limit_delegate.limit(1)
+        return First(query=self)
 
-    def offset(self, number: int) -> Select:
+    def offset(self: Self, number: int) -> Self:
         self.offset_delegate.offset(number)
         return self
 
@@ -623,22 +694,14 @@ class Select(Query):
         # no columns were selected from related tables.
         was_select_star = len(self.columns_delegate.selected_columns) == 0
 
-        if self.limit_delegate._first:
-            if len(response) == 0:
-                return None
-
-            if self.output_delegate._output.nested and not was_select_star:
-                return make_nested(response[0])
-            else:
-                return response[0]
-        elif self.output_delegate._output.nested and not was_select_star:
+        if self.output_delegate._output.nested and not was_select_star:
             return [make_nested(i) for i in response]
         else:
             return response
 
     def order_by(
-        self, *columns: t.Union[Column, str, OrderByRaw], ascending=True
-    ) -> Select:
+        self: Self, *columns: t.Union[Column, str, OrderByRaw], ascending=True
+    ) -> Self:
         """
         :param columns:
             Either a :class:`piccolo.columns.base.Column` instance, a string
@@ -656,31 +719,53 @@ class Select(Query):
         self.order_by_delegate.order_by(*_columns, ascending=ascending)
         return self
 
+    @t.overload
+    def output(self: Self, *, as_list: bool) -> SelectList:
+        ...
+
+    @t.overload
+    def output(self: Self, *, as_json: bool) -> SelectJSON:
+        ...
+
+    @t.overload
+    def output(self: Self, *, load_json: bool) -> Self:
+        ...
+
+    @t.overload
+    def output(self: Self, *, nested: bool) -> Self:
+        ...
+
     def output(
-        self,
+        self: Self,
+        *,
         as_list: bool = False,
         as_json: bool = False,
         load_json: bool = False,
         nested: bool = False,
-    ) -> Select:
+    ):
         self.output_delegate.output(
             as_list=as_list,
             as_json=as_json,
             load_json=load_json,
             nested=nested,
         )
+        if as_list:
+            return SelectList(query=self)
+        elif as_json:
+            return SelectJSON(query=self)
+
         return self
 
     def callback(
-        self,
+        self: Self,
         callbacks: t.Union[t.Callable, t.List[t.Callable]],
         *,
         on: CallbackType = CallbackType.success,
-    ) -> Select:
+    ) -> Self:
         self.callback_delegate.callback(callbacks, on=on)
         return self
 
-    def where(self, *where: Combinable) -> Select:
+    def where(self: Self, *where: Combinable) -> Self:
         self.where_delegate.where(*where)
         return self
 
@@ -851,3 +936,21 @@ class Select(Query):
         querystring = QueryString(query, *args)
 
         return [querystring]
+
+    async def run(
+        self,
+        node: t.Optional[str] = None,
+        in_pool: bool = True,
+        use_callbacks: bool = True,
+        **kwargs,
+    ) -> t.List[t.Dict[str, t.Any]]:
+        results = await super().run(node=node, in_pool=in_pool)
+        if use_callbacks:
+            return await self.callback_delegate.invoke(
+                results, kind=CallbackType.success
+            )
+        else:
+            return results
+
+
+Self = t.TypeVar("Self", bound=Select)

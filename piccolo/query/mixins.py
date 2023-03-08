@@ -238,10 +238,6 @@ class LimitDelegate:
     def limit(self, number: int):
         self._limit = Limit(number)
 
-    def first(self):
-        self.limit(1)
-        self._first = True
-
     def copy(self) -> LimitDelegate:
         _limit = self._limit.copy() if self._limit is not None else None
         return self.__class__(_limit=_limit, _first=self._first)

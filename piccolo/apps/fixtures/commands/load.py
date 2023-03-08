@@ -10,9 +10,10 @@ from piccolo.conf.apps import Finder
 from piccolo.engine import engine_finder
 from piccolo.table import Table, sort_table_classes
 from piccolo.utils.encoding import load_json
+from piccolo.utils.list import batch
 
 
-async def load_json_string(json_string: str):
+async def load_json_string(json_string: str, chunk_size: int = 1000):
     """
     Parses the JSON string, and inserts the parsed data into the database.
     """
@@ -67,14 +68,26 @@ async def load_json_string(json_string: str):
 
     async with engine.transaction():
         for table_class in sorted_table_classes:
-            await table_class.insert(*data[table_class]).run()
+            rows = data[table_class]
+
+            for chunk in batch(data=rows, chunk_size=chunk_size):
+                await table_class.insert(*chunk).run()
 
 
-async def load(path: str = "fixture.json"):
+async def load(path: str = "fixture.json", chunk_size: int = 1000):
     """
     Reads the fixture file, and loads the contents into the database.
+
+    :param path:
+        The path of the fixture file.
+
+    :param chunk_size:
+        The maximum number of rows to insert at a time. This is usually
+        determined by the database adapter, which has a max number of
+        parameters per query.
+
     """
     with open(path, "r") as f:
         contents = f.read()
 
-    await load_json_string(contents)
+    await load_json_string(contents, chunk_size=chunk_size)

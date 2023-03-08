@@ -759,6 +759,51 @@ class Column(Selectable):
         column._alias = name
         return column
 
+    def join_on(self, column: Column) -> ForeignKey:
+        """
+        Joins are typically performed via foreign key columns. For example,
+        here we get the band's name and the manager's name::
+
+            class Manager(Table):
+                name = Varchar()
+
+            class Band(Table):
+                name = Varchar()
+                manager = ForeignKey(Manager)
+
+            >>> await Band.select(Band.name, Band.manager.name)
+
+        The ``join_on`` method lets you join tables even when foreign keys
+        don't exist, by joining on a column in another table.
+
+        For example, here we want to get the manager's email, but no foreign
+        key exists::
+
+            class Manager(Table):
+                name = Varchar(unique=True)
+                email = Varchar()
+
+            class Band(Table):
+                name = Varchar()
+                manager_name = Varchar()
+
+            >>> await Band.select(
+            ...     Band.name,
+            ...     Band.manager_name.join_on(Manager.name).email
+            ... )
+
+        """
+        from piccolo.columns.column_types import ForeignKey
+
+        virtual_foreign_key = ForeignKey(
+            references=column._meta.table, target_column=column
+        )
+        virtual_foreign_key._meta._name = self._meta.name
+        virtual_foreign_key._meta.call_chain = [*self._meta.call_chain]
+        virtual_foreign_key._meta._table = self._meta.table
+        virtual_foreign_key.set_proxy_columns()
+        return virtual_foreign_key
+
     def get_default_value(self) -> t.Any:
         """
         If the column has a default attribute, return it. If it's callable,

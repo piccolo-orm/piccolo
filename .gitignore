@@ -19,3 +19,8 @@ prof/
 .env/
 .venv/
 result.json
+
+# CockroachDB
+cockroach-data/
+heap_profiler/
+goroutine_dump/

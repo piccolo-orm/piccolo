@@ -109,6 +109,34 @@ class TestTransaction(TestCase):
         self.assertTrue(Band.table_exists().run_sync())
         self.assertTrue(Manager.table_exists().run_sync())
 
+    def test_manual_commit(self):
+        """
+        The context manager automatically commits changes, but we also
+        allow the user to do it manually.
+        """
+
+        async def run_transaction():
+            async with Band._meta.db.transaction() as transaction:
+                await Manager.create_table()
+                await transaction.commit()
+
+        asyncio.run(run_transaction())
+        self.assertTrue(Manager.table_exists().run_sync())
+
+    def test_manual_rollback(self):
+        """
+        The context manager will automatically rollback changes if an exception
+        is raised, but we also allow the user to do it manually.
+        """
+
+        async def run_transaction():
+            async with Band._meta.db.transaction() as transaction:
+                await Manager.create_table()
+                await transaction.rollback()
+
+        asyncio.run(run_transaction())
+        self.assertFalse(Manager.table_exists().run_sync())
+
     @engines_only("postgres")
     def test_transaction_id(self):
         """
@@ -231,4 +259,40 @@ class TestTransactionType(TestCase):
             .output(as_list=True)
             .run_sync(),
             manager_names,
+        )
+
+
+class TestSavepoint(TestCase):
+    def setUp(self):
+        Manager.create_table().run_sync()
+
+    def tearDown(self):
+        Manager.alter().drop_table().run_sync()
+
+    def test_savepoint(self):
+        async def run_test():
+            async with Manager._meta.db.transaction() as transaction:
+                await Manager.insert(Manager(name="Manager 1"))
+                savepoint = await transaction.savepoint()
+                await Manager.insert(Manager(name="Manager 2"))
+                await savepoint.rollback_to()
+
+        run_sync(run_test())
+
+        self.assertListEqual(
+            Manager.select(Manager.name).run_sync(), [{"name": "Manager 1"}]
+        )
+
+    def test_named_savepoint(self):
+        async def run_test():
+            async with Manager._meta.db.transaction() as transaction:
+                await Manager.insert(Manager(name="Manager 1"))
+                await transaction.savepoint("my_savepoint")
+                await Manager.insert(Manager(name="Manager 2"))
+                await transaction.rollback_to("my_savepoint")
+
+        run_sync(run_test())
+
+        self.assertListEqual(
+            Manager.select(Manager.name).run_sync(), [{"name": "Manager 1"}]
         )

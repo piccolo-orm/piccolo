@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from piccolo.custom_types import Combinable
+from piccolo.custom_types import Combinable, TableInstance
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
     ReturningDelegate,
@@ -13,14 +13,13 @@ from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
-    from piccolo.table import Table
 
 
 class UpdateError(Exception):
     pass
 
 
-class Update(Query):
+class Update(Query[TableInstance, t.List[t.Any]]):
 
     __slots__ = (
         "force",
@@ -29,7 +28,9 @@ class Update(Query):
         "where_delegate",
     )
 
-    def __init__(self, table: t.Type[Table], force: bool = False, **kwargs):
+    def __init__(
+        self, table: t.Type[TableInstance], force: bool = False, **kwargs
+    ):
         super().__init__(table, **kwargs)
         self.force = force
         self.returning_delegate = ReturningDelegate()
@@ -96,10 +97,13 @@ class Update(Query):
         )
 
         if self.where_delegate._where:
+            # The JOIN syntax isn't allowed in SQL UPDATE queries, so we need
+            # to write the WHERE clause differently, using a sub select.
+
             querystring = QueryString(
                 "{} WHERE {}",
                 querystring,
-                self.where_delegate._where.querystring,
+                self.where_delegate._where.querystring_for_update,
             )
 
         if self.returning_delegate._returning:

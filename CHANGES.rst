@@ -1,6 +1,159 @@
 Changes
 =======
 
+0.109.0
+-------
+
+Joins are now possible without foreign keys using ``join_on``.
+
+For example:
+
+.. code-block:: python
+
+    class Manager(Table):
+        name = Varchar(unique=True)
+        email = Varchar()
+
+    class Band(Table):
+        name = Varchar()
+        manager_name = Varchar()
+
+    >>> await Band.select(
+    ...     Band.name,
+    ...     Band.manager_name.join_on(Manager.name).email
+    ... )
+
+-------------------------------------------------------------------------------
+
+0.108.0
+-------
+
+Added support for savepoints within transactions.
+
+.. code-block:: python
+
+  async with DB.transaction() as transaction:
+      await Manager.objects().create(name="Great manager")
+      savepoint = await transaction.savepoint()
+      await Manager.objects().create(name="Great manager")
+      await savepoint.rollback_to()
+      # Only the first manager will be inserted.
+
+The behaviour of nested context managers has also been changed slightly.
+
+.. code-block:: python
+
+  async with DB.transaction():
+      async with DB.transaction():
+          # This used to raise an exception
+
+We no longer raise an exception if there are nested transaction context
+managers, instead the inner ones do nothing.
+
+If you want the existing behaviour:
+
+.. code-block:: python
+
+  async with DB.transaction():
+      async with DB.transactiona(allow_nested=False):
+          # TransactionError!
+
+-------------------------------------------------------------------------------
+
+0.107.0
+-------
+
+Added the ``log_responses`` option to the database engines. This makes the
+engine print out the raw response from the database for each query, which
+is useful during debugging.
+
+.. code-block:: python
+
+  # piccolo_conf.py
+
+  DB = PostgresEngine(
+    config={'database': 'my_database'},
+    log_queries=True,
+    log_responses=True
+  )
+
+We also updated the Starlite ASGI template - it now uses the new import paths
+(thanks to @sinisaos for this).
+
+-------------------------------------------------------------------------------
+
+0.106.0
+-------
+
+Joins now work within ``update`` queries. For example:
+
+.. code-block:: python
+
+  await Band.update({
+      Band.name: 'Amazing Band'
+  }).where(
+      Band.manager.name == 'Guido'
+  )
+
+Other changes:
+
+* Improved the template used  by ``piccolo app new`` when creating a new
+  Piccolo app (it now uses ``table_finder``).
+
+-------------------------------------------------------------------------------
+
+0.105.0
+-------
+
+Improved the performance of select queries with complex joins. Many thanks to
+@powellnorma and @sinisaos for their help with this.
+
+-------------------------------------------------------------------------------
+
+0.104.0
+-------
+
+Major improvements to Piccolo's typing / auto completion support.
+
+For example:
+
+.. code-block:: python
+
+  >>> bands = await Band.objects()  # List[Band]
+
+  >>> band = await Band.objects().first()  # Optional[Band]
+
+  >>> bands = await Band.select().output(as_json=True)  # str
+
+-------------------------------------------------------------------------------
+
+0.103.0
+-------
+
+``SelectRaw``
+~~~~~~~~~~~~~
+
+This allows you to access features in the database which aren't exposed
+directly by Piccolo. For example, Postgres functions:
+
+.. code-block:: python
+
+    from piccolo.query import SelectRaw
+
+    >>> await Band.select(
+    ...     Band.name,
+    ...     SelectRaw("log(popularity) AS log_popularity")
+    ... )
+    [{'name': 'Pythonistas', 'log_popularity': 3.0}]
+
+Large fixtures
+~~~~~~~~~~~~~~
+
+Piccolo can now load large fixtures using ``piccolo fixtures load``. The
+rows are inserted in batches, so the database adapter doesn't raise any errors.
+
+-------------------------------------------------------------------------------
+
 0.102.0
 -------
 
