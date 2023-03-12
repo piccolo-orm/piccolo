@@ -1800,7 +1800,7 @@ class ForeignKey(Column):
 
         .. code-block:: python
 
-            from piccolo.columns import OnDelete
+            from piccolo.columns import OnUpdate
 
             class Band(Table):
                 name = ForeignKey(
