@@ -1784,7 +1784,7 @@ class ForeignKey(Column):
 
     :param on_update:
         Determines what the database should do when a row has it's primary key
-        updated. If set to ``OnDelete.cascade``, any rows referencing the
+        updated. If set to ``OnUpdate.cascade``, any rows referencing the
         updated row will have their references updated to point to the new
         primary key.
 
