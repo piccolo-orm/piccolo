@@ -92,6 +92,7 @@ class DiffableTable:
     tablename: str
     columns: t.List[Column] = field(default_factory=list)
     previous_class_name: t.Optional[str] = None
+    tablespace: t.Optional[str] = None
 
     def __post_init__(self):
         self.columns_map: t.Dict[str, Column] = {

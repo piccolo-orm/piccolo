@@ -41,6 +41,8 @@ class Create(DDL):
         base = f"{prefix} {self.table._meta.tablename}"
         columns_sql = ", ".join(i.ddl for i in columns)
         create_table_ddl = f"{base} ({columns_sql})"
+        if self.table._meta.tablespace and self.engine_type == "postgres":
+            create_table_ddl += f" TABLESPACE {self.table._meta.tablespace}"
 
         create_indexes: t.List[str] = []
         for column in columns:
@@ -51,6 +53,7 @@ class Create(DDL):
                         columns=[column],
                         method=column._meta.index_method,
                         if_not_exists=self.if_not_exists,
+                        tablespace=self.table._meta.tablespace,
                     ).ddl
                 )
 

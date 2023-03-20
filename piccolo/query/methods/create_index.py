@@ -17,11 +17,13 @@ class CreateIndex(DDL):
         columns: t.List[t.Union[Column, str]],
         method: IndexMethod = IndexMethod.btree,
         if_not_exists: bool = False,
+        tablespace: t.Optional[str] = None,
         **kwargs,
     ):
         self.columns = columns
         self.method = method
         self.if_not_exists = if_not_exists
+        self.tablespace = tablespace
         super().__init__(table, **kwargs)
 
     @property
@@ -45,12 +47,13 @@ class CreateIndex(DDL):
         tablename = self.table._meta.tablename
         method_name = self.method.value
         column_names_str = ", ".join([f'"{i}"' for i in self.column_names])
-        return [
-            (
-                f"{self.prefix} {index_name} ON {tablename} USING "
-                f"{method_name} ({column_names_str})"
-            )
-        ]
+        ddl = (
+            f"{self.prefix} {index_name} ON {tablename} USING "
+            f"{method_name} ({column_names_str})"
+        )
+        if self.tablespace:
+            ddl += f" TABLESPACE {self.tablespace}"
+        return [ddl]
 
     @property
     def cockroach_ddl(self) -> t.Sequence[str]:
