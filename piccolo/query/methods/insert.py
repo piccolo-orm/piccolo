@@ -6,7 +6,7 @@ from piccolo.custom_types import TableInstance
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
     AddDelegate,
-    Conflict,
+    OnConflict,
     OnConflictDelegate,
     ReturningDelegate,
 )
@@ -24,13 +24,12 @@ class Insert(
         "add_delegate",
         "returning_delegate",
         "on_conflict_delegate",
-        "values_delegate",
     )
 
     def __init__(
         self,
         table: t.Type[TableInstance],
-        on_conflict: t.Optional[Conflict] = None,
+        on_conflict: t.Optional[OnConflict] = None,
         *instances: TableInstance,
         **kwargs,
     ):
@@ -52,7 +51,7 @@ class Insert(
         self.returning_delegate.returning(columns)
         return self
 
-    def on_conflict(self: Self, conflict: Conflict) -> Self:
+    def on_conflict(self: Self, conflict: OnConflict) -> Self:
         self.on_conflict_delegate.on_conflict(conflict)
         return self
 
@@ -75,13 +74,23 @@ class Insert(
 
     @property
     def default_querystrings(self) -> t.Sequence[QueryString]:
-        base = f'INSERT INTO "{self.table._meta.tablename}"'
+        engine_type = self.engine_type
+        if (
+            engine_type == "sqlite"
+            and self.table._meta.db.get_version_sync() < 3.24
+        ):
+            if self.on_conflict_delegate._on_conflict == OnConflict.do_nothing:
+                base = f'INSERT OR IGNORE INTO "{self.table._meta.tablename}"'
+            else:
+                base = f'INSERT OR REPLACE INTO "{self.table._meta.tablename}"'
+        else:
+            base = f'INSERT INTO "{self.table._meta.tablename}"'
         columns = ",".join(
             f'"{i._meta.db_column_name}"' for i in self.table._meta.columns
         )
         values = ",".join("{}" for _ in self.add_delegate._add)
         if self.on_conflict_delegate._on_conflict is not None:
-            if self.on_conflict_delegate._on_conflict.value == "DO NOTHING":
+            if self.on_conflict_delegate._on_conflict == OnConflict.do_nothing:
                 query = f"""
                 {base} ({columns}) VALUES {values} ON CONFLICT
                 {self.on_conflict_delegate._on_conflict.value}
@@ -106,8 +115,6 @@ class Insert(
             table=self.table,
         )
 
-        engine_type = self.engine_type
-
         if engine_type in ("postgres", "cockroach") or (
             engine_type == "sqlite"
             and self.table._meta.db.get_version_sync() >= 3.35
@@ -122,6 +129,7 @@ class Insert(
                         table=self.table,
                     )
                 ]
+
         return [querystring]
 
 

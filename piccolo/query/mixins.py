@@ -543,14 +543,14 @@ class GroupByDelegate:
         self._group_by = GroupBy(columns=columns)
 
 
-class Conflict(Enum):
+class OnConflict(str, Enum):
     do_nothing = "DO NOTHING"
     do_update = "DO UPDATE"
 
 
 @dataclass
 class OnConflictDelegate:
-    _on_conflict: t.Optional[Conflict] = None
+    _on_conflict: t.Optional[OnConflict] = None
 
-    def on_conflict(self, conflict: Conflict):
+    def on_conflict(self, conflict: OnConflict):
         self._on_conflict = conflict

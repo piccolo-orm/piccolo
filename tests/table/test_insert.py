@@ -1,6 +1,6 @@
 import pytest
 
-from piccolo.query.mixins import Conflict
+from piccolo.query.mixins import OnConflict
 from tests.base import (
     DBTestCase,
     engine_version_lt,
@@ -61,7 +61,7 @@ class TestInsert(DBTestCase):
 
         Band.insert(
             Band(id=1, name="Javas", popularity=100),
-            on_conflict=Conflict.do_nothing,
+            on_conflict=OnConflict.do_nothing,
         ).run_sync()
 
         response = (
@@ -81,7 +81,7 @@ class TestInsert(DBTestCase):
             Band(id=1, name="Pythonstas-updated", manager=1, popularity=1000),
             Band(id=2, name="Rustaceans-updated", manager=2, popularity=2000),
             Band(id=3, name="CSharps-updated", manager=3, popularity=10),
-            on_conflict=Conflict.do_update,
+            on_conflict=OnConflict.do_update,
         ).run_sync()
 
         response = Band.select().run_sync()
@@ -121,7 +121,7 @@ class TestInsert(DBTestCase):
             Band(id=1, name="Pythonstas-updated", manager=3, popularity=200),
             Band(id=2, name="Rustaceans-updated", manager=2, popularity=1000),
             Band(id=3, name="CSharps-updated", manager=1, popularity=20),
-            on_conflict=Conflict.do_update,
+            on_conflict=OnConflict.do_update,
         ).run_sync()
 
         response = Band.select().run_sync()
