@@ -78,7 +78,7 @@ class Insert(
         if (
             engine_type == "sqlite"
             and self.table._meta.db.get_version_sync() < 3.24
-        ):
+        ):  # pragma: no cover
             if self.on_conflict_delegate._on_conflict == OnConflict.do_nothing:
                 base = f'INSERT OR IGNORE INTO "{self.table._meta.tablename}"'
             else:

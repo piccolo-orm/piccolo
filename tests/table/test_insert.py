@@ -149,6 +149,149 @@ class TestInsert(DBTestCase):
             ],
         )
 
+    @engines_only("cockroach")
+    def test_insert_on_conflict_do_nothing_cockroach(self):
+        """
+        Check that the record has not changed because of the
+        `on_conflict` clause.
+        """
+        self.insert_rows()
+
+        results = Band.select().run_sync()
+
+        Band.insert(
+            Band(
+                id=results[0]["id"],
+                name="Javas",
+                manager=results[0]["manager"],
+                popularity=100,
+            ),
+            on_conflict=OnConflict.do_nothing,
+        ).run_sync()
+
+        response = (
+            Band.select(Band.name)
+            .where(Band.id == results[0]["id"])
+            .first()
+            .run_sync()
+        )
+        self.assertEqual(response["name"], "Pythonistas")
+
+    @engines_only("cockroach")
+    def test_insert_on_conflict_do_update_single_column_cockroach(self):
+        """
+        Check that the record has changed because of the
+        `on_update` clause.
+        """
+        self.insert_rows()
+
+        results = Band.select().run_sync()
+
+        Band.insert(
+            Band(
+                id=results[0]["id"],
+                name="Pythonstas-updated",
+                manager=results[0]["manager"],
+                popularity=1000,
+            ),
+            Band(
+                id=results[1]["id"],
+                name="Rustaceans-updated",
+                manager=results[1]["manager"],
+                popularity=2000,
+            ),
+            Band(
+                id=results[2]["id"],
+                name="CSharps-updated",
+                manager=results[2]["manager"],
+                popularity=10,
+            ),
+            on_conflict=OnConflict.do_update,
+        ).run_sync()
+
+        response = Band.select().run_sync()
+
+        self.assertEqual(
+            response,
+            [
+                {
+                    "id": results[0]["id"],
+                    "name": "Pythonstas-updated",
+                    "manager": results[0]["manager"],
+                    "popularity": 1000,
+                },
+                {
+                    "id": results[1]["id"],
+                    "name": "Rustaceans-updated",
+                    "manager": results[1]["manager"],
+                    "popularity": 2000,
+                },
+                {
+                    "id": results[2]["id"],
+                    "name": "CSharps-updated",
+                    "manager": results[2]["manager"],
+                    "popularity": 10,
+                },
+            ],
+        )
+
+    @engines_only("cockroach")
+    def test_insert_on_conflict_do_update_multiple_columns_cockroach(self):
+        """
+        Check that the record has changed because of the
+        `on_update` clause.
+        """
+        self.insert_rows()
+
+        results = Band.select().run_sync()
+
+        Band.insert(
+            Band(
+                id=results[0]["id"],
+                name="Pythonstas-updated",
+                manager=results[2]["manager"],
+                popularity=200,
+            ),
+            Band(
+                id=results[1]["id"],
+                name="Rustaceans-updated",
+                manager=results[1]["manager"],
+                popularity=1000,
+            ),
+            Band(
+                id=results[2]["id"],
+                name="CSharps-updated",
+                manager=results[0]["manager"],
+                popularity=20,
+            ),
+            on_conflict=OnConflict.do_update,
+        ).run_sync()
+
+        response = Band.select().run_sync()
+        self.assertEqual(
+            response,
+            [
+                {
+                    "id": results[0]["id"],
+                    "name": "Pythonstas-updated",
+                    "manager": results[2]["manager"],
+                    "popularity": 200,
+                },
+                {
+                    "id": results[1]["id"],
+                    "name": "Rustaceans-updated",
+                    "manager": results[1]["manager"],
+                    "popularity": 1000,
+                },
+                {
+                    "id": results[2]["id"],
+                    "name": "CSharps-updated",
+                    "manager": results[0]["manager"],
+                    "popularity": 20,
+                },
+            ],
+        )
+
     @pytest.mark.skipif(
         is_running_sqlite() and engine_version_lt(3.35),
         reason="SQLite version not supported",
