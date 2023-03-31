@@ -4,7 +4,12 @@ import typing as t
 
 from piccolo.custom_types import TableInstance
 from piccolo.query.base import Query
-from piccolo.query.mixins import AddDelegate, ReturningDelegate
+from piccolo.query.mixins import (
+    AddDelegate,
+    Conflict,
+    OnConflictDelegate,
+    ReturningDelegate,
+)
 from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -15,14 +20,25 @@ if t.TYPE_CHECKING:  # pragma: no cover
 class Insert(
     t.Generic[TableInstance], Query[TableInstance, t.List[t.Dict[str, t.Any]]]
 ):
-    __slots__ = ("add_delegate", "returning_delegate")
+    __slots__ = (
+        "add_delegate",
+        "returning_delegate",
+        "on_conflict_delegate",
+        "values_delegate",
+    )
 
     def __init__(
-        self, table: t.Type[TableInstance], *instances: TableInstance, **kwargs
+        self,
+        table: t.Type[TableInstance],
+        on_conflict: t.Optional[Conflict] = None,
+        *instances: TableInstance,
+        **kwargs,
     ):
         super().__init__(table, **kwargs)
         self.add_delegate = AddDelegate()
         self.returning_delegate = ReturningDelegate()
+        self.on_conflict_delegate = OnConflictDelegate()
+        self.on_conflict(on_conflict)  # type: ignore
         self.add(*instances)
 
     ###########################################################################
@@ -34,6 +50,10 @@ class Insert(
 
     def returning(self: Self, *columns: Column) -> Self:
         self.returning_delegate.returning(columns)
+        return self
+
+    def on_conflict(self: Self, conflict: Conflict) -> Self:
+        self.on_conflict_delegate.on_conflict(conflict)
         return self
 
     ###########################################################################
@@ -60,7 +80,25 @@ class Insert(
             f'"{i._meta.db_column_name}"' for i in self.table._meta.columns
         )
         values = ",".join("{}" for _ in self.add_delegate._add)
-        query = f"{base} ({columns}) VALUES {values}"
+        if self.on_conflict_delegate._on_conflict is not None:
+            if self.on_conflict_delegate._on_conflict.value == "DO NOTHING":
+                query = f"""
+                {base} ({columns}) VALUES {values} ON CONFLICT
+                {self.on_conflict_delegate._on_conflict.value}
+                """
+            else:
+                excluded_updated_columns = ", ".join(
+                    f"{i._meta.db_column_name}=EXCLUDED.{i._meta.db_column_name}"  # noqa: E501
+                    for i in self.table._meta.columns
+                )
+                query = f"""
+                {base} ({columns}) VALUES {values} ON CONFLICT
+                ({self.table._meta.primary_key._meta.name})
+                {self.on_conflict_delegate._on_conflict.value}
+                SET {excluded_updated_columns}
+                """
+        else:
+            query = f"{base} ({columns}) VALUES {values}"
         querystring = QueryString(
             query,
             *[i.querystring for i in self.add_delegate._add],
@@ -84,7 +122,6 @@ class Insert(
                         table=self.table,
                     )
                 ]
-
         return [querystring]
 
 

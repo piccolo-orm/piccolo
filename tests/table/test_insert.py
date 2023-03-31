@@ -1,6 +1,12 @@
 import pytest
 
-from tests.base import DBTestCase, engine_version_lt, is_running_sqlite
+from piccolo.query.mixins import Conflict
+from tests.base import (
+    DBTestCase,
+    engine_version_lt,
+    engines_only,
+    is_running_sqlite,
+)
 from tests.example_apps.music.tables import Band, Manager
 
 
@@ -44,6 +50,104 @@ class TestInsert(DBTestCase):
         names = [i["name"] for i in response]
 
         self.assertIn("{}", names)
+
+    @engines_only("postgres", "sqlite")
+    def test_insert_on_conflict_do_nothing(self):
+        """
+        Check that the record has not changed because of the
+        `on_conflict` clause.
+        """
+        self.insert_rows()
+
+        Band.insert(
+            Band(id=1, name="Javas", popularity=100),
+            on_conflict=Conflict.do_nothing,
+        ).run_sync()
+
+        response = (
+            Band.select(Band.name).where(Band.id == 1).first().run_sync()
+        )
+        self.assertEqual(response["name"], "Pythonistas")
+
+    @engines_only("postgres", "sqlite")
+    def test_insert_on_conflict_do_update_single_column(self):
+        """
+        Check that the record has changed because of the
+        `on_update` clause.
+        """
+        self.insert_rows()
+
+        Band.insert(
+            Band(id=1, name="Pythonstas-updated", manager=1, popularity=1000),
+            Band(id=2, name="Rustaceans-updated", manager=2, popularity=2000),
+            Band(id=3, name="CSharps-updated", manager=3, popularity=10),
+            on_conflict=Conflict.do_update,
+        ).run_sync()
+
+        response = Band.select().run_sync()
+        self.assertEqual(
+            response,
+            [
+                {
+                    "id": 1,
+                    "name": "Pythonstas-updated",
+                    "manager": 1,
+                    "popularity": 1000,
+                },
+                {
+                    "id": 2,
+                    "name": "Rustaceans-updated",
+                    "manager": 2,
+                    "popularity": 2000,
+                },
+                {
+                    "id": 3,
+                    "name": "CSharps-updated",
+                    "manager": 3,
+                    "popularity": 10,
+                },
+            ],
+        )
+
+    @engines_only("postgres", "sqlite")
+    def test_insert_on_conflict_do_update_multiple_columns(self):
+        """
+        Check that the record has changed because of the
+        `on_update` clause.
+        """
+        self.insert_rows()
+
+        Band.insert(
+            Band(id=1, name="Pythonstas-updated", manager=3, popularity=200),
+            Band(id=2, name="Rustaceans-updated", manager=2, popularity=1000),
+            Band(id=3, name="CSharps-updated", manager=1, popularity=20),
+            on_conflict=Conflict.do_update,
+        ).run_sync()
+
+        response = Band.select().run_sync()
+        self.assertEqual(
+            response,
+            [
+                {
+                    "id": 1,
+                    "name": "Pythonstas-updated",
+                    "manager": 3,
+                    "popularity": 200,
+                },
+                {
+                    "id": 2,
+                    "name": "Rustaceans-updated",
+                    "manager": 2,
+                    "popularity": 1000,
+                },
+                {
+                    "id": 3,
+                    "name": "CSharps-updated",
+                    "manager": 1,
+                    "popularity": 20,
+                },
+            ],
+        )
 
     @pytest.mark.skipif(
         is_running_sqlite() and engine_version_lt(3.35),

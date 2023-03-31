@@ -141,7 +141,6 @@ class Returning:
 
 @dataclass
 class Output:
-
     as_json: bool = False
     as_list: bool = False
     as_objects: bool = False
@@ -170,7 +169,6 @@ class Callback:
 
 @dataclass
 class WhereDelegate:
-
     _where: t.Optional[Combinable] = None
     _where_columns: t.List[Column] = field(default_factory=list)
 
@@ -205,7 +203,6 @@ class WhereDelegate:
 
 @dataclass
 class OrderByDelegate:
-
     _order_by: OrderBy = field(default_factory=OrderBy)
 
     def get_order_by_columns(self) -> t.List[Column]:
@@ -231,7 +228,6 @@ class OrderByDelegate:
 
 @dataclass
 class LimitDelegate:
-
     _limit: t.Optional[Limit] = None
     _first: bool = False
 
@@ -258,7 +254,6 @@ class AsOfDelegate:
 
 @dataclass
 class DistinctDelegate:
-
     _distinct: bool = False
 
     def distinct(self):
@@ -275,7 +270,6 @@ class ReturningDelegate:
 
 @dataclass
 class CountDelegate:
-
     _count: bool = False
 
     def count(self):
@@ -284,7 +278,6 @@ class CountDelegate:
 
 @dataclass
 class AddDelegate:
-
     _add: t.List[Table] = field(default_factory=list)
 
     def add(self, *instances: Table, table_class: t.Type[Table]):
@@ -548,3 +541,16 @@ class GroupByDelegate:
 
     def group_by(self, *columns: Column):
         self._group_by = GroupBy(columns=columns)
+
+
+class Conflict(Enum):
+    do_nothing = "DO NOTHING"
+    do_update = "DO UPDATE"
+
+
+@dataclass
+class OnConflictDelegate:
+    _on_conflict: t.Optional[Conflict] = None
+
+    def on_conflict(self, conflict: Conflict):
+        self._on_conflict = conflict

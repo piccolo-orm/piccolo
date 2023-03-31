@@ -46,6 +46,7 @@ from piccolo.query.methods.create_index import CreateIndex
 from piccolo.query.methods.indexes import Indexes
 from piccolo.query.methods.objects import First
 from piccolo.query.methods.refresh import Refresh
+from piccolo.query.mixins import Conflict
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
 from piccolo.utils.graphlib import TopologicalSorter
@@ -906,7 +907,9 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def insert(
-        cls: t.Type[TableInstance], *rows: TableInstance
+        cls: t.Type[TableInstance],
+        *rows: TableInstance,
+        on_conflict: t.Optional[Conflict] = None,
     ) -> Insert[TableInstance]:
         """
         Insert rows into the database.
@@ -918,7 +921,9 @@ class Table(metaclass=TableMetaclass):
             )
 
         """
-        query = Insert(table=cls).returning(cls._meta.primary_key)
+        query = Insert(table=cls, on_conflict=on_conflict).returning(
+            cls._meta.primary_key
+        )
         if rows:
             query.add(*rows)
         return query
