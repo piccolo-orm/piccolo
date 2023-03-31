@@ -33,3 +33,21 @@ You can also compose it as follows:
     ).add(
         Band(name="Gophers")
     )
+
+-------------------------------------------------------------------------------
+
+on_conflict
+-----------
+
+You can use the ``on_conflict`` clause in an insert query. 
+Piccolo has ``DO_NOTHING`` and ``DO_UPDATE`` clauses:
+
+.. code-block:: python
+
+    from piccolo.query.mixins import OnConflict
+
+    await Band.insert(
+        Band(id=1, name="Darts"),
+        Band(id=2, name="Gophers"),
+        on_conflict=OnConflict.do_nothing
+    )
