@@ -81,8 +81,12 @@ class Insert(
         ):  # pragma: no cover
             if self.on_conflict_delegate._on_conflict == OnConflict.do_nothing:
                 base = f'INSERT OR IGNORE INTO "{self.table._meta.tablename}"'
-            else:
+            elif (
+                self.on_conflict_delegate._on_conflict == OnConflict.do_update
+            ):
                 base = f'INSERT OR REPLACE INTO "{self.table._meta.tablename}"'
+            else:
+                raise ValueError("Invalid on conflict value")
         else:
             base = f'INSERT INTO "{self.table._meta.tablename}"'
         columns = ",".join(
@@ -95,7 +99,9 @@ class Insert(
                 {base} ({columns}) VALUES {values} ON CONFLICT
                 {self.on_conflict_delegate._on_conflict.value}
                 """
-            else:
+            elif (
+                self.on_conflict_delegate._on_conflict == OnConflict.do_update
+            ):
                 excluded_updated_columns = ", ".join(
                     f"{i._meta.db_column_name}=EXCLUDED.{i._meta.db_column_name}"  # noqa: E501
                     for i in self.table._meta.columns
@@ -106,6 +112,8 @@ class Insert(
                 {self.on_conflict_delegate._on_conflict.value}
                 SET {excluded_updated_columns}
                 """
+            else:
+                raise ValueError("Invalid on conflict value")
         else:
             query = f"{base} ({columns}) VALUES {values}"
         querystring = QueryString(

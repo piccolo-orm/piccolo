@@ -70,6 +70,20 @@ class TestInsert(DBTestCase):
         self.assertEqual(response["name"], "Pythonistas")
 
     @engines_only("postgres", "sqlite")
+    def test_insert_on_conflict_value_error(self):
+        """
+        Check ValueError if user pass wrong value to
+        `on_conflict` clause.
+        """
+        self.insert_rows()
+
+        with self.assertRaises(ValueError):
+            Band.insert(
+                Band(id=1, name="Javas", popularity=100),
+                on_conflict="do_nothing",
+            ).run_sync()
+
+    @engines_only("postgres", "sqlite")
     def test_insert_on_conflict_do_update_single_column(self):
         """
         Check that the record has changed because of the
@@ -176,6 +190,20 @@ class TestInsert(DBTestCase):
             .run_sync()
         )
         self.assertEqual(response["name"], "Pythonistas")
+
+    @engines_only("cockroach")
+    def test_insert_on_conflict_value_error_cockroach(self):
+        """
+        Check ValueError if user pass wrong value to
+        `on_conflict` clause.
+        """
+        self.insert_rows()
+
+        with self.assertRaises(ValueError):
+            Band.insert(
+                Band(id=1, name="Javas", popularity=100),
+                on_conflict="do_nothing",
+            ).run_sync()
 
     @engines_only("cockroach")
     def test_insert_on_conflict_do_update_single_column_cockroach(self):
