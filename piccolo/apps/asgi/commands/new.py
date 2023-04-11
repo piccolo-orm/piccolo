@@ -12,7 +12,7 @@ TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates/app/")
 SERVERS = ["uvicorn", "Hypercorn"]
 ROUTERS = ["starlette", "fastapi", "blacksheep", "litestar"]
 ROUTER_DEPENDENCIES = {
-    "litestar": ["litestar>=1.46.0"],
+    "litestar": ["litestar>=2.0.0a3"],
 }
 
 
