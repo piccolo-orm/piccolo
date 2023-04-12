@@ -10,3 +10,4 @@ help you solve common problems:
     ./migrate_existing_project
     ./using_sqlite_and_asyncio_effectively
     ./deployment
+    ./fastapi
