@@ -16,3 +16,10 @@ added more and more support. Many people successfully use SQLite and Piccolo
 together in production. The main missing feature is support for
 :ref:`automatic database migrations <AutoMigrations>` due to SQLite's limited
 support for ``ALTER TABLE`` ``DDL`` statements.
+
+What about other databases?
+---------------------------
+
+Our focus is on providing great support for a limited number of databases
+(especially Postgres), however it's likely that we'll support more databases in
+the future.
