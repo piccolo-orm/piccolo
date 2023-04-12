@@ -21,7 +21,6 @@ batteries included.
    piccolo/testing/index
    piccolo/features/index
    piccolo/playground/index
-   piccolo/deployment/index
    piccolo/ecosystem/index
    piccolo/tutorials/index
    piccolo/contributing/index
