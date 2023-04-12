@@ -1,5 +1,5 @@
-Deployment
-==========
+Deploying using Docker
+======================
 
 Docker
 ------
