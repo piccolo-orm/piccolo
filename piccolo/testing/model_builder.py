@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import typing as t
 from datetime import date, datetime, time, timedelta
@@ -5,7 +7,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from piccolo.columns import Array, Column
-from piccolo.table import Table
+from piccolo.custom_types import TableInstance
 from piccolo.testing.random_builder import RandomBuilder
 from piccolo.utils.sync import run_sync
 
@@ -27,11 +29,11 @@ class ModelBuilder:
     @classmethod
     async def build(
         cls,
-        table_class: t.Type[Table],
+        table_class: t.Type[TableInstance],
         defaults: t.Dict[t.Union[Column, str], t.Any] = None,
         persist: bool = True,
         minimal: bool = False,
-    ) -> Table:
+    ) -> TableInstance:
         """
         Build a ``Table`` instance with random data and save async.
         If the ``Table`` has any foreign keys, then the related rows are also
@@ -78,11 +80,11 @@ class ModelBuilder:
     @classmethod
     def build_sync(
         cls,
-        table_class: t.Type[Table],
+        table_class: t.Type[TableInstance],
         defaults: t.Dict[t.Union[Column, str], t.Any] = None,
         persist: bool = True,
         minimal: bool = False,
-    ) -> Table:
+    ) -> TableInstance:
         """
         A sync wrapper around :meth:`build`.
         """
@@ -98,11 +100,11 @@ class ModelBuilder:
     @classmethod
     async def _build(
         cls,
-        table_class: t.Type[Table],
+        table_class: t.Type[TableInstance],
         defaults: t.Dict[t.Union[Column, str], t.Any] = None,
         minimal: bool = False,
         persist: bool = True,
-    ) -> Table:
+    ) -> TableInstance:
         model = table_class(_ignore_missing=True)
         defaults = {} if not defaults else defaults
 
