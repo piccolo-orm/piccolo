@@ -287,7 +287,9 @@ class AsOfDelegate:
 @dataclass
 class DistinctDelegate:
 
-    _distinct: Distinct = Distinct(enabled=False, on=None)
+    _distinct: Distinct = field(
+        default_factory=lambda: Distinct(enabled=False, on=None)
+    )
 
     def distinct(
         self, enabled: bool, on: t.Optional[t.Sequence[Column]] = None
