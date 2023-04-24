@@ -3,10 +3,11 @@ from unittest import TestCase
 import pytest
 
 from piccolo.apps.user.tables import BaseUser
+from piccolo.columns import Varchar
 from piccolo.columns.combination import WhereRaw
 from piccolo.query import OrderByRaw
 from piccolo.query.methods.select import Avg, Count, Max, Min, SelectRaw, Sum
-from piccolo.table import create_db_tables_sync, drop_db_tables_sync
+from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
 from tests.base import (
     DBTestCase,
     engine_is,
@@ -503,6 +504,27 @@ class TestSelect(DBTestCase):
     def test_distinct(self):
         """
         Make sure the distinct clause works.
+        """
+        self.insert_rows()
+        self.insert_rows()
+
+        query = Band.select(Band.name).where(Band.name == "Pythonistas")
+        self.assertNotIn("DISTINCT", query.__str__())
+
+        response = query.run_sync()
+        self.assertEqual(
+            response, [{"name": "Pythonistas"}, {"name": "Pythonistas"}]
+        )
+
+        query = query.distinct()
+        self.assertIn("DISTINCT", query.__str__())
+
+        response = query.run_sync()
+        self.assertEqual(response, [{"name": "Pythonistas"}])
+
+    def test_distinct_on(self):
+        """
+        Make sure the distinct clause works, with the ``on`` param.
         """
         self.insert_rows()
         self.insert_rows()
@@ -1235,5 +1257,55 @@ class TestSelectOrderBy(TestCase):
                 {"name": "Pythonistas"},
                 {"name": "Rubyists"},
                 {"name": "Rustaceans"},
+            ],
+        )
+
+
+class Color(Table):
+    a_color = Varchar()
+    b_color = Varchar()
+
+
+class TestDistinctOn(TestCase):
+    def setUp(self):
+        Color.create_table().run_sync()
+
+    def tearDown(self):
+        Color.alter().drop_table().run_sync()
+
+    @engines_only("postgres", "cockroach")
+    def test_distinct_on(self):
+        """
+        Make sure the ``distinct`` method can be used to create a
+        ``DISTINCT ON`` clause.
+        """
+        Color.insert(
+            Color(a_color="red", b_color="red"),
+            Color(a_color="red", b_color="red"),
+            Color(a_color="red", b_color="green"),
+            Color(a_color="red", b_color="blue"),
+            Color(a_color="green", b_color="red"),
+            Color(a_color="green", b_color="blue"),
+            Color(a_color="green", b_color="green"),
+            Color(a_color="blue", b_color="red"),
+            Color(a_color="blue", b_color="green"),
+            Color(a_color="blue", b_color="blue"),
+        ).run_sync()
+
+        query = (
+            Color.select(Color.a_color, Color.b_color)
+            .distinct(on=[Color.a_color])
+            .order_by(Color.a_color)
+            .order_by(Color.b_color)
+        )
+        self.assertIn("DISTINCT ON", query.__str__())
+        response = query.run_sync()
+
+        self.assertEqual(
+            response,
+            [
+                {"a_color": "blue", "b_color": "blue"},
+                {"a_color": "green", "b_color": "blue"},
+                {"a_color": "red", "b_color": "blue"},
             ],
         )

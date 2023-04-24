@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import collections.abc
 import itertools
 import typing as t
 from dataclasses import dataclass, field
@@ -16,6 +17,33 @@ from piccolo.utils.sql_values import convert_to_sql_value
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import Selectable
     from piccolo.table import Table  # noqa
+
+
+@dataclass
+class Distinct:
+    __slots__ = ("enabled", "on")
+
+    enabled: bool
+    on: t.Optional[t.Sequence[Column]]
+
+    @property
+    def querystring(self) -> QueryString:
+        if self.enabled:
+            if self.on:
+                column_names = ", ".join(
+                    i._meta.get_full_name(with_alias=False) for i in self.on
+                )
+                return QueryString(f" DISTINCT ON ({column_names})")
+            else:
+                return QueryString(" DISTINCT")
+        else:
+            return QueryString(" ALL")
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
+
+    def copy(self) -> Distinct:
+        return self.__class__(enabled=self.enabled, on=self.on)
 
 
 @dataclass
@@ -259,10 +287,17 @@ class AsOfDelegate:
 @dataclass
 class DistinctDelegate:
 
-    _distinct: bool = False
+    _distinct: Distinct = Distinct(enabled=False, on=None)
 
-    def distinct(self):
-        self._distinct = True
+    def distinct(
+        self, enabled: bool, on: t.Optional[t.Sequence[Column]] = None
+    ):
+        if not isinstance(on, collections.abc.Sequence):
+            # Check a sequence is passed in, otherwise the user will get some
+            # unuseful errors later on.
+            raise ValueError("`on` must be a sequence")
+
+        self._distinct = Distinct(enabled=enabled, on=on)
 
 
 @dataclass
