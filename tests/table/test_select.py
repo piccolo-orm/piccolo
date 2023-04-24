@@ -1309,3 +1309,33 @@ class TestDistinctOn(TestCase):
                 {"a_color": "red", "b_color": "blue"},
             ],
         )
+
+    @engines_only("sqlite")
+    def test_distinct_on_sqlite(self):
+        """
+        SQLite doesn't support ``DISTINCT ON``, so a ``ValueError`` should be
+        raised.
+        """
+        with self.assertRaises(ValueError) as manager:
+            Color.select(Color.a_color, Color.b_color).distinct(
+                on=[Color.a_color]
+            ).order_by(Color.a_color).order_by(Color.b_color).run_sync()
+
+        self.assertEqual(
+            manager.exception.__str__(),
+            "Only Postgres and Cockroach supports DISTINCT ON",
+        )
+
+    @engines_only("postgres", "cockroach")
+    def test_distinct_on_error(self):
+        """
+        If we pass in something other than a sequence of columns, it should
+        raise a ValueError.
+        """
+        with self.assertRaises(ValueError) as manager:
+            Color.select().distinct(on=Color.a_color)
+
+        self.assertEqual(
+            manager.exception.__str__(),
+            "`on` must be a sequence of `Column` instances",
+        )
