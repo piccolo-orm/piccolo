@@ -358,7 +358,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
     ) -> Self:
         if on is not None and self.engine_type not in (
             "postgres",
-            "coackroach",
+            "cockroach",
         ):
             raise ValueError(
                 "Only Postgres and Cockroach supports DISTINCT ON"
