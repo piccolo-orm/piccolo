@@ -1,9 +1,10 @@
+import datetime
 from unittest import TestCase
 
 import pytest
 
 from piccolo.apps.user.tables import BaseUser
-from piccolo.columns import Varchar
+from piccolo.columns import Date, Varchar
 from piccolo.columns.combination import WhereRaw
 from piccolo.query import OrderByRaw
 from piccolo.query.methods.select import Avg, Count, Max, Min, SelectRaw, Sum
@@ -1261,17 +1262,18 @@ class TestSelectOrderBy(TestCase):
         )
 
 
-class Color(Table):
-    a_color = Varchar()
-    b_color = Varchar()
+class Album(Table):
+    band = Varchar()
+    title = Varchar()
+    release_date = Date()
 
 
 class TestDistinctOn(TestCase):
     def setUp(self):
-        Color.create_table().run_sync()
+        Album.create_table().run_sync()
 
     def tearDown(self):
-        Color.alter().drop_table().run_sync()
+        Album.alter().drop_table().run_sync()
 
     @engines_only("postgres", "cockroach")
     def test_distinct_on(self):
@@ -1279,24 +1281,69 @@ class TestDistinctOn(TestCase):
         Make sure the ``distinct`` method can be used to create a
         ``DISTINCT ON`` clause.
         """
-        Color.insert(
-            Color(a_color="red", b_color="red"),
-            Color(a_color="red", b_color="red"),
-            Color(a_color="red", b_color="green"),
-            Color(a_color="red", b_color="blue"),
-            Color(a_color="green", b_color="red"),
-            Color(a_color="green", b_color="blue"),
-            Color(a_color="green", b_color="green"),
-            Color(a_color="blue", b_color="red"),
-            Color(a_color="blue", b_color="green"),
-            Color(a_color="blue", b_color="blue"),
+        Album.insert(
+            Album(
+                {
+                    Album.band: "Pythonistas",
+                    Album.title: "P1",
+                    Album.release_date: datetime.date(
+                        year=2022, month=1, day=1
+                    ),
+                }
+            ),
+            Album(
+                {
+                    Album.band: "Pythonistas",
+                    Album.title: "P2",
+                    Album.release_date: datetime.date(
+                        year=2023, month=1, day=1
+                    ),
+                }
+            ),
+            Album(
+                {
+                    Album.band: "Rustaceans",
+                    Album.title: "R1",
+                    Album.release_date: datetime.date(
+                        year=2022, month=1, day=1
+                    ),
+                }
+            ),
+            Album(
+                {
+                    Album.band: "Rustaceans",
+                    Album.title: "R2",
+                    Album.release_date: datetime.date(
+                        year=2023, month=1, day=1
+                    ),
+                }
+            ),
+            Album(
+                {
+                    Album.band: "C-Sharps",
+                    Album.title: "C1",
+                    Album.release_date: datetime.date(
+                        year=2022, month=1, day=1
+                    ),
+                }
+            ),
+            Album(
+                {
+                    Album.band: "C-Sharps",
+                    Album.title: "C2",
+                    Album.release_date: datetime.date(
+                        year=2023, month=1, day=1
+                    ),
+                }
+            ),
         ).run_sync()
 
+        # Get the most recent album for each band.
         query = (
-            Color.select(Color.a_color, Color.b_color)
-            .distinct(on=[Color.a_color])
-            .order_by(Color.a_color)
-            .order_by(Color.b_color)
+            Album.select(Album.band, Album.title)
+            .distinct(on=[Album.band])
+            .order_by(Album.band)
+            .order_by(Album.release_date, ascending=False)
         )
         self.assertIn("DISTINCT ON", query.__str__())
         response = query.run_sync()
@@ -1304,9 +1351,9 @@ class TestDistinctOn(TestCase):
         self.assertEqual(
             response,
             [
-                {"a_color": "blue", "b_color": "blue"},
-                {"a_color": "green", "b_color": "blue"},
-                {"a_color": "red", "b_color": "blue"},
+                {"band": "C-Sharps", "title": "C2"},
+                {"band": "Pythonistas", "title": "P2"},
+                {"band": "Rustaceans", "title": "R2"},
             ],
         )
 
@@ -1317,9 +1364,7 @@ class TestDistinctOn(TestCase):
         raised.
         """
         with self.assertRaises(ValueError) as manager:
-            Color.select(Color.a_color, Color.b_color).distinct(
-                on=[Color.a_color]
-            ).order_by(Color.a_color).order_by(Color.b_color).run_sync()
+            Album.select().distinct(on=[Album.band])
 
         self.assertEqual(
             manager.exception.__str__(),
@@ -1333,7 +1378,7 @@ class TestDistinctOn(TestCase):
         raise a ValueError.
         """
         with self.assertRaises(ValueError) as manager:
-            Color.select().distinct(on=Color.a_color)
+            Album.select().distinct(on=Album.band)
 
         self.assertEqual(
             manager.exception.__str__(),
