@@ -136,8 +136,7 @@ def populate():
     """
     for _table in reversed(TABLES):
         try:
-            if _table.table_exists().run_sync():
-                _table.alter().drop_table().run_sync()
+            _table.alter().drop_table(if_exists=True).run_sync()
         except Exception as e:
             print(e)
 
@@ -184,10 +183,26 @@ def populate():
         *[DiscountCode({DiscountCode.code: uuid.uuid4()}) for _ in range(5)]
     ).run_sync()
 
-    recording_studio = RecordingStudio(
-        name="Abbey Road", facilities={"restaurant": True, "mixing_desk": True}
-    )
-    recording_studio.save().run_sync()
+    RecordingStudio.insert(
+        RecordingStudio(
+            {
+                RecordingStudio.name: "Abbey Road",
+                RecordingStudio.facilities: {
+                    "restaurant": True,
+                    "mixing_desk": True,
+                },
+            }
+        ),
+        RecordingStudio(
+            {
+                RecordingStudio.name: "Electric Lady",
+                RecordingStudio.facilities: {
+                    "restaurant": False,
+                    "mixing_desk": True,
+                },
+            },
+        ),
+    ).run_sync()
 
 
 def run(
