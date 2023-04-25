@@ -8,6 +8,7 @@ from piccolo.columns import Date, Varchar
 from piccolo.columns.combination import WhereRaw
 from piccolo.query import OrderByRaw
 from piccolo.query.methods.select import Avg, Count, Max, Min, SelectRaw, Sum
+from piccolo.query.mixins import DistinctOnError
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
 from tests.base import (
     DBTestCase,
@@ -1384,3 +1385,14 @@ class TestDistinctOn(TestCase):
             manager.exception.__str__(),
             "`on` must be a sequence of `Column` instances",
         )
+
+    @engines_only("postgres", "cockroach")
+    def test_distinct_on_order_by_error(self):
+        """
+        The first column passed to `order_by` must match the first column
+        passed to `on`, otherwise an exception is raised.
+        """
+        with self.assertRaises(DistinctOnError):
+            Album.select().distinct(on=[Album.band]).order_by(
+                Album.release_date
+            ).run_sync()

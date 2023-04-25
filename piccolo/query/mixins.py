@@ -19,6 +19,10 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table  # noqa
 
 
+class DistinctOnError(ValueError):
+    pass
+
+
 @dataclass
 class Distinct:
     __slots__ = ("enabled", "on")
@@ -38,6 +42,35 @@ class Distinct:
                 return QueryString(" DISTINCT")
         else:
             return QueryString(" ALL")
+
+    def validate_on(self, order_by: OrderBy):
+        """
+        When using the `on` argument, the first column must match the first
+        order by column.
+
+        :raises DistinctOnError:
+            If the columns don't match.
+
+        """
+        validated = True
+
+        try:
+            first_order_column = order_by.order_by_items[0].columns[0]
+        except IndexError:
+            validated = False
+        else:
+            if not self.on:
+                validated = False
+            elif isinstance(first_order_column, Column) and not self.on[
+                0
+            ]._equals(first_order_column):
+                validated = False
+
+        if not validated:
+            raise DistinctOnError(
+                "The first `order_by` column must match the first column "
+                "passed to `on`."
+            )
 
     def __str__(self) -> str:
         return self.querystring.__str__()
