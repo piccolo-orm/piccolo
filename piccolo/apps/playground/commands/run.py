@@ -180,8 +180,9 @@ def populate():
     ticket = Ticket(concert=concert.id, price=Decimal("50.0"))
     ticket.save().run_sync()
 
-    discount_code = DiscountCode(code=uuid.uuid4())
-    discount_code.save().run_sync()
+    DiscountCode.insert(
+        *[DiscountCode({DiscountCode.code: uuid.uuid4()}) for _ in range(5)]
+    ).run_sync()
 
     recording_studio = RecordingStudio(
         name="Abbey Road", facilities={"restaurant": True, "mixing_desk": True}
