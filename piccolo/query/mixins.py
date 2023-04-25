@@ -20,6 +20,10 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 
 class DistinctOnError(ValueError):
+    """
+    Raised when ``DISTINCT ON`` queries are malformed.
+    """
+
     pass
 
 
