@@ -353,8 +353,18 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         self.columns_delegate.columns(*_columns)
         return self
 
-    def distinct(self: Self) -> Self:
-        self.distinct_delegate.distinct()
+    def distinct(
+        self: Self, *, on: t.Optional[t.Sequence[Column]] = None
+    ) -> Self:
+        if on is not None and self.engine_type not in (
+            "postgres",
+            "cockroach",
+        ):
+            raise ValueError(
+                "Only Postgres and Cockroach supports DISTINCT ON"
+            )
+
+        self.distinct_delegate.distinct(enabled=True, on=on)
         return self
 
     def group_by(self: Self, *columns: t.Union[Column, str]) -> Self:
@@ -722,17 +732,22 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
 
         #######################################################################
 
-        select = (
-            "SELECT DISTINCT" if self.distinct_delegate._distinct else "SELECT"
-        )
-        query = f"{select} {columns_str} FROM {self.table._meta.tablename}"
+        args: t.List[t.Any] = []
+
+        query = "SELECT"
+
+        distinct = self.distinct_delegate._distinct
+        if distinct:
+            if distinct.on:
+                distinct.validate_on(self.order_by_delegate._order_by)
+
+            query += "{}"
+            args.append(distinct.querystring)
+
+        query += f" {columns_str} FROM {self.table._meta.tablename}"
 
         for join in joins:
             query += f" {join}"
-
-        #######################################################################
-
-        args: t.List[t.Any] = []
 
         if self.as_of_delegate._as_of:
             query += "{}"

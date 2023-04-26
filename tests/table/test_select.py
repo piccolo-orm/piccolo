@@ -1,12 +1,15 @@
+import datetime
 from unittest import TestCase
 
 import pytest
 
 from piccolo.apps.user.tables import BaseUser
+from piccolo.columns import Date, Varchar
 from piccolo.columns.combination import WhereRaw
 from piccolo.query import OrderByRaw
 from piccolo.query.methods.select import Avg, Count, Max, Min, SelectRaw, Sum
-from piccolo.table import create_db_tables_sync, drop_db_tables_sync
+from piccolo.query.mixins import DistinctOnError
+from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
 from tests.base import (
     DBTestCase,
     engine_is,
@@ -503,6 +506,27 @@ class TestSelect(DBTestCase):
     def test_distinct(self):
         """
         Make sure the distinct clause works.
+        """
+        self.insert_rows()
+        self.insert_rows()
+
+        query = Band.select(Band.name).where(Band.name == "Pythonistas")
+        self.assertNotIn("DISTINCT", query.__str__())
+
+        response = query.run_sync()
+        self.assertEqual(
+            response, [{"name": "Pythonistas"}, {"name": "Pythonistas"}]
+        )
+
+        query = query.distinct()
+        self.assertIn("DISTINCT", query.__str__())
+
+        response = query.run_sync()
+        self.assertEqual(response, [{"name": "Pythonistas"}])
+
+    def test_distinct_on(self):
+        """
+        Make sure the distinct clause works, with the ``on`` param.
         """
         self.insert_rows()
         self.insert_rows()
@@ -1237,3 +1261,138 @@ class TestSelectOrderBy(TestCase):
                 {"name": "Rustaceans"},
             ],
         )
+
+
+class Album(Table):
+    band = Varchar()
+    title = Varchar()
+    release_date = Date()
+
+
+class TestDistinctOn(TestCase):
+    def setUp(self):
+        Album.create_table().run_sync()
+
+    def tearDown(self):
+        Album.alter().drop_table().run_sync()
+
+    @engines_only("postgres", "cockroach")
+    def test_distinct_on(self):
+        """
+        Make sure the ``distinct`` method can be used to create a
+        ``DISTINCT ON`` clause.
+        """
+        Album.insert(
+            Album(
+                {
+                    Album.band: "Pythonistas",
+                    Album.title: "P1",
+                    Album.release_date: datetime.date(
+                        year=2022, month=1, day=1
+                    ),
+                }
+            ),
+            Album(
+                {
+                    Album.band: "Pythonistas",
+                    Album.title: "P2",
+                    Album.release_date: datetime.date(
+                        year=2023, month=1, day=1
+                    ),
+                }
+            ),
+            Album(
+                {
+                    Album.band: "Rustaceans",
+                    Album.title: "R1",
+                    Album.release_date: datetime.date(
+                        year=2022, month=1, day=1
+                    ),
+                }
+            ),
+            Album(
+                {
+                    Album.band: "Rustaceans",
+                    Album.title: "R2",
+                    Album.release_date: datetime.date(
+                        year=2023, month=1, day=1
+                    ),
+                }
+            ),
+            Album(
+                {
+                    Album.band: "C-Sharps",
+                    Album.title: "C1",
+                    Album.release_date: datetime.date(
+                        year=2022, month=1, day=1
+                    ),
+                }
+            ),
+            Album(
+                {
+                    Album.band: "C-Sharps",
+                    Album.title: "C2",
+                    Album.release_date: datetime.date(
+                        year=2023, month=1, day=1
+                    ),
+                }
+            ),
+        ).run_sync()
+
+        # Get the most recent album for each band.
+        query = (
+            Album.select(Album.band, Album.title)
+            .distinct(on=[Album.band])
+            .order_by(Album.band)
+            .order_by(Album.release_date, ascending=False)
+        )
+        self.assertIn("DISTINCT ON", query.__str__())
+        response = query.run_sync()
+
+        self.assertEqual(
+            response,
+            [
+                {"band": "C-Sharps", "title": "C2"},
+                {"band": "Pythonistas", "title": "P2"},
+                {"band": "Rustaceans", "title": "R2"},
+            ],
+        )
+
+    @engines_only("sqlite")
+    def test_distinct_on_sqlite(self):
+        """
+        SQLite doesn't support ``DISTINCT ON``, so a ``ValueError`` should be
+        raised.
+        """
+        with self.assertRaises(ValueError) as manager:
+            Album.select().distinct(on=[Album.band])
+
+        self.assertEqual(
+            manager.exception.__str__(),
+            "Only Postgres and Cockroach supports DISTINCT ON",
+        )
+
+    @engines_only("postgres", "cockroach")
+    def test_distinct_on_error(self):
+        """
+        If we pass in something other than a sequence of columns, it should
+        raise a ValueError.
+        """
+        with self.assertRaises(ValueError) as manager:
+            Album.select().distinct(on=Album.band)
+
+        self.assertEqual(
+            manager.exception.__str__(),
+            "`on` must be a sequence of `Column` instances",
+        )
+
+    @engines_only("postgres", "cockroach")
+    def test_distinct_on_order_by_error(self):
+        """
+        The first column passed to `order_by` must match the first column
+        passed to `on`, otherwise an exception is raised.
+        """
+        with self.assertRaises(DistinctOnError):
+            Album.select().distinct(on=[Album.band]).order_by(
+                Album.release_date
+            ).run_sync()
