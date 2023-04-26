@@ -1,6 +1,46 @@
 Changes
 =======
 
+0.110.0
+-------
+
+ASGI frameworks
+~~~~~~~~~~~~~~~
+
+The ASGI frameworks in ``piccolo asgi new`` have been updated. ``starlite`` has
+been renamed to ``litestar``. Thanks to @sinisaos for this.
+
+ModelBuilder
+~~~~~~~~~~~~
+
+Generic types are now used in ``ModelBuilder``.
+
+.. code-block:: python
+
+  # mypy knows this is a `Band` instance:
+  band = await ModelBuilder.build(Band)
+
+``DISTINCT ON``
+~~~~~~~~~~~~~~~
+
+Added support for ``DISTINCT ON`` queries. For example, here we fetch the most
+recent album for each band:
+
+.. code-block:: python
+
+  >>> await Album.select().distinct(
+  ...     on=[Album.band]
+  ... ).order_by(
+  ...     Album.band
+  ... ).order_by(
+  ...     Album.release_date,
+  ...     ascending=False
+  ... )
+
+Thanks to @sinisaos and @williamflaherty for their help with this.
+
+-------------------------------------------------------------------------------
+
 0.109.0
 -------
 
