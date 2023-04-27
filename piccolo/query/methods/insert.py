@@ -4,7 +4,12 @@ import typing as t
 
 from piccolo.custom_types import TableInstance
 from piccolo.query.base import Query
-from piccolo.query.mixins import AddDelegate, ReturningDelegate
+from piccolo.query.mixins import (
+    AddDelegate,
+    OnConflictAction,
+    OnConflictDelegate,
+    ReturningDelegate,
+)
 from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -15,7 +20,7 @@ if t.TYPE_CHECKING:  # pragma: no cover
 class Insert(
     t.Generic[TableInstance], Query[TableInstance, t.List[t.Dict[str, t.Any]]]
 ):
-    __slots__ = ("add_delegate", "returning_delegate")
+    __slots__ = ("add_delegate", "on_conflict_delegate", "returning_delegate")
 
     def __init__(
         self, table: t.Type[TableInstance], *instances: TableInstance, **kwargs
@@ -23,6 +28,7 @@ class Insert(
         super().__init__(table, **kwargs)
         self.add_delegate = AddDelegate()
         self.returning_delegate = ReturningDelegate()
+        self.on_conflict_delegate = OnConflictDelegate()
         self.add(*instances)
 
     ###########################################################################
@@ -34,6 +40,21 @@ class Insert(
 
     def returning(self: Self, *columns: Column) -> Self:
         self.returning_delegate.returning(columns)
+        return self
+
+    def on_conflict(
+        self: Self,
+        target: t.Optional[t.Sequence[t.Union[str, Column]]] = None,
+        action: t.Union[
+            OnConflictAction, t.Literal["DO NOTHING", "DO UPDATE"]
+        ] = OnConflictAction.do_nothing,
+        values: t.Optional[
+            t.List[t.Union[Column, t.Tuple[t.Union[str, Column], t.Any]]]
+        ] = None,
+    ) -> Self:
+        self.on_conflict_delegate.on_conflict(
+            target=target, action=action, values=values
+        )
         return self
 
     ###########################################################################
@@ -70,16 +91,28 @@ class Insert(
 
         engine_type = self.engine_type
 
+        # TODO - check SQLite version
+        on_conflict = self.on_conflict_delegate._on_conflict
+        if on_conflict:
+            querystring = QueryString(
+                "{}{}",
+                querystring,
+                on_conflict.querystring,
+                query_type="insert",
+                table=self.table,
+            )
+
         if engine_type in ("postgres", "cockroach") or (
             engine_type == "sqlite"
             and self.table._meta.db.get_version_sync() >= 3.35
         ):
-            if self.returning_delegate._returning:
+            returning = self.returning_delegate._returning
+            if returning:
                 return [
                     QueryString(
                         "{}{}",
                         querystring,
-                        self.returning_delegate._returning.querystring,
+                        returning.querystring,
                         query_type="insert",
                         table=self.table,
                     )

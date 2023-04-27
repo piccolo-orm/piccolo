@@ -1,6 +1,13 @@
+from unittest import TestCase
+
 import pytest
 
-from tests.base import DBTestCase, engine_version_lt, is_running_sqlite
+from tests.base import (
+    DBTestCase,
+    engine_version_lt,
+    is_running_sqlite,
+    postgres_only,
+)
 from tests.example_apps.music.tables import Band, Manager
 
 
@@ -76,3 +83,21 @@ class TestInsert(DBTestCase):
         )
 
         self.assertListEqual(response, [{"manager_name": "Maz"}])
+
+
+class TestOnConflict(DBTestCase):
+    # TODO - make sure it works with other engines.
+    @postgres_only
+    def test_do_update(self):
+        self.insert_row()
+
+        Band.insert(Band(name="Pythonistas", popularity=5000)).on_conflict(
+            target=[Band.name],
+            action="DO UPDATE",
+            values=[Band.popularity],
+        ).run_sync()
+
+        self.assertListEqual(
+            Band.select(Band.name, Band.popularity).run_sync(),
+            [{"name": "Pythonistas", "popularity": 5000}],
+        )
