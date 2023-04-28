@@ -683,7 +683,7 @@ class OnConflict:
                         else:
                             raise ValueError("Unsupported column type")
 
-                        query += f' "{column_name}"={{}}'
+                        query += f' "{column_name}"={{}},'
                         values.append(value_)
 
                 return QueryString(query, *values)
