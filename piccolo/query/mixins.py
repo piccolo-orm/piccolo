@@ -647,7 +647,7 @@ class OnConflict:
 
         def to_string(value) -> str:
             if isinstance(value, Column):
-                return f'"{value._meta.name}"'
+                return f'"{value._meta.db_column_name}"'
             elif isinstance(value, str):
                 return value
             else:
@@ -672,7 +672,7 @@ class OnConflict:
                 for value in self.values:
                     if isinstance(value, Column):
                         column_name = value._meta.db_column_name
-                        query += f' "{column_name}"=EXCLUDED."{column_name}"'
+                        query += f' "{column_name}"=EXCLUDED."{column_name}",'
                     elif isinstance(value, tuple):
                         column = value[0]
                         value_ = value[1]
@@ -686,7 +686,7 @@ class OnConflict:
                         query += f' "{column_name}"={{}}'
                         values.append(value_)
 
-                return QueryString(query, *values)
+                return QueryString(query.rstrip(","), *values)
 
         raise ValueError("OnConflict.action isn't a valid type")
 
