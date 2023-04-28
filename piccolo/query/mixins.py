@@ -672,7 +672,7 @@ class OnConflict:
                 for value in self.values:
                     if isinstance(value, Column):
                         column_name = value._meta.db_column_name
-                        query += f' "{column_name}"=EXCLUDED."{column_name}"'
+                        query += f' "{column_name}"=EXCLUDED."{column_name}",'
                     elif isinstance(value, tuple):
                         column = value[0]
                         value_ = value[1]
