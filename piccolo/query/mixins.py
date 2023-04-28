@@ -686,7 +686,7 @@ class OnConflict:
                         query += f' "{column_name}"={{}}'
                         values.append(value_)
 
-                return QueryString(query, *values)
+                return QueryString(query.rstrip(","), *values)
 
         raise ValueError("OnConflict.action isn't a valid type")
 
