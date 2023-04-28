@@ -1,5 +1,3 @@
-from unittest import TestCase
-
 import pytest
 
 from tests.base import (
@@ -89,6 +87,8 @@ class TestOnConflict(DBTestCase):
     # TODO - make sure it works with other engines.
     @postgres_only
     def test_do_update(self):
+        Band.alter().set_unique(Band.name).run_sync()
+
         self.insert_row()
 
         Band.insert(Band(name="Pythonistas", popularity=5000)).on_conflict(

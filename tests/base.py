@@ -234,7 +234,7 @@ class DBTestCase(TestCase):
                 """
                 CREATE TABLE band (
                     id SERIAL PRIMARY KEY,
-                    name VARCHAR(50) UNIQUE,
+                    name VARCHAR(50),
                     manager INTEGER REFERENCES manager,
                     popularity SMALLINT
                 );"""
