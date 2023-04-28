@@ -629,6 +629,10 @@ class GroupByDelegate:
 
 
 class OnConflictAction(str, Enum):
+    """
+    Specify which action to take on conflict.
+    """
+
     do_nothing = "DO NOTHING"
     do_update = "DO UPDATE"
 
@@ -738,7 +742,7 @@ class OnConflictDelegate:
         if isinstance(action, OnConflictAction):
             action_ = action
         elif isinstance(action, str):
-            action_ = OnConflictAction(action)
+            action_ = OnConflictAction(action.upper())
         else:
             raise ValueError("Unrecognised `on conflict` action.")
 
