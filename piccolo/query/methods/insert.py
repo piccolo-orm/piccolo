@@ -56,7 +56,7 @@ class Insert(
     ) -> Self:
         if (
             self.engine_type == "sqlite"
-            and self.table._meta.db.get_version_sync() < 3.34
+            and self.table._meta.db.get_version_sync() < 3.24
         ):
             raise NotImplementedError(
                 "SQLite versions lower than 3.24 don't support ON CONFLICT"
