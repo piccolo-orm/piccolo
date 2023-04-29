@@ -356,13 +356,8 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
     def distinct(
         self: Self, *, on: t.Optional[t.Sequence[Column]] = None
     ) -> Self:
-        if on is not None and self.engine_type not in (
-            "postgres",
-            "cockroach",
-        ):
-            raise ValueError(
-                "Only Postgres and Cockroach supports DISTINCT ON"
-            )
+        if on is not None and self.engine_type == "sqlite":
+            raise NotImplementedError("SQLite doesn't support DISTINCT ON")
 
         self.distinct_delegate.distinct(enabled=True, on=on)
         return self
@@ -377,6 +372,9 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         return self
 
     def as_of(self: Self, interval: str = "-1s") -> Self:
+        if self.engine_type != "cockroach":
+            raise NotImplementedError("Only CockroachDB supports AS OF")
+
         self.as_of_delegate.as_of(interval)
         return self
 

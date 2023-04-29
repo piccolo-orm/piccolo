@@ -54,6 +54,14 @@ class Insert(
             t.List[t.Union[Column, t.Tuple[t.Union[str, Column], t.Any]]]
         ] = None,
     ) -> Self:
+        if (
+            self.engine_type == "sqlite"
+            and self.table._meta.db.get_version_sync() < 3.34
+        ):
+            raise NotImplementedError(
+                "SQLite versions lower than 3.24 don't support ON CONFLICT"
+            )
+
         self.on_conflict_delegate.on_conflict(
             target=target, action=action, values=values
         )
