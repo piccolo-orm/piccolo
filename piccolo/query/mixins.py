@@ -723,7 +723,7 @@ class OnConflict:
 
     @property
     def querystring(self) -> QueryString:
-        query = " ".join("{}" for i in self.on_conflict_items)
+        query = "".join("{}" for i in self.on_conflict_items)
         return QueryString(
             query, *[i.querystring for i in self.on_conflict_items]
         )

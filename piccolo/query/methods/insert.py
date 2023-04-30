@@ -62,6 +62,16 @@ class Insert(
                 "SQLite versions lower than 3.24 don't support ON CONFLICT"
             )
 
+        if (
+            self.engine_type in ("postgres", "cockroach")
+            and len(self.on_conflict_delegate._on_conflict.on_conflict_items)
+            == 1
+        ):
+            raise NotImplementedError(
+                "Postgres and Cockroach only support a single ON CONFLICT "
+                "clause."
+            )
+
         self.on_conflict_delegate.on_conflict(
             targets=targets, action=action, values=values
         )

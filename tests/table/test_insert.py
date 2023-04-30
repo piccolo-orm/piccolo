@@ -6,7 +6,12 @@ import pytest
 from piccolo.columns import Integer, Varchar
 from piccolo.table import Table
 from piccolo.utils.lazy_loader import LazyLoader
-from tests.base import DBTestCase, engine_version_lt, is_running_sqlite
+from tests.base import (
+    DBTestCase,
+    engine_version_lt,
+    engines_only,
+    is_running_sqlite,
+)
 from tests.example_apps.music.tables import Band, Manager
 
 asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")
@@ -122,8 +127,14 @@ class TestOnConflict(TestCase):
         ).run_sync()
 
         self.assertListEqual(
-            Band.select(Band.name, Band.popularity).run_sync(),
-            [{"name": self.band.name, "popularity": new_popularity}],
+            Band.select().run_sync(),
+            [
+                {
+                    "id": self.band.id,
+                    "name": self.band.name,
+                    "popularity": new_popularity,  # changed
+                }
+            ],
         )
 
     def test_non_target(self):
@@ -157,11 +168,95 @@ class TestOnConflict(TestCase):
         """
         Band = self.Band
 
-        Band.insert(Band(name="Pythonistas", popularity=5000)).on_conflict(
-            action="DO NOTHING"
+        new_popularity = self.band.popularity + 1000
+
+        Band.insert(
+            Band(name="Pythonistas", popularity=new_popularity)
+        ).on_conflict(action="DO NOTHING").run_sync()
+
+        self.assertListEqual(
+            Band.select().run_sync(),
+            [
+                {
+                    "id": self.band.id,
+                    "name": self.band.name,
+                    "popularity": self.band.popularity,
+                }
+            ],
+        )
+
+    @engines_only("sqlite")
+    def test_multiple_do_update(self):
+        """
+        Make sure multiple `ON CONFLICT` clauses work.
+        """
+        Band = self.Band
+
+        new_popularity = self.band.popularity + 1000
+
+        # Conflicting with name - should update.
+        Band.insert(
+            Band(name="Pythonistas", popularity=new_popularity)
+        ).on_conflict(action="DO NOTHING", targets=[Band.id]).on_conflict(
+            action="DO UPDATE", targets=[Band.name], values=[Band.popularity]
         ).run_sync()
 
         self.assertListEqual(
-            Band.select(Band.name, Band.popularity).run_sync(),
-            [{"name": self.band.name, "popularity": self.band.popularity}],
+            Band.select().run_sync(),
+            [
+                {
+                    "id": self.band.id,
+                    "name": self.band.name,
+                    "popularity": new_popularity,  # changed
+                }
+            ],
+        )
+
+    @engines_only("sqlite")
+    def test_multiple_do_nothing(self):
+        """
+        Make sure multiple `ON CONFLICT` clauses work for SQLite.
+        """
+        Band = self.Band
+
+        new_popularity = self.band.popularity + 1000
+
+        # Conflicting with ID - should be ignored.
+        Band.insert(
+            Band(
+                id=self.band.id,
+                name="Pythonistas",
+                popularity=new_popularity,
+            )
+        ).on_conflict(action="DO NOTHING", targets=[Band.id]).on_conflict(
+            action="DO UPDATE",
+            targets=[Band.name],
+            values=[Band.popularity],
+        ).run_sync()
+
+        self.assertListEqual(
+            Band.select().run_sync(),
+            [
+                {
+                    "id": self.band.id,
+                    "name": self.band.name,
+                    "popularity": self.band.popularity,
+                }
+            ],
+        )
+
+    @engines_only("postgres", "cockroach")
+    def tset_mutiple_error(self):
+        """
+        Postgres and Cockroach don't support multiple `ON CONFLICT` clauses.
+        """
+        with self.assertRaises(NotImplementedError) as manager:
+            Band = self.Band
+
+            Band.insert(Band()).on_conflict(action="DO NOTHING").on_conflict(
+                action="DO UPDATE",
+            ).run_sync()
+
+        assert manager.exception.__str__() == (
+            "Postgres and Cockroach only support a single ON CONFLICT clause."
         )
