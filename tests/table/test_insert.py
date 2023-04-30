@@ -116,7 +116,7 @@ class TestOnConflict(TestCase):
         Band.insert(
             Band(name=self.band.name, popularity=new_popularity)
         ).on_conflict(
-            target=[Band.name],
+            targets=[Band.name],
             action="DO UPDATE",
             values=[Band.popularity],
         ).run_sync()
@@ -139,7 +139,7 @@ class TestOnConflict(TestCase):
             Band.insert(
                 Band(name=self.band.name, popularity=new_popularity)
             ).on_conflict(
-                target=[Band.id],  # Target the primary key instead.
+                targets=[Band.id],  # Target the primary key instead.
                 action="DO UPDATE",
                 values=[Band.popularity],
             ).run_sync()

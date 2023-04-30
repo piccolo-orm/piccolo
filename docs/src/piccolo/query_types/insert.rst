@@ -112,12 +112,12 @@ If we fetch the data from the database, we'll see that it was updated:
     >>> await Band.select().where(Band.name == "Pythonistas").first()
     {'id': 1, 'name': 'Pythonistas', 'popularity': 1200}
 
-``target``
-~~~~~~~~~~
+``targets``
+~~~~~~~~~~~
 
-Using the ``target`` argument, we can specify which constraints we're concerned
-with. By specifying ``target=[Band.name]`` we're only concerned with unique
-constraints for the ``band`` column. If you omit the ``target`` argument, then
+Using the ``targets`` argument, we can specify which constraints we're concerned
+with. By specifying ``targets=[Band.name]`` we're only concerned with unique
+constraints for the ``band`` column. If you omit the ``targets`` argument, then
 it works for all constraints on the table.
 
 .. code-block:: python
@@ -127,7 +127,7 @@ it works for all constraints on the table.
     ...     Band(name="Pythonistas", popularity=1200)
     ... ).on_conflict(
     ...     action="DO NOTHING",
-    ...     target=[Band.name]
+    ...     targets=[Band.name]
     ... )
 
 You can also specify the name of a constraint using a string:
@@ -139,7 +139,7 @@ You can also specify the name of a constraint using a string:
     ...     Band(name="Pythonistas", popularity=1200)
     ... ).on_conflict(
     ...     action="DO NOTHING",
-    ...     target=['some_constraint']
+    ...     targets=['some_constraint']
     ... )
 
 ``values``

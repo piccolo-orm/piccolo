@@ -46,7 +46,7 @@ class Insert(
 
     def on_conflict(
         self: Self,
-        target: t.Optional[t.Sequence[t.Union[str, Column]]] = None,
+        targets: t.Optional[t.Sequence[t.Union[str, Column]]] = None,
         action: t.Union[
             OnConflictAction, Literal["DO NOTHING", "DO UPDATE"]
         ] = OnConflictAction.do_nothing,
@@ -63,7 +63,7 @@ class Insert(
             )
 
         self.on_conflict_delegate.on_conflict(
-            target=target, action=action, values=values
+            targets=targets, action=action, values=values
         )
         return self
 

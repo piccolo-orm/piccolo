@@ -639,15 +639,15 @@ class OnConflictAction(str, Enum):
 
 @dataclass
 class OnConflictItem:
-    target: t.Optional[t.Sequence[t.Union[str, Column]]] = None
+    targets: t.Optional[t.Sequence[t.Union[str, Column]]] = None
     action: t.Optional[OnConflictAction] = None
     values: t.Optional[
         t.List[t.Union[Column, t.Tuple[t.Union[str, Column], t.Any]]]
     ] = None
 
     @property
-    def target_string(self) -> str:
-        assert self.target
+    def targets_string(self) -> str:
+        assert self.targets
 
         def to_string(value) -> str:
             if isinstance(value, Column):
@@ -657,7 +657,7 @@ class OnConflictItem:
             else:
                 raise ValueError("OnConflict.target isn't a valid type")
 
-        columns_str = ", ".join([to_string(i) for i in self.target])
+        columns_str = ", ".join([to_string(i) for i in self.targets])
         return f"({columns_str})"
 
     @property
@@ -699,8 +699,8 @@ class OnConflictItem:
         query = " ON CONFLICT"
         values = []
 
-        if self.target:
-            query += f" {self.target_string}"
+        if self.targets:
+            query += f" {self.targets_string}"
 
         if self.action:
             query += " {}"
@@ -750,7 +750,7 @@ class OnConflictDelegate:
 
     def on_conflict(
         self,
-        target: t.Optional[t.Sequence[t.Union[str, Column]]] = None,
+        targets: t.Optional[t.Sequence[t.Union[str, Column]]] = None,
         action: t.Union[
             OnConflictAction, Literal["DO NOTHING", "DO UPDATE"]
         ] = OnConflictAction.do_nothing,
@@ -767,5 +767,5 @@ class OnConflictDelegate:
             raise ValueError("Unrecognised `on conflict` action.")
 
         self._on_conflict.on_conflict_items.append(
-            OnConflictItem(action=action_, target=target, values=values)
+            OnConflictItem(action=action_, targets=targets, values=values)
         )
