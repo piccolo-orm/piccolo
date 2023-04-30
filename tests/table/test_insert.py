@@ -1,11 +1,15 @@
+import sqlite3
 from unittest import TestCase
 
 import pytest
 
 from piccolo.columns import Integer, Varchar
 from piccolo.table import Table
+from piccolo.utils.lazy_loader import LazyLoader
 from tests.base import DBTestCase, engine_version_lt, is_running_sqlite
 from tests.example_apps.music.tables import Band, Manager
+
+asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")
 
 
 class TestInsert(DBTestCase):
@@ -102,6 +106,9 @@ class TestOnConflict(TestCase):
         Band.alter().drop_table().run_sync()
 
     def test_do_update(self):
+        """
+        Make sure that `DO UPDATE` works.
+        """
         Band = self.Band
 
         new_popularity = self.band.popularity + 1000
@@ -118,6 +125,31 @@ class TestOnConflict(TestCase):
             Band.select(Band.name, Band.popularity).run_sync(),
             [{"name": self.band.name, "popularity": new_popularity}],
         )
+
+    def test_non_target(self):
+        """
+        Make sure that if we specify a target constraint, but violate a
+        different constraint, then we still get the error.
+        """
+        Band = self.Band
+
+        new_popularity = self.band.popularity + 1000
+
+        with self.assertRaises(Exception) as manager:
+            Band.insert(
+                Band(name=self.band.name, popularity=new_popularity)
+            ).on_conflict(
+                target=[Band.id],  # Target the primary key instead.
+                action="DO UPDATE",
+                values=[Band.popularity],
+            ).run_sync()
+
+        if self.Band._meta.db.engine_type in ("postgres", "cockroach"):
+            self.assertIsInstance(
+                manager.exception, asyncpg.exceptions.UniqueViolationError
+            )
+        elif self.Band._meta.db.engine_type == "sqlite":
+            self.assertIsInstance(manager.exception, sqlite3.IntegrityError)
 
     def test_do_nothing(self):
         Band = self.Band
