@@ -4,6 +4,7 @@ from unittest import TestCase
 import pytest
 
 from piccolo.columns import Integer, Varchar
+from piccolo.query.methods.insert import OnConflictAction
 from piccolo.table import Table
 from piccolo.utils.lazy_loader import LazyLoader
 from tests.base import (
@@ -291,6 +292,32 @@ class TestOnConflict(TestCase):
                     "id": self.band.id,
                     "name": new_name,
                     "popularity": new_popularity,
+                }
+            ],
+        )
+
+    def test_enum(self):
+        """
+        A string literal can be passed in, or an Enum, to determine the action.
+        Make sure that the enum works.
+        """
+        Band = self.Band
+
+        Band.insert(
+            Band(
+                id=self.band.id,
+                name=self.band.name,
+                popularity=self.band.popularity,
+            )
+        ).on_conflict(action=OnConflictAction.do_nothing).run_sync()
+
+        self.assertListEqual(
+            Band.select().run_sync(),
+            [
+                {
+                    "id": self.band.id,
+                    "name": self.band.name,
+                    "popularity": self.band.popularity,
                 }
             ],
         )
