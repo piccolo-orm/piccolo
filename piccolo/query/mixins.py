@@ -638,7 +638,7 @@ class OnConflictAction(str, Enum):
 
 
 @dataclass
-class OnConflict:
+class OnConflictItem:
     target: t.Optional[t.Sequence[t.Union[str, Column]]] = None
     action: t.Optional[OnConflictAction] = None
     values: t.Optional[
@@ -713,6 +713,26 @@ class OnConflict:
 
 
 @dataclass
+class OnConflict:
+    """
+    Multiple `ON CONFLICT` statements are allowed - which is why we have this
+    parent class.
+    """
+
+    on_conflict_items: t.List[OnConflictItem] = field(default_factory=list)
+
+    @property
+    def querystring(self) -> QueryString:
+        query = " ".join("{}" for i in self.on_conflict_items)
+        return QueryString(
+            query, *[i.querystring for i in self.on_conflict_items]
+        )
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
+
+
+@dataclass
 class OnConflictDelegate:
     """
     Used with insert queries to specify what to do when a query fails due to
@@ -726,7 +746,7 @@ class OnConflictDelegate:
 
     """
 
-    _on_conflict: t.Optional[OnConflict] = None
+    _on_conflict: OnConflict = field(default_factory=OnConflict)
 
     def on_conflict(
         self,
@@ -746,6 +766,6 @@ class OnConflictDelegate:
         else:
             raise ValueError("Unrecognised `on conflict` action.")
 
-        self._on_conflict = OnConflict(
-            action=action_, target=target, values=values
+        self._on_conflict.on_conflict_items.append(
+            OnConflictItem(action=action_, target=target, values=values)
         )

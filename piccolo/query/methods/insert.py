@@ -102,7 +102,7 @@ class Insert(
         engine_type = self.engine_type
 
         on_conflict = self.on_conflict_delegate._on_conflict
-        if on_conflict:
+        if on_conflict.on_conflict_items:
             querystring = QueryString(
                 "{}{}",
                 querystring,
