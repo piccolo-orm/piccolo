@@ -174,6 +174,24 @@ Instead, we can specify a custom value using a tuple:
     ...     values=[(Band.popularity, 1111)]
     ... )
 
+Multiple ``on_conflict`` clauses
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+SQLite allows you to specify multiple ``ON CONFLICT`` clauses, but Postgres and
+Cockroach don't.
+
+.. code-block:: python
+
+    >>> await Band.insert(
+    ...     Band(name="Pythonistas", popularity=1200)
+    ... ).on_conflict(
+    ...     action="DO UPDATE",
+    ...     ...
+    ... ).on_conflict(
+    ...     action="DO NOTHING",
+    ...     ...
+    )
+
 Source
 ~~~~~~
 
