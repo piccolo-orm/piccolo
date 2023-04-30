@@ -1,11 +1,10 @@
+from unittest import TestCase
+
 import pytest
 
-from tests.base import (
-    DBTestCase,
-    engine_version_lt,
-    is_running_sqlite,
-    postgres_only,
-)
+from piccolo.columns import Integer, Varchar
+from piccolo.table import Table
+from tests.base import DBTestCase, engine_version_lt, is_running_sqlite
 from tests.example_apps.music.tables import Band, Manager
 
 
@@ -83,13 +82,27 @@ class TestInsert(DBTestCase):
         self.assertListEqual(response, [{"manager_name": "Maz"}])
 
 
-class TestOnConflict(DBTestCase):
-    # TODO - make sure it works with other engines.
-    @postgres_only
-    def test_do_update(self):
-        Band.alter().set_unique(Band.name).run_sync()
+@pytest.mark.skipif(
+    is_running_sqlite() and engine_version_lt(3.24),
+    reason="SQLite version not supported",
+)
+class TestOnConflict(TestCase):
+    class Band(Table):
+        name = Varchar(unique=True)
+        popularity = Integer()
 
-        self.insert_row()
+    def setUp(self) -> None:
+        self.Band.create_table().run_sync()
+
+    def tearDown(self) -> None:
+        self.Band.alter().drop_table().run_sync()
+
+    def test_do_update(self):
+        Band = self.Band
+
+        Band(
+            {Band.name: "Pythonistas", Band.popularity: 1000}
+        ).save().run_sync()
 
         Band.insert(Band(name="Pythonistas", popularity=5000)).on_conflict(
             target=[Band.name],
