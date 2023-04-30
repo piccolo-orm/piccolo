@@ -138,7 +138,28 @@ class TestOnConflict(TestCase):
             ],
         )
 
-    def test_non_target(self):
+    def test_do_update_no_values(self):
+        """
+        Make sure that `DO UPDATE` with no `values` raises an exception.
+        """
+        Band = self.Band
+
+        new_popularity = self.band.popularity + 1000
+
+        with self.assertRaises(ValueError) as manager:
+            Band.insert(
+                Band(name=self.band.name, popularity=new_popularity)
+            ).on_conflict(
+                targets=[Band.name],
+                action="DO UPDATE",
+            ).run_sync()
+
+        self.assertEqual(
+            manager.exception.__str__(),
+            "No values specified for `on conflict`",
+        )
+
+    def test_violate_non_target(self):
         """
         Make sure that if we specify a target constraint, but violate a
         different constraint, then we still get the error.
