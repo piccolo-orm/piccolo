@@ -92,19 +92,23 @@ class TestOnConflict(TestCase):
         popularity = Integer()
 
     def setUp(self) -> None:
-        self.Band.create_table().run_sync()
+        Band = self.Band
+        Band.create_table().run_sync()
+        self.band = Band({Band.name: "Pythonistas", Band.popularity: 1000})
+        self.band.save().run_sync()
 
     def tearDown(self) -> None:
-        self.Band.alter().drop_table().run_sync()
+        Band = self.Band
+        Band.alter().drop_table().run_sync()
 
     def test_do_update(self):
         Band = self.Band
 
-        Band(
-            {Band.name: "Pythonistas", Band.popularity: 1000}
-        ).save().run_sync()
+        new_popularity = self.band.popularity + 1000
 
-        Band.insert(Band(name="Pythonistas", popularity=5000)).on_conflict(
+        Band.insert(
+            Band(name=self.band.name, popularity=new_popularity)
+        ).on_conflict(
             target=[Band.name],
             action="DO UPDATE",
             values=[Band.popularity],
@@ -112,5 +116,17 @@ class TestOnConflict(TestCase):
 
         self.assertListEqual(
             Band.select(Band.name, Band.popularity).run_sync(),
-            [{"name": "Pythonistas", "popularity": 5000}],
+            [{"name": self.band.name, "popularity": new_popularity}],
+        )
+
+    def test_do_nothing(self):
+        Band = self.Band
+
+        Band.insert(Band(name="Pythonistas", popularity=5000)).on_conflict(
+            action="DO NOTHING"
+        ).run_sync()
+
+        self.assertListEqual(
+            Band.select(Band.name, Band.popularity).run_sync(),
+            [{"name": self.band.name, "popularity": self.band.popularity}],
         )
