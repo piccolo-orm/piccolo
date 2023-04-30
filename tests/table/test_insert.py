@@ -188,7 +188,7 @@ class TestOnConflict(TestCase):
     @engines_only("sqlite")
     def test_multiple_do_update(self):
         """
-        Make sure multiple `ON CONFLICT` clauses work.
+        Make sure multiple `ON CONFLICT` clauses work for SQLite.
         """
         Band = self.Band
 
@@ -246,7 +246,7 @@ class TestOnConflict(TestCase):
         )
 
     @engines_only("postgres", "cockroach")
-    def tset_mutiple_error(self):
+    def test_mutiple_error(self):
         """
         Postgres and Cockroach don't support multiple `ON CONFLICT` clauses.
         """
