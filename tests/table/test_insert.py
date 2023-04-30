@@ -152,6 +152,9 @@ class TestOnConflict(TestCase):
             self.assertIsInstance(manager.exception, sqlite3.IntegrityError)
 
     def test_do_nothing(self):
+        """
+        Make sure that `DO NOTHING` works.
+        """
         Band = self.Band
 
         Band.insert(Band(name="Pythonistas", popularity=5000)).on_conflict(
