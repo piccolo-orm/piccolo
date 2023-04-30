@@ -174,6 +174,18 @@ Instead, we can specify a custom value using a tuple:
     ...     values=[(Band.popularity, 1111)]
     ... )
 
+If we want to update all of the values, we can use :meth:`all_columns<piccolo.table.Table.all_columns>`.
+
+.. code-block:: python
+    :emphasize-lines: 5
+
+    >>> await Band.insert(
+    ...     Band(id=1, name="Pythonistas", popularity=1200)
+    ... ).on_conflict(
+    ...     action="DO UPDATE",
+    ...     values=Band.all_columns()
+    ... )
+
 Multiple ``on_conflict`` clauses
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
