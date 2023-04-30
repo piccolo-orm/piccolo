@@ -101,7 +101,6 @@ class Insert(
 
         engine_type = self.engine_type
 
-        # TODO - check SQLite version
         on_conflict = self.on_conflict_delegate._on_conflict
         if on_conflict:
             querystring = QueryString(
