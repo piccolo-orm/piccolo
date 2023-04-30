@@ -260,3 +260,37 @@ class TestOnConflict(TestCase):
         assert manager.exception.__str__() == (
             "Postgres and Cockroach only support a single ON CONFLICT clause."
         )
+
+    def test_all_columns(self):
+        """
+        We can use ``all_columns`` instead of specifying the ``values``
+        manually.
+        """
+        Band = self.Band
+
+        new_popularity = self.band.popularity + 1000
+        new_name = "Rustaceans"
+
+        # Conflicting with ID - should be ignored.
+        Band.insert(
+            Band(
+                id=self.band.id,
+                name=new_name,
+                popularity=new_popularity,
+            )
+        ).on_conflict(
+            action="DO UPDATE",
+            targets=[Band.id],
+            values=Band.all_columns(),
+        ).run_sync()
+
+        self.assertListEqual(
+            Band.select().run_sync(),
+            [
+                {
+                    "id": self.band.id,
+                    "name": new_name,
+                    "popularity": new_popularity,
+                }
+            ],
+        )
