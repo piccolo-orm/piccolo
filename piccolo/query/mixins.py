@@ -639,26 +639,33 @@ class OnConflictAction(str, Enum):
 
 @dataclass
 class OnConflictItem:
-    targets: t.Optional[t.Sequence[t.Union[str, Column]]] = None
+    target: t.Optional[t.Union[str, Column, t.Tuple[Column, ...]]] = None
+    where: t.Optional[Combinable] = None
     action: t.Optional[OnConflictAction] = None
     values: t.Optional[
-        t.List[t.Union[Column, t.Tuple[t.Union[str, Column], t.Any]]]
+        t.Sequence[t.Union[Column, t.Tuple[Column, t.Any]]]
     ] = None
 
     @property
-    def targets_string(self) -> str:
-        assert self.targets
+    def target_string(self) -> str:
+        target = self.target
+        assert target
 
         def to_string(value) -> str:
             if isinstance(value, Column):
                 return f'"{value._meta.db_column_name}"'
-            elif isinstance(value, str):
-                return value
             else:
                 raise ValueError("OnConflict.target isn't a valid type")
 
-        columns_str = ", ".join([to_string(i) for i in self.targets])
-        return f"({columns_str})"
+        if isinstance(target, str):
+            return f'ON CONSTRAINT "{target}"'
+        elif isinstance(target, Column):
+            return f"({to_string(target)})"
+        elif isinstance(target, tuple):
+            columns_str = ", ".join([to_string(i) for i in target])
+            return f"({columns_str})"
+        else:
+            raise ValueError("OnConflict.target isn't a valid type")
 
     @property
     def action_string(self) -> QueryString:
@@ -682,8 +689,6 @@ class OnConflictItem:
                         value_ = value[1]
                         if isinstance(column, Column):
                             column_name = column._meta.db_column_name
-                        elif isinstance(column, str):
-                            column_name = column
                         else:
                             raise ValueError("Unsupported column type")
 
@@ -699,8 +704,12 @@ class OnConflictItem:
         query = " ON CONFLICT"
         values = []
 
-        if self.targets:
-            query += f" {self.targets_string}"
+        if self.target:
+            query += f" {self.target_string}"
+
+        if self.where:
+            query += " WHERE {}"
+            values.append(self.where.querystring)
 
         if self.action:
             query += " {}"
@@ -750,12 +759,13 @@ class OnConflictDelegate:
 
     def on_conflict(
         self,
-        targets: t.Optional[t.Sequence[t.Union[str, Column]]] = None,
+        target: t.Optional[t.Union[str, Column, t.Tuple[Column, ...]]] = None,
+        where: t.Optional[Combinable] = None,
         action: t.Union[
             OnConflictAction, Literal["DO NOTHING", "DO UPDATE"]
         ] = OnConflictAction.do_nothing,
         values: t.Optional[
-            t.List[t.Union[Column, t.Tuple[t.Union[str, Column], t.Any]]]
+            t.Sequence[t.Union[Column, t.Tuple[Column, t.Any]]]
         ] = None,
     ):
         action_: OnConflictAction
@@ -767,5 +777,7 @@ class OnConflictDelegate:
             raise ValueError("Unrecognised `on conflict` action.")
 
         self._on_conflict.on_conflict_items.append(
-            OnConflictItem(action=action_, targets=targets, values=values)
+            OnConflictItem(
+                target=target, where=where, action=action_, values=values
+            )
         )

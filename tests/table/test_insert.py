@@ -122,7 +122,7 @@ class TestOnConflict(TestCase):
         Band.insert(
             Band(name=self.band.name, popularity=new_popularity)
         ).on_conflict(
-            targets=[Band.name],
+            target=Band.name,
             action="DO UPDATE",
             values=[Band.popularity],
         ).run_sync()
@@ -150,7 +150,7 @@ class TestOnConflict(TestCase):
             Band.insert(
                 Band(name=self.band.name, popularity=new_popularity)
             ).on_conflict(
-                targets=[Band.name],
+                target=Band.name,
                 action="DO UPDATE",
             ).run_sync()
 
@@ -158,6 +158,59 @@ class TestOnConflict(TestCase):
             manager.exception.__str__(),
             "No values specified for `on conflict`",
         )
+
+    @engines_only("postgres", "cockroach")
+    def test_target_tuple(self):
+        """
+        Make sure that a composite unique constraint can be used as a target.
+
+        We only run it on Postgres and Cockroach because we use ALTER TABLE
+        to add a contraint, which SQLite doesn't support.
+        """
+        Band = self.Band
+
+        # Add a composite unique constraint:
+        Band.raw(
+            "ALTER TABLE band ADD CONSTRAINT id_name_unique UNIQUE (id, name)"
+        ).run_sync()
+
+        Band.insert(
+            Band(
+                id=self.band.id,
+                name=self.band.name,
+                popularity=self.band.popularity,
+            )
+        ).on_conflict(
+            target=(Band.id, Band.name),
+            action="DO NOTHING",
+        ).run_sync()
+
+    @engines_only("postgres", "cockroach")
+    def test_target_string(self):
+        """
+        Make sure we can explicitly specify the name of target constraint using
+        a string.
+
+        We just test this on Postgres for now, as we have to get the constraint
+        name from the database.
+        """
+        Band = self.Band
+
+        constraint_name = Band.raw(
+            """
+            SELECT constraint_name
+            FROM information_schema.constraint_column_usage
+            WHERE column_name = 'name'
+                AND table_name = 'band';
+            """
+        ).run_sync()[0]["constraint_name"]
+
+        query = Band.insert(Band(name=self.band.name)).on_conflict(
+            target=constraint_name,
+            action="DO NOTHING",
+        )
+        self.assertIn(f'ON CONSTRAINT "{constraint_name}"', query.__str__())
+        query.run_sync()
 
     def test_violate_non_target(self):
         """
@@ -172,7 +225,7 @@ class TestOnConflict(TestCase):
             Band.insert(
                 Band(name=self.band.name, popularity=new_popularity)
             ).on_conflict(
-                targets=[Band.id],  # Target the primary key instead.
+                target=Band.id,  # Target the primary key instead.
                 action="DO UPDATE",
                 values=[Band.popularity],
             ).run_sync()
@@ -183,6 +236,30 @@ class TestOnConflict(TestCase):
             )
         elif self.Band._meta.db.engine_type == "sqlite":
             self.assertIsInstance(manager.exception, sqlite3.IntegrityError)
+
+    def test_where(self):
+        """
+        Make sure we can pass in a `where` argument.
+        """
+        Band = self.Band
+
+        new_popularity = self.band.popularity + 1000
+
+        query = Band.insert(
+            Band(name=self.band.name, popularity=new_popularity)
+        ).on_conflict(
+            target=Band.name,
+            where=Band.popularity < self.band.popularity,
+            action="DO UPDATE",
+            values=[Band.popularity],
+        )
+
+        self.assertIn(
+            f'WHERE "band"."popularity" < {self.band.popularity}',
+            query.__str__(),
+        )
+
+        query.run_sync()
 
     def test_do_nothing(self):
         """
@@ -219,8 +296,8 @@ class TestOnConflict(TestCase):
         # Conflicting with name - should update.
         Band.insert(
             Band(name="Pythonistas", popularity=new_popularity)
-        ).on_conflict(action="DO NOTHING", targets=[Band.id]).on_conflict(
-            action="DO UPDATE", targets=[Band.name], values=[Band.popularity]
+        ).on_conflict(action="DO NOTHING", target=Band.id).on_conflict(
+            action="DO UPDATE", target=Band.name, values=[Band.popularity]
         ).run_sync()
 
         self.assertListEqual(
@@ -250,9 +327,9 @@ class TestOnConflict(TestCase):
                 name="Pythonistas",
                 popularity=new_popularity,
             )
-        ).on_conflict(action="DO NOTHING", targets=[Band.id]).on_conflict(
+        ).on_conflict(action="DO NOTHING", target=Band.id).on_conflict(
             action="DO UPDATE",
-            targets=[Band.name],
+            target=Band.name,
             values=[Band.popularity],
         ).run_sync()
 
@@ -294,7 +371,7 @@ class TestOnConflict(TestCase):
         new_name = "Rustaceans"
 
         # Conflicting with ID - should be ignored.
-        Band.insert(
+        q = Band.insert(
             Band(
                 id=self.band.id,
                 name=new_name,
@@ -302,9 +379,10 @@ class TestOnConflict(TestCase):
             )
         ).on_conflict(
             action="DO UPDATE",
-            targets=[Band.id],
+            target=Band.id,
             values=Band.all_columns(),
-        ).run_sync()
+        )
+        q.run_sync()
 
         self.assertListEqual(
             Band.select().run_sync(),
@@ -319,7 +397,7 @@ class TestOnConflict(TestCase):
 
     def test_enum(self):
         """
-        A string literal can be passed in, or an Enum, to determine the action.
+        A string literal can be passed in, or an enum, to determine the action.
         Make sure that the enum works.
         """
         Band = self.Band

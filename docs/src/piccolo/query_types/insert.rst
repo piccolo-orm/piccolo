@@ -37,6 +37,10 @@ If we later decide to insert additional rows, we can use the ``add`` method:
 ``on_conflict``
 ---------------
 
+.. hint:: This is an advanced topic, and first time learners of Piccolo
+    can skip if they want.
+
+
 When inserting a row, if a constraint fails (for example, a unique constraint),
 then the insertion fails.
 
@@ -112,12 +116,12 @@ If we fetch the data from the database, we'll see that it was updated:
     >>> await Band.select().where(Band.name == "Pythonistas").first()
     {'id': 1, 'name': 'Pythonistas', 'popularity': 1200}
 
-``targets``
-~~~~~~~~~~~
+``target``
+~~~~~~~~~~
 
-Using the ``targets`` argument, we can specify which constraints we're concerned
-with. By specifying ``targets=[Band.name]`` we're only concerned with unique
-constraints for the ``band`` column. If you omit the ``targets`` argument, then
+Using the ``target`` argument, we can specify which constraint we're concerned
+with. By specifying ``target=Band.name`` we're only concerned with unique
+constraint for the ``band`` column. If you omit the ``target`` argument, then
 it works for all constraints on the table.
 
 .. code-block:: python
@@ -127,7 +131,20 @@ it works for all constraints on the table.
     ...     Band(name="Pythonistas", popularity=1200)
     ... ).on_conflict(
     ...     action="DO NOTHING",
-    ...     targets=[Band.name]
+    ...     target=Band.name
+    ... )
+
+If you want to target a composite unique constraint, you can do so by passing
+in a tuple of columns:
+
+.. code-block:: python
+    :emphasize-lines: 5
+
+    >>> await Band.insert(
+    ...     Band(name="Pythonistas", popularity=1200)
+    ... ).on_conflict(
+    ...     action="DO NOTHING",
+    ...     target=(Band.name, Band.popularity)
     ... )
 
 You can also specify the name of a constraint using a string:
@@ -139,7 +156,7 @@ You can also specify the name of a constraint using a string:
     ...     Band(name="Pythonistas", popularity=1200)
     ... ).on_conflict(
     ...     action="DO NOTHING",
-    ...     targets=['some_constraint']
+    ...     target='some_constraint'
     ... )
 
 ``values``

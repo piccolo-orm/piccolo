@@ -4,7 +4,7 @@ import typing as t
 
 from typing_extensions import Literal
 
-from piccolo.custom_types import TableInstance
+from piccolo.custom_types import Combinable, TableInstance
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
     AddDelegate,
@@ -46,13 +46,14 @@ class Insert(
 
     def on_conflict(
         self: Self,
-        targets: t.Optional[t.Sequence[t.Union[str, Column]]] = None,
+        target: t.Optional[t.Union[str, Column, t.Tuple[Column, ...]]] = None,
         action: t.Union[
             OnConflictAction, Literal["DO NOTHING", "DO UPDATE"]
         ] = OnConflictAction.do_nothing,
         values: t.Optional[
-            t.List[t.Union[Column, t.Tuple[t.Union[str, Column], t.Any]]]
+            t.Sequence[t.Union[Column, t.Tuple[Column, t.Any]]]
         ] = None,
+        where: t.Optional[Combinable] = None,
     ) -> Self:
         if (
             self.engine_type == "sqlite"
@@ -73,7 +74,7 @@ class Insert(
             )
 
         self.on_conflict_delegate.on_conflict(
-            targets=targets, action=action, values=values
+            target=target, where=where, action=action, values=values
         )
         return self
 
