@@ -138,6 +138,41 @@ class TestOnConflict(TestCase):
             ],
         )
 
+    def test_do_update_tuple_values(self):
+        """
+        Make sure we can use tuples in ``values``.
+        """
+        Band = self.Band
+
+        new_popularity = self.band.popularity + 1000
+        new_name = "Rustaceans"
+
+        Band.insert(
+            Band(
+                id=self.band.id,
+                name=new_name,
+                popularity=new_popularity,
+            )
+        ).on_conflict(
+            action="DO UPDATE",
+            target=Band.id,
+            values=[
+                (Band.name, new_name),
+                (Band.popularity, new_popularity + 2000),
+            ],
+        ).run_sync()
+
+        self.assertListEqual(
+            Band.select().run_sync(),
+            [
+                {
+                    "id": self.band.id,
+                    "name": new_name,
+                    "popularity": new_popularity + 2000,
+                }
+            ],
+        )
+
     def test_do_update_no_values(self):
         """
         Make sure that `DO UPDATE` with no `values` raises an exception.
