@@ -640,11 +640,11 @@ class OnConflictAction(str, Enum):
 @dataclass
 class OnConflictItem:
     target: t.Optional[t.Union[str, Column, t.Tuple[Column, ...]]] = None
-    where: t.Optional[Combinable] = None
     action: t.Optional[OnConflictAction] = None
     values: t.Optional[
         t.Sequence[t.Union[Column, t.Tuple[Column, t.Any]]]
     ] = None
+    where: t.Optional[Combinable] = None
 
     @property
     def target_string(self) -> str:
@@ -707,13 +707,13 @@ class OnConflictItem:
         if self.target:
             query += f" {self.target_string}"
 
-        if self.where:
-            query += " WHERE {}"
-            values.append(self.where.querystring)
-
         if self.action:
             query += " {}"
             values.append(self.action_string)
+
+        if self.where:
+            query += " WHERE {}"
+            values.append(self.where.querystring)
 
         return QueryString(query, *values)
 
@@ -760,13 +760,13 @@ class OnConflictDelegate:
     def on_conflict(
         self,
         target: t.Optional[t.Union[str, Column, t.Tuple[Column, ...]]] = None,
-        where: t.Optional[Combinable] = None,
         action: t.Union[
             OnConflictAction, Literal["DO NOTHING", "DO UPDATE"]
         ] = OnConflictAction.do_nothing,
         values: t.Optional[
             t.Sequence[t.Union[Column, t.Tuple[Column, t.Any]]]
         ] = None,
+        where: t.Optional[Combinable] = None,
     ):
         action_: OnConflictAction
         if isinstance(action, OnConflictAction):
@@ -776,8 +776,13 @@ class OnConflictDelegate:
         else:
             raise ValueError("Unrecognised `on conflict` action.")
 
+        if where and action_ == OnConflictAction.do_nothing:
+            raise ValueError(
+                "The `where` option can only be used with DO NOTHING."
+            )
+
         self._on_conflict.on_conflict_items.append(
             OnConflictItem(
-                target=target, where=where, action=action_, values=values
+                target=target, action=action_, values=values, where=where
             )
         )

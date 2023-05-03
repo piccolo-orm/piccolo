@@ -74,7 +74,10 @@ class Insert(
             )
 
         self.on_conflict_delegate.on_conflict(
-            target=target, where=where, action=action, values=values
+            target=target,
+            action=action,
+            values=values,
+            where=where,
         )
         return self
 

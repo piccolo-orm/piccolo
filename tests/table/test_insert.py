@@ -284,9 +284,9 @@ class TestOnConflict(TestCase):
             Band(name=self.band.name, popularity=new_popularity)
         ).on_conflict(
             target=Band.name,
-            where=Band.popularity < self.band.popularity,
             action="DO UPDATE",
             values=[Band.popularity],
+            where=Band.popularity < self.band.popularity,
         )
 
         self.assertIn(
@@ -295,6 +295,23 @@ class TestOnConflict(TestCase):
         )
 
         query.run_sync()
+
+    def test_do_nothing_where(self):
+        """
+        Make sure an error is raised if `where` is used with `DO NOTHING`.
+        """
+        Band = self.Band
+
+        with self.assertRaises(ValueError) as manager:
+            Band.insert(Band()).on_conflict(
+                action="DO NOTHING",
+                where=Band.popularity < self.band.popularity,
+            )
+
+        self.assertEqual(
+            manager.exception.__str__(),
+            "The `where` option can only be used with DO NOTHING.",
+        )
 
     def test_do_nothing(self):
         """
