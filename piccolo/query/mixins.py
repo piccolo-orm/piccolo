@@ -7,6 +7,8 @@ import typing as t
 from dataclasses import dataclass, field
 from enum import Enum, auto
 
+from typing_extensions import Literal
+
 from piccolo.columns import And, Column, Or, Where
 from piccolo.columns.column_types import ForeignKey
 from piccolo.custom_types import Combinable
@@ -581,9 +583,10 @@ class OffsetDelegate:
 
     Typically used in conjunction with order_by and limit.
 
-    Example usage:
+    Example usage::
 
-    .offset(100)
+        .offset(100)
+
     """
 
     _offset: t.Optional[Offset] = None
@@ -613,12 +616,173 @@ class GroupBy:
 @dataclass
 class GroupByDelegate:
     """
-    Used to group results - needed when doing aggregation.
+    Used to group results - needed when doing aggregation::
 
-    .group_by(Band.name)
+        .group_by(Band.name)
+
     """
 
     _group_by: t.Optional[GroupBy] = None
 
     def group_by(self, *columns: Column):
         self._group_by = GroupBy(columns=columns)
+
+
+class OnConflictAction(str, Enum):
+    """
+    Specify which action to take on conflict.
+    """
+
+    do_nothing = "DO NOTHING"
+    do_update = "DO UPDATE"
+
+
+@dataclass
+class OnConflictItem:
+    target: t.Optional[t.Union[str, Column, t.Tuple[Column, ...]]] = None
+    action: t.Optional[OnConflictAction] = None
+    values: t.Optional[
+        t.Sequence[t.Union[Column, t.Tuple[Column, t.Any]]]
+    ] = None
+    where: t.Optional[Combinable] = None
+
+    @property
+    def target_string(self) -> str:
+        target = self.target
+        assert target
+
+        def to_string(value) -> str:
+            if isinstance(value, Column):
+                return f'"{value._meta.db_column_name}"'
+            else:
+                raise ValueError("OnConflict.target isn't a valid type")
+
+        if isinstance(target, str):
+            return f'ON CONSTRAINT "{target}"'
+        elif isinstance(target, Column):
+            return f"({to_string(target)})"
+        elif isinstance(target, tuple):
+            columns_str = ", ".join([to_string(i) for i in target])
+            return f"({columns_str})"
+        else:
+            raise ValueError("OnConflict.target isn't a valid type")
+
+    @property
+    def action_string(self) -> QueryString:
+        action = self.action
+        if isinstance(action, OnConflictAction):
+            if action == OnConflictAction.do_nothing:
+                return QueryString(OnConflictAction.do_nothing.value)
+            elif action == OnConflictAction.do_update:
+                values = []
+                query = f"{OnConflictAction.do_update.value} SET"
+
+                if not self.values:
+                    raise ValueError("No values specified for `on conflict`")
+
+                for value in self.values:
+                    if isinstance(value, Column):
+                        column_name = value._meta.db_column_name
+                        query += f' "{column_name}"=EXCLUDED."{column_name}",'
+                    elif isinstance(value, tuple):
+                        column = value[0]
+                        value_ = value[1]
+                        if isinstance(column, Column):
+                            column_name = column._meta.db_column_name
+                        else:
+                            raise ValueError("Unsupported column type")
+
+                        query += f' "{column_name}"={{}},'
+                        values.append(value_)
+
+                return QueryString(query.rstrip(","), *values)
+
+        raise ValueError("OnConflict.action isn't a valid type")
+
+    @property
+    def querystring(self) -> QueryString:
+        query = " ON CONFLICT"
+        values = []
+
+        if self.target:
+            query += f" {self.target_string}"
+
+        if self.action:
+            query += " {}"
+            values.append(self.action_string)
+
+        if self.where:
+            query += " WHERE {}"
+            values.append(self.where.querystring)
+
+        return QueryString(query, *values)
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
+
+
+@dataclass
+class OnConflict:
+    """
+    Multiple `ON CONFLICT` statements are allowed - which is why we have this
+    parent class.
+    """
+
+    on_conflict_items: t.List[OnConflictItem] = field(default_factory=list)
+
+    @property
+    def querystring(self) -> QueryString:
+        query = "".join("{}" for i in self.on_conflict_items)
+        return QueryString(
+            query, *[i.querystring for i in self.on_conflict_items]
+        )
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
+
+
+@dataclass
+class OnConflictDelegate:
+    """
+    Used with insert queries to specify what to do when a query fails due to
+    a constraint::
+
+        .on_conflict(action='DO NOTHING')
+
+        .on_conflict(action='DO UPDATE', values=[Band.popularity])
+
+        .on_conflict(action='DO UPDATE', values=[(Band.popularity, 1)])
+
+    """
+
+    _on_conflict: OnConflict = field(default_factory=OnConflict)
+
+    def on_conflict(
+        self,
+        target: t.Optional[t.Union[str, Column, t.Tuple[Column, ...]]] = None,
+        action: t.Union[
+            OnConflictAction, Literal["DO NOTHING", "DO UPDATE"]
+        ] = OnConflictAction.do_nothing,
+        values: t.Optional[
+            t.Sequence[t.Union[Column, t.Tuple[Column, t.Any]]]
+        ] = None,
+        where: t.Optional[Combinable] = None,
+    ):
+        action_: OnConflictAction
+        if isinstance(action, OnConflictAction):
+            action_ = action
+        elif isinstance(action, str):
+            action_ = OnConflictAction(action.upper())
+        else:
+            raise ValueError("Unrecognised `on conflict` action.")
+
+        if where and action_ == OnConflictAction.do_nothing:
+            raise ValueError(
+                "The `where` option can only be used with DO NOTHING."
+            )
+
+        self._on_conflict.on_conflict_items.append(
+            OnConflictItem(
+                target=target, action=action_, values=values, where=where
+            )
+        )

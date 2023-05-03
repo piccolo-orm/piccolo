@@ -1364,12 +1364,12 @@ class TestDistinctOn(TestCase):
         SQLite doesn't support ``DISTINCT ON``, so a ``ValueError`` should be
         raised.
         """
-        with self.assertRaises(ValueError) as manager:
+        with self.assertRaises(NotImplementedError) as manager:
             Album.select().distinct(on=[Album.band])
 
         self.assertEqual(
             manager.exception.__str__(),
-            "Only Postgres and Cockroach supports DISTINCT ON",
+            "SQLite doesn't support DISTINCT ON",
         )
 
     @engines_only("postgres", "cockroach")
