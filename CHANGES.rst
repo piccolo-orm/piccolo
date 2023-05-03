@@ -27,8 +27,8 @@ Here we insert some albums, and if they already exist then we update the price:
       Album(title='The Bends', price=9.49),
   ).on_conflict(
       action='DO UPDATE',
-      target=DiscountCode.title,
-      values=[DiscountCode.price]
+      target=Album.title,
+      values=[Album.price]
   )
 
 Thanks to @sinisaos for helping with this.
