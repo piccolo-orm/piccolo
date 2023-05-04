@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import typing as t
 
-from piccolo.columns.operators.comparison import ComparisonOperator, Equal
+from piccolo.columns.operators.comparison import (
+    ComparisonOperator,
+    Equal,
+    IsNull,
+)
 from piccolo.custom_types import Combinable, Iterable
 from piccolo.querystring import QueryString
 from piccolo.utils.sql_values import convert_to_sql_value
@@ -40,6 +44,14 @@ class Combination(CombinableMixin):
             self.second.querystring,
         )
 
+    @property
+    def querystring_for_update(self) -> QueryString:
+        return QueryString(
+            "({} " + self.operator + " {})",
+            self.first.querystring_for_update,
+            self.second.querystring_for_update,
+        )
+
     def __str__(self):
         return self.querystring.__str__()
 
@@ -52,18 +64,22 @@ class And(Combination):
         This is used by `get_or_create` to know which values to assign if
         the row doesn't exist in the database.
 
-        For example, if we have:
+        For example, if we have::
 
-        (Band.name == 'Pythonistas') & (Band.popularity == 1000)
+            (Band.name == 'Pythonistas') & (Band.popularity == 1000)
 
-        We will return {Band.name: 'Pythonistas', Band.popularity: 1000}.
+        We will return::
+
+            {Band.name: 'Pythonistas', Band.popularity: 1000}.
 
         If the operator is anything besides equals, we don't return it, for
-        example:
+        example::
 
-        (Band.name == 'Pythonistas') & (Band.popularity > 1000)
+            (Band.name == 'Pythonistas') & (Band.popularity > 1000)
 
-        Returns {Band.name: 'Pythonistas'}
+        Returns::
+
+            {Band.name: 'Pythonistas'}
 
         """
         output = {}
@@ -71,6 +87,8 @@ class And(Combination):
             if isinstance(combinable, Where):
                 if combinable.operator == Equal:
                     output[combinable.column] = combinable.value
+                elif combinable.operator == IsNull:
+                    output[combinable.column] = None
             elif isinstance(combinable, And):
                 output.update(combinable.get_column_values())
 
@@ -95,17 +113,26 @@ class WhereRaw(CombinableMixin):
         """
         Execute raw SQL queries in your where clause. Use with caution!
 
-        await Band.where(
-            WhereRaw("name = 'Pythonistas'")
-        )
+        .. code-block:: python
+
+            await Band.where(
+                WhereRaw("name = 'Pythonistas'")
+            )
 
         Or passing in parameters:
 
-        await Band.where(
-            WhereRaw("name = {}", 'Pythonistas')
-        )
+        .. code-block:: python
+
+            await Band.where(
+                WhereRaw("name = {}", 'Pythonistas')
+            )
+
         """
         self.querystring = QueryString(sql, *args)
+
+    @property
+    def querystring_for_update(self) -> QueryString:
+        return self.querystring
 
     def __str__(self):
         return self.querystring.__str__()
@@ -189,6 +216,38 @@ class Where(CombinableMixin):
         )
 
         return QueryString(template, *args)
+
+    @property
+    def querystring_for_update(self) -> QueryString:
+        args: t.List[t.Any] = []
+        if self.value != UNDEFINED:
+            args.append(self.value)
+
+        if self.values != UNDEFINED:
+            args.append(self.values_querystring)
+
+        column = self.column
+
+        if column._meta.call_chain:
+            # Use a sub select to find the correct ID.
+            root_column = column._meta.call_chain[0]
+            sub_query = root_column._meta.table.select(root_column).where(self)
+
+            column_name = column._meta.call_chain[0]._meta.name
+            return QueryString(
+                f"{column_name} IN ({{}})",
+                sub_query.querystrings[0],
+            )
+        else:
+            template = self.operator.template.format(
+                name=self.column.get_where_string(
+                    engine_type=self.column._meta.engine_type
+                ),
+                value="{}",
+                values="{}",
+            )
+
+            return QueryString(template, *args)
 
     def __str__(self):
         return self.querystring.__str__()

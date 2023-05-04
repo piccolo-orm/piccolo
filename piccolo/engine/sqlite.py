@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextvars
 import datetime
+import enum
 import os
 import sqlite3
 import typing as t
@@ -238,6 +239,17 @@ class AsyncBatch(Batch):
 ###############################################################################
 
 
+class TransactionType(enum.Enum):
+    """
+    See the `SQLite <https://www.sqlite.org/lang_transaction.html>`_ docs for
+    more info.
+    """
+
+    deferred = "DEFERRED"
+    immediate = "IMMEDIATE"
+    exclusive = "EXCLUSIVE"
+
+
 class Atomic:
     """
     Usage:
@@ -250,85 +262,177 @@ class Atomic:
     await transaction.run()
     """
 
-    __slots__ = ("engine", "queries")
+    __slots__ = ("engine", "queries", "transaction_type")
 
-    def __init__(self, engine: SQLiteEngine):
+    def __init__(
+        self,
+        engine: SQLiteEngine,
+        transaction_type: TransactionType = TransactionType.deferred,
+    ):
         self.engine = engine
+        self.transaction_type = transaction_type
         self.queries: t.List[Query] = []
 
     def add(self, *query: Query):
         self.queries += list(query)
 
     async def run(self):
-        connection = await self.engine.get_connection()
-        await connection.execute("BEGIN")
+        from piccolo.query.methods.objects import Create, GetOrCreate
 
         try:
-            for query in self.queries:
-                if isinstance(query, Query):
-                    for querystring in query.querystrings:
-                        await connection.execute(
-                            *querystring.compile_string(
-                                engine_type=self.engine.engine_type
-                            )
-                        )
-                elif isinstance(query, DDL):
-                    for ddl in query.ddl:
-                        await connection.execute(ddl)
-
+            async with self.engine.transaction(
+                transaction_type=self.transaction_type
+            ):
+                for query in self.queries:
+                    if isinstance(query, (Query, DDL, Create, GetOrCreate)):
+                        await query.run()
+                    else:
+                        raise ValueError("Unrecognised query")
+            self.queries = []
         except Exception as exception:
-            await connection.execute("ROLLBACK")
-            await connection.close()
             self.queries = []
             raise exception from exception
-        else:
-            await connection.execute("COMMIT")
-            await connection.close()
-            self.queries = []
 
     def run_sync(self):
         return run_sync(self.run())
+
+    def __await__(self):
+        return self.run().__await__()
 
 
 ###############################################################################
 
 
-class Transaction:
+class Savepoint:
+    def __init__(self, name: str, transaction: SQLiteTransaction):
+        self.name = name
+        self.transaction = transaction
+
+    async def rollback_to(self):
+        await self.transaction.connection.execute(
+            f"ROLLBACK TO SAVEPOINT {self.name}"
+        )
+
+    async def release(self):
+        await self.transaction.connection.execute(
+            f"RELEASE SAVEPOINT {self.name}"
+        )
+
+
+class SQLiteTransaction:
     """
     Used for wrapping queries in a transaction, using a context manager.
     Currently it's async only.
 
-    Usage:
+    Usage::
 
-    async with engine.transaction():
-        # Run some queries:
-        await Band.select().run()
+        async with engine.transaction():
+            # Run some queries:
+            await Band.select().run()
 
     """
 
-    __slots__ = ("engine", "context", "connection")
+    __slots__ = (
+        "engine",
+        "context",
+        "connection",
+        "transaction_type",
+        "allow_nested",
+        "_savepoint_id",
+        "_parent",
+        "_committed",
+        "_rolled_back",
+    )
 
-    def __init__(self, engine: SQLiteEngine):
+    def __init__(
+        self,
+        engine: SQLiteEngine,
+        transaction_type: TransactionType = TransactionType.deferred,
+        allow_nested: bool = True,
+    ):
+        """
+        :param transaction_type:
+            If your transaction just contains ``SELECT`` queries, then use
+            ``TransactionType.deferred``. This will give you the best
+            performance. When performing ``INSERT``, ``UPDATE``, ``DELETE``
+            queries, we recommend using ``TransactionType.immediate`` to
+            avoid database locks.
+        """
         self.engine = engine
-        if self.engine.transaction_connection.get():
-            raise TransactionError(
-                "A transaction is already active - nested transactions aren't "
-                "currently supported."
-            )
+        self.transaction_type = transaction_type
+        current_transaction = self.engine.current_transaction.get()
 
-    async def __aenter__(self):
-        self.connection = await self.engine.get_connection()
-        await self.connection.execute("BEGIN")
-        self.context = self.engine.transaction_connection.set(self.connection)
+        self._savepoint_id = 0
+        self._parent = None
+        self._committed = False
+        self._rolled_back = False
+
+        if current_transaction:
+            if allow_nested:
+                self._parent = current_transaction
+            else:
+                raise TransactionError(
+                    "A transaction is already active - nested transactions "
+                    "aren't allowed."
+                )
+
+    async def __aenter__(self) -> SQLiteTransaction:
+        if self._parent is not None:
+            return self._parent
+
+        self.connection = await self.get_connection()
+        await self.begin()
+        self.context = self.engine.current_transaction.set(self)
+        return self
+
+    async def get_connection(self):
+        return await self.engine.get_connection()
+
+    async def begin(self):
+        await self.connection.execute(f"BEGIN {self.transaction_type.value}")
+
+    async def commit(self):
+        await self.connection.execute("COMMIT")
+        self._committed = True
+
+    async def rollback(self):
+        await self.connection.execute("ROLLBACK")
+        self._rolled_back = True
+
+    async def rollback_to(self, savepoint_name: str):
+        """
+        Used to rollback to a savepoint just using the name.
+        """
+        await Savepoint(name=savepoint_name, transaction=self).rollback_to()
+
+    ###########################################################################
+
+    def get_savepoint_id(self) -> int:
+        self._savepoint_id += 1
+        return self._savepoint_id
+
+    async def savepoint(self, name: t.Optional[str] = None) -> Savepoint:
+        name = name or f"savepoint_{self.get_savepoint_id()}"
+        await self.connection.execute(f"SAVEPOINT {name}")
+        return Savepoint(name=name, transaction=self)
+
+    ###########################################################################
 
     async def __aexit__(self, exception_type, exception, traceback):
+        if self._parent:
+            return exception is None
+
         if exception:
-            await self.connection.execute("ROLLBACK")
+            # The user may have manually rolled it back.
+            if not self._rolled_back:
+                await self.rollback()
         else:
-            await self.connection.execute("COMMIT")
+            # The user may have manually committed it.
+            if not self._committed and not self._rolled_back:
+                await self.commit()
 
         await self.connection.close()
-        self.engine.transaction_connection.reset(self.context)
+        self.engine.current_transaction.reset(self.context)
 
         return exception is None
 
@@ -340,20 +444,14 @@ def dict_factory(cursor, row) -> t.Dict:
     return {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
 
 
-class SQLiteEngine(Engine):
-    """
-    Any connection kwargs are passed into the database adapter.
+class SQLiteEngine(Engine[t.Optional[SQLiteTransaction]]):
 
-    See the `SQLite docs <https://docs.python.org/3/library/sqlite3.html#sqlite3.connect>`_
-    for more info.
-
-    :param log_queries:
-        If ``True``, all SQL and DDL statements are printed out before being
-        run. Useful for debugging.
-
-    """  # noqa: E501
-
-    __slots__ = ("connection_kwargs", "transaction_connection", "log_queries")
+    __slots__ = (
+        "connection_kwargs",
+        "current_transaction",
+        "log_queries",
+        "log_responses",
+    )
 
     engine_type = "sqlite"
     min_version_number = 3.25
@@ -362,22 +460,42 @@ class SQLiteEngine(Engine):
         self,
         path: str = "piccolo.sqlite",
         log_queries: bool = False,
-        detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
-        isolation_level=None,
+        log_responses: bool = False,
         **connection_kwargs,
     ) -> None:
-        connection_kwargs.update(
-            {
-                "database": path,
-                "detect_types": detect_types,
-                "isolation_level": isolation_level,
-            }
-        )
-        self.log_queries = log_queries
-        self.connection_kwargs = connection_kwargs
+        """
+        :param path:
+            A relative or absolute path to the the SQLite database file (it
+            will be created if it doesn't already exist).
+        :param log_queries:
+            If ``True``, all SQL and DDL statements are printed out before
+            being run. Useful for debugging.
+        :param log_responses:
+            If ``True``, the raw response from each query is printed out.
+            Useful for debugging.
+        :param connection_kwargs:
+            These are passed directly to the database adapter. We recommend
+            setting ``timeout`` if you expect your application to process a
+            large number of concurrent writes, to prevent queries timing out.
+            See Python's `sqlite3 docs <https://docs.python.org/3/library/sqlite3.html#sqlite3.connect>`_
+            for more info.
 
-        self.transaction_connection = contextvars.ContextVar(
-            f"sqlite_transaction_connection_{path}", default=None
+        """  # noqa: E501
+        default_connection_kwargs = {
+            "database": path,
+            "detect_types": sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
+            "isolation_level": None,
+        }
+
+        self.log_queries = log_queries
+        self.log_responses = log_responses
+        self.connection_kwargs = {
+            **default_connection_kwargs,
+            **connection_kwargs,
+        }
+
+        self.current_transaction = contextvars.ContextVar(
+            f"sqlite_current_transaction_{path}", default=None
         )
 
         super().__init__()
@@ -404,30 +522,35 @@ class SQLiteEngine(Engine):
 
     def remove_db_file(self):
         """
-        Use with caution - removes the sqlite file. Useful for testing
+        Use with caution - removes the SQLite file. Useful for testing
         purposes.
         """
         if os.path.exists(self.path):
             os.unlink(self.path)
 
-    def create_db(self, migrate=False):
+    def create_db_file(self):
         """
-        Create the database file, with the option to run migrations. Useful
-        for testing purposes.
+        Create the database file. Useful for testing purposes.
         """
         if os.path.exists(self.path):
             raise Exception(f"Database at {self.path} already exists")
         with open(self.path, "w"):
             pass
-            # Commented out for now, as migrations for SQLite aren't as
-            # well supported as Postgres.
-            # from piccolo.commands.migration.forwards import (
-            #     ForwardsMigrationManager,
-            # )
 
     ###########################################################################
 
-    async def batch(self, query: Query, batch_size: int = 100) -> AsyncBatch:
+    async def batch(
+        self, query: Query, batch_size: int = 100, node: t.Optional[str] = None
+    ) -> AsyncBatch:
+        """
+        :param query:
+            The database query to run.
+        :param batch_size:
+            How many rows to fetch on each iteration.
+        :param node:
+            This is ignored currently, as SQLite runs off a single node. The
+            value is here so the API is consistent with Postgres.
+        """
         connection = await self.get_connection()
         return AsyncBatch(
             connection=connection, query=query, batch_size=batch_size
@@ -516,53 +639,80 @@ class SQLiteEngine(Engine):
         Connection pools aren't currently supported - the argument is there
         for consistency with other engines.
         """
+        query_id = self.get_query_id()
+
         if self.log_queries:
-            print(querystring)
+            self.print_query(query_id=query_id, query=querystring.__str__())
 
         query, query_args = querystring.compile_string(
             engine_type=self.engine_type
         )
 
         # If running inside a transaction:
-        connection = self.transaction_connection.get()
-        if connection:
-            return await self._run_in_existing_connection(
-                connection=connection,
+        current_transaction = self.current_transaction.get()
+        if current_transaction:
+            response = await self._run_in_existing_connection(
+                connection=current_transaction.connection,
+                query=query,
+                args=query_args,
+                query_type=querystring.query_type,
+                table=querystring.table,
+            )
+        else:
+            response = await self._run_in_new_connection(
                 query=query,
                 args=query_args,
                 query_type=querystring.query_type,
                 table=querystring.table,
             )
 
-        return await self._run_in_new_connection(
-            query=query,
-            args=query_args,
-            query_type=querystring.query_type,
-            table=querystring.table,
-        )
+        if self.log_responses:
+            self.print_response(query_id=query_id, response=response)
+
+        return response
 
     async def run_ddl(self, ddl: str, in_pool: bool = False):
         """
         Connection pools aren't currently supported - the argument is there
         for consistency with other engines.
         """
+        query_id = self.get_query_id()
+
         if self.log_queries:
-            print(ddl)
+            self.print_query(query_id=query_id, query=ddl)
 
         # If running inside a transaction:
-        connection = self.transaction_connection.get()
-        if connection:
-            return await self._run_in_existing_connection(
-                connection=connection,
+        current_transaction = self.current_transaction.get()
+        if current_transaction:
+            response = await self._run_in_existing_connection(
+                connection=current_transaction.connection,
+                query=ddl,
+            )
+        else:
+            response = await self._run_in_new_connection(
                 query=ddl,
             )
 
-        return await self._run_in_new_connection(
-            query=ddl,
+        if self.log_responses:
+            self.print_response(query_id=query_id, response=response)
+
+        return response
+
+    def atomic(
+        self, transaction_type: TransactionType = TransactionType.deferred
+    ) -> Atomic:
+        return Atomic(engine=self, transaction_type=transaction_type)
+
+    def transaction(
+        self,
+        transaction_type: TransactionType = TransactionType.deferred,
+        allow_nested: bool = True,
+    ) -> SQLiteTransaction:
+        """
+        Create a new database transaction. See :class:`Transaction`.
+        """
+        return SQLiteTransaction(
+            engine=self,
+            transaction_type=transaction_type,
+            allow_nested=allow_nested,
         )
-
-    def atomic(self) -> Atomic:
-        return Atomic(engine=self)
-
-    def transaction(self) -> Transaction:
-        return Transaction(engine=self)

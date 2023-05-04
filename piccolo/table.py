@@ -11,6 +11,7 @@ from piccolo.columns.column_types import (
     JSON,
     JSONB,
     Array,
+    Email,
     ForeignKey,
     Secret,
     Serial,
@@ -25,6 +26,7 @@ from piccolo.columns.m2m import (
 )
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
+from piccolo.custom_types import TableInstance
 from piccolo.engine import Engine, engine_finder
 from piccolo.query import (
     Alter,
@@ -42,6 +44,7 @@ from piccolo.query import (
 )
 from piccolo.query.methods.create_index import CreateIndex
 from piccolo.query.methods.indexes import Indexes
+from piccolo.query.methods.objects import First
 from piccolo.query.methods.refresh import Refresh
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils import _camel_to_snake
@@ -50,7 +53,7 @@ from piccolo.utils.sql_values import convert_to_sql_value
 from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import colored_warning
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Selectable
 
 PROTECTED_TABLENAMES = ("user",)
@@ -69,10 +72,12 @@ class TableMeta:
     columns: t.List[Column] = field(default_factory=list)
     default_columns: t.List[Column] = field(default_factory=list)
     non_default_columns: t.List[Column] = field(default_factory=list)
+    email_columns: t.List[Email] = field(default_factory=list)
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
     primary_key: Column = field(default_factory=Column)
     json_columns: t.List[t.Union[JSON, JSONB]] = field(default_factory=list)
     secret_columns: t.List[Secret] = field(default_factory=list)
+    auto_update_columns: t.List[Column] = field(default_factory=list)
     tags: t.List[str] = field(default_factory=list)
     help_text: t.Optional[str] = None
     _db: t.Optional[Engine] = None
@@ -157,6 +162,18 @@ class TableMeta:
                     ) from e
 
         return column_object
+
+    def get_auto_update_values(self) -> t.Dict[Column, t.Any]:
+        """
+        If columns have ``auto_update`` defined, then we retrieve these values.
+        """
+        output: t.Dict[Column, t.Any] = {}
+        for column in self.auto_update_columns:
+            value = column._meta.auto_update
+            if callable(value):
+                value = value()
+            output[column] = value
+        return output
 
 
 class TableMetaclass(type):
@@ -243,6 +260,8 @@ class Table(metaclass=TableMetaclass):
         foreign_key_columns: t.List[ForeignKey] = []
         secret_columns: t.List[Secret] = []
         json_columns: t.List[t.Union[JSON, JSONB]] = []
+        email_columns: t.List[Email] = []
+        auto_update_columns: t.List[Column] = []
         primary_key: t.Optional[Column] = None
         m2m_relationships: t.List[M2M] = []
 
@@ -276,6 +295,9 @@ class Table(metaclass=TableMetaclass):
                 if isinstance(column, Array):
                     column.base_column._meta._table = cls
 
+                if isinstance(column, Email):
+                    email_columns.append(column)
+
                 if isinstance(column, Secret):
                     secret_columns.append(column)
 
@@ -284,6 +306,9 @@ class Table(metaclass=TableMetaclass):
 
                 if isinstance(column, (JSON, JSONB)):
                     json_columns.append(column)
+
+                if column._meta.auto_update is not ...:
+                    auto_update_columns.append(column)
 
             if isinstance(attribute, M2M):
                 attribute._meta._name = attribute_name
@@ -302,10 +327,12 @@ class Table(metaclass=TableMetaclass):
             columns=columns,
             default_columns=default_columns,
             non_default_columns=non_default_columns,
+            email_columns=email_columns,
             primary_key=primary_key,
             foreign_key_columns=foreign_key_columns,
             json_columns=json_columns,
             secret_columns=secret_columns,
+            auto_update_columns=auto_update_columns,
             tags=tags,
             help_text=help_text,
             _db=db,
@@ -366,6 +393,10 @@ class Table(metaclass=TableMetaclass):
 
         self._exists_in_db = _exists_in_db
 
+        # This is used by get_or_create to indicate to the user whether it
+        # was an existing row or not.
+        self._was_created: t.Optional[bool] = None
+
         for column in self._meta.columns:
             value = _data.get(column, ...)
 
@@ -407,7 +438,9 @@ class Table(metaclass=TableMetaclass):
         return pk
 
     @classmethod
-    def from_dict(cls, data: t.Dict[str, t.Any]) -> Table:
+    def from_dict(
+        cls: t.Type[TableInstance], data: t.Dict[str, t.Any]
+    ) -> TableInstance:
         """
         Used when loading fixtures. It can be overriden by subclasses in case
         they have specific logic / validation which needs running when loading
@@ -439,6 +472,7 @@ class Table(metaclass=TableMetaclass):
         """
         cls = self.__class__
 
+        # New row - insert
         if not self._exists_in_db:
             return cls.insert(self).returning(cls._meta.primary_key)
 
@@ -457,13 +491,21 @@ class Table(metaclass=TableMetaclass):
             i: getattr(self, i._meta.name, None) for i in column_instances
         }
 
-        return (
-            cls.update()
-            .values(values)  # type: ignore
-            .where(
-                cls._meta.primary_key
-                == getattr(self, self._meta.primary_key._meta.name)
-            )
+        # Assign any `auto_update` values
+        if cls._meta.auto_update_columns:
+            auto_update_values = cls._meta.get_auto_update_values()
+            values.update(auto_update_values)
+            for column, value in auto_update_values.items():
+                setattr(self, column._meta.name, value)
+
+        return cls.update(
+            values,  # type: ignore
+            # We've already included the `auto_update` columns, so no need
+            # to do it again:
+            use_auto_update=False,
+        ).where(
+            cls._meta.primary_key
+            == getattr(self, self._meta.primary_key._meta.name)
         )
 
     def remove(self) -> Delete:
@@ -507,7 +549,9 @@ class Table(metaclass=TableMetaclass):
         """
         return Refresh(instance=self, columns=columns)
 
-    def get_related(self, foreign_key: t.Union[ForeignKey, str]) -> Objects:
+    def get_related(
+        self: TableInstance, foreign_key: t.Union[ForeignKey, str]
+    ) -> First[Table]:
         """
         Used to fetch a ``Table`` instance, for the target of a foreign key.
 
@@ -889,7 +933,9 @@ class Table(metaclass=TableMetaclass):
         return _reference_column
 
     @classmethod
-    def insert(cls, *rows: "Table") -> Insert:
+    def insert(
+        cls: t.Type[TableInstance], *rows: TableInstance
+    ) -> Insert[TableInstance]:
         """
         Insert rows into the database.
 
@@ -1016,8 +1062,9 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def objects(
-        cls, *prefetch: t.Union[ForeignKey, t.List[ForeignKey]]
-    ) -> Objects:
+        cls: t.Type[TableInstance],
+        *prefetch: t.Union[ForeignKey, t.List[ForeignKey]],
+    ) -> Objects[TableInstance]:
         """
         Returns a list of table instances (each representing a row), which you
         can modify and then call 'save' on, or can delete by calling 'remove'.
@@ -1052,7 +1099,7 @@ class Table(metaclass=TableMetaclass):
                 <Band 1>
 
         """
-        return Objects(table=cls, prefetch=prefetch)
+        return Objects[TableInstance](table=cls, prefetch=prefetch)
 
     @classmethod
     def count(cls) -> Count:
@@ -1095,6 +1142,7 @@ class Table(metaclass=TableMetaclass):
         cls,
         values: t.Dict[t.Union[Column, str], t.Any] = None,
         force: bool = False,
+        use_auto_update: bool = True,
         **kwargs,
     ) -> Update:
         """
@@ -1126,10 +1174,19 @@ class Table(metaclass=TableMetaclass):
             Unless set to ``True``, updates aren't allowed without a
             ``where`` clause, to prevent accidental mass overriding of data.
 
+        :param use_auto_update:
+            Whether to use the ``auto_update`` values on any columns. See
+            the ``auto_update`` argument on
+            :class:`Column <piccolo.columns.base.Column>` for more information.
+
         """
         if values is None:
             values = {}
         values = dict(values, **kwargs)
+
+        if use_auto_update and cls._meta.auto_update_columns:
+            values.update(cls._meta.get_auto_update_values())  # type: ignore
+
         return Update(table=cls, force=force).values(values)
 
     @classmethod
@@ -1268,16 +1325,19 @@ def create_table_class(
         For example, `{'my_column': Varchar()}`.
 
     """
-    return types.new_class(
-        name=class_name,
-        bases=bases,
-        kwds=class_kwargs,
-        exec_body=lambda namespace: namespace.update(class_members),
+    return t.cast(
+        t.Type[Table],
+        types.new_class(
+            name=class_name,
+            bases=bases,
+            kwds=class_kwargs,
+            exec_body=lambda namespace: namespace.update(class_members),
+        ),
     )
 
 
 ###############################################################################
-# Quickly create or drop database tables from Piccolo `Table` clases.
+# Quickly create or drop database tables from Piccolo `Table` classes.
 
 
 async def create_db_tables(
@@ -1325,6 +1385,9 @@ def create_tables(*tables: t.Type[Table], if_not_exists: bool = False) -> None:
     This original implementation has been replaced, because it was synchronous,
     and felt at odds with the rest of the Piccolo codebase which is async
     first.
+
+    Instead, use create_db_tables for asynchronous code, or
+    create_db_tables_sync for synchronous code
     """
     colored_warning(
         "`create_tables` is deprecated and will be removed in v1 of Piccolo. "
@@ -1385,6 +1448,9 @@ def drop_tables(*tables: t.Type[Table]) -> None:
     This original implementation has been replaced, because it was synchronous,
     and felt at odds with the rest of the Piccolo codebase which is async
     first.
+
+    Instead, use drop_db_tables for asynchronous code, or
+    drop_db_tables_sync for synchronous code
     """
     colored_warning(
         "`drop_tables` is deprecated and will be removed in v1 of Piccolo. "
@@ -1460,12 +1526,13 @@ def _get_graph(
 
             # We also recursively check the related tables to get a fuller
             # picture of the schema and relationships.
-            output.update(
-                _get_graph(
-                    [referenced_table],
-                    iterations=iterations + 1,
+            if referenced_table._meta.tablename not in output:
+                output.update(
+                    _get_graph(
+                        [referenced_table],
+                        iterations=iterations + 1,
+                    )
                 )
-            )
 
         output[table_class._meta.tablename] = dependents
 

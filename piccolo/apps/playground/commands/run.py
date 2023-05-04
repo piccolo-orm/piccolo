@@ -24,6 +24,7 @@ from piccolo.columns.readable import Readable
 from piccolo.engine import PostgresEngine, SQLiteEngine
 from piccolo.engine.base import Engine
 from piccolo.table import Table
+from piccolo.utils.warnings import colored_string
 
 
 class Manager(Table):
@@ -135,8 +136,7 @@ def populate():
     """
     for _table in reversed(TABLES):
         try:
-            if _table.table_exists().run_sync():
-                _table.alter().drop_table().run_sync()
+            _table.alter().drop_table(if_exists=True).run_sync()
         except Exception as e:
             print(e)
 
@@ -158,6 +158,12 @@ def populate():
     rustaceans = Band(name="Rustaceans", manager=graydon.id, popularity=500)
     rustaceans.save().run_sync()
 
+    anders = Manager(name="Anders")
+    anders.save().run_sync()
+
+    c_sharps = Band(name="C-Sharps", popularity=700, manager=anders.id)
+    c_sharps.save().run_sync()
+
     venue = Venue(name="Amazing Venue", capacity=5000)
     venue.save().run_sync()
 
@@ -173,13 +179,30 @@ def populate():
     ticket = Ticket(concert=concert.id, price=Decimal("50.0"))
     ticket.save().run_sync()
 
-    discount_code = DiscountCode(code=uuid.uuid4())
-    discount_code.save().run_sync()
+    DiscountCode.insert(
+        *[DiscountCode({DiscountCode.code: uuid.uuid4()}) for _ in range(5)]
+    ).run_sync()
 
-    recording_studio = RecordingStudio(
-        name="Abbey Road", facilities={"restaurant": True, "mixing_desk": True}
-    )
-    recording_studio.save().run_sync()
+    RecordingStudio.insert(
+        RecordingStudio(
+            {
+                RecordingStudio.name: "Abbey Road",
+                RecordingStudio.facilities: {
+                    "restaurant": True,
+                    "mixing_desk": True,
+                },
+            }
+        ),
+        RecordingStudio(
+            {
+                RecordingStudio.name: "Electric Lady",
+                RecordingStudio.facilities: {
+                    "restaurant": False,
+                    "mixing_desk": True,
+                },
+            },
+        ),
+    ).run_sync()
 
 
 def run(
@@ -189,6 +212,7 @@ def run(
     database: str = "piccolo_playground",
     host: str = "localhost",
     port: int = 5432,
+    ipython_profile: bool = False,
 ):
     """
     Creates a test database to play with.
@@ -205,6 +229,10 @@ def run(
         Postgres host
     :param port:
         Postgres port
+    :param ipython_profile:
+        Set to true to use your own IPython profile. Located at ~/.ipython/.
+        For more info see the IPython docs
+        https://ipython.readthedocs.io/en/stable/config/intro.html.
     """
     try:
         import IPython
@@ -228,29 +256,36 @@ def run(
         db = SQLiteEngine()
     for _table in TABLES:
         _table._meta._db = db
-    print("Tables:\n")
+
+    print(colored_string("\nTables:\n"))
 
     for _table in TABLES:
         print(_table._table_str(abbreviated=True))
-        print("\n")
+        print("")
 
-    print("Try it as a query builder:")
-    print("Band.select().run_sync()")
-    print("Band.select(Band.name).run_sync()")
-    print("Band.select(Band.name, Band.manager.name).run_sync()")
+    print(colored_string("Try it as a query builder:"))
+    print("await Band.select()")
+    print("await Band.select(Band.name)")
+    print("await Band.select(Band.name, Band.manager.name)")
     print("\n")
 
-    print("Try it as an ORM:")
-    print(
-        "b = Band.objects().where(Band.name == 'Pythonistas').first()."
-        "run_sync()"
-    )
+    print(colored_string("Try it as an ORM:"))
+    print("b = await Band.objects().where(Band.name == 'Pythonistas').first()")
     print("b.popularity = 10000")
-    print("b.save().run_sync()")
+    print("await b.save()")
     print("\n")
 
     populate()
 
-    from IPython.core.interactiveshell import _asyncio_runner  # type: ignore
+    from IPython.core.interactiveshell import _asyncio_runner
 
-    IPython.embed(using=_asyncio_runner)
+    if ipython_profile:
+        print(colored_string("Using your IPython profile\n"))
+        # To try this out, set `c.TerminalInteractiveShell.colors = "Linux"`
+        # in `~/.ipython/profile_default/ipython_config.py` to set the terminal
+        # color.
+        conf_args = {}
+    else:
+        conf_args = {"colors": "neutral"}
+
+    IPython.embed(using=_asyncio_runner, **conf_args)

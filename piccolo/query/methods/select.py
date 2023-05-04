@@ -9,9 +9,11 @@ from piccolo.columns import Column, Selectable
 from piccolo.columns.column_types import JSON, JSONB, PrimaryKey
 from piccolo.columns.m2m import M2MSelect
 from piccolo.columns.readable import Readable
+from piccolo.custom_types import TableInstance
 from piccolo.engine.base import Batch
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
+    AsOfDelegate,
     CallbackDelegate,
     CallbackType,
     ColumnsDelegate,
@@ -20,12 +22,14 @@ from piccolo.query.mixins import (
     LimitDelegate,
     OffsetDelegate,
     OrderByDelegate,
+    OrderByRaw,
     OutputDelegate,
     WhereDelegate,
 )
+from piccolo.query.proxy import Proxy
 from piccolo.querystring import QueryString
 from piccolo.utils.dictionary import make_nested
-from piccolo.utils.encoding import load_json
+from piccolo.utils.encoding import dump_json, load_json
 from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -35,6 +39,28 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 def is_numeric_column(column: Column) -> bool:
     return column.value_type in (int, decimal.Decimal, float)
+
+
+class SelectRaw(Selectable):
+    def __init__(self, sql: str, *args: t.Any) -> None:
+        """
+        Execute raw SQL in your select query.
+
+        .. code-block:: python
+
+            >>> await Band.select(
+            ...     Band.name,
+            ...     SelectRaw("log(popularity) AS log_popularity")
+            ... )
+            [{'name': 'Pythonistas', 'log_popularity': 3.0}]
+
+        """
+        self.querystring = QueryString(sql, *args)
+
+    def get_select_string(
+        self, engine_type: str, with_alias: bool = True
+    ) -> str:
+        return self.querystring.__str__()
 
 
 class Avg(Selectable):
@@ -212,10 +238,80 @@ class Sum(Selectable):
         return f'SUM({column_name}) AS "{self._alias}"'
 
 
-class Select(Query):
+OptionalDict = t.Optional[t.Dict[str, t.Any]]
+
+
+class First(Proxy["Select", OptionalDict]):
+    """
+    This is for static typing purposes.
+    """
+
+    def __init__(self, query: Select):
+        self.query = query
+
+    async def run(
+        self,
+        node: t.Optional[str] = None,
+        in_pool: bool = True,
+    ) -> OptionalDict:
+        rows = await self.query.run(
+            node=node, in_pool=in_pool, use_callbacks=False
+        )
+        results = rows[0] if rows else None
+
+        modified_response = await self.query.callback_delegate.invoke(
+            results=results, kind=CallbackType.success
+        )
+        return modified_response
+
+
+class SelectList(Proxy["Select", t.List]):
+    """
+    This is for static typing purposes.
+    """
+
+    async def run(
+        self,
+        node: t.Optional[str] = None,
+        in_pool: bool = True,
+    ) -> t.List:
+        rows = await self.query.run(
+            node=node, in_pool=in_pool, use_callbacks=False
+        )
+
+        if len(rows) == 0:
+            response = []
+        else:
+            if len(rows[0].keys()) != 1:
+                raise ValueError("Each row returned more than one value")
+
+            response = list(itertools.chain(*[j.values() for j in rows]))
+
+        modified_response = await self.query.callback_delegate.invoke(
+            results=response, kind=CallbackType.success
+        )
+        return modified_response
+
+
+class SelectJSON(Proxy["Select", str]):
+    """
+    This is for static typing purposes.
+    """
+
+    async def run(
+        self,
+        node: t.Optional[str] = None,
+        in_pool: bool = True,
+    ) -> str:
+        rows = await self.query.run(node=node, in_pool=in_pool)
+        return dump_json(rows)
+
+
+class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
     __slots__ = (
         "columns_list",
         "exclude_secrets",
+        "as_of_delegate",
         "columns_delegate",
         "distinct_delegate",
         "group_by_delegate",
@@ -229,7 +325,7 @@ class Select(Query):
 
     def __init__(
         self,
-        table: t.Type[Table],
+        table: t.Type[TableInstance],
         columns_list: t.Sequence[t.Union[Selectable, str]] = None,
         exclude_secrets: bool = False,
         **kwargs,
@@ -239,6 +335,7 @@ class Select(Query):
         super().__init__(table, **kwargs)
         self.exclude_secrets = exclude_secrets
 
+        self.as_of_delegate = AsOfDelegate()
         self.columns_delegate = ColumnsDelegate()
         self.distinct_delegate = DistinctDelegate()
         self.group_by_delegate = GroupByDelegate()
@@ -251,16 +348,21 @@ class Select(Query):
 
         self.columns(*columns_list)
 
-    def columns(self, *columns: t.Union[Selectable, str]) -> Select:
+    def columns(self: Self, *columns: t.Union[Selectable, str]) -> Self:
         _columns = self.table._process_column_args(*columns)
         self.columns_delegate.columns(*_columns)
         return self
 
-    def distinct(self) -> Select:
-        self.distinct_delegate.distinct()
+    def distinct(
+        self: Self, *, on: t.Optional[t.Sequence[Column]] = None
+    ) -> Self:
+        if on is not None and self.engine_type == "sqlite":
+            raise NotImplementedError("SQLite doesn't support DISTINCT ON")
+
+        self.distinct_delegate.distinct(enabled=True, on=on)
         return self
 
-    def group_by(self, *columns: Column) -> Select:
+    def group_by(self: Self, *columns: t.Union[Column, str]) -> Self:
         _columns: t.List[Column] = [
             i
             for i in self.table._process_column_args(*columns)
@@ -269,15 +371,22 @@ class Select(Query):
         self.group_by_delegate.group_by(*_columns)
         return self
 
-    def limit(self, number: int) -> Select:
+    def as_of(self: Self, interval: str = "-1s") -> Self:
+        if self.engine_type != "cockroach":
+            raise NotImplementedError("Only CockroachDB supports AS OF")
+
+        self.as_of_delegate.as_of(interval)
+        return self
+
+    def limit(self: Self, number: int) -> Self:
         self.limit_delegate.limit(number)
         return self
 
-    def first(self) -> Select:
-        self.limit_delegate.first()
-        return self
+    def first(self) -> First:
+        self.limit_delegate.limit(1)
+        return First(query=self)
 
-    def offset(self, number: int) -> Select:
+    def offset(self: Self, number: int) -> Self:
         self.offset_delegate.offset(number)
         return self
 
@@ -392,7 +501,7 @@ class Select(Query):
                             m2m_select,
                         )
 
-            elif self.engine_type == "postgres":
+            elif self.engine_type in ("postgres", "cockroach"):
                 if m2m_select.as_list:
                     # We get the data back as an array, and can just return it
                     # unless it's JSON.
@@ -428,61 +537,91 @@ class Select(Query):
         # no columns were selected from related tables.
         was_select_star = len(self.columns_delegate.selected_columns) == 0
 
-        if self.limit_delegate._first:
-            if len(response) == 0:
-                return None
-
-            if self.output_delegate._output.nested and not was_select_star:
-                return make_nested(response[0])
-            else:
-                return response[0]
-        elif self.output_delegate._output.nested and not was_select_star:
+        if self.output_delegate._output.nested and not was_select_star:
             return [make_nested(i) for i in response]
         else:
             return response
 
-    def order_by(self, *columns: Column, ascending=True) -> Select:
-        _columns: t.List[Column] = [
-            i
-            for i in self.table._process_column_args(*columns)
-            if isinstance(i, Column)
-        ]
+    def order_by(
+        self: Self, *columns: t.Union[Column, str, OrderByRaw], ascending=True
+    ) -> Self:
+        """
+        :param columns:
+            Either a :class:`piccolo.columns.base.Column` instance, a string
+            representing a column name, or :class:`piccolo.query.OrderByRaw`
+            which allows you for complex use cases like
+            ``OrderByRaw('random()')``.
+        """
+        _columns: t.List[t.Union[Column, OrderByRaw]] = []
+        for column in columns:
+            if isinstance(column, str):
+                _columns.append(self.table._meta.get_column_by_name(column))
+            else:
+                _columns.append(column)
+
         self.order_by_delegate.order_by(*_columns, ascending=ascending)
         return self
 
+    @t.overload
+    def output(self: Self, *, as_list: bool) -> SelectList:
+        ...
+
+    @t.overload
+    def output(self: Self, *, as_json: bool) -> SelectJSON:
+        ...
+
+    @t.overload
+    def output(self: Self, *, load_json: bool) -> Self:
+        ...
+
+    @t.overload
+    def output(self: Self, *, nested: bool) -> Self:
+        ...
+
     def output(
-        self,
+        self: Self,
+        *,
         as_list: bool = False,
         as_json: bool = False,
         load_json: bool = False,
         nested: bool = False,
-    ) -> Select:
+    ):
         self.output_delegate.output(
             as_list=as_list,
             as_json=as_json,
             load_json=load_json,
             nested=nested,
         )
+        if as_list:
+            return SelectList(query=self)
+        elif as_json:
+            return SelectJSON(query=self)
+
         return self
 
     def callback(
-        self,
+        self: Self,
         callbacks: t.Union[t.Callable, t.List[t.Callable]],
         *,
         on: CallbackType = CallbackType.success,
-    ) -> Select:
+    ) -> Self:
         self.callback_delegate.callback(callbacks, on=on)
         return self
 
-    def where(self, *where: Combinable) -> Select:
+    def where(self: Self, *where: Combinable) -> Self:
         self.where_delegate.where(*where)
         return self
 
     async def batch(
-        self, batch_size: t.Optional[int] = None, **kwargs
+        self,
+        batch_size: t.Optional[int] = None,
+        node: t.Optional[str] = None,
+        **kwargs,
     ) -> Batch:
         if batch_size:
             kwargs.update(batch_size=batch_size)
+        if node:
+            kwargs.update(node=node)
         return await self.table._meta.db.batch(self, **kwargs)
 
     ###########################################################################
@@ -531,9 +670,9 @@ class Select(Query):
                 ]._foreign_key_meta.resolved_target_column._meta.name
 
                 _joins.append(
-                    f"LEFT JOIN {right_tablename} {table_alias}"
+                    f'LEFT JOIN "{right_tablename}" "{table_alias}"'
                     " ON "
-                    f"({left_tablename}.{key._meta.name} = {table_alias}.{pk_name})"  # noqa: E501
+                    f'("{left_tablename}"."{key._meta.name}" = "{table_alias}"."{pk_name}")'  # noqa: E501
                 )
 
             joins.extend(_joins)
@@ -591,28 +730,37 @@ class Select(Query):
 
         #######################################################################
 
-        select = (
-            "SELECT DISTINCT" if self.distinct_delegate._distinct else "SELECT"
-        )
-        query = f"{select} {columns_str} FROM {self.table._meta.get_formatted_tablename()}"  # noqa: E501
+        args: t.List[t.Any] = []
+
+        query = "SELECT"
+
+        distinct = self.distinct_delegate._distinct
+        if distinct:
+            if distinct.on:
+                distinct.validate_on(self.order_by_delegate._order_by)
+
+            query += "{}"
+            args.append(distinct.querystring)
+
+        query += f" {columns_str} FROM {self.table._meta.get_formatted_tablename()}"  # noqa: E501
 
         for join in joins:
             query += f" {join}"
 
-        #######################################################################
-
-        args: t.List[t.Any] = []
+        if self.as_of_delegate._as_of:
+            query += "{}"
+            args.append(self.as_of_delegate._as_of.querystring)
 
         if self.where_delegate._where:
             query += " WHERE {}"
             args.append(self.where_delegate._where.querystring)
 
         if self.group_by_delegate._group_by:
-            query += " {}"
+            query += "{}"
             args.append(self.group_by_delegate._group_by.querystring)
 
-        if self.order_by_delegate._order_by:
-            query += " {}"
+        if self.order_by_delegate._order_by.order_by_items:
+            query += "{}"
             args.append(self.order_by_delegate._order_by.querystring)
 
         if (
@@ -626,13 +774,31 @@ class Select(Query):
             )
 
         if self.limit_delegate._limit:
-            query += " {}"
+            query += "{}"
             args.append(self.limit_delegate._limit.querystring)
 
         if self.offset_delegate._offset:
-            query += " {}"
+            query += "{}"
             args.append(self.offset_delegate._offset.querystring)
 
         querystring = QueryString(query, *args)
 
         return [querystring]
+
+    async def run(
+        self,
+        node: t.Optional[str] = None,
+        in_pool: bool = True,
+        use_callbacks: bool = True,
+        **kwargs,
+    ) -> t.List[t.Dict[str, t.Any]]:
+        results = await super().run(node=node, in_pool=in_pool)
+        if use_callbacks:
+            return await self.callback_delegate.invoke(
+                results, kind=CallbackType.success
+            )
+        else:
+            return results
+
+
+Self = t.TypeVar("Self", bound=Select)

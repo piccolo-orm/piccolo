@@ -1,18 +1,18 @@
 from __future__ import annotations
 
-import itertools
 import typing as t
 from time import time
 
 from piccolo.columns.column_types import JSON, JSONB
-from piccolo.query.mixins import CallbackType, ColumnsDelegate
+from piccolo.custom_types import QueryResponseType, TableInstance
+from piccolo.query.mixins import ColumnsDelegate
 from piccolo.querystring import QueryString
-from piccolo.utils.encoding import dump_json, load_json
+from piccolo.utils.encoding import load_json
 from piccolo.utils.objects import make_nested_object
 from piccolo.utils.sync import run_sync
 
 if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.query.mixins import CallbackDelegate, OutputDelegate
+    from piccolo.query.mixins import OutputDelegate
     from piccolo.table import Table  # noqa
 
 
@@ -25,13 +25,13 @@ class Timer:
         print(f"Duration: {self.end - self.start}s")
 
 
-class Query:
+class Query(t.Generic[TableInstance, QueryResponseType]):
 
     __slots__ = ("table", "_frozen_querystrings")
 
     def __init__(
         self,
-        table: t.Type[Table],
+        table: t.Type[TableInstance],
         frozen_querystrings: t.Optional[t.Sequence[QueryString]] = None,
     ):
         self.table = table
@@ -45,11 +45,11 @@ class Query:
         else:
             raise ValueError("Engine isn't defined.")
 
-    async def _process_results(self, results):  # noqa: C901
+    async def _process_results(self, results):
         if results:
             keys = results[0].keys()
             keys = [i.replace("$", ".") for i in keys]
-            if self.engine_type == "postgres":
+            if self.engine_type in ("postgres", "cockroach"):
                 # asyncpg returns a special Record object. We can pass it
                 # directly into zip without calling `values` on it. This can
                 # save us hundreds of microseconds, depending on the number of
@@ -117,35 +117,13 @@ class Query:
 
         if output:
             if output._output.as_objects:
-                # When using .first() we get a single row, not a list
-                # of rows.
-                if type(raw) is list:
-                    if output._output.nested:
-                        raw = [
-                            make_nested_object(row, self.table) for row in raw
-                        ]
-                    else:
-                        raw = [
-                            self.table(**columns, _exists_in_db=True)
-                            for columns in raw
-                        ]
-                elif raw is not None:
-                    if output._output.nested:
-                        raw = make_nested_object(raw, self.table)
-                    else:
-                        raw = self.table(**raw, _exists_in_db=True)
-            elif type(raw) is list:
-                if output._output.as_list:
-                    if len(raw) == 0:
-                        return []
-                    if len(raw[0].keys()) != 1:
-                        raise ValueError(
-                            "Each row returned more than one value"
-                        )
-                    else:
-                        raw = list(itertools.chain(*[j.values() for j in raw]))
-                if output._output.as_json:
-                    raw = dump_json(raw)
+                if output._output.nested:
+                    raw = [make_nested_object(row, self.table) for row in raw]
+                else:
+                    raw = [
+                        self.table(**columns, _exists_in_db=True)
+                        for columns in raw
+                    ]
 
         return raw
 
@@ -157,14 +135,16 @@ class Query:
         """
         pass
 
-    def __await__(self):
+    def __await__(self) -> t.Generator[None, None, QueryResponseType]:
         """
         If the user doesn't explicity call .run(), proxy to it as a
         convenience.
         """
         return self.run().__await__()
 
-    async def run(self, node: t.Optional[str] = None, in_pool: bool = True):
+    async def _run(
+        self, node: t.Optional[str] = None, in_pool: bool = True
+    ) -> QueryResponseType:
         """
         Run the query on the database.
 
@@ -195,22 +175,11 @@ class Query:
 
         querystrings = self.querystrings
 
-        callback: t.Optional[CallbackDelegate] = getattr(
-            self, "callback_delegate", None
-        )
-
         if len(querystrings) == 1:
             results = await engine.run_querystring(
                 querystrings[0], in_pool=in_pool
             )
-            processed_results = await self._process_results(results)
-
-            if callback:
-                processed_results = await callback.invoke(
-                    processed_results, kind=CallbackType.success
-                )
-
-            return processed_results
+            return await self._process_results(results)
         else:
             responses = []
             for querystring in querystrings:
@@ -219,15 +188,20 @@ class Query:
                 )
                 processed_results = await self._process_results(results)
 
-                if callback:
-                    processed_results = await callback.invoke(
-                        processed_results, kind=CallbackType.success
-                    )
-
                 responses.append(processed_results)
-            return responses
+            return t.cast(QueryResponseType, responses)
 
-    def run_sync(self, timed=False, in_pool=False, *args, **kwargs):
+    async def run(
+        self, node: t.Optional[str] = None, in_pool: bool = True
+    ) -> QueryResponseType:
+        return await self._run(node=node, in_pool=in_pool)
+
+    def run_sync(
+        self,
+        node: t.Optional[str] = None,
+        timed: bool = False,
+        in_pool: bool = False,
+    ) -> QueryResponseType:
         """
         A convenience method for running the coroutine synchronously.
 
@@ -241,7 +215,7 @@ class Query:
             `issue 505 <https://github.com/piccolo-orm/piccolo/issues/505>`_.
 
         """
-        coroutine = self.run(in_pool=in_pool, *args, **kwargs)
+        coroutine = self.run(node=node, in_pool=in_pool)
 
         if not timed:
             return run_sync(coroutine)
@@ -266,6 +240,10 @@ class Query:
         raise NotImplementedError
 
     @property
+    def cockroach_querystrings(self) -> t.Sequence[QueryString]:
+        raise NotImplementedError
+
+    @property
     def default_querystrings(self) -> t.Sequence[QueryString]:
         raise NotImplementedError
 
@@ -286,6 +264,11 @@ class Query:
         elif engine_type == "sqlite":
             try:
                 return self.sqlite_querystrings
+            except NotImplementedError:
+                return self.default_querystrings
+        elif engine_type == "cockroach":
+            try:
+                return self.cockroach_querystrings
             except NotImplementedError:
                 return self.default_querystrings
         else:
@@ -357,6 +340,9 @@ class Query:
         return "; ".join([i.__str__() for i in self.querystrings])
 
 
+###############################################################################
+
+
 class FrozenQuery:
     def __init__(self, query: Query):
         self.query = query
@@ -378,6 +364,9 @@ class FrozenQuery:
 
     def __str__(self) -> str:
         return self.query.__str__()
+
+
+###############################################################################
 
 
 class DDL:
@@ -404,6 +393,10 @@ class DDL:
         raise NotImplementedError
 
     @property
+    def cockroach_ddl(self) -> t.Sequence[str]:
+        raise NotImplementedError
+
+    @property
     def default_ddl(self) -> t.Sequence[str]:
         raise NotImplementedError
 
@@ -421,6 +414,11 @@ class DDL:
         elif engine_type == "sqlite":
             try:
                 return self.sqlite_ddl
+            except NotImplementedError:
+                return self.default_ddl
+        elif engine_type == "cockroach":
+            try:
+                return self.cockroach_ddl
             except NotImplementedError:
                 return self.default_ddl
         else:
@@ -446,7 +444,6 @@ class DDL:
         if len(self.ddl) == 1:
             return await engine.run_ddl(self.ddl[0], in_pool=in_pool)
         responses = []
-        # TODO - run in a transaction
         for ddl in self.ddl:
             response = await engine.run_ddl(ddl, in_pool=in_pool)
             responses.append(response)

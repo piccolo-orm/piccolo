@@ -26,8 +26,7 @@ Or use an alias to make it shorter:
 
     >>> b = Band
     >>> await b.select(b.name)
-    [{'id': 1, 'name': 'Pythonistas', 'manager': 1, 'popularity': 1000},
-     {'id': 2, 'name': 'Rustaceans', 'manager': 2, 'popularity': 500}]
+    [{'name': 'Rustaceans'}, {'name': 'Pythonistas'}]
 
 .. hint::
    All of these examples also work synchronously using ``run_sync`` -
@@ -252,6 +251,28 @@ And can use aliases for aggregate functions like this:
     ... ).first()
     >>> response["popularity_avg"]
     750.0
+
+-------------------------------------------------------------------------------
+
+SelectRaw
+---------
+
+In certain situations you may want to have raw SQL in your select query.
+
+For example, if there's a Postgres function which you want to access, which
+isn't supported by Piccolo:
+
+.. code-block:: python
+
+    from piccolo.query import SelectRaw
+
+    >>> await Band.select(
+    ...     Band.name,
+    ...     SelectRaw("log(popularity) AS log_popularity")
+    ... )
+    [{'name': 'Pythonistas', 'log_popularity': 3.0}]
+
+.. warning:: Only use SQL that you trust.
 
 -------------------------------------------------------------------------------
 

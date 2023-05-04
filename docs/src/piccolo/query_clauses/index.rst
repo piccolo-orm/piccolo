@@ -26,5 +26,12 @@ by modifying the return values.
     ./freeze
     ./group_by
     ./offset
+    ./on_conflict
     ./output
     ./returning
+
+.. toctree::
+    :maxdepth: 1
+    :caption: CockroachDB
+
+    ./as_of

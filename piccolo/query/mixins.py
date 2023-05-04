@@ -1,19 +1,88 @@
 from __future__ import annotations
 
 import asyncio
+import collections.abc
+import itertools
 import typing as t
 from dataclasses import dataclass, field
 from enum import Enum, auto
+
+from typing_extensions import Literal
 
 from piccolo.columns import And, Column, Or, Where
 from piccolo.columns.column_types import ForeignKey
 from piccolo.custom_types import Combinable
 from piccolo.querystring import QueryString
+from piccolo.utils.list import flatten
 from piccolo.utils.sql_values import convert_to_sql_value
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import Selectable
     from piccolo.table import Table  # noqa
+
+
+class DistinctOnError(ValueError):
+    """
+    Raised when ``DISTINCT ON`` queries are malformed.
+    """
+
+    pass
+
+
+@dataclass
+class Distinct:
+    __slots__ = ("enabled", "on")
+
+    enabled: bool
+    on: t.Optional[t.Sequence[Column]]
+
+    @property
+    def querystring(self) -> QueryString:
+        if self.enabled:
+            if self.on:
+                column_names = ", ".join(
+                    i._meta.get_full_name(with_alias=False) for i in self.on
+                )
+                return QueryString(f" DISTINCT ON ({column_names})")
+            else:
+                return QueryString(" DISTINCT")
+        else:
+            return QueryString(" ALL")
+
+    def validate_on(self, order_by: OrderBy):
+        """
+        When using the `on` argument, the first column must match the first
+        order by column.
+
+        :raises DistinctOnError:
+            If the columns don't match.
+
+        """
+        validated = True
+
+        try:
+            first_order_column = order_by.order_by_items[0].columns[0]
+        except IndexError:
+            validated = False
+        else:
+            if not self.on:
+                validated = False
+            elif isinstance(first_order_column, Column) and not self.on[
+                0
+            ]._equals(first_order_column):
+                validated = False
+
+        if not validated:
+            raise DistinctOnError(
+                "The first `order_by` column must match the first column "
+                "passed to `on`."
+            )
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
+
+    def copy(self) -> Distinct:
+        return self.__class__(enabled=self.enabled, on=self.on)
 
 
 @dataclass
@@ -38,6 +107,24 @@ class Limit:
 
 
 @dataclass
+class AsOf:
+    __slots__ = ("interval",)
+
+    interval: str
+
+    def __post_init__(self):
+        if type(self.interval) != str:
+            raise TypeError("As Of must be a string. Example: '-1s'")
+
+    @property
+    def querystring(self) -> QueryString:
+        return QueryString(f" AS OF SYSTEM TIME '{self.interval}'")
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
+
+
+@dataclass
 class Offset:
     __slots__ = ("number",)
 
@@ -56,20 +143,40 @@ class Offset:
 
 
 @dataclass
-class OrderBy:
+class OrderByRaw:
+    __slots__ = ("sql",)
+
+    sql: str
+
+
+@dataclass
+class OrderByItem:
     __slots__ = ("columns", "ascending")
 
-    columns: t.Sequence[Column]
+    columns: t.Sequence[t.Union[Column, OrderByRaw]]
     ascending: bool
+
+
+@dataclass
+class OrderBy:
+    order_by_items: t.List[OrderByItem] = field(default_factory=list)
 
     @property
     def querystring(self) -> QueryString:
-        order = "ASC" if self.ascending else "DESC"
-        columns_names = ", ".join(
-            i._meta.get_full_name(with_alias=False) for i in self.columns
-        )
+        order_by_strings: t.List[str] = []
+        for order_by_item in self.order_by_items:
+            order = "ASC" if order_by_item.ascending else "DESC"
+            for column in order_by_item.columns:
+                if isinstance(column, Column):
+                    expression = column._meta.get_full_name(with_alias=False)
+                elif isinstance(column, OrderByRaw):
+                    expression = column.sql
+                else:
+                    raise ValueError("Unrecognised order_by")
 
-        return QueryString(f" ORDER BY {columns_names} {order}")
+                order_by_strings.append(f"{expression} {order}")
+
+        return QueryString(f" ORDER BY {', '.join(order_by_strings)}")
 
     def __str__(self):
         return self.querystring.__str__()
@@ -166,13 +273,27 @@ class WhereDelegate:
 @dataclass
 class OrderByDelegate:
 
-    _order_by: t.Optional[OrderBy] = None
+    _order_by: OrderBy = field(default_factory=OrderBy)
 
     def get_order_by_columns(self) -> t.List[Column]:
-        return list(self._order_by.columns) if self._order_by else []
+        """
+        Used to work out which columns are needed for joins.
+        """
+        return [
+            i
+            for i in itertools.chain(
+                *[i.columns for i in self._order_by.order_by_items]
+            )
+            if isinstance(i, Column)
+        ]
 
-    def order_by(self, *columns: Column, ascending=True):
-        self._order_by = OrderBy(columns, ascending)
+    def order_by(self, *columns: t.Union[Column, OrderByRaw], ascending=True):
+        if len(columns) < 1:
+            raise ValueError("At least one column must be passed to order_by.")
+
+        self._order_by.order_by_items.append(
+            OrderByItem(columns=columns, ascending=ascending)
+        )
 
 
 @dataclass
@@ -184,22 +305,40 @@ class LimitDelegate:
     def limit(self, number: int):
         self._limit = Limit(number)
 
-    def first(self):
-        self.limit(1)
-        self._first = True
-
     def copy(self) -> LimitDelegate:
         _limit = self._limit.copy() if self._limit is not None else None
         return self.__class__(_limit=_limit, _first=self._first)
 
 
 @dataclass
+class AsOfDelegate:
+    """
+    Time travel queries using "As Of" syntax.
+    Currently supports Cockroach using AS OF SYSTEM TIME.
+    """
+
+    _as_of: t.Optional[AsOf] = None
+
+    def as_of(self, interval: str = "-1s"):
+        self._as_of = AsOf(interval)
+
+
+@dataclass
 class DistinctDelegate:
 
-    _distinct: bool = False
+    _distinct: Distinct = field(
+        default_factory=lambda: Distinct(enabled=False, on=None)
+    )
 
-    def distinct(self):
-        self._distinct = True
+    def distinct(
+        self, enabled: bool, on: t.Optional[t.Sequence[Column]] = None
+    ):
+        if on and not isinstance(on, collections.abc.Sequence):
+            # Check a sequence is passed in, otherwise the user will get some
+            # unuseful errors later on.
+            raise ValueError("`on` must be a sequence of `Column` instances")
+
+        self._distinct = Distinct(enabled=enabled, on=on)
 
 
 @dataclass
@@ -374,13 +513,7 @@ class ColumnsDelegate:
             in which case we flatten the list.
 
         """
-        _columns = []
-        for column in columns:
-            if isinstance(column, list):
-                _columns.extend(column)
-            else:
-                _columns.append(column)
-
+        _columns = flatten(columns)
         combined = list(self.selected_columns) + _columns
         self.selected_columns = combined
 
@@ -450,9 +583,10 @@ class OffsetDelegate:
 
     Typically used in conjunction with order_by and limit.
 
-    Example usage:
+    Example usage::
 
-    .offset(100)
+        .offset(100)
+
     """
 
     _offset: t.Optional[Offset] = None
@@ -482,12 +616,173 @@ class GroupBy:
 @dataclass
 class GroupByDelegate:
     """
-    Used to group results - needed when doing aggregation.
+    Used to group results - needed when doing aggregation::
 
-    .group_by(Band.name)
+        .group_by(Band.name)
+
     """
 
     _group_by: t.Optional[GroupBy] = None
 
     def group_by(self, *columns: Column):
         self._group_by = GroupBy(columns=columns)
+
+
+class OnConflictAction(str, Enum):
+    """
+    Specify which action to take on conflict.
+    """
+
+    do_nothing = "DO NOTHING"
+    do_update = "DO UPDATE"
+
+
+@dataclass
+class OnConflictItem:
+    target: t.Optional[t.Union[str, Column, t.Tuple[Column, ...]]] = None
+    action: t.Optional[OnConflictAction] = None
+    values: t.Optional[
+        t.Sequence[t.Union[Column, t.Tuple[Column, t.Any]]]
+    ] = None
+    where: t.Optional[Combinable] = None
+
+    @property
+    def target_string(self) -> str:
+        target = self.target
+        assert target
+
+        def to_string(value) -> str:
+            if isinstance(value, Column):
+                return f'"{value._meta.db_column_name}"'
+            else:
+                raise ValueError("OnConflict.target isn't a valid type")
+
+        if isinstance(target, str):
+            return f'ON CONSTRAINT "{target}"'
+        elif isinstance(target, Column):
+            return f"({to_string(target)})"
+        elif isinstance(target, tuple):
+            columns_str = ", ".join([to_string(i) for i in target])
+            return f"({columns_str})"
+        else:
+            raise ValueError("OnConflict.target isn't a valid type")
+
+    @property
+    def action_string(self) -> QueryString:
+        action = self.action
+        if isinstance(action, OnConflictAction):
+            if action == OnConflictAction.do_nothing:
+                return QueryString(OnConflictAction.do_nothing.value)
+            elif action == OnConflictAction.do_update:
+                values = []
+                query = f"{OnConflictAction.do_update.value} SET"
+
+                if not self.values:
+                    raise ValueError("No values specified for `on conflict`")
+
+                for value in self.values:
+                    if isinstance(value, Column):
+                        column_name = value._meta.db_column_name
+                        query += f' "{column_name}"=EXCLUDED."{column_name}",'
+                    elif isinstance(value, tuple):
+                        column = value[0]
+                        value_ = value[1]
+                        if isinstance(column, Column):
+                            column_name = column._meta.db_column_name
+                        else:
+                            raise ValueError("Unsupported column type")
+
+                        query += f' "{column_name}"={{}},'
+                        values.append(value_)
+
+                return QueryString(query.rstrip(","), *values)
+
+        raise ValueError("OnConflict.action isn't a valid type")
+
+    @property
+    def querystring(self) -> QueryString:
+        query = " ON CONFLICT"
+        values = []
+
+        if self.target:
+            query += f" {self.target_string}"
+
+        if self.action:
+            query += " {}"
+            values.append(self.action_string)
+
+        if self.where:
+            query += " WHERE {}"
+            values.append(self.where.querystring)
+
+        return QueryString(query, *values)
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
+
+
+@dataclass
+class OnConflict:
+    """
+    Multiple `ON CONFLICT` statements are allowed - which is why we have this
+    parent class.
+    """
+
+    on_conflict_items: t.List[OnConflictItem] = field(default_factory=list)
+
+    @property
+    def querystring(self) -> QueryString:
+        query = "".join("{}" for i in self.on_conflict_items)
+        return QueryString(
+            query, *[i.querystring for i in self.on_conflict_items]
+        )
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
+
+
+@dataclass
+class OnConflictDelegate:
+    """
+    Used with insert queries to specify what to do when a query fails due to
+    a constraint::
+
+        .on_conflict(action='DO NOTHING')
+
+        .on_conflict(action='DO UPDATE', values=[Band.popularity])
+
+        .on_conflict(action='DO UPDATE', values=[(Band.popularity, 1)])
+
+    """
+
+    _on_conflict: OnConflict = field(default_factory=OnConflict)
+
+    def on_conflict(
+        self,
+        target: t.Optional[t.Union[str, Column, t.Tuple[Column, ...]]] = None,
+        action: t.Union[
+            OnConflictAction, Literal["DO NOTHING", "DO UPDATE"]
+        ] = OnConflictAction.do_nothing,
+        values: t.Optional[
+            t.Sequence[t.Union[Column, t.Tuple[Column, t.Any]]]
+        ] = None,
+        where: t.Optional[Combinable] = None,
+    ):
+        action_: OnConflictAction
+        if isinstance(action, OnConflictAction):
+            action_ = action
+        elif isinstance(action, str):
+            action_ = OnConflictAction(action.upper())
+        else:
+            raise ValueError("Unrecognised `on conflict` action.")
+
+        if where and action_ == OnConflictAction.do_nothing:
+            raise ValueError(
+                "The `where` option can only be used with DO NOTHING."
+            )
+
+        self._on_conflict.on_conflict_items.append(
+            OnConflictItem(
+                target=target, action=action_, values=values, where=where
+            )
+        )

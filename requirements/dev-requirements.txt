@@ -5,6 +5,6 @@ flake8==4.0.1
 isort==5.10.1
 slotscheck==0.14.0
 twine==3.8.0
-mypy==0.942
+mypy==0.961
 pip-upgrader==1.4.15
-wheel==0.37.1
+wheel==0.38.1

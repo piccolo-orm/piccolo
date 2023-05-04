@@ -1,31 +1,37 @@
 from __future__ import annotations
 
+import contextvars
 import logging
+import pprint
 import typing as t
 from abc import ABCMeta, abstractmethod
 
 from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
-from piccolo.utils.warnings import Level, colored_warning
+from piccolo.utils.warnings import Level, colored_string, colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.query.base import Query
 
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class Batch:
     pass
 
 
-class Engine(metaclass=ABCMeta):
+TransactionClass = t.TypeVar("TransactionClass")
 
-    __slots__ = ()
+
+class Engine(t.Generic[TransactionClass], metaclass=ABCMeta):
+
+    __slots__ = ("query_id",)
 
     def __init__(self):
         run_sync(self.check_version())
         run_sync(self.prep_database())
+        self.query_id = 0
 
     @property
     @abstractmethod
@@ -50,7 +56,12 @@ class Engine(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    async def batch(self, query: Query, batch_size: int = 100) -> Batch:
+    async def batch(
+        self,
+        query: Query,
+        batch_size: int = 100,
+        node: t.Optional[str] = None,
+    ) -> Batch:
         pass
 
     @abstractmethod
@@ -111,3 +122,37 @@ class Engine(metaclass=ABCMeta):
         The database driver doesn't implement connection pooling.
         """
         self._connection_pool_warning()
+
+    ###########################################################################
+
+    current_transaction: contextvars.ContextVar[t.Optional[TransactionClass]]
+
+    def transaction_exists(self) -> bool:
+        """
+        Find out if a transaction is currently active.
+
+        :returns:
+            ``True`` if a transaction is already active for the current
+            asyncio task. This is useful to know, because nested transactions
+            aren't currently supported, so you can check if an existing
+            transaction is already active, before creating a new one.
+
+        """
+        return self.current_transaction.get() is not None
+
+    ###########################################################################
+    # Logging queries and responses
+
+    def get_query_id(self) -> int:
+        self.query_id += 1
+        return self.query_id
+
+    def print_query(self, query_id: int, query: str):
+        print(colored_string(f"\nQuery {query_id}:"))
+        print(query)
+
+    def print_response(self, query_id: int, response: t.List):
+        print(
+            colored_string(f"\nQuery {query_id} response:", level=Level.high)
+        )
+        pprint.pprint(response)

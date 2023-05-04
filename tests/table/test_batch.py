@@ -1,7 +1,13 @@
 import asyncio
 import math
+from unittest import TestCase
 
-from tests.base import DBTestCase
+from piccolo.columns import Varchar
+from piccolo.engine.finder import engine_finder
+from piccolo.engine.postgres import AsyncBatch, PostgresEngine
+from piccolo.table import Table
+from piccolo.utils.sync import run_sync
+from tests.base import AsyncMock, DBTestCase, engines_only
 from tests.example_apps.music.tables import Manager
 
 
@@ -87,3 +93,35 @@ class TestBatchObjects(DBTestCase):
 
         self.assertEqual(_row_count, row_count)
         self.assertEqual(iterations, _iterations)
+
+
+@engines_only("postgres", "cockroach")
+class TestBatchNodeArg(TestCase):
+    def test_batch_extra_node(self):
+        """
+        Make sure the batch methods can accept a node argument.
+        """
+
+        # Get the test database credentials:
+        test_engine = engine_finder()
+
+        EXTRA_NODE = AsyncMock(spec=PostgresEngine(config=test_engine.config))
+
+        DB = PostgresEngine(
+            config=test_engine.config,
+            extra_nodes={"read_1": EXTRA_NODE},
+        )
+
+        class Manager(Table, db=DB):
+            name = Varchar()
+
+        # Testing `select`
+        response = run_sync(Manager.select().batch(node="read_1"))
+        self.assertIsInstance(response, AsyncBatch)
+        self.assertTrue(EXTRA_NODE.get_new_connection.called)
+        EXTRA_NODE.reset_mock()
+
+        # Testing `objects`
+        response = run_sync(Manager.objects().batch(node="read_1"))
+        self.assertIsInstance(response, AsyncBatch)
+        self.assertTrue(EXTRA_NODE.get_new_connection.called)

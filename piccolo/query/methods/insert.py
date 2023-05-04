@@ -2,8 +2,16 @@ from __future__ import annotations
 
 import typing as t
 
+from typing_extensions import Literal
+
+from piccolo.custom_types import Combinable, TableInstance
 from piccolo.query.base import Query
-from piccolo.query.mixins import AddDelegate, ReturningDelegate
+from piccolo.query.mixins import (
+    AddDelegate,
+    OnConflictAction,
+    OnConflictDelegate,
+    ReturningDelegate,
+)
 from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -11,24 +19,66 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
-class Insert(Query):
-    __slots__ = ("add_delegate", "returning_delegate")
+class Insert(
+    t.Generic[TableInstance], Query[TableInstance, t.List[t.Dict[str, t.Any]]]
+):
+    __slots__ = ("add_delegate", "on_conflict_delegate", "returning_delegate")
 
-    def __init__(self, table: t.Type[Table], *instances: Table, **kwargs):
+    def __init__(
+        self, table: t.Type[TableInstance], *instances: TableInstance, **kwargs
+    ):
         super().__init__(table, **kwargs)
         self.add_delegate = AddDelegate()
         self.returning_delegate = ReturningDelegate()
+        self.on_conflict_delegate = OnConflictDelegate()
         self.add(*instances)
 
     ###########################################################################
     # Clauses
 
-    def add(self, *instances: Table) -> Insert:
+    def add(self: Self, *instances: Table) -> Self:
         self.add_delegate.add(*instances, table_class=self.table)
         return self
 
-    def returning(self, *columns: Column) -> Insert:
+    def returning(self: Self, *columns: Column) -> Self:
         self.returning_delegate.returning(columns)
+        return self
+
+    def on_conflict(
+        self: Self,
+        target: t.Optional[t.Union[str, Column, t.Tuple[Column, ...]]] = None,
+        action: t.Union[
+            OnConflictAction, Literal["DO NOTHING", "DO UPDATE"]
+        ] = OnConflictAction.do_nothing,
+        values: t.Optional[
+            t.Sequence[t.Union[Column, t.Tuple[Column, t.Any]]]
+        ] = None,
+        where: t.Optional[Combinable] = None,
+    ) -> Self:
+        if (
+            self.engine_type == "sqlite"
+            and self.table._meta.db.get_version_sync() < 3.24
+        ):
+            raise NotImplementedError(
+                "SQLite versions lower than 3.24 don't support ON CONFLICT"
+            )
+
+        if (
+            self.engine_type in ("postgres", "cockroach")
+            and len(self.on_conflict_delegate._on_conflict.on_conflict_items)
+            == 1
+        ):
+            raise NotImplementedError(
+                "Postgres and Cockroach only support a single ON CONFLICT "
+                "clause."
+            )
+
+        self.on_conflict_delegate.on_conflict(
+            target=target,
+            action=action,
+            values=values,
+            where=where,
+        )
         return self
 
     ###########################################################################
@@ -65,19 +115,33 @@ class Insert(Query):
 
         engine_type = self.engine_type
 
-        if engine_type == "postgres" or (
+        on_conflict = self.on_conflict_delegate._on_conflict
+        if on_conflict.on_conflict_items:
+            querystring = QueryString(
+                "{}{}",
+                querystring,
+                on_conflict.querystring,
+                query_type="insert",
+                table=self.table,
+            )
+
+        if engine_type in ("postgres", "cockroach") or (
             engine_type == "sqlite"
             and self.table._meta.db.get_version_sync() >= 3.35
         ):
-            if self.returning_delegate._returning:
+            returning = self.returning_delegate._returning
+            if returning:
                 return [
                     QueryString(
                         "{}{}",
                         querystring,
-                        self.returning_delegate._returning.querystring,
+                        returning.querystring,
                         query_type="insert",
                         table=self.table,
                     )
                 ]
 
         return [querystring]
+
+
+Self = t.TypeVar("Self", bound=Insert)

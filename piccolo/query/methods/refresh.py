@@ -40,7 +40,9 @@ class Refresh:
             i for i in self.instance._meta.columns if not i._meta.primary_key
         ]
 
-    async def run(self) -> Table:
+    async def run(
+        self, in_pool: bool = True, node: t.Optional[str] = None
+    ) -> Table:
         """
         Run it asynchronously. For example::
 
@@ -70,9 +72,10 @@ class Refresh:
             raise ValueError("No columns to fetch.")
 
         updated_values = (
-            await instance.select(*columns)
+            await instance.__class__.select(*columns)
             .where(pk_column == primary_key_value)
             .first()
+            .run(node=node, in_pool=in_pool)
         )
 
         if updated_values is None:
@@ -92,11 +95,11 @@ class Refresh:
         """
         return self.run().__await__()
 
-    def run_sync(self) -> Table:
+    def run_sync(self, *args, **kwargs) -> Table:
         """
         Run it synchronously. For example::
 
             my_instance.refresh().run_sync()
 
         """
-        return run_sync(self.run())
+        return run_sync(self.run(*args, **kwargs))

@@ -43,3 +43,17 @@ When you have the database setup, you can connect to it as follows:
 .. code-block:: bash
 
     piccolo playground run --engine=postgres
+
+iPython
+-------
+
+The playground is built on top of iPython. We provide sensible defaults out of
+the box for syntax highlighting etc. However, to use your own custom iPython
+profile (located in ``~/.ipython``), do the following:
+
+.. code-block:: bash
+
+    piccolo playground run --ipython_profile
+
+See the `iPython docs <https://ipython.readthedocs.io/en/stable/config/intro.html>`_
+for more information.

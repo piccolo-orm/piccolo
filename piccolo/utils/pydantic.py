@@ -14,6 +14,7 @@ from piccolo.columns.column_types import (
     JSONB,
     Array,
     Decimal,
+    Email,
     ForeignKey,
     Numeric,
     Secret,
@@ -36,7 +37,9 @@ class Config(pydantic.BaseConfig):
     arbitrary_types_allowed = True
 
 
-def pydantic_json_validator(cls, value):
+def pydantic_json_validator(cls, value, field):
+    if not field.required and value is None:
+        return value
     try:
         load_json(value)
     except json.JSONDecodeError as e:
@@ -87,6 +90,7 @@ def create_pydantic_model(
     deserialize_json: bool = False,
     recursion_depth: int = 0,
     max_recursion_depth: int = 5,
+    pydantic_config_class: t.Optional[t.Type[pydantic.BaseConfig]] = None,
     **schema_extra_kwargs,
 ) -> t.Type[pydantic.BaseModel]:
     """
@@ -129,6 +133,9 @@ def create_pydantic_model(
         Not to be set by the user - used internally to track recursion.
     :param max_recursion_depth:
         If using nested models, this specifies the max amount of recursion.
+    :param pydantic_config_class:
+        Config class to use as base for the generated pydantic model. You can
+        create your own subclass of ``pydantic.BaseConfig`` and pass it here.
     :param schema_extra_kwargs:
         This can be used to add additional fields to the schema. This is
         very useful when using Pydantic's JSON Schema features. For example:
@@ -211,6 +218,8 @@ def create_pydantic_model(
             value_type: t.Type = pydantic.condecimal(
                 max_digits=column.precision, decimal_places=column.scale
             )
+        elif isinstance(column, Email):
+            value_type = pydantic.EmailStr
         elif isinstance(column, Varchar):
             value_type = pydantic.constr(max_length=column.length)
         elif isinstance(column, Array):
@@ -296,7 +305,11 @@ def create_pydantic_model(
 
         columns[column_name] = (_type, field)
 
-    class CustomConfig(Config):
+    base_classes: t.List[t.Type[pydantic.BaseConfig]] = [Config]
+    if pydantic_config_class:
+        base_classes.append(pydantic_config_class)
+
+    class CustomConfig(*base_classes):  # type: ignore
         schema_extra = {
             "help_text": table._meta.help_text,
             **schema_extra_kwargs,

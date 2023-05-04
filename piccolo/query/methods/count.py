@@ -4,10 +4,9 @@ import typing as t
 
 from piccolo.custom_types import Combinable
 from piccolo.query.base import Query
+from piccolo.query.methods.select import Select
 from piccolo.query.mixins import WhereDelegate
 from piccolo.querystring import QueryString
-
-from .select import Select
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
@@ -20,9 +19,14 @@ class Count(Query):
         super().__init__(table, **kwargs)
         self.where_delegate = WhereDelegate()
 
-    def where(self, *where: Combinable) -> Count:
+    ###########################################################################
+    # Clauses
+
+    def where(self: Self, *where: Combinable) -> Self:
         self.where_delegate.where(*where)
         return self
+
+    ###########################################################################
 
     async def response_handler(self, response) -> bool:
         return response[0]["count"]
@@ -37,3 +41,6 @@ class Count(Query):
                 select.querystrings[0],
             )
         ]
+
+
+Self = t.TypeVar("Self", bound=Count)

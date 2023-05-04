@@ -1,9 +1,25 @@
+import datetime
 from unittest import TestCase
 
+import pytest
+
 from piccolo.apps.user.tables import BaseUser
+from piccolo.columns import Date, Varchar
 from piccolo.columns.combination import WhereRaw
-from piccolo.query.methods.select import Avg, Count, Max, Min, Sum
-from tests.base import DBTestCase, postgres_only, sqlite_only
+from piccolo.query import OrderByRaw
+from piccolo.query.methods.select import Avg, Count, Max, Min, SelectRaw, Sum
+from piccolo.query.mixins import DistinctOnError
+from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
+from tests.base import (
+    DBTestCase,
+    engine_is,
+    engine_version_lt,
+    engines_only,
+    engines_skip,
+    is_running_cockroach,
+    is_running_sqlite,
+    sqlite_only,
+)
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
 
@@ -13,10 +29,26 @@ class TestSelect(DBTestCase):
 
         response = Band.select().run_sync()
 
-        self.assertDictEqual(
-            response[0],
-            {"id": 1, "name": "Pythonistas", "manager": 1, "popularity": 1000},
-        )
+        if engine_is("cockroach"):
+            self.assertDictEqual(
+                response[0],
+                {
+                    "id": response[0]["id"],
+                    "name": "Pythonistas",
+                    "manager": response[0]["manager"],
+                    "popularity": 1000,
+                },
+            )
+        else:
+            self.assertDictEqual(
+                response[0],
+                {
+                    "id": 1,
+                    "name": "Pythonistas",
+                    "manager": 1,
+                    "popularity": 1000,
+                },
+            )
 
     def test_query_some_columns(self):
         self.insert_row()
@@ -74,7 +106,7 @@ class TestSelect(DBTestCase):
         response = Band.select(Band.name).where().run_sync()
         self.assertEqual(response, [{"name": "Pythonistas"}])
 
-    @postgres_only
+    @engines_only("postgres", "cockroach")
     def test_where_like_postgres(self):
         """
         Postgres' LIKE is case sensitive.
@@ -168,7 +200,7 @@ class TestSelect(DBTestCase):
                 .run_sync(),
             )
 
-    @postgres_only
+    @engines_only("postgres", "cockroach")
     def test_where_ilike_postgres(self):
         """
         Only Postgres has ILIKE - it's not in the SQL standard. It's for
@@ -375,6 +407,7 @@ class TestSelect(DBTestCase):
             response, [{"name": "CSharps"}, {"name": "Rustaceans"}]
         )
 
+    @engines_skip("cockroach")
     def test_multiple_where(self):
         """
         Test that chaining multiple where clauses works results in an AND.
@@ -392,6 +425,7 @@ class TestSelect(DBTestCase):
         self.assertEqual(response, [{"name": "Rustaceans"}])
         self.assertIn("AND", query.__str__())
 
+    @engines_skip("cockroach")
     def test_complex_where(self):
         """
         Test a complex where clause - combining AND, and OR.
@@ -422,7 +456,7 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(response, [{"name": "CSharps"}])
 
-    @postgres_only
+    @engines_only("postgres", "cockroach")
     def test_offset_postgres(self):
         self.insert_rows()
 
@@ -462,27 +496,6 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(response, {"name": "CSharps"})
 
-    def test_order_by_ascending(self):
-        self.insert_rows()
-
-        response = (
-            Band.select(Band.name).order_by(Band.name).limit(1).run_sync()
-        )
-
-        self.assertEqual(response, [{"name": "CSharps"}])
-
-    def test_order_by_decending(self):
-        self.insert_rows()
-
-        response = (
-            Band.select(Band.name)
-            .order_by(Band.name, ascending=False)
-            .limit(1)
-            .run_sync()
-        )
-
-        self.assertEqual(response, [{"name": "Rustaceans"}])
-
     def test_count(self):
         self.insert_rows()
 
@@ -493,6 +506,27 @@ class TestSelect(DBTestCase):
     def test_distinct(self):
         """
         Make sure the distinct clause works.
+        """
+        self.insert_rows()
+        self.insert_rows()
+
+        query = Band.select(Band.name).where(Band.name == "Pythonistas")
+        self.assertNotIn("DISTINCT", query.__str__())
+
+        response = query.run_sync()
+        self.assertEqual(
+            response, [{"name": "Pythonistas"}, {"name": "Pythonistas"}]
+        )
+
+        query = query.distinct()
+        self.assertIn("DISTINCT", query.__str__())
+
+        response = query.run_sync()
+        self.assertEqual(response, [{"name": "Pythonistas"}])
+
+    def test_distinct_on(self):
+        """
+        Make sure the distinct clause works, with the ``on`` param.
         """
         self.insert_rows()
         self.insert_rows()
@@ -906,7 +940,13 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
-        self.assertEqual(response, {"id": 1, "name": "Pythonistas"})
+
+        if engine_is("cockroach"):
+            self.assertEqual(
+                response, {"id": response["id"], "name": "Pythonistas"}
+            )
+        else:
+            self.assertEqual(response, {"id": 1, "name": "Pythonistas"})
 
     def test_call_chain(self):
         """
@@ -949,6 +989,28 @@ class TestSelect(DBTestCase):
             response, [{"name": "Pythonistas", "manager_name": "Guido"}]
         )
 
+    @pytest.mark.skipif(
+        is_running_sqlite() and engine_version_lt(3.35),
+        reason="SQLite doesn't have math functions in this version.",
+    )
+    @pytest.mark.skipif(
+        is_running_cockroach(),
+        reason=(
+            "Cockroach raises an error when trying to use the log function."
+        ),
+    )
+    def test_select_raw(self):
+        """
+        Make sure ``SelectRaw`` can be used in select queries.
+        """
+        self.insert_row()
+        response = Band.select(
+            Band.name, SelectRaw("round(log(popularity)) AS popularity_log")
+        ).run_sync()
+        self.assertListEqual(
+            response, [{"name": "Pythonistas", "popularity_log": 3.0}]
+        )
+
 
 class TestSelectSecret(TestCase):
     def setUp(self):
@@ -985,5 +1047,352 @@ class TestSelectSecretParameter(TestCase):
         venue.save().run_sync()
 
         venue_dict = Venue.select(exclude_secrets=True).first().run_sync()
-        self.assertTrue(venue_dict, {"id": 1, "name": "The Garage"})
+        if engine_is("cockroach"):
+            self.assertTrue(
+                venue_dict, {"id": venue_dict["id"], "name": "The Garage"}
+            )
+        else:
+            self.assertTrue(venue_dict, {"id": 1, "name": "The Garage"})
         self.assertNotIn("capacity", venue_dict.keys())
+
+
+class TestSelectOrderBy(TestCase):
+    """
+    We use TestCase, rather than DBTestCase, as we want a lot of data to test
+    with.
+    """
+
+    def setUp(self):
+        """
+        Create tables and lots of test data.
+        """
+        create_db_tables_sync(Band, Manager)
+
+        data = [
+            {
+                "band_name": "Pythonistas",
+                "manager_name": "Guido",
+                "popularity": 1000,
+            },
+            {
+                "band_name": "Rustaceans",
+                "manager_name": "Graydon",
+                "popularity": 800,
+            },
+            {
+                "band_name": "C-Sharps",
+                "manager_name": "Anders",
+                "popularity": 800,
+            },
+            {
+                "band_name": "Rubyists",
+                "manager_name": "Matz",
+                "popularity": 820,
+            },
+        ]
+
+        for item in data:
+            manager = (
+                Manager.objects().create(name=item["manager_name"]).run_sync()
+            )
+
+            Band.objects().create(
+                name=item["band_name"],
+                manager=manager,
+                popularity=item["popularity"],
+            ).run_sync()
+
+    def tearDown(self):
+        drop_db_tables_sync(Band, Manager)
+
+    def test_ascending(self):
+        response = Band.select(Band.name).order_by(Band.name).run_sync()
+
+        self.assertEqual(
+            response,
+            [
+                {"name": "C-Sharps"},
+                {"name": "Pythonistas"},
+                {"name": "Rubyists"},
+                {"name": "Rustaceans"},
+            ],
+        )
+
+    def test_descending(self):
+        response = (
+            Band.select(Band.name)
+            .order_by(Band.name, ascending=False)
+            .run_sync()
+        )
+
+        self.assertEqual(
+            response,
+            [
+                {"name": "Rustaceans"},
+                {"name": "Rubyists"},
+                {"name": "Pythonistas"},
+                {"name": "C-Sharps"},
+            ],
+        )
+
+    def test_string(self):
+        """
+        Make sure strings can be used to identify columns if the user prefers.
+        """
+        response = Band.select(Band.name).order_by("name").run_sync()
+
+        self.assertEqual(
+            response,
+            [
+                {"name": "C-Sharps"},
+                {"name": "Pythonistas"},
+                {"name": "Rubyists"},
+                {"name": "Rustaceans"},
+            ],
+        )
+
+    def test_string_unrecognised(self):
+        """
+        Make sure an unrecognised column name raises an Exception.
+        """
+        with self.assertRaises(ValueError) as manager:
+            Band.select(Band.name).order_by("foo")
+
+        self.assertEqual(
+            manager.exception.__str__(),
+            "No matching column found with name == foo",
+        )
+
+    def test_multiple_columns_ascending(self):
+        """
+        Make sure we can order by multiple columns.
+        """
+        response = (
+            Band.select(Band.popularity, Band.name)
+            .order_by(Band.popularity, Band.name)
+            .run_sync()
+        )
+
+        self.assertEqual(
+            response,
+            [
+                {"popularity": 800, "name": "C-Sharps"},
+                {"popularity": 800, "name": "Rustaceans"},
+                {"popularity": 820, "name": "Rubyists"},
+                {"popularity": 1000, "name": "Pythonistas"},
+            ],
+        )
+
+    def test_multiple_columns_descending(self):
+        """
+        Make sure we can order by multiple columns, descending.
+        """
+        response = (
+            Band.select(Band.popularity, Band.name)
+            .order_by(Band.popularity, Band.name, ascending=False)
+            .run_sync()
+        )
+
+        self.assertEqual(
+            response,
+            [
+                {"popularity": 1000, "name": "Pythonistas"},
+                {"popularity": 820, "name": "Rubyists"},
+                {"popularity": 800, "name": "Rustaceans"},
+                {"popularity": 800, "name": "C-Sharps"},
+            ],
+        )
+
+    def test_join(self):
+        """
+        Make sure that we can order using columns in related tables.
+        """
+        response = (
+            Band.select(Band.manager.name.as_alias("manager_name"), Band.name)
+            .order_by(Band.manager.name)
+            .run_sync()
+        )
+        self.assertEqual(
+            response,
+            [
+                {"manager_name": "Anders", "name": "C-Sharps"},
+                {"manager_name": "Graydon", "name": "Rustaceans"},
+                {"manager_name": "Guido", "name": "Pythonistas"},
+                {"manager_name": "Matz", "name": "Rubyists"},
+            ],
+        )
+
+    def test_ascending_descending(self):
+        """
+        Make sure we can combine ascending and descending.
+        """
+        response = (
+            Band.select(Band.popularity, Band.name)
+            .order_by(Band.popularity)
+            .order_by(Band.name, ascending=False)
+            .run_sync()
+        )
+
+        self.assertEqual(
+            response,
+            [
+                {"popularity": 800, "name": "Rustaceans"},
+                {"popularity": 800, "name": "C-Sharps"},
+                {"popularity": 820, "name": "Rubyists"},
+                {"popularity": 1000, "name": "Pythonistas"},
+            ],
+        )
+
+    def test_order_by_raw(self):
+        """
+        Maker sure ``OrderByRaw`` can be used, to order by anything the user
+        wants.
+        """
+        response = (
+            Band.select(Band.name).order_by(OrderByRaw("name")).run_sync()
+        )
+
+        self.assertEqual(
+            response,
+            [
+                {"name": "C-Sharps"},
+                {"name": "Pythonistas"},
+                {"name": "Rubyists"},
+                {"name": "Rustaceans"},
+            ],
+        )
+
+
+class Album(Table):
+    band = Varchar()
+    title = Varchar()
+    release_date = Date()
+
+
+class TestDistinctOn(TestCase):
+    def setUp(self):
+        Album.create_table().run_sync()
+
+    def tearDown(self):
+        Album.alter().drop_table().run_sync()
+
+    @engines_only("postgres", "cockroach")
+    def test_distinct_on(self):
+        """
+        Make sure the ``distinct`` method can be used to create a
+        ``DISTINCT ON`` clause.
+        """
+        Album.insert(
+            Album(
+                {
+                    Album.band: "Pythonistas",
+                    Album.title: "P1",
+                    Album.release_date: datetime.date(
+                        year=2022, month=1, day=1
+                    ),
+                }
+            ),
+            Album(
+                {
+                    Album.band: "Pythonistas",
+                    Album.title: "P2",
+                    Album.release_date: datetime.date(
+                        year=2023, month=1, day=1
+                    ),
+                }
+            ),
+            Album(
+                {
+                    Album.band: "Rustaceans",
+                    Album.title: "R1",
+                    Album.release_date: datetime.date(
+                        year=2022, month=1, day=1
+                    ),
+                }
+            ),
+            Album(
+                {
+                    Album.band: "Rustaceans",
+                    Album.title: "R2",
+                    Album.release_date: datetime.date(
+                        year=2023, month=1, day=1
+                    ),
+                }
+            ),
+            Album(
+                {
+                    Album.band: "C-Sharps",
+                    Album.title: "C1",
+                    Album.release_date: datetime.date(
+                        year=2022, month=1, day=1
+                    ),
+                }
+            ),
+            Album(
+                {
+                    Album.band: "C-Sharps",
+                    Album.title: "C2",
+                    Album.release_date: datetime.date(
+                        year=2023, month=1, day=1
+                    ),
+                }
+            ),
+        ).run_sync()
+
+        # Get the most recent album for each band.
+        query = (
+            Album.select(Album.band, Album.title)
+            .distinct(on=[Album.band])
+            .order_by(Album.band)
+            .order_by(Album.release_date, ascending=False)
+        )
+        self.assertIn("DISTINCT ON", query.__str__())
+        response = query.run_sync()
+
+        self.assertEqual(
+            response,
+            [
+                {"band": "C-Sharps", "title": "C2"},
+                {"band": "Pythonistas", "title": "P2"},
+                {"band": "Rustaceans", "title": "R2"},
+            ],
+        )
+
+    @engines_only("sqlite")
+    def test_distinct_on_sqlite(self):
+        """
+        SQLite doesn't support ``DISTINCT ON``, so a ``ValueError`` should be
+        raised.
+        """
+        with self.assertRaises(NotImplementedError) as manager:
+            Album.select().distinct(on=[Album.band])
+
+        self.assertEqual(
+            manager.exception.__str__(),
+            "SQLite doesn't support DISTINCT ON",
+        )
+
+    @engines_only("postgres", "cockroach")
+    def test_distinct_on_error(self):
+        """
+        If we pass in something other than a sequence of columns, it should
+        raise a ValueError.
+        """
+        with self.assertRaises(ValueError) as manager:
+            Album.select().distinct(on=Album.band)
+
+        self.assertEqual(
+            manager.exception.__str__(),
+            "`on` must be a sequence of `Column` instances",
+        )
+
+    @engines_only("postgres", "cockroach")
+    def test_distinct_on_order_by_error(self):
+        """
+        The first column passed to `order_by` must match the first column
+        passed to `on`, otherwise an exception is raised.
+        """
+        with self.assertRaises(DistinctOnError):
+            Album.select().distinct(on=[Album.band]).order_by(
+                Album.release_date
+            ).run_sync()

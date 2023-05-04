@@ -236,7 +236,7 @@ class TimedeltaDelegate:
         if not isinstance(value, timedelta):
             raise ValueError("Only timedelta values can be added.")
 
-        if engine_type == "postgres":
+        if engine_type in ("postgres", "cockroach"):
             value_string = self.get_postgres_interval_string(interval=value)
             return QueryString(
                 f'"{column_name}" {operator} INTERVAL {value_string}',
@@ -358,6 +358,17 @@ class Varchar(Column):
 
     def __set__(self, obj, value: t.Union[str, None]):
         obj.__dict__[self._meta.name] = value
+
+
+class Email(Varchar):
+    """
+    Used for storing email addresses. It's identical to :class:`Varchar`,
+    except when using :func:`create_pydantic_model <piccolo.utils.pydantic.create_pydantic_model>` -
+    we add email validation to the Pydantic model. This means that :ref:`PiccoloAdmin`
+    also validates emails addresses.
+    """  # noqa: E501
+
+    pass
 
 
 class Secret(Varchar):
@@ -672,6 +683,8 @@ class BigInt(Integer):
         engine_type = self._meta.engine_type
         if engine_type == "postgres":
             return "BIGINT"
+        elif engine_type == "cockroach":
+            return "BIGINT"
         elif engine_type == "sqlite":
             return "INTEGER"
         raise Exception("Unrecognized engine type")
@@ -720,6 +733,8 @@ class SmallInt(Integer):
         engine_type = self._meta.engine_type
         if engine_type == "postgres":
             return "SMALLINT"
+        elif engine_type == "cockroach":
+            return "SMALLINT"
         elif engine_type == "sqlite":
             return "INTEGER"
         raise Exception("Unrecognized engine type")
@@ -759,14 +774,19 @@ class Serial(Column):
         engine_type = self._meta.engine_type
         if engine_type == "postgres":
             return "SERIAL"
+        elif engine_type == "cockroach":
+            return "INTEGER"
         elif engine_type == "sqlite":
             return "INTEGER"
         raise Exception("Unrecognized engine type")
 
     def default(self):
         engine_type = self._meta.engine_type
+
         if engine_type == "postgres":
             return DEFAULT
+        elif engine_type == "cockroach":
+            return Unquoted("unique_rowid()")
         elif engine_type == "sqlite":
             return NULL
         raise Exception("Unrecognized engine type")
@@ -799,6 +819,8 @@ class BigSerial(Serial):
         engine_type = self._meta.engine_type
         if engine_type == "postgres":
             return "BIGSERIAL"
+        elif engine_type == "cockroach":
+            return "BIGINT"
         elif engine_type == "sqlite":
             return "INTEGER"
         raise Exception("Unrecognized engine type")
@@ -1195,7 +1217,7 @@ class Time(Column):
         obj.__dict__[self._meta.name] = value
 
 
-class Interval(Column):  # lgtm [py/missing-equals]
+class Interval(Column):
     """
     Used for storing timedeltas. Uses the ``timedelta`` type for values.
 
@@ -1237,7 +1259,7 @@ class Interval(Column):  # lgtm [py/missing-equals]
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres":
+        if engine_type in ("postgres", "cockroach"):
             return "INTERVAL"
         elif engine_type == "sqlite":
             # We can't use 'INTERVAL' because the type affinity in SQLite would
@@ -1418,6 +1440,9 @@ class Numeric(Column):
 
     @property
     def column_type(self):
+        engine_type = self._meta.engine_type
+        if engine_type == "cockroach":
+            return "NUMERIC"  # All Numeric is the same for Cockroach.
         if self.digits:
             return f"NUMERIC({self.precision}, {self.scale})"
         else:
@@ -1612,7 +1637,7 @@ class ForeignKeySetupResponse:
     is_lazy: bool
 
 
-class ForeignKey(Column):  # lgtm [py/missing-equals]
+class ForeignKey(Column):
     """
     Used to reference another table. Uses the same type as the primary key
     column on the table it references.
@@ -1759,7 +1784,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
 
     :param on_update:
         Determines what the database should do when a row has it's primary key
-        updated. If set to ``OnDelete.cascade``, any rows referencing the
+        updated. If set to ``OnUpdate.cascade``, any rows referencing the
         updated row will have their references updated to point to the new
         primary key.
 
@@ -1775,7 +1800,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
 
         .. code-block:: python
 
-            from piccolo.columns import OnDelete
+            from piccolo.columns import OnUpdate
 
             class Band(Table):
                 name = ForeignKey(
@@ -1807,6 +1832,9 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
         column of the table being referenced.
         """
         target_column = self._foreign_key_meta.resolved_target_column
+        engine_type = self._meta.engine_type
+        if engine_type == "cockroach":
+            return target_column.column_type
         if isinstance(target_column, Serial):
             return Integer().column_type
         else:
@@ -2097,7 +2125,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
                 raise Exception("Call chain too long!")
 
             foreign_key_meta: ForeignKeyMeta = object.__getattribute__(
-                self, "_foreign_key_meta"
+                new_column, "_foreign_key_meta"
             )
 
             for proxy_column in foreign_key_meta.proxy_columns:
@@ -2105,6 +2133,8 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
                     delattr(new_column, proxy_column._meta.name)
                 except Exception:
                     pass
+
+            foreign_key_meta.proxy_columns = []
 
             for (
                 column
@@ -2151,7 +2181,7 @@ class ForeignKey(Column):  # lgtm [py/missing-equals]
 ###############################################################################
 
 
-class JSON(Column):  # lgtm[py/missing-equals]
+class JSON(Column):
     """
     Used for storing JSON strings. The data is stored as text. This can be
     preferable to JSONB if you just want to store and retrieve JSON without
@@ -2187,6 +2217,14 @@ class JSON(Column):  # lgtm[py/missing-equals]
 
         self.json_operator: t.Optional[str] = None
 
+    @property
+    def column_type(self):
+        engine_type = self._meta.engine_type
+        if engine_type == "cockroach":
+            return "JSONB"  # Cockroach is always JSONB.
+        else:
+            return "JSON"
+
     ###########################################################################
     # Descriptors
 
@@ -2217,6 +2255,10 @@ class JSONB(JSON):
         which is then converted to a JSON string.
 
     """
+
+    @property
+    def column_type(self):
+        return "JSONB"  # Must be defined, we override column_type() in JSON()
 
     def arrow(self, key: str) -> JSONB:
         """
@@ -2299,7 +2341,7 @@ class Bytea(Column):
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres":
+        if engine_type in ("postgres", "cockroach"):
             return "BYTEA"
         elif engine_type == "sqlite":
             return "BLOB"
@@ -2432,8 +2474,15 @@ class Array(Column):
 
         self._validate_default(default, (list, None))
 
+        choices = kwargs.get("choices")
+        if choices is not None:
+            self._validate_choices(
+                choices, allowed_type=base_column.value_type
+            )
+            self._validated_choices = True
+
         # Usually columns are given a name by the Table metaclass, but in this
-        # case we have to assign one manually.
+        # case we have to assign one manually to the base column.
         base_column._meta._name = base_column.__class__.__name__
 
         self.base_column = base_column
@@ -2445,7 +2494,7 @@ class Array(Column):
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres":
+        if engine_type in ("postgres", "cockroach"):
             return f"{self.base_column.column_type}[]"
         elif engine_type == "sqlite":
             return "ARRAY"
@@ -2469,9 +2518,9 @@ class Array(Column):
 
         """  # noqa: E501
         engine_type = self._meta.engine_type
-        if engine_type != "postgres":
+        if engine_type != "postgres" and engine_type != "cockroach":
             raise ValueError(
-                "Only Postgres supports array indexing currently."
+                "Only Postgres and Cockroach support array indexing."
             )
 
         if isinstance(value, int):
@@ -2510,7 +2559,7 @@ class Array(Column):
         """
         engine_type = self._meta.engine_type
 
-        if engine_type == "postgres":
+        if engine_type in ("postgres", "cockroach"):
             return Where(column=self, value=value, operator=ArrayAny)
         elif engine_type == "sqlite":
             return self.like(f"%{value}%")
@@ -2528,12 +2577,46 @@ class Array(Column):
         """
         engine_type = self._meta.engine_type
 
-        if engine_type == "postgres":
+        if engine_type in ("postgres", "cockroach"):
             return Where(column=self, value=value, operator=ArrayAll)
         elif engine_type == "sqlite":
             raise ValueError("Unsupported by SQLite")
         else:
             raise ValueError("Unrecognised engine type")
+
+    def cat(self, value: t.List[t.Any]) -> QueryString:
+        """
+        Used in an ``update`` query to append items to an array.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.cat([1000])
+            ... }).where(Ticket.id == 1)
+
+        You can also use the ``+`` symbol if you prefer:
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers + [1000]
+            ... }).where(Ticket.id == 1)
+
+        """
+        engine_type = self._meta.engine_type
+        if engine_type != "postgres" and engine_type != "cockroach":
+            raise ValueError(
+                "Only Postgres and Cockroach support array appending."
+            )
+
+        if not isinstance(value, list):
+            value = [value]
+
+        db_column_name = self._meta.db_column_name
+        return QueryString(f'array_cat("{db_column_name}", {{}})', value)
+
+    def __add__(self, value: t.List[t.Any]) -> QueryString:
+        return self.cat(value)
 
     ###########################################################################
     # Descriptors

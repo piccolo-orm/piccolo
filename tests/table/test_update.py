@@ -20,10 +20,11 @@ from piccolo.table import Table
 from tests.base import (
     DBTestCase,
     engine_version_lt,
+    engines_skip,
     is_running_sqlite,
     sqlite_only,
 )
-from tests.example_apps.music.tables import Band
+from tests.example_apps.music.tables import Band, Manager
 
 
 class TestUpdate(DBTestCase):
@@ -515,6 +516,7 @@ class TestOperators(TestCase):
     def tearDown(self):
         MyTable.alter().drop_table().run_sync()
 
+    @engines_skip("cockroach")
     def test_operators(self):
         for test_case in TEST_CASES:
             print(test_case.description)
@@ -552,3 +554,163 @@ class TestOperators(TestCase):
             # An error should be raised because we can't save at this level
             # of resolution - 1 millisecond is the minimum.
             MyTable.timestamp + datetime.timedelta(microseconds=1)
+
+
+###############################################################################
+# Test auto_update
+
+
+class AutoUpdateTable(Table, tablename="my_table"):
+    name = Varchar()
+    modified_on = Timestamp(
+        auto_update=datetime.datetime.now, null=True, default=None
+    )
+
+
+class TestAutoUpdate(TestCase):
+    def setUp(self):
+        AutoUpdateTable.create_table().run_sync()
+
+    def tearDown(self):
+        AutoUpdateTable.alter().drop_table().run_sync()
+
+    def test_save(self):
+        """
+        Make sure the ``save`` method uses ``auto_update`` columns correctly.
+        """
+        row = AutoUpdateTable(name="test")
+
+        # Saving for the first time is an INSERT, so `auto_update` shouldn't
+        # be triggered.
+        row.save().run_sync()
+        self.assertIsNone(row.modified_on)
+
+        # A subsequent save is an UPDATE, so `auto_update` should be triggered.
+        row.name = "test 2"
+        row.save().run_sync()
+        self.assertIsInstance(row.modified_on, datetime.datetime)
+
+        # If we save it again, `auto_update` should be applied again.
+        existing_modified_on = row.modified_on
+        row.name = "test 3"
+        row.save().run_sync()
+        self.assertIsInstance(row.modified_on, datetime.datetime)
+        self.assertGreater(row.modified_on, existing_modified_on)
+
+    def test_update(self):
+        """
+        Make sure the update method uses ``auto_update`` columns correctly.
+        """
+        # Insert a row for us to update
+        AutoUpdateTable.insert(AutoUpdateTable(name="test")).run_sync()
+
+        self.assertDictEqual(
+            AutoUpdateTable.select(
+                AutoUpdateTable.name, AutoUpdateTable.modified_on
+            )
+            .first()
+            .run_sync(),
+            {"name": "test", "modified_on": None},
+        )
+
+        # Update the row
+        AutoUpdateTable.update(
+            {AutoUpdateTable.name: "test 2"}, force=True
+        ).run_sync()
+
+        # Retrieve the row
+        updated_row = (
+            AutoUpdateTable.select(
+                AutoUpdateTable.name, AutoUpdateTable.modified_on
+            )
+            .first()
+            .run_sync()
+        )
+        self.assertIsInstance(updated_row["modified_on"], datetime.datetime)
+        self.assertEqual(updated_row["name"], "test 2")
+
+
+###############################################################################
+# Test update with joins
+
+
+class TestUpdateWithJoin(DBTestCase):
+    def test_join(self):
+        """
+        Make sure updates work when the where clause needs a join.
+        """
+        self.insert_rows()
+        Band.update({Band.name: "New name"}).where(
+            Band.manager.name == "Guido"
+        ).run_sync()
+
+        self.assertEqual(
+            Band.count().where(Band.name == "New name").run_sync(), 1
+        )
+
+    def test_multiple_matches(self):
+        """
+        Make sure it works when the join has multiple matching values.
+        """
+        self.insert_rows()
+
+        # Create an additional band with the same manager.
+        manager = Manager.objects().get(Manager.name == "Guido").run_sync()
+        band = Band(name="Pythonistas 2", manager=manager)
+        band.save().run_sync()
+
+        Band.update({Band.name: "New name"}).where(
+            Band.manager.name == "Guido"
+        ).run_sync()
+
+        self.assertEqual(
+            Band.count().where(Band.name == "New name").run_sync(), 2
+        )
+
+    def test_no_matches(self):
+        """
+        Make sure it works when the join has no matching values.
+        """
+        self.insert_rows()
+
+        Band.update({Band.name: "New name"}).where(
+            Band.manager.name == "Mr Manager"
+        ).run_sync()
+
+        self.assertEqual(
+            Band.count().where(Band.name == "New name").run_sync(), 0
+        )
+
+    def test_and(self):
+        """
+        Make sure it works when combined with other where clauses using AND.
+        """
+        self.insert_rows()
+
+        # Create an additional band with the same manager, and different
+        # popularity.
+        manager = Manager.objects().get(Manager.name == "Guido").run_sync()
+        band = Band(name="Pythonistas 2", manager=manager, popularity=10000)
+        band.save().run_sync()
+
+        Band.update({Band.name: "New name"}).where(
+            Band.manager.name == "Guido", Band.popularity == 10000
+        ).run_sync()
+
+        self.assertEqual(
+            Band.count().where(Band.name == "New name").run_sync(), 1
+        )
+
+    def test_or(self):
+        """
+        Make sure it works when combined with other where clauses using OR.
+        """
+        self.insert_rows()
+
+        Band.update({Band.name: "New name"}).where(
+            (Band.manager.name == "Guido") | (Band.manager.name == "Graydon")
+        ).run_sync()
+
+        self.assertEqual(
+            Band.count().where(Band.name == "New name").run_sync(), 2
+        )

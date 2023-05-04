@@ -295,7 +295,7 @@ class Alter(DDL):
         self._set_null: t.List[SetNull] = []
         self._set_unique: t.List[SetUnique] = []
 
-    def add_column(self, name: str, column: Column) -> Alter:
+    def add_column(self: Self, name: str, column: Column) -> Self:
         """
         Band.alter().add_column(‘members’, Integer())
         """
@@ -531,3 +531,6 @@ class Alter(DDL):
         query += ",".join(f" {i}" for i in alterations)
 
         return [query]
+
+
+Self = t.TypeVar("Self", bound=Alter)

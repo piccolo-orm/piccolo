@@ -25,7 +25,8 @@ Piccolo Admin
 -------------
 
 Lets you create a powerful web GUI for your tables in two minutes. View the
-project on `Github <https://github.com/piccolo-orm/piccolo_admin>`_.
+project on `Github <https://github.com/piccolo-orm/piccolo_admin>`_, and the
+`docs <https://piccolo-admin.readthedocs.io/>`_ for more information.
 
 .. image:: https://raw.githubusercontent.com/piccolo-orm/piccolo_admin/master/docs/images/screenshot.png
 

@@ -1,7 +1,5 @@
 .. _ColumnTypes:
 
-.. currentmodule:: piccolo.columns.column_types
-
 ############
 Column Types
 ############
@@ -13,13 +11,18 @@ Column Types
 Column
 ******
 
+.. currentmodule:: piccolo.columns.base
+
 .. autoclass:: Column
+    :noindex:
 
 -------------------------------------------------------------------------------
 
 *****
 Bytea
 *****
+
+.. currentmodule:: piccolo.columns.column_types
 
 .. autoclass:: Bytea
 
@@ -134,7 +137,13 @@ Varchar
 
 .. autoclass:: Varchar
 
--------------------------------------------------------------------------------
+=====
+Email
+=====
+
+.. autoclass:: Email
+
+--------------------------------------------------------------------------
 
 ****
 Time
@@ -331,3 +340,9 @@ all
 ===
 
 .. automethod:: Array.all
+
+===
+cat
+===
+
+.. automethod:: Array.cat

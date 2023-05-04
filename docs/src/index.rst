@@ -21,7 +21,6 @@ batteries included.
    piccolo/testing/index
    piccolo/features/index
    piccolo/playground/index
-   piccolo/deployment/index
    piccolo/ecosystem/index
    piccolo/tutorials/index
    piccolo/contributing/index
@@ -54,7 +53,7 @@ Give me an ASGI web app!
 
    piccolo asgi new
 
-FastAPI, Starlette, BlackSheep, and Xpresso are currently supported, with more
+FastAPI, Starlette, BlackSheep, and Litestar are currently supported, with more
 coming soon.
 
 -------------------------------------------------------------------------------

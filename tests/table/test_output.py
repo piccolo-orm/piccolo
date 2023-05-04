@@ -1,7 +1,7 @@
 import json
 from unittest import TestCase
 
-from tests.base import DBTestCase
+from tests.base import DBTestCase, engine_is
 from tests.example_apps.music.tables import Band, RecordingStudio
 
 
@@ -45,10 +45,28 @@ class TestOutputLoadJSON(TestCase):
 
         results = RecordingStudio.select().output(load_json=True).run_sync()
 
-        self.assertEqual(
-            results,
-            [{"id": 1, "facilities": {"a": 123}, "facilities_b": {"a": 123}}],
-        )
+        if engine_is("cockroach"):
+            self.assertEqual(
+                results,
+                [
+                    {
+                        "id": results[0]["id"],
+                        "facilities": {"a": 123},
+                        "facilities_b": {"a": 123},
+                    }
+                ],
+            )
+        else:
+            self.assertEqual(
+                results,
+                [
+                    {
+                        "id": 1,
+                        "facilities": {"a": 123},
+                        "facilities_b": {"a": 123},
+                    }
+                ],
+            )
 
     def test_objects(self):
         json = {"a": 123}
@@ -83,6 +101,6 @@ class TestOutputNested(DBTestCase):
             .output(nested=True)
             .run_sync()
         )
-        self.assertEqual(
+        self.assertDictEqual(
             response, {"name": "Pythonistas", "manager": {"name": "Guido"}}
         )
