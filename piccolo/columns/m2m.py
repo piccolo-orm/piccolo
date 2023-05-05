@@ -242,7 +242,6 @@ class M2MMeta:
 
 @dataclass
 class M2MAddRelated:
-
     target_row: Table
     m2m: M2M
     rows: t.Sequence[Table]
@@ -260,7 +259,9 @@ class M2MAddRelated:
         unsaved = [i for i in rows if not i._exists_in_db]
 
         if unsaved:
-            await rows[0].__class__.insert(*unsaved).run()
+            await rows[0].__class__.insert(*unsaved).on_conflict(
+                action="DO NOTHING"
+            ).run()
 
         joining_table = self.m2m._meta.resolved_joining_table
 
@@ -286,7 +287,11 @@ class M2MAddRelated:
             )
             joining_table_rows.append(joining_table_row)
 
-        return await joining_table.insert(*joining_table_rows).run()
+        return (
+            await joining_table.insert(*joining_table_rows)
+            .on_conflict(action="DO NOTHING")
+            .run()
+        )
 
     async def run(self):
         """
@@ -309,7 +314,6 @@ class M2MAddRelated:
 
 @dataclass
 class M2MRemoveRelated:
-
     target_row: Table
     m2m: M2M
     rows: t.Sequence[Table]
@@ -349,7 +353,6 @@ class M2MRemoveRelated:
 
 @dataclass
 class M2MGetRelated:
-
     row: Table
     m2m: M2M
 
