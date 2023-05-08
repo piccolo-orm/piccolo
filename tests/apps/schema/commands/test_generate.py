@@ -212,11 +212,11 @@ class TestGenerateWithIndexes(TestCase):
 ###############################################################################
 
 
-class Publication(Table, tablename="schema2.publication"):
+class Publication(Table, tablename="publication", schema="schema2"):
     name = Varchar(length=50)
 
 
-class Writer(Table, tablename="schema1.writer"):
+class Writer(Table, tablename="writer", schema="schema1"):
     name = Varchar(length=50)
     publication = ForeignKey(Publication, null=True)
 
