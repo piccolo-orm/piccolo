@@ -25,19 +25,16 @@ class TableExists(Query[TableInstance, bool]):
 
     @property
     def postgres_querystrings(self) -> t.Sequence[QueryString]:
-        tablename = self.table._meta.get_formatted_tablename(quoted=False)
-        return [
-            QueryString(
-                "SELECT EXISTS(SELECT * FROM information_schema.tables WHERE "
-                f"table_name = '{tablename}')",
-            ),
-        ]
+        query = (
+            "SELECT EXISTS(SELECT * FROM information_schema.tables WHERE "
+            f"table_name = '{self.table._meta.tablename}')"
+        )
+
+        if self.table._meta.schema:
+            query += f" AND table_schema = '{self.table._meta.schema}'"
+
+        return [QueryString(query)]
 
     @property
     def cockroach_querystrings(self) -> t.Sequence[QueryString]:
-        return [
-            QueryString(
-                "SELECT EXISTS(SELECT * FROM information_schema.tables WHERE "
-                f"table_name = '{self.table._meta.tablename}')"
-            )
-        ]
+        return self.postgres_querystrings
