@@ -2,6 +2,7 @@ from unittest import TestCase
 
 from piccolo.columns import Varchar
 from piccolo.table import Table
+from tests.base import engines_only
 from tests.example_apps.music.tables import Manager
 
 
@@ -44,3 +45,35 @@ class TestCreateWithIndexes(TestCase):
             query.ddl[0].__str__().startswith("CREATE TABLE IF NOT EXISTS"),
             query.ddl[1].__str__().startswith("CREATE INDEX IF NOT EXISTS"),
         )
+
+
+@engines_only("postgres", "cockroach")
+class TestCreateWithSchema(TestCase):
+    class Band(Table, tablename="band", schema="schema1"):
+        name = Varchar(length=50, index=True)
+
+    def setUp(self) -> None:
+        Band = self.Band
+        Band.raw('CREATE SCHEMA IF NOT EXISTS "schema1"').run_sync()
+
+    def tearDown(self) -> None:
+        Band = self.Band
+        Band.raw('DROP SCHEMA "schema1" CASCADE').run_sync()
+
+    def test_table_created(self):
+        """
+        Make sure that tables can be created in specific schemas.
+        """
+        Band = self.Band
+        Band.create_table().run_sync()
+
+        response = Band.raw(
+            """
+            SELECT COUNT(*)
+            FROM "information_schema"."tables"
+            WHERE table_schema = 'schema1'
+            AND table_name = 'band';
+            """
+        ).run_sync()
+
+        self.assertListEqual(response, [{"count": 1}])
