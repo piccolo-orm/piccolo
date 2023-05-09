@@ -20,8 +20,7 @@ from piccolo.columns.column_types import (
     Varchar,
 )
 from piccolo.columns.indexes import IndexMethod
-from piccolo.engine import Engine, engine_finder
-from piccolo.table import Table
+from piccolo.table import Table, create_db_tables_sync
 from piccolo.utils.sync import run_sync
 from tests.base import AsyncMock, engines_only, engines_skip
 from tests.example_apps.mega.tables import MegaTable, SmallTable
@@ -229,26 +228,20 @@ class Book(Table):
 
 @engines_only("postgres")
 class TestGenerateWithSchema(TestCase):
+
+    tables = [Publication, Writer, Book]
+
     def setUp(self) -> None:
-        engine: t.Optional[Engine] = engine_finder()
+        for schema_name in ("schema1", "schema2"):
+            Publication.raw(
+                f"CREATE SCHEMA IF NOT EXISTS {schema_name}"
+            ).run_sync()
 
-        class Schema(Table, db=engine):
-            """
-            Only for raw query execution
-            """
-
-            pass
-
-        Schema.raw("CREATE SCHEMA IF NOT EXISTS schema1").run_sync()
-        Schema.raw("CREATE SCHEMA IF NOT EXISTS schema2").run_sync()
-        Publication.create_table().run_sync()
-        Writer.create_table().run_sync()
-        Book.create_table().run_sync()
+        create_db_tables_sync(*self.tables)
 
     def tearDown(self) -> None:
         Book.alter().drop_table().run_sync()
-        Writer.alter().drop_table().run_sync()
-        Publication.alter().drop_table().run_sync()
+        Publication.raw("DROP SCHEMA schema1, schema2 CASCADE").run_sync()
 
     def test_reference_to_another_schema(self):
         output_schema: OutputSchema = run_sync(get_output_schema())
