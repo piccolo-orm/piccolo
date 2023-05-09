@@ -100,7 +100,7 @@ class Insert(
 
     @property
     def default_querystrings(self) -> t.Sequence[QueryString]:
-        base = f'INSERT INTO {self.table._meta.get_formatted_tablename()}'
+        base = f"INSERT INTO {self.table._meta.get_formatted_tablename()}"
         columns = ",".join(
             f'"{i._meta.db_column_name}"' for i in self.table._meta.columns
         )
