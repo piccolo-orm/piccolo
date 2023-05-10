@@ -240,6 +240,17 @@ class SetDigits(AlterColumnStatement):
 
 
 @dataclass
+class SetSchema(AlterStatement):
+    __slots__ = ("schema_name",)
+
+    schema_name: str
+
+    @property
+    def ddl(self) -> str:
+        return f'SET SCHEMA "{self.schema_name}"'
+
+
+@dataclass
 class DropTable:
     tablename: str
     cascade: bool
@@ -275,6 +286,7 @@ class Alter(DDL):
         "_set_digits",
         "_set_length",
         "_set_null",
+        "_set_schema",
         "_set_unique",
     )
 
@@ -293,6 +305,7 @@ class Alter(DDL):
         self._set_digits: t.List[SetDigits] = []
         self._set_length: t.List[SetLength] = []
         self._set_null: t.List[SetNull] = []
+        self._set_schema: t.List[SetSchema] = []
         self._set_unique: t.List[SetUnique] = []
 
     def add_column(self: Self, name: str, column: Column) -> Self:
@@ -499,6 +512,13 @@ class Alter(DDL):
         )
         return self
 
+    def set_schema(self, schema_name: str) -> Alter:
+        """
+        Move the table to a different schema.
+        """
+        self._set_schema.append(SetSchema(schema_name=schema_name))
+        return self
+
     @property
     def default_ddl(self) -> t.Sequence[str]:
         if self._drop_table is not None:
@@ -520,6 +540,7 @@ class Alter(DDL):
                 self._set_length,
                 self._set_default,
                 self._set_digits,
+                self._set_schema,
             )
         ]
 

@@ -323,6 +323,33 @@ class TestSetDefault(DBTestCase):
         self.assertEqual(manager.name, "Pending")
 
 
+@engines_only("postgres", "cockroach")
+class TestSetSchema(TestCase):
+    def setUp(self):
+        Manager.create_table().run_sync()
+        Manager.raw("CREATE SCHEMA IF NOT EXISTS schema1").run_sync()
+
+    def tearDown(self):
+        Manager.alter().drop_table(if_exists=True).run_sync()
+        Manager.raw("DROP SCHEMA schema1 CASCADE").run_sync()
+
+    def test_set_schema(self):
+        Manager.alter().set_schema("schema1").run_sync()
+        assert (
+            len(
+                Manager.raw(
+                    """
+                    SELECT *
+                    FROM information_schema.tables
+                    WHERE table_name = 'manager'
+                        AND table_schema = 'schema1'
+                    """
+                ).run_sync()
+            )
+            == 1
+        )
+
+
 ###############################################################################
 
 
