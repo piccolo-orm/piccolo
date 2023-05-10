@@ -86,6 +86,21 @@ Set whether a column is nullable or not.
 
 -------------------------------------------------------------------------------
 
+set_schema
+----------
+
+Used to change the `schema <https://www.postgresql.org/docs/current/ddl-schemas.html>`_
+which a table lives in.
+
+.. code-block:: python
+
+    await Band.alter().set_schema('schema1')
+
+.. note:: Schemas are a way of organising the tables within a database. Only
+    Postgres and Cockroach support schemas.
+
+-------------------------------------------------------------------------------
+
 set_unique
 ----------
 
