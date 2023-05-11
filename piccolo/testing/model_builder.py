@@ -152,7 +152,7 @@ class ModelBuilder:
         """
         random_value: t.Any
         if column.value_type == Decimal:
-            precision, scale = column._meta.params["digits"]
+            precision, scale = column._meta.params["digits"] or (4, 2)
             random_value = RandomBuilder.next_float(
                 maximum=10 ** (precision - scale), scale=scale
             )

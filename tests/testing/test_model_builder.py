@@ -1,7 +1,7 @@
 import asyncio
 import unittest
 
-from piccolo.columns import Array, Integer, Real, Varchar
+from piccolo.columns import Array, Decimal, Integer, Numeric, Real, Varchar
 from piccolo.table import Table
 from piccolo.testing.model_builder import ModelBuilder
 from tests.base import engines_skip
@@ -23,6 +23,13 @@ class TableWithArrayField(Table):
     floats = Array(Real())
 
 
+class TableWithDecimal(Table):
+    numeric = Numeric()
+    numeric_with_digits = Numeric(digits=(4, 2))
+    decimal = Decimal()
+    decimal_with_digits = Decimal(digits=(4, 2))
+
+
 # Cockroach Bug: Can turn ON when resolved: https://github.com/cockroachdb/cockroach/issues/71908  # noqa: E501
 @engines_skip("cockroach")
 class TestModelBuilder(unittest.TestCase):
@@ -39,12 +46,14 @@ class TestModelBuilder(unittest.TestCase):
             Concert,
             Ticket,
             TableWithArrayField,
+            TableWithDecimal,
         ):
             table_class.create_table().run_sync()
 
     @classmethod
     def tearDownClass(cls) -> None:
         for table_class in (
+            TableWithDecimal,
             TableWithArrayField,
             Ticket,
             Concert,
@@ -66,6 +75,7 @@ class TestModelBuilder(unittest.TestCase):
         asyncio.run(build_model(Poster))
         asyncio.run(build_model(RecordingStudio))
         asyncio.run(build_model(TableWithArrayField))
+        asyncio.run(build_model(TableWithDecimal))
 
     def test_model_builder_sync(self):
         ModelBuilder.build_sync(Manager)
@@ -73,6 +83,7 @@ class TestModelBuilder(unittest.TestCase):
         ModelBuilder.build_sync(Poster)
         ModelBuilder.build_sync(RecordingStudio)
         ModelBuilder.build_sync(TableWithArrayField)
+        ModelBuilder.build_sync(TableWithDecimal)
 
     def test_model_builder_with_choices(self):
         shirt = ModelBuilder.build_sync(Shirt)
