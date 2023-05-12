@@ -276,8 +276,8 @@ class TestGenerateWithException(TestCase):
     )
     def test_exception(self, create_table_class_from_db_mock: AsyncMock):
         """
-        Make sure that a GenerateError exception
-         is raised with all the exceptions gathered.
+        Make sure that a GenerateError exception is raised with all the
+        exceptions gathered.
         """
         create_table_class_from_db_mock.side_effect = [
             ValueError("Test"),

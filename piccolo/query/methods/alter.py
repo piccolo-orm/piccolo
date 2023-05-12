@@ -515,6 +515,10 @@ class Alter(DDL):
     def set_schema(self, schema_name: str) -> Alter:
         """
         Move the table to a different schema.
+
+        :param schema_name:
+            The schema to move the table to.
+
         """
         self._set_schema.append(SetSchema(schema_name=schema_name))
         return self

@@ -32,7 +32,7 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(create_tables.statements) == 1)
         self.assertEqual(
             create_tables.statements[0],
-            "manager.add_table('Band', tablename='band')",
+            "manager.add_table(class_name='Band', tablename='band', schema=None, columns=None)",  # noqa: E501
         )
 
         new_table_columns = schema_differ.new_table_columns
@@ -57,7 +57,7 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(schema_differ.drop_tables.statements) == 1)
         self.assertEqual(
             schema_differ.drop_tables.statements[0],
-            "manager.drop_table(class_name='Band', tablename='band')",
+            "manager.drop_table(class_name='Band', tablename='band', schema=None)",  # noqa: E501
         )
 
     def test_rename_table(self):

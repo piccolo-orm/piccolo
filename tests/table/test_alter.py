@@ -334,7 +334,7 @@ class TestSetSchema(TestCase):
         Manager.raw("DROP SCHEMA schema1 CASCADE").run_sync()
 
     def test_set_schema(self):
-        Manager.alter().set_schema("schema1").run_sync()
+        Manager.alter().set_schema(schema_name="schema1").run_sync()
         assert (
             len(
                 Manager.raw(
