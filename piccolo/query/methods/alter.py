@@ -252,7 +252,7 @@ class SetSchema(AlterStatement):
 
 @dataclass
 class DropTable:
-    tablename: str
+    table: t.Type[Table]
     cascade: bool
     if_exists: bool
 
@@ -263,7 +263,7 @@ class DropTable:
         if self.if_exists:
             query += " IF EXISTS"
 
-        query += f" {self.tablename}"
+        query += f" {self.table._meta.get_formatted_tablename()}"
 
         if self.cascade:
             query += " CASCADE"
@@ -343,7 +343,7 @@ class Alter(DDL):
         Band.alter().drop_table()
         """
         self._drop_table = DropTable(
-            tablename=self.table._meta.tablename,
+            table=self.table,
             cascade=cascade,
             if_exists=if_exists,
         )
