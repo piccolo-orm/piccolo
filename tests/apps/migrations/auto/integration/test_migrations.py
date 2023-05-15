@@ -114,7 +114,7 @@ class MigrationTestCase(DBTestCase):
 
         :param table_snapshots:
             A list of lists. Each sub list represents a snapshot of the table
-            state. Migrations will be created and run based each snapshot.
+            state. Migrations will be created and run based on each snapshot.
         :param test_function:
             After the migrations are run, this function is called. It is passed
             a ``RowMeta`` instance which can be used to check the column was
