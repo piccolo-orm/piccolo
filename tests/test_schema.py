@@ -2,12 +2,14 @@ from unittest import TestCase
 
 from piccolo.schema import SchemaManager
 from piccolo.table import Table
+from tests.base import engines_skip
 
 
 class Band(Table, schema="schema_1"):
     pass
 
 
+@engines_skip("sqlite")
 class TestListTables(TestCase):
     def setUp(self):
         Band.create_table().run_sync()
@@ -27,6 +29,7 @@ class TestListTables(TestCase):
         self.assertListEqual(table_list, [Band._meta.tablename])
 
 
+@engines_skip("sqlite")
 class TestCreateAndDrop(TestCase):
     def test_create_and_drop(self):
         """
@@ -44,6 +47,7 @@ class TestCreateAndDrop(TestCase):
             self.assertNotIn(schema_name, manager.list_schemas().run_sync())
 
 
+@engines_skip("sqlite")
 class TestMoveTable(TestCase):
 
     new_schema = "schema_2"
@@ -83,6 +87,7 @@ class TestMoveTable(TestCase):
         )
 
 
+@engines_skip("sqlite")
 class TestDDL(TestCase):
     manager = SchemaManager()
 

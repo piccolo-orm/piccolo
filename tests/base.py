@@ -56,10 +56,12 @@ def engines_only(*engine_names: str):
     """
     Test decorator. Choose what engines can run a test.
 
-    Example
+    For example::
+
         @engines_only('cockroach', 'postgres')
         def test_unknown_column_type(...):
             self.assertTrue(...)
+
     """
     if ENGINE:
         current_engine_name = ENGINE.engine_type
@@ -85,10 +87,12 @@ def engines_skip(*engine_names: str):
     """
     Test decorator. Choose what engines can run a test.
 
-    Example
+    For example::
+
         @engines_skip('cockroach', 'postgres')
         def test_unknown_column_type(...):
             self.assertTrue(...)
+
     """
     if ENGINE:
         current_engine_name = ENGINE.engine_type
