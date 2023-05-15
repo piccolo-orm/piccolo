@@ -2,6 +2,7 @@ import datetime
 from unittest import TestCase
 
 from piccolo.columns import Date, ForeignKey, Varchar
+from piccolo.schema import SchemaManager
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
 from tests.base import engines_only
 
@@ -29,12 +30,19 @@ class TestForeignKeyWithSchema(TestCase):
     Make sure that foreign keys work with Postgres schemas.
     """
 
+    schema_manager = SchemaManager()
+    schema_name = "schema_1"
+
     def setUp(self) -> None:
-        Band.raw('CREATE SCHEMA IF NOT EXISTS "schema1"').run_sync()
+        self.schema_manager.create_schema(
+            schema_name=self.schema_name
+        ).run_sync()
         create_db_tables_sync(*TABLES)
 
     def tearDown(self) -> None:
-        Band.raw('DROP SCHEMA "schema1" CASCADE').run_sync()
+        self.schema_manager.drop_schema(
+            schema_name=self.schema_name
+        ).run_sync()
         drop_db_tables_sync(*TABLES)
 
     def test_with_schema(self):
