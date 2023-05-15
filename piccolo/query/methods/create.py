@@ -29,6 +29,20 @@ class Create(DDL):
 
     @property
     def default_ddl(self) -> t.Sequence[str]:
+        ddl: t.List[str] = []
+
+        schema_name = self.table._meta.schema
+        if schema_name and self.engine_type != "sqlite":
+            from piccolo.schema import CreateSchema
+
+            ddl.append(
+                CreateSchema(
+                    schema_name=schema_name,
+                    if_not_exists=True,
+                    db=self.table._meta.db,
+                ).ddl
+            )
+
         prefix = "CREATE TABLE"
         if self.if_not_exists:
             prefix += " IF NOT EXISTS"
@@ -40,12 +54,11 @@ class Create(DDL):
 
         base = f"{prefix} {self.table._meta.get_formatted_tablename()}"
         columns_sql = ", ".join(i.ddl for i in columns)
-        create_table_ddl = f"{base} ({columns_sql})"
+        ddl.append(f"{base} ({columns_sql})")
 
-        create_indexes: t.List[str] = []
         for column in columns:
             if column._meta.index is True:
-                create_indexes.extend(
+                ddl.extend(
                     CreateIndex(
                         table=self.table,
                         columns=[column],
@@ -54,4 +67,4 @@ class Create(DDL):
                     ).ddl
                 )
 
-        return [create_table_ddl] + create_indexes
+        return ddl
