@@ -361,6 +361,8 @@ class DBTestCase(TestCase):
                     'Graydon'
                 ),(
                     'Mads'
+                ),(
+                    'Jose'
                 ) RETURNING id;"""
             )
             self.run_sync(
@@ -381,6 +383,10 @@ class DBTestCase(TestCase):
                     'CSharps',
                     {id[2]["id"]},
                     10
+                ),(
+                    'Elixirs',
+                    {id[3]["id"]},
+                    10
                 );"""
             )
         else:
@@ -394,6 +400,8 @@ class DBTestCase(TestCase):
                     'Graydon'
                 ),(
                     'Mads'
+                ),(
+                    'Jose'
                 );"""
             )
             self.run_sync(
@@ -413,6 +421,10 @@ class DBTestCase(TestCase):
                 ),(
                     'CSharps',
                     3,
+                    10
+                ),(
+                    'Elixirs',
+                    4,
                     10
                 );"""
             )
