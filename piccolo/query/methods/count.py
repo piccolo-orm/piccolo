@@ -49,7 +49,11 @@ class Count(Query):
     def default_querystrings(self) -> t.Sequence[QueryString]:
         select = Select(self.table)
         select.where_delegate._where = self.where_delegate._where
-        select.distinct_delegate._distinct = self.distinct_delegate._distinct
+        distinct = self.distinct_delegate._distinct
+        select.distinct_delegate._distinct = distinct
+        if distinct.on:
+            select.order_by_delegate.order_by(distinct.on[0])
+
         return [
             QueryString(
                 'SELECT COUNT(*) AS "count" FROM ({}) AS "subquery"',

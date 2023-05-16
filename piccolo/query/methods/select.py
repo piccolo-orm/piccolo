@@ -737,12 +737,10 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         query = "SELECT"
 
         distinct = self.distinct_delegate._distinct
-        if distinct:
-            if distinct.on:
-                distinct.validate_on(self.order_by_delegate._order_by)
-
-            query += "{}"
-            args.append(distinct.querystring)
+        if distinct.on:
+            distinct.validate_on(self.order_by_delegate._order_by)
+        query += "{}"
+        args.append(distinct.querystring)
 
         query += f" {columns_str} FROM {self.table._meta.get_formatted_tablename()}"  # noqa: E501
 
