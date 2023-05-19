@@ -29,7 +29,7 @@ If the ``schema`` argument isn't specified, then the table is created in the
 Migration support
 ~~~~~~~~~~~~~~~~~
 
-Schemas are also fully supported in :ref:`database migrations <AutoMigrations>`.
+Schemas are fully supported in :ref:`database migrations <AutoMigrations>`.
 For example, if we change the ``schema`` argument:
 
 .. code-block:: python
