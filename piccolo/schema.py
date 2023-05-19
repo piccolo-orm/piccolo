@@ -146,6 +146,8 @@ class ListSchemas:
 class SchemaManager:
     def __init__(self, db: t.Optional[Engine] = None):
         """
+        A useful utility class for interacting with schemas.
+
         :param db:
             Used to execute the database queries. If not specified, we try and
             import it from ``piccolo_conf.py``.
@@ -160,6 +162,17 @@ class SchemaManager:
     def create_schema(
         self, schema_name: str, *, if_not_exists: bool = True
     ) -> CreateSchema:
+        """
+        Creates the specified schema::
+
+            >>> await SchemaManager().create_schema(schema_name="music")
+
+        :param schema_name:
+            The name of the schema to create.
+        :param if_not_exists:
+            No error will be raised if the schema already exists.
+
+        """
         return CreateSchema(
             schema_name=schema_name,
             if_not_exists=if_not_exists,
@@ -173,6 +186,20 @@ class SchemaManager:
         if_exists: bool = True,
         cascade: bool = False,
     ) -> DropSchema:
+        """
+        Drops the specified schema::
+
+            >>> await SchemaManager().drop_schema(schema_name="music")
+
+        :param schema_name:
+            The name of the schema to drop.
+        :param if_exists:
+            No error will be raised if the schema doesn't exist.
+        :param cascade:
+            If ``True`` then it will automatically drop the tables within the
+            schema.
+
+        """
         return DropSchema(
             schema_name=schema_name,
             if_exists=if_exists,
@@ -199,7 +226,7 @@ class SchemaManager:
         :param new_schema:
             The name of the scheam you want to move the table too.
         :current_schema:
-            If not specified, 'public' is assumed.
+            If not specified, ``'public'`` is assumed.
 
         """
         return MoveTable(
@@ -210,6 +237,16 @@ class SchemaManager:
         )
 
     def list_tables(self, schema_name: str) -> ListTables:
+        """
+        Returns the name of each table in the given schema::
+
+            >>> await SchemaManager().list_tables(schema_name="music")
+            ['band', 'manager']
+
+        :param schema_name:
+            List the tables in this schema.
+
+        """
         return ListTables(db=self.db, schema_name=schema_name)
 
     def list_schemas(self) -> ListSchemas:

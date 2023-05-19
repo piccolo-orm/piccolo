@@ -45,6 +45,13 @@ the new schema:
     >>> piccolo migrations new my_app --auto
     >>> piccolo migrations forwards my_app
 
+``SchemaManager``
+~~~~~~~~~~~~~~~~~
+
+The :class:`SchemaManager <piccolo.schema.SchemaManager>` class is used
+internally by Piccolo to interact with schemas. You may find it useful if you
+want to write a script  to create / delete / list schemas.
+
 -------------------------------------------------------------------------------
 
 Readable
