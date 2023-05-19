@@ -3,6 +3,50 @@
 Advanced
 ========
 
+Postgres / CockroachDB Schemas
+------------------------------
+
+Postgres and CoackroachDB have a concept called **schemas**.
+
+It's a way of grouping the tables in a database. To learn more:
+
+* `Postgres docs <https://www.postgresql.org/docs/current/ddl-schemas.html>`_
+* `CockroachDB docs <https://www.cockroachlabs.com/docs/stable/schema-design-overview.html>`_
+
+To specify a table's schema, do the following:
+
+.. code-block:: python
+
+    class Band(Table, schema="music"):
+        ...
+
+    # The table will be created in the `music` schema:
+    >>> await Band.create_table()
+
+If the ``schema`` argument isn't specified, then the table is created in the
+``public`` schema.
+
+Migration support
+~~~~~~~~~~~~~~~~~
+
+Schemas are also fully supported in :ref:`database migrations <AutoMigrations>`.
+For example, if we change the ``schema`` argument:
+
+.. code-block:: python
+
+    class Band(Table, schema="music_2"):
+        ...
+
+Then create an automatic migration and run it, then the table will be moved to
+the new schema:
+
+.. code-block:: bash
+
+    >>> piccolo migrations new my_app --auto
+    >>> piccolo migrations forwards my_app
+
+-------------------------------------------------------------------------------
+
 Readable
 --------
 
