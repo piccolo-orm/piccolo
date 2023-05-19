@@ -792,6 +792,9 @@ class MigrationManager:
 
         for change_table_schema in self.change_table_schemas:
             if backwards:
+                # Note, we don't try dropping any schemas we may have created.
+                # It's dangerous to do so.
+
                 await schema_manager.create_schema(
                     schema_name=change_table_schema.old_schema,
                     if_not_exists=True,
