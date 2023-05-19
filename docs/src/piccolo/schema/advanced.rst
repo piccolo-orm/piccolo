@@ -50,7 +50,7 @@ the new schema:
 
 The :class:`SchemaManager <piccolo.schema.SchemaManager>` class is used
 internally by Piccolo to interact with schemas. You may find it useful if you
-want to write a script  to create / delete / list schemas.
+want to write a script to interact with schemas (create / delete / list etc).
 
 -------------------------------------------------------------------------------
 
