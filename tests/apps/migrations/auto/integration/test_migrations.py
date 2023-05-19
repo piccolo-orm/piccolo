@@ -1046,6 +1046,7 @@ class TestSchemas(MigrationTestCase):
         self.schema_manager.drop_schema(
             self.new_schema, if_exists=True, cascade=True
         ).run_sync()
+        Migration.alter().drop_table(if_exists=True).run_sync()
 
     def test_schemas(self):
         """
