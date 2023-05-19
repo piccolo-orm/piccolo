@@ -786,28 +786,30 @@ class MigrationManager:
                         )
 
     async def _run_change_table_schema(self, backwards=False):
+        from piccolo.schema import SchemaManager
+
+        schema_manager = SchemaManager()
+
         for change_table_schema in self.change_table_schemas:
             if backwards:
-                _Table: t.Type[Table] = create_table_class(
-                    class_name=change_table_schema.class_name,
-                    class_kwargs={
-                        "tablename": change_table_schema.tablename,
-                        "schema": change_table_schema.new_schema,
-                    },
+                await schema_manager.create_schema(
+                    schema_name=change_table_schema.old_schema,
+                    if_not_exists=True,
                 )
-                await _Table.alter().set_schema(
-                    schema_name=change_table_schema.old_schema
+                await schema_manager.move_table(
+                    table_name=change_table_schema.tablename,
+                    new_schema=change_table_schema.old_schema,
+                    current_schema=change_table_schema.new_schema,
                 )
             else:
-                _Table: t.Type[Table] = create_table_class(
-                    class_name=change_table_schema.class_name,
-                    class_kwargs={
-                        "tablename": change_table_schema.tablename,
-                        "schema": change_table_schema.old_schema,
-                    },
+                await schema_manager.create_schema(
+                    schema_name=change_table_schema.new_schema,
+                    if_not_exists=True,
                 )
-                await _Table.alter().set_schema(
-                    schema_name=change_table_schema.new_schema
+                await schema_manager.move_table(
+                    table_name=change_table_schema.tablename,
+                    new_schema=change_table_schema.new_schema,
+                    current_schema=change_table_schema.old_schema,
                 )
 
     async def run(self, backwards=False):

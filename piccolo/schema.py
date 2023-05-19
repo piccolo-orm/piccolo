@@ -42,6 +42,12 @@ class CreateSchema(SchemaDDLBase):
         self.if_not_exists = if_not_exists
         self.db = db
 
+    async def run(self, *args, **kwargs):
+        if self.schema_name == "public" or self.schema_name is None:
+            return
+
+        return await super().run(self, *args, **kwargs)
+
     @property
     def ddl(self) -> str:
         query = "CREATE SCHEMA"

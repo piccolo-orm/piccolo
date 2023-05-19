@@ -46,6 +46,7 @@ from piccolo.columns.defaults.uuid import UUID4
 from piccolo.columns.m2m import M2M
 from piccolo.columns.reference import LazyTableReference
 from piccolo.conf.apps import AppConfig
+from piccolo.schema import SchemaManager
 from piccolo.table import Table, create_table_class, drop_db_tables_sync
 from piccolo.utils.sync import run_sync
 from tests.base import DBTestCase, engines_only, engines_skip
@@ -126,6 +127,8 @@ class MigrationTestCase(DBTestCase):
         migrations_folder_path = os.path.join(
             temp_directory_path, "piccolo_migrations"
         )
+
+        print(migrations_folder_path)
 
         if os.path.exists(migrations_folder_path):
             shutil.rmtree(migrations_folder_path)
@@ -1027,3 +1030,50 @@ class TestTargetColumnString(MigrationTestCase):
             """
         )
         self.assertTrue(response[0]["exists"])
+
+
+###############################################################################
+
+
+@engines_only("postgres", "cockroach")
+class TestSchemas(MigrationTestCase):
+    new_schema = "schema_1"
+
+    def setUp(self) -> None:
+        self.schema_manager = SchemaManager()
+
+    def tearDown(self) -> None:
+        self.schema_manager.drop_schema(
+            self.new_schema, if_exists=True, cascade=True
+        ).run_sync()
+
+    def test_schemas(self):
+        """
+        Make sure migrations still work when a foreign key references a column
+        other than the primary key.
+        """
+        manager_1 = create_table_class(class_name="Manager")
+        manager_2 = create_table_class(
+            class_name="Manager", class_kwargs={"schema": self.new_schema}
+        )
+
+        self._test_migrations(
+            table_snapshots=[
+                [manager_1],
+                [manager_2],
+            ],
+        )
+
+        # The schema should automaticaly be created.
+        self.assertIn(
+            manager_2._meta.schema,
+            self.schema_manager.list_schemas().run_sync(),
+        )
+
+        # Make sure that the table is in the new schema.
+        self.assertListEqual(
+            self.schema_manager.list_tables(
+                schema_name=self.new_schema
+            ).run_sync(),
+            ["manager"],
+        )
