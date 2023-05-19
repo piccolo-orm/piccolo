@@ -1032,7 +1032,10 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def create_table(
-        cls, if_not_exists=False, only_default_columns=False
+        cls,
+        if_not_exists=False,
+        only_default_columns=False,
+        auto_create_schema: bool = True,
     ) -> Create:
         """
         Create table, along with all columns.
@@ -1046,6 +1049,7 @@ class Table(metaclass=TableMetaclass):
             table=cls,
             if_not_exists=if_not_exists,
             only_default_columns=only_default_columns,
+            auto_create_schema=auto_create_schema,
         )
 
     @classmethod
