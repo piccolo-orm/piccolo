@@ -90,14 +90,22 @@ set_schema
 ----------
 
 Used to change the `schema <https://www.postgresql.org/docs/current/ddl-schemas.html>`_
-which a table lives in.
+which a table belongs to.
 
 .. code-block:: python
 
     await Band.alter().set_schema('schema1')
 
-.. note:: Schemas are a way of organising the tables within a database. Only
-    Postgres and Cockroach support schemas.
+Schemas are a way of organising the tables within a database. Only Postgres and
+Cockroach support schemas. :ref:`Learn more here <Schemas>`.
+
+After changing a table's schema, you need to update your ``Table`` accordingly,
+otherwise subsequent queries will fail, as they'll be trying to find the table
+in the old schema.
+
+.. code-block:: python
+
+    Band._meta.schema = 'schema1'
 
 -------------------------------------------------------------------------------
 

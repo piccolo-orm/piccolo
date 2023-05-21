@@ -3,8 +3,10 @@
 Advanced
 ========
 
-Postgres / CockroachDB Schemas
-------------------------------
+.. _Schemas:
+
+Schemas
+-------
 
 Postgres and CoackroachDB have a concept called **schemas**.
 
@@ -20,7 +22,8 @@ To specify a table's schema, do the following:
     class Band(Table, schema="music"):
         ...
 
-    # The table will be created in the `music` schema:
+    # The table will be created in the `music` schema.
+    # The music schema will also be created if it doesn't already exist.
     >>> await Band.create_table()
 
 If the ``schema`` argument isn't specified, then the table is created in the
