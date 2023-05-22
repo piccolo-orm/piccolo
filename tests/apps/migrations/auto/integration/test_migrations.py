@@ -11,6 +11,9 @@ import typing as t
 import uuid
 from unittest.mock import MagicMock, patch
 
+from piccolo.apps.migrations.commands.backwards import (
+    BackwardsMigrationManager,
+)
 from piccolo.apps.migrations.commands.forwards import ForwardsMigrationManager
 from piccolo.apps.migrations.commands.new import (
     _create_migrations_folder,
@@ -100,10 +103,20 @@ def array_default_varchar():
 
 
 class MigrationTestCase(DBTestCase):
-    def run_migrations(self, app_config: AppConfig):
-        manager = ForwardsMigrationManager(app_name=app_config.app_name)
-        run_sync(manager.create_migration_table())
-        run_sync(manager.run_migrations(app_config=app_config))
+    def _run_migrations(self, app_config: AppConfig):
+        forwards_manager = ForwardsMigrationManager(
+            app_name=app_config.app_name
+        )
+        run_sync(forwards_manager.create_migration_table())
+        run_sync(forwards_manager.run_migrations(app_config=app_config))
+
+    def _get_migrations_folder_path(self) -> str:
+        temp_directory_path = tempfile.gettempdir()
+        migrations_folder_path = os.path.join(
+            temp_directory_path, "piccolo_migrations"
+        )
+        print(migrations_folder_path)
+        return migrations_folder_path
 
     def _test_migrations(
         self,
@@ -123,12 +136,7 @@ class MigrationTestCase(DBTestCase):
             test passes, otherwise ``False``.
 
         """
-        temp_directory_path = tempfile.gettempdir()
-        migrations_folder_path = os.path.join(
-            temp_directory_path, "piccolo_migrations"
-        )
-
-        print(migrations_folder_path)
+        migrations_folder_path = self._get_migrations_folder_path()
 
         if os.path.exists(migrations_folder_path):
             shutil.rmtree(migrations_folder_path)
@@ -149,7 +157,7 @@ class MigrationTestCase(DBTestCase):
                 )
             )
             self.assertTrue(os.path.exists(meta.migration_path))
-            self.run_migrations(app_config=app_config)
+            self._run_migrations(app_config=app_config)
 
             # It's kind of absurd sleeping for 1 microsecond, but it guarantees
             # the migration IDs will be unique, and just in case computers
@@ -170,6 +178,37 @@ class MigrationTestCase(DBTestCase):
                 test_function(row_meta),
                 msg=f"Meta is incorrect: {row_meta}",
             )
+
+    def _run_backwards(self, migration_id: str):
+        """
+        After running :meth:`_test_migrations`, if you call `_run_backwards`
+        then the migrations can be reversed.
+
+        :param migration_id:
+            Which migration to reverse to. Can be:
+
+            * A migration ID.
+            * A number, like ``1``, then it will reverse the most recent
+              migration.
+            * ``'all'`` then all of the migrations will be reversed.
+
+        """
+        migrations_folder_path = self._get_migrations_folder_path()
+
+        app_config = AppConfig(
+            app_name="test_app",
+            migrations_folder_path=migrations_folder_path,
+            table_classes=[],
+        )
+
+        backwards_manager = BackwardsMigrationManager(
+            app_name=app_config.app_name,
+            migration_id=migration_id,
+            auto_agree=True,
+        )
+        run_sync(
+            backwards_manager.run_migrations_backwards(app_config=app_config)
+        )
 
 
 @engines_only("postgres", "cockroach")
@@ -1077,4 +1116,22 @@ class TestSchemas(MigrationTestCase):
                 schema_name=self.new_schema
             ).run_sync(),
             ["manager"],
+        )
+
+        #######################################################################
+
+        # Reverse the last migration, which should move the table back to the
+        # public schema.
+        self._run_backwards(migration_id="1")
+
+        self.assertIn(
+            "manager",
+            self.schema_manager.list_tables(schema_name="public").run_sync(),
+        )
+
+        # We don't delete the schema we created as it's risky, just in case
+        # other tables etc were manually added to it.
+        self.assertIn(
+            self.new_schema,
+            self.schema_manager.list_schemas().run_sync(),
         )

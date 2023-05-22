@@ -795,13 +795,14 @@ class MigrationManager:
                 # Note, we don't try dropping any schemas we may have created.
                 # It's dangerous to do so.
 
-                await schema_manager.create_schema(
-                    schema_name=change_table_schema.old_schema,
-                    if_not_exists=True,
-                )
+                if change_table_schema.old_schema is not None:
+                    await schema_manager.create_schema(
+                        schema_name=change_table_schema.old_schema,
+                        if_not_exists=True,
+                    )
                 await schema_manager.move_table(
                     table_name=change_table_schema.tablename,
-                    new_schema=change_table_schema.old_schema,
+                    new_schema=change_table_schema.old_schema or 'public',
                     current_schema=change_table_schema.new_schema,
                 )
             else:
