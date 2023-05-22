@@ -85,6 +85,25 @@ class DropSchema(SchemaDDLBase):
         return query
 
 
+class RenameSchema(SchemaDDLBase):
+    def __init__(
+        self,
+        schema_name: str,
+        new_schema_name: str,
+        db: Engine,
+    ):
+        self.schema_name = schema_name
+        self.new_schema_name = new_schema_name
+        self.db = db
+
+    @property
+    def ddl(self):
+        return (
+            f'ALTER SCHEMA "{self.schema_name}" '
+            f'RENAME TO "{self.new_schema_name}"'
+        )
+
+
 class MoveTable(SchemaDDLBase):
     def __init__(
         self,
@@ -210,6 +229,29 @@ class SchemaManager:
             schema_name=schema_name,
             if_exists=if_exists,
             cascade=cascade,
+            db=self.db,
+        )
+
+    def rename_schema(
+        self, schema_name: str, new_schema_name: str
+    ) -> RenameSchema:
+        """
+        Rename the schema::
+
+            >>> await SchemaManager().rename_schema(
+            ...     schema_name="music",
+            ...     new_schema_name="music_info"
+            ... )
+
+        :param schema_name:
+            The current name of the schema.
+        :param new_schema_name:
+            What to rename the schema to.
+
+        """
+        return RenameSchema(
+            schema_name=schema_name,
+            new_schema_name=new_schema_name,
             db=self.db,
         )
 

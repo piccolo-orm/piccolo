@@ -88,6 +88,36 @@ class TestMoveTable(TestCase):
 
 
 @engines_skip("sqlite")
+class TestRenameSchema(TestCase):
+
+    manager = SchemaManager()
+    schema_name = "test_schema"
+    new_schema_name = "test_schema_2"
+
+    def tearDown(self):
+        for schema_name in (self.schema_name, self.new_schema_name):
+            self.manager.drop_schema(
+                schema_name=schema_name, if_exists=True
+            ).run_sync()
+
+    def test_rename_schema(self):
+        """
+        Make sure we can rename a schema.
+        """
+        self.manager.create_schema(
+            schema_name=self.schema_name, if_not_exists=True
+        ).run_sync()
+
+        self.manager.rename_schema(
+            schema_name=self.schema_name, new_schema_name=self.new_schema_name
+        ).run_sync()
+
+        self.assertIn(
+            self.new_schema_name, self.manager.list_schemas().run_sync()
+        )
+
+
+@engines_skip("sqlite")
 class TestDDL(TestCase):
     manager = SchemaManager()
 
