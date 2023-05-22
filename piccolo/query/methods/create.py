@@ -49,7 +49,8 @@ class Create(DDL):
         schema_name = self.table._meta.schema
         if (
             self.auto_create_schema
-            and schema_name
+            and schema_name is not None
+            and schema_name != "public"
             and self.engine_type != "sqlite"
         ):
             from piccolo.schema import CreateSchema
