@@ -793,7 +793,8 @@ class MigrationManager:
         for change_table_schema in self.change_table_schemas:
             if backwards:
                 # Note, we don't try dropping any schemas we may have created.
-                # It's dangerous to do so.
+                # It's dangerous to do so, just in case the user manually
+                # added tables etc to the scheme, and we delete them.
 
                 if change_table_schema.old_schema is not None:
                     await schema_manager.create_schema(
@@ -802,7 +803,7 @@ class MigrationManager:
                     )
                 await schema_manager.move_table(
                     table_name=change_table_schema.tablename,
-                    new_schema=change_table_schema.old_schema or 'public',
+                    new_schema=change_table_schema.old_schema or "public",
                     current_schema=change_table_schema.new_schema,
                 )
             else:
