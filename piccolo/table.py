@@ -4,6 +4,7 @@ import inspect
 import itertools
 import types
 import typing as t
+import warnings
 from dataclasses import dataclass, field
 
 from piccolo.columns import Column
@@ -247,6 +248,13 @@ class Table(metaclass=TableMetaclass):
         if tags is None:
             tags = []
         tablename = tablename or _camel_to_snake(cls.__name__)
+
+        if "." in tablename:
+            warnings.warn(
+                "There's a '.' in the tablename - please use the `schema` "
+                "argument instead."
+            )
+            schema, tablename = tablename.split(".", maxsplit=1)
 
         if tablename in PROTECTED_TABLENAMES:
             raise ValueError(
