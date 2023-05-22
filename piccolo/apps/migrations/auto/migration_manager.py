@@ -796,25 +796,36 @@ class MigrationManager:
                 # It's dangerous to do so, just in case the user manually
                 # added tables etc to the scheme, and we delete them.
 
-                if change_table_schema.old_schema is not None:
-                    await schema_manager.create_schema(
-                        schema_name=change_table_schema.old_schema,
-                        if_not_exists=True,
+                if change_table_schema.old_schema not in (None, "public"):
+                    await self._run_query(
+                        schema_manager.create_schema(
+                            schema_name=change_table_schema.old_schema,
+                            if_not_exists=True,
+                        )
                     )
-                await schema_manager.move_table(
-                    table_name=change_table_schema.tablename,
-                    new_schema=change_table_schema.old_schema or "public",
-                    current_schema=change_table_schema.new_schema,
+                await self._run_query(
+                    schema_manager.move_table(
+                        table_name=change_table_schema.tablename,
+                        new_schema=change_table_schema.old_schema or "public",
+                        current_schema=change_table_schema.new_schema,
+                    )
                 )
+
             else:
-                await schema_manager.create_schema(
-                    schema_name=change_table_schema.new_schema,
-                    if_not_exists=True,
-                )
-                await schema_manager.move_table(
-                    table_name=change_table_schema.tablename,
-                    new_schema=change_table_schema.new_schema,
-                    current_schema=change_table_schema.old_schema,
+                if change_table_schema.new_schema not in (None, "public"):
+                    await self._run_query(
+                        schema_manager.create_schema(
+                            schema_name=change_table_schema.new_schema,
+                            if_not_exists=True,
+                        )
+                    )
+
+                await self._run_query(
+                    schema_manager.move_table(
+                        table_name=change_table_schema.tablename,
+                        new_schema=change_table_schema.new_schema,
+                        current_schema=change_table_schema.old_schema,
+                    )
                 )
 
     async def run(self, backwards=False):
