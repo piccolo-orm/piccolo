@@ -3,6 +3,7 @@ from unittest import TestCase
 from piccolo.columns import Varchar
 from piccolo.schema import SchemaManager
 from piccolo.table import Table
+from tests.base import engines_skip
 from tests.example_apps.music.tables import Manager
 
 
@@ -22,6 +23,7 @@ class Band(Table, schema="schema_1"):
     name = Varchar()
 
 
+@engines_skip("sqlite")
 class TestTableExistsSchema(TestCase):
     def setUp(self):
         Band.create_table(auto_create_schema=True).run_sync()
