@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from piccolo.columns import Date, ForeignKey, Varchar
 from piccolo.schema import SchemaManager
-from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
+from piccolo.table import Table, create_db_tables_sync
 from tests.base import engines_only
 
 
