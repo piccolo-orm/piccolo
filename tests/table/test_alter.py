@@ -353,6 +353,36 @@ class TestSetSchema(TestCase):
         )
 
 
+@engines_only("postgres", "cockroach")
+class TestDropTable(TestCase):
+    class Manager(Table, schema="schema_1"):
+        pass
+
+    schema_manager = SchemaManager()
+
+    def tearDown(self):
+        self.schema_manager.drop_schema(
+            schema_name="schema_1", if_exists=True, cascade=True
+        ).run_sync()
+
+    def test_drop_table_with_schema(self):
+        Manager = self.Manager
+
+        Manager.create_table().run_sync()
+
+        self.assertIn(
+            "manager",
+            self.schema_manager.list_tables(schema_name="schema_1").run_sync(),
+        )
+
+        Manager.alter().drop_table().run_sync()
+
+        self.assertNotIn(
+            "manager",
+            self.schema_manager.list_tables(schema_name="schema_1").run_sync(),
+        )
+
+
 ###############################################################################
 
 
