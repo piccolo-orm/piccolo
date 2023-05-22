@@ -83,13 +83,6 @@ class RenameColumnCollection:
 
 
 @dataclass
-class StringifiedCallable:
-    statement: str
-    extra_imports: t.List[Import] = field(default_factory=list)
-    extra_definitions: t.List[Definition] = field(default_factory=list)
-
-
-@dataclass
 class AlterStatements:
     statements: t.List[str] = field(default_factory=list)
     extra_imports: t.List[Import] = field(default_factory=list)
