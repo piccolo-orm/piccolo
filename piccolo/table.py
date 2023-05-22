@@ -4,6 +4,7 @@ import inspect
 import itertools
 import types
 import typing as t
+import warnings
 from dataclasses import dataclass, field
 
 from piccolo.columns import Column
@@ -82,11 +83,35 @@ class TableMeta:
     help_text: t.Optional[str] = None
     _db: t.Optional[Engine] = None
     m2m_relationships: t.List[M2M] = field(default_factory=list)
+    schema: t.Optional[str] = None
 
     # Records reverse foreign key relationships - i.e. when the current table
     # is the target of a foreign key. Used by external libraries such as
     # Piccolo API.
     _foreign_key_references: t.List[ForeignKey] = field(default_factory=list)
+
+    def get_formatted_tablename(
+        self, include_schema: bool = True, quoted: bool = True
+    ) -> str:
+        """
+        Returns the tablename, in the desired format.
+
+        :param include_schema:
+            If ``True``, the Postgres schema is included. For example,
+            'my_schema.my_table'.
+        :param quote:
+            If ``True``, the name is wrapped in double quotes. For example,
+            '"my_schema"."my_table"'.
+
+        """
+        components = [self.tablename]
+        if include_schema and self.schema:
+            components.insert(0, self.schema)
+
+        if quoted:
+            return ".".join(f'"{i}"' for i in components)
+        else:
+            return ".".join(components)
 
     @property
     def foreign_key_references(self) -> t.List[ForeignKey]:
@@ -197,6 +222,7 @@ class Table(metaclass=TableMetaclass):
         db: t.Optional[Engine] = None,
         tags: t.List[str] = None,
         help_text: t.Optional[str] = None,
+        schema: t.Optional[str] = None,
     ):  # sourcery no-metrics
         """
         Automatically populate the _meta, which includes the tablename, and
@@ -215,11 +241,20 @@ class Table(metaclass=TableMetaclass):
             A user friendly description of what the table is used for. It isn't
             used in the database, but will be used by tools such a Piccolo
             Admin for tooltips.
+        :param schema:
+            The Postgres schema to use for this table.
 
         """
         if tags is None:
             tags = []
         tablename = tablename or _camel_to_snake(cls.__name__)
+
+        if "." in tablename:
+            warnings.warn(
+                "There's a '.' in the tablename - please use the `schema` "
+                "argument instead."
+            )
+            schema, tablename = tablename.split(".", maxsplit=1)
 
         if tablename in PROTECTED_TABLENAMES:
             raise ValueError(
@@ -310,6 +345,7 @@ class Table(metaclass=TableMetaclass):
             help_text=help_text,
             _db=db,
             m2m_relationships=m2m_relationships,
+            schema=schema,
         )
 
         for foreign_key_column in foreign_key_columns:
@@ -936,7 +972,7 @@ class Table(metaclass=TableMetaclass):
 
         .. code-block:: python
 
-            await Band.raw("select * from band where name = {}", 'Pythonistas')
+            await Band.raw("SELECT * FROM band WHERE name = {}", 'Pythonistas')
 
         """
         return Raw(table=cls, querystring=QueryString(sql, *args))
@@ -1004,7 +1040,10 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def create_table(
-        cls, if_not_exists=False, only_default_columns=False
+        cls,
+        if_not_exists=False,
+        only_default_columns=False,
+        auto_create_schema: bool = True,
     ) -> Create:
         """
         Create table, along with all columns.
@@ -1018,6 +1057,7 @@ class Table(metaclass=TableMetaclass):
             table=cls,
             if_not_exists=if_not_exists,
             only_default_columns=only_default_columns,
+            auto_create_schema=auto_create_schema,
         )
 
     @classmethod

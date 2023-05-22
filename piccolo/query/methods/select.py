@@ -659,10 +659,12 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                         index - 1
                     ]._meta.table_alias
                 else:
-                    left_tablename = key._meta.table._meta.tablename
+                    left_tablename = (
+                        key._meta.table._meta.get_formatted_tablename()
+                    )  # noqa: E501
 
                 right_tablename = (
-                    key._foreign_key_meta.resolved_references._meta.tablename
+                    key._foreign_key_meta.resolved_references._meta.get_formatted_tablename()  # noqa: E501
                 )
 
                 pk_name = column._meta.call_chain[
@@ -670,9 +672,9 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                 ]._foreign_key_meta.resolved_target_column._meta.name
 
                 _joins.append(
-                    f'LEFT JOIN "{right_tablename}" "{table_alias}"'
+                    f'LEFT JOIN {right_tablename} "{table_alias}"'
                     " ON "
-                    f'("{left_tablename}"."{key._meta.name}" = "{table_alias}"."{pk_name}")'  # noqa: E501
+                    f'({left_tablename}."{key._meta.name}" = "{table_alias}"."{pk_name}")'  # noqa: E501
                 )
 
             joins.extend(_joins)
@@ -742,7 +744,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
             query += "{}"
             args.append(distinct.querystring)
 
-        query += f" {columns_str} FROM {self.table._meta.tablename}"
+        query += f" {columns_str} FROM {self.table._meta.get_formatted_tablename()}"  # noqa: E501
 
         for join in joins:
             query += f" {join}"

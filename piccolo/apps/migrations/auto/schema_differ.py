@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import typing as t
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -8,7 +9,12 @@ from piccolo.apps.migrations.auto.diffable_table import (
     DiffableTable,
     TableDelta,
 )
-from piccolo.apps.migrations.auto.operations import RenameColumn, RenameTable
+from piccolo.apps.migrations.auto.migration_manager import MigrationManager
+from piccolo.apps.migrations.auto.operations import (
+    ChangeTableSchema,
+    RenameColumn,
+    RenameTable,
+)
 from piccolo.apps.migrations.auto.serialisation import (
     Definition,
     Import,
@@ -44,6 +50,14 @@ class RenameTableCollection:
 
 
 @dataclass
+class ChangeTableSchemaCollection:
+    collection: t.List[ChangeTableSchema] = field(default_factory=list)
+
+    def append(self, change_table_schema: ChangeTableSchema):
+        self.collection.append(change_table_schema)
+
+
+@dataclass
 class RenameColumnCollection:
     rename_columns: t.List[RenameColumn] = field(default_factory=list)
 
@@ -70,9 +84,19 @@ class RenameColumnCollection:
 
 @dataclass
 class AlterStatements:
-    statements: t.List[str]
+    statements: t.List[str] = field(default_factory=list)
     extra_imports: t.List[Import] = field(default_factory=list)
     extra_definitions: t.List[Definition] = field(default_factory=list)
+
+    def extend(self, alter_statements: AlterStatements):
+        self.statements.extend(alter_statements.statements)
+        self.extra_imports.extend(alter_statements.extra_imports)
+        self.extra_definitions.extend(alter_statements.extra_definitions)
+        return self
+
+
+def optional_str_repr(value: t.Optional[str]) -> str:
+    return f"'{value}'" if value else "None"
 
 
 @dataclass
@@ -98,6 +122,9 @@ class SchemaDiffer:
         self.schema_snapshot_map: t.Dict[str, DiffableTable] = {
             i.class_name: i for i in self.schema_snapshot
         }
+        self.table_schema_changes_collection = (
+            self.check_table_schema_changes()
+        )
         self.rename_tables_collection = self.check_rename_tables()
         self.rename_columns_collection = self.check_renamed_columns()
 
@@ -175,6 +202,28 @@ class SchemaDiffer:
 
         return collection
 
+    def check_table_schema_changes(self) -> ChangeTableSchemaCollection:
+        collection = ChangeTableSchemaCollection()
+
+        for table in self.schema:
+            snapshot_table = self.schema_snapshot_map.get(
+                table.class_name, None
+            )
+            if not snapshot_table:
+                continue
+
+            if table.schema != snapshot_table.schema:
+                collection.append(
+                    ChangeTableSchema(
+                        class_name=table.class_name,
+                        tablename=table.tablename,
+                        new_schema=table.schema,
+                        old_schema=snapshot_table.schema,
+                    )
+                )
+
+        return collection
+
     def check_renamed_columns(self) -> RenameColumnCollection:
         """
         Work out whether any of the columns were renamed.
@@ -231,6 +280,54 @@ class SchemaDiffer:
 
     ###########################################################################
 
+    def _stringify_func(
+        self,
+        func: t.Callable,
+        params: t.Dict[str, t.Any],
+        prefix: t.Optional[str] = None,
+    ) -> AlterStatements:
+        """
+        Generates a string representing how to call the given function with the
+        give params. For example::
+
+            def my_callable(arg_1: str, arg_2: str):
+                ...
+
+            >>> _stringify_func(
+            ...     my_callable,
+            ...     {"arg_1": "a", "arg_2": "b"}
+            ... ).statements
+            ['my_callable(arg_1="a", arg_2="b")']
+
+        """
+        signature = inspect.signature(func)
+
+        if "self" in signature.parameters.keys():
+            params["self"] = None
+
+        serialised_params = serialise_params(params)
+
+        func_name = func.__name__
+
+        # This will raise an exception is we're missing parameters, which helps
+        # with debugging:
+        bound = signature.bind(**serialised_params.params)
+        bound.apply_defaults()
+
+        args = bound.arguments
+        if "self" in args:
+            args.pop("self")
+
+        args_str = ", ".join(f"{i}={repr(j)}" for i, j in args.items())
+
+        return AlterStatements(
+            statements=[f"{prefix or ''}{func_name}({args_str})"],
+            extra_definitions=serialised_params.extra_definitions,
+            extra_imports=serialised_params.extra_imports,
+        )
+
+    ###########################################################################
+
     @property
     def create_tables(self) -> AlterStatements:
         new_tables: t.List[DiffableTable] = list(
@@ -245,12 +342,22 @@ class SchemaDiffer:
             not in self.rename_tables_collection.new_class_names
         ]
 
-        return AlterStatements(
-            statements=[
-                f"manager.add_table('{i.class_name}', tablename='{i.tablename}')"  # noqa: E501
-                for i in new_tables
-            ]
-        )
+        alter_statements = AlterStatements()
+
+        for i in new_tables:
+            alter_statements.extend(
+                self._stringify_func(
+                    func=MigrationManager.add_table,
+                    params={
+                        "class_name": i.class_name,
+                        "tablename": i.tablename,
+                        "schema": i.schema,
+                    },
+                    prefix="manager.",
+                )
+            )
+
+        return alter_statements
 
     @property
     def drop_tables(self) -> AlterStatements:
@@ -266,21 +373,52 @@ class SchemaDiffer:
             not in self.rename_tables_collection.old_class_names
         ]
 
-        return AlterStatements(
-            statements=[
-                f"manager.drop_table(class_name='{i.class_name}', tablename='{i.tablename}')"  # noqa: E501
-                for i in drop_tables
-            ]
-        )
+        alter_statements = AlterStatements()
+
+        for i in drop_tables:
+            alter_statements.extend(
+                self._stringify_func(
+                    func=MigrationManager.drop_table,
+                    params={
+                        "class_name": i.class_name,
+                        "tablename": i.tablename,
+                        "schema": i.schema,
+                    },
+                    prefix="manager.",
+                )
+            )
+
+        return alter_statements
 
     @property
     def rename_tables(self) -> AlterStatements:
-        return AlterStatements(
-            statements=[
-                f"manager.rename_table(old_class_name='{renamed_table.old_class_name}', old_tablename='{renamed_table.old_tablename}', new_class_name='{renamed_table.new_class_name}', new_tablename='{renamed_table.new_tablename}')"  # noqa
-                for renamed_table in self.rename_tables_collection.rename_tables  # noqa: E501
-            ]
-        )
+        alter_statements = AlterStatements()
+
+        for i in self.rename_tables_collection.rename_tables:
+            alter_statements.extend(
+                self._stringify_func(
+                    func=MigrationManager.rename_table,
+                    params=i.__dict__,
+                    prefix="manager.",
+                )
+            )
+
+        return alter_statements
+
+    @property
+    def change_table_schemas(self) -> AlterStatements:
+        alter_statements = AlterStatements()
+
+        for i in self.table_schema_changes_collection.collection:
+            alter_statements.extend(
+                self._stringify_func(
+                    func=MigrationManager.change_table_schema,
+                    params=i.__dict__,
+                    prefix="manager.",
+                )
+            )
+
+        return alter_statements
 
     ###########################################################################
 
@@ -442,12 +580,18 @@ class SchemaDiffer:
 
     @property
     def rename_columns(self) -> AlterStatements:
-        return AlterStatements(
-            statements=[
-                f"manager.rename_column(table_class_name='{i.table_class_name}', tablename='{i.tablename}', old_column_name='{i.old_column_name}', new_column_name='{i.new_column_name}', old_db_column_name='{i.old_db_column_name}', new_db_column_name='{i.new_db_column_name}')"  # noqa: E501
-                for i in self.rename_columns_collection.rename_columns
-            ]
-        )
+        alter_statements = AlterStatements()
+
+        for i in self.rename_columns_collection.rename_columns:
+            alter_statements.extend(
+                self._stringify_func(
+                    func=MigrationManager.rename_column,
+                    params=i.__dict__,
+                    prefix="manager.",
+                )
+            )
+
+        return alter_statements
 
     ###########################################################################
 
@@ -506,6 +650,7 @@ class SchemaDiffer:
             "Created tables": self.create_tables,
             "Dropped tables": self.drop_tables,
             "Renamed tables": self.rename_tables,
+            "Tables which changed schema": self.change_table_schemas,
             "Created table columns": self.new_table_columns,
             "Dropped columns": self.drop_columns,
             "Columns added to existing tables": self.add_columns,

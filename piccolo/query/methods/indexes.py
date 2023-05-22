@@ -17,19 +17,13 @@ class Indexes(Query):
             QueryString(
                 "SELECT indexname AS name FROM pg_indexes "
                 "WHERE tablename = {}",
-                self.table._meta.tablename,
+                self.table._meta.get_formatted_tablename(quoted=False),
             )
         ]
 
     @property
     def cockroach_querystrings(self) -> t.Sequence[QueryString]:
-        return [
-            QueryString(
-                "SELECT indexname AS name FROM pg_indexes "
-                "WHERE tablename = {}",
-                self.table._meta.tablename,
-            )
-        ]
+        return self.postgres_querystrings
 
     @property
     def sqlite_querystrings(self) -> t.Sequence[QueryString]:

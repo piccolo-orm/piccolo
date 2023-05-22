@@ -145,7 +145,7 @@ class TestMigrationManager(DBTestCase):
             asyncio.run(manager.run())
             self.assertEqual(
                 fake_out.getvalue(),
-                """  -  [preview forwards]... \n ALTER TABLE band RENAME COLUMN "name" TO "title";\n""",  # noqa: E501
+                """  -  [preview forwards]... \n ALTER TABLE "band" RENAME COLUMN "name" TO "title";\n""",  # noqa: E501
             )
         response = self.run_sync("SELECT * FROM band;")
         self.assertTrue("title" not in response[0].keys())
@@ -240,8 +240,8 @@ class TestMigrationManager(DBTestCase):
             self.assertEqual(
                 response, [{"id": id[0]["id"], "name": "Bob Jones"}]
             )
-        # Reverse
 
+        # Reverse
         get_app_config.return_value = AppConfig(
             app_name="music", migrations_folder_path=""
         )
@@ -257,12 +257,12 @@ class TestMigrationManager(DBTestCase):
             if engine_is("postgres"):
                 self.assertEqual(
                     fake_out.getvalue(),
-                    """  -  [preview forwards]... \n CREATE TABLE musician ("id" SERIAL PRIMARY KEY NOT NULL, "name" VARCHAR(255) NOT NULL DEFAULT '');\n""",  # noqa: E501
+                    """  -  [preview forwards]... \n CREATE TABLE "musician" ("id" SERIAL PRIMARY KEY NOT NULL, "name" VARCHAR(255) NOT NULL DEFAULT '');\n""",  # noqa: E501
                 )
             if engine_is("cockroach"):
                 self.assertEqual(
                     fake_out.getvalue(),
-                    """  -  [preview forwards]... \n CREATE TABLE musician ("id" INTEGER PRIMARY KEY NOT NULL DEFAULT unique_rowid(), "name" VARCHAR(255) NOT NULL DEFAULT '');\n""",  # noqa: E501
+                    """  -  [preview forwards]... \n CREATE TABLE "musician" ("id" INTEGER PRIMARY KEY NOT NULL DEFAULT unique_rowid(), "name" VARCHAR(255) NOT NULL DEFAULT '');\n""",  # noqa: E501
                 )
         self.assertEqual(self.table_exists("musician"), False)
 
@@ -292,7 +292,7 @@ class TestMigrationManager(DBTestCase):
 
         if engine_is("postgres"):
             self.run_sync(
-                "INSERT INTO manager VALUES (default, 'Dave', 'dave@me.com');"
+                "INSERT INTO \"manager\" VALUES (default, 'Dave', 'dave@me.com');"  # noqa: E501
             )
             response = self.run_sync("SELECT * FROM manager;")
             self.assertEqual(
@@ -326,7 +326,7 @@ class TestMigrationManager(DBTestCase):
             asyncio.run(manager.run())
             self.assertEqual(
                 fake_out.getvalue(),
-                """  -  [preview forwards]... \n ALTER TABLE manager ADD COLUMN "email" VARCHAR(100) UNIQUE DEFAULT '';\n""",  # noqa: E501
+                """  -  [preview forwards]... \n ALTER TABLE "manager" ADD COLUMN "email" VARCHAR(100) UNIQUE DEFAULT '';\n""",  # noqa: E501
             )
 
         response = self.run_sync("SELECT * FROM manager;")
@@ -373,8 +373,8 @@ class TestMigrationManager(DBTestCase):
             self.assertEqual(
                 fake_out.getvalue(),
                 (
-                    """  -  [preview forwards]... \n ALTER TABLE manager ADD COLUMN "email" VARCHAR(100) UNIQUE DEFAULT '';\n"""  # noqa: E501
-                    """\n CREATE INDEX manager_email ON manager USING btree ("email");\n"""  # noqa: E501
+                    """  -  [preview forwards]... \n ALTER TABLE "manager" ADD COLUMN "email" VARCHAR(100) UNIQUE DEFAULT '';\n"""  # noqa: E501
+                    """\n CREATE INDEX manager_email ON "manager" USING btree ("email");\n"""  # noqa: E501
                 ),
             )
         self.assertTrue(index_name not in Manager.indexes().run_sync())
@@ -1028,3 +1028,26 @@ class TestMigrationManager(DBTestCase):
         self.assertTrue(self.table_exists("musician"))
 
         self.run_sync("DROP TABLE IF EXISTS musician;")
+
+    @engines_only("postgres", "cockroach")
+    def test_change_table_schema(self):
+        manager = MigrationManager(migration_id="1", app_name="music")
+
+        manager.change_table_schema(
+            class_name="Manager",
+            tablename="manager",
+            new_schema="schema_1",
+            old_schema=None,
+        )
+
+        # Preview
+        manager.preview = True
+        with patch("sys.stdout", new=StringIO()) as fake_out:
+            asyncio.run(manager.run())
+
+            output = fake_out.getvalue()
+
+            self.assertEqual(
+                output,
+                '  - 1 [preview forwards]... CREATE SCHEMA IF NOT EXISTS "schema_1"\nALTER TABLE "manager" SET SCHEMA "schema_1"\n',  # noqa: E501
+            )

@@ -666,10 +666,6 @@ async def get_foreign_key_reference(
         return ConstraintTable()
 
 
-def get_table_name(name: str, schema: str) -> str:
-    return name if schema == "public" else f"{schema}.{name}"
-
-
 async def create_table_class_from_db(
     table_class: t.Type[Table],
     tablename: str,
@@ -812,7 +808,7 @@ async def create_table_class_from_db(
 
     table = create_table_class(
         class_name=_snake_to_camel(tablename),
-        class_kwargs={"tablename": get_table_name(tablename, schema_name)},
+        class_kwargs={"tablename": tablename, "schema": schema_name},
         class_members=columns,
     )
     output_schema.tables.append(table)

@@ -240,8 +240,19 @@ class SetDigits(AlterColumnStatement):
 
 
 @dataclass
+class SetSchema(AlterStatement):
+    __slots__ = ("schema_name",)
+
+    schema_name: str
+
+    @property
+    def ddl(self) -> str:
+        return f'SET SCHEMA "{self.schema_name}"'
+
+
+@dataclass
 class DropTable:
-    tablename: str
+    table: t.Type[Table]
     cascade: bool
     if_exists: bool
 
@@ -252,7 +263,7 @@ class DropTable:
         if self.if_exists:
             query += " IF EXISTS"
 
-        query += f" {self.tablename}"
+        query += f" {self.table._meta.get_formatted_tablename()}"
 
         if self.cascade:
             query += " CASCADE"
@@ -275,6 +286,7 @@ class Alter(DDL):
         "_set_digits",
         "_set_length",
         "_set_null",
+        "_set_schema",
         "_set_unique",
     )
 
@@ -293,11 +305,15 @@ class Alter(DDL):
         self._set_digits: t.List[SetDigits] = []
         self._set_length: t.List[SetLength] = []
         self._set_null: t.List[SetNull] = []
+        self._set_schema: t.List[SetSchema] = []
         self._set_unique: t.List[SetUnique] = []
 
     def add_column(self: Self, name: str, column: Column) -> Self:
         """
-        Band.alter().add_column(‘members’, Integer())
+        Add a column to the table::
+
+            >>> await Band.alter().add_column('members', Integer())
+
         """
         column._meta._table = self.table
         column._meta._name = name
@@ -311,14 +327,20 @@ class Alter(DDL):
 
     def drop_column(self, column: t.Union[str, Column]) -> Alter:
         """
-        Band.alter().drop_column(Band.popularity)
+        Drop a column from the table::
+
+            >>> await Band.alter().drop_column(Band.popularity)
+
         """
         self._drop.append(DropColumn(column))
         return self
 
     def drop_default(self, column: t.Union[str, Column]) -> Alter:
         """
-        Band.alter().drop_default(Band.popularity)
+        Drop the default from a column::
+
+            >>> await Band.alter().drop_default(Band.popularity)
+
         """
         self._drop_default.append(DropDefault(column=column))
         return self
@@ -327,10 +349,13 @@ class Alter(DDL):
         self, cascade: bool = False, if_exists: bool = False
     ) -> Alter:
         """
-        Band.alter().drop_table()
+        Drop the table::
+
+            >>> await Band.alter().drop_table()
+
         """
         self._drop_table = DropTable(
-            tablename=self.table._meta.tablename,
+            table=self.table,
             cascade=cascade,
             if_exists=if_exists,
         )
@@ -338,7 +363,10 @@ class Alter(DDL):
 
     def rename_table(self, new_name: str) -> Alter:
         """
-        Band.alter().rename_table('musical_group')
+        Rename the table::
+
+            >>> await Band.alter().rename_table('musical_group')
+
         """
         # We override the existing one rather than appending.
         self._rename_table = [RenameTable(new_name=new_name)]
@@ -348,8 +376,14 @@ class Alter(DDL):
         self, column: t.Union[str, Column], new_name: str
     ) -> Alter:
         """
-        Band.alter().rename_column(Band.popularity, ‘rating’)
-        Band.alter().rename_column('popularity', ‘rating’)
+        Rename a column on the table::
+
+            # Specify the column with a `Column` instance:
+            >>> await Band.alter().rename_column(Band.popularity, 'rating')
+
+            # Or by name:
+            >>> await Band.alter().rename_column('popularity', 'rating')
+
         """
         self._rename_columns.append(RenameColumn(column, new_name))
         return self
@@ -361,7 +395,16 @@ class Alter(DDL):
         using_expression: t.Optional[str] = None,
     ) -> Alter:
         """
-        Change the type of a column.
+        Change the type of a column::
+
+            >>> await Band.alter().set_column_type(Band.popularity, BigInt())
+
+        :param using_expression:
+            When changing a column's type, the database doesn't always know how
+            to convert the existing data in that column to the new type. You
+            can provide a hint to the database on what to do. For example
+            ``'name::integer'``.
+
         """
         self._set_column_type.append(
             SetColumnType(
@@ -374,9 +417,10 @@ class Alter(DDL):
 
     def set_default(self, column: Column, value: t.Any) -> Alter:
         """
-        Set the default for a column.
+        Set the default for a column::
 
-        Band.alter().set_default(Band.popularity, 0)
+            >>> await Band.alter().set_default(Band.popularity, 0)
+
         """
         self._set_default.append(SetDefault(column=column, value=value))
         return self
@@ -385,8 +429,14 @@ class Alter(DDL):
         self, column: t.Union[str, Column], boolean: bool = True
     ) -> Alter:
         """
-        Band.alter().set_null(Band.name, True)
-        Band.alter().set_null('name', True)
+        Change a column to be nullable or not::
+
+            # Specify the column using a `Column` instance:
+            >>> await Band.alter().set_null(Band.name, True)
+
+            # Or using a string:
+            >>> await Band.alter().set_null('name', True)
+
         """
         self._set_null.append(SetNull(column, boolean))
         return self
@@ -395,8 +445,14 @@ class Alter(DDL):
         self, column: t.Union[str, Column], boolean: bool = True
     ) -> Alter:
         """
-        Band.alter().set_unique(Band.name, True)
-        Band.alter().set_unique('name', True)
+        Make a column unique or not::
+
+            # Specify the column using a `Column` instance:
+            >>> await Band.alter().set_unique(Band.name, True)
+
+            # Or using a string:
+            >>> await Band.alter().set_unique('name', True)
+
         """
         self._set_unique.append(SetUnique(column, boolean))
         return self
@@ -405,9 +461,10 @@ class Alter(DDL):
         """
         Change the max length of a varchar column. Unfortunately, this isn't
         supported by SQLite, but SQLite also doesn't enforce any length limits
-        on varchar columns anyway.
+        on varchar columns anyway::
 
-        Band.alter().set_length('name', 512)
+            >>> await Band.alter().set_length('name', 512)
+
         """
         if self.engine_type == "sqlite":
             colored_warning(
@@ -454,13 +511,14 @@ class Alter(DDL):
         referenced_column_name: str = "id",
     ) -> Alter:
         """
-        This will add a new foreign key constraint.
+        Add a new foreign key constraint::
 
-        Band.alter().add_foreign_key_constraint(
-            Band.manager,
-            referenced_table_name='manager',
-            on_delete=OnDelete.cascade
-        )
+            >>> await Band.alter().add_foreign_key_constraint(
+            ...     Band.manager,
+            ...     referenced_table_name='manager',
+            ...     on_delete=OnDelete.cascade
+            ... )
+
         """
         constraint_name = self._get_constraint_name(column=column)
         column_name = AlterColumnStatement(column=column).column_name
@@ -483,7 +541,7 @@ class Alter(DDL):
         digits: t.Optional[t.Tuple[int, int]],
     ) -> Alter:
         """
-        Alter the precision and scale for a Numeric column.
+        Alter the precision and scale for a ``Numeric`` column.
         """
         column_type = (
             column.__class__.__name__.upper()
@@ -499,12 +557,23 @@ class Alter(DDL):
         )
         return self
 
+    def set_schema(self, schema_name: str) -> Alter:
+        """
+        Move the table to a different schema.
+
+        :param schema_name:
+            The schema to move the table to.
+
+        """
+        self._set_schema.append(SetSchema(schema_name=schema_name))
+        return self
+
     @property
     def default_ddl(self) -> t.Sequence[str]:
         if self._drop_table is not None:
             return [self._drop_table.ddl]
 
-        query = f"ALTER TABLE {self.table._meta.tablename}"
+        query = f"ALTER TABLE {self.table._meta.get_formatted_tablename()}"
 
         alterations = [
             i.ddl
@@ -520,6 +589,7 @@ class Alter(DDL):
                 self._set_length,
                 self._set_default,
                 self._set_digits,
+                self._set_schema,
             )
         ]
 

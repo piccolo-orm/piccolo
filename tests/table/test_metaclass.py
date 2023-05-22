@@ -1,4 +1,5 @@
 from unittest import TestCase
+from unittest.mock import MagicMock, patch
 
 from piccolo.columns import Secret
 from piccolo.columns.column_types import (
@@ -41,6 +42,38 @@ class TestMetaClass(TestCase):
             pass
 
         self.assertEqual(Manager._meta.help_text, help_text)
+
+    def test_schema(self):
+        """
+        Make sure schema can be set for the Table.
+        """
+        schema = "schema_1"
+
+        class Manager(Table, schema=schema):
+            pass
+
+        self.assertEqual(Manager._meta.schema, schema)
+
+    @patch("piccolo.table.warnings")
+    def test_schema_from_tablename(self, warnings: MagicMock):
+        """
+        If the tablename contains a '.' we extract the schema name.
+        """
+        table = "manager"
+        schema = "schema_1"
+
+        tablename = f"{schema}.{table}"
+
+        class Manager(Table, tablename=tablename):
+            pass
+
+        self.assertEqual(Manager._meta.schema, schema)
+        self.assertEqual(Manager._meta.tablename, table)
+
+        warnings.warn.assert_called_once_with(
+            "There's a '.' in the tablename - please use the `schema` "
+            "argument instead."
+        )
 
     def test_foreign_key_columns(self):
         """

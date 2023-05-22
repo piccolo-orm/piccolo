@@ -221,38 +221,44 @@ class TestFinder(TestCase):
         """
         finder = Finder()
 
-        self.assertEqual(
-            finder.get_table_classes(),
+        self.assertListEqual(
+            sorted(finder.get_table_classes(), key=lambda i: i.__name__),
             [
-                Manager,
                 Band,
-                Venue,
                 Concert,
-                Ticket,
-                Poster,
-                Shirt,
-                RecordingStudio,
+                Manager,
                 MegaTable,
-                SmallTable,
-            ],
-        )
-
-        self.assertEqual(
-            finder.get_table_classes(include_apps=["music"]),
-            [
-                Manager,
-                Band,
-                Venue,
-                Concert,
-                Ticket,
                 Poster,
-                Shirt,
                 RecordingStudio,
+                Shirt,
+                SmallTable,
+                Ticket,
+                Venue,
             ],
         )
 
-        self.assertEqual(
-            finder.get_table_classes(exclude_apps=["music"]),
+        self.assertListEqual(
+            sorted(
+                finder.get_table_classes(include_apps=["music"]),
+                key=lambda i: i.__name__,
+            ),
+            [
+                Band,
+                Concert,
+                Manager,
+                Poster,
+                RecordingStudio,
+                Shirt,
+                Ticket,
+                Venue,
+            ],
+        )
+
+        self.assertListEqual(
+            sorted(
+                finder.get_table_classes(exclude_apps=["music"]),
+                key=lambda i: i.__name__,
+            ),
             [
                 MegaTable,
                 SmallTable,
