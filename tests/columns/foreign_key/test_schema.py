@@ -7,16 +7,16 @@ from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
 from tests.base import engines_only
 
 
-class Manager(Table, schema="schema1"):
+class Manager(Table, schema="schema_1"):
     name = Varchar(length=50)
 
 
-class Band(Table, schema="schema1"):
+class Band(Table, schema="schema_1"):
     name = Varchar(length=50)
     manager = ForeignKey(Manager)
 
 
-class Concert(Table, schema="schema1"):
+class Concert(Table, schema="schema_1"):
     start_date = Date()
     band = ForeignKey(Band)
 
@@ -41,9 +41,8 @@ class TestForeignKeyWithSchema(TestCase):
 
     def tearDown(self) -> None:
         self.schema_manager.drop_schema(
-            schema_name=self.schema_name
+            schema_name=self.schema_name, if_exists=True, cascade=True
         ).run_sync()
-        drop_db_tables_sync(*TABLES)
 
     def test_with_schema(self):
         """
@@ -70,8 +69,8 @@ class TestForeignKeyWithSchema(TestCase):
             Band.name,
             Band.manager.name.as_alias("manager_name"),
         )
-        self.assertIn('"schema1"."band"', query.__str__())
-        self.assertIn('"schema1"."manager"', query.__str__())
+        self.assertIn('"schema_1"."band"', query.__str__())
+        self.assertIn('"schema_1"."manager"', query.__str__())
 
         response = query.run_sync()
         self.assertListEqual(
@@ -87,9 +86,9 @@ class TestForeignKeyWithSchema(TestCase):
             Concert.band.name.as_alias("band_name"),
             Concert.band.manager.name.as_alias("manager_name"),
         )
-        self.assertIn('"schema1"."concert"', query.__str__())
-        self.assertIn('"schema1"."band"', query.__str__())
-        self.assertIn('"schema1"."manager"', query.__str__())
+        self.assertIn('"schema_1"."concert"', query.__str__())
+        self.assertIn('"schema_1"."band"', query.__str__())
+        self.assertIn('"schema_1"."manager"', query.__str__())
 
         response = query.run_sync()
         self.assertListEqual(

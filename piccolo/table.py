@@ -972,7 +972,7 @@ class Table(metaclass=TableMetaclass):
 
         .. code-block:: python
 
-            await Band.raw("select * from band where name = {}", 'Pythonistas')
+            await Band.raw("SELECT * FROM band WHERE name = {}", 'Pythonistas')
 
         """
         return Raw(table=cls, querystring=QueryString(sql, *args))

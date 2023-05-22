@@ -20,6 +20,7 @@ from piccolo.columns.column_types import (
     Varchar,
 )
 from piccolo.columns.indexes import IndexMethod
+from piccolo.schema import SchemaManager
 from piccolo.table import Table, create_db_tables_sync
 from piccolo.utils.sync import run_sync
 from tests.base import AsyncMock, engines_only, engines_skip
@@ -211,11 +212,11 @@ class TestGenerateWithIndexes(TestCase):
 ###############################################################################
 
 
-class Publication(Table, tablename="publication", schema="schema2"):
+class Publication(Table, tablename="publication", schema="schema_2"):
     name = Varchar(length=50)
 
 
-class Writer(Table, tablename="writer", schema="schema1"):
+class Writer(Table, tablename="writer", schema="schema_1"):
     name = Varchar(length=50)
     publication = ForeignKey(Publication, null=True)
 
@@ -231,17 +232,23 @@ class TestGenerateWithSchema(TestCase):
 
     tables = [Publication, Writer, Book]
 
+    schema_manager = SchemaManager()
+
     def setUp(self) -> None:
-        for schema_name in ("schema1", "schema2"):
-            Publication.raw(
-                f"CREATE SCHEMA IF NOT EXISTS {schema_name}"
+        for schema_name in ("schema_1", "schema_2"):
+            self.schema_manager.create_schema(
+                schema_name=schema_name, if_not_exists=True
             ).run_sync()
 
         create_db_tables_sync(*self.tables)
 
     def tearDown(self) -> None:
         Book.alter().drop_table().run_sync()
-        Publication.raw("DROP SCHEMA schema1, schema2 CASCADE").run_sync()
+
+        for schema_name in ("schema_1", "schema_2"):
+            self.schema_manager.drop_schema(
+                schema_name=schema_name, if_exists=True, cascade=True
+            ).run_sync()
 
     def test_reference_to_another_schema(self):
         output_schema: OutputSchema = run_sync(get_output_schema())

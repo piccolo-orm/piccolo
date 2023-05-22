@@ -94,7 +94,7 @@ which a table belongs to.
 
 .. code-block:: python
 
-    await Band.alter().set_schema('schema1')
+    await Band.alter().set_schema('schema_1')
 
 Schemas are a way of organising the tables within a database. Only Postgres and
 Cockroach support schemas. :ref:`Learn more here <Schemas>`.
@@ -105,7 +105,7 @@ in the old schema.
 
 .. code-block:: python
 
-    Band._meta.schema = 'schema1'
+    Band._meta.schema = 'schema_1'
 
 -------------------------------------------------------------------------------
 

@@ -72,3 +72,26 @@ class TestCreateWithSchema(TestCase):
             "band",
             self.manager.list_tables(schema_name="schema_1").run_sync(),
         )
+
+
+@engines_only("postgres", "cockroach")
+class TestCreateWithPublicSchema(TestCase):
+    class Band(Table, tablename="band", schema="public"):
+        name = Varchar(length=50, index=True)
+
+    def tearDown(self) -> None:
+        self.Band.alter().drop_table(if_exists=True).run_sync()
+
+    def test_table_created(self):
+        """
+        Make sure that if the schema is explicitly set a 'public' rather than
+        ``None``, that we don't try creating the schema which would cause it
+        to fail.
+        """
+        Band = self.Band
+        Band.create_table().run_sync()
+
+        self.assertIn(
+            "band",
+            SchemaManager().list_tables(schema_name="public").run_sync(),
+        )

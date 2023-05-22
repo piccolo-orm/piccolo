@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from piccolo.columns import Varchar
+from piccolo.schema import SchemaManager
 from piccolo.table import Table
 from tests.example_apps.music.tables import Manager
 
@@ -17,22 +18,22 @@ class TestTableExists(TestCase):
         self.assertTrue(response)
 
 
-class Band(Table, schema="schema1"):
+class Band(Table, schema="schema_1"):
     name = Varchar()
 
 
 class TestTableExistsSchema(TestCase):
     def setUp(self):
-        Band.raw("CREATE SCHEMA IF NOT EXISTS 'schema1'")
-        Manager.create_table().run_sync()
+        Band.create_table(auto_create_schema=True).run_sync()
 
     def tearDown(self):
-        Manager.alter().drop_table().run_sync()
-        Band.raw("DROP SCHEMA 'schema1'")
+        SchemaManager().drop_schema(
+            "schema_1", if_exists=True, cascade=True
+        ).run_sync()
 
     def test_table_exists(self):
         """
         Make sure it works correctly if the table is in a Postgres schema.
         """
-        response = Manager.table_exists().run_sync()
+        response = Band.table_exists().run_sync()
         self.assertTrue(response)
