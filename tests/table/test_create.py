@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from piccolo.columns import Varchar
+from piccolo.schema import SchemaManager
 from piccolo.table import Table
 from tests.base import engines_only
 from tests.example_apps.music.tables import Manager
@@ -49,16 +50,16 @@ class TestCreateWithIndexes(TestCase):
 
 @engines_only("postgres", "cockroach")
 class TestCreateWithSchema(TestCase):
-    class Band(Table, tablename="band", schema="schema1"):
+
+    manager = SchemaManager()
+
+    class Band(Table, tablename="band", schema="schema_1"):
         name = Varchar(length=50, index=True)
 
-    def setUp(self) -> None:
-        Band = self.Band
-        Band.raw('CREATE SCHEMA IF NOT EXISTS "schema1"').run_sync()
-
     def tearDown(self) -> None:
-        Band = self.Band
-        Band.raw('DROP SCHEMA "schema1" CASCADE').run_sync()
+        self.manager.drop_schema(
+            schema_name="schema_1", cascade=True
+        ).run_sync()
 
     def test_table_created(self):
         """
@@ -67,13 +68,7 @@ class TestCreateWithSchema(TestCase):
         Band = self.Band
         Band.create_table().run_sync()
 
-        response = Band.raw(
-            """
-            SELECT COUNT(*)
-            FROM "information_schema"."tables"
-            WHERE table_schema = 'schema1'
-            AND table_name = 'band';
-            """
-        ).run_sync()
-
-        self.assertListEqual(response, [{"count": 1}])
+        self.assertIn(
+            "band",
+            self.manager.list_tables(schema_name="schema_1").run_sync(),
+        )
