@@ -115,6 +115,7 @@ class MigrationTestCase(DBTestCase):
         migrations_folder_path = os.path.join(
             temp_directory_path, "piccolo_migrations"
         )
+        print(migrations_folder_path)
         return migrations_folder_path
 
     def _test_migrations(
@@ -1079,14 +1080,20 @@ class TestSchemas(MigrationTestCase):
 
     def setUp(self) -> None:
         self.schema_manager = SchemaManager()
+        self.manager_1 = create_table_class(class_name="Manager")
+        self.manager_2 = create_table_class(
+            class_name="Manager", class_kwargs={"schema": self.new_schema}
+        )
 
     def tearDown(self) -> None:
         self.schema_manager.drop_schema(
             self.new_schema, if_exists=True, cascade=True
         ).run_sync()
+
         Migration.alter().drop_table(if_exists=True).run_sync()
 
-    def test_schemas(self):
+        self.manager_1.alter().drop_table(if_exists=True).run_sync()
+
     def test_create_table_in_schema(self):
         """
         Make sure we can create a new table in a schema.
@@ -1111,25 +1118,30 @@ class TestSchemas(MigrationTestCase):
             ["manager"],
         )
 
+        # Roll it backwards to make sure the table no longer exists.
+        self._run_backwards(migration_id="1")
+
+        # Make sure that the table is in the new schema.
+        self.assertNotIn(
+            "manager",
+            self.schema_manager.list_tables(
+                schema_name=self.new_schema
+            ).run_sync(),
+        )
+
     def test_move_schemas(self):
         """
         Make sure the auto migrations detect that a table's schema has changed.
         """
-        manager_1 = create_table_class(class_name="Manager")
-        manager_2 = create_table_class(
-            class_name="Manager", class_kwargs={"schema": self.new_schema}
-        )
-
         self._test_migrations(
             table_snapshots=[
-                [manager_1],
-                [manager_2],
+                [self.manager_1],
+                [self.manager_2],
             ],
         )
 
         # The schema should automaticaly be created.
         self.assertIn(
-            manager_2._meta.schema,
             self.new_schema,
             self.schema_manager.list_schemas().run_sync(),
         )
@@ -1158,4 +1170,59 @@ class TestSchemas(MigrationTestCase):
         self.assertIn(
             self.new_schema,
             self.schema_manager.list_schemas().run_sync(),
+        )
+
+
+@engines_only("postgres", "cockroach")
+class TestSameTableName(MigrationTestCase):
+    """
+    Tables with the same name are allowed in multiple schemas.
+    """
+
+    new_schema = "schema_1"
+    tablename = "manager"
+
+    def setUp(self) -> None:
+        self.schema_manager = SchemaManager()
+
+        self.manager_1 = create_table_class(
+            class_name="Manager1", class_kwargs={"tablename": self.tablename}
+        )
+
+        self.manager_2 = create_table_class(
+            class_name="Manager2",
+            class_kwargs={"tablename": self.tablename, "schema": "schema_1"},
+        )
+
+    def tearDown(self) -> None:
+        self.schema_manager.drop_schema(
+            self.new_schema, if_exists=True, cascade=True
+        ).run_sync()
+
+        self.manager_1.alter().drop_table(if_exists=True).run_sync()
+
+        Migration.alter().drop_table(if_exists=True).run_sync()
+
+    def test_schemas(self):
+        """
+        Make sure we can create a table with the same name in multiple schemas.
+        """
+
+        self._test_migrations(
+            table_snapshots=[
+                [self.manager_1],
+                [self.manager_1, self.manager_2],
+            ],
+        )
+
+        # Make sure that both tables exist (in the correct schemas):
+        self.assertIn(
+            "manager",
+            self.schema_manager.list_tables(schema_name="public").run_sync(),
+        )
+        self.assertIn(
+            "manager",
+            self.schema_manager.list_tables(
+                schema_name=self.new_schema
+            ).run_sync(),
         )
