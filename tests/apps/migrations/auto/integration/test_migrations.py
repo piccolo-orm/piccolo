@@ -1071,6 +1071,7 @@ class TestTargetColumnString(MigrationTestCase):
 
 
 ###############################################################################
+# Testing migrations which involve schemas.
 
 
 @engines_only("postgres", "cockroach")
@@ -1221,3 +1222,47 @@ class TestSameTableName(MigrationTestCase):
                 schema_name=self.new_schema
             ).run_sync(),
         )
+
+
+@engines_only("postgres", "cockroach")
+class TestForeignKey(MigrationTestCase):
+    """
+    Make sure that migrations with foreign keys involving schemas work
+    correctly.
+    """
+
+    schema = "schema_1"
+    schema_manager = SchemaManager()
+
+    def setUp(self) -> None:
+        self.manager = create_table_class(
+            class_name="Manager", class_kwargs={"schema": self.schema}
+        )
+
+        self.band = create_table_class(
+            class_name="Band",
+            class_kwargs={"schema": self.schema},
+            class_members={"manager": ForeignKey(self.manager)},
+        )
+
+    def tearDown(self) -> None:
+        self.schema_manager.drop_schema(
+            self.schema, if_exists=True, cascade=True
+        ).run_sync()
+
+        Migration.alter().drop_table(if_exists=True).run_sync()
+
+    def test_foreign_key(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.manager, self.band],
+            ],
+        )
+
+        tables_in_schema = self.schema_manager.list_tables(
+            schema_name=self.schema
+        ).run_sync()
+
+        # Make sure that both tables exist (in the correct schemas):
+        for tablename in ("manager", "band"):
+            self.assertIn(tablename, tables_in_schema)
