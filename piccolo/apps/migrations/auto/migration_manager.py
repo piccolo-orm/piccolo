@@ -710,7 +710,10 @@ class MigrationManager:
             ] = self.add_columns.for_table_class_name(add_table.class_name)
             _Table: t.Type[Table] = create_table_class(
                 class_name=add_table.class_name,
-                class_kwargs={"tablename": add_table.tablename},
+                class_kwargs={
+                    "tablename": add_table.tablename,
+                    "schema": add_table.schema,
+                },
                 class_members={
                     add_column.column._meta.name: add_column.column
                     for add_column in add_columns

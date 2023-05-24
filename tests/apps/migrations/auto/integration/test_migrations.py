@@ -1087,9 +1087,33 @@ class TestSchemas(MigrationTestCase):
         Migration.alter().drop_table(if_exists=True).run_sync()
 
     def test_schemas(self):
+    def test_create_table_in_schema(self):
         """
-        Make sure migrations still work when a foreign key references a column
-        other than the primary key.
+        Make sure we can create a new table in a schema.
+        """
+        manager = create_table_class(
+            class_name="Manager", class_kwargs={"schema": self.new_schema}
+        )
+
+        self._test_migrations(table_snapshots=[[manager]])
+
+        # The schema should automaticaly be created.
+        self.assertIn(
+            self.new_schema,
+            self.schema_manager.list_schemas().run_sync(),
+        )
+
+        # Make sure that the table is in the new schema.
+        self.assertListEqual(
+            self.schema_manager.list_tables(
+                schema_name=self.new_schema
+            ).run_sync(),
+            ["manager"],
+        )
+
+    def test_move_schemas(self):
+        """
+        Make sure the auto migrations detect that a table's schema has changed.
         """
         manager_1 = create_table_class(class_name="Manager")
         manager_2 = create_table_class(
@@ -1106,6 +1130,7 @@ class TestSchemas(MigrationTestCase):
         # The schema should automaticaly be created.
         self.assertIn(
             manager_2._meta.schema,
+            self.new_schema,
             self.schema_manager.list_schemas().run_sync(),
         )
 
