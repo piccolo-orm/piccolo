@@ -1,6 +1,38 @@
 Changes
 =======
 
+0.112.0
+-------
+
+Added support for schemas in Postgres and CockroachDB.
+
+For example:
+
+.. code-block:: python
+
+  class Band(Table, schema="music"):
+      ...
+
+When creating the table, the schema will be created automatically if it doesn't
+already exist.
+
+.. code-block:: python
+
+  await Band.create_table()
+
+It also works with migrations. If we change the ``schema`` value for the table,
+Piccolo will detect this, and create a migration for moving it to the new schema.
+
+.. code-block:: python
+
+  class Band(Table, schema="music_2"):
+      ...
+
+  # Piccolo will detect that the table needs to be moved to a new schema.
+  >>> piccolo migrations new my_app --auto
+
+-------------------------------------------------------------------------------
+
 0.111.1
 -------
 
