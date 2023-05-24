@@ -1098,11 +1098,7 @@ class TestSchemas(MigrationTestCase):
         """
         Make sure we can create a new table in a schema.
         """
-        manager = create_table_class(
-            class_name="Manager", class_kwargs={"schema": self.new_schema}
-        )
-
-        self._test_migrations(table_snapshots=[[manager]])
+        self._test_migrations(table_snapshots=[[self.manager_2]])
 
         # The schema should automaticaly be created.
         self.assertIn(
