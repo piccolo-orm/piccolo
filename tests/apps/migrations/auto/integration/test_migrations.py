@@ -115,7 +115,6 @@ class MigrationTestCase(DBTestCase):
         migrations_folder_path = os.path.join(
             temp_directory_path, "piccolo_migrations"
         )
-        print(migrations_folder_path)
         return migrations_folder_path
 
     def _test_migrations(
