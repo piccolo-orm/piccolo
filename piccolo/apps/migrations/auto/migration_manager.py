@@ -160,7 +160,7 @@ class MigrationManager:
         self,
         class_name: str,
         tablename: str,
-        schema: str = None,
+        schema: t.Optional[str] = None,
         columns: t.Optional[t.List[Column]] = None,
     ):
         if not columns:
