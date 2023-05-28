@@ -1,6 +1,18 @@
 Changes
 =======
 
+0.113.0
+-------
+
+If Piccolo detects a renamed table in an auto migration, it asks the user for
+confirmation. When lots of tables have been renamed, Piccolo is now more
+intelligent about when to ask for confirmation. Thanks to @sumitsharansatsangi
+for suggesting this change, and @sinisaos for reviewing.
+
+Also, fixed the type annotations for ``MigrationManager.add_table``.
+
+-------------------------------------------------------------------------------
+
 0.112.1
 -------
 
