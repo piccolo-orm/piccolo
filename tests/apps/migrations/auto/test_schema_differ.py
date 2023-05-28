@@ -4,7 +4,14 @@ import typing as t
 from unittest import TestCase
 from unittest.mock import MagicMock, call, patch
 
-from piccolo.apps.migrations.auto import DiffableTable, SchemaDiffer
+from piccolo.apps.migrations.auto.schema_differ import (
+    DiffableTable,
+    RenameColumn,
+    RenameColumnCollection,
+    RenameTable,
+    RenameTableCollection,
+    SchemaDiffer,
+)
 from piccolo.columns.column_types import Numeric, Varchar
 
 
@@ -484,3 +491,54 @@ class TestSchemaDiffer(TestCase):
 
     def test_alter_default(self):
         pass
+
+
+class TestRenameTableCollection(TestCase):
+    collection = RenameTableCollection(
+        rename_tables=[
+            RenameTable(
+                old_class_name="Manager",
+                old_tablename="manager",
+                new_class_name="Manager1",
+                new_tablename="manager_1",
+            )
+        ]
+    )
+
+    def test_was_renamed_from(self):
+        self.assertTrue(
+            self.collection.was_renamed_from(old_class_name="Manager")
+        )
+        self.assertFalse(
+            self.collection.was_renamed_from(old_class_name="Band")
+        )
+
+    def test_renamed_from(self):
+        self.assertEqual(
+            self.collection.renamed_from(new_class_name="Manager1"), "Manager"
+        )
+        self.assertIsNone(
+            self.collection.renamed_from(new_class_name="Band"),
+        )
+
+
+class TestRenameColumnCollection(TestCase):
+    def test_for_table_class_name(self):
+        rename_column = RenameColumn(
+            table_class_name="Manager",
+            tablename="manager",
+            old_column_name="name",
+            new_column_name="full_name",
+            old_db_column_name="name",
+            new_db_column_name="full_name",
+        )
+
+        collection = RenameColumnCollection(rename_columns=[rename_column])
+
+        self.assertListEqual(
+            collection.for_table_class_name(table_class_name="Manager"),
+            [rename_column],
+        )
+        self.assertListEqual(
+            collection.for_table_class_name(table_class_name="Band"), []
+        )
