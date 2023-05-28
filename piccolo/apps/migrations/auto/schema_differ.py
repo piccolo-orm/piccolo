@@ -104,10 +104,6 @@ class AlterStatements:
         return self
 
 
-def optional_str_repr(value: t.Optional[str]) -> str:
-    return f"'{value}'" if value else "None"
-
-
 @dataclass
 class SchemaDiffer:
     """
