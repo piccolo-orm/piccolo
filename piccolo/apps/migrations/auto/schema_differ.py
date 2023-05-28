@@ -39,6 +39,15 @@ class RenameTableCollection:
     def new_class_names(self):
         return [i.new_class_name for i in self.rename_tables]
 
+    def was_renamed_from(self, old_class_name: str) -> bool:
+        """
+        Returns ``True`` if the given class name was renamed.
+        """
+        for rename_table in self.rename_tables:
+            if rename_table.old_class_name == old_class_name:
+                return True
+        return False
+
     def renamed_from(self, new_class_name: str) -> t.Optional[str]:
         """
         Returns the old class name, if it exists.
@@ -156,6 +165,16 @@ class SchemaDiffer:
                 i._meta.db_column_name for i in new_table.columns
             ]
             for drop_table in drop_tables:
+                if collection.was_renamed_from(
+                    old_class_name=drop_table.class_name
+                ):
+                    # We've already detected a table that was renamed from
+                    # this, so we can continue.
+                    # This can happen if we're renaming lots of tables in a
+                    # single migration.
+                    # https://github.com/piccolo-orm/piccolo/discussions/832
+                    continue
+
                 drop_column_names = [
                     i._meta.db_column_name for i in new_table.columns
                 ]
@@ -178,7 +197,7 @@ class SchemaDiffer:
                                 new_tablename=new_table.tablename,
                             )
                         )
-                        continue
+                        break
 
                     user_response = (
                         self.auto_input
@@ -199,6 +218,7 @@ class SchemaDiffer:
                                 new_tablename=new_table.tablename,
                             )
                         )
+                        break
 
         return collection
 
