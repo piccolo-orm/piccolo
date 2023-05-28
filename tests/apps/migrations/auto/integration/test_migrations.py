@@ -11,6 +11,7 @@ import typing as t
 import uuid
 from unittest.mock import MagicMock, patch
 
+from piccolo.apps.migrations.auto.operations import RenameTable
 from piccolo.apps.migrations.commands.backwards import (
     BackwardsMigrationManager,
 )
@@ -117,6 +118,13 @@ class MigrationTestCase(DBTestCase):
         )
         return migrations_folder_path
 
+    def _get_app_config(self) -> AppConfig:
+        return AppConfig(
+            app_name="test_app",
+            migrations_folder_path=self._get_migrations_folder_path(),
+            table_classes=[],
+        )
+
     def _test_migrations(
         self,
         table_snapshots: t.List[t.List[t.Type[Table]]],
@@ -135,18 +143,14 @@ class MigrationTestCase(DBTestCase):
             test passes, otherwise ``False``.
 
         """
-        migrations_folder_path = self._get_migrations_folder_path()
+        app_config = self._get_app_config()
+
+        migrations_folder_path = app_config.migrations_folder_path
 
         if os.path.exists(migrations_folder_path):
             shutil.rmtree(migrations_folder_path)
 
         _create_migrations_folder(migrations_folder_path)
-
-        app_config = AppConfig(
-            app_name="test_app",
-            migrations_folder_path=migrations_folder_path,
-            table_classes=[],
-        )
 
         for table_snapshot in table_snapshots:
             app_config.table_classes = table_snapshot
@@ -177,6 +181,15 @@ class MigrationTestCase(DBTestCase):
                 test_function(row_meta),
                 msg=f"Meta is incorrect: {row_meta}",
             )
+
+    def _get_migration_managers(self):
+        app_config = self._get_app_config()
+
+        return run_sync(
+            ForwardsMigrationManager(
+                app_name=app_config.app_name
+            ).get_migration_managers(app_config=app_config)
+        )
 
     def _run_backwards(self, migration_id: str):
         """
@@ -1225,7 +1238,7 @@ class TestSameTableName(MigrationTestCase):
 
 
 @engines_only("postgres", "cockroach")
-class TestForeignKey(MigrationTestCase):
+class TestForeignKeyWithSchema(MigrationTestCase):
     """
     Make sure that migrations with foreign keys involving schemas work
     correctly.
@@ -1266,3 +1279,59 @@ class TestForeignKey(MigrationTestCase):
         # Make sure that both tables exist (in the correct schemas):
         for tablename in ("manager", "band"):
             self.assertIn(tablename, tables_in_schema)
+
+
+###############################################################################
+
+
+@engines_only("postgres", "cockroach")
+class TestRenameTable(MigrationTestCase):
+    """
+    Make sure that tables can be renamed.
+    """
+
+    schema_manager = SchemaManager()
+    manager = create_table_class(
+        class_name="Manager", class_members={"name": Varchar()}
+    )
+    manager_1 = create_table_class(
+        class_name="Manager",
+        class_kwargs={"tablename": "manager_1"},
+        class_members={"name": Varchar()},
+    )
+
+    def setUp(self) -> None:
+        pass
+
+    def tearDown(self) -> None:
+        drop_db_tables_sync(self.manager, self.manager_1, Migration)
+
+    def test_rename_table(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.manager],
+                [self.manager_1],
+            ],
+        )
+
+        tables = self.schema_manager.list_tables(
+            schema_name="public"
+        ).run_sync()
+
+        self.assertIn("manager_1", tables)
+        self.assertNotIn("manager", tables)
+
+        # Make sure the table was renamed, and not dropped and recreated.
+        migration_managers = self._get_migration_managers()
+
+        self.assertListEqual(
+            migration_managers[-1].rename_tables,
+            [
+                RenameTable(
+                    old_class_name="Manager",
+                    old_tablename="manager",
+                    new_class_name="Manager",
+                    new_tablename="manager_1",
+                )
+            ],
+        )
