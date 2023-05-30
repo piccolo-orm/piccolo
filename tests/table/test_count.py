@@ -14,6 +14,6 @@ class TestCount(DBTestCase):
     def test_count_distinct(self):
         self.insert_rows()
 
-        response = Band.count().distinct(on=[Band.popularity]).run_sync()
+        response = Band.count(distinct=[Band.popularity]).run_sync()
 
         self.assertEqual(response, 3)

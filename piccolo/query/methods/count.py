@@ -2,42 +2,36 @@ from __future__ import annotations
 
 import typing as t
 
-from piccolo.columns import Column
 from piccolo.custom_types import Combinable
 from piccolo.query.base import Query
 from piccolo.query.methods.select import Select
-from piccolo.query.mixins import DistinctDelegate, WhereDelegate
+from piccolo.query.mixins import WhereDelegate
 from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:  # pragma: no cover
+    from piccolo.columns import Column
     from piccolo.table import Table
 
 
 class Count(Query):
-    __slots__ = (
-        "where_delegate",
-        "distinct_delegate",
-    )
 
-    def __init__(self, table: t.Type[Table], **kwargs):
+    __slots__ = ("where_delegate", "distinct")
+
+    def __init__(
+        self,
+        table: t.Type[Table],
+        distinct: t.Optional[t.Sequence[Column]] = None,
+        **kwargs,
+    ):
         super().__init__(table, **kwargs)
+        self.distinct = distinct
         self.where_delegate = WhereDelegate()
-        self.distinct_delegate = DistinctDelegate()
 
     ###########################################################################
     # Clauses
 
     def where(self: Self, *where: Combinable) -> Self:
         self.where_delegate.where(*where)
-        return self
-
-    def distinct(
-        self: Self, *, on: t.Optional[t.Sequence[Column]] = None
-    ) -> Self:
-        if on is not None and self.engine_type == "sqlite":
-            raise NotImplementedError("SQLite doesn't support DISTINCT ON")
-
-        self.distinct_delegate.distinct(enabled=True, on=on)
         return self
 
     ###########################################################################
@@ -49,14 +43,24 @@ class Count(Query):
     def default_querystrings(self) -> t.Sequence[QueryString]:
         select = Select(self.table)
         select.where_delegate._where = self.where_delegate._where
-        distinct = self.distinct_delegate._distinct
-        select.distinct_delegate._distinct = distinct
-        if distinct.on:
-            select.order_by_delegate.order_by(distinct.on[0])
+
+        base: str
+
+        if self.distinct:
+            if len(self.distinct) > 1:
+                column_names = ", ".join(
+                    f'"{i._meta.db_column_name}"' for i in self.distinct
+                )
+                base = f"SELECT COUNT(DISTINCT ({column_names}))"
+            else:
+                column_name = self.distinct[0]._meta.db_column_name
+                base = f'SELECT COUNT(DISTINCT "{column_name}")'
+        else:
+            base = "SELECT COUNT (*)"
 
         return [
             QueryString(
-                'SELECT COUNT(*) AS "count" FROM ({}) AS "subquery"',
+                base + ' AS "count" FROM ({}) AS "subquery"',
                 select.querystrings[0],
             )
         ]
