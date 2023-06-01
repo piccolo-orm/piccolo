@@ -123,19 +123,35 @@ class Count(Selectable):
     """
 
     def __init__(
-        self, column: t.Optional[Column] = None, alias: str = "count"
+        self,
+        column: t.Optional[Column] = None,
+        distinct: t.Optional[t.Sequence[Column]] = None,
+        alias: str = "count",
     ):
+        if distinct and column:
+            raise ValueError("Only specify `column` or `distinct`")
+
         self.column = column
+        self.distinct = distinct
         self._alias = alias
 
     def get_select_string(
         self, engine_type: str, with_alias: bool = True
     ) -> str:
-        if self.column is None:
-            column_name = "*"
+        expression: str
+
+        if self.distinct:
+            column_names = ", ".join(
+                i._meta.get_full_name(with_alias=False) for i in self.distinct
+            )
+            expression = f"DISTINCT ({column_names})"
         else:
-            column_name = self.column._meta.get_full_name(with_alias=False)
-        return f'COUNT({column_name}) AS "{self._alias}"'
+            if self.column:
+                expression = self.column._meta.get_full_name(with_alias=False)
+            else:
+                expression = "*"
+
+        return f'COUNT({expression}) AS "{self._alias}"'
 
 
 class Max(Selectable):

@@ -1114,7 +1114,12 @@ class Table(metaclass=TableMetaclass):
         return Objects[TableInstance](table=cls, prefetch=prefetch)
 
     @classmethod
-    def count(cls, distinct: t.Optional[t.Sequence[Column]] = None) -> Count:
+    def count(
+        cls,
+        column: t.Optional[Column] = None,
+        distinct: t.Optional[t.Sequence[Column]] = None,
+    ) -> Count:
+
         """
         Count the number of matching rows.
 
@@ -1155,7 +1160,7 @@ class Table(metaclass=TableMetaclass):
                     2
 
         """
-        return Count(table=cls, distinct=distinct)
+        return Count(table=cls, column=column, distinct=distinct)
 
     @classmethod
     def exists(cls) -> Exists:
