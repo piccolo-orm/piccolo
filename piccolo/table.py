@@ -1127,6 +1127,9 @@ class Table(metaclass=TableMetaclass):
 
             await Band.count().where(Band.popularity > 1000)
 
+        :param column:
+            If specified, just count rows where this column isn't null.
+
         :param distinct:
             Counts the number of distinct values for these columns. For
             example, if we have a concerts table::
