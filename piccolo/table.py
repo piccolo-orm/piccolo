@@ -1121,9 +1121,7 @@ class Table(metaclass=TableMetaclass):
     ) -> Count:
 
         """
-        Count the number of matching rows.
-
-        .. code-block:: python
+        Count the number of matching rows::
 
             await Band.count().where(Band.popularity > 1000)
 
