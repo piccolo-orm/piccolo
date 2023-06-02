@@ -43,7 +43,6 @@ class TestFreeze(DBTestCase):
                     {"name": "Rustaceans"},
                     {"name": "Pythonistas"},
                     {"name": "CSharps"},
-                    {"name": "Elixirs"},
                 ],
             ),
             QueryResponse(

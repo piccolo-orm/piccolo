@@ -245,8 +245,7 @@ class TestSelect(DBTestCase):
         )
 
         self.assertEqual(
-            response,
-            [{"name": "CSharps"}, {"name": "Elixirs"}, {"name": "Rustaceans"}],
+            response, [{"name": "CSharps"}, {"name": "Rustaceans"}]
         )
 
     def test_where_greater_than(self):
@@ -299,7 +298,6 @@ class TestSelect(DBTestCase):
                     {"name": "Pythonistas"},
                     {"name": "Rustaceans"},
                     {"name": "CSharps"},
-                    {"name": "Elixirs"},
                 ],
             )
 
@@ -324,7 +322,7 @@ class TestSelect(DBTestCase):
             Band.select(Band.name).where(Band.popularity < 1000).run_sync()
         )
 
-        self.assertEqual(response, [{"name": "CSharps"}, {"name": "Elixirs"}])
+        self.assertEqual(response, [{"name": "CSharps"}])
 
     def test_where_less_equal_than(self):
         self.insert_rows()
@@ -334,12 +332,7 @@ class TestSelect(DBTestCase):
         )
 
         self.assertEqual(
-            response,
-            [
-                {"name": "Pythonistas"},
-                {"name": "CSharps"},
-                {"name": "Elixirs"},
-            ],
+            response, [{"name": "Pythonistas"}, {"name": "CSharps"}]
         )
 
     def test_where_raw(self):
@@ -472,12 +465,7 @@ class TestSelect(DBTestCase):
         )
 
         self.assertEqual(
-            response,
-            [
-                {"name": "Elixirs"},
-                {"name": "Pythonistas"},
-                {"name": "Rustaceans"},
-            ],
+            response, [{"name": "Pythonistas"}, {"name": "Rustaceans"}]
         )
 
     @sqlite_only
@@ -575,7 +563,6 @@ class TestSelect(DBTestCase):
             response,
             [
                 {"name": "CSharps", "count": 2},
-                {"name": "Elixirs", "count": 2},
                 {"name": "Pythonistas", "count": 2},
                 {"name": "Rustaceans", "count": 2},
             ],
@@ -599,7 +586,6 @@ class TestSelect(DBTestCase):
             response,
             [
                 {"name": "CSharps", "total": 2},
-                {"name": "Elixirs", "total": 2},
                 {"name": "Pythonistas", "total": 2},
                 {"name": "Rustaceans", "total": 2},
             ],
@@ -623,7 +609,6 @@ class TestSelect(DBTestCase):
             response,
             [
                 {"name": "CSharps", "total": 2},
-                {"name": "Elixirs", "total": 2},
                 {"name": "Pythonistas", "total": 2},
                 {"name": "Rustaceans", "total": 2},
             ],
@@ -666,7 +651,6 @@ class TestSelect(DBTestCase):
                 {"manager.name": None, "count": 0},
                 {"manager.name": "Graydon", "count": 2},
                 {"manager.name": "Guido", "count": 2},
-                {"manager.name": "Jose", "count": 2},
                 {"manager.name": "Mads", "count": 2},
             ],
         )
@@ -688,7 +672,6 @@ class TestSelect(DBTestCase):
                 {"manager.name": None, "count": 1},
                 {"manager.name": "Graydon", "count": 2},
                 {"manager.name": "Guido", "count": 2},
-                {"manager.name": "Jose", "count": 2},
                 {"manager.name": "Mads", "count": 2},
             ],
         )
@@ -698,7 +681,7 @@ class TestSelect(DBTestCase):
 
         response = Band.select(Avg(Band.popularity)).first().run_sync()
 
-        self.assertEqual(float(response["avg"]), 755)
+        self.assertEqual(float(response["avg"]), 1003.3333333333334)
 
     def test_avg_alias(self):
         self.insert_rows()
@@ -709,7 +692,7 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertEqual(float(response["popularity_avg"]), 755)
+        self.assertEqual(float(response["popularity_avg"]), 1003.3333333333334)
 
     def test_avg_as_alias_method(self):
         self.insert_rows()
@@ -720,7 +703,7 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertEqual(float(response["popularity_avg"]), 755)
+        self.assertEqual(float(response["popularity_avg"]), 1003.3333333333334)
 
     def test_avg_with_where_clause(self):
         self.insert_rows()
@@ -829,7 +812,7 @@ class TestSelect(DBTestCase):
 
         response = Band.select(Sum(Band.popularity)).first().run_sync()
 
-        self.assertEqual(response["sum"], 3020)
+        self.assertEqual(response["sum"], 3010)
 
     def test_sum_alias(self):
         self.insert_rows()
@@ -840,7 +823,7 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertEqual(response["popularity_sum"], 3020)
+        self.assertEqual(response["popularity_sum"], 3010)
 
     def test_sum_as_alias_method(self):
         self.insert_rows()
@@ -851,7 +834,7 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertEqual(response["popularity_sum"], 3020)
+        self.assertEqual(response["popularity_sum"], 3010)
 
     def test_sum_with_where_clause(self):
         self.insert_rows()
@@ -906,8 +889,8 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertEqual(float(response["avg"]), 755)
-        self.assertEqual(response["sum"], 3020)
+        self.assertEqual(float(response["avg"]), 1003.3333333333334)
+        self.assertEqual(response["sum"], 3010)
 
     def test_chain_different_functions_alias(self):
         self.insert_rows()
@@ -921,8 +904,8 @@ class TestSelect(DBTestCase):
             .run_sync()
         )
 
-        self.assertEqual(float(response["popularity_avg"]), 755)
-        self.assertEqual(response["popularity_sum"], 3020)
+        self.assertEqual(float(response["popularity_avg"]), 1003.3333333333334)
+        self.assertEqual(response["popularity_sum"], 3010)
 
     def test_avg_validation(self):
         with self.assertRaises(ValueError):

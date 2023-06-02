@@ -38,7 +38,7 @@ class TestOffset(DBTestCase):
 
         self.assertEqual(
             [i.name for i in response],
-            ["Elixirs", "Pythonistas", "Rustaceans"],
+            ["Pythonistas", "Rustaceans"],
         )
 
     @sqlite_only
