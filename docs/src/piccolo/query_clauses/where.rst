@@ -5,6 +5,7 @@ where
 
 You can use ``where`` clauses with the following queries:
 
+* :ref:`Count`
 * :ref:`Delete`
 * :ref:`Exists`
 * :ref:`Objects`

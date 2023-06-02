@@ -1127,37 +1127,37 @@ class Table(metaclass=TableMetaclass):
 
             await Band.count().where(Band.popularity > 1000)
 
-            :param distinct:
-                Counts the number of distinct values for these columns. For
-                example, if we have a concerts table::
+        :param distinct:
+            Counts the number of distinct values for these columns. For
+            example, if we have a concerts table::
 
-                    class Concert(Table):
-                        band = Varchar()
-                        start_date = Date()
+                class Concert(Table):
+                    band = Varchar()
+                    start_date = Date()
 
-                With this data:
+            With this data:
 
-                .. table::
-                    :widths: auto
+            .. table::
+                :widths: auto
 
-                    ===========  ==========
-                    band         start_date
-                    ===========  ==========
-                    Pythonistas  2023-01-01
-                    Pythonistas  2023-02-03
-                    Rustaceans   2023-01-01
-                    ===========  ==========
+                ===========  ==========
+                band         start_date
+                ===========  ==========
+                Pythonistas  2023-01-01
+                Pythonistas  2023-02-03
+                Rustaceans   2023-01-01
+                ===========  ==========
 
-                Without the ``distinct`` argument, we get the count of all
-                rows::
+            Without the ``distinct`` argument, we get the count of all
+            rows::
 
-                    >>> await Concert.count()
-                    3
+                >>> await Concert.count()
+                3
 
-                To get the number of unique concert dates::
+            To get the number of unique concert dates::
 
-                    >>> await Concert.count(distinct=[Concert.start_date])
-                    2
+                >>> await Concert.count(distinct=[Concert.start_date])
+                2
 
         """
         return Count(table=cls, column=column, distinct=distinct)
