@@ -141,9 +141,19 @@ class Count(Selectable):
         expression: str
 
         if self.distinct:
-            column_names = ", ".join(
-                i._meta.get_full_name(with_alias=False) for i in self.distinct
-            )
+            if engine_type == "sqlite":
+                # SQLite doesn't allow us to specify multiple columns, so
+                # instead we concatenate the values.
+                column_names = " || ".join(
+                    i._meta.get_full_name(with_alias=False)
+                    for i in self.distinct
+                )
+            else:
+                column_names = ", ".join(
+                    i._meta.get_full_name(with_alias=False)
+                    for i in self.distinct
+                )
+
             expression = f"DISTINCT ({column_names})"
         else:
             if self.column:
