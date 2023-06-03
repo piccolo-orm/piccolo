@@ -26,7 +26,9 @@ With this data:
     Rustaceans   2023-01-01
     ===========  ==========
 
-We can easily get the number of unique concert dates::
+We can easily get the number of unique concert dates:
+
+.. code-block:: python
 
     >>> await Concert.count(distinct=[Concert.start_date])
     2
