@@ -99,26 +99,21 @@ class Avg(Selectable):
 
 class Count(Selectable):
     """
-    Used in conjunction with the ``group_by`` clause in ``Select`` queries.
+    Used in ``Select`` queries, usually in conjunction with the ``group_by``
+    clause::
 
-    If a column is specified, the count is for non-null values in that
-    column. If no column is specified, the count is for all rows, whether
-    they have null values or not.
+        >>> await Band.select(
+        ...     Band.manager.name.as_alias('manager_name'),
+        ...     Count(alias='band_count')
+        ... ).group_by(Band.manager)
+        [{'manager_name': 'Guido', 'count': 1}, ...]
 
-    .. code-block:: python
+    It can also be used without the ``group_by`` clause (though you may prefer
+    to the :meth:`Table.count <piccolo.table.Table.count>` method instead, as
+    it's more convenient)::
 
-        await Band.select(Band.name, Count()).group_by(Band.name)
-
-        # We can use an alias. These two are equivalent:
-
-        await Band.select(
-            Band.name, Count(alias="total")
-        ).group_by(Band.name)
-
-        await Band.select(
-            Band.name,
-            Count().as_alias("total")
-        ).group_by(Band.name)
+        >>> await Band.select(Count())
+        [{'count': 3}]
 
     """
 
@@ -128,6 +123,26 @@ class Count(Selectable):
         distinct: t.Optional[t.Sequence[Column]] = None,
         alias: str = "count",
     ):
+        """
+        :param column:
+            If specified, the count is for non-null values in that column.
+        :param distinct:
+            If specified, the count is for distinct values in those columns.
+        :param alias:
+            The name of the value in the response::
+
+                # These two are equivalent:
+
+                await Band.select(
+                    Band.name, Count(alias="total")
+                ).group_by(Band.name)
+
+                await Band.select(
+                    Band.name,
+                    Count().as_alias("total")
+                ).group_by(Band.name)
+
+        """
         if distinct and column:
             raise ValueError("Only specify `column` or `distinct`")
 

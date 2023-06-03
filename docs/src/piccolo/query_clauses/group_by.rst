@@ -7,12 +7,10 @@ You can use ``group_by`` clauses with the following queries:
 
 * :ref:`Select`
 
-It is used in combination with aggregate functions - ``Count`` is currently
-supported.
+It is used in combination with the :ref:`aggregate functions <AggregateFunctions>`
+- for example, ``Count``.
 
 -------------------------------------------------------------------------------
-
-.. _group_by_count:
 
 Count
 -----
@@ -24,20 +22,20 @@ In the following query, we get a count of the number of bands per manager:
     >>> from piccolo.query.methods.select import Count
 
     >>> await Band.select(
-    ...     Band.manager.name,
-    ...     Count(Band.manager)
+    ...     Band.manager.name.as_alias('manager_name'),
+    ...     Count(alias='band_count')
     ... ).group_by(
     ...     Band.manager
     ... )
 
     [
-        {"manager.name": "Graydon", "count": 1},
-        {"manager.name": "Guido", "count": 1}
+        {"manager_name": "Graydon", "band_count": 1},
+        {"manager_name": "Guido", "band_count": 1}
     ]
 
-Source
-~~~~~~
+-------------------------------------------------------------------------------
 
-.. currentmodule:: piccolo.query.methods.select
+Other aggregate functions
+-------------------------
 
-.. autoclass:: Count
+These work the same as ``Count``. See :ref:`aggregate functions <AggregateFunctions>`.
