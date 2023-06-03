@@ -62,3 +62,12 @@ class TestCount(TestCase):
         response = Band.count(distinct=[Band.name, Band.popularity]).run_sync()
 
         self.assertEqual(response, 4)
+
+    def test_value_error(self):
+        """
+        Make sure specifying `column` and `distinct` raises an error.
+        """
+        with self.assertRaises(ValueError):
+            Band.count(
+                column=Band.name, distinct=[Band.name, Band.popularity]
+            ).run_sync()
