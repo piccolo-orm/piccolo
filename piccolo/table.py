@@ -1114,16 +1114,54 @@ class Table(metaclass=TableMetaclass):
         return Objects[TableInstance](table=cls, prefetch=prefetch)
 
     @classmethod
-    def count(cls) -> Count:
-        """
-        Count the number of matching rows.
+    def count(
+        cls,
+        column: t.Optional[Column] = None,
+        distinct: t.Optional[t.Sequence[Column]] = None,
+    ) -> Count:
 
-        .. code-block:: python
+        """
+        Count the number of matching rows::
 
             await Band.count().where(Band.popularity > 1000)
 
+        :param column:
+            If specified, just count rows where this column isn't null.
+
+        :param distinct:
+            Counts the number of distinct values for these columns. For
+            example, if we have a concerts table::
+
+                class Concert(Table):
+                    band = Varchar()
+                    start_date = Date()
+
+            With this data:
+
+            .. table::
+                :widths: auto
+
+                ===========  ==========
+                band         start_date
+                ===========  ==========
+                Pythonistas  2023-01-01
+                Pythonistas  2023-02-03
+                Rustaceans   2023-01-01
+                ===========  ==========
+
+            Without the ``distinct`` argument, we get the count of all
+            rows::
+
+                >>> await Concert.count()
+                3
+
+            To get the number of unique concert dates::
+
+                >>> await Concert.count(distinct=[Concert.start_date])
+                2
+
         """
-        return Count(table=cls)
+        return Count(table=cls, column=column, distinct=distinct)
 
     @classmethod
     def exists(cls) -> Exists:

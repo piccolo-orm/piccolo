@@ -4,19 +4,29 @@ import typing as t
 
 from piccolo.custom_types import Combinable
 from piccolo.query.base import Query
-from piccolo.query.methods.select import Select
+from piccolo.query.methods.select import Count as SelectCount
 from piccolo.query.mixins import WhereDelegate
 from piccolo.querystring import QueryString
 
 if t.TYPE_CHECKING:  # pragma: no cover
+    from piccolo.columns import Column
     from piccolo.table import Table
 
 
 class Count(Query):
-    __slots__ = ("where_delegate",)
 
-    def __init__(self, table: t.Type[Table], **kwargs):
+    __slots__ = ("where_delegate", "column", "distinct")
+
+    def __init__(
+        self,
+        table: t.Type[Table],
+        column: t.Optional[Column] = None,
+        distinct: t.Optional[t.Sequence[Column]] = None,
+        **kwargs,
+    ):
         super().__init__(table, **kwargs)
+        self.column = column
+        self.distinct = distinct
         self.where_delegate = WhereDelegate()
 
     ###########################################################################
@@ -33,14 +43,15 @@ class Count(Query):
 
     @property
     def default_querystrings(self) -> t.Sequence[QueryString]:
-        select = Select(self.table)
-        select.where_delegate._where = self.where_delegate._where
-        return [
-            QueryString(
-                'SELECT COUNT(*) AS "count" FROM ({}) AS "subquery"',
-                select.querystrings[0],
-            )
-        ]
+        table: t.Type[Table] = self.table
+
+        query = table.select(
+            SelectCount(column=self.column, distinct=self.distinct)
+        )
+
+        query.where_delegate._where = self.where_delegate._where
+
+        return query.querystrings
 
 
 Self = t.TypeVar("Self", bound=Count)

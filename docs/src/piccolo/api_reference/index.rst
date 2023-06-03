@@ -29,6 +29,19 @@ Column
 .. autoclass:: Column
     :members:
 
+
+-------------------------------------------------------------------------------
+
+Aggregate functions
+-------------------
+
+Count
+~~~~~
+
+.. currentmodule:: piccolo.query.methods.select
+
+.. autoclass:: Count
+
 -------------------------------------------------------------------------------
 
 Refresh
