@@ -33,6 +33,15 @@ We can easily get the number of unique concert dates:
     >>> await Concert.count(distinct=[Concert.start_date])
     2
 
+We could have just done this instead:
+
+.. code-block:: python
+
+    len(await Concert.select(Concert.start_date).distinct())
+
+But it's far less efficient when you have lots of rows, because all of the
+distinct rows need to be returned from the database.
+
 Also, the docs for the ``count`` query, aggregate functions, and
 ``group_by`` clause were significantly improved.
 
