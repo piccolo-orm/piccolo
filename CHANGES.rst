@@ -1,6 +1,43 @@
 Changes
 =======
 
+0.114.0
+-------
+
+``count`` queries can now return the number of distinct rows. For example, if
+we have this table:
+
+.. code-block:: python
+
+    class Concert(Table):
+        band = Varchar()
+        start_date = Date()
+
+With this data:
+
+.. table::
+    :widths: auto
+
+    ===========  ==========
+    band         start_date
+    ===========  ==========
+    Pythonistas  2023-01-01
+    Pythonistas  2023-02-03
+    Rustaceans   2023-01-01
+    ===========  ==========
+
+We can easily get the number of unique concert dates::
+
+    >>> await Concert.count(distinct=[Concert.start_date])
+    2
+
+Also, the docs for the ``count`` query, aggregate functions, and
+``group_by`` clause were significantly improved.
+
+Many thanks to @lqmanh and @sinisaos for their help with this.
+
+-------------------------------------------------------------------------------
+
 0.113.0
 -------
 
