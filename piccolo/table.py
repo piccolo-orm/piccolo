@@ -27,6 +27,7 @@ from piccolo.columns.m2m import (
 )
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
+from piccolo.columns.reverse_lookup import ReverseLookup
 from piccolo.custom_types import TableInstance
 from piccolo.engine import Engine, engine_finder
 from piccolo.query import (
@@ -318,10 +319,11 @@ class Table(metaclass=TableMetaclass):
                 if column._meta.auto_update is not ...:
                     auto_update_columns.append(column)
 
-            if isinstance(attribute, M2M):
+            if isinstance(attribute, (M2M, ReverseLookup)):
                 attribute._meta._name = attribute_name
                 attribute._meta._table = cls
-                m2m_relationships.append(attribute)
+                if isinstance(attribute, M2M):
+                    m2m_relationships.append(attribute)
 
         if not primary_key:
             primary_key = cls._create_serial_primary_key()
