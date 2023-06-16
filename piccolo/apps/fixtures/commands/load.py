@@ -110,7 +110,7 @@ async def load(
     :param on_conflict:
         If specified, the fixture will be upserted, meaning that if a row
         already exists with a matching primary key, then it will be overridden
-        if "UPDATE", or it will be ignored if "DO NOTHING".
+        if "DO UPDATE", or it will be ignored if "DO NOTHING".
 
     """
     with open(path, "r") as f:
