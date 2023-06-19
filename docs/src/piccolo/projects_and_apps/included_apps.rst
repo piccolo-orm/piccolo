@@ -56,6 +56,9 @@ instead:
   versions.
 * Fixtures are stored in JSON, which are a bit friendlier for source control.
 
+dump
+^^^^
+
 To dump the data into a new fixture file:
 
 .. code-block:: bash
@@ -69,8 +72,15 @@ a subset of apps and tables instead, for example:
 
     piccolo fixtures dump --apps=blog --tables=Post > fixtures.json
 
-    # Or for multiple apps / tables
+Or for multiple apps / tables:
+
+.. code-block:: bash
+
     piccolo fixtures dump --apps=blog,shop --tables=Post,Product > fixtures.json
+
+
+load
+^^^^
 
 To load the fixture:
 
@@ -104,7 +114,7 @@ the database adapter will complain if a single insert query is too large. So
 if your fixture containts 10,000 rows, this will mean 10 insert queries.
 
 You can tune this number higher or lower if you want (lower if the
-rows have a lot of columns), or higher if the converse is true.
+table has a lot of columns, or higher if the table has few columns).
 
 .. code-block:: bash
 
