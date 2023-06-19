@@ -77,6 +77,26 @@ To load the fixture:
 
     piccolo fixtures load fixtures.json
 
+If you load the fixture again, you will get primary key errors because the rows
+already exist in the database. But what if we need to run it again, because we
+had a typo in our fixture, or were missing some data? We can upsert the data
+using ``--on_conflict``.
+
+There are two options:
+
+1. ``DO NOTHING`` - if any of the rows already exist in the database, just
+   leave them as they are, and don't raise an exception.
+2. ``DO UPDATE`` - if any of the rows already exist in the database, override
+   them with the latest data in the fixture file.
+
+.. code-block:: bash
+
+    # DO NOTHING
+    piccolo fixtures load fixtures.json --on_conflict='DO NOTHING'
+
+    # DO UPDATE
+    piccolo fixtures load fixtures.json --on_conflict='DO UPDATE'
+
 -------------------------------------------------------------------------------
 
 meta
