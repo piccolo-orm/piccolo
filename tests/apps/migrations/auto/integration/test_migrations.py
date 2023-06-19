@@ -1197,7 +1197,7 @@ class TestSchemas(MigrationTestCase):
         # Make sure that the table is in the public schema.
         self.assertIn(
             "manager",
-            self.schema_manager.list_tables(schema_name="public").run_sync()
+            self.schema_manager.list_tables(schema_name="public").run_sync(),
         )
 
         #######################################################################
