@@ -37,7 +37,7 @@ This release contains:
 * A fix for migrations when changing a table's schema back to 'public' (thanks to
   @sinisaos for discovering this).
 * A fix for ``M2M`` queries, when the tables are in a schema other than
-  'public' (thanks to @quinnalfaro for reporing this).
+  'public' (thanks to @quinnalfaro for reporting this).
 
 Added ``distinct`` method to ``count`` queries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
