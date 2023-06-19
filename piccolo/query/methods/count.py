@@ -15,7 +15,7 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 class Count(Query):
 
-    __slots__ = ("where_delegate", "column", "distinct")
+    __slots__ = ("where_delegate", "column", "_distinct")
 
     def __init__(
         self,
@@ -26,7 +26,7 @@ class Count(Query):
     ):
         super().__init__(table, **kwargs)
         self.column = column
-        self.distinct = distinct
+        self._distinct = distinct
         self.where_delegate = WhereDelegate()
 
     ###########################################################################
@@ -34,6 +34,10 @@ class Count(Query):
 
     def where(self: Self, *where: Combinable) -> Self:
         self.where_delegate.where(*where)
+        return self
+
+    def distinct(self: Self, columns: t.Optional[t.Sequence[Column]]) -> Self:
+        self._distinct = columns
         return self
 
     ###########################################################################
@@ -46,7 +50,7 @@ class Count(Query):
         table: t.Type[Table] = self.table
 
         query = table.select(
-            SelectCount(column=self.column, distinct=self.distinct)
+            SelectCount(column=self.column, distinct=self._distinct)
         )
 
         query.where_delegate._where = self.where_delegate._where

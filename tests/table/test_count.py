@@ -50,6 +50,10 @@ class TestCount(TestCase):
 
         self.assertEqual(response, 3)
 
+        # Test the method also works
+        response = Band.count().distinct([Band.popularity]).run_sync()
+        self.assertEqual(response, 3)
+
     def test_count_distinct_multiple(self):
         Band.insert(
             Band(name="Pythonistas", popularity=10),
