@@ -85,6 +85,9 @@ We can count the number of distinct (i.e. unique) rows.
 
     await Band.count(distinct=[Band.name])
 
+    # This also works - use whichever you prefer:
+    await Band.count().distinct([Band.name])
+
 With the following data:
 
 .. table::
