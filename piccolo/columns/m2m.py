@@ -57,30 +57,34 @@ class M2MSelect(Selectable):
         )
 
     def get_select_string(self, engine_type: str, with_alias=True) -> str:
-        m2m_table_name = self.m2m._meta.resolved_joining_table._meta.tablename
+        m2m_table_name_with_schema = (
+            self.m2m._meta.resolved_joining_table._meta.get_formatted_tablename()  # noqa: E501
+        )  # noqa: E501
         m2m_relationship_name = self.m2m._meta.name
 
         fk_1 = self.m2m._meta.primary_foreign_key
         fk_1_name = fk_1._meta.db_column_name
         table_1 = fk_1._foreign_key_meta.resolved_references
         table_1_name = table_1._meta.tablename
+        table_1_name_with_schema = table_1._meta.get_formatted_tablename()
         table_1_pk_name = table_1._meta.primary_key._meta.db_column_name
 
         fk_2 = self.m2m._meta.secondary_foreign_key
         fk_2_name = fk_2._meta.db_column_name
         table_2 = fk_2._foreign_key_meta.resolved_references
         table_2_name = table_2._meta.tablename
+        table_2_name_with_schema = table_2._meta.get_formatted_tablename()
         table_2_pk_name = table_2._meta.primary_key._meta.db_column_name
 
         inner_select = f"""
-            "{m2m_table_name}"
-            JOIN "{table_1_name}" "inner_{table_1_name}" ON (
-                "{m2m_table_name}"."{fk_1_name}" = "inner_{table_1_name}"."{table_1_pk_name}"
+            {m2m_table_name_with_schema}
+            JOIN {table_1_name_with_schema} "inner_{table_1_name}" ON (
+                {m2m_table_name_with_schema}."{fk_1_name}" = "inner_{table_1_name}"."{table_1_pk_name}"
             )
-            JOIN "{table_2_name}" "inner_{table_2_name}" ON (
-                "{m2m_table_name}"."{fk_2_name}" = "inner_{table_2_name}"."{table_2_pk_name}"
+            JOIN {table_2_name_with_schema} "inner_{table_2_name}" ON (
+                {m2m_table_name_with_schema}."{fk_2_name}" = "inner_{table_2_name}"."{table_2_pk_name}"
             )
-            WHERE "{m2m_table_name}"."{fk_1_name}" = "{table_1_name}"."{table_1_pk_name}"
+            WHERE {m2m_table_name_with_schema}."{fk_1_name}" = "{table_1_name}"."{table_1_pk_name}"
         """  # noqa: E501
 
         if engine_type in ("postgres", "cockroach"):
