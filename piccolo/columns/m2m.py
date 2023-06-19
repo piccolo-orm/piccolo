@@ -64,20 +64,26 @@ class M2MSelect(Selectable):
         fk_1_name = fk_1._meta.db_column_name
         table_1 = fk_1._foreign_key_meta.resolved_references
         table_1_name = table_1._meta.tablename
+        table_1_name_with_schema = table_1._meta.get_formatted_tablename(
+            quoted=False
+        )
         table_1_pk_name = table_1._meta.primary_key._meta.db_column_name
 
         fk_2 = self.m2m._meta.secondary_foreign_key
         fk_2_name = fk_2._meta.db_column_name
         table_2 = fk_2._foreign_key_meta.resolved_references
         table_2_name = table_2._meta.tablename
+        table_2_name_with_schema = table_2._meta.get_formatted_tablename(
+            quoted=False
+        )
         table_2_pk_name = table_2._meta.primary_key._meta.db_column_name
 
         inner_select = f"""
             "{m2m_table_name}"
-            JOIN "{table_1_name}" "inner_{table_1_name}" ON (
+            JOIN "{table_1_name_with_schema}" "inner_{table_1_name}" ON (
                 "{m2m_table_name}"."{fk_1_name}" = "inner_{table_1_name}"."{table_1_pk_name}"
             )
-            JOIN "{table_2_name}" "inner_{table_2_name}" ON (
+            JOIN "{table_2_name_with_schema}" "inner_{table_2_name}" ON (
                 "{m2m_table_name}"."{fk_2_name}" = "inner_{table_2_name}"."{table_2_pk_name}"
             )
             WHERE "{m2m_table_name}"."{fk_1_name}" = "{table_1_name}"."{table_1_pk_name}"
