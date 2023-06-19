@@ -1,6 +1,62 @@
 Changes
 =======
 
+0.115.0
+-------
+
+Fixture upserting
+~~~~~~~~~~~~~~~~~
+
+Fixtures can now be upserted. For example:
+
+.. code-block:: bash
+
+  piccolo fixtures load my_fixture.json --on_conflict='DO UPDATE'
+
+The options are:
+
+* ``DO NOTHING``, meaning any rows with a matching primary key will be left
+  alone.
+* ``DO UPDATE``, meaning any rows with a matching primary key will be updated.
+
+This is really useful, as you can now edit fixtures and load them multiple
+times without getting foreign key constraint errors.
+
+Schema fixes
+~~~~~~~~~~~~
+
+We recently added support for schemas, for example:
+
+.. code-block:: python
+
+  class Band(Table, schema='music'):
+      ...
+
+This release contains:
+
+* A fix for migrations when changing a table's schema back to 'public' (thanks to
+  @sinisaos for discovering this).
+* A fix for ``M2M`` queries, when the tables are in a schema other than
+  'public' (thanks to @quinnalfaro for reporing this).
+
+Added ``distinct`` method to ``count`` queries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We recently added support for ``COUNT DISTINCT`` queries. The syntax is:
+
+.. code-block:: python
+
+  await Concert.count(distinct=[Concert.start_date])
+
+The following alternative syntax now also works (just to be consistent with
+other queries like ``select``):
+
+.. code-block:: python
+
+  await Concert.count().distinct([Concert.start_date])
+
+-------------------------------------------------------------------------------
+
 0.114.0
 -------
 
