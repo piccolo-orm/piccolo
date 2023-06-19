@@ -1,5 +1,7 @@
 import datetime
 import decimal
+import os
+import tempfile
 import typing as t
 import uuid
 from unittest import TestCase
@@ -8,7 +10,7 @@ from piccolo.apps.fixtures.commands.dump import (
     FixtureConfig,
     dump_to_json_string,
 )
-from piccolo.apps.fixtures.commands.load import load_json_string
+from piccolo.apps.fixtures.commands.load import load, load_json_string
 from piccolo.utils.sync import run_sync
 from tests.base import engines_only
 from tests.example_apps.mega.tables import MegaTable, SmallTable
@@ -240,3 +242,39 @@ class TestDumpLoad(TestCase):
                 "not_null_col": "hello",
             },
         )
+
+
+class TestOnConflict(TestCase):
+    def setUp(self) -> None:
+        SmallTable.create_table().run_sync()
+        SmallTable({SmallTable.varchar_col: "Test"}).save().run_sync()
+
+    def tearDown(self) -> None:
+        SmallTable.alter().drop_table().run_sync()
+
+    def test_on_conflict(self):
+        temp_dir = tempfile.gettempdir()
+
+        json_file_path = os.path.join(temp_dir, "fixture.json")
+
+        json_string = run_sync(
+            dump_to_json_string(
+                fixture_configs=[
+                    FixtureConfig(
+                        app_name="mega",
+                        table_class_names=["SmallTable"],
+                    )
+                ]
+            )
+        )
+
+        if os.path.exists(json_file_path):
+            os.unlink(json_file_path)
+
+        with open(json_file_path, "w") as f:
+            f.write(json_string)
+
+        run_sync(load(path=json_file_path, on_conflict="DO NOTHING"))
+        run_sync(load(path=json_file_path, on_conflict="DO UPDATE"))
+        run_sync(load(path=json_file_path, on_conflict="do nothing"))
+        run_sync(load(path=json_file_path, on_conflict="do update"))
