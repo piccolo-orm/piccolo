@@ -1138,9 +1138,10 @@ class TestSchemas(MigrationTestCase):
             ).run_sync(),
         )
 
-    def test_move_schemas(self):
+    def test_move_table_from_public_schema(self):
         """
-        Make sure the auto migrations detect that a table's schema has changed.
+        Make sure the auto migrations can move a table from the public schema
+        to a different schema.
         """
         self._test_migrations(
             table_snapshots=[
@@ -1179,6 +1180,37 @@ class TestSchemas(MigrationTestCase):
         self.assertIn(
             self.new_schema,
             self.schema_manager.list_schemas().run_sync(),
+        )
+
+    def test_move_table_to_public_schema(self):
+        """
+        Make sure the auto migrations can move a table from a schema to the
+        public schema.
+        """
+        self._test_migrations(
+            table_snapshots=[
+                [self.manager_2],
+                [self.manager_1],
+            ],
+        )
+
+        # Make sure that the table is in the public schema.
+        self.assertIn(
+            "manager",
+            self.schema_manager.list_tables(schema_name="public").run_sync()
+        )
+
+        #######################################################################
+
+        # Reverse the last migration, which should move the table back to the
+        # non-public schema.
+        self._run_backwards(migration_id="1")
+
+        self.assertIn(
+            "manager",
+            self.schema_manager.list_tables(
+                schema_name=self.new_schema
+            ).run_sync(),
         )
 
 
