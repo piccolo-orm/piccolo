@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
 from piccolo.apps.migrations.auto.operations import (
     AlterColumn,
+    ChangeTableSchema,
     DropColumn,
     RenameColumn,
     RenameTable,
@@ -135,6 +136,9 @@ class MigrationManager:
     add_tables: t.List[DiffableTable] = field(default_factory=list)
     drop_tables: t.List[DiffableTable] = field(default_factory=list)
     rename_tables: t.List[RenameTable] = field(default_factory=list)
+    change_table_schemas: t.List[ChangeTableSchema] = field(
+        default_factory=list
+    )
     add_columns: AddColumnCollection = field(
         default_factory=AddColumnCollection
     )
@@ -156,6 +160,7 @@ class MigrationManager:
         self,
         class_name: str,
         tablename: str,
+        schema: t.Optional[str] = None,
         columns: t.Optional[t.List[Column]] = None,
     ):
         if not columns:
@@ -163,13 +168,36 @@ class MigrationManager:
 
         self.add_tables.append(
             DiffableTable(
-                class_name=class_name, tablename=tablename, columns=columns
+                class_name=class_name,
+                tablename=tablename,
+                columns=columns,
+                schema=schema,
             )
         )
 
-    def drop_table(self, class_name: str, tablename: str):
+    def drop_table(
+        self, class_name: str, tablename: str, schema: t.Optional[str] = None
+    ):
         self.drop_tables.append(
-            DiffableTable(class_name=class_name, tablename=tablename)
+            DiffableTable(
+                class_name=class_name, tablename=tablename, schema=schema
+            )
+        )
+
+    def change_table_schema(
+        self,
+        class_name: str,
+        tablename: str,
+        new_schema: t.Optional[str] = None,
+        old_schema: t.Optional[str] = None,
+    ):
+        self.change_table_schemas.append(
+            ChangeTableSchema(
+                class_name=class_name,
+                tablename=tablename,
+                new_schema=new_schema,
+                old_schema=old_schema,
+            )
         )
 
     def rename_table(
@@ -682,7 +710,10 @@ class MigrationManager:
             ] = self.add_columns.for_table_class_name(add_table.class_name)
             _Table: t.Type[Table] = create_table_class(
                 class_name=add_table.class_name,
-                class_kwargs={"tablename": add_table.tablename},
+                class_kwargs={
+                    "tablename": add_table.tablename,
+                    "schema": add_table.schema,
+                },
                 class_members={
                     add_column.column._meta.name: add_column.column
                     for add_column in add_columns
@@ -757,6 +788,49 @@ class MigrationManager:
                             _Table.create_index([add_column.column])
                         )
 
+    async def _run_change_table_schema(self, backwards=False):
+        from piccolo.schema import SchemaManager
+
+        schema_manager = SchemaManager()
+
+        for change_table_schema in self.change_table_schemas:
+            if backwards:
+                # Note, we don't try dropping any schemas we may have created.
+                # It's dangerous to do so, just in case the user manually
+                # added tables etc to the scheme, and we delete them.
+
+                if change_table_schema.old_schema not in (None, "public"):
+                    await self._run_query(
+                        schema_manager.create_schema(
+                            schema_name=change_table_schema.old_schema,
+                            if_not_exists=True,
+                        )
+                    )
+                await self._run_query(
+                    schema_manager.move_table(
+                        table_name=change_table_schema.tablename,
+                        new_schema=change_table_schema.old_schema or "public",
+                        current_schema=change_table_schema.new_schema,
+                    )
+                )
+
+            else:
+                if change_table_schema.new_schema not in (None, "public"):
+                    await self._run_query(
+                        schema_manager.create_schema(
+                            schema_name=change_table_schema.new_schema,
+                            if_not_exists=True,
+                        )
+                    )
+
+                await self._run_query(
+                    schema_manager.move_table(
+                        table_name=change_table_schema.tablename,
+                        new_schema=change_table_schema.new_schema or "public",
+                        current_schema=change_table_schema.old_schema,
+                    )
+                )
+
     async def run(self, backwards=False):
         direction = "backwards" if backwards else "forwards"
         if self.preview:
@@ -783,6 +857,7 @@ class MigrationManager:
                         raw()
 
             await self._run_add_tables(backwards=backwards)
+            await self._run_change_table_schema(backwards=backwards)
             await self._run_rename_tables(backwards=backwards)
             await self._run_add_columns(backwards=backwards)
             await self._run_drop_columns(backwards=backwards)

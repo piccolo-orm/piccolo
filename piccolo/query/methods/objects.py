@@ -230,6 +230,8 @@ class Objects(
         return self
 
     def as_of(self, interval: str = "-1s") -> Objects:
+        if self.engine_type != "cockroach":
+            raise NotImplementedError("Only CockroachDB supports AS OF")
         self.as_of_delegate.as_of(interval)
         return self
 

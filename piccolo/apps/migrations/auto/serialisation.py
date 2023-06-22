@@ -392,9 +392,15 @@ class SerialisedTableType(Definition):
 
         #######################################################################
 
+        schema_str = (
+            "None"
+            if self.table_type._meta.schema is None
+            else f'"{self.table_type._meta.schema}"'
+        )
+
         definition = (
             f"class {self.table_class_name}"
-            f'({UniqueGlobalNames.TABLE}, tablename="{tablename}"): '
+            f'({UniqueGlobalNames.TABLE}, tablename="{tablename}", schema={schema_str}): '  # noqa: E501
             f"{pk_column_name} = {serialised_pk_column}"
         )
 

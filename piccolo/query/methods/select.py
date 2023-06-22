@@ -99,43 +99,84 @@ class Avg(Selectable):
 
 class Count(Selectable):
     """
-    Used in conjunction with the ``group_by`` clause in ``Select`` queries.
+    Used in ``Select`` queries, usually in conjunction with the ``group_by``
+    clause::
 
-    If a column is specified, the count is for non-null values in that
-    column. If no column is specified, the count is for all rows, whether
-    they have null values or not.
+        >>> await Band.select(
+        ...     Band.manager.name.as_alias('manager_name'),
+        ...     Count(alias='band_count')
+        ... ).group_by(Band.manager)
+        [{'manager_name': 'Guido', 'count': 1}, ...]
 
-    .. code-block:: python
+    It can also be used without the ``group_by`` clause (though you may prefer
+    to the :meth:`Table.count <piccolo.table.Table.count>` method instead, as
+    it's more convenient)::
 
-        await Band.select(Band.name, Count()).group_by(Band.name)
-
-        # We can use an alias. These two are equivalent:
-
-        await Band.select(
-            Band.name, Count(alias="total")
-        ).group_by(Band.name)
-
-        await Band.select(
-            Band.name,
-            Count().as_alias("total")
-        ).group_by(Band.name)
+        >>> await Band.select(Count())
+        [{'count': 3}]
 
     """
 
     def __init__(
-        self, column: t.Optional[Column] = None, alias: str = "count"
+        self,
+        column: t.Optional[Column] = None,
+        distinct: t.Optional[t.Sequence[Column]] = None,
+        alias: str = "count",
     ):
+        """
+        :param column:
+            If specified, the count is for non-null values in that column.
+        :param distinct:
+            If specified, the count is for distinct values in those columns.
+        :param alias:
+            The name of the value in the response::
+
+                # These two are equivalent:
+
+                await Band.select(
+                    Band.name, Count(alias="total")
+                ).group_by(Band.name)
+
+                await Band.select(
+                    Band.name,
+                    Count().as_alias("total")
+                ).group_by(Band.name)
+
+        """
+        if distinct and column:
+            raise ValueError("Only specify `column` or `distinct`")
+
         self.column = column
+        self.distinct = distinct
         self._alias = alias
 
     def get_select_string(
         self, engine_type: str, with_alias: bool = True
     ) -> str:
-        if self.column is None:
-            column_name = "*"
+        expression: str
+
+        if self.distinct:
+            if engine_type == "sqlite":
+                # SQLite doesn't allow us to specify multiple columns, so
+                # instead we concatenate the values.
+                column_names = " || ".join(
+                    i._meta.get_full_name(with_alias=False)
+                    for i in self.distinct
+                )
+            else:
+                column_names = ", ".join(
+                    i._meta.get_full_name(with_alias=False)
+                    for i in self.distinct
+                )
+
+            expression = f"DISTINCT ({column_names})"
         else:
-            column_name = self.column._meta.get_full_name(with_alias=False)
-        return f'COUNT({column_name}) AS "{self._alias}"'
+            if self.column:
+                expression = self.column._meta.get_full_name(with_alias=False)
+            else:
+                expression = "*"
+
+        return f'COUNT({expression}) AS "{self._alias}"'
 
 
 class Max(Selectable):
@@ -353,8 +394,13 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         self.columns_delegate.columns(*_columns)
         return self
 
-    def distinct(self: Self) -> Self:
-        self.distinct_delegate.distinct()
+    def distinct(
+        self: Self, *, on: t.Optional[t.Sequence[Column]] = None
+    ) -> Self:
+        if on is not None and self.engine_type == "sqlite":
+            raise NotImplementedError("SQLite doesn't support DISTINCT ON")
+
+        self.distinct_delegate.distinct(enabled=True, on=on)
         return self
 
     def group_by(self: Self, *columns: t.Union[Column, str]) -> Self:
@@ -367,6 +413,9 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         return self
 
     def as_of(self: Self, interval: str = "-1s") -> Self:
+        if self.engine_type != "cockroach":
+            raise NotImplementedError("Only CockroachDB supports AS OF")
+
         self.as_of_delegate.as_of(interval)
         return self
 
@@ -651,10 +700,12 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                         index - 1
                     ]._meta.table_alias
                 else:
-                    left_tablename = key._meta.table._meta.tablename
+                    left_tablename = (
+                        key._meta.table._meta.get_formatted_tablename()
+                    )  # noqa: E501
 
                 right_tablename = (
-                    key._foreign_key_meta.resolved_references._meta.tablename
+                    key._foreign_key_meta.resolved_references._meta.get_formatted_tablename()  # noqa: E501
                 )
 
                 pk_name = column._meta.call_chain[
@@ -662,9 +713,9 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                 ]._foreign_key_meta.resolved_target_column._meta.name
 
                 _joins.append(
-                    f'LEFT JOIN "{right_tablename}" "{table_alias}"'
+                    f'LEFT JOIN {right_tablename} "{table_alias}"'
                     " ON "
-                    f'("{left_tablename}"."{key._meta.name}" = "{table_alias}"."{pk_name}")'  # noqa: E501
+                    f'({left_tablename}."{key._meta.name}" = "{table_alias}"."{pk_name}")'  # noqa: E501
                 )
 
             joins.extend(_joins)
@@ -722,17 +773,20 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
 
         #######################################################################
 
-        select = (
-            "SELECT DISTINCT" if self.distinct_delegate._distinct else "SELECT"
-        )
-        query = f"{select} {columns_str} FROM {self.table._meta.tablename}"
+        args: t.List[t.Any] = []
+
+        query = "SELECT"
+
+        distinct = self.distinct_delegate._distinct
+        if distinct.on:
+            distinct.validate_on(self.order_by_delegate._order_by)
+        query += "{}"
+        args.append(distinct.querystring)
+
+        query += f" {columns_str} FROM {self.table._meta.get_formatted_tablename()}"  # noqa: E501
 
         for join in joins:
             query += f" {join}"
-
-        #######################################################################
-
-        args: t.List[t.Any] = []
 
         if self.as_of_delegate._as_of:
             query += "{}"

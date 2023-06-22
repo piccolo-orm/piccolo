@@ -48,7 +48,10 @@ master_doc = "index"
 
 # -- Intersphinx -------------------------------------------------------------
 
-intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "piccolo_api": ("https://piccolo-api.readthedocs.io/en/latest/", None),
+}
 extensions += ["sphinx.ext.intersphinx"]
 
 # -- Autodoc -----------------------------------------------------------------

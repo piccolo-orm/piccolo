@@ -920,12 +920,13 @@ class Column(Selectable):
         if not self._meta.null:
             query += " NOT NULL"
 
-        foreign_key_meta: t.Optional[ForeignKeyMeta] = getattr(
-            self, "_foreign_key_meta", None
+        foreign_key_meta = t.cast(
+            t.Optional[ForeignKeyMeta],
+            getattr(self, "_foreign_key_meta", None),
         )
         if foreign_key_meta:
             references = foreign_key_meta.resolved_references
-            tablename = references._meta.tablename
+            tablename = references._meta.get_formatted_tablename()
             on_delete = foreign_key_meta.on_delete.value
             on_update = foreign_key_meta.on_update.value
             target_column_name = (

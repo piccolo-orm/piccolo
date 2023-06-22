@@ -11,6 +11,10 @@ import typing as t
 import uuid
 from unittest.mock import MagicMock, patch
 
+from piccolo.apps.migrations.auto.operations import RenameTable
+from piccolo.apps.migrations.commands.backwards import (
+    BackwardsMigrationManager,
+)
 from piccolo.apps.migrations.commands.forwards import ForwardsMigrationManager
 from piccolo.apps.migrations.commands.new import (
     _create_migrations_folder,
@@ -46,6 +50,7 @@ from piccolo.columns.defaults.uuid import UUID4
 from piccolo.columns.m2m import M2M
 from piccolo.columns.reference import LazyTableReference
 from piccolo.conf.apps import AppConfig
+from piccolo.schema import SchemaManager
 from piccolo.table import Table, create_table_class, drop_db_tables_sync
 from piccolo.utils.sync import run_sync
 from tests.base import DBTestCase, engines_only, engines_skip
@@ -99,10 +104,26 @@ def array_default_varchar():
 
 
 class MigrationTestCase(DBTestCase):
-    def run_migrations(self, app_config: AppConfig):
-        manager = ForwardsMigrationManager(app_name=app_config.app_name)
-        run_sync(manager.create_migration_table())
-        run_sync(manager.run_migrations(app_config=app_config))
+    def _run_migrations(self, app_config: AppConfig):
+        forwards_manager = ForwardsMigrationManager(
+            app_name=app_config.app_name
+        )
+        run_sync(forwards_manager.create_migration_table())
+        run_sync(forwards_manager.run_migrations(app_config=app_config))
+
+    def _get_migrations_folder_path(self) -> str:
+        temp_directory_path = tempfile.gettempdir()
+        migrations_folder_path = os.path.join(
+            temp_directory_path, "piccolo_migrations"
+        )
+        return migrations_folder_path
+
+    def _get_app_config(self) -> AppConfig:
+        return AppConfig(
+            app_name="test_app",
+            migrations_folder_path=self._get_migrations_folder_path(),
+            table_classes=[],
+        )
 
     def _test_migrations(
         self,
@@ -114,7 +135,7 @@ class MigrationTestCase(DBTestCase):
 
         :param table_snapshots:
             A list of lists. Each sub list represents a snapshot of the table
-            state. Migrations will be created and run based each snapshot.
+            state. Migrations will be created and run based on each snapshot.
         :param test_function:
             After the migrations are run, this function is called. It is passed
             a ``RowMeta`` instance which can be used to check the column was
@@ -122,21 +143,14 @@ class MigrationTestCase(DBTestCase):
             test passes, otherwise ``False``.
 
         """
-        temp_directory_path = tempfile.gettempdir()
-        migrations_folder_path = os.path.join(
-            temp_directory_path, "piccolo_migrations"
-        )
+        app_config = self._get_app_config()
+
+        migrations_folder_path = app_config.migrations_folder_path
 
         if os.path.exists(migrations_folder_path):
             shutil.rmtree(migrations_folder_path)
 
         _create_migrations_folder(migrations_folder_path)
-
-        app_config = AppConfig(
-            app_name="test_app",
-            migrations_folder_path=migrations_folder_path,
-            table_classes=[],
-        )
 
         for table_snapshot in table_snapshots:
             app_config.table_classes = table_snapshot
@@ -146,7 +160,7 @@ class MigrationTestCase(DBTestCase):
                 )
             )
             self.assertTrue(os.path.exists(meta.migration_path))
-            self.run_migrations(app_config=app_config)
+            self._run_migrations(app_config=app_config)
 
             # It's kind of absurd sleeping for 1 microsecond, but it guarantees
             # the migration IDs will be unique, and just in case computers
@@ -167,6 +181,46 @@ class MigrationTestCase(DBTestCase):
                 test_function(row_meta),
                 msg=f"Meta is incorrect: {row_meta}",
             )
+
+    def _get_migration_managers(self):
+        app_config = self._get_app_config()
+
+        return run_sync(
+            ForwardsMigrationManager(
+                app_name=app_config.app_name
+            ).get_migration_managers(app_config=app_config)
+        )
+
+    def _run_backwards(self, migration_id: str):
+        """
+        After running :meth:`_test_migrations`, if you call `_run_backwards`
+        then the migrations can be reversed.
+
+        :param migration_id:
+            Which migration to reverse to. Can be:
+
+            * A migration ID.
+            * A number, like ``1``, then it will reverse the most recent
+              migration.
+            * ``'all'`` then all of the migrations will be reversed.
+
+        """
+        migrations_folder_path = self._get_migrations_folder_path()
+
+        app_config = AppConfig(
+            app_name="test_app",
+            migrations_folder_path=migrations_folder_path,
+            table_classes=[],
+        )
+
+        backwards_manager = BackwardsMigrationManager(
+            app_name=app_config.app_name,
+            migration_id=migration_id,
+            auto_agree=True,
+        )
+        run_sync(
+            backwards_manager.run_migrations_backwards(app_config=app_config)
+        )
 
 
 @engines_only("postgres", "cockroach")
@@ -1027,3 +1081,289 @@ class TestTargetColumnString(MigrationTestCase):
             """
         )
         self.assertTrue(response[0]["exists"])
+
+
+###############################################################################
+# Testing migrations which involve schemas.
+
+
+@engines_only("postgres", "cockroach")
+class TestSchemas(MigrationTestCase):
+    new_schema = "schema_1"
+
+    def setUp(self) -> None:
+        self.schema_manager = SchemaManager()
+        self.manager_1 = create_table_class(class_name="Manager")
+        self.manager_2 = create_table_class(
+            class_name="Manager", class_kwargs={"schema": self.new_schema}
+        )
+
+    def tearDown(self) -> None:
+        self.schema_manager.drop_schema(
+            self.new_schema, if_exists=True, cascade=True
+        ).run_sync()
+
+        Migration.alter().drop_table(if_exists=True).run_sync()
+
+        self.manager_1.alter().drop_table(if_exists=True).run_sync()
+
+    def test_create_table_in_schema(self):
+        """
+        Make sure we can create a new table in a schema.
+        """
+        self._test_migrations(table_snapshots=[[self.manager_2]])
+
+        # The schema should automaticaly be created.
+        self.assertIn(
+            self.new_schema,
+            self.schema_manager.list_schemas().run_sync(),
+        )
+
+        # Make sure that the table is in the new schema.
+        self.assertListEqual(
+            self.schema_manager.list_tables(
+                schema_name=self.new_schema
+            ).run_sync(),
+            ["manager"],
+        )
+
+        # Roll it backwards to make sure the table no longer exists.
+        self._run_backwards(migration_id="1")
+
+        # Make sure that the table is in the new schema.
+        self.assertNotIn(
+            "manager",
+            self.schema_manager.list_tables(
+                schema_name=self.new_schema
+            ).run_sync(),
+        )
+
+    def test_move_table_from_public_schema(self):
+        """
+        Make sure the auto migrations can move a table from the public schema
+        to a different schema.
+        """
+        self._test_migrations(
+            table_snapshots=[
+                [self.manager_1],
+                [self.manager_2],
+            ],
+        )
+
+        # The schema should automaticaly be created.
+        self.assertIn(
+            self.new_schema,
+            self.schema_manager.list_schemas().run_sync(),
+        )
+
+        # Make sure that the table is in the new schema.
+        self.assertListEqual(
+            self.schema_manager.list_tables(
+                schema_name=self.new_schema
+            ).run_sync(),
+            ["manager"],
+        )
+
+        #######################################################################
+
+        # Reverse the last migration, which should move the table back to the
+        # public schema.
+        self._run_backwards(migration_id="1")
+
+        self.assertIn(
+            "manager",
+            self.schema_manager.list_tables(schema_name="public").run_sync(),
+        )
+
+        # We don't delete the schema we created as it's risky, just in case
+        # other tables etc were manually added to it.
+        self.assertIn(
+            self.new_schema,
+            self.schema_manager.list_schemas().run_sync(),
+        )
+
+    def test_move_table_to_public_schema(self):
+        """
+        Make sure the auto migrations can move a table from a schema to the
+        public schema.
+        """
+        self._test_migrations(
+            table_snapshots=[
+                [self.manager_2],
+                [self.manager_1],
+            ],
+        )
+
+        # Make sure that the table is in the public schema.
+        self.assertIn(
+            "manager",
+            self.schema_manager.list_tables(schema_name="public").run_sync(),
+        )
+
+        #######################################################################
+
+        # Reverse the last migration, which should move the table back to the
+        # non-public schema.
+        self._run_backwards(migration_id="1")
+
+        self.assertIn(
+            "manager",
+            self.schema_manager.list_tables(
+                schema_name=self.new_schema
+            ).run_sync(),
+        )
+
+
+@engines_only("postgres", "cockroach")
+class TestSameTableName(MigrationTestCase):
+    """
+    Tables with the same name are allowed in multiple schemas.
+    """
+
+    new_schema = "schema_1"
+    tablename = "manager"
+
+    def setUp(self) -> None:
+        self.schema_manager = SchemaManager()
+
+        self.manager_1 = create_table_class(
+            class_name="Manager1", class_kwargs={"tablename": self.tablename}
+        )
+
+        self.manager_2 = create_table_class(
+            class_name="Manager2",
+            class_kwargs={"tablename": self.tablename, "schema": "schema_1"},
+        )
+
+    def tearDown(self) -> None:
+        self.schema_manager.drop_schema(
+            self.new_schema, if_exists=True, cascade=True
+        ).run_sync()
+
+        self.manager_1.alter().drop_table(if_exists=True).run_sync()
+
+        Migration.alter().drop_table(if_exists=True).run_sync()
+
+    def test_schemas(self):
+        """
+        Make sure we can create a table with the same name in multiple schemas.
+        """
+
+        self._test_migrations(
+            table_snapshots=[
+                [self.manager_1],
+                [self.manager_1, self.manager_2],
+            ],
+        )
+
+        # Make sure that both tables exist (in the correct schemas):
+        self.assertIn(
+            "manager",
+            self.schema_manager.list_tables(schema_name="public").run_sync(),
+        )
+        self.assertIn(
+            "manager",
+            self.schema_manager.list_tables(
+                schema_name=self.new_schema
+            ).run_sync(),
+        )
+
+
+@engines_only("postgres", "cockroach")
+class TestForeignKeyWithSchema(MigrationTestCase):
+    """
+    Make sure that migrations with foreign keys involving schemas work
+    correctly.
+    """
+
+    schema = "schema_1"
+    schema_manager = SchemaManager()
+
+    def setUp(self) -> None:
+        self.manager = create_table_class(
+            class_name="Manager", class_kwargs={"schema": self.schema}
+        )
+
+        self.band = create_table_class(
+            class_name="Band",
+            class_kwargs={"schema": self.schema},
+            class_members={"manager": ForeignKey(self.manager)},
+        )
+
+    def tearDown(self) -> None:
+        self.schema_manager.drop_schema(
+            self.schema, if_exists=True, cascade=True
+        ).run_sync()
+
+        Migration.alter().drop_table(if_exists=True).run_sync()
+
+    def test_foreign_key(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.manager, self.band],
+            ],
+        )
+
+        tables_in_schema = self.schema_manager.list_tables(
+            schema_name=self.schema
+        ).run_sync()
+
+        # Make sure that both tables exist (in the correct schemas):
+        for tablename in ("manager", "band"):
+            self.assertIn(tablename, tables_in_schema)
+
+
+###############################################################################
+
+
+@engines_only("postgres", "cockroach")
+class TestRenameTable(MigrationTestCase):
+    """
+    Make sure that tables can be renamed.
+    """
+
+    schema_manager = SchemaManager()
+    manager = create_table_class(
+        class_name="Manager", class_members={"name": Varchar()}
+    )
+    manager_1 = create_table_class(
+        class_name="Manager",
+        class_kwargs={"tablename": "manager_1"},
+        class_members={"name": Varchar()},
+    )
+
+    def setUp(self) -> None:
+        pass
+
+    def tearDown(self) -> None:
+        drop_db_tables_sync(self.manager, self.manager_1, Migration)
+
+    def test_rename_table(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.manager],
+                [self.manager_1],
+            ],
+        )
+
+        tables = self.schema_manager.list_tables(
+            schema_name="public"
+        ).run_sync()
+
+        self.assertIn("manager_1", tables)
+        self.assertNotIn("manager", tables)
+
+        # Make sure the table was renamed, and not dropped and recreated.
+        migration_managers = self._get_migration_managers()
+
+        self.assertListEqual(
+            migration_managers[-1].rename_tables,
+            [
+                RenameTable(
+                    old_class_name="Manager",
+                    old_tablename="manager",
+                    new_class_name="Manager",
+                    new_tablename="manager_1",
+                )
+            ],
+        )

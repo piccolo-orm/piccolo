@@ -48,12 +48,16 @@ Once you have created a fixture, it can be used by your colleagues when setting
 up an application on their local machines, or when deploying to a new
 environment.
 
-Databases such as Postgres have inbuilt ways of dumping and restoring data
+Databases such as Postgres have built-in ways of dumping and restoring data
 (via ``pg_dump`` and ``pg_restore``). Some reasons to use the fixtures app
 instead:
 
-* When you want the data to be loadable in a range of database versions.
+* When you want the data to be loadable in a range of database types and
+  versions.
 * Fixtures are stored in JSON, which are a bit friendlier for source control.
+
+dump
+^^^^
 
 To dump the data into a new fixture file:
 
@@ -68,14 +72,53 @@ a subset of apps and tables instead, for example:
 
     piccolo fixtures dump --apps=blog --tables=Post > fixtures.json
 
-    # Or for multiple apps / tables
+Or for multiple apps / tables:
+
+.. code-block:: bash
+
     piccolo fixtures dump --apps=blog,shop --tables=Post,Product > fixtures.json
+
+
+load
+^^^^
 
 To load the fixture:
 
 .. code-block:: bash
 
     piccolo fixtures load fixtures.json
+
+If you load the fixture again, you will get primary key errors because the rows
+already exist in the database. But what if we need to run it again, because we
+had a typo in our fixture, or were missing some data? We can upsert the data
+using ``--on_conflict``.
+
+There are two options:
+
+1. ``DO NOTHING`` - if any of the rows already exist in the database, just
+   leave them as they are, and don't raise an exception.
+2. ``DO UPDATE`` - if any of the rows already exist in the database, override
+   them with the latest data in the fixture file.
+
+.. code-block:: bash
+
+    # DO NOTHING
+    piccolo fixtures load fixtures.json --on_conflict='DO NOTHING'
+
+    # DO UPDATE
+    piccolo fixtures load fixtures.json --on_conflict='DO UPDATE'
+
+And finally, if you're loading a really large fixture, you can specify the
+``chunk_size``. By default, Piccolo inserts up to 1,000 rows at a time, as
+the database adapter will complain if a single insert query is too large. So
+if your fixture containts 10,000 rows, this will mean 10 insert queries.
+
+You can tune this number higher or lower if you want (lower if the
+table has a lot of columns, or higher if the table has few columns).
+
+.. code-block:: bash
+
+    piccolo fixtures load fixtures.json --chunk_size=500
 
 -------------------------------------------------------------------------------
 

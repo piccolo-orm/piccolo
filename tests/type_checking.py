@@ -9,6 +9,8 @@ import typing as t
 
 from typing_extensions import assert_type
 
+from piccolo.testing.model_builder import ModelBuilder
+
 from .example_apps.music.tables import Band, Manager
 
 if t.TYPE_CHECKING:
@@ -89,3 +91,7 @@ if t.TYPE_CHECKING:
         Band.insert(Band())
         # This is an error:
         Band.insert(Manager())  # type: ignore
+
+    async def model_builder() -> None:
+        assert_type(await ModelBuilder.build(Band), Band)
+        assert_type(ModelBuilder.build_sync(Band), Band)

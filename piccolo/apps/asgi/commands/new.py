@@ -10,10 +10,9 @@ from jinja2 import Environment, FileSystemLoader
 
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates/app/")
 SERVERS = ["uvicorn", "Hypercorn"]
-ROUTERS = ["starlette", "fastapi", "blacksheep", "xpresso", "starlite"]
+ROUTERS = ["starlette", "fastapi", "blacksheep", "litestar"]
 ROUTER_DEPENDENCIES = {
-    "starlite": ["starlite>=1.46.0"],
-    "xpresso": ["xpresso==0.43.0", "di==0.72.1"],
+    "litestar": ["litestar==2.0.0a3"],
 }
 
 

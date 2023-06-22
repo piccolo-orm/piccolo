@@ -12,6 +12,7 @@ typical ORM.
 
     ./select
     ./objects
+    ./count
     ./alter
     ./create_table
     ./delete

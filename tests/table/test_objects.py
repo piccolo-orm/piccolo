@@ -33,9 +33,12 @@ class TestOffset(DBTestCase):
         Postgres can do an offset without a limit clause.
         """
         self.insert_rows()
+
         response = Band.objects().order_by(Band.name).offset(1).run_sync()
+
         self.assertEqual(
-            [i.name for i in response], ["Pythonistas", "Rustaceans"]
+            [i.name for i in response],
+            ["Pythonistas", "Rustaceans"],
         )
 
     @sqlite_only

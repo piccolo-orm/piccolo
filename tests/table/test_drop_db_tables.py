@@ -16,22 +16,22 @@ class TestDropTables(TestCase):
         """
         Make sure the tables are dropped.
         """
-        self.assertEqual(Manager.table_exists().run_sync(), True)
-        self.assertEqual(Band.table_exists().run_sync(), True)
+        self.assertTrue(Manager.table_exists().run_sync())
+        self.assertTrue(Band.table_exists().run_sync())
 
         drop_db_tables_sync(Manager, Band)
 
-        self.assertEqual(Manager.table_exists().run_sync(), False)
-        self.assertEqual(Band.table_exists().run_sync(), False)
+        self.assertFalse(Manager.table_exists().run_sync())
+        self.assertFalse(Band.table_exists().run_sync())
 
     def test_drop_tables(self):
         """
         This is a deprecated function, which just acts as a proxy.
         """
-        self.assertEqual(Manager.table_exists().run_sync(), True)
-        self.assertEqual(Band.table_exists().run_sync(), True)
+        self.assertTrue(Manager.table_exists().run_sync())
+        self.assertTrue(Band.table_exists().run_sync())
 
         drop_tables(Manager, Band)
 
-        self.assertEqual(Manager.table_exists().run_sync(), False)
-        self.assertEqual(Band.table_exists().run_sync(), False)
+        self.assertFalse(Manager.table_exists().run_sync())
+        self.assertFalse(Band.table_exists().run_sync())

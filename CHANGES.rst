@@ -1,6 +1,242 @@
 Changes
 =======
 
+0.115.0
+-------
+
+Fixture upserting
+~~~~~~~~~~~~~~~~~
+
+Fixtures can now be upserted. For example:
+
+.. code-block:: bash
+
+  piccolo fixtures load my_fixture.json --on_conflict='DO UPDATE'
+
+The options are:
+
+* ``DO NOTHING``, meaning any rows with a matching primary key will be left
+  alone.
+* ``DO UPDATE``, meaning any rows with a matching primary key will be updated.
+
+This is really useful, as you can now edit fixtures and load them multiple
+times without getting foreign key constraint errors.
+
+Schema fixes
+~~~~~~~~~~~~
+
+We recently added support for schemas, for example:
+
+.. code-block:: python
+
+  class Band(Table, schema='music'):
+      ...
+
+This release contains:
+
+* A fix for migrations when changing a table's schema back to 'public' (thanks to
+  @sinisaos for discovering this).
+* A fix for ``M2M`` queries, when the tables are in a schema other than
+  'public' (thanks to @quinnalfaro for reporting this).
+
+Added ``distinct`` method to ``count`` queries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We recently added support for ``COUNT DISTINCT`` queries. The syntax is:
+
+.. code-block:: python
+
+  await Concert.count(distinct=[Concert.start_date])
+
+The following alternative syntax now also works (just to be consistent with
+other queries like ``select``):
+
+.. code-block:: python
+
+  await Concert.count().distinct([Concert.start_date])
+
+-------------------------------------------------------------------------------
+
+0.114.0
+-------
+
+``count`` queries can now return the number of distinct rows. For example, if
+we have this table:
+
+.. code-block:: python
+
+    class Concert(Table):
+        band = Varchar()
+        start_date = Date()
+
+With this data:
+
+.. table::
+    :widths: auto
+
+    ===========  ==========
+    band         start_date
+    ===========  ==========
+    Pythonistas  2023-01-01
+    Pythonistas  2023-02-03
+    Rustaceans   2023-01-01
+    ===========  ==========
+
+We can easily get the number of unique concert dates:
+
+.. code-block:: python
+
+    >>> await Concert.count(distinct=[Concert.start_date])
+    2
+
+We could have just done this instead:
+
+.. code-block:: python
+
+    len(await Concert.select(Concert.start_date).distinct())
+
+But it's far less efficient when you have lots of rows, because all of the
+distinct rows need to be returned from the database.
+
+Also, the docs for the ``count`` query, aggregate functions, and
+``group_by`` clause were significantly improved.
+
+Many thanks to @lqmanh and @sinisaos for their help with this.
+
+-------------------------------------------------------------------------------
+
+0.113.0
+-------
+
+If Piccolo detects a renamed table in an auto migration, it asks the user for
+confirmation. When lots of tables have been renamed, Piccolo is now more
+intelligent about when to ask for confirmation. Thanks to @sumitsharansatsangi
+for suggesting this change, and @sinisaos for reviewing.
+
+Also, fixed the type annotations for ``MigrationManager.add_table``.
+
+-------------------------------------------------------------------------------
+
+0.112.1
+-------
+
+Fixed a bug with serialising table classes in migrations.
+
+-------------------------------------------------------------------------------
+
+0.112.0
+-------
+
+Added support for schemas in Postgres and CockroachDB.
+
+For example:
+
+.. code-block:: python
+
+  class Band(Table, schema="music"):
+      ...
+
+When creating the table, the schema will be created automatically if it doesn't
+already exist.
+
+.. code-block:: python
+
+  await Band.create_table()
+
+It also works with migrations. If we change the ``schema`` value for the table,
+Piccolo will detect this, and create a migration for moving it to the new schema.
+
+.. code-block:: python
+
+  class Band(Table, schema="music_2"):
+      ...
+
+  # Piccolo will detect that the table needs to be moved to a new schema.
+  >>> piccolo migrations new my_app --auto
+
+-------------------------------------------------------------------------------
+
+0.111.1
+-------
+
+Fixing a bug with ``ModelBuilder`` and ``Decimal`` / ``Numeric`` columns.
+
+-------------------------------------------------------------------------------
+
+0.111.0
+-------
+
+Added the ``on_conflict`` clause for ``insert`` queries. This enables **upserts**.
+
+For example, here we insert some bands, and if they already exist then do
+nothing:
+
+.. code-block:: python
+
+  await Band.insert(
+      Band(name='Pythonistas'),
+      Band(name='Rustaceans'),
+      Band(name='C-Sharps'),
+  ).on_conflict(action='DO NOTHING')
+
+Here we insert some albums, and if they already exist then we update the price:
+
+.. code-block:: python
+
+  await Album.insert(
+      Album(title='OK Computer', price=10.49),
+      Album(title='Kid A', price=9.99),
+      Album(title='The Bends', price=9.49),
+  ).on_conflict(
+      action='DO UPDATE',
+      target=Album.title,
+      values=[Album.price]
+  )
+
+Thanks to @sinisaos for helping with this.
+
+-------------------------------------------------------------------------------
+
+0.110.0
+-------
+
+ASGI frameworks
+~~~~~~~~~~~~~~~
+
+The ASGI frameworks in ``piccolo asgi new`` have been updated. ``starlite`` has
+been renamed to ``litestar``. Thanks to @sinisaos for this.
+
+ModelBuilder
+~~~~~~~~~~~~
+
+Generic types are now used in ``ModelBuilder``.
+
+.. code-block:: python
+
+  # mypy knows this is a `Band` instance:
+  band = await ModelBuilder.build(Band)
+
+``DISTINCT ON``
+~~~~~~~~~~~~~~~
+
+Added support for ``DISTINCT ON`` queries. For example, here we fetch the most
+recent album for each band:
+
+.. code-block:: python
+
+  >>> await Album.select().distinct(
+  ...     on=[Album.band]
+  ... ).order_by(
+  ...     Album.band
+  ... ).order_by(
+  ...     Album.release_date,
+  ...     ascending=False
+  ... )
+
+Thanks to @sinisaos and @williamflaherty for their help with this.
+
+-------------------------------------------------------------------------------
+
 0.109.0
 -------
 

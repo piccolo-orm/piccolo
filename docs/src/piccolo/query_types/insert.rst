@@ -3,33 +3,47 @@
 Insert
 ======
 
-This is used to insert rows into the table.
-
-.. code-block:: python
-
-    >>> await Band.insert(Band(name="Pythonistas"))
-    [{'id': 3}]
-
-We can insert multiple rows in one go:
+This is used to bulk insert rows into the table:
 
 .. code-block:: python
 
     await Band.insert(
+        Band(name="Pythonistas")
         Band(name="Darts"),
         Band(name="Gophers")
     )
 
 -------------------------------------------------------------------------------
 
-add
----
+``add``
+-------
 
-You can also compose it as follows:
+If we later decide to insert additional rows, we can use the ``add`` method:
 
 .. code-block:: python
 
-    await Band.insert().add(
-        Band(name="Darts")
-    ).add(
-        Band(name="Gophers")
-    )
+    query = Band.insert(Band(name="Pythonistas"))
+
+    if other_bands:
+        query = query.add(
+            Band(name="Darts"),
+            Band(name="Gophers")
+        )
+
+    await query
+
+-------------------------------------------------------------------------------
+
+Query clauses
+-------------
+
+on_conflict
+~~~~~~~~~~~
+
+See :ref:`On_Conflict`.
+
+
+returning
+~~~~~~~~~
+
+See :ref:`Returning`.
