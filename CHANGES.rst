@@ -1,6 +1,65 @@
 Changes
 =======
 
+0.116.0
+-------
+
+Fixture formatting
+~~~~~~~~~~~~~~~~~~
+
+When creating a fixture:
+
+.. code-block:: bash
+
+  piccolo fixtures dump
+
+The JSON output is now nicely formatted, which is useful because we can pipe
+it straight to a file, and commit it to Git without having to manually run a
+formatter on it.
+
+.. code-block:: bash
+
+  piccolo fixtures dump > my_fixture.json
+
+Thanks to @sinisaos for this.
+
+Protected table names
+~~~~~~~~~~~~~~~~~~~~~
+
+We used to raise a ``ValueError`` if a table was called ``user``.
+
+.. code-block:: python
+
+  class User(Table):  # ValueError!
+      ...
+
+It's because ``user`` is already used by Postgres (e.g. try ``SELECT user`` or
+``SELECT * FROM user``).
+
+We now emit a warning instead for these reasons:
+
+* Piccolo wraps table names in quotes to avoid clashes with reserved keywords.
+* Sometimes you're stuck with a table name from a pre-existing schema, and
+  can't easily rename it.
+
+Re-export ``WhereRaw``
+~~~~~~~~~~~~~~~~~~~~~~
+
+If you want to write raw SQL in your where queries you use ``WhereRaw``:
+
+.. code-block:: python
+
+  >>> Band.select().where(WhereRaw('TRIM(name) = {}', 'Pythonistas'))
+
+You can now import it from ``piccolo.query`` to be consistent with
+``SelectRaw`` and ``OrderByRaw``.
+
+.. code-block:: python
+
+  from piccolo.query import WhereRaw
+
+-------------------------------------------------------------------------------
+
 0.115.0
 -------
 
