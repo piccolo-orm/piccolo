@@ -58,6 +58,10 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Selectable
 
 PROTECTED_TABLENAMES = ("user",)
+TABLENAME_WARNING = (
+    "We recommend giving your table a different name as `{tablename}` is a "
+    "reserved keyword. It should still work, but avoid if possible."
+)
 
 
 TABLE_REGISTRY: t.List[t.Type[Table]] = []
@@ -257,10 +261,7 @@ class Table(metaclass=TableMetaclass):
             schema, tablename = tablename.split(".", maxsplit=1)
 
         if tablename in PROTECTED_TABLENAMES:
-            raise ValueError(
-                f"{tablename} is a protected name, please give your table a "
-                "different name."
-            )
+            warnings.warn(TABLENAME_WARNING.format(tablename=tablename))
 
         columns: t.List[Column] = []
         default_columns: t.List[Column] = []
