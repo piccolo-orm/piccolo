@@ -257,9 +257,10 @@ class Table(metaclass=TableMetaclass):
             schema, tablename = tablename.split(".", maxsplit=1)
 
         if tablename in PROTECTED_TABLENAMES:
-            raise ValueError(
-                f"{tablename} is a protected name, please give your table a "
-                "different name."
+            warnings.warn(
+                "We recommend giving your table a different name as "
+                f"`{tablename}` is a reserved keyword. It will still work "
+                "though."
             )
 
         columns: t.List[Column] = []
