@@ -1,3 +1,5 @@
+from piccolo.columns.combination import WhereRaw
+
 from .base import Query
 from .methods import (
     Alter,
@@ -42,4 +44,5 @@ __all__ = [
     "Sum",
     "TableExists",
     "Update",
+    "WhereRaw",
 ]
