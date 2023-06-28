@@ -9,7 +9,7 @@ from piccolo.columns.column_types import (
     ForeignKey,
     Varchar,
 )
-from piccolo.table import Table
+from piccolo.table import TABLENAME_WARNING, Table
 from tests.example_apps.music.tables import Band
 
 
@@ -22,15 +22,21 @@ class TestMetaClass(TestCase):
         Some tablenames are forbidden because they're reserved words in the
         database, and can potentially cause issues.
         """
-        with self.assertRaises(ValueError):
+        expected_warning = TABLENAME_WARNING.format(tablename="user")
+
+        with patch("piccolo.table.warnings") as warnings:
 
             class User(Table):
                 pass
 
-        with self.assertRaises(ValueError):
+            warnings.warn.assert_called_with(expected_warning)
+
+        with patch("piccolo.table.warnings") as warnings:
 
             class MyUser(Table, tablename="user"):
                 pass
+
+            warnings.warn.assert_called_with(expected_warning)
 
     def test_help_text(self):
         """
