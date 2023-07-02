@@ -14,6 +14,31 @@ Iterable = t.Iterable[t.Any]
 TableInstance = t.TypeVar("TableInstance", bound="Table")
 QueryResponseType = t.TypeVar("QueryResponseType", bound=t.Any)
 
+ExtractField = t.Literal[
+    "century",
+    "day",
+    "decade",
+    "dow",
+    "doy",
+    "epoch",
+    "hour",
+    "isodow",
+    "isoyear",
+    "julian",
+    "microseconds",
+    "millennium",
+    "milliseconds",
+    "minute",
+    "month",
+    "quarter",
+    "second",
+    "timezone",
+    "timezone_hour",
+    "timezone_minute",
+    "week",
+    "year",
+]
+
 
 ###############################################################################
 # For backwards compatibility:

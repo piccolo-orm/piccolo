@@ -62,6 +62,8 @@ from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import ColumnMeta
+    from piccolo.custom_types import ExtractField
+    from piccolo.query.methods.select import Extract
     from piccolo.table import Table
 
 
@@ -927,6 +929,36 @@ class Timestamp(Column):
         self.default = default
         kwargs.update({"default": default})
         super().__init__(**kwargs)
+
+    ###########################################################################
+    # Extract part of the timestamp in a query (e.g. the year).
+
+    def extract(self, field: ExtractField) -> Extract:
+        """
+        Used for extracting part of a timestamp. For example::
+
+            >>> await Concert.select(Concert.starts.extract('year')).distinct()
+
+        Or alternatively, use this convenience method::
+
+            >>> await Concert.select(Concert.starts.year).distinct()
+
+        """
+        from piccolo.query.methods.select import Extract
+
+        return Extract(column=self, field=field)
+
+    @property
+    def year(self) -> Extract:
+        return self.extract(field="year")
+
+    @property
+    def month(self) -> Extract:
+        return self.extract(field="month")
+
+    @property
+    def day(self) -> Extract:
+        return self.extract(field="day")
 
     ###########################################################################
     # For update queries
