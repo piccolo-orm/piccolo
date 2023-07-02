@@ -10,7 +10,7 @@ import uuid
 from datetime import date, datetime
 
 import black
-from typing_extensions import Literal
+from typing import Literal
 
 from piccolo.apps.migrations.auto.serialisation import serialise_params
 from piccolo.apps.schema.commands.exceptions import GenerateError

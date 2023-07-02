@@ -3,5 +3,4 @@ colorama>=0.4.0
 Jinja2>=2.11.0
 targ>=0.3.7
 inflection>=0.5.1
-typing-extensions>=4.3.0
 pydantic[email]>=1.6

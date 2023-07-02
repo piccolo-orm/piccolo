@@ -7,7 +7,7 @@ import typing as t
 from dataclasses import dataclass, field
 from enum import Enum, auto
 
-from typing_extensions import Literal
+from typing import Literal
 
 from piccolo.columns import And, Column, Or, Where
 from piccolo.columns.column_types import ForeignKey

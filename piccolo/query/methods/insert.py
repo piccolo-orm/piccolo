@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from typing_extensions import Literal
+from typing import Literal
 
 from piccolo.custom_types import Combinable, TableInstance
 from piccolo.query.base import Query
