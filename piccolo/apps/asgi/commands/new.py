@@ -11,9 +11,6 @@ from jinja2 import Environment, FileSystemLoader
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates/app/")
 SERVERS = ["uvicorn", "Hypercorn"]
 ROUTERS = ["starlette", "fastapi", "blacksheep", "litestar"]
-ROUTER_DEPENDENCIES = {
-    "litestar": ["litestar==2.0.0a3"],
-}
 
 
 def print_instruction(message: str):
@@ -54,7 +51,7 @@ def new(root: str = ".", name: str = "piccolo_project"):
 
     template_context = {
         "router": router,
-        "router_dependencies": ROUTER_DEPENDENCIES.get(router) or [router],
+        "router_dependencies": [router],
         "server": get_server(),
         "project_identifier": name.replace(" ", "_").lower(),
     }
