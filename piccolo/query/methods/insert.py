@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import typing as t
 
-from typing import Literal
-
 from piccolo.custom_types import Combinable, TableInstance
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
@@ -48,7 +46,7 @@ class Insert(
         self: Self,
         target: t.Optional[t.Union[str, Column, t.Tuple[Column, ...]]] = None,
         action: t.Union[
-            OnConflictAction, Literal["DO NOTHING", "DO UPDATE"]
+            OnConflictAction, t.Literal["DO NOTHING", "DO UPDATE"]
         ] = OnConflictAction.do_nothing,
         values: t.Optional[
             t.Sequence[t.Union[Column, t.Tuple[Column, t.Any]]]
