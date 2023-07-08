@@ -10,7 +10,6 @@ import uuid
 from datetime import date, datetime
 
 import black
-from typing_extensions import Literal
 
 from piccolo.apps.migrations.auto.serialisation import serialise_params
 from piccolo.apps.schema.commands.exceptions import GenerateError
@@ -62,13 +61,13 @@ class ConstraintTable:
 class RowMeta:
     column_default: str
     column_name: str
-    is_nullable: Literal["YES", "NO"]
+    is_nullable: t.Literal["YES", "NO"]
     table_name: str
     character_maximum_length: t.Optional[int]
     data_type: str
     numeric_precision: t.Optional[t.Union[int, str]]
     numeric_scale: t.Optional[t.Union[int, str]]
-    numeric_precision_radix: t.Optional[Literal[2, 10]]
+    numeric_precision_radix: t.Optional[t.Literal[2, 10]]
 
     @classmethod
     def get_column_name_str(cls) -> str:
@@ -77,7 +76,7 @@ class RowMeta:
 
 @dataclasses.dataclass
 class Constraint:
-    constraint_type: Literal["PRIMARY KEY", "UNIQUE", "FOREIGN KEY", "CHECK"]
+    constraint_type: t.Literal["PRIMARY KEY", "UNIQUE", "FOREIGN KEY", "CHECK"]
     constraint_name: str
     constraint_schema: t.Optional[str] = None
     column_name: t.Optional[str] = None
@@ -141,7 +140,7 @@ class Trigger:
     table_name: str
     column_name: str
     on_update: str
-    on_delete: Literal[
+    on_delete: t.Literal[
         "NO ACTION", "RESTRICT", "CASCADE", "SET NULL", "SET_DEFAULT"
     ]
     references_table: str

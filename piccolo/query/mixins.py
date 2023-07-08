@@ -7,8 +7,6 @@ import typing as t
 from dataclasses import dataclass, field
 from enum import Enum, auto
 
-from typing_extensions import Literal
-
 from piccolo.columns import And, Column, Or, Where
 from piccolo.columns.column_types import ForeignKey
 from piccolo.custom_types import Combinable
@@ -761,7 +759,7 @@ class OnConflictDelegate:
         self,
         target: t.Optional[t.Union[str, Column, t.Tuple[Column, ...]]] = None,
         action: t.Union[
-            OnConflictAction, Literal["DO NOTHING", "DO UPDATE"]
+            OnConflictAction, t.Literal["DO NOTHING", "DO UPDATE"]
         ] = OnConflictAction.do_nothing,
         values: t.Optional[
             t.Sequence[t.Union[Column, t.Tuple[Column, t.Any]]]
