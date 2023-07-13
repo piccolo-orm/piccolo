@@ -229,8 +229,6 @@ async def new(
         entered. For example, --auto_input='y'.
 
     """
-    print("Creating new migration ...")
-
     engine = Finder().get_engine()
     if auto and isinstance(engine, SQLiteEngine):
         sys.exit("Auto migrations aren't currently supported by SQLite.")
@@ -248,6 +246,8 @@ async def new(
 
     for app_name in app_names:
         print(f"Checking the `{app_name}` app.")
+
+        print("Creating new migration ...")
 
         app_config = Finder().get_app_config(app_name=app_name)
 
