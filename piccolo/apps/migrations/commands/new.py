@@ -235,10 +235,6 @@ async def new(
     if auto and isinstance(engine, SQLiteEngine):
         sys.exit("Auto migrations aren't currently supported by SQLite.")
 
-    app_config = Finder().get_app_config(app_name=app_name)
-
-    _create_migrations_folder(app_config.migrations_folder_path)
-
     if app_name == "all" and not auto:
         raise ValueError(
             "Only use `--app_name=all` in conjunction with `--auto`."
@@ -252,6 +248,11 @@ async def new(
 
     for app_name in app_names:
         print(f"Checking the `{app_name}` app.")
+
+        app_config = Finder().get_app_config(app_name=app_name)
+
+        _create_migrations_folder(app_config.migrations_folder_path)
+
         try:
             await _create_new_migration(
                 app_config=app_config,
