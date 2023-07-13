@@ -486,7 +486,7 @@ class Finder:
     ) -> t.List[t.Type[Table]]:
         """
         Returns all ``Table`` classes registered with the given apps. If
-        ``app_names`` is ``None``, then ``Table`` classes will be returned
+        ``include_apps`` is ``None``, then ``Table`` classes will be returned
         for all apps.
         """
         if include_apps and exclude_apps:
