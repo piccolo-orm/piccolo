@@ -13,6 +13,7 @@ from types import ModuleType
 
 from piccolo.engine.base import Engine
 from piccolo.table import Table
+from piccolo.utils.graphlib import TopologicalSorter
 from piccolo.utils.warnings import Level, colored_warning
 
 
@@ -441,15 +442,14 @@ class Finder:
         if not sort:
             return [i.app_name for i in configs]
 
-        def sort_app_configs(app_config_1: AppConfig, app_config_2: AppConfig):
-            return (
-                app_config_1 in app_config_2.migration_dependency_app_configs
-            )
-
-        sorted_configs = sorted(
-            configs, key=functools.cmp_to_key(sort_app_configs)
+        return list(
+            TopologicalSorter(
+                {
+                    config.app_name: set(config.migration_dependencies)
+                    for config in configs
+                }
+            ).static_order()
         )
-        return [i.app_name for i in sorted_configs]
 
     def get_sorted_app_names(self) -> t.List[str]:
         """

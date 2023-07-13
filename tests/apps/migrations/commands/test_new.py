@@ -50,14 +50,8 @@ class TestNewMigrationCommand(TestCase):
         """
         Call the command, when no migration changes are needed.
         """
-        with self.assertRaises(SystemExit) as manager:
-            run_sync(new(app_name="music", auto=True))
-
-        self.assertEqual(manager.exception.code, 0)
-
-        self.assertTrue(
-            print_.mock_calls[-1] == call("No changes detected - exiting.")
-        )
+        run_sync(new(app_name="music", auto=True))
+        self.assertTrue(print_.mock_calls[-1] == call("No changes detected."))
 
 
 class TestGenerateMigrationMeta(TestCase):
