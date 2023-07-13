@@ -21,6 +21,7 @@ from piccolo.apps.migrations.auto import (
 )
 from piccolo.conf.apps import AppConfig, Finder
 from piccolo.engine import SQLiteEngine
+from piccolo.utils.printing import print_heading
 
 from .base import BaseMigrationManager
 
@@ -238,16 +239,15 @@ async def new(
             "Only use `--app_name=all` in conjunction with `--auto`."
         )
 
-    app_names = sorted(
-        BaseMigrationManager().get_app_names(sort=False)
+    app_names = (
+        sorted(BaseMigrationManager().get_app_names(sort=False))
         if app_name == "all"
         else [app_name]
     )
 
     for app_name in app_names:
-        print(f"Checking the `{app_name}` app.")
-
-        print("Creating new migration ...")
+        print_heading(app_name)
+        print("🚀 Creating new migration ...")
 
         app_config = Finder().get_app_config(app_name=app_name)
 
@@ -261,4 +261,6 @@ async def new(
                 auto_input=auto_input,
             )
         except NoChanges:
-            print("No changes detected.")
+            print("🏁 No changes detected.")
+
+    print("\n✅ Finished\n")

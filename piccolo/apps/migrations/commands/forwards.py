@@ -10,6 +10,7 @@ from piccolo.apps.migrations.commands.base import (
 )
 from piccolo.apps.migrations.tables import Migration
 from piccolo.conf.apps import AppConfig, MigrationModule
+from piccolo.utils.printing import print_heading
 
 
 class ForwardsMigrationManager(BaseMigrationManager):
@@ -109,8 +110,7 @@ async def run_forwards(
     if app_name == "all":
         sorted_app_names = BaseMigrationManager().get_sorted_app_names()
         for _app_name in sorted_app_names:
-            print(f"\n{_app_name.upper():^64}")
-            print("-" * 64)
+            print_heading(_app_name)
             manager = ForwardsMigrationManager(
                 app_name=_app_name,
                 migration_id="all",
