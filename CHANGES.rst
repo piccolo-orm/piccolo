@@ -1,6 +1,21 @@
 Changes
 =======
 
+0.118.0
+-------
+
+If you have lots of Piccolo apps, you can now create auto migrations for them
+all in one go:
+
+.. code-block:: bash
+
+  piccolo migrations new all --auto
+
+The documentation for running migrations has also been improved, as well as
+improvements to the sorting of migrations based on their dependencies.
+
+-------------------------------------------------------------------------------
+
 0.117.0
 -------
 
