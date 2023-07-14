@@ -11,6 +11,8 @@ all in one go:
 
   piccolo migrations new all --auto
 
+Thanks to @hoosnick for suggesting this new feature.
+
 The documentation for running migrations has also been improved, as well as
 improvements to the sorting of migrations based on their dependencies.
 
