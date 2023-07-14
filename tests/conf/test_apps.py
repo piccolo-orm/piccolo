@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pathlib
 from unittest import TestCase
 
@@ -270,3 +272,35 @@ class TestFinder(TestCase):
             finder.get_table_classes(
                 exclude_apps=["music"], include_apps=["mega"]
             )
+
+    def test_sort_app_configs(self):
+        """
+        Make sure we can sort ``AppConfig`` based on their migration
+        dependencies.
+        """
+        app_config_1 = AppConfig(
+            app_name="app_1",
+            migrations_folder_path="",
+        )
+
+        app_config_1._migration_dependency_app_configs = [
+            AppConfig(
+                app_name="app_2",
+                migrations_folder_path="",
+            )
+        ]
+
+        app_config_2 = AppConfig(
+            app_name="app_2",
+            migrations_folder_path="",
+        )
+
+        app_config_2._migration_dependency_app_configs = []
+
+        sorted_app_configs = Finder().sort_app_configs(
+            [app_config_2, app_config_1]
+        )
+
+        self.assertListEqual(
+            [i.app_name for i in sorted_app_configs], ["app_2", "app_1"]
+        )

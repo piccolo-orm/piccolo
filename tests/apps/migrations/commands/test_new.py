@@ -18,7 +18,7 @@ from tests.example_apps.music.tables import Manager
 
 
 class TestNewMigrationCommand(TestCase):
-    def test_create_new_migration(self):
+    def test_manual(self):
         """
         Create a manual migration (i.e. non-auto).
         """
@@ -46,17 +46,50 @@ class TestNewMigrationCommand(TestCase):
 
     @engines_only("postgres")
     @patch("piccolo.apps.migrations.commands.new.print")
-    def test_new_command(self, print_: MagicMock):
+    def test_auto(self, print_: MagicMock):
         """
         Call the command, when no migration changes are needed.
         """
-        with self.assertRaises(SystemExit) as manager:
-            run_sync(new(app_name="music", auto=True))
+        run_sync(new(app_name="music", auto=True))
 
-        self.assertEqual(manager.exception.code, 0)
+        self.assertListEqual(
+            print_.call_args_list,
+            [
+                call("🚀 Creating new migration ..."),
+                call("🏁 No changes detected."),
+                call("\n✅ Finished\n"),
+            ],
+        )
 
-        self.assertTrue(
-            print_.mock_calls[-1] == call("No changes detected - exiting.")
+    @engines_only("postgres")
+    @patch("piccolo.apps.migrations.commands.new.print")
+    def test_auto_all(self, print_: MagicMock):
+        """
+        Try auto migrating all apps.
+        """
+        run_sync(new(app_name="all", auto=True))
+        self.assertListEqual(
+            print_.call_args_list,
+            [
+                call("🚀 Creating new migration ..."),
+                call("🏁 No changes detected."),
+                call("🚀 Creating new migration ..."),
+                call("🏁 No changes detected."),
+                call("\n✅ Finished\n"),
+            ],
+        )
+
+    @engines_only("postgres")
+    def test_auto_all_error(self):
+        """
+        Call the command, when no migration changes are needed.
+        """
+        with self.assertRaises(ValueError) as manager:
+            run_sync(new(app_name="all", auto=False))
+
+        self.assertEqual(
+            manager.exception.__str__(),
+            "Only use `--app_name=all` in conjunction with `--auto`.",
         )
 
 
