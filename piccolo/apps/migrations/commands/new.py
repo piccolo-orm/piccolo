@@ -240,7 +240,11 @@ async def new(
         )
 
     app_names = (
-        sorted(BaseMigrationManager().get_app_names(sort=False))
+        sorted(
+            BaseMigrationManager().get_app_names(
+                sort_by_migration_dependencies=False
+            )
+        )
         if app_name == "all"
         else [app_name]
     )
