@@ -130,8 +130,8 @@ def create_pydantic_model(
         If using nested models, this specifies the max amount of recursion.
     :param pydantic_config:
         Allows you to configure some of Pydantic's behaviour. See the
-         `Pydantic docs <https://docs.pydantic.dev/latest/api/config/#pydantic.config.ConfigDict>`_
-         for more info.
+        `Pydantic docs <https://docs.pydantic.dev/latest/api/config/#pydantic.config.ConfigDict>`_
+        for more info.
     :param schema_extra_kwargs:
         This can be used to add additional fields to the schema. This is
         very useful when using Pydantic's JSON Schema features. For example:
