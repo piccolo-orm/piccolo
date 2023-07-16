@@ -144,23 +144,23 @@ class TestForeignKeyColumn(TestCase):
             manager = ForeignKey(Manager)
 
         self.assertEqual(
-            create_pydantic_model(table=BandA).schema()["properties"][
-                "manager"
-            ]["extra"]["target_column"],
+            create_pydantic_model(table=BandA).model_json_schema()[
+                "properties"
+            ]["manager"]["extra"]["target_column"],
             "name",
         )
 
         self.assertEqual(
-            create_pydantic_model(table=BandB).schema()["properties"][
-                "manager"
-            ]["extra"]["target_column"],
+            create_pydantic_model(table=BandB).model_json_schema()[
+                "properties"
+            ]["manager"]["extra"]["target_column"],
             "name",
         )
 
         self.assertEqual(
-            create_pydantic_model(table=BandC).schema()["properties"][
-                "manager"
-            ]["extra"]["target_column"],
+            create_pydantic_model(table=BandC).model_json_schema()[
+                "properties"
+            ]["manager"]["extra"]["target_column"],
             "id",
         )
 
@@ -773,7 +773,9 @@ class TestSchemaExtraKwargs(TestCase):
             name = Varchar()
 
         model = create_pydantic_model(Band, visible_columns=("name",))
-        self.assertEqual(model.schema()["visible_columns"], ("name",))
+        self.assertEqual(
+            model.model_json_schema()["visible_columns"], ("name",)
+        )
 
 
 class TestPydanticExtraFields(TestCase):
