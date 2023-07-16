@@ -16,6 +16,8 @@ Thanks to @hoosnick for suggesting this new feature.
 The documentation for running migrations has also been improved, as well as
 improvements to the sorting of migrations based on their dependencies.
 
+Support for Python 3.7 was dropped in this release as it's now end of life.
+
 -------------------------------------------------------------------------------
 
 0.117.0
