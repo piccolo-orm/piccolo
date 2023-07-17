@@ -1,6 +1,6 @@
 .. note:: **Piccolo v1** is currently in **alpha** release - :ref:`read more here <PiccoloV1>`.
 
-   For v0.X docs `go here <https://piccolo-orm.readthedocs.io/en/v0.108.0/>`_.
+   For v0.x docs `go here <https://piccolo-orm.readthedocs.io/en/v0.118.0/>`_.
 
 
 Piccolo
