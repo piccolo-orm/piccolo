@@ -6,7 +6,7 @@ from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from uuid import UUID
 
-from piccolo.columns import Array, Column
+from piccolo.columns import Array, Column, ForeignKey
 from piccolo.custom_types import TableInstance
 from piccolo.testing.random_builder import RandomBuilder
 from piccolo.utils.sync import run_sync
@@ -122,9 +122,9 @@ class ModelBuilder:
             if column._meta.name in defaults:
                 continue  # Column value exists
 
-            if "references" in column._meta.params and persist:
+            if isinstance(column, ForeignKey) and persist:
                 reference_model = await cls._build(
-                    column._meta.params["references"],
+                    column._foreign_key_meta.resolved_references,
                     persist=True,
                 )
                 random_value = getattr(
