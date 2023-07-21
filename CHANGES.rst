@@ -1,6 +1,32 @@
 Changes
 =======
 
+0.119.0
+-------
+
+``ModelBuilder`` now works with ``LazyTableReference`` (which is used when we
+have circular references caused by a ``ForeignKey``).
+
+With this table:
+
+.. code-block:: python
+
+  class Band(Table):
+      manager = ForeignKey(
+          LazyTableReference(
+              'Manager',
+              module_path='some.other.folder.tables'
+          )
+      )
+
+We can now create a dynamic test fixture:
+
+.. code-block:: python
+
+    my_model = await ModelBuilder.build(Band)
+
+-------------------------------------------------------------------------------
+
 0.118.0
 -------
 
@@ -15,6 +41,8 @@ Thanks to @hoosnick for suggesting this new feature.
 
 The documentation for running migrations has also been improved, as well as
 improvements to the sorting of migrations based on their dependencies.
+
+Support for Python 3.7 was dropped in this release as it's now end of life.
 
 -------------------------------------------------------------------------------
 
