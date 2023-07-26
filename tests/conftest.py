@@ -6,7 +6,7 @@ ENGINE = engine_finder()
 
 
 async def drop_tables():
-    for table in [
+    tables = [
         "ticket",
         "concert",
         "venue",
@@ -21,13 +21,26 @@ async def drop_tables():
         "instrument",
         "mega_table",
         "small_table",
-    ]:
-        await ENGINE._run_in_new_connection(f"DROP TABLE IF EXISTS {table}")
+    ]
+    assert ENGINE
+
+    if ENGINE.engine_type == "sqlite":
+        # SQLite doesn't allow us to drop more than one table at a time.
+        for table in tables:
+            await ENGINE._run_in_new_connection(
+                f"DROP TABLE IF EXISTS {table}"
+            )
+    else:
+        table_str = ", ".join(tables)
+        await ENGINE._run_in_new_connection(
+            f"DROP TABLE IF EXISTS {table_str} CASCADE"
+        )
 
 
 def pytest_sessionstart(session):
     """
-    Make sure all the tables have been dropped.
+    Make sure all the tables have been dropped, just in case a previous test
+    run was aborted part of the way through.
 
     https://docs.pytest.org/en/latest/reference.html#_pytest.hookspec.pytest_configure
     """

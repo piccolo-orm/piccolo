@@ -4,6 +4,7 @@ import inspect
 import itertools
 import types
 import typing as t
+import warnings
 from dataclasses import dataclass, field
 
 from piccolo.columns import Column
@@ -57,6 +58,10 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Selectable
 
 PROTECTED_TABLENAMES = ("user",)
+TABLENAME_WARNING = (
+    "We recommend giving your table a different name as `{tablename}` is a "
+    "reserved keyword. It should still work, but avoid if possible."
+)
 
 
 TABLE_REGISTRY: t.List[t.Type[Table]] = []
@@ -83,11 +88,35 @@ class TableMeta:
     help_text: t.Optional[str] = None
     _db: t.Optional[Engine] = None
     m2m_relationships: t.List[M2M] = field(default_factory=list)
+    schema: t.Optional[str] = None
 
     # Records reverse foreign key relationships - i.e. when the current table
     # is the target of a foreign key. Used by external libraries such as
     # Piccolo API.
     _foreign_key_references: t.List[ForeignKey] = field(default_factory=list)
+
+    def get_formatted_tablename(
+        self, include_schema: bool = True, quoted: bool = True
+    ) -> str:
+        """
+        Returns the tablename, in the desired format.
+
+        :param include_schema:
+            If ``True``, the Postgres schema is included. For example,
+            'my_schema.my_table'.
+        :param quote:
+            If ``True``, the name is wrapped in double quotes. For example,
+            '"my_schema"."my_table"'.
+
+        """
+        components = [self.tablename]
+        if include_schema and self.schema:
+            components.insert(0, self.schema)
+
+        if quoted:
+            return ".".join(f'"{i}"' for i in components)
+        else:
+            return ".".join(components)
 
     @property
     def foreign_key_references(self) -> t.List[ForeignKey]:
@@ -198,6 +227,7 @@ class Table(metaclass=TableMetaclass):
         db: t.Optional[Engine] = None,
         tags: t.List[str] = None,
         help_text: t.Optional[str] = None,
+        schema: t.Optional[str] = None,
     ):  # sourcery no-metrics
         """
         Automatically populate the _meta, which includes the tablename, and
@@ -216,17 +246,23 @@ class Table(metaclass=TableMetaclass):
             A user friendly description of what the table is used for. It isn't
             used in the database, but will be used by tools such a Piccolo
             Admin for tooltips.
+        :param schema:
+            The Postgres schema to use for this table.
 
         """
         if tags is None:
             tags = []
         tablename = tablename or _camel_to_snake(cls.__name__)
 
-        if tablename in PROTECTED_TABLENAMES:
-            raise ValueError(
-                f"{tablename} is a protected name, please give your table a "
-                "different name."
+        if "." in tablename:
+            warnings.warn(
+                "There's a '.' in the tablename - please use the `schema` "
+                "argument instead."
             )
+            schema, tablename = tablename.split(".", maxsplit=1)
+
+        if tablename in PROTECTED_TABLENAMES:
+            warnings.warn(TABLENAME_WARNING.format(tablename=tablename))
 
         columns: t.List[Column] = []
         default_columns: t.List[Column] = []
@@ -311,6 +347,7 @@ class Table(metaclass=TableMetaclass):
             help_text=help_text,
             _db=db,
             m2m_relationships=m2m_relationships,
+            schema=schema,
         )
 
         for foreign_key_column in foreign_key_columns:
@@ -939,7 +976,7 @@ class Table(metaclass=TableMetaclass):
 
         .. code-block:: python
 
-            await Band.raw("select * from band where name = {}", 'Pythonistas')
+            await Band.raw("SELECT * FROM band WHERE name = {}", 'Pythonistas')
 
         """
         return Raw(table=cls, querystring=QueryString(sql, *args))
@@ -1007,7 +1044,10 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def create_table(
-        cls, if_not_exists=False, only_default_columns=False
+        cls,
+        if_not_exists=False,
+        only_default_columns=False,
+        auto_create_schema: bool = True,
     ) -> Create:
         """
         Create table, along with all columns.
@@ -1021,6 +1061,7 @@ class Table(metaclass=TableMetaclass):
             table=cls,
             if_not_exists=if_not_exists,
             only_default_columns=only_default_columns,
+            auto_create_schema=auto_create_schema,
         )
 
     @classmethod
@@ -1077,16 +1118,54 @@ class Table(metaclass=TableMetaclass):
         return Objects[TableInstance](table=cls, prefetch=prefetch)
 
     @classmethod
-    def count(cls) -> Count:
-        """
-        Count the number of matching rows.
+    def count(
+        cls,
+        column: t.Optional[Column] = None,
+        distinct: t.Optional[t.Sequence[Column]] = None,
+    ) -> Count:
 
-        .. code-block:: python
+        """
+        Count the number of matching rows::
 
             await Band.count().where(Band.popularity > 1000)
 
+        :param column:
+            If specified, just count rows where this column isn't null.
+
+        :param distinct:
+            Counts the number of distinct values for these columns. For
+            example, if we have a concerts table::
+
+                class Concert(Table):
+                    band = Varchar()
+                    start_date = Date()
+
+            With this data:
+
+            .. table::
+                :widths: auto
+
+                ===========  ==========
+                band         start_date
+                ===========  ==========
+                Pythonistas  2023-01-01
+                Pythonistas  2023-02-03
+                Rustaceans   2023-01-01
+                ===========  ==========
+
+            Without the ``distinct`` argument, we get the count of all
+            rows::
+
+                >>> await Concert.count()
+                3
+
+            To get the number of unique concert dates::
+
+                >>> await Concert.count(distinct=[Concert.start_date])
+                2
+
         """
-        return Count(table=cls)
+        return Count(table=cls, column=column, distinct=distinct)
 
     @classmethod
     def exists(cls) -> Exists:

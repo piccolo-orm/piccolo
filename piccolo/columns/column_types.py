@@ -35,8 +35,6 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from enum import Enum
 
-from typing_extensions import Literal
-
 from piccolo.columns.base import Column, ForeignKeyMeta, OnDelete, OnUpdate
 from piccolo.columns.combination import Where
 from piccolo.columns.defaults.date import DateArg, DateCustom, DateNow
@@ -131,7 +129,7 @@ class MathDelegate:
     def get_querystring(
         self,
         column_name: str,
-        operator: Literal["+", "-", "/", "*"],
+        operator: t.Literal["+", "-", "/", "*"],
         value: t.Union[int, float, Integer],
         reverse: bool = False,
     ) -> QueryString:
@@ -227,7 +225,7 @@ class TimedeltaDelegate:
     def get_querystring(
         self,
         column: Column,
-        operator: Literal["+", "-"],
+        operator: t.Literal["+", "-"],
         value: timedelta,
         engine_type: str,
     ) -> QueryString:
@@ -1795,7 +1793,7 @@ class ForeignKey(Column):
 
     :param on_update:
         Determines what the database should do when a row has it's primary key
-        updated. If set to ``OnDelete.cascade``, any rows referencing the
+        updated. If set to ``OnUpdate.cascade``, any rows referencing the
         updated row will have their references updated to point to the new
         primary key.
 
@@ -1811,7 +1809,7 @@ class ForeignKey(Column):
 
         .. code-block:: python
 
-            from piccolo.columns import OnDelete
+            from piccolo.columns import OnUpdate
 
             class Band(Table):
                 name = ForeignKey(

@@ -250,7 +250,7 @@ class TestSerialiseParams(TestCase):
                 self.assertEqual(
                     serialised.extra_definitions[0].__str__(),
                     (
-                        'class Manager(Table, tablename="manager"): '
+                        'class Manager(Table, tablename="manager", schema=None): '  # noqa: E501
                         "id = Serial(null=False, primary_key=True, unique=False, "  # noqa: E501
                         "index=False, index_method=IndexMethod.btree, "
                         "choices=None, db_column_name='id', secret=False)"

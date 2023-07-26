@@ -3,8 +3,12 @@ name: Test Suite
 on:
     push:
         branches: ["master"]
+        paths-ignore:
+          - "docs/**"
     pull_request:
         branches: ["master"]
+        paths-ignore:
+            - "docs/**"
 
 jobs:
     linters:
@@ -12,7 +16,7 @@ jobs:
         timeout-minutes: 30
         strategy:
             matrix:
-                python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+                python-version: ["3.8", "3.9", "3.10", "3.11"]
 
         steps:
             - uses: actions/checkout@v3
@@ -81,7 +85,7 @@ jobs:
         timeout-minutes: 30
         strategy:
             matrix:
-                python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+                python-version: ["3.8", "3.9", "3.10", "3.11"]
                 postgres-version: [10, 11, 12, 13, 14, 15]
 
         # Service containers to run with `container-job`
@@ -130,14 +134,14 @@ jobs:
                   PG_PASSWORD: postgres
             - name: Upload coverage
               uses: codecov/codecov-action@v1
-              if: matrix.python-version == '3.7'
+              if: matrix.python-version == '3.11'
 
     cockroach:
         runs-on: ubuntu-latest
         timeout-minutes: 30
         strategy:
             matrix:
-                python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+                python-version: ["3.8", "3.9", "3.10", "3.11"]
                 cockroachdb-version: ["v22.2.0"]
         steps:
             - uses: actions/checkout@v3
@@ -164,14 +168,14 @@ jobs:
                   PG_DATABASE: piccolo
             - name: Upload coverage
               uses: codecov/codecov-action@v1
-              if: matrix.python-version == '3.7'
+              if: matrix.python-version == '3.11'
 
     sqlite:
         runs-on: ubuntu-latest
         timeout-minutes: 30
         strategy:
             matrix:
-                python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+                python-version: ["3.8", "3.9", "3.10", "3.11"]
 
         steps:
             - uses: actions/checkout@v3
@@ -189,4 +193,4 @@ jobs:
               run: ./scripts/test-sqlite.sh
             - name: Upload coverage
               uses: codecov/codecov-action@v1
-              if: matrix.python-version == '3.7'
+              if: matrix.python-version == '3.11'

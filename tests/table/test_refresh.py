@@ -9,7 +9,7 @@ class TestRefresh(DBTestCase):
 
     def test_refresh(self):
         """
-        Make sure ``refresh`` works, with not columns specified.
+        Make sure ``refresh`` works, with no columns specified.
         """
         # Fetch an instance from the database.
         band: Band = Band.objects().get(Band.name == "Pythonistas").run_sync()

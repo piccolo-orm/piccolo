@@ -24,12 +24,14 @@ class CockroachEngine(PostgresEngine):
         config: t.Dict[str, t.Any],
         extensions: t.Sequence[str] = (),
         log_queries: bool = False,
+        log_responses: bool = False,
         extra_nodes: t.Dict[str, CockroachEngine] = None,
     ) -> None:
         super().__init__(
             config=config,
             extensions=extensions,
             log_queries=log_queries,
+            log_responses=log_responses,
             extra_nodes=extra_nodes,
         )
 

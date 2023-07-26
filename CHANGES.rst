@@ -1,6 +1,458 @@
 Changes
 =======
 
+0.119.0
+-------
+
+``ModelBuilder`` now works with ``LazyTableReference`` (which is used when we
+have circular references caused by a ``ForeignKey``).
+
+With this table:
+
+.. code-block:: python
+
+  class Band(Table):
+      manager = ForeignKey(
+          LazyTableReference(
+              'Manager',
+              module_path='some.other.folder.tables'
+          )
+      )
+
+We can now create a dynamic test fixture:
+
+.. code-block:: python
+
+    my_model = await ModelBuilder.build(Band)
+
+-------------------------------------------------------------------------------
+
+0.118.0
+-------
+
+If you have lots of Piccolo apps, you can now create auto migrations for them
+all in one go:
+
+.. code-block:: bash
+
+  piccolo migrations new all --auto
+
+Thanks to @hoosnick for suggesting this new feature.
+
+The documentation for running migrations has also been improved, as well as
+improvements to the sorting of migrations based on their dependencies.
+
+Support for Python 3.7 was dropped in this release as it's now end of life.
+
+-------------------------------------------------------------------------------
+
+0.117.0
+-------
+
+Version pinning Pydantic to v1, as v2 has breaking changes.
+
+We will add support for Pydantic v2 in a future release.
+
+Thanks to @sinisaos for helping with this.
+
+-------------------------------------------------------------------------------
+
+0.116.0
+-------
+
+Fixture formatting
+~~~~~~~~~~~~~~~~~~
+
+When creating a fixture:
+
+.. code-block:: bash
+
+  piccolo fixtures dump
+
+The JSON output is now nicely formatted, which is useful because we can pipe
+it straight to a file, and commit it to Git without having to manually run a
+formatter on it.
+
+.. code-block:: bash
+
+  piccolo fixtures dump > my_fixture.json
+
+Thanks to @sinisaos for this.
+
+Protected table names
+~~~~~~~~~~~~~~~~~~~~~
+
+We used to raise a ``ValueError`` if a table was called ``user``.
+
+.. code-block:: python
+
+  class User(Table):  # ValueError!
+      ...
+
+It's because ``user`` is already used by Postgres (e.g. try ``SELECT user`` or
+``SELECT * FROM user``).
+
+We now emit a warning instead for these reasons:
+
+* Piccolo wraps table names in quotes to avoid clashes with reserved keywords.
+* Sometimes you're stuck with a table name from a pre-existing schema, and
+  can't easily rename it.
+
+Re-export ``WhereRaw``
+~~~~~~~~~~~~~~~~~~~~~~
+
+If you want to write raw SQL in your where queries you use ``WhereRaw``:
+
+.. code-block:: python
+
+  >>> Band.select().where(WhereRaw('TRIM(name) = {}', 'Pythonistas'))
+
+You can now import it from ``piccolo.query`` to be consistent with
+``SelectRaw`` and ``OrderByRaw``.
+
+.. code-block:: python
+
+  from piccolo.query import WhereRaw
+
+-------------------------------------------------------------------------------
+
+0.115.0
+-------
+
+Fixture upserting
+~~~~~~~~~~~~~~~~~
+
+Fixtures can now be upserted. For example:
+
+.. code-block:: bash
+
+  piccolo fixtures load my_fixture.json --on_conflict='DO UPDATE'
+
+The options are:
+
+* ``DO NOTHING``, meaning any rows with a matching primary key will be left
+  alone.
+* ``DO UPDATE``, meaning any rows with a matching primary key will be updated.
+
+This is really useful, as you can now edit fixtures and load them multiple
+times without getting foreign key constraint errors.
+
+Schema fixes
+~~~~~~~~~~~~
+
+We recently added support for schemas, for example:
+
+.. code-block:: python
+
+  class Band(Table, schema='music'):
+      ...
+
+This release contains:
+
+* A fix for migrations when changing a table's schema back to 'public' (thanks to
+  @sinisaos for discovering this).
+* A fix for ``M2M`` queries, when the tables are in a schema other than
+  'public' (thanks to @quinnalfaro for reporting this).
+
+Added ``distinct`` method to ``count`` queries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We recently added support for ``COUNT DISTINCT`` queries. The syntax is:
+
+.. code-block:: python
+
+  await Concert.count(distinct=[Concert.start_date])
+
+The following alternative syntax now also works (just to be consistent with
+other queries like ``select``):
+
+.. code-block:: python
+
+  await Concert.count().distinct([Concert.start_date])
+
+-------------------------------------------------------------------------------
+
+0.114.0
+-------
+
+``count`` queries can now return the number of distinct rows. For example, if
+we have this table:
+
+.. code-block:: python
+
+    class Concert(Table):
+        band = Varchar()
+        start_date = Date()
+
+With this data:
+
+.. table::
+    :widths: auto
+
+    ===========  ==========
+    band         start_date
+    ===========  ==========
+    Pythonistas  2023-01-01
+    Pythonistas  2023-02-03
+    Rustaceans   2023-01-01
+    ===========  ==========
+
+We can easily get the number of unique concert dates:
+
+.. code-block:: python
+
+    >>> await Concert.count(distinct=[Concert.start_date])
+    2
+
+We could have just done this instead:
+
+.. code-block:: python
+
+    len(await Concert.select(Concert.start_date).distinct())
+
+But it's far less efficient when you have lots of rows, because all of the
+distinct rows need to be returned from the database.
+
+Also, the docs for the ``count`` query, aggregate functions, and
+``group_by`` clause were significantly improved.
+
+Many thanks to @lqmanh and @sinisaos for their help with this.
+
+-------------------------------------------------------------------------------
+
+0.113.0
+-------
+
+If Piccolo detects a renamed table in an auto migration, it asks the user for
+confirmation. When lots of tables have been renamed, Piccolo is now more
+intelligent about when to ask for confirmation. Thanks to @sumitsharansatsangi
+for suggesting this change, and @sinisaos for reviewing.
+
+Also, fixed the type annotations for ``MigrationManager.add_table``.
+
+-------------------------------------------------------------------------------
+
+0.112.1
+-------
+
+Fixed a bug with serialising table classes in migrations.
+
+-------------------------------------------------------------------------------
+
+0.112.0
+-------
+
+Added support for schemas in Postgres and CockroachDB.
+
+For example:
+
+.. code-block:: python
+
+  class Band(Table, schema="music"):
+      ...
+
+When creating the table, the schema will be created automatically if it doesn't
+already exist.
+
+.. code-block:: python
+
+  await Band.create_table()
+
+It also works with migrations. If we change the ``schema`` value for the table,
+Piccolo will detect this, and create a migration for moving it to the new schema.
+
+.. code-block:: python
+
+  class Band(Table, schema="music_2"):
+      ...
+
+  # Piccolo will detect that the table needs to be moved to a new schema.
+  >>> piccolo migrations new my_app --auto
+
+-------------------------------------------------------------------------------
+
+0.111.1
+-------
+
+Fixing a bug with ``ModelBuilder`` and ``Decimal`` / ``Numeric`` columns.
+
+-------------------------------------------------------------------------------
+
+0.111.0
+-------
+
+Added the ``on_conflict`` clause for ``insert`` queries. This enables **upserts**.
+
+For example, here we insert some bands, and if they already exist then do
+nothing:
+
+.. code-block:: python
+
+  await Band.insert(
+      Band(name='Pythonistas'),
+      Band(name='Rustaceans'),
+      Band(name='C-Sharps'),
+  ).on_conflict(action='DO NOTHING')
+
+Here we insert some albums, and if they already exist then we update the price:
+
+.. code-block:: python
+
+  await Album.insert(
+      Album(title='OK Computer', price=10.49),
+      Album(title='Kid A', price=9.99),
+      Album(title='The Bends', price=9.49),
+  ).on_conflict(
+      action='DO UPDATE',
+      target=Album.title,
+      values=[Album.price]
+  )
+
+Thanks to @sinisaos for helping with this.
+
+-------------------------------------------------------------------------------
+
+0.110.0
+-------
+
+ASGI frameworks
+~~~~~~~~~~~~~~~
+
+The ASGI frameworks in ``piccolo asgi new`` have been updated. ``starlite`` has
+been renamed to ``litestar``. Thanks to @sinisaos for this.
+
+ModelBuilder
+~~~~~~~~~~~~
+
+Generic types are now used in ``ModelBuilder``.
+
+.. code-block:: python
+
+  # mypy knows this is a `Band` instance:
+  band = await ModelBuilder.build(Band)
+
+``DISTINCT ON``
+~~~~~~~~~~~~~~~
+
+Added support for ``DISTINCT ON`` queries. For example, here we fetch the most
+recent album for each band:
+
+.. code-block:: python
+
+  >>> await Album.select().distinct(
+  ...     on=[Album.band]
+  ... ).order_by(
+  ...     Album.band
+  ... ).order_by(
+  ...     Album.release_date,
+  ...     ascending=False
+  ... )
+
+Thanks to @sinisaos and @williamflaherty for their help with this.
+
+-------------------------------------------------------------------------------
+
+0.109.0
+-------
+
+Joins are now possible without foreign keys using ``join_on``.
+
+For example:
+
+.. code-block:: python
+
+    class Manager(Table):
+        name = Varchar(unique=True)
+        email = Varchar()
+
+    class Band(Table):
+        name = Varchar()
+        manager_name = Varchar()
+
+    >>> await Band.select(
+    ...     Band.name,
+    ...     Band.manager_name.join_on(Manager.name).email
+    ... )
+
+-------------------------------------------------------------------------------
+
+0.108.0
+-------
+
+Added support for savepoints within transactions.
+
+.. code-block:: python
+
+  async with DB.transaction() as transaction:
+      await Manager.objects().create(name="Great manager")
+      savepoint = await transaction.savepoint()
+      await Manager.objects().create(name="Great manager")
+      await savepoint.rollback_to()
+      # Only the first manager will be inserted.
+
+The behaviour of nested context managers has also been changed slightly.
+
+.. code-block:: python
+
+  async with DB.transaction():
+      async with DB.transaction():
+          # This used to raise an exception
+
+We no longer raise an exception if there are nested transaction context
+managers, instead the inner ones do nothing.
+
+If you want the existing behaviour:
+
+.. code-block:: python
+
+  async with DB.transaction():
+      async with DB.transactiona(allow_nested=False):
+          # TransactionError!
+
+-------------------------------------------------------------------------------
+
+0.107.0
+-------
+
+Added the ``log_responses`` option to the database engines. This makes the
+engine print out the raw response from the database for each query, which
+is useful during debugging.
+
+.. code-block:: python
+
+  # piccolo_conf.py
+
+  DB = PostgresEngine(
+    config={'database': 'my_database'},
+    log_queries=True,
+    log_responses=True
+  )
+
+We also updated the Starlite ASGI template - it now uses the new import paths
+(thanks to @sinisaos for this).
+
+-------------------------------------------------------------------------------
+
+0.106.0
+-------
+
+Joins now work within ``update`` queries. For example:
+
+.. code-block:: python
+
+  await Band.update({
+      Band.name: 'Amazing Band'
+  }).where(
+      Band.manager.name == 'Guido'
+  )
+
+Other changes:
+
+* Improved the template used  by ``piccolo app new`` when creating a new
+  Piccolo app (it now uses ``table_finder``).
+
+-------------------------------------------------------------------------------
+
 0.105.0
 -------
 

@@ -165,18 +165,29 @@ convenient.
 
 -------------------------------------------------------------------------------
 
+.. _AggregateFunctions:
+
 Aggregate functions
 -------------------
+
+.. note:: These can all be used in conjunction with the :ref:`group_by` clause.
 
 Count
 ~~~~~
 
-Returns the number of rows which match the query:
+.. hint:: You can use the :ref:`count<Count>` query as a quick way of getting
+    the number of rows in a table.
+
+Returns the number of matching rows.
 
 .. code-block:: python
 
-    >>> await Band.count().where(Band.name == 'Pythonistas')
-    1
+    from piccolo.query.methods.select import Count
+
+    >> await Band.select(Count()).where(Band.popularity > 100)
+    [{'count': 3}]
+
+To find out more about the options available, see :class:`Count <piccolo.query.methods.select.Count>`.
 
 Avg
 ~~~

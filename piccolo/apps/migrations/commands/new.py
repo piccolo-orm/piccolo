@@ -21,6 +21,7 @@ from piccolo.apps.migrations.auto import (
 )
 from piccolo.conf.apps import AppConfig, Finder
 from piccolo.engine import SQLiteEngine
+from piccolo.utils.printing import print_heading
 
 from .base import BaseMigrationManager
 
@@ -190,6 +191,7 @@ class AutoMigrationManager(BaseMigrationManager):
                 class_name=i.__name__,
                 tablename=i._meta.tablename,
                 columns=i._meta.non_default_columns,
+                schema=i._meta.schema,
             )
             for i in app_config.table_classes
         ]
@@ -216,7 +218,8 @@ async def new(
     Creates a new migration file in the migrations folder.
 
     :param app_name:
-        The app to create a migration for.
+        The app to create a migration for. Specify a value of 'all' to create
+        migrations for all apps (use in conjunction with --auto).
     :param auto:
         Auto create the migration contents.
     :param desc:
@@ -227,22 +230,41 @@ async def new(
         entered. For example, --auto_input='y'.
 
     """
-    print("Creating new migration ...")
-
     engine = Finder().get_engine()
     if auto and isinstance(engine, SQLiteEngine):
         sys.exit("Auto migrations aren't currently supported by SQLite.")
 
-    app_config = Finder().get_app_config(app_name=app_name)
-
-    _create_migrations_folder(app_config.migrations_folder_path)
-    try:
-        await _create_new_migration(
-            app_config=app_config,
-            auto=auto,
-            description=desc,
-            auto_input=auto_input,
+    if app_name == "all" and not auto:
+        raise ValueError(
+            "Only use `--app_name=all` in conjunction with `--auto`."
         )
-    except NoChanges:
-        print("No changes detected - exiting.")
-        sys.exit(0)
+
+    app_names = (
+        sorted(
+            BaseMigrationManager().get_app_names(
+                sort_by_migration_dependencies=False
+            )
+        )
+        if app_name == "all"
+        else [app_name]
+    )
+
+    for app_name in app_names:
+        print_heading(app_name)
+        print("🚀 Creating new migration ...")
+
+        app_config = Finder().get_app_config(app_name=app_name)
+
+        _create_migrations_folder(app_config.migrations_folder_path)
+
+        try:
+            await _create_new_migration(
+                app_config=app_config,
+                auto=auto,
+                description=desc,
+                auto_input=auto_input,
+            )
+        except NoChanges:
+            print("🏁 No changes detected.")
+
+    print("\n✅ Finished\n")

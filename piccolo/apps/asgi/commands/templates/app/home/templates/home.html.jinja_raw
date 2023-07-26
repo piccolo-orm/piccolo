@@ -51,12 +51,7 @@
                 <li><a href="/admin/">Admin</a></li>
                 <li><a href="/docs/">Swagger API</a></li>
             </ul>
-            <h3>Xpresso</h3>
-            <ul>
-                <li><a href="/admin/">Admin</a></li>
-                <li><a href="/docs/">Swagger API</a></li>
-            </ul>
-            <h3>Starlite</h3>
+            <h3>Litestar</h3>
             <ul>
                 <li><a href="/admin/">Admin</a></li>
                 <li><a href="/schema/swagger">Swagger API</a></li>

@@ -60,12 +60,25 @@ class TestSameDB(DBTestCase):
         """
         Nested transactions currently aren't permitted in a connection.
         """
+        # allow_nested=False
         with self.assertRaises(TransactionError):
             async with Manager._meta.db.transaction():
                 await Manager(name="Bob").save().run()
 
-                async with Manager._meta.db.transaction():
-                    await Manager(name="Dave").save().run()
+                async with Manager._meta.db.transaction(allow_nested=False):
+                    pass
+
+        # allow_nested=True
+        async with Manager._meta.db.transaction():
+            async with Manager._meta.db.transaction():
+                # Shouldn't raise an exception
+                pass
+
+        # Utilise returned transaction.
+        async with Manager._meta.db.transaction():
+            async with Manager._meta.db.transaction() as transaction:
+                await Manager(name="Dave").save().run()
+                await transaction.rollback()
 
     def test_nested(self):
         asyncio.run(self.run_nested())

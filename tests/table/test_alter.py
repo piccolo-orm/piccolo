@@ -8,6 +8,7 @@ import pytest
 from piccolo.columns import BigInt, Integer, Numeric, Varchar
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import ForeignKey, Text
+from piccolo.schema import SchemaManager
 from piccolo.table import Table
 from tests.base import (
     DBTestCase,
@@ -321,6 +322,65 @@ class TestSetDefault(DBTestCase):
 
         manager = Manager.objects().first().run_sync()
         self.assertEqual(manager.name, "Pending")
+
+
+@engines_only("postgres", "cockroach")
+class TestSetSchema(TestCase):
+
+    schema_manager = SchemaManager()
+    schema_name = "schema_1"
+
+    def setUp(self):
+        Manager.create_table().run_sync()
+        self.schema_manager.create_schema(
+            schema_name=self.schema_name
+        ).run_sync()
+
+    def tearDown(self):
+        Manager.alter().drop_table(if_exists=True).run_sync()
+        self.schema_manager.drop_schema(
+            schema_name=self.schema_name, cascade=True
+        ).run_sync()
+
+    def test_set_schema(self):
+        Manager.alter().set_schema(schema_name=self.schema_name).run_sync()
+
+        self.assertIn(
+            Manager._meta.tablename,
+            self.schema_manager.list_tables(
+                schema_name=self.schema_name
+            ).run_sync(),
+        )
+
+
+@engines_only("postgres", "cockroach")
+class TestDropTable(TestCase):
+    class Manager(Table, schema="schema_1"):
+        pass
+
+    schema_manager = SchemaManager()
+
+    def tearDown(self):
+        self.schema_manager.drop_schema(
+            schema_name="schema_1", if_exists=True, cascade=True
+        ).run_sync()
+
+    def test_drop_table_with_schema(self):
+        Manager = self.Manager
+
+        Manager.create_table().run_sync()
+
+        self.assertIn(
+            "manager",
+            self.schema_manager.list_tables(schema_name="schema_1").run_sync(),
+        )
+
+        Manager.alter().drop_table().run_sync()
+
+        self.assertNotIn(
+            "manager",
+            self.schema_manager.list_tables(schema_name="schema_1").run_sync(),
+        )
 
 
 ###############################################################################

@@ -11,6 +11,39 @@ Table
 
 -------------------------------------------------------------------------------
 
+SchemaManager
+-------------
+
+.. currentmodule:: piccolo.schema
+
+.. autoclass:: SchemaManager
+    :members:
+
+-------------------------------------------------------------------------------
+
+Column
+------
+
+.. currentmodule:: piccolo.columns.base
+
+.. autoclass:: Column
+    :members:
+
+
+-------------------------------------------------------------------------------
+
+Aggregate functions
+-------------------
+
+Count
+~~~~~
+
+.. currentmodule:: piccolo.query.methods.select
+
+.. autoclass:: Count
+
+-------------------------------------------------------------------------------
+
 Refresh
 -------
 

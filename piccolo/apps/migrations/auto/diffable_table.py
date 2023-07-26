@@ -16,19 +16,24 @@ from piccolo.columns.base import Column
 from piccolo.table import Table, create_table_class
 
 
-def compare_dicts(dict_1, dict_2) -> t.Dict[str, t.Any]:
+def compare_dicts(
+    dict_1: t.Dict[str, t.Any], dict_2: t.Dict[str, t.Any]
+) -> t.Dict[str, t.Any]:
     """
     Returns a new dictionary which only contains key, value pairs which are in
     the first dictionary and not the second.
 
-    For example:
-        dict_1 = {'a': 1, 'b': 2}
-        dict_2 = {'a': 1}
-        returns {'b': 2}
+    For example::
 
-        dict_1 = {'a': 2, 'b': 2}
-        dict_2 = {'a': 1}
-        returns {'a': 2, 'b': 2}
+        >>> dict_1 = {'a': 1, 'b': 2}
+        >>> dict_2 = {'a': 1}
+        >>> compare_dicts(dict_1, dict_2)
+        {'b': 2}
+
+        >>> dict_1 = {'a': 2, 'b': 2}
+        >>> dict_2 = {'a': 1}
+        >>> compare_dicts(dict_1, dict_2)
+        {'a': 2, 'b': 2}
 
     """
     output = {}
@@ -90,6 +95,7 @@ class DiffableTable:
 
     class_name: str
     tablename: str
+    schema: t.Optional[str] = None
     columns: t.List[Column] = field(default_factory=list)
     previous_class_name: t.Optional[str] = None
 
@@ -212,7 +218,7 @@ class DiffableTable:
         """
         return create_table_class(
             class_name=self.class_name,
-            class_kwargs={"tablename": self.tablename},
+            class_kwargs={"tablename": self.tablename, "schema": self.schema},
             class_members={
                 column._meta.name: column for column in self.columns
             },

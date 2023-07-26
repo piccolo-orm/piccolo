@@ -20,8 +20,8 @@ from piccolo.columns.column_types import (
     Varchar,
 )
 from piccolo.columns.indexes import IndexMethod
-from piccolo.engine import Engine, engine_finder
-from piccolo.table import Table
+from piccolo.schema import SchemaManager
+from piccolo.table import Table, create_db_tables_sync
 from piccolo.utils.sync import run_sync
 from tests.base import AsyncMock, engines_only, engines_skip
 from tests.example_apps.mega.tables import MegaTable, SmallTable
@@ -212,11 +212,11 @@ class TestGenerateWithIndexes(TestCase):
 ###############################################################################
 
 
-class Publication(Table, tablename="schema2.publication"):
+class Publication(Table, tablename="publication", schema="schema_2"):
     name = Varchar(length=50)
 
 
-class Writer(Table, tablename="schema1.writer"):
+class Writer(Table, tablename="writer", schema="schema_1"):
     name = Varchar(length=50)
     publication = ForeignKey(Publication, null=True)
 
@@ -229,26 +229,26 @@ class Book(Table):
 
 @engines_only("postgres")
 class TestGenerateWithSchema(TestCase):
+
+    tables = [Publication, Writer, Book]
+
+    schema_manager = SchemaManager()
+
     def setUp(self) -> None:
-        engine: t.Optional[Engine] = engine_finder()
+        for schema_name in ("schema_1", "schema_2"):
+            self.schema_manager.create_schema(
+                schema_name=schema_name, if_not_exists=True
+            ).run_sync()
 
-        class Schema(Table, db=engine):
-            """
-            Only for raw query execution
-            """
-
-            pass
-
-        Schema.raw("CREATE SCHEMA IF NOT EXISTS schema1").run_sync()
-        Schema.raw("CREATE SCHEMA IF NOT EXISTS schema2").run_sync()
-        Publication.create_table().run_sync()
-        Writer.create_table().run_sync()
-        Book.create_table().run_sync()
+        create_db_tables_sync(*self.tables)
 
     def tearDown(self) -> None:
         Book.alter().drop_table().run_sync()
-        Writer.alter().drop_table().run_sync()
-        Publication.alter().drop_table().run_sync()
+
+        for schema_name in ("schema_1", "schema_2"):
+            self.schema_manager.drop_schema(
+                schema_name=schema_name, if_exists=True, cascade=True
+            ).run_sync()
 
     def test_reference_to_another_schema(self):
         output_schema: OutputSchema = run_sync(get_output_schema())
@@ -283,8 +283,8 @@ class TestGenerateWithException(TestCase):
     )
     def test_exception(self, create_table_class_from_db_mock: AsyncMock):
         """
-        Make sure that a GenerateError exception
-         is raised with all the exceptions gathered.
+        Make sure that a GenerateError exception is raised with all the
+        exceptions gathered.
         """
         create_table_class_from_db_mock.side_effect = [
             ValueError("Test"),

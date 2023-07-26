@@ -13,6 +13,14 @@ class RenameTable:
 
 
 @dataclass
+class ChangeTableSchema:
+    class_name: str
+    tablename: str
+    old_schema: t.Optional[str]
+    new_schema: t.Optional[str]
+
+
+@dataclass
 class RenameColumn:
     table_class_name: str
     tablename: str
