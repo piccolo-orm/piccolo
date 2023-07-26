@@ -12,7 +12,7 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 
 @dataclass
-class SetReadyResponse:
+class CheckReadyResponse:
     is_ready: bool
     was_changed: bool
 
@@ -57,13 +57,13 @@ class LazyTableReference:
 
     def check_ready(
         self, table_classes: t.List[t.Type[Table]]
-    ) -> SetReadyResponse:
+    ) -> CheckReadyResponse:
         """
         Checks to see if the table being referenced is in the provided list,
         meaning it has successfully loaded.
         """
         if self.ready:
-            return SetReadyResponse(is_ready=True, was_changed=False)
+            return CheckReadyResponse(is_ready=True, was_changed=False)
         else:
             for table_class in table_classes:
                 if self.table_class_name == table_class.__name__:
@@ -75,11 +75,11 @@ class LazyTableReference:
                         and self.app_name == table_class._meta.app_name
                     ):
                         self.ready = True
-                        return SetReadyResponse(
+                        return CheckReadyResponse(
                             is_ready=True, was_changed=True
                         )
 
-        return SetReadyResponse(is_ready=False, was_changed=False)
+        return CheckReadyResponse(is_ready=False, was_changed=False)
 
     def resolve(self) -> t.Type[Table]:
         if self._resolved is not None:
