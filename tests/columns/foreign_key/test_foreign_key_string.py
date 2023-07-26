@@ -33,7 +33,7 @@ class TestForeignKeyString(TestCase):
 
     def test_foreign_key_string(self):
         for band_table in (BandA, BandB, BandC):
-            self.assertEqual(
+            self.assertIs(
                 band_table.manager._foreign_key_meta.resolved_references,
                 Manager,
             )
@@ -66,4 +66,4 @@ class TestLazyTableReference(TestCase):
             table_class_name="Manager", app_name="music"
         )
 
-        self.assertTrue(reference.resolve() is Manager)
+        self.assertIs(reference.resolve(), Manager)
