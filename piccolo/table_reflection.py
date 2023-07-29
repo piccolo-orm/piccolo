@@ -88,6 +88,7 @@ class TableStorage(metaclass=Singleton):
         include: t.Union[t.List[str], str, None] = None,
         exclude: t.Union[t.List[str], str, None] = None,
         keep_existing: bool = False,
+        engine: t.Optional[Engine] = None,
     ) -> None:
         """
         Imports tables from the database into ``Table`` objects without
@@ -123,7 +124,7 @@ class TableStorage(metaclass=Singleton):
             exclude += self._schema_tables.get(schema_name, [])
 
         output_schema = await get_output_schema(
-            schema_name=schema_name, include=include_list, exclude=exclude_list
+            schema_name=schema_name, include=include_list, exclude=exclude_list, engine=engine
         )
         add_tables = [
             self._add_table(schema_name=schema_name, table=table)
