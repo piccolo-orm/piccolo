@@ -8,6 +8,7 @@ import typing as t
 from dataclasses import dataclass
 
 from piccolo.apps.schema.commands.generate import get_output_schema
+from piccolo.engine import Engine
 from piccolo.table import Table
 
 
