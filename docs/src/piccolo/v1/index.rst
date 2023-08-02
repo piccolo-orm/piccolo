@@ -4,7 +4,7 @@
 About Piccolo v1
 ================
 
-**17th July 2023**
+**2nd August 2023**
 
 Piccolo started in August 2018, and as of this writing is close to 5 years old.
 
