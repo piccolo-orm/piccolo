@@ -446,7 +446,7 @@ class TestExcludeColumns(TestCase):
             name="Pythonistas", manager={"name": "Guido"}
         )
         self.assertEqual(
-            model_instance.dict(),
+            model_instance.model_dump(),
             {"name": "Pythonistas", "manager": {"name": "Guido"}},
         )
 
@@ -510,7 +510,7 @@ class TestIncludeColumns(TestCase):
             name="Pythonistas", manager={"name": "Guido"}
         )
         self.assertEqual(
-            model_instance.dict(),
+            model_instance.model_dump(),
             {"name": "Pythonistas", "manager": {"name": "Guido"}},
         )
 
