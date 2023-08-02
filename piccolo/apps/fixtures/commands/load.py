@@ -44,7 +44,9 @@ async def load_json_string(
         fixture_configs=fixture_configs
     )
 
-    fixture_pydantic_model = pydantic_model_class.parse_raw(json_string)
+    fixture_pydantic_model = pydantic_model_class.model_validate_json(
+        json_string
+    )
 
     finder = Finder()
     engine = engine_finder()
