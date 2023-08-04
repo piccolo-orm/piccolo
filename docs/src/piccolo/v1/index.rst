@@ -33,7 +33,7 @@ burdensome.
 So Piccolo v1 will just use Pydantic v2 and above.
 
 If you can't upgrade to Pydantic v2, then pin your Piccolo version to ``0.118.0``.
-You can find the `docs here for 0.118.0 <https://piccolo-orm.readthedocs.io/en/v0.118.0/>`_.
+You can find the `docs here for 0.118.0 <https://piccolo-orm.readthedocs.io/en/0.118.0/>`_.
 
 **Timeline and alpha builds**
 
