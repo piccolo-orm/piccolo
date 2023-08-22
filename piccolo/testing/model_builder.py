@@ -6,7 +6,7 @@ from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from uuid import UUID
 
-from piccolo.columns import Array, Column, ForeignKey
+from piccolo.columns import JSON, JSONB, Array, Column, ForeignKey
 from piccolo.custom_types import TableInstance
 from piccolo.testing.random_builder import RandomBuilder
 from piccolo.utils.sync import run_sync
@@ -169,7 +169,7 @@ class ModelBuilder:
 
         if "length" in column._meta.params and isinstance(random_value, str):
             return random_value[: column._meta.params["length"]]
-        elif column.column_type in ["JSON", "JSONB"]:
-            return json.dumps(random_value)
+        elif isinstance(column, (JSON, JSONB)):
+            return json.dumps({"value": random_value})
 
         return random_value
