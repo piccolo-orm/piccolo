@@ -1,4 +1,5 @@
 import asyncio
+import json
 import typing as t
 import unittest
 
@@ -163,3 +164,23 @@ class TestModelBuilder(unittest.TestCase):
         band = ModelBuilder.build_sync(Band, defaults={"manager": manager})
 
         self.assertEqual(manager._meta.primary_key, band.manager)
+
+    def test_json(self):
+        """
+        Make sure the generated JSON can be parsed.
+
+        This is important, because we might have queries like this::
+
+            >>> await RecordingStudio.select().output(load_json=True)
+
+        """
+        studio = ModelBuilder.build_sync(RecordingStudio)
+        self.assertIsInstance(json.loads(studio.facilities), dict)
+        self.assertIsInstance(json.loads(studio.facilities_b), dict)
+
+        for facilities in (
+            RecordingStudio.select(RecordingStudio.facilities)
+            .output(load_json=True, as_list=True)
+            .run_sync()
+        ):
+            self.assertIsInstance(facilities, dict)
