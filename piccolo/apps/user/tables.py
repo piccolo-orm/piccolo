@@ -220,10 +220,7 @@ class BaseUser(Table, tablename="piccolo_user"):
         )
         iterations = int(iterations)
 
-        if (
-            cls.hash_password(password, salt, iterations)
-            == stored_password
-        ):
+        if cls.hash_password(password, salt, iterations) == stored_password:
             if iterations != cls._pbkdf2_iteration_count:
                 await cls.update_password(username, password)
 
