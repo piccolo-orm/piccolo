@@ -49,6 +49,8 @@ class BaseUser(Table, tablename="piccolo_user"):
 
     _min_password_length = 6
     _max_password_length = 128
+    # The number of hash iterations recommended by OWASP:
+    # https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#pbkdf2
     _pbkdf2_iteration_count = 600_000
 
     def __init__(self, **kwargs):
@@ -221,6 +223,9 @@ class BaseUser(Table, tablename="piccolo_user"):
         iterations = int(iterations_)
 
         if cls.hash_password(password, salt, iterations) == stored_password:
+            # If the password was hashed in an earlier Piccolo version, update
+            # it so it's hashed with the currently recommended number of
+            # iterations:
             if iterations != cls._pbkdf2_iteration_count:
                 await cls.update_password(username, password)
 
