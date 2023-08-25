@@ -215,10 +215,10 @@ class BaseUser(Table, tablename="piccolo_user"):
 
         stored_password = response["password"]
 
-        algorithm, iterations, salt, hashed = cls.split_stored_password(
+        algorithm, iterations_, salt, hashed = cls.split_stored_password(
             stored_password
         )
-        iterations = int(iterations)
+        iterations = int(iterations_)
 
         if cls.hash_password(password, salt, iterations) == stored_password:
             if iterations != cls._pbkdf2_iteration_count:
