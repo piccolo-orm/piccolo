@@ -234,3 +234,58 @@ class TestCreateUser(TestCase):
         self.assertEqual(
             manager.exception.__str__(), "A password must be provided."
         )
+
+
+class TestAutoHashingUpdate(TestCase):
+    """
+    Make sure that users with passwords which were hashed in earlier Piccolo
+    versions are automatically re-hashed, meeting current best practices with
+    the number of hashing iterations.
+    """
+
+    def setUp(self):
+        BaseUser.create_table().run_sync()
+
+    def tearDown(self):
+        BaseUser.alter().drop_table().run_sync()
+
+    def test_hash_update(self):
+        # Create a user
+        username = "bob"
+        password = "abc123"
+        user = BaseUser.create_user_sync(username=username, password=password)
+
+        # Update their password, so it uses less than the recommended number
+        # of hashing iterations.
+        BaseUser.update(
+            {
+                BaseUser.password: BaseUser.hash_password(
+                    password=password,
+                    iterations=int(BaseUser._pbkdf2_iteration_count / 2),
+                )
+            }
+        ).where(BaseUser.id == user.id).run_sync()
+
+        # Login the user - Piccolo should detect their password needs rehashing
+        # and update it.
+        self.assertIsNotNone(
+            BaseUser.login_sync(username=username, password=password)
+        )
+
+        hashed_password = (
+            BaseUser.select(BaseUser.password)
+            .where(BaseUser.id == user.id)
+            .first()
+            .run_sync()["password"]
+        )
+
+        algorithm, iterations_, salt, hashed = BaseUser.split_stored_password(
+            hashed_password
+        )
+
+        self.assertEqual(int(iterations_), BaseUser._pbkdf2_iteration_count)
+
+        # Make sure subsequent logins work as expected
+        self.assertIsNotNone(
+            BaseUser.login_sync(username=username, password=password)
+        )

@@ -49,6 +49,9 @@ class BaseUser(Table, tablename="piccolo_user"):
 
     _min_password_length = 6
     _max_password_length = 128
+    # The number of hash iterations recommended by OWASP:
+    # https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#pbkdf2
+    _pbkdf2_iteration_count = 600_000
 
     def __init__(self, **kwargs):
         # Generating passwords upfront is expensive, so might need reworking.
@@ -131,7 +134,7 @@ class BaseUser(Table, tablename="piccolo_user"):
 
     @classmethod
     def hash_password(
-        cls, password: str, salt: str = "", iterations: int = 10000
+        cls, password: str, salt: str = "", iterations: t.Optional[int] = None
     ) -> str:
         """
         Hashes the password, ready for storage, and for comparing during
@@ -147,6 +150,10 @@ class BaseUser(Table, tablename="piccolo_user"):
 
         if not salt:
             salt = cls.get_salt()
+
+        if iterations is None:
+            iterations = cls._pbkdf2_iteration_count
+
         hashed = hashlib.pbkdf2_hmac(
             "sha256",
             bytes(password, encoding="utf-8"),
@@ -210,14 +217,18 @@ class BaseUser(Table, tablename="piccolo_user"):
 
         stored_password = response["password"]
 
-        algorithm, iterations, salt, hashed = cls.split_stored_password(
+        algorithm, iterations_, salt, hashed = cls.split_stored_password(
             stored_password
         )
+        iterations = int(iterations_)
 
-        if (
-            cls.hash_password(password, salt, int(iterations))
-            == stored_password
-        ):
+        if cls.hash_password(password, salt, iterations) == stored_password:
+            # If the password was hashed in an earlier Piccolo version, update
+            # it so it's hashed with the currently recommended number of
+            # iterations:
+            if iterations != cls._pbkdf2_iteration_count:
+                await cls.update_password(username, password)
+
             await cls.update({cls.last_login: datetime.datetime.now()}).where(
                 cls.username == username
             )
