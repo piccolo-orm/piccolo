@@ -1,6 +1,25 @@
 Changes
 =======
 
+1.0a2
+-----
+
+All of the changes from 0.120.0 merged into the v1 branch.
+
+-------------------------------------------------------------------------------
+
+0.120.0
+-------
+
+Improved how ``ModelBuilder`` generates JSON data.
+
+The number of password hash iterations used in ``BaseUser`` has been increased
+to keep pace with the latest guidance from OWASP - thanks to @Skelmis for this.
+
+Fixed a bug with auto migrations when the table is in a schema.
+
+-------------------------------------------------------------------------------
+
 1.0a1
 -----
 
