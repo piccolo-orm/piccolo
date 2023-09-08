@@ -27,6 +27,7 @@ class AddColumnClass:
     column: Column
     table_class_name: str
     tablename: str
+    schema: t.Optional[str]
 
 
 @dataclass
@@ -206,6 +207,7 @@ class MigrationManager:
         old_tablename: str,
         new_class_name: str,
         new_tablename: str,
+        schema: t.Optional[str] = None,
     ):
         self.rename_tables.append(
             RenameTable(
@@ -213,6 +215,7 @@ class MigrationManager:
                 old_tablename=old_tablename,
                 new_class_name=new_class_name,
                 new_tablename=new_tablename,
+                schema=schema,
             )
         )
 
@@ -225,6 +228,7 @@ class MigrationManager:
         column_class_name: str = "",
         column_class: t.Optional[t.Type[Column]] = None,
         params: t.Dict[str, t.Any] = None,
+        schema: t.Optional[str] = None,
     ):
         """
         Add a new column to the table.
@@ -255,6 +259,7 @@ class MigrationManager:
                 column=column,
                 tablename=tablename,
                 table_class_name=table_class_name,
+                schema=schema,
             )
         )
 
@@ -264,6 +269,7 @@ class MigrationManager:
         tablename: str,
         column_name: str,
         db_column_name: t.Optional[str] = None,
+        schema: t.Optional[str] = None,
     ):
         self.drop_columns.append(
             DropColumn(
@@ -271,6 +277,7 @@ class MigrationManager:
                 column_name=column_name,
                 db_column_name=db_column_name or column_name,
                 tablename=tablename,
+                schema=schema,
             )
         )
 
@@ -282,6 +289,7 @@ class MigrationManager:
         new_column_name: str,
         old_db_column_name: t.Optional[str] = None,
         new_db_column_name: t.Optional[str] = None,
+        schema: t.Optional[str] = None,
     ):
         self.rename_columns.append(
             RenameColumn(
@@ -291,6 +299,7 @@ class MigrationManager:
                 new_column_name=new_column_name,
                 old_db_column_name=old_db_column_name or old_column_name,
                 new_db_column_name=new_db_column_name or new_column_name,
+                schema=schema,
             )
         )
 
@@ -304,6 +313,7 @@ class MigrationManager:
         old_params: t.Dict[str, t.Any] = None,
         column_class: t.Optional[t.Type[Column]] = None,
         old_column_class: t.Optional[t.Type[Column]] = None,
+        schema: t.Optional[str] = None,
     ):
         """
         All possible alterations aren't currently supported.
@@ -322,6 +332,7 @@ class MigrationManager:
                 old_params=old_params,
                 column_class=column_class,
                 old_column_class=old_column_class,
+                schema=schema,
             )
         )
 
@@ -403,7 +414,10 @@ class MigrationManager:
 
             _Table: t.Type[Table] = create_table_class(
                 class_name=table_class_name,
-                class_kwargs={"tablename": alter_columns[0].tablename},
+                class_kwargs={
+                    "tablename": alter_columns[0].tablename,
+                    "schema": alter_columns[0].schema,
+                },
             )
 
             for alter_column in alter_columns:
@@ -635,7 +649,10 @@ class MigrationManager:
 
                 _Table: t.Type[Table] = create_table_class(
                     class_name=table_class_name,
-                    class_kwargs={"tablename": columns[0].tablename},
+                    class_kwargs={
+                        "tablename": columns[0].tablename,
+                        "schema": columns[0].schema,
+                    },
                 )
 
                 for column in columns:
@@ -662,7 +679,11 @@ class MigrationManager:
             )
 
             _Table: t.Type[Table] = create_table_class(
-                class_name=class_name, class_kwargs={"tablename": tablename}
+                class_name=class_name,
+                class_kwargs={
+                    "tablename": tablename,
+                    "schema": rename_table.schema,
+                },
             )
 
             await self._run_query(
@@ -680,7 +701,10 @@ class MigrationManager:
 
             _Table: t.Type[Table] = create_table_class(
                 class_name=table_class_name,
-                class_kwargs={"tablename": columns[0].tablename},
+                class_kwargs={
+                    "tablename": columns[0].tablename,
+                    "schema": columns[0].schema,
+                },
             )
 
             for rename_column in columns:
@@ -746,7 +770,10 @@ class MigrationManager:
 
                 _Table: t.Type[Table] = create_table_class(
                     class_name=add_column.table_class_name,
-                    class_kwargs={"tablename": add_column.tablename},
+                    class_kwargs={
+                        "tablename": add_column.tablename,
+                        "schema": add_column.schema,
+                    },
                 )
 
                 await self._run_query(
@@ -765,7 +792,10 @@ class MigrationManager:
                 # sets up the columns correctly.
                 _Table: t.Type[Table] = create_table_class(
                     class_name=add_columns[0].table_class_name,
-                    class_kwargs={"tablename": add_columns[0].tablename},
+                    class_kwargs={
+                        "tablename": add_columns[0].tablename,
+                        "schema": add_columns[0].schema,
+                    },
                     class_members={
                         add_column.column._meta.name: add_column.column
                         for add_column in add_columns
