@@ -129,6 +129,7 @@ class DiffableTable:
                 column_class_name=i.column.__class__.__name__,
                 column_class=i.column.__class__,
                 params=i.column._meta.params,
+                schema=self.schema,
             )
             for i in sorted(
                 {ColumnComparison(column=column) for column in self.columns}
@@ -145,6 +146,7 @@ class DiffableTable:
                 column_name=i.column._meta.name,
                 db_column_name=i.column._meta.db_column_name,
                 tablename=value.tablename,
+                schema=self.schema,
             )
             for i in sorted(
                 {ColumnComparison(column=column) for column in value.columns}
@@ -184,6 +186,7 @@ class DiffableTable:
                         old_params=old_params,
                         column_class=column.__class__,
                         old_column_class=existing_column.__class__,
+                        schema=self.schema,
                     )
                 )
 

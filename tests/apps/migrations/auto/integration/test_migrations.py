@@ -168,14 +168,14 @@ class MigrationTestCase(DBTestCase):
             time.sleep(1e-6)
 
         if test_function:
-            column_name = (
-                table_snapshots[-1][-1]
-                ._meta.non_default_columns[0]
-                ._meta.db_column_name
-            )
+            column = table_snapshots[-1][-1]._meta.non_default_columns[0]
+            column_name = column._meta.db_column_name
+            schema = column._meta.table._meta.schema
+            tablename = column._meta.table._meta.tablename
             row_meta = self.get_postgres_column_definition(
-                tablename="my_table",
+                tablename=tablename,
                 column_name=column_name,
+                schema=schema or "public",
             )
             self.assertTrue(
                 test_function(row_meta),
@@ -1211,6 +1211,72 @@ class TestSchemas(MigrationTestCase):
             self.schema_manager.list_tables(
                 schema_name=self.new_schema
             ).run_sync(),
+        )
+
+    def test_altering_table_in_schema(self):
+        """
+        Make sure tables in schemas can be altered.
+
+        https://github.com/piccolo-orm/piccolo/issues/883
+
+        """
+        self._test_migrations(
+            table_snapshots=[
+                # Create a table with a single column
+                [
+                    create_table_class(
+                        class_name="Manager",
+                        class_kwargs={"schema": self.new_schema},
+                        class_members={"first_name": Varchar()},
+                    )
+                ],
+                # Rename the column
+                [
+                    create_table_class(
+                        class_name="Manager",
+                        class_kwargs={"schema": self.new_schema},
+                        class_members={"name": Varchar()},
+                    )
+                ],
+                # Add a column
+                [
+                    create_table_class(
+                        class_name="Manager",
+                        class_kwargs={"schema": self.new_schema},
+                        class_members={
+                            "name": Varchar(),
+                            "age": Integer(),
+                        },
+                    )
+                ],
+                # Remove a column
+                [
+                    create_table_class(
+                        class_name="Manager",
+                        class_kwargs={"schema": self.new_schema},
+                        class_members={
+                            "name": Varchar(),
+                        },
+                    )
+                ],
+                # Alter a column
+                [
+                    create_table_class(
+                        class_name="Manager",
+                        class_kwargs={"schema": self.new_schema},
+                        class_members={
+                            "name": Varchar(length=512),
+                        },
+                    )
+                ],
+            ],
+            test_function=lambda x: all(
+                [
+                    x.column_name == "name",
+                    x.data_type == "character varying",
+                    x.character_maximum_length == 512,
+                ]
+            ),
         )
 
 
