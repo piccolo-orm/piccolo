@@ -1,6 +1,18 @@
 Changes
 =======
 
+0.120.0
+-------
+
+Improved how ``ModelBuilder`` generates JSON data.
+
+The number of password hash iterations used in ``BaseUser`` has been increased
+to keep pace with the latest guidance from OWASP - thanks to @Skelmis for this.
+
+Fixed a bug with auto migrations when the table is in a schema.
+
+-------------------------------------------------------------------------------
+
 0.119.0
 -------
 
