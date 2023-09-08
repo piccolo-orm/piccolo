@@ -191,6 +191,7 @@ class SchemaDiffer:
                                 old_tablename=drop_table.tablename,
                                 new_class_name=new_table.class_name,
                                 new_tablename=new_table.tablename,
+                                schema=new_table.schema,
                             )
                         )
                         break
@@ -212,6 +213,7 @@ class SchemaDiffer:
                                 old_tablename=drop_table.tablename,
                                 new_class_name=new_table.class_name,
                                 new_tablename=new_table.tablename,
+                                schema=new_table.schema,
                             )
                         )
                         break
@@ -288,6 +290,7 @@ class SchemaDiffer:
                                 new_column_name=add_column.column_name,
                                 old_db_column_name=drop_column.db_column_name,
                                 new_db_column_name=add_column.db_column_name,
+                                schema=add_column.schema,
                             )
                         )
                         break
@@ -516,8 +519,14 @@ class SchemaDiffer:
                         )
                     )
 
+                schema_str = (
+                    "None"
+                    if alter_column.schema is None
+                    else f'"{alter_column.schema}"'
+                )
+
                 response.append(
-                    f"manager.alter_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{alter_column.column_name}', db_column_name='{alter_column.db_column_name}', params={new_params.params}, old_params={old_params.params}, column_class={column_class}, old_column_class={old_column_class})"  # noqa: E501
+                    f"manager.alter_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{alter_column.column_name}', db_column_name='{alter_column.db_column_name}', params={new_params.params}, old_params={old_params.params}, column_class={column_class}, old_column_class={old_column_class}, schema={schema_str})"  # noqa: E501
                 )
 
         return AlterStatements(
@@ -543,8 +552,12 @@ class SchemaDiffer:
                 ):
                     continue
 
+                schema_str = (
+                    "None" if column.schema is None else f'"{column.schema}"'
+                )
+
                 response.append(
-                    f"manager.drop_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column.column_name}', db_column_name='{column.db_column_name}')"  # noqa: E501
+                    f"manager.drop_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column.column_name}', db_column_name='{column.db_column_name}', schema={schema_str})"  # noqa: E501
                 )
         return AlterStatements(statements=response)
 
@@ -585,8 +598,14 @@ class SchemaDiffer:
                     )
                 )
 
+                schema_str = (
+                    "None"
+                    if add_column.schema is None
+                    else f'"{add_column.schema}"'
+                )
+
                 response.append(
-                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{add_column.column_name}', db_column_name='{add_column.db_column_name}', column_class_name='{add_column.column_class_name}', column_class={column_class.__name__}, params={str(cleaned_params)})"  # noqa: E501
+                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{add_column.column_name}', db_column_name='{add_column.db_column_name}', column_class_name='{add_column.column_class_name}', column_class={column_class.__name__}, params={str(cleaned_params)}, schema={schema_str})"  # noqa: E501
                 )
         return AlterStatements(
             statements=response,
@@ -647,8 +666,12 @@ class SchemaDiffer:
                     )
                 )
 
+                schema_str = (
+                    "None" if table.schema is None else f'"{table.schema}"'
+                )
+
                 response.append(
-                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column._meta.name}', db_column_name='{column._meta.db_column_name}', column_class_name='{column.__class__.__name__}', column_class={column.__class__.__name__}, params={str(cleaned_params)})"  # noqa: E501
+                    f"manager.add_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{column._meta.name}', db_column_name='{column._meta.db_column_name}', column_class_name='{column.__class__.__name__}', column_class={column.__class__.__name__}, params={str(cleaned_params)}, schema={schema_str})"  # noqa: E501
                 )
         return AlterStatements(
             statements=response,

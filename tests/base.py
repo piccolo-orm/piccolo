@@ -174,16 +174,18 @@ class DBTestCase(TestCase):
     # Postgres specific utils
 
     def get_postgres_column_definition(
-        self, tablename: str, column_name: str
+        self, tablename: str, column_name: str, schema: str = "public"
     ) -> RowMeta:
         query = """
             SELECT {columns} FROM information_schema.columns
             WHERE table_name = '{tablename}'
             AND table_catalog = 'piccolo'
+            AND table_schema = '{schema}'
             AND column_name = '{column_name}'
         """.format(
             columns=RowMeta.get_column_name_str(),
             tablename=tablename,
+            schema=schema,
             column_name=column_name,
         )
         response = self.run_sync(query)
