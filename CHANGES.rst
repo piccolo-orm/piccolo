@@ -4,7 +4,7 @@ Changes
 0.121.0
 -------
 
-Modified the ``BaseLogin.login`` logic so all code paths take the same time.
+Modified the ``BaseUser.login`` logic so all code paths take the same time.
 Thanks to @Skelmis for this.
 
 -------------------------------------------------------------------------------
