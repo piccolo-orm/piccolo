@@ -86,7 +86,7 @@ jobs:
         strategy:
             matrix:
                 python-version: ["3.8", "3.9", "3.10", "3.11"]
-                postgres-version: [10, 11, 12, 13, 14, 15]
+                postgres-version: [10, 11, 12, 13, 14, 15, 16]
 
         # Service containers to run with `container-job`
         services:
