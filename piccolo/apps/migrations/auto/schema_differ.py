@@ -278,7 +278,7 @@ class SchemaDiffer:
                     user_response = self.auto_input or input(
                         f"Did you rename the `{drop_column.db_column_name}` "  # noqa: E501
                         f"column to `{add_column.db_column_name}` on the "
-                        f"`{ add_column.table_class_name }` table? (y/N)"
+                        f"`{add_column.table_class_name}` table? (y/N)"
                     )
                     if user_response.lower() == "y":
                         used_drop_column_names.append(drop_column.column_name)
