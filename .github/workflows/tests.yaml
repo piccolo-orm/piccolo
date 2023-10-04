@@ -16,7 +16,7 @@ jobs:
         timeout-minutes: 30
         strategy:
             matrix:
-                python-version: ["3.8", "3.9", "3.10", "3.11"]
+                python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
         steps:
             - uses: actions/checkout@v3
@@ -85,7 +85,7 @@ jobs:
         timeout-minutes: 30
         strategy:
             matrix:
-                python-version: ["3.8", "3.9", "3.10", "3.11"]
+                python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
                 postgres-version: [11, 12, 13, 14, 15, 16]
 
         # Service containers to run with `container-job`
@@ -134,14 +134,14 @@ jobs:
                   PG_PASSWORD: postgres
             - name: Upload coverage
               uses: codecov/codecov-action@v1
-              if: matrix.python-version == '3.11'
+              if: matrix.python-version == '3.12'
 
     cockroach:
         runs-on: ubuntu-latest
         timeout-minutes: 30
         strategy:
             matrix:
-                python-version: ["3.8", "3.9", "3.10", "3.11"]
+                python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
                 cockroachdb-version: ["v22.2.0"]
         steps:
             - uses: actions/checkout@v3
@@ -168,14 +168,14 @@ jobs:
                   PG_DATABASE: piccolo
             - name: Upload coverage
               uses: codecov/codecov-action@v1
-              if: matrix.python-version == '3.11'
+              if: matrix.python-version == '3.12'
 
     sqlite:
         runs-on: ubuntu-latest
         timeout-minutes: 30
         strategy:
             matrix:
-                python-version: ["3.8", "3.9", "3.10", "3.11"]
+                python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
         steps:
             - uses: actions/checkout@v3
@@ -193,4 +193,4 @@ jobs:
               run: ./scripts/test-sqlite.sh
             - name: Upload coverage
               uses: codecov/codecov-action@v1
-              if: matrix.python-version == '3.11'
+              if: matrix.python-version == '3.12'
