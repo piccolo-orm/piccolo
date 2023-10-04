@@ -395,7 +395,7 @@ class TestM2MComplexSchema(TestCase):
             original_value = getattr(self.mega_table, column_name)
             returned_value = data[column_name]
 
-            if type(column) == UUID:
+            if isinstance(column, UUID):
                 self.assertIn(type(returned_value), (uuid.UUID, asyncpgUUID))
             else:
                 self.assertEqual(
@@ -419,7 +419,7 @@ class TestM2MComplexSchema(TestCase):
             original_value = getattr(self.mega_table, column_name)
             returned_value = response[0]["mega_rows"][0]
 
-            if type(column) == UUID:
+            if isinstance(column, UUID):
                 self.assertIn(type(returned_value), (uuid.UUID, asyncpgUUID))
                 self.assertEqual(str(original_value), str(returned_value))
             else:

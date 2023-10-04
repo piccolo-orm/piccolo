@@ -143,7 +143,7 @@ class QueryString:
                 fragment.no_arg = True
                 bundled.append(fragment)
             else:
-                if type(value) == self.__class__:
+                if isinstance(value, self.__class__):
                     fragment.no_arg = True
                     bundled.append(fragment)
 

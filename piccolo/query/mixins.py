@@ -90,7 +90,7 @@ class Limit:
     number: int
 
     def __post_init__(self):
-        if type(self.number) != int:
+        if not isinstance(self.number, int):
             raise TypeError("Limit must be an integer")
 
     @property
@@ -111,7 +111,7 @@ class AsOf:
     interval: str
 
     def __post_init__(self):
-        if type(self.interval) != str:
+        if not isinstance(self.interval, str):
             raise TypeError("As Of must be a string. Example: '-1s'")
 
     @property
@@ -129,8 +129,8 @@ class Offset:
     number: int
 
     def __post_init__(self):
-        if type(self.number) != int:
-            raise TypeError("Limit must be an integer")
+        if not isinstance(self.number, int):
+            raise TypeError("Offset must be an integer")
 
     @property
     def querystring(self) -> QueryString:
