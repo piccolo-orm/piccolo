@@ -128,7 +128,8 @@ class TestArrayColumn(TestCase):
 class TestForeignKeyColumn(TestCase):
     def test_target_column(self):
         """
-        Make sure the target_column is correctly set in the Pydantic schema.
+        Make sure the `target_column` is correctly set in the Pydantic schema
+        for `ForeignKey` columns.
         """
 
         class Manager(Table):
@@ -146,34 +147,41 @@ class TestForeignKeyColumn(TestCase):
         self.assertEqual(
             create_pydantic_model(table=BandA).model_json_schema()[
                 "properties"
-            ]["manager"]["extra"]["target_column"],
+            ]["manager"]["extra"]["foreign_key"]["target_column"],
             "name",
         )
 
         self.assertEqual(
             create_pydantic_model(table=BandB).model_json_schema()[
                 "properties"
-            ]["manager"]["extra"]["target_column"],
+            ]["manager"]["extra"]["foreign_key"]["target_column"],
             "name",
         )
 
         self.assertEqual(
             create_pydantic_model(table=BandC).model_json_schema()[
                 "properties"
-            ]["manager"]["extra"]["target_column"],
+            ]["manager"]["extra"]["foreign_key"]["target_column"],
             "id",
         )
 
 
 class TestTextColumn(TestCase):
-    def test_text_format(self):
+    def test_text_widget(self):
+        """
+        Make sure that we indicate that `Text` columns require a special widget
+        in Piccolo Admin.
+        """
+
         class Band(Table):
             bio = Text()
 
         pydantic_model = create_pydantic_model(table=Band)
 
         self.assertEqual(
-            pydantic_model.model_json_schema()["properties"]["bio"]["format"],
+            pydantic_model.model_json_schema()["properties"]["bio"]["extra"][
+                "widget"
+            ],
             "text-area",
         )
 
@@ -265,7 +273,7 @@ class TestTableHelpText(TestCase):
         pydantic_model = create_pydantic_model(table=Movie)
 
         self.assertEqual(
-            pydantic_model.model_json_schema()["help_text"],
+            pydantic_model.model_json_schema()["extra"]["help_text"],
             help_text,
         )
 
@@ -315,7 +323,12 @@ class TestJSONColumn(TestCase):
             with self.assertRaises(pydantic.ValidationError):
                 pydantic_model(meta=json_string, meta_b=json_string)
 
-    def test_json_format(self):
+    def test_json_widget(self):
+        """
+        Make sure that we indicate that `JSON` / `JSONB` columns require a
+        special widget in Piccolo Admin.
+        """
+
         class Movie(Table):
             features = JSON()
 
@@ -323,8 +336,8 @@ class TestJSONColumn(TestCase):
 
         self.assertEqual(
             pydantic_model.model_json_schema()["properties"]["features"][
-                "format"
-            ],
+                "extra"
+            ]["widget"],
             "json",
         )
 
@@ -762,19 +775,21 @@ class TestDBColumnName(TestCase):
         self.assertEqual(model.name, "test")
 
 
-class TestSchemaExtraKwargs(TestCase):
-    def test_schema_extra_kwargs(self):
+class TestJSONSchemaExtra(TestCase):
+    def test_json_schema_extra(self):
         """
-        Make sure that the ``schema_extra_kwargs`` arguments are reflected in
+        Make sure that the ``json_schema_extra`` arguments are reflected in
         Pydantic model's schema.
         """
 
         class Band(Table):
             name = Varchar()
 
-        model = create_pydantic_model(Band, visible_columns=("name",))
+        model = create_pydantic_model(
+            Band, json_schema_extra={"extra": {"visible_columns": ("name",)}}
+        )
         self.assertEqual(
-            model.model_json_schema()["visible_columns"], ("name",)
+            model.model_json_schema()["extra"]["visible_columns"], ("name",)
         )
 
 
