@@ -1,6 +1,14 @@
 Changes
 =======
 
+1.0a3
+-----
+
+Namespaced all custom values we added to Pydantic's JSON schema for easier
+maintenance.
+
+-------------------------------------------------------------------------------
+
 1.0a2
 -----
 
