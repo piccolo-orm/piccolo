@@ -212,7 +212,10 @@ class BaseUser(Table, tablename="piccolo_user"):
             .run()
         )
         if not response:
-            # No match found
+            # No match found. We still call hash_password
+            # here to mitigate the ability to enumerate
+            # users via response timings
+            cls.hash_password(password)
             return None
 
         stored_password = response["password"]

@@ -8,6 +8,14 @@ All of the changes from 0.120.0 merged into the v1 branch.
 
 -------------------------------------------------------------------------------
 
+0.121.0
+-------
+
+Modified the ``BaseUser.login`` logic so all code paths take the same time.
+Thanks to @Skelmis for this.
+
+-------------------------------------------------------------------------------
+
 0.120.0
 -------
 

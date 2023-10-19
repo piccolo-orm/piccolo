@@ -3,6 +3,7 @@ from __future__ import annotations
 import itertools
 import json
 import typing as t
+from collections import defaultdict
 from functools import partial
 
 import pydantic
@@ -12,17 +13,11 @@ from piccolo.columns.column_types import (
     JSON,
     JSONB,
     Array,
-    Date,
     Decimal,
     Email,
     ForeignKey,
-    Interval,
     Numeric,
-    Secret,
     Text,
-    Time,
-    Timestamp,
-    Timestamptz,
     Varchar,
 )
 from piccolo.table import Table
@@ -86,7 +81,7 @@ def create_pydantic_model(
     recursion_depth: int = 0,
     max_recursion_depth: int = 5,
     pydantic_config: t.Optional[pydantic.config.ConfigDict] = None,
-    **schema_extra_kwargs,
+    json_schema_extra: t.Optional[t.Dict[str, t.Any]] = None,
 ) -> t.Type[pydantic.BaseModel]:
     """
     Create a Pydantic model representing a table.
@@ -132,14 +127,14 @@ def create_pydantic_model(
         Allows you to configure some of Pydantic's behaviour. See the
         `Pydantic docs <https://docs.pydantic.dev/latest/api/config/#pydantic.config.ConfigDict>`_
         for more info.
-    :param schema_extra_kwargs:
+    :param json_schema_extra:
         This can be used to add additional fields to the schema. This is
         very useful when using Pydantic's JSON Schema features. For example:
 
         .. code-block:: python
 
             >>> my_model = create_pydantic_model(Band, my_extra_field="Hello")
-            >>> my_model.schema()
+            >>> my_model.model_json_schema()
             {..., "my_extra_field": "Hello"}
 
     :returns:
@@ -250,6 +245,7 @@ def create_pydantic_model(
         extra = {
             "help_text": column._meta.help_text,
             "choices": column._meta.get_choices_dict(),
+            "secret": column._meta.secret,
             "nullable": column._meta.null,
         }
 
@@ -284,78 +280,28 @@ def create_pydantic_model(
             tablename = (
                 column._foreign_key_meta.resolved_references._meta.tablename
             )
-            field = pydantic.Field(
-                json_schema_extra={
-                    "extra": {
-                        "foreign_key": True,
-                        "to": tablename,
-                        "target_column": column._foreign_key_meta.resolved_target_column._meta.name,  # noqa: E501
-                        **extra,
-                    }
-                },
-                **params,
+            target_column = (
+                column._foreign_key_meta.resolved_target_column._meta.name
             )
+            extra["foreign_key"] = {
+                "to": tablename,
+                "target_column": target_column,
+            }
+
             if include_readable:
                 columns[f"{column_name}_readable"] = (str, None)
-        elif isinstance(column, Text):
-            field = pydantic.Field(
-                json_schema_extra={"extra": extra, "format": "text-area"},
-                **params,
-            )
-        elif isinstance(column, (JSON, JSONB)):
-            field = pydantic.Field(
-                json_schema_extra={"extra": extra, "format": "json"}, **params
-            )
-        elif isinstance(column, Secret):
-            field = pydantic.Field(
-                json_schema_extra={"extra": {"secret": True, **extra}},
-                **params,
-            )
-        elif isinstance(column, Interval):
-            field = pydantic.Field(
-                json_schema_extra={
-                    "extra": extra,
-                    "format": "duration",
-                },
-                **params,
-            )
-        elif isinstance(column, Date):
-            field = pydantic.Field(
-                json_schema_extra={
-                    "extra": extra,
-                    "format": "date",
-                },
-                **params,
-            )
-        elif isinstance(column, Time):
-            field = pydantic.Field(
-                json_schema_extra={
-                    "extra": extra,
-                    "format": "time",
-                },
-                **params,
-            )
-        elif isinstance(column, (Timestamp, Timestamptz)):
-            field = pydantic.Field(
-                json_schema_extra={
-                    "extra": extra,
-                    "format": "date-time",
-                },
-                **params,
-            )
-        elif isinstance(column, Array):
-            field = pydantic.Field(
-                json_schema_extra={
-                    "extra": extra,
-                    "type": "array",
-                },
-                **params,
-            )
-
         else:
-            field = pydantic.Field(
-                json_schema_extra={"extra": extra}, **params
-            )
+            # This is used to tell Piccolo Admin that we want to display these
+            # values using a specific widget.
+            if isinstance(column, Text):
+                extra["widget"] = "text-area"
+            elif isinstance(column, (JSON, JSONB)):
+                extra["widget"] = "json"
+
+        field = pydantic.Field(
+            json_schema_extra={"extra": extra},
+            **params,
+        )
 
         columns[column_name] = (_type, field)
 
@@ -365,10 +311,11 @@ def create_pydantic_model(
         else pydantic.config.ConfigDict()
     )
     pydantic_config["arbitrary_types_allowed"] = True
-    pydantic_config["json_schema_extra"] = {
-        "help_text": table._meta.help_text,
-        **schema_extra_kwargs,
-    }
+
+    json_schema_extra_ = defaultdict(dict, **(json_schema_extra or {}))
+    json_schema_extra_["extra"]["help_text"] = table._meta.help_text
+
+    pydantic_config["json_schema_extra"] = dict(json_schema_extra_)
 
     model = pydantic.create_model(  # type: ignore
         model_name,
