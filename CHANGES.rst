@@ -1,6 +1,21 @@
 Changes
 =======
 
+1.0a3
+-----
+
+Namespaced all custom values we added to Pydantic's JSON schema for easier
+maintenance.
+
+-------------------------------------------------------------------------------
+
+1.0a2
+-----
+
+All of the changes from 0.120.0 merged into the v1 branch.
+
+-------------------------------------------------------------------------------
+
 0.121.0
 -------
 
@@ -18,6 +33,13 @@ The number of password hash iterations used in ``BaseUser`` has been increased
 to keep pace with the latest guidance from OWASP - thanks to @Skelmis for this.
 
 Fixed a bug with auto migrations when the table is in a schema.
+
+-------------------------------------------------------------------------------
+
+1.0a1
+-----
+
+Initial alpha release of Piccolo v1, with Pydantic v2 support.
 
 -------------------------------------------------------------------------------
 

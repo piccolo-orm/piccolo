@@ -2,11 +2,11 @@ name: Test Suite
 
 on:
     push:
-        branches: ["master"]
+        branches: ["master", "v1"]
         paths-ignore:
           - "docs/**"
     pull_request:
-        branches: ["master"]
+        branches: ["master", "v1"]
         paths-ignore:
             - "docs/**"
 
