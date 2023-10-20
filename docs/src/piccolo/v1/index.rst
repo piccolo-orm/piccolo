@@ -4,6 +4,18 @@
 About Piccolo v1
 ================
 
+**20th October**
+
+Piccolo v1 is now available!
+
+We migrated to Pydantic v2, and also migrated Piccolo Admin to Vue 3, which
+puts the project in a good place moving forward.
+
+We don't anticipate any major issues for people who are upgrading. If you
+encounter any bugs let us know.
+
+Make sure you have v1 of Piccolo, Piccolo API, and Piccolo Admin.
+
 **2nd August 2023**
 
 Piccolo started in August 2018, and as of this writing is close to 5 years old.
@@ -34,9 +46,3 @@ So Piccolo v1 will just use Pydantic v2 and above.
 
 If you can't upgrade to Pydantic v2, then pin your Piccolo version to ``0.118.0``.
 You can find the `docs here for 0.118.0 <https://piccolo-orm.readthedocs.io/en/0.118.0/>`_.
-
-**Timeline and alpha builds**
-
-Several alpha builds for v1 of Piccolo / Piccolo API / Piccolo Admin will be
-released as we make sure they all work seamlessly together. We don't recommend
-using these alpha releases - the final releases will be available soon.
