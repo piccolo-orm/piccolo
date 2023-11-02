@@ -18,6 +18,7 @@ from piccolo.columns.column_types import (
     ForeignKey,
     Numeric,
     Text,
+    Timestamptz,
     Varchar,
 )
 from piccolo.table import Table
@@ -297,6 +298,8 @@ def create_pydantic_model(
                 extra["widget"] = "text-area"
             elif isinstance(column, (JSON, JSONB)):
                 extra["widget"] = "json"
+            elif isinstance(column, Timestamptz):
+                extra["widget"] = "timestamptz"
 
         field = pydantic.Field(
             json_schema_extra={"extra": extra},
