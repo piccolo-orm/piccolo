@@ -18,6 +18,8 @@ from piccolo.columns import (
     Secret,
     Text,
     Time,
+    Timestamp,
+    Timestamptz,
     Varchar,
 )
 from piccolo.columns.column_types import ForeignKey
@@ -199,6 +201,29 @@ class TestTimeColumn(TestCase):
             ][0]["format"],
             "time",
         )
+
+
+class TestTimestamptzColumn(TestCase):
+    def test_timestamptz_widget(self):
+        """
+        Make sure that we indicate that `Timestamptz` columns require a special
+        widget in Piccolo Admin.
+        """
+
+        class Concert(Table):
+            starts_on_1 = Timestamptz()
+            starts_on_2 = Timestamp()
+
+        pydantic_model = create_pydantic_model(table=Concert)
+
+        properties = pydantic_model.model_json_schema()["properties"]
+
+        self.assertEqual(
+            properties["starts_on_1"]["extra"]["widget"],
+            "timestamptz",
+        )
+
+        self.assertIsNone(properties["starts_on_2"]["extra"].get("widget"))
 
 
 class TestUUIDColumn(TestCase):
