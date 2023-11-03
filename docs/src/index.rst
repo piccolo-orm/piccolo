@@ -1,3 +1,8 @@
+.. note:: These are the docs for **Piccolo v1**. :ref:`Read more here <PiccoloV1>`.
+
+   For v0.x docs `go here <https://piccolo-orm.readthedocs.io/en/0.118.0/>`_.
+
+
 Piccolo
 =======
 
@@ -27,6 +32,7 @@ batteries included.
    piccolo/changes/index
    piccolo/help/index
    piccolo/api_reference/index
+   piccolo/v1/index
 
 -------------------------------------------------------------------------------
 

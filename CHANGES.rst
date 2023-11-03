@@ -1,6 +1,36 @@
 Changes
 =======
 
+1.0.0
+-----
+
+Piccolo v1 is now available!
+
+We migrated to Pydantic v2, and also migrated Piccolo Admin to Vue 3, which
+puts the project in a good place moving forward.
+
+We don't anticipate any major issues for people who are upgrading. If you
+encounter any bugs let us know.
+
+Make sure you have v1 of Piccolo, Piccolo API, and Piccolo Admin.
+
+-------------------------------------------------------------------------------
+
+1.0a3
+-----
+
+Namespaced all custom values we added to Pydantic's JSON schema for easier
+maintenance.
+
+-------------------------------------------------------------------------------
+
+1.0a2
+-----
+
+All of the changes from 0.120.0 merged into the v1 branch.
+
+-------------------------------------------------------------------------------
+
 0.121.0
 -------
 
@@ -18,6 +48,13 @@ The number of password hash iterations used in ``BaseUser`` has been increased
 to keep pace with the latest guidance from OWASP - thanks to @Skelmis for this.
 
 Fixed a bug with auto migrations when the table is in a schema.
+
+-------------------------------------------------------------------------------
+
+1.0a1
+-----
+
+Initial alpha release of Piccolo v1, with Pydantic v2 support.
 
 -------------------------------------------------------------------------------
 
