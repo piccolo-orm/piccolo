@@ -794,7 +794,7 @@ class Table(metaclass=TableMetaclass):
             args_dict[column_name] = value
 
         def is_unquoted(arg):
-            return type(arg) == Unquoted
+            return isinstance(arg, Unquoted)
 
         # Strip out any args which are unquoted.
         filtered_args = [i for i in args_dict.values() if not is_unquoted(i)]
