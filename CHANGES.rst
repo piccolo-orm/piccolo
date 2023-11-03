@@ -1,6 +1,17 @@
 Changes
 =======
 
+1.1.0
+-----
+
+Added support for Python 3.12.
+
+Modified ``create_pydantic_model``, so additional information is returned in
+the JSON schema to distinguish between ``Timestamp`` and ``Timestamptz``
+columns. This will be used for future Piccolo Admin enhancements.
+
+-------------------------------------------------------------------------------
+
 1.0.0
 -----
 
