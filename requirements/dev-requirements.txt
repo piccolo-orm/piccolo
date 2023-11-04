@@ -3,7 +3,7 @@ ipdb==0.13.9
 ipython>=7.31.1
 flake8==6.1.0
 isort==5.10.1
-slotscheck==0.17.0
+slotscheck==0.17.1
 twine==3.8.0
 mypy==0.961
 pip-upgrader==1.4.15

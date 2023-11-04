@@ -21,15 +21,7 @@ mypy $SOURCES
 echo "-----"
 
 echo "Running slotscheck..."
-# Currently doesn't work for Python 3.12 - so skipping until we can get a proper fix.
-pythonVersion=$(python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
-if [ "$pythonVersion" == '3.12' ]
-  then
-    echo "Skipping Python 3.12 for now"
-  else
-    python -m slotscheck $MODULES
-fi
-
+python -m slotscheck $MODULES
 echo "-----"
 
 echo "All passed!"
