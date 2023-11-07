@@ -241,6 +241,40 @@ add additional fields, and to override existing fields.
 
     >>> CustomBandModel(name="Pythonistas", genre="Rock")
 
+Or even simpler still:
+
+.. code-block:: python
+
+    class BandModel(create_pydantic_model(Band)):
+        genre: str
+
+
+Avoiding type warnings
+~~~~~~~~~~~~~~~~~~~~~~
+
+Some linters will complain if you use variables in type annotations:
+
+.. code-block:: python
+
+    BandModel = create_pydantic_model(Band)
+
+
+    def my_function(band: BandModel):  # Variable not allowed in type expression!
+        ...
+
+
+The fix is really simple:
+
+.. code-block:: python
+
+    # We now have a class instead of a variable:
+    class BandModel(create_pydantic_model(Band)):
+        ...
+
+
+    def my_function(band: BandModel):
+        ...
+
 Source
 ~~~~~~
 
