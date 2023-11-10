@@ -10,7 +10,7 @@ import uuid
 from dataclasses import dataclass
 from decimal import Decimal
 
-from piccolo.engine.base import Batch, Engine
+from piccolo.engine.base import Batch, Engine, validate_savepoint_name
 from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import DDL, Query
 from piccolo.querystring import QueryString
@@ -309,11 +309,13 @@ class Savepoint:
         self.transaction = transaction
 
     async def rollback_to(self):
+        validate_savepoint_name(self.name)
         await self.transaction.connection.execute(
             f"ROLLBACK TO SAVEPOINT {self.name}"
         )
 
     async def release(self):
+        validate_savepoint_name(self.name)
         await self.transaction.connection.execute(
             f"RELEASE SAVEPOINT {self.name}"
         )
@@ -413,6 +415,7 @@ class SQLiteTransaction:
 
     async def savepoint(self, name: t.Optional[str] = None) -> Savepoint:
         name = name or f"savepoint_{self.get_savepoint_id()}"
+        validate_savepoint_name(name)
         await self.connection.execute(f"SAVEPOINT {name}")
         return Savepoint(name=name, transaction=self)
 

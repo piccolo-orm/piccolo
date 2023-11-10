@@ -2,6 +2,8 @@ import asyncio
 import typing as t
 from unittest import TestCase
 
+import pytest
+
 from piccolo.engine.postgres import Atomic
 from piccolo.engine.sqlite import SQLiteEngine, TransactionType
 from piccolo.table import drop_db_tables_sync
@@ -296,3 +298,14 @@ class TestSavepoint(TestCase):
         self.assertListEqual(
             Manager.select(Manager.name).run_sync(), [{"name": "Manager 1"}]
         )
+
+    def test_savepoint_sqli_checks(self):
+        # Added to test the fix for GHSA-xq59-7jf3-rjc6
+        async def run_test():
+            async with Manager._meta.db.transaction() as transaction:
+                await transaction.savepoint(
+                    "my_savepoint; SELECT * FROM Manager"
+                )
+
+        with pytest.raises(ValueError):
+            run_sync(run_test())

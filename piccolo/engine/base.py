@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextvars
 import logging
 import pprint
+import string
 import typing as t
 from abc import ABCMeta, abstractmethod
 
@@ -15,6 +16,20 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 
 logger = logging.getLogger(__name__)
+# This is a set to speed up lookups from O(n) when
+# using str vs O(1) when using set[str]
+VALID_SAVEPOINT_CHARACTERS: t.Final[set[str]] = set(
+    string.ascii_letters + string.digits + "-" + "_"
+)
+
+
+def validate_savepoint_name(savepoint_name: str) -> None:
+    """Validates a save point's name meets the required character set."""
+    if not all(i in VALID_SAVEPOINT_CHARACTERS for i in savepoint_name):
+        raise ValueError(
+            "Savepoint names can only contain the following characters:"
+            f" {VALID_SAVEPOINT_CHARACTERS}"
+        )
 
 
 class Batch:
