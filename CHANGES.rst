@@ -1,6 +1,33 @@
 Changes
 =======
 
+1.1.1
+-----
+
+Piccolo allows the user to specify savepoint names which are used in
+transactions. For example:
+
+.. code-block:: python
+
+    async with DB.transaction() as transaction:
+        await Band.insert(Band(name='Pythonistas'))
+
+        # Passing in a savepoint name is optional:
+        savepoint_1 = await transaction.savepoint('savepoint_1')
+
+        await Band.insert(Band(name='Terrible band'))
+
+        # Oops, I made a mistake!
+        await savepoint_1.rollback_to()
+
+Postgres doesn't allow us to parameterise savepoint names, which means there's
+a small chance of SQL injection, if for some reason the savepoint names were
+generated from end-user input. Even though the likelihood is very low, it's
+best to be safe. We now validate the savepoint name, to make sure it can only
+contain certain safe characters. Thanks to @Skelmis for making this change.
+
+-------------------------------------------------------------------------------
+
 1.1.0
 -----
 
