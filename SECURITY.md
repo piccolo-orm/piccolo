@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-v1 is actively maintained, and any security vunerabilities will be patched.
+v1 is actively maintained, and any security vulnerabilities will be patched.
 
 v0.X will have any major security vulnerabilities patched.
 
