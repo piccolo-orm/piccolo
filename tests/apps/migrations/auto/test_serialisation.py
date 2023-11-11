@@ -19,6 +19,7 @@ from piccolo.columns.choices import Choice
 from piccolo.columns.column_types import Varchar
 from piccolo.columns.defaults import UUID4, DateNow, TimeNow, TimestampNow
 from piccolo.columns.reference import LazyTableReference
+from tests.base import engine_is
 
 
 class TestUniqueGlobalNamesMeta:
@@ -234,23 +235,27 @@ class TestSerialiseParams(TestCase):
                 serialised.params["references"].__repr__() == "Manager"
             )
 
-            self.assertTrue(len(serialised.extra_imports) == 1)
-            self.assertEqual(
-                serialised.extra_imports[0].__str__(),
-                "from piccolo.table import Table",
+            self.assertListEqual(
+                sorted([i.__str__() for i in serialised.extra_imports]),
+                [
+                    "from piccolo.columns.column_types import Serial",
+                    "from piccolo.columns.indexes import IndexMethod",
+                    "from piccolo.table import Table",
+                ],
             )
 
             self.assertTrue(len(serialised.extra_definitions) == 1)
 
-            self.assertEqual(
-                serialised.extra_definitions[0].__str__(),
-                (
-                    'class Manager(Table, tablename="manager", schema=None): '
-                    "id = Serial(null=False, primary_key=True, unique=False, "
-                    "index=False, index_method=IndexMethod.btree, "
-                    "choices=None, db_column_name='id', secret=False)"
-                ),
-            )
+            if engine_is("postgres") or engine_is("cockroach"):
+                self.assertEqual(
+                    serialised.extra_definitions[0].__str__(),
+                    (
+                        'class Manager(Table, tablename="manager", schema=None): '  # noqa: E501
+                        "id = Serial(null=False, primary_key=True, unique=False, "  # noqa: E501
+                        "index=False, index_method=IndexMethod.btree, "
+                        "choices=None, db_column_name='id', secret=False)"
+                    ),
+                )
 
     def test_function(self):
         serialised = serialise_params(params={"default": example_function})

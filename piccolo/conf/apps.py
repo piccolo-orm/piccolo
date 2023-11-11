@@ -156,6 +156,9 @@ class AppConfig:
             i if isinstance(i, Command) else Command(i) for i in self.commands
         ]
 
+        for table_class in self.table_classes:
+            table_class._meta.app_name = self.app_name
+
         if isinstance(self.migrations_folder_path, pathlib.Path):
             self.migrations_folder_path = str(self.migrations_folder_path)
 

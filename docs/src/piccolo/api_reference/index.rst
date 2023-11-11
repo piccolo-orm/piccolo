@@ -60,7 +60,6 @@ LazyTableReference
 .. currentmodule:: piccolo.columns
 
 .. autoclass:: LazyTableReference
-    :members:
 
 -------------------------------------------------------------------------------
 

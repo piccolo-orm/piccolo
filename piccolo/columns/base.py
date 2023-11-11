@@ -79,7 +79,7 @@ class OnUpdate(str, Enum):
 
 @dataclass
 class ForeignKeyMeta:
-    references: t.Union[t.Type[Table], LazyTableReference]
+    references: t.Union[t.Type[Table], LazyTableReference, str]
     on_delete: OnDelete
     on_update: OnUpdate
     target_column: t.Union[Column, str, None]
@@ -95,7 +95,14 @@ class ForeignKeyMeta:
         from piccolo.table import Table
 
         if isinstance(self.references, LazyTableReference):
-            return self.references.resolve()
+            if self.references.ready:
+                return self.references.resolve()
+            else:
+                raise ValueError(
+                    f"The {self.references.table_class_name} table hasn't "
+                    "fully initialised yet - please refactor your code so all "
+                    "tables have imported before using them."
+                )
         elif inspect.isclass(self.references) and issubclass(
             self.references, Table
         ):

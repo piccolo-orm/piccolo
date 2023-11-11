@@ -954,25 +954,56 @@ class TestM2MMigrations(MigrationTestCase):
 ###############################################################################
 
 
+class TableA(Table):
+    pass
+
+
+class TableB(Table):
+    fk = ForeignKey(TableA)
+
+
+class TableC(Table):
+    fk = ForeignKey(TableB)
+
+
+class TableD(Table):
+    fk = ForeignKey(TableC)
+
+
+class TableE(Table):
+    fk_2 = ForeignKey(LazyTableReference("TableF", module_path=__name__))
+    fk_3 = ForeignKey(LazyTableReference("TableG", module_path=__name__))
+    fk_5 = ForeignKey("TableG")
+
+
+class TableF(Table):
+    """
+    A table with a custom PK.
+    """
+
+    id = UUID(primary_key=True)
+
+
+class TableG(Table):
+    """
+    A table with the default Serial PK.
+    """
+
+    pass
+
+
 @engines_only("postgres", "cockroach")
 class TestForeignKeys(MigrationTestCase):
     def setUp(self):
-        class TableA(Table):
-            pass
-
-        class TableB(Table):
-            fk = ForeignKey(TableA)
-
-        class TableC(Table):
-            fk = ForeignKey(TableB)
-
-        class TableD(Table):
-            fk = ForeignKey(TableC)
-
-        class TableE(Table):
-            fk = ForeignKey(TableD)
-
-        self.table_classes = [TableA, TableB, TableC, TableD, TableE]
+        self.table_classes = [
+            TableA,
+            TableB,
+            TableC,
+            TableD,
+            TableE,
+            TableF,
+            TableG,
+        ]
 
     def tearDown(self):
         drop_db_tables_sync(Migration, *self.table_classes)
@@ -993,6 +1024,13 @@ class TestForeignKeys(MigrationTestCase):
         self._test_migrations(table_snapshots=[table_classes])
         for table_class in table_classes:
             self.assertTrue(table_class.table_exists().run_sync())
+
+    def test_subset(self):
+        """
+        Test a smaller subset, just in case there's a bug with importing
+        dependencies.
+        """
+        self._test_migrations(table_snapshots=[[TableE, TableF, TableG]])
 
 
 @engines_only("postgres", "cockroach")

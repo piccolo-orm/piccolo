@@ -74,6 +74,7 @@ class TableMeta:
     """
 
     tablename: str = ""
+    app_name: t.Optional[str] = None
     columns: t.List[Column] = field(default_factory=list)
     default_columns: t.List[Column] = field(default_factory=list)
     non_default_columns: t.List[Column] = field(default_factory=list)
@@ -353,14 +354,16 @@ class Table(metaclass=TableMetaclass):
             # ForeignKey columns require additional setup based on their
             # parent Table.
             foreign_key_setup_response = foreign_key_column._setup(
-                table_class=cls
+                table_class=cls, loaded_table_classes=TABLE_REGISTRY
             )
+
             if foreign_key_setup_response.is_lazy:
                 LAZY_COLUMN_REFERENCES.foreign_key_columns.append(
                     foreign_key_column
                 )
 
         TABLE_REGISTRY.append(cls)
+        LAZY_COLUMN_REFERENCES.check_ready(table_class=cls)
 
     def __init__(
         self,

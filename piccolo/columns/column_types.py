@@ -1716,15 +1716,9 @@ class ForeignKey(Column):
 
         In certain situations, you may be unable to reference a ``Table`` class
         if it causes a circular dependency. Try and avoid these by refactoring
-        your code. If unavoidable, you can specify a lazy reference. If the
-        ``Table`` is defined in the same file:
-
-        .. code-block:: python
-
-            class Band(Table):
-                manager = ForeignKey(references='Manager')
-
-        If the ``Table`` is defined in a Piccolo app:
+        your code. If unavoidable, you can specify a lazy reference using
+        :class:`LazyTableReference <piccolo.columns.reference.LazyTableReference>`.
+        If the ``Table`` is defined in the same file:
 
         .. code-block:: python
 
@@ -1733,11 +1727,15 @@ class ForeignKey(Column):
             class Band(Table):
                 manager = ForeignKey(
                     references=LazyTableReference(
-                       table_class_name="Manager", app_name="my_app",
+                       table_class_name="Manager",
+                       module_path=__name__,
                     )
+                    # Alternatively, Piccolo will interpret this string the
+                    # same as above:
+                    # references="Manager"
                 )
 
-        If you aren't using Piccolo apps, you can specify a ``Table`` in any
+        Or if the ``Table`` is defined in a different file:
         Python module:
 
         .. code-block:: python
@@ -1750,9 +1748,22 @@ class ForeignKey(Column):
                        table_class_name="Manager",
                        module_path="some_module.tables",
                     )
-                    # Alternatively, Piccolo will interpret this string as
-                    # the same as above:
+                    # Alternatively, Piccolo will interpret this string the
+                    # same as above:
                     # references="some_module.tables.Manager"
+                )
+
+        If the ``Table`` is defined in a Piccolo app, you can also use this:
+
+        .. code-block:: python
+
+            from piccolo.columns.reference import LazyTableReference
+
+            class Band(Table):
+                manager = ForeignKey(
+                    references=LazyTableReference(
+                       table_class_name="Manager", app_name="my_app",
+                    )
                 )
 
     :param on_delete:
@@ -1887,19 +1898,38 @@ class ForeignKey(Column):
         # The ``TableMetaclass``` sets the actual value for
         # ``ForeignKeyMeta.references``, if the user passed in a string.
         self._foreign_key_meta = ForeignKeyMeta(
-            references=Table if isinstance(references, str) else references,
+            references=references,
             on_delete=on_delete,
             on_update=on_update,
             target_column=target_column,
         )
 
-    def _setup(self, table_class: t.Type[Table]) -> ForeignKeySetupResponse:
+    def _on_ready(self):
+        """
+        Once we know the table being referred to has been loaded, we call this
+        method.
+        """
+        # Record the reverse relationship on the target table.
+        referenced_table = self._foreign_key_meta.resolved_references
+        if self not in referenced_table._meta._foreign_key_references:
+            referenced_table._meta._foreign_key_references.append(self)
+        # Allow columns on the referenced table to be accessed via
+        # auto completion.
+        self.set_proxy_columns()
+
+    def _setup(
+        self,
+        table_class: t.Type[Table],
+        loaded_table_classes: t.List[t.Type[Table]] = [],
+    ) -> ForeignKeySetupResponse:
         """
         This is called by the ``TableMetaclass``. A ``ForeignKey`` column can
         only be completely setup once it's parent ``Table`` is known.
 
         :param table_class:
             The parent ``Table`` class for this column.
+        :param loaded_table_classes:
+            Any ``Table`` classes which have already been loaded.
 
         """
         from piccolo.table import Table
@@ -1929,26 +1959,30 @@ class ForeignKey(Column):
                     module_path=module_path,
                 )
 
+        self._foreign_key_meta.references = references
+
         is_lazy = isinstance(references, LazyTableReference)
+
+        if is_lazy:
+            # We should check if the referenced tables are already
+            # available.
+            if references.check_ready(
+                table_classes=loaded_table_classes
+            ).was_changed:
+                self._on_ready()
+
         is_table_class = inspect.isclass(references) and issubclass(
             references, Table
         )
 
-        if is_lazy or is_table_class:
-            self._foreign_key_meta.references = references
-        else:
+        if not (is_lazy or is_table_class):
             raise ValueError(
                 "Error - ``references`` must be a ``Table`` subclass, or "
                 "a ``LazyTableReference`` instance."
             )
 
         if is_table_class:
-            # Record the reverse relationship on the target table.
-            references._meta._foreign_key_references.append(self)
-
-            # Allow columns on the referenced table to be accessed via
-            # auto completion.
-            self.set_proxy_columns()
+            self._on_ready()
 
         return ForeignKeySetupResponse(is_lazy=is_lazy)
 
@@ -2084,22 +2118,6 @@ class ForeignKey(Column):
         case a copy is returned with an updated call_chain (which records the
         joins required).
         """
-        # If the ForeignKey is using a lazy reference, we need to set the
-        # attributes here. Attributes starting with a double underscore are
-        # unlikely to be column names.
-        if not name.startswith("__"):
-            try:
-                _foreign_key_meta = object.__getattribute__(
-                    self, "_foreign_key_meta"
-                )
-            except AttributeError:
-                pass
-            else:
-                if _foreign_key_meta.proxy_columns == [] and isinstance(
-                    _foreign_key_meta.references, LazyTableReference
-                ):
-                    object.__getattribute__(self, "set_proxy_columns")()
-
         try:
             value = object.__getattribute__(self, name)
         except AttributeError:

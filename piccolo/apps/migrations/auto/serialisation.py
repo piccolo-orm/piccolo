@@ -15,7 +15,7 @@ from enum import Enum
 from piccolo.columns import Column
 from piccolo.columns.defaults.base import Default
 from piccolo.columns.reference import LazyTableReference
-from piccolo.table import Table
+from piccolo.table import Table, create_table_class
 from piccolo.utils.repr import repr_class_instance
 
 from .serialisation_legacy import deserialise_legacy_params
@@ -483,6 +483,31 @@ class SerialisedDecimal:
 ###############################################################################
 
 
+def _primary_key_params(primary_key: Column) -> SerialisedParams:
+    """
+    Returns the extra imports and definitions required for a primary column.
+    """
+    primary_key_class = primary_key.__class__
+
+    pk_serialised_params: SerialisedParams = serialise_params(
+        params=primary_key._meta.params
+    )
+
+    pk_serialised_params.extra_imports.append(
+        Import(
+            module=primary_key_class.__module__,
+            target=primary_key_class.__name__,
+            expect_conflict_with_global_name=getattr(
+                UniqueGlobalNames,
+                f"COLUMN_{primary_key_class.__name__.upper()}",
+                None,
+            ),
+        )
+    )
+
+    return pk_serialised_params
+
+
 def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
     """
     When writing column params to a migration file, we need to serialise some
@@ -664,6 +689,37 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
                     expect_conflict_with_global_name=UniqueGlobalNames.TABLE,
                 )
             )
+            pk_serialised_params = _primary_key_params(
+                table_type._meta.primary_key
+            )
+            extra_imports.extend(pk_serialised_params.extra_imports)
+            extra_definitions.extend(pk_serialised_params.extra_definitions)
+            continue
+
+        if key == "references" and isinstance(value, str):
+            # This isn't perfect - it's better if the user uses
+            # LazyTableReference, but do the best we can.
+
+            referenced_table_class = create_table_class(
+                class_name=value.rsplit(".")[-1]
+            )
+
+            extra_definitions.append(
+                SerialisedTableType(table_type=referenced_table_class)
+            )
+            extra_imports.append(
+                Import(
+                    module=Table.__module__,
+                    target=UniqueGlobalNames.TABLE,
+                    expect_conflict_with_global_name=UniqueGlobalNames.TABLE,
+                )
+            )
+
+            pk_serialised_params = _primary_key_params(
+                referenced_table_class._meta.primary_key
+            )
+            extra_imports.extend(pk_serialised_params.extra_imports)
+            extra_definitions.extend(pk_serialised_params.extra_definitions)
             continue
 
         # Replace any Table class values into class and table names
@@ -678,23 +734,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
                 )
             )
 
-            primary_key_class = value._meta.primary_key.__class__
-            extra_imports.append(
-                Import(
-                    module=primary_key_class.__module__,
-                    target=primary_key_class.__name__,
-                    expect_conflict_with_global_name=getattr(
-                        UniqueGlobalNames,
-                        f"COLUMN_{primary_key_class.__name__.upper()}",
-                        None,
-                    ),
-                )
-            )
-            # Include the extra imports and definitions required for the
-            # primary column params.
-            pk_serialised_params: SerialisedParams = serialise_params(
-                params=value._meta.primary_key._meta.params
-            )
+            pk_serialised_params = _primary_key_params(value._meta.primary_key)
             extra_imports.extend(pk_serialised_params.extra_imports)
             extra_definitions.extend(pk_serialised_params.extra_definitions)
 
