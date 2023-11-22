@@ -30,7 +30,7 @@ class ModelBuilder:
     async def build(
         cls,
         table_class: t.Type[TableInstance],
-        defaults: t.Dict[t.Union[Column, str], t.Any] = None,
+        defaults: t.Optional[t.Dict[t.Union[Column, str], t.Any]] = None,
         persist: bool = True,
         minimal: bool = False,
     ) -> TableInstance:
@@ -101,7 +101,7 @@ class ModelBuilder:
     async def _build(
         cls,
         table_class: t.Type[TableInstance],
-        defaults: t.Dict[t.Union[Column, str], t.Any] = None,
+        defaults: t.Optional[t.Dict[t.Union[Column, str], t.Any]] = None,
         minimal: bool = False,
         persist: bool = True,
     ) -> TableInstance:
@@ -115,7 +115,6 @@ class ModelBuilder:
             setattr(model, column._meta.name, value)
 
         for column in model._meta.columns:
-
             if column._meta.null and minimal:
                 continue
 

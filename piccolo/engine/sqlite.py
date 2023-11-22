@@ -196,7 +196,6 @@ sqlite3.register_adapter(list, convert_array_in)
 
 @dataclass
 class AsyncBatch(Batch):
-
     connection: Connection
     query: Query
     batch_size: int
@@ -448,7 +447,6 @@ def dict_factory(cursor, row) -> t.Dict:
 
 
 class SQLiteEngine(Engine[t.Optional[SQLiteTransaction]]):
-
     __slots__ = (
         "connection_kwargs",
         "current_transaction",
@@ -585,7 +583,7 @@ class SQLiteEngine(Engine[t.Optional[SQLiteTransaction]]):
     async def _run_in_new_connection(
         self,
         query: str,
-        args: t.List[t.Any] = None,
+        args: t.Optional[t.List[t.Any]] = None,
         query_type: str = "generic",
         table: t.Optional[t.Type[Table]] = None,
     ):
@@ -611,7 +609,7 @@ class SQLiteEngine(Engine[t.Optional[SQLiteTransaction]]):
         self,
         connection,
         query: str,
-        args: t.List[t.Any] = None,
+        args: t.Optional[t.List[t.Any]] = None,
         query_type: str = "generic",
         table: t.Optional[t.Type[Table]] = None,
     ):

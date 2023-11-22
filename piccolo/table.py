@@ -364,7 +364,7 @@ class Table(metaclass=TableMetaclass):
 
     def __init__(
         self,
-        _data: t.Dict[Column, t.Any] = None,
+        _data: t.Optional[t.Dict[Column, t.Any]] = None,
         _ignore_missing: bool = False,
         _exists_in_db: bool = False,
         **kwargs,
@@ -1120,7 +1120,6 @@ class Table(metaclass=TableMetaclass):
         column: t.Optional[Column] = None,
         distinct: t.Optional[t.Sequence[Column]] = None,
     ) -> Count:
-
         """
         Count the number of matching rows::
 

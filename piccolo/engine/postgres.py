@@ -22,7 +22,6 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 @dataclass
 class AsyncBatch(Batch):
-
     connection: Connection
     query: Query
     batch_size: int
@@ -348,7 +347,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         extensions: t.Sequence[str] = ("uuid-ossp",),
         log_queries: bool = False,
         log_responses: bool = False,
-        extra_nodes: t.Mapping[str, PostgresEngine] = None,
+        extra_nodes: t.Optional[t.Mapping[str, PostgresEngine]] = None,
     ) -> None:
         if extra_nodes is None:
             extra_nodes = {}

@@ -20,7 +20,6 @@ class UpdateError(Exception):
 
 
 class Update(Query[TableInstance, t.List[t.Any]]):
-
     __slots__ = (
         "force",
         "returning_delegate",
@@ -41,7 +40,9 @@ class Update(Query[TableInstance, t.List[t.Any]]):
     # Clauses
 
     def values(
-        self, values: t.Dict[t.Union[Column, str], t.Any] = None, **kwargs
+        self,
+        values: t.Optional[t.Dict[t.Union[Column, str], t.Any]] = None,
+        **kwargs,
     ) -> Update:
         if values is None:
             values = {}

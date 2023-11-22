@@ -227,7 +227,7 @@ class MigrationManager:
         db_column_name: t.Optional[str] = None,
         column_class_name: str = "",
         column_class: t.Optional[t.Type[Column]] = None,
-        params: t.Dict[str, t.Any] = None,
+        params: t.Optional[t.Dict[str, t.Any]] = None,
         schema: t.Optional[str] = None,
     ):
         """
@@ -309,8 +309,8 @@ class MigrationManager:
         tablename: str,
         column_name: str,
         db_column_name: t.Optional[str] = None,
-        params: t.Dict[str, t.Any] = None,
-        old_params: t.Dict[str, t.Any] = None,
+        params: t.Optional[t.Dict[str, t.Any]] = None,
+        old_params: t.Optional[t.Dict[str, t.Any]] = None,
         column_class: t.Optional[t.Type[Column]] = None,
         old_column_class: t.Optional[t.Type[Column]] = None,
         schema: t.Optional[str] = None,
@@ -421,7 +421,6 @@ class MigrationManager:
             )
 
             for alter_column in alter_columns:
-
                 params = (
                     alter_column.old_params
                     if backwards
@@ -660,7 +659,6 @@ class MigrationManager:
                         _Table.alter().drop_column(column=column.column_name)
                     )
 
-    async def _run_rename_tables(self, backwards=False):
     async def _run_rename_tables(self, backwards: bool = False):
         for rename_table in self.rename_tables:
             class_name = (
@@ -691,7 +689,6 @@ class MigrationManager:
                 _Table.alter().rename_table(new_name=new_tablename)
             )
 
-    async def _run_rename_columns(self, backwards=False):
     async def _run_rename_columns(self, backwards: bool = False):
         for table_class_name in self.rename_columns.table_class_names:
             columns = self.rename_columns.for_table_class_name(
@@ -728,7 +725,6 @@ class MigrationManager:
                     )
                 )
 
-    async def _run_add_tables(self, backwards=False):
     async def _run_add_tables(self, backwards: bool = False):
         table_classes: t.List[t.Type[Table]] = []
         for add_table in self.add_tables:
@@ -758,7 +754,6 @@ class MigrationManager:
             for _Table in sorted_table_classes:
                 await self._run_query(_Table.create_table())
 
-    async def _run_add_columns(self, backwards=False):
     async def _run_add_columns(self, backwards: bool = False):
         """
         Add columns, which belong to existing tables
@@ -822,7 +817,6 @@ class MigrationManager:
                             _Table.create_index([add_column.column])
                         )
 
-    async def _run_change_table_schema(self, backwards=False):
     async def _run_change_table_schema(self, backwards: bool = False):
         from piccolo.schema import SchemaManager
 
@@ -866,7 +860,6 @@ class MigrationManager:
                     )
                 )
 
-    async def run(self, backwards=False):
     async def run(self, backwards: bool = False):
         direction = "backwards" if backwards else "forwards"
         if self.preview:
@@ -879,7 +872,6 @@ class MigrationManager:
             raise Exception("Can't find engine")
 
         async with engine.transaction():
-
             if not self.preview:
                 if direction == "backwards":
                     raw_list = self.raw_backwards
