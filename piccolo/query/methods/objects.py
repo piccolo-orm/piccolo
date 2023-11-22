@@ -280,7 +280,7 @@ class Objects(
     def get_or_create(
         self: Self,
         where: Combinable,
-        defaults: t.Dict[Column, t.Any] = None,
+        defaults: t.Optional[t.Dict[Column, t.Any]] = None,
     ) -> GetOrCreate[TableInstance]:
         if defaults is None:
             defaults = {}

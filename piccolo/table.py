@@ -224,7 +224,7 @@ class Table(metaclass=TableMetaclass):
         cls,
         tablename: t.Optional[str] = None,
         db: t.Optional[Engine] = None,
-        tags: t.List[str] = None,
+        tags: t.Optional[t.List[str]] = None,
         help_text: t.Optional[str] = None,
         schema: t.Optional[str] = None,
     ):  # sourcery no-metrics
@@ -826,7 +826,7 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def all_related(
-        cls, exclude: t.List[t.Union[str, ForeignKey]] = None
+        cls, exclude: t.Optional[t.List[t.Union[str, ForeignKey]]] = None
     ) -> t.List[Column]:
         """
         Used in conjunction with ``objects`` queries. Just as we can use
@@ -876,7 +876,7 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def all_columns(
-        cls, exclude: t.Sequence[t.Union[str, Column]] = None
+        cls, exclude: t.Optional[t.Sequence[t.Union[str, Column]]] = None
     ) -> t.List[Column]:
         """
         Used in conjunction with ``select`` queries. Just as we can use
@@ -1190,7 +1190,7 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def update(
         cls,
-        values: t.Dict[t.Union[Column, str], t.Any] = None,
+        values: t.Optional[t.Dict[t.Union[Column, str], t.Any]] = None,
         force: bool = False,
         use_auto_update: bool = True,
         **kwargs,
@@ -1302,7 +1302,7 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def _table_str(
-        cls, abbreviated=False, excluded_params: t.List[str] = None
+        cls, abbreviated=False, excluded_params: t.Optional[t.List[str]] = None
     ):
         """
         Returns a basic string representation of the table and its columns.

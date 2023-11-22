@@ -81,7 +81,7 @@ class ModelBuilder:
     def build_sync(
         cls,
         table_class: t.Type[TableInstance],
-        defaults: t.Dict[t.Union[Column, str], t.Any] = None,
+        defaults: t.Optional[t.Dict[t.Union[Column, str], t.Any]] = None,
         persist: bool = True,
         minimal: bool = False,
     ) -> TableInstance:

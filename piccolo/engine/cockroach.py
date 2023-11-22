@@ -25,7 +25,7 @@ class CockroachEngine(PostgresEngine):
         extensions: t.Sequence[str] = (),
         log_queries: bool = False,
         log_responses: bool = False,
-        extra_nodes: t.Dict[str, CockroachEngine] = None,
+        extra_nodes: t.Optional[t.Dict[str, CockroachEngine]] = None,
     ) -> None:
         super().__init__(
             config=config,

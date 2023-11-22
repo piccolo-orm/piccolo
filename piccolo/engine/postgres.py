@@ -488,7 +488,9 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
 
     ###########################################################################
 
-    async def _run_in_pool(self, query: str, args: t.Sequence[t.Any] = None):
+    async def _run_in_pool(
+        self, query: str, args: t.Optional[t.Sequence[t.Any]] = None
+    ):
         if args is None:
             args = []
         if not self.pool:
@@ -500,7 +502,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         return response
 
     async def _run_in_new_connection(
-        self, query: str, args: t.Sequence[t.Any] = None
+        self, query: str, args: t.Optional[t.Sequence[t.Any]] = None
     ):
         if args is None:
             args = []

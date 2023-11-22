@@ -32,8 +32,8 @@ class PiccoloAppModule(ModuleType):
 
 def table_finder(
     modules: t.Sequence[str],
-    include_tags: t.Sequence[str] = None,
-    exclude_tags: t.Sequence[str] = None,
+    include_tags: t.Optional[t.Sequence[str]] = None,
+    exclude_tags: t.Optional[t.Sequence[str]] = None,
     exclude_imported: bool = False,
 ) -> t.List[t.Type[Table]]:
     """
@@ -151,7 +151,7 @@ class AppConfig:
         default_factory=list
     )
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.commands = [
             i if isinstance(i, Command) else Command(i) for i in self.commands
         ]
@@ -176,7 +176,6 @@ class AppConfig:
         # We cache the value so it's more efficient, and also so we can set the
         # underlying value in unit tests for easier mocking.
         if self._migration_dependency_app_configs is None:
-
             modules: t.List[PiccoloAppModule] = [
                 t.cast(PiccoloAppModule, import_module(module_path))
                 for module_path in self.migration_dependencies
@@ -214,7 +213,7 @@ class AppRegistry:
 
     """
 
-    def __init__(self, apps: t.List[str] = None):
+    def __init__(self, apps: t.Optional[t.List[str]] = None):
         self.apps = apps or []
         self.app_configs: t.Dict[str, AppConfig] = {}
         app_names = []
