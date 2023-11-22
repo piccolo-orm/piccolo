@@ -34,7 +34,7 @@ def get_diagnose_flag() -> bool:
     return DIAGNOSE_FLAG in sys.argv
 
 
-def main():
+def main() -> None:
     """
     The entrypoint to the Piccolo CLI.
     """

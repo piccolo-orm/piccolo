@@ -403,7 +403,7 @@ class MigrationManager:
         else:
             await query.run()
 
-    async def _run_alter_columns(self, backwards=False):
+    async def _run_alter_columns(self, backwards: bool = False):
         for table_class_name in self.alter_columns.table_class_names:
             alter_columns = self.alter_columns.for_table_class_name(
                 table_class_name
@@ -622,7 +622,7 @@ class MigrationManager:
                     diffable_table.to_table_class().alter().drop_table()
                 )
 
-    async def _run_drop_columns(self, backwards=False):
+    async def _run_drop_columns(self, backwards: bool = False):
         if backwards:
             for drop_column in self.drop_columns.drop_columns:
                 _Table = await self.get_table_from_snapshot(
@@ -661,6 +661,7 @@ class MigrationManager:
                     )
 
     async def _run_rename_tables(self, backwards=False):
+    async def _run_rename_tables(self, backwards: bool = False):
         for rename_table in self.rename_tables:
             class_name = (
                 rename_table.new_class_name
@@ -691,6 +692,7 @@ class MigrationManager:
             )
 
     async def _run_rename_columns(self, backwards=False):
+    async def _run_rename_columns(self, backwards: bool = False):
         for table_class_name in self.rename_columns.table_class_names:
             columns = self.rename_columns.for_table_class_name(
                 table_class_name
@@ -727,6 +729,7 @@ class MigrationManager:
                 )
 
     async def _run_add_tables(self, backwards=False):
+    async def _run_add_tables(self, backwards: bool = False):
         table_classes: t.List[t.Type[Table]] = []
         for add_table in self.add_tables:
             add_columns: t.List[
@@ -756,6 +759,7 @@ class MigrationManager:
                 await self._run_query(_Table.create_table())
 
     async def _run_add_columns(self, backwards=False):
+    async def _run_add_columns(self, backwards: bool = False):
         """
         Add columns, which belong to existing tables
         """
@@ -819,6 +823,7 @@ class MigrationManager:
                         )
 
     async def _run_change_table_schema(self, backwards=False):
+    async def _run_change_table_schema(self, backwards: bool = False):
         from piccolo.schema import SchemaManager
 
         schema_manager = SchemaManager()
@@ -862,6 +867,7 @@ class MigrationManager:
                 )
 
     async def run(self, backwards=False):
+    async def run(self, backwards: bool = False):
         direction = "backwards" if backwards else "forwards"
         if self.preview:
             direction = "preview " + direction

@@ -347,7 +347,7 @@ class SerialisedTableType(Definition):
     def __eq__(self, other):
         return check_equality(self, other)
 
-    def __repr__(self):
+    def __repr__(self) -> None:
         tablename = self.table_type._meta.tablename
 
         # We have to add the primary key column definition too, so foreign
@@ -493,7 +493,6 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
     extra_definitions: t.List[Definition] = []
 
     for key, value in params.items():
-
         # Builtins, such as str, list and dict.
         if inspect.getmodule(value) == builtins:
             params[key] = SerialisedBuiltin(builtin=value)
@@ -501,7 +500,6 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
 
         # Column instances
         if isinstance(value, Column):
-
             # For target_column (which is used by ForeignKey), we can just
             # serialise it as the column name:
             if key == "target_column":

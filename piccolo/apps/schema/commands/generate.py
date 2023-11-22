@@ -91,7 +91,7 @@ class TableConstraints:
     tablename: str
     constraints: t.List[Constraint]
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         foreign_key_constraints: t.List[Constraint] = []
         unique_constraints: t.List[Constraint] = []
         primary_key_constraints: t.List[Constraint] = []

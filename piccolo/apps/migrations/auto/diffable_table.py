@@ -39,7 +39,6 @@ def compare_dicts(
     output = {}
 
     for key, value in dict_1.items():
-
         dict_2_value = dict_2.get(key, ...)
         if (
             dict_2_value is not ...
@@ -99,7 +98,7 @@ class DiffableTable:
     columns: t.List[Column] = field(default_factory=list)
     previous_class_name: t.Optional[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.columns_map: t.Dict[str, Column] = {
             i._meta.name: i for i in self.columns
         }

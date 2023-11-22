@@ -45,7 +45,7 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
         else:
             raise ValueError("Engine isn't defined.")
 
-    async def _process_results(self, results):
+    async def _process_results(self, results) -> t.Dict:
         if results:
             keys = results[0].keys()
             keys = [i.replace("$", ".") for i in keys]
