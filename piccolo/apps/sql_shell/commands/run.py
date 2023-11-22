@@ -11,7 +11,7 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.engine.base import Engine
 
 
-def run():
+def run() -> None:
     """
     Launch the SQL shell for the configured engine. For Postgres
     this will be psql, and for SQLite it will be sqlite3.

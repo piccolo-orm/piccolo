@@ -29,7 +29,7 @@ def start_ipython_shell(
     IPython.embed(using=_asyncio_runner, colors="neutral")
 
 
-def run():
+def run() -> None:
     """
     Runs an iPython shell, and automatically imports all of the Table classes
     from your project.
