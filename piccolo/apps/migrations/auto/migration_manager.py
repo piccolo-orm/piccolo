@@ -646,7 +646,7 @@ class MigrationManager:
                 if not columns:
                     continue
 
-                _Table: t.Type[Table] = create_table_class(
+                _Table = create_table_class(
                     class_name=table_class_name,
                     class_kwargs={
                         "tablename": columns[0].tablename,
@@ -767,7 +767,7 @@ class MigrationManager:
                     # be deleted.
                     continue
 
-                _Table: t.Type[Table] = create_table_class(
+                _Table = create_table_class(
                     class_name=add_column.table_class_name,
                     class_kwargs={
                         "tablename": add_column.tablename,
@@ -789,7 +789,7 @@ class MigrationManager:
 
                 # Define the table, with the columns, so the metaclass
                 # sets up the columns correctly.
-                _Table: t.Type[Table] = create_table_class(
+                _Table = create_table_class(
                     class_name=add_columns[0].table_class_name,
                     class_kwargs={
                         "tablename": add_columns[0].tablename,
