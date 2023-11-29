@@ -124,6 +124,9 @@ class AlterColumnCollection:
         return list({i.table_class_name for i in self.alter_columns})
 
 
+AsyncFunction = t.Callable[[], t.Coroutine]
+
+
 @dataclass
 class MigrationManager:
     """
@@ -153,8 +156,10 @@ class MigrationManager:
     alter_columns: AlterColumnCollection = field(
         default_factory=AlterColumnCollection
     )
-    raw: t.List[t.Union[t.Callable, t.Coroutine]] = field(default_factory=list)
-    raw_backwards: t.List[t.Union[t.Callable, t.Coroutine]] = field(
+    raw: t.List[t.Union[t.Callable, AsyncFunction]] = field(
+        default_factory=list
+    )
+    raw_backwards: t.List[t.Union[t.Callable, AsyncFunction]] = field(
         default_factory=list
     )
 
@@ -337,14 +342,14 @@ class MigrationManager:
             )
         )
 
-    def add_raw(self, raw: t.Union[t.Callable, t.Coroutine]):
+    def add_raw(self, raw: t.Union[t.Callable, AsyncFunction]):
         """
         A migration manager can execute arbitrary functions or coroutines when
         run. This is useful if you want to execute raw SQL.
         """
         self.raw.append(raw)
 
-    def add_raw_backwards(self, raw: t.Union[t.Callable, t.Coroutine]):
+    def add_raw_backwards(self, raw: t.Union[t.Callable, AsyncFunction]):
         """
         When reversing a migration, you may want to run extra code to help
         clean up.
@@ -388,7 +393,7 @@ class MigrationManager:
     ###########################################################################
 
     @staticmethod
-    async def _print_query(query: t.Union[DDL, Query]):
+    async def _print_query(query: t.Union[DDL, Query, SchemaDDLBase]):
         if isinstance(query, DDL):
             print("\n", ";".join(query.ddl) + ";")
         else:
@@ -827,15 +832,19 @@ class MigrationManager:
             if backwards:
                 # Note, we don't try dropping any schemas we may have created.
                 # It's dangerous to do so, just in case the user manually
-                # added tables etc to the scheme, and we delete them.
+                # added tables etc to the schema, and we delete them.
 
-                if change_table_schema.old_schema not in (None, "public"):
+                if (
+                    change_table_schema.old_schema
+                    and change_table_schema.old_schema != "public"
+                ):
                     await self._run_query(
                         schema_manager.create_schema(
                             schema_name=change_table_schema.old_schema,
                             if_not_exists=True,
                         )
                     )
+
                 await self._run_query(
                     schema_manager.move_table(
                         table_name=change_table_schema.tablename,
@@ -845,7 +854,10 @@ class MigrationManager:
                 )
 
             else:
-                if change_table_schema.new_schema not in (None, "public"):
+                if (
+                    change_table_schema.new_schema
+                    and change_table_schema.new_schema != "public"
+                ):
                     await self._run_query(
                         schema_manager.create_schema(
                             schema_name=change_table_schema.new_schema,
