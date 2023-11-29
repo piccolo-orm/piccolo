@@ -26,7 +26,6 @@ class Timer:
 
 
 class Query(t.Generic[TableInstance, QueryResponseType]):
-
     __slots__ = ("table", "_frozen_querystrings")
 
     def __init__(
@@ -370,7 +369,6 @@ class FrozenQuery:
 
 
 class DDL:
-
     __slots__ = ("table",)
 
     def __init__(self, table: t.Type[Table], **kwargs):
