@@ -155,10 +155,6 @@ class AppConfig:
     )
 
     def __post_init__(self) -> None:
-        self.commands = [
-            i if isinstance(i, Command) else Command(i) for i in self.commands
-        ]
-
         if isinstance(self.migrations_folder_path, pathlib.Path):
             self.migrations_folder_path = str(self.migrations_folder_path)
 
@@ -169,6 +165,11 @@ class AppConfig:
     def register_table(self, table_class: t.Type[Table]):
         self.table_classes.append(table_class)
         return table_class
+
+    def get_commands(self) -> t.List[Command]:
+        return [
+            i if isinstance(i, Command) else Command(i) for i in self.commands
+        ]
 
     @property
     def migration_dependency_app_configs(self) -> t.List[AppConfig]:
