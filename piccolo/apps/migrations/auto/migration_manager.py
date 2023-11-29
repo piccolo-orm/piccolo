@@ -18,6 +18,7 @@ from piccolo.columns.column_types import Serial
 from piccolo.engine import engine_finder
 from piccolo.query import Query
 from piccolo.query.base import DDL
+from piccolo.schema import SchemaDDLBase
 from piccolo.table import Table, create_table_class, sort_table_classes
 from piccolo.utils.warnings import colored_warning
 
@@ -393,7 +394,7 @@ class MigrationManager:
         else:
             print(str(query))
 
-    async def _run_query(self, query: t.Union[DDL, Query]):
+    async def _run_query(self, query: t.Union[DDL, Query, SchemaDDLBase]):
         """
         If MigrationManager is not in the preview mode,
          executes the queries. else, prints the query.
