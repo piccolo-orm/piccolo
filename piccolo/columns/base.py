@@ -469,6 +469,7 @@ class Column(Selectable):
     """
 
     value_type: t.Type = int
+    default: any
 
     def __init__(
         self,
