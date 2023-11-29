@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from importlib import import_module
 from types import ModuleType
 
+from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.engine.base import Engine
 from piccolo.table import Table
 from piccolo.utils.graphlib import TopologicalSorter
@@ -22,7 +23,7 @@ class MigrationModule(ModuleType):
     DESCRIPTION: str
 
     @staticmethod
-    async def forwards() -> None:
+    async def forwards() -> MigrationManager:
         pass
 
 
