@@ -13,9 +13,7 @@ except ImportError:
     IPYTHON = False
 
 
-def start_ipython_shell(
-    **tables: t.Dict[str, t.Type[Table]]
-):  # pragma: no cover
+def start_ipython_shell(**tables: t.Type[Table]):  # pragma: no cover
     if not IPYTHON:
         sys.exit(
             "Install iPython using `pip install ipython` to use this feature."
