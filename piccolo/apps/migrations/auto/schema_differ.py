@@ -454,10 +454,11 @@ class SchemaDiffer:
                 class_name = self.rename_tables_collection.renamed_from(
                     table_class_name
                 )
-                snapshot_table = self.schema_snapshot_map.get(class_name)
-                if snapshot_table:
-                    snapshot_table.class_name = table_class_name
-                    return snapshot_table
+                if class_name:
+                    snapshot_table = self.schema_snapshot_map.get(class_name)
+                    if snapshot_table:
+                        snapshot_table.class_name = table_class_name
+                        return snapshot_table
         return None
 
     @property
