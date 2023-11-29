@@ -1,7 +1,7 @@
 import sys
 import typing as t
 
-from piccolo.conf.apps import AppConfig, AppRegistry, Finder
+from piccolo.conf.apps import Finder
 from piccolo.table import Table
 
 try:
@@ -32,7 +32,7 @@ def run() -> None:
     Runs an iPython shell, and automatically imports all of the Table classes
     from your project.
     """
-    app_registry: AppRegistry = Finder().get_app_registry()
+    app_registry = Finder().get_app_registry()
 
     tables = {}
     if app_registry.app_configs:
@@ -41,7 +41,6 @@ def run() -> None:
         print(spacer)
 
         for app_name, app_config in app_registry.app_configs.items():
-            app_config: AppConfig = app_config
             print(f"Importing {app_name} tables:")
             if app_config.table_classes:
                 for table_class in sorted(
