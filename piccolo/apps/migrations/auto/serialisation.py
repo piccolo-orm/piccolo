@@ -347,7 +347,7 @@ class SerialisedTableType(Definition):
     def __eq__(self, other):
         return check_equality(self, other)
 
-    def __repr__(self) -> None:
+    def __repr__(self) -> str:
         tablename = self.table_type._meta.tablename
 
         # We have to add the primary key column definition too, so foreign
