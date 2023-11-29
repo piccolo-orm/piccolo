@@ -127,7 +127,8 @@ class TableConstraints:
         for i in self.foreign_key_constraints:
             if i.column_name == column_name:
                 return ConstraintTable(
-                    name=i.constraint_name, schema=i.constraint_schema
+                    name=i.constraint_name,
+                    schema=i.constraint_schema or "public",
                 )
 
         raise ValueError("No matching constraint found")
@@ -307,7 +308,7 @@ COLUMN_TYPE_MAP: t.Dict[str, t.Type[Column]] = {
 }
 
 # Re-map for Cockroach compatibility.
-COLUMN_TYPE_MAP_COCKROACH = {
+COLUMN_TYPE_MAP_COCKROACH: t.Dict[str, t.Type[Column]] = {
     **COLUMN_TYPE_MAP,
     **{"integer": BigInt, "json": JSONB},
 }
@@ -374,14 +375,13 @@ COLUMN_DEFAULT_PARSER = {
 # Re-map for Cockroach compatibility.
 COLUMN_DEFAULT_PARSER_COCKROACH = {
     **COLUMN_DEFAULT_PARSER,
-    **{BigInt: re.compile(r"^(?P<value>-?\d+)$")},
+    BigInt: re.compile(r"^(?P<value>-?\d+)$"),
 }
 
 
 def get_column_default(
     column_type: t.Type[Column], column_default: str, engine_type: str
 ) -> t.Any:
-
     if engine_type == "cockroach":
         pat = COLUMN_DEFAULT_PARSER_COCKROACH.get(column_type)
     else:
@@ -461,6 +461,7 @@ INDEX_METHOD_MAP: t.Dict[str, IndexMethod] = {
     "gist": IndexMethod.gist,
     "gin": IndexMethod.gin,
 }
+
 
 # 'Indices' seems old-fashioned and obscure in this context.
 async def get_indexes(  # noqa: E302
@@ -786,9 +787,12 @@ async def create_table_class_from_db(
             kwargs["length"] = pg_row_meta.character_maximum_length
         elif isinstance(column_type, Numeric):
             radix = pg_row_meta.numeric_precision_radix
-            precision = int(str(pg_row_meta.numeric_precision), radix)
-            scale = int(str(pg_row_meta.numeric_scale), radix)
-            kwargs["digits"] = (precision, scale)
+            if radix:
+                precision = int(str(pg_row_meta.numeric_precision), radix)
+                scale = int(str(pg_row_meta.numeric_scale), radix)
+                kwargs["digits"] = (precision, scale)
+            else:
+                kwargs["digits"] = None
 
         if column_default:
             default_value = get_column_default(
