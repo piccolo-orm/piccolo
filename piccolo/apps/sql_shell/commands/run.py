@@ -1,6 +1,7 @@
 import os
 import signal
 import subprocess
+import sys
 import typing as t
 
 from piccolo.engine.finder import engine_finder
@@ -25,8 +26,6 @@ def run() -> None:
     if isinstance(engine, PostgresEngine):
         engine = t.cast(PostgresEngine, engine)
 
-        engine.atomic
-
         args = ["psql"]
 
         host = engine.config.get("host")
@@ -41,7 +40,8 @@ def run() -> None:
             args += ["-h", host]
         if port:
             args += ["-p", str(port)]
-        args += [database]
+        if database:
+            args += [database]
 
         sigint_handler = signal.getsignal(signal.SIGINT)
         subprocess_env = os.environ.copy()
@@ -58,7 +58,10 @@ def run() -> None:
 
     elif isinstance(engine, SQLiteEngine):
         engine = t.cast(SQLiteEngine, engine)
+
+        database = t.cast(str, engine.connection_kwargs.get("database"))
+        if not database:
+            sys.exit("Unable to determine which database to connect to.")
+
         print("Enter .quit to exit")
-        subprocess.run(
-            ["sqlite3", engine.connection_kwargs.get("database")], check=True
-        )
+        subprocess.run(["sqlite3", database], check=True)
