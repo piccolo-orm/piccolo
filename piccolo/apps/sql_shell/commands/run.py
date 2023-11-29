@@ -7,16 +7,13 @@ from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
 
-if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.engine.base import Engine
-
 
 def run() -> None:
     """
     Launch the SQL shell for the configured engine. For Postgres
     this will be psql, and for SQLite it will be sqlite3.
     """
-    engine: t.Optional[Engine] = engine_finder()
+    engine = engine_finder()
 
     if engine is None:
         raise ValueError(
@@ -26,7 +23,9 @@ def run() -> None:
 
     # Heavily inspired by Django's dbshell command
     if isinstance(engine, PostgresEngine):
-        engine: PostgresEngine = engine
+        engine = t.cast(PostgresEngine, engine)
+
+        engine.atomic
 
         args = ["psql"]
 
@@ -58,7 +57,7 @@ def run() -> None:
             signal.signal(signal.SIGINT, sigint_handler)
 
     elif isinstance(engine, SQLiteEngine):
-        engine: SQLiteEngine = engine
+        engine = t.cast(SQLiteEngine, engine)
         print("Enter .quit to exit")
         subprocess.run(
             ["sqlite3", engine.connection_kwargs.get("database")], check=True
