@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import abc
 import inspect
 import itertools
 import os
@@ -22,9 +23,10 @@ class MigrationModule(ModuleType):
     VERSION: str
     DESCRIPTION: str
 
+    @abc.abstractmethod
     @staticmethod
     async def forwards() -> MigrationManager:
-        pass
+        ...
 
 
 class PiccoloAppModule(ModuleType):
