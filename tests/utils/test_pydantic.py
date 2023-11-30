@@ -576,7 +576,10 @@ class TestNestedModel(TestCase):
 
         #######################################################################
 
-        ManagerModel = BandModel.model_fields["manager"].annotation
+        ManagerModel = t.cast(
+            t.Type[pydantic.BaseModel],
+            BandModel.model_fields["manager"].annotation,
+        )
         self.assertTrue(issubclass(ManagerModel, pydantic.BaseModel))
         self.assertEqual(
             [i for i in ManagerModel.model_fields.keys()], ["name", "country"]
@@ -584,7 +587,10 @@ class TestNestedModel(TestCase):
 
         #######################################################################
 
-        CountryModel = ManagerModel.model_fields["country"].annotation
+        CountryModel = t.cast(
+            t.Type[pydantic.BaseModel],
+            ManagerModel.model_fields["country"].annotation,
+        )
         self.assertTrue(issubclass(CountryModel, pydantic.BaseModel))
         self.assertEqual(
             [i for i in CountryModel.model_fields.keys()], ["name"]
@@ -621,7 +627,10 @@ class TestNestedModel(TestCase):
 
         BandModel = create_pydantic_model(table=Band, nested=(Band.manager,))
 
-        ManagerModel = BandModel.model_fields["manager"].annotation
+        ManagerModel = t.cast(
+            t.Type[pydantic.BaseModel],
+            BandModel.model_fields["manager"].annotation,
+        )
         self.assertTrue(issubclass(ManagerModel, pydantic.BaseModel))
         self.assertEqual(
             [i for i in ManagerModel.model_fields.keys()], ["name", "country"]
@@ -640,19 +649,26 @@ class TestNestedModel(TestCase):
             table=Band, nested=(Band.manager.country,)
         )
 
-        ManagerModel = BandModel.model_fields["manager"].annotation
+        ManagerModel = t.cast(
+            t.Type[pydantic.BaseModel],
+            BandModel.model_fields["manager"].annotation,
+        )
         self.assertTrue(issubclass(ManagerModel, pydantic.BaseModel))
         self.assertEqual(
             [i for i in ManagerModel.model_fields.keys()], ["name", "country"]
         )
         self.assertEqual(ManagerModel.__qualname__, "Band.manager")
 
-        AssistantManagerType = BandModel.model_fields[
-            "assistant_manager"
-        ].annotation
+        AssistantManagerType = t.cast(
+            t.Type[pydantic.BaseModel],
+            BandModel.model_fields["assistant_manager"].annotation,
+        )
         self.assertIs(AssistantManagerType, t.Optional[int])
 
-        CountryModel = ManagerModel.model_fields["country"].annotation
+        CountryModel = t.cast(
+            t.Type[pydantic.BaseModel],
+            ManagerModel.model_fields["country"].annotation,
+        )
         self.assertTrue(issubclass(CountryModel, pydantic.BaseModel))
         self.assertEqual(
             [i for i in CountryModel.model_fields.keys()], ["name"]
@@ -669,7 +685,10 @@ class TestNestedModel(TestCase):
         VenueModel = ConcertModel.model_fields["venue"].annotation
         self.assertIs(VenueModel, t.Optional[int])
 
-        BandModel = ConcertModel.model_fields["band_1"].annotation
+        BandModel = t.cast(
+            t.Type[pydantic.BaseModel],
+            ConcertModel.model_fields["band_1"].annotation,
+        )
         self.assertTrue(issubclass(BandModel, pydantic.BaseModel))
         self.assertEqual(
             [i for i in BandModel.model_fields.keys()],
@@ -677,7 +696,10 @@ class TestNestedModel(TestCase):
         )
         self.assertEqual(BandModel.__qualname__, "Concert.band_1")
 
-        ManagerModel = BandModel.model_fields["manager"].annotation
+        ManagerModel = t.cast(
+            t.Type[pydantic.BaseModel],
+            BandModel.model_fields["manager"].annotation,
+        )
         self.assertTrue(issubclass(ManagerModel, pydantic.BaseModel))
         self.assertEqual(
             [i for i in ManagerModel.model_fields.keys()],
@@ -690,7 +712,7 @@ class TestNestedModel(TestCase):
         ].annotation
         self.assertIs(AssistantManagerType, t.Optional[int])
 
-        CountryModel = ManagerModel.model_fields["country"].annotation
+        CountryModel = (ManagerModel.model_fields["country"].annotation,)
         self.assertIs(CountryModel, t.Optional[int])
 
         #######################################################################
@@ -710,7 +732,7 @@ class TestNestedModel(TestCase):
             ManagerModel.__qualname__, "MyConcertModel.band_1.manager"
         )
 
-    def test_cascaded_args(self):
+    def test_cascaded_args(self) -> None:
         """
         Make sure that arguments passed to ``create_pydantic_model`` are
         cascaded to nested models.
@@ -731,14 +753,20 @@ class TestNestedModel(TestCase):
             table=Band, nested=True, include_default_columns=True
         )
 
-        ManagerModel = BandModel.model_fields["manager"].annotation
+        ManagerModel = t.cast(
+            t.Type[pydantic.BaseModel],
+            BandModel.model_fields["manager"].annotation,
+        )
         self.assertTrue(issubclass(ManagerModel, pydantic.BaseModel))
         self.assertEqual(
             [i for i in ManagerModel.model_fields.keys()],
             ["id", "name", "country"],
         )
 
-        CountryModel = ManagerModel.model_fields["country"].annotation
+        CountryModel = t.cast(
+            t.Type[pydantic.BaseModel],
+            ManagerModel.model_fields["country"].annotation,
+        )
         self.assertTrue(issubclass(CountryModel, pydantic.BaseModel))
         self.assertEqual(
             [i for i in CountryModel.model_fields.keys()], ["id", "name"]
@@ -770,13 +798,22 @@ class TestRecursionDepth(TestCase):
             table=Concert, nested=True, max_recursion_depth=2
         )
 
-        VenueModel = ConcertModel.model_fields["venue"].annotation
+        VenueModel = t.cast(
+            t.Type[pydantic.BaseModel],
+            ConcertModel.model_fields["venue"].annotation,
+        )
         self.assertTrue(issubclass(VenueModel, pydantic.BaseModel))
 
-        BandModel = ConcertModel.model_fields["band"].annotation
+        BandModel = t.cast(
+            t.Type[pydantic.BaseModel],
+            ConcertModel.model_fields["band"].annotation,
+        )
         self.assertTrue(issubclass(BandModel, pydantic.BaseModel))
 
-        ManagerModel = BandModel.model_fields["manager"].annotation
+        ManagerModel = t.cast(
+            t.Type[pydantic.BaseModel],
+            BandModel.model_fields["manager"].annotation,
+        )
         self.assertTrue(issubclass(ManagerModel, pydantic.BaseModel))
 
         # We should have hit the recursion depth:
@@ -832,7 +869,7 @@ class TestPydanticExtraFields(TestCase):
         config: pydantic.config.ConfigDict = {"extra": "forbid"}
         model = create_pydantic_model(Band, pydantic_config=config)
 
-        self.assertEqual(model.model_config["extra"], "forbid")
+        self.assertEqual(model.model_config.get("extra"), "forbid")
 
     def test_pydantic_invalid_extra_fields(self) -> None:
         """
