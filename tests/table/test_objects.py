@@ -66,6 +66,7 @@ class TestGet(DBTestCase):
         self.insert_row()
 
         band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        assert band is not None
 
         self.assertEqual(band.name, "Pythonistas")
 
@@ -79,6 +80,7 @@ class TestGet(DBTestCase):
             .prefetch(Band.manager)
             .run_sync()
         )
+        assert band is not None
         self.assertIsInstance(band.manager, Manager)
 
         # Just passing it straight into objects
@@ -87,6 +89,7 @@ class TestGet(DBTestCase):
             .get((Band.name == "Pythonistas"))
             .run_sync()
         )
+        assert band is not None
         self.assertIsInstance(band.manager, Manager)
 
 

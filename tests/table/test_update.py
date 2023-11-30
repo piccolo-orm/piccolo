@@ -632,6 +632,7 @@ class TestAutoUpdate(TestCase):
             .first()
             .run_sync()
         )
+        assert updated_row is not None
         self.assertIsInstance(updated_row["modified_on"], datetime.datetime)
         self.assertEqual(updated_row["name"], "test 2")
 

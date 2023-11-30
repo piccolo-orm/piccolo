@@ -228,6 +228,8 @@ class DBTestCase(TestCase):
     ###########################################################################
 
     def create_tables(self):
+        assert ENGINE is not None
+
         if ENGINE.engine_type in ("postgres", "cockroach"):
             self.run_sync(
                 """
@@ -308,6 +310,8 @@ class DBTestCase(TestCase):
             raise Exception("Unrecognised engine")
 
     def insert_row(self):
+        assert ENGINE is not None
+
         if ENGINE.engine_type == "cockroach":
             id = self.run_sync(
                 """
@@ -352,6 +356,8 @@ class DBTestCase(TestCase):
             )
 
     def insert_rows(self):
+        assert ENGINE is not None
+
         if ENGINE.engine_type == "cockroach":
             id = self.run_sync(
                 """
@@ -428,6 +434,8 @@ class DBTestCase(TestCase):
         self.run_sync(f"INSERT INTO manager (name) VALUES {values_string};")
 
     def drop_tables(self):
+        assert ENGINE is not None
+
         if ENGINE.engine_type in ("postgres", "cockroach"):
             self.run_sync("DROP TABLE IF EXISTS band CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS manager CASCADE;")

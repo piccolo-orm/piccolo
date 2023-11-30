@@ -90,7 +90,7 @@ class TestDropColumn(DBTestCase):
     SQLite has very limited support for ALTER statements.
     """
 
-    def _test_drop(self, column: str):
+    def _test_drop(self, column: t.Union[str, Column]):
         self.insert_row()
 
         Band.alter().drop_column(column).run_sync()
@@ -229,10 +229,9 @@ class TestSetColumnType(DBTestCase):
             "BIGINT",
         )
 
-        popularity = (
-            Band.select(Band.popularity).first().run_sync()["popularity"]
-        )
-        self.assertEqual(popularity, 1000)
+        row = Band.select(Band.popularity).first().run_sync()
+        assert row is not None
+        self.assertEqual(row["popularity"], 1000)
 
     def test_integer_to_varchar(self):
         """
@@ -252,10 +251,9 @@ class TestSetColumnType(DBTestCase):
             "CHARACTER VARYING",
         )
 
-        popularity = (
-            Band.select(Band.popularity).first().run_sync()["popularity"]
-        )
-        self.assertEqual(popularity, "1000")
+        row = Band.select(Band.popularity).first().run_sync()
+        assert row is not None
+        self.assertEqual(row["popularity"], "1000")
 
     def test_using_expression(self):
         """
@@ -271,8 +269,9 @@ class TestSetColumnType(DBTestCase):
         )
         alter_query.run_sync()
 
-        popularity = Band.select(Band.name).first().run_sync()["name"]
-        self.assertEqual(popularity, 1)
+        row = Band.select(Band.name).first().run_sync()
+        assert row is not None
+        self.assertEqual(row["popularity"], 1)
 
 
 @engines_only("postgres", "cockroach")
@@ -321,12 +320,12 @@ class TestSetDefault(DBTestCase):
         ).run_sync()
 
         manager = Manager.objects().first().run_sync()
+        assert manager is not None
         self.assertEqual(manager.name, "Pending")
 
 
 @engines_only("postgres", "cockroach")
 class TestSetSchema(TestCase):
-
     schema_manager = SchemaManager()
     schema_name = "schema_1"
 
