@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import abc
 import inspect
 import itertools
 import os
 import pathlib
 import traceback
 import typing as t
+from abc import abstractmethod
 from dataclasses import dataclass, field
 from importlib import import_module
 from types import ModuleType
@@ -23,8 +23,8 @@ class MigrationModule(ModuleType):
     VERSION: str
     DESCRIPTION: str
 
-    @abc.abstractmethod
     @staticmethod
+    @abstractmethod
     async def forwards() -> MigrationManager:
         ...
 
