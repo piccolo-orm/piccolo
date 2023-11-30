@@ -1,9 +1,10 @@
-from piccolo.columns.column_types import Integer, Varchar
+from piccolo.columns.column_types import Integer, Serial, Varchar
 from piccolo.table import Table
 from tests.base import DBTestCase, engine_is, engines_only, engines_skip
 
 
 class Band(Table):
+    id: Serial
     name = Varchar(db_column_name="regrettable_column_name")
     popularity = Integer()
 
