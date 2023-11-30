@@ -42,6 +42,7 @@ class TestArray(TestCase):
         MyTable(value=[1, 2, 3]).save().run_sync()
 
         row = MyTable.objects().first().run_sync()
+        assert row is not None
         self.assertEqual(row.value, [1, 2, 3])
 
     @engines_only("postgres")

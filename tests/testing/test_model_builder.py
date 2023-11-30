@@ -91,6 +91,7 @@ class TestModelBuilder(unittest.TestCase):
         queried_shirt = (
             Shirt.objects().where(Shirt.id == shirt.id).first().run_sync()
         )
+        assert queried_shirt is not None
 
         self.assertIn(
             queried_shirt.size,
@@ -136,6 +137,7 @@ class TestModelBuilder(unittest.TestCase):
             .first()
             .run_sync()
         )
+        assert queried_manager is not None
 
         self.assertEqual(queried_manager.name, "Guido")
 
@@ -148,6 +150,7 @@ class TestModelBuilder(unittest.TestCase):
             .first()
             .run_sync()
         )
+        assert queried_manager is not None
 
         self.assertEqual(queried_manager.name, "Guido")
 

@@ -1028,6 +1028,7 @@ class TestSelectSecret(TestCase):
         user.save().run_sync()
 
         user_dict = BaseUser.select(exclude_secrets=True).first().run_sync()
+        assert user_dict is not None
         self.assertNotIn("password", user_dict.keys())
 
 
@@ -1047,6 +1048,7 @@ class TestSelectSecretParameter(TestCase):
         venue.save().run_sync()
 
         venue_dict = Venue.select(exclude_secrets=True).first().run_sync()
+        assert venue_dict is not None
         if engine_is("cockroach"):
             self.assertTrue(
                 venue_dict, {"id": venue_dict["id"], "name": "The Garage"}

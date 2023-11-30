@@ -604,12 +604,18 @@ class TestAutoUpdate(TestCase):
         # Insert a row for us to update
         AutoUpdateTable.insert(AutoUpdateTable(name="test")).run_sync()
 
-        self.assertDictEqual(
+        data = (
             AutoUpdateTable.select(
                 AutoUpdateTable.name, AutoUpdateTable.modified_on
             )
             .first()
-            .run_sync(),
+            .run_sync()
+        )
+
+        assert data is not None
+
+        self.assertDictEqual(
+            data,
             {"name": "test", "modified_on": None},
         )
 
