@@ -44,7 +44,7 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
         else:
             raise ValueError("Engine isn't defined.")
 
-    async def _process_results(self, results) -> t.Dict:
+    async def _process_results(self, results) -> QueryResponseType:
         if results:
             keys = results[0].keys()
             keys = [i.replace("$", ".") for i in keys]
@@ -117,14 +117,20 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
         if output:
             if output._output.as_objects:
                 if output._output.nested:
-                    raw = [make_nested_object(row, self.table) for row in raw]
+                    return t.cast(
+                        QueryResponseType,
+                        [make_nested_object(row, self.table) for row in raw],
+                    )
                 else:
-                    raw = [
-                        self.table(**columns, _exists_in_db=True)
-                        for columns in raw
-                    ]
+                    return t.cast(
+                        QueryResponseType,
+                        [
+                            self.table(**columns, _exists_in_db=True)
+                            for columns in raw
+                        ],
+                    )
 
-        return raw
+        return t.cast(QueryResponseType, raw)
 
     def _validate(self):
         """
@@ -221,7 +227,7 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
         with Timer():
             return run_sync(coroutine)
 
-    async def response_handler(self, response):
+    async def response_handler(self, response: t.List) -> t.Any:
         """
         Subclasses can override this to modify the raw response returned by
         the database driver.
