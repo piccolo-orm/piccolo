@@ -34,11 +34,11 @@ class TestJSONSave(TestCase):
         row = MyTable(json='{"a": 1}')
         row.save().run_sync()
 
+        row_from_db = MyTable.select(MyTable.json).first().run_sync()
+        assert row_from_db is not None
+
         self.assertEqual(
-            MyTable.select(MyTable.json)
-            .first()
-            .run_sync()["json"]
-            .replace(" ", ""),
+            row_from_db["json"].replace(" ", ""),
             '{"a":1}',
         )
 
@@ -49,11 +49,11 @@ class TestJSONSave(TestCase):
         row = MyTable(json={"a": 1})
         row.save().run_sync()
 
+        row_from_db = MyTable.select(MyTable.json).first().run_sync()
+        assert row_from_db is not None
+
         self.assertEqual(
-            MyTable.select(MyTable.json)
-            .first()
-            .run_sync()["json"]
-            .replace(" ", ""),
+            row_from_db["json"].replace(" ", ""),
             '{"a":1}',
         )
 
@@ -78,7 +78,7 @@ class TestJSONDefault(TestCase):
     def test_invalid_default(self):
         with self.assertRaises(ValueError):
             for value in ("a", 1, ("x", "y", "z")):
-                JSON(default=value)
+                JSON(default=value)  # type: ignore
 
 
 class TestJSONInsert(TestCase):
@@ -89,11 +89,10 @@ class TestJSONInsert(TestCase):
         MyTable.alter().drop_table().run_sync()
 
     def check_response(self):
+        row = MyTable.select(MyTable.json).first().run_sync()
+        assert row is not None
         self.assertEqual(
-            MyTable.select(MyTable.json)
-            .first()
-            .run_sync()["json"]
-            .replace(" ", ""),
+            row["json"].replace(" ", ""),
             '{"message":"original"}',
         )
 
@@ -125,11 +124,10 @@ class TestJSONUpdate(TestCase):
         row.save().run_sync()
 
     def check_response(self):
+        row = MyTable.select(MyTable.json).first().run_sync()
+        assert row is not None
         self.assertEqual(
-            MyTable.select(MyTable.json)
-            .first()
-            .run_sync()["json"]
-            .replace(" ", ""),
+            row["json"].replace(" ", ""),
             '{"message":"updated"}',
         )
 

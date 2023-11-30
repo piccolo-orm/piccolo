@@ -48,6 +48,7 @@ class TestDBColumnName(DBTestCase):
         band.save().run_sync()
 
         band_from_db = Band.objects().first().run_sync()
+        assert band_from_db is not None
         self.assertEqual(band_from_db.name, "Pythonistas")
 
     def test_create(self):
@@ -62,6 +63,7 @@ class TestDBColumnName(DBTestCase):
         self.assertEqual(band.name, "Pythonistas")
 
         band_from_db = Band.objects().first().run_sync()
+        assert band_from_db is not None
         self.assertEqual(band_from_db.name, "Pythonistas")
 
     def test_select(self):

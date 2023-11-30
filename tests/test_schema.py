@@ -21,10 +21,11 @@ class TestListTables(TestCase):
         """
         Make sure we can list all the tables in a schema.
         """
+        schema_name = Band._meta.schema
+
+        assert schema_name is not None
         table_list = (
-            SchemaManager()
-            .list_tables(schema_name=Band._meta.schema)
-            .run_sync()
+            SchemaManager().list_tables(schema_name=schema_name).run_sync()
         )
         self.assertListEqual(table_list, [Band._meta.tablename])
 
@@ -49,7 +50,6 @@ class TestCreateAndDrop(TestCase):
 
 @engines_skip("sqlite")
 class TestMoveTable(TestCase):
-
     new_schema = "schema_2"
 
     def setUp(self):
@@ -89,7 +89,6 @@ class TestMoveTable(TestCase):
 
 @engines_skip("sqlite")
 class TestRenameSchema(TestCase):
-
     manager = SchemaManager()
     schema_name = "test_schema"
     new_schema_name = "test_schema_2"

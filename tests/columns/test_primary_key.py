@@ -133,6 +133,7 @@ class TestPrimaryKeyQueries(TestCase):
         )
 
         manager_dict = Manager.select().first().run_sync()
+        assert manager_dict is not None
 
         self.assertEqual(
             [i for i in manager_dict.keys()],
@@ -151,6 +152,7 @@ class TestPrimaryKeyQueries(TestCase):
         band.save().run_sync()
 
         band_dict = Band.select().first().run_sync()
+        assert band_dict is not None
 
         self.assertEqual(
             [i for i in band_dict.keys()], ["pk", "name", "manager"]
@@ -163,6 +165,7 @@ class TestPrimaryKeyQueries(TestCase):
         # type (i.e. `uuid.UUID`).
 
         manager = Manager.objects().first().run_sync()
+        assert manager is not None
 
         band_2 = Band(manager=manager.pk, name="Pythonistas 2")
         band_2.save().run_sync()

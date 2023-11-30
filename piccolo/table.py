@@ -142,7 +142,10 @@ class TableMeta:
         self._db = value
 
     def refresh_db(self):
-        self.db = engine_finder()
+        engine = engine_finder()
+        if engine is None:
+            raise ValueError("The engine can't be found")
+        self.db = engine
 
     def get_column_by_name(self, name: str) -> Column:
         """
