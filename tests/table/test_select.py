@@ -680,6 +680,7 @@ class TestSelect(DBTestCase):
         self.insert_rows()
 
         response = Band.select(Avg(Band.popularity)).first().run_sync()
+        assert response is not None
 
         self.assertEqual(float(response["avg"]), 1003.3333333333334)
 
@@ -691,6 +692,7 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
+        assert response is not None
 
         self.assertEqual(float(response["popularity_avg"]), 1003.3333333333334)
 
@@ -702,6 +704,7 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
+        assert response is not None
 
         self.assertEqual(float(response["popularity_avg"]), 1003.3333333333334)
 
@@ -714,6 +717,7 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
+        assert response is not None
 
         self.assertEqual(response["avg"], 1500)
 
@@ -730,6 +734,7 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
+        assert response is not None
 
         self.assertEqual(response["popularity_avg"], 1500)
 
@@ -746,6 +751,7 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
+        assert response is not None
 
         self.assertEqual(response["popularity_avg"], 1500)
 
@@ -753,6 +759,7 @@ class TestSelect(DBTestCase):
         self.insert_rows()
 
         response = Band.select(Max(Band.popularity)).first().run_sync()
+        assert response is not None
 
         self.assertEqual(response["max"], 2000)
 
@@ -764,6 +771,7 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
+        assert response is not None
 
         self.assertEqual(response["popularity_max"], 2000)
 
@@ -775,6 +783,7 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
+        assert response is not None
 
         self.assertEqual(response["popularity_max"], 2000)
 
@@ -782,6 +791,7 @@ class TestSelect(DBTestCase):
         self.insert_rows()
 
         response = Band.select(Min(Band.popularity)).first().run_sync()
+        assert response is not None
 
         self.assertEqual(response["min"], 10)
 
@@ -793,6 +803,7 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
+        assert response is not None
 
         self.assertEqual(response["popularity_min"], 10)
 
@@ -804,6 +815,7 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
+        assert response is not None
 
         self.assertEqual(response["popularity_min"], 10)
 
@@ -811,6 +823,7 @@ class TestSelect(DBTestCase):
         self.insert_rows()
 
         response = Band.select(Sum(Band.popularity)).first().run_sync()
+        assert response is not None
 
         self.assertEqual(response["sum"], 3010)
 
@@ -822,6 +835,7 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
+        assert response is not None
 
         self.assertEqual(response["popularity_sum"], 3010)
 
@@ -833,6 +847,7 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
+        assert response is not None
 
         self.assertEqual(response["popularity_sum"], 3010)
 
@@ -845,6 +860,7 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
+        assert response is not None
 
         self.assertEqual(response["sum"], 3000)
 
@@ -861,6 +877,7 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
+        assert response is not None
 
         self.assertEqual(response["popularity_sum"], 3000)
 
@@ -877,6 +894,7 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
+        assert response is not None
 
         self.assertEqual(response["popularity_sum"], 3000)
 
@@ -888,6 +906,7 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
+        assert response is not None
 
         self.assertEqual(float(response["avg"]), 1003.3333333333334)
         self.assertEqual(response["sum"], 3010)
@@ -903,6 +922,7 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
+        assert response is not None
 
         self.assertEqual(float(response["popularity_avg"]), 1003.3333333333334)
         self.assertEqual(response["popularity_sum"], 3010)
@@ -929,7 +949,8 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
-        self.assertEqual(response, {"name": "Pythonistas"})
+        assert response is not None
+        self.assertDictEqual(response, {"name": "Pythonistas"})
 
         # Multiple calls to 'columns' should be additive.
         response = (
@@ -940,6 +961,7 @@ class TestSelect(DBTestCase):
             .first()
             .run_sync()
         )
+        assert response is not None
 
         if engine_is("cockroach"):
             self.assertEqual(
