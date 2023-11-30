@@ -1,26 +1,28 @@
 from unittest import TestCase
 
-from piccolo.columns import Varchar
+from piccolo.columns import Serial, Varchar
 from piccolo.table import Table
 
 
 class Manager(Table):
+    id: Serial
     name = Varchar(unique=True)
     email = Varchar(unique=True)
 
 
 class Band(Table):
+    id: Serial
     name = Varchar(unique=True)
     manager_name = Varchar()
 
 
 class Concert(Table):
+    id: Serial
     title = Varchar()
     band_name = Varchar()
 
 
 class TestJoinOn(TestCase):
-
     tables = [Manager, Band, Concert]
 
     def setUp(self):
