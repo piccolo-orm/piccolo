@@ -278,7 +278,7 @@ class TestSelect(DBTestCase):
         ``where(Band.has_drummer is None)``, which evaluates to a boolean.
         """
         with self.assertRaises(ValueError):
-            Band.select().where(False)
+            Band.select().where(False)  # type: ignore
 
     def test_where_is_not_null(self):
         self.insert_rows()
