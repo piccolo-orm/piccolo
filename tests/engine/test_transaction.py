@@ -45,12 +45,12 @@ class TestAtomic(TestCase):
         drop_db_tables_sync(Band, Manager)
 
     @engines_only("postgres", "cockroach")
-    def test_pool(self):
+    def test_pool(self) -> None:
         """
         Make sure atomic works correctly when a connection pool is active.
         """
 
-        async def run():
+        async def run() -> None:
             """
             We have to run this async function, so we can use a connection
             pool.

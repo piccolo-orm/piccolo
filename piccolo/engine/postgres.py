@@ -92,9 +92,9 @@ class Atomic:
 
     def __init__(self, engine: PostgresEngine):
         self.engine = engine
-        self.queries: t.List[Query] = []
+        self.queries: t.List[t.Union[Query, DDL]] = []
 
-    def add(self, *query: Query):
+    def add(self, *query: t.Union[Query, DDL]):
         self.queries += list(query)
 
     async def run(self):
