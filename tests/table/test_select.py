@@ -1379,7 +1379,7 @@ class TestDistinctOn(TestCase):
         raise a ValueError.
         """
         with self.assertRaises(ValueError) as manager:
-            Album.select().distinct(on=Album.band)
+            Album.select().distinct(on=Album.band)  # type: ignore
 
         self.assertEqual(
             manager.exception.__str__(),
