@@ -24,7 +24,7 @@ def start_ipython_shell(**tables: t.Type[Table]):  # pragma: no cover
         if table_class_name not in existing_global_names:
             globals()[table_class_name] = table_class
 
-    IPython.embed(using=_asyncio_runner, colors="neutral")
+    IPython.embed(using=_asyncio_runner, colors="neutral")  # type: ignore
 
 
 def run() -> None:
