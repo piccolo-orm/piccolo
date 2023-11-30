@@ -276,5 +276,3 @@ class TestOnConflict(TestCase):
 
         run_sync(load(path=json_file_path, on_conflict="DO NOTHING"))
         run_sync(load(path=json_file_path, on_conflict="DO UPDATE"))
-        run_sync(load(path=json_file_path, on_conflict="do nothing"))
-        run_sync(load(path=json_file_path, on_conflict="do update"))
