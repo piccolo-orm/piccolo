@@ -40,10 +40,12 @@ TransactionClass = t.TypeVar("TransactionClass")
 
 
 class Engine(t.Generic[TransactionClass], metaclass=ABCMeta):
+    __slots__ = ("query_id", "log_queries", "log_responses")
 
-    __slots__ = ("query_id",)
+    def __init__(self, log_queries: bool = False, log_responses: bool = False):
+        self.log_queries = log_queries
+        self.log_responses = log_responses
 
-    def __init__(self):
         run_sync(self.check_version())
         run_sync(self.prep_database())
         self.query_id = 0

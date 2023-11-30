@@ -369,7 +369,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         self.current_transaction = contextvars.ContextVar(
             f"pg_current_transaction_{database_name}", default=None
         )
-        super().__init__()
+        super().__init__(log_queries=log_queries, log_responses=log_responses)
 
     @staticmethod
     def _parse_raw_version_string(version_string: str) -> float:

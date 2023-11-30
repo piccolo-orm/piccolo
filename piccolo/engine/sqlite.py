@@ -499,7 +499,7 @@ class SQLiteEngine(Engine[t.Optional[SQLiteTransaction]]):
             f"sqlite_current_transaction_{path}", default=None
         )
 
-        super().__init__()
+        super().__init__(log_queries=log_queries, log_responses=log_responses)
 
     @property
     def path(self):
