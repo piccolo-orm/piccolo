@@ -18,6 +18,7 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from asyncpg.connection import Connection
     from asyncpg.cursor import Cursor
     from asyncpg.pool import Pool
+    from asyncpg.transaction import Transaction
 
 
 @dataclass
@@ -27,7 +28,7 @@ class AsyncBatch(Batch):
     batch_size: int
 
     # Set internally
-    _transaction = None
+    _transaction: t.Optional[Transaction] = None
     _cursor: t.Optional[Cursor] = None
 
     @property
@@ -35,6 +36,12 @@ class AsyncBatch(Batch):
         if not self._cursor:
             raise ValueError("_cursor not set")
         return self._cursor
+
+    @property
+    def transaction(self) -> Transaction:
+        if not self._transaction:
+            raise ValueError("The transaction can't be found.")
+        return self._transaction
 
     async def next(self) -> t.List[t.Dict]:
         data = await self.cursor.fetch(self.batch_size)
@@ -60,9 +67,9 @@ class AsyncBatch(Batch):
 
     async def __aexit__(self, exception_type, exception, traceback):
         if exception:
-            await self._transaction.rollback()
+            await self.transaction.rollback()
         else:
-            await self._transaction.commit()
+            await self.transaction.commit()
 
         await self.connection.close()
 
