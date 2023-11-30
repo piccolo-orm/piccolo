@@ -19,19 +19,19 @@ from piccolo.utils.sync import run_sync
 ENGINE = engine_finder()
 
 
-def engine_version_lt(version: float):
-    return ENGINE and run_sync(ENGINE.get_version()) < version
+def engine_version_lt(version: float) -> bool:
+    return ENGINE is not None and run_sync(ENGINE.get_version()) < version
 
 
-def is_running_postgres():
+def is_running_postgres() -> bool:
     return type(ENGINE) is PostgresEngine
 
 
-def is_running_sqlite():
+def is_running_sqlite() -> bool:
     return type(ENGINE) is SQLiteEngine
 
 
-def is_running_cockroach():
+def is_running_cockroach() -> bool:
     return type(ENGINE) is CockroachEngine
 
 
