@@ -230,7 +230,7 @@ class AsyncBatch(Batch):
         return self
 
     async def __aexit__(self, exception_type, exception, traceback):
-        await self._cursor.close()
+        await self.cursor.close()
         await self.connection.close()
         return exception is not None
 
