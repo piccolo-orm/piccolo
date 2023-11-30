@@ -40,7 +40,7 @@ class TestAttributeAccess(TestCase):
         for band_table in (BandA, BandB, BandC, BandD):
             self.assertIsInstance(band_table.manager.name, Varchar)
 
-    def test_recursion_limit(self):
+    def test_recursion_limit(self) -> None:
         """
         When a table has a ForeignKey to itself, an Exception should be raised
         if the call chain is too large.
@@ -51,7 +51,7 @@ class TestAttributeAccess(TestCase):
         self.assertIsInstance(column, Varchar)
 
         with self.assertRaises(Exception):
-            Manager.manager.manager.manager.manager.manager.manager.manager.manager.manager.manager.manager.name  # noqa
+            Manager.manager.manager.manager.manager.manager.manager.manager.manager.manager.manager.manager.name  # type: ignore  # noqa: E501
 
     def test_recursion_time(self):
         """

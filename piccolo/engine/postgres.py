@@ -22,7 +22,6 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 @dataclass
 class AsyncBatch(Batch):
-
     connection: Connection
     query: Query
     batch_size: int
@@ -93,9 +92,9 @@ class Atomic:
 
     def __init__(self, engine: PostgresEngine):
         self.engine = engine
-        self.queries: t.List[Query] = []
+        self.queries: t.List[t.Union[Query, DDL]] = []
 
-    def add(self, *query: Query):
+    def add(self, *query: t.Union[Query, DDL]):
         self.queries += list(query)
 
     async def run(self):
@@ -348,7 +347,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         extensions: t.Sequence[str] = ("uuid-ossp",),
         log_queries: bool = False,
         log_responses: bool = False,
-        extra_nodes: t.Mapping[str, PostgresEngine] = None,
+        extra_nodes: t.Optional[t.Mapping[str, PostgresEngine]] = None,
     ) -> None:
         if extra_nodes is None:
             extra_nodes = {}
@@ -489,7 +488,9 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
 
     ###########################################################################
 
-    async def _run_in_pool(self, query: str, args: t.Sequence[t.Any] = None):
+    async def _run_in_pool(
+        self, query: str, args: t.Optional[t.Sequence[t.Any]] = None
+    ):
         if args is None:
             args = []
         if not self.pool:
@@ -501,7 +502,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         return response
 
     async def _run_in_new_connection(
-        self, query: str, args: t.Sequence[t.Any] = None
+        self, query: str, args: t.Optional[t.Sequence[t.Any]] = None
     ):
         if args is None:
             args = []

@@ -292,7 +292,7 @@ class M2MBase:
         Genre = self.genre
         GenreToBand = self.genre_to_band
 
-        band: Band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        band = Band.objects().get(Band.name == "Pythonistas").run_sync()
         band.add_m2m(Genre(name="Punk Rock"), m2m=Band.genres).run_sync()
 
         self.assertTrue(
@@ -320,7 +320,7 @@ class M2MBase:
 
         reason = "Their second album was very punk rock."
 
-        band: Band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        band = Band.objects().get(Band.name == "Pythonistas").run_sync()
         band.add_m2m(
             Genre(name="Punk Rock"),
             m2m=Band.genres,
@@ -351,7 +351,7 @@ class M2MBase:
 
         reason = "Their second album was very punk rock."
 
-        band: Band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        band = Band.objects().get(Band.name == "Pythonistas").run_sync()
         band.add_m2m(
             Genre(name="Punk Rock"),
             m2m=Band.genres,
@@ -379,11 +379,9 @@ class M2MBase:
         Genre = self.genre
         GenreToBand = self.genre_to_band
 
-        band: Band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        band = Band.objects().get(Band.name == "Pythonistas").run_sync()
 
-        genre: Genre = (
-            Genre.objects().get(Genre.name == "Classical").run_sync()
-        )
+        genre = Genre.objects().get(Genre.name == "Classical").run_sync()
 
         band.add_m2m(genre, m2m=Band.genres).run_sync()
 
@@ -408,7 +406,7 @@ class M2MBase:
         """
         Band = self.band
 
-        band: Band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        band = Band.objects().get(Band.name == "Pythonistas").run_sync()
 
         genres = band.get_m2m(Band.genres).run_sync()
 
@@ -424,7 +422,7 @@ class M2MBase:
         Genre = self.genre
         GenreToBand = self.genre_to_band
 
-        band: Band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        band = Band.objects().get(Band.name == "Pythonistas").run_sync()
 
         genre = Genre.objects().get(Genre.name == "Rock").run_sync()
 

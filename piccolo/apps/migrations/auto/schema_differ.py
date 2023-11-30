@@ -123,7 +123,7 @@ class SchemaDiffer:
 
     ###########################################################################
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.schema_snapshot_map: t.Dict[str, DiffableTable] = {
             i.class_name: i for i in self.schema_snapshot
         }
@@ -270,7 +270,6 @@ class SchemaDiffer:
             used_drop_column_names: t.List[str] = []
 
             for add_column in delta.add_columns:
-
                 for drop_column in delta.drop_columns:
                     if drop_column.column_name in used_drop_column_names:
                         continue
@@ -455,10 +454,11 @@ class SchemaDiffer:
                 class_name = self.rename_tables_collection.renamed_from(
                     table_class_name
                 )
-                snapshot_table = self.schema_snapshot_map.get(class_name)
-                if snapshot_table:
-                    snapshot_table.class_name = table_class_name
-                    return snapshot_table
+                if class_name:
+                    snapshot_table = self.schema_snapshot_map.get(class_name)
+                    if snapshot_table:
+                        snapshot_table.class_name = table_class_name
+                        return snapshot_table
         return None
 
     @property

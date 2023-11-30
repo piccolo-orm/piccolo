@@ -24,6 +24,11 @@ from piccolo.columns.column_types import (
 from piccolo.table import Table
 from piccolo.utils.encoding import load_json
 
+try:
+    from pydantic.config import JsonDict
+except ImportError:
+    JsonDict = dict  # type: ignore
+
 
 def pydantic_json_validator(value: t.Optional[str], required: bool = True):
     if value is None:
@@ -243,7 +248,7 @@ def create_pydantic_model(
         if column._meta.db_column_name != column._meta.name:
             params["alias"] = column._meta.db_column_name
 
-        extra = {
+        extra: JsonDict = {
             "help_text": column._meta.help_text,
             "choices": column._meta.get_choices_dict(),
             "secret": column._meta.secret,
@@ -320,7 +325,7 @@ def create_pydantic_model(
 
     pydantic_config["json_schema_extra"] = dict(json_schema_extra_)
 
-    model = pydantic.create_model(  # type: ignore
+    model = pydantic.create_model(
         model_name,
         __config__=pydantic_config,
         __validators__=validators,

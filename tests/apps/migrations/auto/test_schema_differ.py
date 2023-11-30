@@ -16,10 +16,9 @@ from piccolo.columns.column_types import Numeric, Varchar
 
 
 class TestSchemaDiffer(TestCase):
-
     maxDiff = None
 
-    def test_add_table(self):
+    def test_add_table(self) -> None:
         """
         Test adding a new table.
         """
@@ -49,7 +48,7 @@ class TestSchemaDiffer(TestCase):
             "manager.add_column(table_class_name='Band', tablename='band', column_name='name', db_column_name='name', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None, 'secret': False}, schema=None)",  # noqa
         )
 
-    def test_drop_table(self):
+    def test_drop_table(self) -> None:
         """
         Test dropping an existing table.
         """
@@ -67,7 +66,7 @@ class TestSchemaDiffer(TestCase):
             "manager.drop_table(class_name='Band', tablename='band', schema=None)",  # noqa: E501
         )
 
-    def test_rename_table(self):
+    def test_rename_table(self) -> None:
         """
         Test renaming a table.
         """
@@ -98,7 +97,7 @@ class TestSchemaDiffer(TestCase):
         self.assertEqual(schema_differ.create_tables.statements, [])
         self.assertEqual(schema_differ.drop_tables.statements, [])
 
-    def test_change_schema(self):
+    def test_change_schema(self) -> None:
         """
         Testing changing the schema.
         """
@@ -133,7 +132,7 @@ class TestSchemaDiffer(TestCase):
         self.assertListEqual(schema_differ.create_tables.statements, [])
         self.assertListEqual(schema_differ.drop_tables.statements, [])
 
-    def test_add_column(self):
+    def test_add_column(self) -> None:
         """
         Test adding a column to an existing table.
         """
@@ -168,7 +167,7 @@ class TestSchemaDiffer(TestCase):
             "manager.add_column(table_class_name='Band', tablename='band', column_name='genre', db_column_name='genre', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None, 'secret': False}, schema=None)",  # noqa: E501
         )
 
-    def test_drop_column(self):
+    def test_drop_column(self) -> None:
         """
         Test dropping a column from an existing table.
         """
@@ -203,7 +202,7 @@ class TestSchemaDiffer(TestCase):
             "manager.drop_column(table_class_name='Band', tablename='band', column_name='genre', db_column_name='genre', schema=None)",  # noqa: E501
         )
 
-    def test_rename_column(self):
+    def test_rename_column(self) -> None:
         """
         Test renaming a column in an existing table.
         """
@@ -261,7 +260,7 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(schema_differ.rename_columns.statements == [])
 
     @patch("piccolo.apps.migrations.auto.schema_differ.input")
-    def test_rename_multiple_columns(self, input: MagicMock):
+    def test_rename_multiple_columns(self, input: MagicMock) -> None:
         """
         Make sure renaming columns works when several columns have been
         renamed.
@@ -419,7 +418,7 @@ class TestSchemaDiffer(TestCase):
             ],
         )
 
-    def test_alter_column_precision(self):
+    def test_alter_column_precision(self) -> None:
         price_1 = Numeric(digits=(4, 2))
         price_1._meta.name = "price"
 
@@ -451,7 +450,7 @@ class TestSchemaDiffer(TestCase):
             "manager.alter_column(table_class_name='Ticket', tablename='ticket', column_name='price', db_column_name='price', params={'digits': (4, 2)}, old_params={'digits': (5, 2)}, column_class=Numeric, old_column_class=Numeric, schema=None)",  # noqa
         )
 
-    def test_db_column_name(self):
+    def test_db_column_name(self) -> None:
         """
         Make sure alter statements use the ``db_column_name`` if provided.
 

@@ -367,7 +367,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
     def __init__(
         self,
         table: t.Type[TableInstance],
-        columns_list: t.Sequence[t.Union[Selectable, str]] = None,
+        columns_list: t.Optional[t.Sequence[t.Union[Selectable, str]]] = None,
         exclude_secrets: bool = False,
         **kwargs,
     ):

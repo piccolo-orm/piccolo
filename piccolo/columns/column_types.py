@@ -1959,7 +1959,7 @@ class ForeignKey(Column):
         return column
 
     def all_columns(
-        self, exclude: t.List[t.Union[Column, str]] = None
+        self, exclude: t.Optional[t.List[t.Union[Column, str]]] = None
     ) -> t.List[Column]:
         """
         Allow a user to access all of the columns on the related table. This is
@@ -2010,7 +2010,7 @@ class ForeignKey(Column):
         ]
 
     def all_related(
-        self, exclude: t.List[t.Union[ForeignKey, str]] = None
+        self, exclude: t.Optional[t.List[t.Union[ForeignKey, str]]] = None
     ) -> t.List[ForeignKey]:
         """
         Returns each ``ForeignKey`` column on the related table. This is
@@ -2065,7 +2065,7 @@ class ForeignKey(Column):
             if fk_column._meta.name not in excluded_column_names
         ]
 
-    def set_proxy_columns(self):
+    def set_proxy_columns(self) -> None:
         """
         In order to allow a fluent interface, where tables can be traversed
         using ForeignKeys (e.g. ``Band.manager.name``), we add attributes to

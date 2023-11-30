@@ -7,12 +7,13 @@ class TestRefresh(DBTestCase):
         super().setUp()
         self.insert_rows()
 
-    def test_refresh(self):
+    def test_refresh(self) -> None:
         """
         Make sure ``refresh`` works, with no columns specified.
         """
         # Fetch an instance from the database.
-        band: Band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        assert band is not None
         initial_data = band.to_dict()
 
         # Modify the data in the database.
@@ -27,12 +28,13 @@ class TestRefresh(DBTestCase):
         self.assertTrue(band.popularity == 8000)
         self.assertTrue(band.id == initial_data["id"])
 
-    def test_columns(self):
+    def test_columns(self) -> None:
         """
         Make sure ``refresh`` works, when columns are specified.
         """
         # Fetch an instance from the database.
-        band: Band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        assert band is not None
         initial_data = band.to_dict()
 
         # Modify the data in the database.
@@ -52,7 +54,7 @@ class TestRefresh(DBTestCase):
         self.assertTrue(band.popularity == initial_data["popularity"])
         self.assertTrue(band.id == initial_data["id"])
 
-    def test_error_when_not_in_db(self):
+    def test_error_when_not_in_db(self) -> None:
         """
         Make sure we can't refresh an instance which hasn't been saved in the
         database.
@@ -67,12 +69,13 @@ class TestRefresh(DBTestCase):
             str(manager.exception),
         )
 
-    def test_error_when_pk_in_none(self):
+    def test_error_when_pk_in_none(self) -> None:
         """
         Make sure we can't refresh an instance when the primary key value isn't
         set.
         """
-        band: Band = Band.objects().first().run_sync()
+        band = Band.objects().first().run_sync()
+        assert band is not None
         band.id = None
 
         with self.assertRaises(ValueError) as manager:

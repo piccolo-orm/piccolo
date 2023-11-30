@@ -81,7 +81,7 @@ class Insert(
 
     ###########################################################################
 
-    def _raw_response_callback(self, results):
+    def _raw_response_callback(self, results: t.List):
         """
         Assign the ids of the created rows to the model instances.
         """

@@ -819,7 +819,7 @@ class TestJSONSchemaExtra(TestCase):
 
 
 class TestPydanticExtraFields(TestCase):
-    def test_pydantic_extra_fields(self):
+    def test_pydantic_extra_fields(self) -> None:
         """
         Make sure that the value of ``extra`` in the config class
         is correctly propagated to the generated model.
@@ -833,7 +833,7 @@ class TestPydanticExtraFields(TestCase):
 
         self.assertEqual(model.model_config["extra"], "forbid")
 
-    def test_pydantic_invalid_extra_fields(self):
+    def test_pydantic_invalid_extra_fields(self) -> None:
         """
         Make sure that invalid values for ``extra`` in the config class
         are rejected.
@@ -842,7 +842,9 @@ class TestPydanticExtraFields(TestCase):
         class Band(Table):
             name = Varchar()
 
-        config: pydantic.config.ConfigDict = {"extra": "foobar"}
+        config: pydantic.config.ConfigDict = {
+            "extra": "foobar"  # type: ignore
+        }
 
         with pytest.raises(pydantic_core._pydantic_core.SchemaError):
             create_pydantic_model(Band, pydantic_config=config)
