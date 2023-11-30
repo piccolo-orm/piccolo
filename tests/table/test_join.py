@@ -23,7 +23,6 @@ class TestCreateJoin:
 
 
 class TestJoin(TestCase):
-
     tables = [Manager, Band, Venue, Concert, Ticket]
 
     def setUp(self):
@@ -108,6 +107,7 @@ class TestJoin(TestCase):
             .first()
             .run_sync()
         )
+        assert result is not None
 
         if engine_is("cockroach"):
             self.assertDictEqual(
@@ -141,6 +141,7 @@ class TestJoin(TestCase):
             .first()
             .run_sync()
         )
+        assert result is not None
 
         if engine_is("cockroach"):
             self.assertDictEqual(
@@ -200,6 +201,7 @@ class TestJoin(TestCase):
             .first()
             .run_sync()
         )
+        assert result is not None
 
         if engine_is("cockroach"):
             self.assertDictEqual(
@@ -237,6 +239,7 @@ class TestJoin(TestCase):
             .first()
             .run_sync()
         )
+        assert result is not None
 
         if engine_is("cockroach"):
             self.assertDictEqual(
@@ -331,6 +334,7 @@ class TestJoin(TestCase):
             .first()
             .run_sync()
         )
+        assert ticket is not None
 
         self.assertIsInstance(ticket.concert, Concert)
         self.assertIsInstance(ticket.concert.band_1, Band)
@@ -354,6 +358,7 @@ class TestJoin(TestCase):
             .first()
             .run_sync()
         )
+        assert ticket is not None
 
         self.assertIsInstance(ticket.concert, Concert)
         self.assertIsInstance(ticket.concert.band_1, Band)
@@ -377,6 +382,7 @@ class TestJoin(TestCase):
             .first()
             .run_sync()
         )
+        assert ticket is not None
 
         self.assertIsInstance(ticket.concert, Concert)
         self.assertIsInstance(ticket.concert.band_1, Band)
@@ -398,6 +404,7 @@ class TestJoin(TestCase):
             .first()
             .run_sync()
         )
+        assert ticket is not None
 
         self.assertIsInstance(ticket.price, decimal.Decimal)
         self.assertIsInstance(ticket.concert, Concert)
@@ -428,6 +435,7 @@ class TestJoin(TestCase):
             .first()
             .run_sync()
         )
+        assert ticket is not None
 
         self.assertIsInstance(ticket.price, decimal.Decimal)
         self.assertIsInstance(ticket.concert, Concert)
