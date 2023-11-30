@@ -20,6 +20,10 @@ echo "Running mypy..."
 mypy $SOURCES
 echo "-----"
 
+echo "Running pyright..."
+pyright $sources
+echo "-----"
+
 echo "Running slotscheck..."
 python -m slotscheck $MODULES
 echo "-----"
