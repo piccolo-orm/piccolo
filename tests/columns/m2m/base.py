@@ -77,6 +77,12 @@ class M2MBase:
     def tearDown(self):
         drop_db_tables_sync(*self.all_tables)
 
+    def assertEqual(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def assertTrue(self, *args, **kwargs):
+        raise NotImplementedError()
+
     @engines_skip("cockroach")
     def test_select_name(self):
         """
