@@ -128,7 +128,7 @@ class MigrationTestCase(DBTestCase):
     def _test_migrations(
         self,
         table_snapshots: t.List[t.List[t.Type[Table]]],
-        test_function: t.Optional[t.Callable[[RowMeta], None]] = None,
+        test_function: t.Optional[t.Callable[[RowMeta], bool]] = None,
     ):
         """
         Writes a migration file to disk and runs it.
