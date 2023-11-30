@@ -315,8 +315,8 @@ class TestJSONColumn(TestCase):
         json_string = '{"code": 12345}'
 
         model_instance = pydantic_model(meta=json_string, meta_b=json_string)
-        self.assertEqual(model_instance.meta, json_string)
-        self.assertEqual(model_instance.meta_b, json_string)
+        self.assertEqual(model_instance.meta, json_string)  # type: ignore
+        self.assertEqual(model_instance.meta_b, json_string)  # type: ignore
 
     def test_deserialize_json(self):
         class Movie(Table):
@@ -331,8 +331,8 @@ class TestJSONColumn(TestCase):
         output = {"code": 12345}
 
         model_instance = pydantic_model(meta=json_string, meta_b=json_string)
-        self.assertEqual(model_instance.meta, output)
-        self.assertEqual(model_instance.meta_b, output)
+        self.assertEqual(model_instance.meta, output)  # type: ignore
+        self.assertEqual(model_instance.meta_b, output)  # type: ignore
 
     def test_validation(self):
         class Movie(Table):
@@ -375,8 +375,8 @@ class TestJSONColumn(TestCase):
         pydantic_model = create_pydantic_model(table=Movie)
         movie = pydantic_model(meta=None, meta_b=None)
 
-        self.assertIsNone(movie.meta)
-        self.assertIsNone(movie.meta_b)
+        self.assertIsNone(movie.meta)  # type: ignore
+        self.assertIsNone(movie.meta_b)  # type: ignore
 
 
 class TestExcludeColumns(TestCase):
@@ -437,7 +437,7 @@ class TestExcludeColumns(TestCase):
         with self.assertRaises(ValueError):
             create_pydantic_model(
                 Computer,
-                exclude_columns=("CPU",),
+                exclude_columns=("CPU",),  # type: ignore
             )
 
     def test_invalid_column_different_table(self):
@@ -798,7 +798,7 @@ class TestDBColumnName(TestCase):
 
         model = BandModel(regrettable_column_name="test")
 
-        self.assertEqual(model.name, "test")
+        self.assertEqual(model.name, "test")  # type: ignore
 
 
 class TestJSONSchemaExtra(TestCase):
