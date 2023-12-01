@@ -1,0 +1,111 @@
+import typing as t
+
+from pathlib import Path
+
+from piccolo_admin.endpoints import create_admin
+from piccolo_api.crud.serializers import create_pydantic_model
+from piccolo.engine import engine_finder
+
+from esmerald import (
+    Esmerald,
+    Include,
+    Gateway,
+    JSONResponse,
+    APIView,
+    get,
+    post,
+    put,
+    delete
+)
+from esmerald.config import StaticFilesConfig
+
+from home.endpoints import home
+from home.piccolo_app import APP_CONFIG
+from home.tables import Task
+
+
+async def open_database_connection_pool():
+    try:
+        engine = engine_finder()
+        await engine.start_connection_pool()
+    except Exception:
+        print("Unable to connect to the database")
+
+
+async def close_database_connection_pool():
+    try:
+        engine = engine_finder()
+        await engine.close_connection_pool()
+    except Exception:
+        print("Unable to connect to the database")
+
+
+TaskModelIn: t.Any = create_pydantic_model(
+    table=Task,
+    model_name='TaskModelIn'
+)
+TaskModelOut: t.Any = create_pydantic_model(
+    table=Task,
+    include_default_columns=True,
+    model_name='TaskModelOut'
+)
+
+
+class TaskAPIView(APIView):
+    path: str = "/"
+    tags: str = ["Task"]
+
+    @get("/")
+    async def tasks() -> t.List[TaskModelOut]:
+        return await Task.select().order_by(Task.id)
+
+
+    @post('/tasks')
+    async def create_task(payload: TaskModelIn) -> TaskModelOut:
+        task = Task(**payload.dict())
+        await task.save()
+        return task.to_dict()
+
+
+    @put('/tasks/{task_id}')
+    async def update_task(payload: TaskModelIn, task_id: int) -> TaskModelOut:
+        task = await Task.objects().get(Task.id == task_id)
+        if not task:
+            return JSONResponse({}, status_code=404)
+
+        for key, value in payload.dict().items():
+            setattr(task, key, value)
+
+        await task.save()
+
+        return task.to_dict()
+
+
+    @delete('/tasks/{task_id}')
+    async def delete_task(task_id: int) -> JSONResponse:
+        task = await Task.objects().get(Task.id == task_id)
+        if not task:
+            return JSONResponse({}, status_code=404)
+
+        await task.remove()
+
+        return JSONResponse({})
+
+
+app = Esmerald(
+    routes=[
+        Gateway("/", handler=home),
+        Gateway("/tasks", handler=TaskAPIView),
+        Include(
+            "/admin/",
+            create_admin(
+                tables=APP_CONFIG.table_classes,
+                # Required when running under HTTPS:
+                # allowed_hosts=['my_site.com']
+            ),
+        ),
+    ],
+    static_files_config=StaticFilesConfig(path="/", directory=Path("static")),
+    on_startup=[open_database_connection_pool],
+    on_shutdown=[close_database_connection_pool],
+)

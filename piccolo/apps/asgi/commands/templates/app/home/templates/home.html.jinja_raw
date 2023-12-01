@@ -56,6 +56,11 @@
                 <li><a href="/admin/">Admin</a></li>
                 <li><a href="/schema/swagger">Swagger API</a></li>
             </ul>
+            <h3>Esmerald</h3>
+            <ul>
+                <li><a href="/admin/">Admin</a></li>
+                <li><a href="/docs/swagger">Swagger API</a></li>
+            </ul>
         </section>
     </div>
 {% endblock content %}
