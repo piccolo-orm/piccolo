@@ -56,19 +56,19 @@ class TaskAPIView(APIView):
     tags: str = ["Task"]
 
     @get("/")
-    async def tasks() -> t.List[TaskModelOut]:
+    async def tasks(self) -> t.List[TaskModelOut]:
         return await Task.select().order_by(Task.id)
 
 
     @post('/tasks')
-    async def create_task(payload: TaskModelIn) -> TaskModelOut:
+    async def create_task(self, payload: TaskModelIn) -> TaskModelOut:
         task = Task(**payload.dict())
         await task.save()
         return task.to_dict()
 
 
     @put('/tasks/{task_id}')
-    async def update_task(payload: TaskModelIn, task_id: int) -> TaskModelOut:
+    async def update_task(self, payload: TaskModelIn, task_id: int) -> TaskModelOut:
         task = await Task.objects().get(Task.id == task_id)
         if not task:
             return JSONResponse({}, status_code=404)
@@ -82,7 +82,7 @@ class TaskAPIView(APIView):
 
 
     @delete('/tasks/{task_id}')
-    async def delete_task(task_id: int) -> JSONResponse:
+    async def delete_task(self, task_id: int) -> JSONResponse:
         task = await Task.objects().get(Task.id == task_id)
         if not task:
             return JSONResponse({}, status_code=404)
