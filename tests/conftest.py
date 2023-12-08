@@ -22,7 +22,7 @@ async def drop_tables():
         "mega_table",
         "small_table",
     ]
-    assert ENGINE
+    assert ENGINE is not None
 
     if ENGINE.engine_type == "sqlite":
         # SQLite doesn't allow us to drop more than one table at a time.
