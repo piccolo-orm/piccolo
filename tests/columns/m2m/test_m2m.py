@@ -44,27 +44,8 @@ from .base import M2MBase
 engine = engine_finder()
 
 
-class Band(Table):
-    name = Varchar()
-    genres = M2M(LazyTableReference("GenreToBand", module_path=__name__))
-
-
-class Genre(Table):
-    name = Varchar()
-    bands = M2M(LazyTableReference("GenreToBand", module_path=__name__))
-
-
-class GenreToBand(Table):
-    band = ForeignKey(Band)
-    genre = ForeignKey(Genre)
-    reason = Text(help_text="For testing additional columns on join tables.")
-
-
 class TestM2M(M2MBase, TestCase):
-    band = Band
-    genre = Genre
-    genre_to_band = GenreToBand
-    all_tables = [Band, Genre, GenreToBand]
+    ...
 
 
 ###############################################################################
