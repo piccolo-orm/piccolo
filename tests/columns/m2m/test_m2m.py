@@ -142,6 +142,7 @@ class TestM2MCustomPrimaryKey(TestCase):
         Make sure we can add items to the joining table.
         """
         customer = Customer.objects().get(Customer.name == "Bob").run_sync()
+        assert customer is not None
         customer.add_m2m(
             Concert(name="Jazzfest"), m2m=Customer.concerts
         ).run_sync()
@@ -173,6 +174,7 @@ class TestM2MCustomPrimaryKey(TestCase):
         async def add_m2m_in_transaction():
             async with engine.transaction():
                 customer = await Customer.objects().get(Customer.name == "Bob")
+                assert customer is not None
                 await customer.add_m2m(
                     Concert(name="Jazzfest"), m2m=Customer.concerts
                 )
@@ -198,6 +200,7 @@ class TestM2MCustomPrimaryKey(TestCase):
         Make sure we can get related items via the joining table.
         """
         customer = Customer.objects().get(Customer.name == "Bob").run_sync()
+        assert customer is not None
 
         concerts = customer.get_m2m(Customer.concerts).run_sync()
 

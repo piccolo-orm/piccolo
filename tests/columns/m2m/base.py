@@ -108,11 +108,11 @@ class M2MBase:
                 schema_name="schema_1", cascade=True
             ).run_sync()
 
-    def assertEqual(self, value_1, value_2):
-        assert value_1 == value_2
+    def assertEqual(self, first, second, msg=None):
+        assert first == second
 
-    def assertTrue(self, value):
-        assert value is True
+    def assertTrue(self, first, msg=None):
+        assert first is True
 
     @engines_skip("cockroach")
     def test_select_name(self):
