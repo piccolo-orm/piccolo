@@ -10,12 +10,11 @@ from piccolo.utils.sync import run_sync
 
 
 class SchemaDDLBase(abc.ABC):
-
     db: Engine
 
     @abc.abstractproperty
     def ddl(self) -> str:
-        pass
+        ...
 
     def __await__(self):
         return self.run().__await__()
@@ -179,7 +178,7 @@ class SchemaManager:
         """
         db = db or engine_finder()
 
-        if not db:
+        if db is None:
             raise ValueError("The DB can't be found.")
 
         self.db = db
