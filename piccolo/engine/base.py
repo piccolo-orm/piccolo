@@ -36,29 +36,41 @@ class Batch:
     pass
 
 
-TransactionClass = t.TypeVar("TransactionClass")
+class BaseTransaction:
+    async def __aenter__(self, *args, **kwargs):
+        ...
+
+    async def __aexit__(self, *args, **kwargs):
+        ...
+
+
+TransactionClass = t.TypeVar("TransactionClass", bound=BaseTransaction)
 
 
 class Engine(t.Generic[TransactionClass], metaclass=ABCMeta):
-    __slots__ = ("query_id", "log_queries", "log_responses")
+    __slots__ = (
+        "query_id",
+        "log_queries",
+        "log_responses",
+        "engine_type",
+        "min_version_number",
+    )
 
-    def __init__(self, log_queries: bool = False, log_responses: bool = False):
+    def __init__(
+        self,
+        engine_type: str,
+        min_version_number: t.Union[int, float],
+        log_queries: bool = False,
+        log_responses: bool = False,
+    ):
         self.log_queries = log_queries
         self.log_responses = log_responses
+        self.engine_type = engine_type
+        self.min_version_number = min_version_number
 
         run_sync(self.check_version())
         run_sync(self.prep_database())
         self.query_id = 0
-
-    @property
-    @abstractmethod
-    def engine_type(self) -> str:
-        pass
-
-    @property
-    @abstractmethod
-    def min_version_number(self) -> float:
-        pass
 
     @abstractmethod
     async def get_version(self) -> float:
@@ -82,7 +94,9 @@ class Engine(t.Generic[TransactionClass], metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    async def run_querystring(self, querystring: QueryString, in_pool: bool):
+    async def run_querystring(
+        self, querystring: QueryString, in_pool: bool = True
+    ):
         pass
 
     @abstractmethod
@@ -90,7 +104,7 @@ class Engine(t.Generic[TransactionClass], metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def transaction(self):
+    def transaction(self) -> TransactionClass:
         pass
 
     @abstractmethod

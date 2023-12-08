@@ -10,7 +10,12 @@ import uuid
 from dataclasses import dataclass
 from decimal import Decimal
 
-from piccolo.engine.base import Batch, Engine, validate_savepoint_name
+from piccolo.engine.base import (
+    BaseTransaction,
+    Batch,
+    Engine,
+    validate_savepoint_name,
+)
 from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import DDL, Query
 from piccolo.querystring import QueryString
@@ -270,9 +275,9 @@ class Atomic:
     ):
         self.engine = engine
         self.transaction_type = transaction_type
-        self.queries: t.List[Query] = []
+        self.queries: t.List[t.Union[Query, DDL]] = []
 
-    def add(self, *query: Query):
+    def add(self, *query: t.Union[Query, DDL]):
         self.queries += list(query)
 
     async def run(self):
@@ -320,7 +325,7 @@ class Savepoint:
         )
 
 
-class SQLiteTransaction:
+class SQLiteTransaction(BaseTransaction):
     """
     Used for wrapping queries in a transaction, using a context manager.
     Currently it's async only.
@@ -446,16 +451,14 @@ def dict_factory(cursor, row) -> t.Dict:
     return {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
 
 
-class SQLiteEngine(Engine[t.Optional[SQLiteTransaction]]):
+class SQLiteEngine(Engine[SQLiteTransaction]):
     __slots__ = (
         "connection_kwargs",
         "current_transaction",
         "log_queries",
         "log_responses",
+        "engine_type"
     )
-
-    engine_type = "sqlite"
-    min_version_number = 3.25
 
     def __init__(
         self,
@@ -499,7 +502,12 @@ class SQLiteEngine(Engine[t.Optional[SQLiteTransaction]]):
             f"sqlite_current_transaction_{path}", default=None
         )
 
-        super().__init__(log_queries=log_queries, log_responses=log_responses)
+        super().__init__(
+            engine_type="sqlite",
+            min_version_number=3.25,
+            log_queries=log_queries,
+            log_responses=log_responses,
+        )
 
     @property
     def path(self):

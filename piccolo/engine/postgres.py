@@ -4,7 +4,12 @@ import contextvars
 import typing as t
 from dataclasses import dataclass
 
-from piccolo.engine.base import Batch, Engine, validate_savepoint_name
+from piccolo.engine.base import (
+    BaseTransaction,
+    Batch,
+    Engine,
+    validate_savepoint_name,
+)
 from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import DDL, Query
 from piccolo.querystring import QueryString
@@ -147,7 +152,7 @@ class Savepoint:
         )
 
 
-class PostgresTransaction:
+class PostgresTransaction(BaseTransaction):
     """
     Used for wrapping queries in a transaction, using a context manager.
     Currently it's async only.
@@ -276,7 +281,7 @@ class PostgresTransaction:
 ###############################################################################
 
 
-class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
+class PostgresEngine(Engine[PostgresTransaction]):
     """
     Used to connect to PostgreSQL.
 
@@ -343,10 +348,8 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         "extra_nodes",
         "pool",
         "current_transaction",
+        "engine_type",
     )
-
-    engine_type = "postgres"
-    min_version_number = 10
 
     def __init__(
         self,
@@ -369,7 +372,12 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         self.current_transaction = contextvars.ContextVar(
             f"pg_current_transaction_{database_name}", default=None
         )
-        super().__init__(log_queries=log_queries, log_responses=log_responses)
+        super().__init__(
+            engine_type="postgres",
+            log_queries=log_queries,
+            log_responses=log_responses,
+            min_version_number=10,
+        )
 
     @staticmethod
     def _parse_raw_version_string(version_string: str) -> float:
