@@ -29,6 +29,8 @@ from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
 from piccolo.custom_types import TableInstance
 from piccolo.engine import Engine, engine_finder
+from piccolo.engine.postgres import PostgresEngine
+from piccolo.engine.sqlite import SQLiteEngine
 from piccolo.query import (
     Alter,
     Count,
@@ -141,7 +143,7 @@ class TableMeta:
     def db(self, value: Engine):
         self._db = value
 
-    def refresh_db(self):
+    def refresh_db(self) -> None:
         engine = engine_finder()
         if engine is None:
             raise ValueError("The engine can't be found")
@@ -185,8 +187,8 @@ class TableMeta:
 
 
 class TableMetaclass(type):
-    def __str__(cls):
-        return cls._table_str()
+    def __str__(cls) -> str:
+        return cls._table_str()  # type: ignore
 
     def __repr__(cls):
         """
@@ -1414,6 +1416,11 @@ async def create_db_tables(
 
     sorted_table_classes = sort_table_classes(list(tables))
 
+    if engine.engine_type == "sqlite":
+        engine = t.cast(SQLiteEngine, engine)
+    else:
+        engine = t.cast(PostgresEngine, engine)
+
     atomic = engine.atomic()
     atomic.add(
         *[
@@ -1466,27 +1473,28 @@ async def drop_db_tables(*tables: t.Type[Table]) -> None:
     else:
         return
 
-    if engine.engine_type == "sqlite":
+    if isinstance(engine, SQLiteEngine):
         # SQLite doesn't support CASCADE, so we have to drop them in the
         # correct order.
         sorted_table_classes = reversed(sort_table_classes(list(tables)))
-        atomic = engine.atomic()
-        atomic.add(
+        sqlite_atomic = engine.atomic()
+        sqlite_atomic.add(
             *[
                 Alter(table=table).drop_table(if_exists=True)
                 for table in sorted_table_classes
             ]
         )
+        await sqlite_atomic.run()
     else:
-        atomic = engine.atomic()
-        atomic.add(
+        engine = t.cast(PostgresEngine, engine)
+        pg_atomic = engine.atomic()
+        pg_atomic.add(
             *[
                 table.alter().drop_table(cascade=True, if_exists=True)
                 for table in tables
             ]
         )
-
-    await atomic.run()
+        await pg_atomic.run()
 
 
 def drop_db_tables_sync(*tables: t.Type[Table]) -> None:
