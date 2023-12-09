@@ -82,14 +82,12 @@ class TaskAPIView(APIView):
 
 
     @delete('/tasks/{task_id}')
-    async def delete_task(self, task_id: int) -> JSONResponse:
+    async def delete_task(self, task_id: int) -> None:
         task = await Task.objects().get(Task.id == task_id)
         if not task:
             return JSONResponse({}, status_code=404)
 
         await task.remove()
-
-        return JSONResponse({})
 
 
 app = Esmerald(
