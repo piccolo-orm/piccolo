@@ -59,14 +59,14 @@ class TaskAPIView(APIView):
         return await Task.select().order_by(Task.id)
 
 
-    @post('/tasks')
+    @post('/')
     async def create_task(self, payload: TaskModelIn) -> TaskModelOut:
         task = Task(**payload.dict())
         await task.save()
         return task.to_dict()
 
 
-    @put('/tasks/{task_id}')
+    @put('/{task_id}')
     async def update_task(self, payload: TaskModelIn, task_id: int) -> TaskModelOut:
         task = await Task.objects().get(Task.id == task_id)
         if not task:
@@ -80,7 +80,7 @@ class TaskAPIView(APIView):
         return task.to_dict()
 
 
-    @delete('/tasks/{task_id}')
+    @delete('/{task_id}')
     async def delete_task(self, task_id: int) -> None:
         task = await Task.objects().get(Task.id == task_id)
         if not task:
@@ -94,7 +94,7 @@ app = Esmerald(
         Gateway("/", handler=home),
         Gateway("/tasks", handler=TaskAPIView)
     ],
-    static_files_config=StaticFilesConfig(path="/", directory=Path("static")),
+    static_files_config=StaticFilesConfig(path="/static", directory=Path("static")),
     on_startup=[open_database_connection_pool],
     on_shutdown=[close_database_connection_pool],
 )
