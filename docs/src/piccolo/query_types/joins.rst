@@ -26,8 +26,44 @@ And a ``where`` clause which uses joins:
 
 Left joins are used.
 
-join_on
--------
+Improved static typing
+----------------------
+
+You can optionally modify the above queries slightly for powerful static typing
+support from tools like Mypy and Pylance:
+
+.. code-block:: python
+
+    await Band.select(Band.name, Band.manager._.name)
+
+Notice how we use ``._.`` instead of ``.`` after each foreign key. An easy way
+to remember this is ``._.`` looks a bit like a connector in a diagram.
+
+Static type checkers now know that we're referencing the ``name`` column on the
+``Manager`` table, which has many advantages:
+
+* Autocompletion of column names.
+* Easier code navigation (command + click on column names to navigate to the
+  column definition).
+* Most importantly, the detection of typos in column names.
+
+This works, no matter how many joins are performed. For example:
+
+.. code-block:: python
+
+    await Concert.select(
+        Concert.band_1._.name,
+        Concert.band_1._.manager._.name,
+    )
+
+.. note:: You may wonder why this syntax is required. We're operating within
+    the limits of Python's typing support, which is still fairly young. In the
+    future we will hopefully be able to offer identical static typing support
+    for ``Band.manager.name`` and ``Band.manager._.name``. But even then,
+    the ``._.`` syntax will still be supported.
+
+``join_on``
+-----------
 
 Joins are usually performed using ``ForeignKey`` columns, though there may be
 situations where you want to join using a column which isn't a ``ForeignKey``.
