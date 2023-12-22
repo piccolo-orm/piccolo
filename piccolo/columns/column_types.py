@@ -35,7 +35,13 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from enum import Enum
 
-from piccolo.columns.base import Column, ForeignKeyMeta, OnDelete, OnUpdate
+from piccolo.columns.base import (
+    Column,
+    ForeignKeyMeta,
+    OnDelete,
+    OnUpdate,
+    ReferencedTable,
+)
 from piccolo.columns.combination import Where
 from piccolo.columns.defaults.date import DateArg, DateCustom, DateNow
 from piccolo.columns.defaults.interval import IntervalArg, IntervalCustom
@@ -1635,7 +1641,7 @@ class ForeignKeySetupResponse:
     is_lazy: bool
 
 
-class ForeignKey(Column):
+class ForeignKey(Column, t.Generic[ReferencedTable]):
     """
     Used to reference another table. Uses the same type as the primary key
     column on the table it references.
@@ -1846,9 +1852,48 @@ class ForeignKey(Column):
         target_column = self._foreign_key_meta.resolved_target_column
         return target_column.value_type
 
+    @t.overload
     def __init__(
         self,
-        references: t.Union[t.Type[Table], LazyTableReference, str],
+        references: t.Type[ReferencedTable],
+        default: t.Any = None,
+        null: bool = True,
+        on_delete: OnDelete = OnDelete.cascade,
+        on_update: OnUpdate = OnUpdate.cascade,
+        target_column: t.Union[str, Column, None] = None,
+        **kwargs,
+    ) -> None:
+        ...
+
+    @t.overload
+    def __init__(
+        self,
+        references: LazyTableReference,
+        default: t.Any = None,
+        null: bool = True,
+        on_delete: OnDelete = OnDelete.cascade,
+        on_update: OnUpdate = OnUpdate.cascade,
+        target_column: t.Union[str, Column, None] = None,
+        **kwargs,
+    ) -> None:
+        ...
+
+    @t.overload
+    def __init__(
+        self,
+        references: str,
+        default: t.Any = None,
+        null: bool = True,
+        on_delete: OnDelete = OnDelete.cascade,
+        on_update: OnUpdate = OnUpdate.cascade,
+        target_column: t.Union[str, Column, None] = None,
+        **kwargs,
+    ) -> None:
+        ...
+
+    def __init__(
+        self,
+        references: t.Union[t.Type[ReferencedTable], LazyTableReference, str],
         default: t.Any = None,
         null: bool = True,
         on_delete: OnDelete = OnDelete.cascade,
@@ -1859,7 +1904,6 @@ class ForeignKey(Column):
         from piccolo.table import Table
 
         if inspect.isclass(references):
-            references = t.cast(t.Type, references)
             if issubclass(references, Table):
                 # Using this to validate the default value - will raise a
                 # ValueError if incorrect.
@@ -2078,6 +2122,40 @@ class ForeignKey(Column):
             setattr(self, _column._meta.name, _column)
             _fk_meta.proxy_columns.append(_column)
 
+    @property
+    def _(self) -> t.Type[ReferencedTable]:
+        """
+        This allows us specify joins in a way which is friendly to static type
+        checkers like Mypy and Pyright.
+
+        Whilst this works::
+
+            # Fetch the band's name, and their manager's name via a foreign
+            # key:
+            await Band.select(Band.name, Band.manager.name)
+
+        There currently isn't a 100% reliable way to tell static type checkers
+        that ``Band.manager.name`` refers to a ``name`` column on the
+        ``Manager`` table.
+
+        However, by using the ``_`` property, it works perfectly. Instead
+        of ``Band.manager.name`` we use ``Band.manager._.name``::
+
+            await Band.select(Band.name, Band.manager._.name)
+
+        So when doing joins, after every foreign key we use ``._.`` instead of
+        ``.``. An easy way to remember this is ``._.`` looks a bit like a
+        connector in a diagram.
+
+        As Python's typing support increases, we'd love ``Band.manager.name``
+        to have the same static typing as ``Band.manager._.name`` (using some
+        kind of ``Proxy`` type), but for now this is the best solution, and is
+        a huge improvement in developer experience, as static type checkers
+        easily know if any of your joins contain typos.
+
+        """
+        return t.cast(t.Type[ReferencedTable], self)
+
     def __getattribute__(self, name: str) -> t.Union[Column, t.Any]:
         """
         Returns attributes unmodified unless they're Column instances, in which
@@ -2085,7 +2163,7 @@ class ForeignKey(Column):
         joins required).
         """
         # If the ForeignKey is using a lazy reference, we need to set the
-        # attributes here. Attributes starting with a double underscore are
+        # attributes here. Attributes starting with an underscore are
         # unlikely to be column names.
         if not name.startswith("__"):
             try:
@@ -2104,6 +2182,9 @@ class ForeignKey(Column):
             value = object.__getattribute__(self, name)
         except AttributeError:
             raise AttributeError
+
+        if name == "_":
+            return value
 
         foreignkey_class: t.Type[ForeignKey] = object.__getattribute__(
             self, "__class__"
@@ -2162,7 +2243,7 @@ class ForeignKey(Column):
         ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> ForeignKey:
+    def __get__(self, obj: None, objtype=None) -> ForeignKey[ReferencedTable]:
         ...
 
     @t.overload

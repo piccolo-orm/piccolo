@@ -9,9 +9,10 @@ import typing as t
 
 from typing_extensions import assert_type
 
+from piccolo.columns import ForeignKey, Varchar
 from piccolo.testing.model_builder import ModelBuilder
 
-from .example_apps.music.tables import Band, Manager
+from .example_apps.music.tables import Band, Concert, Manager
 
 if t.TYPE_CHECKING:
 
@@ -32,6 +33,21 @@ if t.TYPE_CHECKING:
         assert_type(await query, t.Optional[Band])
         assert_type(await query.run(), t.Optional[Band])
         assert_type(query.run_sync(), t.Optional[Band])
+
+    async def foreign_key_reference() -> None:
+        assert_type(Band.manager, ForeignKey[Manager])
+
+    async def foreign_key_traversal() -> None:
+        # Single level
+        assert_type(Band.manager._.name, Varchar)
+        # Multi level
+        assert_type(Concert.band_1._.manager._.name, Varchar)
+
+    async def get_related() -> None:
+        band = await Band.objects().get(Band.name == "Pythonistas")
+        assert band is not None
+        manager = await band.get_related(Band.manager)
+        assert_type(manager, t.Optional[Manager])
 
     async def get_or_create() -> None:
         query = Band.objects().get_or_create(Band.name == "Pythonistas")
