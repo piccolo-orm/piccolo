@@ -23,7 +23,6 @@ class TestCreateJoin:
 
 
 class TestJoin(TestCase):
-
     tables = [Manager, Band, Venue, Concert, Ticket]
 
     def setUp(self):
@@ -97,6 +96,29 @@ class TestJoin(TestCase):
         select_query = Concert.select(Concert.band_1.manager.name)
         response = select_query.run_sync()
         self.assertEqual(response, [{"band_1.manager.name": "Guido"}])
+
+    def test_underscore_syntax(self):
+        """
+        Make sure that queries work with the ``._.`` syntax for joins.
+        """
+        response = Concert.select(
+            Concert.band_1._.name,
+            Concert.band_1._.manager._.name,
+            Concert.band_2._.name,
+            Concert.band_2._.manager._.name,
+        ).run_sync()
+
+        self.assertListEqual(
+            response,
+            [
+                {
+                    "band_1.name": "Pythonistas",
+                    "band_1.manager.name": "Guido",
+                    "band_2.name": "Rustaceans",
+                    "band_2.manager.name": "Graydon",
+                }
+            ],
+        )
 
     def test_select_all_columns(self):
         """
