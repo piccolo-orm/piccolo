@@ -7,7 +7,7 @@ from piccolo.table import Table
 
 class Manager(Table):
     name = Varchar()
-    manager = ForeignKey("self", null=True)
+    manager: ForeignKey["Manager"] = ForeignKey("self", null=True)
 
 
 class Band(Table):

@@ -6,7 +6,7 @@ from piccolo.table import Table
 
 class Manager(Table, tablename="manager"):
     name = Varchar()
-    manager = ForeignKey("self", null=True)
+    manager: ForeignKey["Manager"] = ForeignKey("self", null=True)
 
 
 class TestForeignKeySelf(TestCase):
