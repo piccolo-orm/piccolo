@@ -14,6 +14,7 @@ from piccolo.columns.column_types import (
     Array,
     Email,
     ForeignKey,
+    ReferencedTable,
     Secret,
     Serial,
 )
@@ -563,9 +564,19 @@ class Table(metaclass=TableMetaclass):
         """
         return Refresh(instance=self, columns=columns)
 
+    @t.overload
     def get_related(
-        self: TableInstance, foreign_key: t.Union[ForeignKey, str]
-    ) -> First[Table]:
+        self, foreign_key: ForeignKey[ReferencedTable]
+    ) -> First[ReferencedTable]:
+        ...
+
+    @t.overload
+    def get_related(self, foreign_key: str) -> First[Table]:
+        ...
+
+    def get_related(
+        self, foreign_key: t.Union[str, ForeignKey[ReferencedTable]]
+    ) -> t.Union[First[Table], First[ReferencedTable]]:
         """
         Used to fetch a ``Table`` instance, for the target of a foreign key.
 
@@ -593,16 +604,12 @@ class Table(metaclass=TableMetaclass):
 
         column_name = foreign_key._meta.name
 
-        references: t.Type[
-            Table
-        ] = foreign_key._foreign_key_meta.resolved_references
+        references = foreign_key._foreign_key_meta.resolved_references
 
         return (
             references.objects()
             .where(
-                references._meta.get_column_by_name(
-                    self._meta.primary_key._meta.name
-                )
+                foreign_key._foreign_key_meta.resolved_target_column
                 == getattr(self, column_name)
             )
             .first()

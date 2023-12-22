@@ -14,7 +14,7 @@ class TestGetRelated(TestCase):
         for table in reversed(TABLES):
             table.alter().drop_table().run_sync()
 
-    def test_get_related(self):
+    def test_get_related(self) -> None:
         """
         Make sure you can get a related object from another object instance.
         """

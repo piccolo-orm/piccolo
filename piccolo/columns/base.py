@@ -77,9 +77,12 @@ class OnUpdate(str, Enum):
         return self.__str__()
 
 
+ReferencedTable = t.TypeVar("ReferencedTable", bound='Table')
+
+
 @dataclass
-class ForeignKeyMeta:
-    references: t.Union[t.Type[Table], LazyTableReference]
+class ForeignKeyMeta(t.Generic[ReferencedTable]):
+    references: t.Union[t.Type[ReferencedTable], LazyTableReference]
     on_delete: OnDelete
     on_update: OnUpdate
     target_column: t.Union[Column, str, None]
@@ -121,15 +124,15 @@ class ForeignKeyMeta:
         else:
             raise ValueError("Unable to resolve target_column.")
 
-    def copy(self) -> ForeignKeyMeta:
+    def copy(self) -> ForeignKeyMeta[ReferencedTable]:
         kwargs = self.__dict__.copy()
         kwargs.update(proxy_columns=self.proxy_columns.copy())
         return self.__class__(**kwargs)
 
-    def __copy__(self) -> ForeignKeyMeta:
+    def __copy__(self) -> ForeignKeyMeta[ReferencedTable]:
         return self.copy()
 
-    def __deepcopy__(self, memo) -> ForeignKeyMeta:
+    def __deepcopy__(self, memo) -> ForeignKeyMeta[ReferencedTable]:
         """
         We override deepcopy, as it's too slow if it has to recreate
         everything.
