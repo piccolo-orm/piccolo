@@ -77,7 +77,7 @@ class OnUpdate(str, Enum):
         return self.__str__()
 
 
-ReferencedTable = t.TypeVar("ReferencedTable", bound='Table')
+ReferencedTable = t.TypeVar("ReferencedTable", bound="Table")
 
 
 @dataclass
