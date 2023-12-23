@@ -13,7 +13,7 @@ class BandA(Table):
 
 
 class BandB(Table):
-    manager = ForeignKey(references="Manager")
+    manager: ForeignKey["Manager"] = ForeignKey(references="Manager")
 
 
 class TestReferences(TestCase):

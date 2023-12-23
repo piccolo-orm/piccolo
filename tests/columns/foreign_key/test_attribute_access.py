@@ -7,7 +7,7 @@ from piccolo.table import Table
 
 class Manager(Table):
     name = Varchar()
-    manager = ForeignKey("self")
+    manager: ForeignKey["Manager"] = ForeignKey("self")
 
 
 class BandA(Table):
@@ -15,11 +15,11 @@ class BandA(Table):
 
 
 class BandB(Table):
-    manager = ForeignKey(references="Manager")
+    manager: ForeignKey["Manager"] = ForeignKey(references="Manager")
 
 
 class BandC(Table):
-    manager = ForeignKey(
+    manager: ForeignKey["Manager"] = ForeignKey(
         references=LazyTableReference(
             table_class_name="Manager",
             module_path=__name__,
@@ -28,7 +28,9 @@ class BandC(Table):
 
 
 class BandD(Table):
-    manager = ForeignKey(references=f"{__name__}.Manager")
+    manager: ForeignKey["Manager"] = ForeignKey(
+        references=f"{__name__}.Manager"
+    )
 
 
 class TestAttributeAccess(TestCase):

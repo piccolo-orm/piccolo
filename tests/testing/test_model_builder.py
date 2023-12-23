@@ -42,7 +42,7 @@ class TableWithDecimal(Table):
 
 
 class BandWithLazyReference(Table):
-    manager = ForeignKey(
+    manager: ForeignKey["Manager"] = ForeignKey(
         references=LazyTableReference(
             "Manager", module_path="tests.example_apps.music.tables"
         )

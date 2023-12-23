@@ -25,7 +25,7 @@ Python around the time Piccolo was started.
 
 A really important thing when working at a design agency is having a **great
 admin interface**. A huge amount of effort has gone into
-`Piccolo Admin <https://piccolo-orm.readthedocs.io/en/latest/index.html>`_
+`Piccolo Admin <https://piccolo-admin.readthedocs.io/en/latest/index.html>`_
 to make something you'd be proud to give to a client.
 
 A lot of batteries are included because Piccolo is a pragmatic framework

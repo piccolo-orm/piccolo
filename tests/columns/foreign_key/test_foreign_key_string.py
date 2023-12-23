@@ -9,11 +9,11 @@ class Manager(Table):
 
 
 class BandA(Table):
-    manager = ForeignKey(references="Manager")
+    manager: ForeignKey["Manager"] = ForeignKey(references="Manager")
 
 
 class BandB(Table):
-    manager = ForeignKey(
+    manager: ForeignKey["Manager"] = ForeignKey(
         references=LazyTableReference(
             table_class_name="Manager",
             module_path=__name__,
@@ -22,7 +22,9 @@ class BandB(Table):
 
 
 class BandC(Table, tablename="band"):
-    manager = ForeignKey(references=f"{__name__}.Manager")
+    manager: ForeignKey["Manager"] = ForeignKey(
+        references=f"{__name__}.Manager"
+    )
 
 
 class TestForeignKeyString(TestCase):
