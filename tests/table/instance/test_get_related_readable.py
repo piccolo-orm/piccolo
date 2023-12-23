@@ -34,7 +34,7 @@ class ThingThree(Table):
             columns=[
                 cls.name,
                 cls.thing_two.name,
-                cls.thing_two.thing_one.name,
+                cls.thing_two._.thing_one._.name,
             ],
         )
 
