@@ -181,9 +181,10 @@ class TestPrimaryKeyQueries(TestCase):
         #######################################################################
         # Make sure `get_related` works
 
-        self.assertEqual(
-            band_2.get_related(Band.manager).run_sync().pk, manager.pk
-        )
+        manager_from_db = band_2.get_related(Band.manager).run_sync()
+        assert manager_from_db is not None
+
+        self.assertEqual(manager_from_db.pk, manager.pk)
 
         #######################################################################
         # Make sure `remove` works
