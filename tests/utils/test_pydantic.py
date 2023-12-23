@@ -646,7 +646,7 @@ class TestNestedModel(TestCase):
         # Test two levels deep
 
         BandModel = create_pydantic_model(
-            table=Band, nested=(Band.manager.country,)
+            table=Band, nested=(Band.manager._.country,)
         )
 
         ManagerModel = t.cast(
@@ -679,7 +679,7 @@ class TestNestedModel(TestCase):
         # Test three levels deep
 
         ConcertModel = create_pydantic_model(
-            Concert, nested=(Concert.band_1.manager,)
+            Concert, nested=(Concert.band_1._.manager,)
         )
 
         VenueModel = ConcertModel.model_fields["venue"].annotation
@@ -720,11 +720,14 @@ class TestNestedModel(TestCase):
 
         MyConcertModel = create_pydantic_model(
             Concert,
-            nested=(Concert.band_1.manager,),
+            nested=(Concert.band_1._.manager,),
             model_name="MyConcertModel",
         )
 
-        BandModel = MyConcertModel.model_fields["band_1"].annotation
+        BandModel = t.cast(
+            t.Type[pydantic.BaseModel],
+            MyConcertModel.model_fields["band_1"].annotation,
+        )
         self.assertEqual(BandModel.__qualname__, "MyConcertModel.band_1")
 
         ManagerModel = BandModel.model_fields["manager"].annotation
