@@ -1,6 +1,40 @@
 Changes
 =======
 
+1.2.0
+-----
+
+There's now an alternative syntax for joins, which works really well with
+static type checkers like Mypy and Pylance.
+
+The traditional syntax (which continues to work as before):
+
+.. code-block:: python
+
+  # Get the band name, and the manager's name from a related table
+  await Band.select(Band.name, Band.manager.name)
+
+The alternative syntax is as follows:
+
+.. code-block:: python
+
+  await Band.select(Band.name, Band.manager._.name)
+
+Note how we use ``._.`` instead of ``.`` after a ``ForeignKey``.
+
+This offers a considerably better static typing experience. In the above
+example, type checkers know that ``Band.manager._.name`` refers to the ``name``
+column on the ``Manager`` table. This means typos can be detected, and code
+navigation is easier.
+
+Other changes
+~~~~~~~~~~~~~
+
+* Improve static typing for ``get_related``.
+* Added support for the ``esmerald`` ASGI framework.
+
+-------------------------------------------------------------------------------
+
 1.1.1
 -----
 
