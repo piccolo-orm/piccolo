@@ -45,7 +45,8 @@ engine = engine_finder()
 
 
 class TestM2M(M2MBase, TestCase):
-    ...
+    def setUp(self):
+        return self._setUp(schema=None)
 
 
 ###############################################################################

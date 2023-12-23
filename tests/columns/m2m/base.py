@@ -41,7 +41,7 @@ class M2MBase:
     (public vs non-public).
     """
 
-    def setUp(self, schema: t.Optional[str] = None):
+    def _setUp(self, schema: t.Optional[str] = None):
         self.schema = schema
 
         for table_class in (Band, Genre, GenreToBand):

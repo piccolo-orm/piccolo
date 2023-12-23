@@ -13,4 +13,4 @@ class TestM2MWithSchema(M2MBase, TestCase):
     """
 
     def setUp(self):
-        return super().setUp(schema="schema_1")
+        return self._setUp(schema="schema_1")
