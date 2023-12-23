@@ -246,15 +246,14 @@ class M2MMeta:
 
 @dataclass
 class M2MAddRelated:
-
     target_row: Table
     m2m: M2M
     rows: t.Sequence[Table]
     extra_column_values: t.Dict[t.Union[Column, str], t.Any]
 
-    def __post_init__(self) -> None:
-        # Normalise `extra_column_values`, so we just have the column names.
-        self.extra_column_values: t.Dict[str, t.Any] = {
+    @property
+    def resolved_extra_column_values(self) -> t.Dict[str, t.Any]:
+        return {
             i._meta.name if isinstance(i, Column) else i: j
             for i, j in self.extra_column_values.items()
         }
@@ -271,7 +270,9 @@ class M2MAddRelated:
         joining_table_rows = []
 
         for row in rows:
-            joining_table_row = joining_table(**self.extra_column_values)
+            joining_table_row = joining_table(
+                **self.resolved_extra_column_values
+            )
             setattr(
                 joining_table_row,
                 self.m2m._meta.primary_foreign_key._meta.name,
@@ -313,7 +314,6 @@ class M2MAddRelated:
 
 @dataclass
 class M2MRemoveRelated:
-
     target_row: Table
     m2m: M2M
     rows: t.Sequence[Table]
@@ -353,7 +353,6 @@ class M2MRemoveRelated:
 
 @dataclass
 class M2MGetRelated:
-
     row: Table
     m2m: M2M
 
