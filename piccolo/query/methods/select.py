@@ -435,7 +435,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         self,
         response: t.List[t.Dict[str, t.Any]],
         secondary_table: t.Type[Table],
-        secondary_table_pk: PrimaryKey,
+        secondary_table_pk: Column,
         m2m_name: str,
         m2m_select: M2MSelect,
         as_list: bool = False,
@@ -604,11 +604,11 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         return self
 
     @t.overload
-    def output(self: Self, *, as_list: bool) -> SelectList:
+    def output(self: Self, *, as_list: bool) -> SelectList:  # type: ignore
         ...
 
     @t.overload
-    def output(self: Self, *, as_json: bool) -> SelectJSON:
+    def output(self: Self, *, as_json: bool) -> SelectJSON:  # type: ignore
         ...
 
     @t.overload
@@ -626,7 +626,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         as_json: bool = False,
         load_json: bool = False,
         nested: bool = False,
-    ):
+    ) -> t.Union[Self, SelectJSON, SelectList]:
         self.output_delegate.output(
             as_list=as_list,
             as_json=as_json,
