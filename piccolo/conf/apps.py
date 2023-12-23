@@ -147,17 +147,22 @@ class AppConfig:
     """
 
     app_name: str
-    migrations_folder_path: str
+    migrations_folder_path: t.Union[str, pathlib.Path]
     table_classes: t.List[t.Type[Table]] = field(default_factory=list)
     migration_dependencies: t.List[str] = field(default_factory=list)
     commands: t.List[t.Union[t.Callable, Command]] = field(
         default_factory=list
     )
 
-    def __post_init__(self) -> None:
-        if isinstance(self.migrations_folder_path, pathlib.Path):
-            self.migrations_folder_path = str(self.migrations_folder_path)
+    @property
+    def resolved_migrations_folder_path(self) -> str:
+        return (
+            str(self.migrations_folder_path)
+            if isinstance(self.migrations_folder_path, pathlib.Path)
+            else self.migrations_folder_path
+        )
 
+    def __post_init__(self) -> None:
         self._migration_dependency_app_configs: t.Optional[
             t.List[AppConfig]
         ] = None
