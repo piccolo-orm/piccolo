@@ -1988,7 +1988,9 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
 
         if is_table_class:
             # Record the reverse relationship on the target table.
-            references._meta._foreign_key_references.append(self)
+            t.cast(
+                t.Type[Table], references
+            )._meta._foreign_key_references.append(self)
 
             # Allow columns on the referenced table to be accessed via
             # auto completion.
@@ -2663,7 +2665,7 @@ class Array(Column):
         else:
             raise ValueError("Unrecognised engine type")
 
-    def cat(self, value: t.List[t.Any]) -> QueryString:
+    def cat(self, value: t.Union[t.Any, t.List[t.Any]]) -> QueryString:
         """
         Used in an ``update`` query to append items to an array.
 
@@ -2694,7 +2696,7 @@ class Array(Column):
         db_column_name = self._meta.db_column_name
         return QueryString(f'array_cat("{db_column_name}", {{}})', value)
 
-    def __add__(self, value: t.List[t.Any]) -> QueryString:
+    def __add__(self, value: t.Union[t.Any, t.List[t.Any]]) -> QueryString:
         return self.cat(value)
 
     ###########################################################################
