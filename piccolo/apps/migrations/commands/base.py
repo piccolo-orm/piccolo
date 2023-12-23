@@ -86,7 +86,7 @@ class BaseMigrationManager(Finder):
         """
         migration_managers: t.List[MigrationManager] = []
 
-        migrations_folder = app_config.migrations_folder_path
+        migrations_folder = app_config.resolved_migrations_folder_path
 
         migration_modules: t.Dict[
             str, MigrationModule

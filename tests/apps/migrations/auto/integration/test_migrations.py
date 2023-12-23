@@ -145,7 +145,7 @@ class MigrationTestCase(DBTestCase):
         """
         app_config = self._get_app_config()
 
-        migrations_folder_path = app_config.migrations_folder_path
+        migrations_folder_path = app_config.resolved_migrations_folder_path
 
         if os.path.exists(migrations_folder_path):
             shutil.rmtree(migrations_folder_path)
