@@ -380,8 +380,8 @@ class TestJoin(TestCase):
             Ticket.objects(
                 Ticket.all_related(),
                 Ticket.concert.all_related(),
-                Ticket.concert.band_1.all_related(),
-                Ticket.concert.band_2.all_related(),
+                Ticket.concert._.band_1.all_related(),
+                Ticket.concert._.band_2.all_related(),
             )
             .first()
             .run_sync()
@@ -427,7 +427,7 @@ class TestJoin(TestCase):
         ticket = (
             Ticket.objects()
             .prefetch(
-                Ticket.concert.band_1.manager,
+                Ticket.concert._.band_1._.manager,
             )
             .first()
             .run_sync()
@@ -457,8 +457,8 @@ class TestJoin(TestCase):
         ticket = (
             Ticket.objects()
             .prefetch(
-                Ticket.concert.band_1.manager,
-                Ticket.concert.band_2.manager,
+                Ticket.concert._.band_1._.manager,
+                Ticket.concert._.band_2._.manager,
             )
             .first()
             .run_sync()
