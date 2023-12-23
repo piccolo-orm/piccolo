@@ -553,7 +553,9 @@ class TestOperators(TestCase):
         with self.assertRaises(ValueError):
             # An error should be raised because we can't save at this level
             # of resolution - 1 millisecond is the minimum.
-            MyTable.timestamp + datetime.timedelta(microseconds=1)
+            MyTable.timestamp + datetime.timedelta(  # type: ignore
+                microseconds=1
+            )
 
 
 ###############################################################################
