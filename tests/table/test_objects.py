@@ -81,7 +81,7 @@ class TestGet(DBTestCase):
             .run_sync()
         )
         assert band is not None
-        self.assertIsInstance(band.manager, Manager)
+        self.assertIsInstance(band.manager, Manager)  # type: ignore
 
         # Just passing it straight into objects
         band = (
@@ -100,7 +100,8 @@ class TestGetOrCreate(DBTestCase):
         """
         # When the row doesn't exist in the db:
         Band.objects().get_or_create(
-            Band.name == "Pink Floyd", defaults={"popularity": 100}
+            Band.name == "Pink Floyd",
+            defaults={"popularity": 100},  # type: ignore
         ).run_sync()
 
         instance = (
@@ -224,8 +225,8 @@ class TestGetOrCreate(DBTestCase):
             .prefetch(Band.manager)
             .run_sync()
         )
-        self.assertIsInstance(band.manager, Manager)
-        self.assertEqual(band.manager.name, "Guido")
+        self.assertIsInstance(band.manager, Manager)  # type: ignore
+        self.assertEqual(band.manager.name, "Guido")  # type: ignore
 
         # Just passing it straight into objects
         band = (
@@ -253,8 +254,8 @@ class TestGetOrCreate(DBTestCase):
             .prefetch(Band.manager)
             .run_sync()
         )
-        self.assertIsInstance(band.manager, Manager)
-        self.assertEqual(band.name, "New Band")
+        self.assertIsInstance(band.manager, Manager)  # type: ignore
+        self.assertEqual(band.name, "New Band")  # type: ignore
 
         # Just passing it straight into objects
         band = (
