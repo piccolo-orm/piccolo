@@ -1266,7 +1266,7 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def create_index(
         cls,
-        columns: t.List[t.Union[Column, str]],
+        columns: t.Union[t.List[Column], t.List[str]],
         method: IndexMethod = IndexMethod.btree,
         if_not_exists: bool = False,
     ) -> CreateIndex:
@@ -1288,7 +1288,9 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def drop_index(
-        cls, columns: t.List[t.Union[Column, str]], if_exists: bool = True
+        cls,
+        columns: t.Union[t.List[Column], t.List[str]],
+        if_exists: bool = True,
     ) -> DropIndex:
         """
         Drop a table index. If multiple columns are specified, this refers
