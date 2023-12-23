@@ -4,6 +4,8 @@ import contextvars
 import typing as t
 from dataclasses import dataclass
 
+from typing_extensions import Self
+
 from piccolo.engine.base import (
     BaseTransaction,
     Batch,
@@ -52,10 +54,10 @@ class AsyncBatch(Batch):
         data = await self.cursor.fetch(self.batch_size)
         return await self.query._process_results(data)
 
-    def __aiter__(self):
+    def __aiter__(self: Self) -> Self:
         return self
 
-    async def __anext__(self):
+    async def __anext__(self) -> t.List[t.Dict]:
         response = await self.next()
         if response == []:
             raise StopAsyncIteration()

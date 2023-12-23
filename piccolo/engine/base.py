@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import abc
 import contextvars
 import logging
 import pprint
 import string
 import typing as t
 from abc import ABCMeta, abstractmethod
+
+from typing_extensions import Self
 
 from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
@@ -33,7 +36,21 @@ def validate_savepoint_name(savepoint_name: str) -> None:
 
 
 class Batch:
-    pass
+    @abc.abstractmethod
+    async def __aenter__(self, *args, **kwargs):
+        ...
+
+    @abc.abstractmethod
+    async def __aexit__(self, *args, **kwargs):
+        ...
+
+    @abc.abstractmethod
+    def __aiter__(self: Self) -> Self:
+        ...
+
+    @abc.abstractmethod
+    async def __anext__(self) -> t.List[t.Dict]:
+        ...
 
 
 class BaseTransaction:
