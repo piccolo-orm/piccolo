@@ -106,6 +106,7 @@ class TestGetOrCreate(DBTestCase):
         instance = (
             Band.objects().where(Band.name == "Pink Floyd").first().run_sync()
         )
+        assert instance is not None
 
         self.assertIsInstance(instance, Band)
         self.assertEqual(instance.name, "Pink Floyd")
@@ -119,6 +120,7 @@ class TestGetOrCreate(DBTestCase):
         instance = (
             Band.objects().where(Band.name == "Pink Floyd").first().run_sync()
         )
+        assert instance is not None
 
         self.assertIsInstance(instance, Band)
         self.assertEqual(instance.name, "Pink Floyd")

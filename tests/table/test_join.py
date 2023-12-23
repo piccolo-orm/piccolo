@@ -93,7 +93,7 @@ class TestJoin(TestCase):
             )
 
         # Now make sure that even deeper joins work:
-        select_query = Concert.select(Concert.band_1.manager.name)
+        select_query = Concert.select(Concert.band_1._.manager._.name)
         response = select_query.run_sync()
         self.assertEqual(response, [{"band_1.manager.name": "Guido"}])
 
@@ -126,7 +126,7 @@ class TestJoin(TestCase):
         explicitly specifying them.
         """
         result = (
-            Band.select(Band.name, Band.manager.all_columns())
+            Band.select(Band.name, *Band.manager.all_columns())
             .first()
             .run_sync()
         )
@@ -157,9 +157,9 @@ class TestJoin(TestCase):
         """
         result = (
             Concert.select(
-                Concert.venue.all_columns(),
-                Concert.band_1.manager.all_columns(),
-                Concert.band_2.manager.all_columns(),
+                *Concert.venue.all_columns(),
+                *Concert.band_1._.manager.all_columns(),
+                *Concert.band_2._.manager.all_columns(),
             )
             .first()
             .run_sync()
@@ -205,7 +205,8 @@ class TestJoin(TestCase):
         # We call it multiple times to make sure it doesn't change with time.
         for _ in range(2):
             self.assertEqual(
-                len(Concert.band_1.manager._foreign_key_meta.proxy_columns), 2
+                len(Concert.band_1._.manager._foreign_key_meta.proxy_columns),
+                2,
             )
             self.assertEqual(
                 len(Concert.band_1._foreign_key_meta.proxy_columns), 4
@@ -218,8 +219,8 @@ class TestJoin(TestCase):
         """
         result = (
             Band.select(
-                Band.all_columns(),
-                Band.manager.all_columns(),
+                *Band.all_columns(),
+                *Band.manager.all_columns(),
             )
             .first()
             .run_sync()
@@ -257,7 +258,7 @@ class TestJoin(TestCase):
         with using it for referenced tables.
         """
         result = (
-            Band.select(Band.all_columns(), Band.manager.all_columns())
+            Band.select(*Band.all_columns(), *Band.manager.all_columns())
             .output(nested=True)
             .first()
             .run_sync()
@@ -294,23 +295,25 @@ class TestJoin(TestCase):
         """
         result = (
             Band.select(
-                Band.all_columns(exclude=[Band.id]),
-                Band.manager.all_columns(exclude=[Band.manager.id]),
+                *Band.all_columns(exclude=[Band.id]),
+                *Band.manager.all_columns(exclude=[Band.manager.id]),
             )
             .output(nested=True)
             .first()
             .run_sync()
         )
+        assert result is not None
 
         result_str_args = (
             Band.select(
-                Band.all_columns(exclude=["id"]),
-                Band.manager.all_columns(exclude=["id"]),
+                *Band.all_columns(exclude=["id"]),
+                *Band.manager.all_columns(exclude=["id"]),
             )
             .output(nested=True)
             .first()
             .run_sync()
         )
+        assert result_str_args is not None
 
         for data in (result, result_str_args):
             self.assertDictEqual(
@@ -329,6 +332,7 @@ class TestJoin(TestCase):
         Make sure the prefetch argument works correctly for objects.
         """
         band = Band.objects(Band.manager).first().run_sync()
+        assert band is not None
         self.assertIsInstance(band.manager, Manager)
 
     def test_objects__all_related__root(self):
@@ -337,6 +341,7 @@ class TestJoin(TestCase):
         root table of the query.
         """
         concert = Concert.objects(Concert.all_related()).first().run_sync()
+        assert concert is not None
         self.assertIsInstance(concert.band_1, Band)
         self.assertIsInstance(concert.band_2, Band)
         self.assertIsInstance(concert.venue, Venue)
@@ -348,11 +353,11 @@ class TestJoin(TestCase):
         ticket = (
             Ticket.objects(
                 Ticket.concert,
-                Ticket.concert.band_1,
-                Ticket.concert.band_2,
-                Ticket.concert.venue,
-                Ticket.concert.band_1.manager,
-                Ticket.concert.band_2.manager,
+                Ticket.concert._.band_1,
+                Ticket.concert._.band_2,
+                Ticket.concert._.venue,
+                Ticket.concert._.band_1._.manager,
+                Ticket.concert._.band_2._.manager,
             )
             .first()
             .run_sync()
@@ -399,8 +404,8 @@ class TestJoin(TestCase):
             .prefetch(
                 Ticket.all_related(),
                 Ticket.concert.all_related(),
-                Ticket.concert.band_1.all_related(),
-                Ticket.concert.band_2.all_related(),
+                Ticket.concert._.band_1.all_related(),
+                Ticket.concert._.band_2.all_related(),
             )
             .first()
             .run_sync()

@@ -839,7 +839,7 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def all_related(
         cls, exclude: t.Optional[t.List[t.Union[str, ForeignKey]]] = None
-    ) -> t.List[Column]:
+    ) -> t.List[ForeignKey]:
         """
         Used in conjunction with ``objects`` queries. Just as we can use
         ``all_related`` on a ``ForeignKey``, you can also use it for the table
