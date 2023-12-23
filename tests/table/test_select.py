@@ -975,7 +975,9 @@ class TestSelect(DBTestCase):
         Make sure the call chain lengths are the correct size.
         """
         self.assertEqual(len(Concert.band_1.name._meta.call_chain), 1)
-        self.assertEqual(len(Concert.band_1.manager.name._meta.call_chain), 2)
+        self.assertEqual(
+            len(Concert.band_1._.manager._.name._meta.call_chain), 2
+        )
 
     def test_as_alias(self):
         """
