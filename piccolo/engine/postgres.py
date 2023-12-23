@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing_extensions import Self
 
 from piccolo.engine.base import (
+    BaseAtomic,
     BaseTransaction,
     Batch,
     Engine,
@@ -86,7 +87,7 @@ class AsyncBatch(Batch):
 ###############################################################################
 
 
-class Atomic:
+class Atomic(BaseAtomic):
     """
     This is useful if you want to build up a transaction programatically, by
     adding queries to it.

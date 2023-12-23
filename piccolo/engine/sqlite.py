@@ -13,6 +13,7 @@ from decimal import Decimal
 from typing_extensions import Self
 
 from piccolo.engine.base import (
+    BaseAtomic,
     BaseTransaction,
     Batch,
     Engine,
@@ -256,7 +257,7 @@ class TransactionType(enum.Enum):
     exclusive = "EXCLUSIVE"
 
 
-class Atomic:
+class Atomic(BaseAtomic):
     """
     Usage:
 

@@ -15,7 +15,7 @@ from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import Level, colored_string, colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.query.base import Query
+    from piccolo.query.base import DDL, Query
 
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ def validate_savepoint_name(savepoint_name: str) -> None:
         )
 
 
-class Batch:
+class Batch(metaclass=ABCMeta):
     @abc.abstractmethod
     async def __aenter__(self, *args, **kwargs):
         ...
@@ -53,11 +53,31 @@ class Batch:
         ...
 
 
-class BaseTransaction:
+class BaseTransaction(metaclass=ABCMeta):
+    @abc.abstractmethod
     async def __aenter__(self, *args, **kwargs):
         ...
 
+    @abc.abstractmethod
     async def __aexit__(self, *args, **kwargs):
+        ...
+
+
+class BaseAtomic(metaclass=ABCMeta):
+    @abc.abstractmethod
+    def add(self, *query: t.Union[Query, DDL]):
+        ...
+
+    @abc.abstractmethod
+    async def run(self):
+        ...
+
+    @abc.abstractmethod
+    def run_sync(self):
+        ...
+
+    @abc.abstractmethod
+    def __await__(self):
         ...
 
 
@@ -125,7 +145,7 @@ class Engine(t.Generic[TransactionClass], metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def atomic(self):
+    def atomic(self) -> BaseAtomic:
         pass
 
     async def check_version(self):
