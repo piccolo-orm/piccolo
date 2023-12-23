@@ -268,17 +268,17 @@ class Objects(
 
     ###########################################################################
 
-    def first(self: Self) -> First[TableInstance]:
+    def first(self) -> First[TableInstance]:
         self.limit_delegate.limit(1)
         return First[TableInstance](query=self)
 
-    def get(self: Self, where: Combinable) -> Get[TableInstance]:
+    def get(self, where: Combinable) -> Get[TableInstance]:
         self.where_delegate.where(where)
         self.limit_delegate.limit(1)
         return Get[TableInstance](query=First[TableInstance](query=self))
 
     def get_or_create(
-        self: Self,
+        self,
         where: Combinable,
         defaults: t.Optional[t.Dict[Column, t.Any]] = None,
     ) -> GetOrCreate[TableInstance]:
@@ -288,13 +288,13 @@ class Objects(
             query=self, table_class=self.table, where=where, defaults=defaults
         )
 
-    def create(self: Self, **columns: t.Any) -> Create[TableInstance]:
+    def create(self, **columns: t.Any) -> Create[TableInstance]:
         return Create[TableInstance](table_class=self.table, columns=columns)
 
     ###########################################################################
 
     async def batch(
-        self: Self,
+        self,
         batch_size: t.Optional[int] = None,
         node: t.Optional[str] = None,
         **kwargs,
