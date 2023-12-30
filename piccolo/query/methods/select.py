@@ -279,7 +279,7 @@ class Sum(Selectable):
         return f'SUM({column_name}) AS "{self._alias}"'
 
 
-OptionalDict = t.Optional[t.Dict[str, t.Any]]
+OptionalDict = t.Optional[t.Dict[t.Union[str, Column], t.Any]]
 
 
 class First(Proxy["Select", OptionalDict]):
@@ -348,7 +348,7 @@ class SelectJSON(Proxy["Select", str]):
         return dump_json(rows)
 
 
-class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
+class Select(Query[TableInstance, t.List[t.Dict[t.Union[str, Column], t.Any]]]):
     __slots__ = (
         "columns_list",
         "exclude_secrets",
@@ -832,7 +832,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         in_pool: bool = True,
         use_callbacks: bool = True,
         **kwargs,
-    ) -> t.List[t.Dict[str, t.Any]]:
+    ) -> t.List[t.Dict[t.Union[str, Column], t.Any]]:
         results = await super().run(node=node, in_pool=in_pool)
         if use_callbacks:
             return await self.callback_delegate.invoke(
