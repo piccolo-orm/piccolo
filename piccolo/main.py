@@ -75,6 +75,7 @@ def main() -> None:
         for command in _app_config.get_commands():
             cli.register(
                 command.callable,
+                command_name=command.command_name,
                 group_name=_app_config.app_name,
                 aliases=command.aliases,
             )

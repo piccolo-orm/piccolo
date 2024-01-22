@@ -27,11 +27,6 @@ def print_dict_table(data: List[dict], header_separator: bool = False) -> None:
     Uses the first list element to extract the
     column names and their order within the row.
     """
-
-    if len(data) < 1:
-        print("No data")
-        return
-
     ref_order = [column for column in data[0]]
     width = {column: len(str(column)) for column in ref_order}
 
