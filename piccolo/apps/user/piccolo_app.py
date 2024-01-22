@@ -5,6 +5,7 @@ from piccolo.conf.apps import AppConfig, Command
 from .commands.change_password import change_password
 from .commands.change_permissions import change_permissions
 from .commands.create import create
+from .commands.list import list
 from .tables import BaseUser
 
 CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
@@ -19,6 +20,7 @@ APP_CONFIG = AppConfig(
     migration_dependencies=[],
     commands=[
         Command(callable=create, aliases=["new"]),
+        Command(callable=list, aliases=["ls"]),
         Command(callable=change_password, aliases=["password", "pass"]),
         Command(callable=change_permissions, aliases=["perm", "perms"]),
     ],

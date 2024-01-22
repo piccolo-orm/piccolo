@@ -44,6 +44,11 @@ script), you can pass all of the arguments in as follows:
    If you choose this approach then be careful, as the password will be in the
    shell's history.
 
+list
+~~~~
+
+List existing users.
+
 change_password
 ~~~~~~~~~~~~~~~
 
