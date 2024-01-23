@@ -1,9 +1,9 @@
+import datetime
 import enum
 import random
 import string
 import typing as t
 import uuid
-from datetime import date, datetime, time, timedelta
 
 
 class RandomBuilder:
@@ -16,22 +16,23 @@ class RandomBuilder:
         return random.getrandbits(length * 8).to_bytes(length, "little")
 
     @classmethod
-    def next_date(cls) -> date:
-        return date(
+    def next_date(cls) -> datetime.date:
+        return datetime.date(
             year=random.randint(2000, 2050),
             month=random.randint(1, 12),
             day=random.randint(1, 28),
         )
 
     @classmethod
-    def next_datetime(cls) -> datetime:
-        return datetime(
+    def next_datetime(cls, tz_aware: bool = False) -> datetime.datetime:
+        return datetime.datetime(
             year=random.randint(2000, 2050),
             month=random.randint(1, 12),
             day=random.randint(1, 28),
             hour=random.randint(0, 23),
             minute=random.randint(0, 59),
             second=random.randint(0, 59),
+            tzinfo=datetime.timezone.utc if tz_aware else None,
         )
 
     @classmethod
@@ -53,16 +54,16 @@ class RandomBuilder:
         )
 
     @classmethod
-    def next_time(cls) -> time:
-        return time(
+    def next_time(cls) -> datetime.time:
+        return datetime.time(
             hour=random.randint(0, 23),
             minute=random.randint(0, 59),
             second=random.randint(0, 59),
         )
 
     @classmethod
-    def next_timedelta(cls) -> timedelta:
-        return timedelta(
+    def next_timedelta(cls) -> datetime.timedelta:
+        return datetime.timedelta(
             days=random.randint(1, 7),
             hours=random.randint(1, 23),
             minutes=random.randint(0, 59),

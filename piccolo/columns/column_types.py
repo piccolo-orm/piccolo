@@ -1005,6 +1005,11 @@ class Timestamptz(Column):
     """
 
     value_type = datetime
+
+    # Currently just used by ModelBuilder, to know that we want a timezone
+    # aware datetime.
+    tz_aware = True
+
     timedelta_delegate = TimedeltaDelegate()
 
     def __init__(
