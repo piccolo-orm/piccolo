@@ -29,3 +29,21 @@ class TestList(TestCase):
         assert self.username in output
         assert self.password not in output
         assert self.user.password not in output
+
+
+class TestListArgs(TestCase):
+    def test_limit(self):
+        """
+        Make sure non-positive `limit` values are rejected.
+        """
+        for value in (0, -1):
+            with self.assertRaises(ValueError):
+                list_users(page=value)
+
+    def test_page(self):
+        """
+        Make sure non-positive `page` values are rejected.
+        """
+        for value in (0, -1):
+            with self.assertRaises(ValueError):
+                list_users(limit=value)
