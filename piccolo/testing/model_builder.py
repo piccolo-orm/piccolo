@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import datetime
 import json
 import typing as t
-from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from uuid import UUID
 
@@ -16,13 +16,13 @@ class ModelBuilder:
     __DEFAULT_MAPPER: t.Dict[t.Type, t.Callable] = {
         bool: RandomBuilder.next_bool,
         bytes: RandomBuilder.next_bytes,
-        date: RandomBuilder.next_date,
-        datetime: RandomBuilder.next_datetime,
+        datetime.date: RandomBuilder.next_date,
+        datetime.datetime: RandomBuilder.next_datetime,
         float: RandomBuilder.next_float,
         int: RandomBuilder.next_int,
         str: RandomBuilder.next_str,
-        time: RandomBuilder.next_time,
-        timedelta: RandomBuilder.next_timedelta,
+        datetime.time: RandomBuilder.next_time,
+        datetime.timedelta: RandomBuilder.next_timedelta,
         UUID: RandomBuilder.next_uuid,
     }
 
@@ -155,6 +155,9 @@ class ModelBuilder:
             random_value = RandomBuilder.next_float(
                 maximum=10 ** (precision - scale), scale=scale
             )
+        elif column.value_type == datetime.datetime:
+            tz_aware = getattr(column, "tz_aware", False)
+            random_value = RandomBuilder.next_datetime(tz_aware=tz_aware)
         elif column.value_type == list:
             length = RandomBuilder.next_int(maximum=10)
             base_type = t.cast(Array, column).base_column.value_type

@@ -11,6 +11,8 @@ from piccolo.columns import (
     LazyTableReference,
     Numeric,
     Real,
+    Timestamp,
+    Timestamptz,
     Varchar,
 )
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
@@ -96,6 +98,25 @@ class TestModelBuilder(unittest.TestCase):
             queried_shirt.size,
             ["s", "l", "m"],
         )
+
+    def test_datetime(self):
+        """
+        Make sure that ``ModelBuilder`` generates timezone aware datetime
+        objects for ``Timestamptz`` columns, and timezone naive datetime
+        objects for ``Timestamp`` columns.
+        """
+
+        class Table1(Table):
+            starts = Timestamptz()
+
+        class Table2(Table):
+            starts = Timestamp()
+
+        model_1 = ModelBuilder.build_sync(Table1, persist=False)
+        assert model_1.starts.tzinfo is not None
+
+        model_2 = ModelBuilder.build_sync(Table2, persist=False)
+        assert model_2.starts.tzinfo is None
 
     def test_foreign_key(self):
         model = ModelBuilder.build_sync(Band, persist=True)
