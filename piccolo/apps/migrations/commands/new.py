@@ -3,7 +3,6 @@ from __future__ import annotations
 import datetime
 import os
 import string
-import sys
 import typing as t
 from dataclasses import dataclass
 from itertools import chain
@@ -22,6 +21,7 @@ from piccolo.apps.migrations.auto import (
 from piccolo.conf.apps import AppConfig, Finder
 from piccolo.engine import SQLiteEngine
 from piccolo.utils.printing import print_heading
+from piccolo.utils.warnings import colored_warning
 
 from .base import BaseMigrationManager
 
@@ -232,7 +232,7 @@ async def new(
     """
     engine = Finder().get_engine()
     if auto and isinstance(engine, SQLiteEngine):
-        sys.exit("Auto migrations aren't currently supported by SQLite.")
+        colored_warning("Auto migrations aren't fully supported by SQLite.")
 
     if app_name == "all" and not auto:
         raise ValueError(
