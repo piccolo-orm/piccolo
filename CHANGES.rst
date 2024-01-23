@@ -1,6 +1,23 @@
 Changes
 =======
 
+1.3.0
+-----
+
+Added the ``piccolo user list`` command - a quick and convenient way of listing
+Piccolo Admin users from the command line.
+
+``ModelBuilder`` now creates timezone aware ``datetime`` objects for
+``Timestamptz`` columns.
+
+Updated the ASGI templates.
+
+SQLite auto migrations are now allowed. We used to raise an exception, but
+now we output a warning instead. While SQLite auto migrations aren't as feature
+rich as Postgres, they work fine for simple use cases.
+
+-------------------------------------------------------------------------------
+
 1.2.0
 -----
 
