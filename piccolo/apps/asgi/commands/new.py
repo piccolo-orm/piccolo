@@ -10,15 +10,11 @@ from jinja2 import Environment, FileSystemLoader
 
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates/app/")
 SERVERS = ["uvicorn", "Hypercorn"]
-ADMIN_DEPENDENCIES = ["piccolo_admin>=1.0.0"]
 ROUTER_DEPENDENCIES = {
-    "starlette": ["starlette", *ADMIN_DEPENDENCIES],
-    "fastapi": ["fastapi>=0.100.0", *ADMIN_DEPENDENCIES],
-    "blacksheep": ["blacksheep", *ADMIN_DEPENDENCIES],
-    "litestar": ["litestar", *ADMIN_DEPENDENCIES],
-    # We don't currently use Piccolo Admin with esmerald, due to dependency
-    # conflicts with FastAPI. We'll revisit this at some point in the future
-    # when newer versions of FastAPI are released (DT - 12th December 2023).
+    "starlette": ["starlette"],
+    "fastapi": ["fastapi>=0.100.0"],
+    "blacksheep": ["blacksheep"],
+    "litestar": ["litestar"],
     "esmerald": ["esmerald"],
 }
 ROUTERS = list(ROUTER_DEPENDENCIES.keys())
