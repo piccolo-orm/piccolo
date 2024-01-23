@@ -4,6 +4,7 @@ from pathlib import Path
 
 from piccolo.utils.pydantic import create_pydantic_model
 from piccolo.engine import engine_finder
+from piccolo_admin.endpoints import create_admin
 
 from esmerald import (
     Esmerald,
@@ -92,7 +93,15 @@ class TaskAPIView(APIView):
 app = Esmerald(
     routes=[
         Gateway("/", handler=home),
-        Gateway("/tasks", handler=TaskAPIView)
+        Gateway("/tasks", handler=TaskAPIView),
+        Include(
+            "/admin/",
+            create_admin(
+                tables=APP_CONFIG.table_classes,
+                # Required when running under HTTPS:
+                # allowed_hosts=['my_site.com']
+            ),
+        ),
     ],
     static_files_config=StaticFilesConfig(path="/static", directory=Path("static")),
     on_startup=[open_database_connection_pool],
