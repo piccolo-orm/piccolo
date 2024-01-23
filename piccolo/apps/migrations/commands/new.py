@@ -232,10 +232,7 @@ async def new(
     """
     engine = Finder().get_engine()
     if auto and isinstance(engine, SQLiteEngine):
-        colored_warning(
-            "Auto migrations aren't fully supported by SQLite, though may "
-            "still work for simple use cases."
-        )
+        colored_warning("Auto migrations aren't fully supported by SQLite.")
 
     if app_name == "all" and not auto:
         raise ValueError(
