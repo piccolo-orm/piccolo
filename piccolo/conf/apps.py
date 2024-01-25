@@ -263,10 +263,10 @@ class AppRegistry:
     def __init__(
         self,
         apps: t.Optional[t.List[str]] = None,
-        options: t.Optional[t.Dict[str, t.Dict[str, t.Any]]] = None,
+        app_options: t.Optional[t.Dict[str, t.Dict[str, t.Any]]] = None,
     ):
         self.apps = apps or []
-        self.options = options or {}
+        self.app_options = app_options or {}
 
         self.app_configs: t.Dict[str, AppConfig] = {}
         app_names = []
@@ -462,7 +462,6 @@ class Finder:
         Returns the value for ``option_name`` for the given app. It first looks
         for overrides in ``piccolo_conf.py``, and if not found, returns the
         default value.
-
         """
         app_registry = self.get_app_registry()
         value = app_registry.app_options.get(app_name, {}).get(
@@ -472,9 +471,11 @@ class Finder:
         if value is not ...:
             return value
 
-        return self.get_app_config(app_name=app_name).options.get(
-            option_name, ...
-        )
+        app_config = app_registry.get_app_config(app_name=app_name)
+        if app_config is None:
+            raise ValueError("The app name isn't recognised.")
+
+        return app_config.options.get(option_name, ...)
 
     def get_engine(
         self, module_name: t.Optional[str] = None
