@@ -165,11 +165,14 @@ class AppConfig:
 
         To override this value in ``piccolo_conf.py`` do the following::
 
-            APP_OPTIONS = {
-                "my_app": {
-                    "max_tickets_per_user": 15
+            APP_REGISTRY = AppRegistry(
+                apps=["my_app"],
+                app_options={
+                    "my_app": {
+                        "max_tickets_per_user": 15
+                    }
                 }
-            }
+            )
 
         The app can retrieve the value as follows:
 
@@ -257,8 +260,14 @@ class AppRegistry:
 
     """
 
-    def __init__(self, apps: t.Optional[t.List[str]] = None):
+    def __init__(
+        self,
+        apps: t.Optional[t.List[str]] = None,
+        options: t.Optional[t.Dict[str, t.Dict[str, t.Any]]] = None,
+    ):
         self.apps = apps or []
+        self.options = options or {}
+
         self.app_configs: t.Dict[str, AppConfig] = {}
         app_names = []
 
@@ -455,9 +464,10 @@ class Finder:
         default value.
 
         """
-        piccolo_conf_module = self.get_piccolo_conf_module()
-        app_options = getattr(piccolo_conf_module, "APP_OPTIONS", {})
-        value = app_options.get(app_name, {}).get(option_name, ...)
+        app_registry = self.get_app_registry()
+        value = app_registry.app_options.get(app_name, {}).get(
+            option_name, ...
+        )
 
         if value is not ...:
             return value
