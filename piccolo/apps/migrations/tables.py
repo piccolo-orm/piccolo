@@ -4,10 +4,26 @@ import typing as t
 
 from piccolo.columns import Timestamp, Varchar
 from piccolo.columns.defaults.timestamp import TimestampNow
+from piccolo.conf.apps import Finder
 from piccolo.table import Table
 
+TABLENAME = Finder().get_app_option(
+    app_name="migrations",
+    option_name="tablename",
+)
 
-class Migration(Table):
+
+SCHEMA = Finder().get_app_option(
+    app_name="migrations",
+    option_name="tablename",
+)
+
+
+class Migration(
+    Table,
+    tablename=TABLENAME,
+    schema=SCHEMA,
+):
     name = Varchar(length=200)
     app_name = Varchar(length=200)
     ran_on = Timestamp(default=TimestampNow())
