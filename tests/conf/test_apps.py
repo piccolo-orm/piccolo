@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pathlib
 from unittest import TestCase
+from unittest.mock import MagicMock, patch
 
 from piccolo.apps.user.tables import BaseUser
 from piccolo.conf.apps import AppConfig, AppRegistry, Finder, table_finder
@@ -304,3 +305,42 @@ class TestFinder(TestCase):
         self.assertListEqual(
             [i.app_name for i in sorted_app_configs], ["app_2", "app_1"]
         )
+
+    @patch("piccolo.conf.apps.Finder.get_app_registry")
+    def test_get_app_option(self, get_app_registry: MagicMock):
+        """
+        Make sure we can retrieve app options.
+        """
+        schema = "schema_1"
+        app_registry = AppRegistry(
+            apps=["piccolo.apps.migrations.piccolo_app"],
+            app_options={"migrations": {"schema": schema}},
+        )
+        get_app_registry.return_value = app_registry
+
+        # Make sure we can successfully retrieve an option.
+        option = Finder().get_app_option(
+            app_name="migrations", option_name="schema"
+        )
+        self.assertEqual(option, schema)
+
+        # Make sure the default value is returned if the option wasn't
+        # overridden.
+        option = Finder().get_app_option(
+            app_name="migrations", option_name="tablename"
+        )
+        self.assertEqual(option, None)
+
+        # Make sure an error is raised if the app isn't recognised.
+        with self.assertRaises(ValueError) as e:
+            Finder().get_app_option(
+                app_name="some_app", option_name="some_option"
+            )
+        self.assertEqual(str(e.exception), "The app name isn't recognised.")
+
+        # Make sure an error is raised if the option isn't recognised.
+        with self.assertRaises(ValueError) as e:
+            Finder().get_app_option(
+                app_name="migrations", option_name="some_option"
+            )
+        self.assertEqual(str(e.exception), "The option name isn't recognised.")

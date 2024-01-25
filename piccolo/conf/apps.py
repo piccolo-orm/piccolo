@@ -464,18 +464,23 @@ class Finder:
         default value.
         """
         app_registry = self.get_app_registry()
+
+        # See if the option was overridden:
         value = app_registry.app_options.get(app_name, {}).get(
             option_name, ...
         )
-
         if value is not ...:
             return value
 
+        # Get the default value:
         app_config = app_registry.get_app_config(app_name=app_name)
         if app_config is None:
             raise ValueError("The app name isn't recognised.")
 
-        return app_config.options.get(option_name, ...)
+        if option_name not in app_config.options:
+            raise ValueError("The option name isn't recognised.")
+
+        return app_config.options[option_name]
 
     def get_engine(
         self, module_name: t.Optional[str] = None
