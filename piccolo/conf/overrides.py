@@ -34,8 +34,8 @@ class OverrideLoader:
         folder_path: t.Optional[str] = None,
     ):
         self.toml_file_name = toml_file_name
-        self._toml_contents = None
         self.folder_path = folder_path or os.getcwd()
+        self._toml_contents = None
 
     def get_toml_contents(self) -> t.Dict[str, t.Any]:
         """
