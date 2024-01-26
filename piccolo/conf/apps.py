@@ -164,7 +164,6 @@ class AppConfig:
     commands: t.List[t.Union[t.Callable, Command]] = field(
         default_factory=list
     )
-    options: t.Dict[str, t.Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if isinstance(self.migrations_folder_path, pathlib.Path):
@@ -229,14 +228,8 @@ class AppRegistry:
 
     """
 
-    def __init__(
-        self,
-        apps: t.Optional[t.List[str]] = None,
-        app_options: t.Optional[t.Dict[str, t.Dict[str, t.Any]]] = None,
-    ):
+    def __init__(self, apps: t.Optional[t.List[str]] = None):
         self.apps = apps or []
-        self.app_options = app_options or {}
-
         self.app_configs: t.Dict[str, AppConfig] = {}
         app_names = []
 
