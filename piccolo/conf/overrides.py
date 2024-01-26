@@ -17,7 +17,7 @@ class OverrideLoader:
     of their project (wherever the Python interpreter will be started).
 
     This can be used to modify some of the internal workings of Piccolo.
-    Examples are the tablename and schema of the ``Migration`` table.
+    Examples are the ``tablename`` and ``schema`` of the ``Migration`` table.
 
     The reason we don't have these values in ``piccolo_conf.py`` is we want the
     values to be static. Also, they could be required at any point by Piccolo,
