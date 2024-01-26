@@ -4,19 +4,13 @@ import typing as t
 
 from piccolo.columns import Timestamp, Varchar
 from piccolo.columns.defaults.timestamp import TimestampNow
-from piccolo.conf.apps import Finder
+from piccolo.conf.overrides import get_override
 from piccolo.table import Table
 
-TABLENAME = Finder().get_app_option(
-    app_name="migrations",
-    option_name="tablename",
-)
+TABLENAME = get_override(key="PICCOLO_MIGRATION_TABLENAME", default=None)
 
 
-SCHEMA = Finder().get_app_option(
-    app_name="migrations",
-    option_name="tablename",
-)
+SCHEMA = get_override(key="PICCOLO_MIGRATION_SCHEMA", default=None)
 
 
 class Migration(

@@ -154,37 +154,6 @@ class AppConfig:
         the Piccolo CLI. For example, with a Piccolo app called ``'article'``,
         and a command called ``new``, it can be called on the command line
         using ``piccolo article new``.
-    :param options:
-        This allows the app's behaviour to be customised by setting values in
-        ``piccolo_conf.py``. Define any options you want, for example if we
-        have an app for booking tickets::
-
-            {
-                "max_tickets_per_user": 10
-            }
-
-        To override this value in ``piccolo_conf.py`` do the following::
-
-            APP_REGISTRY = AppRegistry(
-                apps=["my_app"],
-                app_options={
-                    "my_app": {
-                        "max_tickets_per_user": 15
-                    }
-                }
-            )
-
-        The app can retrieve the value as follows:
-
-            from piccolo.conf.apps import Finder
-
-            max_tickets_per_user = Finder().get_app_option(
-                "my_app",
-                "max_tickets_per_user"
-            )
-
-        In this example, ``15`` is returned. If it hadn't been overriden in
-        ``piccolo_conf.py`` then the default value of ``10`` would returned.
 
     """
 
@@ -456,31 +425,6 @@ class Finder:
         """
         piccolo_conf_module = self.get_piccolo_conf_module()
         return getattr(piccolo_conf_module, "APP_REGISTRY")
-
-    def get_app_option(self, app_name: str, option_name: str) -> t.Any:
-        """
-        Returns the value for ``option_name`` for the given app. It first looks
-        for overrides in ``piccolo_conf.py``, and if not found, returns the
-        default value.
-        """
-        app_registry = self.get_app_registry()
-
-        # See if the option was overridden:
-        value = app_registry.app_options.get(app_name, {}).get(
-            option_name, ...
-        )
-        if value is not ...:
-            return value
-
-        # Get the default value:
-        app_config = app_registry.get_app_config(app_name=app_name)
-        if app_config is None:
-            raise ValueError("The app name isn't recognised.")
-
-        if option_name not in app_config.options:
-            raise ValueError("The option name isn't recognised.")
-
-        return app_config.options[option_name]
 
     def get_engine(
         self, module_name: t.Optional[str] = None
