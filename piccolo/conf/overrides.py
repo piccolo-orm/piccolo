@@ -51,7 +51,7 @@ class OverrideLoader:
                 with open(toml_file_path, "rb") as f:
                     self._toml_contents = tomllib.load(f)
             else:
-                raise FileNotFoundError("The toml file wasn't found.")
+                raise FileNotFoundError("The TOML file wasn't found.")
 
         return self._toml_contents
 
@@ -71,7 +71,7 @@ class OverrideLoader:
             if value is ...:
                 return default
 
-            logger.debug(f"Loaded {key} from toml file.")
+            logger.debug(f"Loaded {key} from TOML file.")
             return value
 
     def validate(self):
