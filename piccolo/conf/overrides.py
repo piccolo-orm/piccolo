@@ -5,7 +5,7 @@ import typing as t
 try:
     import tomllib  # type: ignore
 except ImportError:
-    import tomli as tomllib
+    import tomli as tomllib  # type: ignore
 
 
 logger = logging.getLogger(__name__)
