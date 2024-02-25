@@ -1,6 +1,14 @@
 Changes
 =======
 
+1.3.1
+-----
+
+Fixed a bug with foreign keys which reference ``BigSerial`` primary keys.
+Thanks to @Abdelhadi92 for reporting this issue.
+
+-------------------------------------------------------------------------------
+
 1.3.0
 -----
 
