@@ -682,9 +682,7 @@ class BigInt(Integer):
 
     """
 
-    @property
-    def column_type(self):
-        engine_type = self._meta.engine_type
+    def _get_column_type(self, engine_type: str):
         if engine_type == "postgres":
             return "BIGINT"
         elif engine_type == "cockroach":
@@ -692,6 +690,10 @@ class BigInt(Integer):
         elif engine_type == "sqlite":
             return "INTEGER"
         raise Exception("Unrecognized engine type")
+
+    @property
+    def column_type(self):
+        return self._get_column_type(engine_type=self._meta.engine_type)
 
     ###########################################################################
     # Descriptors
@@ -1841,10 +1843,12 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
         column of the table being referenced.
         """
         target_column = self._foreign_key_meta.resolved_target_column
-        engine_type = self._meta.engine_type
-        if engine_type == "cockroach":
-            return target_column.column_type
-        if isinstance(target_column, Serial):
+
+        if isinstance(target_column, BigSerial):
+            return BigInt()._get_column_type(
+                engine_type=self._meta.engine_type
+            )
+        elif isinstance(target_column, Serial):
             return Integer().column_type
         else:
             return target_column.column_type
