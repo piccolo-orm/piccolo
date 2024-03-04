@@ -86,7 +86,7 @@ def get_array_value_type(
     else:
         inner_type = get_pydantic_value_type(column.base_column)
 
-    return t.List[inner_type]
+    return t.List[inner_type]  # type: ignore
 
 
 def get_pydantic_value_type(column: Column) -> t.Type:
