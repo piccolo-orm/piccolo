@@ -1,6 +1,20 @@
 Changes
 =======
 
+1.3.2
+-----
+
+Fixed a bug with nested array columns containing ``BigInt``. For example:
+
+.. code-block:: python
+
+  class MyTable(Table):
+      my_column = Array(Array(BigInt))
+
+Thanks to @AmazingAkai for reporting this issue.
+
+-------------------------------------------------------------------------------
+
 1.3.1
 -----
 
