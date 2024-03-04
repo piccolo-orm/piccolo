@@ -132,13 +132,13 @@ class TestArrayColumn(TestCase):
         """
 
         class Band(Table):
-            members = Array(Array(Varchar()), required=True)
+            members = Array(Array(Varchar(length=255)), required=True)
 
         pydantic_model = create_pydantic_model(table=Band)
 
         self.assertEqual(
             pydantic_model.model_fields["members"].annotation,
-            t.List[t.List[str]],
+            t.List[t.List[pydantic.constr(max_length=255)]],
         )
 
         # Should not raise a validation error:

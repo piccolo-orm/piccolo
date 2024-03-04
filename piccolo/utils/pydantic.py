@@ -84,9 +84,31 @@ def get_array_value_type(
     if isinstance(column.base_column, Array):
         inner_type = get_array_value_type(column.base_column, inner=inner)
     else:
-        inner_type = column.base_column.value_type
+        inner_type = get_pydantic_value_type(column.base_column)
 
     return t.List[inner_type]
+
+
+def get_pydantic_value_type(column: Column) -> t.Type:
+    """
+    Map the Piccolo ``Column`` to a Pydantic type.
+    """
+    value_type: t.Type
+
+    if isinstance(column, (Decimal, Numeric)):
+        value_type = pydantic.condecimal(
+            max_digits=column.precision, decimal_places=column.scale
+        )
+    elif isinstance(column, Email):
+        value_type = pydantic.EmailStr  # type: ignore
+    elif isinstance(column, Varchar):
+        value_type = pydantic.constr(max_length=column.length)
+    elif isinstance(column, Array):
+        value_type = get_array_value_type(column=column)
+    else:
+        value_type = column.value_type
+
+    return value_type
 
 
 def create_pydantic_model(
@@ -226,17 +248,7 @@ def create_pydantic_model(
         #######################################################################
         # Work out the column type
 
-        if isinstance(column, (Decimal, Numeric)):
-            value_type: t.Type = pydantic.condecimal(
-                max_digits=column.precision, decimal_places=column.scale
-            )
-        elif isinstance(column, Email):
-            value_type = pydantic.EmailStr
-        elif isinstance(column, Varchar):
-            value_type = pydantic.constr(max_length=column.length)
-        elif isinstance(column, Array):
-            value_type = get_array_value_type(column=column)
-        elif isinstance(column, (JSON, JSONB)):
+        if isinstance(column, (JSON, JSONB)):
             if deserialize_json:
                 value_type = pydantic.Json
             else:
@@ -250,7 +262,7 @@ def create_pydantic_model(
                     validator  # type: ignore
                 )
         else:
-            value_type = column.value_type
+            value_type = get_pydantic_value_type(column=column)
 
         _type = t.Optional[value_type] if is_optional else value_type
 
