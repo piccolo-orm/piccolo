@@ -126,6 +126,32 @@ class TestArrayColumn(TestCase):
             "string",
         )
 
+    def test_multidimensional_array(self):
+        """
+        Make sure that multidimensional arrays have the correct type.
+        """
+
+        class Band(Table):
+            members = Array(Array(Varchar(length=255)), required=True)
+
+        pydantic_model = create_pydantic_model(table=Band)
+
+        self.assertEqual(
+            pydantic_model.model_fields["members"].annotation,
+            t.List[t.List[pydantic.constr(max_length=255)]],
+        )
+
+        # Should not raise a validation error:
+        pydantic_model(
+            members=[
+                ["Alice", "Bob", "Francis"],
+                ["Alan", "Georgia", "Sue"],
+            ]
+        )
+
+        with self.assertRaises(ValueError):
+            pydantic_model(members=["Bob"])
+
 
 class TestForeignKeyColumn(TestCase):
     def test_target_column(self):
