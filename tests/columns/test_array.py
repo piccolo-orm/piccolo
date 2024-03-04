@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from piccolo.columns.column_types import Array, Integer
+from piccolo.columns.column_types import Array, BigInt, Integer
 from piccolo.table import Table
 from tests.base import engines_only, sqlite_only
 
@@ -22,7 +22,7 @@ class TestArrayDefault(TestCase):
 
 class TestArray(TestCase):
     """
-    Make sure an Array column can be created.
+    Make sure an Array column can be created, and work correctly.
     """
 
     def setUp(self):
@@ -35,9 +35,9 @@ class TestArray(TestCase):
     def test_storage(self):
         """
         Make sure data can be stored and retrieved.
-        """
-        """
+
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+
         """  # noqa: E501
         MyTable(value=[1, 2, 3]).save().run_sync()
 
@@ -48,9 +48,9 @@ class TestArray(TestCase):
     def test_index(self):
         """
         Indexes should allow individual array elements to be queried.
-        """
-        """
+
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+
         """  # noqa: E501
         MyTable(value=[1, 2, 3]).save().run_sync()
 
@@ -63,9 +63,9 @@ class TestArray(TestCase):
         """
         Make sure rows can be retrieved where all items in an array match a
         given value.
-        """
-        """
+
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+
         """  # noqa: E501
         MyTable(value=[1, 1, 1]).save().run_sync()
 
@@ -90,9 +90,9 @@ class TestArray(TestCase):
         """
         Make sure rows can be retrieved where any items in an array match a
         given value.
-        """
-        """
+
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+
         """  # noqa: E501
         MyTable(value=[1, 2, 3]).save().run_sync()
 
@@ -116,9 +116,9 @@ class TestArray(TestCase):
     def test_cat(self):
         """
         Make sure values can be appended to an array.
-        """
-        """
+
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+
         """  # noqa: E501
         MyTable(value=[1, 1, 1]).save().run_sync()
 
@@ -163,3 +163,39 @@ class TestArray(TestCase):
             str(manager.exception),
             "Only Postgres and Cockroach support array appending.",
         )
+
+
+class NestedArrayTable(Table):
+    value = Array(base_column=Array(base_column=BigInt()))
+
+
+class TestNestedArray(TestCase):
+    """
+    Make sure that tables with nested arrays can be created, and work
+    correctly.
+
+    Related to this bug, with nested array columns containing ``BigInt``:
+
+    https://github.com/piccolo-orm/piccolo/issues/936
+
+    """
+
+    def setUp(self):
+        NestedArrayTable.create_table().run_sync()
+
+    def tearDown(self):
+        NestedArrayTable.alter().drop_table().run_sync()
+
+    @engines_only("postgres", "sqlite")
+    def test_storage(self):
+        """
+        Make sure data can be stored and retrieved.
+
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+
+        """  # noqa: E501
+        NestedArrayTable(value=[[1, 2, 3], [4, 5, 6]]).save().run_sync()
+
+        row = NestedArrayTable.objects().first().run_sync()
+        assert row is not None
+        self.assertEqual(row.value, [[1, 2, 3], [4, 5, 6]])
