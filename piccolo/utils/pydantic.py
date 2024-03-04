@@ -74,6 +74,21 @@ def validate_columns(
     )
 
 
+def get_array_value_type(
+    column: Array, inner: t.Optional[t.Type] = None
+) -> t.Type:
+    """
+    Gets the correct type for an ``Array`` column (which might be
+    multidimensional).
+    """
+    if isinstance(column.base_column, Array):
+        inner_type = get_array_value_type(column.base_column, inner=inner)
+    else:
+        inner_type = column.base_column.value_type
+
+    return t.List[inner_type]
+
+
 def create_pydantic_model(
     table: t.Type[Table],
     nested: t.Union[bool, t.Tuple[ForeignKey, ...]] = False,
@@ -220,7 +235,7 @@ def create_pydantic_model(
         elif isinstance(column, Varchar):
             value_type = pydantic.constr(max_length=column.length)
         elif isinstance(column, Array):
-            value_type = t.List[column.base_column.value_type]  # type: ignore
+            value_type = get_array_value_type(column=column)
         elif isinstance(column, (JSON, JSONB)):
             if deserialize_json:
                 value_type = pydantic.Json
