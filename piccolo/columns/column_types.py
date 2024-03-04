@@ -2588,6 +2588,15 @@ class Array(Column):
             return "ARRAY"
         raise Exception("Unrecognized engine type")
 
+    def _setup_base_column(self, table_class: t.Type[Table]):
+        """
+        Called from the ``Table.__init_subclass__`` - makes sure
+        that the ``base_column`` has a reference to the parent table.
+        """
+        self.base_column._meta._table = table_class
+        if isinstance(self.base_column, Array):
+            self.base_column._setup_base_column(table_class=table_class)
+
     def __getitem__(self, value: int) -> Array:
         """
         Allows queries which retrieve an item from the array. The index starts
