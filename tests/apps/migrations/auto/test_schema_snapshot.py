@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from piccolo.apps.migrations.auto import MigrationManager, SchemaSnapshot
+from piccolo.columns import Varchar
 
 
 class TestSchemaSnaphot(TestCase):
@@ -140,7 +141,10 @@ class TestSchemaSnaphot(TestCase):
 
         manager_2 = MigrationManager()
         manager_2.drop_column(
-            table_class_name="Manager", tablename="manager", column_name="name"
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="name",
+            column_class=Varchar,
         )
 
         schema_snapshot = SchemaSnapshot(managers=[manager_1, manager_2])

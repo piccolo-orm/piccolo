@@ -551,6 +551,7 @@ class TestMigrationManager(DBTestCase):
             table_class_name="Musician",
             tablename="musician",
             column_name="name",
+            column_class=Varchar,
         )
         asyncio.run(manager_2.run())
 

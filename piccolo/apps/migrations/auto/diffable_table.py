@@ -146,6 +146,7 @@ class DiffableTable:
                 db_column_name=i.column._meta.db_column_name,
                 tablename=value.tablename,
                 schema=self.schema,
+                column_class=i.column.__class__,
             )
             for i in sorted(
                 {ColumnComparison(column=column) for column in value.columns}

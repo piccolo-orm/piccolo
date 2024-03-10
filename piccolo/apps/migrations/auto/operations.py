@@ -49,6 +49,7 @@ class AlterColumn:
 class DropColumn:
     table_class_name: str
     column_name: str
+    column_class: t.Type[Column]
     db_column_name: str
     tablename: str
     schema: t.Optional[str] = None
