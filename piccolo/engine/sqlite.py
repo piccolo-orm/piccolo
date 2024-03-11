@@ -93,8 +93,8 @@ def convert_array_in(value: list):
     """
     Converts a list value into a string.
     """
-    if value and type(value[0]) not in [str, int, float]:
-        raise ValueError("Can only serialise str, int and float.")
+    if value and type(value[0]) not in [str, int, float, list]:
+        raise ValueError("Can only serialise str, int, float, and list.")
 
     return dump_json(value)
 

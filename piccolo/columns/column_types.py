@@ -682,9 +682,7 @@ class BigInt(Integer):
 
     """
 
-    @property
-    def column_type(self):
-        engine_type = self._meta.engine_type
+    def _get_column_type(self, engine_type: str):
         if engine_type == "postgres":
             return "BIGINT"
         elif engine_type == "cockroach":
@@ -692,6 +690,10 @@ class BigInt(Integer):
         elif engine_type == "sqlite":
             return "INTEGER"
         raise Exception("Unrecognized engine type")
+
+    @property
+    def column_type(self):
+        return self._get_column_type(engine_type=self._meta.engine_type)
 
     ###########################################################################
     # Descriptors
@@ -1005,6 +1007,11 @@ class Timestamptz(Column):
     """
 
     value_type = datetime
+
+    # Currently just used by ModelBuilder, to know that we want a timezone
+    # aware datetime.
+    tz_aware = True
+
     timedelta_delegate = TimedeltaDelegate()
 
     def __init__(
@@ -1836,10 +1843,12 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
         column of the table being referenced.
         """
         target_column = self._foreign_key_meta.resolved_target_column
-        engine_type = self._meta.engine_type
-        if engine_type == "cockroach":
-            return target_column.column_type
-        if isinstance(target_column, Serial):
+
+        if isinstance(target_column, BigSerial):
+            return BigInt()._get_column_type(
+                engine_type=self._meta.engine_type
+            )
+        elif isinstance(target_column, Serial):
             return Integer().column_type
         else:
             return target_column.column_type
@@ -2580,6 +2589,15 @@ class Array(Column):
         elif engine_type == "sqlite":
             return "ARRAY"
         raise Exception("Unrecognized engine type")
+
+    def _setup_base_column(self, table_class: t.Type[Table]):
+        """
+        Called from the ``Table.__init_subclass__`` - makes sure
+        that the ``base_column`` has a reference to the parent table.
+        """
+        self.base_column._meta._table = table_class
+        if isinstance(self.base_column, Array):
+            self.base_column._setup_base_column(table_class=table_class)
 
     def __getitem__(self, value: int) -> Array:
         """

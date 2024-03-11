@@ -118,7 +118,18 @@ def table_finder(
 
 @dataclass
 class Command:
+    """
+    :param callable:
+        The function or method to be called.
+    :param command_name:
+        If not specified, the name of the ``callable`` is used.
+    :param aliases:
+        Alternative ways to refer to this command in the CLI.
+
+    """
+
     callable: t.Callable
+    command_name: t.Optional[str] = None
     aliases: t.List[str] = field(default_factory=list)
 
 

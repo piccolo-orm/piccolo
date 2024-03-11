@@ -308,7 +308,7 @@ class Table(metaclass=TableMetaclass):
                 column._meta._table = cls
 
                 if isinstance(column, Array):
-                    column.base_column._meta._table = cls
+                    column._setup_base_column(table_class=cls)
 
                 if isinstance(column, Email):
                     email_columns.append(column)

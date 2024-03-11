@@ -10,10 +10,14 @@ from jinja2 import Environment, FileSystemLoader
 
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates/app/")
 SERVERS = ["uvicorn", "Hypercorn"]
-ROUTERS = ["starlette", "fastapi", "blacksheep", "litestar", "esmerald"]
 ROUTER_DEPENDENCIES = {
+    "starlette": ["starlette"],
     "fastapi": ["fastapi>=0.100.0"],
+    "blacksheep": ["blacksheep"],
+    "litestar": ["litestar"],
+    "esmerald": ["esmerald"],
 }
+ROUTERS = list(ROUTER_DEPENDENCIES.keys())
 
 
 def print_instruction(message: str):
