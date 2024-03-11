@@ -24,17 +24,17 @@ class TestAllColumns(TestCase):
         """
         Make sure ``all_columns`` works when the joins are several layers deep.
         """
-        all_columns = Concert.band_1.manager.all_columns()
-        self.assertEqual(all_columns, [Band.manager.id, Band.manager.name])
+        all_columns = Concert.band_1._.manager.all_columns()
+        self.assertEqual(all_columns, [Band.manager._.id, Band.manager._.name])
 
         # Make sure the call chains are also correct.
         self.assertEqual(
             all_columns[0]._meta.call_chain,
-            Concert.band_1.manager.id._meta.call_chain,
+            Concert.band_1._.manager._.id._meta.call_chain,
         )
         self.assertEqual(
             all_columns[1]._meta.call_chain,
-            Concert.band_1.manager.name._meta.call_chain,
+            Concert.band_1._.manager._.name._meta.call_chain,
         )
 
     def test_all_columns_exclude(self):

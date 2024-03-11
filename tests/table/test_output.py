@@ -101,6 +101,8 @@ class TestOutputNested(DBTestCase):
             .output(nested=True)
             .run_sync()
         )
+        assert response is not None
         self.assertDictEqual(
-            response, {"name": "Pythonistas", "manager": {"name": "Guido"}}
+            response,  # type: ignore
+            {"name": "Pythonistas", "manager": {"name": "Guido"}},
         )

@@ -1,10 +1,38 @@
 import typing as t
 
+from piccolo.columns.column_types import (
+    ForeignKey,
+    LazyTableReference,
+    Serial,
+    Text,
+    Varchar,
+)
+from piccolo.columns.m2m import M2M
 from piccolo.engine.finder import engine_finder
+from piccolo.schema import SchemaManager
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
 from tests.base import engine_is, engines_skip
 
 engine = engine_finder()
+
+
+class Band(Table):
+    id: Serial
+    name = Varchar()
+    genres = M2M(LazyTableReference("GenreToBand", module_path=__name__))
+
+
+class Genre(Table):
+    id: Serial
+    name = Varchar()
+    bands = M2M(LazyTableReference("GenreToBand", module_path=__name__))
+
+
+class GenreToBand(Table):
+    id: Serial
+    band = ForeignKey(Band)
+    genre = ForeignKey(Genre)
+    reason = Text(help_text="For testing additional columns on join tables.")
 
 
 class M2MBase:
@@ -13,15 +41,13 @@ class M2MBase:
     (public vs non-public).
     """
 
-    band: t.Type[Table]
-    genre: t.Type[Table]
-    genre_to_band: t.Type[Table]
-    all_tables: t.List[t.Type[Table]]
+    def _setUp(self, schema: t.Optional[str] = None):
+        self.schema = schema
 
-    def setUp(self):
-        Band = self.band
-        Genre = self.genre
-        GenreToBand = self.genre_to_band
+        for table_class in (Band, Genre, GenreToBand):
+            table_class._meta.schema = schema
+
+        self.all_tables = [Band, Genre, GenreToBand]
 
         create_db_tables_sync(*self.all_tables, if_not_exists=True)
 
@@ -77,14 +103,22 @@ class M2MBase:
     def tearDown(self):
         drop_db_tables_sync(*self.all_tables)
 
+        if self.schema:
+            SchemaManager().drop_schema(
+                schema_name="schema_1", cascade=True
+            ).run_sync()
+
+    def assertEqual(self, first, second, msg=None):
+        assert first == second
+
+    def assertTrue(self, first, msg=None):
+        assert first is True
+
     @engines_skip("cockroach")
     def test_select_name(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
         """  # noqa: E501
-        Band = self.band
-        Genre = self.genre
-
         response = Band.select(
             Band.name, Band.genres(Genre.name, as_list=True)
         ).run_sync()
@@ -118,9 +152,6 @@ class M2MBase:
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
         """  # noqa: E501
-        Band = self.band
-        Genre = self.genre
-        GenreToBand = self.genre_to_band
 
         GenreToBand.delete(force=True).run_sync()
 
@@ -156,8 +187,6 @@ class M2MBase:
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
         """  # noqa: E501
-        Band = self.band
-        Genre = self.genre
 
         response = Band.select(
             Band.name, Band.genres(Genre.id, Genre.name)
@@ -218,8 +247,6 @@ class M2MBase:
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
         """  # noqa: E501
-        Band = self.band
-        Genre = self.genre
 
         response = Band.select(
             Band.name, Band.genres(Genre.id, as_list=True)
@@ -257,8 +284,6 @@ class M2MBase:
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
 
         """  # noqa: E501
-        Band = self.band
-        Genre = self.genre
 
         response = Band.select(
             Band.name, Band.genres(Genre.all_columns(exclude=(Genre.id,)))
@@ -288,11 +313,9 @@ class M2MBase:
         """
         Make sure we can add items to the joining table.
         """
-        Band = self.band
-        Genre = self.genre
-        GenreToBand = self.genre_to_band
 
         band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        assert band is not None
         band.add_m2m(Genre(name="Punk Rock"), m2m=Band.genres).run_sync()
 
         self.assertTrue(
@@ -314,13 +337,11 @@ class M2MBase:
         Make sure the ``extra_column_values`` parameter for ``add_m2m`` works
         correctly when the dictionary keys are strings.
         """
-        Band = self.band
-        Genre = self.genre
-        GenreToBand = self.genre_to_band
 
         reason = "Their second album was very punk rock."
 
         band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        assert band is not None
         band.add_m2m(
             Genre(name="Punk Rock"),
             m2m=Band.genres,
@@ -329,7 +350,7 @@ class M2MBase:
             },
         ).run_sync()
 
-        genre_to_band = (
+        Genreto_band = (
             GenreToBand.objects()
             .get(
                 (GenreToBand.band.name == "Pythonistas")
@@ -337,21 +358,20 @@ class M2MBase:
             )
             .run_sync()
         )
+        assert Genreto_band is not None
 
-        self.assertEqual(genre_to_band.reason, reason)
+        self.assertEqual(Genreto_band.reason, reason)
 
     def test_extra_columns_class(self):
         """
         Make sure the ``extra_column_values`` parameter for ``add_m2m`` works
         correctly when the dictionary keys are ``Column`` classes.
         """
-        Band = self.band
-        Genre = self.genre
-        GenreToBand = self.genre_to_band
 
         reason = "Their second album was very punk rock."
 
         band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        assert band is not None
         band.add_m2m(
             Genre(name="Punk Rock"),
             m2m=Band.genres,
@@ -360,7 +380,7 @@ class M2MBase:
             },
         ).run_sync()
 
-        genre_to_band = (
+        Genreto_band = (
             GenreToBand.objects()
             .get(
                 (GenreToBand.band.name == "Pythonistas")
@@ -368,20 +388,20 @@ class M2MBase:
             )
             .run_sync()
         )
+        assert Genreto_band is not None
 
-        self.assertEqual(genre_to_band.reason, reason)
+        self.assertEqual(Genreto_band.reason, reason)
 
     def test_add_m2m_existing(self):
         """
         Make sure we can add an existing element to the joining table.
         """
-        Band = self.band
-        Genre = self.genre
-        GenreToBand = self.genre_to_band
 
         band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        assert band is not None
 
         genre = Genre.objects().get(Genre.name == "Classical").run_sync()
+        assert genre is not None
 
         band.add_m2m(genre, m2m=Band.genres).run_sync()
 
@@ -404,9 +424,9 @@ class M2MBase:
         """
         Make sure we can get related items via the joining table.
         """
-        Band = self.band
 
         band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        assert band is not None
 
         genres = band.get_m2m(Band.genres).run_sync()
 
@@ -418,13 +438,12 @@ class M2MBase:
         """
         Make sure we can remove related items via the joining table.
         """
-        Band = self.band
-        Genre = self.genre
-        GenreToBand = self.genre_to_band
 
         band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        assert band is not None
 
         genre = Genre.objects().get(Genre.name == "Rock").run_sync()
+        assert genre is not None
 
         band.remove_m2m(genre, m2m=Band.genres).run_sync()
 

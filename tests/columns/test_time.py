@@ -30,6 +30,7 @@ class TestTime(TestCase):
         row.save().run_sync()
 
         result = MyTable.objects().first().run_sync()
+        assert result is not None
         self.assertEqual(result.created_on, created_on)
 
 
@@ -49,6 +50,7 @@ class TestTimeDefault(TestCase):
         _datetime = partial(datetime.datetime, year=2020, month=1, day=1)
 
         result = MyTableDefault.objects().first().run_sync()
+        assert result is not None
         self.assertLess(
             _datetime(
                 hour=result.created_on.hour,

@@ -44,27 +44,9 @@ from .base import M2MBase
 engine = engine_finder()
 
 
-class Band(Table):
-    name = Varchar()
-    genres = M2M(LazyTableReference("GenreToBand", module_path=__name__))
-
-
-class Genre(Table):
-    name = Varchar()
-    bands = M2M(LazyTableReference("GenreToBand", module_path=__name__))
-
-
-class GenreToBand(Table):
-    band = ForeignKey(Band)
-    genre = ForeignKey(Genre)
-    reason = Text(help_text="For testing additional columns on join tables.")
-
-
 class TestM2M(M2MBase, TestCase):
-    band = Band
-    genre = Genre
-    genre_to_band = GenreToBand
-    all_tables = [Band, Genre, GenreToBand]
+    def setUp(self):
+        return self._setUp(schema=None)
 
 
 ###############################################################################
@@ -161,6 +143,7 @@ class TestM2MCustomPrimaryKey(TestCase):
         Make sure we can add items to the joining table.
         """
         customer = Customer.objects().get(Customer.name == "Bob").run_sync()
+        assert customer is not None
         customer.add_m2m(
             Concert(name="Jazzfest"), m2m=Customer.concerts
         ).run_sync()
@@ -192,6 +175,7 @@ class TestM2MCustomPrimaryKey(TestCase):
         async def add_m2m_in_transaction():
             async with engine.transaction():
                 customer = await Customer.objects().get(Customer.name == "Bob")
+                assert customer is not None
                 await customer.add_m2m(
                     Concert(name="Jazzfest"), m2m=Customer.concerts
                 )
@@ -217,6 +201,7 @@ class TestM2MCustomPrimaryKey(TestCase):
         Make sure we can get related items via the joining table.
         """
         customer = Customer.objects().get(Customer.name == "Bob").run_sync()
+        assert customer is not None
 
         concerts = customer.get_m2m(Customer.concerts).run_sync()
 

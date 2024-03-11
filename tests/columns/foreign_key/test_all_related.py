@@ -38,13 +38,13 @@ class TestAllRelated(TestCase):
         """
         Make sure ``all_related`` works when the joins are several layers deep.
         """
-        all_related = Ticket.concert.band_1.all_related()
-        self.assertEqual(all_related, [Ticket.concert.band_1.manager])
+        all_related = Ticket.concert._.band_1.all_related()
+        self.assertEqual(all_related, [Ticket.concert._.band_1._.manager])
 
         # Make sure the call chains are also correct.
         self.assertEqual(
             all_related[0]._meta.call_chain,
-            Ticket.concert.band_1.manager._meta.call_chain,
+            Ticket.concert._.band_1._.manager._meta.call_chain,
         )
 
     def test_all_related_exclude(self):
@@ -57,6 +57,6 @@ class TestAllRelated(TestCase):
         )
 
         self.assertEqual(
-            Ticket.concert.all_related(exclude=[Ticket.concert.venue]),
+            Ticket.concert.all_related(exclude=[Ticket.concert._.venue]),
             [Ticket.concert.band_1, Ticket.concert.band_2],
         )

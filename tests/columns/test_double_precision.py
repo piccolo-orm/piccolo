@@ -20,5 +20,6 @@ class TestDoublePrecision(TestCase):
         row.save().run_sync()
 
         _row = MyTable.objects().first().run_sync()
+        assert _row is not None
         self.assertEqual(type(_row.column_a), float)
         self.assertAlmostEqual(_row.column_a, 1.23)

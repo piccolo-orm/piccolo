@@ -37,26 +37,26 @@ class TestColumnsDelegate(DBTestCase):
         self.insert_rows()
         time.sleep(1)  # Ensure time travel queries have some history to use!
 
-        result = (
+        query = (
             Band.select()
             .where(Band.name == "Pythonistas")
             .as_of("-500ms")
             .limit(1)
         )
-        self.assertTrue("AS OF SYSTEM TIME '-500ms'" in str(result))
-        result = result.run_sync()
+        self.assertTrue("AS OF SYSTEM TIME '-500ms'" in str(query))
+        result = query.run_sync()
 
         self.assertTrue(result[0]["name"] == "Pythonistas")
 
-        result = Band.select().as_of()
-        self.assertTrue("AS OF SYSTEM TIME '-1s'" in str(result))
-        result = result.run_sync()
+        query = Band.select().as_of()
+        self.assertTrue("AS OF SYSTEM TIME '-1s'" in str(query))
+        result = query.run_sync()
 
         self.assertTrue(result[0]["name"] == "Pythonistas")
 
         # Alternative syntax.
-        result = Band.objects().get(Band.name == "Pythonistas").as_of("-1s")
-        self.assertTrue("AS OF SYSTEM TIME '-1s'" in str(result))
-        result = result.run_sync()
+        query = Band.objects().get(Band.name == "Pythonistas").as_of("-1s")
+        self.assertTrue("AS OF SYSTEM TIME '-1s'" in str(query))
+        result = query.run_sync()
 
-        self.assertTrue(result.name == "Pythonistas")
+        self.assertTrue(result.name == "Pythonistas")  # type: ignore

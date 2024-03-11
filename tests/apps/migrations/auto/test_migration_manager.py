@@ -1,5 +1,6 @@
 import asyncio
 import random
+import typing as t
 from io import StringIO
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
@@ -267,7 +268,7 @@ class TestMigrationManager(DBTestCase):
         self.assertEqual(self.table_exists("musician"), False)
 
     @engines_only("postgres", "cockroach")
-    def test_add_column(self):
+    def test_add_column(self) -> None:
         """
         Test adding a column to a MigrationManager.
         """
@@ -304,21 +305,21 @@ class TestMigrationManager(DBTestCase):
             response = self.run_sync("SELECT * FROM manager;")
             self.assertEqual(response, [{"id": 1, "name": "Dave"}])
 
-        id = 0
+        row_id: t.Optional[int] = None
         if engine_is("cockroach"):
-            id = self.run_sync(
+            row_id = self.run_sync(
                 "INSERT INTO manager VALUES (default, 'Dave', 'dave@me.com') RETURNING id;"  # noqa: E501
-            )
+            )[0]["id"]
             response = self.run_sync("SELECT * FROM manager;")
             self.assertEqual(
                 response,
-                [{"id": id[0]["id"], "name": "Dave", "email": "dave@me.com"}],
+                [{"id": row_id, "name": "Dave", "email": "dave@me.com"}],
             )
 
             # Reverse
             asyncio.run(manager.run(backwards=True))
             response = self.run_sync("SELECT * FROM manager;")
-            self.assertEqual(response, [{"id": id[0]["id"], "name": "Dave"}])
+            self.assertEqual(response, [{"id": row_id, "name": "Dave"}])
 
         # Preview
         manager.preview = True
@@ -333,7 +334,7 @@ class TestMigrationManager(DBTestCase):
         if engine_is("postgres"):
             self.assertEqual(response, [{"id": 1, "name": "Dave"}])
         if engine_is("cockroach"):
-            self.assertEqual(response, [{"id": id[0]["id"], "name": "Dave"}])
+            self.assertEqual(response, [{"id": row_id, "name": "Dave"}])
 
     @engines_only("postgres", "cockroach")
     def test_add_column_with_index(self):
