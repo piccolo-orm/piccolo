@@ -815,7 +815,7 @@ class MigrationManager:
                     )
                     await self._run_query(
                         _Table.alter().add_column(
-                            name=column._meta.name, column=column
+                            name=column._meta.db_column_name, column=column
                         )
                     )
                     if add_column.column._meta.index:
