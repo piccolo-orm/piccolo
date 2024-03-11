@@ -1,3 +1,4 @@
+import typing as t
 from unittest import TestCase
 
 from piccolo.columns.column_types import Boolean
@@ -15,23 +16,30 @@ class TestBoolean(TestCase):
     def tearDown(self):
         MyTable.alter().drop_table().run_sync()
 
-    def test_return_type(self):
+    def test_return_type(self) -> None:
         for value in (True, False, None, ...):
-            kwargs = {} if value is ... else {"boolean": value}
+            kwargs: t.Dict[str, t.Any] = (
+                {} if value is ... else {"boolean": value}
+            )
             expected = MyTable.boolean.default if value is ... else value
 
             row = MyTable(**kwargs)
             row.save().run_sync()
             self.assertEqual(row.boolean, expected)
 
-            self.assertEqual(
+            row_from_db = (
                 MyTable.select(MyTable.boolean)
                 .where(
                     MyTable._meta.primary_key
                     == getattr(row, MyTable._meta.primary_key._meta.name)
                 )
                 .first()
-                .run_sync()["boolean"],
+                .run_sync()
+            )
+            assert row_from_db is not None
+
+            self.assertEqual(
+                row_from_db["boolean"],
                 expected,
             )
 

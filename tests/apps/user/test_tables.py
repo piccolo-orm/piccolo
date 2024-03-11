@@ -221,7 +221,10 @@ class TestCreateUser(TestCase):
 
     def test_no_username_error(self):
         with self.assertRaises(ValueError) as manager:
-            BaseUser.create_user_sync(username=None, password="abc123")
+            BaseUser.create_user_sync(
+                username=None,  # type: ignore
+                password="abc123",
+            )
 
         self.assertEqual(
             manager.exception.__str__(), "A username must be provided."
@@ -229,7 +232,10 @@ class TestCreateUser(TestCase):
 
     def test_no_password_error(self):
         with self.assertRaises(ValueError) as manager:
-            BaseUser.create_user_sync(username="bob", password=None)
+            BaseUser.create_user_sync(
+                username="bob",
+                password=None,  # type: ignore
+            )
 
         self.assertEqual(
             manager.exception.__str__(), "A password must be provided."
@@ -272,12 +278,14 @@ class TestAutoHashingUpdate(TestCase):
             BaseUser.login_sync(username=username, password=password)
         )
 
-        hashed_password = (
+        user_data = (
             BaseUser.select(BaseUser.password)
             .where(BaseUser.id == user.id)
             .first()
-            .run_sync()["password"]
+            .run_sync()
         )
+        assert user_data is not None
+        hashed_password = user_data["password"]
 
         algorithm, iterations_, salt, hashed = BaseUser.split_stored_password(
             hashed_password

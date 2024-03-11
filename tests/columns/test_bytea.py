@@ -59,4 +59,4 @@ class TestByteaDefault(TestCase):
     def test_invalid_default(self):
         with self.assertRaises(ValueError):
             for value in ("a", 1, ("x", "y", "z")):
-                Bytea(default=value)
+                Bytea(default=value)  # type: ignore

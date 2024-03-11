@@ -27,6 +27,7 @@ class TestDate(TestCase):
         row.save().run_sync()
 
         result = MyTable.objects().first().run_sync()
+        assert result is not None
         self.assertEqual(result.created_on, created_on)
 
 
@@ -43,4 +44,5 @@ class TestDateDefault(TestCase):
         row.save().run_sync()
 
         result = MyTableDefault.objects().first().run_sync()
+        assert result is not None
         self.assertEqual(result.created_on, created_on)

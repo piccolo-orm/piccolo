@@ -104,6 +104,7 @@ class TestBatchNodeArg(TestCase):
 
         # Get the test database credentials:
         test_engine = engine_finder()
+        assert isinstance(test_engine, PostgresEngine)
 
         EXTRA_NODE = AsyncMock(spec=PostgresEngine(config=test_engine.config))
 

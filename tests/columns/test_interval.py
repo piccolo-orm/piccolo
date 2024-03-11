@@ -48,6 +48,7 @@ class TestInterval(TestCase):
                 .first()
                 .run_sync()
             )
+            assert result is not None
             self.assertEqual(result.interval, interval)
 
     def test_interval_where_clause(self):
@@ -102,4 +103,5 @@ class TestIntervalDefault(TestCase):
         row.save().run_sync()
 
         result = MyTableDefault.objects().first().run_sync()
+        assert result is not None
         self.assertEqual(result.interval.days, 1)

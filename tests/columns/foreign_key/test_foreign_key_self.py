@@ -1,10 +1,11 @@
 from unittest import TestCase
 
-from piccolo.columns import ForeignKey, Varchar
+from piccolo.columns import ForeignKey, Serial, Varchar
 from piccolo.table import Table
 
 
 class Manager(Table, tablename="manager"):
+    id: Serial
     name = Varchar()
     manager: ForeignKey["Manager"] = ForeignKey("self", null=True)
 

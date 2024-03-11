@@ -1,9 +1,10 @@
-from piccolo.columns.column_types import Integer, Varchar
+from piccolo.columns.column_types import Integer, Serial, Varchar
 from piccolo.table import Table
 from tests.base import DBTestCase, engine_is, engines_only, engines_skip
 
 
 class Band(Table):
+    id: Serial
     name = Varchar(db_column_name="regrettable_column_name")
     popularity = Integer()
 
@@ -48,6 +49,7 @@ class TestDBColumnName(DBTestCase):
         band.save().run_sync()
 
         band_from_db = Band.objects().first().run_sync()
+        assert band_from_db is not None
         self.assertEqual(band_from_db.name, "Pythonistas")
 
     def test_create(self):
@@ -62,6 +64,7 @@ class TestDBColumnName(DBTestCase):
         self.assertEqual(band.name, "Pythonistas")
 
         band_from_db = Band.objects().first().run_sync()
+        assert band_from_db is not None
         self.assertEqual(band_from_db.name, "Pythonistas")
 
     def test_select(self):
