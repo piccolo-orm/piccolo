@@ -271,7 +271,7 @@ class TestSetColumnType(DBTestCase):
 
         row = Band.select(Band.name).first().run_sync()
         assert row is not None
-        self.assertEqual(row["popularity"], 1)
+        self.assertEqual(row["name"], 1)
 
 
 @engines_only("postgres", "cockroach")
