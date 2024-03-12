@@ -1042,7 +1042,6 @@ class TestTargetColumn(MigrationTestCase):
 @engines_only("postgres", "cockroach")
 class TestForeignKeySelf(MigrationTestCase):
     def setUp(self):
-
         class TableA(Table):
             id = UUID(primary_key=True)
             table_a = ForeignKey("self")
@@ -1071,7 +1070,6 @@ class TestForeignKeySelf(MigrationTestCase):
 
 @engines_only("postgres", "cockroach")
 class TestAddForeignKeySelf(MigrationTestCase):
-
     def setUp(self):
         pass
 
