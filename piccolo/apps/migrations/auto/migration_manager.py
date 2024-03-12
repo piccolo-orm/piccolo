@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import logging
 import typing as t
 from dataclasses import dataclass, field
 
@@ -21,6 +22,8 @@ from piccolo.query.base import DDL
 from piccolo.schema import SchemaDDLBase
 from piccolo.table import Table, create_table_class, sort_table_classes
 from piccolo.utils.warnings import colored_warning
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -819,16 +822,25 @@ class MigrationManager:
                         and add_column.column._meta.params.get("references")
                         == "self"
                     ):
-                        existing_table = await self.get_table_from_snapshot(
-                            table_class_name=table_class_name,
-                            app_name=self.app_name,
-                            offset=-1,
-                        )
-                        primary_key = existing_table._meta.primary_key
+                        try:
+                            existing_table = (
+                                await self.get_table_from_snapshot(
+                                    table_class_name=table_class_name,
+                                    app_name=self.app_name,
+                                    offset=-1,
+                                )
+                            )
+                        except ValueError:
+                            logger.error(
+                                "Unable to find primary key for the table - "
+                                "assuming Serial."
+                            )
+                        else:
+                            primary_key = existing_table._meta.primary_key
 
-                        table_class_members[primary_key._meta.name] = (
-                            primary_key
-                        )
+                            table_class_members[primary_key._meta.name] = (
+                                primary_key
+                            )
 
                         break
 
