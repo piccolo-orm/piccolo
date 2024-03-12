@@ -1,6 +1,30 @@
 Changes
 =======
 
+1.4.1
+-----
+
+Fixed an edge case with auto migrations.
+
+If starting from a table like this, with a custom primary key column:
+
+.. code-block:: python
+
+  class MyTable(Table):
+      id = UUID(primary_key=True)
+
+When a foreign key is added to the table which references itself:
+
+.. code-block:: python
+
+  class MyTable(Table):
+      id = UUID(primary_key=True)
+      fk = ForeignKey("self")
+
+The auto migrations could fail in some situations.
+
+-------------------------------------------------------------------------------
+
 1.4.0
 -----
 
