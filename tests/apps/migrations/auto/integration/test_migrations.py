@@ -128,7 +128,7 @@ class MigrationTestCase(DBTestCase):
     def _test_migrations(
         self,
         table_snapshots: t.List[t.List[t.Type[Table]]],
-        test_function: t.Optional[t.Callable[[RowMeta], None]] = None,
+        test_function: t.Optional[t.Callable[[RowMeta], bool]] = None,
     ):
         """
         Writes a migration file to disk and runs it.
@@ -1062,6 +1062,7 @@ class TestForeignKeySelf(MigrationTestCase):
         """
         self._test_migrations(
             table_snapshots=[self.table_classes],
+            test_function=lambda x: x.data_type == "uuid",
         )
 
         for table_class in self.table_classes:
@@ -1107,6 +1108,7 @@ class TestAddForeignKeySelf(MigrationTestCase):
                     )
                 ],
             ],
+            test_function=lambda x: x.data_type == "uuid",
         )
 
 
