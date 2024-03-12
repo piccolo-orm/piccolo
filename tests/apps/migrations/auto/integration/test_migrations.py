@@ -1040,23 +1040,25 @@ class TestTargetColumn(MigrationTestCase):
 
 
 @engines_only("postgres", "cockroach")
-class TestTargetColumnString(MigrationTestCase):
+class TestForeignKeySelf(MigrationTestCase):
     def setUp(self):
+
         class TableA(Table):
-            name = Varchar(unique=True)
+            id = UUID(primary_key=True)
+            table_a = ForeignKey("self")
 
-        class TableB(Table):
-            table_a = ForeignKey(TableA, target_column="name")
-
-        self.table_classes = [TableA, TableB]
+        self.table_classes: t.List[t.Type[Table]] = [TableA]
 
     def tearDown(self):
         drop_db_tables_sync(Migration, *self.table_classes)
 
-    def test_target_column(self):
+    def test_create_table(self):
         """
-        Make sure migrations still work when a foreign key references a column
-        other than the primary key.
+        Make sure migrations still work when:
+
+        * Creating a new table with a foreign key which references itself.
+        * The table has a custom primary key type (e.g. UUID).
+
         """
         self._test_migrations(
             table_snapshots=[self.table_classes],
@@ -1065,22 +1067,47 @@ class TestTargetColumnString(MigrationTestCase):
         for table_class in self.table_classes:
             self.assertTrue(table_class.table_exists().run_sync())
 
-        # Make sure the constraint was created correctly.
-        response = self.run_sync(
-            """
-            SELECT EXISTS(
-                SELECT 1
-                FROM INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE CCU
-                JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS TC ON
-                    CCU.CONSTRAINT_NAME = TC.CONSTRAINT_NAME
-                WHERE CONSTRAINT_TYPE = 'FOREIGN KEY'
-                    AND TC.TABLE_NAME = 'table_b'
-                    AND CCU.TABLE_NAME = 'table_a'
-                    AND CCU.COLUMN_NAME = 'name'
-            )
-            """
+
+@engines_only("postgres", "cockroach")
+class TestAddForeignKeySelf(MigrationTestCase):
+
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        drop_db_tables_sync(create_table_class("MyTable"), Migration)
+
+    @patch("piccolo.conf.apps.Finder.get_app_config")
+    def test_add_column(self, get_app_config):
+        """
+        Make sure migrations still work when:
+
+        * A foreign key is added to an existing table.
+        * The foreign key references its own table.
+        * The table has a custom primary key (e.g. UUID).
+
+        """
+        get_app_config.return_value = self._get_app_config()
+
+        self._test_migrations(
+            table_snapshots=[
+                [
+                    create_table_class(
+                        class_name="MyTable",
+                        class_members={"id": UUID(primary_key=True)},
+                    )
+                ],
+                [
+                    create_table_class(
+                        class_name="MyTable",
+                        class_members={
+                            "id": UUID(primary_key=True),
+                            "fk": ForeignKey("self"),
+                        },
+                    )
+                ],
+            ],
         )
-        self.assertTrue(response[0]["exists"])
 
 
 ###############################################################################
