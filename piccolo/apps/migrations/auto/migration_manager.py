@@ -808,7 +808,7 @@ class MigrationManager:
                 # There's an extreme edge case, when we're adding a foreign
                 # key which references its own table, for example:
                 #
-                #   pk = ForeignKey('self')
+                #   fk = ForeignKey('self')
                 #
                 # And that table has a custom primary key, for example:
                 #
