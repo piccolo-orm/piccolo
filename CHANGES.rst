@@ -1,6 +1,13 @@
 Changes
 =======
 
+1.4.2
+-----
+
+Improved how ``ModelBuilder`` handles recursive foreign keys.
+
+-------------------------------------------------------------------------------
+
 1.4.1
 -----
 
