@@ -1041,10 +1041,10 @@ class TestTargetColumn(MigrationTestCase):
 
 @engines_only("postgres", "cockroach")
 class TestForeignKeySelf(MigrationTestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         class TableA(Table):
             id = UUID(primary_key=True)
-            table_a = ForeignKey("self")
+            table_a: ForeignKey[TableA] = ForeignKey("self")
 
         self.table_classes: t.List[t.Type[Table]] = [TableA]
 

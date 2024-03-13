@@ -52,7 +52,7 @@ class BandWithLazyReference(Table):
 
 
 class BandWithRecursiveReference(Table):
-    manager = ForeignKey("self")
+    manager: ForeignKey["Manager"] = ForeignKey("self")
 
 
 TABLES = (
