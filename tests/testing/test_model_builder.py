@@ -51,6 +51,10 @@ class BandWithLazyReference(Table):
     )
 
 
+class BandWithRecursiveReference(Table):
+    manager: ForeignKey["Manager"] = ForeignKey("self")
+
+
 TABLES = (
     Manager,
     Band,
@@ -63,6 +67,7 @@ TABLES = (
     TableWithArrayField,
     TableWithDecimal,
     BandWithLazyReference,
+    BandWithRecursiveReference,
 )
 
 
@@ -132,6 +137,16 @@ class TestModelBuilder(unittest.TestCase):
         self.assertTrue(
             Manager.exists().where(Manager.id == model.manager).run_sync()
         )
+
+    def test_recursive_foreign_key(self):
+        """
+        Make sure no infinite loops are created with recursive foreign keys.
+        """
+        model = ModelBuilder.build_sync(
+            BandWithRecursiveReference, persist=True
+        )
+        # It should be set to None, as this foreign key is nullable.
+        self.assertIsNone(model.manager)
 
     def test_invalid_column(self):
         with self.assertRaises(ValueError):

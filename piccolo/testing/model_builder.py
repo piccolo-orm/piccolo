@@ -122,14 +122,24 @@ class ModelBuilder:
                 continue  # Column value exists
 
             if isinstance(column, ForeignKey) and persist:
-                reference_model = await cls._build(
-                    column._foreign_key_meta.resolved_references,
-                    persist=True,
-                )
-                random_value = getattr(
-                    reference_model,
-                    reference_model._meta.primary_key._meta.name,
-                )
+                # Check for recursion
+                if column._foreign_key_meta.references is table_class:
+                    if column._meta.null is True:
+                        # We can avoid this problem entirely by setting it to
+                        # None.
+                        random_value = None
+                    else:
+                        # There's no way to avoid recursion in the situation.
+                        raise ValueError("Recursive foreign key detected")
+                else:
+                    reference_model = await cls._build(
+                        column._foreign_key_meta.resolved_references,
+                        persist=True,
+                    )
+                    random_value = getattr(
+                        reference_model,
+                        reference_model._meta.primary_key._meta.name,
+                    )
             else:
                 random_value = cls._randomize_attribute(column)
 
