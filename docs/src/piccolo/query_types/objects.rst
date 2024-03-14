@@ -191,7 +191,7 @@ prefer.
 
     ticket = await Ticket.objects().prefetch(
         Ticket.concert.all_related()
-    )
+    ).first()
 
 -------------------------------------------------------------------------------
 
