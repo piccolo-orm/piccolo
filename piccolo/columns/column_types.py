@@ -350,10 +350,12 @@ class Varchar(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> str: ...
+    def __get__(self, obj: Table, objtype=None) -> str:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Varchar: ...
+    def __get__(self, obj: None, objtype=None) -> Varchar:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -387,10 +389,12 @@ class Secret(Varchar):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> str: ...
+    def __get__(self, obj: Table, objtype=None) -> str:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Secret: ...
+    def __get__(self, obj: None, objtype=None) -> Secret:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -452,10 +456,12 @@ class Text(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> str: ...
+    def __get__(self, obj: Table, objtype=None) -> str:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Text: ...
+    def __get__(self, obj: None, objtype=None) -> Text:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -515,10 +521,12 @@ class UUID(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> uuid.UUID: ...
+    def __get__(self, obj: Table, objtype=None) -> uuid.UUID:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> UUID: ...
+    def __get__(self, obj: None, objtype=None) -> UUID:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -633,10 +641,12 @@ class Integer(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> int: ...
+    def __get__(self, obj: Table, objtype=None) -> int:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Integer: ...
+    def __get__(self, obj: None, objtype=None) -> Integer:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -689,10 +699,12 @@ class BigInt(Integer):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> int: ...
+    def __get__(self, obj: Table, objtype=None) -> int:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> BigInt: ...
+    def __get__(self, obj: None, objtype=None) -> BigInt:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -737,10 +749,12 @@ class SmallInt(Integer):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> int: ...
+    def __get__(self, obj: Table, objtype=None) -> int:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> SmallInt: ...
+    def __get__(self, obj: None, objtype=None) -> SmallInt:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -787,10 +801,12 @@ class Serial(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> int: ...
+    def __get__(self, obj: Table, objtype=None) -> int:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Serial: ...
+    def __get__(self, obj: None, objtype=None) -> Serial:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -819,10 +835,12 @@ class BigSerial(Serial):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> int: ...
+    def __get__(self, obj: Table, objtype=None) -> int:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> BigSerial: ...
+    def __get__(self, obj: None, objtype=None) -> BigSerial:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -852,10 +870,12 @@ class PrimaryKey(Serial):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> int: ...
+    def __get__(self, obj: Table, objtype=None) -> int:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> PrimaryKey: ...
+    def __get__(self, obj: None, objtype=None) -> PrimaryKey:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -940,10 +960,12 @@ class Timestamp(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> datetime: ...
+    def __get__(self, obj: Table, objtype=None) -> datetime:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Timestamp: ...
+    def __get__(self, obj: None, objtype=None) -> Timestamp:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1035,10 +1057,12 @@ class Timestamptz(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> datetime: ...
+    def __get__(self, obj: Table, objtype=None) -> datetime:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Timestamptz: ...
+    def __get__(self, obj: None, objtype=None) -> Timestamptz:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1113,10 +1137,12 @@ class Date(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> date: ...
+    def __get__(self, obj: Table, objtype=None) -> date:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Date: ...
+    def __get__(self, obj: None, objtype=None) -> Date:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1188,10 +1214,12 @@ class Time(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> time: ...
+    def __get__(self, obj: Table, objtype=None) -> time:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Time: ...
+    def __get__(self, obj: None, objtype=None) -> Time:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1277,10 +1305,12 @@ class Interval(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> timedelta: ...
+    def __get__(self, obj: Table, objtype=None) -> timedelta:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Interval: ...
+    def __get__(self, obj: None, objtype=None) -> Interval:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1369,10 +1399,12 @@ class Boolean(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> bool: ...
+    def __get__(self, obj: Table, objtype=None) -> bool:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Boolean: ...
+    def __get__(self, obj: None, objtype=None) -> Boolean:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1470,10 +1502,12 @@ class Numeric(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> decimal.Decimal: ...
+    def __get__(self, obj: Table, objtype=None) -> decimal.Decimal:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Numeric: ...
+    def __get__(self, obj: None, objtype=None) -> Numeric:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1491,10 +1525,12 @@ class Decimal(Numeric):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> decimal.Decimal: ...
+    def __get__(self, obj: Table, objtype=None) -> decimal.Decimal:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Decimal: ...
+    def __get__(self, obj: None, objtype=None) -> Decimal:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1540,10 +1576,12 @@ class Real(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> float: ...
+    def __get__(self, obj: Table, objtype=None) -> float:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Real: ...
+    def __get__(self, obj: None, objtype=None) -> Real:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1561,10 +1599,12 @@ class Float(Real):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> float: ...
+    def __get__(self, obj: Table, objtype=None) -> float:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Float: ...
+    def __get__(self, obj: None, objtype=None) -> Float:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1586,10 +1626,12 @@ class DoublePrecision(Real):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> float: ...
+    def __get__(self, obj: Table, objtype=None) -> float:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> DoublePrecision: ...
+    def __get__(self, obj: None, objtype=None) -> DoublePrecision:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1829,7 +1871,8 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
         on_update: OnUpdate = OnUpdate.cascade,
         target_column: t.Union[str, Column, None] = None,
         **kwargs,
-    ) -> None: ...
+    ) -> None:
+        ...
 
     @t.overload
     def __init__(
@@ -1841,7 +1884,8 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
         on_update: OnUpdate = OnUpdate.cascade,
         target_column: t.Union[str, Column, None] = None,
         **kwargs,
-    ) -> None: ...
+    ) -> None:
+        ...
 
     @t.overload
     def __init__(
@@ -1853,7 +1897,8 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
         on_update: OnUpdate = OnUpdate.cascade,
         target_column: t.Union[str, Column, None] = None,
         **kwargs,
-    ) -> None: ...
+    ) -> None:
+        ...
 
     def __init__(
         self,
@@ -2203,15 +2248,16 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> t.Any: ...
+    def __get__(self, obj: Table, objtype=None) -> t.Any:
+        ...
 
     @t.overload
-    def __get__(
-        self, obj: None, objtype=None
-    ) -> ForeignKey[ReferencedTable]: ...
+    def __get__(self, obj: None, objtype=None) -> ForeignKey[ReferencedTable]:
+        ...
 
     @t.overload
-    def __get__(self, obj: t.Any, objtype=None) -> t.Any: ...
+    def __get__(self, obj: t.Any, objtype=None) -> t.Any:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -2271,10 +2317,12 @@ class JSON(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> str: ...
+    def __get__(self, obj: Table, objtype=None) -> str:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> JSON: ...
+    def __get__(self, obj: None, objtype=None) -> JSON:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -2339,10 +2387,12 @@ class JSONB(JSON):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> str: ...
+    def __get__(self, obj: Table, objtype=None) -> str:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> JSONB: ...
+    def __get__(self, obj: None, objtype=None) -> JSONB:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -2410,10 +2460,12 @@ class Bytea(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> bytes: ...
+    def __get__(self, obj: Table, objtype=None) -> bytes:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Bytea: ...
+    def __get__(self, obj: None, objtype=None) -> Bytea:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -2431,10 +2483,12 @@ class Blob(Bytea):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> bytes: ...
+    def __get__(self, obj: Table, objtype=None) -> bytes:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Blob: ...
+    def __get__(self, obj: None, objtype=None) -> Blob:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -2685,10 +2739,12 @@ class Array(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> t.List[t.Any]: ...
+    def __get__(self, obj: Table, objtype=None) -> t.List[t.Any]:
+        ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Array: ...
+    def __get__(self, obj: None, objtype=None) -> Array:
+        ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
