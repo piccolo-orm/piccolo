@@ -203,7 +203,6 @@ class TestNestedArray(TestCase):
 
 
 class TestGetDimensions(TestCase):
-
     def test_get_dimensions(self):
         """
         Make sure that `_get_dimensions` returns the correct value.
