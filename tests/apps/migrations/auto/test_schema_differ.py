@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+from io import StringIO
 from unittest import TestCase
 from unittest.mock import MagicMock, call, patch
 
@@ -13,6 +14,7 @@ from piccolo.apps.migrations.auto.schema_differ import (
     SchemaDiffer,
 )
 from piccolo.columns.column_types import Numeric, Varchar
+from piccolo.columns.constraints import UniqueConstraint
 
 
 class TestSchemaDiffer(TestCase):
@@ -486,6 +488,224 @@ class TestSchemaDiffer(TestCase):
         self.assertEqual(
             schema_differ.alter_columns.statements[0],
             "manager.alter_column(table_class_name='Ticket', tablename='ticket', column_name='price', db_column_name='custom', params={'digits': (4, 2)}, old_params={'digits': (5, 2)}, column_class=Numeric, old_column_class=Numeric, schema=None)",  # noqa
+        )
+
+    def test_add_unique_constraint(self) -> None:
+        """
+        Test adding a unique constraint to an existing table.
+        """
+        a_column = Varchar()
+        a_column._meta.name = "a"
+
+        b_column = Varchar()
+        b_column._meta.name = "b"
+
+        unique_constraint = UniqueConstraint(["a", "b"])
+        unique_constraint._meta.name = "band_unique"
+
+        schema: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[a_column, b_column, unique_constraint],
+            )
+        ]
+        schema_snapshot: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[a_column, b_column],
+            )
+        ]
+
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
+        )
+
+        self.assertTrue(len(schema_differ.add_columns.statements) == 1)
+        self.assertEqual(
+            schema_differ.add_columns.statements[0],
+            "manager.add_column(table_class_name='Band', tablename='band', column_name='band_unique', db_column_name='band_unique', column_class_name='UniqueConstraint', column_class=UniqueConstraint, params={'unique_columns': ['a', 'b']}, schema=None)",  # noqa: E501
+        )
+
+    def test_drop_unique_constraint(self) -> None:
+        """
+        Test dropping a unique constraint from an existing table.
+        """
+        a_column = Varchar()
+        a_column._meta.name = "a"
+
+        b_column = Varchar()
+        b_column._meta.name = "b"
+
+        unique_constraint = UniqueConstraint(["a", "b"])
+        unique_constraint._meta.name = "band_unique"
+
+        schema: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[a_column, b_column],
+            )
+        ]
+        schema_snapshot: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[a_column, b_column, unique_constraint],
+            )
+        ]
+
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
+        )
+
+        self.assertTrue(len(schema_differ.drop_columns.statements) == 1)
+        self.assertEqual(
+            schema_differ.drop_columns.statements[0],
+            "manager.drop_column(table_class_name='Band', tablename='band', column_name='band_unique', db_column_name='band_unique', schema=None, column_class=UniqueConstraint)",  # noqa: E501
+        )
+
+    def test_no_diff_alter_unique_constraint(self) -> None:
+        """
+        Make sure returning no diff when attempting
+        to alter a unique constraint.
+        """
+        a_column = Varchar()
+        a_column._meta.name = "a"
+
+        b_column = Varchar()
+        b_column._meta.name = "b"
+
+        c_column = Varchar()
+        c_column._meta.name = "c"
+
+        unique_constraint_1 = UniqueConstraint(["a", "b"])
+        unique_constraint_1._meta.name = "band_unique"
+
+        unique_constraint_2 = UniqueConstraint(["a", "b", "c"])
+        unique_constraint_2._meta.name = "band_unique"
+
+        schema: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[a_column, b_column, c_column, unique_constraint_2],
+            )
+        ]
+        schema_snapshot: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[a_column, b_column, c_column, unique_constraint_1],
+            )
+        ]
+
+        with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
+            schema_differ = SchemaDiffer(
+                schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
+            )
+
+            self.assertTrue(len(schema_differ.add_columns.statements) == 0)
+            self.assertTrue(len(schema_differ.drop_columns.statements) == 0)
+            self.assertTrue(len(schema_differ.alter_columns.statements) == 0)
+            self.assertEqual(
+                mock_stdout.getvalue().strip(),
+                "You cannot ALTER `band_unique` unique constraint! At first, delete it, then create the new one.",  # noqa: E501
+            )
+
+    def test_add_unique_constraint_skip_rename(self) -> None:
+        """
+        Make sure the column renaming is skipped
+        when adding a unique constraint.
+        """
+        a_column = Varchar()
+        a_column._meta.name = "a"
+
+        b_column = Varchar()
+        b_column._meta.name = "b"
+
+        c_column = Varchar()
+        c_column._meta.name = "c"
+
+        unique_constraint = UniqueConstraint(["a", "b"])
+        unique_constraint._meta.name = "band_unique"
+
+        schema: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[a_column, b_column, unique_constraint],
+            )
+        ]
+        schema_snapshot: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[a_column, b_column, c_column],
+            )
+        ]
+
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
+        )
+
+        self.assertTrue(len(schema_differ.drop_columns.statements) == 1)
+        self.assertEqual(
+            schema_differ.drop_columns.statements[0],
+            "manager.drop_column(table_class_name='Band', tablename='band', column_name='c', db_column_name='c', schema=None, column_class=Varchar)",  # noqa: E501
+        )
+        self.assertTrue(len(schema_differ.add_columns.statements) == 1)
+        self.assertEqual(
+            schema_differ.add_columns.statements[0],
+            "manager.add_column(table_class_name='Band', tablename='band', column_name='band_unique', db_column_name='band_unique', column_class_name='UniqueConstraint', column_class=UniqueConstraint, params={'unique_columns': ['a', 'b']}, schema=None)",  # noqa: E501
+        )
+
+    def test_drop_unique_constraint_skip_rename(self) -> None:
+        """
+        Make sure the column renaming is skipped
+        when dropping a unique constraint.
+        """
+        a_column = Varchar()
+        a_column._meta.name = "a"
+
+        b_column = Varchar()
+        b_column._meta.name = "b"
+
+        c_column = Varchar()
+        c_column._meta.name = "c"
+
+        unique_constraint = UniqueConstraint(["a", "b"])
+        unique_constraint._meta.name = "band_unique"
+
+        schema: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[a_column, b_column, c_column],
+            )
+        ]
+        schema_snapshot: t.List[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[a_column, b_column, unique_constraint],
+            )
+        ]
+
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
+        )
+
+        self.assertTrue(len(schema_differ.drop_columns.statements) == 1)
+        self.assertEqual(
+            schema_differ.drop_columns.statements[0],
+            "manager.drop_column(table_class_name='Band', tablename='band', column_name='band_unique', db_column_name='band_unique', schema=None, column_class=UniqueConstraint)",  # noqa: E501
+        )
+        self.assertTrue(len(schema_differ.add_columns.statements) == 1)
+        self.assertEqual(
+            schema_differ.add_columns.statements[0],
+            "manager.add_column(table_class_name='Band', tablename='band', column_name='c', db_column_name='c', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None, 'secret': False}, schema=None)",  # noqa: E501
         )
 
     def test_alter_default(self):

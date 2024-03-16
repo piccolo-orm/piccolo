@@ -266,31 +266,19 @@ class MigrationManager:
         if column_class is None:
             raise ValueError("Unrecognised column type")
 
-        if column_class is UniqueConstraint:
-            column = column_class(**params)
-        else:
-            cleaned_params = deserialise_params(params=params)
-            column = column_class(**cleaned_params)
-
+        cleaned_params = deserialise_params(params=params)
+        column = column_class(**cleaned_params)
         column._meta.name = column_name
         column._meta.db_column_name = db_column_name
 
-        if isinstance(column_class, UniqueConstraint):
-            self.add_unique_constraints.append(
-                AddUniqueConstraint(
-                    constraint_name=column_name,
-                    columns=params.get("unique_columns"),  # type: ignore
-                )
+        self.add_columns.append(
+            AddColumnClass(
+                column=column,
+                tablename=tablename,
+                table_class_name=table_class_name,
+                schema=schema,
             )
-        else:
-            self.add_columns.append(
-                AddColumnClass(
-                    column=column,
-                    tablename=tablename,
-                    table_class_name=table_class_name,
-                    schema=schema,
-                )
-            )
+        )
 
     def drop_column(
         self,
@@ -663,11 +651,21 @@ class MigrationManager:
                 column_to_restore = _Table._meta.get_column_by_name(
                     drop_column.column_name
                 )
-                await self._run_query(
-                    _Table.alter().add_column(
-                        name=drop_column.column_name, column=column_to_restore
+
+                if isinstance(column_to_restore, UniqueConstraint):
+                    await self._run_query(
+                        _Table.alter().add_unique_constraint(
+                            constraint_name=column_to_restore._meta.db_column_name,  # noqa: E501
+                            columns=column_to_restore.unique_columns,
+                        )
                     )
-                )
+                else:
+                    await self._run_query(
+                        _Table.alter().add_column(
+                            name=drop_column.column_name,
+                            column=column_to_restore,
+                        )
+                    )
         else:
             for table_class_name in self.drop_columns.table_class_names:
                 columns = self.drop_columns.for_table_class_name(
@@ -686,7 +684,7 @@ class MigrationManager:
                 )
 
                 for column in columns:
-                    if column.column_class == UniqueConstraint:
+                    if column.column_class is UniqueConstraint:
                         await _Table.alter().drop_constraint(
                             constraint_name=column.column_name
                         )
@@ -813,9 +811,16 @@ class MigrationManager:
                     },
                 )
 
-                await self._run_query(
-                    _Table.alter().drop_column(add_column.column)
-                )
+                if isinstance(add_column.column, UniqueConstraint):
+                    await self._run_query(
+                        _Table.alter().drop_constraint(
+                            constraint_name=add_column.column._meta.db_column_name,  # noqa: E501
+                        )
+                    )
+                else:
+                    await self._run_query(
+                        _Table.alter().drop_column(add_column.column)
+                    )
         else:
             for table_class_name in self.add_columns.table_class_names:
                 if table_class_name in [i.class_name for i in self.add_tables]:
