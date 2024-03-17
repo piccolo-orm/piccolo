@@ -268,15 +268,19 @@ class SchemaDiffer:
             # We track which dropped columns have already been identified by
             # the user as renames, so we don't ask them if another column
             # was also renamed from it.
+
+            # When adding or removing a unique constraint,
+            # we don't ask and rename it.
             used_drop_column_names: t.List[str] = []
 
             for add_column in delta.add_columns:
-                if add_column.column_class == UniqueConstraint:
+                if add_column.column_class is UniqueConstraint:
                     continue
                 for drop_column in delta.drop_columns:
-                    if drop_column.column_name in used_drop_column_names:
-                        continue
-                    if drop_column.column_class == UniqueConstraint:
+                    if (
+                        drop_column.column_name in used_drop_column_names
+                        or drop_column.column_class is UniqueConstraint
+                    ):
                         continue
 
                     user_response = self.auto_input or input(
@@ -513,7 +517,7 @@ class SchemaDiffer:
                     )
 
                 if alter_column.old_column_class is not None:
-                    if alter_column.old_column_class == UniqueConstraint:
+                    if alter_column.old_column_class is UniqueConstraint:
                         print(
                             f"You cannot ALTER `{alter_column.column_name}` unique constraint! At first, delete it, then create the new one."  # noqa: E501
                         )
