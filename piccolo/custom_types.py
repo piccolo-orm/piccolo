@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import typing as t
 
+from typing_extensions import Literal
+
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.combination import And, Or, Where, WhereRaw  # noqa
     from piccolo.table import Table
@@ -13,6 +15,31 @@ Iterable = t.Iterable[t.Any]
 
 TableInstance = t.TypeVar("TableInstance", bound="Table")
 QueryResponseType = t.TypeVar("QueryResponseType", bound=t.Any)
+
+ExtractField = Literal[
+    "century",
+    "day",
+    "decade",
+    "dow",
+    "doy",
+    "epoch",
+    "hour",
+    "isodow",
+    "isoyear",
+    "julian",
+    "microseconds",
+    "millennium",
+    "milliseconds",
+    "minute",
+    "month",
+    "quarter",
+    "second",
+    "timezone",
+    "timezone_hour",
+    "timezone_minute",
+    "week",
+    "year",
+]
 
 
 ###############################################################################

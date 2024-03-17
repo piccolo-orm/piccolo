@@ -33,7 +33,7 @@ from piccolo.utils.encoding import dump_json, load_json
 from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.custom_types import Combinable
+    from piccolo.custom_types import Combinable, ExtractField
     from piccolo.table import Table  # noqa
 
 
@@ -61,6 +61,29 @@ class SelectRaw(Selectable):
         self, engine_type: str, with_alias: bool = True
     ) -> str:
         return self.querystring.__str__()
+
+
+class Extract(Selectable):
+    def __init__(
+        self,
+        column: Column,
+        field: ExtractField,
+        alias: t.Optional[str] = None,
+    ):
+        self.column = column
+        self.field = field
+        self._alias = alias
+
+    def get_select_string(
+        self, engine_type: str, with_alias: bool = True
+    ) -> str:
+        # TODO - need to use strftime for SQLite
+        column_name = self.column._meta.get_full_name(with_alias=False)
+        field = self.field
+        alias = self._alias or field
+        return f'EXTRACT({field} FROM {column_name}) AS "{alias}"'
+
+    # TODO - proxy methods like >, ==, != to the underlying column
 
 
 class Avg(Selectable):
