@@ -5,9 +5,6 @@ from dataclasses import dataclass
 
 from piccolo.columns.base import Selectable
 
-if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.columns.base import Column
-
 
 @dataclass
 class Readable(Selectable):
@@ -18,32 +15,33 @@ class Readable(Selectable):
     """
 
     template: str
-    columns: t.Sequence[Column]
+    columns: t.Sequence[Selectable]
     output_name: str = "readable"
 
-    @property
-    def _columns_string(self) -> str:
+    def _get_columns_string(self, engine_type: str) -> str:
         return ", ".join(
-            i._meta.get_full_name(with_alias=False) for i in self.columns
+            i.get_select_string(engine_type=engine_type, with_alias=False)
+            for i in self.columns
         )
 
-    def _get_string(self, operator: str) -> str:
+    def _get_string(self, operator: str, engine_type: str) -> str:
+        columns_string = self._get_columns_string(engine_type=engine_type)
         return (
-            f"{operator}('{self.template}', {self._columns_string}) AS "
+            f"{operator}('{self.template}', {columns_string}) AS "
             f"{self.output_name}"
         )
 
     @property
     def sqlite_string(self) -> str:
-        return self._get_string(operator="PRINTF")
+        return self._get_string(operator="PRINTF", engine_type="sqlite")
 
     @property
     def postgres_string(self) -> str:
-        return self._get_string(operator="FORMAT")
+        return self._get_string(operator="FORMAT", engine_type="postgres")
 
     @property
     def cockroach_string(self) -> str:
-        return self._get_string(operator="FORMAT")
+        return self._get_string(operator="FORMAT", engine_type="cockroach")
 
     def get_select_string(self, engine_type: str, with_alias=True) -> str:
         try:
