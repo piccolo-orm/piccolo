@@ -33,6 +33,7 @@ import typing as t
 import uuid
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
+from zoneinfo import ZoneInfo
 from enum import Enum
 
 from piccolo.columns.base import (
@@ -1007,6 +1008,7 @@ class Timestamptz(Column):
     """
 
     value_type = datetime
+    tz_type = ZoneInfo
 
     # Currently just used by ModelBuilder, to know that we want a timezone
     # aware datetime.
@@ -1015,7 +1017,10 @@ class Timestamptz(Column):
     timedelta_delegate = TimedeltaDelegate()
 
     def __init__(
-        self, default: TimestamptzArg = TimestamptzNow(), **kwargs
+        self,
+        tz: ZoneInfo = ZoneInfo('UTC'),
+        default: TimestamptzArg = TimestamptzNow(), 
+        **kwargs
     ) -> None:
         self._validate_default(
             default, TimestamptzArg.__args__  # type: ignore
@@ -1025,10 +1030,11 @@ class Timestamptz(Column):
             default = TimestamptzCustom.from_datetime(default)
 
         if default == datetime.now:
-            default = TimestamptzNow()
+            default = TimestamptzNow(tz)
 
+        self.tz = tz
         self.default = default
-        kwargs.update({"default": default})
+        kwargs.update({"tz": tz, "default": default})
         super().__init__(**kwargs)
 
     ###########################################################################
