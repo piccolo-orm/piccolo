@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import typing as t
 from enum import Enum
+from zoneinfo import ZoneInfo
 
 from .timestamp import TimestampCustom, TimestampNow, TimestampOffset
 
@@ -27,12 +28,15 @@ class TimestamptzOffset(TimestampOffset):
 
 
 class TimestamptzNow(TimestampNow):
+    def __init__(self, tz: ZoneInfo = ZoneInfo('UTC')):
+        self._tz = tz
+        
     @property
     def cockroach(self):
         return "current_timestamp"
 
     def python(self):
-        return datetime.datetime.now(tz=datetime.timezone.utc)
+        return datetime.datetime.now(tz=self._tz)
 
 
 class TimestamptzCustom(TimestampCustom):
