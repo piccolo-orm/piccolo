@@ -6,3 +6,4 @@ inflection>=0.5.1
 typing-extensions>=4.3.0
 pydantic[email]==2.*
 tzdata>=2024.1
+backports.zoneinfo>=0.2.1
