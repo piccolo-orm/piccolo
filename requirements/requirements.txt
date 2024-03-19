@@ -5,3 +5,4 @@ targ>=0.3.7
 inflection>=0.5.1
 typing-extensions>=4.3.0
 pydantic[email]==2.*
+tzdata>=2024.1
