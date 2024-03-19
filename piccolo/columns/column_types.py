@@ -2597,6 +2597,26 @@ class Array(Column):
         if isinstance(self.base_column, Array):
             self.base_column._setup_base_column(table_class=table_class)
 
+    def _get_dimensions(self, start: int = 0) -> int:
+        """
+        A helper function to get the number of dimensions for the array. For
+        example::
+
+            >>> Array(Varchar())._get_dimensions()
+            1
+
+            >>> Array(Array(Varchar()))._get_dimensions()
+            2
+
+        :param start:
+            Ignore this - it's just used for  calling this method recursively.
+
+        """
+        if isinstance(self.base_column, Array):
+            return self.base_column._get_dimensions(start=start + 1)
+        else:
+            return start + 1
+
     def __getitem__(self, value: int) -> Array:
         """
         Allows queries which retrieve an item from the array. The index starts
