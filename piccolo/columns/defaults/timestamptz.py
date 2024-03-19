@@ -9,6 +9,20 @@ from .timestamp import TimestampCustom, TimestampNow, TimestampOffset
 
 
 class TimestamptzOffset(TimestampOffset):
+    def __init__(
+        self, 
+        days: int = 0, 
+        hours: int = 0, 
+        minutes: int = 0, 
+        seconds: int = 0,
+        tz: ZoneInfo = ZoneInfo('UTC')
+    ):
+        self._tz = tz
+        super().__init__(**{
+            k: v for k, v in locals().items()
+            if k not in ['self', 'tz']
+        })
+        
     @property
     def cockroach(self):
         interval_string = self.get_postgres_interval_string(
@@ -18,7 +32,7 @@ class TimestamptzOffset(TimestampOffset):
 
     def python(self):
         return datetime.datetime.now(
-            tz=datetime.timezone.utc
+            tz=self._tz
         ) + datetime.timedelta(
             days=self.days,
             hours=self.hours,
@@ -40,6 +54,22 @@ class TimestamptzNow(TimestampNow):
 
 
 class TimestamptzCustom(TimestampCustom):
+    def __init__(
+        self,
+        year: int = 2000,
+        month: int = 1,
+        day: int = 1,
+        hour: int = 0,
+        second: int = 0,
+        microsecond: int = 0,
+        tz: ZoneInfo = ZoneInfo('UTC')
+    ):
+        self._tz = tz
+        super().__init__(**{
+            k: v for k, v in locals().items()
+            if k not in ['self', 'tz']
+        })
+        
     @property
     def cockroach(self):
         return "'{}'".format(self.datetime.isoformat().replace("T", " "))
@@ -53,13 +83,13 @@ class TimestamptzCustom(TimestampCustom):
             hour=self.hour,
             second=self.second,
             microsecond=self.microsecond,
-            tzinfo=datetime.timezone.utc,
+            tzinfo=self._tz,
         )
 
     @classmethod
     def from_datetime(cls, instance: datetime.datetime):  # type: ignore
         if instance.tzinfo is not None:
-            instance = instance.astimezone(datetime.timezone.utc)
+            instance = instance.astimezone(self._tz)
         return cls(
             year=instance.year,
             month=instance.month,
