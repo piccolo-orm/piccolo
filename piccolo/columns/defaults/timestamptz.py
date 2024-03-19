@@ -17,7 +17,7 @@ class TimestamptzOffset(TimestampOffset):
         seconds: int = 0,
         tz: ZoneInfo = ZoneInfo('UTC')
     ):
-        self._tz = tz
+        self.tz = tz
         super().__init__(**{
             k: v for k, v in locals().items()
             if k not in ['self', 'tz']
@@ -32,7 +32,7 @@ class TimestamptzOffset(TimestampOffset):
 
     def python(self):
         return datetime.datetime.now(
-            tz=self._tz
+            tz=self.tz
         ) + datetime.timedelta(
             days=self.days,
             hours=self.hours,
@@ -43,14 +43,14 @@ class TimestamptzOffset(TimestampOffset):
 
 class TimestamptzNow(TimestampNow):
     def __init__(self, tz: ZoneInfo = ZoneInfo('UTC')):
-        self._tz = tz
+        self.tz = tz
         
     @property
     def cockroach(self):
         return "current_timestamp"
 
     def python(self):
-        return datetime.datetime.now(tz=self._tz)
+        return datetime.datetime.now(tz=self.tz)
 
 
 class TimestamptzCustom(TimestampCustom):
@@ -64,7 +64,7 @@ class TimestamptzCustom(TimestampCustom):
         microsecond: int = 0,
         tz: ZoneInfo = ZoneInfo('UTC')
     ):
-        self._tz = tz
+        self.tz = tz
         super().__init__(**{
             k: v for k, v in locals().items()
             if k not in ['self', 'tz']
@@ -83,13 +83,13 @@ class TimestamptzCustom(TimestampCustom):
             hour=self.hour,
             second=self.second,
             microsecond=self.microsecond,
-            tzinfo=self._tz,
+            tzinfo=self.tz,
         )
 
     @classmethod
     def from_datetime(cls, instance: datetime.datetime):  # type: ignore
         if instance.tzinfo is not None:
-            instance = instance.astimezone(self._tz)
+            instance = instance.astimezone(self.tz)
         return cls(
             year=instance.year,
             month=instance.month,
