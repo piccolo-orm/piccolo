@@ -87,9 +87,9 @@ class TimestamptzCustom(TimestampCustom):
         )
 
     @classmethod
-    def from_datetime(cls, instance: datetime.datetime):  # type: ignore
+    def from_datetime(cls, instance: datetime.datetime, tz: ZoneInfo = ZoneInfo('UTC')):  # type: ignore
         if instance.tzinfo is not None:
-            instance = instance.astimezone(self.tz)
+            instance = instance.astimezone(tz)
         return cls(
             year=instance.year,
             month=instance.month,
