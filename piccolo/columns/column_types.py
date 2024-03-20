@@ -978,30 +978,33 @@ class Timestamp(Column):
 class Timestamptz(Column):
     """
     Used for storing timezone aware datetimes. Uses the ``datetime`` type for
-    values. The values are converted to UTC in the database, and are also
-    returned as UTC.
+    values. The values are converted to UTC when saved into the database and 
+    are converted back into the timezone of the column on select queries.
 
     **Example**
 
     .. code-block:: python
 
         import datetime
+        from zoneinfo import ZoneInfo
 
-        class Concert(Table):
-            starts = Timestamptz()
+        class TallinnConcerts(Table):
+            event_start = Timestamptz(tz=ZoneInfo("Europe/Tallinn"))
 
         # Create
-        >>> await Concert(
-        ...    starts=datetime.datetime(
-        ...        year=2050, month=1, day=1, tzinfo=datetime.timezone.tz
+        >>> await TallinnConcerts(
+        ...    event_start=datetime.datetime(
+        ...        year=2050, month=1, day=1, hour=20
         ...    )
         ... ).save()
 
         # Query
-        >>> await Concert.select(Concert.starts)
+        >>> await TallinnConcerts.select(TallinnConcerts.event_start)
         {
-            'starts': datetime.datetime(
-                2050, 1, 1, 0, 0, tzinfo=datetime.timezone.utc
+            'event_start': datetime.datetime(
+                2050, 1, 1, 20, 0, tzinfo=zoneinfo.ZoneInfo(
+                    key='Europe/Tallinn'
+                )
             )
         }
 
@@ -1027,7 +1030,7 @@ class Timestamptz(Column):
         )
 
         if isinstance(default, datetime):
-            default = TimestamptzCustom.from_datetime(default)
+            default = TimestamptzCustom.from_datetime(default, tz)
 
         if default == datetime.now:
             default = TimestamptzNow(tz)
