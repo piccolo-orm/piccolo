@@ -6,7 +6,7 @@ import typing as t
 from collections import OrderedDict
 
 from piccolo.columns import Column, Selectable
-from piccolo.columns.column_types import JSON, JSONB, PrimaryKey
+from piccolo.columns.column_types import JSON, JSONB
 from piccolo.columns.m2m import M2MSelect
 from piccolo.columns.readable import Readable
 from piccolo.custom_types import TableInstance
