@@ -11,6 +11,8 @@ from piccolo.apps.fixtures.commands.shared import (
 )
 from piccolo.conf.apps import Finder
 from piccolo.engine import engine_finder
+from piccolo.engine.postgres import PostgresEngine
+from piccolo.engine.sqlite import SQLiteEngine
 from piccolo.query.mixins import OnConflictAction
 from piccolo.table import Table, sort_table_classes
 from piccolo.utils.encoding import load_json
@@ -51,8 +53,13 @@ async def load_json_string(
     finder = Finder()
     engine = engine_finder()
 
-    if not engine:
+    if engine is None:
         raise Exception("Unable to find the engine.")
+
+    if engine.engine_type == "sqlite":
+        engine = t.cast(SQLiteEngine, engine)
+    else:
+        engine = t.cast(PostgresEngine, engine)
 
     # This is what we want to the insert into the database:
     data: t.Dict[t.Type[Table], t.List[Table]] = {}

@@ -89,7 +89,15 @@ class TimeCustom(Default):
         )
 
 
-TimeArg = t.Union[TimeCustom, TimeNow, TimeOffset, Enum, None, datetime.time]
+TimeArg = t.Union[
+    TimeCustom,
+    TimeNow,
+    TimeOffset,
+    Enum,
+    None,
+    datetime.time,
+    t.Callable[[], datetime.time],
+]
 
 
 __all__ = ["TimeArg", "TimeCustom", "TimeNow", "TimeOffset"]

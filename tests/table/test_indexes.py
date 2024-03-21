@@ -1,5 +1,7 @@
+import typing as t
 from unittest import TestCase
 
+from piccolo.columns.base import Column
 from piccolo.columns.column_types import Integer
 from piccolo.table import Table
 from tests.example_apps.music.tables import Manager
@@ -45,12 +47,12 @@ class TestProblematicColumnName(TestCase):
     def tearDown(self):
         Concert.alter().drop_table().run_sync()
 
-    def test_problematic_name(self):
+    def test_problematic_name(self) -> None:
         """
         Make sure we can add an index to a column with a problematic name
         (which clashes with a SQL keyword).
         """
-        columns = [Concert.order]
+        columns: t.List[Column] = [Concert.order]
         Concert.create_index(columns=columns).run_sync()
         index_name = Concert._get_index_name([i._meta.name for i in columns])
 

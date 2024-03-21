@@ -10,12 +10,10 @@ from piccolo.utils.sync import run_sync
 
 
 class SchemaDDLBase(abc.ABC):
-
     db: Engine
 
     @abc.abstractproperty
-    def ddl(self) -> str:
-        pass
+    def ddl(self) -> str: ...
 
     def __await__(self):
         return self.run().__await__()
@@ -131,16 +129,19 @@ class ListTables:
         self.db = db
         self.schema_name = schema_name
 
-    async def run(self):
-        response = await self.db.run_querystring(
-            QueryString(
-                """
+    async def run(self) -> t.List[str]:
+        response = t.cast(
+            t.List[t.Dict],
+            await self.db.run_querystring(
+                QueryString(
+                    """
                 SELECT table_name
                 FROM information_schema.tables
                 WHERE table_schema = {}
                 """,
-                self.schema_name,
-            )
+                    self.schema_name,
+                )
+            ),
         )
         return [i["table_name"] for i in response]
 
@@ -155,9 +156,14 @@ class ListSchemas:
     def __init__(self, db: Engine):
         self.db = db
 
-    async def run(self):
-        response = await self.db.run_querystring(
-            QueryString("SELECT schema_name FROM information_schema.schemata")
+    async def run(self) -> t.List[str]:
+        response = t.cast(
+            t.List[t.Dict],
+            await self.db.run_querystring(
+                QueryString(
+                    "SELECT schema_name FROM information_schema.schemata"
+                )
+            ),
         )
         return [i["schema_name"] for i in response]
 
@@ -179,7 +185,7 @@ class SchemaManager:
         """
         db = db or engine_finder()
 
-        if not db:
+        if db is None:
             raise ValueError("The DB can't be found.")
 
         self.db = db

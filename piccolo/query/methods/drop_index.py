@@ -14,7 +14,7 @@ class DropIndex(Query):
     def __init__(
         self,
         table: t.Type[Table],
-        columns: t.List[t.Union[Column, str]],
+        columns: t.Union[t.List[Column], t.List[str]],
         if_exists: bool = True,
         **kwargs,
     ):

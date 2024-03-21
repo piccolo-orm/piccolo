@@ -313,7 +313,7 @@ COLUMN_TYPE_MAP_COCKROACH: t.Dict[str, t.Type[Column]] = {
     **{"integer": BigInt, "json": JSONB},
 }
 
-COLUMN_DEFAULT_PARSER = {
+COLUMN_DEFAULT_PARSER: t.Dict[t.Type[Column], t.Any] = {
     BigInt: re.compile(r"^'?(?P<value>-?[0-9]\d*)'?(?:::bigint)?$"),
     Boolean: re.compile(r"^(?P<value>true|false)$"),
     Bytea: re.compile(r"'(?P<value>.*)'::bytea$"),
@@ -373,7 +373,7 @@ COLUMN_DEFAULT_PARSER = {
 }
 
 # Re-map for Cockroach compatibility.
-COLUMN_DEFAULT_PARSER_COCKROACH = {
+COLUMN_DEFAULT_PARSER_COCKROACH: t.Dict[t.Type[Column], t.Any] = {
     **COLUMN_DEFAULT_PARSER,
     BigInt: re.compile(r"^(?P<value>-?\d+)$"),
 }

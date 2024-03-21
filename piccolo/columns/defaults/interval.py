@@ -80,6 +80,7 @@ IntervalArg = t.Union[
     Enum,
     None,
     datetime.timedelta,
+    t.Callable[[], datetime.timedelta],
 ]
 
 

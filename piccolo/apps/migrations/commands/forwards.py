@@ -33,7 +33,9 @@ class ForwardsMigrationManager(BaseMigrationManager):
         )
 
         migration_modules: t.Dict[str, MigrationModule] = (
-            self.get_migration_modules(app_config.migrations_folder_path)
+            self.get_migration_modules(
+                app_config.resolved_migrations_folder_path
+            )
         )
 
         ids = self.get_migration_ids(migration_modules)

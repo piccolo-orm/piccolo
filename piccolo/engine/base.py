@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import abc
 import contextvars
 import logging
 import pprint
@@ -7,12 +8,14 @@ import string
 import typing as t
 from abc import ABCMeta, abstractmethod
 
+from typing_extensions import Self
+
 from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import Level, colored_string, colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.query.base import Query
+    from piccolo.query.base import DDL, Query
 
 
 logger = logging.getLogger(__name__)
@@ -32,31 +35,69 @@ def validate_savepoint_name(savepoint_name: str) -> None:
         )
 
 
-class Batch:
-    pass
+class Batch(metaclass=ABCMeta):
+    @abc.abstractmethod
+    async def __aenter__(self, *args, **kwargs): ...
+
+    @abc.abstractmethod
+    async def __aexit__(self, *args, **kwargs): ...
+
+    @abc.abstractmethod
+    def __aiter__(self: Self) -> Self: ...
+
+    @abc.abstractmethod
+    async def __anext__(self) -> t.List[t.Dict]: ...
 
 
-TransactionClass = t.TypeVar("TransactionClass")
+class BaseTransaction(metaclass=ABCMeta):
+    @abc.abstractmethod
+    async def __aenter__(self, *args, **kwargs): ...
+
+    @abc.abstractmethod
+    async def __aexit__(self, *args, **kwargs): ...
+
+
+class BaseAtomic(metaclass=ABCMeta):
+    @abc.abstractmethod
+    def add(self, *query: t.Union[Query, DDL]): ...
+
+    @abc.abstractmethod
+    async def run(self): ...
+
+    @abc.abstractmethod
+    def run_sync(self): ...
+
+    @abc.abstractmethod
+    def __await__(self): ...
+
+
+TransactionClass = t.TypeVar("TransactionClass", bound=BaseTransaction)
 
 
 class Engine(t.Generic[TransactionClass], metaclass=ABCMeta):
+    __slots__ = (
+        "query_id",
+        "log_queries",
+        "log_responses",
+        "engine_type",
+        "min_version_number",
+    )
 
-    __slots__ = ("query_id",)
+    def __init__(
+        self,
+        engine_type: str,
+        min_version_number: t.Union[int, float],
+        log_queries: bool = False,
+        log_responses: bool = False,
+    ):
+        self.log_queries = log_queries
+        self.log_responses = log_responses
+        self.engine_type = engine_type
+        self.min_version_number = min_version_number
 
-    def __init__(self):
         run_sync(self.check_version())
         run_sync(self.prep_database())
         self.query_id = 0
-
-    @property
-    @abstractmethod
-    def engine_type(self) -> str:
-        pass
-
-    @property
-    @abstractmethod
-    def min_version_number(self) -> float:
-        pass
 
     @abstractmethod
     async def get_version(self) -> float:
@@ -80,7 +121,9 @@ class Engine(t.Generic[TransactionClass], metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    async def run_querystring(self, querystring: QueryString, in_pool: bool):
+    async def run_querystring(
+        self, querystring: QueryString, in_pool: bool = True
+    ):
         pass
 
     @abstractmethod
@@ -88,11 +131,11 @@ class Engine(t.Generic[TransactionClass], metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def transaction(self):
+    def transaction(self) -> TransactionClass:
         pass
 
     @abstractmethod
-    def atomic(self):
+    def atomic(self) -> BaseAtomic:
         pass
 
     async def check_version(self):
