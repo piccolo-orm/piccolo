@@ -2563,6 +2563,23 @@ class Array(Column):
         else:
             return start + 1
 
+    def _get_inner_type(self) -> t.Type:
+        """
+        A helper function to get the innermost type for the array. For
+        example::
+
+            >>> Array(Varchar())._get_inner_type()
+            str
+
+            >>> Array(Array(Varchar()))._get_inner_type()
+            str
+
+        """
+        if isinstance(self.base_column, Array):
+            return self.base_column._get_inner_type()
+        else:
+            return self.base_column.value_type
+
     def __getitem__(self, value: int) -> Array:
         """
         Allows queries which retrieve an item from the array. The index starts
