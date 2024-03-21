@@ -69,7 +69,6 @@ html_show_sphinx = False
 globaltoc_maxdepth = 3
 html_theme_options = {
     "source_url": "https://github.com/piccolo-orm/piccolo/",
-    "banner_text": 'Piccolo v1 is now available! <a href="/en/latest/piccolo/v1/index.html">Learn more here</a>.',  # noqa: E501
 }
 
 # -- Options for HTMLHelp output ---------------------------------------------
