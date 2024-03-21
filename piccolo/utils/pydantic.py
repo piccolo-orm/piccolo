@@ -280,6 +280,7 @@ def create_pydantic_model(
             "choices": column._meta.get_choices_dict(),
             "secret": column._meta.secret,
             "nullable": column._meta.null,
+            "unique": column._meta.unique,
         }
 
         if isinstance(column, ForeignKey):

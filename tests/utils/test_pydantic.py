@@ -329,6 +329,34 @@ class TestTableHelpText(TestCase):
         )
 
 
+class TestUniqueColumn(TestCase):
+    def test_unique_column_true(self):
+        class Director(Table):
+            name = Varchar(unique=True)
+
+        pydantic_model = create_pydantic_model(table=Director)
+
+        self.assertEqual(
+            pydantic_model.model_json_schema()["properties"]["name"]["extra"][
+                "unique"
+            ],
+            True,
+        )
+
+    def test_unique_column_false(self):
+        class Director(Table):
+            name = Varchar()
+
+        pydantic_model = create_pydantic_model(table=Director)
+
+        self.assertEqual(
+            pydantic_model.model_json_schema()["properties"]["name"]["extra"][
+                "unique"
+            ],
+            False,
+        )
+
+
 class TestJSONColumn(TestCase):
     def test_default(self):
         class Movie(Table):
