@@ -887,9 +887,11 @@ class Column(Selectable):
             return (
                 "'{"
                 + ", ".join(
-                    f'"{i}"'
-                    if isinstance(i, str)
-                    else str(self.get_sql_value(i))
+                    (
+                        f'"{i}"'
+                        if isinstance(i, str)
+                        else str(self.get_sql_value(i))
+                    )
                     for i in value
                 )
             ) + "}'"

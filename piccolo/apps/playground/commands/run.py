@@ -2,6 +2,7 @@
 Populates a database with an example schema and data, and launches a shell
 for interacting with the data using Piccolo.
 """
+
 import datetime
 import sys
 import typing as t

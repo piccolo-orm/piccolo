@@ -1,6 +1,7 @@
 """
 Dataclasses for storing lazy references between ForeignKey columns and tables.
 """
+
 from __future__ import annotations
 
 import importlib
