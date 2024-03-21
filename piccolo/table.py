@@ -80,6 +80,7 @@ class TableMeta:
     columns: t.List[Column] = field(default_factory=list)
     default_columns: t.List[Column] = field(default_factory=list)
     non_default_columns: t.List[Column] = field(default_factory=list)
+    array_columns: t.List[Array] = field(default_factory=list)
     email_columns: t.List[Email] = field(default_factory=list)
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
     primary_key: Column = field(default_factory=Column)
@@ -272,6 +273,7 @@ class Table(metaclass=TableMetaclass):
         columns: t.List[Column] = []
         default_columns: t.List[Column] = []
         non_default_columns: t.List[Column] = []
+        array_columns: t.List[Array] = []
         foreign_key_columns: t.List[ForeignKey] = []
         secret_columns: t.List[Secret] = []
         json_columns: t.List[t.Union[JSON, JSONB]] = []
@@ -309,6 +311,7 @@ class Table(metaclass=TableMetaclass):
 
                 if isinstance(column, Array):
                     column._setup_base_column(table_class=cls)
+                    array_columns.append(column)
 
                 if isinstance(column, Email):
                     email_columns.append(column)
@@ -342,6 +345,7 @@ class Table(metaclass=TableMetaclass):
             columns=columns,
             default_columns=default_columns,
             non_default_columns=non_default_columns,
+            array_columns=array_columns,
             email_columns=email_columns,
             primary_key=primary_key,
             foreign_key_columns=foreign_key_columns,

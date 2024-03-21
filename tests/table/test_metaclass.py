@@ -5,6 +5,7 @@ from piccolo.columns import Secret
 from piccolo.columns.column_types import (
     JSON,
     JSONB,
+    Array,
     Email,
     ForeignKey,
     Varchar,
@@ -131,6 +132,17 @@ class TestMetaClass(TestCase):
             column_b = Varchar()
 
         self.assertEqual(MyTable._meta.email_columns, [MyTable.column_a])
+
+    def test_arry_columns(self):
+        """
+        Make sure ``TableMeta.array_columns`` are setup correctly.
+        """
+
+        class MyTable(Table):
+            column_a = Array(Varchar())
+            column_b = Varchar()
+
+        self.assertEqual(MyTable._meta.array_columns, [MyTable.column_a])
 
     def test_id_column(self):
         """

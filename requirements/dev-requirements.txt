@@ -1,4 +1,4 @@
-black==22.3.0
+black==24.3.0
 ipdb==0.13.9
 ipython>=7.31.1
 flake8==6.1.0

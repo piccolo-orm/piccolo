@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import logging
 import typing as t
 from dataclasses import dataclass, field
 
@@ -14,13 +15,15 @@ from piccolo.apps.migrations.auto.operations import (
 )
 from piccolo.apps.migrations.auto.serialisation import deserialise_params
 from piccolo.columns import Column, column_types
-from piccolo.columns.column_types import Serial
+from piccolo.columns.column_types import ForeignKey, Serial
 from piccolo.engine import engine_finder
 from piccolo.query import Query
 from piccolo.query.base import DDL
 from piccolo.schema import SchemaDDLBase
 from piccolo.table import Table, create_table_class, sort_table_classes
 from piccolo.utils.warnings import colored_warning
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -794,19 +797,64 @@ class MigrationManager:
                     self.add_columns.for_table_class_name(table_class_name)
                 )
 
+                ###############################################################
                 # Define the table, with the columns, so the metaclass
                 # sets up the columns correctly.
+
+                table_class_members = {
+                    add_column.column._meta.name: add_column.column
+                    for add_column in add_columns
+                }
+
+                # There's an extreme edge case, when we're adding a foreign
+                # key which references its own table, for example:
+                #
+                #   fk = ForeignKey('self')
+                #
+                # And that table has a custom primary key, for example:
+                #
+                #   id = UUID(primary_key=True)
+                #
+                # In this situation, we need to know the primary key of the
+                # table in order to correctly add this new foreign key.
+                for add_column in add_columns:
+                    if (
+                        isinstance(add_column.column, ForeignKey)
+                        and add_column.column._meta.params.get("references")
+                        == "self"
+                    ):
+                        try:
+                            existing_table = (
+                                await self.get_table_from_snapshot(
+                                    table_class_name=table_class_name,
+                                    app_name=self.app_name,
+                                    offset=-1,
+                                )
+                            )
+                        except ValueError:
+                            logger.error(
+                                "Unable to find primary key for the table - "
+                                "assuming Serial."
+                            )
+                        else:
+                            primary_key = existing_table._meta.primary_key
+
+                            table_class_members[primary_key._meta.name] = (
+                                primary_key
+                            )
+
+                        break
+
                 _Table = create_table_class(
                     class_name=add_columns[0].table_class_name,
                     class_kwargs={
                         "tablename": add_columns[0].tablename,
                         "schema": add_columns[0].schema,
                     },
-                    class_members={
-                        add_column.column._meta.name: add_column.column
-                        for add_column in add_columns
-                    },
+                    class_members=table_class_members,
                 )
+
+                ###############################################################
 
                 for add_column in add_columns:
                     # We fetch the column from the Table, as the metaclass
@@ -814,6 +862,7 @@ class MigrationManager:
                     column = _Table._meta.get_column_by_name(
                         add_column.column._meta.name
                     )
+
                     await self._run_query(
                         _Table.alter().add_column(
                             name=column._meta.name, column=column

@@ -1,6 +1,56 @@
 Changes
 =======
 
+1.4.2
+-----
+
+Improved how ``ModelBuilder`` handles recursive foreign keys.
+
+-------------------------------------------------------------------------------
+
+1.4.1
+-----
+
+Fixed an edge case with auto migrations.
+
+If starting from a table like this, with a custom primary key column:
+
+.. code-block:: python
+
+  class MyTable(Table):
+      id = UUID(primary_key=True)
+
+When a foreign key is added to the table which references itself:
+
+.. code-block:: python
+
+  class MyTable(Table):
+      id = UUID(primary_key=True)
+      fk = ForeignKey("self")
+
+The auto migrations could fail in some situations.
+
+-------------------------------------------------------------------------------
+
+1.4.0
+-----
+
+Improved how ``create_pydantic_model`` handles ``Array`` columns:
+
+* Multidimensional arrays (e.g. ``Array(Array(Integer))``) have more accurate
+  types.
+* ``Array(Email())`` now validates that each item in the list is an email
+  address.
+* ``Array(Varchar(length=10))`` now validates that each item is the correct
+  length (i.e. 10 in this example).
+
+Other changes
+~~~~~~~~~~~~~
+
+Some Pylance errors were fixed in the codebase.
+
+-------------------------------------------------------------------------------
+
 1.3.2
 -----
 
