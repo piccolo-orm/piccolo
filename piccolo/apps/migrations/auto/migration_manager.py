@@ -735,9 +735,9 @@ class MigrationManager:
     async def _run_add_tables(self, backwards: bool = False):
         table_classes: t.List[t.Type[Table]] = []
         for add_table in self.add_tables:
-            add_columns: t.List[
-                AddColumnClass
-            ] = self.add_columns.for_table_class_name(add_table.class_name)
+            add_columns: t.List[AddColumnClass] = (
+                self.add_columns.for_table_class_name(add_table.class_name)
+            )
             _Table: t.Type[Table] = create_table_class(
                 class_name=add_table.class_name,
                 class_kwargs={
@@ -790,9 +790,9 @@ class MigrationManager:
                 if table_class_name in [i.class_name for i in self.add_tables]:
                     continue  # No need to add columns to new tables
 
-                add_columns: t.List[
-                    AddColumnClass
-                ] = self.add_columns.for_table_class_name(table_class_name)
+                add_columns: t.List[AddColumnClass] = (
+                    self.add_columns.for_table_class_name(table_class_name)
+                )
 
                 # Define the table, with the columns, so the metaclass
                 # sets up the columns correctly.

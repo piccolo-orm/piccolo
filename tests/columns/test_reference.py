@@ -2,6 +2,7 @@
 Most of the tests for piccolo/columns/reference.py are covered in
 piccolo/columns/test_foreignkey.py
 """
+
 from unittest import TestCase
 
 from piccolo.columns.reference import LazyTableReference

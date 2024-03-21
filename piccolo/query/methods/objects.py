@@ -124,10 +124,10 @@ class First(
 
         results = objects[0] if objects else None
 
-        modified_response: t.Optional[
-            TableInstance
-        ] = await self.query.callback_delegate.invoke(
-            results=results, kind=CallbackType.success
+        modified_response: t.Optional[TableInstance] = (
+            await self.query.callback_delegate.invoke(
+                results=results, kind=CallbackType.success
+            )
         )
         return modified_response
 
@@ -355,10 +355,10 @@ class Objects(
             # With callbacks, the user can return any data that they want.
             # Assume that most of the time they will still return a list of
             # Table instances.
-            modified: t.List[
-                TableInstance
-            ] = await self.callback_delegate.invoke(
-                results, kind=CallbackType.success
+            modified: t.List[TableInstance] = (
+                await self.callback_delegate.invoke(
+                    results, kind=CallbackType.success
+                )
             )
             return modified
         else:

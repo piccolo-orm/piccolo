@@ -8,16 +8,13 @@ from piccolo.utils.repr import repr_class_instance
 
 class Default(ABC):
     @abstractproperty
-    def postgres(self) -> str:
-        ...
+    def postgres(self) -> str: ...
 
     @abstractproperty
-    def sqlite(self) -> str:
-        ...
+    def sqlite(self) -> str: ...
 
     @abstractmethod
-    def python(self):
-        ...
+    def python(self): ...
 
     def get_postgres_interval_string(self, attributes: t.List[str]) -> str:
         """

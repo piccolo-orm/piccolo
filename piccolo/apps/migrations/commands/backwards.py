@@ -31,10 +31,10 @@ class BackwardsMigrationManager(BaseMigrationManager):
         super().__init__()
 
     async def run_migrations_backwards(self, app_config: AppConfig):
-        migration_modules: t.Dict[
-            str, MigrationModule
-        ] = self.get_migration_modules(
-            app_config.resolved_migrations_folder_path
+        migration_modules: t.Dict[str, MigrationModule] = (
+            self.get_migration_modules(
+                app_config.resolved_migrations_folder_path
+            )
         )
 
         ran_migration_ids = await Migration.get_migrations_which_ran(

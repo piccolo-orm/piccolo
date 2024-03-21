@@ -13,8 +13,7 @@ class SchemaDDLBase(abc.ABC):
     db: Engine
 
     @abc.abstractproperty
-    def ddl(self) -> str:
-        ...
+    def ddl(self) -> str: ...
 
     def __await__(self):
         return self.run().__await__()
