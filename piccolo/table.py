@@ -18,6 +18,7 @@ from piccolo.columns.column_types import (
     Secret,
     Serial,
 )
+from piccolo.columns.constraints import UniqueConstraint
 from piccolo.columns.defaults.base import Default
 from piccolo.columns.indexes import IndexMethod
 from piccolo.columns.m2m import (
@@ -64,7 +65,6 @@ TABLENAME_WARNING = (
     "reserved keyword. It should still work, but avoid if possible."
 )
 
-
 TABLE_REGISTRY: t.List[t.Type[Table]] = []
 
 
@@ -84,6 +84,7 @@ class TableMeta:
     primary_key: Column = field(default_factory=Column)
     json_columns: t.List[t.Union[JSON, JSONB]] = field(default_factory=list)
     secret_columns: t.List[Secret] = field(default_factory=list)
+    unique_constraints: t.List[UniqueConstraint] = field(default_factory=list)
     auto_update_columns: t.List[Column] = field(default_factory=list)
     tags: t.List[str] = field(default_factory=list)
     help_text: t.Optional[str] = None
@@ -276,6 +277,7 @@ class Table(metaclass=TableMetaclass):
         auto_update_columns: t.List[Column] = []
         primary_key: t.Optional[Column] = None
         m2m_relationships: t.List[M2M] = []
+        unique_constraints: t.List[UniqueConstraint] = []
 
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]
@@ -328,6 +330,9 @@ class Table(metaclass=TableMetaclass):
                 attribute._meta._table = cls
                 m2m_relationships.append(attribute)
 
+            if isinstance(attribute, UniqueConstraint):
+                unique_constraints.append(attribute)
+
         if not primary_key:
             primary_key = cls._create_serial_primary_key()
             setattr(cls, "id", primary_key)
@@ -347,6 +352,7 @@ class Table(metaclass=TableMetaclass):
             json_columns=json_columns,
             secret_columns=secret_columns,
             auto_update_columns=auto_update_columns,
+            unique_constraints=unique_constraints,
             tags=tags,
             help_text=help_text,
             _db=db,

@@ -16,9 +16,11 @@ from piccolo.apps.migrations.auto.operations import (
 from piccolo.apps.migrations.auto.serialisation import deserialise_params
 from piccolo.columns import Column, column_types
 from piccolo.columns.column_types import ForeignKey, Serial
+from piccolo.columns.constraints import UniqueConstraint
 from piccolo.engine import engine_finder
 from piccolo.query import Query
 from piccolo.query.base import DDL
+from piccolo.query.methods.alter import AddUniqueConstraint, DropConstraint
 from piccolo.schema import SchemaDDLBase
 from piccolo.table import Table, create_table_class, sort_table_classes
 from piccolo.utils.warnings import colored_warning
@@ -159,6 +161,12 @@ class MigrationManager:
     alter_columns: AlterColumnCollection = field(
         default_factory=AlterColumnCollection
     )
+    add_unique_constraints: t.List[AddUniqueConstraint] = field(
+        default_factory=list
+    )
+    drop_unique_constraints: t.List[DropConstraint] = field(
+        default_factory=list
+    )
     raw: t.List[t.Union[t.Callable, AsyncFunction]] = field(
         default_factory=list
     )
@@ -277,6 +285,7 @@ class MigrationManager:
         table_class_name: str,
         tablename: str,
         column_name: str,
+        column_class: t.Type[Column],
         db_column_name: t.Optional[str] = None,
         schema: t.Optional[str] = None,
     ):
@@ -284,6 +293,7 @@ class MigrationManager:
             DropColumn(
                 table_class_name=table_class_name,
                 column_name=column_name,
+                column_class=column_class,
                 db_column_name=db_column_name or column_name,
                 tablename=tablename,
                 schema=schema,
@@ -641,11 +651,21 @@ class MigrationManager:
                 column_to_restore = _Table._meta.get_column_by_name(
                     drop_column.column_name
                 )
-                await self._run_query(
-                    _Table.alter().add_column(
-                        name=drop_column.column_name, column=column_to_restore
+
+                if isinstance(column_to_restore, UniqueConstraint):
+                    await self._run_query(
+                        _Table.alter().add_unique_constraint(
+                            constraint_name=column_to_restore._meta.db_column_name,  # noqa: E501
+                            columns=column_to_restore.unique_columns,
+                        )
                     )
-                )
+                else:
+                    await self._run_query(
+                        _Table.alter().add_column(
+                            name=drop_column.column_name,
+                            column=column_to_restore,
+                        )
+                    )
         else:
             for table_class_name in self.drop_columns.table_class_names:
                 columns = self.drop_columns.for_table_class_name(
@@ -664,9 +684,16 @@ class MigrationManager:
                 )
 
                 for column in columns:
-                    await self._run_query(
-                        _Table.alter().drop_column(column=column.column_name)
-                    )
+                    if column.column_class is UniqueConstraint:
+                        await _Table.alter().drop_constraint(
+                            constraint_name=column.column_name
+                        )
+                    else:
+                        await self._run_query(
+                            _Table.alter().drop_column(
+                                column=column.column_name
+                            )
+                        )
 
     async def _run_rename_tables(self, backwards: bool = False):
         for rename_table in self.rename_tables:
@@ -784,9 +811,16 @@ class MigrationManager:
                     },
                 )
 
-                await self._run_query(
-                    _Table.alter().drop_column(add_column.column)
-                )
+                if isinstance(add_column.column, UniqueConstraint):
+                    await self._run_query(
+                        _Table.alter().drop_constraint(
+                            constraint_name=add_column.column._meta.db_column_name,  # noqa: E501
+                        )
+                    )
+                else:
+                    await self._run_query(
+                        _Table.alter().drop_column(add_column.column)
+                    )
         else:
             for table_class_name in self.add_columns.table_class_names:
                 if table_class_name in [i.class_name for i in self.add_tables]:
@@ -862,15 +896,23 @@ class MigrationManager:
                         add_column.column._meta.name
                     )
 
-                    await self._run_query(
-                        _Table.alter().add_column(
-                            name=column._meta.name, column=column
-                        )
-                    )
-                    if add_column.column._meta.index:
+                    if isinstance(column, UniqueConstraint):
                         await self._run_query(
-                            _Table.create_index([add_column.column])
+                            _Table.alter().add_unique_constraint(
+                                constraint_name=column._meta.db_column_name,
+                                columns=column.unique_columns,
+                            )
                         )
+                    else:
+                        await self._run_query(
+                            _Table.alter().add_column(
+                                name=column._meta.name, column=column
+                            )
+                        )
+                        if add_column.column._meta.index:
+                            await self._run_query(
+                                _Table.create_index([add_column.column])
+                            )
 
     async def _run_change_table_schema(self, backwards: bool = False):
         from piccolo.schema import SchemaManager
