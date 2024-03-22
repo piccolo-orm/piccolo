@@ -212,12 +212,14 @@ class TestGetDimensions(TestCase):
         self.assertEqual(Array(Array(Array(Integer())))._get_dimensions(), 3)
 
 
-class TestGetInnerType(TestCase):
+class TestGetInnerValueType(TestCase):
 
-    def test_get_inner_type(self):
+    def test_get_inner_value_type(self):
         """
-        Make sure that `_get_inner_type` returns the correct base type.
+        Make sure that `_get_inner_value_type` returns the correct base type.
         """
-        self.assertEqual(Array(Integer())._get_inner_type(), int)
-        self.assertEqual(Array(Array(Integer()))._get_inner_type(), int)
-        self.assertEqual(Array(Array(Array(Integer())))._get_inner_type(), int)
+        self.assertEqual(Array(Integer())._get_inner_value_type(), int)
+        self.assertEqual(Array(Array(Integer()))._get_inner_value_type(), int)
+        self.assertEqual(
+            Array(Array(Array(Integer())))._get_inner_value_type(), int
+        )
