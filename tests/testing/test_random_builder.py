@@ -1,5 +1,7 @@
+import datetime
 import unittest
 from enum import Enum
+from uuid import UUID
 
 from piccolo.testing.random_builder import RandomBuilder
 
@@ -31,6 +33,10 @@ class TestRandomBuilder(unittest.TestCase):
         random_enum = RandomBuilder.next_enum(Color)
         self.assertIsInstance(random_enum, int)
 
+    def test_next_decimal(self):
+        random_decimal = RandomBuilder.next_decimal((5, 2))
+        self.assertLessEqual(random_decimal, 1000)
+
     def test_next_float(self):
         random_float = RandomBuilder.next_float(maximum=1000)
         self.assertLessEqual(random_float, 1000)
@@ -52,3 +58,24 @@ class TestRandomBuilder(unittest.TestCase):
 
     def test_next_uuid(self):
         RandomBuilder.next_uuid()
+
+    def test_next_list(self):
+        # `RandomBuilder.next_decimal` will return `float`
+        reversed_mapper = {
+            RandomBuilder.next_bool: bool,
+            RandomBuilder.next_bytes: bytes,
+            RandomBuilder.next_date: datetime.date,
+            RandomBuilder.next_datetime: datetime.datetime,
+            RandomBuilder.next_float: float,
+            RandomBuilder.next_decimal: float,
+            RandomBuilder.next_int: int,
+            RandomBuilder.next_str: str,
+            RandomBuilder.next_time: datetime.time,
+            RandomBuilder.next_timedelta: datetime.timedelta,
+            RandomBuilder.next_uuid: UUID,
+        }
+
+        for callable_, typ in reversed_mapper.items():
+            random_list = RandomBuilder.next_list(callable_)
+            self.assertIsInstance(random_list, list)
+            self.assertTrue(all(isinstance(elem, typ) for elem in random_list))

@@ -1,31 +1,15 @@
 from __future__ import annotations
 
-import datetime
 import json
 import typing as t
-from decimal import Decimal
-from uuid import UUID
 
-from piccolo.columns import JSON, JSONB, Array, Column, ForeignKey
+from piccolo.columns import JSON, JSONB, Column, ForeignKey
 from piccolo.custom_types import TableInstance
 from piccolo.testing.random_builder import RandomBuilder
 from piccolo.utils.sync import run_sync
 
 
 class ModelBuilder:
-    __DEFAULT_MAPPER: t.Dict[t.Type, t.Callable] = {
-        bool: RandomBuilder.next_bool,
-        bytes: RandomBuilder.next_bytes,
-        datetime.date: RandomBuilder.next_date,
-        datetime.datetime: RandomBuilder.next_datetime,
-        float: RandomBuilder.next_float,
-        int: RandomBuilder.next_int,
-        str: RandomBuilder.next_str,
-        datetime.time: RandomBuilder.next_time,
-        datetime.timedelta: RandomBuilder.next_timedelta,
-        UUID: RandomBuilder.next_uuid,
-    }
-
     @classmethod
     async def build(
         cls,
@@ -159,29 +143,7 @@ class ModelBuilder:
             Column class to randomize.
 
         """
-        random_value: t.Any
-        if column.value_type == Decimal:
-            precision, scale = column._meta.params["digits"] or (4, 2)
-            random_value = RandomBuilder.next_float(
-                maximum=10 ** (precision - scale), scale=scale
-            )
-        elif column.value_type == datetime.datetime:
-            tz_aware = getattr(column, "tz_aware", False)
-            random_value = RandomBuilder.next_datetime(tz_aware=tz_aware)
-        elif column.value_type == list:
-            length = RandomBuilder.next_int(maximum=10)
-            base_type = t.cast(Array, column).base_column.value_type
-            random_value = [
-                cls.__DEFAULT_MAPPER[base_type]() for _ in range(length)
-            ]
-        elif column._meta.choices:
-            random_value = RandomBuilder.next_enum(column._meta.choices)
-        else:
-            random_value = cls.__DEFAULT_MAPPER[column.value_type]()
-
-        if "length" in column._meta.params and isinstance(random_value, str):
-            return random_value[: column._meta.params["length"]]
-        elif isinstance(column, (JSON, JSONB)):
+        random_value: t.Any = RandomBuilder._build(column)
+        if isinstance(column, (JSON, JSONB)):
             return json.dumps({"value": random_value})
-
         return random_value
