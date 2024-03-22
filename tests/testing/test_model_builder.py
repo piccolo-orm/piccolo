@@ -1,10 +1,13 @@
 import asyncio
+import builtins
 import json
+import random
 import typing as t
 import unittest
 
 from piccolo.columns import (
     Array,
+    Column,
     Decimal,
     ForeignKey,
     Integer,
@@ -223,3 +226,56 @@ class TestModelBuilder(unittest.TestCase):
             .run_sync()
         ):
             self.assertIsInstance(facilities, dict)
+
+
+@engines_skip("cockroach")
+class TestModelBuilder2(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        create_db_tables_sync(*TABLES)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        drop_db_tables_sync(*TABLES)
+
+    def setUp(self) -> None:
+        ModelBuilder.__OTHER_MAPPER = {}
+
+    def tearDown(self) -> None:
+        ModelBuilder.__OTHER_MAPPER = {}
+
+    def test_register(self):
+        ModelBuilder.register_random_type(str, lambda: "piccolo")
+        manager = ModelBuilder.build_sync(Manager)
+        self.assertEqual(manager.name, "piccolo")
+
+    def test_register_with_column_info(self):
+        def next_str(column: Column) -> str:
+            length = column._meta.params.get("length", 5)
+            return "".join("a" for _ in range(length))
+
+        ModelBuilder.register_random_type(str, next_str)
+        manager = ModelBuilder.build_sync(Manager)
+        self.assertEqual(len(manager.name), 50)
+
+        post = ModelBuilder.build_sync(Poster)
+        self.assertEqual(len(post.content), 5)
+
+    def test_register_same_type(self):
+        ModelBuilder.register_random_type(str, lambda: "piccolo")
+        ModelBuilder.register_random_type(str, lambda: "PICCOLO")
+        manager = ModelBuilder.build_sync(Manager)
+        self.assertEqual(manager.name, "PICCOLO")
+
+    def test_unregister(self):
+        ModelBuilder.register_random_type(str, lambda: "piccolo")
+        ModelBuilder.unregister_random_type(str)
+        manager = ModelBuilder.build_sync(Manager)
+        self.assertNotEqual(manager.name, "piccolo")
+
+    def test_unregister_same_type(self):
+        ModelBuilder.unregister_random_type(str)
+        ModelBuilder.unregister_random_type(str)
+
+    def test_unregister_any_type(self):
+        ModelBuilder.unregister_random_type(random.choice(dir(builtins)))
