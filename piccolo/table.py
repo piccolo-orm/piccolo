@@ -612,7 +612,7 @@ class Table(metaclass=TableMetaclass):
             .first()
         )
 
-    def get_m2m(self, m2m: M2M) -> M2MGetRelated:
+    def get_m2m(self, m2m: M2M, reverse: t.Optional[bool] = None) -> M2MGetRelated:
         """
         Get all matching rows via the join table.
 
@@ -623,7 +623,7 @@ class Table(metaclass=TableMetaclass):
             [<Genre: 1>, <Genre: 2>]
 
         """
-        return M2MGetRelated(row=self, m2m=m2m)
+        return M2MGetRelated(row=self, m2m=m2m, reverse=reverse)
 
     def add_m2m(
         self,

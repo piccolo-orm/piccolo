@@ -72,20 +72,33 @@ class M2MSelect(Selectable):
         fk_2 = self.m2m._meta.secondary_foreign_key
         fk_2_name = fk_2._meta.db_column_name
         table_2 = fk_2._foreign_key_meta.resolved_references
-        table_2_name = table_2._meta.tablename
-        table_2_name_with_schema = table_2._meta.get_formatted_tablename()
-        table_2_pk_name = table_2._meta.primary_key._meta.db_column_name
+        # if primary and secondary table are the same
+        if table_1 == table_2:
+            table_2_name = table_1._meta.tablename
+            table_2_name_with_schema = table_1._meta.get_formatted_tablename()
+            table_2_pk_name = table_1._meta.primary_key._meta.db_column_name
+            inner_select = f"""
+                {m2m_table_name_with_schema}
+                JOIN {table_1_name_with_schema} "inner_{table_1_name}" ON (
+                    {m2m_table_name_with_schema}."{fk_1_name}" = "inner_{table_1_name}"."{table_1_pk_name}"
+                )
+                WHERE {m2m_table_name_with_schema}."{fk_1_name}" = "{table_1_name}"."{table_1_pk_name}"
+            """  # noqa: E501
+        else:
+            table_2_name = table_2._meta.tablename
+            table_2_name_with_schema = table_2._meta.get_formatted_tablename()
+            table_2_pk_name = table_2._meta.primary_key._meta.db_column_name
 
-        inner_select = f"""
-            {m2m_table_name_with_schema}
-            JOIN {table_1_name_with_schema} "inner_{table_1_name}" ON (
-                {m2m_table_name_with_schema}."{fk_1_name}" = "inner_{table_1_name}"."{table_1_pk_name}"
-            )
-            JOIN {table_2_name_with_schema} "inner_{table_2_name}" ON (
-                {m2m_table_name_with_schema}."{fk_2_name}" = "inner_{table_2_name}"."{table_2_pk_name}"
-            )
-            WHERE {m2m_table_name_with_schema}."{fk_1_name}" = "{table_1_name}"."{table_1_pk_name}"
-        """  # noqa: E501
+            inner_select = f"""
+                {m2m_table_name_with_schema}
+                JOIN {table_1_name_with_schema} "inner_{table_1_name}" ON (
+                    {m2m_table_name_with_schema}."{fk_1_name}" = "inner_{table_1_name}"."{table_1_pk_name}"
+                )
+                JOIN {table_2_name_with_schema} "inner_{table_2_name}" ON (
+                    {m2m_table_name_with_schema}."{fk_2_name}" = "inner_{table_2_name}"."{table_2_pk_name}"
+                )
+                WHERE {m2m_table_name_with_schema}."{fk_1_name}" = "{table_1_name}"."{table_1_pk_name}"
+            """  # noqa: E501
 
         if engine_type in ("postgres", "cockroach"):
             if self.as_list:
@@ -233,10 +246,15 @@ class M2MMeta:
         """
         See ``primary_foreign_key``.
         """
+        # if primary and secondary table are the same
         for fk_column in self.foreign_key_columns:
             if fk_column._foreign_key_meta.resolved_references != self.table:
                 return fk_column
-
+            if (
+                fk_column._foreign_key_meta.resolved_references
+                == self.primary_table
+            ):
+                return self.foreign_key_columns[-1]
         raise ValueError("No matching foreign key column found!")
 
     @property
@@ -353,32 +371,51 @@ class M2MRemoveRelated:
 
 @dataclass
 class M2MGetRelated:
-
     row: Table
     m2m: M2M
+    reverse: t.Optional[bool] = False
 
     async def run(self):
         joining_table = self.m2m._meta.resolved_joining_table
-
         secondary_table = self.m2m._meta.secondary_table
-
-        # TODO - replace this with a subquery in the future.
-        ids = (
-            await joining_table.select(
-                getattr(
-                    self.m2m._meta.secondary_foreign_key,
-                    secondary_table._meta.primary_key._meta.name,
+        if self.reverse: 
+            try:
+                ids = (
+                    await joining_table.select(
+                                                getattr(
+                                                    self.m2m._meta.primary_foreign_key,
+                                                    secondary_table._meta.primary_key._meta.name,
+                                                )
+                    )
+                    .where(self.m2m._meta.secondary_foreign_key == self.row)
+                    .output(as_list=True)
                 )
-            )
-            .where(self.m2m._meta.primary_foreign_key == self.row)
-            .output(as_list=True)
-        )
+                results = await secondary_table.objects().where(
+                    secondary_table._meta.primary_key.is_in(ids)
+                )
+            except ValueError:
+                results = []
+            return results
+        else:
+            try:
+                # TODO - replace this with a subquery in the future.
+                ids = (
+                    await joining_table.select(
+                                                getattr(
+                                                    self.m2m._meta.secondary_foreign_key,
+                                                    secondary_table._meta.primary_key._meta.name,
+                                                )
+                    )
+                    .where(self.m2m._meta.primary_foreign_key == self.row)
+                    .output(as_list=True)
+                )
 
-        results = await secondary_table.objects().where(
-            secondary_table._meta.primary_key.is_in(ids)
-        )
-
-        return results
+                results = await secondary_table.objects().where(
+                    secondary_table._meta.primary_key.is_in(ids)
+                )
+            except ValueError:
+                results = []
+            return results
 
     def run_sync(self):
         return run_sync(self.run())
