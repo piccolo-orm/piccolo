@@ -6,6 +6,7 @@ import json
 import typing as t
 from decimal import Decimal
 from functools import partial
+from types import MappingProxyType
 
 from piccolo.columns import JSON, JSONB, Array, Column, ForeignKey
 from piccolo.custom_types import TableInstance
@@ -97,7 +98,7 @@ class ModelBuilder:
         persist: bool = True,
     ) -> TableInstance:
         model = table_class(_ignore_missing=True)
-        defaults = {} if not defaults else defaults
+        defaults = defaults or {}
 
         for column, value in defaults.items():
             if isinstance(column, str):
@@ -150,38 +151,46 @@ class ModelBuilder:
             Column class to randomize.
 
         """
-        random_value: t.Any
-        default_mapper = cls._get_default_mapper()
-        local_mapper = cls._get_local_mapper(column)
-        other_mapper = cls._get_other_mapper(column)
-        # order matters
-        mapper = {**default_mapper, **local_mapper, **other_mapper}
-
+        reg = cls.get_registry(column)
         if column._meta.choices:
             random_value = RandomBuilder.next_enum(column._meta.choices)
-        elif column.value_type == list:
-            length = RandomBuilder.next_int(maximum=10)
-            base_type = t.cast(Array, column).base_column.value_type
-            random_value = [mapper[base_type]() for _ in range(length)]
         else:
-            random_value = mapper[column.value_type]()
+            random_value = reg[column.value_type]()
 
         if isinstance(column, (JSON, JSONB)):
             return json.dumps({"value": random_value})
         return random_value
 
     @classmethod
-    def _get_default_mapper(cls) -> t.Dict[t.Type, t.Callable]:
+    def get_registry(
+        cls, column: Column
+    ) -> MappingProxyType[t.Type, t.Callable]:
         """
-        This classmethod encapsulates the desired logic.
+        This serves as the public API allowing users to **view**
+        the complete registry for the specified column.
+
+        :param column:
+            Column class to randomize.
+
         """
-        mapper = cls.__DEFAULT_MAPPER
-        if not mapper:  # execute once only
-            for typ, callable_name in RandomBuilder.DEFAULT_MAPPER.items():
-                # a simpler approach available?
-                func = RandomBuilder.__dict__[callable_name].__func__
-                mapper[typ] = partial(func, RandomBuilder)
-        return mapper
+        default_mapper = cls.__DEFAULT_MAPPER
+        if not default_mapper:  # execute once only
+            for typ, callable_ in RandomBuilder.get_mapper().items():
+                default_mapper[typ] = callable_
+
+        # order matters
+        reg = {
+            **default_mapper,
+            **cls._get_local_mapper(column),
+            **cls._get_other_mapper(column),
+        }
+
+        if column.value_type == list:
+            reg[list] = partial(
+                RandomBuilder.next_list,
+                reg[t.cast(Array, column).base_column.value_type],
+            )
+        return MappingProxyType(reg)
 
     @classmethod
     def _get_local_mapper(cls, column: Column) -> t.Dict[t.Type, t.Callable]:
@@ -193,19 +202,20 @@ class ModelBuilder:
             Column class to randomize.
         """
         local_mapper: t.Dict[t.Type, t.Callable] = {}
-        if column.value_type == Decimal:
-            precision, scale = column._meta.params["digits"] or (4, 2)
-            local_mapper[Decimal] = partial(
-                RandomBuilder.next_decimal, precision, scale
-            )
-        elif column.value_type == datetime.datetime:
-            tz_aware = getattr(column, "tz_aware", False)
-            local_mapper[datetime.datetime] = partial(
-                RandomBuilder.next_datetime, tz_aware
-            )
-        elif column.value_type == str:
-            if _length := column._meta.params.get("length"):
-                local_mapper[str] = partial(RandomBuilder.next_str, _length)
+
+        precision, scale = column._meta.params.get("digits") or (4, 2)
+        local_mapper[Decimal] = partial(
+            RandomBuilder.next_decimal, precision, scale
+        )
+
+        tz_aware = getattr(column, "tz_aware", False)
+        local_mapper[datetime.datetime] = partial(
+            RandomBuilder.next_datetime, tz_aware
+        )
+
+        if _length := column._meta.params.get("length"):
+            local_mapper[str] = partial(RandomBuilder.next_str, _length)
+
         return local_mapper
 
     @classmethod
@@ -241,10 +251,10 @@ class ModelBuilder:
         return other_mapper
 
     @classmethod
-    def register_random_type(cls, typ: t.Type, callable_: t.Callable) -> None:
+    def register_type(cls, typ: t.Type, callable_: t.Callable) -> None:
         cls.__OTHER_MAPPER[typ] = callable_
 
     @classmethod
-    def unregister_random_type(cls, typ: t.Type) -> None:
+    def unregister_type(cls, typ: t.Type) -> None:
         if typ in cls.__OTHER_MAPPER:
             del cls.__OTHER_MAPPER[typ]

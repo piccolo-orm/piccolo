@@ -56,3 +56,9 @@ class TestRandomBuilder(unittest.TestCase):
 
     def test_next_uuid(self):
         RandomBuilder.next_uuid()
+
+    def test_next_list(self):
+        for typ, callable_ in RandomBuilder.get_mapper().items():
+            random_list = RandomBuilder.next_list(callable_)
+            self.assertIsInstance(random_list, list)
+            self.assertTrue(all(isinstance(elem, typ) for elem in random_list))

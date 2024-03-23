@@ -245,7 +245,7 @@ class TestModelBuilder2(unittest.TestCase):
         ModelBuilder.__OTHER_MAPPER = {}
 
     def test_register(self):
-        ModelBuilder.register_random_type(str, lambda: "piccolo")
+        ModelBuilder.register_type(str, lambda: "piccolo")
         manager = ModelBuilder.build_sync(Manager)
         self.assertEqual(manager.name, "piccolo")
 
@@ -254,7 +254,7 @@ class TestModelBuilder2(unittest.TestCase):
             length = column._meta.params.get("length", 5)
             return "".join("a" for _ in range(length))
 
-        ModelBuilder.register_random_type(str, next_str)
+        ModelBuilder.register_type(str, next_str)
         manager = ModelBuilder.build_sync(Manager)
         self.assertEqual(len(manager.name), 50)
 
@@ -262,20 +262,30 @@ class TestModelBuilder2(unittest.TestCase):
         self.assertEqual(len(post.content), 5)
 
     def test_register_same_type(self):
-        ModelBuilder.register_random_type(str, lambda: "piccolo")
-        ModelBuilder.register_random_type(str, lambda: "PICCOLO")
+        ModelBuilder.register_type(str, lambda: "piccolo")
+        ModelBuilder.register_type(str, lambda: "PICCOLO")
         manager = ModelBuilder.build_sync(Manager)
         self.assertEqual(manager.name, "PICCOLO")
 
     def test_unregister(self):
-        ModelBuilder.register_random_type(str, lambda: "piccolo")
-        ModelBuilder.unregister_random_type(str)
+        ModelBuilder.register_type(str, lambda: "piccolo")
+        ModelBuilder.unregister_type(str)
         manager = ModelBuilder.build_sync(Manager)
         self.assertNotEqual(manager.name, "piccolo")
 
     def test_unregister_same_type(self):
-        ModelBuilder.unregister_random_type(str)
-        ModelBuilder.unregister_random_type(str)
+        ModelBuilder.unregister_type(str)
+        ModelBuilder.unregister_type(str)
 
     def test_unregister_any_type(self):
-        ModelBuilder.unregister_random_type(random.choice(dir(builtins)))
+        ModelBuilder.unregister_type(random.choice(dir(builtins)))
+
+    def test_get_registry(self):
+        def next_str() -> str:
+            return "piccolo"
+
+        ModelBuilder.register_type(str, next_str)
+        reg = ModelBuilder.get_registry(Varchar())
+
+        self.assertIn(str, reg)
+        self.assertIn(next_str, reg.values())
