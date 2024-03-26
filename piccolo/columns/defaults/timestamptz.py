@@ -18,10 +18,12 @@ class TimestamptzOffset(TimestampOffset):
         tz: ZoneInfo = ZoneInfo('UTC')
     ):
         self.tz = tz
-        super().__init__(**{
-            k: v for k, v in locals().items()
-            if k not in ['self', 'tz']
-        })
+        super().__init__(
+            days=days,
+            hours=hours,
+            minutes=minutes,
+            seconds=seconds
+        )
         
     @property
     def cockroach(self):
@@ -65,10 +67,14 @@ class TimestamptzCustom(TimestampCustom):
         tz: ZoneInfo = ZoneInfo('UTC')
     ):
         self.tz = tz
-        super().__init__(**{
-            k: v for k, v in locals().items()
-            if k not in ['self', 'tz']
-        })
+        super().__init__(
+            year=year,
+            month=month,
+            day=day,
+            hour=hour,
+            second=second,
+            microsecond=microsecond
+        )
         
     @property
     def cockroach(self):

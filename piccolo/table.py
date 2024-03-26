@@ -6,7 +6,6 @@ import types
 import typing as t
 import warnings
 from datetime import datetime
-from zoneinfo import ZoneInfo
 from dataclasses import dataclass, field
 
 from piccolo.columns import Column
@@ -57,6 +56,7 @@ from piccolo.utils.graphlib import TopologicalSorter
 from piccolo.utils.sql_values import convert_to_sql_value
 from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import colored_warning
+from zoneinfo import ZoneInfo
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Selectable

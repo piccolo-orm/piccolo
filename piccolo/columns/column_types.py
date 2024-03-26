@@ -33,7 +33,6 @@ import typing as t
 import uuid
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
-from zoneinfo import ZoneInfo
 from enum import Enum
 
 from piccolo.columns.base import (
@@ -64,6 +63,7 @@ from piccolo.columns.reference import LazyTableReference
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils.encoding import dump_json
 from piccolo.utils.warnings import colored_warning
+from zoneinfo import ZoneInfo
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import ColumnMeta
