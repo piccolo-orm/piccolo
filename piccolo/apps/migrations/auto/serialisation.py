@@ -558,8 +558,10 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
             )
             # ZoneInfo for Timestamptz* instances
             in_group = (
-                Timestamptz, TimestamptzNow,
-                TimestamptzCustom, TimestamptzOffset
+                Timestamptz,
+                TimestamptzNow,
+                TimestamptzCustom,
+                TimestamptzOffset,
             )
             if isinstance(value, in_group):
                 extra_imports.append(

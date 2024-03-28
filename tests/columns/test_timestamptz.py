@@ -1,4 +1,5 @@
 import datetime
+import time
 from operator import eq
 from unittest import TestCase
 
@@ -95,6 +96,8 @@ class TestTimestamptzDefault(TestCase):
         Make sure the default value gets created, and can be retrieved.
         """
         created_on = datetime.datetime.now(tz=LOCAL_TZ)
+        time.sleep(1e-5)
+
         row = MyTableDefault()
         row.save().run_sync()
 
@@ -106,7 +109,7 @@ class TestTimestamptzDefault(TestCase):
         self.assertEqual(result.created_on.tzinfo, created_on.tzinfo)
 
         delta = result.created_on_offset - created_on
-        self.assertLessEqual(delta, datetime.timedelta(days=1))
+        self.assertGreaterEqual(delta, datetime.timedelta(days=1))
         self.assertEqual(result.created_on_offset.tzinfo, created_on.tzinfo)
 
         delta = created_on - result.created_on_custom
