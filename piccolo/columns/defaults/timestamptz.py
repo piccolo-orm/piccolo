@@ -3,7 +3,11 @@ from __future__ import annotations
 import datetime
 import typing as t
 from enum import Enum
-from zoneinfo import ZoneInfo
+
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
 
 from .timestamp import TimestampCustom, TimestampNow, TimestampOffset
 
