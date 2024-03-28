@@ -6,6 +6,7 @@ import types
 import typing as t
 import warnings
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from piccolo.columns import Column
 from piccolo.columns.column_types import (
@@ -17,6 +18,7 @@ from piccolo.columns.column_types import (
     ReferencedTable,
     Secret,
     Serial,
+    Timestamptz,
 )
 from piccolo.columns.defaults.base import Default
 from piccolo.columns.indexes import IndexMethod
@@ -54,6 +56,11 @@ from piccolo.utils.graphlib import TopologicalSorter
 from piccolo.utils.sql_values import convert_to_sql_value
 from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import colored_warning
+
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo  # type: ignore  # noqa: F401
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Selectable
@@ -435,6 +442,9 @@ class Table(metaclass=TableMetaclass):
                     and not _ignore_missing
                 ):
                     raise ValueError(f"{column._meta.name} wasn't provided")
+
+            if isinstance(column, Timestamptz) and isinstance(value, datetime):
+                value = value.astimezone(column.tz)
 
             self[column._meta.name] = value
 
