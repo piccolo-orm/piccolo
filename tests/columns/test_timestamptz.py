@@ -12,7 +12,7 @@ from piccolo.columns.defaults.timestamptz import (
 from piccolo.table import Table
 
 try:
-    from zoneinfo import ZoneInfo
+    from zoneinfo import ZoneInfo  # type: ignore
 except ImportError:
     from backports.zoneinfo import ZoneInfo  # type: ignore  # noqa: F401
 

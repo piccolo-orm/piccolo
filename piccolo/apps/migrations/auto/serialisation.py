@@ -24,7 +24,7 @@ from piccolo.table import Table
 from piccolo.utils.repr import repr_class_instance
 
 try:
-    from zoneinfo import ZoneInfo
+    from zoneinfo import ZoneInfo  # type: ignore
 except ImportError:
     from backports.zoneinfo import ZoneInfo  # type: ignore  # noqa: F401
 

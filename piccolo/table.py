@@ -58,7 +58,7 @@ from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import colored_warning
 
 try:
-    from zoneinfo import ZoneInfo
+    from zoneinfo import ZoneInfo  # type: ignore
 except ImportError:
     from backports.zoneinfo import ZoneInfo  # type: ignore  # noqa: F401
 
