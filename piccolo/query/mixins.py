@@ -639,9 +639,9 @@ class OnConflictAction(str, Enum):
 class OnConflictItem:
     target: t.Optional[t.Union[str, Column, t.Tuple[Column, ...]]] = None
     action: t.Optional[OnConflictAction] = None
-    values: t.Optional[
-        t.Sequence[t.Union[Column, t.Tuple[Column, t.Any]]]
-    ] = None
+    values: t.Optional[t.Sequence[t.Union[Column, t.Tuple[Column, t.Any]]]] = (
+        None
+    )
     where: t.Optional[Combinable] = None
 
     @property

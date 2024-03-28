@@ -60,7 +60,7 @@ from piccolo.utils.warnings import colored_warning
 try:
     from zoneinfo import ZoneInfo
 except ImportError:
-    from backports.zoneinfo import ZoneInfo
+    from backports.zoneinfo import ZoneInfo  # type: ignore  # noqa: F401
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Selectable
@@ -445,7 +445,7 @@ class Table(metaclass=TableMetaclass):
 
             if isinstance(column, Timestamptz) and isinstance(value, datetime):
                 value = value.astimezone(column.tz)
-                
+
             self[column._meta.name] = value
 
         unrecognized = kwargs.keys()
@@ -576,12 +576,10 @@ class Table(metaclass=TableMetaclass):
     @t.overload
     def get_related(
         self, foreign_key: ForeignKey[ReferencedTable]
-    ) -> First[ReferencedTable]:
-        ...
+    ) -> First[ReferencedTable]: ...
 
     @t.overload
-    def get_related(self, foreign_key: str) -> First[Table]:
-        ...
+    def get_related(self, foreign_key: str) -> First[Table]: ...
 
     def get_related(
         self, foreign_key: t.Union[str, ForeignKey[ReferencedTable]]
@@ -755,9 +753,9 @@ class Table(metaclass=TableMetaclass):
             if isinstance(value, Table):
                 value = value.to_dict(*columns)
 
-            output[
-                alias_names.get(column._meta.name) or column._meta.name
-            ] = value
+            output[alias_names.get(column._meta.name) or column._meta.name] = (
+                value
+            )
         return output
 
     def __setitem__(self, key: str, value: t.Any):

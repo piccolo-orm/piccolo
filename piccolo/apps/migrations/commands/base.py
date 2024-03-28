@@ -88,9 +88,9 @@ class BaseMigrationManager(Finder):
 
         migrations_folder = app_config.migrations_folder_path
 
-        migration_modules: t.Dict[
-            str, MigrationModule
-        ] = self.get_migration_modules(migrations_folder)
+        migration_modules: t.Dict[str, MigrationModule] = (
+            self.get_migration_modules(migrations_folder)
+        )
 
         migration_ids = sorted(migration_modules.keys())
 

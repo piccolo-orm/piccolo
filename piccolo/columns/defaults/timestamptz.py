@@ -1,34 +1,31 @@
 from __future__ import annotations
 
-import datetime
+import datetime as pydatetime
 import typing as t
 from enum import Enum
 
 try:
     from zoneinfo import ZoneInfo
 except ImportError:
-    from backports.zoneinfo import ZoneInfo
+    from backports.zoneinfo import ZoneInfo  # type: ignore  # noqa: F401
 
 from .timestamp import TimestampCustom, TimestampNow, TimestampOffset
 
 
 class TimestamptzOffset(TimestampOffset):
     def __init__(
-        self, 
-        days: int = 0, 
-        hours: int = 0, 
-        minutes: int = 0, 
+        self,
+        days: int = 0,
+        hours: int = 0,
+        minutes: int = 0,
         seconds: int = 0,
-        tz: ZoneInfo = ZoneInfo('UTC')
+        tz: ZoneInfo = ZoneInfo("UTC"),
     ):
         self.tz = tz
         super().__init__(
-            days=days,
-            hours=hours,
-            minutes=minutes,
-            seconds=seconds
+            days=days, hours=hours, minutes=minutes, seconds=seconds
         )
-        
+
     @property
     def cockroach(self):
         interval_string = self.get_postgres_interval_string(
@@ -37,9 +34,7 @@ class TimestamptzOffset(TimestampOffset):
         return f"CURRENT_TIMESTAMP + INTERVAL '{interval_string}'"
 
     def python(self):
-        return datetime.datetime.now(
-            tz=self.tz
-        ) + datetime.timedelta(
+        return pydatetime.datetime.now(tz=self.tz) + pydatetime.timedelta(
             days=self.days,
             hours=self.hours,
             minutes=self.minutes,
@@ -48,15 +43,15 @@ class TimestamptzOffset(TimestampOffset):
 
 
 class TimestamptzNow(TimestampNow):
-    def __init__(self, tz: ZoneInfo = ZoneInfo('UTC')):
+    def __init__(self, tz: ZoneInfo = ZoneInfo("UTC")):
         self.tz = tz
-        
+
     @property
     def cockroach(self):
         return "current_timestamp"
 
     def python(self):
-        return datetime.datetime.now(tz=self.tz)
+        return pydatetime.datetime.now(tz=self.tz)
 
 
 class TimestamptzCustom(TimestampCustom):
@@ -68,7 +63,7 @@ class TimestamptzCustom(TimestampCustom):
         hour: int = 0,
         second: int = 0,
         microsecond: int = 0,
-        tz: ZoneInfo = ZoneInfo('UTC')
+        tz: ZoneInfo = ZoneInfo("UTC"),
     ):
         self.tz = tz
         super().__init__(
@@ -77,16 +72,16 @@ class TimestamptzCustom(TimestampCustom):
             day=day,
             hour=hour,
             second=second,
-            microsecond=microsecond
+            microsecond=microsecond,
         )
-        
+
     @property
     def cockroach(self):
         return "'{}'".format(self.datetime.isoformat().replace("T", " "))
 
     @property
     def datetime(self):
-        return datetime.datetime(
+        return pydatetime.datetime(
             year=self.year,
             month=self.month,
             day=self.day,
@@ -97,7 +92,9 @@ class TimestamptzCustom(TimestampCustom):
         )
 
     @classmethod
-    def from_datetime(cls, instance: datetime.datetime, tz: ZoneInfo = ZoneInfo('UTC')):  # type: ignore
+    def from_datetime(
+        cls, instance: pydatetime.datetime, tz: ZoneInfo = ZoneInfo("UTC")
+    ):  # type: ignore
         if instance.tzinfo is not None:
             instance = instance.astimezone(tz)
         return cls(
@@ -116,7 +113,7 @@ TimestamptzArg = t.Union[
     TimestamptzOffset,
     Enum,
     None,
-    datetime.datetime,
+    pydatetime.datetime,
 ]
 
 

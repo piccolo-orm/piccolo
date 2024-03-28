@@ -1,6 +1,7 @@
 """
 A User model, used for authentication.
 """
+
 from __future__ import annotations
 
 import datetime
