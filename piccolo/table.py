@@ -57,11 +57,6 @@ from piccolo.utils.sql_values import convert_to_sql_value
 from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import colored_warning
 
-try:
-    from zoneinfo import ZoneInfo  # type: ignore
-except ImportError:  # pragma: no cover
-    from backports.zoneinfo import ZoneInfo  # type: ignore  # noqa: F401
-
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Selectable
 
