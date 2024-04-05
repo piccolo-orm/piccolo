@@ -25,8 +25,7 @@ from .serialisation_legacy import deserialise_legacy_params
 
 class CanConflictWithGlobalNames(abc.ABC):
     @abc.abstractmethod
-    def warn_if_is_conflicting_with_global_name(self):
-        ...
+    def warn_if_is_conflicting_with_global_name(self): ...
 
 
 class UniqueGlobalNamesMeta(type):
@@ -237,8 +236,7 @@ class Import(CanConflictWithGlobalNames):
 
 class Definition(CanConflictWithGlobalNames, abc.ABC):
     @abc.abstractmethod
-    def __repr__(self):
-        ...
+    def __repr__(self): ...
 
     ###########################################################################
     # To allow sorting:
