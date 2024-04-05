@@ -6,7 +6,6 @@ import types
 import typing as t
 import warnings
 from dataclasses import dataclass, field
-from datetime import datetime
 
 from piccolo.columns import Column
 from piccolo.columns.column_types import (
@@ -18,7 +17,6 @@ from piccolo.columns.column_types import (
     ReferencedTable,
     Secret,
     Serial,
-    Timestamptz,
 )
 from piccolo.columns.defaults.base import Default
 from piccolo.columns.indexes import IndexMethod
