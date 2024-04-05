@@ -993,7 +993,6 @@ class Timestamptz(Column):
     """
 
     value_type = datetime
-    tz_type = ZoneInfo
 
     # Currently just used by ModelBuilder, to know that we want a timezone
     # aware datetime.
@@ -1019,7 +1018,7 @@ class Timestamptz(Column):
 
         self.tz = tz
         self.default = default
-        kwargs.update({"tz": tz, "default": default})
+        kwargs.update({"default": default, "tz": tz})
         super().__init__(**kwargs)
 
     ###########################################################################
