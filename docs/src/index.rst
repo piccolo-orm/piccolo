@@ -59,7 +59,7 @@ Give me an ASGI web app!
 
    piccolo asgi new
 
-FastAPI, Starlette, BlackSheep, Litestar and Esmerald are currently supported,
+FastAPI, Starlette, BlackSheep, Litestar, Esmerald and Lilya are currently supported,
 with more coming soon.
 
 -------------------------------------------------------------------------------
