@@ -310,6 +310,8 @@ class Objects(
         )
 
     # TODO - would be good to cache this somehow
+    # I only really need the bit that sets the columns, so could move that
+    # into a separate method. Or pass in args for which delegates to copy?
     def _get_select_query(self) -> Select:
         select = Select(table=self.table)
 

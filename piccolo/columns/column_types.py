@@ -1037,7 +1037,10 @@ class Timestamptz(Column):
         select_string = self._meta.get_full_name(with_alias=False)
 
         if self.tz != ZoneInfo("UTC"):
-            select_string += f" AT TIME ZONE '{self.tz.key}'"
+            # SQLite doesn't support `AT TIME ZONE`, so we have to do it in
+            # Python instead (see ``Select.response_handler``).
+            if self._meta.engine_type in ("postgres", "cockroach"):
+                select_string += f" AT TIME ZONE '{self.tz.key}'"
 
         if with_alias:
             alias = self._get_alias()

@@ -575,7 +575,6 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                     )
 
         #######################################################################
-
         # Make sure any Timestamptz values are timezone aware.
         # This happens when we use `AS TIME ZONE` which returns a naive
         # datetime.
@@ -589,19 +588,32 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         ]
 
         if timestamptz_columns:
+
+            is_sqlite = self.table._meta.db.engine_type == "sqlite"
+
             for column in timestamptz_columns:
                 if column.tz == ZoneInfo("UTC"):
+                    # The values already come back as UTC, so nothing to do.
                     continue
 
                 alias = column._get_alias()
 
                 for row in response:
                     timestamp_value = row.get(alias)
-                    if (
-                        isinstance(timestamp_value, datetime.datetime)
-                        and timestamp_value.tzinfo is None
-                    ):
-                        row[alias] = timestamp_value.replace(tzinfo=column.tz)
+                    if isinstance(timestamp_value, datetime.datetime):
+                        if is_sqlite:
+                            # SQLite doesn't support the `AT TIME ZONE` clause
+                            # so we're just getting the values back as UTC,
+                            # so we need to convert them here.
+                            row[alias] = timestamp_value.astimezone(column.tz)
+                        else:
+                            # Postgres and Cockroach support the
+                            # `AT TIME ZONE` clause, so the values are already
+                            # correct, but the datetime object doesn't contain
+                            # a tz value, so set it here.
+                            row[alias] = timestamp_value.replace(
+                                tzinfo=column.tz
+                            )
 
         #######################################################################
 
