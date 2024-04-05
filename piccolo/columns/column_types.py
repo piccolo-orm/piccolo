@@ -1003,8 +1003,8 @@ class Timestamptz(Column):
 
     def __init__(
         self,
-        tz: ZoneInfo = ZoneInfo("UTC"),
         default: TimestamptzArg = TimestamptzNow(),
+        tz: ZoneInfo = ZoneInfo("UTC"),
         **kwargs,
     ) -> None:
         self._validate_default(
