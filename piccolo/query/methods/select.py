@@ -588,7 +588,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
 
         if timestamptz_columns:
             for column in timestamptz_columns:
-                if column.tz != ZoneInfo("UTC"):
+                if column.tz == ZoneInfo("UTC"):
                     continue
 
                 alias = column._get_alias()
@@ -599,7 +599,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                         isinstance(timestamp_value, datetime.datetime)
                         and timestamp_value.tzinfo is None
                     ):
-                        timestamp_value.replace(tzinfo=column.tz)
+                        row[alias] = timestamp_value.replace(tzinfo=column.tz)
 
         #######################################################################
 
