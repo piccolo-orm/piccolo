@@ -945,8 +945,8 @@ class Column(Selectable):
 
         return query
 
-    def copy(self) -> Column:
-        column: Column = copy.copy(self)
+    def copy(self: Self) -> Self:
+        column = copy.copy(self)
         column._meta = self._meta.copy()
         return column
 
@@ -971,3 +971,6 @@ class Column(Selectable):
             f"{table_class_name}.{self._meta.name} - "
             f"{self.__class__.__name__}"
         )
+
+
+Self = t.TypeVar("Self", bound=Column)

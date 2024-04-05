@@ -1022,6 +1022,34 @@ class Timestamptz(Column):
         super().__init__(**kwargs)
 
     ###########################################################################
+
+    def at_time_zone(self, tz: t.Union[ZoneInfo, str]) -> Timestamptz:
+        """
+        By default, the database returns the value in UTC. This lets us get
+        the value converted to the specified timezone.
+        """
+        tz = ZoneInfo(tz) if isinstance(tz, str) else tz
+        instance = self.copy()
+        instance.tz = tz
+        return instance
+
+    ###########################################################################
+
+    def get_select_string(
+        self, engine_type: str, with_alias: bool = True
+    ) -> str:
+        select_string = self._meta.get_full_name(with_alias=False)
+
+        if self.tz is not None:
+            select_string += f" AT TIME ZONE '{self.tz.key}'"
+
+        if with_alias:
+            alias = self._alias or self._meta.get_default_alias()
+            select_string += f' AS "{alias}"'
+
+        return select_string
+
+    ###########################################################################
     # For update queries
 
     def __add__(self, value: timedelta) -> QueryString:
@@ -2317,7 +2345,7 @@ class JSONB(JSON):
         Allows part of the JSON structure to be returned - for example,
         for {"a": 1}, and a key value of "a", then 1 will be returned.
         """
-        instance = t.cast(JSONB, self.copy())
+        instance = self.copy()
         instance.json_operator = f"-> '{key}'"
         return instance
 

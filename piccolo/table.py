@@ -438,9 +438,6 @@ class Table(metaclass=TableMetaclass):
                 ):
                     raise ValueError(f"{column._meta.name} wasn't provided")
 
-            if isinstance(column, Timestamptz) and isinstance(value, datetime):
-                value = value.astimezone(column.tz)
-
             self[column._meta.name] = value
 
         unrecognized = kwargs.keys()
