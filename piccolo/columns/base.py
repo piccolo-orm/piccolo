@@ -763,6 +763,9 @@ class Column(Selectable):
         column._alias = name
         return column
 
+    def _get_alias(self) -> str:
+        return self._alias or self._meta.get_default_alias()
+
     def join_on(self, column: Column) -> ForeignKey:
         """
         Joins are typically performed via foreign key columns. For example,

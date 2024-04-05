@@ -1040,7 +1040,7 @@ class Timestamptz(Column):
             select_string += f" AT TIME ZONE '{self.tz.key}'"
 
         if with_alias:
-            alias = self._alias or self._meta.get_default_alias()
+            alias = self._get_alias()
             select_string += f' AS "{alias}"'
 
         return select_string
@@ -2354,7 +2354,7 @@ class JSONB(JSON):
             select_string += f" {self.json_operator}"
 
         if with_alias:
-            alias = self._alias or self._meta.get_default_alias()
+            alias = self._get_alias()
             select_string += f' AS "{alias}"'
 
         return select_string
@@ -2659,7 +2659,7 @@ class Array(Column):
             select_string += f"[{self.index}]"
 
         if with_alias:
-            alias = self._alias or self._meta.get_default_alias()
+            alias = self._get_alias()
             select_string += f' AS "{alias}"'
 
         return select_string
