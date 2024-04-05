@@ -1,6 +1,14 @@
 Changes
 =======
 
+1.5.0
+-----
+
+Lots of internal improvements, mostly to support new functionality in Piccolo
+Admin.
+
+-------------------------------------------------------------------------------
+
 1.4.2
 -----
 
