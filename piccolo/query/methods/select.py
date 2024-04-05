@@ -580,10 +580,12 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         # This happens when we use `AS TIME ZONE` which returns a naive
         # datetime.
 
+        selected_columns = (
+            self.columns_delegate.selected_columns or self.table.all_columns()
+        )
+
         timestamptz_columns = [
-            i
-            for i in self.columns_delegate.selected_columns
-            if isinstance(i, Timestamptz)
+            i for i in selected_columns if isinstance(i, Timestamptz)
         ]
 
         if timestamptz_columns:

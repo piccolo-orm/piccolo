@@ -52,9 +52,13 @@ class TestTimestamptz(TestCase):
         Test storing a timezone aware timestamp.
         """
         dt_args = dict(year=2020, month=1, day=1, hour=12, minute=0, second=0)
-        created_on_utc = datetime.datetime(**dt_args, tzinfo=ZoneInfo("UTC"))
+        created_on_utc = datetime.datetime(
+            **dt_args,
+            tzinfo=datetime.timezone.utc,
+        )
         created_on_local = datetime.datetime(
-            **dt_args, tzinfo=ZoneInfo("Europe/Tallinn")
+            **dt_args,
+            tzinfo=ZoneInfo("Europe/Tallinn"),
         )
         row = MyTable(
             created_on_utc=created_on_utc, created_on_local=created_on_local
@@ -68,6 +72,7 @@ class TestTimestamptz(TestCase):
             MyTable.objects().where(eq(p_key, p_key_name)).first().run_sync()
         )
         assert result is not None
+
         self.assertEqual(result.created_on_utc, created_on_utc)
         self.assertEqual(result.created_on_local, created_on_local)
 

@@ -22,7 +22,6 @@ from piccolo.query.mixins import (
 )
 from piccolo.query.proxy import Proxy
 from piccolo.querystring import QueryString
-from piccolo.utils.dictionary import make_nested
 from piccolo.utils.sync import run_sync
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -306,13 +305,12 @@ class Objects(
         return await self.table._meta.db.batch(self, **kwargs)
 
     async def response_handler(self, response):
-        if self.output_delegate._output.nested:
-            return [make_nested(i) for i in response]
-        else:
-            return response
+        return await self._get_select_query().response_handler(
+            response=response
+        )
 
-    @property
-    def default_querystrings(self) -> t.Sequence[QueryString]:
+    # TODO - would be good to cache this somehow
+    def _get_select_query(self) -> Select:
         select = Select(table=self.table)
 
         for attr in (
@@ -339,7 +337,11 @@ class Objects(
 
             select.output_delegate.output(nested=True)
 
-        return select.querystrings
+        return select
+
+    @property
+    def default_querystrings(self) -> t.Sequence[QueryString]:
+        return self._get_select_query().querystrings
 
     ###########################################################################
 
