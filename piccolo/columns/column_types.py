@@ -1040,7 +1040,7 @@ class Timestamptz(Column):
     ) -> str:
         select_string = self._meta.get_full_name(with_alias=False)
 
-        if self.tz is not None:
+        if self.tz != ZoneInfo("UTC"):
             select_string += f" AT TIME ZONE '{self.tz.key}'"
 
         if with_alias:
