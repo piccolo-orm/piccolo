@@ -580,6 +580,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
                     target=None,
                 )
             )
+            continue
 
         # Dates and times
         if isinstance(
@@ -666,6 +667,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
                     extra_imports.append(
                         Import(module=module_name, target=type_.__name__)
                     )
+            continue
 
         # Functions
         if inspect.isfunction(value):
