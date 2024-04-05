@@ -27,7 +27,7 @@ app = Lilya(
 )
 
 
-@app.on_event("startup")
+@app.on_event("on_startup")
 async def open_database_connection_pool():
     try:
         engine = engine_finder()
@@ -36,7 +36,7 @@ async def open_database_connection_pool():
         print("Unable to connect to the database")
 
 
-@app.on_event("shutdown")
+@app.on_event("on_shutdown")
 async def close_database_connection_pool():
     try:
         engine = engine_finder()
