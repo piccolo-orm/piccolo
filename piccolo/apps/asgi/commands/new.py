@@ -93,9 +93,9 @@ def new(root: str = ".", name: str = "piccolo_project"):
 
             if file_name.endswith(".jinja"):
                 output_file_name = file_name.replace(".jinja", "")
-                template = Environment(loader=FileSystemLoader(searchpath=dir_path)).get_template(
-                    file_name
-                )
+                template = Environment(
+                    loader=FileSystemLoader(searchpath=dir_path)
+                ).get_template(file_name)
 
                 output_contents = template.render(**template_context)
 
@@ -109,11 +109,15 @@ def new(root: str = ".", name: str = "piccolo_project"):
                         print(f"Problem processing {output_file_name}")
                         raise exception from exception
 
-                with open(os.path.join(output_dir_path, output_file_name), "w") as f:
+                with open(
+                    os.path.join(output_dir_path, output_file_name), "w"
+                ) as f:
                     f.write(output_contents)
             else:
                 if file_name.endswith(".jinja_raw"):
-                    output_file_name = file_name.replace(".jinja_raw", ".jinja")
+                    output_file_name = file_name.replace(
+                        ".jinja_raw", ".jinja"
+                    )
                 else:
                     output_file_name = file_name
 
@@ -122,4 +126,7 @@ def new(root: str = ".", name: str = "piccolo_project"):
                     os.path.join(output_dir_path, output_file_name),
                 )
 
-    print("Run `pip install -r requirements.txt` and `python main.py` to get " "started.")
+    print(
+        "Run `pip install -r requirements.txt` and `python main.py` to get "
+        "started."
+    )

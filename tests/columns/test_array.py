@@ -213,7 +213,6 @@ class TestGetDimensions(TestCase):
 
 
 class TestGetInnerValueType(TestCase):
-
     def test_get_inner_value_type(self):
         """
         Make sure that `_get_inner_value_type` returns the correct base type.

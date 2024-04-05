@@ -25,7 +25,8 @@ class MigrationModule(ModuleType):
 
     @staticmethod
     @abstractmethod
-    async def forwards() -> MigrationManager: ...
+    async def forwards() -> MigrationManager:
+        ...
 
 
 class PiccoloAppModule(ModuleType):
