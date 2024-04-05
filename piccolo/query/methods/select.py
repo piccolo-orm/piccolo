@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import datetime
 import decimal
 import itertools
 import typing as t
 from collections import OrderedDict
 
 from piccolo.columns import Column, Selectable
-from piccolo.columns.column_types import JSON, JSONB, PrimaryKey
+from piccolo.columns.column_types import JSON, JSONB, PrimaryKey, Timestamptz
 from piccolo.columns.m2m import M2MSelect
 from piccolo.columns.readable import Readable
 from piccolo.custom_types import TableInstance
@@ -31,6 +32,7 @@ from piccolo.querystring import QueryString
 from piccolo.utils.dictionary import make_nested
 from piccolo.utils.encoding import dump_json, load_json
 from piccolo.utils.warnings import colored_warning
+from piccolo.utils.zoneinfo import ZoneInfo
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.custom_types import Combinable
@@ -571,6 +573,33 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                         m2m_name,
                         m2m_select,
                     )
+
+        #######################################################################
+
+        # Make sure any Timestamptz values are timezone aware.
+        # This happens when we use `AS TIME ZONE` which returns a naive
+        # datetime.
+
+        timestamptz_columns = [
+            i
+            for i in self.columns_delegate.selected_columns
+            if isinstance(i, Timestamptz)
+        ]
+
+        if timestamptz_columns:
+            for column in timestamptz_columns:
+                if column.tz != ZoneInfo("UTC"):
+                    continue
+
+                alias = column._get_alias()
+
+                for row in response:
+                    timestamp_value = row.get(alias)
+                    if (
+                        isinstance(timestamp_value, datetime.datetime)
+                        and timestamp_value.tzinfo is None
+                    ):
+                        timestamp_value.replace(tzinfo=column.tz)
 
         #######################################################################
 
