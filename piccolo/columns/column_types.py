@@ -63,11 +63,7 @@ from piccolo.columns.reference import LazyTableReference
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils.encoding import dump_json
 from piccolo.utils.warnings import colored_warning
-
-try:
-    from zoneinfo import ZoneInfo  # type: ignore
-except ImportError:  # pragma: no cover
-    from backports.zoneinfo import ZoneInfo  # type: ignore  # noqa: F401
+from piccolo.utils.zoneinfo import ZoneInfo
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import ColumnMeta

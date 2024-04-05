@@ -10,12 +10,7 @@ from piccolo.columns.defaults.timestamptz import (
     TimestamptzOffset,
 )
 from piccolo.table import Table
-
-try:
-    from zoneinfo import ZoneInfo  # type: ignore
-except ImportError:  # pragma: no cover
-    from backports.zoneinfo import ZoneInfo  # type: ignore  # noqa: F401
-
+from piccolo.utils.zoneinfo import ZoneInfo
 
 UTC_TZ = ZoneInfo("UTC")
 LOCAL_TZ = ZoneInfo("Europe/Tallinn")

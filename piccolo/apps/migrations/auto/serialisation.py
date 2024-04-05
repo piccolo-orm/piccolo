@@ -22,11 +22,7 @@ from piccolo.columns.defaults.timestamptz import (
 from piccolo.columns.reference import LazyTableReference
 from piccolo.table import Table
 from piccolo.utils.repr import repr_class_instance
-
-try:
-    from zoneinfo import ZoneInfo  # type: ignore
-except ImportError:  # pragma: no cover
-    from backports.zoneinfo import ZoneInfo  # type: ignore  # noqa: F401
+from piccolo.utils.zoneinfo import ZoneInfo
 
 from .serialisation_legacy import deserialise_legacy_params
 
