@@ -588,11 +588,10 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         ]
 
         if timestamptz_columns:
-
             is_sqlite = self.table._meta.db.engine_type == "sqlite"
 
             for column in timestamptz_columns:
-                if column.tz == ZoneInfo("UTC"):
+                if column._at_time_zone == ZoneInfo("UTC"):
                     # The values already come back as UTC, so nothing to do.
                     continue
 
@@ -605,14 +604,16 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                             # SQLite doesn't support the `AT TIME ZONE` clause
                             # so we're just getting the values back as UTC,
                             # so we need to convert them here.
-                            row[alias] = timestamp_value.astimezone(column.tz)
+                            row[alias] = timestamp_value.astimezone(
+                                column._at_time_zone
+                            )
                         else:
                             # Postgres and Cockroach support the
                             # `AT TIME ZONE` clause, so the values are already
                             # correct, but the datetime object doesn't contain
                             # a tz value, so set it here.
                             row[alias] = timestamp_value.replace(
-                                tzinfo=column.tz
+                                tzinfo=column._at_time_zone
                             )
 
         #######################################################################

@@ -17,8 +17,8 @@ LOCAL_TZ = ZoneInfo("Europe/Tallinn")
 
 
 class MyTable(Table):
-    created_on_utc = Timestamptz(tz=UTC_TZ)
-    created_on_local = Timestamptz(tz=LOCAL_TZ)
+    created_on_utc = Timestamptz(at_time_zone=UTC_TZ)
+    created_on_local = Timestamptz(at_time_zone=LOCAL_TZ)
 
 
 class MyTableDefault(Table):
@@ -27,16 +27,21 @@ class MyTableDefault(Table):
     `Timestamptz`.
     """
 
-    created_on = Timestamptz(default=TimestamptzNow(tz=LOCAL_TZ), tz=LOCAL_TZ)
+    created_on = Timestamptz(
+        default=TimestamptzNow(tz=LOCAL_TZ),
+        at_time_zone=LOCAL_TZ,
+    )
     created_on_offset = Timestamptz(
-        default=TimestamptzOffset(days=1, tz=LOCAL_TZ), tz=LOCAL_TZ
+        default=TimestamptzOffset(days=1, tz=LOCAL_TZ),
+        at_time_zone=LOCAL_TZ,
     )
     created_on_custom = Timestamptz(
-        default=TimestamptzCustom(year=2021, tz=LOCAL_TZ), tz=LOCAL_TZ
+        default=TimestamptzCustom(year=2021, tz=LOCAL_TZ),
+        at_time_zone=LOCAL_TZ,
     )
     created_on_datetime = Timestamptz(
         default=datetime.datetime(year=2020, month=1, day=1, tzinfo=LOCAL_TZ),
-        tz=LOCAL_TZ,
+        at_time_zone=LOCAL_TZ,
     )
 
 

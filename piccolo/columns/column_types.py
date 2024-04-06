@@ -967,7 +967,7 @@ class Timestamptz(Column):
         from zoneinfo import ZoneInfo
 
         class TallinnConcerts(Table):
-            event_start = Timestamptz(tz=ZoneInfo("Europe/Tallinn"))
+            event_start = Timestamptz(at_time_zone=ZoneInfo("Europe/Tallinn"))
 
         # Create
         >>> await TallinnConcerts(
@@ -999,7 +999,7 @@ class Timestamptz(Column):
     def __init__(
         self,
         default: TimestamptzArg = TimestamptzNow(),
-        tz: ZoneInfo = ZoneInfo("UTC"),
+        at_time_zone: ZoneInfo = ZoneInfo("UTC"),
         **kwargs,
     ) -> None:
         self._validate_default(
@@ -1007,26 +1007,28 @@ class Timestamptz(Column):
         )
 
         if isinstance(default, datetime):
-            default = TimestamptzCustom.from_datetime(default, tz)
+            default = TimestamptzCustom.from_datetime(default, at_time_zone)
 
         if default == datetime.now:
-            default = TimestamptzNow(tz)
+            default = TimestamptzNow(tz=at_time_zone)
 
-        self.tz = tz
+        self._at_time_zone = at_time_zone
         self.default = default
-        kwargs.update({"default": default, "tz": tz})
+        kwargs.update({"default": default, "at_time_zone": at_time_zone})
         super().__init__(**kwargs)
 
     ###########################################################################
 
-    def at_time_zone(self, tz: t.Union[ZoneInfo, str]) -> Timestamptz:
+    def at_time_zone(self, time_zone: t.Union[ZoneInfo, str]) -> Timestamptz:
         """
         By default, the database returns the value in UTC. This lets us get
         the value converted to the specified timezone.
         """
-        tz = ZoneInfo(tz) if isinstance(tz, str) else tz
+        time_zone = (
+            ZoneInfo(time_zone) if isinstance(time_zone, str) else time_zone
+        )
         instance = self.copy()
-        instance.tz = tz
+        instance._at_time_zone = time_zone
         return instance
 
     ###########################################################################
@@ -1036,11 +1038,11 @@ class Timestamptz(Column):
     ) -> str:
         select_string = self._meta.get_full_name(with_alias=False)
 
-        if self.tz != ZoneInfo("UTC"):
+        if self._at_time_zone != ZoneInfo("UTC"):
             # SQLite doesn't support `AT TIME ZONE`, so we have to do it in
             # Python instead (see ``Select.response_handler``).
             if self._meta.engine_type in ("postgres", "cockroach"):
-                select_string += f" AT TIME ZONE '{self.tz.key}'"
+                select_string += f" AT TIME ZONE '{self._at_time_zone.key}'"
 
         if with_alias:
             alias = self._get_alias()
