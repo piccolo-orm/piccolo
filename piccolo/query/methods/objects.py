@@ -8,18 +8,7 @@ from piccolo.custom_types import Combinable, TableInstance
 from piccolo.engine.base import Batch
 from piccolo.query.base import Query
 from piccolo.query.methods.select import Select
-from piccolo.query.mixins import (
-    AsOfDelegate,
-    CallbackDelegate,
-    CallbackType,
-    LimitDelegate,
-    OffsetDelegate,
-    OrderByDelegate,
-    OrderByRaw,
-    OutputDelegate,
-    PrefetchDelegate,
-    WhereDelegate,
-)
+from piccolo.query.mixins import CallbackType, OrderByRaw, PrefetchDelegate
 from piccolo.query.proxy import Proxy
 from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
@@ -124,7 +113,7 @@ class First(
         results = objects[0] if objects else None
 
         modified_response: t.Optional[TableInstance] = (
-            await self.query.callback_delegate.invoke(
+            await self.query._select_query.callback_delegate.invoke(
                 results=results, kind=CallbackType.success
             )
         )
@@ -184,15 +173,8 @@ class Objects(
     """
 
     __slots__ = (
-        "nested",
-        "as_of_delegate",
-        "limit_delegate",
-        "offset_delegate",
-        "order_by_delegate",
-        "output_delegate",
-        "callback_delegate",
+        "_select_query",
         "prefetch_delegate",
-        "where_delegate",
     )
 
     def __init__(
@@ -202,19 +184,16 @@ class Objects(
         **kwargs,
     ):
         super().__init__(table, **kwargs)
-        self.as_of_delegate = AsOfDelegate()
-        self.limit_delegate = LimitDelegate()
-        self.offset_delegate = OffsetDelegate()
-        self.order_by_delegate = OrderByDelegate()
-        self.output_delegate = OutputDelegate()
-        self.output_delegate._output.as_objects = True
-        self.callback_delegate = CallbackDelegate()
+        self._select_query = Select(table=self.table)
+        self._select_query.output_delegate._output.as_objects = True
         self.prefetch_delegate = PrefetchDelegate()
         self.prefetch(*prefetch)
-        self.where_delegate = WhereDelegate()
+
+    ###########################################################################
+    # Proxying to select query
 
     def output(self: Self, load_json: bool = False) -> Self:
-        self.output_delegate.output(
+        self._select_query.output_delegate.output(
             as_list=False, as_json=False, load_json=load_json
         )
         return self
@@ -225,18 +204,32 @@ class Objects(
         *,
         on: CallbackType = CallbackType.success,
     ) -> Self:
-        self.callback_delegate.callback(callbacks, on=on)
+        self._select_query.callback(callbacks, on=on)
         return self
 
     def as_of(self, interval: str = "-1s") -> Objects:
-        if self.engine_type != "cockroach":
-            raise NotImplementedError("Only CockroachDB supports AS OF")
-        self.as_of_delegate.as_of(interval)
+        self._select_query.as_of(interval=interval)
         return self
 
     def limit(self: Self, number: int) -> Self:
-        self.limit_delegate.limit(number)
+        self._select_query.limit(number=number)
         return self
+
+    def offset(self: Self, number: int) -> Self:
+        self._select_query.offset(number=number)
+        return self
+
+    def order_by(
+        self: Self, *columns: t.Union[Column, str, OrderByRaw], ascending=True
+    ) -> Self:
+        self._select_query.order_by(*columns, ascending=ascending)
+        return self
+
+    def where(self: Self, *where: Combinable) -> Self:
+        self._select_query.where(*where)
+        return self
+
+    ###########################################################################
 
     def prefetch(
         self: Self, *fk_columns: t.Union[ForeignKey, t.List[ForeignKey]]
@@ -244,36 +237,15 @@ class Objects(
         self.prefetch_delegate.prefetch(*fk_columns)
         return self
 
-    def offset(self: Self, number: int) -> Self:
-        self.offset_delegate.offset(number)
-        return self
-
-    def order_by(
-        self: Self, *columns: t.Union[Column, str, OrderByRaw], ascending=True
-    ) -> Self:
-        _columns: t.List[t.Union[Column, OrderByRaw]] = []
-        for column in columns:
-            if isinstance(column, str):
-                _columns.append(self.table._meta.get_column_by_name(column))
-            else:
-                _columns.append(column)
-
-        self.order_by_delegate.order_by(*_columns, ascending=ascending)
-        return self
-
-    def where(self: Self, *where: Combinable) -> Self:
-        self.where_delegate.where(*where)
-        return self
-
     ###########################################################################
 
     def first(self: Self) -> First[TableInstance]:
-        self.limit_delegate.limit(1)
+        self._select_query.limit(1)
         return First[TableInstance](query=self)
 
     def get(self: Self, where: Combinable) -> Get[TableInstance]:
-        self.where_delegate.where(where)
-        self.limit_delegate.limit(1)
+        self._select_query.where(where)
+        self._select_query.limit(1)
         return Get[TableInstance](query=First[TableInstance](query=self))
 
     def get_or_create(
@@ -298,32 +270,17 @@ class Objects(
         node: t.Optional[str] = None,
         **kwargs,
     ) -> Batch:
-        if batch_size:
-            kwargs.update(batch_size=batch_size)
-        if node:
-            kwargs.update(node=node)
-        return await self.table._meta.db.batch(self, **kwargs)
+        return await self._get_select_query().batch(
+            batch_size=batch_size, node=node, **kwargs
+        )
 
     async def response_handler(self, response):
         return await self._get_select_query().response_handler(
             response=response
         )
 
-    # TODO - would be good to cache this somehow
-    # I only really need the bit that sets the columns, so could move that
-    # into a separate method. Or pass in args for which delegates to copy?
     def _get_select_query(self) -> Select:
-        select = Select(table=self.table)
-
-        for attr in (
-            "as_of_delegate",
-            "limit_delegate",
-            "where_delegate",
-            "offset_delegate",
-            "output_delegate",
-            "order_by_delegate",
-        ):
-            setattr(select, attr, getattr(self, attr))
+        select = self._select_query
 
         if self.prefetch_delegate.fk_columns:
             select.columns(*self.table.all_columns())
@@ -353,20 +310,12 @@ class Objects(
         in_pool: bool = True,
         use_callbacks: bool = True,
     ) -> t.List[TableInstance]:
-        results = await super().run(node=node, in_pool=in_pool)
-
-        if use_callbacks:
-            # With callbacks, the user can return any data that they want.
-            # Assume that most of the time they will still return a list of
-            # Table instances.
-            modified: t.List[TableInstance] = (
-                await self.callback_delegate.invoke(
-                    results, kind=CallbackType.success
-                )
-            )
-            return modified
-        else:
-            return results
+        results = await self._get_select_query().run(
+            node=node,
+            in_pool=in_pool,
+            use_callbacks=use_callbacks,
+        )
+        return t.cast(t.List[TableInstance], results)
 
     def __await__(
         self,
