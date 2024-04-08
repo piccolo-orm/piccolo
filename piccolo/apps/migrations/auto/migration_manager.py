@@ -10,12 +10,14 @@ from piccolo.apps.migrations.auto.operations import (
     AlterColumn,
     ChangeTableSchema,
     DropColumn,
+    DropConstraint,
     RenameColumn,
     RenameTable,
 )
 from piccolo.apps.migrations.auto.serialisation import deserialise_params
 from piccolo.columns import Column, column_types
 from piccolo.columns.column_types import ForeignKey, Serial
+from piccolo.constraint import Constraint, UniqueConstraint
 from piccolo.engine import engine_finder
 from piccolo.query import Query
 from piccolo.query.base import DDL
@@ -127,6 +129,65 @@ class AlterColumnCollection:
         return list({i.table_class_name for i in self.alter_columns})
 
 
+@dataclass
+class AddConstraintClass:
+    constraint: Constraint
+    table_class_name: str
+    tablename: str
+    schema: t.Optional[str]
+
+
+@dataclass
+class AddConstraintCollection:
+    add_constraints: t.List[AddConstraintClass] = field(default_factory=list)
+
+    def append(self, add_constraint: AddConstraintClass):
+        self.add_constraints.append(add_constraint)
+
+    def for_table_class_name(
+        self, table_class_name: str
+    ) -> t.List[AddConstraintClass]:
+        return [
+            i
+            for i in self.add_constraints
+            if i.table_class_name == table_class_name
+        ]
+
+    def constraints_for_table_class_name(
+        self, table_class_name: str
+    ) -> t.List[Constraint]:
+        return [
+            i.constraint
+            for i in self.add_constraints
+            if i.table_class_name == table_class_name
+        ]
+
+    @property
+    def table_class_names(self) -> t.List[str]:
+        return list({i.table_class_name for i in self.add_constraints})
+
+
+@dataclass
+class DropConstraintCollection:
+    drop_constraints: t.List[DropConstraint] = field(default_factory=list)
+
+    def append(self, drop_constraint: DropConstraint):
+        self.drop_constraints.append(drop_constraint)
+
+    def for_table_class_name(
+        self, table_class_name: str
+    ) -> t.List[DropConstraint]:
+        return [
+            i
+            for i in self.drop_constraints
+            if i.table_class_name == table_class_name
+        ]
+
+    @property
+    def table_class_names(self) -> t.List[str]:
+        return list({i.table_class_name for i in self.drop_constraints})
+
+
 AsyncFunction = t.Callable[[], t.Coroutine]
 
 
@@ -158,6 +219,12 @@ class MigrationManager:
     )
     alter_columns: AlterColumnCollection = field(
         default_factory=AlterColumnCollection
+    )
+    add_constraints: AddConstraintCollection = field(
+        default_factory=AddConstraintCollection
+    )
+    drop_constraints: DropConstraintCollection = field(
+        default_factory=DropConstraintCollection
     )
     raw: t.List[t.Union[t.Callable, AsyncFunction]] = field(
         default_factory=list
@@ -341,6 +408,47 @@ class MigrationManager:
                 old_params=old_params,
                 column_class=column_class,
                 old_column_class=old_column_class,
+                schema=schema,
+            )
+        )
+
+    def add_constraint(
+        self,
+        table_class_name: str,
+        tablename: str,
+        constraint_name: str,
+        constraint_class: t.Type[Constraint],
+        params: t.Dict[str, t.Any],
+        schema: t.Optional[str] = None,
+    ):
+        if constraint_class is UniqueConstraint:
+            constraint = UniqueConstraint(**params)
+        else:
+            raise ValueError("Unrecognised constraint type")
+
+        constraint._meta.name = constraint_name
+
+        self.add_constraints.append(
+            AddConstraintClass(
+                constraint=constraint,
+                table_class_name=table_class_name,
+                tablename=tablename,
+                schema=schema,
+            )
+        )
+
+    def drop_constraint(
+        self,
+        table_class_name: str,
+        tablename: str,
+        constraint_name: str,
+        schema: t.Optional[str] = None,
+    ):
+        self.drop_constraints.append(
+            DropConstraint(
+                table_class_name=table_class_name,
+                constraint_name=constraint_name,
+                tablename=tablename,
                 schema=schema,
             )
         )
@@ -740,16 +848,24 @@ class MigrationManager:
             add_columns: t.List[AddColumnClass] = (
                 self.add_columns.for_table_class_name(add_table.class_name)
             )
+            add_constraints: t.List[AddConstraintClass] = (
+                self.add_constraints.for_table_class_name(add_table.class_name)
+            )
+            class_members: t.Dict[str, t.Any] = {}
+            for add_column in add_columns:
+                class_members[add_column.column._meta.name] = add_column.column
+            for add_constraint in add_constraints:
+                class_members[add_constraint.constraint._meta.name] = (
+                    add_constraint.constraint
+                )
+
             _Table: t.Type[Table] = create_table_class(
                 class_name=add_table.class_name,
                 class_kwargs={
                     "tablename": add_table.tablename,
                     "schema": add_table.schema,
                 },
-                class_members={
-                    add_column.column._meta.name: add_column.column
-                    for add_column in add_columns
-                },
+                class_members=class_members,
             )
             table_classes.append(_Table)
 
@@ -922,6 +1038,91 @@ class MigrationManager:
                     )
                 )
 
+    async def _run_add_constraints(self, backwards: bool = False):
+        if backwards:
+            for add_constraint in self.add_constraints.add_constraints:
+                if add_constraint.table_class_name in [
+                    i.class_name for i in self.add_tables
+                ]:
+                    # Don't reverse the add constraint as the table is going to
+                    # be deleted.
+                    continue
+
+                _Table = create_table_class(
+                    class_name=add_constraint.table_class_name,
+                    class_kwargs={
+                        "tablename": add_constraint.tablename,
+                        "schema": add_constraint.schema,
+                    },
+                )
+
+                await self._run_query(
+                    _Table.alter().drop_constraint(
+                        add_constraint.constraint._meta.name
+                    )
+                )
+        else:
+            for table_class_name in self.add_constraints.table_class_names:
+                if table_class_name in [i.class_name for i in self.add_tables]:
+                    continue  # No need to add constraints to new tables
+
+                add_constraints: t.List[AddConstraintClass] = (
+                    self.add_constraints.for_table_class_name(table_class_name)
+                )
+
+                _Table = create_table_class(
+                    class_name=add_constraints[0].table_class_name,
+                    class_kwargs={
+                        "tablename": add_constraints[0].tablename,
+                        "schema": add_constraints[0].schema,
+                    },
+                )
+
+                for add_constraint in add_constraints:
+                    await self._run_query(
+                        _Table.alter().add_constraint(
+                            add_constraint.constraint
+                        )
+                    )
+
+    async def _run_drop_constraints(self, backwards: bool = False):
+        if backwards:
+            for drop_constraint in self.drop_constraints.drop_constraints:
+                _Table = await self.get_table_from_snapshot(
+                    table_class_name=drop_constraint.table_class_name,
+                    app_name=self.app_name,
+                    offset=-1,
+                )
+                constraint_to_restore = _Table._meta.get_constraint_by_name(
+                    drop_constraint.constraint_name
+                )
+                await self._run_query(
+                    _Table.alter().add_constraint(constraint_to_restore)
+                )
+        else:
+            for table_class_name in self.drop_constraints.table_class_names:
+                constraints = self.drop_constraints.for_table_class_name(
+                    table_class_name
+                )
+
+                if not constraints:
+                    continue
+
+                _Table = create_table_class(
+                    class_name=table_class_name,
+                    class_kwargs={
+                        "tablename": constraints[0].tablename,
+                        "schema": constraints[0].schema,
+                    },
+                )
+
+                for constraint in constraints:
+                    await self._run_query(
+                        _Table.alter().drop_constraint(
+                            constraint_name=constraint.constraint_name
+                        )
+                    )
+
     async def run(self, backwards: bool = False):
         direction = "backwards" if backwards else "forwards"
         if self.preview:
@@ -958,6 +1159,10 @@ class MigrationManager:
             # "ALTER COLUMN TYPE is not supported inside a transaction"
             if engine.engine_type != "cockroach":
                 await self._run_alter_columns(backwards=backwards)
+                await self._run_add_constraints(backwards=backwards)
+                await self._run_drop_constraints(backwards=backwards)
 
         if engine.engine_type == "cockroach":
             await self._run_alter_columns(backwards=backwards)
+            await self._run_add_constraints(backwards=backwards)
+            await self._run_drop_constraints(backwards=backwards)
