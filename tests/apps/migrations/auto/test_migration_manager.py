@@ -339,10 +339,6 @@ class TestMigrationManager(DBTestCase):
 
     @engines_only("postgres", "cockroach")
     def test_add_table_with_unique_constraint(self):
-        """
-        Test adding a table with a unique constraint to a MigrationManager.
-        """
-        # Create table with unique constraint
         manager = MigrationManager()
         manager.add_table(class_name="Musician", tablename="musician")
         manager.add_column(
@@ -383,10 +379,6 @@ class TestMigrationManager(DBTestCase):
     def test_drop_table_with_unique_constraint(
         self, get_app_config: MagicMock, get_migration_managers: MagicMock
     ):
-        """
-        Test dropping a table with a unique constraint to a MigrationManager.
-        """
-        # Create table
         manager_1 = MigrationManager()
         manager_1.add_table(class_name="Musician", tablename="musician")
         manager_1.add_column(
@@ -440,12 +432,8 @@ class TestMigrationManager(DBTestCase):
     )
     @patch.object(BaseMigrationManager, "get_app_config")
     def test_rename_table_with_unique_constraint(
-            self, get_app_config: MagicMock, get_migration_managers: MagicMock
+        self, get_app_config: MagicMock, get_migration_managers: MagicMock
     ):
-        """
-        Test renaming a table with a unique constraint to a MigrationManager.
-        """
-        # Create table
         manager_1 = MigrationManager()
         manager_1.add_table(class_name="Musician", tablename="musician")
         manager_1.add_column(

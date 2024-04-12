@@ -502,7 +502,9 @@ class TestSchemaDiffer(TestCase):
         name_unique_constraint = UniqueConstraint(unique_columns=["name"])
         name_unique_constraint._meta.name = "unique_name"
 
-        name_genre_unique_constraint = UniqueConstraint(unique_columns=["name", "genre"])
+        name_genre_unique_constraint = UniqueConstraint(
+            unique_columns=["name", "genre"]
+        )
         name_genre_unique_constraint._meta.name = "unique_name_genre"
 
         schema: t.List[DiffableTable] = [
@@ -510,7 +512,10 @@ class TestSchemaDiffer(TestCase):
                 class_name="Band",
                 tablename="band",
                 columns=[name_column, genre_column],
-                constraints=[name_unique_constraint, name_genre_unique_constraint],
+                constraints=[
+                    name_unique_constraint,
+                    name_genre_unique_constraint,
+                ],
             )
         ]
         schema_snapshot: t.List[DiffableTable] = [
@@ -529,7 +534,7 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(schema_differ.add_constraints.statements) == 1)
         self.assertEqual(
             schema_differ.add_constraints.statements[0],
-            "manager.add_constraint(table_class_name='Band', tablename='band', constraint_name='unique_name_genre', constraint_class=UniqueConstraint, params={'unique_columns': ['name', 'genre']}, schema=None)"  # noqa: E501
+            "manager.add_constraint(table_class_name='Band', tablename='band', constraint_name='unique_name_genre', constraint_class=UniqueConstraint, params={'unique_columns': ['name', 'genre']}, schema=None)",  # noqa: E501
         )
 
     def test_drop_constraint(self) -> None:
@@ -545,7 +550,9 @@ class TestSchemaDiffer(TestCase):
         name_unique_constraint = UniqueConstraint(unique_columns=["name"])
         name_unique_constraint._meta.name = "unique_name"
 
-        name_genre_unique_constraint = UniqueConstraint(unique_columns=["name", "genre"])
+        name_genre_unique_constraint = UniqueConstraint(
+            unique_columns=["name", "genre"]
+        )
         name_genre_unique_constraint._meta.name = "unique_name_genre"
 
         schema: t.List[DiffableTable] = [
@@ -561,7 +568,10 @@ class TestSchemaDiffer(TestCase):
                 class_name="Band",
                 tablename="band",
                 columns=[name_column, genre_column],
-                constraints=[name_unique_constraint, name_genre_unique_constraint],
+                constraints=[
+                    name_unique_constraint,
+                    name_genre_unique_constraint,
+                ],
             )
         ]
 
@@ -572,7 +582,7 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(schema_differ.drop_constraints.statements) == 1)
         self.assertEqual(
             schema_differ.drop_constraints.statements[0],
-            "manager.drop_constraint(table_class_name='Band', tablename='band', constraint_name='unique_name_genre', schema=None)"  # noqa: E501
+            "manager.drop_constraint(table_class_name='Band', tablename='band', constraint_name='unique_name_genre', schema=None)",  # noqa: E501
         )
 
     def test_alter_default(self):
