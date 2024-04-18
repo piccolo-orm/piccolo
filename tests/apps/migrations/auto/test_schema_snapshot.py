@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from piccolo.apps.migrations.auto import MigrationManager, SchemaSnapshot
+from piccolo.constraint import UniqueConstraint
 
 
 class TestSchemaSnaphot(TestCase):
@@ -187,3 +188,67 @@ class TestSchemaSnaphot(TestCase):
 
         with self.assertRaises(ValueError):
             schema_snapshot.get_table_from_snapshot("Foo")
+
+    def test_add_constraint(self):
+        """
+        Test adding constraints.
+        """
+        manager = MigrationManager()
+        manager.add_table(class_name="Manager", tablename="manager")
+        manager.add_column(
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="name",
+            column_class_name="Varchar",
+            params={"length": 100},
+        )
+        manager.add_constraint(
+            table_class_name="Manager",
+            tablename="manager",
+            constraint_name="unique_name",
+            constraint_class=UniqueConstraint,
+            params={
+                "unique_columns": ["name"],
+            },
+        )
+
+        schema_snapshot = SchemaSnapshot(managers=[manager])
+        snapshot = schema_snapshot.get_snapshot()
+
+        self.assertTrue(len(snapshot) == 1)
+        self.assertTrue(len(snapshot[0].columns) == 1)
+        self.assertTrue(len(snapshot[0].constraints) == 1)
+
+    def test_drop_constraint(self):
+        """
+        Test dropping constraints.
+        """
+        manager_1 = MigrationManager()
+        manager_1.add_table(class_name="Manager", tablename="manager")
+        manager_1.add_column(
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="name",
+            column_class_name="Varchar",
+            params={"length": 100},
+        )
+        manager_1.add_constraint(
+            table_class_name="Manager",
+            tablename="manager",
+            constraint_name="unique_name",
+            constraint_class=UniqueConstraint,
+            params={
+                "unique_columns": ["name"],
+            },
+        )
+
+        manager_2 = MigrationManager()
+        manager_2.drop_constraint(
+            table_class_name="Manager",
+            tablename="manager",
+            constraint_name="unique_name",
+        )
+
+        schema_snapshot = SchemaSnapshot(managers=[manager_1, manager_2])
+        snapshot = schema_snapshot.get_snapshot()
+        self.assertEqual(len(snapshot[0].constraints), 0)
