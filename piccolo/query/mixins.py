@@ -784,3 +784,51 @@ class OnConflictDelegate:
                 target=target, action=action_, values=values, where=where
             )
         )
+
+
+@dataclass
+class ForUpdate:
+    __slots__ = ("nowait", "skip_locked", "of")
+
+    nowait: bool
+    skip_locked: bool
+    of: tuple[Table]
+
+    def __post_init__(self):
+        if not isinstance(self.nowait, bool):
+            raise TypeError("nowait must be an integer")
+        if not isinstance(self.skip_locked, bool):
+            raise TypeError("skip_locked must be an integer")
+        if not isinstance(self.of, tuple) or not all(
+            hasattr(x, "_meta") for x in self.of
+        ):
+            raise TypeError("of must be an tuple of Table")
+        if self.nowait and self.skip_locked:
+            raise TypeError(
+                "The nowait option cannot be used with skip_locked"
+            )
+
+    @property
+    def querystring(self) -> QueryString:
+        sql = " FOR UPDATE"
+        if self.of:
+            tables = ", ".join(x._meta.tablename for x in self.of)
+            sql += " OF " + tables
+        if self.nowait:
+            sql += " NOWAIT"
+        if self.skip_locked:
+            sql += " SKIP LOCKED"
+
+        return QueryString(sql)
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
+
+
+@dataclass
+class ForUpdateDelegate:
+
+    _for_update: t.Optional[ForUpdate] = None
+
+    def for_update(self, nowait=False, skip_locked=False, of=()):
+        self._for_update = ForUpdate(nowait, skip_locked, of)

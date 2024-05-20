@@ -12,6 +12,7 @@ from piccolo.query.mixins import (
     AsOfDelegate,
     CallbackDelegate,
     CallbackType,
+    ForUpdateDelegate,
     LimitDelegate,
     OffsetDelegate,
     OrderByDelegate,
@@ -194,6 +195,7 @@ class Objects(
         "callback_delegate",
         "prefetch_delegate",
         "where_delegate",
+        "for_update_delegate",
     )
 
     def __init__(
@@ -213,6 +215,7 @@ class Objects(
         self.prefetch_delegate = PrefetchDelegate()
         self.prefetch(*prefetch)
         self.where_delegate = WhereDelegate()
+        self.for_update_delegate = ForUpdateDelegate()
 
     def output(self: Self, load_json: bool = False) -> Self:
         self.output_delegate.output(
@@ -272,6 +275,12 @@ class Objects(
         self.limit_delegate.limit(1)
         return First[TableInstance](query=self)
 
+    def for_update(
+        self: Self, nowait: bool = False, skip_locked: bool = False, of=()
+    ) -> Self:
+        self.for_update_delegate.for_update(nowait, skip_locked, of)
+        return self
+
     def get(self, where: Combinable) -> Get[TableInstance]:
         self.where_delegate.where(where)
         self.limit_delegate.limit(1)
@@ -322,6 +331,7 @@ class Objects(
             "offset_delegate",
             "output_delegate",
             "order_by_delegate",
+            "for_update_delegate",
         ):
             setattr(select, attr, getattr(self, attr))
 

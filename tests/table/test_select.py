@@ -1028,6 +1028,33 @@ class TestSelect(DBTestCase):
             response, [{"name": "Pythonistas", "popularity_log": 3.0}]
         )
 
+    def test_for_update(self):
+        """
+        Make sure the for_update clause works.
+        """
+        self.insert_rows()
+
+        query = Band.select()
+        self.assertNotIn("FOR UPDATE", query.__str__())
+
+        query = query.for_update()
+        self.assertTrue(query.__str__().endswith("FOR UPDATE"))
+
+        query = query.for_update(skip_locked=True)
+        self.assertTrue(query.__str__().endswith("FOR UPDATE SKIP LOCKED"))
+
+        query = query.for_update(nowait=True)
+        self.assertTrue(query.__str__().endswith("FOR UPDATE NOWAIT"))
+
+        query = query.for_update(of=(Band,))
+        self.assertTrue(query.__str__().endswith("FOR UPDATE OF band"))
+
+        with self.assertRaises(TypeError):
+            query = query.for_update(skip_locked=True, nowait=True)
+
+        response = query.run_sync()
+        assert response is not None
+
 
 class TestSelectSecret(TestCase):
     def setUp(self):
