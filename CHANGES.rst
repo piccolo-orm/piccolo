@@ -1,6 +1,16 @@
 Changes
 =======
 
+1.5.1
+-----
+
+Fixed a bug with the CLI when reversing migrations (thanks to @metakot for
+reporting this).
+
+Updated the ASGI templates (thanks to @tarsil for adding Lilya).
+
+-------------------------------------------------------------------------------
+
 1.5.0
 -----
 
