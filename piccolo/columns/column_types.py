@@ -287,11 +287,14 @@ class TimedeltaDelegate:
 ###############################################################################
 
 
-def Upper(column: Varchar) -> Varchar:
+StringColumn = t.TypeVar("StringColumn", "Varchar", "Text")
+
+
+def Upper(column: StringColumn) -> StringColumn:
     return column.upper()
 
 
-def Lower(column: Varchar) -> Varchar:
+def Lower(column: StringColumn) -> StringColumn:
     return column.lower()
 
 
@@ -321,7 +324,7 @@ class Varchar(Column):
 
     value_type = str
     concat_delegate: ConcatDelegate = ConcatDelegate()
-    operator: t.Literal["upper", "lower"] | None = None
+    outer_function: t.Literal["upper", "lower"] | None = None
 
     def __init__(
         self,
@@ -333,7 +336,7 @@ class Varchar(Column):
 
         self.length = length
         self.default = default
-        self.operator = None
+        self.outer_function = None
         kwargs.update({"length": length, "default": default})
         super().__init__(**kwargs)
 
@@ -357,16 +360,16 @@ class Varchar(Column):
         )
 
     ###########################################################################
-    # Operators
+    # Outer functions
 
     def upper(self) -> Varchar:
         column = self.copy()
-        column.operator = "upper"
+        column.outer_function = "upper"
         return column
 
     def lower(self) -> Varchar:
         column = self.copy()
-        column.operator = "lower"
+        column.outer_function = "lower"
         return column
 
     ###########################################################################
@@ -445,7 +448,7 @@ class Text(Column):
 
     value_type = str
     concat_delegate: ConcatDelegate = ConcatDelegate()
-    operator: t.Literal["upper", "lower"] | None = None
+    outer_function: t.Literal["upper", "lower"] | None = None
 
     def __init__(
         self,
@@ -454,7 +457,7 @@ class Text(Column):
     ) -> None:
         self._validate_default(default, (str, None))
         self.default = default
-        self.operator = None
+        self.outer_function = None
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
@@ -474,16 +477,16 @@ class Text(Column):
         )
 
     ###########################################################################
-    # Operators
+    # Outer functions
 
     def upper(self) -> Text:
         column = self.copy()
-        column.operator = "upper"
+        column.outer_function = "upper"
         return column
 
     def lower(self) -> Text:
         column = self.copy()
-        column.operator = "lower"
+        column.outer_function = "lower"
         return column
 
     ###########################################################################
