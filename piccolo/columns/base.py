@@ -307,11 +307,11 @@ class ColumnMeta:
 
         :param outer_functions:
             If provided, the column name will be wrapped with the given
-            function. For example:
+            functions. For example:
 
             .. code-block python::
 
-                >>> Band.manager.get_full_name(outer_functions="upper")
+                >>> Band.manager.get_full_name(outer_functions=["upper"])
                 'upper(band$manager.name) AS "manager$name"'
 
         """
