@@ -320,7 +320,7 @@ class ColumnMeta:
         if outer_function:
             full_name = f"{outer_function}({full_name})"
 
-        if with_alias and self.call_chain:
+        if with_alias:
             alias = self.get_default_alias()
             if include_quotes:
                 full_name += f' AS "{alias}"'
