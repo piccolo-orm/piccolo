@@ -275,7 +275,7 @@ class ColumnMeta:
         self,
         with_alias: bool = True,
         include_quotes: bool = True,
-        outer_function: str | None = None,
+        outer_functions: t.List[str] | None = None,
     ) -> str:
         """
         Returns the full column name, taking into account joins.
@@ -305,20 +305,21 @@ class ColumnMeta:
                 >>> column._meta.get_full_name(include_quotes=False)
                 'my_table_name.my_column_name'
 
-        :param outer_function:
+        :param outer_functions:
             If provided, the column name will be wrapped with the given
             function. For example:
 
             .. code-block python::
 
-                >>> Band.manager.get_full_name(outer_function="upper")
+                >>> Band.manager.get_full_name(outer_functions="upper")
                 'upper(band$manager.name) AS "manager$name"'
 
         """
         full_name = self._get_path(include_quotes=include_quotes)
 
-        if outer_function:
-            full_name = f"{outer_function}({full_name})"
+        if outer_functions:
+            for outer_function in outer_functions:
+                full_name = f"{outer_function}({full_name})"
 
         if with_alias:
             alias = self.get_default_alias()
@@ -841,24 +842,24 @@ class Column(Selectable):
         How to refer to this column in a SQL query, taking account of any joins
         and aliases.
         """
-        outer_function = getattr(self, "outer_function", None)
+        outer_functions = getattr(self, "outer_functions", None)
 
         if with_alias:
             if self._alias:
                 original_name = self._meta.get_full_name(
                     with_alias=False,
-                    outer_function=outer_function,
+                    outer_functions=outer_functions,
                 )
                 return f'{original_name} AS "{self._alias}"'
             else:
                 return self._meta.get_full_name(
                     with_alias=True,
-                    outer_function=outer_function,
+                    outer_functions=outer_functions,
                 )
 
         return self._meta.get_full_name(
             with_alias=False,
-            outer_function=outer_function,
+            outer_functions=outer_functions,
         )
 
     def get_where_string(self, engine_type: str) -> str:

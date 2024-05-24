@@ -324,7 +324,7 @@ class Varchar(Column):
 
     value_type = str
     concat_delegate: ConcatDelegate = ConcatDelegate()
-    outer_function: t.Literal["upper", "lower"] | None = None
+    outer_functions: t.List[t.Literal["upper", "lower"]]
 
     def __init__(
         self,
@@ -336,7 +336,7 @@ class Varchar(Column):
 
         self.length = length
         self.default = default
-        self.outer_function = None
+        self.outer_functions = []
         kwargs.update({"length": length, "default": default})
         super().__init__(**kwargs)
 
@@ -362,14 +362,22 @@ class Varchar(Column):
     ###########################################################################
     # Outer functions
 
-    def upper(self) -> Varchar:
+    def _add_outer_function(self, outer_function) -> Varchar:
         column = self.copy()
-        column.outer_function = "upper"
+        column.outer_functions.append(outer_function)
         return column
 
+    def upper(self) -> Varchar:
+        return self._add_outer_function("upper")
+
     def lower(self) -> Varchar:
-        column = self.copy()
-        column.outer_function = "lower"
+        return self._add_outer_function("lower")
+
+    ###########################################################################
+
+    def copy(self):
+        column = super().copy()
+        column.outer_functions = [*column.outer_functions]
         return column
 
     ###########################################################################
@@ -448,7 +456,7 @@ class Text(Column):
 
     value_type = str
     concat_delegate: ConcatDelegate = ConcatDelegate()
-    outer_function: t.Literal["upper", "lower"] | None = None
+    outer_functions: t.List[t.Literal["upper", "lower"]]
 
     def __init__(
         self,
@@ -457,7 +465,7 @@ class Text(Column):
     ) -> None:
         self._validate_default(default, (str, None))
         self.default = default
-        self.outer_function = None
+        self.outer_functions = []
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
@@ -479,14 +487,22 @@ class Text(Column):
     ###########################################################################
     # Outer functions
 
-    def upper(self) -> Text:
+    def _add_outer_function(self, outer_function) -> Text:
         column = self.copy()
-        column.outer_function = "upper"
+        column.outer_functions.append(outer_function)
         return column
 
+    def upper(self) -> Text:
+        return self._add_outer_function("upper")
+
     def lower(self) -> Text:
-        column = self.copy()
-        column.outer_function = "lower"
+        return self._add_outer_function("lower")
+
+    ###########################################################################
+
+    def copy(self):
+        column = super().copy()
+        column.outer_functions = [*column.outer_functions]
         return column
 
     ###########################################################################
