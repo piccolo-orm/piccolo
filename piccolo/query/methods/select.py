@@ -283,36 +283,6 @@ class Sum(Selectable):
         return f'SUM({column_name}) AS "{self._alias}"'
 
 
-class Upper(Selectable):
-    """
-    ``UPPER()`` SQL function. The column type must contain text to run the
-    query.
-
-    .. code-block:: python
-
-        >>> await Band.select(
-        ...     Upper(Band.name)
-        ... ).run()
-        [{"name": "PYTHONISTAS"}]
-
-    """
-
-    def __init__(self, column: Column, alias: str = "upper"):
-        if is_string_column(column):
-            self.column = column
-        else:
-            raise ValueError(
-                "Column type must contain a string to run the query."
-            )
-        self._alias = alias
-
-    def get_select_string(
-        self, engine_type: str, with_alias: bool = True
-    ) -> str:
-        column_name = self.column._meta.get_full_name(with_alias=False)
-        return f'SUM({column_name}) AS "{self._alias}"'
-
-
 OptionalDict = t.Optional[t.Dict[str, t.Any]]
 
 
