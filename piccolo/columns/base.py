@@ -272,7 +272,10 @@ class ColumnMeta:
                 return f"{self.table._meta.tablename}.{column_name}"
 
     def get_full_name(
-        self, with_alias: bool = True, include_quotes: bool = True
+        self,
+        with_alias: bool = True,
+        include_quotes: bool = True,
+        operator: str | None = None,
     ) -> str:
         """
         Returns the full column name, taking into account joins.
@@ -305,6 +308,9 @@ class ColumnMeta:
 
         """
         full_name = self._get_path(include_quotes=include_quotes)
+
+        if operator:
+            full_name = f"{operator}({full_name})"
 
         if with_alias and self.call_chain:
             alias = self.get_default_alias()
@@ -827,18 +833,25 @@ class Column(Selectable):
         How to refer to this column in a SQL query, taking account of any joins
         and aliases.
         """
+        operator = getattr(self, "operator", None)
+
         if with_alias:
             if self._alias:
                 original_name = self._meta.get_full_name(
                     with_alias=False,
+                    operator=operator,
                 )
                 return f'{original_name} AS "{self._alias}"'
             else:
                 return self._meta.get_full_name(
                     with_alias=True,
+                    operator=operator,
                 )
 
-        return self._meta.get_full_name(with_alias=False)
+        return self._meta.get_full_name(
+            with_alias=False,
+            operator=operator,
+        )
 
     def get_where_string(self, engine_type: str) -> str:
         return self.get_select_string(
@@ -945,8 +958,8 @@ class Column(Selectable):
 
         return query
 
-    def copy(self) -> Column:
-        column: Column = copy.copy(self)
+    def copy(self: Self) -> Self:
+        column = copy.copy(self)
         column._meta = self._meta.copy()
         return column
 
@@ -971,3 +984,6 @@ class Column(Selectable):
             f"{table_class_name}.{self._meta.name} - "
             f"{self.__class__.__name__}"
         )
+
+
+Self = t.TypeVar("Self", bound=Column)

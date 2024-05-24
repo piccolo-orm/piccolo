@@ -287,6 +287,14 @@ class TimedeltaDelegate:
 ###############################################################################
 
 
+def Upper(column: Varchar) -> Varchar:
+    return column.upper()
+
+
+def Lower(column: Varchar) -> Varchar:
+    return column.lower()
+
+
 class Varchar(Column):
     """
     Used for storing text when you want to enforce character length limits.
@@ -313,6 +321,7 @@ class Varchar(Column):
 
     value_type = str
     concat_delegate: ConcatDelegate = ConcatDelegate()
+    operator: t.Literal["upper", "lower"] | None = None
 
     def __init__(
         self,
@@ -324,6 +333,7 @@ class Varchar(Column):
 
         self.length = length
         self.default = default
+        self.operator = None
         kwargs.update({"length": length, "default": default})
         super().__init__(**kwargs)
 
@@ -345,6 +355,19 @@ class Varchar(Column):
             value=value,
             reverse=True,
         )
+
+    ###########################################################################
+    # Operators
+
+    def upper(self) -> Varchar:
+        column = self.copy()
+        column.operator = "upper"
+        return column
+
+    def lower(self) -> Varchar:
+        column = self.copy()
+        column.operator = "lower"
+        return column
 
     ###########################################################################
     # Descriptors
@@ -422,6 +445,7 @@ class Text(Column):
 
     value_type = str
     concat_delegate: ConcatDelegate = ConcatDelegate()
+    operator: t.Literal["upper", "lower"] | None = None
 
     def __init__(
         self,
@@ -430,6 +454,7 @@ class Text(Column):
     ) -> None:
         self._validate_default(default, (str, None))
         self.default = default
+        self.operator = None
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
@@ -447,6 +472,19 @@ class Text(Column):
             value=value,
             reverse=True,
         )
+
+    ###########################################################################
+    # Operators
+
+    def upper(self) -> Text:
+        column = self.copy()
+        column.operator = "upper"
+        return column
+
+    def lower(self) -> Text:
+        column = self.copy()
+        column.operator = "lower"
+        return column
 
     ###########################################################################
     # Descriptors
