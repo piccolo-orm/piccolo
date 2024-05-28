@@ -285,7 +285,7 @@ def run(
 
     populate()
 
-    from IPython.core.interactiveshell import _asyncio_runner
+    from IPython.core.async_helpers import _asyncio_runner
 
     if ipython_profile:
         print(colored_string("Using your IPython profile\n"))
