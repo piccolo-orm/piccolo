@@ -128,7 +128,30 @@ class RecordingStudio(Table):
         )
 
 
-TABLES = (Manager, Band, Venue, Concert, Ticket, DiscountCode, RecordingStudio)
+class Album(Table):
+    name = Varchar()
+    band = ForeignKey(Band)
+    release_date = Timestamp()
+    recorded_at = ForeignKey(RecordingStudio)
+
+    @classmethod
+    def get_readable(cls) -> Readable:
+        return Readable(
+            template="%s - %s",
+            columns=[cls.name, cls.band._.name],
+        )
+
+
+TABLES = (
+    Manager,
+    Band,
+    Venue,
+    Concert,
+    Ticket,
+    DiscountCode,
+    RecordingStudio,
+    Album,
+)
 
 
 def populate():
