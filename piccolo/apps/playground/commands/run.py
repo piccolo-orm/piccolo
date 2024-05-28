@@ -137,6 +137,7 @@ class RecordingStudio(Table):
 
 
 class Album(Table):
+    id: Serial
     name = Varchar()
     band = ForeignKey(Band)
     release_date = Date()
