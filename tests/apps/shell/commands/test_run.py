@@ -20,6 +20,7 @@ class TestRun(TestCase):
                 call("Importing music tables:"),
                 call("- Band"),
                 call("- Concert"),
+                call("- Instrument"),
                 call("- Manager"),
                 call("- Poster"),
                 call("- RecordingStudio"),

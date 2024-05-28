@@ -13,6 +13,7 @@ from tests.base import engines_only
 from tests.example_apps.music.tables import (
     Band,
     Concert,
+    Instrument,
     Manager,
     Poster,
     RecordingStudio,
@@ -33,6 +34,7 @@ TABLE_CLASSES: t.List[t.Type[Table]] = [
     Poster,
     Shirt,
     RecordingStudio,
+    Instrument,
 ]
 
 
@@ -211,6 +213,7 @@ class TestForwardsBackwards(TestCase):
                 "2021-07-25T22:38:48:009306",
                 "2021-09-06T13:58:23:024723",
                 "2021-11-13T14:01:46:114725",
+                "2024-05-28T23:15:41:018844",
             ],
         )
 

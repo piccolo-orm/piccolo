@@ -9,6 +9,7 @@ from tests.example_apps.mega.tables import MegaTable, SmallTable
 from tests.example_apps.music.tables import (
     Band,
     Concert,
+    Instrument,
     Manager,
     Poster,
     RecordingStudio,
@@ -113,6 +114,7 @@ class TestTableFinder(TestCase):
             [
                 "Band",
                 "Concert",
+                "Instrument",
                 "Manager",
                 "Poster",
                 "RecordingStudio",
@@ -139,6 +141,7 @@ class TestTableFinder(TestCase):
             [
                 "Band",
                 "Concert",
+                "Instrument",
                 "Manager",
                 "Poster",
                 "RecordingStudio",
@@ -182,6 +185,7 @@ class TestTableFinder(TestCase):
             [
                 "Band",
                 "Concert",
+                "Instrument",
                 "Manager",
                 "RecordingStudio",
                 "Shirt",
@@ -228,6 +232,7 @@ class TestFinder(TestCase):
             [
                 Band,
                 Concert,
+                Instrument,
                 Manager,
                 MegaTable,
                 Poster,
@@ -247,6 +252,7 @@ class TestFinder(TestCase):
             [
                 Band,
                 Concert,
+                Instrument,
                 Manager,
                 Poster,
                 RecordingStudio,
