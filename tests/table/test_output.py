@@ -33,55 +33,6 @@ class TestOutputJSON(DBTestCase):
 
 
 class TestOutputLoadJSON(TestCase):
-    def setUp(self):
-        RecordingStudio.create_table().run_sync()
-
-    def tearDown(self):
-        RecordingStudio.alter().drop_table().run_sync()
-
-    def test_select(self):
-        json = {"a": 123}
-
-        RecordingStudio(facilities=json, facilities_b=json).save().run_sync()
-
-        results = (
-            RecordingStudio.select(
-                RecordingStudio.facilities, RecordingStudio.facilities_b
-            )
-            .output(load_json=True)
-            .run_sync()
-        )
-
-        self.assertEqual(
-            results,
-            [
-                {
-                    "facilities": json,
-                    "facilities_b": json,
-                }
-            ],
-        )
-
-    def test_objects(self):
-        json = {"a": 123}
-
-        RecordingStudio(facilities=json, facilities_b=json).save().run_sync()
-
-        results = RecordingStudio.objects().output(load_json=True).run_sync()
-
-        self.assertEqual(results[0].facilities, json)
-        self.assertEqual(results[0].facilities_b, json)
-
-
-class TestLoadJSONWithJoin(TestCase):
-    """
-    Make sure ``output(load_json=True)`` works correctly when the JSON column
-    is on a joined table.
-
-    https://github.com/piccolo-orm/piccolo/issues/1001
-
-    """
-
     tables = [RecordingStudio, Instrument]
     json = {"a": 123}
 
@@ -90,8 +41,8 @@ class TestLoadJSONWithJoin(TestCase):
 
         recording_studio = RecordingStudio(
             {
-                RecordingStudio.facilities: json,
-                RecordingStudio.facilities_b: json,
+                RecordingStudio.facilities: self.json,
+                RecordingStudio.facilities_b: self.json,
             }
         )
         recording_studio.save().run_sync()
@@ -109,6 +60,31 @@ class TestLoadJSONWithJoin(TestCase):
 
     def test_select(self):
         results = (
+            RecordingStudio.select(
+                RecordingStudio.facilities, RecordingStudio.facilities_b
+            )
+            .output(load_json=True)
+            .run_sync()
+        )
+
+        self.assertEqual(
+            results,
+            [
+                {
+                    "facilities": self.json,
+                    "facilities_b": self.json,
+                }
+            ],
+        )
+
+    def test_join(self):
+        """
+        Make sure it works correctly when the JSON column is on a joined table.
+
+        https://github.com/piccolo-orm/piccolo/issues/1001
+
+        """
+        results = (
             Instrument.select(
                 Instrument.name,
                 Instrument.recording_studio._.facilities,
@@ -122,12 +98,12 @@ class TestLoadJSONWithJoin(TestCase):
             [
                 {
                     "name": "Piccolo",
-                    "recording_studio.facilities": json,
+                    "recording_studio.facilities": self.json,
                 }
             ],
         )
 
-    def test_select_with_alias(self):
+    def test_join_with_alias(self):
         results = (
             Instrument.select(
                 Instrument.name,
@@ -144,10 +120,15 @@ class TestLoadJSONWithJoin(TestCase):
             [
                 {
                     "name": "Piccolo",
-                    "recording_studio.facilities": json,
+                    "facilities": self.json,
                 }
             ],
         )
+
+    def test_objects(self):
+        results = RecordingStudio.objects().output(load_json=True).run_sync()
+        self.assertEqual(results[0].facilities, self.json)
+        self.assertEqual(results[0].facilities_b, self.json)
 
 
 class TestOutputNested(DBTestCase):
