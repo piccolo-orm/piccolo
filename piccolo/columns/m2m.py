@@ -255,6 +255,9 @@ class M2MMeta:
                 == self.primary_table
             ):
                 return self.foreign_key_columns[-1]
+        if self.table == self.primary_table:
+            return self.foreign_key_columns[-1]
+
         raise ValueError("No matching foreign key column found!")
 
     @property
