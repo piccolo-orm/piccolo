@@ -39,5 +39,7 @@ class TestNewApp(TestCase):
 
         exception = context.exception
         self.assertTrue(
-            exception.code.startswith("A module called sys already exists")
+            str(exception.code).startswith(
+                "A module called sys already exists"
+            )
         )

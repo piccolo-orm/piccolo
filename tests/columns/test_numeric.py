@@ -22,6 +22,7 @@ class TestNumeric(TestCase):
         row.save().run_sync()
 
         _row = MyTable.objects().first().run_sync()
+        assert _row is not None
 
         self.assertEqual(type(_row.column_a), Decimal)
         self.assertEqual(type(_row.column_b), Decimal)

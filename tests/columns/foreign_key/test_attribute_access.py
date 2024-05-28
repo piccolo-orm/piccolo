@@ -60,6 +60,6 @@ class TestAttributeAccess(TestCase):
         Make sure that a really large call chain doesn't take too long.
         """
         start = time.time()
-        Manager.manager.manager.manager.manager.manager.manager.name
+        Manager.manager._.manager._.manager._.manager._.manager._.manager._.name  # noqa: E501
         end = time.time()
         self.assertLess(end - start, 1.0)

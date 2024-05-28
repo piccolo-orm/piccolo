@@ -3,7 +3,7 @@ from unittest import TestCase
 
 import pytest
 
-from piccolo.columns import Integer, Varchar
+from piccolo.columns import Integer, Serial, Varchar
 from piccolo.query.methods.insert import OnConflictAction
 from piccolo.table import Table
 from piccolo.utils.lazy_loader import LazyLoader
@@ -98,6 +98,7 @@ class TestInsert(DBTestCase):
 )
 class TestOnConflict(TestCase):
     class Band(Table):
+        id: Serial
         name = Varchar(unique=True)
         popularity = Integer()
 

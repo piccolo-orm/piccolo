@@ -553,7 +553,9 @@ class TestOperators(TestCase):
         with self.assertRaises(ValueError):
             # An error should be raised because we can't save at this level
             # of resolution - 1 millisecond is the minimum.
-            MyTable.timestamp + datetime.timedelta(microseconds=1)
+            MyTable.timestamp + datetime.timedelta(  # type: ignore
+                microseconds=1
+            )
 
 
 ###############################################################################
@@ -604,12 +606,18 @@ class TestAutoUpdate(TestCase):
         # Insert a row for us to update
         AutoUpdateTable.insert(AutoUpdateTable(name="test")).run_sync()
 
-        self.assertDictEqual(
+        data = (
             AutoUpdateTable.select(
                 AutoUpdateTable.name, AutoUpdateTable.modified_on
             )
             .first()
-            .run_sync(),
+            .run_sync()
+        )
+
+        assert data is not None
+
+        self.assertDictEqual(
+            data,
             {"name": "test", "modified_on": None},
         )
 
@@ -626,6 +634,7 @@ class TestAutoUpdate(TestCase):
             .first()
             .run_sync()
         )
+        assert updated_row is not None
         self.assertIsInstance(updated_row["modified_on"], datetime.datetime)
         self.assertEqual(updated_row["name"], "test 2")
 

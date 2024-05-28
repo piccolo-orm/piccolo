@@ -171,6 +171,9 @@ careful to include brackets in the correct place.
 
     ((b.popularity >= 100) & (b.manager.name ==  'Guido')) | (b.popularity > 1000)
 
+Multiple ``where`` clauses
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Using multiple ``where`` clauses is equivalent to an AND.
 
 .. code-block:: python

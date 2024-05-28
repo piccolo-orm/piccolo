@@ -35,6 +35,7 @@ class TestTimestamp(TestCase):
         row.save().run_sync()
 
         result = MyTable.objects().first().run_sync()
+        assert result is not None
         self.assertEqual(result.created_on, created_on)
 
     def test_timezone_aware(self):
@@ -61,6 +62,7 @@ class TestTimestampDefault(TestCase):
         row.save().run_sync()
 
         result = MyTableDefault.objects().first().run_sync()
+        assert result is not None
         self.assertLess(
             result.created_on - created_on, datetime.timedelta(seconds=1)
         )

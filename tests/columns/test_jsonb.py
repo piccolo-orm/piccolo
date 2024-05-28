@@ -159,6 +159,7 @@ class TestJSONB(TestCase):
             .first()
             .run_sync()
         )
+        assert row is not None
         self.assertEqual(row["facilities"], "true")
 
         row = (
@@ -169,6 +170,7 @@ class TestJSONB(TestCase):
             .first()
             .run_sync()
         )
+        assert row is not None
         self.assertEqual(row["facilities"], True)
 
     def test_arrow_as_alias(self):
@@ -188,6 +190,7 @@ class TestJSONB(TestCase):
             .first()
             .run_sync()
         )
+        assert row is not None
         self.assertEqual(row["mixing_desk"], "true")
 
     def test_arrow_where(self):

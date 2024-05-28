@@ -71,6 +71,7 @@ class TestTimestamptz(TestCase):
                 .first()
                 .run_sync()
             )
+            assert result is not None
             self.assertEqual(result.created_on, created_on)
 
             # The database converts it to UTC
@@ -93,6 +94,7 @@ class TestTimestamptzDefault(TestCase):
         row.save().run_sync()
 
         result = MyTableDefault.objects().first().run_sync()
+        assert result is not None
         delta = result.created_on - created_on
         self.assertLess(delta, datetime.timedelta(seconds=1))
         self.assertEqual(result.created_on.tzinfo, datetime.timezone.utc)

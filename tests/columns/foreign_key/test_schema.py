@@ -84,7 +84,7 @@ class TestForeignKeyWithSchema(TestCase):
         query = Concert.select(
             Concert.start_date,
             Concert.band.name.as_alias("band_name"),
-            Concert.band.manager.name.as_alias("manager_name"),
+            Concert.band._.manager._.name.as_alias("manager_name"),
         )
         self.assertIn('"schema_1"."concert"', query.__str__())
         self.assertIn('"schema_1"."band"', query.__str__())

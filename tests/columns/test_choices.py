@@ -34,6 +34,7 @@ class TestChoices(TestCase):
         """
         Shirt().save().run_sync()
         shirt = Shirt.objects().first().run_sync()
+        assert shirt is not None
         self.assertEqual(shirt.size, "l")
 
     def test_update(self):

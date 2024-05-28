@@ -78,6 +78,7 @@ class TableMeta:
     columns: t.List[Column] = field(default_factory=list)
     default_columns: t.List[Column] = field(default_factory=list)
     non_default_columns: t.List[Column] = field(default_factory=list)
+    array_columns: t.List[Array] = field(default_factory=list)
     email_columns: t.List[Email] = field(default_factory=list)
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
     primary_key: Column = field(default_factory=Column)
@@ -267,6 +268,7 @@ class Table(metaclass=TableMetaclass):
         columns: t.List[Column] = []
         default_columns: t.List[Column] = []
         non_default_columns: t.List[Column] = []
+        array_columns: t.List[Array] = []
         foreign_key_columns: t.List[ForeignKey] = []
         secret_columns: t.List[Secret] = []
         json_columns: t.List[t.Union[JSON, JSONB]] = []
@@ -303,7 +305,8 @@ class Table(metaclass=TableMetaclass):
                 column._meta._table = cls
 
                 if isinstance(column, Array):
-                    column.base_column._meta._table = cls
+                    column._setup_base_column(table_class=cls)
+                    array_columns.append(column)
 
                 if isinstance(column, Email):
                     email_columns.append(column)
@@ -337,6 +340,7 @@ class Table(metaclass=TableMetaclass):
             columns=columns,
             default_columns=default_columns,
             non_default_columns=non_default_columns,
+            array_columns=array_columns,
             email_columns=email_columns,
             primary_key=primary_key,
             foreign_key_columns=foreign_key_columns,
@@ -562,12 +566,10 @@ class Table(metaclass=TableMetaclass):
     @t.overload
     def get_related(
         self, foreign_key: ForeignKey[ReferencedTable]
-    ) -> First[ReferencedTable]:
-        ...
+    ) -> First[ReferencedTable]: ...
 
     @t.overload
-    def get_related(self, foreign_key: str) -> First[Table]:
-        ...
+    def get_related(self, foreign_key: str) -> First[Table]: ...
 
     def get_related(
         self, foreign_key: t.Union[str, ForeignKey[ReferencedTable]]
@@ -741,9 +743,9 @@ class Table(metaclass=TableMetaclass):
             if isinstance(value, Table):
                 value = value.to_dict(*columns)
 
-            output[
-                alias_names.get(column._meta.name) or column._meta.name
-            ] = value
+            output[alias_names.get(column._meta.name) or column._meta.name] = (
+                value
+            )
         return output
 
     def __setitem__(self, key: str, value: t.Any):
@@ -809,9 +811,11 @@ class Table(metaclass=TableMetaclass):
         # If unquoted, dump it straight into the query.
         query = ",".join(
             [
-                args_dict[column._meta.name].value
-                if is_unquoted(args_dict[column._meta.name])
-                else "{}"
+                (
+                    args_dict[column._meta.name].value
+                    if is_unquoted(args_dict[column._meta.name])
+                    else "{}"
+                )
                 for column in self._meta.columns
             ]
         )
@@ -995,9 +999,11 @@ class Table(metaclass=TableMetaclass):
         Convert any string arguments to column instances.
         """
         return [
-            cls._meta.get_column_by_name(column)
-            if (isinstance(column, str))
-            else column
+            (
+                cls._meta.get_column_by_name(column)
+                if (isinstance(column, str))
+                else column
+            )
             for column in columns
         ]
 

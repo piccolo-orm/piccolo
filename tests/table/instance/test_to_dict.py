@@ -10,6 +10,7 @@ class TestToDict(DBTestCase):
         self.insert_row()
 
         instance = Manager.objects().first().run_sync()
+        assert instance is not None
         dictionary = instance.to_dict()
         if engine_is("cockroach"):
             self.assertDictEqual(
@@ -26,6 +27,7 @@ class TestToDict(DBTestCase):
         self.insert_row()
 
         instance = Band.objects(Band.manager).first().run_sync()
+        assert instance is not None
         dictionary = instance.to_dict()
         if engine_is("cockroach"):
             self.assertDictEqual(
@@ -58,6 +60,7 @@ class TestToDict(DBTestCase):
         self.insert_row()
 
         instance = Manager.objects().first().run_sync()
+        assert instance is not None
         dictionary = instance.to_dict(Manager.name)
         self.assertDictEqual(dictionary, {"name": "Guido"})
 
@@ -69,6 +72,7 @@ class TestToDict(DBTestCase):
         self.insert_row()
 
         instance = Band.objects(Band.manager).first().run_sync()
+        assert instance is not None
         dictionary = instance.to_dict(Band.name, Band.manager.id)
         if engine_is("cockroach"):
             self.assertDictEqual(
@@ -94,6 +98,7 @@ class TestToDict(DBTestCase):
         self.insert_row()
 
         instance = Manager.objects().first().run_sync()
+        assert instance is not None
         dictionary = instance.to_dict(
             Manager.id, Manager.name.as_alias("title")
         )
