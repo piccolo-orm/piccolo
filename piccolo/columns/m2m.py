@@ -30,6 +30,7 @@ class M2MSelect(Selectable):
         m2m: M2M,
         as_list: bool = False,
         load_json: bool = False,
+        reverse: t.Optional[bool] = None,
     ):
         """
         :param columns:
@@ -39,12 +40,15 @@ class M2MSelect(Selectable):
             flattened list will be returned, rather than a list of objects.
         :param load_json:
             If ``True``, any JSON strings are loaded as Python objects.
+        :param reverse:
+          If ``True``, make reverse query to self reference tables.
 
         """
         self.as_list = as_list
         self.columns = columns
         self.m2m = m2m
         self.load_json = load_json
+        self.reverse = reverse
 
         safe_types = (int, str)
 
@@ -77,13 +81,23 @@ class M2MSelect(Selectable):
             table_2_name = table_1._meta.tablename
             table_2_name_with_schema = table_1._meta.get_formatted_tablename()
             table_2_pk_name = table_1._meta.primary_key._meta.db_column_name
-            inner_select = f"""
-                {m2m_table_name_with_schema}
-                JOIN {table_1_name_with_schema} "inner_{table_1_name}" ON (
-                    {m2m_table_name_with_schema}."{fk_1_name}" = "inner_{table_1_name}"."{table_1_pk_name}"
-                )
-                WHERE {m2m_table_name_with_schema}."{fk_1_name}" = "{table_1_name}"."{table_1_pk_name}"
-            """  # noqa: E501
+            # check reverse argument. If True change direction in query
+            if self.reverse: 
+                inner_select = f"""
+                    {m2m_table_name_with_schema}
+                    JOIN {table_1_name_with_schema} "inner_{table_1_name}" ON (
+                        {m2m_table_name_with_schema}."{fk_1_name}" = "inner_{table_1_name}"."{table_1_pk_name}"
+                    )
+                    WHERE {m2m_table_name_with_schema}."{fk_2_name}" = "{table_2_name}"."{table_2_pk_name}"
+                """  # noqa: E501
+            else:
+                inner_select = f"""
+                    {m2m_table_name_with_schema}
+                    JOIN {table_2_name_with_schema} "inner_{table_2_name}" ON (
+                        {m2m_table_name_with_schema}."{fk_2_name}" = "inner_{table_2_name}"."{table_2_pk_name}"
+                    )
+                    WHERE {m2m_table_name_with_schema}."{fk_1_name}" = "{table_1_name}"."{table_1_pk_name}"
+                """  # noqa: E501
         else:
             table_2_name = table_2._meta.tablename
             table_2_name_with_schema = table_2._meta.get_formatted_tablename()
@@ -379,7 +393,9 @@ class M2MGetRelated:
     reverse: t.Optional[bool] = False
 
     async def run(self):
+
         joining_table = self.m2m._meta.resolved_joining_table
+
         secondary_table = self.m2m._meta.secondary_table
         if self.reverse: 
             try:
@@ -393,11 +409,13 @@ class M2MGetRelated:
                     .where(self.m2m._meta.secondary_foreign_key == self.row)
                     .output(as_list=True)
                 )
+
                 results = await secondary_table.objects().where(
                     secondary_table._meta.primary_key.is_in(ids)
                 )
             except ValueError:
                 results = []
+
             return results
         else:
             try:
@@ -418,6 +436,7 @@ class M2MGetRelated:
                 )
             except ValueError:
                 results = []
+
             return results
 
     def run_sync(self):
@@ -457,6 +476,7 @@ class M2M:
         *columns: t.Union[Column, t.List[Column]],
         as_list: bool = False,
         load_json: bool = False,
+        reverse: t.Optional[bool] = None,
     ) -> M2MSelect:
         """
         :param columns:
@@ -467,6 +487,7 @@ class M2M:
             flattened list will be returned, rather than a list of objects.
         :param load_json:
             If ``True``, any JSON strings are loaded as Python objects.
+            
         """
         columns_ = flatten(columns)
 
@@ -479,5 +500,5 @@ class M2M:
             )
 
         return M2MSelect(
-            *columns_, m2m=self, as_list=as_list, load_json=load_json
+            *columns_, m2m=self, as_list=as_list, load_json=load_json, reverse=reverse
         )
