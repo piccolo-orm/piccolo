@@ -5,7 +5,6 @@ for interacting with the data using Piccolo.
 
 import datetime
 import sys
-import typing as t
 import uuid
 from decimal import Decimal
 from enum import Enum
@@ -98,7 +97,7 @@ class Ticket(Table):
         return Readable(
             template="%s - %s",
             columns=[
-                t.cast(t.Type[Venue], cls.concert.venue).name,
+                cls.concert._.venue._.name,
                 cls.ticket_type,
             ],
         )
