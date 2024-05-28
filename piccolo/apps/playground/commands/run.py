@@ -5,7 +5,6 @@ for interacting with the data using Piccolo.
 
 import datetime
 import sys
-import typing as t
 import uuid
 from decimal import Decimal
 from enum import Enum
@@ -18,6 +17,7 @@ from piccolo.columns import (
     Integer,
     Interval,
     Numeric,
+    Serial,
     Timestamp,
     Varchar,
 )
@@ -29,6 +29,7 @@ from piccolo.utils.warnings import colored_string
 
 
 class Manager(Table):
+    id: Serial
     name = Varchar(length=50)
 
     @classmethod
@@ -40,6 +41,7 @@ class Manager(Table):
 
 
 class Band(Table):
+    id: Serial
     name = Varchar(length=50)
     manager = ForeignKey(references=Manager, null=True)
     popularity = Integer()
@@ -53,6 +55,7 @@ class Band(Table):
 
 
 class Venue(Table):
+    id: Serial
     name = Varchar(length=100)
     capacity = Integer(default=0)
 
@@ -65,6 +68,7 @@ class Venue(Table):
 
 
 class Concert(Table):
+    id: Serial
     band_1 = ForeignKey(Band)
     band_2 = ForeignKey(Band)
     venue = ForeignKey(Venue)
@@ -89,6 +93,7 @@ class Ticket(Table):
         standing = "standing"
         premium = "premium"
 
+    id: Serial
     concert = ForeignKey(Concert)
     price = Numeric(digits=(5, 2))
     ticket_type = Varchar(choices=TicketType, default=TicketType.standing)
@@ -98,13 +103,14 @@ class Ticket(Table):
         return Readable(
             template="%s - %s",
             columns=[
-                t.cast(t.Type[Venue], cls.concert.venue).name,
+                cls.concert._.venue._.name,
                 cls.ticket_type,
             ],
         )
 
 
 class DiscountCode(Table):
+    id: Serial
     code = UUID()
     active = Boolean(default=True, null=True)
 
@@ -117,6 +123,7 @@ class DiscountCode(Table):
 
 
 class RecordingStudio(Table):
+    id: Serial
     name = Varchar(length=100)
     facilities = JSON(null=True)
 
@@ -301,7 +308,7 @@ def run(
 
     populate()
 
-    from IPython.core.interactiveshell import _asyncio_runner
+    from IPython.core.async_helpers import _asyncio_runner
 
     if ipython_profile:
         print(colored_string("Using your IPython profile\n"))
