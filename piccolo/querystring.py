@@ -23,6 +23,8 @@ class Selectable(metaclass=ABCMeta):
     Anything which inherits from this can be used in a select query.
     """
 
+    __slots__ = ("_alias",)
+
     _alias: t.Optional[str]
 
     @abstractmethod

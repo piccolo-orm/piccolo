@@ -91,8 +91,8 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
                     json_column_names.append(column._meta.name)
                 elif len(column._meta.call_chain) > 0:
                     json_column_names.append(
-                        column.get_select_string(
-                            engine_type=column._meta.engine_type
+                        column._meta.get_full_name(
+                            with_alias=False, include_quotes=False
                         )
                     )
                 else:
