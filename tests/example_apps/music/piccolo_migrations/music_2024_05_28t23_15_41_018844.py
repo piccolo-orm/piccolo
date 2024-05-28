@@ -1,9 +1,6 @@
 from piccolo.apps.migrations.auto.migration_manager import MigrationManager
-from piccolo.columns.base import OnDelete
-from piccolo.columns.base import OnUpdate
-from piccolo.columns.column_types import ForeignKey
-from piccolo.columns.column_types import Serial
-from piccolo.columns.column_types import Varchar
+from piccolo.columns.base import OnDelete, OnUpdate
+from piccolo.columns.column_types import ForeignKey, Serial, Varchar
 from piccolo.columns.indexes import IndexMethod
 from piccolo.table import Table
 
@@ -32,7 +29,10 @@ async def forwards():
     )
 
     manager.add_table(
-        class_name="Instrument", tablename="instrument", schema=None, columns=None
+        class_name="Instrument",
+        tablename="instrument",
+        schema=None,
+        columns=None,
     )
 
     manager.add_column(
