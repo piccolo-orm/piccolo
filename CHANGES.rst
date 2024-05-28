@@ -1,6 +1,17 @@
 Changes
 =======
 
+1.5.2
+-----
+
+Added an ``Album`` table to the playground, along with some other
+improvements.
+
+Fixed a bug with the ``output(load_json=True)`` clause, when used on joined
+tables.
+
+-------------------------------------------------------------------------------
+
 1.5.1
 -----
 
