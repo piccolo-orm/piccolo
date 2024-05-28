@@ -56,7 +56,7 @@ from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.columns import Selectable
+    from piccolo.querystring import Selectable
 
 PROTECTED_TABLENAMES = ("user",)
 TABLENAME_WARNING = (

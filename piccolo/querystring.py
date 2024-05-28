@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from importlib.util import find_spec
@@ -15,6 +16,32 @@ if find_spec("asyncpg"):
     from asyncpg.pgproto.pgproto import UUID as apgUUID
 else:
     apgUUID = UUID
+
+
+class Selectable(metaclass=ABCMeta):
+    """
+    Anything which inherits from this can be used in a select query.
+    """
+
+    _alias: t.Optional[str]
+
+    @abstractmethod
+    def get_select_string(
+        self, engine_type: str, with_alias: bool = True
+    ) -> QueryString:
+        """
+        In a query, what to output after the select statement - could be a
+        column name, a sub query, a function etc. For a column it will be the
+        column name.
+        """
+        raise NotImplementedError()
+
+    def as_alias(self, alias: str) -> Selectable:
+        """
+        Allows column names to be changed in the result of a select.
+        """
+        self._alias = alias
+        return self
 
 
 @dataclass
@@ -42,7 +69,7 @@ class Fragment:
     no_arg: bool = False
 
 
-class QueryString:
+class QueryString(Selectable):
     """
     When we're composing complex queries, we're combining QueryStrings, rather
     than concatenating strings directly. The reason for this is QueryStrings
@@ -143,7 +170,7 @@ class QueryString:
                 fragment.no_arg = True
                 bundled.append(fragment)
             else:
-                if isinstance(value, self.__class__):
+                if isinstance(value, QueryString):
                     fragment.no_arg = True
                     bundled.append(fragment)
 
@@ -195,3 +222,22 @@ class QueryString:
         self._frozen_compiled_strings = self.compile_string(
             engine_type=engine_type
         )
+
+    ###########################################################################
+
+    def get_select_string(
+        self, engine_type: str, with_alias: bool = True
+    ) -> QueryString:
+        return self
+
+    ###########################################################################
+    # Basic logic
+
+    def __eq__(self, value) -> QueryString:
+        return QueryString("{} = {}", self, value)
+
+    def __ne__(self, value) -> QueryString:
+        return QueryString("{} != {}", self, value)
+
+    def is_in(self, value) -> QueryString:
+        return QueryString("{} != {}", self, value)

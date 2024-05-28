@@ -63,8 +63,8 @@ class SelectRaw(Selectable):
 
     def get_select_string(
         self, engine_type: str, with_alias: bool = True
-    ) -> str:
-        return self.querystring.__str__()
+    ) -> QueryString:
+        return self.querystring
 
 
 class Avg(Selectable):
@@ -96,9 +96,9 @@ class Avg(Selectable):
 
     def get_select_string(
         self, engine_type: str, with_alias: bool = True
-    ) -> str:
+    ) -> QueryString:
         column_name = self.column._meta.get_full_name(with_alias=False)
-        return f'AVG({column_name}) AS "{self._alias}"'
+        return QueryString(f'AVG({column_name}) AS "{self._alias}"')
 
 
 class Count(Selectable):
@@ -156,7 +156,7 @@ class Count(Selectable):
 
     def get_select_string(
         self, engine_type: str, with_alias: bool = True
-    ) -> str:
+    ) -> QueryString:
         expression: str
 
         if self.distinct:
@@ -180,7 +180,7 @@ class Count(Selectable):
             else:
                 expression = "*"
 
-        return f'COUNT({expression}) AS "{self._alias}"'
+        return QueryString(f'COUNT({expression}) AS "{self._alias}"')
 
 
 class Max(Selectable):
@@ -211,9 +211,9 @@ class Max(Selectable):
 
     def get_select_string(
         self, engine_type: str, with_alias: bool = True
-    ) -> str:
+    ) -> QueryString:
         column_name = self.column._meta.get_full_name(with_alias=False)
-        return f'MAX({column_name}) AS "{self._alias}"'
+        return QueryString(f'MAX({column_name}) AS "{self._alias}"')
 
 
 class Min(Selectable):
@@ -242,9 +242,9 @@ class Min(Selectable):
 
     def get_select_string(
         self, engine_type: str, with_alias: bool = True
-    ) -> str:
+    ) -> QueryString:
         column_name = self.column._meta.get_full_name(with_alias=False)
-        return f'MIN({column_name}) AS "{self._alias}"'
+        return QueryString(f'MIN({column_name}) AS "{self._alias}"')
 
 
 class Sum(Selectable):
@@ -278,9 +278,9 @@ class Sum(Selectable):
 
     def get_select_string(
         self, engine_type: str, with_alias: bool = True
-    ) -> str:
+    ) -> QueryString:
         column_name = self.column._meta.get_full_name(with_alias=False)
-        return f'SUM({column_name}) AS "{self._alias}"'
+        return QueryString(f'SUM({column_name}) AS "{self._alias}"')
 
 
 OptionalDict = t.Optional[t.Dict[str, t.Any]]
@@ -765,11 +765,10 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
 
         engine_type = self.table._meta.db.engine_type
 
-        select_strings: t.List[str] = [
+        select_strings: t.List[QueryString] = [
             c.get_select_string(engine_type=engine_type)
             for c in self.columns_delegate.selected_columns
         ]
-        columns_str = ", ".join(select_strings)
 
         #######################################################################
 
@@ -783,7 +782,9 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         query += "{}"
         args.append(distinct.querystring)
 
+        columns_str = ", ".join("{}" for i in select_strings)
         query += f" {columns_str} FROM {self.table._meta.get_formatted_tablename()}"  # noqa: E501
+        args.extend(select_strings)
 
         for join in joins:
             query += f" {join}"

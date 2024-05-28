@@ -60,7 +60,7 @@ from piccolo.columns.defaults.uuid import UUID4, UUIDArg
 from piccolo.columns.operators.comparison import ArrayAll, ArrayAny
 from piccolo.columns.operators.string import Concat
 from piccolo.columns.reference import LazyTableReference
-from piccolo.querystring import QueryString, Unquoted
+from piccolo.querystring import QueryString, Selectable, Unquoted
 from piccolo.utils.encoding import dump_json
 from piccolo.utils.warnings import colored_warning
 
@@ -290,12 +290,51 @@ class TimedeltaDelegate:
 StringColumn = t.TypeVar("StringColumn", "Varchar", "Text")
 
 
-def Upper(column: StringColumn) -> StringColumn:
-    return column.upper()
+class Function(QueryString):
+    function_name: str
+    columns: t.List[Column]
+
+    def __init__(
+        self,
+        identifier: t.Union[StringColumn, QueryString, str],
+        alias: t.Optional[str] = None,
+    ):
+        self._alias = alias
+
+        if isinstance(identifier, Column):
+            if not alias:
+                self._alias = identifier._meta.get_default_alias()
+
+            # We track any columns just in case we need to perform joins
+            self.columns = [identifier, *getattr(self, "columns", [])]
+
+            column_full_name = identifier._meta.get_full_name(with_alias=False)
+            super().__init__(f"{self.function_name}({column_full_name})")
+        elif isinstance(identifier, QueryString):
+            if identifier._alias:
+                self._alias = identifier._alias
+
+            super().__init__(f"{self.function_name}({{}})", identifier)
+        elif isinstance(identifier, str):
+            super().__init__(f"{self.function_name}({{}})", identifier)
+        else:
+            raise ValueError("Unrecognised function type")
+
+    def get_select_string(
+        self, engine_type: str, with_alias: bool = True
+    ) -> QueryString:
+        if with_alias and self._alias:
+            return QueryString("{} AS " + self._alias, self)
+        else:
+            return self
 
 
-def Lower(column: StringColumn) -> StringColumn:
-    return column.lower()
+class Upper(Function):
+    function_name = "UPPER"
+
+
+class Lower(Function):
+    function_name = "LOWER"
 
 
 class Varchar(Column):
@@ -324,7 +363,6 @@ class Varchar(Column):
 
     value_type = str
     concat_delegate: ConcatDelegate = ConcatDelegate()
-    outer_functions: t.List[t.Literal["upper", "lower"]]
 
     def __init__(
         self,
@@ -336,7 +374,6 @@ class Varchar(Column):
 
         self.length = length
         self.default = default
-        self.outer_functions = []
         kwargs.update({"length": length, "default": default})
         super().__init__(**kwargs)
 
@@ -358,27 +395,6 @@ class Varchar(Column):
             value=value,
             reverse=True,
         )
-
-    ###########################################################################
-    # Outer functions
-
-    def _add_outer_function(self, outer_function) -> Varchar:
-        column = self.copy()
-        column.outer_functions.append(outer_function)
-        return column
-
-    def upper(self) -> Varchar:
-        return self._add_outer_function("upper")
-
-    def lower(self) -> Varchar:
-        return self._add_outer_function("lower")
-
-    ###########################################################################
-
-    def copy(self):
-        column = super().copy()
-        column.outer_functions = [*column.outer_functions]
-        return column
 
     ###########################################################################
     # Descriptors
@@ -456,7 +472,6 @@ class Text(Column):
 
     value_type = str
     concat_delegate: ConcatDelegate = ConcatDelegate()
-    outer_functions: t.List[t.Literal["upper", "lower"]]
 
     def __init__(
         self,
@@ -465,7 +480,6 @@ class Text(Column):
     ) -> None:
         self._validate_default(default, (str, None))
         self.default = default
-        self.outer_functions = []
         kwargs.update({"default": default})
         super().__init__(**kwargs)
 
@@ -483,27 +497,6 @@ class Text(Column):
             value=value,
             reverse=True,
         )
-
-    ###########################################################################
-    # Outer functions
-
-    def _add_outer_function(self, outer_function) -> Text:
-        column = self.copy()
-        column.outer_functions.append(outer_function)
-        return column
-
-    def upper(self) -> Text:
-        return self._add_outer_function("upper")
-
-    def lower(self) -> Text:
-        return self._add_outer_function("lower")
-
-    ###########################################################################
-
-    def copy(self):
-        column = super().copy()
-        column.outer_functions = [*column.outer_functions]
-        return column
 
     ###########################################################################
     # Descriptors
@@ -2251,6 +2244,7 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
             column_meta: ColumnMeta = object.__getattribute__(self, "_meta")
 
             new_column._meta.call_chain = column_meta.call_chain.copy()
+
             new_column._meta.call_chain.append(self)
             return new_column
         else:
@@ -2368,7 +2362,7 @@ class JSONB(JSON):
 
     def get_select_string(
         self, engine_type: str, with_alias: bool = True
-    ) -> str:
+    ) -> QueryString:
         select_string = self._meta.get_full_name(with_alias=False)
 
         if self.json_operator is not None:
@@ -2378,7 +2372,7 @@ class JSONB(JSON):
             alias = self._alias or self._meta.get_default_alias()
             select_string += f' AS "{alias}"'
 
-        return select_string
+        return QueryString(select_string)
 
     def eq(self, value) -> Where:
         """
@@ -2673,7 +2667,9 @@ class Array(Column):
         else:
             raise ValueError("Only integers can be used for indexing.")
 
-    def get_select_string(self, engine_type: str, with_alias=True) -> str:
+    def get_select_string(
+        self, engine_type: str, with_alias=True
+    ) -> QueryString:
         select_string = self._meta.get_full_name(with_alias=False)
 
         if isinstance(self.index, int):
@@ -2683,7 +2679,7 @@ class Array(Column):
             alias = self._alias or self._meta.get_default_alias()
             select_string += f' AS "{alias}"'
 
-        return select_string
+        return QueryString(select_string)
 
     def any(self, value: t.Any) -> Where:
         """

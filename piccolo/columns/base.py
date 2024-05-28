@@ -6,7 +6,6 @@ import decimal
 import inspect
 import typing as t
 import uuid
-from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field, fields
 from enum import Enum
 
@@ -32,6 +31,7 @@ from piccolo.columns.operators.comparison import (
     NotLike,
 )
 from piccolo.columns.reference import LazyTableReference
+from piccolo.querystring import QueryString, Selectable
 from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -275,7 +275,6 @@ class ColumnMeta:
         self,
         with_alias: bool = True,
         include_quotes: bool = True,
-        outer_functions: t.List[str] | None = None,
     ) -> str:
         """
         Returns the full column name, taking into account joins.
@@ -305,21 +304,8 @@ class ColumnMeta:
                 >>> column._meta.get_full_name(include_quotes=False)
                 'my_table_name.my_column_name'
 
-        :param outer_functions:
-            If provided, the column name will be wrapped with the given
-            functions. For example:
-
-            .. code-block python::
-
-                >>> Band.manager.get_full_name(outer_functions=["upper"])
-                'upper(band$manager.name) AS "manager$name"'
-
         """
         full_name = self._get_path(include_quotes=include_quotes)
-
-        if outer_functions:
-            for outer_function in outer_functions:
-                full_name = f"{outer_function}({full_name})"
 
         if with_alias:
             alias = self.get_default_alias()
@@ -359,32 +345,6 @@ class ColumnMeta:
         everything.
         """
         return self.copy()
-
-
-class Selectable(metaclass=ABCMeta):
-    """
-    Anything which inherits from this can be used in a select query.
-    """
-
-    _alias: t.Optional[str]
-
-    @abstractmethod
-    def get_select_string(
-        self, engine_type: str, with_alias: bool = True
-    ) -> str:
-        """
-        In a query, what to output after the select statement - could be a
-        column name, a sub query, a function etc. For a column it will be the
-        column name.
-        """
-        raise NotImplementedError()
-
-    def as_alias(self, alias: str) -> Selectable:
-        """
-        Allows column names to be changed in the result of a select.
-        """
-        self._alias = alias
-        return self
 
 
 class Column(Selectable):
@@ -837,32 +797,32 @@ class Column(Selectable):
 
     def get_select_string(
         self, engine_type: str, with_alias: bool = True
-    ) -> str:
+    ) -> QueryString:
         """
         How to refer to this column in a SQL query, taking account of any joins
         and aliases.
         """
-        outer_functions = getattr(self, "outer_functions", None)
 
         if with_alias:
             if self._alias:
                 original_name = self._meta.get_full_name(
                     with_alias=False,
-                    outer_functions=outer_functions,
                 )
-                return f'{original_name} AS "{self._alias}"'
+                return QueryString(f'{original_name} AS "{self._alias}"')
             else:
-                return self._meta.get_full_name(
-                    with_alias=True,
-                    outer_functions=outer_functions,
+                return QueryString(
+                    self._meta.get_full_name(
+                        with_alias=True,
+                    )
                 )
 
-        return self._meta.get_full_name(
-            with_alias=False,
-            outer_functions=outer_functions,
+        return QueryString(
+            self._meta.get_full_name(
+                with_alias=False,
+            )
         )
 
-    def get_where_string(self, engine_type: str) -> str:
+    def get_where_string(self, engine_type: str) -> QueryString:
         return self.get_select_string(
             engine_type=engine_type, with_alias=False
         )
