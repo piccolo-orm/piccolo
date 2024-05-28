@@ -60,7 +60,7 @@ from piccolo.columns.defaults.uuid import UUID4, UUIDArg
 from piccolo.columns.operators.comparison import ArrayAll, ArrayAny
 from piccolo.columns.operators.string import Concat
 from piccolo.columns.reference import LazyTableReference
-from piccolo.querystring import QueryString, Selectable, Unquoted
+from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils.encoding import dump_json
 from piccolo.utils.warnings import colored_warning
 
@@ -287,16 +287,13 @@ class TimedeltaDelegate:
 ###############################################################################
 
 
-StringColumn = t.TypeVar("StringColumn", "Varchar", "Text")
-
-
 class Function(QueryString):
     function_name: str
     columns: t.List[Column]
 
     def __init__(
         self,
-        identifier: t.Union[StringColumn, QueryString, str],
+        identifier: t.Union[Column, QueryString, str],
         alias: t.Optional[str] = None,
     ):
         self._alias = alias

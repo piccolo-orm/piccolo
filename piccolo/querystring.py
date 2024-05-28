@@ -233,11 +233,17 @@ class QueryString(Selectable):
     ###########################################################################
     # Basic logic
 
-    def __eq__(self, value) -> QueryString:
+    def __eq__(self, value) -> QueryString:  # type: ignore[override]
         return QueryString("{} = {}", self, value)
 
-    def __ne__(self, value) -> QueryString:
+    def __ne__(self, value) -> QueryString:  # type: ignore[override]
         return QueryString("{} != {}", self, value)
+
+    def __add__(self, value) -> QueryString:
+        return QueryString("{} + {}", self, value)
+
+    def __sub__(self, value) -> QueryString:
+        return QueryString("{} - {}", self, value)
 
     def is_in(self, value) -> QueryString:
         return QueryString("{} != {}", self, value)
