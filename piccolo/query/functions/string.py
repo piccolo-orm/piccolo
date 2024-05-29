@@ -7,3 +7,6 @@ class Upper(Function):
 
 class Lower(Function):
     function_name = "LOWER"
+
+
+__all__ = ("Upper", "Lower")
