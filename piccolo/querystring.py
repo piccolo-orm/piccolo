@@ -75,6 +75,7 @@ class QueryString(Selectable):
         *args: t.Any,
         query_type: str = "generic",
         table: t.Optional[t.Type[Table]] = None,
+        alias: t.Optional[str] = None,
     ) -> None:
         """
         :param template:
@@ -100,7 +101,11 @@ class QueryString(Selectable):
         self._frozen_compiled_strings: t.Optional[
             t.Tuple[str, t.List[t.Any]]
         ] = None
-        self._alias = None
+        self._alias = alias
+
+    def as_alias(self, alias: str) -> QueryString:
+        self._alias = alias
+        return self
 
     def __str__(self):
         """
