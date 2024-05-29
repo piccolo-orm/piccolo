@@ -28,6 +28,10 @@ class TestUpperFunction(TestCase):
         response = Band.select(Upper(Band.name)).run_sync()
         self.assertEqual(response, [{"upper": "PYTHONISTAS"}])
 
+    def test_alias(self):
+        response = Band.select(Upper(Band.name, alias="name")).run_sync()
+        self.assertEqual(response, [{"name": "PYTHONISTAS"}])
+
     def test_joined_column(self):
         """
         Make sure we can uppercase a column's value from a joined table.
