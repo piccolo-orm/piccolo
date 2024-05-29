@@ -235,6 +235,11 @@ class QueryString(Selectable):
         else:
             return self
 
+    def get_where_string(self, engine_type: str) -> QueryString:
+        return self.get_select_string(
+            engine_type=engine_type, with_alias=False
+        )
+
     ###########################################################################
     # Basic logic
 
