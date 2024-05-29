@@ -4,7 +4,7 @@ import typing as t
 
 from piccolo.custom_types import Combinable
 from piccolo.query.base import Query
-from piccolo.query.methods.select import Count as SelectCount
+from piccolo.query.functions.aggregate import Count as CountFunction
 from piccolo.query.mixins import WhereDelegate
 from piccolo.querystring import QueryString
 
@@ -50,7 +50,7 @@ class Count(Query):
         table: t.Type[Table] = self.table
 
         query = table.select(
-            SelectCount(column=self.column, distinct=self._distinct)
+            CountFunction(column=self.column, distinct=self._distinct)
         )
 
         query.where_delegate._where = self.where_delegate._where

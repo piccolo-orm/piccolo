@@ -182,7 +182,7 @@ Returns the number of matching rows.
 
 .. code-block:: python
 
-    from piccolo.query.methods.select import Count
+    from piccolo.query.functions.aggregate import Count
 
     >> await Band.select(Count()).where(Band.popularity > 100)
     [{'count': 3}]
@@ -196,7 +196,7 @@ Returns the average for a given column:
 
 .. code-block:: python
 
-    >>> from piccolo.query import Avg
+    >>> from piccolo.query.functions.aggregate import Avg
     >>> response = await Band.select(Avg(Band.popularity)).first()
     >>> response["avg"]
     750.0
@@ -208,7 +208,7 @@ Returns the sum for a given column:
 
 .. code-block:: python
 
-    >>> from piccolo.query import Sum
+    >>> from piccolo.query.functions.aggregate import Sum
     >>> response = await Band.select(Sum(Band.popularity)).first()
     >>> response["sum"]
     1500
@@ -220,7 +220,7 @@ Returns the maximum for a given column:
 
 .. code-block:: python
 
-    >>> from piccolo.query import Max
+    >>> from piccolo.query.functions.aggregate import Max
     >>> response = await Band.select(Max(Band.popularity)).first()
     >>> response["max"]
     1000
@@ -232,7 +232,7 @@ Returns the minimum for a given column:
 
 .. code-block:: python
 
-    >>> from piccolo.query import Min
+    >>> from piccolo.query.functions.aggregate import Min
     >>> response = await Band.select(Min(Band.popularity)).first()
     >>> response["min"]
     500
@@ -244,7 +244,7 @@ You also can have multiple different aggregate functions in one query:
 
 .. code-block:: python
 
-    >>> from piccolo.query import Avg, Sum
+    >>> from piccolo.query.functions.aggregate import Avg, Sum
     >>> response = await Band.select(
     ...     Avg(Band.popularity),
     ...     Sum(Band.popularity)
