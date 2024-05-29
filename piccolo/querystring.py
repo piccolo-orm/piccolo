@@ -251,4 +251,7 @@ class QueryString(Selectable):
         return QueryString("{} - {}", self, value)
 
     def is_in(self, value) -> QueryString:
-        return QueryString("{} != {}", self, value)
+        return QueryString("{} IN {}", self, value)
+
+    def not_in(self, value) -> QueryString:
+        return QueryString("{} NOT IN {}", self, value)
