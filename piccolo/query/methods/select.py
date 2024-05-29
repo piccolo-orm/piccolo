@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import datetime
 import decimal
 import itertools
 import typing as t
 from collections import OrderedDict
 
 from piccolo.columns import Column, Selectable
-from piccolo.columns.column_types import JSON, JSONB, PrimaryKey
+from piccolo.columns.column_types import JSON, JSONB, PrimaryKey, Timestamptz
 from piccolo.columns.m2m import M2MSelect
 from piccolo.columns.readable import Readable
 from piccolo.custom_types import TableInstance
@@ -31,6 +32,7 @@ from piccolo.querystring import QueryString
 from piccolo.utils.dictionary import make_nested
 from piccolo.utils.encoding import dump_json, load_json
 from piccolo.utils.warnings import colored_warning
+from piccolo.utils.zoneinfo import ZoneInfo
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.custom_types import Combinable
@@ -571,6 +573,48 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                         m2m_name,
                         m2m_select,
                     )
+
+        #######################################################################
+        # Make sure any Timestamptz values are timezone aware.
+        # This happens when we use `AS TIME ZONE` which returns a naive
+        # datetime.
+
+        selected_columns = (
+            self.columns_delegate.selected_columns or self.table.all_columns()
+        )
+
+        timestamptz_columns = [
+            i for i in selected_columns if isinstance(i, Timestamptz)
+        ]
+
+        if timestamptz_columns:
+            is_sqlite = self.table._meta.db.engine_type == "sqlite"
+
+            for column in timestamptz_columns:
+                if column._at_time_zone == ZoneInfo("UTC"):
+                    # The values already come back as UTC, so nothing to do.
+                    continue
+
+                alias = column._get_alias()
+
+                for row in response:
+                    timestamp_value = row.get(alias)
+                    if isinstance(timestamp_value, datetime.datetime):
+                        if is_sqlite:
+                            # SQLite doesn't support the `AT TIME ZONE` clause
+                            # so we're just getting the values back as UTC,
+                            # so we need to convert them here.
+                            row[alias] = timestamp_value.astimezone(
+                                column._at_time_zone
+                            )
+                        else:
+                            # Postgres and Cockroach support the
+                            # `AT TIME ZONE` clause, so the values are already
+                            # correct, but the datetime object doesn't contain
+                            # a tz value, so set it here.
+                            row[alias] = timestamp_value.replace(
+                                tzinfo=column._at_time_zone
+                            )
 
         #######################################################################
 

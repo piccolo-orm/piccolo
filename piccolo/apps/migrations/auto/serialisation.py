@@ -12,11 +12,17 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
 
-from piccolo.columns import Column
+from piccolo.columns import Column, Timestamptz
 from piccolo.columns.defaults.base import Default
+from piccolo.columns.defaults.timestamptz import (
+    TimestamptzCustom,
+    TimestamptzNow,
+    TimestamptzOffset,
+)
 from piccolo.columns.reference import LazyTableReference
 from piccolo.table import Table
 from piccolo.utils.repr import repr_class_instance
+from piccolo.utils.zoneinfo import ZoneInfo
 
 from .serialisation_legacy import deserialise_legacy_params
 
@@ -546,6 +552,30 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
                     expect_conflict_with_global_name=UniqueGlobalNames.DEFAULT,
                 )
             )
+            # ZoneInfo for Timestamptz* instances
+            in_group = (
+                Timestamptz,
+                TimestamptzNow,
+                TimestamptzCustom,
+                TimestamptzOffset,
+            )
+            if isinstance(value, in_group):
+                extra_imports.append(
+                    Import(
+                        module=ZoneInfo.__module__,
+                        target=None,
+                    )
+                )
+            continue
+
+        # ZoneInfo instances
+        if isinstance(value, ZoneInfo):
+            extra_imports.append(
+                Import(
+                    module=value.__class__.__module__,
+                    target=None,
+                )
+            )
             continue
 
         # Dates and times
@@ -633,6 +663,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
                     extra_imports.append(
                         Import(module=module_name, target=type_.__name__)
                     )
+            continue
 
         # Functions
         if inspect.isfunction(value):

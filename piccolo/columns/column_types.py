@@ -63,6 +63,7 @@ from piccolo.columns.reference import LazyTableReference
 from piccolo.querystring import QueryString, Unquoted
 from piccolo.utils.encoding import dump_json
 from piccolo.utils.warnings import colored_warning
+from piccolo.utils.zoneinfo import ZoneInfo
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import ColumnMeta
@@ -955,30 +956,33 @@ class Timestamp(Column):
 class Timestamptz(Column):
     """
     Used for storing timezone aware datetimes. Uses the ``datetime`` type for
-    values. The values are converted to UTC in the database, and are also
-    returned as UTC.
+    values. The values are converted to UTC when saved into the database and
+    are converted back into the timezone of the column on select queries.
 
     **Example**
 
     .. code-block:: python
 
         import datetime
+        from zoneinfo import ZoneInfo
 
-        class Concert(Table):
-            starts = Timestamptz()
+        class TallinnConcerts(Table):
+            event_start = Timestamptz(at_time_zone=ZoneInfo("Europe/Tallinn"))
 
         # Create
-        >>> await Concert(
-        ...    starts=datetime.datetime(
-        ...        year=2050, month=1, day=1, tzinfo=datetime.timezone.tz
+        >>> await TallinnConcerts(
+        ...    event_start=datetime.datetime(
+        ...        year=2050, month=1, day=1, hour=20
         ...    )
         ... ).save()
 
         # Query
-        >>> await Concert.select(Concert.starts)
+        >>> await TallinnConcerts.select(TallinnConcerts.event_start)
         {
-            'starts': datetime.datetime(
-                2050, 1, 1, 0, 0, tzinfo=datetime.timezone.utc
+            'event_start': datetime.datetime(
+                2050, 1, 1, 20, 0, tzinfo=zoneinfo.ZoneInfo(
+                    key='Europe/Tallinn'
+                )
             )
         }
 
@@ -993,21 +997,58 @@ class Timestamptz(Column):
     timedelta_delegate = TimedeltaDelegate()
 
     def __init__(
-        self, default: TimestamptzArg = TimestamptzNow(), **kwargs
+        self,
+        default: TimestamptzArg = TimestamptzNow(),
+        at_time_zone: ZoneInfo = ZoneInfo("UTC"),
+        **kwargs,
     ) -> None:
         self._validate_default(
             default, TimestamptzArg.__args__  # type: ignore
         )
 
         if isinstance(default, datetime):
-            default = TimestamptzCustom.from_datetime(default)
+            default = TimestamptzCustom.from_datetime(default, at_time_zone)
 
         if default == datetime.now:
-            default = TimestamptzNow()
+            default = TimestamptzNow(tz=at_time_zone)
 
+        self._at_time_zone = at_time_zone
         self.default = default
-        kwargs.update({"default": default})
+        kwargs.update({"default": default, "at_time_zone": at_time_zone})
         super().__init__(**kwargs)
+
+    ###########################################################################
+
+    def at_time_zone(self, time_zone: t.Union[ZoneInfo, str]) -> Timestamptz:
+        """
+        By default, the database returns the value in UTC. This lets us get
+        the value converted to the specified timezone.
+        """
+        time_zone = (
+            ZoneInfo(time_zone) if isinstance(time_zone, str) else time_zone
+        )
+        instance = self.copy()
+        instance._at_time_zone = time_zone
+        return instance
+
+    ###########################################################################
+
+    def get_select_string(
+        self, engine_type: str, with_alias: bool = True
+    ) -> str:
+        select_string = self._meta.get_full_name(with_alias=False)
+
+        if self._at_time_zone != ZoneInfo("UTC"):
+            # SQLite doesn't support `AT TIME ZONE`, so we have to do it in
+            # Python instead (see ``Select.response_handler``).
+            if self._meta.engine_type in ("postgres", "cockroach"):
+                select_string += f" AT TIME ZONE '{self._at_time_zone.key}'"
+
+        if with_alias:
+            alias = self._get_alias()
+            select_string += f' AS "{alias}"'
+
+        return select_string
 
     ###########################################################################
     # For update queries
@@ -2305,7 +2346,7 @@ class JSONB(JSON):
         Allows part of the JSON structure to be returned - for example,
         for {"a": 1}, and a key value of "a", then 1 will be returned.
         """
-        instance = t.cast(JSONB, self.copy())
+        instance = self.copy()
         instance.json_operator = f"-> '{key}'"
         return instance
 
@@ -2318,7 +2359,7 @@ class JSONB(JSON):
             select_string += f" {self.json_operator}"
 
         if with_alias:
-            alias = self._alias or self._meta.get_default_alias()
+            alias = self._get_alias()
             select_string += f' AS "{alias}"'
 
         return select_string
@@ -2623,7 +2664,7 @@ class Array(Column):
             select_string += f"[{self.index}]"
 
         if with_alias:
-            alias = self._alias or self._meta.get_default_alias()
+            alias = self._get_alias()
             select_string += f' AS "{alias}"'
 
         return select_string
