@@ -695,17 +695,12 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
 
             _joins: t.List[str] = []
             for index, key in enumerate(column._meta.call_chain, 0):
-                table_alias = "$".join(
-                    f"{_key._meta.table._meta.tablename}${_key._meta.name}"
-                    for _key in column._meta.call_chain[: index + 1]
-                )
-
-                key._meta.table_alias = table_alias
+                table_alias = key.table_alias
 
                 if index > 0:
                     left_tablename = column._meta.call_chain[
                         index - 1
-                    ]._meta.table_alias
+                    ].table_alias
                 else:
                     left_tablename = (
                         key._meta.table._meta.get_formatted_tablename()

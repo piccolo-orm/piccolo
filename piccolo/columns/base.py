@@ -205,7 +205,6 @@ class ColumnMeta:
 
     # Used by Foreign Keys:
     call_chain: t.List["ForeignKey"] = field(default_factory=list)
-    table_alias: t.Optional[str] = None
 
     ###########################################################################
 
@@ -260,7 +259,7 @@ class ColumnMeta:
         column_name = self.db_column_name
 
         if self.call_chain:
-            table_alias = self.call_chain[-1]._meta.table_alias
+            table_alias = self.call_chain[-1].table_alias
             if include_quotes:
                 return f'"{table_alias}"."{column_name}"'
             else:
@@ -883,6 +882,13 @@ class Column(Selectable):
     @property
     def column_type(self):
         return self.__class__.__name__.upper()
+
+    @property
+    def table_alias(self) -> str:
+        return "$".join(
+            f"{_key._meta.table._meta.tablename}${_key._meta.name}"
+            for _key in [*self._meta.call_chain, self]
+        )
 
     @property
     def ddl(self) -> str:
