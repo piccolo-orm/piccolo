@@ -25,7 +25,7 @@ In the following query, we get a count of the number of bands per manager:
     ...     Band.manager.name.as_alias('manager_name'),
     ...     Count(alias='band_count')
     ... ).group_by(
-    ...     Band.manager
+    ...     Band.manager.name
     ... )
 
     [

@@ -258,7 +258,7 @@ class WhereDelegate:
         elif isinstance(combinable, WhereRaw):
             self._where_columns.extend(combinable.querystring.columns)
 
-    def where(self, *where: Combinable):
+    def where(self, *where: t.Union[Combinable, QueryString]):
         for arg in where:
             if isinstance(arg, bool):
                 raise ValueError(

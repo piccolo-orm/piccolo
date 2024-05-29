@@ -32,7 +32,7 @@ class Count(Query):
     ###########################################################################
     # Clauses
 
-    def where(self: Self, *where: Combinable) -> Self:
+    def where(self: Self, *where: t.Union[Combinable, QueryString]) -> Self:
         self.where_delegate.where(*where)
         return self
 
