@@ -165,6 +165,31 @@ convenient.
 
 -------------------------------------------------------------------------------
 
+String functions
+----------------
+
+Piccolo has lots of string functions built-in. See
+``piccolo/query/functions/string.py``. Here's an example using ``Upper``, to
+convert values to uppercase:
+
+.. code-block:: python
+
+    from piccolo.query.functions.string import Upper
+
+    >> await Band.select(Upper(Band.name, alias='name'))
+    [{'name': 'PYTHONISTAS'}, ...]
+
+You can also use these within where clauses:
+
+.. code-block:: python
+
+    from piccolo.query.functions.string import Upper
+
+    >> await Band.select(Band.name).where(Upper(Band.manager.name) == 'GUIDO')
+    [{'name': 'Pythonistas'}]
+
+-------------------------------------------------------------------------------
+
 .. _AggregateFunctions:
 
 Aggregate functions
