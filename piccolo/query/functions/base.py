@@ -22,16 +22,7 @@ class Function(QueryString):
                 f"{self.function_name}({column_full_name})",
                 alias=alias,
             )
-        elif isinstance(identifier, QueryString):
-            if identifier._alias:
-                self._alias = identifier._alias
-
-            super().__init__(
-                f"{self.function_name}({{}})",
-                identifier,
-                alias=alias,
-            )
-        elif isinstance(identifier, str):
+        elif isinstance(identifier, (QueryString, str)):
             super().__init__(
                 f"{self.function_name}({{}})",
                 identifier,
