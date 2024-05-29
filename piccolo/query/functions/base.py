@@ -17,14 +17,23 @@ class Function(QueryString):
 
         if isinstance(identifier, Column):
             # We track any columns just in case we need to perform joins
-            self.columns = [identifier, *getattr(self, "columns", [])]
+            self.columns = [identifier]
 
             column_full_name = identifier._meta.get_full_name(with_alias=False)
             super().__init__(
                 f"{self.function_name}({column_full_name})",
                 alias=alias,
             )
-        elif isinstance(identifier, (QueryString, str)):
+        elif isinstance(identifier, QueryString):
+            # Just in case the querystring passed in is also tracking columns.
+            self.columns = [*getattr(identifier, "columns", [])]
+
+            super().__init__(
+                f"{self.function_name}({{}})",
+                identifier,
+                alias=alias,
+            )
+        elif isinstance(identifier, str):
             super().__init__(
                 f"{self.function_name}({{}})",
                 identifier,
