@@ -67,6 +67,7 @@ __all__ = (
     "Length",
     "Lower",
     "Ltrim",
+    "Reverse",
     "Rtrim",
     "Upper",
 )
