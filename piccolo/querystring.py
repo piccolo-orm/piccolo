@@ -9,6 +9,7 @@ from string import Formatter
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
+    from piccolo.columns import Column
 
 from uuid import UUID
 
@@ -67,6 +68,7 @@ class QueryString(Selectable):
         "query_type",
         "table",
         "_frozen_compiled_strings",
+        "columns",
     )
 
     def __init__(
@@ -95,13 +97,38 @@ class QueryString(Selectable):
 
         """
         self.template = template
-        self.args = args
         self.query_type = query_type
         self.table = table
         self._frozen_compiled_strings: t.Optional[
             t.Tuple[str, t.List[t.Any]]
         ] = None
         self._alias = alias
+        self.args, self.columns = self.process_args(args)
+
+    def process_args(
+        self, args: t.Sequence[t.Any]
+    ) -> t.Tuple[t.Sequence[t.Any], t.Sequence[Column]]:
+        """
+        If a Column is passed in, we convert it to the name of the column
+        (including joins).
+        """
+        from piccolo.columns import Column
+
+        processed_args = []
+        columns = []
+
+        for arg in args:
+            if isinstance(arg, Column):
+                columns.append(arg)
+                arg = QueryString(
+                    f"{arg._meta.get_full_name(with_alias=False)}"
+                )
+            elif isinstance(arg, QueryString):
+                columns.extend(arg.columns)
+
+            processed_args.append(arg)
+
+        return (processed_args, columns)
 
     def as_alias(self, alias: str) -> QueryString:
         self._alias = alias

@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from piccolo.query.functions.string import Reverse, Upper
+from piccolo.querystring import QueryString
 from piccolo.table import create_db_tables_sync, drop_db_tables_sync
 from tests.base import engines_skip
 from tests.example_apps.music.tables import Band, Manager
@@ -55,3 +56,21 @@ class TestNested(FunctionTest):
         """
         response = Band.select(Upper(Reverse(Band.name))).run_sync()
         self.assertListEqual(response, [{"upper": "SATSINOHTYP"}])
+
+    def test_nested_with_joined_column(self):
+        """
+        Make sure nested functions can be used on a column from a joined table.
+        """
+        response = Band.select(Upper(Reverse(Band.manager._.name))).run_sync()
+        self.assertListEqual(response, [{"upper": "ODIUG"}])
+
+    def test_nested_within_querystring(self):
+        """
+        If we wrap a function in a custom QueryString - make sure the columns
+        are still accessible, so joins are successful.
+        """
+        response = Band.select(
+            QueryString("CONCAT({}, '!')", Upper(Band.manager._.name)),
+        ).run_sync()
+
+        self.assertListEqual(response, [{"concat": "GUIDO!"}])
