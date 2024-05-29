@@ -13,6 +13,8 @@ class Function(QueryString):
         identifier: t.Union[Column, QueryString, str],
         alias: t.Optional[str] = None,
     ):
+        alias = alias or self.__class__.__name__.lower()
+
         if isinstance(identifier, Column):
             # We track any columns just in case we need to perform joins
             self.columns = [identifier, *getattr(self, "columns", [])]

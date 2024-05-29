@@ -37,6 +37,9 @@ class Ltrim(Function):
 class Reverse(Function):
     """
     Return reversed string.
+
+    Not supported in SQLite.
+
     """
 
     function_name = "REVERSE"

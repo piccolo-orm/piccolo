@@ -2,6 +2,7 @@ from unittest import TestCase
 
 from piccolo.query.functions.string import Reverse, Upper
 from piccolo.table import create_db_tables_sync, drop_db_tables_sync
+from tests.base import engines_skip
 from tests.example_apps.music.tables import Band, Manager
 
 
@@ -42,7 +43,11 @@ class TestUpperFunction(FunctionTest):
         self.assertListEqual(response, [{"upper": "GUIDO"}])
 
 
+@engines_skip("sqlite")
 class TestNested(FunctionTest):
+    """
+    Skip the the test for SQLite, as it doesn't support ``Reverse``.
+    """
 
     def test_nested(self):
         """
