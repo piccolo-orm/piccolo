@@ -1,12 +1,11 @@
 from unittest import TestCase
 
-from piccolo.query.functions.string import Upper
+from piccolo.query.functions.string import Reverse, Upper
 from piccolo.table import create_db_tables_sync, drop_db_tables_sync
 from tests.example_apps.music.tables import Band, Manager
 
 
-class TestUpperFunction(TestCase):
-
+class FunctionTest(TestCase):
     tables = (Band, Manager)
 
     def setUp(self) -> None:
@@ -21,20 +20,33 @@ class TestUpperFunction(TestCase):
     def tearDown(self) -> None:
         drop_db_tables_sync(*self.tables)
 
+
+class TestUpperFunction(FunctionTest):
+
     def test_column(self):
         """
         Make sure we can uppercase a column's value.
         """
         response = Band.select(Upper(Band.name)).run_sync()
-        self.assertEqual(response, [{"upper": "PYTHONISTAS"}])
+        self.assertListEqual(response, [{"upper": "PYTHONISTAS"}])
 
     def test_alias(self):
         response = Band.select(Upper(Band.name, alias="name")).run_sync()
-        self.assertEqual(response, [{"name": "PYTHONISTAS"}])
+        self.assertListEqual(response, [{"name": "PYTHONISTAS"}])
 
     def test_joined_column(self):
         """
         Make sure we can uppercase a column's value from a joined table.
         """
         response = Band.select(Upper(Band.manager._.name)).run_sync()
-        self.assertEqual(response, [{"upper": "GUIDO"}])
+        self.assertListEqual(response, [{"upper": "GUIDO"}])
+
+
+class TestNested(FunctionTest):
+
+    def test_nested(self):
+        """
+        Make sure we can nest functions.
+        """
+        response = Band.select(Upper(Reverse(Band.name))).run_sync()
+        self.assertListEqual(response, [{"upper": "SATSINOHTYP"}])
