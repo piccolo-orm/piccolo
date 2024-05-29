@@ -118,6 +118,7 @@ class QueryString(Selectable):
         self._frozen_compiled_strings: t.Optional[
             t.Tuple[str, t.List[t.Any]]
         ] = None
+        self._alias = None
 
     def __str__(self):
         """
