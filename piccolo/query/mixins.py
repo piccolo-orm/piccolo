@@ -255,6 +255,8 @@ class WhereDelegate:
         elif isinstance(combinable, (And, Or)):
             self._extract_columns(combinable.first)
             self._extract_columns(combinable.second)
+        elif isinstance(combinable, WhereRaw):
+            self._where_columns.extend(combinable.querystring.columns)
 
     def where(self, *where: Combinable):
         for arg in where:

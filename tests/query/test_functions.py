@@ -74,3 +74,29 @@ class TestNested(FunctionTest):
         ).run_sync()
 
         self.assertListEqual(response, [{"concat": "GUIDO!"}])
+
+
+class TestWhereClause(FunctionTest):
+
+    def test_where(self):
+        """
+        Make sure where clauses work with functions.
+        """
+        response = (
+            Band.select(Band.name)
+            .where(Upper(Band.name) == "PYTHONISTAS")
+            .run_sync()
+        )
+        self.assertListEqual(response, [{"name": "Pythonistas"}])
+
+    def test_where_with_joined_column(self):
+        """
+        Make sure where clauses work with functions, when a joined column is
+        used.
+        """
+        response = (
+            Band.select(Band.name)
+            .where(Upper(Band.manager._.name) == "GUIDO")
+            .run_sync()
+        )
+        self.assertListEqual(response, [{"name": "Pythonistas"}])
