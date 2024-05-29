@@ -32,4 +32,4 @@ class Function(QueryString):
         elif isinstance(identifier, str):
             super().__init__(f"{self.function_name}({{}})", identifier)
         else:
-            raise ValueError("Unrecognised function type")
+            raise ValueError("Unrecognised identifier type")
