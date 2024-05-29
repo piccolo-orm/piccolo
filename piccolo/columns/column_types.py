@@ -60,7 +60,7 @@ from piccolo.columns.defaults.uuid import UUID4, UUIDArg
 from piccolo.columns.operators.comparison import ArrayAll, ArrayAny
 from piccolo.columns.operators.string import Concat
 from piccolo.columns.reference import LazyTableReference
-from piccolo.querystring import QueryString, Unquoted
+from piccolo.querystring import QueryString
 from piccolo.utils.encoding import dump_json
 from piccolo.utils.warnings import colored_warning
 
@@ -752,8 +752,8 @@ class SmallInt(Integer):
 ###############################################################################
 
 
-DEFAULT = Unquoted("DEFAULT")
-NULL = Unquoted("null")
+DEFAULT = QueryString("DEFAULT")
+NULL = QueryString("null")
 
 
 class Serial(Column):
@@ -778,7 +778,7 @@ class Serial(Column):
         if engine_type == "postgres":
             return DEFAULT
         elif engine_type == "cockroach":
-            return Unquoted("unique_rowid()")
+            return QueryString("unique_rowid()")
         elif engine_type == "sqlite":
             return NULL
         raise Exception("Unrecognized engine type")

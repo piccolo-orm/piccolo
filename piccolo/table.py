@@ -48,7 +48,7 @@ from piccolo.query.methods.create_index import CreateIndex
 from piccolo.query.methods.indexes import Indexes
 from piccolo.query.methods.objects import First
 from piccolo.query.methods.refresh import Refresh
-from piccolo.querystring import QueryString, Unquoted
+from piccolo.querystring import QueryString
 from piccolo.utils import _camel_to_snake
 from piccolo.utils.graphlib import TopologicalSorter
 from piccolo.utils.sql_values import convert_to_sql_value
@@ -796,30 +796,14 @@ class Table(metaclass=TableMetaclass):
         """
         Used when inserting rows.
         """
-        args_dict = {}
-        for col in self._meta.columns:
-            column_name = col._meta.name
-            value = convert_to_sql_value(value=self[column_name], column=col)
-            args_dict[column_name] = value
-
-        def is_unquoted(arg):
-            return isinstance(arg, Unquoted)
-
-        # Strip out any args which are unquoted.
-        filtered_args = [i for i in args_dict.values() if not is_unquoted(i)]
+        args = [
+            convert_to_sql_value(value=self[column._meta.name], column=column)
+            for column in self._meta.columns
+        ]
 
         # If unquoted, dump it straight into the query.
-        query = ",".join(
-            [
-                (
-                    args_dict[column._meta.name].value
-                    if is_unquoted(args_dict[column._meta.name])
-                    else "{}"
-                )
-                for column in self._meta.columns
-            ]
-        )
-        return QueryString(f"({query})", *filtered_args)
+        query = ",".join(["{}" for _ in args])
+        return QueryString(f"({query})", *args)
 
     def __str__(self) -> str:
         return self.querystring.__str__()

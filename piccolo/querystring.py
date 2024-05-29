@@ -47,24 +47,6 @@ class Selectable(metaclass=ABCMeta):
 
 
 @dataclass
-class Unquoted:
-    """
-    Used when we want the value to be unquoted because it's a Postgres
-    keyword - for example DEFAULT.
-    """
-
-    __slots__ = ("value",)
-
-    value: str
-
-    def __repr__(self):
-        return f"{self.value}"
-
-    def __str__(self):
-        return f"{self.value}"
-
-
-@dataclass
 class Fragment:
     prefix: str
     index: int = 0
@@ -261,3 +243,11 @@ class QueryString(Selectable):
 
     def not_in(self, value) -> QueryString:
         return QueryString("{} NOT IN {}", self, value)
+
+
+class Unquoted(QueryString):
+    """
+    This is deprecated - just use QueryString directly.
+    """
+
+    pass
