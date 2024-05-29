@@ -60,7 +60,7 @@ from piccolo.columns.defaults.uuid import UUID4, UUIDArg
 from piccolo.columns.operators.comparison import ArrayAll, ArrayAny
 from piccolo.columns.operators.string import Concat
 from piccolo.columns.reference import LazyTableReference
-from piccolo.querystring import QueryString, Unquoted
+from piccolo.querystring import QueryString
 from piccolo.utils.encoding import dump_json
 from piccolo.utils.warnings import colored_warning
 
@@ -752,8 +752,8 @@ class SmallInt(Integer):
 ###############################################################################
 
 
-DEFAULT = Unquoted("DEFAULT")
-NULL = Unquoted("null")
+DEFAULT = QueryString("DEFAULT")
+NULL = QueryString("null")
 
 
 class Serial(Column):
@@ -778,7 +778,7 @@ class Serial(Column):
         if engine_type == "postgres":
             return DEFAULT
         elif engine_type == "cockroach":
-            return Unquoted("unique_rowid()")
+            return QueryString("unique_rowid()")
         elif engine_type == "sqlite":
             return NULL
         raise Exception("Unrecognized engine type")
@@ -2194,6 +2194,7 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
             column_meta: ColumnMeta = object.__getattribute__(self, "_meta")
 
             new_column._meta.call_chain = column_meta.call_chain.copy()
+
             new_column._meta.call_chain.append(self)
             return new_column
         else:
@@ -2311,7 +2312,7 @@ class JSONB(JSON):
 
     def get_select_string(
         self, engine_type: str, with_alias: bool = True
-    ) -> str:
+    ) -> QueryString:
         select_string = self._meta.get_full_name(with_alias=False)
 
         if self.json_operator is not None:
@@ -2321,7 +2322,7 @@ class JSONB(JSON):
             alias = self._alias or self._meta.get_default_alias()
             select_string += f' AS "{alias}"'
 
-        return select_string
+        return QueryString(select_string)
 
     def eq(self, value) -> Where:
         """
@@ -2616,7 +2617,9 @@ class Array(Column):
         else:
             raise ValueError("Only integers can be used for indexing.")
 
-    def get_select_string(self, engine_type: str, with_alias=True) -> str:
+    def get_select_string(
+        self, engine_type: str, with_alias=True
+    ) -> QueryString:
         select_string = self._meta.get_full_name(with_alias=False)
 
         if isinstance(self.index, int):
@@ -2626,7 +2629,7 @@ class Array(Column):
             alias = self._alias or self._meta.get_default_alias()
             select_string += f' AS "{alias}"'
 
-        return select_string
+        return QueryString(select_string)
 
     def any(self, value: t.Any) -> Where:
         """

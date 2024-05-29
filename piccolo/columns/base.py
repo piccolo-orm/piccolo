@@ -6,7 +6,6 @@ import decimal
 import inspect
 import typing as t
 import uuid
-from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field, fields
 from enum import Enum
 
@@ -32,6 +31,7 @@ from piccolo.columns.operators.comparison import (
     NotLike,
 )
 from piccolo.columns.reference import LazyTableReference
+from piccolo.querystring import QueryString, Selectable
 from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -205,7 +205,6 @@ class ColumnMeta:
 
     # Used by Foreign Keys:
     call_chain: t.List["ForeignKey"] = field(default_factory=list)
-    table_alias: t.Optional[str] = None
 
     ###########################################################################
 
@@ -260,7 +259,7 @@ class ColumnMeta:
         column_name = self.db_column_name
 
         if self.call_chain:
-            table_alias = self.call_chain[-1]._meta.table_alias
+            table_alias = self.call_chain[-1].table_alias
             if include_quotes:
                 return f'"{table_alias}"."{column_name}"'
             else:
@@ -272,7 +271,9 @@ class ColumnMeta:
                 return f"{self.table._meta.tablename}.{column_name}"
 
     def get_full_name(
-        self, with_alias: bool = True, include_quotes: bool = True
+        self,
+        with_alias: bool = True,
+        include_quotes: bool = True,
     ) -> str:
         """
         Returns the full column name, taking into account joins.
@@ -302,11 +303,10 @@ class ColumnMeta:
                 >>> column._meta.get_full_name(include_quotes=False)
                 'my_table_name.my_column_name'
 
-
         """
         full_name = self._get_path(include_quotes=include_quotes)
 
-        if with_alias and self.call_chain:
+        if with_alias:
             alias = self.get_default_alias()
             if include_quotes:
                 full_name += f' AS "{alias}"'
@@ -344,32 +344,6 @@ class ColumnMeta:
         everything.
         """
         return self.copy()
-
-
-class Selectable(metaclass=ABCMeta):
-    """
-    Anything which inherits from this can be used in a select query.
-    """
-
-    _alias: t.Optional[str]
-
-    @abstractmethod
-    def get_select_string(
-        self, engine_type: str, with_alias: bool = True
-    ) -> str:
-        """
-        In a query, what to output after the select statement - could be a
-        column name, a sub query, a function etc. For a column it will be the
-        column name.
-        """
-        raise NotImplementedError()
-
-    def as_alias(self, alias: str) -> Selectable:
-        """
-        Allows column names to be changed in the result of a select.
-        """
-        self._alias = alias
-        return self
 
 
 class Column(Selectable):
@@ -822,25 +796,32 @@ class Column(Selectable):
 
     def get_select_string(
         self, engine_type: str, with_alias: bool = True
-    ) -> str:
+    ) -> QueryString:
         """
         How to refer to this column in a SQL query, taking account of any joins
         and aliases.
         """
+
         if with_alias:
             if self._alias:
                 original_name = self._meta.get_full_name(
                     with_alias=False,
                 )
-                return f'{original_name} AS "{self._alias}"'
+                return QueryString(f'{original_name} AS "{self._alias}"')
             else:
-                return self._meta.get_full_name(
-                    with_alias=True,
+                return QueryString(
+                    self._meta.get_full_name(
+                        with_alias=True,
+                    )
                 )
 
-        return self._meta.get_full_name(with_alias=False)
+        return QueryString(
+            self._meta.get_full_name(
+                with_alias=False,
+            )
+        )
 
-    def get_where_string(self, engine_type: str) -> str:
+    def get_where_string(self, engine_type: str) -> QueryString:
         return self.get_select_string(
             engine_type=engine_type, with_alias=False
         )
@@ -903,6 +884,13 @@ class Column(Selectable):
         return self.__class__.__name__.upper()
 
     @property
+    def table_alias(self) -> str:
+        return "$".join(
+            f"{_key._meta.table._meta.tablename}${_key._meta.name}"
+            for _key in [*self._meta.call_chain, self]
+        )
+
+    @property
     def ddl(self) -> str:
         """
         Used when creating tables.
@@ -945,8 +933,8 @@ class Column(Selectable):
 
         return query
 
-    def copy(self) -> Column:
-        column: Column = copy.copy(self)
+    def copy(self: Self) -> Self:
+        column = copy.copy(self)
         column._meta = self._meta.copy()
         return column
 
@@ -971,3 +959,6 @@ class Column(Selectable):
             f"{table_class_name}.{self._meta.name} - "
             f"{self.__class__.__name__}"
         )
+
+
+Self = t.TypeVar("Self", bound=Column)

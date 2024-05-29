@@ -9,13 +9,14 @@ from enum import Enum, auto
 
 from piccolo.columns import And, Column, Or, Where
 from piccolo.columns.column_types import ForeignKey
+from piccolo.columns.combination import WhereRaw
 from piccolo.custom_types import Combinable
 from piccolo.querystring import QueryString
 from piccolo.utils.list import flatten
 from piccolo.utils.sql_values import convert_to_sql_value
 
 if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.columns.base import Selectable
+    from piccolo.querystring import Selectable
     from piccolo.table import Table  # noqa
 
 
@@ -254,8 +255,10 @@ class WhereDelegate:
         elif isinstance(combinable, (And, Or)):
             self._extract_columns(combinable.first)
             self._extract_columns(combinable.second)
+        elif isinstance(combinable, WhereRaw):
+            self._where_columns.extend(combinable.querystring.columns)
 
-    def where(self, *where: Combinable):
+    def where(self, *where: t.Union[Combinable, QueryString]):
         for arg in where:
             if isinstance(arg, bool):
                 raise ValueError(
@@ -264,6 +267,10 @@ class WhereDelegate:
                     "`.where(MyTable.some_column is None)` instead of "
                     "`.where(MyTable.some_column.is_null())`."
                 )
+
+            if isinstance(arg, QueryString):
+                # If a raw QueryString is passed in.
+                arg = WhereRaw(arg.template, *arg.args)
 
             self._where = And(self._where, arg) if self._where else arg
 
