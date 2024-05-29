@@ -34,6 +34,14 @@ class Ltrim(Function):
     function_name = "LTRIM"
 
 
+class Reverse(Function):
+    """
+    Return reversed string.
+    """
+
+    function_name = "REVERSE"
+
+
 class Rtrim(Function):
     """
     Removes the longest string containing only characters in characters (a
