@@ -230,7 +230,10 @@ class QueryString(Selectable):
     def get_select_string(
         self, engine_type: str, with_alias: bool = True
     ) -> QueryString:
-        return self
+        if with_alias and self._alias:
+            return QueryString("{} AS " + self._alias, self)
+        else:
+            return self
 
     ###########################################################################
     # Basic logic

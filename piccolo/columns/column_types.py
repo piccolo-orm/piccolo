@@ -317,14 +317,6 @@ class Function(QueryString):
         else:
             raise ValueError("Unrecognised function type")
 
-    def get_select_string(
-        self, engine_type: str, with_alias: bool = True
-    ) -> QueryString:
-        if with_alias and self._alias:
-            return QueryString("{} AS " + self._alias, self)
-        else:
-            return self
-
 
 class Upper(Function):
     function_name = "UPPER"
