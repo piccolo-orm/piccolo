@@ -682,6 +682,13 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         for readable in readables:
             columns += readable.columns
 
+        querystrings: t.List[QueryString] = [
+            i for i in columns if isinstance(i, QueryString)
+        ]
+        for querystring in querystrings:
+            if querystring_columns := getattr(querystring, "columns"):
+                columns += querystring_columns
+
         for column in columns:
             if not isinstance(column, Column):
                 continue
