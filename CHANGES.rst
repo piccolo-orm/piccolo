@@ -1,6 +1,27 @@
 Changes
 =======
 
+1.6.0
+-----
+
+Added support for a bunch of Postgres functions, like ``Upper``, ``Lower``,
+``Length``, and ``Ltrim``. They can be used in ``select`` queries:
+
+.. code-block:: python
+
+  from piccolo.query.functions.string import Upper
+  >>> await Band.select(Upper(Band.name))
+  [["name": "PYTHONISTAS"]]
+
+And also in ``where`` clauses:
+
+.. code-block:: python
+
+  >>> await Band.select().where(Upper(Band.manager.name) == 'GUIDO')
+  [["name": "Pythonistas"]]
+
+-------------------------------------------------------------------------------
+
 1.5.2
 -----
 
