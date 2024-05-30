@@ -10,15 +10,15 @@ Added support for a bunch of Postgres functions, like ``Upper``, ``Lower``,
 .. code-block:: python
 
   from piccolo.query.functions.string import Upper
-  >>> await Band.select(Upper(Band.name))
-  [["name": "PYTHONISTAS"]]
+  >>> await Band.select(Upper(Band.name, alias="name"))
+  [{"name": "PYTHONISTAS"}]
 
 And also in ``where`` clauses:
 
 .. code-block:: python
 
   >>> await Band.select().where(Upper(Band.manager.name) == 'GUIDO')
-  [["name": "Pythonistas"]]
+  [{"name": "Pythonistas"}]
 
 -------------------------------------------------------------------------------
 
