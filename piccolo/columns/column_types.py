@@ -2532,7 +2532,14 @@ class Array(Column):
         if engine_type in ("postgres", "cockroach"):
             return f"{self.base_column.column_type}[]"
         elif engine_type == "sqlite":
-            return "ARRAY"
+            inner_column = self._get_inner_column()
+            return (
+                f"ARRAY_{inner_column.column_type}"
+                if isinstance(
+                    inner_column, (Date, Timestamp, Timestamptz, Time)
+                )
+                else "ARRAY"
+            )
         raise Exception("Unrecognized engine type")
 
     def _setup_base_column(self, table_class: t.Type[Table]):
@@ -2564,6 +2571,23 @@ class Array(Column):
         else:
             return start + 1
 
+    def _get_inner_column(self) -> Column:
+        """
+        A helper function to get the innermost ``Column`` for the array. For
+        example::
+
+            >>> Array(Varchar())._get_inner_column()
+            Varchar
+
+            >>> Array(Array(Varchar()))._get_inner_column()
+            Varchar
+
+        """
+        if isinstance(self.base_column, Array):
+            return self.base_column._get_inner_column()
+        else:
+            return self.base_column
+
     def _get_inner_value_type(self) -> t.Type:
         """
         A helper function to get the innermost value type for the array. For
@@ -2576,10 +2600,7 @@ class Array(Column):
             str
 
         """
-        if isinstance(self.base_column, Array):
-            return self.base_column._get_inner_value_type()
-        else:
-            return self.base_column.value_type
+        return self._get_inner_column().value_type
 
     def __getitem__(self, value: int) -> Array:
         """
