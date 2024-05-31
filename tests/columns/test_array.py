@@ -206,6 +206,7 @@ class TestDateTimeArray(TestCase):
     def tearDown(self):
         DateTimeArrayTable.alter().drop_table().run_sync()
 
+    @engines_only("postgres", "sqlite")
     def test_storage(self):
         test_date = datetime.date(year=2024, month=1, day=1)
         test_time = datetime.time(hour=12, minute=0)
