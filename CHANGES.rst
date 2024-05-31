@@ -1,6 +1,23 @@
 Changes
 =======
 
+1.7.0
+-----
+
+Arrays of date / time / timestamps now work in SQLite.
+
+For example:
+
+.. code-block:: python
+
+  class MyTable(Table):
+      times = Array(Time())
+      dates = Array(Date())
+      timestamps = Array(Timestamp())
+      timestamps_tz = Array(Timestamptz())
+
+-------------------------------------------------------------------------------
+
 1.6.0
 -----
 
