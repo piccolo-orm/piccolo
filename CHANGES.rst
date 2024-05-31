@@ -4,7 +4,8 @@ Changes
 1.7.0
 -----
 
-Arrays of date / time / timestamps now work in SQLite.
+Arrays of ``Date`` / ``Time`` / ``Timestamp`` / ``Timestamptz`` now work in
+SQLite.
 
 For example:
 
