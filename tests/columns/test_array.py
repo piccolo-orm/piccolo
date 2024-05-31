@@ -1,6 +1,15 @@
+import datetime
 from unittest import TestCase
 
-from piccolo.columns.column_types import Array, BigInt, Integer
+from piccolo.columns.column_types import (
+    Array,
+    BigInt,
+    Date,
+    Integer,
+    Time,
+    Timestamp,
+    Timestamptz,
+)
 from piccolo.table import Table
 from tests.base import engines_only, sqlite_only
 
@@ -22,7 +31,7 @@ class TestArrayDefault(TestCase):
 
 class TestArray(TestCase):
     """
-    Make sure an Array column can be created, and work correctly.
+    Make sure an Array column can be created, and works correctly.
     """
 
     def setUp(self):
@@ -164,6 +173,83 @@ class TestArray(TestCase):
             str(manager.exception),
             "Only Postgres and Cockroach support array appending.",
         )
+
+
+###############################################################################
+# Date and time arrays
+
+
+class DateTimeArrayTable(Table):
+    date = Array(Date())
+    time = Array(Time())
+    timestamp = Array(Timestamp())
+    timestamptz = Array(Timestamptz())
+    date_nullable = Array(Date(), null=True)
+    time_nullable = Array(Time(), null=True)
+    timestamp_nullable = Array(Timestamp(), null=True)
+    timestamptz_nullable = Array(Timestamptz(), null=True)
+
+
+class TestDateTimeArray(TestCase):
+    """
+    Make sure that data can be stored and retrieved when using arrays of
+    date / time / timestamp.
+
+    We have to serialise / deserialise it in a special way in SQLite, hence
+    the tests.
+
+    """
+
+    def setUp(self):
+        DateTimeArrayTable.create_table().run_sync()
+
+    def tearDown(self):
+        DateTimeArrayTable.alter().drop_table().run_sync()
+
+    def test_storage(self):
+        test_date = datetime.date(year=2024, month=1, day=1)
+        test_time = datetime.time(hour=12, minute=0)
+        test_timestamp = datetime.datetime(
+            year=2024, month=1, day=1, hour=12, minute=0
+        )
+        test_timestamptz = datetime.datetime(
+            year=2024,
+            month=1,
+            day=1,
+            hour=12,
+            minute=0,
+            tzinfo=datetime.timezone.utc,
+        )
+
+        DateTimeArrayTable(
+            {
+                DateTimeArrayTable.date: [test_date],
+                DateTimeArrayTable.time: [test_time],
+                DateTimeArrayTable.timestamp: [test_timestamp],
+                DateTimeArrayTable.timestamptz: [test_timestamptz],
+                DateTimeArrayTable.date_nullable: None,
+                DateTimeArrayTable.time_nullable: None,
+                DateTimeArrayTable.timestamp_nullable: None,
+                DateTimeArrayTable.timestamptz_nullable: None,
+            }
+        ).save().run_sync()
+
+        row = DateTimeArrayTable.objects().first().run_sync()
+        assert row is not None
+
+        self.assertListEqual(row.date, [test_date])
+        self.assertListEqual(row.time, [test_time])
+        self.assertListEqual(row.timestamp, [test_timestamp])
+        self.assertListEqual(row.timestamptz, [test_timestamptz])
+
+        self.assertIsNone(row.date_nullable)
+        self.assertIsNone(row.time_nullable)
+        self.assertIsNone(row.timestamp_nullable)
+        self.assertIsNone(row.timestamptz_nullable)
+
+
+###############################################################################
+# Nested arrays
 
 
 class NestedArrayTable(Table):
