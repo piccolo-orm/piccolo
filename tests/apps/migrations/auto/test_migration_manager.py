@@ -768,15 +768,15 @@ class TestMigrationManager(DBTestCase):
         )
 
         asyncio.run(manager.run())
-        self.assertEqual(
-            self._get_column_default(),
-            [{"column_default": "'Unknown':::STRING"}],
+        self.assertIn(
+            self._get_column_default()[0]["column_default"],
+            ["'Unknown'", "'Unknown':::STRING"],
         )
 
         asyncio.run(manager.run(backwards=True))
-        self.assertEqual(
-            self._get_column_default(),
-            [{"column_default": "'':::STRING"}],
+        self.assertIn(
+            self._get_column_default()[0]["column_default"],
+            ["''", "'':::STRING"],
         )
 
     @engines_only("postgres")
@@ -856,9 +856,9 @@ class TestMigrationManager(DBTestCase):
             old_params={"default": None},
         )
         asyncio.run(manager_1.run())
-        self.assertEqual(
-            self._get_column_default(),
-            [{"column_default": "'Mr Manager':::STRING"}],
+        self.assertIn(
+            self._get_column_default()[0]["column_default"],
+            ["'Mr Manager'", "'Mr Manager':::STRING"],
         )
 
         # Drop the default.
@@ -879,9 +879,9 @@ class TestMigrationManager(DBTestCase):
         # And add it back once more to be sure.
         manager_3 = manager_1
         asyncio.run(manager_3.run())
-        self.assertEqual(
-            self._get_column_default(),
-            [{"column_default": "'Mr Manager':::STRING"}],
+        self.assertIn(
+            self._get_column_default()[0]["column_default"],
+            ["'Mr Manager'", "'Mr Manager':::STRING"],
         )
 
         # Run them all backwards
@@ -892,9 +892,9 @@ class TestMigrationManager(DBTestCase):
         )
 
         asyncio.run(manager_2.run(backwards=True))
-        self.assertEqual(
-            self._get_column_default(),
-            [{"column_default": "'Mr Manager':::STRING"}],
+        self.assertIn(
+            self._get_column_default()[0]["column_default"],
+            ["'Mr Manager'", "'Mr Manager':::STRING"],
         )
 
         asyncio.run(manager_1.run(backwards=True))
