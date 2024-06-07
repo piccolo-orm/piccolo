@@ -201,6 +201,10 @@ class ColumnMeta:
             )
         return self._table
 
+    @table.setter
+    def table(self, value: t.Type[Table]):
+        self._table = value
+
     ###########################################################################
 
     # Used by Foreign Keys:
