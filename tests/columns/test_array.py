@@ -11,7 +11,7 @@ from piccolo.columns.column_types import (
     Timestamptz,
 )
 from piccolo.table import Table
-from tests.base import engines_only, sqlite_only
+from tests.base import engines_only, engines_skip, sqlite_only
 
 
 class MyTable(Table):
@@ -40,7 +40,6 @@ class TestArray(TestCase):
     def tearDown(self):
         MyTable.alter().drop_table().run_sync()
 
-    @engines_only("postgres", "sqlite")
     def test_storage(self):
         """
         Make sure data can be stored and retrieved.
@@ -54,7 +53,7 @@ class TestArray(TestCase):
         assert row is not None
         self.assertEqual(row.value, [1, 2, 3])
 
-    @engines_only("postgres")
+    @engines_skip("sqlite")
     def test_index(self):
         """
         Indexes should allow individual array elements to be queried.
@@ -68,7 +67,7 @@ class TestArray(TestCase):
             MyTable.select(MyTable.value[0]).first().run_sync(), {"value": 1}
         )
 
-    @engines_only("postgres")
+    @engines_skip("sqlite")
     def test_all(self):
         """
         Make sure rows can be retrieved where all items in an array match a
@@ -95,7 +94,7 @@ class TestArray(TestCase):
             None,
         )
 
-    @engines_only("postgres")
+    @engines_skip("sqlite")
     def test_any(self):
         """
         Make sure rows can be retrieved where any items in an array match a
@@ -122,7 +121,7 @@ class TestArray(TestCase):
             None,
         )
 
-    @engines_only("postgres")
+    @engines_skip("sqlite")
     def test_cat(self):
         """
         Make sure values can be appended to an array.
@@ -137,7 +136,8 @@ class TestArray(TestCase):
         ).run_sync()
 
         self.assertEqual(
-            MyTable.select().run_sync(), [{"id": 1, "value": [1, 1, 1, 2]}]
+            MyTable.select(MyTable.value).run_sync(),
+            [{"value": [1, 1, 1, 2]}],
         )
 
         # Try plus symbol
@@ -147,7 +147,8 @@ class TestArray(TestCase):
         ).run_sync()
 
         self.assertEqual(
-            MyTable.select().run_sync(), [{"id": 1, "value": [1, 1, 1, 2, 3]}]
+            MyTable.select(MyTable.value).run_sync(),
+            [{"value": [1, 1, 1, 2, 3]}],
         )
 
         # Make sure non-list values work
@@ -157,8 +158,8 @@ class TestArray(TestCase):
         ).run_sync()
 
         self.assertEqual(
-            MyTable.select().run_sync(),
-            [{"id": 1, "value": [1, 1, 1, 2, 3, 4]}],
+            MyTable.select(MyTable.value).run_sync(),
+            [{"value": [1, 1, 1, 2, 3, 4]}],
         )
 
     @sqlite_only
