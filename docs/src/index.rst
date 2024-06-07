@@ -16,6 +16,7 @@ batteries included.
    piccolo/getting_started/index
    piccolo/query_types/index
    piccolo/query_clauses/index
+   piccolo/functions/index
    piccolo/schema/index
    piccolo/projects_and_apps/index
    piccolo/engines/index
