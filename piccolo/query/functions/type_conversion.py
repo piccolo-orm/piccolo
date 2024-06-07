@@ -14,7 +14,7 @@ class Cast(QueryString):
         """
         Cast a value to a different type. For example::
 
-            >>> class piccolo.query.functions import Cast
+            >>> from piccolo.query.functions import Cast
 
             >>> await Concert.select(
             ...     Cast(Concert.starts, Time(), "start_time")
