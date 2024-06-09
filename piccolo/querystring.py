@@ -270,6 +270,18 @@ class QueryString(Selectable):
     def __sub__(self, value) -> QueryString:
         return QueryString("{} - {}", self, value)
 
+    def __gt__(self, value) -> QueryString:
+        return QueryString("{} > {}", self, value)
+
+    def __ge__(self, value) -> QueryString:
+        return QueryString("{} >= {}", self, value)
+
+    def __lt__(self, value) -> QueryString:
+        return QueryString("{} < {}", self, value)
+
+    def __le__(self, value) -> QueryString:
+        return QueryString("{} <= {}", self, value)
+
     def is_in(self, value) -> QueryString:
         return QueryString("{} IN {}", self, value)
 

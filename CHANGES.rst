@@ -1,6 +1,25 @@
 Changes
 =======
 
+1.8.0
+-----
+
+Added the ``Cast`` function, for performing type conversion.
+
+Here's an example, where we convert a ``timestamp`` to ``time``:
+
+.. code-block:: python
+
+    >>> from piccolo.columns import Time
+    >>> from piccolo.query.functions import Cast
+
+    >>> await Concert.select(Cast(Concert.starts, Time()))
+    [{'starts': datetime.time(19, 0)}]
+
+A new section was also added to the docs describing functions in more detail.
+
+-------------------------------------------------------------------------------
+
 1.7.0
 -----
 

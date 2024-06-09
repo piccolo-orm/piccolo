@@ -12,17 +12,17 @@ class Avg(Function):
 
     .. code-block:: python
 
-        await Band.select(Avg(Band.popularity)).run()
+        await Band.select(Avg(Band.popularity))
 
         # We can use an alias. These two are equivalent:
 
         await Band.select(
             Avg(Band.popularity, alias="popularity_avg")
-        ).run()
+        )
 
         await Band.select(
             Avg(Band.popularity).as_alias("popularity_avg")
-        ).run()
+        )
 
     """
 
@@ -103,17 +103,17 @@ class Min(Function):
 
     .. code-block:: python
 
-        await Band.select(Min(Band.popularity)).run()
+        await Band.select(Min(Band.popularity))
 
         # We can use an alias. These two are equivalent:
 
         await Band.select(
             Min(Band.popularity, alias="popularity_min")
-        ).run()
+        )
 
         await Band.select(
             Min(Band.popularity).as_alias("popularity_min")
-        ).run()
+        )
 
     """
 
@@ -128,17 +128,17 @@ class Max(Function):
 
         await Band.select(
             Max(Band.popularity)
-        ).run()
+        )
 
         # We can use an alias. These two are equivalent:
 
         await Band.select(
             Max(Band.popularity, alias="popularity_max")
-        ).run()
+        )
 
         await Band.select(
             Max(Band.popularity).as_alias("popularity_max")
-        ).run()
+        )
 
     """
 
@@ -153,17 +153,17 @@ class Sum(Function):
 
         await Band.select(
             Sum(Band.popularity)
-        ).run()
+        )
 
         # We can use an alias. These two are equivalent:
 
         await Band.select(
             Sum(Band.popularity, alias="popularity_sum")
-        ).run()
+        )
 
         await Band.select(
             Sum(Band.popularity).as_alias("popularity_sum")
-        ).run()
+        )
 
     """
 
