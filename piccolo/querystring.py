@@ -282,11 +282,26 @@ class QueryString(Selectable):
     def __le__(self, value) -> QueryString:
         return QueryString("{} <= {}", self, value)
 
+    def __truediv__(self, value) -> QueryString:
+        return QueryString("{} / {}", self, value)
+
+    def __mul__(self, value) -> QueryString:
+        return QueryString("{} * {}", self, value)
+
+    def __pow__(self, value) -> QueryString:
+        return QueryString("{} ^ {}", self, value)
+
     def is_in(self, value) -> QueryString:
         return QueryString("{} IN {}", self, value)
 
     def not_in(self, value) -> QueryString:
         return QueryString("{} NOT IN {}", self, value)
+
+    def like(self, value: str) -> QueryString:
+        return QueryString("{} LIKE {}", self, value)
+
+    def ilike(self, value: str) -> QueryString:
+        return QueryString("{} ILIKE {}", self, value)
 
 
 class Unquoted(QueryString):
