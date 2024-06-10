@@ -45,6 +45,14 @@ class TestQueryStringOperators(TestCase):
             ("SELECT price + $1", [1]),
         )
 
+    def test_multiply(self):
+        query = QueryString("SELECT price") * 2
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(),
+            ("SELECT price * $1", [2]),
+        )
+
     def test_divide(self):
         query = QueryString("SELECT price") / 1
         self.assertIsInstance(query, QueryString)
@@ -91,4 +99,68 @@ class TestQueryStringOperators(TestCase):
         self.assertEqual(
             query.compile_string(),
             ("strip(name) ILIKE $1", ["Python%"]),
+        )
+
+    def test_greater_than(self):
+        query = QueryString("SELECT price") > 10
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(),
+            ("SELECT price > $1", [10]),
+        )
+
+    def test_greater_equal_than(self):
+        query = QueryString("SELECT price") >= 10
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(),
+            ("SELECT price >= $1", [10]),
+        )
+
+    def test_less_than(self):
+        query = QueryString("SELECT price") < 10
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(),
+            ("SELECT price < $1", [10]),
+        )
+
+    def test_less_equal_than(self):
+        query = QueryString("SELECT price") <= 10
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(),
+            ("SELECT price <= $1", [10]),
+        )
+
+    def test_equals(self):
+        query = QueryString("SELECT price") == 10
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(),
+            ("SELECT price = $1", [10]),
+        )
+
+    def test_not_equals(self):
+        query = QueryString("SELECT price") != 10
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(),
+            ("SELECT price != $1", [10]),
+        )
+
+    def test_is_in(self):
+        query = QueryString("SELECT price").is_in([10, 20, 30])
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(),
+            ("SELECT price IN $1", [[10, 20, 30]]),
+        )
+
+    def test_not_in(self):
+        query = QueryString("SELECT price").not_in([10, 20, 30])
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(),
+            ("SELECT price NOT IN $1", [[10, 20, 30]]),
         )
