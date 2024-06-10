@@ -1,6 +1,8 @@
 import datetime
 from unittest import TestCase
 
+import pytest
+
 from piccolo.columns.column_types import (
     Array,
     BigInt,
@@ -10,8 +12,9 @@ from piccolo.columns.column_types import (
     Timestamp,
     Timestamptz,
 )
+from piccolo.querystring import QueryString
 from piccolo.table import Table
-from tests.base import engines_only, sqlite_only
+from tests.base import engines_only, engines_skip, sqlite_only
 
 
 class MyTable(Table):
@@ -40,12 +43,18 @@ class TestArray(TestCase):
     def tearDown(self):
         MyTable.alter().drop_table().run_sync()
 
-    @engines_only("postgres", "sqlite")
+    @pytest.mark.cockroach_array_slow
     def test_storage(self):
         """
         Make sure data can be stored and retrieved.
 
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        In CockroachDB <= v22.2.0 we had this error:
+
+        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+
+        In newer CockroachDB versions, it runs but is very slow:
+
+        * https://github.com/piccolo-orm/piccolo/issues/1005
 
         """  # noqa: E501
         MyTable(value=[1, 2, 3]).save().run_sync()
@@ -54,12 +63,19 @@ class TestArray(TestCase):
         assert row is not None
         self.assertEqual(row.value, [1, 2, 3])
 
-    @engines_only("postgres")
+    @engines_skip("sqlite")
+    @pytest.mark.cockroach_array_slow
     def test_index(self):
         """
         Indexes should allow individual array elements to be queried.
 
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        In CockroachDB <= v22.2.0 we had this error:
+
+        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+
+        In newer CockroachDB versions, it runs but is very slow:
+
+        * https://github.com/piccolo-orm/piccolo/issues/1005
 
         """  # noqa: E501
         MyTable(value=[1, 2, 3]).save().run_sync()
@@ -68,66 +84,92 @@ class TestArray(TestCase):
             MyTable.select(MyTable.value[0]).first().run_sync(), {"value": 1}
         )
 
-    @engines_only("postgres")
+    @engines_skip("sqlite")
+    @pytest.mark.cockroach_array_slow
     def test_all(self):
         """
         Make sure rows can be retrieved where all items in an array match a
         given value.
 
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        In CockroachDB <= v22.2.0 we had this error:
+
+        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+
+        In newer CockroachDB versions, it runs but is very slow:
+
+        * https://github.com/piccolo-orm/piccolo/issues/1005
 
         """  # noqa: E501
         MyTable(value=[1, 1, 1]).save().run_sync()
 
+        # We have to explicitly specify the type, so CockroachDB works.
         self.assertEqual(
             MyTable.select(MyTable.value)
-            .where(MyTable.value.all(1))
+            .where(MyTable.value.all(QueryString("{}::INTEGER", 1)))
             .first()
             .run_sync(),
             {"value": [1, 1, 1]},
         )
 
+        # We have to explicitly specify the type, so CockroachDB works.
         self.assertEqual(
             MyTable.select(MyTable.value)
-            .where(MyTable.value.all(0))
+            .where(MyTable.value.all(QueryString("{}::INTEGER", 0)))
             .first()
             .run_sync(),
             None,
         )
 
-    @engines_only("postgres")
+    @engines_skip("sqlite")
+    @pytest.mark.cockroach_array_slow
     def test_any(self):
         """
         Make sure rows can be retrieved where any items in an array match a
         given value.
 
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        In CockroachDB <= v22.2.0 we had this error:
+
+        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+
+        In newer CockroachDB versions, it runs but is very slow:
+
+        * https://github.com/piccolo-orm/piccolo/issues/1005
 
         """  # noqa: E501
+
         MyTable(value=[1, 2, 3]).save().run_sync()
 
+        # We have to explicitly specify the type, so CockroachDB works.
         self.assertEqual(
             MyTable.select(MyTable.value)
-            .where(MyTable.value.any(1))
+            .where(MyTable.value.any(QueryString("{}::INTEGER", 1)))
             .first()
             .run_sync(),
             {"value": [1, 2, 3]},
         )
 
+        # We have to explicitly specify the type, so CockroachDB works.
         self.assertEqual(
             MyTable.select(MyTable.value)
-            .where(MyTable.value.any(0))
+            .where(MyTable.value.any(QueryString("{}::INTEGER", 0)))
             .first()
             .run_sync(),
             None,
         )
 
-    @engines_only("postgres")
+    @engines_skip("sqlite")
+    @pytest.mark.cockroach_array_slow
     def test_cat(self):
         """
         Make sure values can be appended to an array.
 
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        In CockroachDB <= v22.2.0 we had this error:
+
+        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+
+        In newer CockroachDB versions, it runs but is very slow:
+
+        * https://github.com/piccolo-orm/piccolo/issues/1005
 
         """  # noqa: E501
         MyTable(value=[1, 1, 1]).save().run_sync()
@@ -137,7 +179,8 @@ class TestArray(TestCase):
         ).run_sync()
 
         self.assertEqual(
-            MyTable.select().run_sync(), [{"id": 1, "value": [1, 1, 1, 2]}]
+            MyTable.select(MyTable.value).run_sync(),
+            [{"value": [1, 1, 1, 2]}],
         )
 
         # Try plus symbol
@@ -147,7 +190,8 @@ class TestArray(TestCase):
         ).run_sync()
 
         self.assertEqual(
-            MyTable.select().run_sync(), [{"id": 1, "value": [1, 1, 1, 2, 3]}]
+            MyTable.select(MyTable.value).run_sync(),
+            [{"value": [1, 1, 1, 2, 3]}],
         )
 
         # Make sure non-list values work
@@ -157,8 +201,8 @@ class TestArray(TestCase):
         ).run_sync()
 
         self.assertEqual(
-            MyTable.select().run_sync(),
-            [{"id": 1, "value": [1, 1, 1, 2, 3, 4]}],
+            MyTable.select(MyTable.value).run_sync(),
+            [{"value": [1, 1, 1, 2, 3, 4]}],
         )
 
     @sqlite_only
