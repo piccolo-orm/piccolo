@@ -291,6 +291,9 @@ class QueryString(Selectable):
     def __pow__(self, value) -> QueryString:
         return QueryString("{} ^ {}", self, value)
 
+    def __mod__(self, value) -> QueryString:
+        return QueryString("{} % {}", self, value)
+
     def is_in(self, value) -> QueryString:
         return QueryString("{} IN {}", self, value)
 
