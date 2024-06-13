@@ -896,7 +896,7 @@ class Column(Selectable):
                 return (
                     delimiter
                     + "{"
-                    + ", ".join(
+                    + ",".join(
                         self.get_sql_value(
                             i,
                             delimiter="" if isinstance(i, list) else '"',
