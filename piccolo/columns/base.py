@@ -830,7 +830,11 @@ class Column(Selectable):
             engine_type=engine_type, with_alias=False
         )
 
-    def get_sql_value(self, value: t.Any, delimiter: str = "'") -> str:
+    def get_sql_value(
+        self,
+        value: t.Any,
+        delimiter: str = "'",
+    ) -> str:
         """
         When using DDL statements, we can't parameterise the values. An example
         is when setting the default for a column. So we have to convert from
@@ -839,11 +843,18 @@ class Column(Selectable):
 
         :param value:
             The Python value to convert to a string usable in a DDL statement
-            e.g. 1.
+            e.g. ``1``.
+        :param delimiter:
+            The string returned by this function is wrapped in delimiters,
+            ready to be added to a DDL statement. For example:
+            ``'hello world'``.
         :returns:
-            The string usable in the DDL statement e.g. '1'.
+            The string usable in the DDL statement e.g. ``'1'``.
 
         """
+        from piccolo.engine.sqlite import ADAPTERS as sqlite_adapters
+
+        # Common across all DB engines
         if isinstance(value, Default):
             return getattr(value, self._meta.engine_type)
         elif value is None:
@@ -854,32 +865,49 @@ class Column(Selectable):
             return f"{delimiter}{value}{delimiter}"
         elif isinstance(value, bool):
             return str(value).lower()
-        elif isinstance(value, datetime.datetime):
-            return (
-                f"{delimiter}{value.isoformat().replace('T', ' ')}{delimiter}"
-            )
-        elif isinstance(value, datetime.date):
-            return f"{delimiter}{value.isoformat()}{delimiter}"
-        elif isinstance(value, datetime.time):
-            return f"{delimiter}{value.isoformat()}{delimiter}"
-        elif isinstance(value, datetime.timedelta):
-            interval = IntervalCustom.from_timedelta(value)
-            return getattr(interval, self._meta.engine_type)
         elif isinstance(value, bytes):
             return f"{delimiter}{value.hex()}{delimiter}"
-        elif isinstance(value, uuid.UUID):
-            return f"{delimiter}{value}{delimiter}"
-        elif isinstance(value, list):
-            # Convert to the array syntax.
-            return (
-                "'{"
-                + ", ".join(
-                    self.get_sql_value(i, delimiter='"') for i in value
+
+        # SQLite specific
+        if self._meta.engine_type == "sqlite":
+            if adapter := sqlite_adapters.get(type(value)):
+                sqlite_value = adapter(value)
+                return (
+                    f"{delimiter}{sqlite_value}{delimiter}"
+                    if isinstance(sqlite_value, str)
+                    else sqlite_value
                 )
-                + "}'"
-            )
-        else:
-            return str(value)
+
+        # Postgres and Cockroach
+        if self._meta.engine_type in ["postgres", "cockroach"]:
+            if isinstance(value, datetime.datetime):
+                return f"{delimiter}{value.isoformat().replace('T', ' ')}{delimiter}"  # noqa: E501
+            elif isinstance(value, datetime.date):
+                return f"{delimiter}{value.isoformat()}{delimiter}"
+            elif isinstance(value, datetime.time):
+                return f"{delimiter}{value.isoformat()}{delimiter}"
+            elif isinstance(value, datetime.timedelta):
+                interval = IntervalCustom.from_timedelta(value)
+                return getattr(interval, self._meta.engine_type)
+            elif isinstance(value, uuid.UUID):
+                return f"{delimiter}{value}{delimiter}"
+            elif isinstance(value, list):
+                # Convert to the array syntax.
+                return (
+                    delimiter
+                    + "{"
+                    + ", ".join(
+                        self.get_sql_value(
+                            i,
+                            delimiter="" if isinstance(i, list) else '"',
+                        )
+                        for i in value
+                    )
+                    + "}"
+                    + delimiter
+                )
+
+        return str(value)
 
     @property
     def column_type(self):
