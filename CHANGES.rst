@@ -1,6 +1,41 @@
 Changes
 =======
 
+1.9.0
+-----
+
+Added some math functions, for example ``Abs``, ``Ceil``, ``Floor`` and
+``Round``.
+
+.. code-block:: python
+
+  >>> from piccolo.query.functions import Round
+  >>> await Ticket.select(Round(Ticket.price, alias="price"))
+  [{'price': 50.0}]
+
+Added more operators to ``QueryString`` (multiply, divide, modulus, power), so
+we can do things like:
+
+.. code-block:: python
+
+  >>> await Ticket.select(Round(Ticket.price) * 2)
+  [{'price': 100.0}]
+
+Fixed some edge cases around defaults for ``Array`` columns.
+
+.. code-block:: python
+
+  def get_default():
+      # This used to fail:
+      return [datetime.time(hour=8, minute=0)]
+
+  class MyTable(Table):
+      times = Array(Time(), default=get_default)
+
+Fixed some deprecation warnings, and improved CockroachDB array tests.
+
+-------------------------------------------------------------------------------
+
 1.8.0
 -----
 
