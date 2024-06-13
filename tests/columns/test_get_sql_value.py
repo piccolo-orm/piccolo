@@ -35,22 +35,27 @@ class TestArrayPostgres(TestCase):
 
 @engines_only("sqlite")
 class TestArraySQLite(TestCase):
+    """
+    Note, we use ``.replace(" ", "")`` because we serialise arrays using
+    Python's json library, and there is inconsistency between Python versions
+    (some output ``["a", "b", "c"]``, and others ``["a","b","c"]``).
+    """
 
     def test_string(self):
         self.assertEqual(
-            Band.name.get_sql_value(["a", "b", "c"]),
+            Band.name.get_sql_value(["a", "b", "c"]).replace(" ", ""),
             '\'["a","b","c"]\'',
         )
 
     def test_int(self):
         self.assertEqual(
-            Band.name.get_sql_value([1, 2, 3]),
+            Band.name.get_sql_value([1, 2, 3]).replace(" ", ""),
             "'[1,2,3]'",
         )
 
     def test_nested(self):
         self.assertEqual(
-            Band.name.get_sql_value([1, 2, 3, [4, 5, 6]]),
+            Band.name.get_sql_value([1, 2, 3, [4, 5, 6]]).replace(" ", ""),
             "'[1,2,3,[4,5,6]]'",
         )
 
