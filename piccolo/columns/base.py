@@ -830,7 +830,7 @@ class Column(Selectable):
             engine_type=engine_type, with_alias=False
         )
 
-    def get_sql_value(self, value: t.Any) -> t.Any:
+    def get_sql_value(self, value: t.Any, delimiter: str = "'") -> str:
         """
         When using DDL statements, we can't parameterise the values. An example
         is when setting the default for a column. So we have to convert from
@@ -851,37 +851,35 @@ class Column(Selectable):
         elif isinstance(value, (float, decimal.Decimal)):
             return str(value)
         elif isinstance(value, str):
-            return f"'{value}'"
+            return f"{delimiter}{value}{delimiter}"
         elif isinstance(value, bool):
             return str(value).lower()
         elif isinstance(value, datetime.datetime):
-            return f"'{value.isoformat().replace('T', ' ')}'"
+            return (
+                f"{delimiter}{value.isoformat().replace('T', ' ')}{delimiter}"
+            )
         elif isinstance(value, datetime.date):
-            return f"'{value.isoformat()}'"
+            return f"{delimiter}{value.isoformat()}{delimiter}"
         elif isinstance(value, datetime.time):
-            return f"'{value.isoformat()}'"
+            return f"{delimiter}{value.isoformat()}{delimiter}"
         elif isinstance(value, datetime.timedelta):
             interval = IntervalCustom.from_timedelta(value)
             return getattr(interval, self._meta.engine_type)
         elif isinstance(value, bytes):
-            return f"'{value.hex()}'"
+            return f"{delimiter}{value.hex()}{delimiter}"
         elif isinstance(value, uuid.UUID):
-            return f"'{value}'"
+            return f"{delimiter}{value}{delimiter}"
         elif isinstance(value, list):
             # Convert to the array syntax.
             return (
                 "'{"
                 + ", ".join(
-                    (
-                        f'"{i}"'
-                        if isinstance(i, str)
-                        else str(self.get_sql_value(i))
-                    )
-                    for i in value
+                    self.get_sql_value(i, delimiter='"') for i in value
                 )
-            ) + "}'"
+                + "}'"
+            )
         else:
-            return value
+            return str(value)
 
     @property
     def column_type(self):
