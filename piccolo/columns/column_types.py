@@ -57,7 +57,11 @@ from piccolo.columns.defaults.timestamptz import (
     TimestamptzNow,
 )
 from piccolo.columns.defaults.uuid import UUID4, UUIDArg
-from piccolo.columns.operators.comparison import ArrayAll, ArrayAny
+from piccolo.columns.operators.comparison import (
+    ArrayAll,
+    ArrayAny,
+    ArrayNotAny,
+)
 from piccolo.columns.operators.string import Concat
 from piccolo.columns.reference import LazyTableReference
 from piccolo.querystring import QueryString
@@ -2667,6 +2671,24 @@ class Array(Column):
             return Where(column=self, value=value, operator=ArrayAny)
         elif engine_type == "sqlite":
             return self.like(f"%{value}%")
+        else:
+            raise ValueError("Unrecognised engine type")
+
+    def not_any(self, value: t.Any) -> Where:
+        """
+        Check if the given value isn't in the array.
+
+        .. code-block:: python
+
+            >>> await Ticket.select().where(Ticket.seat_numbers.not_any(510))
+
+        """
+        engine_type = self._meta.engine_type
+
+        if engine_type in ("postgres", "cockroach"):
+            return Where(column=self, value=value, operator=ArrayNotAny)
+        elif engine_type == "sqlite":
+            return self.not_like(f"%{value}%")
         else:
             raise ValueError("Unrecognised engine type")
 
