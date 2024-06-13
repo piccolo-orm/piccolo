@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 import typing as t
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 
 from piccolo.utils.repr import repr_class_instance
 
 
 class Default(ABC):
-    @abstractproperty
+    @property
+    @abstractmethod
     def postgres(self) -> str:
         pass
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def sqlite(self) -> str:
         pass
 

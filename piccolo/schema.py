@@ -13,7 +13,8 @@ class SchemaDDLBase(abc.ABC):
 
     db: Engine
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def ddl(self) -> str:
         pass
 
