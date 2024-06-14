@@ -12,6 +12,7 @@ from piccolo.query.functions.datetime import (
     Year,
 )
 from piccolo.table import Table
+from tests.base import engines_only, sqlite_only
 
 from .base import FunctionTest
 
@@ -33,6 +34,36 @@ class DatetimeTest(FunctionTest):
             }
         )
         self.concert.save().run_sync()
+
+
+@engines_only("postgres", "cockroach")
+class TestExtract(DatetimeTest):
+    def test_extract(self):
+        self.assertEqual(
+            Concert.select(
+                Extract(Concert.starts, "year", alias="starts_year")
+            ).run_sync(),
+            [{"starts_year": self.concert.starts.year}],
+        )
+
+    def test_invalid_format(self):
+        with self.assertRaises(ValueError):
+            Extract(
+                Concert.starts,
+                "abc123",  # type: ignore
+                alias="starts_year",
+            )
+
+
+@sqlite_only
+class TestStrftime(DatetimeTest):
+    def test_strftime(self):
+        self.assertEqual(
+            Concert.select(
+                Strftime(Concert.starts, "%Y", alias="starts_year")
+            ).run_sync(),
+            [{"starts_year": str(self.concert.starts.year)}],
+        )
 
 
 class TestDatabaseAgnostic(DatetimeTest):
