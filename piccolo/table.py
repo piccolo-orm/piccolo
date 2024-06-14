@@ -6,6 +6,7 @@ import types
 import typing as t
 import warnings
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from piccolo.columns import Column
 from piccolo.columns.column_types import (
@@ -17,6 +18,7 @@ from piccolo.columns.column_types import (
     ReferencedTable,
     Secret,
     Serial,
+    Timestamptz,
 )
 from piccolo.columns.defaults.base import Default
 from piccolo.columns.indexes import IndexMethod
@@ -435,6 +437,9 @@ class Table(metaclass=TableMetaclass):
                     and not _ignore_missing
                 ):
                     raise ValueError(f"{column._meta.name} wasn't provided")
+
+            if isinstance(column, Timestamptz) and isinstance(value, datetime):
+                value = value.astimezone(column.tz)
 
             self[column._meta.name] = value
 

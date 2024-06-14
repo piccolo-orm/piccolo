@@ -68,6 +68,11 @@ from piccolo.querystring import QueryString
 from piccolo.utils.encoding import dump_json
 from piccolo.utils.warnings import colored_warning
 
+try:
+    from zoneinfo import ZoneInfo  # type: ignore
+except ImportError:  # pragma: no cover
+    from backports.zoneinfo import ZoneInfo  # type: ignore  # noqa: F401
+
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import ColumnMeta
     from piccolo.table import Table
@@ -959,36 +964,40 @@ class Timestamp(Column):
 class Timestamptz(Column):
     """
     Used for storing timezone aware datetimes. Uses the ``datetime`` type for
-    values. The values are converted to UTC in the database, and are also
-    returned as UTC.
+    values. The values are converted to UTC when saved into the database and
+    are converted back into the timezone of the column on select queries.
 
     **Example**
 
     .. code-block:: python
 
         import datetime
+        from zoneinfo import ZoneInfo
 
-        class Concert(Table):
-            starts = Timestamptz()
+        class TallinnConcerts(Table):
+            event_start = Timestamptz(tz=ZoneInfo("Europe/Tallinn"))
 
         # Create
-        >>> await Concert(
-        ...    starts=datetime.datetime(
-        ...        year=2050, month=1, day=1, tzinfo=datetime.timezone.tz
+        >>> await TallinnConcerts(
+        ...    event_start=datetime.datetime(
+        ...        year=2050, month=1, day=1, hour=20
         ...    )
         ... ).save()
 
         # Query
-        >>> await Concert.select(Concert.starts)
+        >>> await TallinnConcerts.select(TallinnConcerts.event_start)
         {
-            'starts': datetime.datetime(
-                2050, 1, 1, 0, 0, tzinfo=datetime.timezone.utc
+            'event_start': datetime.datetime(
+                2050, 1, 1, 20, 0, tzinfo=zoneinfo.ZoneInfo(
+                    key='Europe/Tallinn'
+                )
             )
         }
 
     """
 
     value_type = datetime
+    tz_type = ZoneInfo
 
     # Currently just used by ModelBuilder, to know that we want a timezone
     # aware datetime.
@@ -997,20 +1006,24 @@ class Timestamptz(Column):
     timedelta_delegate = TimedeltaDelegate()
 
     def __init__(
-        self, default: TimestamptzArg = TimestamptzNow(), **kwargs
+        self,
+        tz: ZoneInfo = ZoneInfo("UTC"),
+        default: TimestamptzArg = TimestamptzNow(),
+        **kwargs,
     ) -> None:
         self._validate_default(
             default, TimestamptzArg.__args__  # type: ignore
         )
 
         if isinstance(default, datetime):
-            default = TimestamptzCustom.from_datetime(default)
+            default = TimestamptzCustom.from_datetime(default, tz)
 
         if default == datetime.now:
-            default = TimestamptzNow()
+            default = TimestamptzNow(tz)
 
+        self.tz = tz
         self.default = default
-        kwargs.update({"default": default})
+        kwargs.update({"tz": tz, "default": default})
         super().__init__(**kwargs)
 
     ###########################################################################
