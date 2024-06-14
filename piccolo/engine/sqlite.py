@@ -344,7 +344,7 @@ class AsyncBatch(BaseBatch):
             raise StopAsyncIteration()
         return response
 
-    async def __aenter__(self):
+    async def __aenter__(self: Self) -> Self:
         querystring = self.query.querystrings[0]
         template, template_args = querystring.compile_string()
 

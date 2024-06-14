@@ -64,7 +64,7 @@ class AsyncBatch(BaseBatch):
             raise StopAsyncIteration()
         return response
 
-    async def __aenter__(self):
+    async def __aenter__(self: Self) -> Self:
         self._transaction = self.connection.transaction()
         await self._transaction.start()
         querystring = self.query.querystrings[0]
