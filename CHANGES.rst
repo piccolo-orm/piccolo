@@ -1,6 +1,28 @@
 Changes
 =======
 
+1.10.0
+------
+
+Added ``not_any`` method for ``Array`` columns. This will return rows where an
+array doesn't contain the given value. For example:
+
+.. code-block:: python
+
+  class MyTable(Table):
+      array_column = Array(Integer())
+
+  >>> await MyTable.select(
+  ...     MyTable.array_column
+  ... ).where(
+  ...     MyTable.array_column.not_any(1)
+  ... )
+  [{"array_column": [4, 5, 6]}]
+
+Also fixed a bunch of Pylance linter warnings across the codebase.
+
+-------------------------------------------------------------------------------
+
 1.9.0
 -----
 
