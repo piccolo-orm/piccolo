@@ -542,7 +542,7 @@ class SQLiteTransaction(BaseTransaction):
 
     ###########################################################################
 
-    async def __aexit__(self, exception_type, exception, traceback):
+    async def __aexit__(self, exception_type, exception, traceback) -> bool:
         if self._parent:
             return exception is None
 
