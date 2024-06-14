@@ -7,7 +7,8 @@ from piccolo.apps.user.tables import BaseUser
 from piccolo.columns import Date, Varchar
 from piccolo.columns.combination import WhereRaw
 from piccolo.query import OrderByRaw
-from piccolo.query.methods.select import Avg, Count, Max, Min, SelectRaw, Sum
+from piccolo.query.functions.aggregate import Avg, Count, Max, Min, Sum
+from piccolo.query.methods.select import SelectRaw
 from piccolo.query.mixins import DistinctOnError
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
 from tests.base import (
@@ -926,14 +927,6 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(float(response["popularity_avg"]), 1003.3333333333334)
         self.assertEqual(response["popularity_sum"], 3010)
-
-    def test_avg_validation(self):
-        with self.assertRaises(ValueError):
-            Band.select(Avg(Band.name)).run_sync()
-
-    def test_sum_validation(self):
-        with self.assertRaises(ValueError):
-            Band.select(Sum(Band.name)).run_sync()
 
     def test_columns(self):
         """

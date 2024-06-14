@@ -262,7 +262,7 @@ class Objects(
         self.order_by_delegate.order_by(*_columns, ascending=ascending)
         return self
 
-    def where(self: Self, *where: Combinable) -> Self:
+    def where(self: Self, *where: t.Union[Combinable, QueryString]) -> Self:
         self.where_delegate.where(*where)
         return self
 

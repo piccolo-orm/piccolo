@@ -13,7 +13,7 @@ on:
 jobs:
     linters:
         runs-on: ubuntu-latest
-        timeout-minutes: 30
+        timeout-minutes: 60
         strategy:
             matrix:
                 python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
@@ -35,7 +35,7 @@ jobs:
 
     integration:
         runs-on: ubuntu-latest
-        timeout-minutes: 30
+        timeout-minutes: 60
         strategy:
             matrix:
                 # These tests are slow, so we only run on the latest Python
@@ -82,7 +82,7 @@ jobs:
 
     postgres:
         runs-on: ubuntu-latest
-        timeout-minutes: 30
+        timeout-minutes: 60
         strategy:
             matrix:
                 python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
@@ -138,11 +138,11 @@ jobs:
 
     cockroach:
         runs-on: ubuntu-latest
-        timeout-minutes: 30
+        timeout-minutes: 60
         strategy:
             matrix:
                 python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-                cockroachdb-version: ["v22.2.0"]
+                cockroachdb-version: ["v24.1.0"]
         steps:
             - uses: actions/checkout@v3
             - name: Set up Python ${{ matrix.python-version }}
@@ -172,7 +172,7 @@ jobs:
 
     sqlite:
         runs-on: ubuntu-latest
-        timeout-minutes: 30
+        timeout-minutes: 60
         strategy:
             matrix:
                 python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]

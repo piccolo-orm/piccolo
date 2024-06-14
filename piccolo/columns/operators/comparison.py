@@ -62,5 +62,9 @@ class ArrayAny(ComparisonOperator):
     template = "{value} = ANY ({name})"
 
 
+class ArrayNotAny(ComparisonOperator):
+    template = "NOT {value} = ANY ({name})"
+
+
 class ArrayAll(ComparisonOperator):
     template = "{value} = ALL ({name})"

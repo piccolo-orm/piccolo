@@ -12,8 +12,10 @@ from piccolo.utils.sync import run_sync
 class SchemaDDLBase(abc.ABC):
     db: Engine
 
-    @abc.abstractproperty
-    def ddl(self) -> str: ...
+    @property
+    @abc.abstractmethod
+    def ddl(self) -> str:
+        pass
 
     def __await__(self):
         return self.run().__await__()

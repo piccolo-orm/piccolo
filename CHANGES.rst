@@ -1,6 +1,128 @@
 Changes
 =======
 
+1.9.0
+-----
+
+Added some math functions, for example ``Abs``, ``Ceil``, ``Floor`` and
+``Round``.
+
+.. code-block:: python
+
+  >>> from piccolo.query.functions import Round
+  >>> await Ticket.select(Round(Ticket.price, alias="price"))
+  [{'price': 50.0}]
+
+Added more operators to ``QueryString`` (multiply, divide, modulus, power), so
+we can do things like:
+
+.. code-block:: python
+
+  >>> await Ticket.select(Round(Ticket.price) * 2)
+  [{'price': 100.0}]
+
+Fixed some edge cases around defaults for ``Array`` columns.
+
+.. code-block:: python
+
+  def get_default():
+      # This used to fail:
+      return [datetime.time(hour=8, minute=0)]
+
+  class MyTable(Table):
+      times = Array(Time(), default=get_default)
+
+Fixed some deprecation warnings, and improved CockroachDB array tests.
+
+-------------------------------------------------------------------------------
+
+1.8.0
+-----
+
+Added the ``Cast`` function, for performing type conversion.
+
+Here's an example, where we convert a ``timestamp`` to ``time``:
+
+.. code-block:: python
+
+    >>> from piccolo.columns import Time
+    >>> from piccolo.query.functions import Cast
+
+    >>> await Concert.select(Cast(Concert.starts, Time()))
+    [{'starts': datetime.time(19, 0)}]
+
+A new section was also added to the docs describing functions in more detail.
+
+-------------------------------------------------------------------------------
+
+1.7.0
+-----
+
+Arrays of ``Date`` / ``Time`` / ``Timestamp`` / ``Timestamptz`` now work in
+SQLite.
+
+For example:
+
+.. code-block:: python
+
+  class MyTable(Table):
+      times = Array(Time())
+      dates = Array(Date())
+      timestamps = Array(Timestamp())
+      timestamps_tz = Array(Timestamptz())
+
+-------------------------------------------------------------------------------
+
+1.6.0
+-----
+
+Added support for a bunch of Postgres functions, like ``Upper``, ``Lower``,
+``Length``, and ``Ltrim``. They can be used in ``select`` queries:
+
+.. code-block:: python
+
+  from piccolo.query.functions.string import Upper
+  >>> await Band.select(Upper(Band.name, alias="name"))
+  [{"name": "PYTHONISTAS"}]
+
+And also in ``where`` clauses:
+
+.. code-block:: python
+
+  >>> await Band.select().where(Upper(Band.manager.name) == 'GUIDO')
+  [{"name": "Pythonistas"}]
+
+-------------------------------------------------------------------------------
+
+1.5.2
+-----
+
+Added an ``Album`` table to the playground, along with some other
+improvements.
+
+Fixed a bug with the ``output(load_json=True)`` clause, when used on joined
+tables.
+
+-------------------------------------------------------------------------------
+
+1.5.1
+-----
+
+Fixed a bug with the CLI when reversing migrations (thanks to @metakot for
+reporting this).
+
+Updated the ASGI templates (thanks to @tarsil for adding Lilya).
+
+-------------------------------------------------------------------------------
+
+1.5.0
+-----
+
+Lots of internal improvements, mostly to support new functionality in Piccolo
+Admin.
+
+-------------------------------------------------------------------------------
+
 1.4.2
 -----
 

@@ -16,7 +16,7 @@ class Exists(Query[TableInstance, bool]):
         super().__init__(table, **kwargs)
         self.where_delegate = WhereDelegate()
 
-    def where(self: Self, *where: Combinable) -> Self:
+    def where(self: Self, *where: t.Union[Combinable, QueryString]) -> Self:
         self.where_delegate.where(*where)
         return self
 
