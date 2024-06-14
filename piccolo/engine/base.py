@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import abc
 import contextvars
 import logging
 import pprint
@@ -36,38 +35,38 @@ def validate_savepoint_name(savepoint_name: str) -> None:
 
 
 class Batch(metaclass=ABCMeta):
-    @abc.abstractmethod
+    @abstractmethod
     async def __aenter__(self, *args, **kwargs): ...
 
-    @abc.abstractmethod
+    @abstractmethod
     async def __aexit__(self, *args, **kwargs): ...
 
-    @abc.abstractmethod
+    @abstractmethod
     def __aiter__(self: Self) -> Self: ...
 
-    @abc.abstractmethod
+    @abstractmethod
     async def __anext__(self) -> t.List[t.Dict]: ...
 
 
 class BaseTransaction(metaclass=ABCMeta):
-    @abc.abstractmethod
+    @abstractmethod
     async def __aenter__(self, *args, **kwargs): ...
 
-    @abc.abstractmethod
+    @abstractmethod
     async def __aexit__(self, *args, **kwargs): ...
 
 
 class BaseAtomic(metaclass=ABCMeta):
-    @abc.abstractmethod
+    @abstractmethod
     def add(self, *query: t.Union[Query, DDL]): ...
 
-    @abc.abstractmethod
+    @abstractmethod
     async def run(self): ...
 
-    @abc.abstractmethod
+    @abstractmethod
     def run_sync(self): ...
 
-    @abc.abstractmethod
+    @abstractmethod
     def __await__(self): ...
 
 
