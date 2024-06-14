@@ -212,7 +212,7 @@ def Hour(
     """
     return _extract_component(
         identifier=identifier,
-        sqlite_format="%h",
+        sqlite_format="%H",
         postgres_format="hour",
         alias=alias,
     )
@@ -227,7 +227,7 @@ def Minute(
     """
     return _extract_component(
         identifier=identifier,
-        sqlite_format="%m",
+        sqlite_format="%M",
         postgres_format="minute",
         alias=alias,
     )
@@ -242,7 +242,7 @@ def Second(
     """
     return _extract_component(
         identifier=identifier,
-        sqlite_format="%s",
+        sqlite_format="%S",
         postgres_format="second",
         alias=alias,
     )
