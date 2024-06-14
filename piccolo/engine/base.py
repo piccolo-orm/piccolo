@@ -49,6 +49,9 @@ class BaseBatch(metaclass=ABCMeta):
 
 
 class BaseTransaction(metaclass=ABCMeta):
+
+    __slots__: t.Tuple[str, ...] = tuple()
+
     @abstractmethod
     async def __aenter__(self, *args, **kwargs): ...
 
@@ -57,6 +60,9 @@ class BaseTransaction(metaclass=ABCMeta):
 
 
 class BaseAtomic(metaclass=ABCMeta):
+
+    __slots__: t.Tuple[str, ...] = tuple()
+
     @abstractmethod
     def add(self, *query: t.Union[Query, DDL]): ...
 
@@ -80,6 +86,7 @@ class Engine(t.Generic[TransactionClass], metaclass=ABCMeta):
         "log_responses",
         "engine_type",
         "min_version_number",
+        "current_transaction",
     )
 
     def __init__(

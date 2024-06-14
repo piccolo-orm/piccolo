@@ -569,13 +569,7 @@ def dict_factory(cursor, row) -> t.Dict:
 
 
 class SQLiteEngine(Engine[SQLiteTransaction]):
-    __slots__ = (
-        "connection_kwargs",
-        "current_transaction",
-        "log_queries",
-        "log_responses",
-        "engine_type",
-    )
+    __slots__ = ("connection_kwargs",)
 
     def __init__(
         self,

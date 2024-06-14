@@ -346,12 +346,8 @@ class PostgresEngine(Engine[PostgresTransaction]):
     __slots__ = (
         "config",
         "extensions",
-        "log_queries",
-        "log_responses",
         "extra_nodes",
         "pool",
-        "current_transaction",
-        "engine_type",
     )
 
     def __init__(
