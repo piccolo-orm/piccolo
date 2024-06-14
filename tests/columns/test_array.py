@@ -159,6 +159,34 @@ class TestArray(TestCase):
 
     @engines_skip("sqlite")
     @pytest.mark.cockroach_array_slow
+    def test_not_any(self):
+        """
+        Make sure rows can be retrieved where the array doesn't contain a
+        certain value.
+
+        In CockroachDB <= v22.2.0 we had this error:
+
+        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+
+        In newer CockroachDB versions, it runs but is very slow:
+
+        * https://github.com/piccolo-orm/piccolo/issues/1005
+
+        """  # noqa: E501
+
+        MyTable(value=[1, 2, 3]).save().run_sync()
+        MyTable(value=[4, 5, 6]).save().run_sync()
+
+        # We have to explicitly specify the type, so CockroachDB works.
+        self.assertEqual(
+            MyTable.select(MyTable.value)
+            .where(MyTable.value.not_any(QueryString("{}::INTEGER", 4)))
+            .run_sync(),
+            [{"value": [1, 2, 3]}],
+        )
+
+    @engines_skip("sqlite")
+    @pytest.mark.cockroach_array_slow
     def test_cat(self):
         """
         Make sure values can be appended to an array.
