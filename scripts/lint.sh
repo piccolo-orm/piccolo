@@ -20,11 +20,6 @@ echo "Running mypy..."
 mypy $SOURCES
 echo "-----"
 
-# Disabling for now as it's so hard to get 100% valid pyright code
-# echo "Running pyright..."
-# pyright $sources
-# echo "-----"
-
 echo "Running slotscheck..."
 python -m slotscheck $MODULES
 echo "-----"
