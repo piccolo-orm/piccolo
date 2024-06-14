@@ -3,6 +3,11 @@ String functions
 
 .. currentmodule:: piccolo.query.functions.string
 
+Concat
+------
+
+.. autoclass:: Concat
+
 Length
 ------
 

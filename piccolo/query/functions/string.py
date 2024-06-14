@@ -5,6 +5,11 @@ https://www.postgresql.org/docs/current/functions-string.html
 
 """
 
+import typing as t
+
+from piccolo.columns.base import Column
+from piccolo.querystring import QueryString
+
 from .base import Function
 
 
@@ -63,6 +68,22 @@ class Upper(Function):
     function_name = "UPPER"
 
 
+class Concat(QueryString):
+    def __init__(
+        self,
+        *args: t.Union[Column, QueryString, str],
+        alias: t.Optional[str] = None,
+    ):
+        """
+        Concatenate multiple values into a single string.
+        """
+        placeholders = ", ".join("{}" for _ in args)
+
+        super().__init__(
+            template=f"CONCAT({placeholders})", *args, alias=alias
+        )
+
+
 __all__ = (
     "Length",
     "Lower",
@@ -70,4 +91,5 @@ __all__ = (
     "Reverse",
     "Rtrim",
     "Upper",
+    "Concat",
 )
