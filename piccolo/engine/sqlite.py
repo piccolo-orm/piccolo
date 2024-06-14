@@ -15,8 +15,8 @@ from typing_extensions import Self
 
 from piccolo.engine.base import (
     BaseAtomic,
+    BaseBatch,
     BaseTransaction,
-    Batch,
     Engine,
     validate_savepoint_name,
 )
@@ -317,7 +317,7 @@ for column_name in ("TIMESTAMP", "TIMESTAMPTZ", "DATE", "TIME"):
 
 
 @dataclass
-class AsyncBatch(Batch):
+class AsyncBatch(BaseBatch):
     connection: Connection
     query: Query
     batch_size: int

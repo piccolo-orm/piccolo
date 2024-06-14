@@ -34,7 +34,7 @@ def validate_savepoint_name(savepoint_name: str) -> None:
         )
 
 
-class Batch(metaclass=ABCMeta):
+class BaseBatch(metaclass=ABCMeta):
     @abstractmethod
     async def __aenter__(self, *args, **kwargs): ...
 
@@ -116,7 +116,7 @@ class Engine(t.Generic[TransactionClass], metaclass=ABCMeta):
         query: Query,
         batch_size: int = 100,
         node: t.Optional[str] = None,
-    ) -> Batch:
+    ) -> BaseBatch:
         pass
 
     @abstractmethod

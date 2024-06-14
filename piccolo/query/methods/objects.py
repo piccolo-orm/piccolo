@@ -5,7 +5,7 @@ import typing as t
 from piccolo.columns.column_types import ForeignKey
 from piccolo.columns.combination import And, Where
 from piccolo.custom_types import Combinable, TableInstance
-from piccolo.engine.base import Batch
+from piccolo.engine.base import BaseBatch
 from piccolo.query.base import Query
 from piccolo.query.methods.select import Select
 from piccolo.query.mixins import (
@@ -298,7 +298,7 @@ class Objects(
         batch_size: t.Optional[int] = None,
         node: t.Optional[str] = None,
         **kwargs,
-    ) -> Batch:
+    ) -> BaseBatch:
         if batch_size:
             kwargs.update(batch_size=batch_size)
         if node:

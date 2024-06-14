@@ -8,8 +8,8 @@ from typing_extensions import Self
 
 from piccolo.engine.base import (
     BaseAtomic,
+    BaseBatch,
     BaseTransaction,
-    Batch,
     Engine,
     validate_savepoint_name,
 )
@@ -30,7 +30,7 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 
 @dataclass
-class AsyncBatch(Batch):
+class AsyncBatch(BaseBatch):
     connection: Connection
     query: Query
     batch_size: int

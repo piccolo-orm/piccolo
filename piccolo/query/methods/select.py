@@ -9,7 +9,7 @@ from piccolo.columns.column_types import JSON, JSONB
 from piccolo.columns.m2m import M2MSelect
 from piccolo.columns.readable import Readable
 from piccolo.custom_types import TableInstance
-from piccolo.engine.base import Batch
+from piccolo.engine.base import BaseBatch
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
     AsOfDelegate,
@@ -442,7 +442,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         batch_size: t.Optional[int] = None,
         node: t.Optional[str] = None,
         **kwargs,
-    ) -> Batch:
+    ) -> BaseBatch:
         if batch_size:
             kwargs.update(batch_size=batch_size)
         if node:
