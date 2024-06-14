@@ -138,7 +138,7 @@ def _extract_component(
     sqlite_format: str,
     postgres_format: ExtractComponent,
     alias: t.Optional[str],
-):
+) -> QueryString:
     engine_type = _get_engine_type(identifier=identifier)
 
     return Cast(
@@ -161,7 +161,7 @@ def _extract_component(
 def Year(
     identifier: t.Union[Date, Timestamp, Timestamptz, QueryString],
     alias: t.Optional[str] = None,
-):
+) -> QueryString:
     """
     Extract the year as an integer.
     """
@@ -176,7 +176,7 @@ def Year(
 def Month(
     identifier: t.Union[Date, Timestamp, Timestamptz, QueryString],
     alias: t.Optional[str] = None,
-):
+) -> QueryString:
     """
     Extract the month as an integer.
     """
@@ -191,7 +191,7 @@ def Month(
 def Day(
     identifier: t.Union[Date, Timestamp, Timestamptz, QueryString],
     alias: t.Optional[str] = None,
-):
+) -> QueryString:
     """
     Extract the day as an integer.
     """
@@ -206,7 +206,7 @@ def Day(
 def Hour(
     identifier: t.Union[Time, Timestamp, Timestamptz, QueryString],
     alias: t.Optional[str] = None,
-):
+) -> QueryString:
     """
     Extract the hour as an integer.
     """
@@ -221,7 +221,7 @@ def Hour(
 def Minute(
     identifier: t.Union[Time, Timestamp, Timestamptz, QueryString],
     alias: t.Optional[str] = None,
-):
+) -> QueryString:
     """
     Extract the minute as an integer.
     """
@@ -236,7 +236,7 @@ def Minute(
 def Second(
     identifier: t.Union[Time, Timestamp, Timestamptz, QueryString],
     alias: t.Optional[str] = None,
-):
+) -> QueryString:
     """
     Extract the second as an integer.
     """
