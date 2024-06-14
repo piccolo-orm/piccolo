@@ -137,7 +137,7 @@ class Engine(t.Generic[TransactionClass], metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def transaction(self) -> TransactionClass:
+    def transaction(self, *args, **kwargs) -> TransactionClass:
         pass
 
     @abstractmethod
