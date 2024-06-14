@@ -131,6 +131,7 @@ class M2MSelect(Selectable):
             if len(self.columns) > 1 or not self.serialisation_safe:
                 column_name = table_2_pk_name
             else:
+                assert len(self.columns) > 0
                 column_name = self.columns[0]._meta.db_column_name
 
             return QueryString(
