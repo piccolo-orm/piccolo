@@ -30,8 +30,6 @@ from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
 from piccolo.custom_types import TableInstance
 from piccolo.engine import Engine, engine_finder
-from piccolo.engine.postgres import PostgresEngine
-from piccolo.engine.sqlite import SQLiteEngine
 from piccolo.query import (
     Alter,
     Count,
@@ -1415,11 +1413,6 @@ async def create_db_tables(
 
     sorted_table_classes = sort_table_classes(list(tables))
 
-    if engine.engine_type == "sqlite":
-        engine = t.cast(SQLiteEngine, engine)
-    else:
-        engine = t.cast(PostgresEngine, engine)
-
     atomic = engine.atomic()
     atomic.add(
         *[
@@ -1472,28 +1465,23 @@ async def drop_db_tables(*tables: t.Type[Table]) -> None:
     else:
         return
 
-    if isinstance(engine, SQLiteEngine):
+    if engine.engine_type == "sqlite":
         # SQLite doesn't support CASCADE, so we have to drop them in the
         # correct order.
         sorted_table_classes = reversed(sort_table_classes(list(tables)))
-        sqlite_atomic = engine.atomic()
-        sqlite_atomic.add(
-            *[
-                Alter(table=table).drop_table(if_exists=True)
-                for table in sorted_table_classes
-            ]
-        )
-        await sqlite_atomic.run()
+        ddl_statements = [
+            Alter(table=table).drop_table(if_exists=True)
+            for table in sorted_table_classes
+        ]
     else:
-        engine = t.cast(PostgresEngine, engine)
-        pg_atomic = engine.atomic()
-        pg_atomic.add(
-            *[
-                table.alter().drop_table(cascade=True, if_exists=True)
-                for table in tables
-            ]
-        )
-        await pg_atomic.run()
+        ddl_statements = [
+            table.alter().drop_table(cascade=True, if_exists=True)
+            for table in tables
+        ]
+
+    atomic = engine.atomic()
+    atomic.add(*ddl_statements)
+    await atomic.run()
 
 
 def drop_db_tables_sync(*tables: t.Type[Table]) -> None:
