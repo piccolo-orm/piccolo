@@ -766,7 +766,7 @@ class TestNestedModel(TestCase):
         ].annotation
         self.assertIs(AssistantManagerType, t.Optional[int])
 
-        CountryModel = (ManagerModel.model_fields["country"].annotation,)
+        CountryModel = ManagerModel.model_fields["country"].annotation
         self.assertIs(CountryModel, t.Optional[int])
 
         #######################################################################
