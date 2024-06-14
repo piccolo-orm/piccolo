@@ -5,7 +5,7 @@ import typing as t
 from piccolo.columns.column_types import ForeignKey
 from piccolo.columns.combination import And, Where
 from piccolo.custom_types import Combinable, TableInstance
-from piccolo.engine.base import Batch
+from piccolo.engine.base import BaseBatch
 from piccolo.query.base import Query
 from piccolo.query.methods.select import Select
 from piccolo.query.mixins import (
@@ -268,17 +268,17 @@ class Objects(
 
     ###########################################################################
 
-    def first(self: Self) -> First[TableInstance]:
+    def first(self) -> First[TableInstance]:
         self.limit_delegate.limit(1)
         return First[TableInstance](query=self)
 
-    def get(self: Self, where: Combinable) -> Get[TableInstance]:
+    def get(self, where: Combinable) -> Get[TableInstance]:
         self.where_delegate.where(where)
         self.limit_delegate.limit(1)
         return Get[TableInstance](query=First[TableInstance](query=self))
 
     def get_or_create(
-        self: Self,
+        self,
         where: Combinable,
         defaults: t.Optional[t.Dict[Column, t.Any]] = None,
     ) -> GetOrCreate[TableInstance]:
@@ -288,17 +288,17 @@ class Objects(
             query=self, table_class=self.table, where=where, defaults=defaults
         )
 
-    def create(self: Self, **columns: t.Any) -> Create[TableInstance]:
+    def create(self, **columns: t.Any) -> Create[TableInstance]:
         return Create[TableInstance](table_class=self.table, columns=columns)
 
     ###########################################################################
 
     async def batch(
-        self: Self,
+        self,
         batch_size: t.Optional[int] = None,
         node: t.Optional[str] = None,
         **kwargs,
-    ) -> Batch:
+    ) -> BaseBatch:
         if batch_size:
             kwargs.update(batch_size=batch_size)
         if node:

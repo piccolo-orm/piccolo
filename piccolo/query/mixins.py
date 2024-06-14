@@ -207,7 +207,6 @@ class Returning:
 
 @dataclass
 class Output:
-
     as_json: bool = False
     as_list: bool = False
     as_objects: bool = False
@@ -236,7 +235,6 @@ class Callback:
 
 @dataclass
 class WhereDelegate:
-
     _where: t.Optional[Combinable] = None
     _where_columns: t.List[Column] = field(default_factory=list)
 
@@ -246,7 +244,8 @@ class WhereDelegate:
         needed.
         """
         self._where_columns = []
-        self._extract_columns(self._where)
+        if self._where is not None:
+            self._extract_columns(self._where)
         return self._where_columns
 
     def _extract_columns(self, combinable: Combinable):
@@ -277,7 +276,6 @@ class WhereDelegate:
 
 @dataclass
 class OrderByDelegate:
-
     _order_by: OrderBy = field(default_factory=OrderBy)
 
     def get_order_by_columns(self) -> t.List[Column]:
@@ -303,7 +301,6 @@ class OrderByDelegate:
 
 @dataclass
 class LimitDelegate:
-
     _limit: t.Optional[Limit] = None
     _first: bool = False
 
@@ -330,7 +327,6 @@ class AsOfDelegate:
 
 @dataclass
 class DistinctDelegate:
-
     _distinct: Distinct = field(
         default_factory=lambda: Distinct(enabled=False, on=None)
     )
@@ -356,7 +352,6 @@ class ReturningDelegate:
 
 @dataclass
 class CountDelegate:
-
     _count: bool = False
 
     def count(self):
@@ -365,7 +360,6 @@ class CountDelegate:
 
 @dataclass
 class AddDelegate:
-
     _add: t.List[Table] = field(default_factory=list)
 
     def add(self, *instances: Table, table_class: t.Type[Table]):
@@ -421,8 +415,7 @@ class OutputDelegate:
             self._output.nested = bool(nested)
 
     def copy(self) -> OutputDelegate:
-        _output = self._output.copy() if self._output is not None else None
-        return self.__class__(_output=_output)
+        return self.__class__(_output=self._output.copy())
 
 
 @dataclass

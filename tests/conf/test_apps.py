@@ -85,7 +85,7 @@ class TestAppConfig(TestCase):
         config = AppConfig(
             app_name="music", migrations_folder_path=pathlib.Path(__file__)
         )
-        self.assertEqual(config.migrations_folder_path, __file__)
+        self.assertEqual(config.resolved_migrations_folder_path, __file__)
 
     def test_get_table_with_name(self):
         """

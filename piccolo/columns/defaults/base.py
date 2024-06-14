@@ -18,7 +18,7 @@ class Default(ABC):
         pass
 
     @abstractmethod
-    def python(self):
+    def python(self) -> t.Any:
         pass
 
     def get_postgres_interval_string(self, attributes: t.List[str]) -> str:

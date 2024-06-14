@@ -5,11 +5,11 @@ import typing as t
 from collections import OrderedDict
 
 from piccolo.columns import Column, Selectable
-from piccolo.columns.column_types import JSON, JSONB, PrimaryKey
+from piccolo.columns.column_types import JSON, JSONB
 from piccolo.columns.m2m import M2MSelect
 from piccolo.columns.readable import Readable
 from piccolo.custom_types import TableInstance
-from piccolo.engine.base import Batch
+from piccolo.engine.base import BaseBatch
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
     AsOfDelegate,
@@ -217,7 +217,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         self,
         response: t.List[t.Dict[str, t.Any]],
         secondary_table: t.Type[Table],
-        secondary_table_pk: PrimaryKey,
+        secondary_table_pk: Column,
         m2m_name: str,
         m2m_select: M2MSelect,
         as_list: bool = False,
@@ -386,13 +386,19 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         return self
 
     @t.overload
-    def output(self: Self, *, as_list: bool) -> SelectList: ...
+    def output(self: Self, *, as_list: bool) -> SelectList:  # type: ignore
+        ...
 
     @t.overload
-    def output(self: Self, *, as_json: bool) -> SelectJSON: ...
+    def output(self: Self, *, as_json: bool) -> SelectJSON:  # type: ignore
+        ...
 
     @t.overload
     def output(self: Self, *, load_json: bool) -> Self: ...
+
+    @t.overload
+    def output(self: Self, *, load_json: bool, as_list: bool) -> SelectJSON:  # type: ignore  # noqa: E501
+        ...
 
     @t.overload
     def output(self: Self, *, nested: bool) -> Self: ...
@@ -404,7 +410,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         as_json: bool = False,
         load_json: bool = False,
         nested: bool = False,
-    ):
+    ) -> t.Union[Self, SelectJSON, SelectList]:
         self.output_delegate.output(
             as_list=as_list,
             as_json=as_json,
@@ -436,7 +442,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         batch_size: t.Optional[int] = None,
         node: t.Optional[str] = None,
         **kwargs,
-    ) -> Batch:
+    ) -> BaseBatch:
         if batch_size:
             kwargs.update(batch_size=batch_size)
         if node:

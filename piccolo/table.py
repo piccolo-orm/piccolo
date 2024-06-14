@@ -143,8 +143,11 @@ class TableMeta:
     def db(self, value: Engine):
         self._db = value
 
-    def refresh_db(self):
-        self.db = engine_finder()
+    def refresh_db(self) -> None:
+        engine = engine_finder()
+        if engine is None:
+            raise ValueError("The engine can't be found")
+        self.db = engine
 
     def get_column_by_name(self, name: str) -> Column:
         """
@@ -184,8 +187,8 @@ class TableMeta:
 
 
 class TableMetaclass(type):
-    def __str__(cls):
-        return cls._table_str()
+    def __str__(cls) -> str:
+        return cls._table_str()  # type: ignore
 
     def __repr__(cls):
         """
@@ -822,7 +825,7 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def all_related(
         cls, exclude: t.Optional[t.List[t.Union[str, ForeignKey]]] = None
-    ) -> t.List[Column]:
+    ) -> t.List[ForeignKey]:
         """
         Used in conjunction with ``objects`` queries. Just as we can use
         ``all_related`` on a ``ForeignKey``, you can also use it for the table
@@ -1251,7 +1254,7 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def create_index(
         cls,
-        columns: t.List[t.Union[Column, str]],
+        columns: t.Union[t.List[Column], t.List[str]],
         method: IndexMethod = IndexMethod.btree,
         if_not_exists: bool = False,
     ) -> CreateIndex:
@@ -1273,7 +1276,9 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def drop_index(
-        cls, columns: t.List[t.Union[Column, str]], if_exists: bool = True
+        cls,
+        columns: t.Union[t.List[Column], t.List[str]],
+        if_exists: bool = True,
     ) -> DropIndex:
         """
         Drop a table index. If multiple columns are specified, this refers
@@ -1464,22 +1469,18 @@ async def drop_db_tables(*tables: t.Type[Table]) -> None:
         # SQLite doesn't support CASCADE, so we have to drop them in the
         # correct order.
         sorted_table_classes = reversed(sort_table_classes(list(tables)))
-        atomic = engine.atomic()
-        atomic.add(
-            *[
-                Alter(table=table).drop_table(if_exists=True)
-                for table in sorted_table_classes
-            ]
-        )
+        ddl_statements = [
+            Alter(table=table).drop_table(if_exists=True)
+            for table in sorted_table_classes
+        ]
     else:
-        atomic = engine.atomic()
-        atomic.add(
-            *[
-                table.alter().drop_table(cascade=True, if_exists=True)
-                for table in tables
-            ]
-        )
+        ddl_statements = [
+            table.alter().drop_table(cascade=True, if_exists=True)
+            for table in tables
+        ]
 
+    atomic = engine.atomic()
+    atomic.add(*ddl_statements)
     await atomic.run()
 
 

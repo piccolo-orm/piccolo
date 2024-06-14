@@ -51,7 +51,7 @@ async def load_json_string(
     finder = Finder()
     engine = engine_finder()
 
-    if not engine:
+    if engine is None:
         raise Exception("Unable to find the engine.")
 
     # This is what we want to the insert into the database:
