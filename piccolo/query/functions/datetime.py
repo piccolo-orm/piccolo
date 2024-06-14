@@ -146,16 +146,15 @@ def _extract_component(
             Strftime(
                 identifier=identifier,
                 datetime_format=sqlite_format,
-                alias=alias,
             )
             if engine_type == "sqlite"
             else Extract(
                 identifier=identifier,
                 datetime_component=postgres_format,
-                alias=alias,
             )
         ),
         Integer(),
+        alias=alias,
     )
 
 
