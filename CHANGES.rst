@@ -1,6 +1,33 @@
 Changes
 =======
 
+1.11.0
+------
+
+Added datetime functions, for example ``Year``:
+
+.. code-block:: python
+
+    >>> from piccolo.query.functions import Year
+    >>> await Concert.select(Year(Concert.starts, alias="starts_year"))
+    [{'starts_year': 2024}]
+
+Added the ``Concat`` function, for concatenating strings:
+
+.. code-block:: python
+
+    >>> await Band.select(
+    ...     Concat(
+    ...         Band.name,
+    ...         '-',
+    ...         Band.manager._.name,
+    ...         alias="name_and_manager"
+    ...     )
+    ... )
+    [{"name_and_manager": "Pythonistas-Guido"}]
+
+-------------------------------------------------------------------------------
+
 1.10.0
 ------
 
