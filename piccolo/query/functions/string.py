@@ -7,12 +7,9 @@ https://www.postgresql.org/docs/current/functions-string.html
 
 import typing as t
 
-import pytest
-
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import Text, Varchar
 from piccolo.querystring import QueryString
-from tests.base import engine_version_lt, is_running_sqlite
 
 from .base import Function
 
@@ -72,10 +69,6 @@ class Upper(Function):
     function_name = "UPPER"
 
 
-@pytest.mark.skipif(
-    is_running_sqlite() and engine_version_lt(3.44),
-    reason="SQLite version not supported",
-)
 class Concat(QueryString):
     def __init__(
         self,

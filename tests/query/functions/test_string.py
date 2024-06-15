@@ -1,4 +1,7 @@
+import pytest
+
 from piccolo.query.functions.string import Concat, Upper
+from tests.base import engine_version_lt, is_running_sqlite
 from tests.example_apps.music.tables import Band
 
 from .base import BandTest
@@ -25,6 +28,10 @@ class TestUpper(BandTest):
         self.assertListEqual(response, [{"upper": "GUIDO"}])
 
 
+@pytest.mark.skipif(
+    is_running_sqlite() and engine_version_lt(3.44),
+    reason="SQLite version not supported",
+)
 class TestConcat(BandTest):
 
     def test_column_and_string(self):
