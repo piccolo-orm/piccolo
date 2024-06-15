@@ -16,6 +16,7 @@ Added the ``Concat`` function, for concatenating strings:
 
 .. code-block:: python
 
+    >>> from piccolo.query.functions import Concat
     >>> await Band.select(
     ...     Concat(
     ...         Band.name,
