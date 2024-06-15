@@ -62,6 +62,7 @@ from piccolo.columns.operators.comparison import (
     ArrayAny,
     ArrayNotAny,
 )
+from piccolo.columns.operators.string import Concat
 from piccolo.columns.reference import LazyTableReference
 from piccolo.querystring import QueryString
 from piccolo.utils.encoding import dump_json
@@ -96,18 +97,26 @@ class ConcatDelegate:
             value instead.
 
         """
-        from piccolo.query.functions.string import Concat
-
         if isinstance(value, Column):
             if len(column._meta.call_chain) > 0:
                 raise ValueError(
                     "Adding values across joins isn't currently supported."
                 )
-        elif not isinstance(value, (str, QueryString)):
-            raise ValueError("Only str and Column values can be added.")
+        elif isinstance(value, str):
+            value = QueryString("CAST({} AS TEXT)", value)
+        elif not isinstance(value, QueryString):
+            raise ValueError(
+                "Only str, Column and QueryString values can be added."
+            )
 
         args = [value, column] if reverse else [column, value]
-        return Concat(*args)
+
+        # We use the concat operator instead of the concat function, because
+        # this is what we historically used, and they treat null values
+        # differently.
+        return QueryString(
+            Concat.template.format(value_1="{}", value_2="{}"), *args
+        )
 
 
 class MathDelegate:
