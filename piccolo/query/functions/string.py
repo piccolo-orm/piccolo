@@ -88,7 +88,7 @@ class Concat(QueryString):
 
         placeholders = ", ".join("{}" for _ in args)
 
-        processed_args = []
+        processed_args: t.List[t.Union[QueryString, Column]] = []
 
         for arg in args:
             if isinstance(arg, str) or (
