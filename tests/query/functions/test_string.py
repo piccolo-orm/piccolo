@@ -1,10 +1,10 @@
-from piccolo.query.functions.string import Upper
+from piccolo.query.functions.string import Concat, Upper
 from tests.example_apps.music.tables import Band
 
 from .base import BandTest
 
 
-class TestUpperFunction(BandTest):
+class TestUpper(BandTest):
 
     def test_column(self):
         """
@@ -23,3 +23,28 @@ class TestUpperFunction(BandTest):
         """
         response = Band.select(Upper(Band.manager._.name)).run_sync()
         self.assertListEqual(response, [{"upper": "GUIDO"}])
+
+
+class TestConcat(BandTest):
+
+    def test_column_and_string(self):
+        response = Band.select(
+            Concat(Band.name, "!!!", alias="name")
+        ).run_sync()
+        self.assertListEqual(response, [{"name": "Pythonistas!!!"}])
+
+    def test_column_and_column(self):
+        response = Band.select(
+            Concat(Band.name, Band.popularity, alias="name")
+        ).run_sync()
+        self.assertListEqual(response, [{"name": "Pythonistas1000"}])
+
+    def test_join(self):
+        response = Band.select(
+            Concat(Band.name, "-", Band.manager._.name, alias="name")
+        ).run_sync()
+        self.assertListEqual(response, [{"name": "Pythonistas-Guido"}])
+
+    def test_min_args(self):
+        with self.assertRaises(ValueError):
+            Concat()
