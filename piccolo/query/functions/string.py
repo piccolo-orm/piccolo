@@ -8,6 +8,7 @@ https://www.postgresql.org/docs/current/functions-string.html
 import typing as t
 
 from piccolo.columns.base import Column
+from piccolo.columns.column_types import Text, Varchar
 from piccolo.querystring import QueryString
 
 from .base import Function
@@ -87,14 +88,16 @@ class Concat(QueryString):
 
         placeholders = ", ".join("{}" for _ in args)
 
-        processed_args = [
-            (
-                QueryString("CAST({} AS text)", arg)
-                if isinstance(arg, str)
-                else arg
-            )
-            for arg in args
-        ]
+        processed_args = []
+
+        for arg in args:
+            if isinstance(arg, str) or (
+                isinstance(arg, Column)
+                and not isinstance(arg, (Varchar, Text))
+            ):
+                processed_args.append(QueryString("CAST({} AS TEXT)", arg))
+            else:
+                processed_args.append(arg)
 
         super().__init__(
             f"CONCAT({placeholders})", *processed_args, alias=alias
