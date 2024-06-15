@@ -62,7 +62,6 @@ from piccolo.columns.operators.comparison import (
     ArrayAny,
     ArrayNotAny,
 )
-from piccolo.columns.operators.string import Concat
 from piccolo.columns.reference import LazyTableReference
 from piccolo.querystring import QueryString
 from piccolo.utils.encoding import dump_json
@@ -86,46 +85,29 @@ class ConcatDelegate:
 
     def get_querystring(
         self,
-        column_name: str,
-        value: t.Union[str, Varchar, Text],
+        column: Column,
+        value: t.Union[str, Column, QueryString],
         reverse: bool = False,
     ) -> QueryString:
-        if isinstance(value, (Varchar, Text)):
-            column: Column = value
+        """
+        :param reverse:
+            By default the value is appended to the column's value. If
+            ``reverse=True`` then the value is prepended to the column's
+            value instead.
+
+        """
+        from piccolo.query.functions.string import Concat
+
+        if isinstance(value, Column):
             if len(column._meta.call_chain) > 0:
                 raise ValueError(
                     "Adding values across joins isn't currently supported."
                 )
-            other_column_name = column._meta.db_column_name
-            if reverse:
-                return QueryString(
-                    Concat.template.format(
-                        value_1=other_column_name, value_2=column_name
-                    )
-                )
-            else:
-                return QueryString(
-                    Concat.template.format(
-                        value_1=column_name, value_2=other_column_name
-                    )
-                )
-        elif isinstance(value, str):
-            if reverse:
-                value_1 = QueryString("CAST({} AS text)", value)
-                return QueryString(
-                    Concat.template.format(value_1="{}", value_2=column_name),
-                    value_1,
-                )
-            else:
-                value_2 = QueryString("CAST({} AS text)", value)
-                return QueryString(
-                    Concat.template.format(value_1=column_name, value_2="{}"),
-                    value_2,
-                )
-        else:
-            raise ValueError(
-                "Only str, Varchar columns, and Text columns can be added."
-            )
+        elif not isinstance(value, (str, QueryString)):
+            raise ValueError("Only str and Column values can be added.")
+
+        args = [value, column] if reverse else [column, value]
+        return Concat(*args)
 
 
 class MathDelegate:
@@ -340,12 +322,13 @@ class Varchar(Column):
 
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.db_column_name, value=value
+            column=self,
+            value=value,
         )
 
     def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.db_column_name,
+            column=self,
             value=value,
             reverse=True,
         )
@@ -442,12 +425,13 @@ class Text(Column):
 
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.db_column_name, value=value
+            column=self,
+            value=value,
         )
 
     def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.db_column_name,
+            column=self,
             value=value,
             reverse=True,
         )

@@ -76,11 +76,28 @@ class Concat(QueryString):
     ):
         """
         Concatenate multiple values into a single string.
+
+        .. note::
+            Null values are ignored, so ``null + '!!!'`` returns ``!!!``,
+            not ``null``.
+
         """
+        if len(args) < 2:
+            raise ValueError("At least two values must be passed in.")
+
         placeholders = ", ".join("{}" for _ in args)
 
+        processed_args = [
+            (
+                QueryString("CAST({} AS text)", arg)
+                if isinstance(arg, str)
+                else arg
+            )
+            for arg in args
+        ]
+
         super().__init__(
-            template=f"CONCAT({placeholders})", *args, alias=alias
+            f"CONCAT({placeholders})", *processed_args, alias=alias
         )
 
 
