@@ -35,6 +35,8 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from enum import Enum
 
+from typing_extensions import Self
+
 from piccolo.columns.base import (
     Column,
     ForeignKeyMeta,
@@ -2015,6 +2017,39 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
             for column in _fk_meta.resolved_references._meta.columns
             if column._meta.name not in excluded_column_names
         ]
+
+    def reverse(self) -> ForeignKey:
+        """
+        If there's a unique foreign key, this function reverses it.
+
+        .. code-block:: python
+
+            class Band(Table):
+                name = Varchar()
+
+            class FanClub(Table):
+                band = ForeignKey(Band, unique=True)
+                address = Text()
+
+        It's helpful with ``get_related``, for example:
+
+        .. code-block:: python
+
+            >>> band = await Band.objects().first()
+            >>> await band.get_related(FanClub.band.reverse())
+            <Fan Club: 1>
+
+        """
+        if not self._meta.unique:
+            raise ValueError("Only reverse unique foreign keys.")
+
+        if len(self._meta.call_chain) > 0:
+            raise ValueError(
+                "Foreign Keys can only be reversed one level at the moment."
+            )
+
+        target_column = self._foreign_key_meta.resolved_target_column
+        return target_column.join_on(self)
 
     def all_related(
         self, exclude: t.Optional[t.List[t.Union[ForeignKey, str]]] = None
