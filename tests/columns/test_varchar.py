@@ -1,9 +1,7 @@
-from unittest import TestCase
-
 from piccolo.columns.column_types import Varchar
 from piccolo.table import Table
 
-from ..base import engines_only
+from ..base import TableTest, engines_only
 
 
 class MyTable(Table):
@@ -11,7 +9,7 @@ class MyTable(Table):
 
 
 @engines_only("postgres", "cockroach")
-class TestVarchar(TestCase):
+class TestVarchar(TableTest):
     """
     SQLite doesn't enforce any constraints on max character length.
 
@@ -20,11 +18,7 @@ class TestVarchar(TestCase):
     Might consider enforcing this at the ORM level instead in the future.
     """
 
-    def setUp(self):
-        MyTable.create_table().run_sync()
-
-    def tearDown(self):
-        MyTable.alter().drop_table().run_sync()
+    tables = [MyTable]
 
     def test_length(self):
         row = MyTable(name="bob")

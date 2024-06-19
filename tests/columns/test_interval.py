@@ -1,9 +1,9 @@
 import datetime
-from unittest import TestCase
 
 from piccolo.columns.column_types import Interval
 from piccolo.columns.defaults.interval import IntervalCustom
 from piccolo.table import Table
+from tests.base import TableTest
 
 
 class MyTable(Table):
@@ -14,12 +14,8 @@ class MyTableDefault(Table):
     interval = Interval(default=IntervalCustom(days=1))
 
 
-class TestInterval(TestCase):
-    def setUp(self):
-        MyTable.create_table().run_sync()
-
-    def tearDown(self):
-        MyTable.alter().drop_table().run_sync()
+class TestInterval(TableTest):
+    tables = [MyTable]
 
     def test_interval(self):
         # Test a range of different timedeltas
@@ -91,12 +87,8 @@ class TestInterval(TestCase):
         self.assertTrue(result)
 
 
-class TestIntervalDefault(TestCase):
-    def setUp(self):
-        MyTableDefault.create_table().run_sync()
-
-    def tearDown(self):
-        MyTableDefault.alter().drop_table().run_sync()
+class TestIntervalDefault(TableTest):
+    tables = [MyTableDefault]
 
     def test_interval(self):
         row = MyTableDefault()
