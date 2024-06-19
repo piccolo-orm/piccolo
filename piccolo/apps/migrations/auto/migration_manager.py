@@ -165,6 +165,7 @@ class MigrationManager:
     raw_backwards: t.List[t.Union[t.Callable, AsyncFunction]] = field(
         default_factory=list
     )
+    fake: bool = False
 
     def add_table(
         self,
