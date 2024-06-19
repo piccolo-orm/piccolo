@@ -14,7 +14,7 @@ from piccolo.columns.column_types import (
 )
 from piccolo.querystring import QueryString
 from piccolo.table import Table
-from tests.base import engines_only, engines_skip, sqlite_only
+from tests.base import TableTest, engines_only, engines_skip, sqlite_only
 
 
 class MyTable(Table):
@@ -32,16 +32,12 @@ class TestArrayDefault(TestCase):
         self.assertTrue(column.default is list)
 
 
-class TestArray(TestCase):
+class TestArray(TableTest):
     """
     Make sure an Array column can be created, and works correctly.
     """
 
-    def setUp(self):
-        MyTable.create_table().run_sync()
-
-    def tearDown(self):
-        MyTable.alter().drop_table().run_sync()
+    tables = [MyTable]
 
     @pytest.mark.cockroach_array_slow
     def test_storage(self):

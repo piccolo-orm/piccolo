@@ -1,9 +1,9 @@
 import datetime
-from unittest import TestCase
 
 from piccolo.columns.column_types import Timestamp
 from piccolo.columns.defaults.timestamp import TimestampNow
 from piccolo.table import Table
+from tests.base import TableTest
 
 
 class MyTable(Table):
@@ -19,12 +19,8 @@ class MyTableDefault(Table):
     created_on = Timestamp(default=TimestampNow())
 
 
-class TestTimestamp(TestCase):
-    def setUp(self):
-        MyTable.create_table().run_sync()
-
-    def tearDown(self):
-        MyTable.alter().drop_table().run_sync()
+class TestTimestamp(TableTest):
+    tables = [MyTable]
 
     def test_timestamp(self):
         """
@@ -46,12 +42,8 @@ class TestTimestamp(TestCase):
             Timestamp(default=datetime.datetime.now(tz=datetime.timezone.utc))
 
 
-class TestTimestampDefault(TestCase):
-    def setUp(self):
-        MyTableDefault.create_table().run_sync()
-
-    def tearDown(self):
-        MyTableDefault.alter().drop_table().run_sync()
+class TestTimestampDefault(TableTest):
+    tables = [MyTableDefault]
 
     def test_timestamp(self):
         """

@@ -1,20 +1,16 @@
 import uuid
-from unittest import TestCase
 
 from piccolo.columns.column_types import UUID
 from piccolo.table import Table
+from tests.base import TableTest
 
 
 class MyTable(Table):
     uuid = UUID()
 
 
-class TestUUID(TestCase):
-    def setUp(self):
-        MyTable.create_table().run_sync()
-
-    def tearDown(self):
-        MyTable.alter().drop_table().run_sync()
+class TestUUID(TableTest):
+    tables = [MyTable]
 
     def test_return_type(self):
         row = MyTable()

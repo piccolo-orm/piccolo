@@ -1,5 +1,4 @@
 import datetime
-from unittest import TestCase
 
 from dateutil import tz
 
@@ -10,6 +9,7 @@ from piccolo.columns.defaults.timestamptz import (
     TimestamptzOffset,
 )
 from piccolo.table import Table
+from tests.base import TableTest
 
 
 class MyTable(Table):
@@ -34,12 +34,8 @@ class CustomTimezone(datetime.tzinfo):
     pass
 
 
-class TestTimestamptz(TestCase):
-    def setUp(self):
-        MyTable.create_table().run_sync()
-
-    def tearDown(self):
-        MyTable.alter().drop_table().run_sync()
+class TestTimestamptz(TableTest):
+    tables = [MyTable]
 
     def test_timestamptz_timezone_aware(self):
         """
@@ -78,12 +74,8 @@ class TestTimestamptz(TestCase):
             self.assertEqual(result.created_on.tzinfo, datetime.timezone.utc)
 
 
-class TestTimestamptzDefault(TestCase):
-    def setUp(self):
-        MyTableDefault.create_table().run_sync()
-
-    def tearDown(self):
-        MyTableDefault.alter().drop_table().run_sync()
+class TestTimestamptzDefault(TableTest):
+    tables = [MyTableDefault]
 
     def test_timestamptz_default(self):
         """

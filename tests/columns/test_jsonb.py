@@ -1,8 +1,6 @@
-from unittest import TestCase
-
 from piccolo.columns.column_types import JSONB, ForeignKey, Varchar
 from piccolo.table import Table
-from tests.base import engines_only, engines_skip
+from tests.base import TableTest, engines_only, engines_skip
 
 
 class RecordingStudio(Table):
@@ -16,14 +14,8 @@ class Instrument(Table):
 
 
 @engines_only("postgres", "cockroach")
-class TestJSONB(TestCase):
-    def setUp(self):
-        RecordingStudio.create_table().run_sync()
-        Instrument.create_table().run_sync()
-
-    def tearDown(self):
-        Instrument.alter().drop_table().run_sync()
-        RecordingStudio.alter().drop_table().run_sync()
+class TestJSONB(TableTest):
+    tables = [RecordingStudio, Instrument]
 
     def test_json(self):
         """
