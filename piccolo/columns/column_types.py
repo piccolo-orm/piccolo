@@ -2040,16 +2040,17 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
             <Fan Club: 1>
 
         """
-        if not self._meta.unique:
+        if not self._meta.unique or any(
+            not i._meta.unique for i in self._meta.call_chain
+        ):
             raise ValueError("Only reverse unique foreign keys.")
 
-        if len(self._meta.call_chain) > 0:
-            raise ValueError(
-                "Foreign Keys can only be reversed one level at the moment."
-            )
-
         target_column = self._foreign_key_meta.resolved_target_column
-        return target_column.join_on(self)
+        foreign_key = target_column.join_on(self)
+        foreign_key._meta.call_chain = [
+            i.reverse() for i in reversed(self._meta.call_chain)
+        ]
+        return foreign_key
 
     def all_related(
         self, exclude: t.Optional[t.List[t.Union[ForeignKey, str]]] = None
