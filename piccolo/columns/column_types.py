@@ -2031,6 +2031,10 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
                 band = ForeignKey(Band, unique=True)
                 address = Text()
 
+            class Treasurer(Table):
+                fan_club = ForeignKey(FanClub, unique=True)
+                name = Varchar()
+
         It's helpful with ``get_related``, for example:
 
         .. code-block:: python
@@ -2039,17 +2043,34 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
             >>> await band.get_related(FanClub.band.reverse())
             <Fan Club: 1>
 
+        It works multiple levels deep:
+
+        .. code-block:: python
+
+            >>> await band.get_related(Treasurer.fan_club._.band.reverse())
+            <Treasurer: 1>
+
         """
         if not self._meta.unique or any(
             not i._meta.unique for i in self._meta.call_chain
         ):
             raise ValueError("Only reverse unique foreign keys.")
 
-        target_column = self._foreign_key_meta.resolved_target_column
-        foreign_key = target_column.join_on(self)
-        foreign_key._meta.call_chain = [
-            i.reverse() for i in reversed(self._meta.call_chain)
-        ]
+        foreign_keys = [*self._meta.call_chain, self]
+
+        root_foreign_key = foreign_keys[0]
+        target_column = (
+            root_foreign_key._foreign_key_meta.resolved_target_column
+        )
+        foreign_key = target_column.join_on(root_foreign_key)
+
+        call_chain = []
+        for fk in reversed(foreign_keys[1:]):
+            target_column = fk._foreign_key_meta.resolved_target_column
+            call_chain.append(target_column.join_on(fk))
+
+        foreign_key._meta.call_chain = call_chain
+
         return foreign_key
 
     def all_related(

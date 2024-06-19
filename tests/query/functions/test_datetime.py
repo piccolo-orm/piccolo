@@ -12,16 +12,14 @@ from piccolo.query.functions.datetime import (
     Year,
 )
 from piccolo.table import Table
-from tests.base import engines_only, sqlite_only
-
-from .base import FunctionTest
+from tests.base import TableTest, engines_only, sqlite_only
 
 
 class Concert(Table):
     starts = Timestamp()
 
 
-class DatetimeTest(FunctionTest):
+class DatetimeTest(TableTest):
     tables = [Concert]
 
     def setUp(self) -> None:

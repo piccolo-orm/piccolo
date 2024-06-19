@@ -3,15 +3,14 @@ import decimal
 from piccolo.columns import Numeric
 from piccolo.query.functions.math import Abs, Ceil, Floor, Round
 from piccolo.table import Table
-
-from .base import FunctionTest
+from tests.base import TableTest
 
 
 class Ticket(Table):
     price = Numeric(digits=(5, 2))
 
 
-class TestMath(FunctionTest):
+class TestMath(TableTest):
 
     tables = [Ticket]
 

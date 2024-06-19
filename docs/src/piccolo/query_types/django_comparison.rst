@@ -218,7 +218,7 @@ Or alternatively, using ``get_related``:
 
     fan_club = await band.get_related(Band.id.join_on(FanClub.band))
 
-    # Similarly:
+    # Alternatively, by reversing the foreign key:
     fan_club = await band.get_related(FanClub.band.reverse())
 
 If doing a select query, and you want data from the related table:
@@ -231,7 +231,7 @@ If doing a select query, and you want data from the related table:
     ... )
     [{'name': 'Pythonistas', 'address': '1 Flying Circus, UK'}, ...]
 
-Similarly, in where clauses:
+And filtering by related tables in the ``where`` clause:
 
 .. code-block:: python
 
