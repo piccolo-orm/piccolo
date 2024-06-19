@@ -18,7 +18,7 @@ constraint. In Piccolo, you can do it like this:
         name = Varchar()
 
     class FanClub(Table):
-        band = ForeignKey(Band, unique=True)  # note the unique foreign key
+        band = ForeignKey(Band, unique=True)  # <- Note the unique constraint
         address = Text()
 
 Queries
