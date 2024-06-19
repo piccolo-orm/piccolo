@@ -3,6 +3,9 @@
 One to One
 ==========
 
+Schema
+------
+
 A one to one relationship is basically just a foreign key with a unique
 constraint. In Piccolo, you can do it like this:
 
@@ -17,6 +20,12 @@ constraint. In Piccolo, you can do it like this:
     class FanClub(Table):
         band = ForeignKey(Band, unique=True)  # note the unique foreign key
         address = Text()
+
+Queries
+-------
+
+Getting a related object
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 If we have a ``Band`` object:
 
@@ -36,8 +45,15 @@ Or alternatively, using ``get_related``:
 
     fan_club = await band.get_related(Band.id.join_on(FanClub.band))
 
-    # Alternatively, by reversing the foreign key:
+Instead of using ``join_on``, you can use ``reverse`` to traverse the foreign
+key backwards if you prefer:
+
+.. code-block:: python
+
     fan_club = await band.get_related(FanClub.band.reverse())
+
+Select
+~~~~~~
 
 If doing a select query, and you want data from the related table:
 
@@ -49,7 +65,10 @@ If doing a select query, and you want data from the related table:
     ... )
     [{'name': 'Pythonistas', 'address': '1 Flying Circus, UK'}, ...]
 
-And filtering by related tables in the ``where`` clause:
+Where
+~~~~~
+
+If you want to filter by related tables in the ``where`` clause:
 
 .. code-block:: python
 
@@ -57,3 +76,10 @@ And filtering by related tables in the ``where`` clause:
     ...     Band.name,
     ... ).where(Band.id.join_on(FanClub.band).address.like("%Flying%"))
     [{'name': 'Pythonistas'}]
+
+Source
+------
+
+.. currentmodule:: piccolo.columns.column_types
+
+.. automethod:: ForeignKey.reverse
