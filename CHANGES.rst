@@ -1,6 +1,17 @@
 Changes
 =======
 
+1.12.0
+------
+
+* Added documentation for one to one fields.
+* Upgraded ASGI templates (thanks to @sinisaos for this).
+* Migrations can now be hardcoded as fake.
+* Refactored tests to reduce boilerplate code.
+* Updated documentation dependencies.
+
+-------------------------------------------------------------------------------
+
 1.11.0
 ------
 
