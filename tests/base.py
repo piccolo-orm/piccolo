@@ -13,7 +13,12 @@ from piccolo.engine.cockroach import CockroachEngine
 from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
-from piccolo.table import Table, create_table_class
+from piccolo.table import (
+    Table,
+    create_db_tables_sync,
+    create_table_class,
+    drop_db_tables_sync,
+)
 from piccolo.utils.sync import run_sync
 
 ENGINE = engine_finder()
@@ -454,3 +459,17 @@ class DBTestCase(TestCase):
 
     def tearDown(self):
         self.drop_tables()
+
+
+class TableTest(TestCase):
+    """
+    Used for tests where we need to create Piccolo tables.
+    """
+
+    tables: t.List[t.Type[Table]]
+
+    def setUp(self) -> None:
+        create_db_tables_sync(*self.tables)
+
+    def tearDown(self) -> None:
+        drop_db_tables_sync(*self.tables)

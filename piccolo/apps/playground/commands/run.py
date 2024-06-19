@@ -19,6 +19,7 @@ from piccolo.columns import (
     Interval,
     Numeric,
     Serial,
+    Text,
     Timestamp,
     Varchar,
 )
@@ -53,6 +54,12 @@ class Band(Table):
             template="%s",
             columns=[cls.name],
         )
+
+
+class FanClub(Table):
+    id: Serial
+    address = Text()
+    band = ForeignKey(Band, unique=True)
 
 
 class Venue(Table):
@@ -154,6 +161,7 @@ class Album(Table):
 TABLES = (
     Manager,
     Band,
+    FanClub,
     Venue,
     Concert,
     Ticket,
@@ -184,6 +192,9 @@ def populate():
 
     pythonistas = Band(name="Pythonistas", manager=guido.id, popularity=1000)
     pythonistas.save().run_sync()
+
+    fan_club = FanClub(address="1 Flying Circus, UK", band=pythonistas)
+    fan_club.save().run_sync()
 
     graydon = Manager(name="Graydon")
     graydon.save().run_sync()

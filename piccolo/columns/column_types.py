@@ -2016,6 +2016,61 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
             if column._meta.name not in excluded_column_names
         ]
 
+    def reverse(self) -> ForeignKey:
+        """
+        If there's a unique foreign key, this function reverses it.
+
+        .. code-block:: python
+
+            class Band(Table):
+                name = Varchar()
+
+            class FanClub(Table):
+                band = ForeignKey(Band, unique=True)
+                address = Text()
+
+            class Treasurer(Table):
+                fan_club = ForeignKey(FanClub, unique=True)
+                name = Varchar()
+
+        It's helpful with ``get_related``, for example:
+
+        .. code-block:: python
+
+            >>> band = await Band.objects().first()
+            >>> await band.get_related(FanClub.band.reverse())
+            <Fan Club: 1>
+
+        It works multiple levels deep:
+
+        .. code-block:: python
+
+            >>> await band.get_related(Treasurer.fan_club._.band.reverse())
+            <Treasurer: 1>
+
+        """
+        if not self._meta.unique or any(
+            not i._meta.unique for i in self._meta.call_chain
+        ):
+            raise ValueError("Only reverse unique foreign keys.")
+
+        foreign_keys = [*self._meta.call_chain, self]
+
+        root_foreign_key = foreign_keys[0]
+        target_column = (
+            root_foreign_key._foreign_key_meta.resolved_target_column
+        )
+        foreign_key = target_column.join_on(root_foreign_key)
+
+        call_chain = []
+        for fk in reversed(foreign_keys[1:]):
+            target_column = fk._foreign_key_meta.resolved_target_column
+            call_chain.append(target_column.join_on(fk))
+
+        foreign_key._meta.call_chain = call_chain
+
+        return foreign_key
+
     def all_related(
         self, exclude: t.Optional[t.List[t.Union[ForeignKey, str]]] = None
     ) -> t.List[ForeignKey]:
