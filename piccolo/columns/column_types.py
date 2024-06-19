@@ -35,8 +35,6 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from enum import Enum
 
-from typing_extensions import Self
-
 from piccolo.columns.base import (
     Column,
     ForeignKeyMeta,
