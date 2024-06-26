@@ -363,7 +363,7 @@ class Email(Varchar):
     Used for storing email addresses. It's identical to :class:`Varchar`,
     except when using :func:`create_pydantic_model <piccolo.utils.pydantic.create_pydantic_model>` -
     we add email validation to the Pydantic model. This means that :ref:`PiccoloAdmin`
-    also validates emails addresses.
+    also validates email addresses.
     """  # noqa: E501
 
     pass
