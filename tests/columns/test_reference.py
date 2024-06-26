@@ -5,20 +5,41 @@ piccolo/columns/test_foreignkey.py
 
 from unittest import TestCase
 
-from piccolo.columns import ForeignKey
+from piccolo.columns import ForeignKey, Varchar
 from piccolo.columns.reference import LazyTableReference
 from piccolo.table import Table
+from tests.base import TableTest
 
 
 class Band(Table):
-    manager = ForeignKey(LazyTableReference("Manager", module_path=__name__))
+    manager: ForeignKey["Manager"] = ForeignKey(
+        LazyTableReference("Manager", module_path=__name__)
+    )
+    name = Varchar()
 
 
 class Manager(Table):
-    pass
+    name = Varchar()
 
 
-class TestLazyTableReference(TestCase):
+class TestQueries(TableTest):
+    tables = [Band, Manager]
+
+    def setUp(self):
+        super().setUp()
+        manager = Manager({Manager.name: "Guido"})
+        manager.save().run_sync()
+        band = Band({Band.name: "Pythonistas", Band.manager: manager})
+        band.save().run_sync()
+
+    def test_select(self):
+        self.assertListEqual(
+            Band.select(Band.name, Band.manager._.name).run_sync(),
+            [{"name": "Pythonistas", "manager.name": "Guido"}],
+        )
+
+
+class TestInit(TestCase):
     def test_init(self):
         """
         A ``LazyTableReference`` must be passed either an ``app_name`` or
@@ -44,6 +65,8 @@ class TestLazyTableReference(TestCase):
             module_path="tests.example_apps.music.tables",
         )
 
+
+class TestStr(TestCase):
     def test_str(self):
         self.assertEqual(
             LazyTableReference(
