@@ -5,7 +5,17 @@ piccolo/columns/test_foreignkey.py
 
 from unittest import TestCase
 
+from piccolo.columns import ForeignKey
 from piccolo.columns.reference import LazyTableReference
+from piccolo.table import Table
+
+
+class Band(Table):
+    manager = ForeignKey(LazyTableReference("Manager", module_path=__name__))
+
+
+class Manager(Table):
+    pass
 
 
 class TestLazyTableReference(TestCase):
