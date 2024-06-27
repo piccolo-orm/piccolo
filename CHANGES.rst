@@ -1,6 +1,13 @@
 Changes
 =======
 
+1.13.0
+------
+
+Improved ``LazyTableReference``, to help prevent circular import errors.
+
+-------------------------------------------------------------------------------
+
 1.12.0
 ------
 
