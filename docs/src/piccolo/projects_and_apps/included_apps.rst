@@ -38,6 +38,8 @@ Lets you scaffold an ASGI web app. See :ref:`ASGICommand`.
 
 -------------------------------------------------------------------------------
 
+.. _Fixtures:
+
 fixtures
 ~~~~~~~~
 

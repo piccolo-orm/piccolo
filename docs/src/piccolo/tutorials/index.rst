@@ -11,3 +11,4 @@ help you solve common problems:
     ./using_sqlite_and_asyncio_effectively
     ./deployment
     ./fastapi
+    ./avoiding_circular_imports
