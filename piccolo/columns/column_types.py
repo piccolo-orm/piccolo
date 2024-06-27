@@ -2183,7 +2183,7 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
         # If the ForeignKey is using a lazy reference, we need to set the
         # attributes here. Attributes starting with an underscore are
         # unlikely to be column names.
-        if not name.startswith("__"):
+        if not name.startswith("_") and name not in dir(self):
             try:
                 _foreign_key_meta = object.__getattribute__(
                     self, "_foreign_key_meta"
@@ -2196,12 +2196,9 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
                 ):
                     object.__getattribute__(self, "set_proxy_columns")()
 
-        try:
-            value = object.__getattribute__(self, name)
-        except AttributeError:
-            raise AttributeError
+        value = object.__getattribute__(self, name)
 
-        if name == "_":
+        if name.startswith("_"):
             return value
 
         foreignkey_class: t.Type[ForeignKey] = object.__getattribute__(
