@@ -30,6 +30,9 @@ class LazyTableReference:
         If specified, the ``Table`` subclass is imported from this path.
         For example, ``'my_app.tables'``.
 
+        .. hint::
+            If the table is in the same file, you can pass in ``__name__``.
+
     """
 
     table_class_name: str
