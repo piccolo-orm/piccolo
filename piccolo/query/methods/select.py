@@ -36,7 +36,13 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table  # noqa
 
 # Here to avoid breaking changes - will be removed in the future.
-from piccolo.query.functions.aggregate import Count  # noqa: F401
+from piccolo.query.functions.aggregate import (  # noqa: F401
+    Avg,
+    Count,
+    Max,
+    Min,
+    Sum,
+)
 
 
 class SelectRaw(Selectable):

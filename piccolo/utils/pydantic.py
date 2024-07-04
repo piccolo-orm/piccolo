@@ -206,7 +206,7 @@ def create_pydantic_model(
     ###########################################################################
 
     columns: t.Dict[str, t.Any] = {}
-    validators: t.Dict[str, classmethod] = {}
+    validators: t.Dict[str, t.Callable] = {}
 
     piccolo_columns = tuple(
         table._meta.columns
