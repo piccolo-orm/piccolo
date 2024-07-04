@@ -1,6 +1,15 @@
 Changes
 =======
 
+1.13.1
+------
+
+In Piccolo ``1.6.0`` we moved some aggregate functions to a new file. We now
+re-export them from their original location to keep backwards compatibility.
+Thanks to @sarvesh-deserve for reporting this issue.
+
+-------------------------------------------------------------------------------
+
 1.13.0
 ------
 
