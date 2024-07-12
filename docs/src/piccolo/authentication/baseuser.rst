@@ -129,10 +129,10 @@ To change a user's password:
 .. code-block:: python
 
     # From within a coroutine:
-    await BaseUser.update_password(username="bob", password="abc123")
+    await BaseUser.update_password(user="bob", password="abc123")
 
     # When not in an event loop:
-    BaseUser.update_password_sync(username="bob", password="abc123")
+    BaseUser.update_password_sync(user="bob", password="abc123")
 
 .. warning:: Don't use bulk updates for passwords - use ``update_password`` /
    ``update_password_sync``, and they'll correctly hash the password.
