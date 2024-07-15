@@ -18,7 +18,8 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 
 class Insert(
-    t.Generic[TableInstance], Query[TableInstance, t.List[t.Dict[str, t.Any]]]
+    t.Generic[TableInstance],
+    Query[TableInstance, t.List[t.Dict[t.Union[str, "Column"], t.Any]]],
 ):
     __slots__ = ("add_delegate", "on_conflict_delegate", "returning_delegate")
 
