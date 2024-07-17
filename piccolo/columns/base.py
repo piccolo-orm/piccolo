@@ -527,7 +527,7 @@ class Column(Selectable):
         elif (
             default is None
             and None in allowed_types
-            or isinstance(default, tuple(allowed_types))
+            or isinstance(default, tuple(t for t in allowed_types if t is not None))
         ):
             self._validated = True
             return True
@@ -539,8 +539,8 @@ class Column(Selectable):
             ):
                 self._validated = True
                 return True
-        elif (
-            isinstance(default, Enum) and isinstance(default.value, tuple(allowed_types))
+        elif isinstance(default, Enum) and isinstance(
+            default.value, tuple(t for t in allowed_types if t is not None)
         ):
             self._validated = True
             return True
