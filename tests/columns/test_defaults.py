@@ -71,7 +71,6 @@ class TestDefaults(TestCase):
         UUID(default=UUID4())
         UUID(default=uuid.uuid4())
         UUID(default=get_custom_default(UUID4))
-
         with self.assertRaises(ValueError):
             UUID(default="hello world")
 
@@ -80,7 +79,6 @@ class TestDefaults(TestCase):
         Time(default=TimeNow())
         Time(default=datetime.datetime.now().time())
         Time(default=get_custom_default(TimeNow))
-
         with self.assertRaises(ValueError):
             Time(default="hello world")  # type: ignore
 
@@ -89,7 +87,6 @@ class TestDefaults(TestCase):
         Date(default=DateNow())
         Date(default=datetime.datetime.now().date())
         Date(default=get_custom_default(DateNow))
-
         with self.assertRaises(ValueError):
             Date(default="hello world")  # type: ignore
 
@@ -98,13 +95,13 @@ class TestDefaults(TestCase):
         Timestamp(default=TimestampNow())
         Timestamp(default=datetime.datetime.now())
         Timestamp(default=get_custom_default(TimestampNow))
-
         with self.assertRaises(ValueError):
             Timestamp(default="hello world")  # type: ignore
 
     def test_foreignkey(self):
         class MyTable(Table):
             pass
+
         ForeignKey(references=MyTable, default=None, null=True)
         ForeignKey(references=MyTable, default=1)
         with self.assertRaises(ValueError):
