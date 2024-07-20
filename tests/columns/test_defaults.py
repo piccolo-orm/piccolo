@@ -2,6 +2,7 @@ import datetime
 import decimal
 import uuid
 from unittest import TestCase
+
 from piccolo.columns.column_types import (
     UUID,
     UUID4,
@@ -27,6 +28,7 @@ from piccolo.table import Table
 def get_custom_default(base):
     class CustomDefault(base):
         pass
+
     return CustomDefault()
 
 
@@ -34,6 +36,7 @@ class TestDefaults(TestCase):
     """
     Columns check the type of the default argument.
     """
+
     def test_int(self):
         for _type in (Integer, BigInt, SmallInt):
             _type(default=0)
