@@ -250,11 +250,11 @@ class ColumnMeta:
 
         if self.call_chain:
             column_name = (
-                "$".join(
+                ".".join(
                     t.cast(str, i._meta.db_column_name)
                     for i in self.call_chain
                 )
-                + f"${column_name}"
+                + f".{column_name}"
             )
 
         return column_name
@@ -291,7 +291,7 @@ class ColumnMeta:
                 'band$manager.name'
 
                 >>> Band.manager.name._meta.get_full_name(with_alias=True)
-                'band$manager.name AS "manager$name"'
+                'band$manager.name AS "manager.name"'
 
         :param include_quotes:
             If you're using the name in a SQL query, each component needs to be

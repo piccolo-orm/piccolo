@@ -246,7 +246,7 @@ class QueryString(Selectable):
         self, engine_type: str, with_alias: bool = True
     ) -> QueryString:
         if with_alias and self._alias:
-            return QueryString("{} AS " + self._alias, self)
+            return QueryString("{} AS " + f'"{self._alias}"', self)
         else:
             return self
 

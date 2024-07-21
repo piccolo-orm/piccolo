@@ -579,6 +579,13 @@ class PostgresEngine(Engine[PostgresTransaction]):
 
         return response
 
+    def transform_response_to_dicts(self, results) -> t.List[t.Dict]:
+        """
+        asyncpg returns a special Record object, so we need to convert it to
+        a dict.
+        """
+        return [dict(i) for i in results]
+
     def atomic(self) -> Atomic:
         return Atomic(engine=self)
 
