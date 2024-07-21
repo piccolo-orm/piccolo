@@ -1,6 +1,14 @@
 Changes
 =======
 
+1.14.0
+------
+
+Laying the foundations for alterative Postgres database drivers (e.g.
+``psqlpy``). Thanks to @insani7y and @chandr-andr for their help with this.
+
+-------------------------------------------------------------------------------
+
 1.13.1
 ------
 
