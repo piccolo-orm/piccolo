@@ -132,6 +132,13 @@ class Engine(t.Generic[TransactionClass], metaclass=ABCMeta):
     ):
         pass
 
+    def transform_response_to_dicts(self, results) -> t.List[t.Dict]:
+        """
+        If the database adapter returns something other than a list of
+        dictionaries, it should perform the transformation here.
+        """
+        return results
+
     @abstractmethod
     async def run_ddl(self, ddl: str, in_pool: bool = True):
         pass

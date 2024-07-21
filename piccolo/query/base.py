@@ -45,20 +45,11 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
             raise ValueError("Engine isn't defined.")
 
     async def _process_results(self, results) -> QueryResponseType:
-        if results:
-            keys = results[0].keys()
-            keys = [i.replace("$", ".") for i in keys]
-            if self.engine_type in ("postgres", "cockroach"):
-                # asyncpg returns a special Record object. We can pass it
-                # directly into zip without calling `values` on it. This can
-                # save us hundreds of microseconds, depending on the number of
-                # results.
-                raw = [dict(zip(keys, i)) for i in results]
-            else:
-                # SQLite returns a list of dictionaries.
-                raw = [dict(zip(keys, i.values())) for i in results]
-        else:
-            raw = []
+        raw = (
+            self.table._meta.db.transform_response_to_dicts(results)
+            if results
+            else []
+        )
 
         if hasattr(self, "_raw_response_callback"):
             self._raw_response_callback(raw)

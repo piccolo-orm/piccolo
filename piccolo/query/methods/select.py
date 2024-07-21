@@ -574,7 +574,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         query += "{}"
         args.append(distinct.querystring)
 
-        columns_str = ", ".join("{}" for i in select_strings)
+        columns_str = ", ".join("{}" for _ in select_strings)
         query += f" {columns_str} FROM {self.table._meta.get_formatted_tablename()}"  # noqa: E501
         args.extend(select_strings)
 
