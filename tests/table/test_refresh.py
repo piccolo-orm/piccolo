@@ -1,5 +1,5 @@
 from tests.base import DBTestCase
-from tests.example_apps.music.tables import Band
+from tests.example_apps.music.tables import Band, Manager
 
 
 class TestRefresh(DBTestCase):
@@ -24,9 +24,32 @@ class TestRefresh(DBTestCase):
         # Refresh `band`, and make sure it has the correct data.
         band.refresh().run_sync()
 
-        self.assertTrue(band.name == "Pythonistas!!!")
-        self.assertTrue(band.popularity == 8000)
-        self.assertTrue(band.id == initial_data["id"])
+        self.assertEqual(band.name, "Pythonistas!!!")
+        self.assertEqual(band.popularity, 8000)
+        self.assertEqual(band.id, initial_data["id"])
+
+    def test_refresh_with_prefetch(self) -> None:
+        """
+        Make sure ``refresh`` works, when the object used prefetch to get
+        nested objets (the nested objects should be updated too).
+        """
+        band = (
+            Band.objects(Band.manager)
+            .where(Band.name == "Pythonistas")
+            .first()
+            .run_sync()
+        )
+        assert band is not None
+
+        # Modify the data in the database.
+        Manager.update({Manager.name: "Guido!!!"}).where(
+            Manager.name == "Guido"
+        ).run_sync()
+
+        # Refresh `band`, and make sure it has the correct data.
+        band.refresh().run_sync()
+
+        self.assertEqual(band.manager.name, "Guido!!!")
 
     def test_columns(self) -> None:
         """
@@ -50,9 +73,9 @@ class TestRefresh(DBTestCase):
         )
         query.run_sync()
 
-        self.assertTrue(band.name == "Pythonistas!!!")
-        self.assertTrue(band.popularity == initial_data["popularity"])
-        self.assertTrue(band.id == initial_data["id"])
+        self.assertEqual(band.name, "Pythonistas!!!")
+        self.assertEqual(band.popularity, initial_data["popularity"])
+        self.assertEqual(band.id, initial_data["id"])
 
     def test_error_when_not_in_db(self) -> None:
         """

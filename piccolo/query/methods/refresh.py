@@ -54,6 +54,8 @@ class Refresh:
         Modifies the instance in place, but also returns it as a convenience.
 
         """
+        from piccolo.columns.column_types import ForeignKey
+        from piccolo.table import Table
 
         instance = self.instance
 
@@ -71,8 +73,24 @@ class Refresh:
         if not columns:
             raise ValueError("No columns to fetch.")
 
+        select_columns = []
+
+        for column in columns:
+            # If 'prefetch' was used on the object, for example:
+            #
+            # >>> await Band.objects(Band.manager)
+            #
+            # We should also update the prefetched object.
+
+            if isinstance(column, ForeignKey) and isinstance(
+                getattr(self.instance, column._meta.name), Table
+            ):
+                select_columns.extend(column.all_columns())
+            else:
+                select_columns.append(column)
+
         updated_values = (
-            await instance.__class__.select(*columns)
+            await instance.__class__.select(*select_columns)
             .where(pk_column == primary_key_value)
             .first()
             .run(node=node, in_pool=in_pool)
@@ -84,7 +102,17 @@ class Refresh:
             )
 
         for key, value in updated_values.items():
-            setattr(instance, key, value)
+            # For prefetched objects, make sure we update them correctly
+            object_to_update = instance
+            column_name = key
+
+            if "." in key:
+                path = key.split(".")
+                column_name = path.pop()
+                for i in path:
+                    object_to_update = getattr(object_to_update, i)
+
+            setattr(object_to_update, column_name, value)
 
         return instance
 
