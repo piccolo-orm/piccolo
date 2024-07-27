@@ -81,6 +81,13 @@ class Refresh:
             # >>> await Band.objects(Band.manager)
             #
             # We should also update the prefetched object.
+            #
+            # It only works 1 level deep at the moment. If we refresh this:
+            #
+            # >>> await Album.objects(Album.band.manager).first()
+            #
+            # It will update the nested `band` object, but not the `manager`
+            # object.
 
             if isinstance(column, ForeignKey) and isinstance(
                 getattr(self.instance, column._meta.name), Table
