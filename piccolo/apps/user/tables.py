@@ -91,15 +91,17 @@ class BaseUser(Table, tablename="piccolo_user"):
             raise ValueError("A password must be provided.")
 
         if len(password) < cls._min_password_length:
-            raise ValueError("The password is too short.")
+            raise ValueError(
+                f"The password is too short. (min {cls._min_password_length})"
+            )
 
         if len(password) > cls._max_password_length:
-            raise ValueError("The password is too long.")
+            raise ValueError(
+                f"The password is too long. (max {cls._max_password_length})"
+            )
 
         if password.startswith("pbkdf2_sha256"):
-            logger.warning(
-                "Tried to create a user with an already hashed password."
-            )
+            logger.warning("Tried to create a user with an already hashed password.")
             raise ValueError("Do not pass a hashed password.")
 
     ###########################################################################
@@ -122,9 +124,7 @@ class BaseUser(Table, tablename="piccolo_user"):
         elif isinstance(user, int):
             clause = cls.id == user
         else:
-            raise ValueError(
-                "The `user` arg must be a user id, or a username."
-            )
+            raise ValueError("The `user` arg must be a user id, or a username.")
 
         cls._validate_password(password=password)
 
@@ -243,16 +243,12 @@ class BaseUser(Table, tablename="piccolo_user"):
     ###########################################################################
 
     @classmethod
-    def create_user_sync(
-        cls, username: str, password: str, **extra_params
-    ) -> BaseUser:
+    def create_user_sync(cls, username: str, password: str, **extra_params) -> BaseUser:
         """
         A sync equivalent of :meth:`create_user`.
         """
         return run_sync(
-            cls.create_user(
-                username=username, password=password, **extra_params
-            )
+            cls.create_user(username=username, password=password, **extra_params)
         )
 
     @classmethod
