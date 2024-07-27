@@ -38,7 +38,9 @@ class TestInstantiateUser(TestCase):
         malicious_password = secrets.token_urlsafe(1000)
         with self.assertRaises(ValueError) as manager:
             BaseUser(username="bob", password=malicious_password)
-        self.assertEqual(manager.exception.__str__(), "The password is too long.")
+        self.assertEqual(
+            manager.exception.__str__(), "The password is too long."
+        )
 
 
 class TestLogin(TestCase):
@@ -182,12 +184,20 @@ class TestCreateUser(TestCase):
     @patch("piccolo.apps.user.tables.logger")
     def test_hashed_password_error(self, logger: MagicMock):
         with self.assertRaises(ValueError) as manager:
-            BaseUser.create_user_sync(username="bob", password="pbkdf2_sha256$10000")
+            BaseUser.create_user_sync(
+                username="bob", password="pbkdf2_sha256$10000"
+            )
 
-        self.assertEqual(manager.exception.__str__(), "Do not pass a hashed password.")
+        self.assertEqual(
+            manager.exception.__str__(), "Do not pass a hashed password."
+        )
         self.assertEqual(
             logger.method_calls,
-            [call.warning("Tried to create a user with an already hashed password.")],
+            [
+                call.warning(
+                    "Tried to create a user with an already hashed password."
+                )
+            ],
         )
 
     def test_short_password_error(self):
@@ -218,7 +228,9 @@ class TestCreateUser(TestCase):
                 password="abc123",
             )
 
-        self.assertEqual(manager.exception.__str__(), "A username must be provided.")
+        self.assertEqual(
+            manager.exception.__str__(), "A username must be provided."
+        )
 
     def test_no_password_error(self):
         with self.assertRaises(ValueError) as manager:
@@ -227,7 +239,9 @@ class TestCreateUser(TestCase):
                 password=None,  # type: ignore
             )
 
-        self.assertEqual(manager.exception.__str__(), "A password must be provided.")
+        self.assertEqual(
+            manager.exception.__str__(), "A password must be provided."
+        )
 
 
 class TestAutoHashingUpdate(TestCase):
@@ -262,7 +276,9 @@ class TestAutoHashingUpdate(TestCase):
 
         # Login the user - Piccolo should detect their password needs rehashing
         # and update it.
-        self.assertIsNotNone(BaseUser.login_sync(username=username, password=password))
+        self.assertIsNotNone(
+            BaseUser.login_sync(username=username, password=password)
+        )
 
         user_data = (
             BaseUser.select(BaseUser.password)
@@ -280,4 +296,6 @@ class TestAutoHashingUpdate(TestCase):
         self.assertEqual(int(iterations_), BaseUser._pbkdf2_iteration_count)
 
         # Make sure subsequent logins work as expected
-        self.assertIsNotNone(BaseUser.login_sync(username=username, password=password))
+        self.assertIsNotNone(
+            BaseUser.login_sync(username=username, password=password)
+        )
