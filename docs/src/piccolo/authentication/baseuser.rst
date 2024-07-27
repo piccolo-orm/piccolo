@@ -143,7 +143,9 @@ Limits
 ------
 
 The maximum password length allowed is 128 characters. This should be
-sufficiently long for most use cases.
+sufficiently long for most use cases.  
+
+The minimum password length allowed is 6 characters.
 
 -------------------------------------------------------------------------------
 

@@ -109,7 +109,7 @@ class TestLogin(TestCase):
             BaseUser.update_password_sync(username, malicious_password)
         self.assertEqual(
             manager.exception.__str__(),
-            "The password is too long.",
+            f"The password is too long. (max {BaseUser._max_password_length})",
         )
 
         # Test short passwords
@@ -118,7 +118,10 @@ class TestLogin(TestCase):
             BaseUser.update_password_sync(username, short_password)
         self.assertEqual(
             manager.exception.__str__(),
-            "The password is too short.",
+            (
+                "The password is too short. (min "
+                f"{BaseUser._min_password_length})"
+            ),
         )
 
         # Test no password
@@ -205,7 +208,11 @@ class TestCreateUser(TestCase):
             BaseUser.create_user_sync(username="bob", password="abc")
 
         self.assertEqual(
-            manager.exception.__str__(), "The password is too short."
+            manager.exception.__str__(),
+            (
+                "The password is too short. (min "
+                f"{BaseUser._min_password_length})"
+            ),
         )
 
     def test_long_password_error(self):
@@ -216,7 +223,8 @@ class TestCreateUser(TestCase):
             )
 
         self.assertEqual(
-            manager.exception.__str__(), "The password is too long."
+            manager.exception.__str__(),
+            f"The password is too long. (max {BaseUser._max_password_length})",
         )
 
     def test_no_username_error(self):
