@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import typing as t
-from dataclasses import dataclass
 
 from piccolo.utils.sync import run_sync
 
@@ -10,7 +9,6 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
-@dataclass
 class Refresh:
     """
     Used to refresh :class:`Table <piccolo.table.Table>` instances with the
@@ -25,8 +23,25 @@ class Refresh:
 
     """
 
-    instance: Table
-    columns: t.Optional[t.Sequence[Column]] = None
+    def __init__(
+        self,
+        instance: Table,
+        columns: t.Optional[t.Sequence[Column]] = None,
+    ):
+        self.instance = instance
+
+        if columns:
+            for column in columns:
+                if len(column._meta.call_chain) > 0:
+                    raise ValueError(
+                        "We can't currently selectively refresh certain "
+                        "columns on child objects (e.g. Concert.band_1.name). "
+                        "Please just specify top level columns (e.g. "
+                        "Concert.band_1), and the entire child object will be "
+                        "refreshed."
+                    )
+
+        self.columns = columns
 
     @property
     def _columns(self) -> t.Sequence[Column]:
@@ -48,7 +63,7 @@ class Refresh:
 
         We should also update the prefetched object.
 
-        It works multiple level deep at the moment. If we refresh this::
+        It works multiple level deep. If we refresh this::
 
             >>> await Album.objects(Album.band.manager).first()
 
@@ -67,7 +82,14 @@ class Refresh:
                 Table,
             ):
                 select_columns.extend(
-                    self._get_columns(child_instance, column.all_columns())
+                    self._get_columns(
+                        child_instance,
+                        column.all_columns(
+                            exclude=[
+                                child_instance.__class__._meta.primary_key
+                            ]
+                        ),
+                    )
                 )
             else:
                 select_columns.append(column)
