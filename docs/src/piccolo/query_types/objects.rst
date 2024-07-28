@@ -282,6 +282,20 @@ has the latest data from the database, you can use the
     # Or just refresh certain columns:
     await band.refresh([Band.name])
 
+It works with ``prefetch`` too:
+
+.. code-block:: python
+
+    # If we have an instance with a child object:
+    band = await Band.objects(Band.manager).first()
+
+    # And it has gotten stale, we can refresh it:
+    await band.refresh()
+
+    # The nested object will also be updated if it was stale:
+    >>> band.manager.name
+    "New value"
+
 -------------------------------------------------------------------------------
 
 Query clauses

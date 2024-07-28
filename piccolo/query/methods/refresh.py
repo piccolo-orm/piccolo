@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import typing as t
-from dataclasses import dataclass
 
 from piccolo.utils.sync import run_sync
 
@@ -10,7 +9,6 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
-@dataclass
 class Refresh:
     """
     Used to refresh :class:`Table <piccolo.table.Table>` instances with the
@@ -25,8 +23,25 @@ class Refresh:
 
     """
 
-    instance: Table
-    columns: t.Optional[t.Sequence[Column]] = None
+    def __init__(
+        self,
+        instance: Table,
+        columns: t.Optional[t.Sequence[Column]] = None,
+    ):
+        self.instance = instance
+
+        if columns:
+            for column in columns:
+                if len(column._meta.call_chain) > 0:
+                    raise ValueError(
+                        "We can't currently selectively refresh certain "
+                        "columns on child objects (e.g. Concert.band_1.name). "
+                        "Please just specify top level columns (e.g. "
+                        "Concert.band_1), and the entire child object will be "
+                        "refreshed."
+                    )
+
+        self.columns = columns
 
     @property
     def _columns(self) -> t.Sequence[Column]:
@@ -39,6 +54,47 @@ class Refresh:
         return [
             i for i in self.instance._meta.columns if not i._meta.primary_key
         ]
+
+    def _get_columns(self, instance: Table, columns: t.Sequence[Column]):
+        """
+        If `prefetch` was used on the object, for example::
+
+            >>> await Band.objects(Band.manager)
+
+        We should also update the prefetched object.
+
+        It works multiple level deep. If we refresh this::
+
+            >>> await Album.objects(Album.band.manager).first()
+
+        It will update the nested `band` object, and also the `manager`
+        object.
+
+        """
+        from piccolo.columns.column_types import ForeignKey
+        from piccolo.table import Table
+
+        select_columns = []
+
+        for column in columns:
+            if isinstance(column, ForeignKey) and isinstance(
+                (child_instance := getattr(instance, column._meta.name)),
+                Table,
+            ):
+                select_columns.extend(
+                    self._get_columns(
+                        child_instance,
+                        column.all_columns(
+                            exclude=[
+                                child_instance.__class__._meta.primary_key
+                            ]
+                        ),
+                    )
+                )
+            else:
+                select_columns.append(column)
+
+        return select_columns
 
     async def run(
         self, in_pool: bool = True, node: t.Optional[str] = None
@@ -54,7 +110,6 @@ class Refresh:
         Modifies the instance in place, but also returns it as a convenience.
 
         """
-
         instance = self.instance
 
         if not instance._exists_in_db:
@@ -71,8 +126,12 @@ class Refresh:
         if not columns:
             raise ValueError("No columns to fetch.")
 
+        select_columns = self._get_columns(
+            instance=self.instance, columns=columns
+        )
+
         updated_values = (
-            await instance.__class__.select(*columns)
+            await instance.__class__.select(*select_columns)
             .where(pk_column == primary_key_value)
             .first()
             .run(node=node, in_pool=in_pool)
@@ -84,7 +143,17 @@ class Refresh:
             )
 
         for key, value in updated_values.items():
-            setattr(instance, key, value)
+            # For prefetched objects, make sure we update them correctly
+            object_to_update = instance
+            column_name = key
+
+            if "." in key:
+                path = key.split(".")
+                column_name = path.pop()
+                for i in path:
+                    object_to_update = getattr(object_to_update, i)
+
+            setattr(object_to_update, column_name, value)
 
         return instance
 
