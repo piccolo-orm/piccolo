@@ -40,6 +40,40 @@ class Refresh:
             i for i in self.instance._meta.columns if not i._meta.primary_key
         ]
 
+    def _get_columns(self, instance: Table, columns: t.Sequence[Column]):
+        """
+        If `prefetch` was used on the object, for example::
+
+            >>> await Band.objects(Band.manager)
+
+        We should also update the prefetched object.
+
+        It works multiple level deep at the moment. If we refresh this::
+
+            >>> await Album.objects(Album.band.manager).first()
+
+        It will update the nested `band` object, and also the `manager`
+        object.
+
+        """
+        from piccolo.columns.column_types import ForeignKey
+        from piccolo.table import Table
+
+        select_columns = []
+
+        for column in columns:
+            if isinstance(column, ForeignKey) and isinstance(
+                (child_instance := getattr(instance, column._meta.name)),
+                Table,
+            ):
+                select_columns.extend(
+                    self._get_columns(child_instance, column.all_columns())
+                )
+            else:
+                select_columns.append(column)
+
+        return select_columns
+
     async def run(
         self, in_pool: bool = True, node: t.Optional[str] = None
     ) -> Table:
@@ -54,9 +88,6 @@ class Refresh:
         Modifies the instance in place, but also returns it as a convenience.
 
         """
-        from piccolo.columns.column_types import ForeignKey
-        from piccolo.table import Table
-
         instance = self.instance
 
         if not instance._exists_in_db:
@@ -73,28 +104,9 @@ class Refresh:
         if not columns:
             raise ValueError("No columns to fetch.")
 
-        select_columns = []
-
-        for column in columns:
-            # If 'prefetch' was used on the object, for example:
-            #
-            # >>> await Band.objects(Band.manager)
-            #
-            # We should also update the prefetched object.
-            #
-            # It only works 1 level deep at the moment. If we refresh this:
-            #
-            # >>> await Album.objects(Album.band.manager).first()
-            #
-            # It will update the nested `band` object, but not the `manager`
-            # object.
-
-            if isinstance(column, ForeignKey) and isinstance(
-                getattr(self.instance, column._meta.name), Table
-            ):
-                select_columns.extend(column.all_columns())
-            else:
-                select_columns.append(column)
+        select_columns = self._get_columns(
+            instance=self.instance, columns=columns
+        )
 
         updated_values = (
             await instance.__class__.select(*select_columns)
