@@ -79,9 +79,7 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
                 if column._alias is not None:
                     json_column_names.append(column._alias)
                 elif len(column._meta.call_chain) > 0:
-                    json_column_names.append(
-                        column._meta.get_default_alias().replace("$", ".")
-                    )
+                    json_column_names.append(column._meta.get_default_alias())
                 else:
                     json_column_names.append(column._meta.name)
 

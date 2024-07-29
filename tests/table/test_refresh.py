@@ -215,6 +215,23 @@ class TestRefreshWithPrefetch(TableTest):
         self.assertEqual(band.manager.id, new_manager.id)
         self.assertEqual(band.manager.name, "New Manager")
 
+    def test_foreign_key_set_to_null(self):
+        band = (
+            Band.objects(Band.manager)
+            .where(Band.name == "Pythonistas")
+            .first()
+            .run_sync()
+        )
+        assert band is not None
+
+        # Remove the manager from band
+        Band.update({Band.manager: None}, force=True).run_sync()
+
+        # Refresh `band`, and make sure the foreign key value is now `None`,
+        # instead of a nested object.
+        band.refresh().run_sync()
+        self.assertIsNone(band.manager)
+
     def test_exception(self) -> None:
         """
         We don't currently let the user refresh specific fields from nested

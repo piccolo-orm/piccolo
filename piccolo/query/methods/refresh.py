@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
+from piccolo.utils.encoding import JSONDict
 from piccolo.utils.sync import run_sync
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -20,6 +21,9 @@ class Refresh:
     :param columns:
         Which columns to refresh - it not specified, then all columns are
         refreshed.
+    :param load_json:
+        Whether to load ``JSON`` / ``JSONB`` columns as objects, instead of
+        just a string.
 
     """
 
@@ -27,6 +31,7 @@ class Refresh:
         self,
         instance: Table,
         columns: t.Optional[t.Sequence[Column]] = None,
+        load_json: bool = False,
     ):
         self.instance = instance
 
@@ -42,6 +47,7 @@ class Refresh:
                     )
 
         self.columns = columns
+        self.load_json = load_json
 
     @property
     def _columns(self) -> t.Sequence[Column]:
@@ -94,6 +100,24 @@ class Refresh:
 
         return select_columns
 
+    def _update_instance(self, instance: Table, data_dict: t.Dict):
+        """
+        Update the table instance. It is called recursively, if the instance
+        has child instances.
+        """
+        for key, value in data_dict.items():
+            if isinstance(value, dict) and not isinstance(value, JSONDict):
+                # If the value is a dict, then it's a child instance.
+                if all(i is None for i in value.values()):
+                    # If all values in the nested object are None, then we can
+                    # safely assume that the object itself is null, as the
+                    # primary key value must be null.
+                    setattr(instance, key, None)
+                else:
+                    self._update_instance(getattr(instance, key), value)
+            else:
+                setattr(instance, key, value)
+
     async def run(
         self, in_pool: bool = True, node: t.Optional[str] = None
     ) -> Table:
@@ -128,30 +152,20 @@ class Refresh:
             instance=self.instance, columns=columns
         )
 
-        updated_values = (
+        data_dict = (
             await instance.__class__.select(*select_columns)
             .where(pk_column == primary_key_value)
+            .output(nested=True, load_json=self.load_json)
             .first()
             .run(node=node, in_pool=in_pool)
         )
 
-        if updated_values is None:
+        if data_dict is None:
             raise ValueError(
                 "The object doesn't exist in the database any more."
             )
 
-        for key, value in updated_values.items():
-            # For prefetched objects, make sure we update them correctly
-            object_to_update = instance
-            column_name = key
-
-            if "." in key:
-                path = key.split(".")
-                column_name = path.pop()
-                for i in path:
-                    object_to_update = getattr(object_to_update, i)
-
-            setattr(object_to_update, column_name, value)
+        self._update_instance(instance=instance, data_dict=data_dict)
 
         return instance
 
