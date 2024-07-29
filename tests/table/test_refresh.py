@@ -170,7 +170,7 @@ class TestRefreshWithPrefetch(TableTest):
 
         # Refresh `band`, and make sure it has the correct data.
         band.refresh().run_sync()
-        self.assertEqual(self.band.manager.name, "Guido!!!")
+        self.assertEqual(band.manager.name, "Guido!!!")
 
     def test_multiple_layers(self) -> None:
         """
@@ -181,6 +181,7 @@ class TestRefreshWithPrefetch(TableTest):
             Concert.objects(Concert.band_1._.manager)
             .where(Concert.band_1._.name == "Pythonistas")
             .first()
+            .run_sync()
         )
         assert concert is not None
 
@@ -188,8 +189,31 @@ class TestRefreshWithPrefetch(TableTest):
         self.manager.name = "Guido!!!"
         self.manager.save().run_sync()
 
-        self.concert.refresh().run_sync()
-        self.assertEqual(self.concert.band_1.manager.name, "Guido!!!")
+        concert.refresh().run_sync()
+        self.assertEqual(concert.band_1.manager.name, "Guido!!!")
+
+    def test_updated_foreign_key(self) -> None:
+        """
+        If a foreign key now references a different row, make sure this
+        is refreshed correctly.
+        """
+        band = (
+            Band.objects(Band.manager)
+            .where(Band.name == "Pythonistas")
+            .first()
+            .run_sync()
+        )
+        assert band is not None
+
+        # Assign a different manager to the band
+        new_manager = Manager({Manager.name: "New Manager"})
+        new_manager.save().run_sync()
+        Band.update({Band.manager: new_manager.id}, force=True).run_sync()
+
+        # Refresh `band`, and make sure it references the new manager.
+        band.refresh().run_sync()
+        self.assertEqual(band.manager.id, new_manager.id)
+        self.assertEqual(band.manager.name, "New Manager")
 
     def test_exception(self) -> None:
         """
