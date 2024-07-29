@@ -301,10 +301,10 @@ It works with ``prefetch`` too:
 .. code-block:: python
 
     # If we have an instance:
-    band = await Band.objects().first()
+    band = await Band.objects().where(Band.name == "Pythonistas").first()
 
     # Call an API endpoint (e.g. with httpx):
-    await client.post("/band/", json={"popularity: 5000"})
+    await client.post(f"/band/{band.id}/", json={"popularity": 5000})
 
     # Make sure the instance was updated:
     await band.refresh()
