@@ -67,5 +67,8 @@ def load_json(data: str) -> t.Any:
     response = (
         orjson.loads(data) if ORJSON else json.loads(data)  # type: ignore
     )
+
     if isinstance(response, dict):
         return JSONDict(**response)
+
+    return response
