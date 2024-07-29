@@ -84,11 +84,9 @@ class Refresh:
                 select_columns.extend(
                     self._get_columns(
                         child_instance,
-                        column.all_columns(
-                            exclude=[
-                                child_instance.__class__._meta.primary_key
-                            ]
-                        ),
+                        # Fetch all columns (even the primary key, just in
+                        # case the foreign key now references a different row).
+                        column.all_columns(),
                     )
                 )
             else:
