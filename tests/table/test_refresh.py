@@ -1,5 +1,13 @@
+import typing as t
+
 from tests.base import DBTestCase, TableTest
-from tests.example_apps.music.tables import Band, Concert, Manager, Venue
+from tests.example_apps.music.tables import (
+    Band,
+    Concert,
+    Manager,
+    RecordingStudio,
+    Venue,
+)
 
 
 class TestRefresh(DBTestCase):
@@ -216,6 +224,10 @@ class TestRefreshWithPrefetch(TableTest):
         self.assertEqual(band.manager.name, "New Manager")
 
     def test_foreign_key_set_to_null(self):
+        """
+        Make sure that if the foreign key was set to null, that ``refresh``
+        sets the nested object to ``None``.
+        """
         band = (
             Band.objects(Band.manager)
             .where(Band.name == "Pythonistas")
@@ -242,3 +254,42 @@ class TestRefreshWithPrefetch(TableTest):
 
         # Shouldn't raise an exception:
         self.concert.refresh(columns=[Concert.band_1]).run_sync()
+
+
+class TestRefreshWithLoadJSON(TableTest):
+
+    tables = [RecordingStudio]
+
+    def setUp(self):
+        super().setUp()
+
+        self.recording_studio = RecordingStudio(
+            {RecordingStudio.facilities: {"piano": True}}
+        )
+        self.recording_studio.save().run_sync()
+
+    def test_load_json(self):
+        """
+        Make sure we can refresh an object, and load the JSON as a Python
+        object.
+        """
+        RecordingStudio.update(
+            {RecordingStudio.facilities: {"electric piano": True}},
+            force=True,
+        ).run_sync()
+
+        # Refresh without load_json:
+        self.recording_studio.refresh().run_sync()
+
+        self.assertEqual(
+            self.recording_studio.facilities,
+            '{"electric piano":true}',
+        )
+
+        # Refresh with load_json:
+        self.recording_studio.refresh(load_json=True).run_sync()
+
+        self.assertDictEqual(
+            t.cast(dict, self.recording_studio.facilities),
+            {"electric piano": True},
+        )
