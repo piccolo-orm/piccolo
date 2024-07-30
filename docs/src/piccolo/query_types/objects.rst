@@ -296,6 +296,20 @@ It works with ``prefetch`` too:
     >>> band.manager.name
     "New value"
 
+``refresh`` is very useful in unit tests:
+
+.. code-block:: python
+
+    # If we have an instance:
+    band = await Band.objects().where(Band.name == "Pythonistas").first()
+
+    # Call an API endpoint which updates the object (e.g. with httpx):
+    await client.patch(f"/band/{band.id}/", json={"popularity": 5000})
+
+    # Make sure the instance was updated:
+    await band.refresh()
+    assert band.popularity == 5000
+
 -------------------------------------------------------------------------------
 
 Query clauses

@@ -407,6 +407,9 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         ...
 
     @t.overload
+    def output(self: Self, *, load_json: bool, nested: bool) -> Self: ...
+
+    @t.overload
     def output(self: Self, *, nested: bool) -> Self: ...
 
     def output(

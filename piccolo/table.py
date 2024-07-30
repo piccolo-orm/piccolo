@@ -541,7 +541,9 @@ class Table(metaclass=TableMetaclass):
         )
 
     def refresh(
-        self, columns: t.Optional[t.Sequence[Column]] = None
+        self,
+        columns: t.Optional[t.Sequence[Column]] = None,
+        load_json: bool = False,
     ) -> Refresh:
         """
         Used to fetch the latest data for this instance from the database.
@@ -550,6 +552,10 @@ class Table(metaclass=TableMetaclass):
         :param columns:
             If you only want to refresh certain columns, specify them here.
             Otherwise all columns are refreshed.
+
+        :param load_json:
+            Whether to load ``JSON`` / ``JSONB`` columns as objects, instead of
+            just a string.
 
         Example usage::
 
@@ -564,7 +570,7 @@ class Table(metaclass=TableMetaclass):
             instance.refresh().run_sync()
 
         """
-        return Refresh(instance=self, columns=columns)
+        return Refresh(instance=self, columns=columns, load_json=load_json)
 
     @t.overload
     def get_related(
