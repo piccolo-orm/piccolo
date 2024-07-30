@@ -282,8 +282,10 @@ class TestRefreshWithLoadJSON(TableTest):
         self.recording_studio.refresh().run_sync()
 
         self.assertEqual(
-            self.recording_studio.facilities,
-            '{"electric piano":true}',
+            # Remove the white space, because some versions of Python add
+            # whitespace around JSON, and some don't.
+            self.recording_studio.facilities.replace(" ", ""),
+            '{"electricpiano":true}',
         )
 
         # Refresh with load_json:
