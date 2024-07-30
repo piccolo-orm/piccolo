@@ -1,6 +1,28 @@
 Changes
 =======
 
+1.15.0
+------
+
+Improved ``refresh`` - it now works with prefetched objects. For example:
+
+.. code-block:: python
+
+  >>> band = await Band.objects(Band.manager).first()
+  >>> band.manager.name
+  "Guido"
+
+  # If the manager has changed in the database, when we refresh the band, the
+  # manager object will also be updated:
+  >>> await band.refresh()
+  >>> band.manager.name
+  "New name"
+
+Also, improved the error messages when creating a ``BaseUser`` - thanks to
+@haaavk for this.
+
+-------------------------------------------------------------------------------
+
 1.14.0
 ------
 
