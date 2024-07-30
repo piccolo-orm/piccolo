@@ -303,8 +303,8 @@ It works with ``prefetch`` too:
     # If we have an instance:
     band = await Band.objects().where(Band.name == "Pythonistas").first()
 
-    # Call an API endpoint (e.g. with httpx):
-    await client.post(f"/band/{band.id}/", json={"popularity": 5000})
+    # Call an API endpoint which updates the object (e.g. with httpx):
+    await client.patch(f"/band/{band.id}/", json={"popularity": 5000})
 
     # Make sure the instance was updated:
     await band.refresh()
