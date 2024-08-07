@@ -1,3 +1,7 @@
+import sys
+
+import pytest
+
 from piccolo.engine import engine_finder
 from piccolo.testing.test_case import (
     AsyncTableTest,
@@ -31,6 +35,7 @@ class TestAsyncTableTest(AsyncTableTest):
         self.assertTrue(await Manager.table_exists())
 
 
+@pytest.mark.skipif(sys.version_info <= (3, 11), reason="Python 3.11 required")
 class TestAsyncTransaction(AsyncTransactionTest):
     """
     Make sure that the test exists within a transaction.
@@ -42,6 +47,7 @@ class TestAsyncTransaction(AsyncTransactionTest):
         self.assertTrue(db.transaction_exists())
 
 
+@pytest.mark.skipif(sys.version_info <= (3, 11), reason="Python 3.11 required")
 class TestAsyncTransactionRolledBack(AsyncTransactionTest):
     """
     Make sure that the changes get rolled back automatically.

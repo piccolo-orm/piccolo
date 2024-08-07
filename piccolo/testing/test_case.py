@@ -49,6 +49,14 @@ class AsyncTableTest(IsolatedAsyncioTestCase):
 
 
 class AsyncTransactionTest(IsolatedAsyncioTestCase):
+    """
+    Wraps each test in a transaction, which is automatically rolled back at the
+    end.
+
+    .. warning::
+        Python 3.11 and above only.
+
+    """
 
     db: t.Optional[Engine] = None
 
@@ -56,7 +64,8 @@ class AsyncTransactionTest(IsolatedAsyncioTestCase):
         db = self.db or engine_finder()
         assert db is not None
         self.transaction = db.transaction()
-        await self.enterAsyncContext(cm=self.transaction)
+        # This is only available in Python 3.11 and above:
+        await self.enterAsyncContext(cm=self.transaction)  # type: ignore
 
     async def asyncTearDown(self):
         await super().asyncTearDown()
