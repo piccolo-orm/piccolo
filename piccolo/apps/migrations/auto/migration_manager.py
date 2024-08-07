@@ -369,9 +369,6 @@ class MigrationManager:
         app_name: t.Optional[str],
         offset: int = 0,
         migration_id: t.Optional[str] = None,
-        # deep_relationships: bool = False,
-        # get_children: bool = False,
-        # get_complex_related
     ) -> t.Type[Table]:
         """
         Returns a Table subclass which can be used for modifying data within
@@ -396,8 +393,7 @@ class MigrationManager:
             max_migration_id=migration_id,
             offset=offset,
         )
-        table_class = diffable_table.to_table_class()
-        return table_class
+        return diffable_table.to_table_class()
 
     ###########################################################################
 
