@@ -2,7 +2,7 @@ import typing as t
 
 from piccolo.columns.column_types import Boolean
 from piccolo.table import Table
-from tests.base import TableTest
+from piccolo.testing.test_case import TableTest
 
 
 class MyTable(Table):

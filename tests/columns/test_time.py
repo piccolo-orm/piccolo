@@ -4,7 +4,8 @@ from functools import partial
 from piccolo.columns.column_types import Time
 from piccolo.columns.defaults.time import TimeNow
 from piccolo.table import Table
-from tests.base import TableTest, engines_skip
+from piccolo.testing.test_case import TableTest
+from tests.base import engines_skip
 
 
 class MyTable(Table):
