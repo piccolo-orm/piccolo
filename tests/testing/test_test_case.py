@@ -8,6 +8,9 @@ from tests.example_apps.music.tables import Band, Manager
 
 
 class TestTableTest(TableTest):
+    """
+    Make sure the tables are created automatically.
+    """
 
     tables = [Band, Manager]
 
@@ -17,6 +20,9 @@ class TestTableTest(TableTest):
 
 
 class TestAsyncTableTest(AsyncTableTest):
+    """
+    Make sure the tables are created automatically in async tests.
+    """
 
     tables = [Band, Manager]
 
@@ -26,8 +32,28 @@ class TestAsyncTableTest(AsyncTableTest):
 
 
 class TestAsyncTransaction(AsyncTransactionTest):
+    """
+    Make sure that the test exists within a transaction.
+    """
 
     async def test_transaction_exists(self):
         db = engine_finder()
         assert db is not None
         self.assertTrue(db.transaction_exists())
+
+
+class TestAsyncTransactionRolledBack(AsyncTransactionTest):
+    """
+    Make sure that the changes get rolled back automatically.
+    """
+
+    async def asyncTearDown(self):
+        await super().asyncTearDown()
+
+        assert Manager.table_exists().run_sync() is False
+
+    async def test_insert_data(self):
+        await Manager.create_table()
+
+        manager = Manager({Manager.name: "Guido"})
+        await manager.save()

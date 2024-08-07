@@ -55,4 +55,9 @@ class AsyncTransactionTest(IsolatedAsyncioTestCase):
     async def asyncSetUp(self) -> None:
         db = self.db or engine_finder()
         assert db is not None
-        await self.enterAsyncContext(cm=db.transaction())
+        self.transaction = db.transaction()
+        await self.enterAsyncContext(cm=self.transaction)
+
+    async def asyncTearDown(self):
+        await super().asyncTearDown()
+        await self.transaction.rollback()
