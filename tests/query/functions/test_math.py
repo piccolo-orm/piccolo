@@ -3,7 +3,7 @@ import decimal
 from piccolo.columns import Numeric
 from piccolo.query.functions.math import Abs, Ceil, Floor, Round
 from piccolo.table import Table
-from tests.base import TableTest
+from piccolo.testing.test_case import TableTest
 
 
 class Ticket(Table):

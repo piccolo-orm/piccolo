@@ -14,7 +14,8 @@ from piccolo.columns.column_types import (
 )
 from piccolo.querystring import QueryString
 from piccolo.table import Table
-from tests.base import TableTest, engines_only, engines_skip, sqlite_only
+from piccolo.testing.test_case import TableTest
+from tests.base import engines_only, engines_skip, sqlite_only
 
 
 class MyTable(Table):

@@ -12,7 +12,8 @@ from piccolo.query.functions.datetime import (
     Year,
 )
 from piccolo.table import Table
-from tests.base import TableTest, engines_only, sqlite_only
+from piccolo.testing.test_case import TableTest
+from tests.base import engines_only, sqlite_only
 
 
 class Concert(Table):

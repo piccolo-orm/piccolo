@@ -2,7 +2,8 @@ import enum
 
 from piccolo.columns.column_types import Array, Varchar
 from piccolo.table import Table
-from tests.base import TableTest, engines_only
+from piccolo.testing.test_case import TableTest
+from tests.base import engines_only
 from tests.example_apps.music.tables import Shirt
 
 

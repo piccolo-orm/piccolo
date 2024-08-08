@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from piccolo.columns.column_types import Numeric
 from piccolo.table import Table
-from tests.base import TableTest
+from piccolo.testing.test_case import TableTest
 
 
 class MyTable(Table):

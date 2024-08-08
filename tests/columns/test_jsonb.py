@@ -1,6 +1,7 @@
 from piccolo.columns.column_types import JSONB, ForeignKey, Varchar
 from piccolo.table import Table
-from tests.base import TableTest, engines_only, engines_skip
+from piccolo.testing.test_case import TableTest
+from tests.base import engines_only, engines_skip
 
 
 class RecordingStudio(Table):

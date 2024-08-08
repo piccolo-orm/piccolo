@@ -1,6 +1,7 @@
 import typing as t
 
-from tests.base import DBTestCase, TableTest
+from piccolo.testing.test_case import TableTest
+from tests.base import DBTestCase
 from tests.example_apps.music.tables import (
     Band,
     Concert,
