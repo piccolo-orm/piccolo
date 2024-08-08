@@ -127,10 +127,10 @@ tables.
 
     class TestApp(IsolatedAsyncioTestCase):
         async def setUp(self):
-            await create_db_tables_sync(*TABLES)
+            await create_db_tables(*TABLES)
 
         async def tearDown(self):
-            await drop_db_tables_sync(*TABLES)
+            await drop_db_tables(*TABLES)
 
         async def test_app(self):
             # Do some testing ...
