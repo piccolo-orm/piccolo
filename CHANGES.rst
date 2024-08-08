@@ -1,6 +1,45 @@
 Changes
 =======
 
+1.16.0
+------
+
+Added custom async ``TestCase`` subclasses, to help with testing.
+
+For example ``AsyncTransactionTest``, which wraps each test in a transaction
+automatically:
+
+.. code-block:: python
+
+  class TestBandEndpoint(AsyncTransactionTest):
+
+      async def test_band_response(self):
+          """
+          Make sure the endpoint returns a 200.
+          """
+          # This data automatically gets removed from the database when the
+          # test finishes:
+          band = Band({Band.name: "Pythonistas"})
+          await band.save()
+
+          # Using an API testing client, like httpx:
+          response = await client.get(f"/bands/{band.id}/")
+          self.assertEqual(response.status_code, 200)
+
+And ``AsyncTableTest``, which automatically creates and drops tables:
+
+.. code-block:: python
+
+  class TestBand(AsyncTableTest):
+
+      # These tables automatically get created and dropped:
+      tables = [Band]
+
+      async def test_band(self):
+          ...
+
+-------------------------------------------------------------------------------
+
 1.15.0
 ------
 

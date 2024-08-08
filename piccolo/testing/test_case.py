@@ -25,7 +25,7 @@ class TableTest(TestCase):
         class TestBand(TableTest):
             tables = [Band]
 
-            def test_example(self):
+            def test_band(self):
                 ...
 
     """  # noqa: E501
@@ -49,7 +49,7 @@ class AsyncTableTest(IsolatedAsyncioTestCase):
         class TestBand(AsyncTableTest):
             tables = [Band]
 
-            async def test_example(self):
+            async def test_band(self):
                 ...
 
     """
