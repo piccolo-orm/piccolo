@@ -100,52 +100,67 @@ Creating the test schema
 When running your unit tests, you usually start with a blank test database,
 create the tables, and then install test data.
 
-To create the tables, there are a few different approaches you can take. Here
-we use :func:`create_db_tables_sync <piccolo.table.create_db_tables_sync>` and
-:func:`drop_db_tables_sync <piccolo.table.drop_db_tables_sync>`.
+To create the tables, there are a few different approaches you can take.
+
+``create_db_tables`` / ``drop_db_tables``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Here we use :func:`create_db_tables <piccolo.table.create_db_tables>` and
+:func:`drop_db_tables <piccolo.table.drop_db_tables>` to create and drop the
+tables.
 
 .. note::
-    The async equivalents are :func:`create_db_tables <piccolo.table.create_db_tables>`
-    and :func:`drop_db_tables <piccolo.table.drop_db_tables>`.
+    The sync equivalents are :func:`create_db_tables_sync <piccolo.table.create_db_tables_sync>`
+    and :func:`drop_db_tables_sync <piccolo.table.drop_db_tables_sync>`, if
+    you need your tests to be synchronous for some reason.
 
 .. code-block:: python
 
-    from unittest import TestCase
+    from unittest import IsolatedAsyncioTestCase
 
-    from piccolo.table import create_db_tables_sync, drop_db_tables_sync
+    from piccolo.table import create_db_tables, drop_db_tables
     from piccolo.conf.apps import Finder
+
 
     TABLES = Finder().get_table_classes()
 
-    class TestApp(TestCase):
-        def setUp(self):
-            create_db_tables_sync(*TABLES)
 
-        def tearDown(self):
-            drop_db_tables_sync(*TABLES)
+    class TestApp(IsolatedAsyncioTestCase):
+        async def setUp(self):
+            await create_db_tables_sync(*TABLES)
 
-        def test_app(self):
+        async def tearDown(self):
+            await drop_db_tables_sync(*TABLES)
+
+        async def test_app(self):
             # Do some testing ...
             pass
+
+You can remove this boiler plate by using
+:class:`AsyncTransactionTest <piccolo.testing.test_case.AsyncTransactionTest>`,
+which does this for you.
+
+Run migrations
+~~~~~~~~~~~~~~
 
 Alternatively, you can run the migrations to setup the schema if you prefer:
 
 .. code-block:: python
 
-    from unittest import TestCase
+    from unittest import IsolatedAsyncioTestCase
 
     from piccolo.apps.migrations.commands.backwards import run_backwards
     from piccolo.apps.migrations.commands.forwards import run_forwards
-    from piccolo.utils.sync import run_sync
 
-    class TestApp(TestCase):
-        def setUp(self):
-            run_sync(run_forwards("all"))
 
-        def tearDown(self):
-            run_sync(run_backwards("all", auto_agree=True))
+    class TestApp(IsolatedAsyncioTestCase):
+        async def setUp(self):
+            await run_forwards("all")
 
-        def test_app(self):
+        async def tearDown(self):
+            await run_backwards("all", auto_agree=True)
+
+        async def test_app(self):
             # Do some testing ...
             pass
 
@@ -156,7 +171,10 @@ Testing async code
 
 There are a few options for testing async code using pytest.
 
-You can either call any async code using Piccolo's ``run_sync`` utility:
+``run_sync``
+~~~~~~~~~~~~
+
+You can call any async code using Piccolo's ``run_sync`` utility:
 
 .. code-block:: python
 
@@ -169,7 +187,10 @@ You can either call any async code using Piccolo's ``run_sync`` utility:
         rows = run_sync(get_data())
         assert len(rows) == 1
 
-Alternatively, you can make your tests natively async.
+It's preferable to make your tests naticely async though.
+
+``pytest-asyncio``
+~~~~~~~~~~~~~~~~~~
 
 If you prefer using pytest's function based tests, then take a look at
 `pytest-asyncio <https://github.com/pytest-dev/pytest-asyncio>`_. Simply
@@ -181,6 +202,9 @@ like this:
     async def test_select():
         rows = await MyTable.select()
         assert len(rows) == 1
+
+``IsolatedAsyncioTestCase``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you prefer class based tests, and are using Python 3.8 or above, then have
 a look at :class:`IsolatedAsyncioTestCase <unittest.IsolatedAsyncioTestCase>`
@@ -194,3 +218,26 @@ from Python's standard library. You can then write tests like this:
         async def test_select(self):
             rows = await MyTable.select()
             assert len(rows) == 1
+
+Also look at the ``IsolatedAsyncioTestCase`` subclasses which Piccolo provides
+(see :class:`AsyncTransactionTest <piccolo.testing.test_case.AsyncTransactionTest>`
+and :class:`AsyncTableTest <piccolo.testing.test_case.AsyncTableTest>` below).
+
+-------------------------------------------------------------------------------
+
+``TestCase`` subclasses
+-----------------------
+
+Piccolo ships with some ``unittest.TestCase`` subclasses which remove
+boilerplate code from tests.
+
+.. currentmodule:: piccolo.testing.test_case
+
+.. autoclass:: AsyncTransactionTest
+    :class-doc-from: class
+
+.. autoclass:: AsyncTableTest
+    :class-doc-from: class
+
+.. autoclass:: TableTest
+    :class-doc-from: class

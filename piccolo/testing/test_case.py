@@ -15,8 +15,10 @@ from piccolo.table import (
 
 class TableTest(TestCase):
     """
-    Used for tests where we need to create Piccolo tables - they will
-    automatically be created and dropped.
+    Identical to :class:`AsyncTableTest <piccolo.testing.test_case.AsyncTableTest>`,
+    except it only work for sync tests. Only use this if you can't make your
+    tests async (perhaps you're on Python 3.7 where ``IsolatedAsyncioTestCase``
+    isn't available).
 
     For example::
 
@@ -26,7 +28,7 @@ class TableTest(TestCase):
             def test_example(self):
                 ...
 
-    """
+    """  # noqa: E501
 
     tables: t.List[t.Type[Table]]
 
@@ -38,6 +40,19 @@ class TableTest(TestCase):
 
 
 class AsyncTableTest(IsolatedAsyncioTestCase):
+    """
+    Used for tests where we need to create Piccolo tables - they will
+    automatically be created and dropped.
+
+    For example::
+
+        class TestBand(AsyncTableTest):
+            tables = [Band]
+
+            async def test_example(self):
+                ...
+
+    """
 
     tables: t.List[t.Type[Table]]
 
@@ -50,14 +65,47 @@ class AsyncTableTest(IsolatedAsyncioTestCase):
 
 class AsyncTransactionTest(IsolatedAsyncioTestCase):
     """
-    Wraps each test in a transaction, which is automatically rolled back at the
-    end.
+    Wraps each test in a transaction, which is automatically rolled back when
+    the test finishes.
 
     .. warning::
         Python 3.11 and above only.
 
+    If your test suite just contains ``AsyncTransactionTest`` tests, then you
+    can setup your database tables once before your test suite runs. Any
+    changes made to your tables by the tests will be rolled back automatically.
+
+    Here's an example::
+
+        from piccolo.testing.test_case import AsyncTransactionTest
+
+
+        class TestBandEndpoint(AsyncTransactionTest):
+
+            async def test_band_response(self):
+                \"\"\"
+                Make sure the endpoint returns a 200.
+                \"\"\"
+                band = Band({Band.name: "Pythonistas"})
+                await band.save()
+
+                # Using an API testing client, like httpx:
+                response = client.get(f"/bands/{band.id}/")
+                self.assertEqual(response.status_code, 200)
+
+    We add a ``Band`` to the database, but any subsequent tests won't see it,
+    as the changes are rolled back automatically.
+
     """
 
+    # We use `engine_finder` to find the current `Engine`, but you can
+    # explicity set it here if you prefer:
+    #
+    # class MyTest(AsyncTransactionTest):
+    #     db = DB
+    #
+    #     ...
+    #
     db: t.Optional[Engine] = None
 
     async def asyncSetUp(self) -> None:
