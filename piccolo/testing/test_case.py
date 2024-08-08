@@ -90,7 +90,7 @@ class AsyncTransactionTest(IsolatedAsyncioTestCase):
                 await band.save()
 
                 # Using an API testing client, like httpx:
-                response = client.get(f"/bands/{band.id}/")
+                response = await client.get(f"/bands/{band.id}/")
                 self.assertEqual(response.status_code, 200)
 
     We add a ``Band`` to the database, but any subsequent tests won't see it,
