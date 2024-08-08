@@ -187,7 +187,7 @@ You can call any async code using Piccolo's ``run_sync`` utility:
         rows = run_sync(get_data())
         assert len(rows) == 1
 
-It's preferable to make your tests naticely async though.
+It's preferable to make your tests natively async though.
 
 ``pytest-asyncio``
 ~~~~~~~~~~~~~~~~~~
