@@ -29,6 +29,7 @@ by modifying the return values.
     ./on_conflict
     ./output
     ./returning
+    ./for_update
 
 .. toctree::
     :maxdepth: 1

@@ -17,6 +17,7 @@ from piccolo.query.mixins import (
     CallbackType,
     ColumnsDelegate,
     DistinctDelegate,
+    ForUpdateDelegate,
     GroupByDelegate,
     LimitDelegate,
     OffsetDelegate,
@@ -150,6 +151,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         "output_delegate",
         "callback_delegate",
         "where_delegate",
+        "for_update_delegate",
     )
 
     def __init__(
@@ -174,6 +176,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         self.output_delegate = OutputDelegate()
         self.callback_delegate = CallbackDelegate()
         self.where_delegate = WhereDelegate()
+        self.for_update_delegate = ForUpdateDelegate()
 
         self.columns(*columns_list)
 
@@ -217,6 +220,12 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
 
     def offset(self: Self, number: int) -> Self:
         self.offset_delegate.offset(number)
+        return self
+
+    def for_update(
+        self: Self, nowait: bool = False, skip_locked: bool = False, of=()
+    ) -> Self:
+        self.for_update_delegate.for_update(nowait, skip_locked, of)
         return self
 
     async def _splice_m2m_rows(
@@ -617,6 +626,14 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         if self.offset_delegate._offset:
             query += "{}"
             args.append(self.offset_delegate._offset.querystring)
+
+        if engine_type == "sqlite" and self.for_update_delegate._for_update:
+            raise NotImplementedError(
+                "SQLite doesn't support SELECT .. FOR UPDATE"
+            )
+
+        if self.for_update_delegate._for_update:
+            args.append(self.for_update_delegate._for_update.querystring)
 
         querystring = QueryString(query, *args)
 
