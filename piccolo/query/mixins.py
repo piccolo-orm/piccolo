@@ -796,13 +796,13 @@ class ForUpdate:
 
     def __post_init__(self):
         if not isinstance(self.nowait, bool):
-            raise TypeError("nowait must be an integer")
+            raise TypeError("nowait must be a bool")
         if not isinstance(self.skip_locked, bool):
-            raise TypeError("skip_locked must be an integer")
+            raise TypeError("skip_locked must be a bool")
         if not isinstance(self.of, tuple) or not all(
             hasattr(x, "_meta") for x in self.of
         ):
-            raise TypeError("of must be an tuple of Table")
+            raise TypeError("of must be a tuple of Table")
         if self.nowait and self.skip_locked:
             raise TypeError(
                 "The nowait option cannot be used with skip_locked"
