@@ -1028,6 +1028,10 @@ class TestSelect(DBTestCase):
             response, [{"name": "Pythonistas", "popularity_log": 3.0}]
         )
 
+    @pytest.mark.skipif(
+        is_running_sqlite(),
+        reason="SQLite doesn't support SELECT .. FOR UPDATE.",
+    )
     def test_for_update(self):
         """
         Make sure the for_update clause works.
