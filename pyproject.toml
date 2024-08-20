@@ -24,7 +24,8 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 markers = [
     "integration",
-    "speed"
+    "speed",
+    "cockroach_array_slow"
 ]
 
 [tool.coverage.run]

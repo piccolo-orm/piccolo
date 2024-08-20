@@ -4,7 +4,6 @@ import inspect
 import typing as t
 from dataclasses import dataclass
 
-from piccolo.columns.base import Selectable
 from piccolo.columns.column_types import (
     JSON,
     JSONB,
@@ -12,6 +11,7 @@ from piccolo.columns.column_types import (
     ForeignKey,
     LazyTableReference,
 )
+from piccolo.querystring import QueryString, Selectable
 from piccolo.utils.list import flatten
 from piccolo.utils.sync import run_sync
 
@@ -60,7 +60,9 @@ class M2MSelect(Selectable):
             for column in columns
         )
 
-    def get_select_string(self, engine_type: str, with_alias=True) -> str:
+    def get_select_string(
+        self, engine_type: str, with_alias=True
+    ) -> QueryString:
         m2m_table_name_with_schema = (
             self.m2m._meta.resolved_joining_table._meta.get_formatted_tablename()  # noqa: E501
         )  # noqa: E501
@@ -117,28 +119,33 @@ class M2MSelect(Selectable):
         if engine_type in ("postgres", "cockroach"):
             if self.as_list:
                 column_name = self.columns[0]._meta.db_column_name
-                return f"""
+                return QueryString(
+                    f"""
                     ARRAY(
                         SELECT
                             "inner_{table_2_name}"."{column_name}"
                         FROM {inner_select}
                     ) AS "{m2m_relationship_name}"
                 """
+                )
             elif not self.serialisation_safe:
                 column_name = table_2_pk_name
-                return f"""
+                return QueryString(
+                    f"""
                     ARRAY(
                         SELECT
                             "inner_{table_2_name}"."{column_name}"
                         FROM {inner_select}
                     ) AS "{m2m_relationship_name}"
                 """
+                )
             else:
                 column_names = ", ".join(
                     f'"inner_{table_2_name}"."{column._meta.db_column_name}"'
                     for column in self.columns
                 )
-                return f"""
+                return QueryString(
+                    f"""
                     (
                         SELECT JSON_AGG({m2m_relationship_name}_results)
                         FROM (
@@ -146,13 +153,16 @@ class M2MSelect(Selectable):
                         ) AS "{m2m_relationship_name}_results"
                     ) AS "{m2m_relationship_name}"
                 """
+                )
         elif engine_type == "sqlite":
             if len(self.columns) > 1 or not self.serialisation_safe:
                 column_name = table_2_pk_name
             else:
+                assert len(self.columns) > 0
                 column_name = self.columns[0]._meta.db_column_name
 
-            return f"""
+            return QueryString(
+                f"""
                 (
                     SELECT group_concat(
                         "inner_{table_2_name}"."{column_name}"
@@ -161,6 +171,7 @@ class M2MSelect(Selectable):
                 )
                 AS "{m2m_relationship_name} [M2M]"
             """
+            )
         else:
             raise ValueError(f"{engine_type} is an unrecognised engine type")
 
@@ -281,15 +292,14 @@ class M2MMeta:
 
 @dataclass
 class M2MAddRelated:
-
     target_row: Table
     m2m: M2M
     rows: t.Sequence[Table]
     extra_column_values: t.Dict[t.Union[Column, str], t.Any]
 
-    def __post_init__(self) -> None:
-        # Normalise `extra_column_values`, so we just have the column names.
-        self.extra_column_values: t.Dict[str, t.Any] = {
+    @property
+    def resolved_extra_column_values(self) -> t.Dict[str, t.Any]:
+        return {
             i._meta.name if isinstance(i, Column) else i: j
             for i, j in self.extra_column_values.items()
         }
@@ -306,7 +316,9 @@ class M2MAddRelated:
         joining_table_rows = []
 
         for row in rows:
-            joining_table_row = joining_table(**self.extra_column_values)
+            joining_table_row = joining_table(
+                **self.resolved_extra_column_values
+            )
             setattr(
                 joining_table_row,
                 self.m2m._meta.primary_foreign_key._meta.name,
@@ -348,7 +360,6 @@ class M2MAddRelated:
 
 @dataclass
 class M2MRemoveRelated:
-
     target_row: Table
     m2m: M2M
     rows: t.Sequence[Table]

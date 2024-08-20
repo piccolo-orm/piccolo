@@ -335,6 +335,12 @@ any
 
 .. automethod:: Array.any
 
+=======
+not_any
+=======
+
+.. automethod:: Array.not_any
+
 ===
 all
 ===

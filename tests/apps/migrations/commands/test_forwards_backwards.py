@@ -13,6 +13,7 @@ from tests.base import engines_only
 from tests.example_apps.music.tables import (
     Band,
     Concert,
+    Instrument,
     Manager,
     Poster,
     RecordingStudio,
@@ -33,6 +34,7 @@ TABLE_CLASSES: t.List[t.Type[Table]] = [
     Poster,
     Shirt,
     RecordingStudio,
+    Instrument,
 ]
 
 
@@ -190,7 +192,7 @@ class TestForwardsBackwards(TestCase):
     @engines_only("postgres")
     def test_forwards_fake(self):
         """
-        Test running the migrations if they've already run.
+        Make sure migrations can be faked on the command line.
         """
         run_sync(forwards(app_name="music", migration_id="all", fake=True))
 
@@ -211,7 +213,39 @@ class TestForwardsBackwards(TestCase):
                 "2021-07-25T22:38:48:009306",
                 "2021-09-06T13:58:23:024723",
                 "2021-11-13T14:01:46:114725",
+                "2024-05-28T23:15:41:018844",
+                "2024-06-19T18:11:05:793132",
             ],
+        )
+
+    @engines_only("postgres")
+    @patch("piccolo.apps.migrations.commands.forwards.print")
+    def test_hardcoded_fake_migrations(self, print_: MagicMock):
+        """
+        Make sure that migrations that have been hardcoded as fake aren't
+        executed, even without the ``--fake`` command line flag.
+
+        See tests/example_apps/music/piccolo_migrations/music_2024_06_19t18_11_05_793132.py
+
+        """  # noqa: E501
+        run_sync(forwards(app_name="music", migration_id="all"))
+
+        # The migration which is hardcoded as fake:
+        migration_name = "2024-06-19T18:11:05:793132"
+
+        self.assertTrue(
+            Migration.exists()
+            .where(Migration.name == migration_name)
+            .run_sync()
+        )
+
+        self.assertNotIn(
+            call("Running fake migration"),
+            print_.mock_calls,
+        )
+        self.assertIn(
+            call(f"- {migration_name}: faked! ⏭️"),
+            print_.mock_calls,
         )
 
     def tearDown(self):

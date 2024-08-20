@@ -48,7 +48,7 @@ from piccolo.query.methods.create_index import CreateIndex
 from piccolo.query.methods.indexes import Indexes
 from piccolo.query.methods.objects import First
 from piccolo.query.methods.refresh import Refresh
-from piccolo.querystring import QueryString, Unquoted
+from piccolo.querystring import QueryString
 from piccolo.utils import _camel_to_snake
 from piccolo.utils.graphlib import TopologicalSorter
 from piccolo.utils.sql_values import convert_to_sql_value
@@ -56,7 +56,7 @@ from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.columns import Selectable
+    from piccolo.querystring import Selectable
 
 PROTECTED_TABLENAMES = ("user",)
 TABLENAME_WARNING = (
@@ -143,8 +143,11 @@ class TableMeta:
     def db(self, value: Engine):
         self._db = value
 
-    def refresh_db(self):
-        self.db = engine_finder()
+    def refresh_db(self) -> None:
+        engine = engine_finder()
+        if engine is None:
+            raise ValueError("The engine can't be found")
+        self.db = engine
 
     def get_column_by_name(self, name: str) -> Column:
         """
@@ -184,8 +187,8 @@ class TableMeta:
 
 
 class TableMetaclass(type):
-    def __str__(cls):
-        return cls._table_str()
+    def __str__(cls) -> str:
+        return cls._table_str()  # type: ignore
 
     def __repr__(cls):
         """
@@ -538,7 +541,9 @@ class Table(metaclass=TableMetaclass):
         )
 
     def refresh(
-        self, columns: t.Optional[t.Sequence[Column]] = None
+        self,
+        columns: t.Optional[t.Sequence[Column]] = None,
+        load_json: bool = False,
     ) -> Refresh:
         """
         Used to fetch the latest data for this instance from the database.
@@ -547,6 +552,10 @@ class Table(metaclass=TableMetaclass):
         :param columns:
             If you only want to refresh certain columns, specify them here.
             Otherwise all columns are refreshed.
+
+        :param load_json:
+            Whether to load ``JSON`` / ``JSONB`` columns as objects, instead of
+            just a string.
 
         Example usage::
 
@@ -561,7 +570,7 @@ class Table(metaclass=TableMetaclass):
             instance.refresh().run_sync()
 
         """
-        return Refresh(instance=self, columns=columns)
+        return Refresh(instance=self, columns=columns, load_json=load_json)
 
     @t.overload
     def get_related(
@@ -796,30 +805,14 @@ class Table(metaclass=TableMetaclass):
         """
         Used when inserting rows.
         """
-        args_dict = {}
-        for col in self._meta.columns:
-            column_name = col._meta.name
-            value = convert_to_sql_value(value=self[column_name], column=col)
-            args_dict[column_name] = value
-
-        def is_unquoted(arg):
-            return isinstance(arg, Unquoted)
-
-        # Strip out any args which are unquoted.
-        filtered_args = [i for i in args_dict.values() if not is_unquoted(i)]
+        args = [
+            convert_to_sql_value(value=self[column._meta.name], column=column)
+            for column in self._meta.columns
+        ]
 
         # If unquoted, dump it straight into the query.
-        query = ",".join(
-            [
-                (
-                    args_dict[column._meta.name].value
-                    if is_unquoted(args_dict[column._meta.name])
-                    else "{}"
-                )
-                for column in self._meta.columns
-            ]
-        )
-        return QueryString(f"({query})", *filtered_args)
+        query = ",".join(["{}" for _ in args])
+        return QueryString(f"({query})", *args)
 
     def __str__(self) -> str:
         return self.querystring.__str__()
@@ -838,7 +831,7 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def all_related(
         cls, exclude: t.Optional[t.List[t.Union[str, ForeignKey]]] = None
-    ) -> t.List[Column]:
+    ) -> t.List[ForeignKey]:
         """
         Used in conjunction with ``objects`` queries. Just as we can use
         ``all_related`` on a ``ForeignKey``, you can also use it for the table
@@ -1267,7 +1260,7 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def create_index(
         cls,
-        columns: t.List[t.Union[Column, str]],
+        columns: t.Union[t.List[Column], t.List[str]],
         method: IndexMethod = IndexMethod.btree,
         if_not_exists: bool = False,
     ) -> CreateIndex:
@@ -1289,7 +1282,9 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def drop_index(
-        cls, columns: t.List[t.Union[Column, str]], if_exists: bool = True
+        cls,
+        columns: t.Union[t.List[Column], t.List[str]],
+        if_exists: bool = True,
     ) -> DropIndex:
         """
         Drop a table index. If multiple columns are specified, this refers
@@ -1480,22 +1475,18 @@ async def drop_db_tables(*tables: t.Type[Table]) -> None:
         # SQLite doesn't support CASCADE, so we have to drop them in the
         # correct order.
         sorted_table_classes = reversed(sort_table_classes(list(tables)))
-        atomic = engine.atomic()
-        atomic.add(
-            *[
-                Alter(table=table).drop_table(if_exists=True)
-                for table in sorted_table_classes
-            ]
-        )
+        ddl_statements = [
+            Alter(table=table).drop_table(if_exists=True)
+            for table in sorted_table_classes
+        ]
     else:
-        atomic = engine.atomic()
-        atomic.add(
-            *[
-                table.alter().drop_table(cascade=True, if_exists=True)
-                for table in tables
-            ]
-        )
+        ddl_statements = [
+            table.alter().drop_table(cascade=True, if_exists=True)
+            for table in tables
+        ]
 
+    atomic = engine.atomic()
+    atomic.add(*ddl_statements)
     await atomic.run()
 
 

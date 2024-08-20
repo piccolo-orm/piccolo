@@ -145,7 +145,7 @@ class MigrationTestCase(DBTestCase):
         """
         app_config = self._get_app_config()
 
-        migrations_folder_path = app_config.migrations_folder_path
+        migrations_folder_path = app_config.resolved_migrations_folder_path
 
         if os.path.exists(migrations_folder_path):
             shutil.rmtree(migrations_folder_path)
@@ -288,7 +288,12 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "text",
                     x.is_nullable == "NO",
-                    x.column_default in ("''::text", "'':::STRING"),
+                    x.column_default
+                    in (
+                        "''",
+                        "''::text",
+                        "'':::STRING",
+                    ),
                 ]
             ),
         )
@@ -461,6 +466,7 @@ class TestMigrations(MigrationTestCase):
                     in (
                         "now()",
                         "CURRENT_TIMESTAMP",
+                        "current_timestamp()::TIMESTAMP",
                         "current_timestamp():::TIMESTAMPTZ::TIMESTAMP",
                     ),
                 ]
@@ -541,7 +547,11 @@ class TestMigrations(MigrationTestCase):
                     x.data_type == "interval",
                     x.is_nullable == "NO",
                     x.column_default
-                    in ("'00:00:00'::interval", "'00:00:00':::INTERVAL"),
+                    in (
+                        "'00:00:00'",
+                        "'00:00:00'::interval",
+                        "'00:00:00':::INTERVAL",
+                    ),
                 ]
             ),
         )
@@ -743,7 +753,12 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "jsonb",
                     x.is_nullable == "NO",
-                    x.column_default in ("'{}'::jsonb", "'{}':::JSONB"),
+                    x.column_default
+                    in (
+                        "'{}'",
+                        "'{}'::jsonb",
+                        "'{}':::JSONB",
+                    ),
                 ]
             ),
         )
@@ -766,7 +781,11 @@ class TestMigrations(MigrationTestCase):
                     x.data_type == "character varying",
                     x.is_nullable == "NO",
                     x.column_default
-                    in ("''::character varying", "'':::STRING"),
+                    in (
+                        "''",
+                        "''::character varying",
+                        "'':::STRING",
+                    ),
                 ]
             ),
         )
@@ -788,7 +807,11 @@ class TestMigrations(MigrationTestCase):
                     x.data_type == "character varying",
                     x.is_nullable == "NO",
                     x.column_default
-                    in ("''::character varying", "'':::STRING"),
+                    in (
+                        "''",
+                        "''::character varying",
+                        "'':::STRING",
+                    ),
                 ]
             ),
         )

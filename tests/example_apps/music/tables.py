@@ -115,3 +115,13 @@ class RecordingStudio(Table):
     id: Serial
     facilities = JSON()
     facilities_b = JSONB()
+
+
+class Instrument(Table):
+    """
+    Used for testing foreign keys to a table with a JSON column.
+    """
+
+    id: Serial
+    name = Varchar()
+    recording_studio = ForeignKey(RecordingStudio)

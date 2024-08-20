@@ -50,7 +50,7 @@ class Update(Query[TableInstance, t.List[t.Any]]):
         self.values_delegate.values(values)
         return self
 
-    def where(self, *where: Combinable) -> Update:
+    def where(self, *where: t.Union[Combinable, QueryString]) -> Update:
         self.where_delegate.where(*where)
         return self
 

@@ -57,10 +57,14 @@ from piccolo.columns.defaults.timestamptz import (
     TimestamptzNow,
 )
 from piccolo.columns.defaults.uuid import UUID4, UUIDArg
-from piccolo.columns.operators.comparison import ArrayAll, ArrayAny
+from piccolo.columns.operators.comparison import (
+    ArrayAll,
+    ArrayAny,
+    ArrayNotAny,
+)
 from piccolo.columns.operators.string import Concat
 from piccolo.columns.reference import LazyTableReference
-from piccolo.querystring import QueryString, Unquoted
+from piccolo.querystring import QueryString
 from piccolo.utils.encoding import dump_json
 from piccolo.utils.warnings import colored_warning
 
@@ -82,46 +86,37 @@ class ConcatDelegate:
 
     def get_querystring(
         self,
-        column_name: str,
-        value: t.Union[str, Varchar, Text],
+        column: Column,
+        value: t.Union[str, Column, QueryString],
         reverse: bool = False,
     ) -> QueryString:
-        if isinstance(value, (Varchar, Text)):
-            column: Column = value
+        """
+        :param reverse:
+            By default the value is appended to the column's value. If
+            ``reverse=True`` then the value is prepended to the column's
+            value instead.
+
+        """
+        if isinstance(value, Column):
             if len(column._meta.call_chain) > 0:
                 raise ValueError(
                     "Adding values across joins isn't currently supported."
                 )
-            other_column_name = column._meta.db_column_name
-            if reverse:
-                return QueryString(
-                    Concat.template.format(
-                        value_1=other_column_name, value_2=column_name
-                    )
-                )
-            else:
-                return QueryString(
-                    Concat.template.format(
-                        value_1=column_name, value_2=other_column_name
-                    )
-                )
         elif isinstance(value, str):
-            if reverse:
-                value_1 = QueryString("CAST({} AS text)", value)
-                return QueryString(
-                    Concat.template.format(value_1="{}", value_2=column_name),
-                    value_1,
-                )
-            else:
-                value_2 = QueryString("CAST({} AS text)", value)
-                return QueryString(
-                    Concat.template.format(value_1=column_name, value_2="{}"),
-                    value_2,
-                )
-        else:
+            value = QueryString("CAST({} AS TEXT)", value)
+        elif not isinstance(value, QueryString):
             raise ValueError(
-                "Only str, Varchar columns, and Text columns can be added."
+                "Only str, Column and QueryString values can be added."
             )
+
+        args = [value, column] if reverse else [column, value]
+
+        # We use the concat operator instead of the concat function, because
+        # this is what we historically used, and they treat null values
+        # differently.
+        return QueryString(
+            Concat.template.format(value_1="{}", value_2="{}"), *args
+        )
 
 
 class MathDelegate:
@@ -336,12 +331,13 @@ class Varchar(Column):
 
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.db_column_name, value=value
+            column=self,
+            value=value,
         )
 
     def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.db_column_name,
+            column=self,
             value=value,
             reverse=True,
         )
@@ -367,7 +363,7 @@ class Email(Varchar):
     Used for storing email addresses. It's identical to :class:`Varchar`,
     except when using :func:`create_pydantic_model <piccolo.utils.pydantic.create_pydantic_model>` -
     we add email validation to the Pydantic model. This means that :ref:`PiccoloAdmin`
-    also validates emails addresses.
+    also validates email addresses.
     """  # noqa: E501
 
     pass
@@ -438,12 +434,13 @@ class Text(Column):
 
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.db_column_name, value=value
+            column=self,
+            value=value,
         )
 
     def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.db_column_name,
+            column=self,
             value=value,
             reverse=True,
         )
@@ -752,8 +749,8 @@ class SmallInt(Integer):
 ###############################################################################
 
 
-DEFAULT = Unquoted("DEFAULT")
-NULL = Unquoted("null")
+DEFAULT = QueryString("DEFAULT")
+NULL = QueryString("null")
 
 
 class Serial(Column):
@@ -778,7 +775,7 @@ class Serial(Column):
         if engine_type == "postgres":
             return DEFAULT
         elif engine_type == "cockroach":
-            return Unquoted("unique_rowid()")
+            return QueryString("unique_rowid()")
         elif engine_type == "sqlite":
             return NULL
         raise Exception("Unrecognized engine type")
@@ -1952,7 +1949,9 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
 
         if is_table_class:
             # Record the reverse relationship on the target table.
-            references._meta._foreign_key_references.append(self)
+            t.cast(
+                t.Type[Table], references
+            )._meta._foreign_key_references.append(self)
 
             # Allow columns on the referenced table to be accessed via
             # auto completion.
@@ -2016,6 +2015,61 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
             for column in _fk_meta.resolved_references._meta.columns
             if column._meta.name not in excluded_column_names
         ]
+
+    def reverse(self) -> ForeignKey:
+        """
+        If there's a unique foreign key, this function reverses it.
+
+        .. code-block:: python
+
+            class Band(Table):
+                name = Varchar()
+
+            class FanClub(Table):
+                band = ForeignKey(Band, unique=True)
+                address = Text()
+
+            class Treasurer(Table):
+                fan_club = ForeignKey(FanClub, unique=True)
+                name = Varchar()
+
+        It's helpful with ``get_related``, for example:
+
+        .. code-block:: python
+
+            >>> band = await Band.objects().first()
+            >>> await band.get_related(FanClub.band.reverse())
+            <Fan Club: 1>
+
+        It works multiple levels deep:
+
+        .. code-block:: python
+
+            >>> await band.get_related(Treasurer.fan_club._.band.reverse())
+            <Treasurer: 1>
+
+        """
+        if not self._meta.unique or any(
+            not i._meta.unique for i in self._meta.call_chain
+        ):
+            raise ValueError("Only reverse unique foreign keys.")
+
+        foreign_keys = [*self._meta.call_chain, self]
+
+        root_foreign_key = foreign_keys[0]
+        target_column = (
+            root_foreign_key._foreign_key_meta.resolved_target_column
+        )
+        foreign_key = target_column.join_on(root_foreign_key)
+
+        call_chain = []
+        for fk in reversed(foreign_keys[1:]):
+            target_column = fk._foreign_key_meta.resolved_target_column
+            call_chain.append(target_column.join_on(fk))
+
+        foreign_key._meta.call_chain = call_chain
+
+        return foreign_key
 
     def all_related(
         self, exclude: t.Optional[t.List[t.Union[ForeignKey, str]]] = None
@@ -2129,7 +2183,7 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
         # If the ForeignKey is using a lazy reference, we need to set the
         # attributes here. Attributes starting with an underscore are
         # unlikely to be column names.
-        if not name.startswith("__"):
+        if not name.startswith("_") and name not in dir(self):
             try:
                 _foreign_key_meta = object.__getattribute__(
                     self, "_foreign_key_meta"
@@ -2142,12 +2196,9 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
                 ):
                     object.__getattribute__(self, "set_proxy_columns")()
 
-        try:
-            value = object.__getattribute__(self, name)
-        except AttributeError:
-            raise AttributeError
+        value = object.__getattribute__(self, name)
 
-        if name == "_":
+        if name.startswith("_"):
             return value
 
         foreignkey_class: t.Type[ForeignKey] = object.__getattribute__(
@@ -2194,6 +2245,7 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
             column_meta: ColumnMeta = object.__getattribute__(self, "_meta")
 
             new_column._meta.call_chain = column_meta.call_chain.copy()
+
             new_column._meta.call_chain.append(self)
             return new_column
         else:
@@ -2311,7 +2363,7 @@ class JSONB(JSON):
 
     def get_select_string(
         self, engine_type: str, with_alias: bool = True
-    ) -> str:
+    ) -> QueryString:
         select_string = self._meta.get_full_name(with_alias=False)
 
         if self.json_operator is not None:
@@ -2321,7 +2373,7 @@ class JSONB(JSON):
             alias = self._alias or self._meta.get_default_alias()
             select_string += f' AS "{alias}"'
 
-        return select_string
+        return QueryString(select_string)
 
     def eq(self, value) -> Where:
         """
@@ -2531,7 +2583,14 @@ class Array(Column):
         if engine_type in ("postgres", "cockroach"):
             return f"{self.base_column.column_type}[]"
         elif engine_type == "sqlite":
-            return "ARRAY"
+            inner_column = self._get_inner_column()
+            return (
+                f"ARRAY_{inner_column.column_type}"
+                if isinstance(
+                    inner_column, (Date, Timestamp, Timestamptz, Time)
+                )
+                else "ARRAY"
+            )
         raise Exception("Unrecognized engine type")
 
     def _setup_base_column(self, table_class: t.Type[Table]):
@@ -2563,6 +2622,23 @@ class Array(Column):
         else:
             return start + 1
 
+    def _get_inner_column(self) -> Column:
+        """
+        A helper function to get the innermost ``Column`` for the array. For
+        example::
+
+            >>> Array(Varchar())._get_inner_column()
+            Varchar
+
+            >>> Array(Array(Varchar()))._get_inner_column()
+            Varchar
+
+        """
+        if isinstance(self.base_column, Array):
+            return self.base_column._get_inner_column()
+        else:
+            return self.base_column
+
     def _get_inner_value_type(self) -> t.Type:
         """
         A helper function to get the innermost value type for the array. For
@@ -2575,10 +2651,7 @@ class Array(Column):
             str
 
         """
-        if isinstance(self.base_column, Array):
-            return self.base_column._get_inner_value_type()
-        else:
-            return self.base_column.value_type
+        return self._get_inner_column().value_type
 
     def __getitem__(self, value: int) -> Array:
         """
@@ -2616,7 +2689,9 @@ class Array(Column):
         else:
             raise ValueError("Only integers can be used for indexing.")
 
-    def get_select_string(self, engine_type: str, with_alias=True) -> str:
+    def get_select_string(
+        self, engine_type: str, with_alias=True
+    ) -> QueryString:
         select_string = self._meta.get_full_name(with_alias=False)
 
         if isinstance(self.index, int):
@@ -2626,7 +2701,7 @@ class Array(Column):
             alias = self._alias or self._meta.get_default_alias()
             select_string += f' AS "{alias}"'
 
-        return select_string
+        return QueryString(select_string)
 
     def any(self, value: t.Any) -> Where:
         """
@@ -2643,6 +2718,24 @@ class Array(Column):
             return Where(column=self, value=value, operator=ArrayAny)
         elif engine_type == "sqlite":
             return self.like(f"%{value}%")
+        else:
+            raise ValueError("Unrecognised engine type")
+
+    def not_any(self, value: t.Any) -> Where:
+        """
+        Check if the given value isn't in the array.
+
+        .. code-block:: python
+
+            >>> await Ticket.select().where(Ticket.seat_numbers.not_any(510))
+
+        """
+        engine_type = self._meta.engine_type
+
+        if engine_type in ("postgres", "cockroach"):
+            return Where(column=self, value=value, operator=ArrayNotAny)
+        elif engine_type == "sqlite":
+            return self.not_like(f"%{value}%")
         else:
             raise ValueError("Unrecognised engine type")
 
@@ -2664,7 +2757,7 @@ class Array(Column):
         else:
             raise ValueError("Unrecognised engine type")
 
-    def cat(self, value: t.List[t.Any]) -> QueryString:
+    def cat(self, value: t.Union[t.Any, t.List[t.Any]]) -> QueryString:
         """
         Used in an ``update`` query to append items to an array.
 
@@ -2695,7 +2788,7 @@ class Array(Column):
         db_column_name = self._meta.db_column_name
         return QueryString(f'array_cat("{db_column_name}", {{}})', value)
 
-    def __add__(self, value: t.List[t.Any]) -> QueryString:
+    def __add__(self, value: t.Union[t.Any, t.List[t.Any]]) -> QueryString:
         return self.cat(value)
 
     ###########################################################################

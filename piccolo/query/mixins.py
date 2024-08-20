@@ -9,13 +9,14 @@ from enum import Enum, auto
 
 from piccolo.columns import And, Column, Or, Where
 from piccolo.columns.column_types import ForeignKey
+from piccolo.columns.combination import WhereRaw
 from piccolo.custom_types import Combinable
 from piccolo.querystring import QueryString
 from piccolo.utils.list import flatten
 from piccolo.utils.sql_values import convert_to_sql_value
 
 if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.columns.base import Selectable
+    from piccolo.querystring import Selectable
     from piccolo.table import Table  # noqa
 
 
@@ -206,7 +207,6 @@ class Returning:
 
 @dataclass
 class Output:
-
     as_json: bool = False
     as_list: bool = False
     as_objects: bool = False
@@ -235,7 +235,6 @@ class Callback:
 
 @dataclass
 class WhereDelegate:
-
     _where: t.Optional[Combinable] = None
     _where_columns: t.List[Column] = field(default_factory=list)
 
@@ -245,7 +244,8 @@ class WhereDelegate:
         needed.
         """
         self._where_columns = []
-        self._extract_columns(self._where)
+        if self._where is not None:
+            self._extract_columns(self._where)
         return self._where_columns
 
     def _extract_columns(self, combinable: Combinable):
@@ -254,8 +254,10 @@ class WhereDelegate:
         elif isinstance(combinable, (And, Or)):
             self._extract_columns(combinable.first)
             self._extract_columns(combinable.second)
+        elif isinstance(combinable, WhereRaw):
+            self._where_columns.extend(combinable.querystring.columns)
 
-    def where(self, *where: Combinable):
+    def where(self, *where: t.Union[Combinable, QueryString]):
         for arg in where:
             if isinstance(arg, bool):
                 raise ValueError(
@@ -265,12 +267,15 @@ class WhereDelegate:
                     "`.where(MyTable.some_column.is_null())`."
                 )
 
+            if isinstance(arg, QueryString):
+                # If a raw QueryString is passed in.
+                arg = WhereRaw(arg.template, *arg.args)
+
             self._where = And(self._where, arg) if self._where else arg
 
 
 @dataclass
 class OrderByDelegate:
-
     _order_by: OrderBy = field(default_factory=OrderBy)
 
     def get_order_by_columns(self) -> t.List[Column]:
@@ -296,7 +301,6 @@ class OrderByDelegate:
 
 @dataclass
 class LimitDelegate:
-
     _limit: t.Optional[Limit] = None
     _first: bool = False
 
@@ -323,7 +327,6 @@ class AsOfDelegate:
 
 @dataclass
 class DistinctDelegate:
-
     _distinct: Distinct = field(
         default_factory=lambda: Distinct(enabled=False, on=None)
     )
@@ -349,7 +352,6 @@ class ReturningDelegate:
 
 @dataclass
 class CountDelegate:
-
     _count: bool = False
 
     def count(self):
@@ -358,7 +360,6 @@ class CountDelegate:
 
 @dataclass
 class AddDelegate:
-
     _add: t.List[Table] = field(default_factory=list)
 
     def add(self, *instances: Table, table_class: t.Type[Table]):
@@ -414,8 +415,7 @@ class OutputDelegate:
             self._output.nested = bool(nested)
 
     def copy(self) -> OutputDelegate:
-        _output = self._output.copy() if self._output is not None else None
-        return self.__class__(_output=_output)
+        return self.__class__(_output=self._output.copy())
 
 
 @dataclass

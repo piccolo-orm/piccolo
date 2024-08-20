@@ -282,6 +282,34 @@ has the latest data from the database, you can use the
     # Or just refresh certain columns:
     await band.refresh([Band.name])
 
+It works with ``prefetch`` too:
+
+.. code-block:: python
+
+    # If we have an instance with a child object:
+    band = await Band.objects(Band.manager).first()
+
+    # And it has gotten stale, we can refresh it:
+    await band.refresh()
+
+    # The nested object will also be updated if it was stale:
+    >>> band.manager.name
+    "New value"
+
+``refresh`` is very useful in unit tests:
+
+.. code-block:: python
+
+    # If we have an instance:
+    band = await Band.objects().where(Band.name == "Pythonistas").first()
+
+    # Call an API endpoint which updates the object (e.g. with httpx):
+    await client.patch(f"/band/{band.id}/", json={"popularity": 5000})
+
+    # Make sure the instance was updated:
+    await band.refresh()
+    assert band.popularity == 5000
+
 -------------------------------------------------------------------------------
 
 Query clauses

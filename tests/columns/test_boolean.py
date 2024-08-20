@@ -1,20 +1,16 @@
 import typing as t
-from unittest import TestCase
 
 from piccolo.columns.column_types import Boolean
 from piccolo.table import Table
+from piccolo.testing.test_case import TableTest
 
 
 class MyTable(Table):
     boolean = Boolean(boolean=False, null=True)
 
 
-class TestBoolean(TestCase):
-    def setUp(self):
-        MyTable.create_table().run_sync()
-
-    def tearDown(self):
-        MyTable.alter().drop_table().run_sync()
+class TestBoolean(TableTest):
+    tables = [MyTable]
 
     def test_return_type(self) -> None:
         for value in (True, False, None, ...):

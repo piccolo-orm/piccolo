@@ -138,6 +138,7 @@ TimestampArg = t.Union[
     None,
     datetime.datetime,
     DatetimeDefault,
+    t.Callable[[], datetime.datetime],
 ]
 
 

@@ -165,6 +165,7 @@ class MigrationManager:
     raw_backwards: t.List[t.Union[t.Callable, AsyncFunction]] = field(
         default_factory=list
     )
+    fake: bool = False
 
     def add_table(
         self,
@@ -261,7 +262,8 @@ class MigrationManager:
         cleaned_params = deserialise_params(params=params)
         column = column_class(**cleaned_params)
         column._meta.name = column_name
-        column._meta.db_column_name = db_column_name
+        if db_column_name:
+            column._meta.db_column_name = db_column_name
 
         self.add_columns.append(
             AddColumnClass(

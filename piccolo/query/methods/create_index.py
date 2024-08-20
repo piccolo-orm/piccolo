@@ -14,7 +14,7 @@ class CreateIndex(DDL):
     def __init__(
         self,
         table: t.Type[Table],
-        columns: t.List[t.Union[Column, str]],
+        columns: t.Union[t.List[Column], t.List[str]],
         method: IndexMethod = IndexMethod.btree,
         if_not_exists: bool = False,
         **kwargs,

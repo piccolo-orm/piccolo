@@ -4,7 +4,6 @@ from unittest import TestCase
 
 import pytest
 
-from piccolo.engine.postgres import Atomic
 from piccolo.engine.sqlite import SQLiteEngine, TransactionType
 from piccolo.table import drop_db_tables_sync
 from piccolo.utils.sync import run_sync
@@ -58,7 +57,7 @@ class TestAtomic(TestCase):
             engine = Band._meta.db
             await engine.start_connection_pool()
 
-            atomic: Atomic = engine.atomic()
+            atomic = engine.atomic()
             atomic.add(
                 Manager.create_table(),
                 Band.create_table(),
