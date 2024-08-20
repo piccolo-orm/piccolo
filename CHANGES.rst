@@ -1,6 +1,27 @@
 Changes
 =======
 
+1.17.0
+------
+
+Each migration is automatically wrapped in a transaction - this can now be
+disabled using the ``wrap_in_transaction`` argument:
+
+.. code-block:: python
+
+  manager = MigrationManager(
+      wrap_in_transaction=False,
+      ...
+  )
+
+This is useful when writing a manual migration, and you want to manage all of
+the transaction logic yourself (or want multiple transactions).
+
+``granian`` is now a supported server in the ASGI templates. Thanks to
+@sinisaos for this.
+
+-------------------------------------------------------------------------------
+
 1.16.0
 ------
 
