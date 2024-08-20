@@ -2052,7 +2052,8 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
         if not self._meta.unique or any(
             not i._meta.unique for i in self._meta.call_chain
         ):
-            raise ValueError("Only reverse unique foreign keys.")
+            pass
+            # raise ValueError("Only reverse unique foreign keys.")
 
         foreign_keys = [*self._meta.call_chain, self]
 

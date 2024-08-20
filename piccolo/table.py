@@ -581,7 +581,7 @@ class Table(metaclass=TableMetaclass):
     def get_related(self, foreign_key: str) -> First[Table]: ...
 
     def get_related(
-        self, foreign_key: t.Union[str, ForeignKey[ReferencedTable]]
+        self, foreign_key: t.Union[str, ForeignKey[ReferencedTable]], many: bool = False
     ) -> t.Union[First[Table], First[ReferencedTable]]:
         """
         Used to fetch a ``Table`` instance, for the target of a foreign key.
@@ -612,15 +612,15 @@ class Table(metaclass=TableMetaclass):
 
         references = foreign_key._foreign_key_meta.resolved_references
 
-        return (
-            references.objects()
-            .where(
+        insts = references.objects().where(
                 foreign_key._foreign_key_meta.resolved_target_column
                 == getattr(self, column_name)
             )
-            .first()
-        )
+        if many:
+            return insts
+        return insts.first()
 
+    
     def get_m2m(self, m2m: M2M, reverse: t.Optional[bool] = None) -> M2MGetRelated:
         """
         Get all matching rows via the join table.
