@@ -130,11 +130,27 @@ class AlterColumnCollection:
 AsyncFunction = t.Callable[[], t.Coroutine]
 
 
+class SkippedTransaction:
+    async def __aenter__(self):
+        print("Automatic transaction disabled")
+
+    async def __aexit__(self, *args, **kwargs):
+        pass
+
+
 @dataclass
 class MigrationManager:
     """
     Each auto generated migration returns a MigrationManager. It contains
     all of the schema changes that migration wants to make.
+
+    :param wrap_in_transaction:
+        By default, the migration is wrapped in a transaction, so if anything
+        fails, the whole migration will get rolled back. You can disable this
+        behaviour if you want - for example, in a manual migration you might
+        want to create the transaction yourself (perhaps you're using
+        savepoints), or you may want multiple transactions.
+
     """
 
     migration_id: str = ""
@@ -166,6 +182,7 @@ class MigrationManager:
         default_factory=list
     )
     fake: bool = False
+    wrap_in_transaction: bool = True
 
     def add_table(
         self,
@@ -935,7 +952,11 @@ class MigrationManager:
         if not engine:
             raise Exception("Can't find engine")
 
-        async with engine.transaction():
+        async with (
+            engine.transaction()
+            if self.wrap_in_transaction
+            else SkippedTransaction()
+        ):
             if not self.preview:
                 if direction == "backwards":
                     raw_list = self.raw_backwards
