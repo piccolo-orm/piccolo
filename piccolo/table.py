@@ -574,11 +574,11 @@ class Table(metaclass=TableMetaclass):
 
     @t.overload
     def get_related(
-        self, foreign_key: ForeignKey[ReferencedTable]
+        self, foreign_key: ForeignKey[ReferencedTable], many: bool = False
     ) -> First[ReferencedTable]: ...
 
     @t.overload
-    def get_related(self, foreign_key: str) -> First[Table]: ...
+    def get_related(self, foreign_key: str, many: bool = False) -> First[Table]: ...
 
     def get_related(
         self, foreign_key: t.Union[str, ForeignKey[ReferencedTable]], many: bool = False
@@ -620,7 +620,7 @@ class Table(metaclass=TableMetaclass):
             return insts
         return insts.first()
 
-    
+
     def get_m2m(self, m2m: M2M, reverse: t.Optional[bool] = None) -> M2MGetRelated:
         """
         Get all matching rows via the join table.
