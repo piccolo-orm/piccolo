@@ -888,6 +888,25 @@ class TestMigrations(MigrationTestCase):
             ]
         )
 
+    def test_column_type_conversion_integer_float(self):
+        """
+        Make sure conversion between ``Integer`` and ``Real`` works - related
+        to this bug:
+
+        https://github.com/piccolo-orm/piccolo/issues/1071
+
+        """
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Real(default=1.0),
+                    Integer(default=1),
+                    Real(default=1.0),
+                ]
+            ]
+        )
+
     def test_column_type_conversion_json(self):
         self._test_migrations(
             table_snapshots=[
