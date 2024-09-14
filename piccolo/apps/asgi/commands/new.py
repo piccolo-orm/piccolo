@@ -15,7 +15,7 @@ ROUTER_DEPENDENCIES = {
     "fastapi": ["fastapi>=0.112.1"],
     "blacksheep": ["blacksheep"],
     "litestar": ["litestar"],
-    "esmerald": ["esmerald"],
+    "esmerald": ["esmerald==3.3.0"],
     "lilya": ["lilya"],
 }
 ROUTERS = list(ROUTER_DEPENDENCIES.keys())
