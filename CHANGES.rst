@@ -1,6 +1,14 @@
 Changes
 =======
 
+1.17.1
+------
+
+Fixed a bug with migrations, where altering a column type from ``Integer`` to
+``Float`` could fail. Thanks to @kurtportelli for reporting this issue.
+
+-------------------------------------------------------------------------------
+
 1.17.0
 ------
 
