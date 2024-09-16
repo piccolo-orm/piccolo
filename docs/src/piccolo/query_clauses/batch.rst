@@ -6,6 +6,7 @@ batch
 You can use ``batch`` clauses with the following queries:
 
 * :ref:`Objects`
+* :ref:`Raw`
 * :ref:`Select`
 
 Example
