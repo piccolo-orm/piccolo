@@ -525,6 +525,12 @@ class Table(metaclass=TableMetaclass):
             == getattr(self, self._meta.primary_key._meta.name)
         )
 
+    def update_self(
+        self,
+        values: t.Optional[t.Dict[t.Union[Column, str], t.Any]] = None,
+    ):
+        pass
+
     def remove(self) -> Delete:
         """
         A proxy to a delete query.
