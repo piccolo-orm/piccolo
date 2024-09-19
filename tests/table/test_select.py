@@ -1032,7 +1032,7 @@ class TestSelect(DBTestCase):
         is_running_sqlite(),
         reason="SQLite doesn't support SELECT .. FOR UPDATE.",
     )
-    def test_for_update(self):
+    def test_lock_for(self):
         """
         Make sure the for_update clause works.
         """
@@ -1041,20 +1041,23 @@ class TestSelect(DBTestCase):
         query = Band.select()
         self.assertNotIn("FOR UPDATE", query.__str__())
 
-        query = query.for_update()
+        query = query.lock_for()
         self.assertTrue(query.__str__().endswith("FOR UPDATE"))
 
-        query = query.for_update(skip_locked=True)
+        query = query.lock_for(lock_strength='key share')
+        self.assertTrue(query.__str__().endswith('FOR KEY SHARE'))
+
+        query = query.lock_for(skip_locked=True)
         self.assertTrue(query.__str__().endswith("FOR UPDATE SKIP LOCKED"))
 
-        query = query.for_update(nowait=True)
+        query = query.lock_for(nowait=True)
         self.assertTrue(query.__str__().endswith("FOR UPDATE NOWAIT"))
 
-        query = query.for_update(of=(Band,))
+        query = query.lock_for(of=(Band,))
         self.assertTrue(query.__str__().endswith("FOR UPDATE OF band"))
 
         with self.assertRaises(TypeError):
-            query = query.for_update(skip_locked=True, nowait=True)
+            query = query.lock_for(skip_locked=True, nowait=True)
 
         response = query.run_sync()
         assert response is not None

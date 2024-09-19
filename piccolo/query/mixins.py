@@ -786,15 +786,31 @@ class OnConflictDelegate:
         )
 
 
-@dataclass
-class ForUpdate:
-    __slots__ = ("nowait", "skip_locked", "of")
+class LockStrength(str, Enum):
+    """
+    Specify lock strength
 
+    https://www.postgresql.org/docs/current/sql-select.html#SQL-FOR-UPDATE-SHARE
+    """
+
+    update = "UPDATE"
+    no_key_update = "NO KEY UPDATE"
+    share = "SHARE"
+    key_share = "KEY SHARE"
+
+
+@dataclass
+class LockFor:
+    __slots__ = ("lock_strength", "nowait", "skip_locked", "of")
+
+    lock_strength: LockStrength
     nowait: bool
     skip_locked: bool
-    of: tuple[Table]
+    of: tuple[type[Table], ...]
 
     def __post_init__(self):
+        if not isinstance(self.lock_strength, LockStrength):
+            raise TypeError("lock_strength must be a LockStrength")
         if not isinstance(self.nowait, bool):
             raise TypeError("nowait must be a bool")
         if not isinstance(self.skip_locked, bool):
@@ -810,7 +826,7 @@ class ForUpdate:
 
     @property
     def querystring(self) -> QueryString:
-        sql = " FOR UPDATE"
+        sql = f" FOR {self.lock_strength.value}"
         if self.of:
             tables = ", ".join(x._meta.tablename for x in self.of)
             sql += " OF " + tables
@@ -826,9 +842,35 @@ class ForUpdate:
 
 
 @dataclass
-class ForUpdateDelegate:
+class LockForDelegate:
 
-    _for_update: t.Optional[ForUpdate] = None
+    _lock_for: t.Optional[LockFor] = None
 
-    def for_update(self, nowait=False, skip_locked=False, of=()):
-        self._for_update = ForUpdate(nowait, skip_locked, of)
+    def lock_for(
+        self,
+        lock_strength: t.Union[
+            LockStrength,
+            t.Literal[
+                "UPDATE",
+                "NO KEY UPDATE",
+                "KEY SHARE",
+                "SHARE",
+                "update",
+                "no key update",
+                "key share",
+                "share",
+            ],
+        ] = LockStrength.update,
+        nowait=False,
+        skip_locked=False,
+        of: t.Tuple[type[Table], ...] = (),
+    ):
+        lock_strength_: LockStrength
+        if isinstance(lock_strength, LockStrength):
+            lock_strength_ = lock_strength
+        elif isinstance(lock_strength, str):
+            lock_strength_ = LockStrength(lock_strength.upper())
+        else:
+            raise ValueError("Unrecognised `lock_strength` value.")
+
+        self._lock_for = LockFor(lock_strength_, nowait, skip_locked, of)

@@ -17,9 +17,10 @@ from piccolo.query.mixins import (
     CallbackType,
     ColumnsDelegate,
     DistinctDelegate,
-    ForUpdateDelegate,
     GroupByDelegate,
     LimitDelegate,
+    LockForDelegate,
+    LockStrength,
     OffsetDelegate,
     OrderByDelegate,
     OrderByRaw,
@@ -151,7 +152,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         "output_delegate",
         "callback_delegate",
         "where_delegate",
-        "for_update_delegate",
+        "lock_for_delegate",
     )
 
     def __init__(
@@ -176,7 +177,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         self.output_delegate = OutputDelegate()
         self.callback_delegate = CallbackDelegate()
         self.where_delegate = WhereDelegate()
-        self.for_update_delegate = ForUpdateDelegate()
+        self.lock_for_delegate = LockForDelegate()
 
         self.columns(*columns_list)
 
@@ -222,10 +223,26 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         self.offset_delegate.offset(number)
         return self
 
-    def for_update(
-        self: Self, nowait: bool = False, skip_locked: bool = False, of=()
+    def lock_for(
+        self: Self,
+        lock_strength: t.Union[
+            LockStrength,
+            t.Literal[
+                "UPDATE",
+                "NO KEY UPDATE",
+                "KEY SHARE",
+                "SHARE",
+                "update",
+                "no key update",
+                "key share",
+                "share",
+            ],
+        ] = LockStrength.update,
+        nowait: bool = False,
+        skip_locked: bool = False,
+        of: t.Tuple[type[Table], ...] = (),
     ) -> Self:
-        self.for_update_delegate.for_update(nowait, skip_locked, of)
+        self.lock_for_delegate.lock_for(lock_strength, nowait, skip_locked, of)
         return self
 
     async def _splice_m2m_rows(
@@ -627,13 +644,13 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
             query += "{}"
             args.append(self.offset_delegate._offset.querystring)
 
-        if engine_type == "sqlite" and self.for_update_delegate._for_update:
+        if engine_type == "sqlite" and self.lock_for_delegate._lock_for:
             raise NotImplementedError(
                 "SQLite doesn't support SELECT .. FOR UPDATE"
             )
 
-        if self.for_update_delegate._for_update:
-            args.append(self.for_update_delegate._for_update.querystring)
+        if self.lock_for_delegate._lock_for:
+            args.append(self.lock_for_delegate._lock_for.querystring)
 
         querystring = QueryString(query, *args)
 

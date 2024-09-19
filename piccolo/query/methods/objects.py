@@ -12,8 +12,9 @@ from piccolo.query.mixins import (
     AsOfDelegate,
     CallbackDelegate,
     CallbackType,
-    ForUpdateDelegate,
     LimitDelegate,
+    LockForDelegate,
+    LockStrength,
     OffsetDelegate,
     OrderByDelegate,
     OrderByRaw,
@@ -28,6 +29,7 @@ from piccolo.utils.sync import run_sync
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
+    from piccolo.table import Table
 
 
 ###############################################################################
@@ -195,7 +197,7 @@ class Objects(
         "callback_delegate",
         "prefetch_delegate",
         "where_delegate",
-        "for_update_delegate",
+        "lock_for_delegate",
     )
 
     def __init__(
@@ -215,7 +217,7 @@ class Objects(
         self.prefetch_delegate = PrefetchDelegate()
         self.prefetch(*prefetch)
         self.where_delegate = WhereDelegate()
-        self.for_update_delegate = ForUpdateDelegate()
+        self.lock_for_delegate = LockForDelegate()
 
     def output(self: Self, load_json: bool = False) -> Self:
         self.output_delegate.output(
@@ -275,10 +277,26 @@ class Objects(
         self.limit_delegate.limit(1)
         return First[TableInstance](query=self)
 
-    def for_update(
-        self: Self, nowait: bool = False, skip_locked: bool = False, of=()
+    def lock_for(
+        self: Self,
+        lock_strength: t.Union[
+            LockStrength,
+            t.Literal[
+                "UPDATE",
+                "NO KEY UPDATE",
+                "KEY SHARE",
+                "SHARE",
+                "update",
+                "no key update",
+                "key share",
+                "share",
+            ],
+        ] = LockStrength.update,
+        nowait: bool = False,
+        skip_locked: bool = False,
+        of: t.Tuple[type[Table], ...] = (),
     ) -> Self:
-        self.for_update_delegate.for_update(nowait, skip_locked, of)
+        self.lock_for_delegate.lock_for(lock_strength, nowait, skip_locked, of)
         return self
 
     def get(self, where: Combinable) -> Get[TableInstance]:
@@ -331,7 +349,7 @@ class Objects(
             "offset_delegate",
             "output_delegate",
             "order_by_delegate",
-            "for_update_delegate",
+            "lock_for_delegate",
         ):
             setattr(select, attr, getattr(self, attr))
 
