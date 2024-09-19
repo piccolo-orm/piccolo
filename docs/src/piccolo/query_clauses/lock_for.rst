@@ -53,7 +53,6 @@ Which is equivalent to:
    SELECT ... FOR SHARE
 
 
-
 nowait
 ------
 

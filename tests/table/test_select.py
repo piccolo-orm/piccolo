@@ -1044,8 +1044,8 @@ class TestSelect(DBTestCase):
         query = query.lock_for()
         self.assertTrue(query.__str__().endswith("FOR UPDATE"))
 
-        query = query.lock_for(lock_strength='key share')
-        self.assertTrue(query.__str__().endswith('FOR KEY SHARE'))
+        query = query.lock_for(lock_strength="key share")
+        self.assertTrue(query.__str__().endswith("FOR KEY SHARE"))
 
         query = query.lock_for(skip_locked=True)
         self.assertTrue(query.__str__().endswith("FOR UPDATE SKIP LOCKED"))
