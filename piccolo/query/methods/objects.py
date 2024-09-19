@@ -27,6 +27,7 @@ from piccolo.utils.sync import run_sync
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
+    from piccolo.table import Table
 
 
 ###############################################################################
@@ -170,6 +171,93 @@ class Create(t.Generic[TableInstance]):
         return self.run().__await__()
 
     def run_sync(self, *args, **kwargs) -> TableInstance:
+        return run_sync(self.run(*args, **kwargs))
+
+
+class UpdateSelf:
+    """
+    This allows the user to update a single object - useful when the values
+    are derived from the database in some way.
+
+    For example, if we have the following table::
+
+        class Concert(Table):
+            name = Varchar(unique=True)
+            tickets_available = Integer()
+
+    And we fetch an object::
+
+        >>> concert = await Concert.objects().get(name="Amazing concert")
+
+    We could use the typical syntax for updating the object::
+
+        >>> concert.tickets_available += -1
+        >>> await concert.save()
+
+    The problem with this, is what if another object has already decremented
+    ``tickets_available``? It would overide the value.
+
+    Instead we can do this:
+
+        >>> await concert.update_self({
+        ...     Concert.tickets_available: Concert.tickets_available - 1
+        ... })
+
+    This updates ``tickets_available`` in the database, and also sets the
+    new value for ``tickets_available`` on the object.
+
+    """
+
+    def __init__(
+        self,
+        row: Table,
+        values: t.Dict[t.Union[Column, str], t.Any],
+    ):
+        self.row = row
+        self.values = values
+
+    async def run(
+        self,
+        node: t.Optional[str] = None,
+        in_pool: bool = True,
+    ) -> None:
+        if not self.row._exists_in_db:
+            raise ValueError("This row doesn't exist in the database.")
+
+        TableClass = self.row.__class__
+
+        primary_key = TableClass._meta.primary_key
+        primary_key_value = getattr(self.row, primary_key._meta.name)
+
+        if primary_key_value is None:
+            raise ValueError("The primary key is None")
+
+        columns = [
+            TableClass._meta.get_column_by_name(i) if isinstance(i, str) else i
+            for i in self.values.keys()
+        ]
+
+        response = (
+            await TableClass.update(self.values)
+            .where(primary_key == primary_key_value)
+            .returning(*columns)
+            .run(
+                node=node,
+                in_pool=in_pool,
+            )
+        )
+
+        for key, value in response[0].items():
+            setattr(self.row, key, value)
+
+    def __await__(self) -> t.Generator[None, None, None]:
+        """
+        If the user doesn't explicity call .run(), proxy to it as a
+        convenience.
+        """
+        return self.run().__await__()
+
+    def run_sync(self, *args, **kwargs) -> None:
         return run_sync(self.run(*args, **kwargs))
 
 

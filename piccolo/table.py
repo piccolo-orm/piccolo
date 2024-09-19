@@ -46,7 +46,7 @@ from piccolo.query import (
 )
 from piccolo.query.methods.create_index import CreateIndex
 from piccolo.query.methods.indexes import Indexes
-from piccolo.query.methods.objects import First
+from piccolo.query.methods.objects import First, UpdateSelf
 from piccolo.query.methods.refresh import Refresh
 from piccolo.querystring import QueryString
 from piccolo.utils import _camel_to_snake
@@ -526,10 +526,9 @@ class Table(metaclass=TableMetaclass):
         )
 
     def update_self(
-        self,
-        values: t.Optional[t.Dict[t.Union[Column, str], t.Any]] = None,
-    ):
-        pass
+        self, values: t.Dict[t.Union[Column, str], t.Any]
+    ) -> UpdateSelf:
+        return UpdateSelf(row=self, values=values)
 
     def remove(self) -> Delete:
         """
