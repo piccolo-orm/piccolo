@@ -181,30 +181,30 @@ class UpdateSelf:
 
     For example, if we have the following table::
 
-        class Concert(Table):
-            name = Varchar(unique=True)
-            tickets_available = Integer()
+        class Band(Table):
+            name = Varchar()
+            popularity = Integer()
 
     And we fetch an object::
 
-        >>> concert = await Concert.objects().get(name="Amazing concert")
+        >>> band = await Band.objects().get(name="Pythonistas")
 
     We could use the typical syntax for updating the object::
 
-        >>> concert.tickets_available += -1
-        >>> await concert.save()
+        >>> band.popularity += 1
+        >>> await band.save()
 
-    The problem with this, is what if another object has already decremented
-    ``tickets_available``? It would overide the value.
+    The problem with this, is what if another object has already incremented
+    ``popularity``? It would overide the value.
 
     Instead we can do this:
 
-        >>> await concert.update_self({
-        ...     Concert.tickets_available: Concert.tickets_available - 1
+        >>> await band.update_self({
+        ...     Band.popularity: Band.popularity + 1
         ... })
 
-    This updates ``tickets_available`` in the database, and also sets the
-    new value for ``tickets_available`` on the object.
+    This updates ``popularity`` in the database, and also sets the new value
+    for ``popularity`` on the object.
 
     """
 
