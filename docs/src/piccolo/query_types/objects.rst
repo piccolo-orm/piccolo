@@ -101,18 +101,32 @@ convenient for updating values:
 ``update_self``
 ~~~~~~~~~~~~~~~
 
-The ``save`` method is fine in the majority of cases, but if you want to set
-a new value on the object, based on something in the database, you can use
-the :meth:`update_self <piccolo.table.Table.update_self>` method instead.
+The :meth:`save <piccolo.table.Table.save>` method is fine in the majority of
+cases, but there are some situations where the :meth:`update_self <piccolo.table.Table.update_self>`
+method is preferable.
 
-For example, if we want to increment the popularity value in the database, and
-assign the new value to the object, we can do this:
+For example, if we want to increment the ``popularity`` value, we can do this:
 
 .. code-block:: python
 
     await band.update_self({
         Band.popularity: Band.popularity + 1
-    }).first()
+    })
+
+Which does the following:
+
+* Increments the popularity in the database
+* Assigns the new value to the object
+
+This is safer than:
+
+.. code-block:: python
+
+    band.popularity += 1
+    await band.save()
+
+Because ``update_self`` increments the current ``popularity`` value in the
+database, not the one on the object, which might be out of date.
 
 -------------------------------------------------------------------------------
 
