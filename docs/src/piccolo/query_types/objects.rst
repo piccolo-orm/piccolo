@@ -78,6 +78,9 @@ We also have this shortcut which combines the above into a single line:
 Updating objects
 ----------------
 
+``save``
+~~~~~~~~
+
 Objects have a :meth:`save <piccolo.table.Table.save>` method, which is
 convenient for updating values:
 
@@ -94,6 +97,22 @@ convenient for updating values:
 
     # Or specify specific columns to save:
     await band.save([Band.popularity])
+
+``update_self``
+~~~~~~~~~~~~~~~
+
+The ``save`` method is fine in the majority of cases, but if you want to set
+a new value on the object, based on something in the database, you can use
+the :meth:`update_self <piccolo.table.Table.update_self>` method instead.
+
+For example, if we want to increment the popularity value in the database, and
+assign the new value to the object, we can do this:
+
+.. code-block:: python
+
+    await band.update_self({
+        Band.popularity: Band.popularity + 1
+    }).first()
 
 -------------------------------------------------------------------------------
 
@@ -115,8 +134,8 @@ Similarly, we can delete objects, using the ``remove`` method.
 Fetching related objects
 ------------------------
 
-get_related
-~~~~~~~~~~~
+``get_related``
+~~~~~~~~~~~~~~~
 
 If you have an object from a table with a :class:`ForeignKey <piccolo.columns.column_types.ForeignKey>`
 column, and you want to fetch the related row as an object, you can do so
@@ -195,8 +214,8 @@ prefer.
 
 -------------------------------------------------------------------------------
 
-get_or_create
--------------
+``get_or_create``
+-----------------
 
 With ``get_or_create`` you can get an existing record matching the criteria,
 or create a new one with the ``defaults`` arguments:
@@ -239,8 +258,8 @@ Complex where clauses are supported, but only within reason. For example:
 
 -------------------------------------------------------------------------------
 
-to_dict
--------
+``to_dict``
+-----------
 
 If you need to convert an object into a dictionary, you can do so using the
 ``to_dict`` method.
@@ -264,8 +283,8 @@ the columns:
 
 -------------------------------------------------------------------------------
 
-refresh
--------
+``refresh``
+-----------
 
 If you have an object which has gotten stale, and want to refresh it, so it
 has the latest data from the database, you can use the
