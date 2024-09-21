@@ -46,7 +46,7 @@ from piccolo.query import (
 )
 from piccolo.query.methods.create_index import CreateIndex
 from piccolo.query.methods.indexes import Indexes
-from piccolo.query.methods.objects import First
+from piccolo.query.methods.objects import First, UpdateSelf
 from piccolo.query.methods.refresh import Refresh
 from piccolo.querystring import QueryString
 from piccolo.utils import _camel_to_snake
@@ -524,6 +524,43 @@ class Table(metaclass=TableMetaclass):
             cls._meta.primary_key
             == getattr(self, self._meta.primary_key._meta.name)
         )
+
+    def update_self(
+        self, values: t.Dict[t.Union[Column, str], t.Any]
+    ) -> UpdateSelf:
+        """
+        This allows the user to update a single object - useful when the values
+        are derived from the database in some way.
+
+        For example, if we have the following table::
+
+            class Band(Table):
+                name = Varchar()
+                popularity = Integer()
+
+        And we fetch an object::
+
+            >>> band = await Band.objects().get(name="Pythonistas")
+
+        We could use the typical syntax for updating the object::
+
+            >>> band.popularity += 1
+            >>> await band.save()
+
+        The problem with this, is what if another object has already
+        incremented ``popularity``? It would overide the value.
+
+        Instead we can do this:
+
+            >>> await band.update_self({
+            ...     Band.popularity: Band.popularity + 1
+            ... })
+
+        This updates ``popularity`` in the database, and also sets the new
+        value for ``popularity`` on the object.
+
+        """
+        return UpdateSelf(row=self, values=values)
 
     def remove(self) -> Delete:
         """
