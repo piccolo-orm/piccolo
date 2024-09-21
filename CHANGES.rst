@@ -1,6 +1,56 @@
 Changes
 =======
 
+1.18.0
+------
+
+``update_self``
+~~~~~~~~~~~~~~~
+
+Added the ``update_self`` method, which is an alternative to the ``save``
+method. Here's an example where it's useful:
+
+.. code-block:: python
+
+  # If we have a band object:
+  >>> band = Band.objects().get(name="Pythonistas")
+  >>> band.popularity
+  1000
+
+  # We can increment the popularity, based on the current value in the
+  # database:
+  >>> await band.update_self({
+  ...     Band.popularity: Band.popularity + 1
+  ... })
+
+  # The new value is set on the object:
+  >>> band.popularity
+  1001
+
+  # It's safer than using the `save` method, because the popularity value on
+  # the object might be out of date with what's in the database:
+  band.popularity += 1
+  await band.save()
+
+Thanks to @trondhindenes for suggesting this feature.
+
+Batch raw queries
+~~~~~~~~~~~~~~~~~
+
+The ``batch`` method can now be used with ``raw`` queries. For example:
+
+.. code-block:: python
+
+  async with await MyTable.raw("SELECT * FROM my_table").batch() as batch:
+      async for _batch in batch:
+          print(_batch)
+
+This is useful when you expect a raw query to return a lot of data.
+
+Thanks to @devsarvesh92 for suggesting this feature.
+
+-------------------------------------------------------------------------------
+
 1.17.1
 ------
 
