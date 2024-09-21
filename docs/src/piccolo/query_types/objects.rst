@@ -16,36 +16,45 @@ examples.
 Fetching objects
 ----------------
 
-To get all objects:
+To get all rows:
 
 .. code-block:: python
 
     >>> await Band.objects()
-    [<Band: 1>, <Band: 2>]
+    [<Band: 1>, <Band: 2>, <Band: 3>]
 
-To get certain rows:
+To limit the number of rows returned, use the :ref:`order_by` and :ref:`limit`
+clauses:
+
+.. code-block:: python
+
+    >>> await Band.objects().order_by(Band.popularity, ascending=False).limit(2)
+    [<Band: 1>, <Band: 3>]
+
+To filter the rows we use the :ref:`where` clause:
 
 .. code-block:: python
 
     >>> await Band.objects().where(Band.name == 'Pythonistas')
     [<Band: 1>]
 
-To get a single row (or ``None`` if it doesn't exist):
+To get a single row (or ``None`` if it doesn't exist) use the :ref:`first`
+clause:
+
+.. code-block:: python
+
+    >>> await Band.objects().where(Band.name == 'Pythonistas').first()
+    <Band: 1>
+
+Alternatively, you can use this abbreviated syntax:
 
 .. code-block:: python
 
     >>> await Band.objects().get(Band.name == 'Pythonistas')
     <Band: 1>
 
-To get the first row:
-
-.. code-block:: python
-
-    >>> await Band.objects().first()
-    <Band: 1>
-
-You'll notice that the API is similar to :ref:`Select` - except it returns all
-columns.
+You'll notice that the API is similar to :ref:`Select` (expect with ``select``
+you can specify which columns are returned).
 
 -------------------------------------------------------------------------------
 
