@@ -1028,6 +1028,40 @@ class TestSelect(DBTestCase):
             response, [{"name": "Pythonistas", "popularity_log": 3.0}]
         )
 
+    @pytest.mark.skipif(
+        is_running_sqlite(),
+        reason="SQLite doesn't support SELECT ... FOR UPDATE.",
+    )
+    def test_lock_rows(self):
+        """
+        Make sure the for_update clause works.
+        """
+        self.insert_rows()
+
+        query = Band.select()
+        self.assertNotIn("FOR UPDATE", query.__str__())
+
+        query = query.lock_rows()
+        self.assertTrue(query.__str__().endswith("FOR UPDATE"))
+
+        query = query.lock_rows(lock_strength="KEY SHARE")
+        self.assertTrue(query.__str__().endswith("FOR KEY SHARE"))
+
+        query = query.lock_rows(skip_locked=True)
+        self.assertTrue(query.__str__().endswith("FOR UPDATE SKIP LOCKED"))
+
+        query = query.lock_rows(nowait=True)
+        self.assertTrue(query.__str__().endswith("FOR UPDATE NOWAIT"))
+
+        query = query.lock_rows(of=(Band,))
+        self.assertTrue(query.__str__().endswith('FOR UPDATE OF "band"'))
+
+        with self.assertRaises(TypeError):
+            query = query.lock_rows(skip_locked=True, nowait=True)
+
+        response = query.run_sync()
+        assert response is not None
+
 
 class TestSelectSecret(TestCase):
     def setUp(self):

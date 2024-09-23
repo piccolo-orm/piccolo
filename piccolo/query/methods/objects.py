@@ -13,6 +13,8 @@ from piccolo.query.mixins import (
     CallbackDelegate,
     CallbackType,
     LimitDelegate,
+    LockRowsDelegate,
+    LockStrength,
     OffsetDelegate,
     OrderByDelegate,
     OrderByRaw,
@@ -250,6 +252,7 @@ class Objects(
         "callback_delegate",
         "prefetch_delegate",
         "where_delegate",
+        "lock_rows_delegate",
     )
 
     def __init__(
@@ -269,6 +272,7 @@ class Objects(
         self.prefetch_delegate = PrefetchDelegate()
         self.prefetch(*prefetch)
         self.where_delegate = WhereDelegate()
+        self.lock_rows_delegate = LockRowsDelegate()
 
     def output(self: Self, load_json: bool = False) -> Self:
         self.output_delegate.output(
@@ -328,6 +332,26 @@ class Objects(
         self.limit_delegate.limit(1)
         return First[TableInstance](query=self)
 
+    def lock_rows(
+        self: Self,
+        lock_strength: t.Union[
+            LockStrength,
+            t.Literal[
+                "UPDATE",
+                "NO KEY UPDATE",
+                "KEY SHARE",
+                "SHARE",
+            ],
+        ] = LockStrength.update,
+        nowait: bool = False,
+        skip_locked: bool = False,
+        of: t.Tuple[type[Table], ...] = (),
+    ) -> Self:
+        self.lock_rows_delegate.lock_rows(
+            lock_strength, nowait, skip_locked, of
+        )
+        return self
+
     def get(self, where: Combinable) -> Get[TableInstance]:
         self.where_delegate.where(where)
         self.limit_delegate.limit(1)
@@ -378,6 +402,7 @@ class Objects(
             "offset_delegate",
             "output_delegate",
             "order_by_delegate",
+            "lock_rows_delegate",
         ):
             setattr(select, attr, getattr(self, attr))
 

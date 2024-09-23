@@ -19,6 +19,8 @@ from piccolo.query.mixins import (
     DistinctDelegate,
     GroupByDelegate,
     LimitDelegate,
+    LockRowsDelegate,
+    LockStrength,
     OffsetDelegate,
     OrderByDelegate,
     OrderByRaw,
@@ -150,6 +152,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         "output_delegate",
         "callback_delegate",
         "where_delegate",
+        "lock_rows_delegate",
     )
 
     def __init__(
@@ -174,6 +177,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         self.output_delegate = OutputDelegate()
         self.callback_delegate = CallbackDelegate()
         self.where_delegate = WhereDelegate()
+        self.lock_rows_delegate = LockRowsDelegate()
 
         self.columns(*columns_list)
 
@@ -217,6 +221,26 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
 
     def offset(self: Self, number: int) -> Self:
         self.offset_delegate.offset(number)
+        return self
+
+    def lock_rows(
+        self: Self,
+        lock_strength: t.Union[
+            LockStrength,
+            t.Literal[
+                "UPDATE",
+                "NO KEY UPDATE",
+                "KEY SHARE",
+                "SHARE",
+            ],
+        ] = LockStrength.update,
+        nowait: bool = False,
+        skip_locked: bool = False,
+        of: t.Tuple[type[Table], ...] = (),
+    ) -> Self:
+        self.lock_rows_delegate.lock_rows(
+            lock_strength, nowait, skip_locked, of
+        )
         return self
 
     async def _splice_m2m_rows(
@@ -617,6 +641,16 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         if self.offset_delegate._offset:
             query += "{}"
             args.append(self.offset_delegate._offset.querystring)
+
+        if self.lock_rows_delegate._lock_rows:
+            if engine_type == "sqlite":
+                raise NotImplementedError(
+                    "SQLite doesn't support row locking e.g. SELECT ... FOR "
+                    "UPDATE"
+                )
+
+            query += "{}"
+            args.append(self.lock_rows_delegate._lock_rows.querystring)
 
         querystring = QueryString(query, *args)
 
