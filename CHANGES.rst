@@ -13,7 +13,7 @@ method. Here's an example where it's useful:
 .. code-block:: python
 
   # If we have a band object:
-  >>> band = Band.objects().get(name="Pythonistas")
+  >>> band = await Band.objects().get(name="Pythonistas")
   >>> band.popularity
   1000
 
