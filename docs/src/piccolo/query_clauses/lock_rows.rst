@@ -1,15 +1,14 @@
-.. _lock_for:
+.. _lock_rows:
 
-lock_for
-========
+lock_rows
+=========
 
-You can use ``lock_for`` clauses with the following queries:
+You can use the ``lock_rows`` clause with the following queries:
 
 * :ref:`Objects`
 * :ref:`Select`
 
-Returns a query that locks rows until the end of the transaction, generating a
-``SELECT ... FOR UPDATE`` SQL statement or similar with other lock strengths.
+It returns a query that locks rows until the end of the transaction, generating a ``SELECT ... FOR UPDATE`` SQL statement or similar with other lock strengths.
 
 .. note:: Postgres and CockroachDB only.
 
@@ -18,12 +17,11 @@ Returns a query that locks rows until the end of the transaction, generating a
 Basic Usage
 -----------
 
-
 Basic usage without parameters:
 
 .. code-block:: python
 
-    await Band.select(Band.name == 'Pythonistas').lock_for()
+    await Band.select(Band.name == 'Pythonistas').lock_rows()
 
 Equivalent to:
 
@@ -47,7 +45,7 @@ You can specify a different lock strength:
 
 .. code-block:: python
 
-    await Band.select(Band.name == 'Pythonistas').lock_for('share')
+    await Band.select(Band.name == 'Pythonistas').lock_rows('SHARE')
 
 Which is equivalent to:
 
@@ -64,7 +62,7 @@ waiting for the other transaction to release the lock.
 
 .. code-block:: python
 
-    await Band.select(Band.name == 'Pythonistas').lock_for('update', nowait=True)
+    await Band.select(Band.name == 'Pythonistas').lock_rows('UPDATE', nowait=True)
 
 
 skip_locked
@@ -74,8 +72,7 @@ Ignore locked rows.
 
 .. code-block:: python
 
-    await Band.select(Band.name == 'Pythonistas').lock_for('update', skip_locked=True)
-
+    await Band.select(Band.name == 'Pythonistas').lock_rows('UPDATE', skip_locked=True)
 
 
 of
@@ -86,7 +83,7 @@ Using ``of``, you can specify which tables should be locked.
 
 .. code-block:: python
 
-    await Band.select().where(Band.manager.name == 'Guido').lock_for('update', of=(Band, ))
+    await Band.select().where(Band.manager.name == 'Guido').lock_rows('UPDATE', of=(Band, ))
 
 
 Learn more

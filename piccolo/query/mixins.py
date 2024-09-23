@@ -800,13 +800,13 @@ class LockStrength(str, Enum):
 
 
 @dataclass
-class LockFor:
+class LockRows:
     __slots__ = ("lock_strength", "nowait", "skip_locked", "of")
 
     lock_strength: LockStrength
     nowait: bool
     skip_locked: bool
-    of: tuple[type[Table], ...]
+    of: t.Tuple[t.Type[Table], ...]
 
     def __post_init__(self):
         if not isinstance(self.lock_strength, LockStrength):
@@ -828,7 +828,9 @@ class LockFor:
     def querystring(self) -> QueryString:
         sql = f" FOR {self.lock_strength.value}"
         if self.of:
-            tables = ", ".join(x._meta.tablename for x in self.of)
+            tables = ", ".join(
+                i._meta.get_formatted_tablename() for i in self.of
+            )
             sql += " OF " + tables
         if self.nowait:
             sql += " NOWAIT"
@@ -842,11 +844,11 @@ class LockFor:
 
 
 @dataclass
-class LockForDelegate:
+class LockRowsDelegate:
 
-    _lock_for: t.Optional[LockFor] = None
+    _lock_rows: t.Optional[LockRows] = None
 
-    def lock_for(
+    def lock_rows(
         self,
         lock_strength: t.Union[
             LockStrength,
@@ -855,10 +857,6 @@ class LockForDelegate:
                 "NO KEY UPDATE",
                 "KEY SHARE",
                 "SHARE",
-                "update",
-                "no key update",
-                "key share",
-                "share",
             ],
         ] = LockStrength.update,
         nowait=False,
@@ -873,4 +871,4 @@ class LockForDelegate:
         else:
             raise ValueError("Unrecognised `lock_strength` value.")
 
-        self._lock_for = LockFor(lock_strength_, nowait, skip_locked, of)
+        self._lock_rows = LockRows(lock_strength_, nowait, skip_locked, of)

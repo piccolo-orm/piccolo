@@ -19,7 +19,7 @@ from piccolo.query.mixins import (
     DistinctDelegate,
     GroupByDelegate,
     LimitDelegate,
-    LockForDelegate,
+    LockRowsDelegate,
     LockStrength,
     OffsetDelegate,
     OrderByDelegate,
@@ -152,7 +152,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         "output_delegate",
         "callback_delegate",
         "where_delegate",
-        "lock_for_delegate",
+        "lock_rows_delegate",
     )
 
     def __init__(
@@ -177,7 +177,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         self.output_delegate = OutputDelegate()
         self.callback_delegate = CallbackDelegate()
         self.where_delegate = WhereDelegate()
-        self.lock_for_delegate = LockForDelegate()
+        self.lock_rows_delegate = LockRowsDelegate()
 
         self.columns(*columns_list)
 
@@ -223,7 +223,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         self.offset_delegate.offset(number)
         return self
 
-    def lock_for(
+    def lock_rows(
         self: Self,
         lock_strength: t.Union[
             LockStrength,
@@ -232,17 +232,15 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                 "NO KEY UPDATE",
                 "KEY SHARE",
                 "SHARE",
-                "update",
-                "no key update",
-                "key share",
-                "share",
             ],
         ] = LockStrength.update,
         nowait: bool = False,
         skip_locked: bool = False,
         of: t.Tuple[type[Table], ...] = (),
     ) -> Self:
-        self.lock_for_delegate.lock_for(lock_strength, nowait, skip_locked, of)
+        self.lock_rows_delegate.lock_rows(
+            lock_strength, nowait, skip_locked, of
+        )
         return self
 
     async def _splice_m2m_rows(
@@ -644,13 +642,15 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
             query += "{}"
             args.append(self.offset_delegate._offset.querystring)
 
-        if engine_type == "sqlite" and self.lock_for_delegate._lock_for:
-            raise NotImplementedError(
-                "SQLite doesn't support SELECT .. FOR UPDATE"
-            )
+        if self.lock_rows_delegate._lock_rows:
+            if engine_type == "sqlite":
+                raise NotImplementedError(
+                    "SQLite doesn't support row locking e.g. SELECT ... FOR "
+                    "UPDATE"
+                )
 
-        if self.lock_for_delegate._lock_for:
-            args.append(self.lock_for_delegate._lock_for.querystring)
+            query += "{}"
+            args.append(self.lock_rows_delegate._lock_rows.querystring)
 
         querystring = QueryString(query, *args)
 

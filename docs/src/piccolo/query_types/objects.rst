@@ -335,10 +335,10 @@ limit
 
 See :ref:`limit`.
 
-lock_for
+lock_rows
 ~~~~~~~~
 
-See :ref:`lock_for`.
+See :ref:`lock_rows`.
 
 offset
 ~~~~~~
