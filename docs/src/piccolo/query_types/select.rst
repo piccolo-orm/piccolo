@@ -376,6 +376,12 @@ limit
 
 See :ref:`limit`.
 
+
+lock_for
+~~~~~~~~
+
+See :ref:`lock_for`.
+
 offset
 ~~~~~~
 

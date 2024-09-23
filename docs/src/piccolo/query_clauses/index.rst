@@ -25,11 +25,11 @@ by modifying the return values.
     ./distinct
     ./freeze
     ./group_by
+    ./lock_for
     ./offset
     ./on_conflict
     ./output
     ./returning
-    ./lock_for
 
 .. toctree::
     :maxdepth: 1
