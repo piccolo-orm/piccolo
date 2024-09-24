@@ -35,6 +35,8 @@ do the following:
 This means that when multiple transactions are running at the same time, it
 isn't possible to book more tickets than are available.
 
+Thanks to @dkopitsa for adding this feature.
+
 -------------------------------------------------------------------------------
 
 1.18.0
