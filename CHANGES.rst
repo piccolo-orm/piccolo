@@ -1,6 +1,42 @@
 Changes
 =======
 
+1.19.0
+------
+
+Added support for row locking (i.e. ``SELECT ... FOR UPDATE``).
+
+For example, if we have this table:
+
+.. code-block:: python
+
+  class Concert(Table):
+      name = Varchar()
+      tickets_available = Integer()
+
+And we want to make sure that ``tickets_available`` never goes below 0, we can
+do the following:
+
+.. code-block:: python
+
+  async def book_tickets(ticket_count: int):
+      async with Concert._meta.db.transaction():
+          concert = await Concert.objects().where(
+              Concert.name == "Awesome Concert"
+          ).first().lock_rows()
+
+          if concert.tickets_available >= ticket_count:
+              await concert.update_self({
+                  Concert.tickets_available: Concert.tickets_available - ticket_count
+              })
+          else:
+              raise ValueError("Not enough tickets are available!")
+
+This means that when multiple transactions are running at the same time, it
+isn't possible to book more tickets than are available.
+
+-------------------------------------------------------------------------------
+
 1.18.0
 ------
 
