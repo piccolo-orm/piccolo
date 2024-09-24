@@ -381,7 +381,7 @@ See :ref:`limit`.
 
 
 lock_rows
-~~~~~~~~
+~~~~~~~~~
 
 See :ref:`lock_rows`.
 
