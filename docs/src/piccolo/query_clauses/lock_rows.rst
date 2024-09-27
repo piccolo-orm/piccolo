@@ -119,6 +119,10 @@ do the following:
 This means that when multiple transactions are running at the same time, it
 isn't possible to book more tickets than are available.
 
+.. note::
+
+   There is a `video tutorial on YouTube <https://youtu.be/qlFYQXrNBBI>`__.
+
 -------------------------------------------------------------------------------
 
 Learn more
