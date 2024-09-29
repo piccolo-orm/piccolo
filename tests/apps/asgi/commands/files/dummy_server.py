@@ -40,6 +40,7 @@ def dummy_server(app: t.Union[str, t.Callable] = "app:app"):
         "method": "GET",
         "query_string": b"",
         "headers": [],
+        "_body": b"null",
     }
     if callable(app):
         asyncio.run(app(scope, receive, send))
