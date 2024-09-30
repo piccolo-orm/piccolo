@@ -386,7 +386,7 @@ class M2MGetRelated:
 
         results = await secondary_table.objects().where(
             secondary_table._meta.primary_key.is_in(ids)
-        )
+        ) if len(ids) > 0 else []
 
         return results
 
