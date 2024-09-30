@@ -39,6 +39,7 @@ class TaskModelIn(BaseModel):
 
 
 class TaskModelOut(BaseModel):
+    id: int
     name: str
     completed: bool = False
 
