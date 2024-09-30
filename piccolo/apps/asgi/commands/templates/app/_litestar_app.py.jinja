@@ -1,8 +1,5 @@
 import typing as t
 
-from home.endpoints import home
-from home.piccolo_app import APP_CONFIG
-from home.tables import Task
 from litestar import Litestar, asgi, delete, get, patch, post
 from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.exceptions import NotFoundException
@@ -10,8 +7,19 @@ from litestar.static_files import StaticFilesConfig
 from litestar.template import TemplateConfig
 from litestar.types import Receive, Scope, Send
 from piccolo.engine import engine_finder
-from piccolo.utils.pydantic import create_pydantic_model
 from piccolo_admin.endpoints import create_admin
+from pydantic import BaseModel
+
+from home.endpoints import home
+from home.piccolo_app import APP_CONFIG
+from home.tables import Task
+
+"""
+NOTE: `create_pydantic_model` is not compatible with Litestar
+version higher than 2.11.0. If you are using Litestar<=2.11.0, 
+you can use `create_pydantic_model` as in other asgi templates
+
+from piccolo.utils.pydantic import create_pydantic_model
 
 TaskModelIn: t.Any = create_pydantic_model(
     table=Task,
@@ -22,6 +30,18 @@ TaskModelOut: t.Any = create_pydantic_model(
     include_default_columns=True,
     model_name="TaskModelOut",
 )
+"""
+
+
+class TaskModelIn(BaseModel):
+    name: str
+    completed: bool = False
+
+
+class TaskModelOut(BaseModel):
+    id: int
+    name: str
+    completed: bool = False
 
 
 # mounting Piccolo Admin
@@ -32,31 +52,32 @@ async def admin(scope: "Scope", receive: "Receive", send: "Send") -> None:
 
 @get("/tasks", tags=["Task"])
 async def tasks() -> t.List[TaskModelOut]:
-    return await Task.select().order_by(Task.id, ascending=False)
+    tasks = await Task.select().order_by(Task._meta.primary_key, ascending=False)
+    return [TaskModelOut(**task) for task in tasks]
 
 
 @post("/tasks", tags=["Task"])
 async def create_task(data: TaskModelIn) -> TaskModelOut:
-    task = Task(**data.dict())
+    task = Task(**data.model_dump())
     await task.save()
-    return task.to_dict()
+    return TaskModelOut(**task.to_dict())
 
 
 @patch("/tasks/{task_id:int}", tags=["Task"])
 async def update_task(task_id: int, data: TaskModelIn) -> TaskModelOut:
-    task = await Task.objects().get(Task.id == task_id)
+    task = await Task.objects().get(Task._meta.primary_key == task_id)
     if not task:
         raise NotFoundException("Task does not exist")
-    for key, value in data.dict().items():
+    for key, value in data.model_dump().items():
         setattr(task, key, value)
 
     await task.save()
-    return task.to_dict()
+    return TaskModelOut(**task.to_dict())
 
 
 @delete("/tasks/{task_id:int}", tags=["Task"])
 async def delete_task(task_id: int) -> None:
-    task = await Task.objects().get(Task.id == task_id)
+    task = await Task.objects().get(Task._meta.primary_key == task_id)
     if not task:
         raise NotFoundException("Task does not exist")
     await task.remove()
