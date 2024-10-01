@@ -1,6 +1,18 @@
 Changes
 =======
 
+1.19.1
+------
+
+Fixed a bug with the ``get_m2m`` method, which would raise a ``ValueError``
+when no objects were found. It now handles this gracefully and returns an empty
+list instead. Thanks to @nVitius for this fix.
+
+Improved the ASGI templates (including a fix for the latest LiteStar version).
+Thanks to @sinisaos for this.
+
+-------------------------------------------------------------------------------
+
 1.19.0
 ------
 
