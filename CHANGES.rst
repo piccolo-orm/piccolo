@@ -8,7 +8,7 @@ Fixed a bug with the ``get_m2m`` method, which would raise a ``ValueError``
 when no objects were found. It now handles this gracefully and returns an empty
 list instead. Thanks to @nVitius for this fix.
 
-Improved the ASGI templates (including a fix for the latest LiteStar version).
+Improved the ASGI templates (including a fix for the latest Litestar version).
 Thanks to @sinisaos for this.
 
 -------------------------------------------------------------------------------
