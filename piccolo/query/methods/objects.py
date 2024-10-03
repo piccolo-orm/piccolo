@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from piccolo.columns.column_types import ForeignKey
+from piccolo.columns.column_types import ForeignKey, ReferencedTable
 from piccolo.columns.combination import And, Where
 from piccolo.custom_types import Combinable, TableInstance
 from piccolo.engine.base import BaseBatch
@@ -228,6 +228,51 @@ class UpdateSelf:
         return self.run().__await__()
 
     def run_sync(self, *args, **kwargs) -> None:
+        return run_sync(self.run(*args, **kwargs))
+
+
+class GetRelated(t.Generic[ReferencedTable]):
+
+    def __init__(self, row: Table, foreign_key: ForeignKey[ReferencedTable]):
+        self.row = row
+        self.foreign_key = foreign_key
+
+    async def run(
+        self,
+        node: t.Optional[str] = None,
+        in_pool: bool = True,
+    ) -> t.Optional[ReferencedTable]:
+        references = self.foreign_key._foreign_key_meta.resolved_references
+
+        data = (
+            await self.row.__class__.select(
+                *[
+                    i.as_alias(i._meta.name)
+                    for i in self.foreign_key.all_columns()
+                ]
+            )
+            .first()
+            .run(node=node, in_pool=in_pool)
+        )
+
+        # Make sure that some values were returned:
+        if data is None or not any(data.values()):
+            return None
+
+        referenced_object = references(**data)
+        referenced_object._exists_in_db = True
+        return referenced_object
+
+    def __await__(
+        self,
+    ) -> t.Generator[None, None, t.Optional[ReferencedTable]]:
+        """
+        If the user doesn't explicity call .run(), proxy to it as a
+        convenience.
+        """
+        return self.run().__await__()
+
+    def run_sync(self, *args, **kwargs) -> t.Optional[ReferencedTable]:
         return run_sync(self.run(*args, **kwargs))
 
 

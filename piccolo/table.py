@@ -46,7 +46,7 @@ from piccolo.query import (
 )
 from piccolo.query.methods.create_index import CreateIndex
 from piccolo.query.methods.indexes import Indexes
-from piccolo.query.methods.objects import First, UpdateSelf
+from piccolo.query.methods.objects import GetRelated, UpdateSelf
 from piccolo.query.methods.refresh import Refresh
 from piccolo.querystring import QueryString
 from piccolo.utils import _camel_to_snake
@@ -612,14 +612,14 @@ class Table(metaclass=TableMetaclass):
     @t.overload
     def get_related(
         self, foreign_key: ForeignKey[ReferencedTable]
-    ) -> First[ReferencedTable]: ...
+    ) -> GetRelated[ReferencedTable]: ...
 
     @t.overload
-    def get_related(self, foreign_key: str) -> First[Table]: ...
+    def get_related(self, foreign_key: str) -> GetRelated[Table]: ...
 
     def get_related(
         self, foreign_key: t.Union[str, ForeignKey[ReferencedTable]]
-    ) -> t.Union[First[Table], First[ReferencedTable]]:
+    ) -> GetRelated[ReferencedTable]:
         """
         Used to fetch a ``Table`` instance, for the target of a foreign key.
 
@@ -630,8 +630,8 @@ class Table(metaclass=TableMetaclass):
             >>> print(manager.name)
             'Guido'
 
-        It can only follow foreign keys one level currently.
-        i.e. ``Band.manager``, but not ``Band.manager.x.y.z``.
+        It can only follow foreign keys multiple levels deep. For example,
+        ``Concert.band_1.manager``.
 
         """
         if isinstance(foreign_key, str):
@@ -645,18 +645,7 @@ class Table(metaclass=TableMetaclass):
                 "ForeignKey column."
             )
 
-        column_name = foreign_key._meta.name
-
-        references = foreign_key._foreign_key_meta.resolved_references
-
-        return (
-            references.objects()
-            .where(
-                foreign_key._foreign_key_meta.resolved_target_column
-                == getattr(self, column_name)
-            )
-            .first()
-        )
+        return GetRelated(foreign_key=foreign_key, row=self)
 
     def get_m2m(self, m2m: M2M) -> M2MGetRelated:
         """

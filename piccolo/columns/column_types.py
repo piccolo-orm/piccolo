@@ -1789,7 +1789,7 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
 
     """  # noqa: E501
 
-    _foreign_key_meta: ForeignKeyMeta
+    _foreign_key_meta: ForeignKeyMeta[ReferencedTable]
 
     @property
     def column_type(self):

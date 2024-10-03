@@ -1,42 +1,62 @@
 import typing as t
-from unittest import TestCase
 
-from tests.example_apps.music.tables import Band, Manager
-
-TABLES = [Manager, Band]
+from piccolo.testing.test_case import AsyncTableTest
+from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
 
-class TestGetRelated(TestCase):
-    def setUp(self):
-        for table in TABLES:
-            table.create_table().run_sync()
+class TestGetRelated(AsyncTableTest):
+    tables = [Manager, Band, Concert, Venue]
 
-    def tearDown(self):
-        for table in reversed(TABLES):
-            table.alter().drop_table().run_sync()
+    async def asyncSetUp(self):
+        await super().asyncSetUp()
 
-    def test_get_related(self) -> None:
+        self.manager = Manager(name="Guido")
+        await self.manager.save()
+
+        self.band = Band(
+            name="Pythonistas", manager=self.manager.id, popularity=100
+        )
+        await self.band.save()
+
+    async def test_foreign_key(self) -> None:
         """
         Make sure you can get a related object from another object instance.
         """
-        manager = Manager(name="Guido")
-        manager.save().run_sync()
+        manager = await self.band.get_related(Band.manager)
+        assert manager is not None
+        self.assertTrue(manager.name == "Guido")
 
-        band = Band(name="Pythonistas", manager=manager.id, popularity=100)
-        band.save().run_sync()
-
-        _manager = band.get_related(Band.manager).run_sync()
-        assert _manager is not None
-        self.assertTrue(_manager.name == "Guido")
-
-        # Test non-ForeignKey
+    async def test_non_foreign_key(self):
+        """
+        Make sure that non-ForeignKey raise an exception.
+        """
         with self.assertRaises(ValueError):
-            band.get_related(Band.name)  # type: ignore
+            self.band.get_related(Band.name)  # type: ignore
 
-        # Make sure it also works using a string
-        _manager_2 = t.cast(Manager, band.get_related("manager").run_sync())
-        self.assertTrue(_manager_2.name == "Guido")
+    async def test_string(self):
+        """
+        Make sure it also works using a string representation of a foreign key.
+        """
+        manager = t.cast(Manager, await self.band.get_related("manager"))
+        self.assertTrue(manager.name == "Guido")
 
-        # Test an invalid string
+    async def test_invalid_string(self):
+        """
+        Make sure an exception is raised if the foreign key string is invalid.
+        """
         with self.assertRaises(ValueError):
-            band.get_related("abc123")
+            self.band.get_related("abc123")
+
+    async def test_multiple_levels(self):
+        """
+        Make sure ``get_related`` works multiple levels deep.
+        """
+        concert = Concert(band_1=self.band)
+        await concert.save()
+
+        manager = await concert.get_related(Concert.band_1._.manager)
+        assert manager is not None
+        self.assertTrue(manager.name == "Guido")
+
+        band_2_manager = await concert.get_related(Concert.band_2._.manager)
+        assert band_2_manager is None

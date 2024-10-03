@@ -176,6 +176,13 @@ using ``get_related``.
     >>> manager.name
     'Guido'
 
+It works multiple levels deep - for example:
+
+.. code-block:: python
+
+    concert = await Concert.objects().first()
+    manager = await concert.get_related(Concert.band_1.manager)
+
 Prefetching related objects
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

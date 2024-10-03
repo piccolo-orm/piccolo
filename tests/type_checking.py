@@ -49,6 +49,12 @@ if t.TYPE_CHECKING:
         manager = await band.get_related(Band.manager)
         assert_type(manager, t.Optional[Manager])
 
+    async def get_related_multiple_levels() -> None:
+        concert = await Concert.objects().first()
+        assert concert is not None
+        manager = await concert.get_related(Concert.band_1._.manager)
+        assert_type(manager, t.Optional[Manager])
+
     async def get_or_create() -> None:
         query = Band.objects().get_or_create(Band.name == "Pythonistas")
         assert_type(await query, Band)
