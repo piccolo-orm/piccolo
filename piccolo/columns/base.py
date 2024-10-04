@@ -89,7 +89,7 @@ class ForeignKeyMeta(t.Generic[ReferencedTable]):
     proxy_columns: t.List[Column] = field(default_factory=list)
 
     @property
-    def resolved_references(self) -> t.Type[ReferencedTable]:
+    def resolved_references(self) -> t.Type[Table]:
         """
         Evaluates the ``references`` attribute if it's a ``LazyTableReference``,
         raising a ``ValueError`` if it fails, otherwise returns a ``Table``
@@ -98,7 +98,7 @@ class ForeignKeyMeta(t.Generic[ReferencedTable]):
         from piccolo.table import Table
 
         if isinstance(self.references, LazyTableReference):
-            return t.cast(t.Type[ReferencedTable], self.references.resolve())
+            return self.references.resolve()
         elif inspect.isclass(self.references) and issubclass(
             self.references, Table
         ):

@@ -242,7 +242,10 @@ class GetRelated(t.Generic[ReferencedTable]):
         node: t.Optional[str] = None,
         in_pool: bool = True,
     ) -> t.Optional[ReferencedTable]:
-        references = self.foreign_key._foreign_key_meta.resolved_references
+        references = t.cast(
+            t.Type[ReferencedTable],
+            self.foreign_key._foreign_key_meta.resolved_references,
+        )
 
         data = (
             await self.row.__class__.select(
