@@ -242,17 +242,21 @@ class GetRelated(t.Generic[ReferencedTable]):
         node: t.Optional[str] = None,
         in_pool: bool = True,
     ) -> t.Optional[ReferencedTable]:
-        references = t.cast(
-            t.Type[ReferencedTable],
-            self.foreign_key._foreign_key_meta.resolved_references,
-        )
+        if not self.row._exists_in_db:
+            raise ValueError("The object doesn't exist in the database.")
+
+        root_table = self.row.__class__
 
         data = (
-            await self.row.__class__.select(
+            await root_table.select(
                 *[
                     i.as_alias(i._meta.name)
                     for i in self.foreign_key.all_columns()
                 ]
+            )
+            .where(
+                root_table._meta.primary_key
+                == getattr(self.row, root_table._meta.primary_key._meta.name)
             )
             .first()
             .run(node=node, in_pool=in_pool)
@@ -261,6 +265,11 @@ class GetRelated(t.Generic[ReferencedTable]):
         # Make sure that some values were returned:
         if data is None or not any(data.values()):
             return None
+
+        references = t.cast(
+            t.Type[ReferencedTable],
+            self.foreign_key._foreign_key_meta.resolved_references,
+        )
 
         referenced_object = references(**data)
         referenced_object._exists_in_db = True
