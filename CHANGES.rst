@@ -1,6 +1,18 @@
 Changes
 =======
 
+1.20.0
+------
+
+``get_related`` now works multiple layers deep:
+
+.. code-block:: python
+
+    concert = await Concert.objects().first()
+    manager = await concert.get_related(Concert.band_1._.manager)
+
+-------------------------------------------------------------------------------
+
 1.19.1
 ------
 
