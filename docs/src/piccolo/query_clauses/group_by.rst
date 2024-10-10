@@ -19,13 +19,13 @@ In the following query, we get a count of the number of bands per manager:
 
 .. code-block:: python
 
-    >>> from piccolo.query.methods.select import Count
+    >>> from piccolo.query.functions.aggregate import Count
 
     >>> await Band.select(
     ...     Band.manager.name.as_alias('manager_name'),
     ...     Count(alias='band_count')
     ... ).group_by(
-    ...     Band.manager
+    ...     Band.manager.name
     ... )
 
     [

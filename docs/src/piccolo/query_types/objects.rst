@@ -16,36 +16,45 @@ examples.
 Fetching objects
 ----------------
 
-To get all objects:
+To get all rows:
 
 .. code-block:: python
 
     >>> await Band.objects()
-    [<Band: 1>, <Band: 2>]
+    [<Band: 1>, <Band: 2>, <Band: 3>]
 
-To get certain rows:
+To limit the number of rows returned, use the :ref:`order_by` and :ref:`limit`
+clauses:
+
+.. code-block:: python
+
+    >>> await Band.objects().order_by(Band.popularity, ascending=False).limit(2)
+    [<Band: 1>, <Band: 3>]
+
+To filter the rows we use the :ref:`where` clause:
 
 .. code-block:: python
 
     >>> await Band.objects().where(Band.name == 'Pythonistas')
     [<Band: 1>]
 
-To get a single row (or ``None`` if it doesn't exist):
+To get a single row (or ``None`` if it doesn't exist) use the :ref:`first`
+clause:
+
+.. code-block:: python
+
+    >>> await Band.objects().where(Band.name == 'Pythonistas').first()
+    <Band: 1>
+
+Alternatively, you can use this abbreviated syntax:
 
 .. code-block:: python
 
     >>> await Band.objects().get(Band.name == 'Pythonistas')
     <Band: 1>
 
-To get the first row:
-
-.. code-block:: python
-
-    >>> await Band.objects().first()
-    <Band: 1>
-
-You'll notice that the API is similar to :ref:`Select` - except it returns all
-columns.
+You'll notice that the API is similar to :ref:`Select` (expect with ``select``
+you can specify which columns are returned).
 
 -------------------------------------------------------------------------------
 
@@ -78,6 +87,9 @@ We also have this shortcut which combines the above into a single line:
 Updating objects
 ----------------
 
+``save``
+~~~~~~~~
+
 Objects have a :meth:`save <piccolo.table.Table.save>` method, which is
 convenient for updating values:
 
@@ -94,6 +106,36 @@ convenient for updating values:
 
     # Or specify specific columns to save:
     await band.save([Band.popularity])
+
+``update_self``
+~~~~~~~~~~~~~~~
+
+The :meth:`save <piccolo.table.Table.save>` method is fine in the majority of
+cases, but there are some situations where the :meth:`update_self <piccolo.table.Table.update_self>`
+method is preferable.
+
+For example, if we want to increment the ``popularity`` value, we can do this:
+
+.. code-block:: python
+
+    await band.update_self({
+        Band.popularity: Band.popularity + 1
+    })
+
+Which does the following:
+
+* Increments the popularity in the database
+* Assigns the new value to the object
+
+This is safer than:
+
+.. code-block:: python
+
+    band.popularity += 1
+    await band.save()
+
+Because ``update_self`` increments the current ``popularity`` value in the
+database, not the one on the object, which might be out of date.
 
 -------------------------------------------------------------------------------
 
@@ -115,8 +157,8 @@ Similarly, we can delete objects, using the ``remove`` method.
 Fetching related objects
 ------------------------
 
-get_related
-~~~~~~~~~~~
+``get_related``
+~~~~~~~~~~~~~~~
 
 If you have an object from a table with a :class:`ForeignKey <piccolo.columns.column_types.ForeignKey>`
 column, and you want to fetch the related row as an object, you can do so
@@ -133,6 +175,13 @@ using ``get_related``.
     <Manager: 1>
     >>> manager.name
     'Guido'
+
+It works multiple levels deep - for example:
+
+.. code-block:: python
+
+    concert = await Concert.objects().first()
+    manager = await concert.get_related(Concert.band_1.manager)
 
 Prefetching related objects
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -195,8 +244,8 @@ prefer.
 
 -------------------------------------------------------------------------------
 
-get_or_create
--------------
+``get_or_create``
+-----------------
 
 With ``get_or_create`` you can get an existing record matching the criteria,
 or create a new one with the ``defaults`` arguments:
@@ -239,8 +288,8 @@ Complex where clauses are supported, but only within reason. For example:
 
 -------------------------------------------------------------------------------
 
-to_dict
--------
+``to_dict``
+-----------
 
 If you need to convert an object into a dictionary, you can do so using the
 ``to_dict`` method.
@@ -264,8 +313,8 @@ the columns:
 
 -------------------------------------------------------------------------------
 
-refresh
--------
+``refresh``
+-----------
 
 If you have an object which has gotten stale, and want to refresh it, so it
 has the latest data from the database, you can use the
@@ -281,6 +330,34 @@ has the latest data from the database, you can use the
 
     # Or just refresh certain columns:
     await band.refresh([Band.name])
+
+It works with ``prefetch`` too:
+
+.. code-block:: python
+
+    # If we have an instance with a child object:
+    band = await Band.objects(Band.manager).first()
+
+    # And it has gotten stale, we can refresh it:
+    await band.refresh()
+
+    # The nested object will also be updated if it was stale:
+    >>> band.manager.name
+    "New value"
+
+``refresh`` is very useful in unit tests:
+
+.. code-block:: python
+
+    # If we have an instance:
+    band = await Band.objects().where(Band.name == "Pythonistas").first()
+
+    # Call an API endpoint which updates the object (e.g. with httpx):
+    await client.patch(f"/band/{band.id}/", json={"popularity": 5000})
+
+    # Make sure the instance was updated:
+    await band.refresh()
+    assert band.popularity == 5000
 
 -------------------------------------------------------------------------------
 
@@ -306,6 +383,11 @@ limit
 ~~~~~
 
 See :ref:`limit`.
+
+lock_rows
+~~~~~~~~~
+
+See :ref:`lock_rows`.
 
 offset
 ~~~~~~

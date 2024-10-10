@@ -1,19 +1,14 @@
-from unittest import TestCase
-
 from piccolo.columns.column_types import Real
 from piccolo.table import Table
+from piccolo.testing.test_case import TableTest
 
 
 class MyTable(Table):
     column_a = Real()
 
 
-class TestReal(TestCase):
-    def setUp(self):
-        MyTable.create_table().run_sync()
-
-    def tearDown(self):
-        MyTable.alter().drop_table().run_sync()
+class TestReal(TableTest):
+    tables = [MyTable]
 
     def test_creation(self):
         row = MyTable(column_a=1.23)

@@ -1,6 +1,414 @@
 Changes
 =======
 
+1.20.0
+------
+
+``get_related`` now works multiple layers deep:
+
+.. code-block:: python
+
+    concert = await Concert.objects().first()
+    manager = await concert.get_related(Concert.band_1._.manager)
+
+-------------------------------------------------------------------------------
+
+1.19.1
+------
+
+Fixed a bug with the ``get_m2m`` method, which would raise a ``ValueError``
+when no objects were found. It now handles this gracefully and returns an empty
+list instead. Thanks to @nVitius for this fix.
+
+Improved the ASGI templates (including a fix for the latest Litestar version).
+Thanks to @sinisaos for this.
+
+-------------------------------------------------------------------------------
+
+1.19.0
+------
+
+Added support for row locking (i.e. ``SELECT ... FOR UPDATE``).
+
+For example, if we have this table:
+
+.. code-block:: python
+
+  class Concert(Table):
+      name = Varchar()
+      tickets_available = Integer()
+
+And we want to make sure that ``tickets_available`` never goes below 0, we can
+do the following:
+
+.. code-block:: python
+
+  async def book_tickets(ticket_count: int):
+      async with Concert._meta.db.transaction():
+          concert = await Concert.objects().where(
+              Concert.name == "Awesome Concert"
+          ).first().lock_rows()
+
+          if concert.tickets_available >= ticket_count:
+              await concert.update_self({
+                  Concert.tickets_available: Concert.tickets_available - ticket_count
+              })
+          else:
+              raise ValueError("Not enough tickets are available!")
+
+This means that when multiple transactions are running at the same time, it
+isn't possible to book more tickets than are available.
+
+Thanks to @dkopitsa for adding this feature.
+
+-------------------------------------------------------------------------------
+
+1.18.0
+------
+
+``update_self``
+~~~~~~~~~~~~~~~
+
+Added the ``update_self`` method, which is an alternative to the ``save``
+method. Here's an example where it's useful:
+
+.. code-block:: python
+
+  # If we have a band object:
+  >>> band = await Band.objects().get(name="Pythonistas")
+  >>> band.popularity
+  1000
+
+  # We can increment the popularity, based on the current value in the
+  # database:
+  >>> await band.update_self({
+  ...     Band.popularity: Band.popularity + 1
+  ... })
+
+  # The new value is set on the object:
+  >>> band.popularity
+  1001
+
+  # It's safer than using the `save` method, because the popularity value on
+  # the object might be out of date with what's in the database:
+  band.popularity += 1
+  await band.save()
+
+Thanks to @trondhindenes for suggesting this feature.
+
+Batch raw queries
+~~~~~~~~~~~~~~~~~
+
+The ``batch`` method can now be used with ``raw`` queries. For example:
+
+.. code-block:: python
+
+  async with await MyTable.raw("SELECT * FROM my_table").batch() as batch:
+      async for _batch in batch:
+          print(_batch)
+
+This is useful when you expect a raw query to return a lot of data.
+
+Thanks to @devsarvesh92 for suggesting this feature.
+
+-------------------------------------------------------------------------------
+
+1.17.1
+------
+
+Fixed a bug with migrations, where altering a column type from ``Integer`` to
+``Float`` could fail. Thanks to @kurtportelli for reporting this issue.
+
+-------------------------------------------------------------------------------
+
+1.17.0
+------
+
+Each migration is automatically wrapped in a transaction - this can now be
+disabled using the ``wrap_in_transaction`` argument:
+
+.. code-block:: python
+
+  manager = MigrationManager(
+      wrap_in_transaction=False,
+      ...
+  )
+
+This is useful when writing a manual migration, and you want to manage all of
+the transaction logic yourself (or want multiple transactions).
+
+``granian`` is now a supported server in the ASGI templates. Thanks to
+@sinisaos for this.
+
+-------------------------------------------------------------------------------
+
+1.16.0
+------
+
+Added custom async ``TestCase`` subclasses, to help with testing.
+
+For example ``AsyncTransactionTest``, which wraps each test in a transaction
+automatically:
+
+.. code-block:: python
+
+  class TestBandEndpoint(AsyncTransactionTest):
+
+      async def test_band_response(self):
+          """
+          Make sure the endpoint returns a 200.
+          """
+          # This data automatically gets removed from the database when the
+          # test finishes:
+          band = Band({Band.name: "Pythonistas"})
+          await band.save()
+
+          # Using an API testing client, like httpx:
+          response = await client.get(f"/bands/{band.id}/")
+          self.assertEqual(response.status_code, 200)
+
+And ``AsyncTableTest``, which automatically creates and drops tables:
+
+.. code-block:: python
+
+  class TestBand(AsyncTableTest):
+
+      # These tables automatically get created and dropped:
+      tables = [Band]
+
+      async def test_band(self):
+          ...
+
+-------------------------------------------------------------------------------
+
+1.15.0
+------
+
+Improved ``refresh`` - it now works with prefetched objects. For example:
+
+.. code-block:: python
+
+  >>> band = await Band.objects(Band.manager).first()
+  >>> band.manager.name
+  "Guido"
+
+  # If the manager has changed in the database, when we refresh the band, the
+  # manager object will also be updated:
+  >>> await band.refresh()
+  >>> band.manager.name
+  "New name"
+
+Also, improved the error messages when creating a ``BaseUser`` - thanks to
+@haaavk for this.
+
+-------------------------------------------------------------------------------
+
+1.14.0
+------
+
+Laying the foundations for alterative Postgres database drivers (e.g.
+``psqlpy``). Thanks to @insani7y and @chandr-andr for their help with this.
+
+.. warning::
+  The SQL generated by Piccolo changed slightly in this release. Aliases used
+  to be like ``"manager$name"`` but now they are like ``"manager.name"``
+  (note ``$`` changed to ``.``). If you are using ``SelectRaw`` in your queries
+  to refer to these columns, then they will need updating. Please let us know
+  if you encounter any other issues.
+
+-------------------------------------------------------------------------------
+
+1.13.1
+------
+
+In Piccolo ``1.6.0`` we moved some aggregate functions to a new file. We now
+re-export them from their original location to keep backwards compatibility.
+Thanks to @sarvesh-deserve for reporting this issue.
+
+-------------------------------------------------------------------------------
+
+1.13.0
+------
+
+Improved ``LazyTableReference``, to help prevent circular import errors.
+
+-------------------------------------------------------------------------------
+
+1.12.0
+------
+
+* Added documentation for one to one fields.
+* Upgraded ASGI templates (thanks to @sinisaos for this).
+* Migrations can now be hardcoded as fake.
+* Refactored tests to reduce boilerplate code.
+* Updated documentation dependencies.
+
+-------------------------------------------------------------------------------
+
+1.11.0
+------
+
+Added datetime functions, for example ``Year``:
+
+.. code-block:: python
+
+    >>> from piccolo.query.functions import Year
+    >>> await Concert.select(Year(Concert.starts, alias="starts_year"))
+    [{'starts_year': 2024}]
+
+Added the ``Concat`` function, for concatenating strings:
+
+.. code-block:: python
+
+    >>> from piccolo.query.functions import Concat
+    >>> await Band.select(
+    ...     Concat(
+    ...         Band.name,
+    ...         '-',
+    ...         Band.manager._.name,
+    ...         alias="name_and_manager"
+    ...     )
+    ... )
+    [{"name_and_manager": "Pythonistas-Guido"}]
+
+-------------------------------------------------------------------------------
+
+1.10.0
+------
+
+Added ``not_any`` method for ``Array`` columns. This will return rows where an
+array doesn't contain the given value. For example:
+
+.. code-block:: python
+
+  class MyTable(Table):
+      array_column = Array(Integer())
+
+  >>> await MyTable.select(
+  ...     MyTable.array_column
+  ... ).where(
+  ...     MyTable.array_column.not_any(1)
+  ... )
+  [{"array_column": [4, 5, 6]}]
+
+Also fixed a bunch of Pylance linter warnings across the codebase.
+
+-------------------------------------------------------------------------------
+
+1.9.0
+-----
+
+Added some math functions, for example ``Abs``, ``Ceil``, ``Floor`` and
+``Round``.
+
+.. code-block:: python
+
+  >>> from piccolo.query.functions import Round
+  >>> await Ticket.select(Round(Ticket.price, alias="price"))
+  [{'price': 50.0}]
+
+Added more operators to ``QueryString`` (multiply, divide, modulus, power), so
+we can do things like:
+
+.. code-block:: python
+
+  >>> await Ticket.select(Round(Ticket.price) * 2)
+  [{'price': 100.0}]
+
+Fixed some edge cases around defaults for ``Array`` columns.
+
+.. code-block:: python
+
+  def get_default():
+      # This used to fail:
+      return [datetime.time(hour=8, minute=0)]
+
+  class MyTable(Table):
+      times = Array(Time(), default=get_default)
+
+Fixed some deprecation warnings, and improved CockroachDB array tests.
+
+-------------------------------------------------------------------------------
+
+1.8.0
+-----
+
+Added the ``Cast`` function, for performing type conversion.
+
+Here's an example, where we convert a ``timestamp`` to ``time``:
+
+.. code-block:: python
+
+    >>> from piccolo.columns import Time
+    >>> from piccolo.query.functions import Cast
+
+    >>> await Concert.select(Cast(Concert.starts, Time()))
+    [{'starts': datetime.time(19, 0)}]
+
+A new section was also added to the docs describing functions in more detail.
+
+-------------------------------------------------------------------------------
+
+1.7.0
+-----
+
+Arrays of ``Date`` / ``Time`` / ``Timestamp`` / ``Timestamptz`` now work in
+SQLite.
+
+For example:
+
+.. code-block:: python
+
+  class MyTable(Table):
+      times = Array(Time())
+      dates = Array(Date())
+      timestamps = Array(Timestamp())
+      timestamps_tz = Array(Timestamptz())
+
+-------------------------------------------------------------------------------
+
+1.6.0
+-----
+
+Added support for a bunch of Postgres functions, like ``Upper``, ``Lower``,
+``Length``, and ``Ltrim``. They can be used in ``select`` queries:
+
+.. code-block:: python
+
+  from piccolo.query.functions.string import Upper
+  >>> await Band.select(Upper(Band.name, alias="name"))
+  [{"name": "PYTHONISTAS"}]
+
+And also in ``where`` clauses:
+
+.. code-block:: python
+
+  >>> await Band.select().where(Upper(Band.manager.name) == 'GUIDO')
+  [{"name": "Pythonistas"}]
+
+-------------------------------------------------------------------------------
+
+1.5.2
+-----
+
+Added an ``Album`` table to the playground, along with some other
+improvements.
+
+Fixed a bug with the ``output(load_json=True)`` clause, when used on joined
+tables.
+
+-------------------------------------------------------------------------------
+
+1.5.1
+-----
+
+Fixed a bug with the CLI when reversing migrations (thanks to @metakot for
+reporting this).
+
+Updated the ASGI templates (thanks to @tarsil for adding Lilya).
+
+-------------------------------------------------------------------------------
+
 1.5.0
 -----
 

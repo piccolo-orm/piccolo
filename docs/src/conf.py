@@ -69,6 +69,8 @@ html_show_sphinx = False
 globaltoc_maxdepth = 3
 html_theme_options = {
     "source_url": "https://github.com/piccolo-orm/piccolo/",
+    "banner_text": 'Piccolo Admin now supports <a href="https://piccolo-orm.com/blog/piccolo-admin-multi-factor-authentication-now-available/">Multi-factor Authentication</a>!',  # noqa : E501
+    "banner_hiding": "permanent",
 }
 
 # -- Options for HTMLHelp output ---------------------------------------------

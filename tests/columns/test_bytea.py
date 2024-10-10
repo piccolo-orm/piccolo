@@ -1,7 +1,6 @@
-from unittest import TestCase
-
 from piccolo.columns.column_types import Bytea
 from piccolo.table import Table
+from piccolo.testing.test_case import TableTest
 
 
 class MyTable(Table):
@@ -19,12 +18,8 @@ class MyTableDefault(Table):
     token_none = Bytea(default=None, null=True)
 
 
-class TestBytea(TestCase):
-    def setUp(self):
-        MyTable.create_table().run_sync()
-
-    def tearDown(self):
-        MyTable.alter().drop_table().run_sync()
+class TestBytea(TableTest):
+    tables = [MyTable]
 
     def test_bytea(self):
         """
@@ -40,12 +35,8 @@ class TestBytea(TestCase):
         )
 
 
-class TestByteaDefault(TestCase):
-    def setUp(self):
-        MyTableDefault.create_table().run_sync()
-
-    def tearDown(self):
-        MyTableDefault.alter().drop_table().run_sync()
+class TestByteaDefault(TableTest):
+    tables = [MyTableDefault]
 
     def test_json_default(self):
         row = MyTableDefault()

@@ -98,7 +98,9 @@ def _generate_migration_meta(app_config: AppConfig) -> NewMigrationMeta:
 
     filename = f"{cleaned_app_name}_{cleaned_id}"
 
-    path = os.path.join(app_config.migrations_folder_path, f"{filename}.py")
+    path = os.path.join(
+        app_config.resolved_migrations_folder_path, f"{filename}.py"
+    )
 
     return NewMigrationMeta(
         migration_id=_id, migration_filename=filename, migration_path=path
@@ -256,7 +258,7 @@ async def new(
 
         app_config = Finder().get_app_config(app_name=app_name)
 
-        _create_migrations_folder(app_config.migrations_folder_path)
+        _create_migrations_folder(app_config.resolved_migrations_folder_path)
 
         try:
             await _create_new_migration(

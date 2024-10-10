@@ -32,7 +32,9 @@ class BackwardsMigrationManager(BaseMigrationManager):
 
     async def run_migrations_backwards(self, app_config: AppConfig):
         migration_modules: t.Dict[str, MigrationModule] = (
-            self.get_migration_modules(app_config.migrations_folder_path)
+            self.get_migration_modules(
+                app_config.resolved_migrations_folder_path
+            )
         )
 
         ran_migration_ids = await Migration.get_migrations_which_ran(
@@ -78,9 +80,11 @@ class BackwardsMigrationManager(BaseMigrationManager):
         _continue = (
             "y"
             if self.auto_agree
-            else input(f"Reverse {n} migration{'s' if n != 1 else ''}? [y/N] ")
+            else input(
+                f"Reverse {n} migration{'s' if n != 1 else ''}? [y/N] "
+            ).lower()
         )
-        if _continue in "yY":
+        if _continue == "y":
             for migration_id in reversed_migration_ids:
                 migration_module = migration_modules[migration_id]
                 response = await migration_module.forwards()
@@ -131,10 +135,10 @@ async def run_backwards(
                 "apps:\n"
                 f"{', '.join(names)}\n"
                 "Are you sure you want to continue? [y/N] "
-            )
+            ).lower()
         )
 
-        if _continue not in "yY":
+        if _continue != "y":
             return MigrationResult(success=False, message="user cancelled")
         for _app_name in sorted_app_names:
             print_heading(_app_name)

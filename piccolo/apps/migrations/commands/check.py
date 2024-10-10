@@ -36,7 +36,7 @@ class CheckMigrationManager(BaseMigrationManager):
                 continue
 
             migration_modules = self.get_migration_modules(
-                app_config.migrations_folder_path
+                app_config.resolved_migrations_folder_path
             )
             ids = self.get_migration_ids(migration_modules)
             for _id in ids:

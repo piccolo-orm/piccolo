@@ -2,7 +2,7 @@ import asyncio
 import random
 import typing as t
 from io import StringIO
-from unittest import TestCase
+from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import MagicMock, patch
 
 from piccolo.apps.migrations.auto.migration_manager import MigrationManager
@@ -12,6 +12,7 @@ from piccolo.columns.base import OnDelete, OnUpdate
 from piccolo.columns.column_types import ForeignKey
 from piccolo.conf.apps import AppConfig
 from piccolo.constraint import UniqueConstraint
+from piccolo.engine import engine_finder
 from piccolo.table import Table, sort_table_classes
 from piccolo.utils.lazy_loader import LazyLoader
 from tests.base import AsyncMock, DBTestCase, engine_is, engines_only
@@ -1033,15 +1034,15 @@ class TestMigrationManager(DBTestCase):
         )
 
         asyncio.run(manager.run())
-        self.assertEqual(
-            self._get_column_default(),
-            [{"column_default": "'Unknown':::STRING"}],
+        self.assertIn(
+            self._get_column_default()[0]["column_default"],
+            ["'Unknown'", "'Unknown':::STRING"],
         )
 
         asyncio.run(manager.run(backwards=True))
-        self.assertEqual(
-            self._get_column_default(),
-            [{"column_default": "'':::STRING"}],
+        self.assertIn(
+            self._get_column_default()[0]["column_default"],
+            ["''", "'':::STRING"],
         )
 
     @engines_only("postgres")
@@ -1121,9 +1122,9 @@ class TestMigrationManager(DBTestCase):
             old_params={"default": None},
         )
         asyncio.run(manager_1.run())
-        self.assertEqual(
-            self._get_column_default(),
-            [{"column_default": "'Mr Manager':::STRING"}],
+        self.assertIn(
+            self._get_column_default()[0]["column_default"],
+            ["'Mr Manager'", "'Mr Manager':::STRING"],
         )
 
         # Drop the default.
@@ -1144,9 +1145,9 @@ class TestMigrationManager(DBTestCase):
         # And add it back once more to be sure.
         manager_3 = manager_1
         asyncio.run(manager_3.run())
-        self.assertEqual(
-            self._get_column_default(),
-            [{"column_default": "'Mr Manager':::STRING"}],
+        self.assertIn(
+            self._get_column_default()[0]["column_default"],
+            ["'Mr Manager'", "'Mr Manager':::STRING"],
         )
 
         # Run them all backwards
@@ -1157,9 +1158,9 @@ class TestMigrationManager(DBTestCase):
         )
 
         asyncio.run(manager_2.run(backwards=True))
-        self.assertEqual(
-            self._get_column_default(),
-            [{"column_default": "'Mr Manager':::STRING"}],
+        self.assertIn(
+            self._get_column_default()[0]["column_default"],
+            ["'Mr Manager'", "'Mr Manager':::STRING"],
         )
 
         asyncio.run(manager_1.run(backwards=True))
@@ -1317,3 +1318,37 @@ class TestMigrationManager(DBTestCase):
                 output,
                 '  - 1 [preview forwards]... CREATE SCHEMA IF NOT EXISTS "schema_1"\nALTER TABLE "manager" SET SCHEMA "schema_1"\n',  # noqa: E501
             )
+
+
+class TestWrapInTransaction(IsolatedAsyncioTestCase):
+
+    async def test_enabled(self):
+        """
+        Make sure we can wrap the migration in a transaction if we want to.
+        """
+
+        async def run():
+            db = engine_finder()
+            assert db
+            assert db.transaction_exists() is True
+
+        manager = MigrationManager(wrap_in_transaction=True)
+        manager.add_raw(run)
+
+        await manager.run()
+
+    async def test_disabled(self):
+        """
+        Make sure we can stop the migration being wrapped in a transaction if
+        we want to.
+        """
+
+        async def run():
+            db = engine_finder()
+            assert db
+            assert db.transaction_exists() is False
+
+        manager = MigrationManager(wrap_in_transaction=False)
+        manager.add_raw(run)
+
+        await manager.run()

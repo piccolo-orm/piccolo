@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-import decimal
 import itertools
 import typing as t
 from collections import OrderedDict
 
 from piccolo.columns import Column, Selectable
-from piccolo.columns.column_types import JSON, JSONB, PrimaryKey
+from piccolo.columns.column_types import JSON, JSONB
 from piccolo.columns.m2m import M2MSelect
 from piccolo.columns.readable import Readable
 from piccolo.custom_types import TableInstance
-from piccolo.engine.base import Batch
+from piccolo.engine.base import BaseBatch
 from piccolo.query.base import Query
 from piccolo.query.mixins import (
     AsOfDelegate,
@@ -20,6 +19,8 @@ from piccolo.query.mixins import (
     DistinctDelegate,
     GroupByDelegate,
     LimitDelegate,
+    LockRowsDelegate,
+    LockStrength,
     OffsetDelegate,
     OrderByDelegate,
     OrderByRaw,
@@ -36,9 +37,14 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.custom_types import Combinable
     from piccolo.table import Table  # noqa
 
-
-def is_numeric_column(column: Column) -> bool:
-    return column.value_type in (int, decimal.Decimal, float)
+# Here to avoid breaking changes - will be removed in the future.
+from piccolo.query.functions.aggregate import (  # noqa: F401
+    Avg,
+    Count,
+    Max,
+    Min,
+    Sum,
+)
 
 
 class SelectRaw(Selectable):
@@ -59,224 +65,8 @@ class SelectRaw(Selectable):
 
     def get_select_string(
         self, engine_type: str, with_alias: bool = True
-    ) -> str:
-        return self.querystring.__str__()
-
-
-class Avg(Selectable):
-    """
-    ``AVG()`` SQL function. Column type must be numeric to run the query.
-
-    .. code-block:: python
-
-        await Band.select(Avg(Band.popularity)).run()
-
-        # We can use an alias. These two are equivalent:
-
-        await Band.select(
-            Avg(Band.popularity, alias="popularity_avg")
-        ).run()
-
-        await Band.select(
-            Avg(Band.popularity).as_alias("popularity_avg")
-        ).run()
-
-    """
-
-    def __init__(self, column: Column, alias: str = "avg"):
-        if is_numeric_column(column):
-            self.column = column
-        else:
-            raise ValueError("Column type must be numeric to run the query.")
-        self._alias = alias
-
-    def get_select_string(
-        self, engine_type: str, with_alias: bool = True
-    ) -> str:
-        column_name = self.column._meta.get_full_name(with_alias=False)
-        return f'AVG({column_name}) AS "{self._alias}"'
-
-
-class Count(Selectable):
-    """
-    Used in ``Select`` queries, usually in conjunction with the ``group_by``
-    clause::
-
-        >>> await Band.select(
-        ...     Band.manager.name.as_alias('manager_name'),
-        ...     Count(alias='band_count')
-        ... ).group_by(Band.manager)
-        [{'manager_name': 'Guido', 'count': 1}, ...]
-
-    It can also be used without the ``group_by`` clause (though you may prefer
-    to the :meth:`Table.count <piccolo.table.Table.count>` method instead, as
-    it's more convenient)::
-
-        >>> await Band.select(Count())
-        [{'count': 3}]
-
-    """
-
-    def __init__(
-        self,
-        column: t.Optional[Column] = None,
-        distinct: t.Optional[t.Sequence[Column]] = None,
-        alias: str = "count",
-    ):
-        """
-        :param column:
-            If specified, the count is for non-null values in that column.
-        :param distinct:
-            If specified, the count is for distinct values in those columns.
-        :param alias:
-            The name of the value in the response::
-
-                # These two are equivalent:
-
-                await Band.select(
-                    Band.name, Count(alias="total")
-                ).group_by(Band.name)
-
-                await Band.select(
-                    Band.name,
-                    Count().as_alias("total")
-                ).group_by(Band.name)
-
-        """
-        if distinct and column:
-            raise ValueError("Only specify `column` or `distinct`")
-
-        self.column = column
-        self.distinct = distinct
-        self._alias = alias
-
-    def get_select_string(
-        self, engine_type: str, with_alias: bool = True
-    ) -> str:
-        expression: str
-
-        if self.distinct:
-            if engine_type == "sqlite":
-                # SQLite doesn't allow us to specify multiple columns, so
-                # instead we concatenate the values.
-                column_names = " || ".join(
-                    i._meta.get_full_name(with_alias=False)
-                    for i in self.distinct
-                )
-            else:
-                column_names = ", ".join(
-                    i._meta.get_full_name(with_alias=False)
-                    for i in self.distinct
-                )
-
-            expression = f"DISTINCT ({column_names})"
-        else:
-            if self.column:
-                expression = self.column._meta.get_full_name(with_alias=False)
-            else:
-                expression = "*"
-
-        return f'COUNT({expression}) AS "{self._alias}"'
-
-
-class Max(Selectable):
-    """
-    ``MAX()`` SQL function.
-
-    .. code-block:: python
-
-        await Band.select(
-            Max(Band.popularity)
-        ).run()
-
-        # We can use an alias. These two are equivalent:
-
-        await Band.select(
-            Max(Band.popularity, alias="popularity_max")
-        ).run()
-
-        await Band.select(
-            Max(Band.popularity).as_alias("popularity_max")
-        ).run()
-
-    """
-
-    def __init__(self, column: Column, alias: str = "max"):
-        self.column = column
-        self._alias = alias
-
-    def get_select_string(
-        self, engine_type: str, with_alias: bool = True
-    ) -> str:
-        column_name = self.column._meta.get_full_name(with_alias=False)
-        return f'MAX({column_name}) AS "{self._alias}"'
-
-
-class Min(Selectable):
-    """
-    ``MIN()`` SQL function.
-
-    .. code-block:: python
-
-        await Band.select(Min(Band.popularity)).run()
-
-        # We can use an alias. These two are equivalent:
-
-        await Band.select(
-            Min(Band.popularity, alias="popularity_min")
-        ).run()
-
-        await Band.select(
-            Min(Band.popularity).as_alias("popularity_min")
-        ).run()
-
-    """
-
-    def __init__(self, column: Column, alias: str = "min"):
-        self.column = column
-        self._alias = alias
-
-    def get_select_string(
-        self, engine_type: str, with_alias: bool = True
-    ) -> str:
-        column_name = self.column._meta.get_full_name(with_alias=False)
-        return f'MIN({column_name}) AS "{self._alias}"'
-
-
-class Sum(Selectable):
-    """
-    ``SUM()`` SQL function. Column type must be numeric to run the query.
-
-    .. code-block:: python
-
-        await Band.select(
-            Sum(Band.popularity)
-        ).run()
-
-        # We can use an alias. These two are equivalent:
-
-        await Band.select(
-            Sum(Band.popularity, alias="popularity_sum")
-        ).run()
-
-        await Band.select(
-            Sum(Band.popularity).as_alias("popularity_sum")
-        ).run()
-
-    """
-
-    def __init__(self, column: Column, alias: str = "sum"):
-        if is_numeric_column(column):
-            self.column = column
-        else:
-            raise ValueError("Column type must be numeric to run the query.")
-        self._alias = alias
-
-    def get_select_string(
-        self, engine_type: str, with_alias: bool = True
-    ) -> str:
-        column_name = self.column._meta.get_full_name(with_alias=False)
-        return f'SUM({column_name}) AS "{self._alias}"'
+    ) -> QueryString:
+        return self.querystring
 
 
 OptionalDict = t.Optional[t.Dict[str, t.Any]]
@@ -362,6 +152,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         "output_delegate",
         "callback_delegate",
         "where_delegate",
+        "lock_rows_delegate",
     )
 
     def __init__(
@@ -386,6 +177,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         self.output_delegate = OutputDelegate()
         self.callback_delegate = CallbackDelegate()
         self.where_delegate = WhereDelegate()
+        self.lock_rows_delegate = LockRowsDelegate()
 
         self.columns(*columns_list)
 
@@ -431,11 +223,31 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         self.offset_delegate.offset(number)
         return self
 
+    def lock_rows(
+        self: Self,
+        lock_strength: t.Union[
+            LockStrength,
+            t.Literal[
+                "UPDATE",
+                "NO KEY UPDATE",
+                "KEY SHARE",
+                "SHARE",
+            ],
+        ] = LockStrength.update,
+        nowait: bool = False,
+        skip_locked: bool = False,
+        of: t.Tuple[type[Table], ...] = (),
+    ) -> Self:
+        self.lock_rows_delegate.lock_rows(
+            lock_strength, nowait, skip_locked, of
+        )
+        return self
+
     async def _splice_m2m_rows(
         self,
         response: t.List[t.Dict[str, t.Any]],
         secondary_table: t.Type[Table],
-        secondary_table_pk: PrimaryKey,
+        secondary_table_pk: Column,
         m2m_name: str,
         m2m_select: M2MSelect,
         as_list: bool = False,
@@ -604,13 +416,22 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         return self
 
     @t.overload
-    def output(self: Self, *, as_list: bool) -> SelectList: ...
+    def output(self: Self, *, as_list: bool) -> SelectList:  # type: ignore
+        ...
 
     @t.overload
-    def output(self: Self, *, as_json: bool) -> SelectJSON: ...
+    def output(self: Self, *, as_json: bool) -> SelectJSON:  # type: ignore
+        ...
 
     @t.overload
     def output(self: Self, *, load_json: bool) -> Self: ...
+
+    @t.overload
+    def output(self: Self, *, load_json: bool, as_list: bool) -> SelectJSON:  # type: ignore  # noqa: E501
+        ...
+
+    @t.overload
+    def output(self: Self, *, load_json: bool, nested: bool) -> Self: ...
 
     @t.overload
     def output(self: Self, *, nested: bool) -> Self: ...
@@ -622,7 +443,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         as_json: bool = False,
         load_json: bool = False,
         nested: bool = False,
-    ):
+    ) -> t.Union[Self, SelectJSON, SelectList]:
         self.output_delegate.output(
             as_list=as_list,
             as_json=as_json,
@@ -645,7 +466,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         self.callback_delegate.callback(callbacks, on=on)
         return self
 
-    def where(self: Self, *where: Combinable) -> Self:
+    def where(self: Self, *where: t.Union[Combinable, QueryString]) -> Self:
         self.where_delegate.where(*where)
         return self
 
@@ -654,7 +475,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         batch_size: t.Optional[int] = None,
         node: t.Optional[str] = None,
         **kwargs,
-    ) -> Batch:
+    ) -> BaseBatch:
         if batch_size:
             kwargs.update(batch_size=batch_size)
         if node:
@@ -678,23 +499,25 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         for readable in readables:
             columns += readable.columns
 
+        querystrings: t.List[QueryString] = [
+            i for i in columns if isinstance(i, QueryString)
+        ]
+        for querystring in querystrings:
+            if querystring_columns := getattr(querystring, "columns", []):
+                columns += querystring_columns
+
         for column in columns:
             if not isinstance(column, Column):
                 continue
 
             _joins: t.List[str] = []
             for index, key in enumerate(column._meta.call_chain, 0):
-                table_alias = "$".join(
-                    f"{_key._meta.table._meta.tablename}${_key._meta.name}"
-                    for _key in column._meta.call_chain[: index + 1]
-                )
-
-                key._meta.table_alias = table_alias
+                table_alias = key.table_alias
 
                 if index > 0:
                     left_tablename = column._meta.call_chain[
                         index - 1
-                    ]._meta.table_alias
+                    ].table_alias
                 else:
                     left_tablename = (
                         key._meta.table._meta.get_formatted_tablename()
@@ -761,11 +584,10 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
 
         engine_type = self.table._meta.db.engine_type
 
-        select_strings: t.List[str] = [
+        select_strings: t.List[QueryString] = [
             c.get_select_string(engine_type=engine_type)
             for c in self.columns_delegate.selected_columns
         ]
-        columns_str = ", ".join(select_strings)
 
         #######################################################################
 
@@ -779,7 +601,9 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         query += "{}"
         args.append(distinct.querystring)
 
+        columns_str = ", ".join("{}" for _ in select_strings)
         query += f" {columns_str} FROM {self.table._meta.get_formatted_tablename()}"  # noqa: E501
+        args.extend(select_strings)
 
         for join in joins:
             query += f" {join}"
@@ -817,6 +641,16 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         if self.offset_delegate._offset:
             query += "{}"
             args.append(self.offset_delegate._offset.querystring)
+
+        if self.lock_rows_delegate._lock_rows:
+            if engine_type == "sqlite":
+                raise NotImplementedError(
+                    "SQLite doesn't support row locking e.g. SELECT ... FOR "
+                    "UPDATE"
+                )
+
+            query += "{}"
+            args.append(self.lock_rows_delegate._lock_rows.querystring)
 
         querystring = QueryString(query, *args)
 

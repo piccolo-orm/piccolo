@@ -43,10 +43,17 @@ def compare_dicts(
 
     for key, value in dict_1.items():
         dict_2_value = dict_2.get(key, ...)
+
         if (
-            dict_2_value is not ...
-            and dict_2_value != value
-            or dict_2_value is ...
+            # If the value is `...` then it means no value was found.
+            (dict_2_value is ...)
+            # We have to compare the types, because if we just use equality
+            # then 1.0 == 1 is True.
+            # See this issue:
+            # https://github.com/piccolo-orm/piccolo/issues/1071
+            or (type(value) is not type(dict_2_value))
+            # Finally compare the actual values.
+            or (dict_2_value != value)
         ):
             output[key] = value
 

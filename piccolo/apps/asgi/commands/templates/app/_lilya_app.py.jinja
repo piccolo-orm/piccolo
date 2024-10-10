@@ -1,0 +1,44 @@
+from lilya.apps import Lilya
+from lilya.routing import Include, Path
+from lilya.staticfiles import StaticFiles
+from piccolo.engine import engine_finder
+from piccolo_admin.endpoints import create_admin
+from piccolo_api.crud.endpoints import PiccoloCRUD
+
+from home.endpoints import HomeController
+from home.piccolo_app import APP_CONFIG
+from home.tables import Task
+
+app = Lilya(
+    routes=[
+        Path("/", HomeController),
+        Include(
+            "/admin/",
+            create_admin(
+                tables=APP_CONFIG.table_classes,
+                # Required when running under HTTPS:
+                # allowed_hosts=['my_site.com']
+            ),
+        ),
+        Include("/static/", StaticFiles(directory="static")),
+        Include("/tasks/", PiccoloCRUD(table=Task)),
+    ],
+)
+
+
+@app.on_event("on_startup")
+async def open_database_connection_pool():
+    try:
+        engine = engine_finder()
+        await engine.start_connection_pool()
+    except Exception:
+        print("Unable to connect to the database")
+
+
+@app.on_event("on_shutdown")
+async def close_database_connection_pool():
+    try:
+        engine = engine_finder()
+        await engine.close_connection_pool()
+    except Exception:
+        print("Unable to connect to the database")

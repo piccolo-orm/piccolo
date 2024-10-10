@@ -434,6 +434,22 @@ class M2MBase:
 
         self.assertEqual([i.name for i in genres], ["Rock", "Folk"])
 
+    def test_get_m2m_no_rows(self):
+        """
+        If there are no matching objects, then an empty list should be
+        returned.
+
+        https://github.com/piccolo-orm/piccolo/issues/1090
+
+        """
+        band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        assert band is not None
+
+        Genre.delete(force=True).run_sync()
+
+        genres = band.get_m2m(Band.genres).run_sync()
+        self.assertEqual(genres, [])
+
     def test_remove_m2m(self):
         """
         Make sure we can remove related items via the joining table.

@@ -7,7 +7,8 @@ from piccolo.apps.user.tables import BaseUser
 from piccolo.columns import Date, Varchar
 from piccolo.columns.combination import WhereRaw
 from piccolo.query import OrderByRaw
-from piccolo.query.methods.select import Avg, Count, Max, Min, SelectRaw, Sum
+from piccolo.query.functions.aggregate import Avg, Count, Max, Min, Sum
+from piccolo.query.methods.select import SelectRaw
 from piccolo.query.mixins import DistinctOnError
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
 from tests.base import (
@@ -927,14 +928,6 @@ class TestSelect(DBTestCase):
         self.assertEqual(float(response["popularity_avg"]), 1003.3333333333334)
         self.assertEqual(response["popularity_sum"], 3010)
 
-    def test_avg_validation(self):
-        with self.assertRaises(ValueError):
-            Band.select(Avg(Band.name)).run_sync()
-
-    def test_sum_validation(self):
-        with self.assertRaises(ValueError):
-            Band.select(Sum(Band.name)).run_sync()
-
     def test_columns(self):
         """
         Make sure the colums method can be used to specify which columns to
@@ -1034,6 +1027,40 @@ class TestSelect(DBTestCase):
         self.assertListEqual(
             response, [{"name": "Pythonistas", "popularity_log": 3.0}]
         )
+
+    @pytest.mark.skipif(
+        is_running_sqlite(),
+        reason="SQLite doesn't support SELECT ... FOR UPDATE.",
+    )
+    def test_lock_rows(self):
+        """
+        Make sure the for_update clause works.
+        """
+        self.insert_rows()
+
+        query = Band.select()
+        self.assertNotIn("FOR UPDATE", query.__str__())
+
+        query = query.lock_rows()
+        self.assertTrue(query.__str__().endswith("FOR UPDATE"))
+
+        query = query.lock_rows(lock_strength="KEY SHARE")
+        self.assertTrue(query.__str__().endswith("FOR KEY SHARE"))
+
+        query = query.lock_rows(skip_locked=True)
+        self.assertTrue(query.__str__().endswith("FOR UPDATE SKIP LOCKED"))
+
+        query = query.lock_rows(nowait=True)
+        self.assertTrue(query.__str__().endswith("FOR UPDATE NOWAIT"))
+
+        query = query.lock_rows(of=(Band,))
+        self.assertTrue(query.__str__().endswith('FOR UPDATE OF "band"'))
+
+        with self.assertRaises(TypeError):
+            query = query.lock_rows(skip_locked=True, nowait=True)
+
+        response = query.run_sync()
+        assert response is not None
 
 
 class TestSelectSecret(TestCase):

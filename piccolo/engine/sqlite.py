@@ -9,8 +9,17 @@ import typing as t
 import uuid
 from dataclasses import dataclass
 from decimal import Decimal
+from functools import partial, wraps
 
-from piccolo.engine.base import Batch, Engine, validate_savepoint_name
+from typing_extensions import Self
+
+from piccolo.engine.base import (
+    BaseAtomic,
+    BaseBatch,
+    BaseTransaction,
+    Engine,
+    validate_savepoint_name,
+)
 from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import DDL, Query
 from piccolo.querystring import QueryString
@@ -35,14 +44,14 @@ if t.TYPE_CHECKING:  # pragma: no cover
 # In
 
 
-def convert_numeric_in(value):
+def convert_numeric_in(value: Decimal) -> float:
     """
     Convert any Decimal values into floats.
     """
     return float(value)
 
 
-def convert_uuid_in(value) -> str:
+def convert_uuid_in(value: uuid.UUID) -> str:
     """
     Converts the UUID value being passed into sqlite.
     """
@@ -56,7 +65,7 @@ def convert_time_in(value: datetime.time) -> str:
     return value.isoformat()
 
 
-def convert_date_in(value: datetime.date):
+def convert_date_in(value: datetime.date) -> str:
     """
     Converts the date value being passed into sqlite.
     """
@@ -74,128 +83,241 @@ def convert_datetime_in(value: datetime.datetime) -> str:
     return str(value)
 
 
-def convert_timedelta_in(value: datetime.timedelta):
+def convert_timedelta_in(value: datetime.timedelta) -> float:
     """
     Converts the timedelta value being passed into sqlite.
     """
     return value.total_seconds()
 
 
-def convert_array_in(value: list):
+def convert_array_in(value: list) -> str:
     """
-    Converts a list value into a string.
+    Converts a list value into a string (it handles nested lists, and type like
+    dateime/ time / date which aren't usually JSON serialisable.).
+
     """
-    if value and type(value[0]) not in [str, int, float, list]:
-        raise ValueError("Can only serialise str, int, float, and list.")
 
-    return dump_json(value)
+    def serialise(data: list):
+        output = []
 
+        for item in data:
+            if isinstance(item, list):
+                output.append(serialise(item))
+            elif isinstance(
+                item, (datetime.datetime, datetime.time, datetime.date)
+            ):
+                if adapter := ADAPTERS.get(type(item)):
+                    output.append(adapter(item))
+                else:
+                    raise ValueError("The adapter wasn't found.")
+            elif item is None or isinstance(item, (str, int, float, list)):
+                # We can safely JSON serialise these.
+                output.append(item)
+            else:
+                raise ValueError("We can't currently serialise this value.")
+
+        return output
+
+    return dump_json(serialise(value))
+
+
+###############################################################################
+
+# Register adapters
+
+ADAPTERS: t.Dict[t.Type, t.Callable[[t.Any], t.Any]] = {
+    Decimal: convert_numeric_in,
+    uuid.UUID: convert_uuid_in,
+    datetime.time: convert_time_in,
+    datetime.date: convert_date_in,
+    datetime.datetime: convert_datetime_in,
+    datetime.timedelta: convert_timedelta_in,
+    list: convert_array_in,
+}
+
+for value_type, adapter in ADAPTERS.items():
+    sqlite3.register_adapter(value_type, adapter)
+
+###############################################################################
 
 # Out
 
 
-def convert_numeric_out(value: bytes) -> Decimal:
+def decode_to_string(converter: t.Callable[[str], t.Any]):
+    """
+    This means we can use our converters with string and bytes. They are
+    passed bytes when used directly via SQLite, and are passed strings when
+    used by the array converters.
+    """
+
+    @wraps(converter)
+    def wrapper(value: t.Union[str, bytes]) -> t.Any:
+        if isinstance(value, bytes):
+            return converter(value.decode("utf8"))
+        elif isinstance(value, str):
+            return converter(value)
+        else:
+            raise ValueError("Unsupported type")
+
+    return wrapper
+
+
+@decode_to_string
+def convert_numeric_out(value: str) -> Decimal:
     """
     Convert float values into Decimals.
     """
-    return Decimal(value.decode("ascii"))
+    return Decimal(value)
 
 
-def convert_int_out(value: bytes) -> int:
+@decode_to_string
+def convert_int_out(value: str) -> int:
     """
     Make sure Integer values are actually of type int.
     """
     return int(float(value))
 
 
-def convert_uuid_out(value: bytes) -> uuid.UUID:
+@decode_to_string
+def convert_uuid_out(value: str) -> uuid.UUID:
     """
     If the value is a uuid, convert it to a UUID instance.
     """
-    return uuid.UUID(value.decode("utf8"))
+    return uuid.UUID(value)
 
 
-def convert_date_out(value: bytes) -> datetime.date:
-    return datetime.date.fromisoformat(value.decode("utf8"))
+@decode_to_string
+def convert_date_out(value: str) -> datetime.date:
+    return datetime.date.fromisoformat(value)
 
 
-def convert_time_out(value: bytes) -> datetime.time:
+@decode_to_string
+def convert_time_out(value: str) -> datetime.time:
     """
     If the value is a time, convert it to a UUID instance.
     """
-    return datetime.time.fromisoformat(value.decode("utf8"))
+    return datetime.time.fromisoformat(value)
 
 
-def convert_seconds_out(value: bytes) -> datetime.timedelta:
+@decode_to_string
+def convert_seconds_out(value: str) -> datetime.timedelta:
     """
     If the value is from a seconds column, convert it to a timedelta instance.
     """
-    return datetime.timedelta(seconds=float(value.decode("utf8")))
+    return datetime.timedelta(seconds=float(value))
 
 
-def convert_boolean_out(value: bytes) -> bool:
+@decode_to_string
+def convert_boolean_out(value: str) -> bool:
     """
     If the value is from a boolean column, convert it to a bool value.
     """
-    _value = value.decode("utf8")
-    return _value == "1"
+    return value == "1"
 
 
-def convert_timestamp_out(value: bytes) -> datetime.datetime:
+@decode_to_string
+def convert_timestamp_out(value: str) -> datetime.datetime:
     """
     If the value is from a timestamp column, convert it to a datetime value.
     """
-    return datetime.datetime.fromisoformat(value.decode("utf8"))
+    return datetime.datetime.fromisoformat(value)
 
 
-def convert_timestamptz_out(value: bytes) -> datetime.datetime:
+@decode_to_string
+def convert_timestamptz_out(value: str) -> datetime.datetime:
     """
     If the value is from a timestamptz column, convert it to a datetime value,
     with a timezone of UTC.
     """
-    _value = datetime.datetime.fromisoformat(value.decode("utf8"))
-    _value = _value.replace(tzinfo=datetime.timezone.utc)
-    return _value
+    return datetime.datetime.fromisoformat(value).replace(
+        tzinfo=datetime.timezone.utc
+    )
 
 
-def convert_array_out(value: bytes) -> t.List:
+@decode_to_string
+def convert_array_out(value: str) -> t.List:
     """
     If the value if from an array column, deserialise the string back into a
     list.
     """
-    return load_json(value.decode("utf8"))
+    return load_json(value)
 
 
-def convert_M2M_out(value: bytes) -> t.List:
-    _value = value.decode("utf8")
-    return _value.split(",")
+def convert_complex_array_out(value: bytes, converter: t.Callable):
+    """
+    This is used to handle arrays of things like timestamps, which we can't
+    just load from JSON without doing additional work to convert the elements
+    back into Python objects.
+    """
+    parsed = load_json(value.decode("utf8"))
+
+    def convert_list(list_value: t.List):
+        output = []
+
+        for value in list_value:
+            if isinstance(value, list):
+                # For nested arrays
+                output.append(convert_list(value))
+            elif isinstance(value, str):
+                output.append(converter(value))
+            else:
+                output.append(value)
+
+        return output
+
+    if isinstance(parsed, list):
+        return convert_list(parsed)
+    else:
+        return parsed
 
 
-sqlite3.register_converter("Numeric", convert_numeric_out)
-sqlite3.register_converter("Integer", convert_int_out)
-sqlite3.register_converter("UUID", convert_uuid_out)
-sqlite3.register_converter("Date", convert_date_out)
-sqlite3.register_converter("Time", convert_time_out)
-sqlite3.register_converter("Seconds", convert_seconds_out)
-sqlite3.register_converter("Boolean", convert_boolean_out)
-sqlite3.register_converter("Timestamp", convert_timestamp_out)
-sqlite3.register_converter("Timestamptz", convert_timestamptz_out)
-sqlite3.register_converter("Array", convert_array_out)
-sqlite3.register_converter("M2M", convert_M2M_out)
+@decode_to_string
+def convert_M2M_out(value: str) -> t.List:
+    return value.split(",")
 
-sqlite3.register_adapter(Decimal, convert_numeric_in)
-sqlite3.register_adapter(uuid.UUID, convert_uuid_in)
-sqlite3.register_adapter(datetime.time, convert_time_in)
-sqlite3.register_adapter(datetime.date, convert_date_in)
-sqlite3.register_adapter(datetime.datetime, convert_datetime_in)
-sqlite3.register_adapter(datetime.timedelta, convert_timedelta_in)
-sqlite3.register_adapter(list, convert_array_in)
+
+###############################################################################
+# Register the basic converters
+
+CONVERTERS = {
+    "NUMERIC": convert_numeric_out,
+    "INTEGER": convert_int_out,
+    "UUID": convert_uuid_out,
+    "DATE": convert_date_out,
+    "TIME": convert_time_out,
+    "SECONDS": convert_seconds_out,
+    "BOOLEAN": convert_boolean_out,
+    "TIMESTAMP": convert_timestamp_out,
+    "TIMESTAMPTZ": convert_timestamptz_out,
+    "M2M": convert_M2M_out,
+}
+
+for column_name, converter in CONVERTERS.items():
+    sqlite3.register_converter(column_name, converter)
+
+###############################################################################
+# Register the array converters
+
+# The ARRAY column type handles values which can be easily serialised to and
+# from JSON.
+sqlite3.register_converter("ARRAY", convert_array_out)
+
+# We have special column types for arrays of timestamps etc, as simply loading
+# the JSON isn't sufficient.
+for column_name in ("TIMESTAMP", "TIMESTAMPTZ", "DATE", "TIME"):
+    sqlite3.register_converter(
+        f"ARRAY_{column_name}",
+        partial(
+            convert_complex_array_out,
+            converter=CONVERTERS[column_name],
+        ),
+    )
 
 ###############################################################################
 
 
 @dataclass
-class AsyncBatch(Batch):
+class AsyncBatch(BaseBatch):
     connection: Connection
     query: Query
     batch_size: int
@@ -213,16 +335,16 @@ class AsyncBatch(Batch):
         data = await self.cursor.fetchmany(self.batch_size)
         return await self.query._process_results(data)
 
-    def __aiter__(self):
+    def __aiter__(self: Self) -> Self:
         return self
 
-    async def __anext__(self):
+    async def __anext__(self) -> t.List[t.Dict]:
         response = await self.next()
         if response == []:
             raise StopAsyncIteration()
         return response
 
-    async def __aenter__(self):
+    async def __aenter__(self: Self) -> Self:
         querystring = self.query.querystrings[0]
         template, template_args = querystring.compile_string()
 
@@ -230,7 +352,7 @@ class AsyncBatch(Batch):
         return self
 
     async def __aexit__(self, exception_type, exception, traceback):
-        await self._cursor.close()
+        await self.cursor.close()
         await self.connection.close()
         return exception is not None
 
@@ -249,7 +371,7 @@ class TransactionType(enum.Enum):
     exclusive = "EXCLUSIVE"
 
 
-class Atomic:
+class Atomic(BaseAtomic):
     """
     Usage:
 
@@ -270,9 +392,9 @@ class Atomic:
     ):
         self.engine = engine
         self.transaction_type = transaction_type
-        self.queries: t.List[Query] = []
+        self.queries: t.List[t.Union[Query, DDL]] = []
 
-    def add(self, *query: Query):
+    def add(self, *query: t.Union[Query, DDL]):
         self.queries += list(query)
 
     async def run(self):
@@ -320,7 +442,7 @@ class Savepoint:
         )
 
 
-class SQLiteTransaction:
+class SQLiteTransaction(BaseTransaction):
     """
     Used for wrapping queries in a transaction, using a context manager.
     Currently it's async only.
@@ -420,7 +542,7 @@ class SQLiteTransaction:
 
     ###########################################################################
 
-    async def __aexit__(self, exception_type, exception, traceback):
+    async def __aexit__(self, exception_type, exception, traceback) -> bool:
         if self._parent:
             return exception is None
 
@@ -446,16 +568,8 @@ def dict_factory(cursor, row) -> t.Dict:
     return {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
 
 
-class SQLiteEngine(Engine[t.Optional[SQLiteTransaction]]):
-    __slots__ = (
-        "connection_kwargs",
-        "current_transaction",
-        "log_queries",
-        "log_responses",
-    )
-
-    engine_type = "sqlite"
-    min_version_number = 3.25
+class SQLiteEngine(Engine[SQLiteTransaction]):
+    __slots__ = ("connection_kwargs",)
 
     def __init__(
         self,
@@ -499,7 +613,12 @@ class SQLiteEngine(Engine[t.Optional[SQLiteTransaction]]):
             f"sqlite_current_transaction_{path}", default=None
         )
 
-        super().__init__()
+        super().__init__(
+            engine_type="sqlite",
+            min_version_number=3.25,
+            log_queries=log_queries,
+            log_responses=log_responses,
+        )
 
     @property
     def path(self):

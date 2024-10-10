@@ -53,8 +53,8 @@ You can use the ``<, >, <=, >=`` operators, which work as you expect.
 
 -------------------------------------------------------------------------------
 
-like / ilike
--------------
+``like`` / ``ilike``
+--------------------
 
 The percentage operator is required to designate where the match should occur.
 
@@ -80,8 +80,8 @@ The percentage operator is required to designate where the match should occur.
 
 -------------------------------------------------------------------------------
 
-not_like
---------
+``not_like``
+------------
 
 Usage is the same as ``like`` excepts it excludes matching rows.
 
@@ -93,8 +93,8 @@ Usage is the same as ``like`` excepts it excludes matching rows.
 
 -------------------------------------------------------------------------------
 
-is_in / not_in
---------------
+``is_in`` / ``not_in``
+----------------------
 
 You can get all rows with a value contained in the list:
 
@@ -114,8 +114,8 @@ And all rows with a value not contained in the list:
 
 -------------------------------------------------------------------------------
 
-is_null / is_not_null
----------------------
+``is_null`` / ``is_not_null``
+-----------------------------
 
 These queries work, but some linters will complain about doing a comparison
 with ``None``:
@@ -202,8 +202,8 @@ Also, multiple arguments inside ``where`` clause is equivalent to an AND.
         Band.popularity >= 100, Band.popularity < 1000
     )
 
-Using And / Or directly
-~~~~~~~~~~~~~~~~~~~~~~~
+Using ``And`` / ``Or`` directly
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Rather than using the ``|`` and ``&`` characters, you can use the ``And`` and
 ``Or`` classes, which are what's used under the hood.
@@ -221,8 +221,8 @@ Rather than using the ``|`` and ``&`` characters, you can use the ``And`` and
 
 -------------------------------------------------------------------------------
 
-WhereRaw
---------
+``WhereRaw``
+------------
 
 In certain situations you may want to have raw SQL in your where clause.
 
@@ -268,3 +268,22 @@ The ``where`` clause has full support for joins. For example:
 
     >>> await Band.select(Band.name).where(Band.manager.name == 'Guido')
     [{'name': 'Pythonistas'}]
+
+-------------------------------------------------------------------------------
+
+Conditional ``where`` clauses
+-----------------------------
+
+You can add ``where`` clauses conditionally (e.g. based on user input):
+
+.. code-block:: python
+
+    async def get_band_names(only_popular_bands: bool) -> list[str]:
+        query = Band.select(Band.name).output(as_list=True)
+
+        if only_popular_bands:
+            query = query.where(Band.popularity >= 1000)
+
+        return await query
+
+.. hint:: This works with all clauses, not just ``where`` clauses.

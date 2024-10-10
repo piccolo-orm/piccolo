@@ -45,20 +45,11 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
             raise ValueError("Engine isn't defined.")
 
     async def _process_results(self, results) -> QueryResponseType:
-        if results:
-            keys = results[0].keys()
-            keys = [i.replace("$", ".") for i in keys]
-            if self.engine_type in ("postgres", "cockroach"):
-                # asyncpg returns a special Record object. We can pass it
-                # directly into zip without calling `values` on it. This can
-                # save us hundreds of microseconds, depending on the number of
-                # results.
-                raw = [dict(zip(keys, i)) for i in results]
-            else:
-                # SQLite returns a list of dictionaries.
-                raw = [dict(zip(keys, i.values())) for i in results]
-        else:
-            raw = []
+        raw = (
+            self.table._meta.db.transform_response_to_dicts(results)
+            if results
+            else []
+        )
 
         if hasattr(self, "_raw_response_callback"):
             self._raw_response_callback(raw)
@@ -87,14 +78,8 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
             for column in json_columns:
                 if column._alias is not None:
                     json_column_names.append(column._alias)
-                elif column.json_operator is not None:
-                    json_column_names.append(column._meta.name)
                 elif len(column._meta.call_chain) > 0:
-                    json_column_names.append(
-                        column.get_select_string(
-                            engine_type=column._meta.engine_type
-                        )
-                    )
+                    json_column_names.append(column._meta.get_default_alias())
                 else:
                     json_column_names.append(column._meta.name)
 

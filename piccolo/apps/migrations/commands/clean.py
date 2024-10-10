@@ -20,7 +20,7 @@ class CleanMigrationManager(BaseMigrationManager):
         app_config = self.get_app_config(app_name=self.app_name)
 
         migration_module_dict = self.get_migration_modules(
-            folder_path=app_config.migrations_folder_path
+            folder_path=app_config.resolved_migrations_folder_path
         )
 
         # The migration IDs which are in migration modules.
