@@ -851,6 +851,13 @@ class Table(metaclass=TableMetaclass):
         )
         return f"<{self.__class__.__name__}: {pk}>"
 
+    def __eq__(self, other: Table):
+        return (
+            isinstance(other, self.__class__)
+            and self.__class__._meta.primary_key
+            == other.__class__._meta.primary_key
+        )
+
     ###########################################################################
     # Classmethods
 
