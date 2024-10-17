@@ -534,7 +534,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                 _joins.append(
                     f'LEFT JOIN {right_tablename} "{table_alias}"'
                     " ON "
-                    f'({left_tablename}."{key._meta.name}" = "{table_alias}"."{pk_name}")'  # noqa: E501
+                    f'({left_tablename}."{key._meta.db_column_name}" = "{table_alias}"."{pk_name}")'  # noqa: E501
                 )
 
             joins.extend(_joins)
