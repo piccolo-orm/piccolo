@@ -8,6 +8,8 @@ import typing as t
 from dataclasses import dataclass
 
 from piccolo.apps.schema.commands.generate import get_output_schema
+from piccolo.engine import engine_finder
+from piccolo.engine.base import Engine
 from piccolo.table import Table
 
 
@@ -78,9 +80,16 @@ class TableStorage(metaclass=Singleton):
     works with Postgres.
     """
 
-    def __init__(self):
+    def __init__(self, engine: t.Optional[Engine] = None):
+        """
+        :param engine:
+            Which engine to use to make the database queries. If not specified,
+            we try importing an engine from ``piccolo_conf.py``.
+
+        """
+        self.engine = engine or engine_finder()
         self.tables = ImmutableDict()
-        self._schema_tables = {}
+        self._schema_tables: t.Dict[str, t.List[str]] = {}
 
     async def reflect(
         self,
@@ -120,10 +129,13 @@ class TableStorage(metaclass=Singleton):
         exclude_list = self._to_list(exclude)
 
         if keep_existing:
-            exclude += self._schema_tables.get(schema_name, [])
+            exclude_list += self._schema_tables.get(schema_name, [])
 
         output_schema = await get_output_schema(
-            schema_name=schema_name, include=include_list, exclude=exclude_list
+            schema_name=schema_name,
+            include=include_list,
+            exclude=exclude_list,
+            engine=self.engine,
         )
         add_tables = [
             self._add_table(schema_name=schema_name, table=table)
@@ -177,7 +189,7 @@ class TableStorage(metaclass=Singleton):
 
     def _add_to_schema_tables(self, schema_name: str, table_name: str) -> None:
         """
-        We keep record of schemas and their tables for easy use. This method
+        We keep a record of schemas and their tables for easy use. This method
         adds a table to its schema.
 
         """
