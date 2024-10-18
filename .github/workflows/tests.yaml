@@ -41,7 +41,7 @@ jobs:
                 # These tests are slow, so we only run on the latest Python
                 # version.
                 python-version: ["3.13"]
-                postgres-version: [14]
+                postgres-version: [17]
         services:
             postgres:
                 image: postgres:${{ matrix.postgres-version }}
@@ -86,7 +86,7 @@ jobs:
         strategy:
             matrix:
                 python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
-                postgres-version: [11, 12, 13, 14, 15, 16]
+                postgres-version: [12, 13, 14, 15, 16, 17]
 
         # Service containers to run with `container-job`
         services:
