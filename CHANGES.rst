@@ -1,6 +1,16 @@
 Changes
 =======
 
+1.21.0
+------
+
+Postgres 17 is now officially supported.
+
+Fixed a bug with joins, when a ``ForeignKey`` column had ``db_column_name``
+specified. Thanks to @jessemcl-flwls for reporting this issue.
+
+-------------------------------------------------------------------------------
+
 1.20.0
 ------
 
