@@ -2352,40 +2352,13 @@ class JSONB(JSON):
     def column_type(self):
         return "JSONB"  # Must be defined, we override column_type() in JSON()
 
-    def arrow(self, key: str) -> JSONB:
+    def arrow(self, key: str) -> QueryString:
         """
         Allows part of the JSON structure to be returned - for example,
         for {"a": 1}, and a key value of "a", then 1 will be returned.
         """
-        instance = t.cast(JSONB, self.copy())
-        instance.json_operator = f"-> '{key}'"
-        return instance
-
-    def get_select_string(
-        self, engine_type: str, with_alias: bool = True
-    ) -> QueryString:
-        select_string = self._meta.get_full_name(with_alias=False)
-
-        if self.json_operator is not None:
-            select_string += f" {self.json_operator}"
-
-        if with_alias:
-            alias = self._alias or self._meta.get_default_alias()
-            select_string += f' AS "{alias}"'
-
-        return QueryString(select_string)
-
-    def eq(self, value) -> Where:
-        """
-        See ``Boolean.eq`` for more details.
-        """
-        return self.__eq__(value)
-
-    def ne(self, value) -> Where:
-        """
-        See ``Boolean.ne`` for more details.
-        """
-        return self.__ne__(value)
+        alias = self._alias or self._meta.get_default_alias()
+        return QueryString("{} -> {}", self, key, alias=alias)
 
     ###########################################################################
     # Descriptors
