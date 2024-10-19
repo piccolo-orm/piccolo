@@ -259,10 +259,16 @@ class QueryString(Selectable):
     # Basic logic
 
     def __eq__(self, value) -> QueryString:  # type: ignore[override]
-        return QueryString("{} = {}", self, value)
+        if value is None:
+            return QueryString("{} IS NULL", self)
+        else:
+            return QueryString("{} = {}", self, value)
 
     def __ne__(self, value) -> QueryString:  # type: ignore[override]
-        return QueryString("{} != {}", self, value)
+        if value is None:
+            return QueryString("{} IS NOT NULL", self, value)
+        else:
+            return QueryString("{} != {}", self, value)
 
     def eq(self, value) -> QueryString:
         return self.__eq__(value)
