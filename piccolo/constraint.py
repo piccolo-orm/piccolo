@@ -6,6 +6,10 @@ from dataclasses import dataclass, field
 
 
 class Constraint:
+    """
+    All other constraints inherit from ``Constraint``. Don't use it directly.
+    """
+
     def __init__(self, **kwargs) -> None:
         self._meta = ConstraintMeta(params=kwargs)
 
@@ -20,6 +24,10 @@ class Constraint:
 
 @dataclass
 class ConstraintMeta:
+    """
+    This is used to store info about the constraint.
+    """
+
     # Used for representing the table in migrations.
     params: t.Dict[str, t.Any] = field(default_factory=dict)
 
@@ -40,11 +48,19 @@ class ConstraintMeta:
 
 
 class UniqueConstraint(Constraint):
+    """
+    Unique constraint on the table columns.
+    """
+
     def __init__(
         self,
         unique_columns: t.List[str],
         **kwargs,
     ) -> None:
+        """
+        :param unique_columns:
+            The table columns that should be unique together.
+        """
         self.unique_columns = unique_columns
         kwargs.update({"unique_columns": unique_columns})
         super().__init__(**kwargs)
