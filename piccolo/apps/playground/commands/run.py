@@ -233,6 +233,7 @@ def populate():
             RecordingStudio.facilities: {
                 "restaurant": True,
                 "mixing_desk": True,
+                "instruments": {"electric_guitar": 10, "drum_kit": 2},
             },
         }
     )
@@ -244,6 +245,7 @@ def populate():
             RecordingStudio.facilities: {
                 "restaurant": False,
                 "mixing_desk": True,
+                "instruments": {"electric_guitar": 6, "drum_kit": 3},
             },
         },
     )
