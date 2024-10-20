@@ -2,12 +2,14 @@ from piccolo.columns import JSONB
 from piccolo.query.functions.json import Arrow
 from piccolo.table import Table
 from piccolo.testing.test_case import AsyncTableTest
+from tests.base import engines_skip
 
 
 class RecordingStudio(Table):
     facilities = JSONB(null=True)
 
 
+@engines_skip("sqlite")
 class TestArrow(AsyncTableTest):
 
     tables = [RecordingStudio]
