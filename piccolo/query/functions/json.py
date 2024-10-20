@@ -17,7 +17,12 @@ class Arrow(QueryString):
     ``.output(load_json=True)``.
     """
 
-    def __init__(self, column: JSONB, key: str, alias: t.Optional[str] = None):
+    def __init__(
+        self,
+        column: JSONB | QueryString,
+        key: str,
+        alias: t.Optional[str] = None,
+    ):
         super().__init__("{} -> {}", column, key, alias=alias)
 
     def clean_value(self, value: t.Any):
