@@ -3,8 +3,9 @@ from __future__ import annotations
 import typing as t
 from time import time
 
-from piccolo.columns.column_types import JSON, JSONB, JSONQueryString
+from piccolo.columns.column_types import JSON, JSONB
 from piccolo.custom_types import QueryResponseType, TableInstance
+from piccolo.query.functions.json import Arrow
 from piccolo.query.mixins import ColumnsDelegate
 from piccolo.querystring import QueryString
 from piccolo.utils.encoding import load_json
@@ -73,7 +74,7 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
                 for column in columns_delegate.selected_columns:
                     if isinstance(column, (JSON, JSONB)):
                         json_columns.append(column)
-                    elif isinstance(column, JSONQueryString):
+                    elif isinstance(column, Arrow):
                         if alias := column._alias:
                             json_column_names.append(alias)
             else:

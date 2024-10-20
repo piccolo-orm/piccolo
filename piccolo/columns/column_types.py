@@ -70,6 +70,7 @@ from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import ColumnMeta
+    from piccolo.query.functions.json import Arrow
     from piccolo.table import Table
 
 
@@ -2335,33 +2336,6 @@ class JSON(Column):
         obj.__dict__[self._meta.name] = value
 
 
-class JSONQueryString(QueryString):
-    """
-    Functionally this is basically the same as ``QueryString``, we just need
-    ``Query._process_results`` to be able to differentiate it from a normal
-    ``QueryString`` just incase the user specified ``.output(load_json=True)``.
-    """
-
-    def clean_value(self, value: t.Any):
-        if not isinstance(value, (str, QueryString)):
-            value = dump_json(value)
-        return value
-
-    def __eq__(self, value) -> QueryString:  # type: ignore[override]
-        value = self.clean_value(value)
-        return QueryString("{} = {}", self, value)
-
-    def __ne__(self, value) -> QueryString:  # type: ignore[override]
-        value = self.clean_value(value)
-        return QueryString("{} != {}", self, value)
-
-    def eq(self, value) -> QueryString:
-        return self.__eq__(value)
-
-    def ne(self, value) -> QueryString:
-        return self.__ne__(value)
-
-
 class JSONB(JSON):
     """
     Used for storing JSON strings - Postgres only. The data is stored in a
@@ -2379,13 +2353,15 @@ class JSONB(JSON):
     def column_type(self):
         return "JSONB"  # Must be defined, we override column_type() in JSON()
 
-    def arrow(self, key: str) -> JSONQueryString:
+    def arrow(self, key: str) -> Arrow:
         """
         Allows part of the JSON structure to be returned - for example,
         for {"a": 1}, and a key value of "a", then 1 will be returned.
         """
+        from piccolo.query.functions.json import Arrow
+
         alias = self._alias or self._meta.get_default_alias()
-        return JSONQueryString("{} -> {}", self, key, alias=alias)
+        return Arrow(column=self, key=key, alias=alias)
 
     ###########################################################################
     # Descriptors
