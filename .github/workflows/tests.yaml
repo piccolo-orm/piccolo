@@ -16,7 +16,7 @@ jobs:
         timeout-minutes: 60
         strategy:
             matrix:
-                python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+                python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
         steps:
             - uses: actions/checkout@v3
@@ -40,7 +40,7 @@ jobs:
             matrix:
                 # These tests are slow, so we only run on the latest Python
                 # version.
-                python-version: ["3.10"]
+                python-version: ["3.12"]
                 postgres-version: [17]
         services:
             postgres:
@@ -85,7 +85,7 @@ jobs:
         timeout-minutes: 60
         strategy:
             matrix:
-                python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+                python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
                 postgres-version: [12, 13, 14, 15, 16, 17]
 
         # Service containers to run with `container-job`
@@ -134,14 +134,14 @@ jobs:
                   PG_PASSWORD: postgres
             - name: Upload coverage
               uses: codecov/codecov-action@v1
-              if: matrix.python-version == '3.12'
+              if: matrix.python-version == '3.13'
 
     cockroach:
         runs-on: ubuntu-latest
         timeout-minutes: 60
         strategy:
             matrix:
-                python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+                python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
                 cockroachdb-version: ["v24.1.0"]
         steps:
             - uses: actions/checkout@v3
@@ -168,14 +168,14 @@ jobs:
                   PG_DATABASE: piccolo
             - name: Upload coverage
               uses: codecov/codecov-action@v1
-              if: matrix.python-version == '3.12'
+              if: matrix.python-version == '3.13'
 
     sqlite:
         runs-on: ubuntu-latest
         timeout-minutes: 60
         strategy:
             matrix:
-                python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+                python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
         steps:
             - uses: actions/checkout@v3
@@ -193,4 +193,4 @@ jobs:
               run: ./scripts/test-sqlite.sh
             - name: Upload coverage
               uses: codecov/codecov-action@v1
-              if: matrix.python-version == '3.12'
+              if: matrix.python-version == '3.13'
