@@ -2356,12 +2356,24 @@ class JSONB(JSON):
     def arrow(self, key: str) -> Arrow:
         """
         Allows part of the JSON structure to be returned - for example,
-        for {"a": 1}, and a key value of "a", then 1 will be returned.
+        for ``{"a": 1}``, and a key value of ``"a"``, then 1 will be returned.
+
+        It can be used multiple levels deep::
+
+            >>> await RecordingStudio.select(
+            ...     RecordingStudio.facilities.arrow("facilities.guitars")
+            ... )
+
         """
         from piccolo.query.functions.json import Arrow
 
         alias = self._alias or self._meta.get_default_alias()
-        return Arrow(column=self, key=key, alias=alias)
+
+        key_elements = key.split(".")
+        output = Arrow(self, key=key_elements[0], alias=alias)
+        for key_element in key_elements[1:]:
+            output = Arrow(output, key=key_element, alias=alias)
+        return output
 
     ###########################################################################
     # Descriptors

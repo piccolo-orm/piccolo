@@ -19,11 +19,11 @@ class Arrow(QueryString):
 
     def __init__(
         self,
-        column: JSONB | QueryString,
+        identifier: JSONB | QueryString,
         key: str,
         alias: t.Optional[str] = None,
     ):
-        super().__init__("{} -> {}", column, key, alias=alias)
+        super().__init__("{} -> {}", identifier, key, alias=alias)
 
     def clean_value(self, value: t.Any):
         if not isinstance(value, (str, QueryString)):
