@@ -56,7 +56,6 @@ class Arrow(QueryString):
             ...     RecordingStudio.facilities.arrow(
             ...         "instruments"
             ...     ).arrow(
-            ...         "drum_kit"
             ...         "drum_kits"
             ...     ).as_alias("drum_kits")
             ... ).output(load_json=True)
