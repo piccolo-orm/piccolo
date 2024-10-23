@@ -234,6 +234,10 @@ def populate():
                 "restaurant": True,
                 "mixing_desk": True,
                 "instruments": {"electric_guitars": 10, "drum_kits": 2},
+                "technicians": [
+                    {"name": "Alice Jones"},
+                    {"name": "Bob Williams"},
+                ],
             },
         }
     )
@@ -246,6 +250,9 @@ def populate():
                 "restaurant": False,
                 "mixing_desk": True,
                 "instruments": {"electric_guitars": 6, "drum_kits": 3},
+                "technicians": [
+                    {"name": "Frank Smith"},
+                ],
             },
         },
     )
