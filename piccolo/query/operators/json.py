@@ -13,7 +13,8 @@ class Arrow(QueryString):
     """
     Allows you to drill into a JSON object.
 
-    You can access via the arrow function on ``JSON`` and ``JSONB`` columns.
+    You can access this via the ``arrow`` function on ``JSON`` and ``JSONB``
+    columns.
 
     """
 
@@ -56,6 +57,7 @@ class Arrow(QueryString):
             ...         "instruments"
             ...     ).arrow(
             ...         "drum_kit"
+            ...         "drum_kits"
             ...     ).as_alias("drum_kits")
             ... ).output(load_json=True)
             [
