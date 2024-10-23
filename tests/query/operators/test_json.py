@@ -1,5 +1,5 @@
 from piccolo.columns import JSONB
-from piccolo.query.operators.json import Arrow
+from piccolo.query.operators.json import GetChildElement
 from piccolo.table import Table
 from piccolo.testing.test_case import AsyncTableTest
 from tests.base import engines_skip
@@ -20,8 +20,8 @@ class TestArrow(AsyncTableTest):
         ).save()
 
         response = await RecordingStudio.select(
-            Arrow(Arrow(RecordingStudio.facilities, "a"), "b").as_alias(
-                "b_value"
-            )
+            GetChildElement(
+                GetChildElement(RecordingStudio.facilities, "a"), "b"
+            ).as_alias("b_value")
         )
         self.assertListEqual(response, [{"b_value": '{"c": 1}'}])

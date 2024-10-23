@@ -9,27 +9,7 @@ if t.TYPE_CHECKING:
     from piccolo.columns.column_types import JSON
 
 
-class Arrow(QueryString):
-    """
-    Allows you to drill into a JSON object.
-
-    You can access this via the ``arrow`` function on ``JSON`` and ``JSONB``
-    columns.
-
-    """
-
-    def __init__(
-        self,
-        identifier: t.Union[JSON, QueryString],
-        key: t.Union[str, int, QueryString],
-        alias: t.Optional[str] = None,
-    ):
-        if isinstance(key, int):
-            # asyncpg only accepts integer keys if we explicitly mark it as an
-            # int.
-            key = QueryString("{}::int", key)
-
-        super().__init__("{} -> {}", identifier, key, alias=alias)
+class JSONQueryString(QueryString):
 
     def clean_value(self, value: t.Any):
         if not isinstance(value, (str, QueryString)):
@@ -50,9 +30,33 @@ class Arrow(QueryString):
     def ne(self, value) -> QueryString:
         return self.__ne__(value)
 
-    def arrow(self, key: t.Union[str, int, QueryString]) -> Arrow:
+
+class GetChildElement(QueryString):
+    """
+    Allows you to get a child element from a JSON object.
+
+    You can access this via the ``arrow`` function on ``JSON`` and ``JSONB``
+    columns.
+
+    """
+
+    def __init__(
+        self,
+        identifier: t.Union[JSON, QueryString],
+        key: t.Union[str, int, QueryString],
+        alias: t.Optional[str] = None,
+    ):
+        if isinstance(key, int):
+            # asyncpg only accepts integer keys if we explicitly mark it as an
+            # int.
+            key = QueryString("{}::int", key)
+
+        super().__init__("{} -> {}", identifier, key, alias=alias)
+
+    def arrow(self, key: t.Union[str, int, QueryString]) -> GetChildElement:
         """
-        This allows you to drill multiple levels deep into a JSON object.
+        This allows you to drill multiple levels deep into a JSON object if
+        needed.
 
         For example::
 
@@ -70,4 +74,28 @@ class Arrow(QueryString):
             ]
 
         """
-        return Arrow(identifier=self, key=key, alias=self._alias)
+        return GetChildElement(identifier=self, key=key, alias=self._alias)
+
+
+class GetElementFromPath(JSONQueryString):
+    """
+    Allows you to retrieve an element from a JSON object by specifying a path.
+    It can be several levels deep.
+
+    You can access this via the ``from_path`` function on ``JSON`` and
+    ``JSONB`` columns.
+
+    """
+
+    def __init__(
+        self,
+        identifier: t.Union[JSON, QueryString],
+        path: t.List[t.Union[str, int]],
+        alias: t.Optional[str] = None,
+    ):
+        super().__init__(
+            "{} #> {}",
+            identifier,
+            [str(i) if isinstance(i, int) else i for i in path],
+            alias=alias,
+        )

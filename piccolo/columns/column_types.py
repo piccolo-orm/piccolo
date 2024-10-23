@@ -70,7 +70,10 @@ from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import ColumnMeta
-    from piccolo.query.operators.json import Arrow
+    from piccolo.query.operators.json import (
+        GetChildElement,
+        GetElementFromPath,
+    )
     from piccolo.table import Table
 
 
@@ -2322,19 +2325,55 @@ class JSON(Column):
 
     ###########################################################################
 
-    def arrow(self, key: t.Union[str, int, QueryString]) -> Arrow:
+    def arrow(self, key: t.Union[str, int, QueryString]) -> GetChildElement:
         """
-        Allows part of the JSON structure to be returned - for example::
+        Allows a child element of the JSON structure to be returned - for
+        example::
 
             >>> await RecordingStudio.select(
             ...     RecordingStudio.facilities.arrow("restaurant")
             ... )
 
         """
-        from piccolo.query.operators.json import Arrow
+        from piccolo.query.operators.json import GetChildElement
 
         alias = self._alias or self._meta.get_default_alias()
-        return Arrow(identifier=self, key=key, alias=alias)
+        return GetChildElement(identifier=self, key=key, alias=alias)
+
+    def from_path(
+        self,
+        path: t.List[t.Union[str, int]],
+    ) -> GetElementFromPath:
+        """
+        Allows an element of the JSON structure to be returned, which can be
+        arbitrarily deep. For example::
+
+            >>> await RecordingStudio.select(
+            ...     RecordingStudio.facilities.from_path([
+            ...         "technician",
+            ...         0,
+            ...         "first_name"
+            ...     ])
+            ... )
+
+        It's the same as calling ``arrow`` multiple times, but is more
+        efficient / convenient if extracting highly nested data::
+
+            >>> await RecordingStudio.select(
+            ...     RecordingStudio.facilities.arrow(
+            ...         "technician"
+            ...     ).arrow(
+            ...         0
+            ...     ).arrow(
+            ...         "first_name"
+            ...     )
+            ... )
+
+        """
+        from piccolo.query.operators.json import GetElementFromPath
+
+        alias = self._alias or self._meta.get_default_alias()
+        return GetElementFromPath(identifier=self, path=path, alias=alias)
 
     ###########################################################################
     # Descriptors
