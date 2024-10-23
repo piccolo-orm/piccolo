@@ -196,6 +196,29 @@ class TestArrow(AsyncTableTest):
         assert row is not None
         self.assertEqual(row["mixing_desk"], "true")
 
+    async def test_multiple_levels_deep(self):
+        """
+        Make sure elements can be extracted multiple levels deep, and using
+        array indexes.
+        """
+        await RecordingStudio(
+            name="Abbey Road",
+            facilities={
+                "technicians": [
+                    {"name": "Alice Jones"},
+                    {"name": "Bob Williams"},
+                ]
+            },
+        ).save()
+
+        response = await RecordingStudio.select(
+            RecordingStudio.facilities["technicians"][0]["name"].as_alias(
+                "technician_name"
+            )
+        ).output(load_json=True)
+        assert response is not None
+        self.assertListEqual(response, [{"technician_name": "Alice Jones"}])
+
     async def test_arrow_where(self):
         """
         Make sure the arrow function can be used within a WHERE clause.
