@@ -201,6 +201,7 @@ JSONB
 
 .. autoclass:: JSONB
 
+===========
 Serialising
 ===========
 
@@ -224,6 +225,7 @@ You can also pass in a JSON string if you prefer:
     )
     await studio.save()
 
+=============
 Deserialising
 =============
 
@@ -257,11 +259,12 @@ With ``objects`` queries, we can modify the returned JSON, and then save it:
     studio['facilities']['restaurant'] = False
     await studio.save()
 
+=====
 arrow
 =====
 
-``JSONB`` columns have an ``arrow`` function, which is useful for retrieving
-a subset of the JSON data:
+``JSON`` and ``JSONB`` columns have an ``arrow`` function, which is useful for
+retrieving a subset of the JSON data:
 
 .. code-block:: python
 
@@ -270,6 +273,8 @@ a subset of the JSON data:
     ...     RecordingStudio.facilities.arrow('mixing_desk').as_alias('mixing_desk')
     ... ).output(load_json=True)
     [{'name': 'Abbey Road', 'mixing_desk': True}]
+
+.. note:: Postgres and CockroachDB only.
 
 It can also be used for filtering in a where clause:
 
@@ -280,6 +285,7 @@ It can also be used for filtering in a where clause:
     ... )
     [{'name': 'Abbey Road'}]
 
+=============
 Handling null
 =============
 
