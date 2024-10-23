@@ -21,7 +21,7 @@ class Arrow(QueryString):
     def __init__(
         self,
         identifier: t.Union[JSON, QueryString],
-        key: t.Union[str, int],
+        key: t.Union[str, int, QueryString],
         alias: t.Optional[str] = None,
     ):
         super().__init__("{} -> {}", identifier, key, alias=alias)
@@ -45,7 +45,7 @@ class Arrow(QueryString):
     def ne(self, value) -> QueryString:
         return self.__ne__(value)
 
-    def arrow(self, key: t.Union[str, int]) -> Arrow:
+    def arrow(self, key: t.Union[str, int, QueryString]) -> Arrow:
         """
         This allows you to drill multiple levels deep into a JSON object.
 
