@@ -70,6 +70,10 @@ from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import ColumnMeta
+    from piccolo.query.operators.json import (
+        GetChildElement,
+        GetElementFromPath,
+    )
     from piccolo.table import Table
 
 
@@ -2320,6 +2324,76 @@ class JSON(Column):
             return "JSON"
 
     ###########################################################################
+
+    def arrow(self, key: t.Union[str, int, QueryString]) -> GetChildElement:
+        """
+        Allows a child element of the JSON structure to be returned - for
+        example::
+
+            >>> await RecordingStudio.select(
+            ...     RecordingStudio.facilities.arrow("restaurant")
+            ... )
+
+        """
+        from piccolo.query.operators.json import GetChildElement
+
+        alias = self._alias or self._meta.get_default_alias()
+        return GetChildElement(identifier=self, key=key, alias=alias)
+
+    def __getitem__(
+        self, value: t.Union[str, int, QueryString]
+    ) -> GetChildElement:
+        """
+        A shortcut for the ``arrow`` method, used for retrieving a child
+        element.
+
+        For example:
+
+        .. code-block:: python
+
+            >>> await RecordingStudio.select(
+            ...     RecordingStudio.facilities["restaurant"]
+            ... )
+
+        """
+        return self.arrow(key=value)
+
+    def from_path(
+        self,
+        path: t.List[t.Union[str, int]],
+    ) -> GetElementFromPath:
+        """
+        Allows an element of the JSON structure to be returned, which can be
+        arbitrarily deep. For example::
+
+            >>> await RecordingStudio.select(
+            ...     RecordingStudio.facilities.from_path([
+            ...         "technician",
+            ...         0,
+            ...         "first_name"
+            ...     ])
+            ... )
+
+        It's the same as calling ``arrow`` multiple times, but is more
+        efficient / convenient if extracting highly nested data::
+
+            >>> await RecordingStudio.select(
+            ...     RecordingStudio.facilities.arrow(
+            ...         "technician"
+            ...     ).arrow(
+            ...         0
+            ...     ).arrow(
+            ...         "first_name"
+            ...     )
+            ... )
+
+        """
+        from piccolo.query.operators.json import GetElementFromPath
+
+        alias = self._alias or self._meta.get_default_alias()
+        return GetElementFromPath(identifier=self, path=path, alias=alias)
+
+    ###########################################################################
     # Descriptors
 
     @t.overload
@@ -2337,10 +2411,10 @@ class JSON(Column):
 
 class JSONB(JSON):
     """
-    Used for storing JSON strings - Postgres only. The data is stored in a
-    binary format, and can be queried. Insertion can be slower (as it needs to
-    be converted to the binary format). The benefits of JSONB generally
-    outweigh the downsides.
+    Used for storing JSON strings - Postgres / CochroachDB only. The data is
+    stored in a binary format, and can be queried more efficiently. Insertion
+    can be slower (as it needs to be converted to the binary format). The
+    benefits of JSONB generally outweigh the downsides.
 
     :param default:
         Either a JSON string can be provided, or a Python ``dict`` or ``list``
@@ -2351,41 +2425,6 @@ class JSONB(JSON):
     @property
     def column_type(self):
         return "JSONB"  # Must be defined, we override column_type() in JSON()
-
-    def arrow(self, key: str) -> JSONB:
-        """
-        Allows part of the JSON structure to be returned - for example,
-        for {"a": 1}, and a key value of "a", then 1 will be returned.
-        """
-        instance = t.cast(JSONB, self.copy())
-        instance.json_operator = f"-> '{key}'"
-        return instance
-
-    def get_select_string(
-        self, engine_type: str, with_alias: bool = True
-    ) -> QueryString:
-        select_string = self._meta.get_full_name(with_alias=False)
-
-        if self.json_operator is not None:
-            select_string += f" {self.json_operator}"
-
-        if with_alias:
-            alias = self._alias or self._meta.get_default_alias()
-            select_string += f' AS "{alias}"'
-
-        return QueryString(select_string)
-
-    def eq(self, value) -> Where:
-        """
-        See ``Boolean.eq`` for more details.
-        """
-        return self.__eq__(value)
-
-    def ne(self, value) -> Where:
-        """
-        See ``Boolean.ne`` for more details.
-        """
-        return self.__ne__(value)
 
     ###########################################################################
     # Descriptors
