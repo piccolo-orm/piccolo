@@ -24,6 +24,11 @@ class Arrow(QueryString):
         key: t.Union[str, int, QueryString],
         alias: t.Optional[str] = None,
     ):
+        if isinstance(key, int):
+            # asyncpg only accepts integer keys if we explicitly mark it as an
+            # int.
+            key = QueryString("{}::int", key)
+
         super().__init__("{} -> {}", identifier, key, alias=alias)
 
     def clean_value(self, value: t.Any):
