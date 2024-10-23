@@ -2357,10 +2357,10 @@ class JSON(Column):
 
 class JSONB(JSON):
     """
-    Used for storing JSON strings - Postgres only. The data is stored in a
-    binary format, and can be queried more efficiently. Insertion can be slower
-    (as it needs to be converted to the binary format). The benefits of JSONB
-    generally outweigh the downsides.
+    Used for storing JSON strings - Postgres / CochroachDB only. The data is
+    stored in a binary format, and can be queried more efficiently. Insertion
+    can be slower (as it needs to be converted to the binary format). The
+    benefits of JSONB generally outweigh the downsides.
 
     :param default:
         Either a JSON string can be provided, or a Python ``dict`` or ``list``
