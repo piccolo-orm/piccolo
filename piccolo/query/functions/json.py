@@ -6,21 +6,26 @@ from piccolo.querystring import QueryString
 from piccolo.utils.encoding import dump_json
 
 if t.TYPE_CHECKING:
-    from piccolo.columns.column_types import JSONB
+    from piccolo.columns.column_types import JSON
 
 
 class Arrow(QueryString):
     """
-    Functionally this is basically the same as ``QueryString``, we just need
-    ``Query._process_results`` to be able to differentiate it from a normal
-    ``QueryString`` just in case the user specified
-    ``.output(load_json=True)``.
+    Allows you to drill into a JSON object.
+
+    Arrow isn't really a function - it's an operator (i.e. ``->``), but for
+    Piccolo's purposes it works basically the same.
+
+    In the future we might move this to a different folder. For that reason,
+    don't use it directly - use the arrow function on ``JSON`` and ``JSONB``
+    columns.
+
     """
 
     def __init__(
         self,
-        identifier: JSONB | QueryString,
-        key: str,
+        identifier: t.Union[JSON, QueryString],
+        key: t.Union[str, int],
         alias: t.Optional[str] = None,
     ):
         super().__init__("{} -> {}", identifier, key, alias=alias)
@@ -43,3 +48,25 @@ class Arrow(QueryString):
 
     def ne(self, value) -> QueryString:
         return self.__ne__(value)
+
+    def arrow(self, key: t.Union[str, int]) -> Arrow:
+        """
+        This allows you to drill multiple levels deep into a JSON object.
+
+        For example::
+
+            >>> await RecordingStudio.select(
+            ...     RecordingStudio.name,
+            ...     RecordingStudio.facilities.arrow(
+            ...         "instruments"
+            ...     ).arrow(
+            ...         "drum_kit"
+            ...     ).as_alias("drum_kit")
+            ... ).output(load_json=True)
+            [
+                {'name': 'Abbey Road', 'drum_kit': 2},
+                {'name': 'Electric Lady', 'drum_kit': 3}
+            ]
+
+        """
+        return Arrow(identifier=self, key=key, alias=self._alias)
