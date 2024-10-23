@@ -189,15 +189,11 @@ Storing JSON can be useful in certain situations, for example - raw API
 responses, data from a Javascript app, and for storing data with an unknown or
 changing schema.
 
-====
-JSON
-====
+====================
+``JSON`` / ``JSONB``
+====================
 
 .. autoclass:: JSON
-
-=====
-JSONB
-=====
 
 .. autoclass:: JSONB
 
@@ -259,29 +255,87 @@ With ``objects`` queries, we can modify the returned JSON, and then save it:
     studio['facilities']['restaurant'] = False
     await studio.save()
 
-=====
-arrow
-=====
+=========
+``arrow``
+=========
 
-``JSON`` and ``JSONB`` columns have an ``arrow`` function, which is useful for
-retrieving a subset of the JSON data:
+``JSON`` and ``JSONB`` columns have an ``arrow`` operator, which is useful for
+retrieving a subset of the JSON data.
+
+.. note:: Postgres and CockroachDB only.
+
+``select`` queries
+==================
+
+If we have the following JSON stored in the ``RecordingStudio.facility``
+column:
+
+.. code-block:: json
+
+    {
+        "instruments": {
+            "drum_kits": 2,
+            "electric_guitars": 10
+        },
+        "restaurant": true,
+        "technicians": [
+            {
+                "name": "Alice Jones"
+            },
+            {
+                "name": "Bob Williams"
+            }
+        ]
+    }
+
+We can retrieve the ``restaurant`` value from the JSON object:
 
 .. code-block:: python
 
     >>> await RecordingStudio.select(
-    ...     RecordingStudio.name,
-    ...     RecordingStudio.facilities.arrow('mixing_desk').as_alias('mixing_desk')
+    ...     RecordingStudio.facilities.arrow('restaurant')
+    ...     .as_alias('restaurant')
     ... ).output(load_json=True)
-    [{'name': 'Abbey Road', 'mixing_desk': True}]
+    [{'restaurant': True}, ...]
 
-.. note:: Postgres and CockroachDB only.
+You can drill multiple levels deep by calling ``arrow`` multiple times.
 
-It can also be used for filtering in a where clause:
+Here we fetch the number of drum kits that the recording studio has:
+
+.. code-block:: python
+
+    >>> await RecordingStudio.select(
+    ...     RecordingStudio.facilities.arrow("instruments")
+    ...     .arrow("drum_kits")
+    ...     .as_alias("drum_kits")
+    ... ).output(load_json=True)
+    [{'drum_kits': 2}, ...]
+
+If you have a JSON object which consists of arrays and objects, then you can
+navigate the array elements by passing in an integer to ``arrow``.
+
+Here we fetch the first technician from the array:
+
+.. code-block:: python
+
+    >>> await RecordingStudio.select(
+    ...     RecordingStudio.facilities.arrow("technicians")
+    ...     .arrow(0)
+    ...     .arrow("name")
+    ...     .as_alias("technician_name")
+    ... ).output(load_json=True)
+
+    [{'technician_name': 'Alice Jones'}, ...]
+
+``where`` clauses
+=================
+
+The ``arrow`` operator can also be used for filtering in a where clause:
 
 .. code-block:: python
 
     >>> await RecordingStudio.select(RecordingStudio.name).where(
-    ...     RecordingStudio.facilities.arrow('mixing_desk') == True
+    ...     RecordingStudio.facilities.arrow('mixing_desk').eq(True)
     ... )
     [{'name': 'Abbey Road'}]
 
