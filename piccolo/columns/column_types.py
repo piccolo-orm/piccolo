@@ -2340,6 +2340,24 @@ class JSON(Column):
         alias = self._alias or self._meta.get_default_alias()
         return GetChildElement(identifier=self, key=key, alias=alias)
 
+    def __getitem__(
+        self, value: t.Union[str, int, QueryString]
+    ) -> GetChildElement:
+        """
+        A shortcut for the ``arrow`` method, used for retrieving a child
+        element.
+
+        For example:
+
+        .. code-block:: python
+
+            >>> await RecordingStudio.select(
+            ...     RecordingStudio.facilities["restaurant"]
+            ... )
+
+        """
+        return self.arrow(key=value)
+
     def from_path(
         self,
         path: t.List[t.Union[str, int]],

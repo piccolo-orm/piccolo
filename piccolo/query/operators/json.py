@@ -76,6 +76,11 @@ class GetChildElement(QueryString):
         """
         return GetChildElement(identifier=self, key=key, alias=self._alias)
 
+    def __getitem__(
+        self, value: t.Union[str, int, QueryString]
+    ) -> GetChildElement:
+        return GetChildElement(identifier=self, key=value, alias=self._alias)
+
 
 class GetElementFromPath(JSONQueryString):
     """
