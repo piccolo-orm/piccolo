@@ -268,7 +268,7 @@ from the JSON data.
 ``select`` queries
 ==================
 
-If we have the following JSON stored in the ``RecordingStudio.facility``
+If we have the following JSON stored in the ``RecordingStudio.facilities``
 column:
 
 .. code-block:: json
@@ -299,8 +299,8 @@ We can retrieve the ``restaurant`` value from the JSON object:
     ... ).output(load_json=True)
     [{'restaurant': True}, ...]
 
-As a convenience, you can just use square brackets, instead of calling
-``arrow`` explicitly:
+As a convenience, you can use square brackets, instead of calling ``arrow``
+explicitly:
 
 .. code-block:: python
 
