@@ -259,8 +259,9 @@ With ``objects`` queries, we can modify the returned JSON, and then save it:
 Getting elements
 ================
 
-``JSON`` and ``JSONB`` columns have an ``arrow`` method, which is useful for
-retrieving a child element from the JSON data.
+``JSON`` and ``JSONB`` columns have an ``arrow`` method (representing the
+``->`` operator in Postgres), which is useful for retrieving a child element
+from the JSON data.
 
 .. note:: Postgres and CockroachDB only.
 
