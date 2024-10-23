@@ -1,6 +1,45 @@
 Changes
 =======
 
+1.22.0
+------
+
+Python 3.13 is now officially supported.
+
+``JSON`` / ``JSONB`` querying has been significantly improved. For example, if
+we have this table:
+
+.. code-block:: python
+
+  class RecordingStudio(Table):
+      facilities = JSONB()
+
+And the ``facilities`` column contains the following JSON data:
+
+.. code-block:: python
+
+    {
+        "technicians": [
+            {"name": "Alice Jones"},
+            {"name": "Bob Williams"},
+        ]
+    }
+
+We can get the first technician name as follows:
+
+.. code-block:: python
+
+    >>> await RecordingStudio.select(
+    ...     RecordingStudio.facilities["technicians"][0]["name"].as_alias("name")
+    ... ).output(load_json=True)
+    [{'name': 'Alice Jones'}, ...]
+
+``TableStorage`` (used for dynamically creating Piccolo ``Table`` classes from
+an existing database) was improved, to support a Dockerised version of Piccolo
+Admin, which is coming soon.
+
+-------------------------------------------------------------------------------
+
 1.21.0
 ------
 
