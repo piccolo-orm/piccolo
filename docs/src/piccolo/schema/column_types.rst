@@ -260,7 +260,7 @@ With ``objects`` queries, we can modify the returned JSON, and then save it:
 =========
 
 ``JSON`` and ``JSONB`` columns have an ``arrow`` operator, which is useful for
-retrieving a subset of the JSON data.
+retrieving a child element from the JSON data.
 
 .. note:: Postgres and CockroachDB only.
 
@@ -298,7 +298,8 @@ We can retrieve the ``restaurant`` value from the JSON object:
     ... ).output(load_json=True)
     [{'restaurant': True}, ...]
 
-You can drill multiple levels deep by calling ``arrow`` multiple times.
+You can drill multiple levels deep by calling ``arrow`` multiple times (or
+alternatively use the :ref:`from_path` method - see below).
 
 Here we fetch the number of drum kits that the recording studio has:
 
@@ -338,6 +339,27 @@ The ``arrow`` operator can also be used for filtering in a where clause:
     ...     RecordingStudio.facilities.arrow('mixing_desk').eq(True)
     ... )
     [{'name': 'Abbey Road'}]
+
+.. _from_path:
+
+=============
+``from_path``
+=============
+
+This works the same as ``arrow`` but is more optimised if you need to return
+part of a highly nested JSON structure.
+
+.. code-block:: python
+
+    >>> await RecordingStudio.select(
+    ...     RecordingStudio.facilities.from_path([
+    ...         "technicians",
+    ...         0,
+    ...         "name"
+    ...     ]).as_alias("technician_name")
+    ... ).output(load_json=True)
+
+    [{'technician_name': 'Alice Jones'}, ...]
 
 =============
 Handling null

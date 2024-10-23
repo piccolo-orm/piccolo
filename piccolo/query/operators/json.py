@@ -93,6 +93,11 @@ class GetElementFromPath(JSONQueryString):
         path: t.List[t.Union[str, int]],
         alias: t.Optional[str] = None,
     ):
+        """
+        :param path:
+            For example: ``["technician", 0, "name"]``.
+
+        """
         super().__init__(
             "{} #> {}",
             identifier,
