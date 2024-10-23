@@ -31,7 +31,7 @@ class JSONQueryString(QueryString):
         return self.__ne__(value)
 
 
-class GetChildElement(QueryString):
+class GetChildElement(JSONQueryString):
     """
     Allows you to get a child element from a JSON object.
 

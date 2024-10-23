@@ -1,6 +1,6 @@
 from piccolo.columns.column_types import JSONB, ForeignKey, Varchar
 from piccolo.table import Table
-from piccolo.testing.test_case import TableTest
+from piccolo.testing.test_case import AsyncTableTest, TableTest
 from tests.base import engines_only, engines_skip
 
 
@@ -137,93 +137,99 @@ class TestJSONB(TableTest):
             [{"name": "Guitar", "studio_facilities": {"mixing_desk": True}}],
         )
 
-    def test_arrow(self):
+
+@engines_only("postgres", "cockroach")
+class TestArrow(AsyncTableTest):
+    tables = [RecordingStudio, Instrument]
+
+    async def insert_row(self):
+        await RecordingStudio(
+            name="Abbey Road", facilities='{"mixing_desk": true}'
+        ).save()
+
+    async def test_arrow(self):
         """
         Test using the arrow function to retrieve a subset of the JSON.
         """
-        RecordingStudio(
-            name="Abbey Road", facilities='{"mixing_desk": true}'
-        ).save().run_sync()
+        await self.insert_row()
 
-        row = (
-            RecordingStudio.select(
-                RecordingStudio.facilities.arrow("mixing_desk")
-            )
-            .first()
-            .run_sync()
-        )
+        row = await RecordingStudio.select(
+            RecordingStudio.facilities.arrow("mixing_desk")
+        ).first()
         assert row is not None
         self.assertEqual(row["facilities"], "true")
 
-        row = (
+        row = await (
             RecordingStudio.select(
                 RecordingStudio.facilities.arrow("mixing_desk")
             )
             .output(load_json=True)
             .first()
-            .run_sync()
         )
         assert row is not None
         self.assertEqual(row["facilities"], True)
 
-    def test_arrow_as_alias(self):
+    async def test_arrow_as_alias(self):
         """
         Test using the arrow function to retrieve a subset of the JSON.
         """
-        RecordingStudio(
-            name="Abbey Road", facilities='{"mixing_desk": true}'
-        ).save().run_sync()
+        await self.insert_row()
 
-        row = (
-            RecordingStudio.select(
-                RecordingStudio.facilities.arrow("mixing_desk").as_alias(
-                    "mixing_desk"
-                )
+        row = await RecordingStudio.select(
+            RecordingStudio.facilities.arrow("mixing_desk").as_alias(
+                "mixing_desk"
             )
-            .first()
-            .run_sync()
-        )
+        ).first()
         assert row is not None
         self.assertEqual(row["mixing_desk"], "true")
 
-    def test_arrow_where(self):
+    async def test_square_brackets(self):
+        """
+        Make sure we can use square brackets instead of calling ``arrow``
+        explicitly.
+        """
+        await self.insert_row()
+
+        row = await RecordingStudio.select(
+            RecordingStudio.facilities["mixing_desk"].as_alias("mixing_desk")
+        ).first()
+        assert row is not None
+        self.assertEqual(row["mixing_desk"], "true")
+
+    async def test_arrow_where(self):
         """
         Make sure the arrow function can be used within a WHERE clause.
         """
-        RecordingStudio(
-            name="Abbey Road", facilities='{"mixing_desk": true}'
-        ).save().run_sync()
+        await self.insert_row()
 
         self.assertEqual(
-            RecordingStudio.count()
-            .where(RecordingStudio.facilities.arrow("mixing_desk").eq(True))
-            .run_sync(),
+            await RecordingStudio.count().where(
+                RecordingStudio.facilities.arrow("mixing_desk").eq(True)
+            ),
             1,
         )
 
         self.assertEqual(
-            RecordingStudio.count()
-            .where(RecordingStudio.facilities.arrow("mixing_desk").eq(False))
-            .run_sync(),
+            await RecordingStudio.count().where(
+                RecordingStudio.facilities.arrow("mixing_desk").eq(False)
+            ),
             0,
         )
 
-    def test_arrow_first(self):
+    async def test_arrow_first(self):
         """
         Make sure the arrow function can be used with the first clause.
         """
-        RecordingStudio.insert(
+        await RecordingStudio.insert(
             RecordingStudio(facilities='{"mixing_desk": true}'),
             RecordingStudio(facilities='{"mixing_desk": false}'),
-        ).run_sync()
+        )
 
         self.assertEqual(
-            RecordingStudio.select(
+            await RecordingStudio.select(
                 RecordingStudio.facilities.arrow("mixing_desk").as_alias(
                     "mixing_desk"
                 )
-            )
-            .first()
-            .run_sync(),
+            ).first(),
             {"mixing_desk": "true"},
         )
