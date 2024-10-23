@@ -256,3 +256,31 @@ class TestArrow(AsyncTableTest):
             ).first(),
             {"mixing_desk": "true"},
         )
+
+
+@engines_only("postgres", "cockroach")
+class TestFromPath(AsyncTableTest):
+
+    tables = [RecordingStudio, Instrument]
+
+    async def test_from_path(self):
+        """
+        Make sure ``from_path`` can be used for complex nested data.
+        """
+        await RecordingStudio(
+            name="Abbey Road",
+            facilities={
+                "technicians": [
+                    {"name": "Alice Jones"},
+                    {"name": "Bob Williams"},
+                ]
+            },
+        ).save()
+
+        response = await RecordingStudio.select(
+            RecordingStudio.facilities.from_path(
+                ["technicians", 0, "name"]
+            ).as_alias("technician_name")
+        ).output(load_json=True)
+        assert response is not None
+        self.assertListEqual(response, [{"technician_name": "Alice Jones"}])
