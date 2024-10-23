@@ -255,11 +255,11 @@ With ``objects`` queries, we can modify the returned JSON, and then save it:
     studio['facilities']['restaurant'] = False
     await studio.save()
 
-=========
-``arrow``
-=========
+================
+Getting elements
+================
 
-``JSON`` and ``JSONB`` columns have an ``arrow`` operator, which is useful for
+``JSON`` and ``JSONB`` columns have an ``arrow`` method, which is useful for
 retrieving a child element from the JSON data.
 
 .. note:: Postgres and CockroachDB only.
@@ -298,6 +298,17 @@ We can retrieve the ``restaurant`` value from the JSON object:
     ... ).output(load_json=True)
     [{'restaurant': True}, ...]
 
+As a convenience, you can just use square brackets, instead of calling
+``arrow`` explicitly:
+
+.. code-block:: python
+
+    >>> await RecordingStudio.select(
+    ...     RecordingStudio.facilities['restaurant']
+    ...     .as_alias('restaurant')
+    ... ).output(load_json=True)
+    [{'restaurant': True}, ...]
+
 You can drill multiple levels deep by calling ``arrow`` multiple times (or
 alternatively use the :ref:`from_path` method - see below).
 
@@ -306,8 +317,7 @@ Here we fetch the number of drum kits that the recording studio has:
 .. code-block:: python
 
     >>> await RecordingStudio.select(
-    ...     RecordingStudio.facilities.arrow("instruments")
-    ...     .arrow("drum_kits")
+    ...     RecordingStudio.facilities["instruments"]["drum_kits"]
     ...     .as_alias("drum_kits")
     ... ).output(load_json=True)
     [{'drum_kits': 2}, ...]
@@ -320,9 +330,7 @@ Here we fetch the first technician from the array:
 .. code-block:: python
 
     >>> await RecordingStudio.select(
-    ...     RecordingStudio.facilities.arrow("technicians")
-    ...     .arrow(0)
-    ...     .arrow("name")
+    ...     RecordingStudio.facilities["technicians"][0]["name"]
     ...     .as_alias("technician_name")
     ... ).output(load_json=True)
 
@@ -336,7 +344,7 @@ The ``arrow`` operator can also be used for filtering in a where clause:
 .. code-block:: python
 
     >>> await RecordingStudio.select(RecordingStudio.name).where(
-    ...     RecordingStudio.facilities.arrow('mixing_desk').eq(True)
+    ...     RecordingStudio.facilities['mixing_desk'].eq(True)
     ... )
     [{'name': 'Abbey Road'}]
 
