@@ -2322,15 +2322,12 @@ class JSON(Column):
 
     ###########################################################################
 
-    def arrow(self, key: t.Union[str, int]) -> Arrow:
+    def arrow(self, key: t.Union[str, int, QueryString]) -> Arrow:
         """
-        Allows part of the JSON structure to be returned - for example,
-        for ``{"a": 1}``, and a key value of ``"a"``, then 1 will be returned.
-
-        It can be used multiple levels deep::
+        Allows part of the JSON structure to be returned - for example::
 
             >>> await RecordingStudio.select(
-            ...     RecordingStudio.facilities.arrow("facilities.guitars")
+            ...     RecordingStudio.facilities.arrow("restaurant")
             ... )
 
         """
