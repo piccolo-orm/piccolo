@@ -70,7 +70,7 @@ from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import ColumnMeta
-    from piccolo.query.functions.json import Arrow
+    from piccolo.query.operators.json import Arrow
     from piccolo.table import Table
 
 
@@ -2334,7 +2334,7 @@ class JSON(Column):
             ... )
 
         """
-        from piccolo.query.functions.json import Arrow
+        from piccolo.query.operators.json import Arrow
 
         alias = self._alias or self._meta.get_default_alias()
         return Arrow(identifier=self, key=key, alias=alias)

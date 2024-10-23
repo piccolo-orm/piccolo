@@ -13,12 +13,7 @@ class Arrow(QueryString):
     """
     Allows you to drill into a JSON object.
 
-    Arrow isn't really a function - it's an operator (i.e. ``->``), but for
-    Piccolo's purposes it works basically the same.
-
-    In the future we might move this to a different folder. For that reason,
-    don't use it directly - use the arrow function on ``JSON`` and ``JSONB``
-    columns.
+    You can access via the arrow function on ``JSON`` and ``JSONB`` columns.
 
     """
 
@@ -61,11 +56,11 @@ class Arrow(QueryString):
             ...         "instruments"
             ...     ).arrow(
             ...         "drum_kit"
-            ...     ).as_alias("drum_kit")
+            ...     ).as_alias("drum_kits")
             ... ).output(load_json=True)
             [
-                {'name': 'Abbey Road', 'drum_kit': 2},
-                {'name': 'Electric Lady', 'drum_kit': 3}
+                {'name': 'Abbey Road', 'drum_kits': 2},
+                {'name': 'Electric Lady', 'drum_kits': 3}
             ]
 
         """

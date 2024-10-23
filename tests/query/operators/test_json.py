@@ -1,5 +1,5 @@
 from piccolo.columns import JSONB
-from piccolo.query.functions.json import Arrow
+from piccolo.query.operators.json import Arrow
 from piccolo.table import Table
 from piccolo.testing.test_case import AsyncTableTest
 from tests.base import engines_skip

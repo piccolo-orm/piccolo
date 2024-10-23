@@ -5,7 +5,7 @@ from time import time
 
 from piccolo.columns.column_types import JSON, JSONB
 from piccolo.custom_types import QueryResponseType, TableInstance
-from piccolo.query.functions.json import Arrow
+from piccolo.query.operators.json import Arrow
 from piccolo.query.mixins import ColumnsDelegate
 from piccolo.querystring import QueryString
 from piccolo.utils.encoding import load_json
