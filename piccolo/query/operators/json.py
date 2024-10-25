@@ -13,6 +13,22 @@ if t.TYPE_CHECKING:
 class JSONQueryString(QueryString):
 
     def clean_value(self, value: t.Any):
+        """
+        We need to pass a valid JSON string to Postgres.
+
+        There are lots of different use cases to account for::
+
+            # A JSON string is passed in - in which case, leave it.
+            RecordingStudio.facilities == '{"mixing_desk": true}'
+
+            # A Python dict is passed in - we need to convert this to JSON.
+            RecordingStudio.facilities == {"mixing_desk": True}
+
+            # A string is passed in, but it isn't valid JSON, so we need to
+            # convert it to a JSON string (i.e. '"Alice Jones"').
+            RecordingStudio.facilities["technicians"][0]["name"] == "Alice Jones"
+
+        """  # noqa: E501
         if isinstance(value, QueryString):
             return value
         elif isinstance(value, str):
