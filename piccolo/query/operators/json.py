@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import json
 import typing as t
 
 from piccolo.querystring import QueryString
-from piccolo.utils.encoding import dump_json
+from piccolo.utils.encoding import dump_json, load_json
 
 if t.TYPE_CHECKING:
     from piccolo.columns.column_types import JSON
@@ -12,9 +13,18 @@ if t.TYPE_CHECKING:
 class JSONQueryString(QueryString):
 
     def clean_value(self, value: t.Any):
-        if not isinstance(value, QueryString):
-            value = dump_json(value)
-        return value
+        if isinstance(value, QueryString):
+            return value
+        elif isinstance(value, str):
+            # The string might already be valid JSON, in which case, leave it.
+            try:
+                load_json(value)
+            except json.JSONDecodeError:
+                pass
+            else:
+                return value
+
+        return dump_json(value)
 
     def __eq__(self, value) -> QueryString:  # type: ignore[override]
         value = self.clean_value(value)
