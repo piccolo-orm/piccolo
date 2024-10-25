@@ -12,7 +12,7 @@ if t.TYPE_CHECKING:
 class JSONQueryString(QueryString):
 
     def clean_value(self, value: t.Any):
-        if not isinstance(value, (str, QueryString)):
+        if not isinstance(value, QueryString):
             value = dump_json(value)
         return value
 
