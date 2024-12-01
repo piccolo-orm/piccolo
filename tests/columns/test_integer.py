@@ -1,12 +1,14 @@
 from piccolo.columns.column_types import Integer
 from piccolo.table import Table
 from piccolo.testing.test_case import AsyncTableTest
+from tests.base import sqlite_only
 
 
 class MyTable(Table):
     integer = Integer()
 
 
+@sqlite_only
 class TestInteger(AsyncTableTest):
     tables = [MyTable]
 
