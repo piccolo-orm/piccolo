@@ -175,7 +175,7 @@ def convert_int_out(value: str) -> int:
     """
     Make sure Integer values are actually of type int.
     """
-    return int(float(value))
+    return int(value)
 
 
 @decode_to_string
