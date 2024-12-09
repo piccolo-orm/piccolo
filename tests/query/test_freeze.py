@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from unittest import mock
 
 from piccolo.columns import Integer, Varchar
-from piccolo.query.base import Query
+from piccolo.query.base import FrozenQuery, Query
 from piccolo.table import Table
 from tests.base import AsyncMock, DBTestCase, sqlite_only
 from tests.example_apps.music.tables import Band
@@ -12,12 +12,12 @@ from tests.example_apps.music.tables import Band
 
 @dataclass
 class QueryResponse:
-    query: Query
+    query: t.Union[Query, FrozenQuery]
     response: t.Any
 
 
 class TestFreeze(DBTestCase):
-    def test_frozen_select_queries(self):
+    def test_frozen_select_queries(self) -> None:
         """
         Make sure a variety of select queries work as expected when frozen.
         """

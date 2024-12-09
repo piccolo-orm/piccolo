@@ -20,7 +20,6 @@ class UpdateError(Exception):
 
 
 class Update(Query[TableInstance, t.List[t.Any]]):
-
     __slots__ = (
         "force",
         "returning_delegate",
@@ -41,7 +40,9 @@ class Update(Query[TableInstance, t.List[t.Any]]):
     # Clauses
 
     def values(
-        self, values: t.Dict[t.Union[Column, str], t.Any] = None, **kwargs
+        self,
+        values: t.Optional[t.Dict[t.Union[Column, str], t.Any]] = None,
+        **kwargs,
     ) -> Update:
         if values is None:
             values = {}
@@ -49,7 +50,7 @@ class Update(Query[TableInstance, t.List[t.Any]]):
         self.values_delegate.values(values)
         return self
 
-    def where(self, *where: Combinable) -> Update:
+    def where(self, *where: t.Union[Combinable, QueryString]) -> Update:
         self.where_delegate.where(*where)
         return self
 
@@ -90,7 +91,7 @@ class Update(Query[TableInstance, t.List[t.Any]]):
             for col, _ in self.values_delegate._values.items()
         )
 
-        query = f"UPDATE {self.table._meta.tablename} SET {columns_str}"
+        query = f"UPDATE {self.table._meta.get_formatted_tablename()} SET {columns_str}"  # noqa: E501
 
         querystring = QueryString(
             query, *self.values_delegate.get_sql_values()

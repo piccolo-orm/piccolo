@@ -8,8 +8,9 @@ from piccolo.utils.sync import run_sync
 
 
 class Runnable(Protocol):
-    async def run(self, node: t.Optional[str] = None, in_pool: bool = True):
-        ...
+    async def run(
+        self, node: t.Optional[str] = None, in_pool: bool = True
+    ): ...
 
 
 QueryType = t.TypeVar("QueryType", bound=Runnable)

@@ -5,7 +5,10 @@ Select
 
 .. hint:: Follow along by installing Piccolo and running ``piccolo playground run`` - see :ref:`Playground`.
 
-To get all rows:
+Columns
+-------
+
+To get all columns:
 
 .. code-block:: python
 
@@ -165,18 +168,54 @@ convenient.
 
 -------------------------------------------------------------------------------
 
+String functions
+----------------
+
+Piccolo has lots of string functions built-in. See
+``piccolo/query/functions/string.py``. Here's an example using ``Upper``, to
+convert values to uppercase:
+
+.. code-block:: python
+
+    from piccolo.query.functions.string import Upper
+
+    >> await Band.select(Upper(Band.name, alias='name'))
+    [{'name': 'PYTHONISTAS'}, ...]
+
+You can also use these within where clauses:
+
+.. code-block:: python
+
+    from piccolo.query.functions.string import Upper
+
+    >> await Band.select(Band.name).where(Upper(Band.manager.name) == 'GUIDO')
+    [{'name': 'Pythonistas'}]
+
+-------------------------------------------------------------------------------
+
+.. _AggregateFunctions:
+
 Aggregate functions
 -------------------
+
+.. note:: These can all be used in conjunction with the :ref:`group_by` clause.
 
 Count
 ~~~~~
 
-Returns the number of rows which match the query:
+.. hint:: You can use the :ref:`count<Count>` query as a quick way of getting
+    the number of rows in a table.
+
+Returns the number of matching rows.
 
 .. code-block:: python
 
-    >>> await Band.count().where(Band.name == 'Pythonistas')
-    1
+    from piccolo.query.functions.aggregate import Count
+
+    >> await Band.select(Count()).where(Band.popularity > 100)
+    [{'count': 3}]
+
+To find out more about the options available, see :class:`Count <piccolo.query.methods.select.Count>`.
 
 Avg
 ~~~
@@ -185,7 +224,7 @@ Returns the average for a given column:
 
 .. code-block:: python
 
-    >>> from piccolo.query import Avg
+    >>> from piccolo.query.functions.aggregate import Avg
     >>> response = await Band.select(Avg(Band.popularity)).first()
     >>> response["avg"]
     750.0
@@ -197,7 +236,7 @@ Returns the sum for a given column:
 
 .. code-block:: python
 
-    >>> from piccolo.query import Sum
+    >>> from piccolo.query.functions.aggregate import Sum
     >>> response = await Band.select(Sum(Band.popularity)).first()
     >>> response["sum"]
     1500
@@ -209,7 +248,7 @@ Returns the maximum for a given column:
 
 .. code-block:: python
 
-    >>> from piccolo.query import Max
+    >>> from piccolo.query.functions.aggregate import Max
     >>> response = await Band.select(Max(Band.popularity)).first()
     >>> response["max"]
     1000
@@ -221,7 +260,7 @@ Returns the minimum for a given column:
 
 .. code-block:: python
 
-    >>> from piccolo.query import Min
+    >>> from piccolo.query.functions.aggregate import Min
     >>> response = await Band.select(Min(Band.popularity)).first()
     >>> response["min"]
     500
@@ -233,7 +272,7 @@ You also can have multiple different aggregate functions in one query:
 
 .. code-block:: python
 
-    >>> from piccolo.query import Avg, Sum
+    >>> from piccolo.query.functions.aggregate import Avg, Sum
     >>> response = await Band.select(
     ...     Avg(Band.popularity),
     ...     Sum(Band.popularity)
@@ -339,6 +378,12 @@ limit
 ~~~~~
 
 See :ref:`limit`.
+
+
+lock_rows
+~~~~~~~~~
+
+See :ref:`lock_rows`.
 
 offset
 ~~~~~~

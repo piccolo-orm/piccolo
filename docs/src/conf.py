@@ -48,7 +48,10 @@ master_doc = "index"
 
 # -- Intersphinx -------------------------------------------------------------
 
-intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "piccolo_api": ("https://piccolo-api.readthedocs.io/en/latest/", None),
+}
 extensions += ["sphinx.ext.intersphinx"]
 
 # -- Autodoc -----------------------------------------------------------------
@@ -64,7 +67,11 @@ html_theme = "piccolo_theme"
 html_short_title = "Piccolo"
 html_show_sphinx = False
 globaltoc_maxdepth = 3
-html_theme_options = {"source_url": "https://github.com/piccolo-orm/piccolo/"}
+html_theme_options = {
+    "source_url": "https://github.com/piccolo-orm/piccolo/",
+    "banner_text": 'Piccolo Admin now supports <a href="https://piccolo-orm.com/blog/piccolo-admin-multi-factor-authentication-now-available/">Multi-factor Authentication</a>!',  # noqa : E501
+    "banner_hiding": "permanent",
+}
 
 # -- Options for HTMLHelp output ---------------------------------------------
 

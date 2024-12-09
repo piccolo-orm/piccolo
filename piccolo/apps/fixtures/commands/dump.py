@@ -62,7 +62,7 @@ async def dump_to_json_string(
     pydantic_model = create_pydantic_fixture_model(
         fixture_configs=fixture_configs
     )
-    return pydantic_model(**dump).json()
+    return pydantic_model(**dump).model_dump_json(indent=4)
 
 
 def parse_args(apps: str, tables: str) -> t.List[FixtureConfig]:

@@ -7,6 +7,7 @@ from piccolo.columns import (
     ForeignKey,
     Integer,
     Numeric,
+    Serial,
     Text,
     Varchar,
 )
@@ -21,6 +22,7 @@ engine = engine_finder()
 
 
 class Manager(Table):
+    id: Serial
     name = Varchar(length=50)
 
     @classmethod
@@ -29,6 +31,7 @@ class Manager(Table):
 
 
 class Band(Table):
+    id: Serial
     name = Varchar(length=50)
     manager = ForeignKey(Manager, null=True)
     popularity = (
@@ -47,6 +50,7 @@ class Band(Table):
 
 
 class Venue(Table):
+    id: Serial
     name = Varchar(length=100)
     capacity = Integer(default=0, secret=True)
 
@@ -56,6 +60,7 @@ class Venue(Table):
 
 
 class Concert(Table):
+    id: Serial
     band_1 = ForeignKey(Band)
     band_2 = ForeignKey(Band)
     venue = ForeignKey(Venue)
@@ -74,6 +79,7 @@ class Concert(Table):
 
 
 class Ticket(Table):
+    id: Serial
     concert = ForeignKey(Concert)
     price = Numeric(digits=(5, 2))
 
@@ -83,6 +89,7 @@ class Poster(Table, tags=["special"]):
     Has tags for tests which need it.
     """
 
+    id: Serial
     content = Text()
 
 
@@ -96,6 +103,7 @@ class Shirt(Table):
         medium = "m"
         large = "l"
 
+    id: Serial
     size = Varchar(length=1, choices=Size, default=Size.large)
 
 
@@ -104,5 +112,16 @@ class RecordingStudio(Table):
     Used for testing JSON and JSONB columns.
     """
 
+    id: Serial
     facilities = JSON()
     facilities_b = JSONB()
+
+
+class Instrument(Table):
+    """
+    Used for testing foreign keys to a table with a JSON column.
+    """
+
+    id: Serial
+    name = Varchar()
+    recording_studio = ForeignKey(RecordingStudio)

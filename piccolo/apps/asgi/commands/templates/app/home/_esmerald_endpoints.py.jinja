@@ -1,7 +1,8 @@
 import os
 
 import jinja2
-from xpresso.responses import HTMLResponse
+from esmerald import Request, Response, get
+from esmerald.responses import HTMLResponse
 
 ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(
@@ -10,11 +11,10 @@ ENVIRONMENT = jinja2.Environment(
 )
 
 
-async def home():
+@get(path="/", include_in_schema=False)
+def home(request: Request) -> HTMLResponse:
     template = ENVIRONMENT.get_template("home.html.jinja")
 
-    content = template.render(
-        title="Piccolo + ASGI",
-    )
+    content = template.render(title="Piccolo + ASGI",)
 
     return HTMLResponse(content)

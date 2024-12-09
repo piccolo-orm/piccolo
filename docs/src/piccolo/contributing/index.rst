@@ -36,6 +36,7 @@ Get the tests running
 * Install default dependencies: ``pip install -r requirements/requirements.txt``
 * Install development dependencies: ``pip install -r requirements/dev-requirements.txt``
 * Install test dependencies: ``pip install -r requirements/test-requirements.txt``
+* Install database drivers: ``pip install -r requirements/extras/postgres.txt -r requirements/extras/sqlite.txt``
 * Setup Postgres, and make sure a database called ``piccolo`` exists (see ``tests/postgres_conf.py``).
 * Run the automated code linting/formatting tools: ``./scripts/lint.sh``
 * Run the test suite with Postgres: ``./scripts/test-postgres.sh``

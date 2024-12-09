@@ -35,9 +35,13 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from enum import Enum
 
-from typing_extensions import Literal
-
-from piccolo.columns.base import Column, ForeignKeyMeta, OnDelete, OnUpdate
+from piccolo.columns.base import (
+    Column,
+    ForeignKeyMeta,
+    OnDelete,
+    OnUpdate,
+    ReferencedTable,
+)
 from piccolo.columns.combination import Where
 from piccolo.columns.defaults.date import DateArg, DateCustom, DateNow
 from piccolo.columns.defaults.interval import IntervalArg, IntervalCustom
@@ -53,15 +57,23 @@ from piccolo.columns.defaults.timestamptz import (
     TimestamptzNow,
 )
 from piccolo.columns.defaults.uuid import UUID4, UUIDArg
-from piccolo.columns.operators.comparison import ArrayAll, ArrayAny
+from piccolo.columns.operators.comparison import (
+    ArrayAll,
+    ArrayAny,
+    ArrayNotAny,
+)
 from piccolo.columns.operators.string import Concat
 from piccolo.columns.reference import LazyTableReference
-from piccolo.querystring import QueryString, Unquoted
+from piccolo.querystring import QueryString
 from piccolo.utils.encoding import dump_json
 from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import ColumnMeta
+    from piccolo.query.operators.json import (
+        GetChildElement,
+        GetElementFromPath,
+    )
     from piccolo.table import Table
 
 
@@ -78,46 +90,37 @@ class ConcatDelegate:
 
     def get_querystring(
         self,
-        column_name: str,
-        value: t.Union[str, Varchar, Text],
+        column: Column,
+        value: t.Union[str, Column, QueryString],
         reverse: bool = False,
     ) -> QueryString:
-        if isinstance(value, (Varchar, Text)):
-            column: Column = value
+        """
+        :param reverse:
+            By default the value is appended to the column's value. If
+            ``reverse=True`` then the value is prepended to the column's
+            value instead.
+
+        """
+        if isinstance(value, Column):
             if len(column._meta.call_chain) > 0:
                 raise ValueError(
                     "Adding values across joins isn't currently supported."
                 )
-            other_column_name = column._meta.db_column_name
-            if reverse:
-                return QueryString(
-                    Concat.template.format(
-                        value_1=other_column_name, value_2=column_name
-                    )
-                )
-            else:
-                return QueryString(
-                    Concat.template.format(
-                        value_1=column_name, value_2=other_column_name
-                    )
-                )
         elif isinstance(value, str):
-            if reverse:
-                value_1 = QueryString("CAST({} AS text)", value)
-                return QueryString(
-                    Concat.template.format(value_1="{}", value_2=column_name),
-                    value_1,
-                )
-            else:
-                value_2 = QueryString("CAST({} AS text)", value)
-                return QueryString(
-                    Concat.template.format(value_1=column_name, value_2="{}"),
-                    value_2,
-                )
-        else:
+            value = QueryString("CAST({} AS TEXT)", value)
+        elif not isinstance(value, QueryString):
             raise ValueError(
-                "Only str, Varchar columns, and Text columns can be added."
+                "Only str, Column and QueryString values can be added."
             )
+
+        args = [value, column] if reverse else [column, value]
+
+        # We use the concat operator instead of the concat function, because
+        # this is what we historically used, and they treat null values
+        # differently.
+        return QueryString(
+            Concat.template.format(value_1="{}", value_2="{}"), *args
+        )
 
 
 class MathDelegate:
@@ -131,7 +134,7 @@ class MathDelegate:
     def get_querystring(
         self,
         column_name: str,
-        operator: Literal["+", "-", "/", "*"],
+        operator: t.Literal["+", "-", "/", "*"],
         value: t.Union[int, float, Integer],
         reverse: bool = False,
     ) -> QueryString:
@@ -227,7 +230,7 @@ class TimedeltaDelegate:
     def get_querystring(
         self,
         column: Column,
-        operator: Literal["+", "-"],
+        operator: t.Literal["+", "-"],
         value: timedelta,
         engine_type: str,
     ) -> QueryString:
@@ -332,12 +335,13 @@ class Varchar(Column):
 
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.db_column_name, value=value
+            column=self,
+            value=value,
         )
 
     def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.db_column_name,
+            column=self,
             value=value,
             reverse=True,
         )
@@ -346,12 +350,10 @@ class Varchar(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> str:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> str: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Varchar:
-        ...
+    def __get__(self, obj: None, objtype=None) -> Varchar: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -365,7 +367,7 @@ class Email(Varchar):
     Used for storing email addresses. It's identical to :class:`Varchar`,
     except when using :func:`create_pydantic_model <piccolo.utils.pydantic.create_pydantic_model>` -
     we add email validation to the Pydantic model. This means that :ref:`PiccoloAdmin`
-    also validates emails addresses.
+    also validates email addresses.
     """  # noqa: E501
 
     pass
@@ -385,12 +387,10 @@ class Secret(Varchar):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> str:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> str: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Secret:
-        ...
+    def __get__(self, obj: None, objtype=None) -> Secret: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -438,12 +438,13 @@ class Text(Column):
 
     def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.db_column_name, value=value
+            column=self,
+            value=value,
         )
 
     def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.db_column_name,
+            column=self,
             value=value,
             reverse=True,
         )
@@ -452,12 +453,10 @@ class Text(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> str:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> str: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Text:
-        ...
+    def __get__(self, obj: None, objtype=None) -> Text: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -517,12 +516,10 @@ class UUID(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> uuid.UUID:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> uuid.UUID: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> UUID:
-        ...
+    def __get__(self, obj: None, objtype=None) -> UUID: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -637,12 +634,10 @@ class Integer(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> int:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> int: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Integer:
-        ...
+    def __get__(self, obj: None, objtype=None) -> Integer: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -678,9 +673,7 @@ class BigInt(Integer):
 
     """
 
-    @property
-    def column_type(self):
-        engine_type = self._meta.engine_type
+    def _get_column_type(self, engine_type: str):
         if engine_type == "postgres":
             return "BIGINT"
         elif engine_type == "cockroach":
@@ -689,16 +682,18 @@ class BigInt(Integer):
             return "INTEGER"
         raise Exception("Unrecognized engine type")
 
+    @property
+    def column_type(self):
+        return self._get_column_type(engine_type=self._meta.engine_type)
+
     ###########################################################################
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> int:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> int: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> BigInt:
-        ...
+    def __get__(self, obj: None, objtype=None) -> BigInt: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -743,12 +738,10 @@ class SmallInt(Integer):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> int:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> int: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> SmallInt:
-        ...
+    def __get__(self, obj: None, objtype=None) -> SmallInt: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -760,8 +753,8 @@ class SmallInt(Integer):
 ###############################################################################
 
 
-DEFAULT = Unquoted("DEFAULT")
-NULL = Unquoted("null")
+DEFAULT = QueryString("DEFAULT")
+NULL = QueryString("null")
 
 
 class Serial(Column):
@@ -786,7 +779,7 @@ class Serial(Column):
         if engine_type == "postgres":
             return DEFAULT
         elif engine_type == "cockroach":
-            return Unquoted("unique_rowid()")
+            return QueryString("unique_rowid()")
         elif engine_type == "sqlite":
             return NULL
         raise Exception("Unrecognized engine type")
@@ -795,12 +788,10 @@ class Serial(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> int:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> int: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Serial:
-        ...
+    def __get__(self, obj: None, objtype=None) -> Serial: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -829,12 +820,10 @@ class BigSerial(Serial):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> int:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> int: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> BigSerial:
-        ...
+    def __get__(self, obj: None, objtype=None) -> BigSerial: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -864,12 +853,10 @@ class PrimaryKey(Serial):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> int:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> int: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> PrimaryKey:
-        ...
+    def __get__(self, obj: None, objtype=None) -> PrimaryKey: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -954,12 +941,10 @@ class Timestamp(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> datetime:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> datetime: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Timestamp:
-        ...
+    def __get__(self, obj: None, objtype=None) -> Timestamp: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1001,6 +986,11 @@ class Timestamptz(Column):
     """
 
     value_type = datetime
+
+    # Currently just used by ModelBuilder, to know that we want a timezone
+    # aware datetime.
+    tz_aware = True
+
     timedelta_delegate = TimedeltaDelegate()
 
     def __init__(
@@ -1046,12 +1036,10 @@ class Timestamptz(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> datetime:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> datetime: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Timestamptz:
-        ...
+    def __get__(self, obj: None, objtype=None) -> Timestamptz: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1126,12 +1114,10 @@ class Date(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> date:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> date: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Date:
-        ...
+    def __get__(self, obj: None, objtype=None) -> Date: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1203,12 +1189,10 @@ class Time(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> time:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> time: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Time:
-        ...
+    def __get__(self, obj: None, objtype=None) -> Time: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1294,12 +1278,10 @@ class Interval(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> timedelta:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> timedelta: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Interval:
-        ...
+    def __get__(self, obj: None, objtype=None) -> Interval: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1388,12 +1370,10 @@ class Boolean(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> bool:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> bool: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Boolean:
-        ...
+    def __get__(self, obj: None, objtype=None) -> Boolean: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1491,12 +1471,10 @@ class Numeric(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> decimal.Decimal:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> decimal.Decimal: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Numeric:
-        ...
+    def __get__(self, obj: None, objtype=None) -> Numeric: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1514,12 +1492,10 @@ class Decimal(Numeric):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> decimal.Decimal:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> decimal.Decimal: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Decimal:
-        ...
+    def __get__(self, obj: None, objtype=None) -> Decimal: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1565,12 +1541,10 @@ class Real(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> float:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> float: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Real:
-        ...
+    def __get__(self, obj: None, objtype=None) -> Real: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1588,12 +1562,10 @@ class Float(Real):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> float:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> float: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Float:
-        ...
+    def __get__(self, obj: None, objtype=None) -> Float: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1615,12 +1587,10 @@ class DoublePrecision(Real):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> float:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> float: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> DoublePrecision:
-        ...
+    def __get__(self, obj: None, objtype=None) -> DoublePrecision: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -1637,7 +1607,7 @@ class ForeignKeySetupResponse:
     is_lazy: bool
 
 
-class ForeignKey(Column):
+class ForeignKey(Column, t.Generic[ReferencedTable]):
     """
     Used to reference another table. Uses the same type as the primary key
     column on the table it references.
@@ -1784,7 +1754,7 @@ class ForeignKey(Column):
 
     :param on_update:
         Determines what the database should do when a row has it's primary key
-        updated. If set to ``OnDelete.cascade``, any rows referencing the
+        updated. If set to ``OnUpdate.cascade``, any rows referencing the
         updated row will have their references updated to point to the new
         primary key.
 
@@ -1800,7 +1770,7 @@ class ForeignKey(Column):
 
         .. code-block:: python
 
-            from piccolo.columns import OnDelete
+            from piccolo.columns import OnUpdate
 
             class Band(Table):
                 name = ForeignKey(
@@ -1832,10 +1802,12 @@ class ForeignKey(Column):
         column of the table being referenced.
         """
         target_column = self._foreign_key_meta.resolved_target_column
-        engine_type = self._meta.engine_type
-        if engine_type == "cockroach":
-            return target_column.column_type
-        if isinstance(target_column, Serial):
+
+        if isinstance(target_column, BigSerial):
+            return BigInt()._get_column_type(
+                engine_type=self._meta.engine_type
+            )
+        elif isinstance(target_column, Serial):
             return Integer().column_type
         else:
             return target_column.column_type
@@ -1848,9 +1820,45 @@ class ForeignKey(Column):
         target_column = self._foreign_key_meta.resolved_target_column
         return target_column.value_type
 
+    @t.overload
     def __init__(
         self,
-        references: t.Union[t.Type[Table], LazyTableReference, str],
+        references: t.Type[ReferencedTable],
+        default: t.Any = None,
+        null: bool = True,
+        on_delete: OnDelete = OnDelete.cascade,
+        on_update: OnUpdate = OnUpdate.cascade,
+        target_column: t.Union[str, Column, None] = None,
+        **kwargs,
+    ) -> None: ...
+
+    @t.overload
+    def __init__(
+        self,
+        references: LazyTableReference,
+        default: t.Any = None,
+        null: bool = True,
+        on_delete: OnDelete = OnDelete.cascade,
+        on_update: OnUpdate = OnUpdate.cascade,
+        target_column: t.Union[str, Column, None] = None,
+        **kwargs,
+    ) -> None: ...
+
+    @t.overload
+    def __init__(
+        self,
+        references: str,
+        default: t.Any = None,
+        null: bool = True,
+        on_delete: OnDelete = OnDelete.cascade,
+        on_update: OnUpdate = OnUpdate.cascade,
+        target_column: t.Union[str, Column, None] = None,
+        **kwargs,
+    ) -> None: ...
+
+    def __init__(
+        self,
+        references: t.Union[t.Type[ReferencedTable], LazyTableReference, str],
         default: t.Any = None,
         null: bool = True,
         on_delete: OnDelete = OnDelete.cascade,
@@ -1861,7 +1869,6 @@ class ForeignKey(Column):
         from piccolo.table import Table
 
         if inspect.isclass(references):
-            references = t.cast(t.Type, references)
             if issubclass(references, Table):
                 # Using this to validate the default value - will raise a
                 # ValueError if incorrect.
@@ -1946,7 +1953,9 @@ class ForeignKey(Column):
 
         if is_table_class:
             # Record the reverse relationship on the target table.
-            references._meta._foreign_key_references.append(self)
+            t.cast(
+                t.Type[Table], references
+            )._meta._foreign_key_references.append(self)
 
             # Allow columns on the referenced table to be accessed via
             # auto completion.
@@ -1961,7 +1970,7 @@ class ForeignKey(Column):
         return column
 
     def all_columns(
-        self, exclude: t.List[t.Union[Column, str]] = None
+        self, exclude: t.Optional[t.List[t.Union[Column, str]]] = None
     ) -> t.List[Column]:
         """
         Allow a user to access all of the columns on the related table. This is
@@ -2011,8 +2020,63 @@ class ForeignKey(Column):
             if column._meta.name not in excluded_column_names
         ]
 
+    def reverse(self) -> ForeignKey:
+        """
+        If there's a unique foreign key, this function reverses it.
+
+        .. code-block:: python
+
+            class Band(Table):
+                name = Varchar()
+
+            class FanClub(Table):
+                band = ForeignKey(Band, unique=True)
+                address = Text()
+
+            class Treasurer(Table):
+                fan_club = ForeignKey(FanClub, unique=True)
+                name = Varchar()
+
+        It's helpful with ``get_related``, for example:
+
+        .. code-block:: python
+
+            >>> band = await Band.objects().first()
+            >>> await band.get_related(FanClub.band.reverse())
+            <Fan Club: 1>
+
+        It works multiple levels deep:
+
+        .. code-block:: python
+
+            >>> await band.get_related(Treasurer.fan_club._.band.reverse())
+            <Treasurer: 1>
+
+        """
+        if not self._meta.unique or any(
+            not i._meta.unique for i in self._meta.call_chain
+        ):
+            raise ValueError("Only reverse unique foreign keys.")
+
+        foreign_keys = [*self._meta.call_chain, self]
+
+        root_foreign_key = foreign_keys[0]
+        target_column = (
+            root_foreign_key._foreign_key_meta.resolved_target_column
+        )
+        foreign_key = target_column.join_on(root_foreign_key)
+
+        call_chain = []
+        for fk in reversed(foreign_keys[1:]):
+            target_column = fk._foreign_key_meta.resolved_target_column
+            call_chain.append(target_column.join_on(fk))
+
+        foreign_key._meta.call_chain = call_chain
+
+        return foreign_key
+
     def all_related(
-        self, exclude: t.List[t.Union[ForeignKey, str]] = None
+        self, exclude: t.Optional[t.List[t.Union[ForeignKey, str]]] = None
     ) -> t.List[ForeignKey]:
         """
         Returns each ``ForeignKey`` column on the related table. This is
@@ -2067,7 +2131,7 @@ class ForeignKey(Column):
             if fk_column._meta.name not in excluded_column_names
         ]
 
-    def set_proxy_columns(self):
+    def set_proxy_columns(self) -> None:
         """
         In order to allow a fluent interface, where tables can be traversed
         using ForeignKeys (e.g. ``Band.manager.name``), we add attributes to
@@ -2080,6 +2144,40 @@ class ForeignKey(Column):
             setattr(self, _column._meta.name, _column)
             _fk_meta.proxy_columns.append(_column)
 
+    @property
+    def _(self) -> t.Type[ReferencedTable]:
+        """
+        This allows us specify joins in a way which is friendly to static type
+        checkers like Mypy and Pyright.
+
+        Whilst this works::
+
+            # Fetch the band's name, and their manager's name via a foreign
+            # key:
+            await Band.select(Band.name, Band.manager.name)
+
+        There currently isn't a 100% reliable way to tell static type checkers
+        that ``Band.manager.name`` refers to a ``name`` column on the
+        ``Manager`` table.
+
+        However, by using the ``_`` property, it works perfectly. Instead
+        of ``Band.manager.name`` we use ``Band.manager._.name``::
+
+            await Band.select(Band.name, Band.manager._.name)
+
+        So when doing joins, after every foreign key we use ``._.`` instead of
+        ``.``. An easy way to remember this is ``._.`` looks a bit like a
+        connector in a diagram.
+
+        As Python's typing support increases, we'd love ``Band.manager.name``
+        to have the same static typing as ``Band.manager._.name`` (using some
+        kind of ``Proxy`` type), but for now this is the best solution, and is
+        a huge improvement in developer experience, as static type checkers
+        easily know if any of your joins contain typos.
+
+        """
+        return t.cast(t.Type[ReferencedTable], self)
+
     def __getattribute__(self, name: str) -> t.Union[Column, t.Any]:
         """
         Returns attributes unmodified unless they're Column instances, in which
@@ -2087,9 +2185,9 @@ class ForeignKey(Column):
         joins required).
         """
         # If the ForeignKey is using a lazy reference, we need to set the
-        # attributes here. Attributes starting with a double underscore are
+        # attributes here. Attributes starting with an underscore are
         # unlikely to be column names.
-        if not name.startswith("__"):
+        if not name.startswith("_") and name not in dir(self):
             try:
                 _foreign_key_meta = object.__getattribute__(
                     self, "_foreign_key_meta"
@@ -2102,10 +2200,10 @@ class ForeignKey(Column):
                 ):
                     object.__getattribute__(self, "set_proxy_columns")()
 
-        try:
-            value = object.__getattribute__(self, name)
-        except AttributeError:
-            raise AttributeError
+        value = object.__getattribute__(self, name)
+
+        if name.startswith("_"):
+            return value
 
         foreignkey_class: t.Type[ForeignKey] = object.__getattribute__(
             self, "__class__"
@@ -2151,6 +2249,7 @@ class ForeignKey(Column):
             column_meta: ColumnMeta = object.__getattribute__(self, "_meta")
 
             new_column._meta.call_chain = column_meta.call_chain.copy()
+
             new_column._meta.call_chain.append(self)
             return new_column
         else:
@@ -2160,16 +2259,15 @@ class ForeignKey(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> t.Any:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> t.Any: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> ForeignKey:
-        ...
+    def __get__(
+        self, obj: None, objtype=None
+    ) -> ForeignKey[ReferencedTable]: ...
 
     @t.overload
-    def __get__(self, obj: t.Any, objtype=None) -> t.Any:
-        ...
+    def __get__(self, obj: t.Any, objtype=None) -> t.Any: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -2226,15 +2324,83 @@ class JSON(Column):
             return "JSON"
 
     ###########################################################################
+
+    def arrow(self, key: t.Union[str, int, QueryString]) -> GetChildElement:
+        """
+        Allows a child element of the JSON structure to be returned - for
+        example::
+
+            >>> await RecordingStudio.select(
+            ...     RecordingStudio.facilities.arrow("restaurant")
+            ... )
+
+        """
+        from piccolo.query.operators.json import GetChildElement
+
+        alias = self._alias or self._meta.get_default_alias()
+        return GetChildElement(identifier=self, key=key, alias=alias)
+
+    def __getitem__(
+        self, value: t.Union[str, int, QueryString]
+    ) -> GetChildElement:
+        """
+        A shortcut for the ``arrow`` method, used for retrieving a child
+        element.
+
+        For example:
+
+        .. code-block:: python
+
+            >>> await RecordingStudio.select(
+            ...     RecordingStudio.facilities["restaurant"]
+            ... )
+
+        """
+        return self.arrow(key=value)
+
+    def from_path(
+        self,
+        path: t.List[t.Union[str, int]],
+    ) -> GetElementFromPath:
+        """
+        Allows an element of the JSON structure to be returned, which can be
+        arbitrarily deep. For example::
+
+            >>> await RecordingStudio.select(
+            ...     RecordingStudio.facilities.from_path([
+            ...         "technician",
+            ...         0,
+            ...         "first_name"
+            ...     ])
+            ... )
+
+        It's the same as calling ``arrow`` multiple times, but is more
+        efficient / convenient if extracting highly nested data::
+
+            >>> await RecordingStudio.select(
+            ...     RecordingStudio.facilities.arrow(
+            ...         "technician"
+            ...     ).arrow(
+            ...         0
+            ...     ).arrow(
+            ...         "first_name"
+            ...     )
+            ... )
+
+        """
+        from piccolo.query.operators.json import GetElementFromPath
+
+        alias = self._alias or self._meta.get_default_alias()
+        return GetElementFromPath(identifier=self, path=path, alias=alias)
+
+    ###########################################################################
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> str:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> str: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> JSON:
-        ...
+    def __get__(self, obj: None, objtype=None) -> JSON: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -2245,10 +2411,10 @@ class JSON(Column):
 
 class JSONB(JSON):
     """
-    Used for storing JSON strings - Postgres only. The data is stored in a
-    binary format, and can be queried. Insertion can be slower (as it needs to
-    be converted to the binary format). The benefits of JSONB generally
-    outweigh the downsides.
+    Used for storing JSON strings - Postgres / CochroachDB only. The data is
+    stored in a binary format, and can be queried more efficiently. Insertion
+    can be slower (as it needs to be converted to the binary format). The
+    benefits of JSONB generally outweigh the downsides.
 
     :param default:
         Either a JSON string can be provided, or a Python ``dict`` or ``list``
@@ -2260,51 +2426,14 @@ class JSONB(JSON):
     def column_type(self):
         return "JSONB"  # Must be defined, we override column_type() in JSON()
 
-    def arrow(self, key: str) -> JSONB:
-        """
-        Allows part of the JSON structure to be returned - for example,
-        for {"a": 1}, and a key value of "a", then 1 will be returned.
-        """
-        instance = t.cast(JSONB, self.copy())
-        instance.json_operator = f"-> '{key}'"
-        return instance
-
-    def get_select_string(
-        self, engine_type: str, with_alias: bool = True
-    ) -> str:
-        select_string = self._meta.get_full_name(with_alias=False)
-
-        if self.json_operator is not None:
-            select_string += f" {self.json_operator}"
-
-        if with_alias:
-            alias = self._alias or self._meta.get_default_alias()
-            select_string += f' AS "{alias}"'
-
-        return select_string
-
-    def eq(self, value) -> Where:
-        """
-        See ``Boolean.eq`` for more details.
-        """
-        return self.__eq__(value)
-
-    def ne(self, value) -> Where:
-        """
-        See ``Boolean.ne`` for more details.
-        """
-        return self.__ne__(value)
-
     ###########################################################################
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> str:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> str: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> JSONB:
-        ...
+    def __get__(self, obj: None, objtype=None) -> JSONB: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -2372,12 +2501,10 @@ class Bytea(Column):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> bytes:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> bytes: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Bytea:
-        ...
+    def __get__(self, obj: None, objtype=None) -> Bytea: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -2395,12 +2522,10 @@ class Blob(Bytea):
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> bytes:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> bytes: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Blob:
-        ...
+    def __get__(self, obj: None, objtype=None) -> Blob: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
@@ -2497,8 +2622,75 @@ class Array(Column):
         if engine_type in ("postgres", "cockroach"):
             return f"{self.base_column.column_type}[]"
         elif engine_type == "sqlite":
-            return "ARRAY"
+            inner_column = self._get_inner_column()
+            return (
+                f"ARRAY_{inner_column.column_type}"
+                if isinstance(
+                    inner_column, (Date, Timestamp, Timestamptz, Time)
+                )
+                else "ARRAY"
+            )
         raise Exception("Unrecognized engine type")
+
+    def _setup_base_column(self, table_class: t.Type[Table]):
+        """
+        Called from the ``Table.__init_subclass__`` - makes sure
+        that the ``base_column`` has a reference to the parent table.
+        """
+        self.base_column._meta._table = table_class
+        if isinstance(self.base_column, Array):
+            self.base_column._setup_base_column(table_class=table_class)
+
+    def _get_dimensions(self, start: int = 0) -> int:
+        """
+        A helper function to get the number of dimensions for the array. For
+        example::
+
+            >>> Array(Varchar())._get_dimensions()
+            1
+
+            >>> Array(Array(Varchar()))._get_dimensions()
+            2
+
+        :param start:
+            Ignore this - it's just used for  calling this method recursively.
+
+        """
+        if isinstance(self.base_column, Array):
+            return self.base_column._get_dimensions(start=start + 1)
+        else:
+            return start + 1
+
+    def _get_inner_column(self) -> Column:
+        """
+        A helper function to get the innermost ``Column`` for the array. For
+        example::
+
+            >>> Array(Varchar())._get_inner_column()
+            Varchar
+
+            >>> Array(Array(Varchar()))._get_inner_column()
+            Varchar
+
+        """
+        if isinstance(self.base_column, Array):
+            return self.base_column._get_inner_column()
+        else:
+            return self.base_column
+
+    def _get_inner_value_type(self) -> t.Type:
+        """
+        A helper function to get the innermost value type for the array. For
+        example::
+
+            >>> Array(Varchar())._get_inner_value_type()
+            str
+
+            >>> Array(Array(Varchar()))._get_inner_value_type()
+            str
+
+        """
+        return self._get_inner_column().value_type
 
     def __getitem__(self, value: int) -> Array:
         """
@@ -2536,7 +2728,9 @@ class Array(Column):
         else:
             raise ValueError("Only integers can be used for indexing.")
 
-    def get_select_string(self, engine_type: str, with_alias=True) -> str:
+    def get_select_string(
+        self, engine_type: str, with_alias=True
+    ) -> QueryString:
         select_string = self._meta.get_full_name(with_alias=False)
 
         if isinstance(self.index, int):
@@ -2546,7 +2740,7 @@ class Array(Column):
             alias = self._alias or self._meta.get_default_alias()
             select_string += f' AS "{alias}"'
 
-        return select_string
+        return QueryString(select_string)
 
     def any(self, value: t.Any) -> Where:
         """
@@ -2563,6 +2757,24 @@ class Array(Column):
             return Where(column=self, value=value, operator=ArrayAny)
         elif engine_type == "sqlite":
             return self.like(f"%{value}%")
+        else:
+            raise ValueError("Unrecognised engine type")
+
+    def not_any(self, value: t.Any) -> Where:
+        """
+        Check if the given value isn't in the array.
+
+        .. code-block:: python
+
+            >>> await Ticket.select().where(Ticket.seat_numbers.not_any(510))
+
+        """
+        engine_type = self._meta.engine_type
+
+        if engine_type in ("postgres", "cockroach"):
+            return Where(column=self, value=value, operator=ArrayNotAny)
+        elif engine_type == "sqlite":
+            return self.not_like(f"%{value}%")
         else:
             raise ValueError("Unrecognised engine type")
 
@@ -2584,7 +2796,7 @@ class Array(Column):
         else:
             raise ValueError("Unrecognised engine type")
 
-    def cat(self, value: t.List[t.Any]) -> QueryString:
+    def cat(self, value: t.Union[t.Any, t.List[t.Any]]) -> QueryString:
         """
         Used in an ``update`` query to append items to an array.
 
@@ -2615,19 +2827,17 @@ class Array(Column):
         db_column_name = self._meta.db_column_name
         return QueryString(f'array_cat("{db_column_name}", {{}})', value)
 
-    def __add__(self, value: t.List[t.Any]) -> QueryString:
+    def __add__(self, value: t.Union[t.Any, t.List[t.Any]]) -> QueryString:
         return self.cat(value)
 
     ###########################################################################
     # Descriptors
 
     @t.overload
-    def __get__(self, obj: Table, objtype=None) -> t.List[t.Any]:
-        ...
+    def __get__(self, obj: Table, objtype=None) -> t.List[t.Any]: ...
 
     @t.overload
-    def __get__(self, obj: None, objtype=None) -> Array:
-        ...
+    def __get__(self, obj: None, objtype=None) -> Array: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self

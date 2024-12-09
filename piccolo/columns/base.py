@@ -6,7 +6,6 @@ import decimal
 import inspect
 import typing as t
 import uuid
-from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field, fields
 from enum import Enum
 
@@ -32,6 +31,7 @@ from piccolo.columns.operators.comparison import (
     NotLike,
 )
 from piccolo.columns.reference import LazyTableReference
+from piccolo.querystring import QueryString, Selectable
 from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -77,9 +77,12 @@ class OnUpdate(str, Enum):
         return self.__str__()
 
 
+ReferencedTable = t.TypeVar("ReferencedTable", bound="Table")
+
+
 @dataclass
-class ForeignKeyMeta:
-    references: t.Union[t.Type[Table], LazyTableReference]
+class ForeignKeyMeta(t.Generic[ReferencedTable]):
+    references: t.Union[t.Type[ReferencedTable], LazyTableReference]
     on_delete: OnDelete
     on_update: OnUpdate
     target_column: t.Union[Column, str, None]
@@ -121,15 +124,15 @@ class ForeignKeyMeta:
         else:
             raise ValueError("Unable to resolve target_column.")
 
-    def copy(self) -> ForeignKeyMeta:
+    def copy(self) -> ForeignKeyMeta[ReferencedTable]:
         kwargs = self.__dict__.copy()
         kwargs.update(proxy_columns=self.proxy_columns.copy())
         return self.__class__(**kwargs)
 
-    def __copy__(self) -> ForeignKeyMeta:
+    def __copy__(self) -> ForeignKeyMeta[ReferencedTable]:
         return self.copy()
 
-    def __deepcopy__(self, memo) -> ForeignKeyMeta:
+    def __deepcopy__(self, memo) -> ForeignKeyMeta[ReferencedTable]:
         """
         We override deepcopy, as it's too slow if it has to recreate
         everything.
@@ -198,11 +201,14 @@ class ColumnMeta:
             )
         return self._table
 
+    @table.setter
+    def table(self, value: t.Type[Table]):
+        self._table = value
+
     ###########################################################################
 
     # Used by Foreign Keys:
     call_chain: t.List["ForeignKey"] = field(default_factory=list)
-    table_alias: t.Optional[str] = None
 
     ###########################################################################
 
@@ -244,11 +250,11 @@ class ColumnMeta:
 
         if self.call_chain:
             column_name = (
-                "$".join(
+                ".".join(
                     t.cast(str, i._meta.db_column_name)
                     for i in self.call_chain
                 )
-                + f"${column_name}"
+                + f".{column_name}"
             )
 
         return column_name
@@ -257,7 +263,7 @@ class ColumnMeta:
         column_name = self.db_column_name
 
         if self.call_chain:
-            table_alias = self.call_chain[-1]._meta.table_alias
+            table_alias = self.call_chain[-1].table_alias
             if include_quotes:
                 return f'"{table_alias}"."{column_name}"'
             else:
@@ -269,7 +275,9 @@ class ColumnMeta:
                 return f"{self.table._meta.tablename}.{column_name}"
 
     def get_full_name(
-        self, with_alias: bool = True, include_quotes: bool = True
+        self,
+        with_alias: bool = True,
+        include_quotes: bool = True,
     ) -> str:
         """
         Returns the full column name, taking into account joins.
@@ -283,7 +291,7 @@ class ColumnMeta:
                 'band$manager.name'
 
                 >>> Band.manager.name._meta.get_full_name(with_alias=True)
-                'band$manager.name AS "manager$name"'
+                'band$manager.name AS "manager.name"'
 
         :param include_quotes:
             If you're using the name in a SQL query, each component needs to be
@@ -299,11 +307,10 @@ class ColumnMeta:
                 >>> column._meta.get_full_name(include_quotes=False)
                 'my_table_name.my_column_name'
 
-
         """
         full_name = self._get_path(include_quotes=include_quotes)
 
-        if with_alias and self.call_chain:
+        if with_alias:
             alias = self.get_default_alias()
             if include_quotes:
                 full_name += f' AS "{alias}"'
@@ -341,32 +348,6 @@ class ColumnMeta:
         everything.
         """
         return self.copy()
-
-
-class Selectable(metaclass=ABCMeta):
-    """
-    Anything which inherits from this can be used in a select query.
-    """
-
-    _alias: t.Optional[str]
-
-    @abstractmethod
-    def get_select_string(
-        self, engine_type: str, with_alias: bool = True
-    ) -> str:
-        """
-        In a query, what to output after the select statement - could be a
-        column name, a sub query, a function etc. For a column it will be the
-        column name.
-        """
-        raise NotImplementedError()
-
-    def as_alias(self, alias: str) -> Selectable:
-        """
-        Allows column names to be changed in the result of a select.
-        """
-        self._alias = alias
-        return self
 
 
 class Column(Selectable):
@@ -469,6 +450,7 @@ class Column(Selectable):
     """
 
     value_type: t.Type = int
+    default: t.Any
 
     def __init__(
         self,
@@ -818,30 +800,41 @@ class Column(Selectable):
 
     def get_select_string(
         self, engine_type: str, with_alias: bool = True
-    ) -> str:
+    ) -> QueryString:
         """
         How to refer to this column in a SQL query, taking account of any joins
         and aliases.
         """
+
         if with_alias:
             if self._alias:
                 original_name = self._meta.get_full_name(
                     with_alias=False,
                 )
-                return f'{original_name} AS "{self._alias}"'
+                return QueryString(f'{original_name} AS "{self._alias}"')
             else:
-                return self._meta.get_full_name(
-                    with_alias=True,
+                return QueryString(
+                    self._meta.get_full_name(
+                        with_alias=True,
+                    )
                 )
 
-        return self._meta.get_full_name(with_alias=False)
+        return QueryString(
+            self._meta.get_full_name(
+                with_alias=False,
+            )
+        )
 
-    def get_where_string(self, engine_type: str) -> str:
+    def get_where_string(self, engine_type: str) -> QueryString:
         return self.get_select_string(
             engine_type=engine_type, with_alias=False
         )
 
-    def get_sql_value(self, value: t.Any) -> t.Any:
+    def get_sql_value(
+        self,
+        value: t.Any,
+        delimiter: str = "'",
+    ) -> str:
         """
         When using DDL statements, we can't parameterise the values. An example
         is when setting the default for a column. So we have to convert from
@@ -850,11 +843,18 @@ class Column(Selectable):
 
         :param value:
             The Python value to convert to a string usable in a DDL statement
-            e.g. 1.
+            e.g. ``1``.
+        :param delimiter:
+            The string returned by this function is wrapped in delimiters,
+            ready to be added to a DDL statement. For example:
+            ``'hello world'``.
         :returns:
-            The string usable in the DDL statement e.g. '1'.
+            The string usable in the DDL statement e.g. ``'1'``.
 
         """
+        from piccolo.engine.sqlite import ADAPTERS as sqlite_adapters
+
+        # Common across all DB engines
         if isinstance(value, Default):
             return getattr(value, self._meta.engine_type)
         elif value is None:
@@ -862,39 +862,63 @@ class Column(Selectable):
         elif isinstance(value, (float, decimal.Decimal)):
             return str(value)
         elif isinstance(value, str):
-            return f"'{value}'"
+            return f"{delimiter}{value}{delimiter}"
         elif isinstance(value, bool):
             return str(value).lower()
-        elif isinstance(value, datetime.datetime):
-            return f"'{value.isoformat().replace('T', ' ')}'"
-        elif isinstance(value, datetime.date):
-            return f"'{value.isoformat()}'"
-        elif isinstance(value, datetime.time):
-            return f"'{value.isoformat()}'"
-        elif isinstance(value, datetime.timedelta):
-            interval = IntervalCustom.from_timedelta(value)
-            return getattr(interval, self._meta.engine_type)
         elif isinstance(value, bytes):
-            return f"'{value.hex()}'"
-        elif isinstance(value, uuid.UUID):
-            return f"'{value}'"
-        elif isinstance(value, list):
-            # Convert to the array syntax.
-            return (
-                "'{"
-                + ", ".join(
-                    f'"{i}"'
-                    if isinstance(i, str)
-                    else str(self.get_sql_value(i))
-                    for i in value
+            return f"{delimiter}{value.hex()}{delimiter}"
+
+        # SQLite specific
+        if self._meta.engine_type == "sqlite":
+            if adapter := sqlite_adapters.get(type(value)):
+                sqlite_value = adapter(value)
+                return (
+                    f"{delimiter}{sqlite_value}{delimiter}"
+                    if isinstance(sqlite_value, str)
+                    else sqlite_value
                 )
-            ) + "}'"
-        else:
-            return value
+
+        # Postgres and Cockroach
+        if self._meta.engine_type in ["postgres", "cockroach"]:
+            if isinstance(value, datetime.datetime):
+                return f"{delimiter}{value.isoformat().replace('T', ' ')}{delimiter}"  # noqa: E501
+            elif isinstance(value, datetime.date):
+                return f"{delimiter}{value.isoformat()}{delimiter}"
+            elif isinstance(value, datetime.time):
+                return f"{delimiter}{value.isoformat()}{delimiter}"
+            elif isinstance(value, datetime.timedelta):
+                interval = IntervalCustom.from_timedelta(value)
+                return getattr(interval, self._meta.engine_type)
+            elif isinstance(value, uuid.UUID):
+                return f"{delimiter}{value}{delimiter}"
+            elif isinstance(value, list):
+                # Convert to the array syntax.
+                return (
+                    delimiter
+                    + "{"
+                    + ",".join(
+                        self.get_sql_value(
+                            i,
+                            delimiter="" if isinstance(i, list) else '"',
+                        )
+                        for i in value
+                    )
+                    + "}"
+                    + delimiter
+                )
+
+        return str(value)
 
     @property
     def column_type(self):
         return self.__class__.__name__.upper()
+
+    @property
+    def table_alias(self) -> str:
+        return "$".join(
+            f"{_key._meta.table._meta.tablename}${_key._meta.name}"
+            for _key in [*self._meta.call_chain, self]
+        )
 
     @property
     def ddl(self) -> str:
@@ -909,12 +933,13 @@ class Column(Selectable):
         if not self._meta.null:
             query += " NOT NULL"
 
-        foreign_key_meta: t.Optional[ForeignKeyMeta] = getattr(
-            self, "_foreign_key_meta", None
+        foreign_key_meta = t.cast(
+            t.Optional[ForeignKeyMeta],
+            getattr(self, "_foreign_key_meta", None),
         )
         if foreign_key_meta:
             references = foreign_key_meta.resolved_references
-            tablename = references._meta.tablename
+            tablename = references._meta.get_formatted_tablename()
             on_delete = foreign_key_meta.on_delete.value
             on_update = foreign_key_meta.on_update.value
             target_column_name = (
@@ -938,8 +963,8 @@ class Column(Selectable):
 
         return query
 
-    def copy(self) -> Column:
-        column: Column = copy.copy(self)
+    def copy(self: Self) -> Self:
+        column = copy.copy(self)
         column._meta = self._meta.copy()
         return column
 
@@ -964,3 +989,6 @@ class Column(Selectable):
             f"{table_class_name}.{self._meta.name} - "
             f"{self.__class__.__name__}"
         )
+
+
+Self = t.TypeVar("Self", bound=Column)

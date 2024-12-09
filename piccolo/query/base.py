@@ -6,6 +6,7 @@ from time import time
 from piccolo.columns.column_types import JSON, JSONB
 from piccolo.custom_types import QueryResponseType, TableInstance
 from piccolo.query.mixins import ColumnsDelegate
+from piccolo.query.operators.json import JSONQueryString
 from piccolo.querystring import QueryString
 from piccolo.utils.encoding import load_json
 from piccolo.utils.objects import make_nested_object
@@ -26,7 +27,6 @@ class Timer:
 
 
 class Query(t.Generic[TableInstance, QueryResponseType]):
-
     __slots__ = ("table", "_frozen_querystrings")
 
     def __init__(
@@ -45,21 +45,12 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
         else:
             raise ValueError("Engine isn't defined.")
 
-    async def _process_results(self, results):
-        if results:
-            keys = results[0].keys()
-            keys = [i.replace("$", ".") for i in keys]
-            if self.engine_type in ("postgres", "cockroach"):
-                # asyncpg returns a special Record object. We can pass it
-                # directly into zip without calling `values` on it. This can
-                # save us hundreds of microseconds, depending on the number of
-                # results.
-                raw = [dict(zip(keys, i)) for i in results]
-            else:
-                # SQLite returns a list of dictionaries.
-                raw = [dict(zip(keys, i.values())) for i in results]
-        else:
-            raw = []
+    async def _process_results(self, results) -> QueryResponseType:
+        raw = (
+            self.table._meta.db.transform_response_to_dicts(results)
+            if results
+            else []
+        )
 
         if hasattr(self, "_raw_response_callback"):
             self._raw_response_callback(raw)
@@ -75,27 +66,25 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
                 self, "columns_delegate", None
             )
 
+            json_column_names: t.List[str] = []
+
             if columns_delegate is not None:
-                json_columns = [
-                    i
-                    for i in columns_delegate.selected_columns
-                    if isinstance(i, (JSON, JSONB))
-                ]
+                json_columns: t.List[t.Union[JSON, JSONB]] = []
+
+                for column in columns_delegate.selected_columns:
+                    if isinstance(column, (JSON, JSONB)):
+                        json_columns.append(column)
+                    elif isinstance(column, JSONQueryString):
+                        if alias := column._alias:
+                            json_column_names.append(alias)
             else:
                 json_columns = self.table._meta.json_columns
 
-            json_column_names = []
             for column in json_columns:
                 if column._alias is not None:
                     json_column_names.append(column._alias)
-                elif column.json_operator is not None:
-                    json_column_names.append(column._meta.name)
                 elif len(column._meta.call_chain) > 0:
-                    json_column_names.append(
-                        column.get_select_string(
-                            engine_type=column._meta.engine_type
-                        )
-                    )
+                    json_column_names.append(column._meta.get_default_alias())
                 else:
                     json_column_names.append(column._meta.name)
 
@@ -118,14 +107,20 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
         if output:
             if output._output.as_objects:
                 if output._output.nested:
-                    raw = [make_nested_object(row, self.table) for row in raw]
+                    return t.cast(
+                        QueryResponseType,
+                        [make_nested_object(row, self.table) for row in raw],
+                    )
                 else:
-                    raw = [
-                        self.table(**columns, _exists_in_db=True)
-                        for columns in raw
-                    ]
+                    return t.cast(
+                        QueryResponseType,
+                        [
+                            self.table(**columns, _exists_in_db=True)
+                            for columns in raw
+                        ],
+                    )
 
-        return raw
+        return t.cast(QueryResponseType, raw)
 
     def _validate(self):
         """
@@ -222,7 +217,7 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
         with Timer():
             return run_sync(coroutine)
 
-    async def response_handler(self, response):
+    async def response_handler(self, response: t.List) -> t.Any:
         """
         Subclasses can override this to modify the raw response returned by
         the database driver.
@@ -370,7 +365,6 @@ class FrozenQuery:
 
 
 class DDL:
-
     __slots__ = ("table",)
 
     def __init__(self, table: t.Type[Table], **kwargs):

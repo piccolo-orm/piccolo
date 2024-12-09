@@ -6,7 +6,7 @@ class TestRaw(DBTestCase):
     def test_raw_without_args(self):
         self.insert_row()
 
-        response = Band.raw("select * from band").run_sync()
+        response = Band.raw("SELECT * FROM band").run_sync()
 
         if engine_is("cockroach"):
             self.assertDictEqual(
@@ -33,7 +33,7 @@ class TestRaw(DBTestCase):
         self.insert_rows()
 
         response = Band.raw(
-            "select * from band where name = {}", "Pythonistas"
+            "SELECT * FROM band WHERE name = {}", "Pythonistas"
         ).run_sync()
 
         self.assertEqual(len(response), 1)

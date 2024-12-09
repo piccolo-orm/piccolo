@@ -25,8 +25,7 @@ from .serialisation_legacy import deserialise_legacy_params
 
 class CanConflictWithGlobalNames(abc.ABC):
     @abc.abstractmethod
-    def warn_if_is_conflicting_with_global_name(self):
-        ...
+    def warn_if_is_conflicting_with_global_name(self): ...
 
 
 class UniqueGlobalNamesMeta(type):
@@ -237,8 +236,7 @@ class Import(CanConflictWithGlobalNames):
 
 class Definition(CanConflictWithGlobalNames, abc.ABC):
     @abc.abstractmethod
-    def __repr__(self):
-        ...
+    def __repr__(self): ...
 
     ###########################################################################
     # To allow sorting:
@@ -347,7 +345,7 @@ class SerialisedTableType(Definition):
     def __eq__(self, other):
         return check_equality(self, other)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         tablename = self.table_type._meta.tablename
 
         # We have to add the primary key column definition too, so foreign
@@ -392,9 +390,15 @@ class SerialisedTableType(Definition):
 
         #######################################################################
 
+        schema_str = (
+            "None"
+            if self.table_type._meta.schema is None
+            else f'"{self.table_type._meta.schema}"'
+        )
+
         definition = (
             f"class {self.table_class_name}"
-            f'({UniqueGlobalNames.TABLE}, tablename="{tablename}"): '
+            f'({UniqueGlobalNames.TABLE}, tablename="{tablename}", schema={schema_str}): '  # noqa: E501
             f"{pk_column_name} = {serialised_pk_column}"
         )
 
@@ -487,7 +491,6 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
     extra_definitions: t.List[Definition] = []
 
     for key, value in params.items():
-
         # Builtins, such as str, list and dict.
         if inspect.getmodule(value) == builtins:
             params[key] = SerialisedBuiltin(builtin=value)
@@ -495,7 +498,6 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
 
         # Column instances
         if isinstance(value, Column):
-
             # For target_column (which is used by ForeignKey), we can just
             # serialise it as the column name:
             if key == "target_column":

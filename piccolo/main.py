@@ -34,7 +34,7 @@ def get_diagnose_flag() -> bool:
     return DIAGNOSE_FLAG in sys.argv
 
 
-def main():
+def main() -> None:
     """
     The entrypoint to the Piccolo CLI.
     """
@@ -72,9 +72,10 @@ def main():
         tester_config,
         user_config,
     ]:
-        for command in _app_config.commands:
+        for command in _app_config.get_commands():
             cli.register(
                 command.callable,
+                command_name=command.command_name,
                 group_name=_app_config.app_name,
                 aliases=command.aliases,
             )
@@ -92,12 +93,14 @@ def main():
         )
     else:
         for app_name, _app_config in APP_REGISTRY.app_configs.items():
-            for command in _app_config.commands:
+            for command in _app_config.get_commands():
                 if cli.command_exists(
-                    group_name=app_name, command_name=command.callable.__name__
+                    group_name=app_name,
+                    command_name=command.callable.__name__,
                 ):
                     # Skipping - already registered.
                     continue
+
                 cli.register(
                     command.callable,
                     group_name=app_name,

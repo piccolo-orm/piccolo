@@ -22,7 +22,7 @@ class UUID4(Default):
         return uuid.uuid4()
 
 
-UUIDArg = t.Union[UUID4, uuid.UUID, str, Enum, None]
+UUIDArg = t.Union[UUID4, uuid.UUID, str, Enum, None, t.Callable[[], uuid.UUID]]
 
 
 __all__ = ["UUIDArg", "UUID4"]

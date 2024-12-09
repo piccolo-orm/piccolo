@@ -154,11 +154,15 @@ By default the primary key column isn't included - you can add it using:
 
     BandModel = create_pydantic_model(Band, include_default_columns=True)
 
-``pydantic_config_class``
-~~~~~~~~~~~~~~~~~~~~~~~~~
+``pydantic_config``
+~~~~~~~~~~~~~~~~~~~
 
-You can specify a custom class to use as the base for the Pydantic model's config.
-This class should be a subclass of ``pydantic.BaseConfig``.
+.. hint:: We used to have a ``pydantic_config_class`` argument in Piccolo prior
+    to v1, but it has been replaced with ``pydantic_config`` due to changes in
+    Pydantic v2.
+
+You can specify a Pydantic ``ConfigDict`` to use as the base for the Pydantic
+model's config (see `docs <https://docs.pydantic.dev/latest/api/config/#pydantic.config.ConfigDict>`_).
 
 For example, let's set the ``extra`` parameter to tell pydantic how to treat
 extra fields (that is, fields that would not otherwise be in the generated model).
@@ -172,12 +176,15 @@ So if we want to disallow extra fields, we can do:
 
 .. code-block:: python
 
-    class MyPydanticConfig(pydantic.BaseConfig):
-        extra = 'forbid'
+    from pydatic.config import ConfigDict
+
+    config: ConfigDict = {
+        "extra": "forbid"
+    }
 
     model = create_pydantic_model(
         table=MyTable,
-        pydantic_config_class=MyPydanticConfig
+        pydantic_config=config
     )
 
 
@@ -233,6 +240,40 @@ add additional fields, and to override existing fields.
         genre: str
 
     >>> CustomBandModel(name="Pythonistas", genre="Rock")
+
+Or even simpler still:
+
+.. code-block:: python
+
+    class BandModel(create_pydantic_model(Band)):
+        genre: str
+
+
+Avoiding type warnings
+~~~~~~~~~~~~~~~~~~~~~~
+
+Some linters will complain if you use variables in type annotations:
+
+.. code-block:: python
+
+    BandModel = create_pydantic_model(Band)
+
+
+    def my_function(band: BandModel):  # Variable not allowed in type expression!
+        ...
+
+
+The fix is really simple:
+
+.. code-block:: python
+
+    # We now have a class instead of a variable:
+    class BandModel(create_pydantic_model(Band)):
+        ...
+
+
+    def my_function(band: BandModel):
+        ...
 
 Source
 ~~~~~~

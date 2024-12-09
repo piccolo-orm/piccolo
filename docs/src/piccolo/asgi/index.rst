@@ -21,8 +21,9 @@ Routing frameworks
 ******************
 
 Currently, `Starlette <https://www.starlette.io/>`_, `FastAPI <https://fastapi.tiangolo.com/>`_,
-`BlackSheep <https://www.neoteroi.dev/blacksheep/>`_, `Xpresso <https://xpresso-api.dev/>`_ and 
-`Starlite <https://starlite-api.github.io/starlite/>`_ are supported.
+`BlackSheep <https://www.neoteroi.dev/blacksheep/>`_,
+`Litestar <https://litestar.dev/>`_, `Esmerald <https://esmerald.dev/>`_ and
+`Lilya <https://lilya.dev/>`_ are supported.
 
 Other great ASGI routing frameworks exist, and may be supported in the future
 (`Quart <https://pgjones.gitlab.io/quart/>`_ ,
@@ -32,8 +33,8 @@ Other great ASGI routing frameworks exist, and may be supported in the future
 Which to use?
 =============
 
-All are great choices. FastAPI is built on top of Starlette, so they're
-very similar. FastAPI and BlackSheep are great if you want to document a REST
+All are great choices. FastAPI is built on top of Starlette and Esmerald is built on top of Lilya, so they're
+very similar. FastAPI, BlackSheep and Esmerald are great if you want to document a REST
 API, as they have built-in OpenAPI support.
 
 -------------------------------------------------------------------------------

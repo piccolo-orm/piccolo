@@ -9,12 +9,16 @@ import colorama
 from jinja2 import Environment, FileSystemLoader
 
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates/app/")
-SERVERS = ["uvicorn", "Hypercorn"]
-ROUTERS = ["starlette", "fastapi", "blacksheep", "xpresso", "starlite"]
+SERVERS = ["uvicorn", "Hypercorn", "granian"]
 ROUTER_DEPENDENCIES = {
-    "starlite": ["starlite>=1.46.0"],
-    "xpresso": ["xpresso==0.43.0", "di==0.72.1"],
+    "starlette": ["starlette"],
+    "fastapi": ["fastapi"],
+    "blacksheep": ["blacksheep"],
+    "litestar": ["litestar"],
+    "esmerald": ["esmerald"],
+    "lilya": ["lilya"],
 }
+ROUTERS = list(ROUTER_DEPENDENCIES.keys())
 
 
 def print_instruction(message: str):

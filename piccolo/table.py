@@ -4,6 +4,7 @@ import inspect
 import itertools
 import types
 import typing as t
+import warnings
 from dataclasses import dataclass, field
 
 from piccolo.columns import Column
@@ -13,6 +14,7 @@ from piccolo.columns.column_types import (
     Array,
     Email,
     ForeignKey,
+    ReferencedTable,
     Secret,
     Serial,
 )
@@ -45,9 +47,9 @@ from piccolo.query import (
 )
 from piccolo.query.methods.create_index import CreateIndex
 from piccolo.query.methods.indexes import Indexes
-from piccolo.query.methods.objects import First
+from piccolo.query.methods.objects import GetRelated, UpdateSelf
 from piccolo.query.methods.refresh import Refresh
-from piccolo.querystring import QueryString, Unquoted
+from piccolo.querystring import QueryString
 from piccolo.utils import _camel_to_snake
 from piccolo.utils.graphlib import TopologicalSorter
 from piccolo.utils.sql_values import convert_to_sql_value
@@ -55,9 +57,13 @@ from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import colored_warning
 
 if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.columns import Selectable
+    from piccolo.querystring import Selectable
 
 PROTECTED_TABLENAMES = ("user",)
+TABLENAME_WARNING = (
+    "We recommend giving your table a different name as `{tablename}` is a "
+    "reserved keyword. It should still work, but avoid if possible."
+)
 
 
 TABLE_REGISTRY: t.List[t.Type[Table]] = []
@@ -73,6 +79,7 @@ class TableMeta:
     columns: t.List[Column] = field(default_factory=list)
     default_columns: t.List[Column] = field(default_factory=list)
     non_default_columns: t.List[Column] = field(default_factory=list)
+    array_columns: t.List[Array] = field(default_factory=list)
     email_columns: t.List[Email] = field(default_factory=list)
     foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
     primary_key: Column = field(default_factory=Column)
@@ -83,11 +90,35 @@ class TableMeta:
     help_text: t.Optional[str] = None
     _db: t.Optional[Engine] = None
     m2m_relationships: t.List[M2M] = field(default_factory=list)
+    schema: t.Optional[str] = None
 
     # Records reverse foreign key relationships - i.e. when the current table
     # is the target of a foreign key. Used by external libraries such as
     # Piccolo API.
     _foreign_key_references: t.List[ForeignKey] = field(default_factory=list)
+
+    def get_formatted_tablename(
+        self, include_schema: bool = True, quoted: bool = True
+    ) -> str:
+        """
+        Returns the tablename, in the desired format.
+
+        :param include_schema:
+            If ``True``, the Postgres schema is included. For example,
+            'my_schema.my_table'.
+        :param quote:
+            If ``True``, the name is wrapped in double quotes. For example,
+            '"my_schema"."my_table"'.
+
+        """
+        components = [self.tablename]
+        if include_schema and self.schema:
+            components.insert(0, self.schema)
+
+        if quoted:
+            return ".".join(f'"{i}"' for i in components)
+        else:
+            return ".".join(components)
 
     @property
     def foreign_key_references(self) -> t.List[ForeignKey]:
@@ -113,8 +144,11 @@ class TableMeta:
     def db(self, value: Engine):
         self._db = value
 
-    def refresh_db(self):
-        self.db = engine_finder()
+    def refresh_db(self) -> None:
+        engine = engine_finder()
+        if engine is None:
+            raise ValueError("The engine can't be found")
+        self.db = engine
 
     def get_column_by_name(self, name: str) -> Column:
         """
@@ -154,8 +188,8 @@ class TableMeta:
 
 
 class TableMetaclass(type):
-    def __str__(cls):
-        return cls._table_str()
+    def __str__(cls) -> str:
+        return cls._table_str()  # type: ignore
 
     def __repr__(cls):
         """
@@ -196,8 +230,9 @@ class Table(metaclass=TableMetaclass):
         cls,
         tablename: t.Optional[str] = None,
         db: t.Optional[Engine] = None,
-        tags: t.List[str] = None,
+        tags: t.Optional[t.List[str]] = None,
         help_text: t.Optional[str] = None,
+        schema: t.Optional[str] = None,
     ):  # sourcery no-metrics
         """
         Automatically populate the _meta, which includes the tablename, and
@@ -216,21 +251,28 @@ class Table(metaclass=TableMetaclass):
             A user friendly description of what the table is used for. It isn't
             used in the database, but will be used by tools such a Piccolo
             Admin for tooltips.
+        :param schema:
+            The Postgres schema to use for this table.
 
         """
         if tags is None:
             tags = []
         tablename = tablename or _camel_to_snake(cls.__name__)
 
-        if tablename in PROTECTED_TABLENAMES:
-            raise ValueError(
-                f"{tablename} is a protected name, please give your table a "
-                "different name."
+        if "." in tablename:
+            warnings.warn(
+                "There's a '.' in the tablename - please use the `schema` "
+                "argument instead."
             )
+            schema, tablename = tablename.split(".", maxsplit=1)
+
+        if tablename in PROTECTED_TABLENAMES:
+            warnings.warn(TABLENAME_WARNING.format(tablename=tablename))
 
         columns: t.List[Column] = []
         default_columns: t.List[Column] = []
         non_default_columns: t.List[Column] = []
+        array_columns: t.List[Array] = []
         foreign_key_columns: t.List[ForeignKey] = []
         secret_columns: t.List[Secret] = []
         json_columns: t.List[t.Union[JSON, JSONB]] = []
@@ -267,7 +309,8 @@ class Table(metaclass=TableMetaclass):
                 column._meta._table = cls
 
                 if isinstance(column, Array):
-                    column.base_column._meta._table = cls
+                    column._setup_base_column(table_class=cls)
+                    array_columns.append(column)
 
                 if isinstance(column, Email):
                     email_columns.append(column)
@@ -302,6 +345,7 @@ class Table(metaclass=TableMetaclass):
             columns=columns,
             default_columns=default_columns,
             non_default_columns=non_default_columns,
+            array_columns=array_columns,
             email_columns=email_columns,
             primary_key=primary_key,
             foreign_key_columns=foreign_key_columns,
@@ -312,6 +356,7 @@ class Table(metaclass=TableMetaclass):
             help_text=help_text,
             _db=db,
             m2m_relationships=m2m_relationships,
+            schema=schema,
         )
 
         for foreign_key_column in foreign_key_columns:
@@ -329,7 +374,7 @@ class Table(metaclass=TableMetaclass):
 
     def __init__(
         self,
-        _data: t.Dict[Column, t.Any] = None,
+        _data: t.Optional[t.Dict[Column, t.Any]] = None,
         _ignore_missing: bool = False,
         _exists_in_db: bool = False,
         **kwargs,
@@ -482,6 +527,43 @@ class Table(metaclass=TableMetaclass):
             == getattr(self, self._meta.primary_key._meta.name)
         )
 
+    def update_self(
+        self, values: t.Dict[t.Union[Column, str], t.Any]
+    ) -> UpdateSelf:
+        """
+        This allows the user to update a single object - useful when the values
+        are derived from the database in some way.
+
+        For example, if we have the following table::
+
+            class Band(Table):
+                name = Varchar()
+                popularity = Integer()
+
+        And we fetch an object::
+
+            >>> band = await Band.objects().get(name="Pythonistas")
+
+        We could use the typical syntax for updating the object::
+
+            >>> band.popularity += 1
+            >>> await band.save()
+
+        The problem with this, is what if another object has already
+        incremented ``popularity``? It would overide the value.
+
+        Instead we can do this:
+
+            >>> await band.update_self({
+            ...     Band.popularity: Band.popularity + 1
+            ... })
+
+        This updates ``popularity`` in the database, and also sets the new
+        value for ``popularity`` on the object.
+
+        """
+        return UpdateSelf(row=self, values=values)
+
     def remove(self) -> Delete:
         """
         A proxy to a delete query.
@@ -498,7 +580,9 @@ class Table(metaclass=TableMetaclass):
         )
 
     def refresh(
-        self, columns: t.Optional[t.Sequence[Column]] = None
+        self,
+        columns: t.Optional[t.Sequence[Column]] = None,
+        load_json: bool = False,
     ) -> Refresh:
         """
         Used to fetch the latest data for this instance from the database.
@@ -507,6 +591,10 @@ class Table(metaclass=TableMetaclass):
         :param columns:
             If you only want to refresh certain columns, specify them here.
             Otherwise all columns are refreshed.
+
+        :param load_json:
+            Whether to load ``JSON`` / ``JSONB`` columns as objects, instead of
+            just a string.
 
         Example usage::
 
@@ -521,11 +609,19 @@ class Table(metaclass=TableMetaclass):
             instance.refresh().run_sync()
 
         """
-        return Refresh(instance=self, columns=columns)
+        return Refresh(instance=self, columns=columns, load_json=load_json)
+
+    @t.overload
+    def get_related(
+        self, foreign_key: ForeignKey[ReferencedTable]
+    ) -> GetRelated[ReferencedTable]: ...
+
+    @t.overload
+    def get_related(self, foreign_key: str) -> GetRelated[Table]: ...
 
     def get_related(
-        self: TableInstance, foreign_key: t.Union[ForeignKey, str]
-    ) -> First[Table]:
+        self, foreign_key: t.Union[str, ForeignKey[ReferencedTable]]
+    ) -> GetRelated[ReferencedTable]:
         """
         Used to fetch a ``Table`` instance, for the target of a foreign key.
 
@@ -536,8 +632,8 @@ class Table(metaclass=TableMetaclass):
             >>> print(manager.name)
             'Guido'
 
-        It can only follow foreign keys one level currently.
-        i.e. ``Band.manager``, but not ``Band.manager.x.y.z``.
+        It can only follow foreign keys multiple levels deep. For example,
+        ``Concert.band_1.manager``.
 
         """
         if isinstance(foreign_key, str):
@@ -551,22 +647,7 @@ class Table(metaclass=TableMetaclass):
                 "ForeignKey column."
             )
 
-        column_name = foreign_key._meta.name
-
-        references: t.Type[
-            Table
-        ] = foreign_key._foreign_key_meta.resolved_references
-
-        return (
-            references.objects()
-            .where(
-                references._meta.get_column_by_name(
-                    self._meta.primary_key._meta.name
-                )
-                == getattr(self, column_name)
-            )
-            .first()
-        )
+        return GetRelated(foreign_key=foreign_key, row=self)
 
     def get_m2m(self, m2m: M2M) -> M2MGetRelated:
         """
@@ -699,9 +780,9 @@ class Table(metaclass=TableMetaclass):
             if isinstance(value, Table):
                 value = value.to_dict(*columns)
 
-            output[
-                alias_names.get(column._meta.name) or column._meta.name
-            ] = value
+            output[alias_names.get(column._meta.name) or column._meta.name] = (
+                value
+            )
         return output
 
     def __setitem__(self, key: str, value: t.Any):
@@ -752,28 +833,14 @@ class Table(metaclass=TableMetaclass):
         """
         Used when inserting rows.
         """
-        args_dict = {}
-        for col in self._meta.columns:
-            column_name = col._meta.name
-            value = convert_to_sql_value(value=self[column_name], column=col)
-            args_dict[column_name] = value
-
-        def is_unquoted(arg):
-            return type(arg) == Unquoted
-
-        # Strip out any args which are unquoted.
-        filtered_args = [i for i in args_dict.values() if not is_unquoted(i)]
+        args = [
+            convert_to_sql_value(value=self[column._meta.name], column=column)
+            for column in self._meta.columns
+        ]
 
         # If unquoted, dump it straight into the query.
-        query = ",".join(
-            [
-                args_dict[column._meta.name].value
-                if is_unquoted(args_dict[column._meta.name])
-                else "{}"
-                for column in self._meta.columns
-            ]
-        )
-        return QueryString(f"({query})", *filtered_args)
+        query = ",".join(["{}" for _ in args])
+        return QueryString(f"({query})", *args)
 
     def __str__(self) -> str:
         return self.querystring.__str__()
@@ -791,8 +858,8 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def all_related(
-        cls, exclude: t.List[t.Union[str, ForeignKey]] = None
-    ) -> t.List[Column]:
+        cls, exclude: t.Optional[t.List[t.Union[str, ForeignKey]]] = None
+    ) -> t.List[ForeignKey]:
         """
         Used in conjunction with ``objects`` queries. Just as we can use
         ``all_related`` on a ``ForeignKey``, you can also use it for the table
@@ -841,7 +908,7 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def all_columns(
-        cls, exclude: t.Sequence[t.Union[str, Column]] = None
+        cls, exclude: t.Optional[t.Sequence[t.Union[str, Column]]] = None
     ) -> t.List[Column]:
         """
         Used in conjunction with ``select`` queries. Just as we can use
@@ -938,7 +1005,7 @@ class Table(metaclass=TableMetaclass):
 
         .. code-block:: python
 
-            await Band.raw("select * from band where name = {}", 'Pythonistas')
+            await Band.raw("SELECT * FROM band WHERE name = {}", 'Pythonistas')
 
         """
         return Raw(table=cls, querystring=QueryString(sql, *args))
@@ -953,9 +1020,11 @@ class Table(metaclass=TableMetaclass):
         Convert any string arguments to column instances.
         """
         return [
-            cls._meta.get_column_by_name(column)
-            if (isinstance(column, str))
-            else column
+            (
+                cls._meta.get_column_by_name(column)
+                if (isinstance(column, str))
+                else column
+            )
             for column in columns
         ]
 
@@ -1006,7 +1075,10 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def create_table(
-        cls, if_not_exists=False, only_default_columns=False
+        cls,
+        if_not_exists=False,
+        only_default_columns=False,
+        auto_create_schema: bool = True,
     ) -> Create:
         """
         Create table, along with all columns.
@@ -1020,6 +1092,7 @@ class Table(metaclass=TableMetaclass):
             table=cls,
             if_not_exists=if_not_exists,
             only_default_columns=only_default_columns,
+            auto_create_schema=auto_create_schema,
         )
 
     @classmethod
@@ -1076,16 +1149,53 @@ class Table(metaclass=TableMetaclass):
         return Objects[TableInstance](table=cls, prefetch=prefetch)
 
     @classmethod
-    def count(cls) -> Count:
+    def count(
+        cls,
+        column: t.Optional[Column] = None,
+        distinct: t.Optional[t.Sequence[Column]] = None,
+    ) -> Count:
         """
-        Count the number of matching rows.
-
-        .. code-block:: python
+        Count the number of matching rows::
 
             await Band.count().where(Band.popularity > 1000)
 
+        :param column:
+            If specified, just count rows where this column isn't null.
+
+        :param distinct:
+            Counts the number of distinct values for these columns. For
+            example, if we have a concerts table::
+
+                class Concert(Table):
+                    band = Varchar()
+                    start_date = Date()
+
+            With this data:
+
+            .. table::
+                :widths: auto
+
+                ===========  ==========
+                band         start_date
+                ===========  ==========
+                Pythonistas  2023-01-01
+                Pythonistas  2023-02-03
+                Rustaceans   2023-01-01
+                ===========  ==========
+
+            Without the ``distinct`` argument, we get the count of all
+            rows::
+
+                >>> await Concert.count()
+                3
+
+            To get the number of unique concert dates::
+
+                >>> await Concert.count(distinct=[Concert.start_date])
+                2
+
         """
-        return Count(table=cls)
+        return Count(table=cls, column=column, distinct=distinct)
 
     @classmethod
     def exists(cls) -> Exists:
@@ -1114,7 +1224,7 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def update(
         cls,
-        values: t.Dict[t.Union[Column, str], t.Any] = None,
+        values: t.Optional[t.Dict[t.Union[Column, str], t.Any]] = None,
         force: bool = False,
         use_auto_update: bool = True,
         **kwargs,
@@ -1178,7 +1288,7 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def create_index(
         cls,
-        columns: t.List[t.Union[Column, str]],
+        columns: t.Union[t.List[Column], t.List[str]],
         method: IndexMethod = IndexMethod.btree,
         if_not_exists: bool = False,
     ) -> CreateIndex:
@@ -1200,7 +1310,9 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def drop_index(
-        cls, columns: t.List[t.Union[Column, str]], if_exists: bool = True
+        cls,
+        columns: t.Union[t.List[Column], t.List[str]],
+        if_exists: bool = True,
     ) -> DropIndex:
         """
         Drop a table index. If multiple columns are specified, this refers
@@ -1226,7 +1338,7 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def _table_str(
-        cls, abbreviated=False, excluded_params: t.List[str] = None
+        cls, abbreviated=False, excluded_params: t.Optional[t.List[str]] = None
     ):
         """
         Returns a basic string representation of the table and its columns.
@@ -1391,22 +1503,18 @@ async def drop_db_tables(*tables: t.Type[Table]) -> None:
         # SQLite doesn't support CASCADE, so we have to drop them in the
         # correct order.
         sorted_table_classes = reversed(sort_table_classes(list(tables)))
-        atomic = engine.atomic()
-        atomic.add(
-            *[
-                Alter(table=table).drop_table(if_exists=True)
-                for table in sorted_table_classes
-            ]
-        )
+        ddl_statements = [
+            Alter(table=table).drop_table(if_exists=True)
+            for table in sorted_table_classes
+        ]
     else:
-        atomic = engine.atomic()
-        atomic.add(
-            *[
-                table.alter().drop_table(cascade=True, if_exists=True)
-                for table in tables
-            ]
-        )
+        ddl_statements = [
+            table.alter().drop_table(cascade=True, if_exists=True)
+            for table in tables
+        ]
 
+    atomic = engine.atomic()
+    atomic.add(*ddl_statements)
     await atomic.run()
 
 

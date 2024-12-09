@@ -1,18 +1,20 @@
 from __future__ import annotations
 
-import functools
 import inspect
 import itertools
 import os
 import pathlib
 import traceback
 import typing as t
+from abc import abstractmethod
 from dataclasses import dataclass, field
 from importlib import import_module
 from types import ModuleType
 
+from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.engine.base import Engine
 from piccolo.table import Table
+from piccolo.utils.graphlib import TopologicalSorter
 from piccolo.utils.warnings import Level, colored_warning
 
 
@@ -22,8 +24,8 @@ class MigrationModule(ModuleType):
     DESCRIPTION: str
 
     @staticmethod
-    async def forwards() -> None:
-        pass
+    @abstractmethod
+    async def forwards() -> MigrationManager: ...
 
 
 class PiccoloAppModule(ModuleType):
@@ -32,8 +34,8 @@ class PiccoloAppModule(ModuleType):
 
 def table_finder(
     modules: t.Sequence[str],
-    include_tags: t.Sequence[str] = None,
-    exclude_tags: t.Sequence[str] = None,
+    include_tags: t.Optional[t.Sequence[str]] = None,
+    exclude_tags: t.Optional[t.Sequence[str]] = None,
     exclude_imported: bool = False,
 ) -> t.List[t.Type[Table]]:
     """
@@ -115,7 +117,18 @@ def table_finder(
 
 @dataclass
 class Command:
+    """
+    :param callable:
+        The function or method to be called.
+    :param command_name:
+        If not specified, the name of the ``callable`` is used.
+    :param aliases:
+        Alternative ways to refer to this command in the CLI.
+
+    """
+
     callable: t.Callable
+    command_name: t.Optional[str] = None
     aliases: t.List[str] = field(default_factory=list)
 
 
@@ -144,41 +157,58 @@ class AppConfig:
     """
 
     app_name: str
-    migrations_folder_path: str
+    migrations_folder_path: t.Union[str, pathlib.Path]
     table_classes: t.List[t.Type[Table]] = field(default_factory=list)
     migration_dependencies: t.List[str] = field(default_factory=list)
     commands: t.List[t.Union[t.Callable, Command]] = field(
         default_factory=list
     )
 
-    def __post_init__(self):
-        self.commands = [
-            i if isinstance(i, Command) else Command(i) for i in self.commands
-        ]
+    @property
+    def resolved_migrations_folder_path(self) -> str:
+        return (
+            str(self.migrations_folder_path)
+            if isinstance(self.migrations_folder_path, pathlib.Path)
+            else self.migrations_folder_path
+        )
 
-        if isinstance(self.migrations_folder_path, pathlib.Path):
-            self.migrations_folder_path = str(self.migrations_folder_path)
+    def __post_init__(self) -> None:
+        self._migration_dependency_app_configs: t.Optional[
+            t.List[AppConfig]
+        ] = None
 
     def register_table(self, table_class: t.Type[Table]):
         self.table_classes.append(table_class)
         return table_class
 
+    def get_commands(self) -> t.List[Command]:
+        return [
+            i if isinstance(i, Command) else Command(i) for i in self.commands
+        ]
+
     @property
     def migration_dependency_app_configs(self) -> t.List[AppConfig]:
         """
-        Get all of the AppConfig instances from this app's migration
+        Get all of the ``AppConfig`` instances from this app's migration
         dependencies.
         """
-        modules: t.List[PiccoloAppModule] = [
-            t.cast(PiccoloAppModule, import_module(module_path))
-            for module_path in self.migration_dependencies
-        ]
-        return [i.APP_CONFIG for i in modules]
+        # We cache the value so it's more efficient, and also so we can set the
+        # underlying value in unit tests for easier mocking.
+        if self._migration_dependency_app_configs is None:
+            modules: t.List[PiccoloAppModule] = [
+                t.cast(PiccoloAppModule, import_module(module_path))
+                for module_path in self.migration_dependencies
+            ]
+            self._migration_dependency_app_configs = [
+                i.APP_CONFIG for i in modules
+            ]
+
+        return self._migration_dependency_app_configs
 
     def get_table_with_name(self, table_class_name: str) -> t.Type[Table]:
         """
-        Returns a Table subclass with the given name from this app, if it
-        exists. Otherwise raises a ValueError.
+        Returns a ``Table`` subclass with the given name from this app, if it
+        exists. Otherwise raises a ``ValueError``.
         """
         filtered = [
             table_class
@@ -202,7 +232,7 @@ class AppRegistry:
 
     """
 
-    def __init__(self, apps: t.List[str] = None):
+    def __init__(self, apps: t.Optional[t.List[str]] = None):
         self.apps = apps or []
         self.app_configs: t.Dict[str, AppConfig] = {}
         app_names = []
@@ -426,44 +456,69 @@ class Finder:
 
         return app_modules
 
-    def get_app_names(self, sort: bool = True) -> t.List[str]:
+    def get_app_names(
+        self, sort_by_migration_dependencies: bool = True
+    ) -> t.List[str]:
         """
         Return all of the app names.
 
-        :param sort:
+        :param sort_by_migration_dependencies:
             If True, sorts the app names using the migration dependencies, so
             dependencies are before dependents in the list.
 
         """
-        modules = self.get_app_modules()
-        configs: t.List[AppConfig] = [module.APP_CONFIG for module in modules]
-
-        if not sort:
-            return [i.app_name for i in configs]
-
-        def sort_app_configs(app_config_1: AppConfig, app_config_2: AppConfig):
-            return (
-                app_config_1 in app_config_2.migration_dependency_app_configs
+        return [
+            i.app_name
+            for i in self.get_app_configs(
+                sort_by_migration_dependencies=sort_by_migration_dependencies
             )
-
-        sorted_configs = sorted(
-            configs, key=functools.cmp_to_key(sort_app_configs)
-        )
-        return [i.app_name for i in sorted_configs]
+        ]
 
     def get_sorted_app_names(self) -> t.List[str]:
         """
-        Just here for backwards compatibility.
+        Just here for backwards compatibility - use ``get_app_names`` directly.
         """
-        return self.get_app_names(sort=True)
+        return self.get_app_names(sort_by_migration_dependencies=True)
+
+    def sort_app_configs(
+        self, app_configs: t.List[AppConfig]
+    ) -> t.List[AppConfig]:
+        app_config_map = {
+            app_config.app_name: app_config for app_config in app_configs
+        }
+
+        sorted_app_names = TopologicalSorter(
+            {
+                app_config.app_name: [
+                    i.app_name
+                    for i in app_config.migration_dependency_app_configs
+                ]
+                for app_config in app_config_map.values()
+            }
+        ).static_order()
+
+        return [app_config_map[i] for i in sorted_app_names]
+
+    def get_app_configs(
+        self, sort_by_migration_dependencies: bool = True
+    ) -> t.List[AppConfig]:
+        """
+        Returns a list of ``AppConfig``, optionally sorted by migration
+        dependencies.
+        """
+        app_configs = [i.APP_CONFIG for i in self.get_app_modules()]
+
+        return (
+            self.sort_app_configs(app_configs=app_configs)
+            if sort_by_migration_dependencies
+            else app_configs
+        )
 
     def get_app_config(self, app_name: str) -> AppConfig:
         """
         Returns an ``AppConfig`` for the given app name.
         """
-        modules = self.get_app_modules()
-        for module in modules:
-            app_config = module.APP_CONFIG
+        for app_config in self.get_app_configs():
             if app_config.app_name == app_name:
                 return app_config
         raise ValueError(f"No app found with name {app_name}")
@@ -487,7 +542,7 @@ class Finder:
     ) -> t.List[t.Type[Table]]:
         """
         Returns all ``Table`` classes registered with the given apps. If
-        ``app_names`` is ``None``, then ``Table`` classes will be returned
+        ``include_apps`` is ``None``, then ``Table`` classes will be returned
         for all apps.
         """
         if include_apps and exclude_apps:

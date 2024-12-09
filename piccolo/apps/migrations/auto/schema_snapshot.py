@@ -50,6 +50,12 @@ class SchemaSnapshot:
                         table.tablename = rename_table.new_tablename
                         break
 
+            for change_table_schema in manager.change_table_schemas:
+                for table in tables:
+                    if table.tablename == change_table_schema.tablename:
+                        table.schema = change_table_schema.new_schema
+                        break
+
             for table in tables:
                 add_columns = manager.add_columns.columns_for_table_class_name(
                     table.class_name

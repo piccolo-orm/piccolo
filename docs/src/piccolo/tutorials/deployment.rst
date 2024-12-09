@@ -1,5 +1,5 @@
-Deployment
-==========
+Deploying using Docker
+======================
 
 Docker
 ------
@@ -35,7 +35,7 @@ This is a very simple Dockerfile, and illustrates the basics:
 .. code-block:: dockerfile
 
     # Specify the base image:
-    FROM python:3.10-slim-bullseye
+    FROM python:3.12-bookworm
 
     # Install the pip requirements:
     RUN pip install --upgrade pip
@@ -77,3 +77,11 @@ When we run the container (usually via `Kubernetes <https://kubernetes.io/>`_,
 `Docker Compose <https://docs.docker.com/compose/>`_, or similar),
 we can specify the database credentials using environment variables, which will
 be used by our application.
+
+Accessing a local Postgres database
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Bear in mind that if you have Postgres running locally on the server (i.e. on
+``localhost``), your Docker container won't automatically be able to access it.
+You can try Docker's host based networking, or just run Postgres within a
+Docker container.

@@ -10,5 +10,5 @@ python3 -m pytest \
     --cov-report=xml \
     --cov-report=html \
     --cov-fail-under=80 \
-    -m "not integration" \
+    -m "not integration and not cockroach_array_slow" \
     -s $@

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
+import typing as t
 
 from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.apps.migrations.commands.base import (
@@ -9,6 +10,8 @@ from piccolo.apps.migrations.commands.base import (
     MigrationResult,
 )
 from piccolo.apps.migrations.tables import Migration
+from piccolo.conf.apps import AppConfig, MigrationModule
+from piccolo.utils.printing import print_heading
 
 
 class BackwardsMigrationManager(BaseMigrationManager):
@@ -27,20 +30,12 @@ class BackwardsMigrationManager(BaseMigrationManager):
         self.preview = preview
         super().__init__()
 
-    async def run(self) -> MigrationResult:
-        await self.create_migration_table()
-
-        app_modules = self.get_app_modules()
-
-        migration_modules = {}
-
-        for app_module in app_modules:
-            app_config = getattr(app_module, "APP_CONFIG")
-            if app_config.app_name == self.app_name:
-                migration_modules = self.get_migration_modules(
-                    app_config.migrations_folder_path
-                )
-                break
+    async def run_migrations_backwards(self, app_config: AppConfig):
+        migration_modules: t.Dict[str, MigrationModule] = (
+            self.get_migration_modules(
+                app_config.resolved_migrations_folder_path
+            )
+        )
 
         ran_migration_ids = await Migration.get_migrations_which_ran(
             app_name=self.app_name
@@ -85,9 +80,11 @@ class BackwardsMigrationManager(BaseMigrationManager):
         _continue = (
             "y"
             if self.auto_agree
-            else input(f"Reverse {n} migration{'s' if n != 1 else ''}? [y/N] ")
+            else input(
+                f"Reverse {n} migration{'s' if n != 1 else ''}? [y/N] "
+            ).lower()
         )
-        if _continue in "yY":
+        if _continue == "y":
             for migration_id in reversed_migration_ids:
                 migration_module = migration_modules[migration_id]
                 response = await migration_module.forwards()
@@ -112,6 +109,11 @@ class BackwardsMigrationManager(BaseMigrationManager):
             print(message, file=sys.stderr)
             return MigrationResult(success=False, message=message)
 
+    async def run(self) -> MigrationResult:
+        await self.create_migration_table()
+        app_config = self.get_app_config(self.app_name)
+        return await self.run_migrations_backwards(app_config=app_config)
+
 
 async def run_backwards(
     app_name: str,
@@ -133,14 +135,13 @@ async def run_backwards(
                 "apps:\n"
                 f"{', '.join(names)}\n"
                 "Are you sure you want to continue? [y/N] "
-            )
+            ).lower()
         )
 
-        if _continue not in "yY":
+        if _continue != "y":
             return MigrationResult(success=False, message="user cancelled")
         for _app_name in sorted_app_names:
-            print(f"\n{_app_name.upper():^64}")
-            print("-" * 64)
+            print_heading(_app_name)
             manager = BackwardsMigrationManager(
                 app_name=_app_name,
                 migration_id="all",

@@ -1,11 +1,13 @@
+from __future__ import annotations
+
+import datetime
 import json
 import typing as t
-from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from uuid import UUID
 
-from piccolo.columns import Array, Column
-from piccolo.table import Table
+from piccolo.columns import JSON, JSONB, Array, Column, ForeignKey
+from piccolo.custom_types import TableInstance
 from piccolo.testing.random_builder import RandomBuilder
 from piccolo.utils.sync import run_sync
 
@@ -14,24 +16,24 @@ class ModelBuilder:
     __DEFAULT_MAPPER: t.Dict[t.Type, t.Callable] = {
         bool: RandomBuilder.next_bool,
         bytes: RandomBuilder.next_bytes,
-        date: RandomBuilder.next_date,
-        datetime: RandomBuilder.next_datetime,
+        datetime.date: RandomBuilder.next_date,
+        datetime.datetime: RandomBuilder.next_datetime,
         float: RandomBuilder.next_float,
         int: RandomBuilder.next_int,
         str: RandomBuilder.next_str,
-        time: RandomBuilder.next_time,
-        timedelta: RandomBuilder.next_timedelta,
+        datetime.time: RandomBuilder.next_time,
+        datetime.timedelta: RandomBuilder.next_timedelta,
         UUID: RandomBuilder.next_uuid,
     }
 
     @classmethod
     async def build(
         cls,
-        table_class: t.Type[Table],
-        defaults: t.Dict[t.Union[Column, str], t.Any] = None,
+        table_class: t.Type[TableInstance],
+        defaults: t.Optional[t.Dict[t.Union[Column, str], t.Any]] = None,
         persist: bool = True,
         minimal: bool = False,
-    ) -> Table:
+    ) -> TableInstance:
         """
         Build a ``Table`` instance with random data and save async.
         If the ``Table`` has any foreign keys, then the related rows are also
@@ -78,11 +80,11 @@ class ModelBuilder:
     @classmethod
     def build_sync(
         cls,
-        table_class: t.Type[Table],
-        defaults: t.Dict[t.Union[Column, str], t.Any] = None,
+        table_class: t.Type[TableInstance],
+        defaults: t.Optional[t.Dict[t.Union[Column, str], t.Any]] = None,
         persist: bool = True,
         minimal: bool = False,
-    ) -> Table:
+    ) -> TableInstance:
         """
         A sync wrapper around :meth:`build`.
         """
@@ -98,11 +100,11 @@ class ModelBuilder:
     @classmethod
     async def _build(
         cls,
-        table_class: t.Type[Table],
-        defaults: t.Dict[t.Union[Column, str], t.Any] = None,
+        table_class: t.Type[TableInstance],
+        defaults: t.Optional[t.Dict[t.Union[Column, str], t.Any]] = None,
         minimal: bool = False,
         persist: bool = True,
-    ) -> Table:
+    ) -> TableInstance:
         model = table_class(_ignore_missing=True)
         defaults = {} if not defaults else defaults
 
@@ -113,22 +115,31 @@ class ModelBuilder:
             setattr(model, column._meta.name, value)
 
         for column in model._meta.columns:
-
             if column._meta.null and minimal:
                 continue
 
             if column._meta.name in defaults:
                 continue  # Column value exists
 
-            if "references" in column._meta.params and persist:
-                reference_model = await cls._build(
-                    column._meta.params["references"],
-                    persist=True,
-                )
-                random_value = getattr(
-                    reference_model,
-                    reference_model._meta.primary_key._meta.name,
-                )
+            if isinstance(column, ForeignKey) and persist:
+                # Check for recursion
+                if column._foreign_key_meta.references is table_class:
+                    if column._meta.null is True:
+                        # We can avoid this problem entirely by setting it to
+                        # None.
+                        random_value = None
+                    else:
+                        # There's no way to avoid recursion in the situation.
+                        raise ValueError("Recursive foreign key detected")
+                else:
+                    reference_model = await cls._build(
+                        column._foreign_key_meta.resolved_references,
+                        persist=True,
+                    )
+                    random_value = getattr(
+                        reference_model,
+                        reference_model._meta.primary_key._meta.name,
+                    )
             else:
                 random_value = cls._randomize_attribute(column)
 
@@ -150,10 +161,13 @@ class ModelBuilder:
         """
         random_value: t.Any
         if column.value_type == Decimal:
-            precision, scale = column._meta.params["digits"]
+            precision, scale = column._meta.params["digits"] or (4, 2)
             random_value = RandomBuilder.next_float(
                 maximum=10 ** (precision - scale), scale=scale
             )
+        elif column.value_type == datetime.datetime:
+            tz_aware = getattr(column, "tz_aware", False)
+            random_value = RandomBuilder.next_datetime(tz_aware=tz_aware)
         elif column.value_type == list:
             length = RandomBuilder.next_int(maximum=10)
             base_type = t.cast(Array, column).base_column.value_type
@@ -167,7 +181,7 @@ class ModelBuilder:
 
         if "length" in column._meta.params and isinstance(random_value, str):
             return random_value[: column._meta.params["length"]]
-        elif column.column_type in ["JSON", "JSONB"]:
-            return json.dumps(random_value)
+        elif isinstance(column, (JSON, JSONB)):
+            return json.dumps({"value": random_value})
 
         return random_value

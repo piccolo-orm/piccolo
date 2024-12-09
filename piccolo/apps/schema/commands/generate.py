@@ -10,7 +10,6 @@ import uuid
 from datetime import date, datetime
 
 import black
-from typing_extensions import Literal
 
 from piccolo.apps.migrations.auto.serialisation import serialise_params
 from piccolo.apps.schema.commands.exceptions import GenerateError
@@ -62,13 +61,13 @@ class ConstraintTable:
 class RowMeta:
     column_default: str
     column_name: str
-    is_nullable: Literal["YES", "NO"]
+    is_nullable: t.Literal["YES", "NO"]
     table_name: str
     character_maximum_length: t.Optional[int]
     data_type: str
     numeric_precision: t.Optional[t.Union[int, str]]
     numeric_scale: t.Optional[t.Union[int, str]]
-    numeric_precision_radix: t.Optional[Literal[2, 10]]
+    numeric_precision_radix: t.Optional[t.Literal[2, 10]]
 
     @classmethod
     def get_column_name_str(cls) -> str:
@@ -77,7 +76,7 @@ class RowMeta:
 
 @dataclasses.dataclass
 class Constraint:
-    constraint_type: Literal["PRIMARY KEY", "UNIQUE", "FOREIGN KEY", "CHECK"]
+    constraint_type: t.Literal["PRIMARY KEY", "UNIQUE", "FOREIGN KEY", "CHECK"]
     constraint_name: str
     constraint_schema: t.Optional[str] = None
     column_name: t.Optional[str] = None
@@ -92,7 +91,7 @@ class TableConstraints:
     tablename: str
     constraints: t.List[Constraint]
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         foreign_key_constraints: t.List[Constraint] = []
         unique_constraints: t.List[Constraint] = []
         primary_key_constraints: t.List[Constraint] = []
@@ -128,7 +127,8 @@ class TableConstraints:
         for i in self.foreign_key_constraints:
             if i.column_name == column_name:
                 return ConstraintTable(
-                    name=i.constraint_name, schema=i.constraint_schema
+                    name=i.constraint_name,
+                    schema=i.constraint_schema or "public",
                 )
 
         raise ValueError("No matching constraint found")
@@ -141,7 +141,7 @@ class Trigger:
     table_name: str
     column_name: str
     on_update: str
-    on_delete: Literal[
+    on_delete: t.Literal[
         "NO ACTION", "RESTRICT", "CASCADE", "SET NULL", "SET_DEFAULT"
     ]
     references_table: str
@@ -308,12 +308,12 @@ COLUMN_TYPE_MAP: t.Dict[str, t.Type[Column]] = {
 }
 
 # Re-map for Cockroach compatibility.
-COLUMN_TYPE_MAP_COCKROACH = {
+COLUMN_TYPE_MAP_COCKROACH: t.Dict[str, t.Type[Column]] = {
     **COLUMN_TYPE_MAP,
     **{"integer": BigInt, "json": JSONB},
 }
 
-COLUMN_DEFAULT_PARSER = {
+COLUMN_DEFAULT_PARSER: t.Dict[t.Type[Column], t.Any] = {
     BigInt: re.compile(r"^'?(?P<value>-?[0-9]\d*)'?(?:::bigint)?$"),
     Boolean: re.compile(r"^(?P<value>true|false)$"),
     Bytea: re.compile(r"'(?P<value>.*)'::bytea$"),
@@ -373,16 +373,15 @@ COLUMN_DEFAULT_PARSER = {
 }
 
 # Re-map for Cockroach compatibility.
-COLUMN_DEFAULT_PARSER_COCKROACH = {
+COLUMN_DEFAULT_PARSER_COCKROACH: t.Dict[t.Type[Column], t.Any] = {
     **COLUMN_DEFAULT_PARSER,
-    **{BigInt: re.compile(r"^(?P<value>-?\d+)$")},
+    BigInt: re.compile(r"^(?P<value>-?\d+)$"),
 }
 
 
 def get_column_default(
     column_type: t.Type[Column], column_default: str, engine_type: str
 ) -> t.Any:
-
     if engine_type == "cockroach":
         pat = COLUMN_DEFAULT_PARSER_COCKROACH.get(column_type)
     else:
@@ -462,6 +461,7 @@ INDEX_METHOD_MAP: t.Dict[str, IndexMethod] = {
     "gist": IndexMethod.gist,
     "gin": IndexMethod.gin,
 }
+
 
 # 'Indices' seems old-fashioned and obscure in this context.
 async def get_indexes(  # noqa: E302
@@ -666,10 +666,6 @@ async def get_foreign_key_reference(
         return ConstraintTable()
 
 
-def get_table_name(name: str, schema: str) -> str:
-    return name if schema == "public" else f"{schema}.{name}"
-
-
 async def create_table_class_from_db(
     table_class: t.Type[Table],
     tablename: str,
@@ -791,9 +787,12 @@ async def create_table_class_from_db(
             kwargs["length"] = pg_row_meta.character_maximum_length
         elif isinstance(column_type, Numeric):
             radix = pg_row_meta.numeric_precision_radix
-            precision = int(str(pg_row_meta.numeric_precision), radix)
-            scale = int(str(pg_row_meta.numeric_scale), radix)
-            kwargs["digits"] = (precision, scale)
+            if radix:
+                precision = int(str(pg_row_meta.numeric_precision), radix)
+                scale = int(str(pg_row_meta.numeric_scale), radix)
+                kwargs["digits"] = (precision, scale)
+            else:
+                kwargs["digits"] = None
 
         if column_default:
             default_value = get_column_default(
@@ -812,7 +811,7 @@ async def create_table_class_from_db(
 
     table = create_table_class(
         class_name=_snake_to_camel(tablename),
-        class_kwargs={"tablename": get_table_name(tablename, schema_name)},
+        class_kwargs={"tablename": tablename, "schema": schema_name},
         class_members=columns,
     )
     output_schema.tables.append(table)

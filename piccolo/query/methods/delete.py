@@ -30,7 +30,7 @@ class Delete(Query):
         self.returning_delegate = ReturningDelegate()
         self.where_delegate = WhereDelegate()
 
-    def where(self: Self, *where: Combinable) -> Self:
+    def where(self: Self, *where: t.Union[Combinable, QueryString]) -> Self:
         self.where_delegate.where(*where)
         return self
 
@@ -53,7 +53,7 @@ class Delete(Query):
 
     @property
     def default_querystrings(self) -> t.Sequence[QueryString]:
-        query = f"DELETE FROM {self.table._meta.tablename}"
+        query = f"DELETE FROM {self.table._meta.get_formatted_tablename()}"
 
         querystring = QueryString(query)
 

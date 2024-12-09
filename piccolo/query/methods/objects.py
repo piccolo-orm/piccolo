@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import typing as t
 
-from piccolo.columns.column_types import ForeignKey
+from piccolo.columns.column_types import ForeignKey, ReferencedTable
 from piccolo.columns.combination import And, Where
 from piccolo.custom_types import Combinable, TableInstance
-from piccolo.engine.base import Batch
+from piccolo.engine.base import BaseBatch
 from piccolo.query.base import Query
 from piccolo.query.methods.select import Select
 from piccolo.query.mixins import (
@@ -13,6 +13,8 @@ from piccolo.query.mixins import (
     CallbackDelegate,
     CallbackType,
     LimitDelegate,
+    LockRowsDelegate,
+    LockStrength,
     OffsetDelegate,
     OrderByDelegate,
     OrderByRaw,
@@ -27,6 +29,7 @@ from piccolo.utils.sync import run_sync
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
+    from piccolo.table import Table
 
 
 ###############################################################################
@@ -124,10 +127,10 @@ class First(
 
         results = objects[0] if objects else None
 
-        modified_response: t.Optional[
-            TableInstance
-        ] = await self.query.callback_delegate.invoke(
-            results=results, kind=CallbackType.success
+        modified_response: t.Optional[TableInstance] = (
+            await self.query.callback_delegate.invoke(
+                results=results, kind=CallbackType.success
+            )
         )
         return modified_response
 
@@ -173,6 +176,118 @@ class Create(t.Generic[TableInstance]):
         return run_sync(self.run(*args, **kwargs))
 
 
+class UpdateSelf:
+
+    def __init__(
+        self,
+        row: Table,
+        values: t.Dict[t.Union[Column, str], t.Any],
+    ):
+        self.row = row
+        self.values = values
+
+    async def run(
+        self,
+        node: t.Optional[str] = None,
+        in_pool: bool = True,
+    ) -> None:
+        if not self.row._exists_in_db:
+            raise ValueError("This row doesn't exist in the database.")
+
+        TableClass = self.row.__class__
+
+        primary_key = TableClass._meta.primary_key
+        primary_key_value = getattr(self.row, primary_key._meta.name)
+
+        if primary_key_value is None:
+            raise ValueError("The primary key is None")
+
+        columns = [
+            TableClass._meta.get_column_by_name(i) if isinstance(i, str) else i
+            for i in self.values.keys()
+        ]
+
+        response = (
+            await TableClass.update(self.values)
+            .where(primary_key == primary_key_value)
+            .returning(*columns)
+            .run(
+                node=node,
+                in_pool=in_pool,
+            )
+        )
+
+        for key, value in response[0].items():
+            setattr(self.row, key, value)
+
+    def __await__(self) -> t.Generator[None, None, None]:
+        """
+        If the user doesn't explicity call .run(), proxy to it as a
+        convenience.
+        """
+        return self.run().__await__()
+
+    def run_sync(self, *args, **kwargs) -> None:
+        return run_sync(self.run(*args, **kwargs))
+
+
+class GetRelated(t.Generic[ReferencedTable]):
+
+    def __init__(self, row: Table, foreign_key: ForeignKey[ReferencedTable]):
+        self.row = row
+        self.foreign_key = foreign_key
+
+    async def run(
+        self,
+        node: t.Optional[str] = None,
+        in_pool: bool = True,
+    ) -> t.Optional[ReferencedTable]:
+        if not self.row._exists_in_db:
+            raise ValueError("The object doesn't exist in the database.")
+
+        root_table = self.row.__class__
+
+        data = (
+            await root_table.select(
+                *[
+                    i.as_alias(i._meta.name)
+                    for i in self.foreign_key.all_columns()
+                ]
+            )
+            .where(
+                root_table._meta.primary_key
+                == getattr(self.row, root_table._meta.primary_key._meta.name)
+            )
+            .first()
+            .run(node=node, in_pool=in_pool)
+        )
+
+        # Make sure that some values were returned:
+        if data is None or not any(data.values()):
+            return None
+
+        references = t.cast(
+            t.Type[ReferencedTable],
+            self.foreign_key._foreign_key_meta.resolved_references,
+        )
+
+        referenced_object = references(**data)
+        referenced_object._exists_in_db = True
+        return referenced_object
+
+    def __await__(
+        self,
+    ) -> t.Generator[None, None, t.Optional[ReferencedTable]]:
+        """
+        If the user doesn't explicity call .run(), proxy to it as a
+        convenience.
+        """
+        return self.run().__await__()
+
+    def run_sync(self, *args, **kwargs) -> t.Optional[ReferencedTable]:
+        return run_sync(self.run(*args, **kwargs))
+
+
 ###############################################################################
 
 
@@ -194,6 +309,7 @@ class Objects(
         "callback_delegate",
         "prefetch_delegate",
         "where_delegate",
+        "lock_rows_delegate",
     )
 
     def __init__(
@@ -213,6 +329,7 @@ class Objects(
         self.prefetch_delegate = PrefetchDelegate()
         self.prefetch(*prefetch)
         self.where_delegate = WhereDelegate()
+        self.lock_rows_delegate = LockRowsDelegate()
 
     def output(self: Self, load_json: bool = False) -> Self:
         self.output_delegate.output(
@@ -230,6 +347,8 @@ class Objects(
         return self
 
     def as_of(self, interval: str = "-1s") -> Objects:
+        if self.engine_type != "cockroach":
+            raise NotImplementedError("Only CockroachDB supports AS OF")
         self.as_of_delegate.as_of(interval)
         return self
 
@@ -260,25 +379,45 @@ class Objects(
         self.order_by_delegate.order_by(*_columns, ascending=ascending)
         return self
 
-    def where(self: Self, *where: Combinable) -> Self:
+    def where(self: Self, *where: t.Union[Combinable, QueryString]) -> Self:
         self.where_delegate.where(*where)
         return self
 
     ###########################################################################
 
-    def first(self: Self) -> First[TableInstance]:
+    def first(self) -> First[TableInstance]:
         self.limit_delegate.limit(1)
         return First[TableInstance](query=self)
 
-    def get(self: Self, where: Combinable) -> Get[TableInstance]:
+    def lock_rows(
+        self: Self,
+        lock_strength: t.Union[
+            LockStrength,
+            t.Literal[
+                "UPDATE",
+                "NO KEY UPDATE",
+                "KEY SHARE",
+                "SHARE",
+            ],
+        ] = LockStrength.update,
+        nowait: bool = False,
+        skip_locked: bool = False,
+        of: t.Tuple[type[Table], ...] = (),
+    ) -> Self:
+        self.lock_rows_delegate.lock_rows(
+            lock_strength, nowait, skip_locked, of
+        )
+        return self
+
+    def get(self, where: Combinable) -> Get[TableInstance]:
         self.where_delegate.where(where)
         self.limit_delegate.limit(1)
         return Get[TableInstance](query=First[TableInstance](query=self))
 
     def get_or_create(
-        self: Self,
+        self,
         where: Combinable,
-        defaults: t.Dict[Column, t.Any] = None,
+        defaults: t.Optional[t.Dict[Column, t.Any]] = None,
     ) -> GetOrCreate[TableInstance]:
         if defaults is None:
             defaults = {}
@@ -286,17 +425,17 @@ class Objects(
             query=self, table_class=self.table, where=where, defaults=defaults
         )
 
-    def create(self: Self, **columns: t.Any) -> Create[TableInstance]:
+    def create(self, **columns: t.Any) -> Create[TableInstance]:
         return Create[TableInstance](table_class=self.table, columns=columns)
 
     ###########################################################################
 
     async def batch(
-        self: Self,
+        self,
         batch_size: t.Optional[int] = None,
         node: t.Optional[str] = None,
         **kwargs,
-    ) -> Batch:
+    ) -> BaseBatch:
         if batch_size:
             kwargs.update(batch_size=batch_size)
         if node:
@@ -320,6 +459,7 @@ class Objects(
             "offset_delegate",
             "output_delegate",
             "order_by_delegate",
+            "lock_rows_delegate",
         ):
             setattr(select, attr, getattr(self, attr))
 
@@ -353,10 +493,10 @@ class Objects(
             # With callbacks, the user can return any data that they want.
             # Assume that most of the time they will still return a list of
             # Table instances.
-            modified: t.List[
-                TableInstance
-            ] = await self.callback_delegate.invoke(
-                results, kind=CallbackType.success
+            modified: t.List[TableInstance] = (
+                await self.callback_delegate.invoke(
+                    results, kind=CallbackType.success
+                )
             )
             return modified
         else:

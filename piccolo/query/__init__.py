@@ -1,7 +1,9 @@
+from piccolo.columns.combination import WhereRaw
+
 from .base import Query
+from .functions.aggregate import Avg, Max, Min, Sum
 from .methods import (
     Alter,
-    Avg,
     Count,
     Create,
     CreateIndex,
@@ -9,12 +11,9 @@ from .methods import (
     DropIndex,
     Exists,
     Insert,
-    Max,
-    Min,
     Objects,
     Raw,
     Select,
-    Sum,
     TableExists,
     Update,
 )
@@ -42,4 +41,5 @@ __all__ = [
     "Sum",
     "TableExists",
     "Update",
+    "WhereRaw",
 ]

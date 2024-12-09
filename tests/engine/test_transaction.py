@@ -2,7 +2,8 @@ import asyncio
 import typing as t
 from unittest import TestCase
 
-from piccolo.engine.postgres import Atomic
+import pytest
+
 from piccolo.engine.sqlite import SQLiteEngine, TransactionType
 from piccolo.table import drop_db_tables_sync
 from piccolo.utils.sync import run_sync
@@ -43,12 +44,12 @@ class TestAtomic(TestCase):
         drop_db_tables_sync(Band, Manager)
 
     @engines_only("postgres", "cockroach")
-    def test_pool(self):
+    def test_pool(self) -> None:
         """
         Make sure atomic works correctly when a connection pool is active.
         """
 
-        async def run():
+        async def run() -> None:
             """
             We have to run this async function, so we can use a connection
             pool.
@@ -56,7 +57,7 @@ class TestAtomic(TestCase):
             engine = Band._meta.db
             await engine.start_connection_pool()
 
-            atomic: Atomic = engine.atomic()
+            atomic = engine.atomic()
             atomic.add(
                 Manager.create_table(),
                 Band.create_table(),
@@ -296,3 +297,14 @@ class TestSavepoint(TestCase):
         self.assertListEqual(
             Manager.select(Manager.name).run_sync(), [{"name": "Manager 1"}]
         )
+
+    def test_savepoint_sqli_checks(self):
+        # Added to test the fix for GHSA-xq59-7jf3-rjc6
+        async def run_test():
+            async with Manager._meta.db.transaction() as transaction:
+                await transaction.savepoint(
+                    "my_savepoint; SELECT * FROM Manager"
+                )
+
+        with pytest.raises(ValueError):
+            run_sync(run_test())

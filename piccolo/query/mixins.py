@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import collections.abc
 import itertools
 import typing as t
 from dataclasses import dataclass, field
@@ -8,14 +9,79 @@ from enum import Enum, auto
 
 from piccolo.columns import And, Column, Or, Where
 from piccolo.columns.column_types import ForeignKey
+from piccolo.columns.combination import WhereRaw
 from piccolo.custom_types import Combinable
 from piccolo.querystring import QueryString
 from piccolo.utils.list import flatten
 from piccolo.utils.sql_values import convert_to_sql_value
 
 if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.columns.base import Selectable
+    from piccolo.querystring import Selectable
     from piccolo.table import Table  # noqa
+
+
+class DistinctOnError(ValueError):
+    """
+    Raised when ``DISTINCT ON`` queries are malformed.
+    """
+
+    pass
+
+
+@dataclass
+class Distinct:
+    __slots__ = ("enabled", "on")
+
+    enabled: bool
+    on: t.Optional[t.Sequence[Column]]
+
+    @property
+    def querystring(self) -> QueryString:
+        if self.enabled:
+            if self.on:
+                column_names = ", ".join(
+                    i._meta.get_full_name(with_alias=False) for i in self.on
+                )
+                return QueryString(f" DISTINCT ON ({column_names})")
+            else:
+                return QueryString(" DISTINCT")
+        else:
+            return QueryString(" ALL")
+
+    def validate_on(self, order_by: OrderBy):
+        """
+        When using the `on` argument, the first column must match the first
+        order by column.
+
+        :raises DistinctOnError:
+            If the columns don't match.
+
+        """
+        validated = True
+
+        try:
+            first_order_column = order_by.order_by_items[0].columns[0]
+        except IndexError:
+            validated = False
+        else:
+            if not self.on:
+                validated = False
+            elif isinstance(first_order_column, Column) and not self.on[
+                0
+            ]._equals(first_order_column):
+                validated = False
+
+        if not validated:
+            raise DistinctOnError(
+                "The first `order_by` column must match the first column "
+                "passed to `on`."
+            )
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
+
+    def copy(self) -> Distinct:
+        return self.__class__(enabled=self.enabled, on=self.on)
 
 
 @dataclass
@@ -25,7 +91,7 @@ class Limit:
     number: int
 
     def __post_init__(self):
-        if type(self.number) != int:
+        if not isinstance(self.number, int):
             raise TypeError("Limit must be an integer")
 
     @property
@@ -46,7 +112,7 @@ class AsOf:
     interval: str
 
     def __post_init__(self):
-        if type(self.interval) != str:
+        if not isinstance(self.interval, str):
             raise TypeError("As Of must be a string. Example: '-1s'")
 
     @property
@@ -64,8 +130,8 @@ class Offset:
     number: int
 
     def __post_init__(self):
-        if type(self.number) != int:
-            raise TypeError("Limit must be an integer")
+        if not isinstance(self.number, int):
+            raise TypeError("Offset must be an integer")
 
     @property
     def querystring(self) -> QueryString:
@@ -141,7 +207,6 @@ class Returning:
 
 @dataclass
 class Output:
-
     as_json: bool = False
     as_list: bool = False
     as_objects: bool = False
@@ -170,7 +235,6 @@ class Callback:
 
 @dataclass
 class WhereDelegate:
-
     _where: t.Optional[Combinable] = None
     _where_columns: t.List[Column] = field(default_factory=list)
 
@@ -180,7 +244,8 @@ class WhereDelegate:
         needed.
         """
         self._where_columns = []
-        self._extract_columns(self._where)
+        if self._where is not None:
+            self._extract_columns(self._where)
         return self._where_columns
 
     def _extract_columns(self, combinable: Combinable):
@@ -189,8 +254,10 @@ class WhereDelegate:
         elif isinstance(combinable, (And, Or)):
             self._extract_columns(combinable.first)
             self._extract_columns(combinable.second)
+        elif isinstance(combinable, WhereRaw):
+            self._where_columns.extend(combinable.querystring.columns)
 
-    def where(self, *where: Combinable):
+    def where(self, *where: t.Union[Combinable, QueryString]):
         for arg in where:
             if isinstance(arg, bool):
                 raise ValueError(
@@ -200,12 +267,15 @@ class WhereDelegate:
                     "`.where(MyTable.some_column.is_null())`."
                 )
 
+            if isinstance(arg, QueryString):
+                # If a raw QueryString is passed in.
+                arg = WhereRaw(arg.template, *arg.args)
+
             self._where = And(self._where, arg) if self._where else arg
 
 
 @dataclass
 class OrderByDelegate:
-
     _order_by: OrderBy = field(default_factory=OrderBy)
 
     def get_order_by_columns(self) -> t.List[Column]:
@@ -231,7 +301,6 @@ class OrderByDelegate:
 
 @dataclass
 class LimitDelegate:
-
     _limit: t.Optional[Limit] = None
     _first: bool = False
 
@@ -258,11 +327,19 @@ class AsOfDelegate:
 
 @dataclass
 class DistinctDelegate:
+    _distinct: Distinct = field(
+        default_factory=lambda: Distinct(enabled=False, on=None)
+    )
 
-    _distinct: bool = False
+    def distinct(
+        self, enabled: bool, on: t.Optional[t.Sequence[Column]] = None
+    ):
+        if on and not isinstance(on, collections.abc.Sequence):
+            # Check a sequence is passed in, otherwise the user will get some
+            # unuseful errors later on.
+            raise ValueError("`on` must be a sequence of `Column` instances")
 
-    def distinct(self):
-        self._distinct = True
+        self._distinct = Distinct(enabled=enabled, on=on)
 
 
 @dataclass
@@ -275,7 +352,6 @@ class ReturningDelegate:
 
 @dataclass
 class CountDelegate:
-
     _count: bool = False
 
     def count(self):
@@ -284,7 +360,6 @@ class CountDelegate:
 
 @dataclass
 class AddDelegate:
-
     _add: t.List[Table] = field(default_factory=list)
 
     def add(self, *instances: Table, table_class: t.Type[Table]):
@@ -340,8 +415,7 @@ class OutputDelegate:
             self._output.nested = bool(nested)
 
     def copy(self) -> OutputDelegate:
-        _output = self._output.copy() if self._output is not None else None
-        return self.__class__(_output=_output)
+        return self.__class__(_output=self._output.copy())
 
 
 @dataclass
@@ -507,9 +581,10 @@ class OffsetDelegate:
 
     Typically used in conjunction with order_by and limit.
 
-    Example usage:
+    Example usage::
 
-    .offset(100)
+        .offset(100)
+
     """
 
     _offset: t.Optional[Offset] = None
@@ -539,12 +614,261 @@ class GroupBy:
 @dataclass
 class GroupByDelegate:
     """
-    Used to group results - needed when doing aggregation.
+    Used to group results - needed when doing aggregation::
 
-    .group_by(Band.name)
+        .group_by(Band.name)
+
     """
 
     _group_by: t.Optional[GroupBy] = None
 
     def group_by(self, *columns: Column):
         self._group_by = GroupBy(columns=columns)
+
+
+class OnConflictAction(str, Enum):
+    """
+    Specify which action to take on conflict.
+    """
+
+    do_nothing = "DO NOTHING"
+    do_update = "DO UPDATE"
+
+
+@dataclass
+class OnConflictItem:
+    target: t.Optional[t.Union[str, Column, t.Tuple[Column, ...]]] = None
+    action: t.Optional[OnConflictAction] = None
+    values: t.Optional[t.Sequence[t.Union[Column, t.Tuple[Column, t.Any]]]] = (
+        None
+    )
+    where: t.Optional[Combinable] = None
+
+    @property
+    def target_string(self) -> str:
+        target = self.target
+        assert target
+
+        def to_string(value) -> str:
+            if isinstance(value, Column):
+                return f'"{value._meta.db_column_name}"'
+            else:
+                raise ValueError("OnConflict.target isn't a valid type")
+
+        if isinstance(target, str):
+            return f'ON CONSTRAINT "{target}"'
+        elif isinstance(target, Column):
+            return f"({to_string(target)})"
+        elif isinstance(target, tuple):
+            columns_str = ", ".join([to_string(i) for i in target])
+            return f"({columns_str})"
+        else:
+            raise ValueError("OnConflict.target isn't a valid type")
+
+    @property
+    def action_string(self) -> QueryString:
+        action = self.action
+        if isinstance(action, OnConflictAction):
+            if action == OnConflictAction.do_nothing:
+                return QueryString(OnConflictAction.do_nothing.value)
+            elif action == OnConflictAction.do_update:
+                values = []
+                query = f"{OnConflictAction.do_update.value} SET"
+
+                if not self.values:
+                    raise ValueError("No values specified for `on conflict`")
+
+                for value in self.values:
+                    if isinstance(value, Column):
+                        column_name = value._meta.db_column_name
+                        query += f' "{column_name}"=EXCLUDED."{column_name}",'
+                    elif isinstance(value, tuple):
+                        column = value[0]
+                        value_ = value[1]
+                        if isinstance(column, Column):
+                            column_name = column._meta.db_column_name
+                        else:
+                            raise ValueError("Unsupported column type")
+
+                        query += f' "{column_name}"={{}},'
+                        values.append(value_)
+
+                return QueryString(query.rstrip(","), *values)
+
+        raise ValueError("OnConflict.action isn't a valid type")
+
+    @property
+    def querystring(self) -> QueryString:
+        query = " ON CONFLICT"
+        values = []
+
+        if self.target:
+            query += f" {self.target_string}"
+
+        if self.action:
+            query += " {}"
+            values.append(self.action_string)
+
+        if self.where:
+            query += " WHERE {}"
+            values.append(self.where.querystring)
+
+        return QueryString(query, *values)
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
+
+
+@dataclass
+class OnConflict:
+    """
+    Multiple `ON CONFLICT` statements are allowed - which is why we have this
+    parent class.
+    """
+
+    on_conflict_items: t.List[OnConflictItem] = field(default_factory=list)
+
+    @property
+    def querystring(self) -> QueryString:
+        query = "".join("{}" for i in self.on_conflict_items)
+        return QueryString(
+            query, *[i.querystring for i in self.on_conflict_items]
+        )
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
+
+
+@dataclass
+class OnConflictDelegate:
+    """
+    Used with insert queries to specify what to do when a query fails due to
+    a constraint::
+
+        .on_conflict(action='DO NOTHING')
+
+        .on_conflict(action='DO UPDATE', values=[Band.popularity])
+
+        .on_conflict(action='DO UPDATE', values=[(Band.popularity, 1)])
+
+    """
+
+    _on_conflict: OnConflict = field(default_factory=OnConflict)
+
+    def on_conflict(
+        self,
+        target: t.Optional[t.Union[str, Column, t.Tuple[Column, ...]]] = None,
+        action: t.Union[
+            OnConflictAction, t.Literal["DO NOTHING", "DO UPDATE"]
+        ] = OnConflictAction.do_nothing,
+        values: t.Optional[
+            t.Sequence[t.Union[Column, t.Tuple[Column, t.Any]]]
+        ] = None,
+        where: t.Optional[Combinable] = None,
+    ):
+        action_: OnConflictAction
+        if isinstance(action, OnConflictAction):
+            action_ = action
+        elif isinstance(action, str):
+            action_ = OnConflictAction(action.upper())
+        else:
+            raise ValueError("Unrecognised `on conflict` action.")
+
+        if where and action_ == OnConflictAction.do_nothing:
+            raise ValueError(
+                "The `where` option can only be used with DO NOTHING."
+            )
+
+        self._on_conflict.on_conflict_items.append(
+            OnConflictItem(
+                target=target, action=action_, values=values, where=where
+            )
+        )
+
+
+class LockStrength(str, Enum):
+    """
+    Specify lock strength
+
+    https://www.postgresql.org/docs/current/sql-select.html#SQL-FOR-UPDATE-SHARE
+    """
+
+    update = "UPDATE"
+    no_key_update = "NO KEY UPDATE"
+    share = "SHARE"
+    key_share = "KEY SHARE"
+
+
+@dataclass
+class LockRows:
+    __slots__ = ("lock_strength", "nowait", "skip_locked", "of")
+
+    lock_strength: LockStrength
+    nowait: bool
+    skip_locked: bool
+    of: t.Tuple[t.Type[Table], ...]
+
+    def __post_init__(self):
+        if not isinstance(self.lock_strength, LockStrength):
+            raise TypeError("lock_strength must be a LockStrength")
+        if not isinstance(self.nowait, bool):
+            raise TypeError("nowait must be a bool")
+        if not isinstance(self.skip_locked, bool):
+            raise TypeError("skip_locked must be a bool")
+        if not isinstance(self.of, tuple) or not all(
+            hasattr(x, "_meta") for x in self.of
+        ):
+            raise TypeError("of must be a tuple of Table")
+        if self.nowait and self.skip_locked:
+            raise TypeError(
+                "The nowait option cannot be used with skip_locked"
+            )
+
+    @property
+    def querystring(self) -> QueryString:
+        sql = f" FOR {self.lock_strength.value}"
+        if self.of:
+            tables = ", ".join(
+                i._meta.get_formatted_tablename() for i in self.of
+            )
+            sql += " OF " + tables
+        if self.nowait:
+            sql += " NOWAIT"
+        if self.skip_locked:
+            sql += " SKIP LOCKED"
+
+        return QueryString(sql)
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
+
+
+@dataclass
+class LockRowsDelegate:
+
+    _lock_rows: t.Optional[LockRows] = None
+
+    def lock_rows(
+        self,
+        lock_strength: t.Union[
+            LockStrength,
+            t.Literal[
+                "UPDATE",
+                "NO KEY UPDATE",
+                "KEY SHARE",
+                "SHARE",
+            ],
+        ] = LockStrength.update,
+        nowait=False,
+        skip_locked=False,
+        of: t.Tuple[type[Table], ...] = (),
+    ):
+        lock_strength_: LockStrength
+        if isinstance(lock_strength, LockStrength):
+            lock_strength_ = lock_strength
+        elif isinstance(lock_strength, str):
+            lock_strength_ = LockStrength(lock_strength.upper())
+        else:
+            raise ValueError("Unrecognised `lock_strength` value.")
+
+        self._lock_rows = LockRows(lock_strength_, nowait, skip_locked, of)

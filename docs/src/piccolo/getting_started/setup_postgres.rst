@@ -80,11 +80,3 @@ Postgres version
 ****************
 
 Piccolo is tested on most major Postgres versions (see the `GitHub Actions file <https://github.com/piccolo-orm/piccolo/blob/master/.github/workflows/tests.yaml>`_).
-
--------------------------------------------------------------------------------
-
-What about other databases?
-***************************
-
-At the moment the focus is on providing the best Postgres experience possible,
-along with some SQLite support. Other databases may be supported in the future.

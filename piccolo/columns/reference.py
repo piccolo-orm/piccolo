@@ -1,6 +1,7 @@
 """
 Dataclasses for storing lazy references between ForeignKey columns and tables.
 """
+
 from __future__ import annotations
 
 import importlib
@@ -28,6 +29,9 @@ class LazyTableReference:
     :param module_path:
         If specified, the ``Table`` subclass is imported from this path.
         For example, ``'my_app.tables'``.
+
+        .. hint::
+            If the table is in the same file, you can pass in ``__name__``.
 
     """
 

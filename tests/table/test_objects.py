@@ -33,9 +33,12 @@ class TestOffset(DBTestCase):
         Postgres can do an offset without a limit clause.
         """
         self.insert_rows()
+
         response = Band.objects().order_by(Band.name).offset(1).run_sync()
+
         self.assertEqual(
-            [i.name for i in response], ["Pythonistas", "Rustaceans"]
+            [i.name for i in response],
+            ["Pythonistas", "Rustaceans"],
         )
 
     @sqlite_only
@@ -63,6 +66,7 @@ class TestGet(DBTestCase):
         self.insert_row()
 
         band = Band.objects().get(Band.name == "Pythonistas").run_sync()
+        assert band is not None
 
         self.assertEqual(band.name, "Pythonistas")
 
@@ -76,7 +80,8 @@ class TestGet(DBTestCase):
             .prefetch(Band.manager)
             .run_sync()
         )
-        self.assertIsInstance(band.manager, Manager)
+        assert band is not None
+        self.assertIsInstance(band.manager, Manager)  # type: ignore
 
         # Just passing it straight into objects
         band = (
@@ -84,6 +89,7 @@ class TestGet(DBTestCase):
             .get((Band.name == "Pythonistas"))
             .run_sync()
         )
+        assert band is not None
         self.assertIsInstance(band.manager, Manager)
 
 
@@ -94,12 +100,14 @@ class TestGetOrCreate(DBTestCase):
         """
         # When the row doesn't exist in the db:
         Band.objects().get_or_create(
-            Band.name == "Pink Floyd", defaults={"popularity": 100}
+            Band.name == "Pink Floyd",
+            defaults={"popularity": 100},  # type: ignore
         ).run_sync()
 
         instance = (
             Band.objects().where(Band.name == "Pink Floyd").first().run_sync()
         )
+        assert instance is not None
 
         self.assertIsInstance(instance, Band)
         self.assertEqual(instance.name, "Pink Floyd")
@@ -113,6 +121,7 @@ class TestGetOrCreate(DBTestCase):
         instance = (
             Band.objects().where(Band.name == "Pink Floyd").first().run_sync()
         )
+        assert instance is not None
 
         self.assertIsInstance(instance, Band)
         self.assertEqual(instance.name, "Pink Floyd")
@@ -216,8 +225,8 @@ class TestGetOrCreate(DBTestCase):
             .prefetch(Band.manager)
             .run_sync()
         )
-        self.assertIsInstance(band.manager, Manager)
-        self.assertEqual(band.manager.name, "Guido")
+        self.assertIsInstance(band.manager, Manager)  # type: ignore
+        self.assertEqual(band.manager.name, "Guido")  # type: ignore
 
         # Just passing it straight into objects
         band = (
@@ -245,8 +254,8 @@ class TestGetOrCreate(DBTestCase):
             .prefetch(Band.manager)
             .run_sync()
         )
-        self.assertIsInstance(band.manager, Manager)
-        self.assertEqual(band.name, "New Band")
+        self.assertIsInstance(band.manager, Manager)  # type: ignore
+        self.assertEqual(band.name, "New Band")  # type: ignore
 
         # Just passing it straight into objects
         band = (

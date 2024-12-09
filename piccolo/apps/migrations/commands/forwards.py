@@ -10,6 +10,7 @@ from piccolo.apps.migrations.commands.base import (
 )
 from piccolo.apps.migrations.tables import Migration
 from piccolo.conf.apps import AppConfig, MigrationModule
+from piccolo.utils.printing import print_heading
 
 
 class ForwardsMigrationManager(BaseMigrationManager):
@@ -31,9 +32,11 @@ class ForwardsMigrationManager(BaseMigrationManager):
             app_name=app_config.app_name
         )
 
-        migration_modules: t.Dict[
-            str, MigrationModule
-        ] = self.get_migration_modules(app_config.migrations_folder_path)
+        migration_modules: t.Dict[str, MigrationModule] = (
+            self.get_migration_modules(
+                app_config.resolved_migrations_folder_path
+            )
+        )
 
         ids = self.get_migration_ids(migration_modules)
         n = len(ids)
@@ -69,18 +72,19 @@ class ForwardsMigrationManager(BaseMigrationManager):
             print(f"🚀 Running {n} migration{'s' if n != 1 else ''}:")
 
             for _id in subset:
-                if self.fake:
-                    print(f"- {_id}: faked! ⏭️")
-                else:
-                    migration_module = migration_modules[_id]
-                    response = await migration_module.forwards()
+                migration_module = migration_modules[_id]
+                response = await migration_module.forwards()
 
-                    if isinstance(response, MigrationManager):
+                if isinstance(response, MigrationManager):
+                    if self.fake or response.fake:
+                        print(f"- {_id}: faked! ⏭️")
+                    else:
                         if self.preview:
                             response.preview = True
                         await response.run()
 
-                    print("ok! ✔️")
+                print("ok! ✔️")
+
                 if not self.preview:
                     await Migration.insert().add(
                         Migration(name=_id, app_name=app_config.app_name)
@@ -109,8 +113,7 @@ async def run_forwards(
     if app_name == "all":
         sorted_app_names = BaseMigrationManager().get_sorted_app_names()
         for _app_name in sorted_app_names:
-            print(f"\n{_app_name.upper():^64}")
-            print("-" * 64)
+            print_heading(_app_name)
             manager = ForwardsMigrationManager(
                 app_name=_app_name,
                 migration_id="all",

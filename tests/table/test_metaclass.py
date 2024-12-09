@@ -1,14 +1,16 @@
 from unittest import TestCase
+from unittest.mock import MagicMock, patch
 
 from piccolo.columns import Secret
 from piccolo.columns.column_types import (
     JSON,
     JSONB,
+    Array,
     Email,
     ForeignKey,
     Varchar,
 )
-from piccolo.table import Table
+from piccolo.table import TABLENAME_WARNING, Table
 from tests.example_apps.music.tables import Band
 
 
@@ -21,15 +23,21 @@ class TestMetaClass(TestCase):
         Some tablenames are forbidden because they're reserved words in the
         database, and can potentially cause issues.
         """
-        with self.assertRaises(ValueError):
+        expected_warning = TABLENAME_WARNING.format(tablename="user")
+
+        with patch("piccolo.table.warnings") as warnings:
 
             class User(Table):
                 pass
 
-        with self.assertRaises(ValueError):
+            warnings.warn.assert_called_with(expected_warning)
+
+        with patch("piccolo.table.warnings") as warnings:
 
             class MyUser(Table, tablename="user"):
                 pass
+
+            warnings.warn.assert_called_with(expected_warning)
 
     def test_help_text(self):
         """
@@ -41,6 +49,38 @@ class TestMetaClass(TestCase):
             pass
 
         self.assertEqual(Manager._meta.help_text, help_text)
+
+    def test_schema(self):
+        """
+        Make sure schema can be set for the Table.
+        """
+        schema = "schema_1"
+
+        class Manager(Table, schema=schema):
+            pass
+
+        self.assertEqual(Manager._meta.schema, schema)
+
+    @patch("piccolo.table.warnings")
+    def test_schema_from_tablename(self, warnings: MagicMock):
+        """
+        If the tablename contains a '.' we extract the schema name.
+        """
+        table = "manager"
+        schema = "schema_1"
+
+        tablename = f"{schema}.{table}"
+
+        class Manager(Table, tablename=tablename):
+            pass
+
+        self.assertEqual(Manager._meta.schema, schema)
+        self.assertEqual(Manager._meta.tablename, table)
+
+        warnings.warn.assert_called_once_with(
+            "There's a '.' in the tablename - please use the `schema` "
+            "argument instead."
+        )
 
     def test_foreign_key_columns(self):
         """
@@ -92,6 +132,17 @@ class TestMetaClass(TestCase):
             column_b = Varchar()
 
         self.assertEqual(MyTable._meta.email_columns, [MyTable.column_a])
+
+    def test_arry_columns(self):
+        """
+        Make sure ``TableMeta.array_columns`` are setup correctly.
+        """
+
+        class MyTable(Table):
+            column_a = Array(Varchar())
+            column_b = Varchar()
+
+        self.assertEqual(MyTable._meta.array_columns, [MyTable.column_a])
 
     def test_id_column(self):
         """

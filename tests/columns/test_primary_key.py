@@ -1,5 +1,4 @@
 import uuid
-from unittest import TestCase
 
 from piccolo.columns.column_types import (
     UUID,
@@ -9,6 +8,7 @@ from piccolo.columns.column_types import (
     Varchar,
 )
 from piccolo.table import Table
+from piccolo.testing.test_case import TableTest
 
 
 class MyTableDefaultPrimaryKey(Table):
@@ -30,12 +30,8 @@ class MyTablePrimaryKeyUUID(Table):
     name = Varchar()
 
 
-class TestPrimaryKeyDefault(TestCase):
-    def setUp(self):
-        MyTableDefaultPrimaryKey.create_table().run_sync()
-
-    def tearDown(self):
-        MyTableDefaultPrimaryKey.alter().drop_table().run_sync()
+class TestPrimaryKeyDefault(TableTest):
+    tables = [MyTableDefaultPrimaryKey]
 
     def test_return_type(self):
         row = MyTableDefaultPrimaryKey()
@@ -45,12 +41,8 @@ class TestPrimaryKeyDefault(TestCase):
         self.assertIsInstance(row["id"], int)
 
 
-class TestPrimaryKeyInteger(TestCase):
-    def setUp(self):
-        MyTablePrimaryKeySerial.create_table().run_sync()
-
-    def tearDown(self):
-        MyTablePrimaryKeySerial.alter().drop_table().run_sync()
+class TestPrimaryKeyInteger(TableTest):
+    tables = [MyTablePrimaryKeySerial]
 
     def test_return_type(self):
         row = MyTablePrimaryKeySerial()
@@ -60,12 +52,8 @@ class TestPrimaryKeyInteger(TestCase):
         self.assertIsInstance(row["pk"], int)
 
 
-class TestPrimaryKeyBigSerial(TestCase):
-    def setUp(self):
-        MyTablePrimaryKeyBigSerial.create_table().run_sync()
-
-    def tearDown(self):
-        MyTablePrimaryKeyBigSerial.alter().drop_table().run_sync()
+class TestPrimaryKeyBigSerial(TableTest):
+    tables = [MyTablePrimaryKeyBigSerial]
 
     def test_return_type(self):
         row = MyTablePrimaryKeyBigSerial()
@@ -75,12 +63,8 @@ class TestPrimaryKeyBigSerial(TestCase):
         self.assertIsInstance(row["pk"], int)
 
 
-class TestPrimaryKeyUUID(TestCase):
-    def setUp(self):
-        MyTablePrimaryKeyUUID.create_table().run_sync()
-
-    def tearDown(self):
-        MyTablePrimaryKeyUUID.alter().drop_table().run_sync()
+class TestPrimaryKeyUUID(TableTest):
+    tables = [MyTablePrimaryKeyUUID]
 
     def test_return_type(self):
         row = MyTablePrimaryKeyUUID()
@@ -101,14 +85,8 @@ class Band(Table):
     manager = ForeignKey(Manager)
 
 
-class TestPrimaryKeyQueries(TestCase):
-    def setUp(self):
-        Manager.create_table().run_sync()
-        Band.create_table().run_sync()
-
-    def tearDown(self):
-        Band.alter().drop_table().run_sync()
-        Manager.alter().drop_table().run_sync()
+class TestPrimaryKeyQueries(TableTest):
+    tables = [Manager, Band]
 
     def test_primary_key_queries(self):
         """
@@ -133,6 +111,7 @@ class TestPrimaryKeyQueries(TestCase):
         )
 
         manager_dict = Manager.select().first().run_sync()
+        assert manager_dict is not None
 
         self.assertEqual(
             [i for i in manager_dict.keys()],
@@ -151,6 +130,7 @@ class TestPrimaryKeyQueries(TestCase):
         band.save().run_sync()
 
         band_dict = Band.select().first().run_sync()
+        assert band_dict is not None
 
         self.assertEqual(
             [i for i in band_dict.keys()], ["pk", "name", "manager"]
@@ -163,6 +143,7 @@ class TestPrimaryKeyQueries(TestCase):
         # type (i.e. `uuid.UUID`).
 
         manager = Manager.objects().first().run_sync()
+        assert manager is not None
 
         band_2 = Band(manager=manager.pk, name="Pythonistas 2")
         band_2.save().run_sync()
@@ -178,9 +159,10 @@ class TestPrimaryKeyQueries(TestCase):
         #######################################################################
         # Make sure `get_related` works
 
-        self.assertEqual(
-            band_2.get_related(Band.manager).run_sync().pk, manager.pk
-        )
+        manager_from_db = band_2.get_related(Band.manager).run_sync()
+        assert manager_from_db is not None
+
+        self.assertEqual(manager_from_db.pk, manager.pk)
 
         #######################################################################
         # Make sure `remove` works

@@ -16,16 +16,13 @@ class CockroachEngine(PostgresEngine):
     :class:`PostgresEngine <piccolo.engine.postgres.PostgresEngine>`.
     """
 
-    engine_type = "cockroach"
-    min_version_number = 0  # Doesn't seem to work with cockroach versioning.
-
     def __init__(
         self,
         config: t.Dict[str, t.Any],
         extensions: t.Sequence[str] = (),
         log_queries: bool = False,
         log_responses: bool = False,
-        extra_nodes: t.Dict[str, CockroachEngine] = None,
+        extra_nodes: t.Optional[t.Dict[str, CockroachEngine]] = None,
     ) -> None:
         super().__init__(
             config=config,
@@ -34,6 +31,8 @@ class CockroachEngine(PostgresEngine):
             log_responses=log_responses,
             extra_nodes=extra_nodes,
         )
+        self.engine_type = "cockroach"
+        self.min_version_number = 0
 
     async def prep_database(self):
         try:

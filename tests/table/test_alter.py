@@ -8,6 +8,7 @@ import pytest
 from piccolo.columns import BigInt, Integer, Numeric, Varchar
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import ForeignKey, Text
+from piccolo.schema import SchemaManager
 from piccolo.table import Table
 from tests.base import (
     DBTestCase,
@@ -89,7 +90,7 @@ class TestDropColumn(DBTestCase):
     SQLite has very limited support for ALTER statements.
     """
 
-    def _test_drop(self, column: str):
+    def _test_drop(self, column: t.Union[str, Column]):
         self.insert_row()
 
         Band.alter().drop_column(column).run_sync()
@@ -228,10 +229,9 @@ class TestSetColumnType(DBTestCase):
             "BIGINT",
         )
 
-        popularity = (
-            Band.select(Band.popularity).first().run_sync()["popularity"]
-        )
-        self.assertEqual(popularity, 1000)
+        row = Band.select(Band.popularity).first().run_sync()
+        assert row is not None
+        self.assertEqual(row["popularity"], 1000)
 
     def test_integer_to_varchar(self):
         """
@@ -251,10 +251,9 @@ class TestSetColumnType(DBTestCase):
             "CHARACTER VARYING",
         )
 
-        popularity = (
-            Band.select(Band.popularity).first().run_sync()["popularity"]
-        )
-        self.assertEqual(popularity, "1000")
+        row = Band.select(Band.popularity).first().run_sync()
+        assert row is not None
+        self.assertEqual(row["popularity"], "1000")
 
     def test_using_expression(self):
         """
@@ -270,8 +269,9 @@ class TestSetColumnType(DBTestCase):
         )
         alter_query.run_sync()
 
-        popularity = Band.select(Band.name).first().run_sync()["name"]
-        self.assertEqual(popularity, 1)
+        row = Band.select(Band.name).first().run_sync()
+        assert row is not None
+        self.assertEqual(row["name"], 1)
 
 
 @engines_only("postgres", "cockroach")
@@ -320,7 +320,66 @@ class TestSetDefault(DBTestCase):
         ).run_sync()
 
         manager = Manager.objects().first().run_sync()
+        assert manager is not None
         self.assertEqual(manager.name, "Pending")
+
+
+@engines_only("postgres", "cockroach")
+class TestSetSchema(TestCase):
+    schema_manager = SchemaManager()
+    schema_name = "schema_1"
+
+    def setUp(self):
+        Manager.create_table().run_sync()
+        self.schema_manager.create_schema(
+            schema_name=self.schema_name
+        ).run_sync()
+
+    def tearDown(self):
+        Manager.alter().drop_table(if_exists=True).run_sync()
+        self.schema_manager.drop_schema(
+            schema_name=self.schema_name, cascade=True
+        ).run_sync()
+
+    def test_set_schema(self):
+        Manager.alter().set_schema(schema_name=self.schema_name).run_sync()
+
+        self.assertIn(
+            Manager._meta.tablename,
+            self.schema_manager.list_tables(
+                schema_name=self.schema_name
+            ).run_sync(),
+        )
+
+
+@engines_only("postgres", "cockroach")
+class TestDropTable(TestCase):
+    class Manager(Table, schema="schema_1"):
+        pass
+
+    schema_manager = SchemaManager()
+
+    def tearDown(self):
+        self.schema_manager.drop_schema(
+            schema_name="schema_1", if_exists=True, cascade=True
+        ).run_sync()
+
+    def test_drop_table_with_schema(self):
+        Manager = self.Manager
+
+        Manager.create_table().run_sync()
+
+        self.assertIn(
+            "manager",
+            self.schema_manager.list_tables(schema_name="schema_1").run_sync(),
+        )
+
+        Manager.alter().drop_table().run_sync()
+
+        self.assertNotIn(
+            "manager",
+            self.schema_manager.list_tables(schema_name="schema_1").run_sync(),
+        )
 
 
 ###############################################################################

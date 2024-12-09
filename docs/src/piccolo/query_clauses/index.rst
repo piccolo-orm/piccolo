@@ -25,7 +25,9 @@ by modifying the return values.
     ./distinct
     ./freeze
     ./group_by
+    ./lock_rows
     ./offset
+    ./on_conflict
     ./output
     ./returning
 

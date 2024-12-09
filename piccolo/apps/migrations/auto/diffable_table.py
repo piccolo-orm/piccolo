@@ -16,30 +16,41 @@ from piccolo.columns.base import Column
 from piccolo.table import Table, create_table_class
 
 
-def compare_dicts(dict_1, dict_2) -> t.Dict[str, t.Any]:
+def compare_dicts(
+    dict_1: t.Dict[str, t.Any], dict_2: t.Dict[str, t.Any]
+) -> t.Dict[str, t.Any]:
     """
     Returns a new dictionary which only contains key, value pairs which are in
     the first dictionary and not the second.
 
-    For example:
-        dict_1 = {'a': 1, 'b': 2}
-        dict_2 = {'a': 1}
-        returns {'b': 2}
+    For example::
 
-        dict_1 = {'a': 2, 'b': 2}
-        dict_2 = {'a': 1}
-        returns {'a': 2, 'b': 2}
+        >>> dict_1 = {'a': 1, 'b': 2}
+        >>> dict_2 = {'a': 1}
+        >>> compare_dicts(dict_1, dict_2)
+        {'b': 2}
+
+        >>> dict_1 = {'a': 2, 'b': 2}
+        >>> dict_2 = {'a': 1}
+        >>> compare_dicts(dict_1, dict_2)
+        {'a': 2, 'b': 2}
 
     """
     output = {}
 
     for key, value in dict_1.items():
-
         dict_2_value = dict_2.get(key, ...)
+
         if (
-            dict_2_value is not ...
-            and dict_2_value != value
-            or dict_2_value is ...
+            # If the value is `...` then it means no value was found.
+            (dict_2_value is ...)
+            # We have to compare the types, because if we just use equality
+            # then 1.0 == 1 is True.
+            # See this issue:
+            # https://github.com/piccolo-orm/piccolo/issues/1071
+            or (type(value) is not type(dict_2_value))
+            # Finally compare the actual values.
+            or (dict_2_value != value)
         ):
             output[key] = value
 
@@ -90,10 +101,11 @@ class DiffableTable:
 
     class_name: str
     tablename: str
+    schema: t.Optional[str] = None
     columns: t.List[Column] = field(default_factory=list)
     previous_class_name: t.Optional[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.columns_map: t.Dict[str, Column] = {
             i._meta.name: i for i in self.columns
         }
@@ -123,6 +135,7 @@ class DiffableTable:
                 column_class_name=i.column.__class__.__name__,
                 column_class=i.column.__class__,
                 params=i.column._meta.params,
+                schema=self.schema,
             )
             for i in sorted(
                 {ColumnComparison(column=column) for column in self.columns}
@@ -139,6 +152,7 @@ class DiffableTable:
                 column_name=i.column._meta.name,
                 db_column_name=i.column._meta.db_column_name,
                 tablename=value.tablename,
+                schema=self.schema,
             )
             for i in sorted(
                 {ColumnComparison(column=column) for column in value.columns}
@@ -178,6 +192,7 @@ class DiffableTable:
                         old_params=old_params,
                         column_class=column.__class__,
                         old_column_class=existing_column.__class__,
+                        schema=self.schema,
                     )
                 )
 
@@ -212,7 +227,7 @@ class DiffableTable:
         """
         return create_table_class(
             class_name=self.class_name,
-            class_kwargs={"tablename": self.tablename},
+            class_kwargs={"tablename": self.tablename, "schema": self.schema},
             class_members={
                 column._meta.name: column for column in self.columns
             },

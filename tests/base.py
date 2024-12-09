@@ -13,25 +13,30 @@ from piccolo.engine.cockroach import CockroachEngine
 from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
-from piccolo.table import Table, create_table_class
+from piccolo.table import (
+    Table,
+    create_db_tables_sync,
+    create_table_class,
+    drop_db_tables_sync,
+)
 from piccolo.utils.sync import run_sync
 
 ENGINE = engine_finder()
 
 
-def engine_version_lt(version: float):
-    return ENGINE and run_sync(ENGINE.get_version()) < version
+def engine_version_lt(version: float) -> bool:
+    return ENGINE is not None and run_sync(ENGINE.get_version()) < version
 
 
-def is_running_postgres():
+def is_running_postgres() -> bool:
     return type(ENGINE) is PostgresEngine
 
 
-def is_running_sqlite():
+def is_running_sqlite() -> bool:
     return type(ENGINE) is SQLiteEngine
 
 
-def is_running_cockroach():
+def is_running_cockroach() -> bool:
     return type(ENGINE) is CockroachEngine
 
 
@@ -56,10 +61,12 @@ def engines_only(*engine_names: str):
     """
     Test decorator. Choose what engines can run a test.
 
-    Example
+    For example::
+
         @engines_only('cockroach', 'postgres')
         def test_unknown_column_type(...):
             self.assertTrue(...)
+
     """
     if ENGINE:
         current_engine_name = ENGINE.engine_type
@@ -85,10 +92,12 @@ def engines_skip(*engine_names: str):
     """
     Test decorator. Choose what engines can run a test.
 
-    Example
+    For example::
+
         @engines_skip('cockroach', 'postgres')
         def test_unknown_column_type(...):
             self.assertTrue(...)
+
     """
     if ENGINE:
         current_engine_name = ENGINE.engine_type
@@ -170,16 +179,18 @@ class DBTestCase(TestCase):
     # Postgres specific utils
 
     def get_postgres_column_definition(
-        self, tablename: str, column_name: str
+        self, tablename: str, column_name: str, schema: str = "public"
     ) -> RowMeta:
         query = """
             SELECT {columns} FROM information_schema.columns
             WHERE table_name = '{tablename}'
             AND table_catalog = 'piccolo'
+            AND table_schema = '{schema}'
             AND column_name = '{column_name}'
         """.format(
             columns=RowMeta.get_column_name_str(),
             tablename=tablename,
+            schema=schema,
             column_name=column_name,
         )
         response = self.run_sync(query)
@@ -222,6 +233,8 @@ class DBTestCase(TestCase):
     ###########################################################################
 
     def create_tables(self):
+        assert ENGINE is not None
+
         if ENGINE.engine_type in ("postgres", "cockroach"):
             self.run_sync(
                 """
@@ -302,6 +315,8 @@ class DBTestCase(TestCase):
             raise Exception("Unrecognised engine")
 
     def insert_row(self):
+        assert ENGINE is not None
+
         if ENGINE.engine_type == "cockroach":
             id = self.run_sync(
                 """
@@ -346,6 +361,8 @@ class DBTestCase(TestCase):
             )
 
     def insert_rows(self):
+        assert ENGINE is not None
+
         if ENGINE.engine_type == "cockroach":
             id = self.run_sync(
                 """
@@ -422,6 +439,8 @@ class DBTestCase(TestCase):
         self.run_sync(f"INSERT INTO manager (name) VALUES {values_string};")
 
     def drop_tables(self):
+        assert ENGINE is not None
+
         if ENGINE.engine_type in ("postgres", "cockroach"):
             self.run_sync("DROP TABLE IF EXISTS band CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS manager CASCADE;")
@@ -440,3 +459,17 @@ class DBTestCase(TestCase):
 
     def tearDown(self):
         self.drop_tables()
+
+
+class TableTest(TestCase):
+    """
+    Used for tests where we need to create Piccolo tables.
+    """
+
+    tables: t.List[t.Type[Table]]
+
+    def setUp(self) -> None:
+        create_db_tables_sync(*self.tables)
+
+    def tearDown(self) -> None:
+        drop_db_tables_sync(*self.tables)
