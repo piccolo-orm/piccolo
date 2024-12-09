@@ -4,7 +4,7 @@ import inspect
 import typing as t
 from dataclasses import dataclass
 
-from piccolo.columns.base import Selectable
+from piccolo.columns.base import QueryString, Selectable
 from piccolo.columns.column_types import (
     JSON,
     JSONB,
@@ -53,7 +53,9 @@ class ReverseLookupSelect(Selectable):
             for column in columns
         )
 
-    def get_select_string(self, engine_type: str, with_alias=True) -> str:
+    def get_select_string(
+        self, engine_type: str, with_alias=True
+    ) -> QueryString:
         reverse_lookup_name = self.reverse_lookup._meta.name
 
         table1 = self.reverse_lookup._meta.table
@@ -74,22 +76,26 @@ class ReverseLookupSelect(Selectable):
         if engine_type in ("postgres", "cockroach"):
             if self.as_list:
                 column_name = self.columns[0]._meta.db_column_name
-                return f"""
+                return QueryString(
+                    f"""
                     ARRAY(
                         SELECT
                             "{table2_name}"."{column_name}"
                         FROM {reverse_select}
                     ) AS "{reverse_lookup_name}"
                 """
+                )
             elif not self.serialisation_safe:
                 column_name = table2_pk
-                return f"""
+                return QueryString(
+                    f"""
                     ARRAY(
                         SELECT
                             "{table2_name}"."{column_name}"
                         FROM {reverse_select}
                     ) AS "{reverse_lookup_name}"
                 """
+                )
             else:
                 if len(self.columns) > 0:
                     column_names = ", ".join(
@@ -101,7 +107,8 @@ class ReverseLookupSelect(Selectable):
                         f'"{table2_name}"."{column._meta.db_column_name}"'  # noqa: E501
                         for column in table2._meta.columns
                     )
-                return f"""
+                return QueryString(
+                    f"""
                     (
                         SELECT JSON_AGG("{table2_name}s")
                         FROM (
@@ -109,6 +116,7 @@ class ReverseLookupSelect(Selectable):
                         ) AS "{table2_name}s"
                     ) AS "{reverse_lookup_name}"
                 """
+                )
         elif engine_type == "sqlite":
             if len(self.columns) > 1 or not self.serialisation_safe:
                 column_name = table2_pk
@@ -118,15 +126,17 @@ class ReverseLookupSelect(Selectable):
                 except IndexError:
                     column_name = table2_pk
 
-            return f"""
+            return QueryString(
+                f"""
                 (
                     SELECT group_concat(
                         "{table2_name}"."{column_name}"
                     )
                     FROM {reverse_select}
                 )
-                AS "{table2_name}s [M2M]"
+                AS "{reverse_lookup_name} [M2M]"
             """
+            )
         else:
             raise ValueError(f"{engine_type} is an unrecognised engine type")
 

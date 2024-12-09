@@ -250,7 +250,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         secondary_table: t.Type[Table],
         secondary_table_pk: Column,
         m2m_name: str,
-        m2m_select: M2MSelect,
+        m2m_select: t.Union[M2MSelect, ReverseLookupSelect],
         as_list: bool = False,
     ):
         row_ids = list(
@@ -287,7 +287,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
             row[m2m_name] = [extra_rows_map.get(i) for i in row[m2m_name]]
         return response
 
-    async def response_handler(self, response):
+    async def response_handler(self, response: t.List[t.Dict[str, t.Any]]):
         m2m_selects = [
             i
             for i in self.columns_delegate.selected_columns
@@ -409,12 +409,9 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                 )
                 try:
                     for row in response:
-                        data = row[f"{reverse_lookup_name}"]
-                        row[f"{reverse_lookup_name}"] = (
-                            [
-                                value_type(i)
-                                for i in row[f"{reverse_lookup_name}"]
-                            ]
+                        data = row[reverse_lookup_name]
+                        row[reverse_lookup_name] = (
+                            [value_type(i) for i in row[reverse_lookup_name]]
                             if data
                             else []
                         )
@@ -436,7 +433,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                             response,
                             reverse_table,
                             reverse_table._meta.primary_key,
-                            f"{reverse_lookup_name}",
+                            reverse_lookup_name,
                             reverse_lookup_select,
                             as_list=True,
                         )
@@ -449,11 +446,11 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                             0
                         ]._meta.name
                         for row in response:
-                            if row[f"{reverse_lookup_name}"] is None:
-                                row[f"{reverse_lookup_name}"] = []
-                            row[f"{reverse_lookup_name}"] = [
+                            if row[reverse_lookup_name] is None:
+                                row[reverse_lookup_name] = []
+                            row[reverse_lookup_name] = [
                                 {column_name: i}
-                                for i in row[f"{reverse_lookup_name}"]
+                                for i in row[reverse_lookup_name]
                             ]
                     elif (
                         len(reverse_lookup_select.columns) == 0
@@ -464,7 +461,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                             set(
                                 itertools.chain(
                                     *[
-                                        row[f"{reverse_lookup_name}"]
+                                        row[reverse_lookup_name]
                                         for row in response
                                     ]
                                 )
@@ -500,16 +497,16 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                             for row in extra_rows
                         }
                         for row in response:
-                            row[f"{reverse_lookup_name}"] = [
+                            row[reverse_lookup_name] = [
                                 extra_rows_map.get(i)
-                                for i in row[f"{reverse_lookup_name}"]
+                                for i in row[reverse_lookup_name]
                             ]
                     else:
                         response = await self._splice_m2m_rows(
                             response,
                             reverse_table,
                             reverse_table._meta.primary_key,
-                            f"{reverse_lookup_name}",
+                            reverse_lookup_name,
                             reverse_lookup_select,
                             as_list=False,
                         )
@@ -522,8 +519,8 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                         and reverse_lookup_select.load_json
                     ):
                         for row in response:
-                            data = row[reverse_lookup_select.columns[0]]
-                            row[reverse_lookup_select.columns[0]] = [
+                            data = row[str(reverse_lookup_select.columns[0])]
+                            row[str(reverse_lookup_select.columns[0])] = [
                                 load_json(i) for i in data
                             ]
 
@@ -532,8 +529,8 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                     # are returned as a JSON string, so we need to deserialise
                     # it.
                     for row in response:
-                        data = row[f"{reverse_lookup_name}"]
-                        row[f"{reverse_lookup_name}"] = (
+                        data = row[reverse_lookup_name]
+                        row[reverse_lookup_name] = (
                             load_json(data) if data else []
                         )
                 else:
@@ -544,7 +541,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                         response,
                         reverse_table,
                         reverse_table._meta.primary_key,
-                        f"{reverse_lookup_name}",
+                        reverse_lookup_name,
                         reverse_lookup_select,
                         as_list=False,
                     )

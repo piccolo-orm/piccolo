@@ -3,7 +3,7 @@ import importlib
 import sys
 import typing as t
 
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 
 async def dummy_server(app: t.Union[str, t.Callable] = "app:app"):
@@ -24,7 +24,7 @@ async def dummy_server(app: t.Union[str, t.Callable] = "app:app"):
         module = importlib.import_module(path)
         app = t.cast(t.Callable, getattr(module, app_name))
 
-    async with AsyncClient(app=app) as client:
+    async with AsyncClient(transport=ASGITransport(app=app)) as client:
         response = await client.get("http://localhost:8000")
         if response.status_code != 200:
             sys.exit("The app isn't callable!")
