@@ -244,33 +244,33 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         )
         return self
 
-    async def _splice_m2m_rows(
+    async def _splice_related_rows(
         self,
         response: t.List[t.Dict[str, t.Any]],
         secondary_table: t.Type[Table],
         secondary_table_pk: Column,
-        m2m_name: str,
-        m2m_select: t.Union[M2MSelect, ReverseLookupSelect],
+        related_name: str,
+        related_select: t.Union[M2MSelect, ReverseLookupSelect],
         as_list: bool = False,
     ):
         row_ids = list(
-            set(itertools.chain(*[row[m2m_name] for row in response]))
+            set(itertools.chain(*[row[related_name] for row in response]))
         )
         extra_rows = (
             (
                 await secondary_table.select(
-                    *m2m_select.columns,
+                    *related_select.columns,
                     secondary_table_pk.as_alias("mapping_key"),
                 )
                 .where(secondary_table_pk.is_in(row_ids))
-                .output(load_json=m2m_select.load_json)
+                .output(load_json=related_select.load_json)
                 .run()
             )
             if row_ids
             else []
         )
         if as_list:
-            column_name = m2m_select.columns[0]._meta.name
+            column_name = related_select.columns[0]._meta.name
             extra_rows_map = {
                 row["mapping_key"]: row[column_name] for row in extra_rows
             }
@@ -284,7 +284,9 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                 for row in extra_rows
             }
         for row in response:
-            row[m2m_name] = [extra_rows_map.get(i) for i in row[m2m_name]]
+            row[related_name] = [
+                extra_rows_map.get(i) for i in row[related_name]
+            ]
         return response
 
     async def response_handler(self, response: t.List[t.Dict[str, t.Any]]):
@@ -333,7 +335,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                     if m2m_select.serialisation_safe:
                         pass
                     else:
-                        response = await self._splice_m2m_rows(
+                        response = await self._splice_related_rows(
                             response,
                             secondary_table,
                             secondary_table_pk,
@@ -352,7 +354,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                                 {column_name: i} for i in row[m2m_name]
                             ]
                     else:
-                        response = await self._splice_m2m_rows(
+                        response = await self._splice_related_rows(
                             response,
                             secondary_table,
                             secondary_table_pk,
@@ -382,7 +384,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                     # If the data can't be safely serialised as JSON, we get
                     # back an array of primary key values, and need to
                     # splice in the correct values using Python.
-                    response = await self._splice_m2m_rows(
+                    response = await self._splice_related_rows(
                         response,
                         secondary_table,
                         secondary_table_pk,
@@ -429,7 +431,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                     if reverse_lookup_select.serialisation_safe:
                         pass
                     else:
-                        response = await self._splice_m2m_rows(
+                        response = await self._splice_related_rows(
                             response,
                             reverse_table,
                             reverse_table._meta.primary_key,
@@ -502,7 +504,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                                 for i in row[reverse_lookup_name]
                             ]
                     else:
-                        response = await self._splice_m2m_rows(
+                        response = await self._splice_related_rows(
                             response,
                             reverse_table,
                             reverse_table._meta.primary_key,
@@ -537,7 +539,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                     # If the data can't be safely serialised as JSON, we get
                     # back an array of primary key values, and need to
                     # splice in the correct values using Python.
-                    response = await self._splice_m2m_rows(
+                    response = await self._splice_related_rows(
                         response,
                         reverse_table,
                         reverse_table._meta.primary_key,

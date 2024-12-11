@@ -22,19 +22,19 @@ We create it in Piccolo like this:
 
 
     class Manager(Table):
-    name = Varchar()
-    bands = ReverseLookup(
-        LazyTableReference(
-            "Band",
-            module_path=__name__,
-        ),
-        reverse_fk="manager",
-    )
+        name = Varchar()
+        bands = ReverseLookup(
+            LazyTableReference(
+                "Band",
+                module_path=__name__,
+            ),
+            reverse_fk="manager",
+        )
 
 
     class Band(Table):
-    name = Varchar()
-    manager = ForeignKey(Manager)
+        name = Varchar()
+        manager = ForeignKey(Manager)
 
 -------------------------------------------------------------------------------
 
