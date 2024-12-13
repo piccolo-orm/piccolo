@@ -157,6 +157,54 @@ class TestReverseLookup(TestCase):
             ],
         )
 
+    @engines_skip("cockroach")
+    def test_select_multiple_all_columns_descending(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """  # noqa: E501
+        response = Manager.select(
+            Manager.name, Manager.bands(descending=True)
+        ).run_sync()
+
+        self.assertEqual(
+            response,
+            [
+                {
+                    "name": "Guido",
+                    "bands": [
+                        {"id": 2, "name": "Rustaceans", "manager": 1},
+                        {"id": 1, "name": "Pythonistas", "manager": 1},
+                    ],
+                },
+                {
+                    "name": "Mark",
+                    "bands": [{"id": 3, "name": "C-Sharps", "manager": 2}],
+                },
+                {
+                    "name": "John",
+                    "bands": [],
+                },
+            ],
+        )
+
+    @engines_skip("cockroach")
+    def test_select_id_descending(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+        """  # noqa: E501
+        response = Manager.select(
+            Manager.name, Manager.bands(Band.id, as_list=True, descending=True)
+        ).run_sync()
+
+        self.assertEqual(
+            response,
+            [
+                {"name": "Guido", "bands": [2, 1]},
+                {"name": "Mark", "bands": [3]},
+                {"name": "John", "bands": []},
+            ],
+        )
+
     def test_select_multiple_as_list_error(self):
 
         with self.assertRaises(ValueError):
@@ -260,6 +308,22 @@ class TestReverseLookupCustomPrimaryKey(TestCase):
                 {
                     "name": "Bob",
                     "concerts": [{"name": "Rockfest"}, {"name": "Folkfest"}],
+                },
+                {"name": "Sally", "concerts": [{"name": "Classicfest"}]},
+                {"name": "Fred", "concerts": []},
+            ],
+        )
+
+        response = Customer.select(
+            Customer.name, Customer.concerts(Concert.name, descending=True)
+        ).run_sync()
+
+        self.assertEqual(
+            response,
+            [
+                {
+                    "name": "Bob",
+                    "concerts": [{"name": "Folkfest"}, {"name": "Rockfest"}],
                 },
                 {"name": "Sally", "concerts": [{"name": "Classicfest"}]},
                 {"name": "Fred", "concerts": []},

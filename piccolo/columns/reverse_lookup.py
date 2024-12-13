@@ -27,6 +27,7 @@ class ReverseLookupSelect(Selectable):
         reverse_lookup: ReverseLookup,
         as_list: bool = False,
         load_json: bool = False,
+        descending: bool = False,
     ):
         """
         :param columns:
@@ -36,12 +37,16 @@ class ReverseLookupSelect(Selectable):
             flattened list will be returned, rather than a list of objects.
         :param load_json:
             If ``True``, any JSON strings are loaded as Python objects.
+        :param descending:
+            If ``True'', reverse lookup results sorted in descending order,
+            otherwise in default ascending order.
 
         """
         self.as_list = as_list
         self.columns = columns
         self.reverse_lookup = reverse_lookup
         self.load_json = load_json
+        self.descending = descending
 
         safe_types = [int, str]
 
@@ -210,6 +215,7 @@ class ReverseLookup:
         *columns: Column,
         as_list: bool = False,
         load_json: bool = False,
+        descending: bool = False,
     ) -> ReverseLookupSelect:
         """
         :param columns:
@@ -220,6 +226,9 @@ class ReverseLookup:
             flattened list will be returned, rather than a list of objects.
         :param load_json:
             If ``True``, any JSON strings are loaded as Python objects.
+        :param descending:
+            If ``True'', reverse lookup results sorted in descending order,
+            otherwise in default ascending order.
 
         """
 
@@ -233,4 +242,5 @@ class ReverseLookup:
             reverse_lookup=self,
             as_list=as_list,
             load_json=load_json,
+            descending=descending,
         )

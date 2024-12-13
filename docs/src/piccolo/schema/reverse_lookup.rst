@@ -24,10 +24,7 @@ We create it in Piccolo like this:
     class Manager(Table):
         name = Varchar()
         bands = ReverseLookup(
-            LazyTableReference(
-                "Band",
-                module_path=__name__,
-            ),
+            LazyTableReference("Band", module_path=__name__),
             reverse_fk="manager",
         )
 
@@ -100,6 +97,28 @@ If you omit the columns argument, then all of the columns are returned.
             'bands': [
                 {'id': 1, 'name': 'Pythonistas'}, 
                 {'id': 2, 'name': 'Rustaceans'},
+            ]
+        }
+    ]
+
+The default order of reverse lookup results is ascending, but if you 
+specify ``descending=True``, you can get the results in descending order.
+
+.. code-block:: python
+
+    >>> await Manager.select(Manager.name, Manager.bands(descending=True))
+    [
+        {
+            'name': 'John',
+            'bands': [
+                {'id': 3, 'name': 'C-Sharps'},
+            ]
+        },
+        {   
+            'name': 'Guido', 
+            'bands': [
+                {'id': 2, 'name': 'Rustaceans'},
+                {'id': 1, 'name': 'Pythonistas'}, 
             ]
         }
     ]

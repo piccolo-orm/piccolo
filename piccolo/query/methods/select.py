@@ -548,6 +548,12 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                         as_list=False,
                     )
 
+            if reverse_lookup_select.descending:
+                for row in response:
+                    row[reverse_lookup_name] = list(
+                        reversed(row[reverse_lookup_name])
+                    )
+
         #######################################################################
 
         # If no columns were specified, it's a select *, so we know that
