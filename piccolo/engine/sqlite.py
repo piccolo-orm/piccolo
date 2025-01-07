@@ -173,9 +173,21 @@ def convert_numeric_out(value: str) -> Decimal:
 @decode_to_string
 def convert_int_out(value: str) -> int:
     """
-    Make sure Integer values are actually of type int.
+    Make sure INTEGER values are actually of type ``int``.
+
+    SQLite doesn't enforce that the values in INTEGER columns are actually
+    integers - they could be strings ('hello'), or floats (1.0).
+
+    There's not much we can do if the value is something like 'hello' - a
+    ``ValueError`` is appropriate in this situation.
+
+    For a value like ``1.0``, it seems reasonable to handle this, and return a
+    value of ``1``.
+
     """
-    return int(value)
+    # We used to use int(float(value)), but it was incorrect, because float has
+    # limited precision for large numbers.
+    return int(Decimal(value))
 
 
 @decode_to_string
