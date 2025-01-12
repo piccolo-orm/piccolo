@@ -17,6 +17,7 @@ ROUTER_DEPENDENCIES = {
     "litestar": ["litestar"],
     "esmerald": ["esmerald"],
     "lilya": ["lilya"],
+    "falcon": ["falcon"],
 }
 ROUTERS = list(ROUTER_DEPENDENCIES.keys())
 

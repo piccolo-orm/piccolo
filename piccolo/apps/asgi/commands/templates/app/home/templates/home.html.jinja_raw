@@ -66,6 +66,11 @@
                 <li><a href="/admin/">Admin</a></li>
                 <li><a href="/tasks/">JSON endpoint</a></li>
             </ul>
+            <h3>Falcon</h3>
+            <ul>
+                <li><a href="/admin/">Admin</a></li>
+                <li><a href="/tasks/">JSON endpoint</a></li>
+            </ul>
         </section>
     </div>
 {% endblock content %}
