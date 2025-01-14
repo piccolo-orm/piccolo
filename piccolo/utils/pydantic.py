@@ -248,7 +248,7 @@ def create_pydantic_model(
 
         if all_optional:
             is_optional = True
-        elif column._meta.required is not ...:
+        elif column._meta.required is not None:
             # The user can force the field to be optional or not, irrespective
             # of whether it's nullable in the database.
             is_optional = not column._meta.required

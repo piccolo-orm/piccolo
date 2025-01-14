@@ -153,7 +153,7 @@ class ColumnMeta:
     unique: bool = False
     index: bool = False
     index_method: IndexMethod = IndexMethod.btree
-    required: bool = ...
+    required: t.Optional[bool] = None
     help_text: t.Optional[str] = None
     choices: t.Optional[t.Type[Enum]] = None
     secret: bool = False
@@ -459,7 +459,7 @@ class Column(Selectable):
         unique: bool = False,
         index: bool = False,
         index_method: IndexMethod = IndexMethod.btree,
-        required: bool = ...,
+        required: t.Optional[bool] = None,
         help_text: t.Optional[str] = None,
         choices: t.Optional[t.Type[Enum]] = None,
         db_column_name: t.Optional[str] = None,
