@@ -72,22 +72,22 @@ class TestNewAppRuns(TestCase):
                 os.mkdir(root)
                 new(root=root)
 
-                # Copy a integration test ASGI server, so we can test that
-                # the server works.
+                # Copy a dummy ASGI server, so we can test that the server
+                # works.
                 shutil.copyfile(
                     os.path.join(
                         os.path.dirname(__file__),
                         "files",
-                        "test_server.py",
+                        "dummy_server.py",
                     ),
-                    os.path.join(root, "test_server.py"),
+                    os.path.join(root, "dummy_server.py"),
                 )
 
                 response = subprocess.run(
                     f"cd {root} && "
                     "python -m venv venv && "
                     "./venv/bin/pip install -r requirements.txt && "
-                    "./venv/bin/python test_server.py",
+                    "./venv/bin/python dummy_server.py",
                     shell=True,
                 )
                 self.assertEqual(
