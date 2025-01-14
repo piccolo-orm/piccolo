@@ -243,10 +243,20 @@ def create_pydantic_model(
     for column in piccolo_columns:
         column_name = column._meta.name
 
-        is_optional = True if all_optional else not column._meta.required
+        #######################################################################
+        # Work out if the field should be optional
+
+        if all_optional:
+            is_optional = True
+        elif column._meta.required is not ...:
+            # The user can force the field to be optional or not, irrespective
+            # of whether it's nullable in the database.
+            is_optional = not column._meta.required
+        else:
+            is_optional = column._meta.null
 
         #######################################################################
-        # Work out the column type
+        # Work out the field type
 
         if isinstance(column, (JSON, JSONB)):
             if deserialize_json:

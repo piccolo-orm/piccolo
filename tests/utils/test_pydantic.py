@@ -48,10 +48,15 @@ class TestEmailColumn(TestCase):
         pydantic_model = create_pydantic_model(table=Director)
 
         self.assertEqual(
-            pydantic_model.model_json_schema()["properties"]["email"]["anyOf"][
-                0
-            ]["format"],
+            pydantic_model.model_json_schema()["properties"]["email"][
+                "format"
+            ],
             "email",
+        )
+
+        self.assertEqual(
+            pydantic_model.model_json_schema()["properties"]["email"]["type"],
+            "string",
         )
 
         with self.assertRaises(ValidationError):
@@ -121,8 +126,8 @@ class TestArrayColumn(TestCase):
 
         self.assertEqual(
             pydantic_model.model_json_schema()["properties"]["members"][
-                "anyOf"
-            ][0]["items"]["type"],
+                "items"
+            ]["type"],
             "string",
         )
 
@@ -132,7 +137,7 @@ class TestArrayColumn(TestCase):
         """
 
         class Band(Table):
-            members = Array(Array(Varchar(length=255)), required=True)
+            members = Array(Array(Varchar(length=255)))
 
         pydantic_model = create_pydantic_model(table=Band)
 
@@ -223,8 +228,8 @@ class TestTimeColumn(TestCase):
 
         self.assertEqual(
             pydantic_model.model_json_schema()["properties"]["start_time"][
-                "anyOf"
-            ][0]["format"],
+                "format"
+            ],
             "time",
         )
 
@@ -281,11 +286,78 @@ class TestUUIDColumn(TestCase):
             self.assertEqual(json, '{"code":"' + str(ticket_.code) + '"}')
 
         self.assertEqual(
-            pydantic_model.model_json_schema()["properties"]["code"]["anyOf"][
-                0
-            ]["format"],
+            pydantic_model.model_json_schema()["properties"]["code"]["format"],
             "uuid",
         )
+
+
+class TestRequired(TestCase):
+    """
+    Using the `required` attribute, we can force the field to be required or
+    not (overriding `column._meta.null`)
+    """
+
+    def test_required(self):
+        """
+        Make a null column required.
+        """
+
+        class Director(Table):
+            name = Varchar(null=True, required=True)
+
+        pydantic_model = create_pydantic_model(table=Director)
+
+        self.assertEqual(
+            pydantic_model.model_json_schema()["properties"]["name"]["type"],
+            "string",
+        )
+
+        with self.assertRaises(pydantic.ValidationError):
+            pydantic_model(name=None)
+
+    def test_not_required(self):
+        """
+        Make a column not required.
+        """
+
+        class Director(Table):
+            name = Varchar(null=False, required=False)
+
+        pydantic_model = create_pydantic_model(table=Director)
+
+        self.assertEqual(
+            pydantic_model.model_json_schema()["properties"]["name"]["anyOf"],
+            [
+                {"maxLength": 255, "type": "string"},
+                {"type": "null"},
+            ],
+        )
+
+        # Shouldn't raise an error:
+        pydantic_model(name=None)
+
+    def test_all_optional(self):
+        """
+        Makes all columns not required - useful for filters.
+        """
+
+        class Director(Table):
+            name = Varchar(null=False)
+
+        pydantic_model = create_pydantic_model(
+            table=Director, all_optional=True
+        )
+
+        self.assertEqual(
+            pydantic_model.model_json_schema()["properties"]["name"]["anyOf"],
+            [
+                {"maxLength": 255, "type": "string"},
+                {"type": "null"},
+            ],
+        )
+
+        # Shouldn't raise an error:
+        pydantic_model(name=None)
 
 
 class TestColumnHelpText(TestCase):
