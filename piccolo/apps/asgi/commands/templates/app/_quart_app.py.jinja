@@ -1,0 +1,119 @@
+import typing as t
+from http import HTTPStatus
+
+from hypercorn.middleware import DispatcherMiddleware
+from piccolo.engine import engine_finder
+from piccolo_admin.endpoints import create_admin
+from piccolo_api.crud.serializers import create_pydantic_model
+from quart import Quart
+from quart_schema import (
+    Info,
+    QuartSchema,
+    hide,
+    tag,
+    validate_request,
+    validate_response,
+)
+
+from home.endpoints import index
+from home.piccolo_app import APP_CONFIG
+from home.tables import Task
+
+
+app = Quart(__name__, static_folder="static")
+QuartSchema(app, info=Info(title="Quart API", version="0.1.0"))
+
+
+TaskModelIn: t.Any = create_pydantic_model(
+    table=Task,
+    model_name="TaskModelIn",
+)
+TaskModelOut: t.Any = create_pydantic_model(
+    table=Task,
+    include_default_columns=True,
+    model_name="TaskModelOut",
+)
+
+
+@app.get("/")
+@hide
+def home():
+    return index()
+
+
+@app.get("/tasks/")
+@validate_response(t.List[TaskModelOut])
+@tag(["Task"])
+async def tasks():
+    return await Task.select().order_by(Task._meta.primary_key, ascending=False)
+
+
+@app.post("/tasks/")
+@validate_request(TaskModelIn)
+@validate_response(TaskModelOut)
+@tag(["Task"])
+async def create_task(data: TaskModelIn):
+    task = Task(**data.model_dump())
+    await task.save()
+    return task.to_dict(), HTTPStatus.CREATED
+
+
+@app.put("/tasks/<int:task_id>/")
+@validate_request(TaskModelIn)
+@validate_response(TaskModelOut)
+@tag(["Task"])
+async def update_task(task_id: int, data: TaskModelIn):
+    task = await Task.objects().get(Task._meta.primary_key == task_id)
+    if not task:
+        return {}, HTTPStatus.NOT_FOUND
+
+    for key, value in data.model_dump().items():
+        setattr(task, key, value)
+
+    await task.save()
+
+    return task.to_dict(), HTTPStatus.OK
+
+
+@app.delete("/tasks/<int:task_id>/")
+@validate_response(TaskModelOut)
+@tag(["Task"])
+async def delete_task(task_id: int):
+    task = await Task.objects().get(Task._meta.primary_key == task_id)
+    if not task:
+        return {}, HTTPStatus.NOT_FOUND
+
+    await task.remove()
+
+    return {}, HTTPStatus.OK
+
+
+@app.before_serving
+async def open_database_connection_pool():
+    try:
+        engine = engine_finder()
+        await engine.start_connection_pool()
+    except Exception:
+        print("Unable to connect to the database")
+
+
+@app.after_serving
+async def close_database_connection_pool():
+    try:
+        engine = engine_finder()
+        await engine.close_connection_pool()
+    except Exception:
+        print("Unable to connect to the database")
+
+
+# enable the admin application using DispatcherMiddleware
+app = DispatcherMiddleware(  # type: ignore
+    {
+        "/admin": create_admin(
+            tables=APP_CONFIG.table_classes,
+            # Required when running under HTTPS:
+            # allowed_hosts=['my_site.com']
+        ),
+        "": app,
+    }
+)
