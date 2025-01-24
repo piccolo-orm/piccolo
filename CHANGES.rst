@@ -1,6 +1,55 @@
 Changes
 =======
 
+1.22.0
+------
+
+Python 3.13 is now officially supported.
+
+``JSON`` / ``JSONB`` querying has been significantly improved. For example, if
+we have this table:
+
+.. code-block:: python
+
+  class RecordingStudio(Table):
+      facilities = JSONB()
+
+And the ``facilities`` column contains the following JSON data:
+
+.. code-block:: python
+
+    {
+        "technicians": [
+            {"name": "Alice Jones"},
+            {"name": "Bob Williams"},
+        ]
+    }
+
+We can get the first technician name as follows:
+
+.. code-block:: python
+
+    >>> await RecordingStudio.select(
+    ...     RecordingStudio.facilities["technicians"][0]["name"].as_alias("name")
+    ... ).output(load_json=True)
+    [{'name': 'Alice Jones'}, ...]
+
+``TableStorage`` (used for dynamically creating Piccolo ``Table`` classes from
+an existing database) was improved, to support a Dockerised version of Piccolo
+Admin, which is coming soon.
+
+-------------------------------------------------------------------------------
+
+1.21.0
+------
+
+Postgres 17 is now officially supported.
+
+Fixed a bug with joins, when a ``ForeignKey`` column had ``db_column_name``
+specified. Thanks to @jessemcl-flwls for reporting this issue.
+
+-------------------------------------------------------------------------------
+
 1.20.0
 ------
 
@@ -3688,7 +3737,7 @@ metaclass not being explicit enough when checking falsy values.
   which prevents circular import issues.
 * Faster column copying, which is important when specifying joins, e.g.
   ``await Band.select(Band.manager.name).run()``.
-* Fixed a bug with migrations and foreign key contraints.
+* Fixed a bug with migrations and foreign key constraints.
 
 -------------------------------------------------------------------------------
 

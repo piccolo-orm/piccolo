@@ -6,6 +6,7 @@ from time import time
 from piccolo.columns.column_types import JSON, JSONB
 from piccolo.custom_types import QueryResponseType, TableInstance
 from piccolo.query.mixins import ColumnsDelegate
+from piccolo.query.operators.json import JSONQueryString
 from piccolo.querystring import QueryString
 from piccolo.utils.encoding import load_json
 from piccolo.utils.objects import make_nested_object
@@ -65,16 +66,20 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
                 self, "columns_delegate", None
             )
 
+            json_column_names: t.List[str] = []
+
             if columns_delegate is not None:
-                json_columns = [
-                    i
-                    for i in columns_delegate.selected_columns
-                    if isinstance(i, (JSON, JSONB))
-                ]
+                json_columns: t.List[t.Union[JSON, JSONB]] = []
+
+                for column in columns_delegate.selected_columns:
+                    if isinstance(column, (JSON, JSONB)):
+                        json_columns.append(column)
+                    elif isinstance(column, JSONQueryString):
+                        if alias := column._alias:
+                            json_column_names.append(alias)
             else:
                 json_columns = self.table._meta.json_columns
 
-            json_column_names = []
             for column in json_columns:
                 if column._alias is not None:
                     json_column_names.append(column._alias)

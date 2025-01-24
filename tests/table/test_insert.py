@@ -201,7 +201,7 @@ class TestOnConflict(TestCase):
         Make sure that a composite unique constraint can be used as a target.
 
         We only run it on Postgres and Cockroach because we use ALTER TABLE
-        to add a contraint, which SQLite doesn't support.
+        to add a constraint, which SQLite doesn't support.
         """
         Band = self.Band
 
