@@ -3737,7 +3737,7 @@ metaclass not being explicit enough when checking falsy values.
   which prevents circular import issues.
 * Faster column copying, which is important when specifying joins, e.g.
   ``await Band.select(Band.manager.name).run()``.
-* Fixed a bug with migrations and foreign key contraints.
+* Fixed a bug with migrations and foreign key constraints.
 
 -------------------------------------------------------------------------------
 
