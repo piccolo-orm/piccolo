@@ -15,7 +15,7 @@ from piccolo.apps.migrations.auto.serialisation import (
     serialise_params,
 )
 from piccolo.columns.base import Column
-from piccolo.constraint import Constraint
+from piccolo.constraints import Constraint
 from piccolo.table import Table, create_table_class
 
 

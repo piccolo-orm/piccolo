@@ -17,7 +17,7 @@ from piccolo.apps.migrations.auto.operations import (
 from piccolo.apps.migrations.auto.serialisation import deserialise_params
 from piccolo.columns import Column, column_types
 from piccolo.columns.column_types import ForeignKey, Serial
-from piccolo.constraint import Constraint, UniqueConstraint
+from piccolo.constraints import Constraint, UniqueConstraint
 from piccolo.engine import engine_finder
 from piccolo.query import Query
 from piccolo.query.base import DDL

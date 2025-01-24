@@ -28,7 +28,7 @@ from piccolo.columns.m2m import (
 )
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
-from piccolo.constraint import Constraint
+from piccolo.constraints import Constraint
 from piccolo.custom_types import TableInstance
 from piccolo.engine import Engine, engine_finder
 from piccolo.query import (
@@ -491,7 +491,7 @@ class Table(metaclass=TableMetaclass):
         You should wait for the ``Table`` to be initialised before calling
         this method. For example::
 
-            from piccolo.constraint import UniqueConstraint
+            from piccolo.constraints import UniqueConstraint
 
             class Album(Table):
                 name = Varchar()

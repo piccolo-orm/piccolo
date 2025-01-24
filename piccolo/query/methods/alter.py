@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import ForeignKey, Numeric, Varchar
-from piccolo.constraint import Constraint
+from piccolo.constraints import Constraint
 from piccolo.query.base import DDL
 from piccolo.utils.warnings import Level, colored_warning
 

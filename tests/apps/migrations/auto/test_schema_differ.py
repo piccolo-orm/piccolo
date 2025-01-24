@@ -13,7 +13,7 @@ from piccolo.apps.migrations.auto.schema_differ import (
     SchemaDiffer,
 )
 from piccolo.columns.column_types import Numeric, Varchar
-from piccolo.constraint import UniqueConstraint
+from piccolo.constraints import UniqueConstraint
 
 
 class TestSchemaDiffer(TestCase):

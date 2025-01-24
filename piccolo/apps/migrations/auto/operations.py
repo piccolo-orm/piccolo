@@ -2,7 +2,7 @@ import typing as t
 from dataclasses import dataclass
 
 from piccolo.columns.base import Column
-from piccolo.constraint import Constraint
+from piccolo.constraints import Constraint
 
 
 @dataclass

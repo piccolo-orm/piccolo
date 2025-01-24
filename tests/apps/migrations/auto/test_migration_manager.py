@@ -11,7 +11,7 @@ from piccolo.columns import Text, Varchar
 from piccolo.columns.base import OnDelete, OnUpdate
 from piccolo.columns.column_types import ForeignKey
 from piccolo.conf.apps import AppConfig
-from piccolo.constraint import UniqueConstraint
+from piccolo.constraints import UniqueConstraint
 from piccolo.engine import engine_finder
 from piccolo.table import Table, sort_table_classes
 from piccolo.utils.lazy_loader import LazyLoader

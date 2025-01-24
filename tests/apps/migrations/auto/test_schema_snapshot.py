@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from piccolo.apps.migrations.auto import MigrationManager, SchemaSnapshot
-from piccolo.constraint import UniqueConstraint
+from piccolo.constraints import UniqueConstraint
 
 
 class TestSchemaSnaphot(TestCase):

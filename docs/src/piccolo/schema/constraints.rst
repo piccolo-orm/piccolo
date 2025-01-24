@@ -21,7 +21,7 @@ Multi-column
 ``add_constraints``
 -------------------
 
-Use the ``add_constraints`` class method to add multi-column constraints to a
+Use the ``add_constraints`` method to add multi-column constraints to a
 ``Table``:
 
 .. currentmodule:: piccolo.table
