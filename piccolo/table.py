@@ -482,6 +482,28 @@ class Table(metaclass=TableMetaclass):
         """
         return cls(**data)
 
+    @classmethod
+    def add_constraints(cls, *constraint: Constraint):
+        """
+        Add composite constraints to the table (e.g. a unique constraint across
+        multiple columns).
+
+        You should wait for the ``Table`` to be initialised before calling
+        this method. For example::
+
+            from piccolo.constraint import UniqueConstraint
+
+            class Album(Table):
+                name = Varchar()
+                band = ForeignKey(Band)
+
+            Album.add_constraints(
+                UniqueConstraint(Album.name, Album.band)
+            )
+
+        """
+        cls._meta.constraints.extend(constraint)
+
     ###########################################################################
 
     def save(
