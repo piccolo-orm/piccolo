@@ -440,11 +440,7 @@ class MigrationManager:
         params: t.Dict[str, t.Any],
         schema: t.Optional[str] = None,
     ):
-        if constraint_class is UniqueConstraint:
-            constraint = UniqueConstraint(**params)
-        else:
-            raise ValueError("Unrecognised constraint type")
-
+        constraint = constraint_class(**params)
         constraint._meta.name = constraint_name
 
         self.add_constraints.append(
@@ -881,7 +877,12 @@ class MigrationManager:
             )
 
             _Table._meta.constraints.extend(
-                self.add_constraints.for_table_class_name(add_table.class_name)
+                [
+                    i.constraint
+                    for i in self.add_constraints.for_table_class_name(
+                        add_table.class_name
+                    )
+                ]
             )
 
             table_classes.append(_Table)
