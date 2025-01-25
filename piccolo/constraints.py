@@ -100,4 +100,4 @@ class CheckConstraint(Constraint):
 
     @property
     def ddl(self) -> str:
-        return f"CHECK {self.condition})"
+        return f"CHECK ({self.condition})"
