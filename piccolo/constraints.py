@@ -79,7 +79,7 @@ class UniqueConstraint(Constraint):
 
 class CheckConstraint(Constraint):
     """
-    Check constraint on the table columns.
+    Check constraint on the table.
     """
 
     def __init__(
