@@ -50,6 +50,7 @@ class TestShared(TestCase):
                         "unique_col": "hello",
                         "null_col": None,
                         "not_null_col": "hello",
+                        "double_precision_col": 1.0,
                     }
                 ],
             }
