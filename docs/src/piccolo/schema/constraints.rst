@@ -2,8 +2,11 @@
 Constraints
 ===========
 
+Unique constraints
+==================
+
 Single column
-=============
+-------------
 
 Unique constraints can be added to a single column using the ``unique=True``
 argument of ``Column``:
@@ -13,29 +16,15 @@ argument of ``Column``:
     class Band(Table):
         name = Varchar(unique=True)
 
--------------------------------------------------------------------------------
-
 Multi-column
-============
+------------
 
-``add_constraints``
--------------------
-
-Use the ``add_constraints`` method to add multi-column constraints to a
+Use the ``add_unique_constraint`` method to add a multi-column constraint to a
 ``Table``:
 
 .. currentmodule:: piccolo.table
 
-.. automethod:: Table.add_constraints
+.. automethod:: Table.add_unique_constraint
 
 -------------------------------------------------------------------------------
 
-Constraint types
-================
-
-``UniqueConstraint``
---------------------
-
-.. currentmodule:: piccolo.constraint
-
-.. autoclass:: UniqueConstraint

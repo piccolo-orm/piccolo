@@ -486,13 +486,10 @@ class Table(metaclass=TableMetaclass):
         nulls_distinct: bool = True,
     ):
         """
-        Add a unique constraint to the table (e.g. a unique constraint across
-        multiple columns).
+        Add a unique constraint across multiple columns.
 
         You should wait for the ``Table`` to be initialised before calling
         this method. For example::
-
-            from piccolo.constraints import UniqueConstraint
 
             class Album(Table):
                 name = Varchar()
@@ -503,8 +500,11 @@ class Table(metaclass=TableMetaclass):
                 Album.band,
             )
 
-        Note - this method doesn't create the constraint in the database. That
-        is done either by creating a migration, or using ``create_table``.
+        .. note::
+            This method doesn't create the constraint in the database - it just
+            registers it with the ``Table``. To create it in the database,
+            either create a migration, or use ``create_table`` if it's a new
+            table.
 
         :param columns:
             The table columns that should be unique together.
