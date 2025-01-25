@@ -28,3 +28,7 @@ Use the ``add_unique_constraint`` method to add a multi-column constraint to a
 
 -------------------------------------------------------------------------------
 
+Check constraints
+=================
+
+.. automethod:: Table.add_check_constraint

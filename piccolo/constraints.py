@@ -75,3 +75,29 @@ class UniqueConstraint(Constraint):
         )
         columns_string = ", ".join(f'"{i}"' for i in self.column_names)
         return f"UNIQUE {nulls_string}({columns_string})"
+
+
+class CheckConstraint(Constraint):
+    """
+    Check constraint on the table columns.
+    """
+
+    def __init__(
+        self,
+        condition: str,
+        name: str,
+    ) -> None:
+        """
+        :param condition:
+            The SQL expression used to make sure the data is valid (e.g.
+            ``"price > 0"``).
+        :param name:
+            The name of the constraint in the database.
+
+        """
+        self.condition = condition
+        super().__init__(name=name, condition=condition)
+
+    @property
+    def ddl(self) -> str:
+        return f"CHECK {self.condition})"

@@ -28,8 +28,8 @@ from piccolo.columns.m2m import (
 )
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
-from piccolo.constraints import Constraint, UniqueConstraint
-from piccolo.custom_types import TableInstance
+from piccolo.constraints import CheckConstraint, Constraint, UniqueConstraint
+from piccolo.custom_types import Combinable, TableInstance
 from piccolo.engine import Engine, engine_finder
 from piccolo.query import (
     Alter,
@@ -478,6 +478,9 @@ class Table(metaclass=TableMetaclass):
         """
         return cls(**data)
 
+    ###########################################################################
+    # Constraints
+
     @classmethod
     def add_unique_constraint(
         cls,
@@ -486,7 +489,7 @@ class Table(metaclass=TableMetaclass):
         nulls_distinct: bool = True,
     ):
         """
-        Add a unique constraint across multiple columns.
+        Add a unique constraint to one or more columns.
 
         You should wait for the ``Table`` to be initialised before calling
         this method. For example::
@@ -499,6 +502,9 @@ class Table(metaclass=TableMetaclass):
                 Album.name,
                 Album.band,
             )
+
+        In the above example, the database will enforce that ``name`` and
+        ``band`` form a unique combination.
 
         .. note::
             This method doesn't create the constraint in the database - it just
@@ -537,6 +543,67 @@ class Table(metaclass=TableMetaclass):
                 column_names=column_names,
                 name=name,
                 nulls_distinct=nulls_distinct,
+            )
+        )
+
+    @classmethod
+    def add_check_constraint(
+        cls,
+        condition: Combinable,
+        name: t.Optional[str] = None,
+    ):
+        """
+        Add a check constraint to the table.
+
+        You should wait for the ``Table`` to be initialised before calling
+        this method. For example::
+
+            class Ticket(Table):
+                price = Decimal()
+
+            Ticket.add_check_constraint(
+                Ticket.price >= 0
+            )
+
+        .. note::
+            This method doesn't create the constraint in the database - it just
+            registers it with the ``Table``. To create it in the database,
+            either create a migration, or use ``create_table`` if it's a new
+            table.
+
+        You can have more complex conditions, for example::
+
+            Ticket.add_check_constraint(
+                (Ticket.price >= 0) & (Ticket.price < 100)
+            )
+
+        :param condition:
+            The syntax is the same as the ``where`` clause used by most
+            queries (e.g. ``select``).
+        :param name:
+            The name of the constraint in the database. If not provided, we
+            generate a sensible default.
+
+        """  # noqa: E501
+        from piccolo.query.mixins import WhereDelegate
+
+        columns = WhereDelegate(_where=condition).get_where_columns()
+
+        for column in columns:
+            if column._meta.table != cls:
+                raise ValueError(
+                    f"The {column._meta.name} column doesn't belong to this "
+                    "table."
+                )
+
+        if name is None:
+            column_names = [column._meta.db_column_name for column in columns]
+            name = "_".join([cls._meta.tablename, *column_names, "check"])
+
+        cls._meta.constraints.append(
+            CheckConstraint(
+                condition=condition.querystring.__str__(),
+                name=name,
             )
         )
 
