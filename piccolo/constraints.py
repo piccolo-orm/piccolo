@@ -4,8 +4,6 @@ import typing as t
 from abc import abstractmethod
 from dataclasses import dataclass, field
 
-from piccolo.columns import Column
-
 
 class Constraint:
     """
@@ -13,6 +11,7 @@ class Constraint:
     """
 
     def __init__(self, name: str, **kwargs) -> None:
+        kwargs.update(name=name)
         self._meta = ConstraintMeta(name=name, params=kwargs)
 
     def __hash__(self):
@@ -43,36 +42,24 @@ class UniqueConstraint(Constraint):
 
     def __init__(
         self,
-        *columns: Column,
-        name: t.Optional[str] = None,
+        column_names: t.Sequence[str],
+        name: str,
         nulls_distinct: bool = True,
     ) -> None:
         """
         :param columns:
             The table columns that should be unique together.
         :param name:
-            The name of the constraint in the database. If not provided, we
-            generate a sensible default.
+            The name of the constraint in the database.
         :param nulls_distinct:
             See the `Postgres docs <https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS>`_
             for more information.
 
         """  # noqa: E501
-        if len(columns) < 1:
+        if len(column_names) < 1:
             raise ValueError("At least 1 column must be specified.")
 
-        tablenames = [column._meta.table._meta.tablename for column in columns]
-
-        if len(set(tablenames)) > 1:
-            raise ValueError("The columns belong to different tables.")
-
-        column_names = [column._meta.db_column_name for column in columns]
         self.column_names = column_names
-
-        if name is None:
-            name = "_".join([tablenames[0], "unique", *column_names])
-        self.name = name
-
         self.nulls_distinct = nulls_distinct
 
         super().__init__(

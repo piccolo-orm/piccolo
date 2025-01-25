@@ -867,16 +867,9 @@ class MigrationManager:
             add_columns: t.List[AddColumnClass] = (
                 self.add_columns.for_table_class_name(add_table.class_name)
             )
-            add_constraints: t.List[AddConstraintClass] = (
-                self.add_constraints.for_table_class_name(add_table.class_name)
-            )
             class_members: t.Dict[str, t.Any] = {}
             for add_column in add_columns:
                 class_members[add_column.column._meta.name] = add_column.column
-            for add_constraint in add_constraints:
-                class_members[add_constraint.constraint._meta.name] = (
-                    add_constraint.constraint
-                )
 
             _Table: t.Type[Table] = create_table_class(
                 class_name=add_table.class_name,
@@ -886,6 +879,11 @@ class MigrationManager:
                 },
                 class_members=class_members,
             )
+
+            _Table._meta.constraints.extend(
+                self.add_constraints.for_table_class_name(add_table.class_name)
+            )
+
             table_classes.append(_Table)
 
         # Sort by foreign key, so they're created in the right order.

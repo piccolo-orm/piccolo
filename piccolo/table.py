@@ -28,7 +28,7 @@ from piccolo.columns.m2m import (
 )
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
-from piccolo.constraints import Constraint
+from piccolo.constraints import Constraint, UniqueConstraint
 from piccolo.custom_types import TableInstance
 from piccolo.engine import Engine, engine_finder
 from piccolo.query import (
@@ -343,10 +343,6 @@ class Table(metaclass=TableMetaclass):
                 attribute._meta._table = cls
                 m2m_relationships.append(attribute)
 
-            if isinstance(attribute, Constraint):
-                attribute._meta._name = attribute_name
-                constraints.append(attribute)
-
         if not primary_key:
             primary_key = cls._create_serial_primary_key()
             setattr(cls, "id", primary_key)
@@ -483,9 +479,14 @@ class Table(metaclass=TableMetaclass):
         return cls(**data)
 
     @classmethod
-    def add_constraints(cls, *constraint: Constraint):
+    def add_unique_constraint(
+        cls,
+        *columns: Column,
+        name: t.Optional[str] = None,
+        nulls_distinct: bool = True,
+    ):
         """
-        Add composite constraints to the table (e.g. a unique constraint across
+        Add a unique constraint to the table (e.g. a unique constraint across
         multiple columns).
 
         You should wait for the ``Table`` to be initialised before calling
@@ -497,12 +498,47 @@ class Table(metaclass=TableMetaclass):
                 name = Varchar()
                 band = ForeignKey(Band)
 
-            Album.add_constraints(
-                UniqueConstraint(Album.name, Album.band)
+            Album.add_unique_constraint(
+                Album.name,
+                Album.band,
             )
 
-        """
-        cls._meta.constraints.extend(constraint)
+        Note - this method doesn't create the constraint in the database. That
+        is done either by creating a migration, or using ``create_table``.
+
+        :param columns:
+            The table columns that should be unique together.
+        :param name:
+            The name of the constraint in the database. If not provided, we
+            generate a sensible default.
+        :param nulls_distinct:
+            See the `Postgres docs <https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS>`_
+            for more information.
+
+        """  # noqa: E501
+
+        if len(columns) < 1:
+            raise ValueError("At least 1 column must be specified.")
+
+        for column in columns:
+            if column._meta.table != cls:
+                raise ValueError(
+                    f"The {column._meta.name} column doesn't belong to this "
+                    "table."
+                )
+
+        column_names = [column._meta.db_column_name for column in columns]
+
+        if name is None:
+            name = "_".join([cls._meta.tablename, *column_names, "unique"])
+
+        cls._meta.constraints.append(
+            UniqueConstraint(
+                column_names=column_names,
+                name=name,
+                nulls_distinct=nulls_distinct,
+            )
+        )
 
     ###########################################################################
 
