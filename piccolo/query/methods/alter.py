@@ -317,7 +317,6 @@ class Alter(DDL):
         """
         column._meta._table = self.table
         column._meta._name = name
-        column._meta.db_column_name = name
 
         if isinstance(column, ForeignKey):
             column._setup(table_class=self.table)
