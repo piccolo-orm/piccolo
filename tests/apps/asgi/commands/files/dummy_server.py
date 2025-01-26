@@ -4,9 +4,10 @@ import sys
 import typing as t
 
 from httpx import ASGITransport, AsyncClient
+from uvicorn import Config, Server
 
 
-async def dummy_server(app: t.Union[str, t.Callable] = "app:app"):
+async def dummy_server(app: t.Union[str, t.Callable] = "app:app") -> None:
     """
     A very simplistic ASGI server. It's used to run the generated ASGI
     applications in unit tests.
@@ -24,10 +25,16 @@ async def dummy_server(app: t.Union[str, t.Callable] = "app:app"):
         module = importlib.import_module(path)
         app = t.cast(t.Callable, getattr(module, app_name))
 
-    async with AsyncClient(transport=ASGITransport(app=app)) as client:
-        response = await client.get("http://localhost:8000")
-        if response.status_code != 200:
-            sys.exit("The app isn't callable!")
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app)) as client:
+            response = await client.get("http://localhost:8000")
+            if response.status_code != 200:
+                sys.exit("The app isn't callable!")
+    except Exception:
+        config = Config(app=app)
+        server = Server(config=config)
+        asyncio.create_task(server.serve())
+        await asyncio.sleep(0.1)
 
 
 if __name__ == "__main__":

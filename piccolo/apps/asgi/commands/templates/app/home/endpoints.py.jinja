@@ -12,4 +12,6 @@
     {% include '_quart_endpoints.py.jinja' %}
 {% elif router == 'falcon' %}
     {% include '_falcon_endpoints.py.jinja' %}
+{% elif router == 'sanic' %}
+    {% include '_sanic_endpoints.py.jinja' %}
 {% endif %}

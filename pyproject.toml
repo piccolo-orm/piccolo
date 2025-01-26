@@ -16,7 +16,8 @@ module = [
     "IPython.core.interactiveshell",
     "jinja2",
     "orjson",
-    "aiosqlite"
+    "aiosqlite",
+    "uvicorn"
 ]
 ignore_missing_imports = true
 
