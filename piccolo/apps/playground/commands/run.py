@@ -95,6 +95,9 @@ class Concert(Table):
         )
 
 
+from piccolo.constraints import Unique
+
+
 class Ticket(Table):
     class TicketType(Enum):
         sitting = "sitting"
@@ -105,6 +108,13 @@ class Ticket(Table):
     concert = ForeignKey(Concert)
     price = Numeric(digits=(5, 2))
     ticket_type = Varchar(choices=TicketType, default=TicketType.standing)
+
+    # These should just be dataclasses ... and perform no logic.
+    # In the metaclass we do all of the logic to convert them to proper
+    # Constraints
+    # I think using a dataclass makes more sense ... because we want to pass
+    # args.
+    constraints = [Unique(columns=[concert, ticket_type])]
 
     @classmethod
     def get_readable(cls) -> Readable:

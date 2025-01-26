@@ -1,11 +1,152 @@
 from __future__ import annotations
 
 import typing as t
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field
 
+if t.TYPE_CHECKING:
+    from piccolo.columns import Column
+    from piccolo.custom_types import Combinable
 
-class Constraint:
+
+class ConstraintConfig(metaclass=ABCMeta):
+
+    def validate_columns(self, columns: t.List[Column]):
+        """
+        Make sure all the columns belong to the same table.
+        """
+        if len({column._meta.table._meta.tablename for column in columns}) > 1:
+            raise ValueError("The columns don't all belong to the same table.")
+
+    @abstractmethod
+    def to_constraint(self) -> Constraint:
+        """
+        Override in subclasses.
+        """
+        raise NotImplementedError()
+
+
+class Unique(ConstraintConfig):
+    """
+    Add a unique constraint to one or more columns. For example::
+
+        class Album(Table):
+            name = Varchar()
+            band = ForeignKey(Band)
+
+            constraints = [
+                Unique([Album.name, Album.band])
+            ]
+
+    In the above example, the database will enforce that ``name`` and
+    ``band`` form a unique combination.
+
+    :param columns:
+        The table columns that should be unique together.
+    :param name:
+        The name of the constraint in the database. If not provided, we
+        generate a sensible default.
+    :param nulls_distinct:
+        See the `Postgres docs <https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS>`_
+        for more information.
+
+    """  # noqa: E501
+
+    def __init__(
+        self,
+        columns: t.List[Column],
+        name: t.Optional[str] = None,
+        nulls_distinct: bool = True,
+    ):
+        if len(columns) < 1:
+            raise ValueError("At least 1 column must be specified.")
+
+        self.validate_columns(columns)
+
+        self.columns = columns
+        self.name = name
+        self.nulls_distinct = nulls_distinct
+
+    def to_constraint(self) -> UniqueConstraint:
+        """
+        You should wait for the ``Table`` metaclass to assign names all of the
+        columns before calling this method.
+        """
+        column_names = [column._meta.db_column_name for column in self.columns]
+
+        if self.name is None:
+            tablename = self.columns[0]._meta.table._meta.tablename
+            name = "_".join([tablename, *column_names, "unique"])
+
+        return UniqueConstraint(
+            column_names=column_names,
+            name=name,
+            nulls_distinct=self.nulls_distinct,
+        )
+
+
+class Check(ConstraintConfig):
+    """
+    Add a check constraint to the table. For example::
+
+        class Ticket(Table):
+            price = Decimal()
+
+            constraints = [
+                Check(Ticket.price >= 0)
+            ]
+
+    You can have more complex conditions. For example::
+
+        class Ticket(Table):
+            price = Decimal()
+
+            constraints = [
+                Check(
+                    (Ticket.price >= 0) & (Ticket.price < 100)
+                )
+            ]
+
+    :param condition:
+        The syntax is the same as the ``where`` clause used by most
+        queries (e.g. ``select``).
+    :param name:
+        The name of the constraint in the database. If not provided, we
+        generate a sensible default.
+
+    """
+
+    def __init__(self, condition: Combinable, name: t.Optional[str] = None):
+        from piccolo.query.mixins import WhereDelegate
+
+        self.columns = WhereDelegate(_where=condition).get_where_columns()
+        self.validate_columns(self.columns)
+
+        self.condition = condition
+        self.name = name
+
+    def to_constraint(self) -> CheckConstraint:
+        """
+        You should wait for the ``Table`` metaclass to assign names all of the
+        columns before calling this method.
+        """
+        if self.name is None:
+            tablename = self.columns[0]._meta.table._meta.tablename
+            column_names = [
+                column._meta.db_column_name for column in self.columns
+            ]
+            name = "_".join([tablename, *column_names, "check"])
+
+        return CheckConstraint(
+            condition=self.condition.querystring.__str__(),
+            name=name,
+        )
+
+
+###############################################################################
+
+
+class Constraint(metaclass=ABCMeta):
     """
     All other constraints inherit from ``Constraint``. Don't use it directly.
     """
@@ -38,6 +179,9 @@ class ConstraintMeta:
 class UniqueConstraint(Constraint):
     """
     Unique constraint on the table columns.
+
+    This is the internal representation that Piccolo uses for constraints -
+    the user just supplies ``Unique``.
     """
 
     def __init__(
@@ -80,6 +224,9 @@ class UniqueConstraint(Constraint):
 class CheckConstraint(Constraint):
     """
     Check constraint on the table.
+
+    This is the internal representation that Piccolo uses for constraints -
+    the user just supplies ``Check``.
     """
 
     def __init__(
