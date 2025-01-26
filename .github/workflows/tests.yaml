@@ -40,7 +40,7 @@ jobs:
             matrix:
                 # These tests are slow, so we only run on the latest Python
                 # version.
-                python-version: ["3.12"]
+                python-version: ["3.13"]
                 postgres-version: [17]
         services:
             postgres:

@@ -1,0 +1,60 @@
+import os
+import typing as t
+
+import falcon.asgi
+from hypercorn.middleware import DispatcherMiddleware
+from piccolo.engine import engine_finder
+from piccolo_admin.endpoints import create_admin
+from piccolo_api.crud.endpoints import PiccoloCRUD
+
+from home.endpoints import HomeEndpoint
+from home.piccolo_app import APP_CONFIG
+from home.tables import Task
+
+
+async def open_database_connection_pool():
+    try:
+        engine = engine_finder()
+        await engine.start_connection_pool()
+    except Exception:
+        print("Unable to connect to the database")
+
+
+async def close_database_connection_pool():
+    try:
+        engine = engine_finder()
+        await engine.close_connection_pool()
+    except Exception:
+        print("Unable to connect to the database")
+
+
+class LifespanMiddleware:
+    async def process_startup(
+        self, scope: t.Dict[str, t.Any], event: t.Dict[str, t.Any]
+    ) -> None:
+        await open_database_connection_pool()
+
+    async def process_shutdown(
+        self, scope: t.Dict[str, t.Any], event: t.Dict[str, t.Any]
+    ) -> None:
+        await close_database_connection_pool()
+
+
+app: t.Any = falcon.asgi.App(middleware=LifespanMiddleware())
+app.add_static_route("/static", directory=os.path.abspath("static"))
+app.add_route("/", HomeEndpoint())
+
+PICCOLO_CRUD: t.Any = PiccoloCRUD(table=Task)
+
+# enable the Admin and PiccoloCrud app using DispatcherMiddleware
+app = DispatcherMiddleware(  # type: ignore
+    {
+        "/admin": create_admin(
+            tables=APP_CONFIG.table_classes,
+            # Required when running under HTTPS:
+            # allowed_hosts=['my_site.com']
+        ),
+        "/tasks": PICCOLO_CRUD,
+        "": app,
+    }
+)
