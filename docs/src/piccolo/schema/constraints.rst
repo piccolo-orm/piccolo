@@ -2,11 +2,8 @@
 Constraints
 ===========
 
-Unique constraints
-==================
-
-Single column
--------------
+Simple unique constraints
+=========================
 
 Unique constraints can be added to a single column using the ``unique=True``
 argument of ``Column``:
@@ -16,19 +13,31 @@ argument of ``Column``:
     class Band(Table):
         name = Varchar(unique=True)
 
-Multi-column
-------------
-
-Use the ``add_unique_constraint`` method to add a multi-column constraint to a
-``Table``:
-
-.. currentmodule:: piccolo.table
-
-.. automethod:: Table.add_unique_constraint
-
 -------------------------------------------------------------------------------
 
-Check constraints
-=================
+``Table.constraints``
+=====================
 
-.. automethod:: Table.add_check_constraint
+By adding a ``constraints`` list to your ``Table``, you can implement powerful
+``UNIQUE`` and ``CHECK`` constraints.
+
+``Unique``
+----------
+
+.. currentmodule:: piccolo.constraints
+
+.. autoclass:: Unique
+
+``Check``
+----------
+
+.. autoclass:: Check
+
+How are they created?
+---------------------
+
+If creating a new table using ``await MyTable.create_table()``, then the
+constraints will also be created.
+
+Also, if using auto migrations, they handle the creation and deletion of these
+constraints for you.

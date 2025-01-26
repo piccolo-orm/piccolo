@@ -30,12 +30,14 @@ class Unique(ConstraintConfig):
     """
     Add a unique constraint to one or more columns. For example::
 
+        from piccolo.constraints import Unique
+
         class Album(Table):
             name = Varchar()
             band = ForeignKey(Band)
 
             constraints = [
-                Unique([Album.name, Album.band])
+                Unique([name, band])
             ]
 
     In the above example, the database will enforce that ``name`` and
@@ -89,21 +91,25 @@ class Check(ConstraintConfig):
     """
     Add a check constraint to the table. For example::
 
+        from piccolo.constraints import Check
+
         class Ticket(Table):
             price = Decimal()
 
             constraints = [
-                Check(Ticket.price >= 0)
+                Check(price >= 0)
             ]
 
     You can have more complex conditions. For example::
+
+        from piccolo.constraints import Check
 
         class Ticket(Table):
             price = Decimal()
 
             constraints = [
                 Check(
-                    (Ticket.price >= 0) & (Ticket.price < 100)
+                    (price >= 0) & (price < 100)
                 )
             ]
 
