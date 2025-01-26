@@ -351,18 +351,18 @@ class Table(metaclass=TableMetaclass):
             default_columns.append(primary_key)
 
         # Now the columns are all setup, we can do the constraints.
-        if t.cast(
+        constraint_configs = t.cast(
             t.List[ConstraintConfig],
-            constraint_configs := getattr(cls, "constraints"),
-        ):
-            for constraint_config in constraint_configs:
-                if isinstance(constraint_config, ConstraintConfig):
-                    constraints.append(constraint_config.to_constraint())
-                else:
-                    raise ValueError(
-                        "The `constraints` list should only contain `Unique`"
-                        " or `Check`."
-                    )
+            getattr(cls, "constraints", []),
+        )
+        for constraint_config in constraint_configs:
+            if isinstance(constraint_config, ConstraintConfig):
+                constraints.append(constraint_config.to_constraint())
+            else:
+                raise ValueError(
+                    "The `constraints` list should only contain `Unique`"
+                    " or `Check`."
+                )
 
         cls._meta = TableMeta(
             tablename=tablename,
