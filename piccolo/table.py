@@ -290,7 +290,6 @@ class Table(metaclass=TableMetaclass):
         auto_update_columns: t.List[Column] = []
         primary_key: t.Optional[Column] = None
         m2m_relationships: t.List[M2M] = []
-        constraints: t.List[Constraint] = []
 
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]
@@ -350,20 +349,6 @@ class Table(metaclass=TableMetaclass):
             columns.insert(0, primary_key)  # PK should be added first
             default_columns.append(primary_key)
 
-        # Now the columns are all setup, we can do the constraints.
-        constraint_configs = t.cast(
-            t.List[ConstraintConfig],
-            getattr(cls, "constraints", []),
-        )
-        for constraint_config in constraint_configs:
-            if isinstance(constraint_config, ConstraintConfig):
-                constraints.append(constraint_config.to_constraint())
-            else:
-                raise ValueError(
-                    "The `constraints` list should only contain `Unique`"
-                    " or `Check`."
-                )
-
         cls._meta = TableMeta(
             tablename=tablename,
             columns=columns,
@@ -380,7 +365,6 @@ class Table(metaclass=TableMetaclass):
             help_text=help_text,
             _db=db,
             m2m_relationships=m2m_relationships,
-            constraints=constraints,
             schema=schema,
         )
 
@@ -394,6 +378,24 @@ class Table(metaclass=TableMetaclass):
                 LAZY_COLUMN_REFERENCES.foreign_key_columns.append(
                     foreign_key_column
                 )
+
+        # Now the table and columns are all setup, we can do the constraints.
+        constraints: t.List[Constraint] = []
+        constraint_configs = t.cast(
+            t.List[ConstraintConfig],
+            getattr(cls, "constraints", []),
+        )
+        for constraint_config in constraint_configs:
+            if isinstance(constraint_config, ConstraintConfig):
+                constraints.append(
+                    constraint_config.to_constraint(tablename=tablename)
+                )
+            else:
+                raise ValueError(
+                    "The `constraints` list should only contain `Unique`"
+                    " or `Check`."
+                )
+        cls._meta.constraints = constraints
 
         TABLE_REGISTRY.append(cls)
 

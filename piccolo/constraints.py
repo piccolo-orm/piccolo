@@ -11,15 +11,8 @@ if t.TYPE_CHECKING:
 
 class ConstraintConfig(metaclass=ABCMeta):
 
-    def validate_columns(self, columns: t.List[Column]):
-        """
-        Make sure all the columns belong to the same table.
-        """
-        if len({column._meta.table._meta.tablename for column in columns}) > 1:
-            raise ValueError("The columns don't all belong to the same table.")
-
     @abstractmethod
-    def to_constraint(self) -> Constraint:
+    def to_constraint(self, tablename: str) -> Constraint:
         """
         Override in subclasses.
         """
@@ -36,7 +29,7 @@ class Unique(ConstraintConfig):
             name = Varchar()
             band = ForeignKey(Band)
 
-            constraints = [
+            constraints = lambda: [
                 Unique([name, band])
             ]
 
@@ -56,29 +49,27 @@ class Unique(ConstraintConfig):
 
     def __init__(
         self,
-        columns: t.List[Column],
+        columns: t.Callable[[], [t.List[Column]]],
         name: t.Optional[str] = None,
         nulls_distinct: bool = True,
     ):
         if len(columns) < 1:
             raise ValueError("At least 1 column must be specified.")
 
-        self.validate_columns(columns)
-
         self.columns = columns
         self.name = name
         self.nulls_distinct = nulls_distinct
 
-    def to_constraint(self) -> UniqueConstraint:
+    def to_constraint(self, tablename: str) -> UniqueConstraint:
         """
         You should wait for the ``Table`` metaclass to assign names all of the
         columns before calling this method.
         """
-        column_names = [column._meta.db_column_name for column in self.columns]
+        column_names = [
+            column._meta.db_column_name for column in self.columns()
+        ]
 
-        if self.name is None:
-            tablename = self.columns[0]._meta.table._meta.tablename
-            name = "_".join([tablename, *column_names, "unique"])
+        name = self.name or "_".join([tablename, *column_names, "unique"])
 
         return UniqueConstraint(
             column_names=column_names,
@@ -122,29 +113,30 @@ class Check(ConstraintConfig):
 
     """
 
-    def __init__(self, condition: Combinable, name: t.Optional[str] = None):
-        from piccolo.query.mixins import WhereDelegate
-
-        self.columns = WhereDelegate(_where=condition).get_where_columns()
-        self.validate_columns(self.columns)
-
+    def __init__(
+        self,
+        condition: t.Callable[[], [Combinable]],
+        name: t.Optional[str] = None,
+    ):
         self.condition = condition
         self.name = name
 
-    def to_constraint(self) -> CheckConstraint:
+    def to_constraint(self, tablename: str) -> CheckConstraint:
         """
         You should wait for the ``Table`` metaclass to assign names all of the
         columns before calling this method.
         """
-        if self.name is None:
-            tablename = self.columns[0]._meta.table._meta.tablename
-            column_names = [
-                column._meta.db_column_name for column in self.columns
-            ]
+        name = self.name
+
+        if name is None:
+            from piccolo.query.mixins import WhereDelegate
+
+            columns = WhereDelegate(_where=self.condition).get_where_columns()
+            column_names = [column._meta.db_column_name for column in columns]
             name = "_".join([tablename, *column_names, "check"])
 
         return CheckConstraint(
-            condition=self.condition.querystring.__str__(),
+            condition=self.condition().querystring.__str__(),
             name=name,
         )
 
