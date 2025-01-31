@@ -4,6 +4,145 @@ import typing as t
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field
 
+if t.TYPE_CHECKING:
+    from piccolo.columns import Column
+    from piccolo.custom_types import Combinable
+
+
+class ConstraintConfig(metaclass=ABCMeta):
+
+    @abstractmethod
+    def to_constraint(self, tablename: str) -> Constraint:
+        """
+        Override in subclasses.
+        """
+        raise NotImplementedError()
+
+
+class Unique(ConstraintConfig):
+    """
+    Add a unique constraint to one or more columns. For example::
+
+        from piccolo.constraints import Unique
+
+        class Album(Table):
+            name = Varchar()
+            band = ForeignKey(Band)
+
+            constraints = lambda: [
+                Unique([name, band])
+            ]
+
+    In the above example, the database will enforce that ``name`` and
+    ``band`` form a unique combination.
+
+    :param columns:
+        The table columns that should be unique together.
+    :param name:
+        The name of the constraint in the database. If not provided, we
+        generate a sensible default.
+    :param nulls_distinct:
+        See the `Postgres docs <https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS>`_
+        for more information.
+
+    """  # noqa: E501
+
+    def __init__(
+        self,
+        columns: t.Callable[[], [t.List[Column]]],
+        name: t.Optional[str] = None,
+        nulls_distinct: bool = True,
+    ):
+        if len(columns) < 1:
+            raise ValueError("At least 1 column must be specified.")
+
+        self.columns = columns
+        self.name = name
+        self.nulls_distinct = nulls_distinct
+
+    def to_constraint(self, tablename: str) -> UniqueConstraint:
+        """
+        You should wait for the ``Table`` metaclass to assign names all of the
+        columns before calling this method.
+        """
+        column_names = [
+            column._meta.db_column_name for column in self.columns()
+        ]
+
+        name = self.name or "_".join([tablename, *column_names, "unique"])
+
+        return UniqueConstraint(
+            column_names=column_names,
+            name=name,
+            nulls_distinct=self.nulls_distinct,
+        )
+
+
+class Check(ConstraintConfig):
+    """
+    Add a check constraint to the table. For example::
+
+        from piccolo.constraints import Check
+
+        class Ticket(Table):
+            price = Decimal()
+
+            constraints = [
+                Check(price >= 0)
+            ]
+
+    You can have more complex conditions. For example::
+
+        from piccolo.constraints import Check
+
+        class Ticket(Table):
+            price = Decimal()
+
+            constraints = [
+                Check(
+                    (price >= 0) & (price < 100)
+                )
+            ]
+
+    :param condition:
+        The syntax is the same as the ``where`` clause used by most
+        queries (e.g. ``select``).
+    :param name:
+        The name of the constraint in the database. If not provided, we
+        generate a sensible default.
+
+    """
+
+    def __init__(
+        self,
+        condition: t.Callable[[], [Combinable]],
+        name: t.Optional[str] = None,
+    ):
+        self.condition = condition
+        self.name = name
+
+    def to_constraint(self, tablename: str) -> CheckConstraint:
+        """
+        You should wait for the ``Table`` metaclass to assign names all of the
+        columns before calling this method.
+        """
+        name = self.name
+
+        if name is None:
+            from piccolo.query.mixins import WhereDelegate
+
+            columns = WhereDelegate(_where=self.condition).get_where_columns()
+            column_names = [column._meta.db_column_name for column in columns]
+            name = "_".join([tablename, *column_names, "check"])
+
+        return CheckConstraint(
+            condition=self.condition().querystring.__str__(),
+            name=name,
+        )
+
+
+###############################################################################
+
 
 class Constraint(metaclass=ABCMeta):
     """
@@ -35,34 +174,13 @@ class ConstraintMeta:
     params: t.Dict[str, t.Any] = field(default_factory=dict)
 
 
-class Unique(Constraint):
+class UniqueConstraint(Constraint):
     """
-    Add a unique constraint to one or more columns. For example::
+    Unique constraint on the table columns.
 
-        from piccolo.constraints import Unique
-
-        class Album(
-            Table,
-            constraints=[
-                Unique(['name', 'band'])
-            ]
-        ):
-            name = Varchar()
-            band = ForeignKey(Band)
-
-    In the above example, the database will enforce that ``name`` and
-    ``band`` form a unique combination.
-
-    :param columns:
-        The table columns that should be unique together.
-    :param name:
-        The name of the constraint in the database. If not provided, we
-        generate a sensible default.
-    :param nulls_distinct:
-        See the `Postgres docs <https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS>`_
-        for more information.
-
-    """  # noqa: E501
+    This is the internal representation that Piccolo uses for constraints -
+    the user just supplies ``Unique``.
+    """
 
     def __init__(
         self,
@@ -101,41 +219,12 @@ class Unique(Constraint):
         return f"UNIQUE {nulls_string}({columns_string})"
 
 
-class Check(Constraint):
+class CheckConstraint(Constraint):
     """
-    Add a check constraint to the table. For example::
+    Check constraint on the table.
 
-        from piccolo.constraints import Check
-
-        class Ticket(
-            Table,
-            constraints=[
-                Check('price >= 0')
-            ]
-        ):
-            price = Decimal()
-
-    You can have more complex conditions. For example::
-
-        from piccolo.constraints import Check
-
-        class Ticket(
-            Table,
-            constraints=[
-                Check(
-                    "price >= 0 AND price < 100"
-                )
-            ]
-        ):
-            price = Decimal()
-
-    :param condition:
-        The syntax is the same as the ``where`` clause used by most
-        queries (e.g. ``select``).
-    :param name:
-        The name of the constraint in the database. If not provided, we
-        generate a sensible default.
-
+    This is the internal representation that Piccolo uses for constraints -
+    the user just supplies ``Check``.
     """
 
     def __init__(

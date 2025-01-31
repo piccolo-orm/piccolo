@@ -28,7 +28,7 @@ from piccolo.columns.m2m import (
 )
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
-from piccolo.constraints import Constraint
+from piccolo.constraints import Check, Constraint, ConstraintConfig, Unique
 from piccolo.custom_types import TableInstance
 from piccolo.engine import Engine, engine_finder
 from piccolo.query import (
@@ -243,7 +243,6 @@ class Table(metaclass=TableMetaclass):
         tags: t.Optional[t.List[str]] = None,
         help_text: t.Optional[str] = None,
         schema: t.Optional[str] = None,
-        constraints: t.Optional[t.List[Constraint]] = None,
     ):  # sourcery no-metrics
         """
         Automatically populate the _meta, which includes the tablename, and
@@ -367,7 +366,6 @@ class Table(metaclass=TableMetaclass):
             _db=db,
             m2m_relationships=m2m_relationships,
             schema=schema,
-            constraints=constraints or [],
         )
 
         for foreign_key_column in foreign_key_columns:
@@ -380,6 +378,24 @@ class Table(metaclass=TableMetaclass):
                 LAZY_COLUMN_REFERENCES.foreign_key_columns.append(
                     foreign_key_column
                 )
+
+        # Now the table and columns are all setup, we can do the constraints.
+        constraints: t.List[Constraint] = []
+        constraint_configs = t.cast(
+            t.List[ConstraintConfig],
+            getattr(cls, "constraints", []),
+        )
+        for constraint_config in constraint_configs:
+            if isinstance(constraint_config, ConstraintConfig):
+                constraints.append(
+                    constraint_config.to_constraint(tablename=tablename)
+                )
+            else:
+                raise ValueError(
+                    "The `constraints` list should only contain `Unique`"
+                    " or `Check`."
+                )
+        cls._meta.constraints = constraints
 
         TABLE_REGISTRY.append(cls)
 
