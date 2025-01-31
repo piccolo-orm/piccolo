@@ -29,7 +29,7 @@ class Unique(ConstraintConfig):
             name = Varchar()
             band = ForeignKey(Band)
 
-            constraints = lambda: [
+            constraints = [
                 Unique([name, band])
             ]
 
@@ -49,7 +49,7 @@ class Unique(ConstraintConfig):
 
     def __init__(
         self,
-        columns: t.Callable[[], [t.List[Column]]],
+        columns: t.List[t.Union[Column, str]],
         name: t.Optional[str] = None,
         nulls_distinct: bool = True,
     ):
@@ -65,11 +65,18 @@ class Unique(ConstraintConfig):
         You should wait for the ``Table`` metaclass to assign names all of the
         columns before calling this method.
         """
+        from piccolo.columns import Column
+
         column_names = [
-            column._meta.db_column_name for column in self.columns()
+            (
+                column._meta.db_column_name
+                if isinstance(column, Column)
+                else column
+            )
+            for column in self.columns
         ]
 
-        name = self.name or "_".join([tablename, *column_names, "unique"])
+        name = self.name or "_".join(["unique", tablename, *column_names])
 
         return UniqueConstraint(
             column_names=column_names,
@@ -115,7 +122,7 @@ class Check(ConstraintConfig):
 
     def __init__(
         self,
-        condition: t.Callable[[], [Combinable]],
+        condition: t.Union[Combinable, str],
         name: t.Optional[str] = None,
     ):
         self.condition = condition
@@ -126,17 +133,33 @@ class Check(ConstraintConfig):
         You should wait for the ``Table`` metaclass to assign names all of the
         columns before calling this method.
         """
+        from piccolo.columns.combination import CombinableMixin
+
         name = self.name
 
         if name is None:
-            from piccolo.query.mixins import WhereDelegate
+            if isinstance(self.condition, str):
+                name = "_".join(
+                    ["check", tablename, str(hash(self.condition))]
+                )
+            else:
+                from piccolo.query.mixins import WhereDelegate
 
-            columns = WhereDelegate(_where=self.condition).get_where_columns()
-            column_names = [column._meta.db_column_name for column in columns]
-            name = "_".join([tablename, *column_names, "check"])
+                columns = WhereDelegate(
+                    _where=self.condition
+                ).get_where_columns()
+                column_names = [
+                    column._meta.db_column_name for column in columns
+                ]
+                name = "_".join(["check", tablename, *column_names])
+
+        if isinstance(self.condition, CombinableMixin):
+            condition_str = self.condition.querystring_for_constraint.__str__()
+        else:
+            condition_str = self.condition
 
         return CheckConstraint(
-            condition=self.condition().querystring.__str__(),
+            condition=condition_str,
             name=name,
         )
 

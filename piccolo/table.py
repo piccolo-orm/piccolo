@@ -302,11 +302,14 @@ class Table(metaclass=TableMetaclass):
 
             attribute = getattr(cls, attribute_name)
             if isinstance(attribute, Column):
+                column = attribute
+                column._meta._name = attribute_name 
+
                 # We have to copy, then override the existing column
                 # definition, in case this column is inheritted from a mixin.
                 # Otherwise, when we set attributes on that column, it will
                 # effect all other users of that mixin.
-                column = attribute.copy()
+                column = column.copy()
                 setattr(cls, attribute_name, column)
 
                 if column._meta.primary_key:
@@ -315,7 +318,6 @@ class Table(metaclass=TableMetaclass):
                 non_default_columns.append(column)
                 columns.append(column)
 
-                column._meta._name = attribute_name
                 column._meta._table = cls
 
                 if isinstance(column, Array):

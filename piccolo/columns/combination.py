@@ -52,6 +52,14 @@ class Combination(CombinableMixin):
             self.second.querystring_for_update,
         )
 
+    @property
+    def querystring_for_constraint(self) -> QueryString:
+        return QueryString(
+            "({} " + self.operator + " {})",
+            self.first.querystring_for_constraint,
+            self.second.querystring_for_constraint,
+        )
+
     def __str__(self):
         return self.querystring.__str__()
 
@@ -132,6 +140,10 @@ class WhereRaw(CombinableMixin):
 
     @property
     def querystring_for_update(self) -> QueryString:
+        return self.querystring
+
+    @property
+    def querystring_for_constraint(self) -> QueryString:
         return self.querystring
 
     def __str__(self):
@@ -248,6 +260,23 @@ class Where(CombinableMixin):
             )
 
             return QueryString(template, *args)
+
+    @property
+    def querystring_for_constraint(self) -> QueryString:
+        args: t.List[t.Any] = []
+        if self.value != UNDEFINED:
+            args.append(self.value)
+
+        if self.values != UNDEFINED:
+            args.append(self.values_querystring)
+
+        template = self.operator.template.format(
+            name=f'"{self.column._meta.db_column_name}"',
+            value="{}",
+            values="{}",
+        )
+
+        return QueryString(template, *args)
 
     def __str__(self):
         return self.querystring.__str__()
