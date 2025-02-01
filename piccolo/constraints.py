@@ -39,9 +39,6 @@ class Unique(ConstraintConfig):
 
     :param columns:
         The table columns that should be unique together.
-    :param name:
-        The name of the constraint in the database. If not provided, we
-        generate a sensible default.
     :param nulls_distinct:
         See the `Postgres docs <https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS>`_
         for more information.
@@ -61,8 +58,8 @@ class Unique(ConstraintConfig):
 
     def to_constraint(self) -> UniqueConstraint:
         """
-        You should wait for the ``Table`` metaclass to assign names all of the
-        columns before calling this method.
+        You should wait for the ``Table`` metaclass to assign names to all of
+        the columns before calling this method.
         """
         from piccolo.columns import Column
 
@@ -107,9 +104,6 @@ class Check(ConstraintConfig):
     :param condition:
         The syntax is the same as the ``where`` clause used by most
         queries (e.g. ``select``).
-    :param name:
-        The name of the constraint in the database. If not provided, we
-        generate a sensible default.
 
     """
 
@@ -121,8 +115,8 @@ class Check(ConstraintConfig):
 
     def to_constraint(self) -> CheckConstraint:
         """
-        You should wait for the ``Table`` metaclass to assign names all of the
-        columns before calling this method.
+        You should wait for the ``Table`` metaclass to assign names to all of
+        the columns before calling this method.
         """
         from piccolo.columns.combination import CombinableMixin
 
