@@ -360,7 +360,7 @@ class TestMigrationManager(DBTestCase):
             constraint_name="unique_name_label",
             constraint_class=UniqueConstraint,
             params={
-                "unique_columns": ["name", "label"],
+                "column_names": ["name", "label"],
             },
         )
         asyncio.run(manager.run())
@@ -400,7 +400,7 @@ class TestMigrationManager(DBTestCase):
             constraint_name="unique_name_label",
             constraint_class=UniqueConstraint,
             params={
-                "unique_columns": ["name", "label"],
+                "column_names": ["name", "label"],
             },
         )
         asyncio.run(manager_1.run())
@@ -455,7 +455,7 @@ class TestMigrationManager(DBTestCase):
             constraint_name="unique_name_label",
             constraint_class=UniqueConstraint,
             params={
-                "unique_columns": ["name", "label"],
+                "column_names": ["name", "label"],
             },
         )
         asyncio.run(manager_1.run())
@@ -524,7 +524,7 @@ class TestMigrationManager(DBTestCase):
             constraint_name="musician_unique",
             constraint_class=UniqueConstraint,
             params={
-                "unique_columns": ["name", "label"],
+                "column_names": ["name", "label"],
             },
         )
         asyncio.run(manager_2.run())
@@ -576,7 +576,7 @@ class TestMigrationManager(DBTestCase):
             constraint_name="musician_unique",
             constraint_class=UniqueConstraint,
             params={
-                "unique_columns": ["name", "label"],
+                "column_names": ["name", "label"],
             },
         )
         asyncio.run(manager_1.run())
