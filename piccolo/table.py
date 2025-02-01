@@ -1401,6 +1401,7 @@ class Table(metaclass=TableMetaclass):
         constraint_strings: t.List[str] = []
         for constraint in cls._meta.constraints:
             constraint_strings.append(constraint._table_str())
+        constraints_string = spacer.join(constraint_strings)
 
         tablename = repr(cls._meta.tablename)
 
@@ -1413,7 +1414,9 @@ class Table(metaclass=TableMetaclass):
         )
 
         return (
-            f"class {cls.__name__}({class_args}):\n" f"    {columns_string}\n"
+            f"class {cls.__name__}({class_args}):\n"
+            f"    {columns_string}\n"
+            f"    {constraints_string}\n"
         )
 
 

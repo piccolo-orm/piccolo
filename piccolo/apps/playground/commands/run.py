@@ -24,7 +24,7 @@ from piccolo.columns import (
     Varchar,
 )
 from piccolo.columns.readable import Readable
-from piccolo.constraints import Unique
+from piccolo.constraints import Check, Unique
 from piccolo.engine import PostgresEngine, SQLiteEngine
 from piccolo.engine.base import Engine
 from piccolo.table import Table
@@ -108,6 +108,7 @@ class Ticket(Table):
     ticket_type = Varchar(choices=TicketType, default=TicketType.standing)
 
     unique_concert_ticket_type = Unique(columns=[concert, ticket_type])
+    check_price = Check((price > 0) & (price < 200))
 
     @classmethod
     def get_readable(cls) -> Readable:

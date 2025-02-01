@@ -222,7 +222,10 @@ class UniqueConstraint(Constraint):
         columns_string = ", ".join(
             [f'"{column_name}"' for column_name in self.column_names]
         )
-        return f'{self._meta.name} = Unique([{columns_string}])")'
+        return (
+            f"{self._meta.name} = Unique([{columns_string}], "
+            f"nulls_distinct={self.nulls_distinct})"
+        )
 
 
 class CheckConstraint(Constraint):
@@ -254,4 +257,4 @@ class CheckConstraint(Constraint):
         return f"CHECK ({self.condition})"
 
     def _table_str(self) -> str:
-        return f'{self._meta.name} = Check("{self.condition}"))'
+        return f'{self._meta.name} = Check("{self.condition}")'
