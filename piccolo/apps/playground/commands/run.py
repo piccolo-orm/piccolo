@@ -107,7 +107,7 @@ class Ticket(Table):
     price = Numeric(digits=(5, 2))
     ticket_type = Varchar(choices=TicketType, default=TicketType.standing)
 
-    constraints = [Unique(columns=[concert, ticket_type])]
+    unique_concert_ticket_type = Unique(columns=[concert, ticket_type])
 
     @classmethod
     def get_readable(cls) -> Readable:

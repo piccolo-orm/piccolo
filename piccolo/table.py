@@ -290,6 +290,7 @@ class Table(metaclass=TableMetaclass):
         auto_update_columns: t.List[Column] = []
         primary_key: t.Optional[Column] = None
         m2m_relationships: t.List[M2M] = []
+        constraint_configs: t.List[ConstraintConfig] = []
 
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]
@@ -303,7 +304,7 @@ class Table(metaclass=TableMetaclass):
             attribute = getattr(cls, attribute_name)
             if isinstance(attribute, Column):
                 column = attribute
-                column._meta._name = attribute_name 
+                column._meta._name = attribute_name
 
                 # We have to copy, then override the existing column
                 # definition, in case this column is inheritted from a mixin.
@@ -344,6 +345,10 @@ class Table(metaclass=TableMetaclass):
                 attribute._meta._table = cls
                 m2m_relationships.append(attribute)
 
+            if isinstance(attribute, ConstraintConfig):
+                attribute.name = attribute_name
+                constraint_configs.append(attribute)
+
         if not primary_key:
             primary_key = cls._create_serial_primary_key()
             setattr(cls, "id", primary_key)
@@ -383,20 +388,8 @@ class Table(metaclass=TableMetaclass):
 
         # Now the table and columns are all setup, we can do the constraints.
         constraints: t.List[Constraint] = []
-        constraint_configs = t.cast(
-            t.List[ConstraintConfig],
-            getattr(cls, "constraints", []),
-        )
         for constraint_config in constraint_configs:
-            if isinstance(constraint_config, ConstraintConfig):
-                constraints.append(
-                    constraint_config.to_constraint(tablename=tablename)
-                )
-            else:
-                raise ValueError(
-                    "The `constraints` list should only contain `Unique`"
-                    " or `Check`."
-                )
+            constraints.append(constraint_config.to_constraint())
         cls._meta.constraints = constraints
 
         TABLE_REGISTRY.append(cls)
@@ -1384,7 +1377,7 @@ class Table(metaclass=TableMetaclass):
         if excluded_params is None:
             excluded_params = []
         spacer = "\n    "
-        columns = []
+        column_strings: t.List[str] = []
         for col in cls._meta.columns:
             params: t.List[str] = []
             for key, value in col._meta.params.items():
@@ -1400,10 +1393,15 @@ class Table(metaclass=TableMetaclass):
                     if not abbreviated:
                         params.append(f"{key}={_value}")
             params_string = ", ".join(params)
-            columns.append(
+            column_strings.append(
                 f"{col._meta.name} = {col.__class__.__name__}({params_string})"
             )
-        columns_string = spacer.join(columns)
+        columns_string = spacer.join(column_strings)
+
+        constraint_strings: t.List[str] = []
+        for constraint in cls._meta.constraints:
+            constraint_strings.append(constraint._table_str())
+
         tablename = repr(cls._meta.tablename)
 
         parent_class_name = cls.mro()[1].__name__

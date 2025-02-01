@@ -11,8 +11,10 @@ if t.TYPE_CHECKING:
 
 class ConstraintConfig(metaclass=ABCMeta):
 
+    name: str
+
     @abstractmethod
-    def to_constraint(self, tablename: str) -> Constraint:
+    def to_constraint(self) -> Constraint:
         """
         Override in subclasses.
         """
@@ -29,9 +31,8 @@ class Unique(ConstraintConfig):
             name = Varchar()
             band = ForeignKey(Band)
 
-            constraints = [
-                Unique([name, band])
-            ]
+            unique_name_band = Unique([name, band])
+
 
     In the above example, the database will enforce that ``name`` and
     ``band`` form a unique combination.
@@ -50,17 +51,15 @@ class Unique(ConstraintConfig):
     def __init__(
         self,
         columns: t.List[t.Union[Column, str]],
-        name: t.Optional[str] = None,
         nulls_distinct: bool = True,
     ):
         if len(columns) < 1:
             raise ValueError("At least 1 column must be specified.")
 
         self.columns = columns
-        self.name = name
         self.nulls_distinct = nulls_distinct
 
-    def to_constraint(self, tablename: str) -> UniqueConstraint:
+    def to_constraint(self) -> UniqueConstraint:
         """
         You should wait for the ``Table`` metaclass to assign names all of the
         columns before calling this method.
@@ -76,11 +75,9 @@ class Unique(ConstraintConfig):
             for column in self.columns
         ]
 
-        name = self.name or "_".join(["unique", tablename, *column_names])
-
         return UniqueConstraint(
             column_names=column_names,
-            name=name,
+            name=self.name,
             nulls_distinct=self.nulls_distinct,
         )
 
@@ -94,9 +91,7 @@ class Check(ConstraintConfig):
         class Ticket(Table):
             price = Decimal()
 
-            constraints = [
-                Check(price >= 0)
-            ]
+            check_price_positive = Check(price >= 0)
 
     You can have more complex conditions. For example::
 
@@ -105,11 +100,9 @@ class Check(ConstraintConfig):
         class Ticket(Table):
             price = Decimal()
 
-            constraints = [
-                Check(
-                    (price >= 0) & (price < 100)
-                )
-            ]
+            check_price_range = Check(
+                (price >= 0) & (price < 100)
+            )
 
     :param condition:
         The syntax is the same as the ``where`` clause used by most
@@ -123,35 +116,15 @@ class Check(ConstraintConfig):
     def __init__(
         self,
         condition: t.Union[Combinable, str],
-        name: t.Optional[str] = None,
     ):
         self.condition = condition
-        self.name = name
 
-    def to_constraint(self, tablename: str) -> CheckConstraint:
+    def to_constraint(self) -> CheckConstraint:
         """
         You should wait for the ``Table`` metaclass to assign names all of the
         columns before calling this method.
         """
         from piccolo.columns.combination import CombinableMixin
-
-        name = self.name
-
-        if name is None:
-            if isinstance(self.condition, str):
-                name = "_".join(
-                    ["check", tablename, str(hash(self.condition))]
-                )
-            else:
-                from piccolo.query.mixins import WhereDelegate
-
-                columns = WhereDelegate(
-                    _where=self.condition
-                ).get_where_columns()
-                column_names = [
-                    column._meta.db_column_name for column in columns
-                ]
-                name = "_".join(["check", tablename, *column_names])
 
         if isinstance(self.condition, CombinableMixin):
             condition_str = self.condition.querystring_for_constraint.__str__()
@@ -160,7 +133,7 @@ class Check(ConstraintConfig):
 
         return CheckConstraint(
             condition=condition_str,
-            name=name,
+            name=self.name,
         )
 
 
@@ -182,6 +155,10 @@ class Constraint(metaclass=ABCMeta):
     @property
     @abstractmethod
     def ddl(self) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _table_str(self) -> str:
         raise NotImplementedError
 
 
@@ -241,6 +218,12 @@ class UniqueConstraint(Constraint):
         columns_string = ", ".join(f'"{i}"' for i in self.column_names)
         return f"UNIQUE {nulls_string}({columns_string})"
 
+    def _table_str(self) -> str:
+        columns_string = ", ".join(
+            [f'"{column_name}"' for column_name in self.column_names]
+        )
+        return f'{self._meta.name} = Unique([{columns_string}])")'
+
 
 class CheckConstraint(Constraint):
     """
@@ -269,3 +252,6 @@ class CheckConstraint(Constraint):
     @property
     def ddl(self) -> str:
         return f"CHECK ({self.condition})"
+
+    def _table_str(self) -> str:
+        return f'{self._meta.name} = Check("{self.condition}"))'
