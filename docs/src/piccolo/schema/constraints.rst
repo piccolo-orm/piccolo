@@ -15,11 +15,11 @@ argument of ``Column``:
 
 -------------------------------------------------------------------------------
 
-``Table.constraints``
+Advanced constraints
 =====================
 
-By adding a ``constraints`` list to your ``Table``, you can implement powerful
-``UNIQUE`` and ``CHECK`` constraints.
+You can add you can implement powerful ``UNIQUE`` and ``CHECK`` constraints
+on your ``Table``.
 
 ``Unique``
 ----------
