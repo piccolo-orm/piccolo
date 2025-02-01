@@ -15,6 +15,8 @@ argument of ``Column``:
 
 -------------------------------------------------------------------------------
 
+.. _AdvancedConstraints:
+
 Advanced constraints
 =====================
 
@@ -41,3 +43,8 @@ constraints will also be created.
 
 Also, if using auto migrations, they handle the creation and deletion of these
 constraints for you.
+
+Mixins
+------
+
+Constraints can be added to :ref:`mixin classes <Mixins>` for reusability.
