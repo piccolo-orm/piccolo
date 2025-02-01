@@ -499,14 +499,10 @@ class TestSchemaDiffer(TestCase):
         genre_column = Varchar()
         genre_column._meta.name = "genre"
 
-        # TODO - this doesn't seem to be used, remove it?
-        name_unique_constraint = UniqueConstraint(unique_columns=["name"])
-        name_unique_constraint._meta.name = "unique_name"
-
         name_genre_unique_constraint = UniqueConstraint(
-            unique_columns=["name", "genre"]
+            column_names=["name", "genre"],
+            name="unique_name_genre",
         )
-        name_genre_unique_constraint._meta.name = "unique_name_genre"
 
         schema: t.List[DiffableTable] = [
             DiffableTable(
@@ -557,13 +553,15 @@ class TestSchemaDiffer(TestCase):
         genre_column = Varchar()
         genre_column._meta.name = "genre"
 
-        name_unique_constraint = UniqueConstraint(unique_columns=["name"])
-        name_unique_constraint._meta.name = "unique_name"
+        name_unique_constraint = UniqueConstraint(
+            column_names=["name"],
+            name="unique_name",
+        )
 
         name_genre_unique_constraint = UniqueConstraint(
-            unique_columns=["name", "genre"]
+            column_names=["name", "genre"],
+            name="unique_name_genre",
         )
-        name_genre_unique_constraint._meta.name = "unique_name_genre"
 
         schema: t.List[DiffableTable] = [
             DiffableTable(
@@ -605,13 +603,15 @@ class TestSchemaDiffer(TestCase):
         genre_column = Varchar()
         genre_column._meta.name = "genre"
 
-        name_unique_constraint = UniqueConstraint(unique_columns=["name"])
-        name_unique_constraint._meta.name = "unique_name"
+        name_unique_constraint = UniqueConstraint(
+            column_names=["name"],
+            name="unique_name",
+        )
 
         name_genre_unique_constraint = UniqueConstraint(
-            unique_columns=["name", "genre"]
+            column_names=["name", "genre"],
+            name="unique_name_genre",
         )
-        name_genre_unique_constraint._meta.name = "unique_name_genre"
 
         schema: t.List[DiffableTable] = [
             DiffableTable(
