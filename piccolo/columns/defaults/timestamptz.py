@@ -73,6 +73,7 @@ TimestamptzArg = t.Union[
     Enum,
     None,
     datetime.datetime,
+    t.Callable[[], datetime.datetime],
 ]
 
 
