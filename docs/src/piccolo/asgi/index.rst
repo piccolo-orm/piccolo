@@ -20,21 +20,19 @@ will ask for your preferences on which libraries to use.
 Routing frameworks
 ******************
 
-Currently, `Starlette <https://www.starlette.io/>`_, `FastAPI <https://fastapi.tiangolo.com/>`_,
+`Starlette <https://www.starlette.io/>`_, `FastAPI <https://fastapi.tiangolo.com/>`_,
 `BlackSheep <https://www.neoteroi.dev/blacksheep/>`_,
-`Litestar <https://litestar.dev/>`_, `Esmerald <https://esmerald.dev/>`_ and
-`Lilya <https://lilya.dev/>`_ are supported.
-
-Other great ASGI routing frameworks exist, and may be supported in the future
-(`Quart <https://pgjones.gitlab.io/quart/>`_ ,
-`Sanic <https://sanic.readthedocs.io/en/latest/>`_ ,
-`Django <https://www.djangoproject.com/>`_  etc).
+`Litestar <https://litestar.dev/>`_, `Esmerald <https://esmerald.dev/>`_,
+`Lilya <https://lilya.dev/>`_,
+`Quart <https://quart.palletsprojects.com/en/latest/>`_,
+`Falcon <https://falconframework.org/>`_
+and `Sanic <https://sanic.dev/en/>`_ are supported.
 
 Which to use?
 =============
 
 All are great choices. FastAPI is built on top of Starlette and Esmerald is built on top of Lilya, so they're
-very similar. FastAPI, BlackSheep and Esmerald are great if you want to document a REST
+very similar. FastAPI, BlackSheep, Litestar and Esmerald are great if you want to document a REST
 API, as they have built-in OpenAPI support.
 
 -------------------------------------------------------------------------------
@@ -42,7 +40,9 @@ API, as they have built-in OpenAPI support.
 Web servers
 ************
 
-`Hypercorn <https://pgjones.gitlab.io/hypercorn/>`_ and
-`Uvicorn <https://www.uvicorn.org/>`_  are available as ASGI servers.
+`Uvicorn <https://www.uvicorn.org/>`_,
+`Hypercorn <https://hypercorn.readthedocs.io/en/latest/>`_
+and `Granian <https://github.com/emmett-framework/granian>`_ 
+are available as ASGI servers.
 `Daphne <https://github.com/django/daphne>`_ can't be used programatically so
 was omitted at this time.

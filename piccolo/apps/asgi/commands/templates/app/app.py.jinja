@@ -13,5 +13,7 @@
 {% elif router == 'quart' %}
     {% include '_quart_app.py.jinja' %}
 {% elif router == 'falcon' %}
-    {% include '_falcon_app.py.jinja' %}                          
+    {% include '_falcon_app.py.jinja' %}
+{% elif router == 'sanic' %}
+    {% include '_sanic_app.py.jinja' %}
 {% endif %}
