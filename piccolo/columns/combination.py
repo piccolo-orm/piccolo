@@ -200,13 +200,7 @@ class Where(CombinableMixin):
         """
         return convert_to_sql_value(value=value, column=self.column)
 
-    @property
-    def values_querystring(self) -> QueryString:
-        values = self.values
-
-        if isinstance(values, Undefined):
-            raise ValueError("values is undefined")
-
+    def get_values_querystring(self, values) -> QueryString:
         template = ", ".join("{}" for _ in values)
         return QueryString(template, *values)
 
@@ -217,7 +211,7 @@ class Where(CombinableMixin):
             args.append(self.value)
 
         if self.values != UNDEFINED:
-            args.append(self.values_querystring)
+            args.append(self.get_values_querystring(self.values))
 
         template = self.operator.template.format(
             name=self.column.get_where_string(
@@ -236,7 +230,7 @@ class Where(CombinableMixin):
             args.append(self.value)
 
         if self.values != UNDEFINED:
-            args.append(self.values_querystring)
+            args.append(self.get_values_querystring(self.values))
 
         column = self.column
 
@@ -263,15 +257,40 @@ class Where(CombinableMixin):
 
     @property
     def querystring_for_constraint(self) -> QueryString:
+        """
+        This is used for check constraints - the main difference is we
+        don't prefix the column name with the table name.
+        """
+
+        from piccolo.columns.base import Column
+
+        def stringify_column(column: Column) -> str:
+            return f'"{column._meta.db_column_name}"'
+
         args: t.List[t.Any] = []
         if self.value != UNDEFINED:
-            args.append(self.value)
+            args.append(
+                QueryString(stringify_column(self.value))
+                if isinstance(self.value, Column)
+                else self.value
+            )
 
-        if self.values != UNDEFINED:
-            args.append(self.values_querystring)
+        if not isinstance(self.values, Undefined):
+            args.append(
+                self.get_values_querystring(
+                    values=[
+                        (
+                            QueryString(stringify_column(value))
+                            if isinstance(self.value, Column)
+                            else self.value
+                        )
+                        for value in self.values
+                    ]
+                )
+            )
 
         template = self.operator.template.format(
-            name=f'"{self.column._meta.db_column_name}"',
+            name=stringify_column(self.column),
             value="{}",
             values="{}",
         )
