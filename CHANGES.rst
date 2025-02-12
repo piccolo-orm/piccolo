@@ -1,6 +1,17 @@
 Changes
 =======
 
+1.23.0
+------
+
+* Added Quart, Sanic, and Falcon as supported ASGI frameworks (thanks to
+  @sinisaos for this).
+* Fixed a bug with very large integers in SQLite.
+* Fixed type annotation for ``Timestamptz`` default values (thanks to @Skelmis
+  for this).
+
+-------------------------------------------------------------------------------
+
 1.22.0
 ------
 
