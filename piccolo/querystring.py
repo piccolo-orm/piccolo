@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from importlib.util import find_spec
 from string import Formatter
 
@@ -138,6 +138,10 @@ class QueryString(Selectable):
         """
         The SQL returned by the ``__str__`` method isn't used directly in
         queries - it's just a usability feature.
+
+        The only exception to this is CHECK constraints, where we use this to
+        convert simple querystrings into strings.
+
         """
         _, bundled, combined_args = self.bundle(
             start_index=1, bundled=[], combined_args=[]
@@ -153,7 +157,7 @@ class QueryString(Selectable):
             _type = type(arg)
             if _type == str:
                 converted_args.append(f"'{arg}'")
-            elif _type == datetime:
+            elif _type == datetime or _type == date:
                 dt_string = arg.isoformat()
                 converted_args.append(f"'{dt_string}'")
             elif _type == UUID or _type == apgUUID:

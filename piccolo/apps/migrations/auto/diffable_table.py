@@ -5,14 +5,17 @@ from dataclasses import dataclass, field
 
 from piccolo.apps.migrations.auto.operations import (
     AddColumn,
+    AddConstraint,
     AlterColumn,
     DropColumn,
+    DropConstraint,
 )
 from piccolo.apps.migrations.auto.serialisation import (
     deserialise_params,
     serialise_params,
 )
 from piccolo.columns.base import Column
+from piccolo.constraints import Constraint
 from piccolo.table import Table, create_table_class
 
 
@@ -62,6 +65,8 @@ class TableDelta:
     add_columns: t.List[AddColumn] = field(default_factory=list)
     drop_columns: t.List[DropColumn] = field(default_factory=list)
     alter_columns: t.List[AlterColumn] = field(default_factory=list)
+    add_constraints: t.List[AddConstraint] = field(default_factory=list)
+    drop_constraints: t.List[DropConstraint] = field(default_factory=list)
 
     def __eq__(self, value: TableDelta) -> bool:  # type: ignore
         """
@@ -93,6 +98,19 @@ class ColumnComparison:
 
 
 @dataclass
+class ConstraintComparison:
+    constraint: Constraint
+
+    def __hash__(self) -> int:
+        return self.constraint.__hash__()
+
+    def __eq__(self, value) -> bool:
+        if isinstance(value, ConstraintComparison):
+            return self.constraint._meta.name == value.constraint._meta.name
+        return False
+
+
+@dataclass
 class DiffableTable:
     """
     Represents a Table. When we substract two instances, it returns the
@@ -103,6 +121,7 @@ class DiffableTable:
     tablename: str
     schema: t.Optional[str] = None
     columns: t.List[Column] = field(default_factory=list)
+    constraints: t.List[Constraint] = field(default_factory=list)
     previous_class_name: t.Optional[str] = None
 
     def __post_init__(self) -> None:
@@ -196,10 +215,54 @@ class DiffableTable:
                     )
                 )
 
+        add_constraints = [
+            AddConstraint(
+                table_class_name=self.class_name,
+                constraint_name=i.constraint._meta.name,
+                constraint_class_name=i.constraint.__class__.__name__,
+                constraint_class=i.constraint.__class__,
+                params=i.constraint._meta.params,
+                schema=self.schema,
+            )
+            for i in sorted(
+                {
+                    ConstraintComparison(constraint=constraint)
+                    for constraint in self.constraints
+                }
+                - {
+                    ConstraintComparison(constraint=constraint)
+                    for constraint in value.constraints
+                },
+                key=lambda x: x.constraint._meta.name,
+            )
+        ]
+
+        drop_constraints = [
+            DropConstraint(
+                table_class_name=self.class_name,
+                constraint_name=i.constraint._meta.name,
+                tablename=value.tablename,
+                schema=self.schema,
+            )
+            for i in sorted(
+                {
+                    ConstraintComparison(constraint=constraint)
+                    for constraint in value.constraints
+                }
+                - {
+                    ConstraintComparison(constraint=constraint)
+                    for constraint in self.constraints
+                },
+                key=lambda x: x.constraint._meta.name,
+            )
+        ]
+
         return TableDelta(
             add_columns=add_columns,
             drop_columns=drop_columns,
             alter_columns=alter_columns,
+            add_constraints=add_constraints,
+            drop_constraints=drop_constraints,
         )
 
     def __hash__(self) -> int:
@@ -225,10 +288,14 @@ class DiffableTable:
         """
         Converts the DiffableTable into a Table subclass.
         """
+        class_members: t.Dict[str, t.Any] = {}
+        for column in self.columns:
+            class_members[column._meta.name] = column
+        for constraint in self.constraints:
+            class_members[constraint._meta.name] = constraint
+
         return create_table_class(
             class_name=self.class_name,
             class_kwargs={"tablename": self.tablename, "schema": self.schema},
-            class_members={
-                column._meta.name: column for column in self.columns
-            },
+            class_members=class_members,
         )
