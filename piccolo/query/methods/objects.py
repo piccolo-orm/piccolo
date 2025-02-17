@@ -65,7 +65,7 @@ class GetOrCreate(
             instance._was_created = False
             return instance
 
-        instance = self.table_class(_data=self.defaults)
+        instance = self.table_class(_data=self.defaults, _ignore_missing=True)
 
         # If it's a complex `where`, there can be several column values to
         # extract e.g. (Band.name == 'Pythonistas') & (Band.popularity == 1000)
