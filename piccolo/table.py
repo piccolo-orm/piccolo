@@ -157,7 +157,11 @@ class TableMeta:
         """
         components = name.split(".")
         column_name = components[0]
-        column = [i for i in self.columns if i._meta.name == column_name]
+        column = [
+            i
+            for i in self.columns
+            if column_name in (i._meta.name, i._meta.db_column_name)
+        ]
         if len(column) != 1:
             raise ValueError(f"No matching column found with name == {name}")
         column_object = column[0]
