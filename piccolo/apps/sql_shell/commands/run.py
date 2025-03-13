@@ -28,24 +28,21 @@ def run() -> None:
 
         args = ["psql"]
 
-        host = engine.config.get("host")
-        port = engine.config.get("port")
-        user = engine.config.get("user")
-        password = engine.config.get("password")
-        database = engine.config.get("database")
-
-        if user:
-            args += ["-U", user]
-        if host:
-            args += ["-h", host]
-        if port:
-            args += ["-p", str(port)]
-        if database:
-            args += [database]
+        if dsn := engine.config.get("dsn"):
+            args += [dsn]
+        else:
+            if user := engine.config.get("user"):
+                args += ["-U", user]
+            if host := engine.config.get("host"):
+                args += ["-h", host]
+            if port := engine.config.get("port"):
+                args += ["-p", str(port)]
+            if database := engine.config.get("database"):
+                args += [database]
 
         sigint_handler = signal.getsignal(signal.SIGINT)
         subprocess_env = os.environ.copy()
-        if password:
+        if password := engine.config.get("password"):
             subprocess_env["PGPASSWORD"] = str(password)
         try:
             # Allow SIGINT to pass to psql to abort queries.
