@@ -1,6 +1,20 @@
 Changes
 =======
 
+1.24.0
+------
+
+* Fixed a bug with ``get_or_create`` when a table has a column with both
+  ``null=False`` and ``default=None`` - thanks to @bymoye for reporting this
+  issue.
+* If a ``PostgresEngine`` uses the ``dsn`` argument for ``asyncpg``, this is
+  now used by ``piccolo sql_shell run``. Thanks to @abhishek-compro for
+  suggesting this.
+* Fixed the type annotation for the ``length`` argument of ``Varchar`` - it
+  is allowed to be ``None``. Thanks to @Compro-Prasad for this.
+
+-------------------------------------------------------------------------------
+
 1.23.0
 ------
 
