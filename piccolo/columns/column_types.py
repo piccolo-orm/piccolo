@@ -315,7 +315,7 @@ class Varchar(Column):
 
     def __init__(
         self,
-        length: int = 255,
+        length: t.Optional[int] = 255,
         default: t.Union[str, Enum, t.Callable[[], str], None] = "",
         **kwargs,
     ) -> None:
