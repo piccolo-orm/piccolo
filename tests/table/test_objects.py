@@ -272,7 +272,7 @@ class TestGetOrCreate(DBTestCase):
         self.assertEqual(band.manager.name, "Guido")
 
 
-class BandNotNull(Band):
+class BandNotNull(Band, tablename="band"):
     manager = ForeignKey(Manager, null=False)
 
 
