@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from piccolo.query.base import DDL
+from piccolo.query.methods.alter import AddConstraint
 from piccolo.query.methods.create_index import CreateIndex
 
 if t.TYPE_CHECKING:  # pragma: no cover
@@ -86,5 +87,10 @@ class Create(DDL):
                         if_not_exists=self.if_not_exists,
                     ).ddl
                 )
+
+        for constraint in self.table._meta.constraints:
+            ddl.append(
+                f"ALTER TABLE {self.table._meta.get_formatted_tablename()} {AddConstraint(constraint=constraint).ddl}"  # noqa: E501
+            )
 
         return ddl
