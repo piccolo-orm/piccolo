@@ -65,22 +65,20 @@ class GetOrCreate(
             instance._was_created = False
             return instance
 
-        instance = self.table_class(_data=self.defaults)
+        data = {**self.defaults}
 
         # If it's a complex `where`, there can be several column values to
         # extract e.g. (Band.name == 'Pythonistas') & (Band.popularity == 1000)
         if isinstance(self.where, Where):
-            setattr(
-                instance,
-                self.where.column._meta.name,  # type: ignore
-                self.where.value,  # type: ignore
-            )
+            data[self.where.column] = self.where.value
         elif isinstance(self.where, And):
             for column, value in self.where.get_column_values().items():
                 if len(column._meta.call_chain) == 0:
                     # Make sure we only set the value if the column belongs
                     # to this table.
-                    setattr(instance, column._meta.name, value)
+                    data[column] = value
+
+        instance = self.table_class(_data=data)
 
         await instance.save().run(node=node, in_pool=in_pool)
 
