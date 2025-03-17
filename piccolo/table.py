@@ -852,9 +852,42 @@ class Table(metaclass=TableMetaclass):
         return f"<{self.__class__.__name__}: {pk}>"
 
     def __eq__(self, other) -> bool:
-        return isinstance(other, self.__class__) and getattr(
-            self, self._meta.primary_key._meta.name, None
-        ) == getattr(other, other._meta.primary_key._meta.name, None)
+    def __eq__(self, other: t.Any) -> bool:
+        """
+        Lets us check if two ``Table`` instances represent the same row in the
+        database, based on their primary key value::
+
+            band_1 = await Band.objects().where(Band.name == "Pythonistas")
+            band_2 = await Band.objects().where(Band.name == "Rustaceans")
+
+            >>> band_1 == band_1
+            True
+
+            >>> band_1 == band_2
+            False
+
+        """
+        if isinstance(other, self.__class__):
+            pk_value = getattr(
+                self,
+                self._meta.primary_key._meta.name,
+            )
+            other_pk_value = getattr(
+                other,
+                other._meta.primary_key._meta.name,
+            )
+
+            # We need this special case for `Serial` columns, which have a
+            # `QueryString` value until saved in the database.
+            if any(
+                isinstance(value, QueryString)
+                for value in (pk_value, other_pk_value)
+            ):
+                return False
+
+            return pk_value == other_pk_value
+
+        return False
 
     ###########################################################################
     # Classmethods
