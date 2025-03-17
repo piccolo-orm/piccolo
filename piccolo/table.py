@@ -862,31 +862,36 @@ class Table(metaclass=TableMetaclass):
             >>> band_1 == band_1
             True
 
+            >>> band_1 == band_1.id
+            True
+
             >>> band_1 == band_2
             False
 
         """
+        pk_value = getattr(
+            self,
+            self._meta.primary_key._meta.name,
+        )
+
         if isinstance(other, self.__class__):
-            pk_value = getattr(
-                self,
-                self._meta.primary_key._meta.name,
-            )
             other_pk_value = getattr(
                 other,
                 other._meta.primary_key._meta.name,
             )
+        else:
+            # Assume it's already the primary key value
+            other_pk_value = other
 
-            # We need this special case for `Serial` columns, which have a
-            # `QueryString` value until saved in the database.
-            if any(
-                isinstance(value, QueryString)
-                for value in (pk_value, other_pk_value)
-            ):
-                return False
+        # We need this special case for `Serial` columns, which have a
+        # `QueryString` value until saved in the database.
+        if any(
+            isinstance(value, QueryString)
+            for value in (pk_value, other_pk_value)
+        ):
+            return False
 
-            return pk_value == other_pk_value
-
-        return False
+        return pk_value == other_pk_value
 
     ###########################################################################
     # Classmethods

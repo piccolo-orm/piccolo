@@ -30,3 +30,8 @@ class TestInstanceEquality(AsyncTableTest):
         # the primary key), so they shouldn't be equal.
         self.assertNotEqual(Manager(), Manager())
         self.assertNotEqual(manager_1, Manager())
+
+        # We should be able to test equality between a primary key value and
+        # a Table instance:
+        self.assertEqual(manager_1, manager_1.id)
+        self.assertNotEqual(manager_1, manager_2.id)
