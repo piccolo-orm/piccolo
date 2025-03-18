@@ -191,23 +191,45 @@ So if we want to disallow extra fields, we can do:
 Required fields
 ~~~~~~~~~~~~~~~
 
-You can specify which fields are required using the ``required``
-argument of :class:`Column <piccolo.columns.base.Column>`. For example:
+If a column has ``null=True``, then it creates an ``Optional`` field in the
+Pydantic model:
 
 .. code-block:: python
 
     class Band(Table):
-        name = Varchar(required=True)
+        name = Varchar(null=True)
 
     BandModel = create_pydantic_model(Band)
+
+    # This is equivalent to:
+    from pydantic import BaseModel
+
+    class BandModel(BaseModel):
+        name: Optional[str] = None
+
+If the column has ``null=True``, but we still want the user to provide a value,
+then we can pass ``required=True`` to :class:`Column <piccolo.columns.base.Column>`:
+
+.. code-block:: python
+
+    class Band(Table):
+        name = Varchar(null=True, required=True)
+
+    BandModel = create_pydantic_model(Band)
+
+    # This is equivalent to:
+    from pydantic import BaseModel
+
+    class BandModel(BaseModel):
+        name: str
 
     # Omitting the field raises an error:
     >>> BandModel()
     ValidationError - name field required
 
-You can override this behaviour using the ``all_optional`` argument. An example
-use case is when you have a model which is used for filtering, then you'll want
-all fields to be optional.
+If you don't want any of your fields to be required, you can use the
+``all_optional`` argument. An example use case is when you have a model which
+is used for filtering:
 
 .. code-block:: python
 
@@ -217,11 +239,10 @@ all fields to be optional.
     BandFilterModel = create_pydantic_model(
         Band,
         all_optional=True,
-        model_name='BandFilterModel',
     )
 
     # This no longer raises an exception:
-    >>> BandModel()
+    >>> BandFilterModel()
 
 Subclassing the model
 ~~~~~~~~~~~~~~~~~~~~~
