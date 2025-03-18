@@ -869,29 +869,30 @@ class Table(metaclass=TableMetaclass):
             False
 
         """
+        pk = self._meta.primary_key
+
         pk_value = getattr(
             self,
-            self._meta.primary_key._meta.name,
+            pk._meta.name,
         )
 
         if isinstance(other, self.__class__):
             other_pk_value = getattr(
                 other,
-                other._meta.primary_key._meta.name,
+                pk._meta.name,
             )
         else:
             # Assume it's already the primary key value
             other_pk_value = other
 
-        # We need this special case for `Serial` columns, which have a
-        # `QueryString` value until saved in the database.
-        if any(
-            isinstance(value, QueryString)
-            for value in (pk_value, other_pk_value)
-        ):
-            return False
-
-        return pk_value == other_pk_value
+        # Make sure the value is of the correct type.
+        # We need this for `Serial` columns, which have a `QueryString` value
+        # until saved in the database.
+        return (
+            isinstance(pk_value, pk.value_type)
+            and isinstance(other_pk_value, pk.value_type)
+            and (pk_value == other_pk_value)
+        )
 
     ###########################################################################
     # Classmethods
