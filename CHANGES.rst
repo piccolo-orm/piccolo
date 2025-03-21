@@ -1,6 +1,14 @@
 Changes
 =======
 
+1.24.1
+------
+
+Fixed a bug with default values in ``Timestamp`` and ``Timestamptz`` columns.
+Thanks to @splch for this.
+
+-------------------------------------------------------------------------------
+
 1.24.0
 ------
 
