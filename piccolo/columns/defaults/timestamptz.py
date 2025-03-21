@@ -62,6 +62,7 @@ class TimestamptzCustom(TimestampCustom):
             month=instance.month,
             day=instance.day,
             hour=instance.hour,
+            minute=instance.minute,
             second=instance.second,
             microsecond=instance.microsecond,
         )
