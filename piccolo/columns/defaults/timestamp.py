@@ -70,6 +70,7 @@ class TimestampCustom(Default):
         month: int = 1,
         day: int = 1,
         hour: int = 0,
+        minute: int = 0,
         second: int = 0,
         microsecond: int = 0,
     ):
@@ -77,6 +78,7 @@ class TimestampCustom(Default):
         self.month = month
         self.day = day
         self.hour = hour
+        self.minute = minute
         self.second = second
         self.microsecond = microsecond
 
@@ -87,6 +89,7 @@ class TimestampCustom(Default):
             month=self.month,
             day=self.day,
             hour=self.hour,
+            minute=self.minute,
             second=self.second,
             microsecond=self.microsecond,
         )
@@ -115,6 +118,7 @@ class TimestampCustom(Default):
             month=instance.month,
             day=instance.month,
             hour=instance.hour,
+            minute=instance.minute,
             second=instance.second,
             microsecond=instance.microsecond,
         )
