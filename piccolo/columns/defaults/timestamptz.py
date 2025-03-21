@@ -47,6 +47,7 @@ class TimestamptzCustom(TimestampCustom):
             month=self.month,
             day=self.day,
             hour=self.hour,
+            minute=self.minute,
             second=self.second,
             microsecond=self.microsecond,
             tzinfo=datetime.timezone.utc,
