@@ -116,7 +116,7 @@ class TimestampCustom(Default):
         return cls(
             year=instance.year,
             month=instance.month,
-            day=instance.month,
+            day=instance.day,
             hour=instance.hour,
             minute=instance.minute,
             second=instance.second,
