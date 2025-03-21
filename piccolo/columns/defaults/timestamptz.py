@@ -59,7 +59,7 @@ class TimestamptzCustom(TimestampCustom):
         return cls(
             year=instance.year,
             month=instance.month,
-            day=instance.month,
+            day=instance.day,
             hour=instance.hour,
             second=instance.second,
             microsecond=instance.microsecond,
