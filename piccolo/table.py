@@ -28,6 +28,7 @@ from piccolo.columns.m2m import (
 )
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
+from piccolo.columns.reverse_lookup import ReverseLookup
 from piccolo.custom_types import TableInstance
 from piccolo.engine import Engine, engine_finder
 from piccolo.query import (
@@ -88,7 +89,9 @@ class TableMeta:
     tags: t.List[str] = field(default_factory=list)
     help_text: t.Optional[str] = None
     _db: t.Optional[Engine] = None
-    m2m_relationships: t.List[M2M] = field(default_factory=list)
+    m2m_relationships: t.List[t.Union[M2M, ReverseLookup]] = field(
+        default_factory=list
+    )
     schema: t.Optional[str] = None
 
     # Records reverse foreign key relationships - i.e. when the current table
@@ -278,7 +281,7 @@ class Table(metaclass=TableMetaclass):
         email_columns: t.List[Email] = []
         auto_update_columns: t.List[Column] = []
         primary_key: t.Optional[Column] = None
-        m2m_relationships: t.List[M2M] = []
+        m2m_relationships: t.List[t.Union[M2M, ReverseLookup]] = []
 
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]
@@ -326,7 +329,7 @@ class Table(metaclass=TableMetaclass):
                 if column._meta.auto_update is not ...:
                     auto_update_columns.append(column)
 
-            if isinstance(attribute, M2M):
+            if isinstance(attribute, (M2M, ReverseLookup)):
                 attribute._meta._name = attribute_name
                 attribute._meta._table = cls
                 m2m_relationships.append(attribute)
