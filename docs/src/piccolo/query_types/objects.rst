@@ -404,7 +404,7 @@ raw primary key value:
 
 .. code-block:: python
 
-    >>> band.id
+    >>> band_1.id
     1
 
     >>> band_1 == 1
