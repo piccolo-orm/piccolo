@@ -361,6 +361,63 @@ It works with ``prefetch`` too:
 
 -------------------------------------------------------------------------------
 
+Comparing objects
+-----------------
+
+If you have two objects, and you want to know whether they refer to the same
+row in the database, you can simply use the equality operator:
+
+.. code-block:: python
+
+    band_1 = await Band.objects().where(Band.name == "Pythonistas").first()
+    band_2 = await Band.objects().where(Band.name == "Pythonistas").first()
+
+    >>> band_1 == band_2
+    True
+
+It works by comparing the primary key value of each object. If the object has
+no primary key value yet (e.g. it uses a ``Serial`` column, and it
+hasn't been saved in the database), then the result will always be ``False``:
+
+.. code-block:: python
+
+    band_1 = Band()
+    band_2 = Band()
+
+    >>> band_1 == band_2
+    False
+
+If you want to compare every value on the objects, and not just the primary
+key, you can use ``to_dict``. For example:
+
+.. code-block:: python
+
+    >>> band_1.to_dict() == band_2.to_dict()
+    True
+
+    >>> band_1.popularity = 10_000
+    >>> band_1.to_dict() == band_2.to_dict()
+    False
+
+As well as comparing objects to one another, you can compare an object to the
+raw primary key value:
+
+.. code-block:: python
+
+    >>> band.id
+    1
+
+    >>> band_1 == 1
+    True
+
+    >>> band_1 == band_1.id
+    True
+
+    >>> band_1 == 5
+    False
+
+-------------------------------------------------------------------------------
+
 Query clauses
 -------------
 
