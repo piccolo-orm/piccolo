@@ -375,9 +375,16 @@ row in the database, you can simply use the equality operator:
     >>> band_1 == band_2
     True
 
-It works by comparing the primary key value of each object. If the object has
-no primary key value yet (e.g. it uses a ``Serial`` column, and it
-hasn't been saved in the database), then the result will always be ``False``:
+It works by comparing the primary key value of each object. It's equivalent to:
+
+.. code-block:: python
+
+    >>> band_1.id == band_2.id
+    True
+
+If the object has no primary key value yet (e.g. it uses a ``Serial`` column,
+and it hasn't been saved in the database), then the result will always be
+``False``:
 
 .. code-block:: python
 
