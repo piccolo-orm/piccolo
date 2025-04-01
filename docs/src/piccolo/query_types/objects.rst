@@ -375,7 +375,8 @@ row in the database, you can simply use the equality operator:
     >>> band_1 == band_2
     True
 
-It works by comparing the primary key value of each object. It's equivalent to:
+It works by comparing the primary key value of each object. It's equivalent to
+this:
 
 .. code-block:: python
 
@@ -404,23 +405,6 @@ key, you can use ``to_dict``. For example:
 
     >>> band_1.popularity = 10_000
     >>> band_1.to_dict() == band_2.to_dict()
-    False
-
-As well as comparing objects to one another, you can compare an object to the
-raw primary key value:
-
-.. code-block:: python
-
-    >>> band_1.id
-    1
-
-    >>> band_1 == 1
-    True
-
-    >>> band_1 == band_1.id
-    True
-
-    >>> band_1 == 5
     False
 
 -------------------------------------------------------------------------------

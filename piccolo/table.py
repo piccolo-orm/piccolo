@@ -856,19 +856,37 @@ class Table(metaclass=TableMetaclass):
         Lets us check if two ``Table`` instances represent the same row in the
         database, based on their primary key value::
 
-            band_1 = await Band.objects().where(Band.name == "Pythonistas")
-            band_2 = await Band.objects().where(Band.name == "Rustaceans")
+            band_1 = await Band.objects().where(
+                Band.name == "Pythonistas"
+            ).first()
 
-            >>> band_1 == band_1
-            True
+            band_2 = await Band.objects().where(
+                Band.name == "Pythonistas"
+            ).first()
 
-            >>> band_1 == band_1.id
-            True
+            band_3 = await Band.objects().where(
+                Band.name == "Rustaceans"
+            ).first()
 
             >>> band_1 == band_2
+            True
+
+            >>> band_1 == band_3
             False
 
         """
+        if not isinstance(other, Table):
+            # This is the correct way to tell Python that this operation
+            # isn't supported:
+            # https://docs.python.org/3/library/constants.html#NotImplemented
+            return NotImplemented
+
+        # Make sure we're comparing the same table.
+        # There are several ways we could do this (like comparing tablename),
+        # but this should be OK.
+        if not isinstance(other, self.__class__):
+            return False
+
         pk = self._meta.primary_key
 
         pk_value = getattr(
@@ -876,23 +894,28 @@ class Table(metaclass=TableMetaclass):
             pk._meta.name,
         )
 
-        if isinstance(other, self.__class__):
-            other_pk_value = getattr(
-                other,
-                pk._meta.name,
-            )
-        else:
-            # Assume it's already the primary key value
-            other_pk_value = other
-
-        # Make sure the value is of the correct type.
-        # We need this for `Serial` columns, which have a `QueryString` value
-        # until saved in the database.
-        return (
-            isinstance(pk_value, pk.value_type)
-            and isinstance(other_pk_value, pk.value_type)
-            and (pk_value == other_pk_value)
+        other_pk_value = getattr(
+            other,
+            pk._meta.name,
         )
+
+        # Make sure the primary key values are of the correct type.
+        # We need this for `Serial` columns, which have a `QueryString`
+        # value until saved in the database. We don't want to use `==` on
+        # two QueryString values, because QueryString has a custom `__eq__`
+        # method which doesn't return a boolean.
+        if isinstance(
+            pk_value,
+            pk.value_type,
+        ) and isinstance(
+            other_pk_value,
+            pk.value_type,
+        ):
+            return pk_value == other_pk_value
+        else:
+            # As a fallback, even if it hasn't been saved in the database,
+            # an object should still be equal to itself.
+            return other is self
 
     ###########################################################################
     # Classmethods
