@@ -44,3 +44,16 @@ class TestDelete(DBTestCase):
             Band.delete().run_sync()
 
         Band.delete(force=True).run_sync()
+
+    def test_delete_where_subquery(self):
+        """
+        Make sure delete works with the FK columns in where clause.
+        """
+
+        self.insert_rows()
+
+        Band.delete().where(Band.manager._.id == 1).run_sync()
+
+        response = Band.count().where(Band.manager._.id == 1).run_sync()
+
+        self.assertEqual(response, 0)
