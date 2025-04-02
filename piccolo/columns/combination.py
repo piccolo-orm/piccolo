@@ -45,11 +45,11 @@ class Combination(CombinableMixin):
         )
 
     @property
-    def querystring_for_update(self) -> QueryString:
+    def querystring_for_joins(self) -> QueryString:
         return QueryString(
             "({} " + self.operator + " {})",
-            self.first.querystring_for_update,
-            self.second.querystring_for_update,
+            self.first.querystring_for_joins,
+            self.second.querystring_for_joins,
         )
 
     def __str__(self):
@@ -131,7 +131,7 @@ class WhereRaw(CombinableMixin):
         self.querystring = QueryString(sql, *args)
 
     @property
-    def querystring_for_update(self) -> QueryString:
+    def querystring_for_joins(self) -> QueryString:
         return self.querystring
 
     def __str__(self):
@@ -218,7 +218,7 @@ class Where(CombinableMixin):
         return QueryString(template, *args)
 
     @property
-    def querystring_for_update(self) -> QueryString:
+    def querystring_for_joins(self) -> QueryString:
         args: t.List[t.Any] = []
         if self.value != UNDEFINED:
             args.append(self.value)

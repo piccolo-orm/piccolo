@@ -61,7 +61,7 @@ class Delete(Query):
             querystring = QueryString(
                 "{} WHERE {}",
                 querystring,
-                self.where_delegate._where.querystring_for_update,
+                self.where_delegate._where.querystring_for_joins,
             )
 
         if self.returning_delegate._returning:
