@@ -1,6 +1,20 @@
 Changes
 =======
 
+1.24.2
+------
+
+Fixed a bug with ``delete`` queries which had joins in the ``where`` clause.
+For example:
+
+.. code-block:: python
+
+  >>> await Band.delete().where(Band.manager.name == 'Guido')
+
+Thanks to @HakierGrzonzo for reporting the issue, and @sinisaos for the fix.
+
+-------------------------------------------------------------------------------
+
 1.24.1
 ------
 

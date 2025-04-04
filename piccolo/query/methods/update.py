@@ -104,7 +104,7 @@ class Update(Query[TableInstance, t.List[t.Any]]):
             querystring = QueryString(
                 "{} WHERE {}",
                 querystring,
-                self.where_delegate._where.querystring_for_update,
+                self.where_delegate._where.querystring_for_update_and_delete,
             )
 
         if self.returning_delegate._returning:
