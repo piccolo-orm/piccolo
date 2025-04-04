@@ -17,9 +17,11 @@ class TestRemove(TestCase):
             "Maz"
             in Manager.select(Manager.name).output(as_list=True).run_sync()
         )
+        self.assertEqual(manager._exists_in_db, True)
 
         manager.remove().run_sync()
         self.assertTrue(
             "Maz"
             not in Manager.select(Manager.name).output(as_list=True).run_sync()
         )
+        self.assertEqual(manager._exists_in_db, False)
