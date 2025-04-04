@@ -202,7 +202,9 @@ class BaseUser(Table, tablename="piccolo_user"):
             The id of the user if a match is found, otherwise ``None``.
 
         """
-        if len(username) > cls.username.length:
+        if (max_username_length := cls.username.length) and len(
+            username
+        ) > max_username_length:
             logger.warning("Excessively long username provided.")
             return None
 

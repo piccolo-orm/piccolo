@@ -1,6 +1,53 @@
 Changes
 =======
 
+1.24.2
+------
+
+Fixed a bug with ``delete`` queries which had joins in the ``where`` clause.
+For example:
+
+.. code-block:: python
+
+  >>> await Band.delete().where(Band.manager.name == 'Guido')
+
+Thanks to @HakierGrzonzo for reporting the issue, and @sinisaos for the fix.
+
+-------------------------------------------------------------------------------
+
+1.24.1
+------
+
+Fixed a bug with default values in ``Timestamp`` and ``Timestamptz`` columns.
+Thanks to @splch for this.
+
+-------------------------------------------------------------------------------
+
+1.24.0
+------
+
+* Fixed a bug with ``get_or_create`` when a table has a column with both
+  ``null=False`` and ``default=None`` - thanks to @bymoye for reporting this
+  issue.
+* If a ``PostgresEngine`` uses the ``dsn`` argument for ``asyncpg``, this is
+  now used by ``piccolo sql_shell run``. Thanks to @abhishek-compro for
+  suggesting this.
+* Fixed the type annotation for the ``length`` argument of ``Varchar`` - it
+  is allowed to be ``None``. Thanks to @Compro-Prasad for this.
+
+-------------------------------------------------------------------------------
+
+1.23.0
+------
+
+* Added Quart, Sanic, and Falcon as supported ASGI frameworks (thanks to
+  @sinisaos for this).
+* Fixed a bug with very large integers in SQLite.
+* Fixed type annotation for ``Timestamptz`` default values (thanks to @Skelmis
+  for this).
+
+-------------------------------------------------------------------------------
+
 1.22.0
 ------
 
