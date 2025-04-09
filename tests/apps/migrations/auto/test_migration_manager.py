@@ -618,6 +618,71 @@ class TestMigrationManager(DBTestCase):
             response = self.run_sync("SELECT * FROM manager;")
             self.assertEqual(response, [{"id": id[0]["id"], "name": "Dave"}])
 
+    @engines_only("postgres", "cockroach")
+    def test_alter_fk_on_delete_on_update(self):
+        """
+        Test altering whether a column is nullable with MigrationManager.
+        """
+        # before performing migrations - OnDelete.no_action
+        on_delete_type = Band.raw(
+            """
+            select confdeltype
+            from pg_constraint
+            join pg_class c on c.oid=conrelid
+            join pg_class p on p.oid=confrelid;
+            """
+        ).run_sync()
+        self.assertEqual(on_delete_type[0]["confdeltype"], b"a")
+
+        manager = MigrationManager(app_name="music")
+        manager.alter_column(
+            table_class_name="Band",
+            tablename="band",
+            column_name="manager",
+            db_column_name="manager",
+            params={
+                "on_delete": OnDelete.set_null,
+                "on_update": OnUpdate.set_null,
+            },
+            old_params={
+                "on_delete": OnDelete.no_action,
+                "on_update": OnUpdate.no_action,
+            },
+            column_class=ForeignKey,
+            old_column_class=ForeignKey,
+            schema=None,
+        )
+
+        asyncio.run(manager.run())
+
+        # after performing migrations - OnDelete.set_null
+        on_delete_type = Band.raw(
+            """
+            select confdeltype
+            from pg_constraint
+            join pg_class c on c.oid=conrelid
+            join pg_class p on p.oid=confrelid;
+            """
+        ).run_sync()
+
+        self.assertEqual(on_delete_type[0]["confdeltype"], b"n")
+
+        # Reverse
+        asyncio.run(manager.run(backwards=True))
+
+        # after performing reverse migrations we have
+        # OnDelete.no_action again
+        on_delete_type = Band.raw(
+            """
+            select confdeltype
+            from pg_constraint
+            join pg_class c on c.oid=conrelid
+            join pg_class p on p.oid=confrelid;
+            """
+        ).run_sync()
+
+        self.assertEqual(on_delete_type[0]["confdeltype"], b"a")
+
     @engines_only("postgres")
     def test_alter_column_unique(self):
         """

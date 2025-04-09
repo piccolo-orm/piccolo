@@ -534,6 +534,38 @@ class MigrationManager:
 
                 ###############################################################
 
+                on_delete = params.get("on_delete")
+                on_update = params.get("on_update")
+                if on_delete is not None or on_update is not None:
+                    # use to find FK table `referenced_table_name`` and
+                    # `referenced_column_name` for alter fk constraints
+                    existing_table = await self.get_table_from_snapshot(
+                        table_class_name=table_class_name,
+                        app_name=self.app_name,
+                    )
+                    # first drop fk constraint on alter table
+                    await self._run_query(
+                        _Table.alter().drop_foreign_key_constraint(
+                            column=alter_column.column_name
+                        )
+                    )
+                    # then add fk constraint on alter table
+                    for item in existing_table._meta.foreign_key_columns:
+                        reference: t.Any = item._foreign_key_meta.references
+                        referenced_table_name = reference._meta.tablename
+                        referenced_column_name = (
+                            reference._meta.primary_key._meta.name
+                        )
+                        await self._run_query(
+                            _Table.alter().add_foreign_key_constraint(
+                                column=alter_column.column_name,
+                                referenced_table_name=referenced_table_name,
+                                referenced_column_name=referenced_column_name,
+                                on_delete=on_delete,
+                                on_update=on_update,
+                            )
+                        )
+
                 null = params.get("null")
                 if null is not None:
                     await self._run_query(

@@ -194,6 +194,7 @@ class AddForeignKeyConstraint(AlterStatement):
         "constraint_name",
         "foreign_key_column_name",
         "referenced_table_name",
+        "referenced_column_name",
         "on_delete",
         "on_update",
     )
@@ -201,9 +202,9 @@ class AddForeignKeyConstraint(AlterStatement):
     constraint_name: str
     foreign_key_column_name: str
     referenced_table_name: str
+    referenced_column_name: str
     on_delete: t.Optional[OnDelete]
     on_update: t.Optional[OnUpdate]
-    referenced_column_name: str = "id"
 
     @property
     def ddl(self) -> str:
@@ -273,8 +274,8 @@ class DropTable:
 
 class Alter(DDL):
     __slots__ = (
-        "_add_foreign_key_constraint",
         "_add",
+        "_add_foreign_key_constraint",
         "_drop_constraint",
         "_drop_default",
         "_drop_table",
@@ -488,7 +489,7 @@ class Alter(DDL):
     def _get_constraint_name(self, column: t.Union[str, ForeignKey]) -> str:
         column_name = AlterColumnStatement(column=column).column_name
         tablename = self.table._meta.tablename
-        return f"{tablename}_{column_name}_fk"
+        return f"{tablename}_{column_name}_fkey"
 
     def drop_constraint(self, constraint_name: str) -> Alter:
         self._drop_constraint.append(
@@ -500,15 +501,18 @@ class Alter(DDL):
         self, column: t.Union[str, ForeignKey]
     ) -> Alter:
         constraint_name = self._get_constraint_name(column=column)
-        return self.drop_constraint(constraint_name=constraint_name)
+        self._drop_constraint.append(
+            DropConstraint(constraint_name=constraint_name)
+        )
+        return self
 
     def add_foreign_key_constraint(
         self,
         column: t.Union[str, ForeignKey],
         referenced_table_name: str,
+        referenced_column_name: str,
         on_delete: t.Optional[OnDelete] = None,
         on_update: t.Optional[OnUpdate] = None,
-        referenced_column_name: str = "id",
     ) -> Alter:
         """
         Add a new foreign key constraint::
@@ -528,9 +532,9 @@ class Alter(DDL):
                 constraint_name=constraint_name,
                 foreign_key_column_name=column_name,
                 referenced_table_name=referenced_table_name,
+                referenced_column_name=referenced_column_name,
                 on_delete=on_delete,
                 on_update=on_update,
-                referenced_column_name=referenced_column_name,
             )
         )
         return self
@@ -579,9 +583,11 @@ class Alter(DDL):
             i.ddl
             for i in itertools.chain(
                 self._add,
+                self._add_foreign_key_constraint,
                 self._rename_columns,
                 self._rename_table,
                 self._drop,
+                self._drop_constraint,
                 self._drop_default,
                 self._set_column_type,
                 self._set_unique,
