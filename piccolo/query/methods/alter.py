@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import ForeignKey, Numeric, Varchar
+from piccolo.constraints import Constraint
 from piccolo.query.base import DDL
 from piccolo.utils.warnings import Level, colored_warning
 
@@ -178,6 +179,17 @@ class SetLength(AlterColumnStatement):
 
 
 @dataclass
+class AddConstraint(AlterStatement):
+    __slots__ = ("constraint",)
+
+    constraint: Constraint
+
+    @property
+    def ddl(self) -> str:
+        return f"ADD CONSTRAINT {self.constraint._meta.name} {self.constraint.ddl}"  # noqa: E501
+
+
+@dataclass
 class DropConstraint(AlterStatement):
     __slots__ = ("constraint_name",)
 
@@ -275,6 +287,7 @@ class Alter(DDL):
     __slots__ = (
         "_add_foreign_key_constraint",
         "_add",
+        "_add_constraint",
         "_drop_constraint",
         "_drop_default",
         "_drop_table",
@@ -294,6 +307,7 @@ class Alter(DDL):
         super().__init__(table, **kwargs)
         self._add_foreign_key_constraint: t.List[AddForeignKeyConstraint] = []
         self._add: t.List[AddColumn] = []
+        self._add_constraint: t.List[AddConstraint] = []
         self._drop_constraint: t.List[DropConstraint] = []
         self._drop_default: t.List[DropDefault] = []
         self._drop_table: t.Optional[DropTable] = None
@@ -490,6 +504,10 @@ class Alter(DDL):
         tablename = self.table._meta.tablename
         return f"{tablename}_{column_name}_fk"
 
+    def add_constraint(self, constraint: Constraint) -> Alter:
+        self._add_constraint.append(AddConstraint(constraint=constraint))
+        return self
+
     def drop_constraint(self, constraint_name: str) -> Alter:
         self._drop_constraint.append(
             DropConstraint(constraint_name=constraint_name)
@@ -590,6 +608,8 @@ class Alter(DDL):
                 self._set_default,
                 self._set_digits,
                 self._set_schema,
+                self._add_constraint,
+                self._drop_constraint,
             )
         ]
 
