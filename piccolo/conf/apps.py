@@ -32,8 +32,18 @@ class PiccoloAppModule(ModuleType):
     APP_CONFIG: AppConfig
 
 
+def get_package(name: str) -> str:
+    """
+    :param name:
+        The __name__ variable from a Python file.
+
+    """
+    return ".".join(name.split(".")[:-1])
+
+
 def table_finder(
     modules: t.Sequence[str],
+    package: t.Optional[str] = None,
     include_tags: t.Optional[t.Sequence[str]] = None,
     exclude_tags: t.Optional[t.Sequence[str]] = None,
     exclude_imported: bool = False,
@@ -46,8 +56,10 @@ def table_finder(
 
     :param modules:
         The module paths to check for ``Table`` subclasses. For example,
-        ``['blog.tables']``. The path should be from the root of your project,
-        not a relative path.
+        ``['blog.tables']``.
+    :param package:
+        This must be passed in if the modules are relative paths (e.g.
+        ``['.foo']``).
     :param include_tags:
         If the ``Table`` subclass has one of these tags, it will be
         imported. The special tag ``'__all__'`` will import all ``Table``
@@ -84,7 +96,10 @@ def table_finder(
 
     for module_path in modules:
         try:
-            module = import_module(module_path)
+            module = import_module(
+                module_path,
+                package=package,
+            )
         except ImportError as exception:
             print(f"Unable to import {module_path}")
             raise exception from exception
