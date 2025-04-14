@@ -77,7 +77,7 @@ def new(app_name: str, root: str = "."):
     :param app_name:
         The name of the new app.
     :param root:
-        Where to create the app e.g. /my/folder. By default it creates the
+        Where to create the app e.g. ./my/folder. By default it creates the
         app in the current directory.
 
     """
