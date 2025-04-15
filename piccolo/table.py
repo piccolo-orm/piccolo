@@ -28,7 +28,10 @@ from piccolo.columns.m2m import (
 )
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
-from piccolo.columns.reverse_lookup import ReverseLookup
+from piccolo.columns.reverse_lookup import (
+    ReverseLookup,
+    ReverseLookupGetRelated,
+)
 from piccolo.custom_types import TableInstance
 from piccolo.engine import Engine, engine_finder
 from piccolo.query import (
@@ -735,6 +738,21 @@ class Table(metaclass=TableMetaclass):
             rows=rows,
             m2m=m2m,
         )
+
+    def get_reverse_lookup(
+        self, reverse_lookup: ReverseLookup
+    ) -> ReverseLookupGetRelated:
+        """
+        Get all matching rows via the reverse lookup.
+
+        .. code-block:: python
+
+            >>> band = await Band.objects().get(Band.name == "Pythonistas")
+            >>> await band.get_reverse_lookup(Band.genres)
+            [<Genre: 1>, <Genre: 2>]
+
+        """
+        return ReverseLookupGetRelated(row=self, reverse_lookup=reverse_lookup)
 
     def to_dict(self, *columns: Column) -> t.Dict[str, t.Any]:
         """

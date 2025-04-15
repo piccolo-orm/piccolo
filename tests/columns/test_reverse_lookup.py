@@ -67,14 +67,11 @@ class TestReverseLookup(TestCase):
     def tearDown(self):
         drop_db_tables_sync(*SIMPLE_SCHEMA)
 
-    @engines_skip("cockroach")
     def test_select_name(self):
-        """
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """  # noqa: E501
         response = Manager.select(
             Manager.name, Manager.bands(Band.name, as_list=True)
         ).run_sync()
+
         self.assertEqual(
             response,
             [
@@ -84,134 +81,160 @@ class TestReverseLookup(TestCase):
             ],
         )
 
-    @engines_skip("cockroach")
     def test_select_multiple(self):
-        """
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """  # noqa: E501
         response = Manager.select(
             Manager.name, Manager.bands(Band.id, Band.name)
         ).run_sync()
 
-        self.assertEqual(
-            response,
-            [
-                {
-                    "name": "Guido",
-                    "bands": [
-                        {"id": 1, "name": "Pythonistas"},
-                        {"id": 2, "name": "Rustaceans"},
-                    ],
-                },
-                {"name": "Mark", "bands": [{"id": 3, "name": "C-Sharps"}]},
-                {
-                    "name": "John",
-                    "bands": [],
-                },
-            ],
-        )
+        if engine_is("cockroach"):
+            self.assertEqual(len(response[0]["bands"]), 2)
+            self.assertEqual(len(response[1]["bands"]), 1)
+            self.assertEqual(len(response[2]["bands"]), 0)
+        else:
+            self.assertEqual(
+                response,
+                [
+                    {
+                        "name": "Guido",
+                        "bands": [
+                            {"id": 1, "name": "Pythonistas"},
+                            {"id": 2, "name": "Rustaceans"},
+                        ],
+                    },
+                    {"name": "Mark", "bands": [{"id": 3, "name": "C-Sharps"}]},
+                    {
+                        "name": "John",
+                        "bands": [],
+                    },
+                ],
+            )
 
-    @engines_skip("cockroach")
     def test_select_multiple_all_columns(self):
-        """
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """  # noqa: E501
         response = Manager.select(Manager.name, Manager.bands()).run_sync()
 
-        self.assertEqual(
-            response,
-            [
-                {
-                    "name": "Guido",
-                    "bands": [
-                        {"id": 1, "name": "Pythonistas", "manager": 1},
-                        {"id": 2, "name": "Rustaceans", "manager": 1},
-                    ],
-                },
-                {
-                    "name": "Mark",
-                    "bands": [{"id": 3, "name": "C-Sharps", "manager": 2}],
-                },
-                {
-                    "name": "John",
-                    "bands": [],
-                },
-            ],
-        )
+        if engine_is("cockroach"):
+            self.assertEqual(len(response[0]["bands"]), 2)
+            self.assertEqual(len(response[1]["bands"]), 1)
+            self.assertEqual(len(response[2]["bands"]), 0)
+        else:
+            self.assertEqual(
+                response,
+                [
+                    {
+                        "name": "Guido",
+                        "bands": [
+                            {"id": 1, "name": "Pythonistas", "manager": 1},
+                            {"id": 2, "name": "Rustaceans", "manager": 1},
+                        ],
+                    },
+                    {
+                        "name": "Mark",
+                        "bands": [{"id": 3, "name": "C-Sharps", "manager": 2}],
+                    },
+                    {
+                        "name": "John",
+                        "bands": [],
+                    },
+                ],
+            )
 
-    @engines_skip("cockroach")
     def test_select_id(self):
-        """
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """  # noqa: E501
         response = Manager.select(
             Manager.name, Manager.bands(Band.id, as_list=True)
         ).run_sync()
 
-        self.assertEqual(
-            response,
-            [
-                {"name": "Guido", "bands": [1, 2]},
-                {"name": "Mark", "bands": [3]},
-                {"name": "John", "bands": []},
-            ],
-        )
+        if engine_is("cockroach"):
+            self.assertEqual(len(response[0]["bands"]), 2)
+            self.assertEqual(len(response[1]["bands"]), 1)
+            self.assertEqual(len(response[2]["bands"]), 0)
+        else:
+            self.assertEqual(
+                response,
+                [
+                    {"name": "Guido", "bands": [1, 2]},
+                    {"name": "Mark", "bands": [3]},
+                    {"name": "John", "bands": []},
+                ],
+            )
 
-    @engines_skip("cockroach")
     def test_select_multiple_all_columns_descending(self):
-        """
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """  # noqa: E501
         response = Manager.select(
             Manager.name, Manager.bands(descending=True)
         ).run_sync()
 
-        self.assertEqual(
-            response,
-            [
-                {
-                    "name": "Guido",
-                    "bands": [
-                        {"id": 2, "name": "Rustaceans", "manager": 1},
-                        {"id": 1, "name": "Pythonistas", "manager": 1},
-                    ],
-                },
-                {
-                    "name": "Mark",
-                    "bands": [{"id": 3, "name": "C-Sharps", "manager": 2}],
-                },
-                {
-                    "name": "John",
-                    "bands": [],
-                },
-            ],
-        )
+        if engine_is("cockroach"):
+            self.assertEqual(len(response[0]["bands"]), 2)
+            self.assertEqual(len(response[1]["bands"]), 1)
+            self.assertEqual(len(response[2]["bands"]), 0)
+        else:
+            self.assertEqual(
+                response,
+                [
+                    {
+                        "name": "Guido",
+                        "bands": [
+                            {"id": 2, "name": "Rustaceans", "manager": 1},
+                            {"id": 1, "name": "Pythonistas", "manager": 1},
+                        ],
+                    },
+                    {
+                        "name": "Mark",
+                        "bands": [{"id": 3, "name": "C-Sharps", "manager": 2}],
+                    },
+                    {
+                        "name": "John",
+                        "bands": [],
+                    },
+                ],
+            )
 
-    @engines_skip("cockroach")
     def test_select_id_descending(self):
-        """
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """  # noqa: E501
         response = Manager.select(
             Manager.name, Manager.bands(Band.id, as_list=True, descending=True)
         ).run_sync()
 
-        self.assertEqual(
-            response,
-            [
-                {"name": "Guido", "bands": [2, 1]},
-                {"name": "Mark", "bands": [3]},
-                {"name": "John", "bands": []},
-            ],
-        )
+        if engine_is("cockroach"):
+            self.assertEqual(len(response[0]["bands"]), 2)
+            self.assertEqual(len(response[1]["bands"]), 1)
+            self.assertEqual(len(response[2]["bands"]), 0)
+        else:
+            self.assertEqual(
+                response,
+                [
+                    {"name": "Guido", "bands": [2, 1]},
+                    {"name": "Mark", "bands": [3]},
+                    {"name": "John", "bands": []},
+                ],
+            )
 
     def test_select_multiple_as_list_error(self):
-
         with self.assertRaises(ValueError):
             Manager.select(
                 Manager.name,
                 Manager.bands(Band.id, Band.name, as_list=True),
             ).run_sync()
+
+    def test_objects_query(self):
+        manager = Manager.objects().get(Manager.name == "Guido").run_sync()
+        bands = manager.get_reverse_lookup(Manager.bands).run_sync()
+        response = {
+            "name": manager.name,
+            "bands": [i.to_dict() for i in bands],
+        }
+
+        if engine_is("cockroach"):
+            self.assertEqual(len(response["bands"]), 2)
+        else:
+            self.assertEqual(
+                response,
+                {
+                    "name": "Guido",
+                    "bands": [
+                        {"id": 1, "name": "Pythonistas", "manager": 1},
+                        {"id": 2, "name": "Rustaceans", "manager": 1},
+                    ],
+                },
+            )
 
 
 ###############################################################################
@@ -249,14 +272,6 @@ class TestReverseLookupCustomPrimaryKey(TestCase):
     def setUp(self):
         create_db_tables_sync(*CUSTOM_PK_SCHEMA, if_not_exists=True)
 
-    def tearDown(self):
-        drop_db_tables_sync(*CUSTOM_PK_SCHEMA)
-
-    @engines_skip("cockroach")
-    def test_select_custom_primary_key(self):
-        """
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """  # noqa: E501
         Customer.objects().create(name="Bob").run_sync()
         Customer.objects().create(name="Sally").run_sync()
         Customer.objects().create(name="Fred").run_sync()
@@ -284,6 +299,11 @@ class TestReverseLookupCustomPrimaryKey(TestCase):
             name="Classicfest", customer=sally_pk["uuid"]
         ).run_sync()
 
+    def tearDown(self):
+        drop_db_tables_sync(*CUSTOM_PK_SCHEMA)
+
+    @engines_skip("cockroach")
+    def test_select_custom_primary_key(self):
         response = Customer.select(
             Customer.name,
             Customer.concerts(Concert.name, as_list=True),
@@ -307,7 +327,10 @@ class TestReverseLookupCustomPrimaryKey(TestCase):
             [
                 {
                     "name": "Bob",
-                    "concerts": [{"name": "Rockfest"}, {"name": "Folkfest"}],
+                    "concerts": [
+                        {"name": "Rockfest"},
+                        {"name": "Folkfest"},
+                    ],
                 },
                 {"name": "Sally", "concerts": [{"name": "Classicfest"}]},
                 {"name": "Fred", "concerts": []},
@@ -323,9 +346,38 @@ class TestReverseLookupCustomPrimaryKey(TestCase):
             [
                 {
                     "name": "Bob",
-                    "concerts": [{"name": "Folkfest"}, {"name": "Rockfest"}],
+                    "concerts": [
+                        {"name": "Folkfest"},
+                        {"name": "Rockfest"},
+                    ],
                 },
                 {"name": "Sally", "concerts": [{"name": "Classicfest"}]},
                 {"name": "Fred", "concerts": []},
             ],
         )
+
+    def test_objects_custom_primary_key(self):
+        customer_bob = (
+            Customer.objects().get(Customer.name == "Bob").run_sync()
+        )
+        concerts_bob = customer_bob.get_reverse_lookup(
+            Customer.concerts
+        ).run_sync()
+
+        customer_sally = (
+            Customer.objects().get(Customer.name == "Sally").run_sync()
+        )
+        concerts_sally = customer_sally.get_reverse_lookup(
+            Customer.concerts
+        ).run_sync()
+
+        customer_fred = (
+            Customer.objects().get(Customer.name == "Fred").run_sync()
+        )
+        concerts_fred = customer_fred.get_reverse_lookup(
+            Customer.concerts
+        ).run_sync()
+
+        self.assertEqual(len(concerts_bob), 2)
+        self.assertEqual(len(concerts_sally), 1)
+        self.assertEqual(len(concerts_fred), 0)

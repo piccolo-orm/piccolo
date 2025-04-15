@@ -11,6 +11,7 @@ from piccolo.columns.column_types import (
     Column,
     LazyTableReference,
 )
+from piccolo.utils.sync import run_sync
 
 if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
@@ -191,6 +192,45 @@ class ReverseLookupMeta:
                 "The reverse_joining_table attribute is neither a Table"
                 " subclass or a LazyTableReference instance."
             )
+
+
+@dataclass
+class ReverseLookupGetRelated:
+    row: Table
+    reverse_lookup: ReverseLookup
+
+    async def run(self):
+        primary_table = self.reverse_lookup._meta._table
+        reverse_lookup_table = (
+            self.reverse_lookup._meta.resolved_reverse_joining_table
+        )
+
+        for fk_column in reverse_lookup_table._meta.foreign_key_columns:
+            ids = (
+                await primary_table.select(
+                    primary_table._meta.primary_key.join_on(
+                        fk_column
+                    ).all_columns()[0]
+                )
+                .where(primary_table._meta.primary_key == self.row)
+                .output(as_list=True)
+            )
+
+        results = (
+            await reverse_lookup_table.objects().where(
+                reverse_lookup_table._meta.primary_key.is_in(ids)
+            )
+            if len(ids) > 0
+            else []
+        )
+
+        return results
+
+    def run_sync(self):
+        return run_sync(self.run())
+
+    def __await__(self):
+        return self.run().__await__()
 
 
 class ReverseLookup:

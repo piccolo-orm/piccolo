@@ -512,7 +512,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
                             reverse_lookup_select,
                             as_list=False,
                         )
-            if self.engine_type == "postgres":
+            if self.engine_type in ("postgres", "cockroach"):
                 if reverse_lookup_select.as_list:
                     # We get the data back as an array, and can just return it
                     # unless it's JSON.
