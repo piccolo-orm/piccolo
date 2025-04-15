@@ -576,6 +576,8 @@ class Table(metaclass=TableMetaclass):
 
         setattr(self, self._meta.primary_key._meta.name, None)
 
+        self._exists_in_db = False
+
         return self.__class__.delete().where(
             self.__class__._meta.primary_key == primary_key_value
         )
