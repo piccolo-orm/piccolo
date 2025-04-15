@@ -122,3 +122,16 @@ specify ``descending=True``, you can get the results in descending order.
             ]
         }
     ]
+
+Object queries
+==============
+
+We can also use object queries to ``ReverseLookup``.
+
+get_reverse_lookup
+------------------
+
+.. currentmodule:: piccolo.table
+
+.. automethod:: Table.get_reverse_lookup
+    :noindex:
