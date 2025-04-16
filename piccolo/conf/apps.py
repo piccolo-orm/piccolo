@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import inspect
 import itertools
 import os
@@ -10,6 +11,8 @@ from abc import abstractmethod
 from dataclasses import dataclass, field
 from importlib import import_module
 from types import ModuleType
+
+import black
 
 from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.engine.base import Engine
@@ -583,3 +586,69 @@ class Finder:
             tables.extend(app_config.table_classes)
 
         return tables
+
+
+def register_app(app_name: str, root: str):
+    """
+    Adds the given app to the ``AppRegistry`` in ``piccolo_conf.py``.
+
+    This is used by command line tools like:
+
+    .. code-block:: bash
+
+        piccolo app new my_app --register
+
+    """
+
+    piccolo_conf_module = Finder().get_piccolo_conf_module()
+
+    if piccolo_conf_module is None:
+        raise FileNotFoundError(
+            "Unable to register app - piccolo_conf.py not found."
+        )
+
+    app_identifier = ".".join(
+        [*pathlib.Path(root).parts, app_name, "piccolo_app"]
+    )
+
+    module_file_path = piccolo_conf_module.__file__
+    assert module_file_path
+
+    with open(module_file_path) as f:
+        contents = f.read()
+
+    ast_root = ast.parse(contents)
+
+    parsing_successful = False
+
+    for node in ast.walk(ast_root):
+        if isinstance(node, ast.Call):
+            if (
+                isinstance(node.func, ast.Name)
+                and node.func.id == "AppRegistry"
+            ):
+                if len(node.keywords) > 0:
+                    keyword = node.keywords[0]
+                    if keyword.arg == "apps":
+                        apps = keyword.value
+                        if isinstance(apps, ast.List):
+                            apps.elts.append(
+                                ast.Constant(app_identifier, kind="str")
+                            )
+                            parsing_successful = True
+                            break
+
+    if not parsing_successful:
+        raise SyntaxError(
+            "Unable to parse piccolo_conf.py - `AppRegistry(apps=...)` not "
+            "found)."
+        )
+
+    new_contents = ast.unparse(ast_root)
+
+    formatted_contents = black.format_str(
+        new_contents, mode=black.FileMode(line_length=80)
+    )
+
+    with open(module_file_path, "wt") as f:
+        f.write(formatted_contents)

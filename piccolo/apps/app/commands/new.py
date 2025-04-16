@@ -8,6 +8,8 @@ import typing as t
 import black
 import jinja2
 
+from piccolo.conf.apps import register_app
+
 TEMPLATE_DIRECTORY = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "templates"
 )
@@ -30,7 +32,7 @@ def module_exists(module_name: str) -> bool:
         return True
 
 
-def new_app(app_name: str, root: str = "."):
+def new_app(app_name: str, root: str = ".", register: bool = False):
     print(f"Creating {app_name} app ...")
 
     app_root = os.path.join(root, app_name)
@@ -69,8 +71,11 @@ def new_app(app_name: str, root: str = "."):
     with open(os.path.join(migrations_folder_path, "__init__.py"), "w"):
         pass
 
+    if register:
+        register_app(app_name=app_name, root=root)
 
-def new(app_name: str, root: str = "."):
+
+def new(app_name: str, root: str = ".", register: bool = False):
     """
     Creates a new Piccolo app.
 
@@ -79,6 +84,8 @@ def new(app_name: str, root: str = "."):
     :param root:
         Where to create the app e.g. ./my/folder. By default it creates the
         app in the current directory.
+    :param register:
+        If True, the app is registered automatically in piccolo_conf.py.
 
     """
-    new_app(app_name=app_name, root=root)
+    new_app(app_name=app_name, root=root, register=register)
