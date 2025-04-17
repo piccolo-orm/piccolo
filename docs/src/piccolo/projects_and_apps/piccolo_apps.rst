@@ -46,6 +46,18 @@ automatically. Otherwise, add it manually:
 Anytime you invoke the ``piccolo`` command, you will now be able to perform
 operations on your app, such as :ref:`Migrations`.
 
+root
+~~~~
+
+By default the app is created in the current directory. If you want the app to
+be in a sub folder, you can use the ``--root`` option:
+
+.. code-block:: bash
+
+    piccolo app new my_app --register --root=./apps
+
+The app will then be created in the ``apps`` folder.
+
 -------------------------------------------------------------------------------
 
 AppConfig
