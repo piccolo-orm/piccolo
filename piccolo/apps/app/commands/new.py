@@ -33,7 +33,7 @@ def module_exists(module_name: str) -> bool:
         return True
 
 
-def get_app_identifier(app_name: str, root: str) -> str:
+def get_app_module(app_name: str, root: str) -> str:
     return ".".join([*pathlib.Path(root).parts, app_name, "piccolo_app"])
 
 
@@ -77,8 +77,8 @@ def new_app(app_name: str, root: str = ".", register: bool = False):
         pass
 
     if register:
-        app_identifier = get_app_identifier(app_name=app_name, root=root)
-        PiccoloConfUpdater().register_app(app_identifier=app_identifier)
+        app_module = get_app_module(app_name=app_name, root=root)
+        PiccoloConfUpdater().register_app(app_module=app_module)
 
 
 def new(app_name: str, root: str = ".", register: bool = False):

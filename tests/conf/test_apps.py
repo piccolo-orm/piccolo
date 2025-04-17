@@ -330,7 +330,7 @@ class TestPiccoloConfUpdater(TestCase):
 
         new_src = updater._modify_app_registry_src(
             src="APP_REGISTRY = AppRegistry(apps=[])",
-            app_identifier="music.piccolo_app",
+            app_module="music.piccolo_app",
         )
         self.assertEqual(
             new_src.strip(),
@@ -350,7 +350,7 @@ class TestPiccoloConfUpdater(TestCase):
             f.write(src)
 
         updater = PiccoloConfUpdater()
-        updater.register_app(app_identifier="music.piccolo_app")
+        updater.register_app(app_module="music.piccolo_app")
 
         with open(piccolo_conf_path) as f:
             contents = f.read().strip()

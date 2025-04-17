@@ -614,11 +614,11 @@ class PiccoloConfUpdater:
             piccolo_conf_path or Finder().get_piccolo_conf_path()
         )
 
-    def _modify_app_registry_src(self, src: str, app_identifier: str) -> str:
+    def _modify_app_registry_src(self, src: str, app_module: str) -> str:
         """
         :param src:
             The contents of the ``piccolo_conf.py`` file.
-        :param app_identifier:
+        :param app_module:
             The app to add to the registry e.g. ``'music.piccolo_app'``.
         :returns:
             Updated Python source code string.
@@ -640,7 +640,7 @@ class PiccoloConfUpdater:
                             apps = keyword.value
                             if isinstance(apps, ast.List):
                                 apps.elts.append(
-                                    ast.Constant(app_identifier, kind="str")
+                                    ast.Constant(app_module, kind="str")
                                 )
                                 parsing_successful = True
                                 break
@@ -659,7 +659,7 @@ class PiccoloConfUpdater:
 
         return formatted_contents
 
-    def register_app(self, app_identifier: str):
+    def register_app(self, app_module: str):
         """
         Adds the given app to the ``AppRegistry`` in ``piccolo_conf.py``.
 
@@ -669,15 +669,15 @@ class PiccoloConfUpdater:
 
             piccolo app new my_app --register
 
-        :param app_identifier:
-            The name of the app, e.g. ``'music.piccolo_app'``.
+        :param app_module:
+            The module of the app, e.g. ``'music.piccolo_app'``.
 
         """
         with open(self.piccolo_conf_path) as f:
             piccolo_conf_src = f.read()
 
         new_contents = self._modify_app_registry_src(
-            src=piccolo_conf_src, app_identifier=app_identifier
+            src=piccolo_conf_src, app_module=app_module
         )
 
         with open(self.piccolo_conf_path, "wt") as f:

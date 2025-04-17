@@ -3,11 +3,7 @@ import shutil
 import tempfile
 from unittest import TestCase
 
-from piccolo.apps.app.commands.new import (
-    get_app_identifier,
-    module_exists,
-    new,
-)
+from piccolo.apps.app.commands.new import get_app_module, module_exists, new
 
 
 class TestModuleExists(TestCase):
@@ -51,17 +47,17 @@ class TestNewApp(TestCase):
 
 class TestGetAppIdentifier(TestCase):
 
-    def test_get_app_identifier(self):
+    def test_get_app_module(self):
         """
         Make sure the the ``root`` argument is handled correctly.
         """
         self.assertEqual(
-            get_app_identifier(app_name="music", root="."),
+            get_app_module(app_name="music", root="."),
             "music.piccolo_app",
         )
 
         for root in ("apps", "./apps", "./apps/"):
             self.assertEqual(
-                get_app_identifier(app_name="music", root=root),
+                get_app_module(app_name="music", root=root),
                 "apps.music.piccolo_app",
             )
