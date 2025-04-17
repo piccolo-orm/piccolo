@@ -44,7 +44,7 @@ def new_app(app_name: str, root: str = "."):
             "Python module. Please choose a different name for your app."
         )
 
-    os.mkdir(app_root)
+    os.makedirs(app_root)
 
     with open(os.path.join(app_root, "__init__.py"), "w"):
         pass
@@ -77,7 +77,7 @@ def new(app_name: str, root: str = "."):
     :param app_name:
         The name of the new app.
     :param root:
-        Where to create the app e.g. /my/folder. By default it creates the
+        Where to create the app e.g. ./my/folder. By default it creates the
         app in the current directory.
 
     """
