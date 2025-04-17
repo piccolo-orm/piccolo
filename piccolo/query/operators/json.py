@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import json
 import typing as t
 
 from piccolo.querystring import QueryString
-from piccolo.utils.encoding import dump_json
+from piccolo.utils.encoding import dump_json, load_json
 
 if t.TYPE_CHECKING:
     from piccolo.columns.column_types import JSON
@@ -12,9 +13,34 @@ if t.TYPE_CHECKING:
 class JSONQueryString(QueryString):
 
     def clean_value(self, value: t.Any):
-        if not isinstance(value, (str, QueryString)):
-            value = dump_json(value)
-        return value
+        """
+        We need to pass a valid JSON string to Postgres.
+
+        There are lots of different use cases to account for::
+
+            # A JSON string is passed in - in which case, leave it.
+            RecordingStudio.facilities == '{"mixing_desk": true}'
+
+            # A Python dict is passed in - we need to convert this to JSON.
+            RecordingStudio.facilities == {"mixing_desk": True}
+
+            # A string is passed in, but it isn't valid JSON, so we need to
+            # convert it to a JSON string (i.e. '"Alice Jones"').
+            RecordingStudio.facilities["technicians"][0]["name"] == "Alice Jones"
+
+        """  # noqa: E501
+        if isinstance(value, QueryString):
+            return value
+        elif isinstance(value, str):
+            # The string might already be valid JSON, in which case, leave it.
+            try:
+                load_json(value)
+            except json.JSONDecodeError:
+                pass
+            else:
+                return value
+
+        return dump_json(value)
 
     def __eq__(self, value) -> QueryString:  # type: ignore[override]
         value = self.clean_value(value)
