@@ -647,8 +647,8 @@ class PiccoloConfUpdater:
 
         if not parsing_successful:
             raise SyntaxError(
-                "Unable to parse piccolo_conf.py - `AppRegistry(apps=...)` not "
-                "found)."
+                "Unable to parse piccolo_conf.py - `AppRegistry(apps=...)` "
+                "not found)."
             )
 
         new_contents = ast.unparse(ast_root)
@@ -659,10 +659,7 @@ class PiccoloConfUpdater:
 
         return formatted_contents
 
-    def _get_app_identifier(self, app_name: str, root: str) -> str:
-        return ".".join([*pathlib.Path(root).parts, app_name, "piccolo_app"])
-
-    def register_app(self, app_name: str, root: str = "."):
+    def register_app(self, app_identifier: str):
         """
         Adds the given app to the ``AppRegistry`` in ``piccolo_conf.py``.
 
@@ -672,17 +669,12 @@ class PiccoloConfUpdater:
 
             piccolo app new my_app --register
 
-        :param app_name:
-            The name of the app, e.g. ``'music'``.
-        :param root:
-            Typically the app is created at the root of the project, if not
-            then include the path here. For example ``'./apps'``.
+        :param app_identifier:
+            The name of the app, e.g. ``'music.piccolo_app'``.
 
         """
         with open(self.piccolo_conf_path) as f:
             piccolo_conf_src = f.read()
-
-        app_identifier = self._get_app_identifier(app_name=app_name, root=root)
 
         new_contents = self._modify_app_registry_src(
             src=piccolo_conf_src, app_identifier=app_identifier

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import os
+import pathlib
 import sys
 import typing as t
 
@@ -30,6 +31,10 @@ def module_exists(module_name: str) -> bool:
         return False
     else:
         return True
+
+
+def get_app_identifier(app_name: str, root: str) -> str:
+    return ".".join([*pathlib.Path(root).parts, app_name, "piccolo_app"])
 
 
 def new_app(app_name: str, root: str = ".", register: bool = False):
@@ -72,7 +77,8 @@ def new_app(app_name: str, root: str = ".", register: bool = False):
         pass
 
     if register:
-        PiccoloConfUpdater().register_app(app_name=app_name, root=root)
+        app_identifier = get_app_identifier(app_name=app_name, root=root)
+        PiccoloConfUpdater().register_app(app_identifier=app_identifier)
 
 
 def new(app_name: str, root: str = ".", register: bool = False):

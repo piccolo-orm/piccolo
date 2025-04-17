@@ -321,23 +321,6 @@ class TestFinder(TestCase):
 
 class TestPiccoloConfUpdater(TestCase):
 
-    def test_get_app_identifier(self):
-        """
-        Make sure the the ``root`` argument is handled correctly.
-        """
-        updater = PiccoloConfUpdater()
-
-        self.assertEqual(
-            updater._get_app_identifier(app_name="music", root="."),
-            "music.piccolo_app",
-        )
-
-        for root in ("apps", "./apps", "./apps/"):
-            self.assertEqual(
-                updater._get_app_identifier(app_name="music", root=root),
-                "apps.music.piccolo_app",
-            )
-
     def test_modify_app_registry_src(self):
         """
         Make sure the `piccolo_conf.py` source code can be modified
@@ -367,7 +350,7 @@ class TestPiccoloConfUpdater(TestCase):
             f.write(src)
 
         updater = PiccoloConfUpdater()
-        updater.register_app(app_name="music")
+        updater.register_app(app_identifier="music.piccolo_app")
 
         with open(piccolo_conf_path) as f:
             contents = f.read().strip()
