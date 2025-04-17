@@ -8,7 +8,7 @@ import typing as t
 import black
 import jinja2
 
-from piccolo.conf.apps import register_app
+from piccolo.conf.apps import PiccoloConfUpdater
 
 TEMPLATE_DIRECTORY = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "templates"
@@ -72,7 +72,7 @@ def new_app(app_name: str, root: str = ".", register: bool = False):
         pass
 
     if register:
-        register_app(app_name=app_name, root=root)
+        PiccoloConfUpdater().register_app(app_name=app_name, root=root)
 
 
 def new(app_name: str, root: str = ".", register: bool = False):

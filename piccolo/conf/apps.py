@@ -440,6 +440,17 @@ class Finder:
         else:
             return module
 
+    def get_piccolo_conf_path(self) -> str:
+        piccolo_conf_module = self.get_piccolo_conf_module()
+
+        if piccolo_conf_module is None:
+            raise ModuleNotFoundError("piccolo_conf.py not found.")
+
+        module_file_path = piccolo_conf_module.__file__
+        assert module_file_path
+
+        return module_file_path
+
     def get_app_registry(self) -> AppRegistry:
         """
         Returns the ``AppRegistry`` instance within piccolo_conf.
@@ -588,67 +599,94 @@ class Finder:
         return tables
 
 
-def register_app(app_name: str, root: str):
-    """
-    Adds the given app to the ``AppRegistry`` in ``piccolo_conf.py``.
+###############################################################################
 
-    This is used by command line tools like:
 
-    .. code-block:: bash
+class PiccoloConfUpdater:
 
-        piccolo app new my_app --register
-
-    """
-
-    piccolo_conf_module = Finder().get_piccolo_conf_module()
-
-    if piccolo_conf_module is None:
-        raise FileNotFoundError(
-            "Unable to register app - piccolo_conf.py not found."
+    def __init__(self, piccolo_conf_path: t.Optional[str] = None):
+        """
+        :param piccolo_conf_path:
+            The path to the piccolo_conf.py (e.g. `./piccolo_conf.py`). If not
+            passed in, we use our ``Finder`` class to get it.
+        """
+        self.piccolo_conf_path = (
+            piccolo_conf_path or Finder().get_piccolo_conf_path()
         )
 
-    app_identifier = ".".join(
-        [*pathlib.Path(root).parts, app_name, "piccolo_app"]
-    )
+    def _modify_app_registry_src(self, src: str, app_identifier: str) -> str:
+        """
+        :param src:
+            The contents of the ``piccolo_conf.py`` file.
+        :param app_identifier:
+            The app to add to the registry e.g. ``'music.piccolo_app'``.
+        :returns:
+            Updated Python source code string.
 
-    module_file_path = piccolo_conf_module.__file__
-    assert module_file_path
+        """
+        ast_root = ast.parse(src)
 
-    with open(module_file_path) as f:
-        contents = f.read()
+        parsing_successful = False
 
-    ast_root = ast.parse(contents)
+        for node in ast.walk(ast_root):
+            if isinstance(node, ast.Call):
+                if (
+                    isinstance(node.func, ast.Name)
+                    and node.func.id == "AppRegistry"
+                ):
+                    if len(node.keywords) > 0:
+                        keyword = node.keywords[0]
+                        if keyword.arg == "apps":
+                            apps = keyword.value
+                            if isinstance(apps, ast.List):
+                                apps.elts.append(
+                                    ast.Constant(app_identifier, kind="str")
+                                )
+                                parsing_successful = True
+                                break
 
-    parsing_successful = False
+        if not parsing_successful:
+            raise SyntaxError(
+                "Unable to parse piccolo_conf.py - `AppRegistry(apps=...)` not "
+                "found)."
+            )
 
-    for node in ast.walk(ast_root):
-        if isinstance(node, ast.Call):
-            if (
-                isinstance(node.func, ast.Name)
-                and node.func.id == "AppRegistry"
-            ):
-                if len(node.keywords) > 0:
-                    keyword = node.keywords[0]
-                    if keyword.arg == "apps":
-                        apps = keyword.value
-                        if isinstance(apps, ast.List):
-                            apps.elts.append(
-                                ast.Constant(app_identifier, kind="str")
-                            )
-                            parsing_successful = True
-                            break
+        new_contents = ast.unparse(ast_root)
 
-    if not parsing_successful:
-        raise SyntaxError(
-            "Unable to parse piccolo_conf.py - `AppRegistry(apps=...)` not "
-            "found)."
+        formatted_contents = black.format_str(
+            new_contents, mode=black.FileMode(line_length=80)
         )
 
-    new_contents = ast.unparse(ast_root)
+        return formatted_contents
 
-    formatted_contents = black.format_str(
-        new_contents, mode=black.FileMode(line_length=80)
-    )
+    def _get_app_identifier(self, app_name: str, root: str) -> str:
+        return ".".join([*pathlib.Path(root).parts, app_name, "piccolo_app"])
 
-    with open(module_file_path, "wt") as f:
-        f.write(formatted_contents)
+    def register_app(self, app_name: str, root: str = "."):
+        """
+        Adds the given app to the ``AppRegistry`` in ``piccolo_conf.py``.
+
+        This is used by command line tools like:
+
+        .. code-block:: bash
+
+            piccolo app new my_app --register
+
+        :param app_name:
+            The name of the app, e.g. ``'music'``.
+        :param root:
+            Typically the app is created at the root of the project, if not
+            then include the path here. For example ``'./apps'``.
+
+        """
+        with open(self.piccolo_conf_path) as f:
+            piccolo_conf_src = f.read()
+
+        app_identifier = self._get_app_identifier(app_name=app_name, root=root)
+
+        new_contents = self._modify_app_registry_src(
+            src=piccolo_conf_src, app_identifier=app_identifier
+        )
+
+        with open(self.piccolo_conf_path, "wt") as f:
+            f.write(new_contents)

@@ -1,10 +1,17 @@
 from __future__ import annotations
 
 import pathlib
+import tempfile
 from unittest import TestCase
 
 from piccolo.apps.user.tables import BaseUser
-from piccolo.conf.apps import AppConfig, AppRegistry, Finder, table_finder
+from piccolo.conf.apps import (
+    AppConfig,
+    AppRegistry,
+    Finder,
+    PiccoloConfUpdater,
+    table_finder,
+)
 from tests.example_apps.mega.tables import MegaTable, SmallTable
 from tests.example_apps.music.tables import (
     Band,
@@ -309,4 +316,62 @@ class TestFinder(TestCase):
 
         self.assertListEqual(
             [i.app_name for i in sorted_app_configs], ["app_2", "app_1"]
+        )
+
+
+class TestPiccoloConfUpdater(TestCase):
+
+    def test_get_app_identifier(self):
+        """
+        Make sure the the ``root`` argument is handled correctly.
+        """
+        updater = PiccoloConfUpdater()
+
+        self.assertEqual(
+            updater._get_app_identifier(app_name="music", root="."),
+            "music.piccolo_app",
+        )
+
+        for root in ("apps", "./apps", "./apps/"):
+            self.assertEqual(
+                updater._get_app_identifier(app_name="music", root=root),
+                "apps.music.piccolo_app",
+            )
+
+    def test_modify_app_registry_src(self):
+        """
+        Make sure the `piccolo_conf.py` source code can be modified
+        successfully.
+        """
+        updater = PiccoloConfUpdater()
+
+        new_src = updater._modify_app_registry_src(
+            src="APP_REGISTRY = AppRegistry(apps=[])",
+            app_identifier="music.piccolo_app",
+        )
+        self.assertEqual(
+            new_src.strip(),
+            'APP_REGISTRY = AppRegistry(apps=["music.piccolo_app"])',
+        )
+
+    def test_register_app(self):
+        """
+        Make sure the new contents get written to disk.
+        """
+        temp_dir = tempfile.gettempdir()
+        piccolo_conf_path = pathlib.Path(temp_dir) / "piccolo_conf.py"
+
+        src = "APP_REGISTRY = AppRegistry(apps=[])"
+
+        with open(piccolo_conf_path, "wt") as f:
+            f.write(src)
+
+        updater = PiccoloConfUpdater()
+        updater.register_app(app_name="music")
+
+        with open(piccolo_conf_path) as f:
+            contents = f.read().strip()
+
+        self.assertEqual(
+            contents, 'APP_REGISTRY = AppRegistry(apps=["music.piccolo_app])'
         )
