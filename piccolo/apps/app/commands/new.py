@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib
 import os
 import pathlib
+import string
 import sys
 import typing as t
 
@@ -33,6 +34,25 @@ def module_exists(module_name: str) -> bool:
         return True
 
 
+APP_NAME_ALLOWED_CHARACTERS = [*string.ascii_lowercase, *string.digits, "_"]
+
+
+def validate_app_name(app_name: str):
+    """
+    Make sure the app name is something which is a valid Python package name.
+
+    :raises ValueError:
+        If ``app_name`` isn't valid.
+
+    """
+    for char in app_name:
+        if not char.lower() in APP_NAME_ALLOWED_CHARACTERS:
+            raise ValueError(
+                f"The app name contains a disallowed character: `{char}`. "
+                "It must only include a-z, 0-9, and _ characters."
+            )
+
+
 def get_app_module(app_name: str, root: str) -> str:
     return ".".join([*pathlib.Path(root).parts, app_name, "piccolo_app"])
 
@@ -40,16 +60,21 @@ def get_app_module(app_name: str, root: str) -> str:
 def new_app(app_name: str, root: str = ".", register: bool = False):
     print(f"Creating {app_name} app ...")
 
-    app_root = os.path.join(root, app_name)
-
-    if os.path.exists(app_root):
-        sys.exit("Folder already exists - exiting.")
+    try:
+        validate_app_name(app_name=app_name)
+    except ValueError as exception:
+        sys.exit(str(exception))
 
     if module_exists(app_name):
         sys.exit(
             f"A module called {app_name} already exists - possibly a builtin "
             "Python module. Please choose a different name for your app."
         )
+
+    app_root = os.path.join(root, app_name)
+
+    if os.path.exists(app_root):
+        sys.exit("Folder already exists - exiting.")
 
     os.makedirs(app_root)
 

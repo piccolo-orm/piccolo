@@ -3,7 +3,12 @@ import shutil
 import tempfile
 from unittest import TestCase
 
-from piccolo.apps.app.commands.new import get_app_module, module_exists, new
+from piccolo.apps.app.commands.new import (
+    get_app_module,
+    module_exists,
+    new,
+    validate_app_name,
+)
 
 
 class TestModuleExists(TestCase):
@@ -43,6 +48,22 @@ class TestNewApp(TestCase):
                 "A module called sys already exists"
             )
         )
+
+
+class TestValidateAppName(TestCase):
+
+    def test_validate_app_name(self):
+        """
+        Make sure only app names which work as valid Python package names are
+        allowed.
+        """
+        # Should be rejected:
+        for app_name in ("MY APP", "app/my_app", "my.app"):
+            with self.assertRaises(ValueError):
+                validate_app_name(app_name=app_name)
+
+        # Should work fine:
+        validate_app_name(app_name="music")
 
 
 class TestGetAppIdentifier(TestCase):
