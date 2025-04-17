@@ -621,7 +621,7 @@ class TestMigrationManager(DBTestCase):
     @engines_only("postgres", "cockroach")
     def test_alter_fk_on_delete_on_update(self):
         """
-        Test altering whether a column is nullable with MigrationManager.
+        Test altering Ondelete and OnUpdate with MigrationManager.
         """
         # before performing migrations - OnDelete.no_action
         on_delete_type = Band.raw(
