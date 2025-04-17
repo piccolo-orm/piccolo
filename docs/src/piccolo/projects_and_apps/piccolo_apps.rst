@@ -18,7 +18,7 @@ Run the following command within your project:
 
 .. code-block:: bash
 
-    piccolo app new my_app
+    piccolo app new my_app --register
 
 
 Where ``my_app`` is your new app's name. This will create a folder like this:
@@ -34,7 +34,8 @@ Where ``my_app`` is your new app's name. This will create a folder like this:
 
 
 It's important to register your new app with the ``APP_REGISTRY`` in
-``piccolo_conf.py``.
+``piccolo_conf.py``. If you used the ``--register`` flag, then this is done
+automatically. Otherwise, add it manually:
 
 .. code-block:: python
 
@@ -44,6 +45,18 @@ It's important to register your new app with the ``APP_REGISTRY`` in
 
 Anytime you invoke the ``piccolo`` command, you will now be able to perform
 operations on your app, such as :ref:`Migrations`.
+
+root
+~~~~
+
+By default the app is created in the current directory. If you want the app to
+be in a sub folder, you can use the ``--root`` option:
+
+.. code-block:: bash
+
+    piccolo app new my_app --register --root=./apps
+
+The app will then be created in the ``apps`` folder.
 
 -------------------------------------------------------------------------------
 
