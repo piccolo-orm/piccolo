@@ -550,21 +550,24 @@ class MigrationManager:
                         )
                     )
                     # then add fk constraint on alter table
-                    for item in existing_table._meta.foreign_key_columns:
-                        reference: t.Any = item._foreign_key_meta.references
-                        referenced_table_name = reference._meta.tablename
-                        referenced_column_name = (
-                            reference._meta.primary_key._meta.name
+                    reference: t.Any = (
+                        existing_table._meta.foreign_key_columns[
+                            0
+                        ]._foreign_key_meta.references
+                    )
+                    referenced_table_name = reference._meta.tablename
+                    referenced_column_name = (
+                        reference._meta.primary_key._meta.name
+                    )
+                    await self._run_query(
+                        _Table.alter().add_foreign_key_constraint(
+                            column=alter_column.column_name,
+                            referenced_table_name=referenced_table_name,
+                            referenced_column_name=referenced_column_name,
+                            on_delete=on_delete,
+                            on_update=on_update,
                         )
-                        await self._run_query(
-                            _Table.alter().add_foreign_key_constraint(
-                                column=alter_column.column_name,
-                                referenced_table_name=referenced_table_name,
-                                referenced_column_name=referenced_column_name,
-                                on_delete=on_delete,
-                                on_update=on_update,
-                            )
-                        )
+                    )
 
                 null = params.get("null")
                 if null is not None:
