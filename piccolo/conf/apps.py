@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import inspect
 import itertools
 import os
@@ -10,6 +11,8 @@ from abc import abstractmethod
 from dataclasses import dataclass, field
 from importlib import import_module
 from types import ModuleType
+
+import black
 
 from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.engine.base import Engine
@@ -437,6 +440,17 @@ class Finder:
         else:
             return module
 
+    def get_piccolo_conf_path(self) -> str:
+        piccolo_conf_module = self.get_piccolo_conf_module()
+
+        if piccolo_conf_module is None:
+            raise ModuleNotFoundError("piccolo_conf.py not found.")
+
+        module_file_path = piccolo_conf_module.__file__
+        assert module_file_path
+
+        return module_file_path
+
     def get_app_registry(self) -> AppRegistry:
         """
         Returns the ``AppRegistry`` instance within piccolo_conf.
@@ -583,3 +597,88 @@ class Finder:
             tables.extend(app_config.table_classes)
 
         return tables
+
+
+###############################################################################
+
+
+class PiccoloConfUpdater:
+
+    def __init__(self, piccolo_conf_path: t.Optional[str] = None):
+        """
+        :param piccolo_conf_path:
+            The path to the piccolo_conf.py (e.g. `./piccolo_conf.py`). If not
+            passed in, we use our ``Finder`` class to get it.
+        """
+        self.piccolo_conf_path = (
+            piccolo_conf_path or Finder().get_piccolo_conf_path()
+        )
+
+    def _modify_app_registry_src(self, src: str, app_module: str) -> str:
+        """
+        :param src:
+            The contents of the ``piccolo_conf.py`` file.
+        :param app_module:
+            The app to add to the registry e.g. ``'music.piccolo_app'``.
+        :returns:
+            Updated Python source code string.
+
+        """
+        ast_root = ast.parse(src)
+
+        parsing_successful = False
+
+        for node in ast.walk(ast_root):
+            if isinstance(node, ast.Call):
+                if (
+                    isinstance(node.func, ast.Name)
+                    and node.func.id == "AppRegistry"
+                ):
+                    if len(node.keywords) > 0:
+                        keyword = node.keywords[0]
+                        if keyword.arg == "apps":
+                            apps = keyword.value
+                            if isinstance(apps, ast.List):
+                                apps.elts.append(
+                                    ast.Constant(app_module, kind="str")
+                                )
+                                parsing_successful = True
+                                break
+
+        if not parsing_successful:
+            raise SyntaxError(
+                "Unable to parse piccolo_conf.py - `AppRegistry(apps=...)` "
+                "not found)."
+            )
+
+        new_contents = ast.unparse(ast_root)
+
+        formatted_contents = black.format_str(
+            new_contents, mode=black.FileMode(line_length=80)
+        )
+
+        return formatted_contents
+
+    def register_app(self, app_module: str):
+        """
+        Adds the given app to the ``AppRegistry`` in ``piccolo_conf.py``.
+
+        This is used by command line tools like:
+
+        .. code-block:: bash
+
+            piccolo app new my_app --register
+
+        :param app_module:
+            The module of the app, e.g. ``'music.piccolo_app'``.
+
+        """
+        with open(self.piccolo_conf_path) as f:
+            piccolo_conf_src = f.read()
+
+        new_contents = self._modify_app_registry_src(
+            src=piccolo_conf_src, app_module=app_module
+        )
+
+        with open(self.piccolo_conf_path, "wt") as f:
+            f.write(new_contents)
