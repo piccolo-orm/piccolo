@@ -1,6 +1,35 @@
 Changes
 =======
 
+1.25.0
+------
+
+Improvements to Piccolo app creation. When running the following:
+
+.. code-block:: bash
+
+  piccolo app new my_app
+
+It now validates that the app name (``my_app`` in this case) is valid as a
+Python package.
+
+Also, there is now a ``--register`` flag, which automatically adds the new app
+to the ``APP_REGISTRY`` in ``piccolo_conf.py``.
+
+.. code-block:: python
+
+  piccolo app new my_app --register
+
+Other changes:
+
+* ``table_finder`` can now use relative modules.
+* Updated the Esmerald ASGI template (thanks to @sinisaos for this).
+* When using the ``remove`` method to delete a row from the database
+  (``await some_band.remove()``), ``some_band._exists_in_db`` is now set to
+  ``False``. Thanks to @sinisaos for this fix.
+
+-------------------------------------------------------------------------------
+
 1.24.2
 ------
 
