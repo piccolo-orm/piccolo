@@ -28,6 +28,7 @@ from piccolo.columns.m2m import (
 )
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
+from piccolo.constraints import Constraint, ConstraintConfig
 from piccolo.custom_types import TableInstance
 from piccolo.engine import Engine, engine_finder
 from piccolo.query import (
@@ -84,6 +85,7 @@ class TableMeta:
     primary_key: Column = field(default_factory=Column)
     json_columns: t.List[t.Union[JSON, JSONB]] = field(default_factory=list)
     secret_columns: t.List[Secret] = field(default_factory=list)
+    constraints: t.List[Constraint] = field(default_factory=list)
     auto_update_columns: t.List[Column] = field(default_factory=list)
     tags: t.List[str] = field(default_factory=list)
     help_text: t.Optional[str] = None
@@ -172,6 +174,15 @@ class TableMeta:
                     ) from e
 
         return column_object
+
+    def get_constraint_by_name(self, name: str) -> Constraint:
+        """
+        Returns a constraint which matches the given name.
+        """
+        for constraint in self.constraints:
+            if constraint._meta.name == name:
+                return constraint
+        raise ValueError(f"No matching constraint found with name == {name}")
 
     def get_auto_update_values(self) -> t.Dict[Column, t.Any]:
         """
@@ -279,6 +290,7 @@ class Table(metaclass=TableMetaclass):
         auto_update_columns: t.List[Column] = []
         primary_key: t.Optional[Column] = None
         m2m_relationships: t.List[M2M] = []
+        constraint_configs: t.List[ConstraintConfig] = []
 
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]
@@ -291,11 +303,14 @@ class Table(metaclass=TableMetaclass):
 
             attribute = getattr(cls, attribute_name)
             if isinstance(attribute, Column):
+                column = attribute
+                column._meta._name = attribute_name
+
                 # We have to copy, then override the existing column
                 # definition, in case this column is inheritted from a mixin.
                 # Otherwise, when we set attributes on that column, it will
                 # effect all other users of that mixin.
-                column = attribute.copy()
+                column = column.copy()
                 setattr(cls, attribute_name, column)
 
                 if column._meta.primary_key:
@@ -304,7 +319,6 @@ class Table(metaclass=TableMetaclass):
                 non_default_columns.append(column)
                 columns.append(column)
 
-                column._meta._name = attribute_name
                 column._meta._table = cls
 
                 if isinstance(column, Array):
@@ -330,6 +344,10 @@ class Table(metaclass=TableMetaclass):
                 attribute._meta._name = attribute_name
                 attribute._meta._table = cls
                 m2m_relationships.append(attribute)
+
+            if isinstance(attribute, ConstraintConfig):
+                attribute.name = attribute_name
+                constraint_configs.append(attribute)
 
         if not primary_key:
             primary_key = cls._create_serial_primary_key()
@@ -367,6 +385,12 @@ class Table(metaclass=TableMetaclass):
                 LAZY_COLUMN_REFERENCES.foreign_key_columns.append(
                     foreign_key_column
                 )
+
+        # Now the table and columns are all setup, we can do the constraints.
+        constraints: t.List[Constraint] = []
+        for constraint_config in constraint_configs:
+            constraints.append(constraint_config.to_constraint())
+        cls._meta.constraints = constraints
 
         TABLE_REGISTRY.append(cls)
 
@@ -1355,7 +1379,7 @@ class Table(metaclass=TableMetaclass):
         if excluded_params is None:
             excluded_params = []
         spacer = "\n    "
-        columns = []
+        column_strings: t.List[str] = []
         for col in cls._meta.columns:
             params: t.List[str] = []
             for key, value in col._meta.params.items():
@@ -1371,10 +1395,16 @@ class Table(metaclass=TableMetaclass):
                     if not abbreviated:
                         params.append(f"{key}={_value}")
             params_string = ", ".join(params)
-            columns.append(
+            column_strings.append(
                 f"{col._meta.name} = {col.__class__.__name__}({params_string})"
             )
-        columns_string = spacer.join(columns)
+        columns_string = spacer.join(column_strings)
+
+        constraint_strings: t.List[str] = []
+        for constraint in cls._meta.constraints:
+            constraint_strings.append(constraint._table_str())
+        constraints_string = spacer.join(constraint_strings)
+
         tablename = repr(cls._meta.tablename)
 
         parent_class_name = cls.mro()[1].__name__
@@ -1386,7 +1416,9 @@ class Table(metaclass=TableMetaclass):
         )
 
         return (
-            f"class {cls.__name__}({class_args}):\n" f"    {columns_string}\n"
+            f"class {cls.__name__}({class_args}):\n"
+            f"    {columns_string}\n"
+            f"    {constraints_string}\n"
         )
 
 
