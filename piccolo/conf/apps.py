@@ -62,7 +62,7 @@ def table_finder(
         ``['blog.tables']``.
     :param package:
         This must be passed in if the modules are relative paths (e.g.
-        ``['.foo']``).
+        if ``modules=['.tables']`` then ``package='blog'``).
     :param include_tags:
         If the ``Table`` subclass has one of these tags, it will be
         imported. The special tag ``'__all__'`` will import all ``Table``

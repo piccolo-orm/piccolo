@@ -213,8 +213,9 @@ list of modules.
         commands=[]
     )
 
-The module path should be from the root of the project (the same directory as
-your ``piccolo_conf.py`` file, rather than a relative path).
+The ``modules`` list can contain absolute paths (e.g. ``'blog.tables'``) or
+relative paths (e.g. ``'.tables'``). If relative paths are used, then the
+``package`` argument must be passed in (``'blog'`` in this case).
 
 You can filter the ``Table`` subclasses returned using :ref:`tags <TableTags>`.
 
