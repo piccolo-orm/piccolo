@@ -509,8 +509,9 @@ class Alter(DDL):
     def add_foreign_key_constraint(
         self,
         column: t.Union[str, ForeignKey],
-        referenced_table_name: str,
-        referenced_column_name: str,
+        referenced_table_name: t.Optional[str] = None,
+        referenced_column_name: t.Optional[str] = None,
+        constraint_name: t.Optional[str] = None,
         on_delete: t.Optional[OnDelete] = None,
         on_update: t.Optional[OnUpdate] = None,
     ) -> Alter:
@@ -519,13 +520,30 @@ class Alter(DDL):
 
             >>> await Band.alter().add_foreign_key_constraint(
             ...     Band.manager,
-            ...     referenced_table_name='manager',
             ...     on_delete=OnDelete.cascade
             ... )
 
         """
-        constraint_name = self._get_constraint_name(column=column)
+        constraint_name = constraint_name or self._get_constraint_name(
+            column=column
+        )
         column_name = AlterColumnStatement(column=column).column_name
+
+        if referenced_column_name is None:
+            if isinstance(column, ForeignKey):
+                referenced_column_name = (
+                    column._foreign_key_meta.resolved_target_column._meta.db_column_name  # noqa: E501
+                )
+            else:
+                raise ValueError("Please pass in `referenced_column_name`.")
+
+        if referenced_table_name is None:
+            if isinstance(column, ForeignKey):
+                referenced_table_name = (
+                    column._foreign_key_meta.resolved_references._meta.tablename  # noqa: E501
+                )
+            else:
+                raise ValueError("Please pass in `referenced_table_name`.")
 
         self._add_foreign_key_constraint.append(
             AddForeignKeyConstraint(
