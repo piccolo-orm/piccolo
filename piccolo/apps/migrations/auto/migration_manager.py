@@ -19,6 +19,7 @@ from piccolo.columns.column_types import ForeignKey, Serial
 from piccolo.engine import engine_finder
 from piccolo.query import Query
 from piccolo.query.base import DDL
+from piccolo.query.constraints import get_fk_constraint_name
 from piccolo.schema import SchemaDDLBase
 from piccolo.table import Table, create_table_class, sort_table_classes
 from piccolo.utils.warnings import colored_warning
@@ -423,8 +424,8 @@ class MigrationManager:
 
     async def _run_query(self, query: t.Union[DDL, Query, SchemaDDLBase]):
         """
-        If MigrationManager is not in the preview mode,
-         executes the queries. else, prints the query.
+        If MigrationManager is in preview mode then it just print the query
+        instead of executing it.
         """
         if self.preview:
             await self._print_query(query)
@@ -537,14 +538,6 @@ class MigrationManager:
                 on_delete = params.get("on_delete")
                 on_update = params.get("on_update")
                 if on_delete is not None or on_update is not None:
-                    # First drop the existing foreign key constraint
-                    await self._run_query(
-                        _Table.alter().drop_foreign_key_constraint(
-                            column=alter_column.column_name
-                        )
-                    )
-
-                    # Then add a new foreign key constraint
                     existing_table = await self.get_table_from_snapshot(
                         table_class_name=table_class_name,
                         app_name=self.app_name,
@@ -556,6 +549,17 @@ class MigrationManager:
 
                     assert isinstance(fk_column, ForeignKey)
 
+                    # First drop the existing foreign key constraint
+                    constraint_name = await get_fk_constraint_name(
+                        column=fk_column
+                    )
+                    await self._run_query(
+                        _Table.alter().drop_constraint(
+                            constraint_name=constraint_name
+                        )
+                    )
+
+                    # Then add a new foreign key constraint
                     await self._run_query(
                         _Table.alter().add_foreign_key_constraint(
                             column=fk_column,
