@@ -37,6 +37,21 @@ class RenameTable(AlterStatement):
 
 
 @dataclass
+class RenamePkConstraint(AlterStatement):
+    __slots__ = ("old_constraint_name", "new_constraint_name")
+
+    old_constraint_name: str
+    new_constraint_name: str
+
+    @property
+    def ddl(self) -> str:
+        return (
+            f"RENAME CONSTRAINT {self.old_constraint_name} "
+            f"TO {self.new_constraint_name}"
+        )
+
+
+@dataclass
 class AlterColumnStatement(AlterStatement):
     __slots__ = ("column",)
 
@@ -289,6 +304,7 @@ class Alter(DDL):
         "_set_null",
         "_set_schema",
         "_set_unique",
+        "_rename_pk_constraint",
     )
 
     def __init__(self, table: t.Type[Table], **kwargs):
@@ -308,6 +324,7 @@ class Alter(DDL):
         self._set_null: t.List[SetNull] = []
         self._set_schema: t.List[SetSchema] = []
         self._set_unique: t.List[SetUnique] = []
+        self._rename_pk_constraint: t.List[RenamePkConstraint] = []
 
     def add_column(self: Self, name: str, column: Column) -> Self:
         """
@@ -371,6 +388,20 @@ class Alter(DDL):
         """
         # We override the existing one rather than appending.
         self._rename_table = [RenameTable(new_name=new_name)]
+        return self
+
+    def rename_pk_constraint(
+        self, old_constraint_name: str, new_constraint_name: str
+    ) -> Alter:
+        """
+        Used when renaming a table in migrations.
+        """
+        self._rename_pk_constraint = [
+            RenamePkConstraint(
+                old_constraint_name=old_constraint_name,
+                new_constraint_name=new_constraint_name,
+            )
+        ]
         return self
 
     def rename_column(
@@ -614,6 +645,7 @@ class Alter(DDL):
                 self._set_default,
                 self._set_digits,
                 self._set_schema,
+                self._rename_pk_constraint,
             )
         ]
 

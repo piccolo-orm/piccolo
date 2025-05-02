@@ -596,11 +596,31 @@ class TestMigrationManager(DBTestCase):
         if engine_is("postgres"):
             self.run_sync("INSERT INTO director VALUES (default, 'Dave');")
 
+            check_pk_constraint_name = self.run_sync(
+                """
+                SELECT conname FROM pg_catalog.pg_constraint c JOIN pg_class t
+                ON t.oid = c.conrelid WHERE t.relname = 'director'
+                AND c.contype = 'p'
+                """
+            )
+            self.assertEqual(
+                check_pk_constraint_name[0]["conname"], "director_pkey"
+            )
             response = self.run_sync("SELECT * FROM director;")
             self.assertEqual(response, [{"id": 1, "name": "Dave"}])
 
             # Reverse
             asyncio.run(manager.run(backwards=True))
+            check_pk_constraint_name = self.run_sync(
+                """
+                SELECT conname FROM pg_catalog.pg_constraint c JOIN pg_class t
+                ON t.oid = c.conrelid WHERE t.relname = 'manager'
+                AND c.contype = 'p'
+                """
+            )
+            self.assertEqual(
+                check_pk_constraint_name[0]["conname"], "manager_pkey"
+            )
             response = self.run_sync("SELECT * FROM manager;")
             self.assertEqual(response, [{"id": 1, "name": "Dave"}])
 
@@ -621,7 +641,7 @@ class TestMigrationManager(DBTestCase):
     @engines_only("postgres", "cockroach")
     def test_alter_fk_on_delete_on_update(self):
         """
-        Test altering Ondelete and OnUpdate with MigrationManager.
+        Test altering OnDelete and OnUpdate with MigrationManager.
         """
         # before performing migrations - OnDelete.no_action
         on_delete_type = Band.raw(
