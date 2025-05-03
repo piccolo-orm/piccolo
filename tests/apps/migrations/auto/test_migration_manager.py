@@ -596,11 +596,32 @@ class TestMigrationManager(DBTestCase):
         if engine_is("postgres"):
             self.run_sync("INSERT INTO director VALUES (default, 'Dave');")
 
+            check_pk_constraint_name = self.run_sync(
+                """
+                SELECT conname FROM pg_catalog.pg_constraint c JOIN pg_class t
+                ON t.oid = c.conrelid WHERE t.relname = 'director'
+                AND c.contype = 'p'
+                """
+            )
+            self.assertEqual(
+                check_pk_constraint_name[0]["conname"], "director_pkey"
+            )
+
             response = self.run_sync("SELECT * FROM director;")
             self.assertEqual(response, [{"id": 1, "name": "Dave"}])
 
             # Reverse
             asyncio.run(manager.run(backwards=True))
+            check_pk_constraint_name = self.run_sync(
+                """
+                SELECT conname FROM pg_catalog.pg_constraint c JOIN pg_class t
+                ON t.oid = c.conrelid WHERE t.relname = 'manager'
+                AND c.contype = 'p'
+                """
+            )
+            self.assertEqual(
+                check_pk_constraint_name[0]["conname"], "manager_pkey"
+            )
             response = self.run_sync("SELECT * FROM manager;")
             self.assertEqual(response, [{"id": 1, "name": "Dave"}])
 
