@@ -37,18 +37,15 @@ class RenameTable(AlterStatement):
 
 
 @dataclass
-class RenamePkConstraint(AlterStatement):
-    __slots__ = ("old_constraint_name", "new_constraint_name")
+class RenameConstraint(AlterStatement):
+    __slots__ = ("old_name", "new_name")
 
-    old_constraint_name: str
-    new_constraint_name: str
+    old_name: str
+    new_name: str
 
     @property
     def ddl(self) -> str:
-        return (
-            f"RENAME CONSTRAINT {self.old_constraint_name} "
-            f"TO {self.new_constraint_name}"
-        )
+        return f"RENAME CONSTRAINT {self.old_name} TO {self.new_name}"
 
 
 @dataclass
@@ -304,7 +301,7 @@ class Alter(DDL):
         "_set_null",
         "_set_schema",
         "_set_unique",
-        "_rename_pk_constraint",
+        "_rename_constraint",
     )
 
     def __init__(self, table: t.Type[Table], **kwargs):
@@ -324,7 +321,7 @@ class Alter(DDL):
         self._set_null: t.List[SetNull] = []
         self._set_schema: t.List[SetSchema] = []
         self._set_unique: t.List[SetUnique] = []
-        self._rename_pk_constraint: t.List[RenamePkConstraint] = []
+        self._rename_constraint: t.List[RenameConstraint] = []
 
     def add_column(self: Self, name: str, column: Column) -> Self:
         """
@@ -390,16 +387,22 @@ class Alter(DDL):
         self._rename_table = [RenameTable(new_name=new_name)]
         return self
 
-    def rename_pk_constraint(
+    def rename_constraint(
         self, old_constraint_name: str, new_constraint_name: str
     ) -> Alter:
         """
-        Used when renaming a table in migrations.
+        Rename a constraint on the table::
+
+            >>> await Band.alter().rename_constraint(
+            ...     'old_constraint_name',
+            ...     'new_constraint_name',
+            ... )
+
         """
-        self._rename_pk_constraint = [
-            RenamePkConstraint(
-                old_constraint_name=old_constraint_name,
-                new_constraint_name=new_constraint_name,
+        self._rename_constraint = [
+            RenameConstraint(
+                old_name=old_constraint_name,
+                new_name=new_constraint_name,
             )
         ]
         return self
@@ -635,6 +638,7 @@ class Alter(DDL):
                 self._add_foreign_key_constraint,
                 self._rename_columns,
                 self._rename_table,
+                self._rename_constraint,
                 self._drop,
                 self._drop_constraint,
                 self._drop_default,
@@ -645,7 +649,6 @@ class Alter(DDL):
                 self._set_default,
                 self._set_digits,
                 self._set_schema,
-                self._rename_pk_constraint,
             )
         ]
 
