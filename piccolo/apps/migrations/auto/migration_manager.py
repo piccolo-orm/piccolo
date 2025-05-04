@@ -722,8 +722,6 @@ class MigrationManager:
                     )
 
     async def _run_rename_tables(self, backwards: bool = False):
-        engine = engine_finder()
-
         for rename_table in self.rename_tables:
             class_name = (
                 rename_table.new_class_name
@@ -748,15 +746,6 @@ class MigrationManager:
                     "schema": rename_table.schema,
                 },
             )
-
-            if engine is not None:
-                if engine.engine_type in ("postgres", "cockroach"):
-                    await self._run_query(
-                        _Table.alter().rename_constraint(
-                            old_constraint_name=f"{tablename}_pkey",
-                            new_constraint_name=f"{new_tablename}_pkey",
-                        )
-                    )
 
             await self._run_query(
                 _Table.alter().rename_table(new_name=new_tablename)
