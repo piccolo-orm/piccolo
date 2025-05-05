@@ -12,8 +12,10 @@ from piccolo.columns.base import OnDelete, OnUpdate
 from piccolo.columns.column_types import ForeignKey
 from piccolo.conf.apps import AppConfig
 from piccolo.engine import engine_finder
+from piccolo.query.constraints import get_fk_constraint_rules
 from piccolo.table import Table, sort_table_classes
 from piccolo.utils.lazy_loader import LazyLoader
+from piccolo.utils.sync import run_sync
 from tests.base import AsyncMock, DBTestCase, engine_is, engines_only
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
@@ -624,15 +626,10 @@ class TestMigrationManager(DBTestCase):
         Test altering OnDelete and OnUpdate with MigrationManager.
         """
         # before performing migrations - OnDelete.no_action
-        on_delete_type = Band.raw(
-            """
-            select confdeltype
-            from pg_constraint
-            join pg_class c on c.oid=conrelid
-            join pg_class p on p.oid=confrelid;
-            """
-        ).run_sync()
-        self.assertEqual(on_delete_type[0]["confdeltype"], b"a")
+        self.assertEqual(
+            run_sync(get_fk_constraint_rules(column=Band.manager)).on_delete,
+            OnDelete.no_action,
+        )
 
         manager = MigrationManager(app_name="music")
         manager.alter_column(
@@ -656,32 +653,20 @@ class TestMigrationManager(DBTestCase):
         asyncio.run(manager.run())
 
         # after performing migrations - OnDelete.set_null
-        on_delete_type = Band.raw(
-            """
-            select confdeltype
-            from pg_constraint
-            join pg_class c on c.oid=conrelid
-            join pg_class p on p.oid=confrelid;
-            """
-        ).run_sync()
-
-        self.assertEqual(on_delete_type[0]["confdeltype"], b"n")
+        self.assertEqual(
+            run_sync(get_fk_constraint_rules(column=Band.manager)).on_delete,
+            OnDelete.set_null,
+        )
 
         # Reverse
         asyncio.run(manager.run(backwards=True))
 
         # after performing reverse migrations we have
         # OnDelete.no_action again
-        on_delete_type = Band.raw(
-            """
-            select confdeltype
-            from pg_constraint
-            join pg_class c on c.oid=conrelid
-            join pg_class p on p.oid=confrelid;
-            """
-        ).run_sync()
-
-        self.assertEqual(on_delete_type[0]["confdeltype"], b"a")
+        self.assertEqual(
+            run_sync(get_fk_constraint_rules(column=Band.manager)).on_delete,
+            OnDelete.no_action,
+        )
 
     @engines_only("postgres")
     def test_alter_column_unique(self):
