@@ -2,6 +2,9 @@ from piccolo.columns import ForeignKey
 
 
 async def get_fk_constraint_name(column: ForeignKey) -> str:
+    """
+    Checks what the foreign key constraint is called in the database.
+    """
 
     table = column._meta.table
 
