@@ -11,6 +11,7 @@ from typing_extensions import assert_type
 
 from piccolo.columns import ForeignKey, Varchar
 from piccolo.testing.model_builder import ModelBuilder
+from piccolo.utils.sync import run_sync
 
 from .example_apps.music.tables import Band, Concert, Manager
 
@@ -117,3 +118,14 @@ if t.TYPE_CHECKING:
     async def model_builder() -> None:
         assert_type(await ModelBuilder.build(Band), Band)
         assert_type(ModelBuilder.build_sync(Band), Band)
+
+    def run_sync_return_type() -> None:
+        """
+        Make sure `run_sync` returns the same type as the coroutine which is
+        passed in.
+        """
+
+        async def my_func() -> str:
+            return "hello"
+
+        assert_type(run_sync(my_func()), str)
