@@ -387,9 +387,7 @@ class Alter(DDL):
         self._rename_table = [RenameTable(new_name=new_name)]
         return self
 
-    def rename_constraint(
-        self, old_constraint_name: str, new_constraint_name: str
-    ) -> Alter:
+    def rename_constraint(self, old_name: str, new_name: str) -> Alter:
         """
         Rename a constraint on the table::
 
@@ -401,8 +399,8 @@ class Alter(DDL):
         """
         self._rename_constraint = [
             RenameConstraint(
-                old_name=old_constraint_name,
-                new_name=new_constraint_name,
+                old_name=old_name,
+                new_name=new_name,
             )
         ]
         return self
