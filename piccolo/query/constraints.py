@@ -12,6 +12,7 @@ async def get_fk_constraint_name(column: ForeignKey) -> str:
     table = column._meta.table
 
     if table._meta.db.engine_type == "sqlite":
+        # TODO - add the query for SQLite
         raise ValueError("SQLite isn't currently supported.")
 
     schema = table._meta.schema or "public"
@@ -55,6 +56,7 @@ async def get_fk_constraint_rules(column: ForeignKey) -> ConstraintRules:
     table = column._meta.table
 
     if table._meta.db.engine_type == "sqlite":
+        # TODO - add the query for SQLite
         raise ValueError("SQLite isn't currently supported.")
 
     schema = table._meta.schema or "public"
