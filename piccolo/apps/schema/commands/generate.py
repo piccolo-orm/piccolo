@@ -501,6 +501,8 @@ async def get_fk_triggers(
         Any Table subclass - just used to execute raw queries on the database.
 
     """
+    # TODO - Move this query to `piccolo.query.constraints` or use:
+    # `piccolo.query.constraints.referential_constraints`
     triggers = await table_class.raw(
         (
             "SELECT tc.constraint_name, "
