@@ -32,7 +32,7 @@ Run the following command in your terminal:
 
 .. code-block:: bash
 
-    piccolo migrations new app_a
+    piccolo migrations new app_a --auto
 
 This will create a migration that removes the table from ``app_a``.
 
@@ -43,7 +43,7 @@ To prevent the table from actually being dropped from the database, apply the mi
 
 .. code-block:: bash
 
-    piccolo migrations apply app_a --auto --fake
+    piccolo migrations forwards app_a --fake
 
 This marks the migration as applied without making real changes to the database.
 
@@ -61,7 +61,7 @@ Generate a new  fake migration for ``app_b`` to register ``TableA``:
 
 .. code-block:: bash
 
-    piccolo migrations new app_b --auto --fake
+    piccolo migrations new app_b --auto
 
 6. Apply the Migration in ``app_b``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -70,7 +70,7 @@ Apply the new migration:
 
 .. code-block:: bash
 
-    piccolo migrations forwards app_b
+    piccolo migrations forwards app_b --fake
 
 Because the table already exists in the database, Piccolo will associate it with ``app_b`` without duplicating or altering it.
 
