@@ -1,6 +1,14 @@
 Changes
 =======
 
+1.26.0
+------
+
+Improved auto migrations - ``ON DELETE`` and ``ON UPDATE`` can be modified
+on ``ForeignKey`` columns. Thanks to @sinisaos for this.
+
+-------------------------------------------------------------------------------
+
 1.25.0
 ------
 
