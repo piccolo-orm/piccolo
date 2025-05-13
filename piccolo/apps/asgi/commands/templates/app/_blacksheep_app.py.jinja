@@ -115,3 +115,5 @@ async def close_database_connection_pool(application):
 
 app.on_start += open_database_connection_pool
 app.on_stop += close_database_connection_pool
+
+app.router.apply_routes()
