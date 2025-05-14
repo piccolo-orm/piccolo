@@ -112,4 +112,21 @@ class SchemaSnapshot:
                                 rename_column.new_db_column_name
                             )
 
+                add_composite_indexes = manager.add_composite_indexes.composite_index_for_table_class_name(  # noqa: E501
+                    table.class_name
+                )
+                table.composite_indexes.extend(add_composite_indexes)  # type: ignore # noqa: E501
+
+                drop_composite_indexes = (
+                    manager.drop_composite_indexes.for_table_class_name(
+                        table.class_name
+                    )
+                )
+                for drop_constraint in drop_composite_indexes:
+                    table.composite_indexes = [
+                        i
+                        for i in table.composite_indexes
+                        if i != drop_constraint.composite_index_name
+                    ]
+
         return tables

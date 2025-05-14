@@ -28,6 +28,7 @@ from piccolo.columns.m2m import (
 )
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
+from piccolo.composite_index import CompositeIndex
 from piccolo.custom_types import TableInstance
 from piccolo.engine import Engine, engine_finder
 from piccolo.query import (
@@ -84,6 +85,7 @@ class TableMeta:
     primary_key: Column = field(default_factory=Column)
     json_columns: t.List[t.Union[JSON, JSONB]] = field(default_factory=list)
     secret_columns: t.List[Secret] = field(default_factory=list)
+    composite_index: t.List[CompositeIndex] = field(default_factory=list)
     auto_update_columns: t.List[Column] = field(default_factory=list)
     tags: t.List[str] = field(default_factory=list)
     help_text: t.Optional[str] = None
@@ -172,6 +174,17 @@ class TableMeta:
                     ) from e
 
         return column_object
+
+    # def get_composite_index_by_name(self, name: str) -> CompositeIndex:
+    #     """
+    #     Returns a composite index which matches the given name.
+    #     """
+    #     for index in self.composite_index:
+    #         if index._meta.name == name:
+    #             return index
+    #     raise ValueError(
+    #         f"No matching composite index found with name == {name}"
+    #     )
 
     def get_auto_update_values(self) -> t.Dict[Column, t.Any]:
         """
@@ -279,6 +292,7 @@ class Table(metaclass=TableMetaclass):
         auto_update_columns: t.List[Column] = []
         primary_key: t.Optional[Column] = None
         m2m_relationships: t.List[M2M] = []
+        composite_index: t.List[CompositeIndex] = []
 
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]
@@ -331,6 +345,10 @@ class Table(metaclass=TableMetaclass):
                 attribute._meta._table = cls
                 m2m_relationships.append(attribute)
 
+            if isinstance(attribute, CompositeIndex):
+                attribute._meta.name = attribute_name
+                composite_index.append(attribute)
+
         if not primary_key:
             primary_key = cls._create_serial_primary_key()
             setattr(cls, "id", primary_key)
@@ -355,6 +373,7 @@ class Table(metaclass=TableMetaclass):
             _db=db,
             m2m_relationships=m2m_relationships,
             schema=schema,
+            composite_index=composite_index,
         )
 
         for foreign_key_column in foreign_key_columns:

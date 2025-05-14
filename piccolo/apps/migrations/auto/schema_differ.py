@@ -628,6 +628,68 @@ class SchemaDiffer:
 
         return alter_statements
 
+    @property
+    def add_composite_index(self) -> AlterStatements:
+        response: t.List[str] = []
+        extra_imports: t.List[Import] = []
+        extra_definitions: t.List[Definition] = []
+        for table in self.schema:
+            snapshot_table = self._get_snapshot_table(table.class_name)
+            if snapshot_table:
+                delta: TableDelta = table - snapshot_table
+            else:
+                continue
+
+            for add_index in delta.add_composite_indexes:
+                index_class = add_index.composite_index_class
+                extra_imports.append(
+                    Import(
+                        module=index_class.__module__,
+                        target=index_class.__name__,
+                        expect_conflict_with_global_name=getattr(
+                            UniqueGlobalNames,
+                            f"COLUMN_{index_class.__name__.upper()}",
+                            None,
+                        ),
+                    )
+                )
+
+                schema_str = (
+                    "None"
+                    if add_index.schema is None
+                    else f'"{add_index.schema}"'
+                )
+
+                response.append(
+                    f"manager.add_composite_index(table_class_name='{table.class_name}', tablename='{table.tablename}', composite_index_name='{add_index.composite_index_name}', composite_index_class={add_index.composite_index_class.__name__}, columns={add_index.columns}, schema={schema_str})"  # noqa: E501
+                )
+        return AlterStatements(
+            statements=response,
+            extra_imports=extra_imports,
+            extra_definitions=extra_definitions,
+        )
+
+    @property
+    def drop_composite_index(self) -> AlterStatements:
+        response = []
+        for table in self.schema:
+            snapshot_table = self._get_snapshot_table(table.class_name)
+            if snapshot_table:
+                delta: TableDelta = table - snapshot_table
+            else:
+                continue
+
+            for drop_index in delta.drop_composite_indexes:
+                schema_str = (
+                    "None"
+                    if drop_index.schema is None
+                    else f'"{drop_index.schema}"'
+                )
+                response.append(
+                    f"manager.drop_composite_index(table_class_name='{table.class_name}', tablename='{table.tablename}', composite_index_name='{drop_index.composite_index_name}', schema={schema_str})"  # noqa: E501
+                )
+        return AlterStatements(statements=response)
+
     ###########################################################################
 
     @property
@@ -679,6 +741,48 @@ class SchemaDiffer:
             extra_definitions=extra_definitions,
         )
 
+    @property
+    def new_table_composite_index(self) -> AlterStatements:
+        new_tables: t.List[DiffableTable] = list(
+            set(self.schema) - set(self.schema_snapshot)
+        )
+
+        response: t.List[str] = []
+        extra_imports: t.List[Import] = []
+        extra_definitions: t.List[Definition] = []
+        for table in new_tables:
+            if (
+                table.class_name
+                in self.rename_tables_collection.new_class_names
+            ):
+                continue
+
+            for index in table.composite_indexes:
+                extra_imports.append(
+                    Import(
+                        module=index.__class__.__module__,
+                        target=index.__class__.__name__,
+                        expect_conflict_with_global_name=getattr(
+                            UniqueGlobalNames,
+                            f"COLUMN_{index.__class__.__name__.upper()}",
+                            None,
+                        ),
+                    )
+                )
+
+                schema_str = (
+                    "None" if table.schema is None else f'"{table.schema}"'
+                )
+
+                response.append(
+                    f"manager.add_composite_index(table_class_name='{table.class_name}', tablename='{table.tablename}', composite_index_name='{index._meta.name}', composite_index_class={index.__class__.__name__}, columns={index.columns}, schema={schema_str})"  # noqa: E501
+                )
+        return AlterStatements(
+            statements=response,
+            extra_imports=extra_imports,
+            extra_definitions=extra_definitions,
+        )
+
     ###########################################################################
 
     def get_alter_statements(self) -> t.List[AlterStatements]:
@@ -691,10 +795,13 @@ class SchemaDiffer:
             "Renamed tables": self.rename_tables,
             "Tables which changed schema": self.change_table_schemas,
             "Created table columns": self.new_table_columns,
+            "Created table composite index": self.new_table_composite_index,
             "Dropped columns": self.drop_columns,
             "Columns added to existing tables": self.add_columns,
             "Renamed columns": self.rename_columns,
             "Altered columns": self.alter_columns,
+            "Dropped composite_index": self.drop_composite_index,
+            "Composite index added to existing tables": self.add_composite_index,  # noqa: E501
         }
 
         for message, statements in alter_statements.items():
