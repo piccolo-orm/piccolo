@@ -479,36 +479,14 @@ class MigrationManager:
                 if (old_column_class is not None) and (
                     column_class is not None
                 ):
-                    # Array columns migrations with base column type changes
-                    if (
-                        column_class.value_type == list
-                        and old_column_class.value_type == list
-                    ):
-                        old_array_column = old_column_class(**old_params)
-                        old_array_column._meta._table = _Table
-                        old_array_column._meta._name = alter_column.column_name
-                        old_array_column._meta.db_column_name = (
-                            alter_column.db_column_name
-                        )
+                    base_colum_class = params.get("base_column").__class__
+                    old_base_column_class = old_params.get(
+                        "base_column"
+                    ).__class__
 
-                        new_array_column = column_class(**params)
-                        new_array_column._meta._table = _Table
-                        new_array_column._meta._name = alter_column.column_name
-                        new_array_column._meta.db_column_name = (
-                            alter_column.db_column_name
-                        )
-                        # first drop array column
-                        await self._run_query(
-                            _Table.alter().drop_column(old_array_column)
-                        )
-                        # than add array column with new base column type
-                        await self._run_query(
-                            _Table.alter().add_column(
-                                name=new_array_column._meta.name,
-                                column=new_array_column,
-                            )
-                        )
-                    if old_column_class != column_class:
+                    if (old_column_class != column_class) or (
+                        old_base_column_class != base_colum_class
+                    ):
                         old_column = old_column_class(**old_params)
                         old_column._meta._table = _Table
                         old_column._meta._name = alter_column.column_name
@@ -524,6 +502,37 @@ class MigrationManager:
                         )
 
                         using_expression: t.Optional[str] = None
+
+                        # Array base column type changes
+                        if (
+                            column_class.value_type == list
+                            and old_column_class.value_type == list
+                        ):
+                            # drop the default old column
+                            await self._run_query(
+                                _Table.alter().drop_default(old_column)
+                            )
+
+                            using_expression = "{}::{}".format(
+                                new_column._meta.db_column_name,
+                                new_column.column_type,
+                            )
+                            # then set a new column type
+                            await self._run_query(
+                                _Table.alter().set_column_type(
+                                    old_column=old_column,
+                                    new_column=new_column,
+                                    using_expression=using_expression,
+                                )
+                            )
+                            # finally set a new default value for
+                            # the array column
+                            await self._run_query(
+                                _Table.alter().set_default(
+                                    column=new_column,
+                                    value=new_column.get_default_value(),
+                                )
+                            )
 
                         # Postgres won't automatically cast some types to
                         # others. We may as well try, as it will definitely
