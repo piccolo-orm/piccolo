@@ -1,6 +1,20 @@
 Changes
 =======
 
+1.26.1
+------
+
+Updated the BlackSheep ASGI template - thanks to @sinisaos for this.
+
+Fixed a bug with auto migrations when a ``ForeignKey`` specifies
+``target_column`` - multiple primary key columns were added to the migration
+file. Thanks to @waldner for reporting this issue.
+
+Added a tutorial for moving tables between Piccolo apps - thanks to
+@sarvesh4396 for this.
+
+-------------------------------------------------------------------------------
+
 1.26.0
 ------
 

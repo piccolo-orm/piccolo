@@ -379,6 +379,12 @@ class SerialisedTableType(Definition):
             else:
                 raise ValueError("Unrecognised `target_column` value.")
 
+            if column._meta.name == pk_column._meta.name:
+                # The target column is the foreign key, so no need to add
+                # it again.
+                # https://github.com/piccolo-orm/piccolo/issues/1197
+                continue
+
             serialised_target_columns.add(
                 SerialisedColumnInstance(
                     column,
