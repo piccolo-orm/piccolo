@@ -479,6 +479,35 @@ class MigrationManager:
                 if (old_column_class is not None) and (
                     column_class is not None
                 ):
+                    # Array columns migrations with base column type changes
+                    if (
+                        column_class.value_type == list
+                        and old_column_class.value_type == list
+                    ):
+                        old_array_column = old_column_class(**old_params)
+                        old_array_column._meta._table = _Table
+                        old_array_column._meta._name = alter_column.column_name
+                        old_array_column._meta.db_column_name = (
+                            alter_column.db_column_name
+                        )
+
+                        new_array_column = column_class(**params)
+                        new_array_column._meta._table = _Table
+                        new_array_column._meta._name = alter_column.column_name
+                        new_array_column._meta.db_column_name = (
+                            alter_column.db_column_name
+                        )
+                        # first drop array column
+                        await self._run_query(
+                            _Table.alter().drop_column(old_array_column)
+                        )
+                        # than add array column with new base column type
+                        await self._run_query(
+                            _Table.alter().add_column(
+                                name=new_array_column._meta.name,
+                                column=new_array_column,
+                            )
+                        )
                     if old_column_class != column_class:
                         old_column = old_column_class(**old_params)
                         old_column._meta._table = _Table
