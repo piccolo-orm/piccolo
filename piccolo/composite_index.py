@@ -1,17 +1,30 @@
 from __future__ import annotations
 
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+
+class Composite:
+    """
+    All other composite indexes inherit from ``Composite``.
+    Don't use it directly.
+    """
+
+    def __init__(self, **kwargs) -> None:
+        self._meta = CompositeMeta(params=kwargs)
+
+    def __hash__(self):
+        return hash(self._meta.name)
 
 
 @dataclass
-class CompositeIndexMeta:
+class CompositeMeta:
     """
-    Composite index meta class for storing the composite index name
-    although the name is only used for identification (can be any name)
-    in migrations because Piccolo ``create_index`` method creates its own
-    index name which is stored in the database.
+    This is used to store info about the composite index.
     """
+
+    # Used for representing the table in migrations.
+    params: t.Dict[str, t.Any] = field(default_factory=dict)
 
     # Set by the Table Metaclass:
     _name: t.Optional[str] = None
@@ -29,19 +42,20 @@ class CompositeIndexMeta:
         self._name = value
 
 
-class CompositeIndex:
+class CompositeIndex(Composite):
     """
-    Composite indexes on the table.
+    Composite index on the table columns.
     """
-
-    _meta = CompositeIndexMeta()
 
     def __init__(
         self,
         columns: t.List[str],
+        **kwargs,
     ) -> None:
         """
         :param columns:
-            The table columns that should be composite index.
+            The table columns that should be in composite index.
         """
         self.columns = columns
+        kwargs.update({"columns": columns})
+        super().__init__(**kwargs)

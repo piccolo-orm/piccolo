@@ -15,7 +15,7 @@ from piccolo.apps.migrations.auto.serialisation import (
     serialise_params,
 )
 from piccolo.columns.base import Column
-from piccolo.composite_index import CompositeIndex
+from piccolo.composite_index import Composite
 from piccolo.table import Table, create_table_class
 
 
@@ -103,7 +103,7 @@ class ColumnComparison:
 
 @dataclass
 class CompositeIndexComparison:
-    composite_index: CompositeIndex
+    composite_index: Composite
 
     def __hash__(self) -> int:
         return self.composite_index.__hash__()
@@ -111,7 +111,8 @@ class CompositeIndexComparison:
     def __eq__(self, value) -> bool:
         if isinstance(value, CompositeIndexComparison):
             return (
-                self.composite_index.columns == value.composite_index.columns
+                self.composite_index._meta.name
+                == value.composite_index._meta.name
             )
         return False
 
@@ -127,7 +128,7 @@ class DiffableTable:
     tablename: str
     schema: t.Optional[str] = None
     columns: t.List[Column] = field(default_factory=list)
-    composite_indexes: t.List[CompositeIndex] = field(default_factory=list)
+    composite_indexes: t.List[Composite] = field(default_factory=list)
     previous_class_name: t.Optional[str] = None
 
     def __post_init__(self) -> None:
@@ -227,7 +228,7 @@ class DiffableTable:
                 composite_index_name=i.composite_index._meta.name,
                 composite_index_class_name=i.composite_index.__class__.__name__,  # noqa: E501
                 composite_index_class=i.composite_index.__class__,
-                columns=i.composite_index.columns,
+                params=i.composite_index._meta.params,
                 schema=self.schema,
             )
             for i in sorted(
@@ -246,7 +247,7 @@ class DiffableTable:
         drop_composite_indexes = [
             DropCompositeIndex(
                 table_class_name=self.class_name,
-                composite_index_name=i.composite_index,  # type: ignore
+                composite_index_name=i.composite_index._meta.name,
                 tablename=value.tablename,
                 schema=self.schema,
             )
@@ -259,7 +260,7 @@ class DiffableTable:
                     CompositeIndexComparison(composite_index=composite_index)
                     for composite_index in self.composite_indexes
                 },
-                key=lambda x: x.composite_index,  # type: ignore
+                key=lambda x: x.composite_index._meta.name,
             )
         ]
 
@@ -294,10 +295,14 @@ class DiffableTable:
         """
         Converts the DiffableTable into a Table subclass.
         """
+        class_members: t.Dict[str, t.Any] = {}
+        for column in self.columns:
+            class_members[column._meta.name] = column
+        for composite_index in self.composite_indexes:
+            class_members[composite_index._meta.name] = composite_index
+
         return create_table_class(
             class_name=self.class_name,
             class_kwargs={"tablename": self.tablename, "schema": self.schema},
-            class_members={
-                column._meta.name: column for column in self.columns
-            },
+            class_members=class_members,
         )

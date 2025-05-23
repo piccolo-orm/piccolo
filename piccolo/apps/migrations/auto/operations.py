@@ -2,7 +2,7 @@ import typing as t
 from dataclasses import dataclass
 
 from piccolo.columns.base import Column
-from piccolo.composite_index import CompositeIndex
+from piccolo.composite_index import Composite
 
 
 @dataclass
@@ -71,8 +71,8 @@ class AddCompositeIndex:
     table_class_name: str
     composite_index_name: str
     composite_index_class_name: str
-    composite_index_class: t.Type[CompositeIndex]
-    columns: t.List[str]
+    composite_index_class: t.Type[Composite]
+    params: t.Dict[str, t.Any]
     schema: t.Optional[str] = None
 
 

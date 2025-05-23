@@ -629,7 +629,7 @@ class SchemaDiffer:
         return alter_statements
 
     @property
-    def add_composite_index(self) -> AlterStatements:
+    def add_composite_indexes(self) -> AlterStatements:
         response: t.List[str] = []
         extra_imports: t.List[Import] = []
         extra_definitions: t.List[Definition] = []
@@ -640,15 +640,17 @@ class SchemaDiffer:
             else:
                 continue
 
-            for add_index in delta.add_composite_indexes:
-                index_class = add_index.composite_index_class
+            for add_composite_index in delta.add_composite_indexes:
+                composite_index_class = (
+                    add_composite_index.composite_index_class
+                )
                 extra_imports.append(
                     Import(
-                        module=index_class.__module__,
-                        target=index_class.__name__,
+                        module=composite_index_class.__module__,
+                        target=composite_index_class.__name__,
                         expect_conflict_with_global_name=getattr(
                             UniqueGlobalNames,
-                            f"COLUMN_{index_class.__name__.upper()}",
+                            f"COLUMN_{composite_index_class.__name__.upper()}",
                             None,
                         ),
                     )
@@ -656,12 +658,12 @@ class SchemaDiffer:
 
                 schema_str = (
                     "None"
-                    if add_index.schema is None
-                    else f'"{add_index.schema}"'
+                    if add_composite_index.schema is None
+                    else f'"{add_composite_index.schema}"'
                 )
 
                 response.append(
-                    f"manager.add_composite_index(table_class_name='{table.class_name}', tablename='{table.tablename}', composite_index_name='{add_index.composite_index_name}', composite_index_class={add_index.composite_index_class.__name__}, columns={add_index.columns}, schema={schema_str})"  # noqa: E501
+                    f"manager.add_composite_index(table_class_name='{table.class_name}', tablename='{table.tablename}', composite_index_name='{add_composite_index.composite_index_name}', composite_index_class={composite_index_class.__name__}, params={add_composite_index.params}, schema={schema_str})"  # noqa: E501
                 )
         return AlterStatements(
             statements=response,
@@ -670,7 +672,7 @@ class SchemaDiffer:
         )
 
     @property
-    def drop_composite_index(self) -> AlterStatements:
+    def drop_composite_indexes(self) -> AlterStatements:
         response = []
         for table in self.schema:
             snapshot_table = self._get_snapshot_table(table.class_name)
@@ -679,14 +681,15 @@ class SchemaDiffer:
             else:
                 continue
 
-            for drop_index in delta.drop_composite_indexes:
+            for drop_composite_index in delta.drop_composite_indexes:
                 schema_str = (
                     "None"
-                    if drop_index.schema is None
-                    else f'"{drop_index.schema}"'
+                    if drop_composite_index.schema is None
+                    else f'"{drop_composite_index.schema}"'
                 )
+
                 response.append(
-                    f"manager.drop_composite_index(table_class_name='{table.class_name}', tablename='{table.tablename}', composite_index_name='{drop_index.composite_index_name}', schema={schema_str})"  # noqa: E501
+                    f"manager.drop_composite_index(table_class_name='{table.class_name}', tablename='{table.tablename}', composite_index_name='{drop_composite_index.composite_index_name}', schema={schema_str})"  # noqa: E501
                 )
         return AlterStatements(statements=response)
 
@@ -742,7 +745,7 @@ class SchemaDiffer:
         )
 
     @property
-    def new_table_composite_index(self) -> AlterStatements:
+    def new_table_composite_indexes(self) -> AlterStatements:
         new_tables: t.List[DiffableTable] = list(
             set(self.schema) - set(self.schema_snapshot)
         )
@@ -757,14 +760,14 @@ class SchemaDiffer:
             ):
                 continue
 
-            for index in table.composite_indexes:
+            for composite_index in table.composite_indexes:
                 extra_imports.append(
                     Import(
-                        module=index.__class__.__module__,
-                        target=index.__class__.__name__,
+                        module=composite_index.__class__.__module__,
+                        target=composite_index.__class__.__name__,
                         expect_conflict_with_global_name=getattr(
                             UniqueGlobalNames,
-                            f"COLUMN_{index.__class__.__name__.upper()}",
+                            f"COLUMN_{composite_index.__class__.__name__.upper()}",  # noqa: E501
                             None,
                         ),
                     )
@@ -775,7 +778,7 @@ class SchemaDiffer:
                 )
 
                 response.append(
-                    f"manager.add_composite_index(table_class_name='{table.class_name}', tablename='{table.tablename}', composite_index_name='{index._meta.name}', composite_index_class={index.__class__.__name__}, columns={index.columns}, schema={schema_str})"  # noqa: E501
+                    f"manager.add_composite_index(table_class_name='{table.class_name}', tablename='{table.tablename}', composite_index_name='{composite_index._meta.name}', composite_index_class={composite_index.__class__.__name__}, params={composite_index._meta.params}, schema={schema_str})"  # noqa: E501
                 )
         return AlterStatements(
             statements=response,
@@ -795,13 +798,13 @@ class SchemaDiffer:
             "Renamed tables": self.rename_tables,
             "Tables which changed schema": self.change_table_schemas,
             "Created table columns": self.new_table_columns,
-            "Created table composite index": self.new_table_composite_index,
+            "Created table composite indexes": self.new_table_composite_indexes,  # noqa: E501
             "Dropped columns": self.drop_columns,
             "Columns added to existing tables": self.add_columns,
             "Renamed columns": self.rename_columns,
             "Altered columns": self.alter_columns,
-            "Dropped composite_index": self.drop_composite_index,
-            "Composite index added to existing tables": self.add_composite_index,  # noqa: E501
+            "Dropped composite index": self.drop_composite_indexes,
+            "Composite index added to existing tables": self.add_composite_indexes,  # noqa: E501
         }
 
         for message, statements in alter_statements.items():
