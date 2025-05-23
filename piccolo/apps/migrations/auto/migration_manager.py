@@ -10,12 +10,14 @@ from piccolo.apps.migrations.auto.operations import (
     AlterColumn,
     ChangeTableSchema,
     DropColumn,
+    DropCompositeIndex,
     RenameColumn,
     RenameTable,
 )
 from piccolo.apps.migrations.auto.serialisation import deserialise_params
 from piccolo.columns import Column, column_types
 from piccolo.columns.column_types import ForeignKey, Serial
+from piccolo.composite_index import Composite, CompositeIndex
 from piccolo.engine import engine_finder
 from piccolo.query import Query
 from piccolo.query.base import DDL
@@ -128,6 +130,69 @@ class AlterColumnCollection:
         return list({i.table_class_name for i in self.alter_columns})
 
 
+@dataclass
+class AddCompositeIndexClass:
+    composite_index: Composite
+    table_class_name: str
+    tablename: str
+    schema: t.Optional[str]
+
+
+@dataclass
+class AddCompositeIndexCollection:
+    add_composite_indexes: t.List[AddCompositeIndexClass] = field(
+        default_factory=list
+    )
+
+    def append(self, add_composite_index: AddCompositeIndexClass):
+        self.add_composite_indexes.append(add_composite_index)
+
+    def for_table_class_name(
+        self, table_class_name: str
+    ) -> t.List[AddCompositeIndexClass]:
+        return [
+            i
+            for i in self.add_composite_indexes
+            if i.table_class_name == table_class_name
+        ]
+
+    def composite_indexes_for_table_class_name(
+        self, table_class_name: str
+    ) -> t.List[Composite]:
+        return [
+            i.composite_index
+            for i in self.add_composite_indexes
+            if i.table_class_name == table_class_name
+        ]
+
+    @property
+    def table_class_names(self) -> t.List[str]:
+        return list({i.table_class_name for i in self.add_composite_indexes})
+
+
+@dataclass
+class DropCompositeIndexCollection:
+    drop_composite_indexes: t.List[DropCompositeIndex] = field(
+        default_factory=list
+    )
+
+    def append(self, drop_composite_index: DropCompositeIndex):
+        self.drop_composite_indexes.append(drop_composite_index)
+
+    def for_table_class_name(
+        self, table_class_name: str
+    ) -> t.List[DropCompositeIndex]:
+        return [
+            i
+            for i in self.drop_composite_indexes
+            if i.table_class_name == table_class_name
+        ]
+
+    @property
+    def table_class_names(self) -> t.List[str]:
+        return list({i.table_class_name for i in self.drop_composite_indexes})
+
+
 AsyncFunction = t.Callable[[], t.Coroutine]
 
 
@@ -175,6 +240,12 @@ class MigrationManager:
     )
     alter_columns: AlterColumnCollection = field(
         default_factory=AlterColumnCollection
+    )
+    add_composite_indexes: AddCompositeIndexCollection = field(
+        default_factory=AddCompositeIndexCollection
+    )
+    drop_composite_indexes: DropCompositeIndexCollection = field(
+        default_factory=DropCompositeIndexCollection
     )
     raw: t.List[t.Union[t.Callable, AsyncFunction]] = field(
         default_factory=list
@@ -365,6 +436,48 @@ class MigrationManager:
             )
         )
 
+    def add_composite_index(
+        self,
+        table_class_name: str,
+        tablename: str,
+        composite_index_name: str,
+        composite_index_class: t.Type[Composite],
+        params: t.Dict[str, t.Any],
+        schema: t.Optional[str] = None,
+    ):
+        if composite_index_class is CompositeIndex:
+            composite_index = CompositeIndex(**params)
+        else:
+            raise ValueError("Unrecognised composite index type")
+
+        composite_index._meta.name = composite_index_name
+        composite_index.columns = params["columns"]
+
+        self.add_composite_indexes.append(
+            AddCompositeIndexClass(
+                composite_index=composite_index,
+                table_class_name=table_class_name,
+                tablename=tablename,
+                schema=schema,
+            )
+        )
+
+    def drop_composite_index(
+        self,
+        table_class_name: str,
+        tablename: str,
+        composite_index_name: str,
+        schema: t.Optional[str] = None,
+    ):
+        self.drop_composite_indexes.append(
+            DropCompositeIndex(
+                table_class_name=table_class_name,
+                composite_index_name=composite_index_name,
+                tablename=tablename,
+                schema=schema,
+            )
+        )
+
     def add_raw(self, raw: t.Union[t.Callable, AsyncFunction]):
         """
         A migration manager can execute arbitrary functions or coroutines when
@@ -424,8 +537,8 @@ class MigrationManager:
 
     async def _run_query(self, query: t.Union[DDL, Query, SchemaDDLBase]):
         """
-        If MigrationManager is in preview mode then it just print the query
-        instead of executing it.
+        If MigrationManager is not in the preview mode,
+         executes the queries. else, prints the query.
         """
         if self.preview:
             await self._print_query(query)
@@ -793,16 +906,26 @@ class MigrationManager:
             add_columns: t.List[AddColumnClass] = (
                 self.add_columns.for_table_class_name(add_table.class_name)
             )
+            add_composite_indexes: t.List[AddCompositeIndexClass] = (
+                self.add_composite_indexes.for_table_class_name(
+                    add_table.class_name
+                )
+            )
+            class_members: t.Dict[str, t.Any] = {}
+            for add_column in add_columns:
+                class_members[add_column.column._meta.name] = add_column.column
+            for add_composite_index in add_composite_indexes:
+                class_members[
+                    add_composite_index.composite_index._meta.name
+                ] = add_composite_index.composite_index
+
             _Table: t.Type[Table] = create_table_class(
                 class_name=add_table.class_name,
                 class_kwargs={
                     "tablename": add_table.tablename,
                     "schema": add_table.schema,
                 },
-                class_members={
-                    add_column.column._meta.name: add_column.column
-                    for add_column in add_columns
-                },
+                class_members=class_members,
             )
             table_classes.append(_Table)
 
@@ -975,6 +1098,115 @@ class MigrationManager:
                     )
                 )
 
+    async def _run_add_composite_indexes(self, backwards: bool = False):
+        if backwards:
+            for (
+                add_composite_index
+            ) in self.add_composite_indexes.add_composite_indexes:
+                if add_composite_index.table_class_name in [
+                    i.class_name for i in self.add_tables
+                ]:
+                    # Don't reverse the add composite index as the table
+                    # is going to be deleted.
+                    continue
+
+                _Table = create_table_class(
+                    class_name=add_composite_index.table_class_name,
+                    class_kwargs={
+                        "tablename": add_composite_index.tablename,
+                        "schema": add_composite_index.schema,
+                    },
+                )
+
+                await self._run_query(
+                    _Table.drop_index(
+                        columns=add_composite_index.composite_index._meta.params[  # noqa: E501
+                            "columns"
+                        ],
+                        name=add_composite_index.composite_index._meta.name,
+                    )
+                )
+        else:
+            for (
+                table_class_name
+            ) in self.add_composite_indexes.table_class_names:
+                add_composite_indexes: t.List[AddCompositeIndexClass] = (
+                    self.add_composite_indexes.for_table_class_name(
+                        table_class_name
+                    )
+                )
+
+                _Table = create_table_class(
+                    class_name=add_composite_indexes[0].table_class_name,
+                    class_kwargs={
+                        "tablename": add_composite_indexes[0].tablename,
+                        "schema": add_composite_indexes[0].schema,
+                    },
+                )
+
+                await self._run_query(
+                    _Table.create_index(
+                        columns=add_composite_indexes[
+                            0
+                        ].composite_index._meta.params["columns"],
+                        name=add_composite_indexes[
+                            0
+                        ].composite_index._meta.name,
+                    )
+                )
+
+    async def _run_drop_composite_indexes(self, backwards: bool = False):
+        if backwards:
+            for (
+                drop_composite_index
+            ) in self.drop_composite_indexes.drop_composite_indexes:
+                _Table = await self.get_table_from_snapshot(
+                    table_class_name=drop_composite_index.table_class_name,
+                    app_name=self.app_name,
+                    offset=-1,
+                )
+                composite_index_to_restore = (
+                    _Table._meta.get_composite_index_by_name(
+                        drop_composite_index.composite_index_name
+                    )
+                )
+
+                await self._run_query(
+                    _Table.create_index(
+                        columns=composite_index_to_restore._meta.params[
+                            "columns"
+                        ],
+                        name=composite_index_to_restore._meta._name,
+                    )
+                )
+        else:
+            for (
+                table_class_name
+            ) in self.drop_composite_indexes.table_class_names:
+                composite_indexes = (
+                    self.drop_composite_indexes.for_table_class_name(
+                        table_class_name
+                    )
+                )
+
+                if not composite_indexes:
+                    continue
+
+                _Table = create_table_class(
+                    class_name=table_class_name,
+                    class_kwargs={
+                        "tablename": composite_indexes[0].tablename,
+                        "schema": composite_indexes[0].schema,
+                    },
+                )
+
+                await self._run_query(
+                    _Table.drop_index(
+                        columns=[],  # placeholder value
+                        name=composite_indexes[0].composite_index_name,
+                    )
+                )
+
     async def run(self, backwards: bool = False):
         direction = "backwards" if backwards else "forwards"
         if self.preview:
@@ -1010,6 +1242,8 @@ class MigrationManager:
             await self._run_drop_columns(backwards=backwards)
             await self._run_drop_tables(backwards=backwards)
             await self._run_rename_columns(backwards=backwards)
+            await self._run_add_composite_indexes(backwards=backwards)
+            await self._run_drop_composite_indexes(backwards=backwards)
             # We can remove this for cockroach when resolved.
             # https://github.com/cockroachdb/cockroach/issues/49351
             # "ALTER COLUMN TYPE is not supported inside a transaction"
