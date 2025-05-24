@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import asyncio
 import typing as t
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
+
+ReturnType = t.TypeVar("ReturnType")
 
 
-def run_sync(coroutine: t.Coroutine):
+def run_sync(
+    coroutine: t.Coroutine[t.Any, t.Any, ReturnType],
+) -> ReturnType:
     """
     Run the coroutine synchronously - trying to accommodate as many edge cases
     as possible.
@@ -20,5 +24,5 @@ def run_sync(coroutine: t.Coroutine):
     except RuntimeError:
         # An event loop already exists.
         with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(asyncio.run, coroutine)
+            future: Future = executor.submit(asyncio.run, coroutine)
             return future.result()

@@ -12,8 +12,10 @@ from piccolo.columns.base import OnDelete, OnUpdate
 from piccolo.columns.column_types import ForeignKey
 from piccolo.conf.apps import AppConfig
 from piccolo.engine import engine_finder
+from piccolo.query.constraints import get_fk_constraint_rules
 from piccolo.table import Table, sort_table_classes
 from piccolo.utils.lazy_loader import LazyLoader
+from piccolo.utils.sync import run_sync
 from tests.base import AsyncMock, DBTestCase, engine_is, engines_only
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
@@ -617,6 +619,54 @@ class TestMigrationManager(DBTestCase):
             asyncio.run(manager.run(backwards=True))
             response = self.run_sync("SELECT * FROM manager;")
             self.assertEqual(response, [{"id": id[0]["id"], "name": "Dave"}])
+
+    @engines_only("postgres", "cockroach")
+    def test_alter_fk_on_delete_on_update(self):
+        """
+        Test altering OnDelete and OnUpdate with MigrationManager.
+        """
+        # before performing migrations - OnDelete.no_action
+        self.assertEqual(
+            run_sync(get_fk_constraint_rules(column=Band.manager)).on_delete,
+            OnDelete.no_action,
+        )
+
+        manager = MigrationManager(app_name="music")
+        manager.alter_column(
+            table_class_name="Band",
+            tablename="band",
+            column_name="manager",
+            db_column_name="manager",
+            params={
+                "on_delete": OnDelete.set_null,
+                "on_update": OnUpdate.set_null,
+            },
+            old_params={
+                "on_delete": OnDelete.no_action,
+                "on_update": OnUpdate.no_action,
+            },
+            column_class=ForeignKey,
+            old_column_class=ForeignKey,
+            schema=None,
+        )
+
+        asyncio.run(manager.run())
+
+        # after performing migrations - OnDelete.set_null
+        self.assertEqual(
+            run_sync(get_fk_constraint_rules(column=Band.manager)).on_delete,
+            OnDelete.set_null,
+        )
+
+        # Reverse
+        asyncio.run(manager.run(backwards=True))
+
+        # after performing reverse migrations we have
+        # OnDelete.no_action again
+        self.assertEqual(
+            run_sync(get_fk_constraint_rules(column=Band.manager)).on_delete,
+            OnDelete.no_action,
+        )
 
     @engines_only("postgres")
     def test_alter_column_unique(self):

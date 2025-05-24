@@ -501,6 +501,8 @@ async def get_fk_triggers(
         Any Table subclass - just used to execute raw queries on the database.
 
     """
+    # TODO - Move this query to `piccolo.query.constraints` or use:
+    # `piccolo.query.constraints.referential_constraints`
     triggers = await table_class.raw(
         (
             "SELECT tc.constraint_name, "
@@ -535,23 +537,6 @@ async def get_fk_triggers(
         tablename=tablename,
         triggers=[Trigger(**i) for i in triggers],
     )
-
-
-ONDELETE_MAP = {
-    "NO ACTION": OnDelete.no_action,
-    "RESTRICT": OnDelete.restrict,
-    "CASCADE": OnDelete.cascade,
-    "SET NULL": OnDelete.set_null,
-    "SET DEFAULT": OnDelete.set_default,
-}
-
-ONUPDATE_MAP = {
-    "NO ACTION": OnUpdate.no_action,
-    "RESTRICT": OnUpdate.restrict,
-    "CASCADE": OnUpdate.cascade,
-    "SET NULL": OnUpdate.set_null,
-    "SET DEFAULT": OnUpdate.set_default,
-}
 
 
 async def get_constraints(
@@ -765,8 +750,8 @@ async def create_table_class_from_db(
                     column_name, constraint_table.name
                 )
                 if trigger:
-                    kwargs["on_update"] = ONUPDATE_MAP[trigger.on_update]
-                    kwargs["on_delete"] = ONDELETE_MAP[trigger.on_delete]
+                    kwargs["on_update"] = OnUpdate(trigger.on_update)
+                    kwargs["on_delete"] = OnDelete(trigger.on_delete)
                 else:
                     output_schema.trigger_warnings.append(
                         f"{tablename}.{column_name}"

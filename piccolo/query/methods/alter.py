@@ -37,6 +37,18 @@ class RenameTable(AlterStatement):
 
 
 @dataclass
+class RenameConstraint(AlterStatement):
+    __slots__ = ("old_name", "new_name")
+
+    old_name: str
+    new_name: str
+
+    @property
+    def ddl(self) -> str:
+        return f"RENAME CONSTRAINT {self.old_name} TO {self.new_name}"
+
+
+@dataclass
 class AlterColumnStatement(AlterStatement):
     __slots__ = ("column",)
 
@@ -194,6 +206,7 @@ class AddForeignKeyConstraint(AlterStatement):
         "constraint_name",
         "foreign_key_column_name",
         "referenced_table_name",
+        "referenced_column_name",
         "on_delete",
         "on_update",
     )
@@ -201,9 +214,9 @@ class AddForeignKeyConstraint(AlterStatement):
     constraint_name: str
     foreign_key_column_name: str
     referenced_table_name: str
+    referenced_column_name: str
     on_delete: t.Optional[OnDelete]
     on_update: t.Optional[OnUpdate]
-    referenced_column_name: str = "id"
 
     @property
     def ddl(self) -> str:
@@ -273,8 +286,8 @@ class DropTable:
 
 class Alter(DDL):
     __slots__ = (
-        "_add_foreign_key_constraint",
         "_add",
+        "_add_foreign_key_constraint",
         "_drop_constraint",
         "_drop_default",
         "_drop_table",
@@ -288,6 +301,7 @@ class Alter(DDL):
         "_set_null",
         "_set_schema",
         "_set_unique",
+        "_rename_constraint",
     )
 
     def __init__(self, table: t.Type[Table], **kwargs):
@@ -307,6 +321,7 @@ class Alter(DDL):
         self._set_null: t.List[SetNull] = []
         self._set_schema: t.List[SetSchema] = []
         self._set_unique: t.List[SetUnique] = []
+        self._rename_constraint: t.List[RenameConstraint] = []
 
     def add_column(self: Self, name: str, column: Column) -> Self:
         """
@@ -370,6 +385,24 @@ class Alter(DDL):
         """
         # We override the existing one rather than appending.
         self._rename_table = [RenameTable(new_name=new_name)]
+        return self
+
+    def rename_constraint(self, old_name: str, new_name: str) -> Alter:
+        """
+        Rename a constraint on the table::
+
+            >>> await Band.alter().rename_constraint(
+            ...     'old_constraint_name',
+            ...     'new_constraint_name',
+            ... )
+
+        """
+        self._rename_constraint = [
+            RenameConstraint(
+                old_name=old_name,
+                new_name=new_name,
+            )
+        ]
         return self
 
     def rename_column(
@@ -488,7 +521,7 @@ class Alter(DDL):
     def _get_constraint_name(self, column: t.Union[str, ForeignKey]) -> str:
         column_name = AlterColumnStatement(column=column).column_name
         tablename = self.table._meta.tablename
-        return f"{tablename}_{column_name}_fk"
+        return f"{tablename}_{column_name}_fkey"
 
     def drop_constraint(self, constraint_name: str) -> Alter:
         self._drop_constraint.append(
@@ -500,37 +533,58 @@ class Alter(DDL):
         self, column: t.Union[str, ForeignKey]
     ) -> Alter:
         constraint_name = self._get_constraint_name(column=column)
-        return self.drop_constraint(constraint_name=constraint_name)
+        self._drop_constraint.append(
+            DropConstraint(constraint_name=constraint_name)
+        )
+        return self
 
     def add_foreign_key_constraint(
         self,
         column: t.Union[str, ForeignKey],
-        referenced_table_name: str,
+        referenced_table_name: t.Optional[str] = None,
+        referenced_column_name: t.Optional[str] = None,
+        constraint_name: t.Optional[str] = None,
         on_delete: t.Optional[OnDelete] = None,
         on_update: t.Optional[OnUpdate] = None,
-        referenced_column_name: str = "id",
     ) -> Alter:
         """
         Add a new foreign key constraint::
 
             >>> await Band.alter().add_foreign_key_constraint(
             ...     Band.manager,
-            ...     referenced_table_name='manager',
             ...     on_delete=OnDelete.cascade
             ... )
 
         """
-        constraint_name = self._get_constraint_name(column=column)
+        constraint_name = constraint_name or self._get_constraint_name(
+            column=column
+        )
         column_name = AlterColumnStatement(column=column).column_name
+
+        if referenced_column_name is None:
+            if isinstance(column, ForeignKey):
+                referenced_column_name = (
+                    column._foreign_key_meta.resolved_target_column._meta.db_column_name  # noqa: E501
+                )
+            else:
+                raise ValueError("Please pass in `referenced_column_name`.")
+
+        if referenced_table_name is None:
+            if isinstance(column, ForeignKey):
+                referenced_table_name = (
+                    column._foreign_key_meta.resolved_references._meta.tablename  # noqa: E501
+                )
+            else:
+                raise ValueError("Please pass in `referenced_table_name`.")
 
         self._add_foreign_key_constraint.append(
             AddForeignKeyConstraint(
                 constraint_name=constraint_name,
                 foreign_key_column_name=column_name,
                 referenced_table_name=referenced_table_name,
+                referenced_column_name=referenced_column_name,
                 on_delete=on_delete,
                 on_update=on_update,
-                referenced_column_name=referenced_column_name,
             )
         )
         return self
@@ -579,9 +633,12 @@ class Alter(DDL):
             i.ddl
             for i in itertools.chain(
                 self._add,
+                self._add_foreign_key_constraint,
                 self._rename_columns,
                 self._rename_table,
+                self._rename_constraint,
                 self._drop,
+                self._drop_constraint,
                 self._drop_default,
                 self._set_column_type,
                 self._set_unique,
