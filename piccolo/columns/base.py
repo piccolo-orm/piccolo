@@ -38,6 +38,31 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.column_types import ForeignKey
     from piccolo.table import Table
 
+VALID_COLUMN_ARGUMENTS: t.List[str] = [
+    "references",
+    "on_delete",
+    "on_update",
+    "target_column",
+    "proxy_columns",
+    "null",
+    "primary_key",
+    "primary",
+    "key",
+    "unique",
+    "index",
+    "index_method",
+    "required",
+    "help_text",
+    "choices",
+    "secret",
+    "auto_update",
+    "length",
+    "default",
+    "digits",
+    "base_column",
+    "boolean",
+]
+
 
 class OnDelete(str, Enum):
     """
@@ -472,6 +497,11 @@ class Column(Selectable):
         # into `primary_key`.
         if (kwargs.get("primary") is True) and (kwargs.get("key") is True):
             primary_key = True
+
+        # Check that the column argument is valid to prevent typos
+        for argument in list(kwargs.keys()):
+            if argument not in VALID_COLUMN_ARGUMENTS:
+                raise ValueError(f"{argument} is not valid column argument.")
 
         # Used for migrations.
         # We deliberately omit 'required', 'auto_update' and 'help_text' as
