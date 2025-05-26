@@ -815,6 +815,22 @@ class MigrationManager:
         else:
             for _Table in sorted_table_classes:
                 await self._run_query(_Table.create_table())
+                # Missing unique constraint while creating custom
+                # primary key and unique column
+                # https://github.com/piccolo-orm/piccolo/issues/1143
+                for add_column in add_columns:
+                    if (
+                        not isinstance(add_column.column, Serial)
+                        and add_column.column._meta.params["unique"] is True
+                        and add_column.column._meta.params["primary_key"]
+                        is True
+                    ):
+                        await self._run_query(
+                            _Table.alter().set_unique(
+                                column=add_column.column._meta.name,
+                                boolean=True,
+                            )
+                        )
 
     async def _run_add_columns(self, backwards: bool = False):
         """
