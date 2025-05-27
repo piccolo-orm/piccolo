@@ -43,9 +43,6 @@ class CompositeMeta:
 
 
 class CompositeIndex(Composite):
-    """
-    Composite index on the table columns.
-    """
 
     def __init__(
         self,
@@ -53,8 +50,26 @@ class CompositeIndex(Composite):
         **kwargs,
     ) -> None:
         """
+        Add a composite index to multiple columns. For example::
+
+            from piccolo.columns import Varchar, Boolean
+            from piccolo.composite_index import CompositeIndex
+            from piccolo.table import Table
+
+            class Album(Table):
+                name = Varchar()
+                released = Boolean(default=False)
+                name_released_idx = CompositeIndex(["name", "released"])
+
+        This way we create composite index ``name_released_idx``
+        on ``Album`` table.
+
+        To drop the composite index, simply delete or comment out
+        the composite index argument and perform another migration.
+
         :param columns:
-            The table columns that should be in composite index.
+            The table column name that should be in composite index.
+
         """
         self.columns = columns
         kwargs.update({"columns": columns})
