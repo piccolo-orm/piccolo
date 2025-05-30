@@ -499,7 +499,7 @@ class Column(Selectable):
             primary_key = True
 
         # Check that the column argument is valid to prevent typos
-        for argument in list(kwargs.keys()):
+        for argument in kwargs.keys():
             if argument not in VALID_COLUMN_ARGUMENTS:
                 raise ValueError(f"{argument} is not valid column argument.")
 
