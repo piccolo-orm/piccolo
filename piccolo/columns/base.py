@@ -474,6 +474,7 @@ class Column(Selectable):
         # into `primary_key`.
         if (kwargs.get("primary") is True) and (kwargs.get("key") is True):
             primary_key = True
+            VALID_COLUMN_ARGUMENTS.extend(["primary", "key"])
 
         # Check that the column argument is valid to prevent typos
         VALID_COLUMN_ARGUMENTS.extend(
@@ -481,11 +482,6 @@ class Column(Selectable):
                 inspect.signature(self.__init__).parameters  # type: ignore
             )
         )
-        # we can't get these arguments from Column.__init__
-        # (an old primary key arguments that is kept for backwards
-        # compatibility and optional boolean argument for Boolean column)
-        VALID_COLUMN_ARGUMENTS.extend(["boolean", "primary", "key"])
-
         for argument in kwargs.keys():
             if argument not in VALID_COLUMN_ARGUMENTS:
                 raise ValueError(f"{argument} is not valid column argument.")
