@@ -8,7 +8,7 @@ Improved auto completion / typo detection for column arguments.
 
 For example:
 
-.. code-block:: bash
+.. code-block:: python
 
   class Band(Table):
       name = Varchar(nul=True)  # linters will now warn that nul is a typo (should be null)
