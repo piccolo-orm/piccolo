@@ -6,7 +6,7 @@ from piccolo.testing.test_case import TableTest
 
 
 class MyTable(Table):
-    boolean = Boolean(boolean=False, null=True)
+    boolean = Boolean(default=False, null=True)
 
 
 class TestBoolean(TableTest):

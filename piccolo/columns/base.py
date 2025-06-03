@@ -350,6 +350,20 @@ class ColumnMeta:
         return self.copy()
 
 
+class ColumnKwargs(t.TypedDict, total=False):
+    null: bool
+    primary_key: bool
+    unique: bool
+    index: bool
+    index_method: IndexMethod
+    required: bool
+    help_text: str
+    choices: t.Type[Enum]
+    db_column_name: str
+    secret: bool
+    auto_update: t.Any
+
+
 class Column(Selectable):
     """
     All other columns inherit from ``Column``. Don't use it directly.
