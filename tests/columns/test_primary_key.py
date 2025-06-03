@@ -75,12 +75,12 @@ class TestPrimaryKeyUUID(TableTest):
 
 
 class Manager(Table):
-    pk = UUID(primary=True, key=True)
+    pk = UUID(primary_key=True)
     name = Varchar()
 
 
 class Band(Table):
-    pk = UUID(primary=True, key=True)
+    pk = UUID(primary_key=True)
     name = Varchar()
     manager = ForeignKey(Manager)
 
