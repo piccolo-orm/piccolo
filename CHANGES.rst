@@ -1,6 +1,22 @@
 Changes
 =======
 
+1.27.0
+------
+
+Improved auto completion / typo detection for column arguments.
+
+For example:
+
+.. code-block:: bash
+
+  class Band(Table):
+      name = Varchar(nul=True)  # linters will now warn that nul is a typo (should be null)
+
+Thanks to @sinisaos for this.
+
+-------------------------------------------------------------------------------
+
 1.26.1
 ------
 
