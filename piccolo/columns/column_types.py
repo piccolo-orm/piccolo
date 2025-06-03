@@ -35,6 +35,8 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from enum import Enum
 
+from typing_extensions import NotRequired, Unpack
+
 from piccolo.columns.base import (
     Column,
     ForeignKeyMeta,
@@ -57,6 +59,7 @@ from piccolo.columns.defaults.timestamptz import (
     TimestamptzNow,
 )
 from piccolo.columns.defaults.uuid import UUID4, UUIDArg
+from piccolo.columns.indexes import IndexMethod
 from piccolo.columns.operators.comparison import (
     ArrayAll,
     ArrayAny,
@@ -75,6 +78,23 @@ if t.TYPE_CHECKING:  # pragma: no cover
         GetElementFromPath,
     )
     from piccolo.table import Table
+
+
+class Arguments(t.TypedDict, total=False):
+    null: NotRequired[bool]
+    primary_key: NotRequired[bool]
+    primary: NotRequired[bool]
+    key: NotRequired[bool]
+    unique: NotRequired[bool]
+    index: NotRequired[bool]
+    index_method: NotRequired[IndexMethod]
+    required: NotRequired[bool]
+    help_text: NotRequired[str]
+    choices: NotRequired[t.Type[Enum]]
+    secret: NotRequired[bool]
+    auto_update: NotRequired[t.Any]
+    digits: NotRequired[t.Tuple[int, int]]
+    db_column_name: NotRequired[str]
 
 
 ###############################################################################
@@ -317,13 +337,13 @@ class Varchar(Column):
         self,
         length: t.Optional[int] = 255,
         default: t.Union[str, Enum, t.Callable[[], str], None] = "",
-        **kwargs,
+        **kwargs: Unpack[Arguments],
     ) -> None:
         self._validate_default(default, (str, None))
 
         self.length = length
         self.default = default
-        kwargs.update({"length": length, "default": default})
+        kwargs.update({"length": length, "default": default})  # type: ignore
         super().__init__(**kwargs)
 
     @property
@@ -426,11 +446,11 @@ class Text(Column):
     def __init__(
         self,
         default: t.Union[str, Enum, None, t.Callable[[], str]] = "",
-        **kwargs,
+        **kwargs: Unpack[Arguments],
     ) -> None:
         self._validate_default(default, (str, None))
         self.default = default
-        kwargs.update({"default": default})
+        kwargs.update({"default": default})  # type: ignore
         super().__init__(**kwargs)
 
     ###########################################################################
@@ -490,7 +510,11 @@ class UUID(Column):
 
     value_type = uuid.UUID
 
-    def __init__(self, default: UUIDArg = UUID4(), **kwargs) -> None:
+    def __init__(
+        self,
+        default: UUIDArg = UUID4(),
+        **kwargs: Unpack[Arguments],
+    ) -> None:
         if default is UUID4:
             # In case the class is passed in, instead of an instance.
             default = UUID4()
@@ -509,7 +533,7 @@ class UUID(Column):
                 ) from e
 
         self.default = default
-        kwargs.update({"default": default})
+        kwargs.update({"default": default})  # type: ignore
         super().__init__(**kwargs)
 
     ###########################################################################
@@ -553,11 +577,11 @@ class Integer(Column):
     def __init__(
         self,
         default: t.Union[int, Enum, t.Callable[[], int], None] = 0,
-        **kwargs,
+        **kwargs: Unpack[Arguments],
     ) -> None:
         self._validate_default(default, (int, None))
         self.default = default
-        kwargs.update({"default": default})
+        kwargs.update({"default": default})  # type: ignore
         super().__init__(**kwargs)
 
     ###########################################################################
@@ -833,7 +857,10 @@ class BigSerial(Serial):
 
 
 class PrimaryKey(Serial):
-    def __init__(self, **kwargs) -> None:
+    def __init__(
+        self,
+        **kwargs: Unpack[Arguments],
+    ) -> None:
         # Set the index to False, as a database should automatically create
         # an index for a PrimaryKey column.
         kwargs.update({"primary_key": True, "index": False})
@@ -896,7 +923,9 @@ class Timestamp(Column):
     timedelta_delegate = TimedeltaDelegate()
 
     def __init__(
-        self, default: TimestampArg = TimestampNow(), **kwargs
+        self,
+        default: TimestampArg = TimestampNow(),
+        **kwargs: Unpack[Arguments],
     ) -> None:
         self._validate_default(default, TimestampArg.__args__)  # type: ignore
 
@@ -912,7 +941,7 @@ class Timestamp(Column):
             default = TimestampNow()
 
         self.default = default
-        kwargs.update({"default": default})
+        kwargs.update({"default": default})  # type: ignore
         super().__init__(**kwargs)
 
     ###########################################################################
@@ -994,7 +1023,9 @@ class Timestamptz(Column):
     timedelta_delegate = TimedeltaDelegate()
 
     def __init__(
-        self, default: TimestamptzArg = TimestamptzNow(), **kwargs
+        self,
+        default: TimestamptzArg = TimestamptzNow(),
+        **kwargs: Unpack[Arguments],
     ) -> None:
         self._validate_default(
             default, TimestamptzArg.__args__  # type: ignore
@@ -1007,7 +1038,7 @@ class Timestamptz(Column):
             default = TimestamptzNow()
 
         self.default = default
-        kwargs.update({"default": default})
+        kwargs.update({"default": default})  # type: ignore
         super().__init__(**kwargs)
 
     ###########################################################################
@@ -1075,7 +1106,11 @@ class Date(Column):
     value_type = date
     timedelta_delegate = TimedeltaDelegate()
 
-    def __init__(self, default: DateArg = DateNow(), **kwargs) -> None:
+    def __init__(
+        self,
+        default: DateArg = DateNow(),
+        **kwargs: Unpack[Arguments],
+    ) -> None:
         self._validate_default(default, DateArg.__args__)  # type: ignore
 
         if isinstance(default, date):
@@ -1085,7 +1120,7 @@ class Date(Column):
             default = DateNow()
 
         self.default = default
-        kwargs.update({"default": default})
+        kwargs.update({"default": default})  # type: ignore
         super().__init__(**kwargs)
 
     ###########################################################################
@@ -1153,14 +1188,18 @@ class Time(Column):
     value_type = time
     timedelta_delegate = TimedeltaDelegate()
 
-    def __init__(self, default: TimeArg = TimeNow(), **kwargs) -> None:
+    def __init__(
+        self,
+        default: TimeArg = TimeNow(),
+        **kwargs: Unpack[Arguments],
+    ) -> None:
         self._validate_default(default, TimeArg.__args__)  # type: ignore
 
         if isinstance(default, time):
             default = TimeCustom.from_time(default)
 
         self.default = default
-        kwargs.update({"default": default})
+        kwargs.update({"default": default})  # type: ignore
         super().__init__(**kwargs)
 
     ###########################################################################
@@ -1229,7 +1268,9 @@ class Interval(Column):
     timedelta_delegate = TimedeltaDelegate()
 
     def __init__(
-        self, default: IntervalArg = IntervalCustom(), **kwargs
+        self,
+        default: IntervalArg = IntervalCustom(),
+        **kwargs: Unpack[Arguments],
     ) -> None:
         self._validate_default(default, IntervalArg.__args__)  # type: ignore
 
@@ -1237,7 +1278,7 @@ class Interval(Column):
             default = IntervalCustom.from_timedelta(default)
 
         self.default = default
-        kwargs.update({"default": default})
+        kwargs.update({"default": default})  # type: ignore
         super().__init__(**kwargs)
 
     @property
@@ -1319,11 +1360,11 @@ class Boolean(Column):
     def __init__(
         self,
         default: t.Union[bool, Enum, t.Callable[[], bool], None] = False,
-        **kwargs,
+        **kwargs: Unpack[Arguments],
     ) -> None:
         self._validate_default(default, (bool, None))
         self.default = default
-        kwargs.update({"default": default})
+        kwargs.update({"default": default})  # type: ignore
         super().__init__(**kwargs)
 
     def eq(self, value) -> Where:
@@ -1530,11 +1571,11 @@ class Real(Column):
     def __init__(
         self,
         default: t.Union[float, Enum, t.Callable[[], float], None] = 0.0,
-        **kwargs,
+        **kwargs: Unpack[Arguments],
     ) -> None:
         self._validate_default(default, (float, None))
         self.default = default
-        kwargs.update({"default": default})
+        kwargs.update({"default": default})  # type: ignore
         super().__init__(**kwargs)
 
     ###########################################################################
@@ -2302,7 +2343,7 @@ class JSON(Column):
             t.Callable[[], t.Union[str, t.List, t.Dict]],
             None,
         ] = "{}",
-        **kwargs,
+        **kwargs: Unpack[Arguments],
     ) -> None:
         self._validate_default(default, (str, list, dict, None))
 
@@ -2310,7 +2351,7 @@ class JSON(Column):
             default = dump_json(default)
 
         self.default = default
-        kwargs.update({"default": default})
+        kwargs.update({"default": default})  # type: ignore
         super().__init__(**kwargs)
 
         self.json_operator: t.Optional[str] = None
@@ -2486,7 +2527,7 @@ class Bytea(Column):
             t.Callable[[], bytearray],
             None,
         ] = b"",
-        **kwargs,
+        **kwargs: Unpack[Arguments],
     ) -> None:
         self._validate_default(default, (bytes, bytearray, None))
 
@@ -2494,7 +2535,7 @@ class Bytea(Column):
             default = bytes(default)
 
         self.default = default
-        kwargs.update({"default": default})
+        kwargs.update({"default": default})  # type: ignore
         super().__init__(**kwargs)
 
     ###########################################################################
@@ -2587,7 +2628,7 @@ class Array(Column):
         default: t.Union[
             t.List, Enum, t.Callable[[], t.List], None
         ] = ListProxy(),
-        **kwargs,
+        **kwargs: Unpack[Arguments],
     ) -> None:
         if isinstance(base_column, ForeignKey):
             raise ValueError("Arrays of ForeignKeys aren't allowed.")
@@ -2613,7 +2654,9 @@ class Array(Column):
         self.base_column = base_column
         self.default = default
         self.index: t.Optional[int] = None
-        kwargs.update({"base_column": base_column, "default": default})
+        kwargs.update(
+            {"base_column": base_column, "default": default}  # type: ignore
+        )
         super().__init__(**kwargs)
 
     @property
