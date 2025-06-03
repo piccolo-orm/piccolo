@@ -39,6 +39,20 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
+class ColumnKwargs(t.TypedDict, total=False):
+    null: bool
+    primary_key: bool
+    unique: bool
+    index: bool
+    index_method: IndexMethod
+    required: bool
+    help_text: str
+    choices: t.Type[Enum]
+    secret: bool
+    auto_update: t.Any
+    db_column_name: str
+
+
 class OnDelete(str, Enum):
     """
     Used by :class:`ForeignKey <piccolo.columns.column_types.ForeignKey>` to

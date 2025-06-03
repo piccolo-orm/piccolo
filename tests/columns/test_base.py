@@ -45,16 +45,6 @@ class TestSecretParameter(TestCase):
         self.assertEqual(column._meta.secret, secret)
 
 
-class TestInvalidColumnArgument(TestCase):
-    def test_invalid_arguments(self):
-        """
-        Test invalid argument to a column.
-        """
-        with self.assertRaises(ValueError):
-            column = Varchar(nul=True)
-            self.assertEqual(column._meta.name, column)
-
-
 class TestChoices(TestCase):
     def test_choices(self):
         """

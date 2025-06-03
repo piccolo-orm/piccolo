@@ -39,6 +39,7 @@ from typing_extensions import Unpack
 
 from piccolo.columns.base import (
     Column,
+    ColumnKwargs,
     ForeignKeyMeta,
     OnDelete,
     OnUpdate,
@@ -59,7 +60,6 @@ from piccolo.columns.defaults.timestamptz import (
     TimestamptzNow,
 )
 from piccolo.columns.defaults.uuid import UUID4, UUIDArg
-from piccolo.columns.indexes import IndexMethod
 from piccolo.columns.operators.comparison import (
     ArrayAll,
     ArrayAny,
@@ -78,23 +78,6 @@ if t.TYPE_CHECKING:  # pragma: no cover
         GetElementFromPath,
     )
     from piccolo.table import Table
-
-
-class ColumnKwargs(t.TypedDict, total=False):
-    null: bool
-    primary_key: bool
-    primary: bool
-    key: bool
-    unique: bool
-    index: bool
-    index_method: IndexMethod
-    required: bool
-    help_text: str
-    choices: t.Type[Enum]
-    secret: bool
-    auto_update: t.Any
-    digits: t.Tuple[int, int]
-    db_column_name: str
 
 
 ###############################################################################
@@ -1479,7 +1462,7 @@ class Numeric(Column):
         default: t.Union[
             decimal.Decimal, Enum, t.Callable[[], decimal.Decimal], None
         ] = decimal.Decimal(0.0),
-        **kwargs,
+        **kwargs: Unpack[ColumnKwargs],
     ) -> None:
         if isinstance(digits, tuple):
             if len(digits) != 2:
@@ -1495,8 +1478,7 @@ class Numeric(Column):
 
         self.default = default
         self.digits = digits
-        kwargs.update({"default": default, "digits": digits})
-        super().__init__(**kwargs)
+        super().__init__(default=default, digits=digits, **kwargs)
 
     ###########################################################################
     # Descriptors
