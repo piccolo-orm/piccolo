@@ -350,6 +350,20 @@ class ColumnMeta:
         return self.copy()
 
 
+class ColumnKwargs(t.TypedDict, total=False):
+    null: bool
+    primary_key: bool
+    unique: bool
+    index: bool
+    index_method: IndexMethod
+    required: bool
+    help_text: str
+    choices: t.Type[Enum]
+    db_column_name: str
+    secret: bool
+    auto_update: t.Any
+
+
 class Column(Selectable):
     """
     All other columns inherit from ``Column``. Don't use it directly.
@@ -467,10 +481,9 @@ class Column(Selectable):
         auto_update: t.Any = ...,
         **kwargs,
     ) -> None:
-        # This is for backwards compatibility - originally there were two
-        # separate arguments `primary` and `key`, but they have now been merged
-        # into `primary_key`.
-        if (kwargs.get("primary") is True) and (kwargs.get("key") is True):
+        # This is for backwards compatibility - originally the `primary_key`
+        # argument was called `primary`.
+        if kwargs.get("primary") is True:
             primary_key = True
 
         # Used for migrations.
