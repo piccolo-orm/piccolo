@@ -18,8 +18,7 @@ async def forwards():
         params={
             "default": False,
             "null": False,
-            "primary": False,
-            "key": False,
+            "primary_key": False,
             "unique": False,
             "index": False,
             "index_method": IndexMethod.btree,
@@ -35,8 +34,7 @@ async def forwards():
         params={
             "default": None,
             "null": True,
-            "primary": False,
-            "key": False,
+            "primary_key": False,
             "unique": False,
             "index": False,
             "index_method": IndexMethod.btree,
