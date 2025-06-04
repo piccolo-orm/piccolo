@@ -61,7 +61,7 @@ class UniqueGlobalNamesMeta(type):
 
     @staticmethod
     def get_unique_class_attribute_values(
-        class_attributes: t.Dict[str, t.Any]
+        class_attributes: t.Dict[str, t.Any],
     ) -> t.Set[t.Any]:
         """
         Return class attribute values.
