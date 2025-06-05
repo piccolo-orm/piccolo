@@ -4,7 +4,7 @@ Changes
 1.27.1
 ------
 
-Improve the type annotations in ``ColumnKwargs`` - make some optional. Thanks
+Improved the type annotations in ``ColumnKwargs`` - made some optional. Thanks
 to @stronk7 and @sinisaos for their help with this.
 
 -------------------------------------------------------------------------------
