@@ -1,6 +1,14 @@
 Changes
 =======
 
+1.27.1
+------
+
+Improve the type annotations in ``ColumnKwargs`` - make some optional. Thanks
+to @stronk7 and @sinisaos for their help with this.
+
+-------------------------------------------------------------------------------
+
 1.27.0
 ------
 
