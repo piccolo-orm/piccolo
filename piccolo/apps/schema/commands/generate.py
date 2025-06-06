@@ -5,9 +5,9 @@ import dataclasses
 import itertools
 import json
 import re
-import typing as t
 import uuid
 from datetime import date, datetime
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import black
 
@@ -43,7 +43,7 @@ from piccolo.engine.postgres import PostgresEngine
 from piccolo.table import Table, create_table_class, sort_table_classes
 from piccolo.utils.naming import _snake_to_camel
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.engine.base import Engine
 
 
@@ -61,13 +61,13 @@ class ConstraintTable:
 class RowMeta:
     column_default: str
     column_name: str
-    is_nullable: t.Literal["YES", "NO"]
+    is_nullable: Literal["YES", "NO"]
     table_name: str
-    character_maximum_length: t.Optional[int]
+    character_maximum_length: Optional[int]
     data_type: str
-    numeric_precision: t.Optional[t.Union[int, str]]
-    numeric_scale: t.Optional[t.Union[int, str]]
-    numeric_precision_radix: t.Optional[t.Literal[2, 10]]
+    numeric_precision: Optional[Union[int, str]]
+    numeric_scale: Optional[Union[int, str]]
+    numeric_precision_radix: Optional[Literal[2, 10]]
 
     @classmethod
     def get_column_name_str(cls) -> str:
@@ -76,10 +76,10 @@ class RowMeta:
 
 @dataclasses.dataclass
 class Constraint:
-    constraint_type: t.Literal["PRIMARY KEY", "UNIQUE", "FOREIGN KEY", "CHECK"]
+    constraint_type: Literal["PRIMARY KEY", "UNIQUE", "FOREIGN KEY", "CHECK"]
     constraint_name: str
-    constraint_schema: t.Optional[str] = None
-    column_name: t.Optional[str] = None
+    constraint_schema: Optional[str] = None
+    column_name: Optional[str] = None
 
 
 @dataclasses.dataclass
@@ -89,12 +89,12 @@ class TableConstraints:
     """
 
     tablename: str
-    constraints: t.List[Constraint]
+    constraints: list[Constraint]
 
     def __post_init__(self) -> None:
-        foreign_key_constraints: t.List[Constraint] = []
-        unique_constraints: t.List[Constraint] = []
-        primary_key_constraints: t.List[Constraint] = []
+        foreign_key_constraints: list[Constraint] = []
+        unique_constraints: list[Constraint] = []
+        primary_key_constraints: list[Constraint] = []
 
         for constraint in self.constraints:
             if constraint.constraint_type == "FOREIGN KEY":
@@ -141,7 +141,7 @@ class Trigger:
     table_name: str
     column_name: str
     on_update: str
-    on_delete: t.Literal[
+    on_delete: Literal[
         "NO ACTION", "RESTRICT", "CASCADE", "SET NULL", "SET_DEFAULT"
     ]
     references_table: str
@@ -155,14 +155,14 @@ class TableTriggers:
     """
 
     tablename: str
-    triggers: t.List[Trigger]
+    triggers: list[Trigger]
 
-    def get_column_triggers(self, column_name: str) -> t.List[Trigger]:
+    def get_column_triggers(self, column_name: str) -> list[Trigger]:
         return [i for i in self.triggers if i.column_name == column_name]
 
     def get_column_ref_trigger(
         self, column_name: str, references_table: str
-    ) -> t.Optional[Trigger]:
+    ) -> Optional[Trigger]:
         for trigger in self.triggers:
             if (
                 trigger.column_name == column_name
@@ -221,14 +221,14 @@ class TableIndexes:
     """
 
     tablename: str
-    indexes: t.List[Index]
+    indexes: list[Index]
 
-    def get_column_index(self, column_name: str) -> t.Optional[Index]:
+    def get_column_index(self, column_name: str) -> Optional[Index]:
         return next(
             (i for i in self.indexes if i.column_name == column_name), None
         )
 
-    def get_warnings(self) -> t.List[str]:
+    def get_warnings(self) -> list[str]:
         return list(
             itertools.chain(*[index.warnings for index in self.indexes])
         )
@@ -250,13 +250,13 @@ class OutputSchema:
         e.g. ["class MyTable(Table): ..."]
     """
 
-    imports: t.List[str] = dataclasses.field(default_factory=list)
-    warnings: t.List[str] = dataclasses.field(default_factory=list)
-    index_warnings: t.List[str] = dataclasses.field(default_factory=list)
-    trigger_warnings: t.List[str] = dataclasses.field(default_factory=list)
-    tables: t.List[t.Type[Table]] = dataclasses.field(default_factory=list)
+    imports: list[str] = dataclasses.field(default_factory=list)
+    warnings: list[str] = dataclasses.field(default_factory=list)
+    index_warnings: list[str] = dataclasses.field(default_factory=list)
+    trigger_warnings: list[str] = dataclasses.field(default_factory=list)
+    tables: list[type[Table]] = dataclasses.field(default_factory=list)
 
-    def get_table_with_name(self, tablename: str) -> t.Optional[t.Type[Table]]:
+    def get_table_with_name(self, tablename: str) -> Optional[type[Table]]:
         """
         Used to search for a table by name.
         """
@@ -287,7 +287,7 @@ class OutputSchema:
         return self
 
 
-COLUMN_TYPE_MAP: t.Dict[str, t.Type[Column]] = {
+COLUMN_TYPE_MAP: dict[str, type[Column]] = {
     "bigint": BigInt,
     "boolean": Boolean,
     "bytea": Bytea,
@@ -308,12 +308,12 @@ COLUMN_TYPE_MAP: t.Dict[str, t.Type[Column]] = {
 }
 
 # Re-map for Cockroach compatibility.
-COLUMN_TYPE_MAP_COCKROACH: t.Dict[str, t.Type[Column]] = {
+COLUMN_TYPE_MAP_COCKROACH: dict[str, type[Column]] = {
     **COLUMN_TYPE_MAP,
     **{"integer": BigInt, "json": JSONB},
 }
 
-COLUMN_DEFAULT_PARSER: t.Dict[t.Type[Column], t.Any] = {
+COLUMN_DEFAULT_PARSER: dict[type[Column], Any] = {
     BigInt: re.compile(r"^'?(?P<value>-?[0-9]\d*)'?(?:::bigint)?$"),
     Boolean: re.compile(r"^(?P<value>true|false)$"),
     Bytea: re.compile(r"'(?P<value>.*)'::bytea$"),
@@ -373,15 +373,15 @@ COLUMN_DEFAULT_PARSER: t.Dict[t.Type[Column], t.Any] = {
 }
 
 # Re-map for Cockroach compatibility.
-COLUMN_DEFAULT_PARSER_COCKROACH: t.Dict[t.Type[Column], t.Any] = {
+COLUMN_DEFAULT_PARSER_COCKROACH: dict[type[Column], Any] = {
     **COLUMN_DEFAULT_PARSER,
     BigInt: re.compile(r"^(?P<value>-?\d+)$"),
 }
 
 
 def get_column_default(
-    column_type: t.Type[Column], column_default: str, engine_type: str
-) -> t.Any:
+    column_type: type[Column], column_default: str, engine_type: str
+) -> Any:
     if engine_type == "cockroach":
         pat = COLUMN_DEFAULT_PARSER_COCKROACH.get(column_type)
     else:
@@ -455,7 +455,7 @@ def get_column_default(
                 return column_type.value_type(value["value"])
 
 
-INDEX_METHOD_MAP: t.Dict[str, IndexMethod] = {
+INDEX_METHOD_MAP: dict[str, IndexMethod] = {
     "btree": IndexMethod.btree,
     "hash": IndexMethod.hash,
     "gist": IndexMethod.gist,
@@ -465,7 +465,7 @@ INDEX_METHOD_MAP: t.Dict[str, IndexMethod] = {
 
 # 'Indices' seems old-fashioned and obscure in this context.
 async def get_indexes(  # noqa: E302
-    table_class: t.Type[Table], tablename: str, schema_name: str = "public"
+    table_class: type[Table], tablename: str, schema_name: str = "public"
 ) -> TableIndexes:
     """
     Get all of the constraints for a table.
@@ -492,7 +492,7 @@ async def get_indexes(  # noqa: E302
 
 
 async def get_fk_triggers(
-    table_class: t.Type[Table], tablename: str, schema_name: str = "public"
+    table_class: type[Table], tablename: str, schema_name: str = "public"
 ) -> TableTriggers:
     """
     Get all of the constraints for a table.
@@ -540,7 +540,7 @@ async def get_fk_triggers(
 
 
 async def get_constraints(
-    table_class: t.Type[Table], tablename: str, schema_name: str = "public"
+    table_class: type[Table], tablename: str, schema_name: str = "public"
 ) -> TableConstraints:
     """
     Get all of the constraints for a table.
@@ -572,8 +572,8 @@ async def get_constraints(
 
 
 async def get_tablenames(
-    table_class: t.Type[Table], schema_name: str = "public"
-) -> t.List[str]:
+    table_class: type[Table], schema_name: str = "public"
+) -> list[str]:
     """
     Get the tablenames for the schema.
 
@@ -598,8 +598,8 @@ async def get_tablenames(
 
 
 async def get_table_schema(
-    table_class: t.Type[Table], tablename: str, schema_name: str = "public"
-) -> t.List[RowMeta]:
+    table_class: type[Table], tablename: str, schema_name: str = "public"
+) -> list[RowMeta]:
     """
     Get the schema from the database.
 
@@ -629,7 +629,7 @@ async def get_table_schema(
 
 
 async def get_foreign_key_reference(
-    table_class: t.Type[Table], constraint_name: str, constraint_schema: str
+    table_class: type[Table], constraint_name: str, constraint_schema: str
 ) -> ConstraintTable:
     """
     Retrieve the name of the table that a foreign key is referencing.
@@ -652,7 +652,7 @@ async def get_foreign_key_reference(
 
 
 async def create_table_class_from_db(
-    table_class: t.Type[Table],
+    table_class: type[Table],
     tablename: str,
     schema_name: str,
     engine_type: str,
@@ -674,7 +674,7 @@ async def create_table_class_from_db(
         table_class=table_class, tablename=tablename, schema_name=schema_name
     )
 
-    columns: t.Dict[str, Column] = {}
+    columns: dict[str, Column] = {}
 
     for pg_row_meta in table_schema:
         data_type = pg_row_meta.data_type
@@ -692,7 +692,7 @@ async def create_table_class_from_db(
             )
             column_type = Column
 
-        kwargs: t.Dict[str, t.Any] = {
+        kwargs: dict[str, Any] = {
             "null": pg_row_meta.is_nullable == "YES",
             "unique": constraints.is_unique(column_name=column_name),
         }
@@ -721,7 +721,7 @@ async def create_table_class_from_db(
                 constraint_schema=fk_constraint_table.schema,
             )
             if constraint_table.name:
-                referenced_table: t.Union[str, t.Optional[t.Type[Table]]]
+                referenced_table: Union[str, Optional[type[Table]]]
 
                 if constraint_table.name == tablename:
                     referenced_output_schema = output_schema
@@ -805,9 +805,9 @@ async def create_table_class_from_db(
 
 async def get_output_schema(
     schema_name: str = "public",
-    include: t.Optional[t.List[str]] = None,
-    exclude: t.Optional[t.List[str]] = None,
-    engine: t.Optional[Engine] = None,
+    include: Optional[list[str]] = None,
+    exclude: Optional[list[str]] = None,
+    engine: Optional[Engine] = None,
 ) -> OutputSchema:
     """
     :param schema_name:

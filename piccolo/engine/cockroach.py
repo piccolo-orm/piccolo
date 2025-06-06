@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import typing as t
+from collections.abc import Sequence
+from typing import Any, Optional
 
 from piccolo.utils.lazy_loader import LazyLoader
 from piccolo.utils.warnings import Level, colored_warning
@@ -18,11 +19,11 @@ class CockroachEngine(PostgresEngine):
 
     def __init__(
         self,
-        config: t.Dict[str, t.Any],
-        extensions: t.Sequence[str] = (),
+        config: dict[str, Any],
+        extensions: Sequence[str] = (),
         log_queries: bool = False,
         log_responses: bool = False,
-        extra_nodes: t.Optional[t.Dict[str, CockroachEngine]] = None,
+        extra_nodes: Optional[dict[str, CockroachEngine]] = None,
     ) -> None:
         super().__init__(
             config=config,

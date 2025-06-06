@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
-import typing as t
+from typing import Optional
 
 from piccolo.table import TABLE_REGISTRY
 
@@ -25,7 +25,7 @@ class set_env_var:
     def set_var(self, value: str):
         os.environ[self.var_name] = value
 
-    def get_var(self) -> t.Optional[str]:
+    def get_var(self) -> Optional[str]:
         return os.environ.get(self.var_name)
 
     def __enter__(self):
@@ -39,7 +39,7 @@ class set_env_var:
             self.set_var(self.existing_value)
 
 
-def run_pytest(pytest_args: t.List[str]) -> int:  # pragma: no cover
+def run_pytest(pytest_args: list[str]) -> int:  # pragma: no cover
     try:
         import pytest
     except ImportError:

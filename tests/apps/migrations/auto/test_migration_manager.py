@@ -1,7 +1,7 @@
 import asyncio
 import random
-import typing as t
 from io import StringIO
+from typing import Optional
 from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import MagicMock, patch
 
@@ -307,7 +307,7 @@ class TestMigrationManager(DBTestCase):
             response = self.run_sync("SELECT * FROM manager;")
             self.assertEqual(response, [{"id": 1, "name": "Dave"}])
 
-        row_id: t.Optional[int] = None
+        row_id: Optional[int] = None
         if engine_is("cockroach"):
             row_id = self.run_sync(
                 "INSERT INTO manager VALUES (default, 'Dave', 'dave@me.com') RETURNING id;"  # noqa: E501

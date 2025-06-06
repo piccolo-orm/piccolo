@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ast
 import asyncio
-import typing as t
+from typing import cast
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
@@ -38,7 +38,7 @@ class TestGenerate(TestCase):
             table_class.alter().drop_table().run_sync()
 
     def _compare_table_columns(
-        self, table_1: t.Type[Table], table_2: t.Type[Table]
+        self, table_1: type[Table], table_2: type[Table]
     ):
         """
         Make sure that for each column in table_1, there is a corresponding
@@ -166,7 +166,7 @@ class TestGenerate(TestCase):
         # Make sure the 'references' value of the generated column is "self".
         for table in output_schema.tables:
             if table.__name__ == "MegaTable":
-                column = t.cast(
+                column = cast(
                     ForeignKey,
                     output_schema.tables[1]._meta.get_column_by_name(
                         "self_referencing_fk"

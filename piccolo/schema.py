@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-import typing as t
+from typing import Optional, cast
 
 from piccolo.engine.base import Engine
 from piccolo.engine.finder import engine_finder
@@ -110,7 +110,7 @@ class MoveTable(SchemaDDLBase):
         table_name: str,
         new_schema: str,
         db: Engine,
-        current_schema: t.Optional[str] = None,
+        current_schema: Optional[str] = None,
     ):
         self.table_name = table_name
         self.current_schema = current_schema
@@ -131,9 +131,9 @@ class ListTables:
         self.db = db
         self.schema_name = schema_name
 
-    async def run(self) -> t.List[str]:
-        response = t.cast(
-            t.List[t.Dict],
+    async def run(self) -> list[str]:
+        response = cast(
+            list[dict],
             await self.db.run_querystring(
                 QueryString(
                     """
@@ -158,9 +158,9 @@ class ListSchemas:
     def __init__(self, db: Engine):
         self.db = db
 
-    async def run(self) -> t.List[str]:
-        response = t.cast(
-            t.List[t.Dict],
+    async def run(self) -> list[str]:
+        response = cast(
+            list[dict],
             await self.db.run_querystring(
                 QueryString(
                     "SELECT schema_name FROM information_schema.schemata"
@@ -177,7 +177,7 @@ class ListSchemas:
 
 
 class SchemaManager:
-    def __init__(self, db: t.Optional[Engine] = None):
+    def __init__(self, db: Optional[Engine] = None):
         """
         A useful utility class for interacting with schemas.
 
@@ -267,7 +267,7 @@ class SchemaManager:
         self,
         table_name: str,
         new_schema: str,
-        current_schema: t.Optional[str] = None,
+        current_schema: Optional[str] = None,
     ) -> MoveTable:
         """
         Moves a table to a different schema::

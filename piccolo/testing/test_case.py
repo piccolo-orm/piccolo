@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import typing as t
+from typing import Optional
 from unittest import IsolatedAsyncioTestCase, TestCase
 
 from piccolo.engine import Engine, engine_finder
@@ -30,7 +30,7 @@ class TableTest(TestCase):
 
     """  # noqa: E501
 
-    tables: t.List[t.Type[Table]]
+    tables: list[type[Table]]
 
     def setUp(self) -> None:
         create_db_tables_sync(*self.tables)
@@ -54,7 +54,7 @@ class AsyncTableTest(IsolatedAsyncioTestCase):
 
     """
 
-    tables: t.List[t.Type[Table]]
+    tables: list[type[Table]]
 
     async def asyncSetUp(self) -> None:
         await create_db_tables(*self.tables)
@@ -106,7 +106,7 @@ class AsyncTransactionTest(IsolatedAsyncioTestCase):
     #
     #     ...
     #
-    db: t.Optional[Engine] = None
+    db: Optional[Engine] = None
 
     async def asyncSetUp(self) -> None:
         db = self.db or engine_finder()

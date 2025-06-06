@@ -2,8 +2,8 @@ import datetime
 import enum
 import random
 import string
-import typing as t
 import uuid
+from typing import Any
 
 
 class RandomBuilder:
@@ -36,7 +36,7 @@ class RandomBuilder:
         )
 
     @classmethod
-    def next_enum(cls, e: t.Type[enum.Enum]) -> t.Any:
+    def next_enum(cls, e: type[enum.Enum]) -> Any:
         return random.choice([item.value for item in e])
 
     @classmethod
