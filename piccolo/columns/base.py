@@ -357,9 +357,9 @@ class ColumnKwargs(t.TypedDict, total=False):
     index: bool
     index_method: IndexMethod
     required: bool
-    help_text: str
-    choices: t.Type[Enum]
-    db_column_name: str
+    help_text: t.Optional[str]
+    choices: t.Optional[t.Type[Enum]]
+    db_column_name: t.Optional[str]
     secret: bool
     auto_update: t.Any
 
