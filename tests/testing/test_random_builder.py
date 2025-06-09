@@ -35,6 +35,10 @@ class TestRandomBuilder(unittest.TestCase):
         random_float = RandomBuilder.next_float(maximum=1000)
         self.assertLessEqual(random_float, 1000)
 
+    def test_next_decimal(self):
+        random_decimal = RandomBuilder.next_decimal(5, 2)
+        self.assertLessEqual(random_decimal, 1000)
+
     def test_next_int(self):
         random_int = RandomBuilder.next_int()
         self.assertLessEqual(random_int, 2147483647)
@@ -52,3 +56,9 @@ class TestRandomBuilder(unittest.TestCase):
 
     def test_next_uuid(self):
         RandomBuilder.next_uuid()
+
+    def test_next_list(self):
+        for typ, callable_ in RandomBuilder.get_mapper().items():
+            random_list = RandomBuilder.next_list(callable_)
+            self.assertIsInstance(random_list, list)
+            self.assertTrue(all(isinstance(elem, typ) for elem in random_list))

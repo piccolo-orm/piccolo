@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import datetime
+import inspect
 import json
 import typing as t
 from decimal import Decimal
-from uuid import UUID
+from functools import partial
+from types import MappingProxyType
 
 from piccolo.columns import JSON, JSONB, Array, Column, ForeignKey
 from piccolo.custom_types import TableInstance
@@ -13,18 +15,8 @@ from piccolo.utils.sync import run_sync
 
 
 class ModelBuilder:
-    __DEFAULT_MAPPER: t.Dict[t.Type, t.Callable] = {
-        bool: RandomBuilder.next_bool,
-        bytes: RandomBuilder.next_bytes,
-        datetime.date: RandomBuilder.next_date,
-        datetime.datetime: RandomBuilder.next_datetime,
-        float: RandomBuilder.next_float,
-        int: RandomBuilder.next_int,
-        str: RandomBuilder.next_str,
-        datetime.time: RandomBuilder.next_time,
-        datetime.timedelta: RandomBuilder.next_timedelta,
-        UUID: RandomBuilder.next_uuid,
-    }
+    __DEFAULT_MAPPER: t.Dict[t.Type, t.Callable] = {}
+    __OTHER_MAPPER: t.Dict[t.Type, t.Callable] = {}
 
     @classmethod
     async def build(
@@ -106,7 +98,7 @@ class ModelBuilder:
         persist: bool = True,
     ) -> TableInstance:
         model = table_class(_ignore_missing=True)
-        defaults = {} if not defaults else defaults
+        defaults = defaults or {}
 
         for column, value in defaults.items():
             if isinstance(column, str):
@@ -159,29 +151,110 @@ class ModelBuilder:
             Column class to randomize.
 
         """
-        random_value: t.Any
-        if column.value_type == Decimal:
-            precision, scale = column._meta.params["digits"] or (4, 2)
-            random_value = RandomBuilder.next_float(
-                maximum=10 ** (precision - scale), scale=scale
-            )
-        elif column.value_type == datetime.datetime:
-            tz_aware = getattr(column, "tz_aware", False)
-            random_value = RandomBuilder.next_datetime(tz_aware=tz_aware)
-        elif column.value_type == list:
-            length = RandomBuilder.next_int(maximum=10)
-            base_type = t.cast(Array, column).base_column.value_type
-            random_value = [
-                cls.__DEFAULT_MAPPER[base_type]() for _ in range(length)
-            ]
-        elif column._meta.choices:
+        reg = cls.get_registry(column)
+        if column._meta.choices:
             random_value = RandomBuilder.next_enum(column._meta.choices)
         else:
-            random_value = cls.__DEFAULT_MAPPER[column.value_type]()
+            random_value = reg[column.value_type]()
 
-        if "length" in column._meta.params and isinstance(random_value, str):
-            return random_value[: column._meta.params["length"]]
-        elif isinstance(column, (JSON, JSONB)):
+        if isinstance(column, (JSON, JSONB)):
             return json.dumps({"value": random_value})
-
         return random_value
+
+    @classmethod
+    def get_registry(
+        cls, column: Column
+    ) -> MappingProxyType[t.Type, t.Callable]:
+        """
+        This serves as the public API allowing users to **view**
+        the complete registry for the specified column.
+
+        :param column:
+            Column class to randomize.
+
+        """
+        default_mapper = cls.__DEFAULT_MAPPER
+        if not default_mapper:  # execute once only
+            for typ, callable_ in RandomBuilder.get_mapper().items():
+                default_mapper[typ] = callable_
+
+        # order matters
+        reg = {
+            **default_mapper,
+            **cls._get_local_mapper(column),
+            **cls._get_other_mapper(column),
+        }
+
+        if column.value_type == list:
+            reg[list] = partial(
+                RandomBuilder.next_list,
+                reg[t.cast(Array, column).base_column.value_type],
+            )
+        return MappingProxyType(reg)
+
+    @classmethod
+    def _get_local_mapper(cls, column: Column) -> t.Dict[t.Type, t.Callable]:
+        """
+        This classmethod encapsulates the desired logic, utilizing information
+        from the column.
+
+        :param column:
+            Column class to randomize.
+        """
+        local_mapper: t.Dict[t.Type, t.Callable] = {}
+
+        precision, scale = column._meta.params.get("digits") or (4, 2)
+        local_mapper[Decimal] = partial(
+            RandomBuilder.next_decimal, precision, scale
+        )
+
+        tz_aware = getattr(column, "tz_aware", False)
+        local_mapper[datetime.datetime] = partial(
+            RandomBuilder.next_datetime, tz_aware
+        )
+
+        if _length := column._meta.params.get("length"):
+            local_mapper[str] = partial(RandomBuilder.next_str, _length)
+
+        return local_mapper
+
+    @classmethod
+    def _get_other_mapper(cls, column: Column) -> t.Dict[t.Type, t.Callable]:
+        """
+        This is a hook that allows users to register their own random type
+        callable. If the callable has a parameter named `column`, we assist
+        by injecting `column` using `partial`.
+
+        :param column:
+            Column class to randomize.
+
+        Examples::
+
+            # a callable not utilizing column information
+            ModelBuilder.register_random_type(str, lambda: "piccolo")
+
+            # a callable utilizing the column information
+            def next_str(column: Column) -> str:
+                length = column._meta.params.get("length", 5)
+                return "".join("a" for _ in range(length))
+            )
+            ModelBuilder.register_random_type(str, next_str)
+
+        """
+        other_mapper: t.Dict[t.Type, t.Callable] = {}
+        for typ, callable_ in cls.__OTHER_MAPPER.items():
+            sig = inspect.signature(callable_)
+            if sig.parameters.get("column"):
+                other_mapper[typ] = partial(callable_, column)
+            else:
+                other_mapper[typ] = callable_
+        return other_mapper
+
+    @classmethod
+    def register_type(cls, typ: t.Type, callable_: t.Callable) -> None:
+        cls.__OTHER_MAPPER[typ] = callable_
+
+    @classmethod
+    def unregister_type(cls, typ: t.Type) -> None:
+        if typ in cls.__OTHER_MAPPER:
+            del cls.__OTHER_MAPPER[typ]
