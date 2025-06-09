@@ -1,8 +1,17 @@
 from __future__ import annotations
 
 import itertools
-import typing as t
 from collections import OrderedDict
+from collections.abc import Callable, Sequence
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    Optional,
+    TypeVar,
+    Union,
+    overload,
+)
 
 from piccolo.columns import Column, Selectable
 from piccolo.columns.column_types import JSON, JSONB
@@ -33,7 +42,7 @@ from piccolo.utils.dictionary import make_nested
 from piccolo.utils.encoding import dump_json, load_json
 from piccolo.utils.warnings import colored_warning
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.custom_types import Combinable
     from piccolo.table import Table  # noqa
 
@@ -48,7 +57,7 @@ from piccolo.query.functions.aggregate import (  # noqa: F401
 
 
 class SelectRaw(Selectable):
-    def __init__(self, sql: str, *args: t.Any) -> None:
+    def __init__(self, sql: str, *args: Any) -> None:
         """
         Execute raw SQL in your select query.
 
@@ -69,7 +78,7 @@ class SelectRaw(Selectable):
         return self.querystring
 
 
-OptionalDict = t.Optional[t.Dict[str, t.Any]]
+OptionalDict = Optional[dict[str, Any]]
 
 
 class First(Proxy["Select", OptionalDict]):
@@ -82,7 +91,7 @@ class First(Proxy["Select", OptionalDict]):
 
     async def run(
         self,
-        node: t.Optional[str] = None,
+        node: Optional[str] = None,
         in_pool: bool = True,
     ) -> OptionalDict:
         rows = await self.query.run(
@@ -96,16 +105,16 @@ class First(Proxy["Select", OptionalDict]):
         return modified_response
 
 
-class SelectList(Proxy["Select", t.List]):
+class SelectList(Proxy["Select", list]):
     """
     This is for static typing purposes.
     """
 
     async def run(
         self,
-        node: t.Optional[str] = None,
+        node: Optional[str] = None,
         in_pool: bool = True,
-    ) -> t.List:
+    ) -> list:
         rows = await self.query.run(
             node=node, in_pool=in_pool, use_callbacks=False
         )
@@ -131,14 +140,14 @@ class SelectJSON(Proxy["Select", str]):
 
     async def run(
         self,
-        node: t.Optional[str] = None,
+        node: Optional[str] = None,
         in_pool: bool = True,
     ) -> str:
         rows = await self.query.run(node=node, in_pool=in_pool)
         return dump_json(rows)
 
 
-class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
+class Select(Query[TableInstance, list[dict[str, Any]]]):
     __slots__ = (
         "columns_list",
         "exclude_secrets",
@@ -157,8 +166,8 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
 
     def __init__(
         self,
-        table: t.Type[TableInstance],
-        columns_list: t.Optional[t.Sequence[t.Union[Selectable, str]]] = None,
+        table: type[TableInstance],
+        columns_list: Optional[Sequence[Union[Selectable, str]]] = None,
         exclude_secrets: bool = False,
         **kwargs,
     ):
@@ -181,22 +190,20 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
 
         self.columns(*columns_list)
 
-    def columns(self: Self, *columns: t.Union[Selectable, str]) -> Self:
+    def columns(self: Self, *columns: Union[Selectable, str]) -> Self:
         _columns = self.table._process_column_args(*columns)
         self.columns_delegate.columns(*_columns)
         return self
 
-    def distinct(
-        self: Self, *, on: t.Optional[t.Sequence[Column]] = None
-    ) -> Self:
+    def distinct(self: Self, *, on: Optional[Sequence[Column]] = None) -> Self:
         if on is not None and self.engine_type == "sqlite":
             raise NotImplementedError("SQLite doesn't support DISTINCT ON")
 
         self.distinct_delegate.distinct(enabled=True, on=on)
         return self
 
-    def group_by(self: Self, *columns: t.Union[Column, str]) -> Self:
-        _columns: t.List[Column] = [
+    def group_by(self: Self, *columns: Union[Column, str]) -> Self:
+        _columns: list[Column] = [
             i
             for i in self.table._process_column_args(*columns)
             if isinstance(i, Column)
@@ -225,9 +232,9 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
 
     def lock_rows(
         self: Self,
-        lock_strength: t.Union[
+        lock_strength: Union[
             LockStrength,
-            t.Literal[
+            Literal[
                 "UPDATE",
                 "NO KEY UPDATE",
                 "KEY SHARE",
@@ -236,7 +243,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         ] = LockStrength.update,
         nowait: bool = False,
         skip_locked: bool = False,
-        of: t.Tuple[type[Table], ...] = (),
+        of: tuple[type[Table], ...] = (),
     ) -> Self:
         self.lock_rows_delegate.lock_rows(
             lock_strength, nowait, skip_locked, of
@@ -245,8 +252,8 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
 
     async def _splice_m2m_rows(
         self,
-        response: t.List[t.Dict[str, t.Any]],
-        secondary_table: t.Type[Table],
+        response: list[dict[str, Any]],
+        secondary_table: type[Table],
         secondary_table_pk: Column,
         m2m_name: str,
         m2m_select: M2MSelect,
@@ -396,7 +403,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
             return response
 
     def order_by(
-        self: Self, *columns: t.Union[Column, str, OrderByRaw], ascending=True
+        self: Self, *columns: Union[Column, str, OrderByRaw], ascending=True
     ) -> Self:
         """
         :param columns:
@@ -405,7 +412,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
             which allows you for complex use cases like
             ``OrderByRaw('random()')``.
         """
-        _columns: t.List[t.Union[Column, OrderByRaw]] = []
+        _columns: list[Union[Column, OrderByRaw]] = []
         for column in columns:
             if isinstance(column, str):
                 _columns.append(self.table._meta.get_column_by_name(column))
@@ -415,25 +422,25 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         self.order_by_delegate.order_by(*_columns, ascending=ascending)
         return self
 
-    @t.overload
+    @overload
     def output(self: Self, *, as_list: bool) -> SelectList:  # type: ignore
         ...
 
-    @t.overload
+    @overload
     def output(self: Self, *, as_json: bool) -> SelectJSON:  # type: ignore
         ...
 
-    @t.overload
+    @overload
     def output(self: Self, *, load_json: bool) -> Self: ...
 
-    @t.overload
+    @overload
     def output(self: Self, *, load_json: bool, as_list: bool) -> SelectJSON:  # type: ignore  # noqa: E501
         ...
 
-    @t.overload
+    @overload
     def output(self: Self, *, load_json: bool, nested: bool) -> Self: ...
 
-    @t.overload
+    @overload
     def output(self: Self, *, nested: bool) -> Self: ...
 
     def output(
@@ -443,7 +450,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         as_json: bool = False,
         load_json: bool = False,
         nested: bool = False,
-    ) -> t.Union[Self, SelectJSON, SelectList]:
+    ) -> Union[Self, SelectJSON, SelectList]:
         self.output_delegate.output(
             as_list=as_list,
             as_json=as_json,
@@ -459,21 +466,21 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
 
     def callback(
         self: Self,
-        callbacks: t.Union[t.Callable, t.List[t.Callable]],
+        callbacks: Union[Callable, list[Callable]],
         *,
         on: CallbackType = CallbackType.success,
     ) -> Self:
         self.callback_delegate.callback(callbacks, on=on)
         return self
 
-    def where(self: Self, *where: t.Union[Combinable, QueryString]) -> Self:
+    def where(self: Self, *where: Union[Combinable, QueryString]) -> Self:
         self.where_delegate.where(*where)
         return self
 
     async def batch(
         self,
-        batch_size: t.Optional[int] = None,
-        node: t.Optional[str] = None,
+        batch_size: Optional[int] = None,
+        node: Optional[str] = None,
         **kwargs,
     ) -> BaseBatch:
         if batch_size:
@@ -484,14 +491,14 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
 
     ###########################################################################
 
-    def _get_joins(self, columns: t.Sequence[Selectable]) -> t.List[str]:
+    def _get_joins(self, columns: Sequence[Selectable]) -> list[str]:
         """
         A call chain is a sequence of foreign keys representing joins which
         need to be made to retrieve a column in another table.
         """
-        joins: t.List[str] = []
+        joins: list[str] = []
 
-        readables: t.List[Readable] = [
+        readables: list[Readable] = [
             i for i in columns if isinstance(i, Readable)
         ]
 
@@ -499,7 +506,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         for readable in readables:
             columns += readable.columns
 
-        querystrings: t.List[QueryString] = [
+        querystrings: list[QueryString] = [
             i for i in columns if isinstance(i, QueryString)
         ]
         for querystring in querystrings:
@@ -510,7 +517,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
             if not isinstance(column, Column):
                 continue
 
-            _joins: t.List[str] = []
+            _joins: list[str] = []
             for index, key in enumerate(column._meta.call_chain, 0):
                 table_alias = key.table_alias
 
@@ -542,7 +549,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         # Remove duplicates
         return list(OrderedDict.fromkeys(joins))
 
-    def _check_valid_call_chain(self, keys: t.Sequence[Selectable]) -> bool:
+    def _check_valid_call_chain(self, keys: Sequence[Selectable]) -> bool:
         for column in keys:
             if not isinstance(column, Column):
                 continue
@@ -556,7 +563,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         return True
 
     @property
-    def default_querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> Sequence[QueryString]:
         # JOIN
         self._check_valid_call_chain(self.columns_delegate.selected_columns)
 
@@ -567,7 +574,7 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
         )
 
         # Combine all joins, and remove duplicates
-        joins: t.List[str] = list(
+        joins: list[str] = list(
             OrderedDict.fromkeys(select_joins + where_joins + order_by_joins)
         )
 
@@ -584,14 +591,14 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
 
         engine_type = self.table._meta.db.engine_type
 
-        select_strings: t.List[QueryString] = [
+        select_strings: list[QueryString] = [
             c.get_select_string(engine_type=engine_type)
             for c in self.columns_delegate.selected_columns
         ]
 
         #######################################################################
 
-        args: t.List[t.Any] = []
+        args: list[Any] = []
 
         query = "SELECT"
 
@@ -658,11 +665,11 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
 
     async def run(
         self,
-        node: t.Optional[str] = None,
+        node: Optional[str] = None,
         in_pool: bool = True,
         use_callbacks: bool = True,
         **kwargs,
-    ) -> t.List[t.Dict[str, t.Any]]:
+    ) -> list[dict[str, Any]]:
         results = await super().run(node=node, in_pool=in_pool)
         if use_callbacks:
             return await self.callback_delegate.invoke(
@@ -672,4 +679,4 @@ class Select(Query[TableInstance, t.List[t.Dict[str, t.Any]]]):
             return results
 
 
-Self = t.TypeVar("Self", bound=Select)
+Self = TypeVar("Self", bound=Select)

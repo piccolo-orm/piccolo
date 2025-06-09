@@ -1,18 +1,19 @@
 from __future__ import annotations
 
-import typing as t
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any, TypeVar, Union
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.combination import And, Or, Where, WhereRaw  # noqa
     from piccolo.table import Table
 
 
-Combinable = t.Union["Where", "WhereRaw", "And", "Or"]
-Iterable = t.Iterable[t.Any]
+Combinable = Union["Where", "WhereRaw", "And", "Or"]
+CustomIterable = Iterable[Any]
 
 
-TableInstance = t.TypeVar("TableInstance", bound="Table")
-QueryResponseType = t.TypeVar("QueryResponseType", bound=t.Any)
+TableInstance = TypeVar("TableInstance", bound="Table")
+QueryResponseType = TypeVar("QueryResponseType", bound=Any)
 
 
 ###############################################################################

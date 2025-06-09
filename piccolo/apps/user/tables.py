@@ -8,7 +8,7 @@ import datetime
 import hashlib
 import logging
 import secrets
-import typing as t
+from typing import Any, Optional, Union
 
 from piccolo.columns import Boolean, Secret, Timestamp, Varchar
 from piccolo.columns.column_types import Serial
@@ -109,14 +109,14 @@ class BaseUser(Table, tablename="piccolo_user"):
     ###########################################################################
 
     @classmethod
-    def update_password_sync(cls, user: t.Union[str, int], password: str):
+    def update_password_sync(cls, user: Union[str, int], password: str):
         """
         A sync equivalent of :meth:`update_password`.
         """
         return run_sync(cls.update_password(user, password))
 
     @classmethod
-    async def update_password(cls, user: t.Union[str, int], password: str):
+    async def update_password(cls, user: Union[str, int], password: str):
         """
         The password is the raw password string e.g. ``'password123'``.
         The user can be a user ID, or a username.
@@ -139,7 +139,7 @@ class BaseUser(Table, tablename="piccolo_user"):
 
     @classmethod
     def hash_password(
-        cls, password: str, salt: str = "", iterations: t.Optional[int] = None
+        cls, password: str, salt: str = "", iterations: Optional[int] = None
     ) -> str:
         """
         Hashes the password, ready for storage, and for comparing during
@@ -167,7 +167,7 @@ class BaseUser(Table, tablename="piccolo_user"):
         ).hex()
         return f"pbkdf2_sha256${iterations}${salt}${hashed}"
 
-    def __setattr__(self, name: str, value: t.Any):
+    def __setattr__(self, name: str, value: Any):
         """
         Make sure that if the password is set, it's stored in a hashed form.
         """
@@ -177,7 +177,7 @@ class BaseUser(Table, tablename="piccolo_user"):
         super().__setattr__(name, value)
 
     @classmethod
-    def split_stored_password(cls, password: str) -> t.List[str]:
+    def split_stored_password(cls, password: str) -> list[str]:
         elements = password.split("$")
         if len(elements) != 4:
             raise ValueError("Unable to split hashed password")
@@ -186,14 +186,14 @@ class BaseUser(Table, tablename="piccolo_user"):
     ###########################################################################
 
     @classmethod
-    def login_sync(cls, username: str, password: str) -> t.Optional[int]:
+    def login_sync(cls, username: str, password: str) -> Optional[int]:
         """
         A sync equivalent of :meth:`login`.
         """
         return run_sync(cls.login(username, password))
 
     @classmethod
-    async def login(cls, username: str, password: str) -> t.Optional[int]:
+    async def login(cls, username: str, password: str) -> Optional[int]:
         """
         Make sure the user exists and the password is valid. If so, the
         ``last_login`` value is updated in the database.

@@ -6,11 +6,12 @@ import itertools
 import os
 import pathlib
 import traceback
-import typing as t
 from abc import abstractmethod
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from importlib import import_module
 from types import ModuleType
+from typing import Optional, Union, cast
 
 import black
 
@@ -45,12 +46,12 @@ def get_package(name: str) -> str:
 
 
 def table_finder(
-    modules: t.Sequence[str],
-    package: t.Optional[str] = None,
-    include_tags: t.Optional[t.Sequence[str]] = None,
-    exclude_tags: t.Optional[t.Sequence[str]] = None,
+    modules: Sequence[str],
+    package: Optional[str] = None,
+    include_tags: Optional[Sequence[str]] = None,
+    exclude_tags: Optional[Sequence[str]] = None,
     exclude_imported: bool = False,
-) -> t.List[t.Type[Table]]:
+) -> list[type[Table]]:
     """
     Rather than explicitly importing and registering table classes with the
     ``AppConfig``, ``table_finder`` can be used instead. It imports any ``Table``
@@ -95,7 +96,7 @@ def table_finder(
         # 'blog.tables', instead of ['blog.tables'].
         modules = [modules]
 
-    table_subclasses: t.List[t.Type[Table]] = []
+    table_subclasses: list[type[Table]] = []
 
     for module_path in modules:
         full_module_path = (
@@ -151,9 +152,9 @@ class Command:
 
     """
 
-    callable: t.Callable
-    command_name: t.Optional[str] = None
-    aliases: t.List[str] = field(default_factory=list)
+    callable: Callable
+    command_name: Optional[str] = None
+    aliases: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -181,12 +182,10 @@ class AppConfig:
     """
 
     app_name: str
-    migrations_folder_path: t.Union[str, pathlib.Path]
-    table_classes: t.List[t.Type[Table]] = field(default_factory=list)
-    migration_dependencies: t.List[str] = field(default_factory=list)
-    commands: t.List[t.Union[t.Callable, Command]] = field(
-        default_factory=list
-    )
+    migrations_folder_path: Union[str, pathlib.Path]
+    table_classes: list[type[Table]] = field(default_factory=list)
+    migration_dependencies: list[str] = field(default_factory=list)
+    commands: list[Union[Callable, Command]] = field(default_factory=list)
 
     @property
     def resolved_migrations_folder_path(self) -> str:
@@ -197,21 +196,21 @@ class AppConfig:
         )
 
     def __post_init__(self) -> None:
-        self._migration_dependency_app_configs: t.Optional[
-            t.List[AppConfig]
-        ] = None
+        self._migration_dependency_app_configs: Optional[list[AppConfig]] = (
+            None
+        )
 
-    def register_table(self, table_class: t.Type[Table]):
+    def register_table(self, table_class: type[Table]):
         self.table_classes.append(table_class)
         return table_class
 
-    def get_commands(self) -> t.List[Command]:
+    def get_commands(self) -> list[Command]:
         return [
             i if isinstance(i, Command) else Command(i) for i in self.commands
         ]
 
     @property
-    def migration_dependency_app_configs(self) -> t.List[AppConfig]:
+    def migration_dependency_app_configs(self) -> list[AppConfig]:
         """
         Get all of the ``AppConfig`` instances from this app's migration
         dependencies.
@@ -219,8 +218,8 @@ class AppConfig:
         # We cache the value so it's more efficient, and also so we can set the
         # underlying value in unit tests for easier mocking.
         if self._migration_dependency_app_configs is None:
-            modules: t.List[PiccoloAppModule] = [
-                t.cast(PiccoloAppModule, import_module(module_path))
+            modules: list[PiccoloAppModule] = [
+                cast(PiccoloAppModule, import_module(module_path))
                 for module_path in self.migration_dependencies
             ]
             self._migration_dependency_app_configs = [
@@ -229,7 +228,7 @@ class AppConfig:
 
         return self._migration_dependency_app_configs
 
-    def get_table_with_name(self, table_class_name: str) -> t.Type[Table]:
+    def get_table_with_name(self, table_class_name: str) -> type[Table]:
         """
         Returns a ``Table`` subclass with the given name from this app, if it
         exists. Otherwise raises a ``ValueError``.
@@ -256,9 +255,9 @@ class AppRegistry:
 
     """
 
-    def __init__(self, apps: t.Optional[t.List[str]] = None):
+    def __init__(self, apps: Optional[list[str]] = None):
         self.apps = apps or []
-        self.app_configs: t.Dict[str, AppConfig] = {}
+        self.app_configs: dict[str, AppConfig] = {}
         app_names = []
 
         for app in self.apps:
@@ -282,7 +281,7 @@ class AppRegistry:
         self._validate_app_names(app_names)
 
     @staticmethod
-    def _validate_app_names(app_names: t.List[str]):
+    def _validate_app_names(app_names: list[str]):
         """
         Raise a ValueError if an app_name is repeated.
         """
@@ -298,10 +297,10 @@ class AppRegistry:
                     "multiple times."
                 )
 
-    def get_app_config(self, app_name: str) -> t.Optional[AppConfig]:
+    def get_app_config(self, app_name: str) -> Optional[AppConfig]:
         return self.app_configs.get(app_name)
 
-    def get_table_classes(self, app_name: str) -> t.List[t.Type[Table]]:
+    def get_table_classes(self, app_name: str) -> list[type[Table]]:
         """
         Returns each Table subclass defined in the given app if it exists.
         Otherwise raises a ValueError.
@@ -317,7 +316,7 @@ class AppRegistry:
 
     def get_table_with_name(
         self, app_name: str, table_class_name: str
-    ) -> t.Optional[t.Type[Table]]:
+    ) -> Optional[type[Table]]:
         """
         Returns a Table subclass registered with the given app if it exists.
         Otherwise raises a ValueError.
@@ -357,8 +356,8 @@ class Finder:
         self.diagnose = diagnose
 
     def _deduplicate(
-        self, config_modules: t.List[PiccoloAppModule]
-    ) -> t.List[PiccoloAppModule]:
+        self, config_modules: list[PiccoloAppModule]
+    ) -> list[PiccoloAppModule]:
         """
         Remove all duplicates - just leaving the first instance.
         """
@@ -366,8 +365,8 @@ class Finder:
         return list({c: None for c in config_modules}.keys())
 
     def _import_app_modules(
-        self, config_module_paths: t.List[str]
-    ) -> t.List[PiccoloAppModule]:
+        self, config_module_paths: list[str]
+    ) -> list[PiccoloAppModule]:
         """
         Import all piccolo_app.py modules within your apps, and all
         dependencies.
@@ -376,7 +375,7 @@ class Finder:
 
         for config_module_path in config_module_paths:
             try:
-                config_module = t.cast(
+                config_module = cast(
                     PiccoloAppModule, import_module(config_module_path)
                 )
             except ImportError as e:
@@ -392,8 +391,8 @@ class Finder:
         return config_modules
 
     def get_piccolo_conf_module(
-        self, module_name: t.Optional[str] = None
-    ) -> t.Optional[PiccoloConfModule]:
+        self, module_name: Optional[str] = None
+    ) -> Optional[PiccoloConfModule]:
         """
         Searches the path for a 'piccolo_conf.py' module to import. The
         location searched can be overriden by:
@@ -413,7 +412,7 @@ class Finder:
             module_name = DEFAULT_MODULE_NAME
 
         try:
-            module = t.cast(PiccoloConfModule, import_module(module_name))
+            module = cast(PiccoloConfModule, import_module(module_name))
         except ModuleNotFoundError as exc:
             if self.diagnose:
                 colored_warning(
@@ -459,10 +458,10 @@ class Finder:
         return getattr(piccolo_conf_module, "APP_REGISTRY")
 
     def get_engine(
-        self, module_name: t.Optional[str] = None
-    ) -> t.Optional[Engine]:
+        self, module_name: Optional[str] = None
+    ) -> Optional[Engine]:
         piccolo_conf = self.get_piccolo_conf_module(module_name=module_name)
-        engine: t.Optional[Engine] = getattr(piccolo_conf, ENGINE_VAR, None)
+        engine: Optional[Engine] = getattr(piccolo_conf, ENGINE_VAR, None)
 
         if not engine:
             colored_warning(
@@ -478,7 +477,7 @@ class Finder:
 
         return engine
 
-    def get_app_modules(self) -> t.List[PiccoloAppModule]:
+    def get_app_modules(self) -> list[PiccoloAppModule]:
         """
         Returns the ``piccolo_app.py`` modules for each registered Piccolo app
         in your project.
@@ -493,7 +492,7 @@ class Finder:
 
     def get_app_names(
         self, sort_by_migration_dependencies: bool = True
-    ) -> t.List[str]:
+    ) -> list[str]:
         """
         Return all of the app names.
 
@@ -509,15 +508,15 @@ class Finder:
             )
         ]
 
-    def get_sorted_app_names(self) -> t.List[str]:
+    def get_sorted_app_names(self) -> list[str]:
         """
         Just here for backwards compatibility - use ``get_app_names`` directly.
         """
         return self.get_app_names(sort_by_migration_dependencies=True)
 
     def sort_app_configs(
-        self, app_configs: t.List[AppConfig]
-    ) -> t.List[AppConfig]:
+        self, app_configs: list[AppConfig]
+    ) -> list[AppConfig]:
         app_config_map = {
             app_config.app_name: app_config for app_config in app_configs
         }
@@ -536,7 +535,7 @@ class Finder:
 
     def get_app_configs(
         self, sort_by_migration_dependencies: bool = True
-    ) -> t.List[AppConfig]:
+    ) -> list[AppConfig]:
         """
         Returns a list of ``AppConfig``, optionally sorted by migration
         dependencies.
@@ -560,7 +559,7 @@ class Finder:
 
     def get_table_with_name(
         self, app_name: str, table_class_name: str
-    ) -> t.Type[Table]:
+    ) -> type[Table]:
         """
         Returns a ``Table`` class registered with the given app if it exists.
         Otherwise it raises an ``ValueError``.
@@ -572,9 +571,9 @@ class Finder:
 
     def get_table_classes(
         self,
-        include_apps: t.Optional[t.List[str]] = None,
-        exclude_apps: t.Optional[t.List[str]] = None,
-    ) -> t.List[t.Type[Table]]:
+        include_apps: Optional[list[str]] = None,
+        exclude_apps: Optional[list[str]] = None,
+    ) -> list[type[Table]]:
         """
         Returns all ``Table`` classes registered with the given apps. If
         ``include_apps`` is ``None``, then ``Table`` classes will be returned
@@ -590,7 +589,7 @@ class Finder:
             if exclude_apps:
                 app_names = [i for i in app_names if i not in exclude_apps]
 
-        tables: t.List[t.Type[Table]] = []
+        tables: list[type[Table]] = []
 
         for app_name in app_names:
             app_config = self.get_app_config(app_name=app_name)
@@ -604,7 +603,7 @@ class Finder:
 
 class PiccoloConfUpdater:
 
-    def __init__(self, piccolo_conf_path: t.Optional[str] = None):
+    def __init__(self, piccolo_conf_path: Optional[str] = None):
         """
         :param piccolo_conf_path:
             The path to the piccolo_conf.py (e.g. `./piccolo_conf.py`). If not

@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import datetime
 import json
-import typing as t
+from collections.abc import Callable
 from decimal import Decimal
+from typing import Any, Optional, Union, cast
 from uuid import UUID
 
 from piccolo.columns import JSON, JSONB, Array, Column, ForeignKey
@@ -13,7 +14,7 @@ from piccolo.utils.sync import run_sync
 
 
 class ModelBuilder:
-    __DEFAULT_MAPPER: t.Dict[t.Type, t.Callable] = {
+    __DEFAULT_MAPPER: dict[type, Callable] = {
         bool: RandomBuilder.next_bool,
         bytes: RandomBuilder.next_bytes,
         datetime.date: RandomBuilder.next_date,
@@ -29,8 +30,8 @@ class ModelBuilder:
     @classmethod
     async def build(
         cls,
-        table_class: t.Type[TableInstance],
-        defaults: t.Optional[t.Dict[t.Union[Column, str], t.Any]] = None,
+        table_class: type[TableInstance],
+        defaults: Optional[dict[Union[Column, str], Any]] = None,
         persist: bool = True,
         minimal: bool = False,
     ) -> TableInstance:
@@ -80,8 +81,8 @@ class ModelBuilder:
     @classmethod
     def build_sync(
         cls,
-        table_class: t.Type[TableInstance],
-        defaults: t.Optional[t.Dict[t.Union[Column, str], t.Any]] = None,
+        table_class: type[TableInstance],
+        defaults: Optional[dict[Union[Column, str], Any]] = None,
         persist: bool = True,
         minimal: bool = False,
     ) -> TableInstance:
@@ -100,8 +101,8 @@ class ModelBuilder:
     @classmethod
     async def _build(
         cls,
-        table_class: t.Type[TableInstance],
-        defaults: t.Optional[t.Dict[t.Union[Column, str], t.Any]] = None,
+        table_class: type[TableInstance],
+        defaults: Optional[dict[Union[Column, str], Any]] = None,
         minimal: bool = False,
         persist: bool = True,
     ) -> TableInstance:
@@ -151,7 +152,7 @@ class ModelBuilder:
         return model
 
     @classmethod
-    def _randomize_attribute(cls, column: Column) -> t.Any:
+    def _randomize_attribute(cls, column: Column) -> Any:
         """
         Generate a random value for a column and apply formatting.
 
@@ -159,7 +160,7 @@ class ModelBuilder:
             Column class to randomize.
 
         """
-        random_value: t.Any
+        random_value: Any
         if column.value_type == Decimal:
             precision, scale = column._meta.params["digits"] or (4, 2)
             random_value = RandomBuilder.next_float(
@@ -170,7 +171,7 @@ class ModelBuilder:
             random_value = RandomBuilder.next_datetime(tz_aware=tz_aware)
         elif column.value_type == list:
             length = RandomBuilder.next_int(maximum=10)
-            base_type = t.cast(Array, column).base_column.value_type
+            base_type = cast(Array, column).base_column.value_type
             random_value = [
                 cls.__DEFAULT_MAPPER[base_type]() for _ in range(length)
             ]
