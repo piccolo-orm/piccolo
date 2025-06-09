@@ -263,9 +263,9 @@ class TestFromPath(AsyncTableTest):
 
     tables = [RecordingStudio, Instrument]
 
-    async def test_from_path(self):
+    async def test_select(self):
         """
-        Make sure ``from_path`` can be used for complex nested data.
+        Make sure ``from_path`` can be used when selecting complex nested data.
         """
         await RecordingStudio(
             name="Abbey Road",
@@ -284,3 +284,58 @@ class TestFromPath(AsyncTableTest):
         ).output(load_json=True)
         assert response is not None
         self.assertListEqual(response, [{"technician_name": "Alice Jones"}])
+
+    async def test_where(self):
+        """
+        Make sure ``from_path`` can be used in a ``where`` clause.
+        """
+        await RecordingStudio.insert(
+            RecordingStudio(
+                name="Abbey Road",
+                facilities={
+                    "restaurant": False,
+                    "mixing_desk": False,
+                    "instruments": {"electric_guitars": 4, "drum_kits": 2},
+                    "technicians": [
+                        {"name": "Alice Jones"},
+                        {"name": "Bob Williams"},
+                    ],
+                },
+            ),
+            RecordingStudio(
+                name="Electric Lady",
+                facilities={
+                    "restaurant": True,
+                    "mixing_desk": True,
+                    "instruments": {"electric_guitars": 6, "drum_kits": 3},
+                    "technicians": [
+                        {"name": "Frank Smith"},
+                    ],
+                },
+            ),
+        )
+
+        # Test array indexing
+        response = (
+            await RecordingStudio.select(RecordingStudio.name)
+            .where(
+                RecordingStudio.facilities.from_path(
+                    ["technicians", 0, "name"]
+                )
+                == "Alice Jones"
+            )
+            .output(load_json=True)
+        )
+        assert response is not None
+        self.assertListEqual(response, [{"name": "Abbey Road"}])
+
+        # Test boolean
+        response = (
+            await RecordingStudio.select(RecordingStudio.name)
+            .where(
+                RecordingStudio.facilities.from_path(["restaurant"]).eq(True)
+            )
+            .output(load_json=True)
+        )
+        assert response is not None
+        self.assertListEqual(response, [{"name": "Electric Lady"}])
