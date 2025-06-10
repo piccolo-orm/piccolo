@@ -5,7 +5,7 @@ Note: We need type annotations on the function, otherwise MyPy treats every
 type inside the function as Any.
 """
 
-import typing as t
+from typing import TYPE_CHECKING, Any, Optional
 
 from typing_extensions import assert_type
 
@@ -15,25 +15,25 @@ from piccolo.utils.sync import run_sync
 
 from .example_apps.music.tables import Band, Concert, Manager
 
-if t.TYPE_CHECKING:
+if TYPE_CHECKING:
 
     async def objects() -> None:
         query = Band.objects()
-        assert_type(await query, t.List[Band])
-        assert_type(await query.run(), t.List[Band])
-        assert_type(query.run_sync(), t.List[Band])
+        assert_type(await query, list[Band])
+        assert_type(await query.run(), list[Band])
+        assert_type(query.run_sync(), list[Band])
 
     async def objects_first() -> None:
         query = Band.objects().first()
-        assert_type(await query, t.Optional[Band])
-        assert_type(await query.run(), t.Optional[Band])
-        assert_type(query.run_sync(), t.Optional[Band])
+        assert_type(await query, Optional[Band])
+        assert_type(await query.run(), Optional[Band])
+        assert_type(query.run_sync(), Optional[Band])
 
     async def get() -> None:
         query = Band.objects().get(Band.name == "Pythonistas")
-        assert_type(await query, t.Optional[Band])
-        assert_type(await query.run(), t.Optional[Band])
-        assert_type(query.run_sync(), t.Optional[Band])
+        assert_type(await query, Optional[Band])
+        assert_type(await query.run(), Optional[Band])
+        assert_type(query.run_sync(), Optional[Band])
 
     async def foreign_key_reference() -> None:
         assert_type(Band.manager, ForeignKey[Manager])
@@ -48,13 +48,13 @@ if t.TYPE_CHECKING:
         band = await Band.objects().get(Band.name == "Pythonistas")
         assert band is not None
         manager = await band.get_related(Band.manager)
-        assert_type(manager, t.Optional[Manager])
+        assert_type(manager, Optional[Manager])
 
     async def get_related_multiple_levels() -> None:
         concert = await Concert.objects().first()
         assert concert is not None
         manager = await concert.get_related(Concert.band_1._.manager)
-        assert_type(manager, t.Optional[Manager])
+        assert_type(manager, Optional[Manager])
 
     async def get_or_create() -> None:
         query = Band.objects().get_or_create(Band.name == "Pythonistas")
@@ -64,22 +64,22 @@ if t.TYPE_CHECKING:
 
     async def select() -> None:
         query = Band.select()
-        assert_type(await query, t.List[t.Dict[str, t.Any]])
-        assert_type(await query.run(), t.List[t.Dict[str, t.Any]])
-        assert_type(query.run_sync(), t.List[t.Dict[str, t.Any]])
+        assert_type(await query, list[dict[str, Any]])
+        assert_type(await query.run(), list[dict[str, Any]])
+        assert_type(query.run_sync(), list[dict[str, Any]])
 
     async def select_first() -> None:
         query = Band.select().first()
-        assert_type(await query, t.Optional[t.Dict[str, t.Any]])
-        assert_type(await query.run(), t.Optional[t.Dict[str, t.Any]])
-        assert_type(query.run_sync(), t.Optional[t.Dict[str, t.Any]])
+        assert_type(await query, Optional[dict[str, Any]])
+        assert_type(await query.run(), Optional[dict[str, Any]])
+        assert_type(query.run_sync(), Optional[dict[str, Any]])
 
     async def select_list() -> None:
         query = Band.select(Band.name).output(as_list=True)
-        assert_type(await query, t.List)
-        assert_type(await query.run(), t.List)
-        assert_type(query.run_sync(), t.List)
-        # The next step would be to detect that it's t.List[str], but might not
+        assert_type(await query, list)
+        assert_type(await query.run(), list)
+        assert_type(query.run_sync(), list)
+        # The next step would be to detect that it's list[str], but might not
         # be possible.
 
     async def select_as_json() -> None:
@@ -105,9 +105,9 @@ if t.TYPE_CHECKING:
 
     async def update() -> None:
         query = Band.update()
-        assert_type(await query, t.List[t.Any])
-        assert_type(await query.run(), t.List[t.Any])
-        assert_type(query.run_sync(), t.List[t.Any])
+        assert_type(await query, list[Any])
+        assert_type(await query.run(), list[Any])
+        assert_type(query.run_sync(), list[Any])
 
     async def insert() -> None:
         # This is correct:

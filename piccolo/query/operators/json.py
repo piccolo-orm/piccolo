@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-import typing as t
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from piccolo.querystring import QueryString
 from piccolo.utils.encoding import dump_json
 
-if t.TYPE_CHECKING:
+if TYPE_CHECKING:
     from piccolo.columns.column_types import JSON
 
 
 class JSONQueryString(QueryString):
 
-    def clean_value(self, value: t.Any):
+    def clean_value(self, value: Any):
         if not isinstance(value, (str, QueryString)):
             value = dump_json(value)
         return value
@@ -42,9 +42,9 @@ class GetChildElement(JSONQueryString):
 
     def __init__(
         self,
-        identifier: t.Union[JSON, QueryString],
-        key: t.Union[str, int, QueryString],
-        alias: t.Optional[str] = None,
+        identifier: Union[JSON, QueryString],
+        key: Union[str, int, QueryString],
+        alias: Optional[str] = None,
     ):
         if isinstance(key, int):
             # asyncpg only accepts integer keys if we explicitly mark it as an
@@ -53,7 +53,7 @@ class GetChildElement(JSONQueryString):
 
         super().__init__("{} -> {}", identifier, key, alias=alias)
 
-    def arrow(self, key: t.Union[str, int, QueryString]) -> GetChildElement:
+    def arrow(self, key: Union[str, int, QueryString]) -> GetChildElement:
         """
         This allows you to drill multiple levels deep into a JSON object if
         needed.
@@ -77,7 +77,7 @@ class GetChildElement(JSONQueryString):
         return GetChildElement(identifier=self, key=key, alias=self._alias)
 
     def __getitem__(
-        self, value: t.Union[str, int, QueryString]
+        self, value: Union[str, int, QueryString]
     ) -> GetChildElement:
         return GetChildElement(identifier=self, key=value, alias=self._alias)
 
@@ -94,9 +94,9 @@ class GetElementFromPath(JSONQueryString):
 
     def __init__(
         self,
-        identifier: t.Union[JSON, QueryString],
-        path: t.List[t.Union[str, int]],
-        alias: t.Optional[str] = None,
+        identifier: Union[JSON, QueryString],
+        path: list[Union[str, int]],
+        alias: Optional[str] = None,
     ):
         """
         :param path:

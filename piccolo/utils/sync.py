@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import asyncio
-import typing as t
+from collections.abc import Coroutine
 from concurrent.futures import Future, ThreadPoolExecutor
+from typing import Any, TypeVar
 
-ReturnType = t.TypeVar("ReturnType")
+ReturnType = TypeVar("ReturnType")
 
 
 def run_sync(
-    coroutine: t.Coroutine[t.Any, t.Any, ReturnType],
+    coroutine: Coroutine[Any, Any, ReturnType],
 ) -> ReturnType:
     """
     Run the coroutine synchronously - trying to accommodate as many edge cases

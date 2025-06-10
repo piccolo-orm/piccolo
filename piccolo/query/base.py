@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import typing as t
+from collections.abc import Generator, Sequence
 from time import time
+from typing import TYPE_CHECKING, Any, Generic, Optional, Union, cast
 
 from piccolo.columns.column_types import JSON, JSONB
 from piccolo.custom_types import QueryResponseType, TableInstance
@@ -12,7 +13,7 @@ from piccolo.utils.encoding import load_json
 from piccolo.utils.objects import make_nested_object
 from piccolo.utils.sync import run_sync
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.query.mixins import OutputDelegate
     from piccolo.table import Table  # noqa
 
@@ -26,13 +27,13 @@ class Timer:
         print(f"Duration: {self.end - self.start}s")
 
 
-class Query(t.Generic[TableInstance, QueryResponseType]):
+class Query(Generic[TableInstance, QueryResponseType]):
     __slots__ = ("table", "_frozen_querystrings")
 
     def __init__(
         self,
-        table: t.Type[TableInstance],
-        frozen_querystrings: t.Optional[t.Sequence[QueryString]] = None,
+        table: type[TableInstance],
+        frozen_querystrings: Optional[Sequence[QueryString]] = None,
     ):
         self.table = table
         self._frozen_querystrings = frozen_querystrings
@@ -55,21 +56,21 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
         if hasattr(self, "_raw_response_callback"):
             self._raw_response_callback(raw)
 
-        output: t.Optional[OutputDelegate] = getattr(
+        output: Optional[OutputDelegate] = getattr(
             self, "output_delegate", None
         )
 
         #######################################################################
 
         if output and output._output.load_json:
-            columns_delegate: t.Optional[ColumnsDelegate] = getattr(
+            columns_delegate: Optional[ColumnsDelegate] = getattr(
                 self, "columns_delegate", None
             )
 
-            json_column_names: t.List[str] = []
+            json_column_names: list[str] = []
 
             if columns_delegate is not None:
-                json_columns: t.List[t.Union[JSON, JSONB]] = []
+                json_columns: list[Union[JSON, JSONB]] = []
 
                 for column in columns_delegate.selected_columns:
                     if isinstance(column, (JSON, JSONB)):
@@ -107,12 +108,12 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
         if output:
             if output._output.as_objects:
                 if output._output.nested:
-                    return t.cast(
+                    return cast(
                         QueryResponseType,
                         [make_nested_object(row, self.table) for row in raw],
                     )
                 else:
-                    return t.cast(
+                    return cast(
                         QueryResponseType,
                         [
                             self.table(**columns, _exists_in_db=True)
@@ -120,7 +121,7 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
                         ],
                     )
 
-        return t.cast(QueryResponseType, raw)
+        return cast(QueryResponseType, raw)
 
     def _validate(self):
         """
@@ -130,7 +131,7 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
         """
         pass
 
-    def __await__(self) -> t.Generator[None, None, QueryResponseType]:
+    def __await__(self) -> Generator[None, None, QueryResponseType]:
         """
         If the user doesn't explicity call .run(), proxy to it as a
         convenience.
@@ -138,7 +139,7 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
         return self.run().__await__()
 
     async def _run(
-        self, node: t.Optional[str] = None, in_pool: bool = True
+        self, node: Optional[str] = None, in_pool: bool = True
     ) -> QueryResponseType:
         """
         Run the query on the database.
@@ -184,16 +185,16 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
                 processed_results = await self._process_results(results)
 
                 responses.append(processed_results)
-            return t.cast(QueryResponseType, responses)
+            return cast(QueryResponseType, responses)
 
     async def run(
-        self, node: t.Optional[str] = None, in_pool: bool = True
+        self, node: Optional[str] = None, in_pool: bool = True
     ) -> QueryResponseType:
         return await self._run(node=node, in_pool=in_pool)
 
     def run_sync(
         self,
-        node: t.Optional[str] = None,
+        node: Optional[str] = None,
         timed: bool = False,
         in_pool: bool = False,
     ) -> QueryResponseType:
@@ -217,7 +218,7 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
         with Timer():
             return run_sync(coroutine)
 
-    async def response_handler(self, response: t.List) -> t.Any:
+    async def response_handler(self, response: list) -> Any:
         """
         Subclasses can override this to modify the raw response returned by
         the database driver.
@@ -227,23 +228,23 @@ class Query(t.Generic[TableInstance, QueryResponseType]):
     ###########################################################################
 
     @property
-    def sqlite_querystrings(self) -> t.Sequence[QueryString]:
+    def sqlite_querystrings(self) -> Sequence[QueryString]:
         raise NotImplementedError
 
     @property
-    def postgres_querystrings(self) -> t.Sequence[QueryString]:
+    def postgres_querystrings(self) -> Sequence[QueryString]:
         raise NotImplementedError
 
     @property
-    def cockroach_querystrings(self) -> t.Sequence[QueryString]:
+    def cockroach_querystrings(self) -> Sequence[QueryString]:
         raise NotImplementedError
 
     @property
-    def default_querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> Sequence[QueryString]:
         raise NotImplementedError
 
     @property
-    def querystrings(self) -> t.Sequence[QueryString]:
+    def querystrings(self) -> Sequence[QueryString]:
         """
         Calls the correct underlying method, depending on the current engine.
         """
@@ -367,7 +368,7 @@ class FrozenQuery:
 class DDL:
     __slots__ = ("table",)
 
-    def __init__(self, table: t.Type[Table], **kwargs):
+    def __init__(self, table: type[Table], **kwargs):
         self.table = table
 
     @property
@@ -379,23 +380,23 @@ class DDL:
             raise ValueError("Engine isn't defined.")
 
     @property
-    def sqlite_ddl(self) -> t.Sequence[str]:
+    def sqlite_ddl(self) -> Sequence[str]:
         raise NotImplementedError
 
     @property
-    def postgres_ddl(self) -> t.Sequence[str]:
+    def postgres_ddl(self) -> Sequence[str]:
         raise NotImplementedError
 
     @property
-    def cockroach_ddl(self) -> t.Sequence[str]:
+    def cockroach_ddl(self) -> Sequence[str]:
         raise NotImplementedError
 
     @property
-    def default_ddl(self) -> t.Sequence[str]:
+    def default_ddl(self) -> Sequence[str]:
         raise NotImplementedError
 
     @property
-    def ddl(self) -> t.Sequence[str]:
+    def ddl(self) -> Sequence[str]:
         """
         Calls the correct underlying method, depending on the current engine.
         """

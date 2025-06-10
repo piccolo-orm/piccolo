@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-import typing as t
+from typing import TYPE_CHECKING, Any, Union
 
 from piccolo.columns.operators.comparison import (
     ComparisonOperator,
     Equal,
     IsNull,
 )
-from piccolo.custom_types import Combinable, Iterable
+from piccolo.custom_types import Combinable, CustomIterable
 from piccolo.querystring import QueryString
 from piccolo.utils.sql_values import convert_to_sql_value
 
-if t.TYPE_CHECKING:
+if TYPE_CHECKING:
     from piccolo.columns.base import Column
 
 
@@ -59,7 +59,7 @@ class Combination(CombinableMixin):
 class And(Combination):
     operator = "AND"
 
-    def get_column_values(self) -> t.Dict[Column, t.Any]:
+    def get_column_values(self) -> dict[Column, Any]:
         """
         This is used by `get_or_create` to know which values to assign if
         the row doesn't exist in the database.
@@ -109,7 +109,7 @@ UNDEFINED = Undefined()
 class WhereRaw(CombinableMixin):
     __slots__ = ("querystring",)
 
-    def __init__(self, sql: str, *args: t.Any) -> None:
+    def __init__(self, sql: str, *args: Any) -> None:
         """
         Execute raw SQL queries in your where clause. Use with caution!
 
@@ -145,9 +145,9 @@ class Where(CombinableMixin):
     def __init__(
         self,
         column: Column,
-        value: t.Any = UNDEFINED,
-        values: t.Union[Iterable, Undefined] = UNDEFINED,
-        operator: t.Type[ComparisonOperator] = ComparisonOperator,
+        value: Any = UNDEFINED,
+        values: Union[CustomIterable, Undefined] = UNDEFINED,
+        operator: type[ComparisonOperator] = ComparisonOperator,
     ) -> None:
         """
         We use the UNDEFINED value to show the value was deliberately
@@ -163,7 +163,7 @@ class Where(CombinableMixin):
 
         self.operator = operator
 
-    def clean_value(self, value: t.Any) -> t.Any:
+    def clean_value(self, value: Any) -> Any:
         """
         If a where clause contains a ``Table`` instance, we should convert that
         to a column reference. For example:
@@ -200,7 +200,7 @@ class Where(CombinableMixin):
 
     @property
     def querystring(self) -> QueryString:
-        args: t.List[t.Any] = []
+        args: list[Any] = []
         if self.value != UNDEFINED:
             args.append(self.value)
 
@@ -219,7 +219,7 @@ class Where(CombinableMixin):
 
     @property
     def querystring_for_update_and_delete(self) -> QueryString:
-        args: t.List[t.Any] = []
+        args: list[Any] = []
         if self.value != UNDEFINED:
             args.append(self.value)
 

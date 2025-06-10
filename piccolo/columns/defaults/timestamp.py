@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import datetime
-import typing as t
+from collections.abc import Callable
 from enum import Enum
+from typing import Union
 
 from .base import Default
 
@@ -134,7 +135,7 @@ class DatetimeDefault:
 
 ###############################################################################
 
-TimestampArg = t.Union[
+TimestampArg = Union[
     TimestampCustom,
     TimestampNow,
     TimestampOffset,
@@ -142,7 +143,7 @@ TimestampArg = t.Union[
     None,
     datetime.datetime,
     DatetimeDefault,
-    t.Callable[[], datetime.datetime],
+    Callable[[], datetime.datetime],
 ]
 
 

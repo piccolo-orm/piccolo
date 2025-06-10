@@ -1,4 +1,4 @@
-import typing as t
+from typing import Optional, Union
 
 from piccolo.columns.base import Column
 from piccolo.querystring import QueryString
@@ -9,8 +9,8 @@ class Function(QueryString):
 
     def __init__(
         self,
-        identifier: t.Union[Column, QueryString, str],
-        alias: t.Optional[str] = None,
+        identifier: Union[Column, QueryString, str],
+        alias: Optional[str] = None,
     ):
         alias = alias or self.__class__.__name__.lower()
 
