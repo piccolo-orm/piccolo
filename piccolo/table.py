@@ -93,7 +93,9 @@ class TableMeta:
     tags: list[str] = field(default_factory=list)
     help_text: Optional[str] = None
     _db: Optional[Engine] = None
-    m2m_relationships: list[M2M] = field(default_factory=list)
+    m2m_relationships: list[Union[M2M, ReverseLookup]] = field(
+        default_factory=list
+    )
     schema: Optional[str] = None
 
     # Records reverse foreign key relationships - i.e. when the current table
@@ -283,7 +285,7 @@ class Table(metaclass=TableMetaclass):
         email_columns: list[Email] = []
         auto_update_columns: list[Column] = []
         primary_key: Optional[Column] = None
-        m2m_relationships: list[M2M] = []
+        m2m_relationships: list[Union[M2M, ReverseLookup]] = []
 
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]

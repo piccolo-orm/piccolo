@@ -257,7 +257,7 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
         secondary_table: type[Table],
         secondary_table_pk: Column,
         related_name: str,
-        related_select: t.Union[M2MSelect, ReverseLookupSelect],
+        related_select: Union[M2MSelect, ReverseLookupSelect],
         as_list: bool = False,
     ):
         row_ids = list(
@@ -296,7 +296,7 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
             ]
         return response
 
-    async def response_handler(self, response: t.List[t.Dict[str, t.Any]]):
+    async def response_handler(self, response: list[dict[str, Any]]):
         m2m_selects = [
             i
             for i in self.columns_delegate.selected_columns
