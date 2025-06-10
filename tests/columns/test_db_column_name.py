@@ -1,4 +1,4 @@
-import typing as t
+from typing import Optional
 
 from piccolo.columns.column_types import ForeignKey, Integer, Serial, Varchar
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
@@ -35,7 +35,7 @@ class TestDBColumnName(DBTestCase):
     def tearDown(self):
         drop_db_tables_sync(Band, Manager)
 
-    def insert_band(self, manager: t.Optional[Manager] = None) -> Band:
+    def insert_band(self, manager: Optional[Manager] = None) -> Band:
         band = Band(name="Pythonistas", popularity=1000, manager=manager)
         band.save().run_sync()
         return band

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import datetime
-import typing as t
+from collections.abc import Callable
 from enum import Enum
+from typing import Union
 
 from .base import Default
 
@@ -75,12 +76,12 @@ class IntervalCustom(Default):
 
 ###############################################################################
 
-IntervalArg = t.Union[
+IntervalArg = Union[
     IntervalCustom,
     Enum,
     None,
     datetime.timedelta,
-    t.Callable[[], datetime.timedelta],
+    Callable[[], datetime.timedelta],
 ]
 
 

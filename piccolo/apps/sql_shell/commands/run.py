@@ -2,7 +2,7 @@ import os
 import signal
 import subprocess
 import sys
-import typing as t
+from typing import cast
 
 from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
@@ -24,7 +24,7 @@ def run() -> None:
 
     # Heavily inspired by Django's dbshell command
     if isinstance(engine, PostgresEngine):
-        engine = t.cast(PostgresEngine, engine)
+        engine = cast(PostgresEngine, engine)
 
         args = ["psql"]
 
@@ -56,9 +56,9 @@ def run() -> None:
             signal.signal(signal.SIGINT, sigint_handler)
 
     elif isinstance(engine, SQLiteEngine):
-        engine = t.cast(SQLiteEngine, engine)
+        engine = cast(SQLiteEngine, engine)
 
-        database = t.cast(str, engine.connection_kwargs.get("database"))
+        database = cast(str, engine.connection_kwargs.get("database"))
         if not database:
             sys.exit("Unable to determine which database to connect to.")
 

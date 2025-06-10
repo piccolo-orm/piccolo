@@ -5,11 +5,12 @@ import datetime
 import enum
 import os
 import sqlite3
-import typing as t
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal
 from functools import partial, wraps
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from typing_extensions import Self
 
@@ -30,7 +31,7 @@ from piccolo.utils.sync import run_sync
 aiosqlite = LazyLoader("aiosqlite", globals(), "aiosqlite")
 
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from aiosqlite import Connection, Cursor  # type: ignore
 
     from piccolo.table import Table
@@ -125,7 +126,7 @@ def convert_array_in(value: list) -> str:
 
 # Register adapters
 
-ADAPTERS: t.Dict[t.Type, t.Callable[[t.Any], t.Any]] = {
+ADAPTERS: dict[type, Callable[[Any], Any]] = {
     Decimal: convert_numeric_in,
     uuid.UUID: convert_uuid_in,
     datetime.time: convert_time_in,
@@ -143,7 +144,7 @@ for value_type, adapter in ADAPTERS.items():
 # Out
 
 
-def decode_to_string(converter: t.Callable[[str], t.Any]):
+def decode_to_string(converter: Callable[[str], Any]):
     """
     This means we can use our converters with string and bytes. They are
     passed bytes when used directly via SQLite, and are passed strings when
@@ -151,7 +152,7 @@ def decode_to_string(converter: t.Callable[[str], t.Any]):
     """
 
     @wraps(converter)
-    def wrapper(value: t.Union[str, bytes]) -> t.Any:
+    def wrapper(value: Union[str, bytes]) -> Any:
         if isinstance(value, bytes):
             return converter(value.decode("utf8"))
         elif isinstance(value, str):
@@ -247,7 +248,7 @@ def convert_timestamptz_out(value: str) -> datetime.datetime:
 
 
 @decode_to_string
-def convert_array_out(value: str) -> t.List:
+def convert_array_out(value: str) -> list:
     """
     If the value if from an array column, deserialise the string back into a
     list.
@@ -255,7 +256,7 @@ def convert_array_out(value: str) -> t.List:
     return load_json(value)
 
 
-def convert_complex_array_out(value: bytes, converter: t.Callable):
+def convert_complex_array_out(value: bytes, converter: Callable):
     """
     This is used to handle arrays of things like timestamps, which we can't
     just load from JSON without doing additional work to convert the elements
@@ -263,7 +264,7 @@ def convert_complex_array_out(value: bytes, converter: t.Callable):
     """
     parsed = load_json(value.decode("utf8"))
 
-    def convert_list(list_value: t.List):
+    def convert_list(list_value: list):
         output = []
 
         for value in list_value:
@@ -284,7 +285,7 @@ def convert_complex_array_out(value: bytes, converter: t.Callable):
 
 
 @decode_to_string
-def convert_M2M_out(value: str) -> t.List:
+def convert_M2M_out(value: str) -> list:
     return value.split(",")
 
 
@@ -335,7 +336,7 @@ class AsyncBatch(BaseBatch):
     batch_size: int
 
     # Set internally
-    _cursor: t.Optional[Cursor] = None
+    _cursor: Optional[Cursor] = None
 
     @property
     def cursor(self) -> Cursor:
@@ -343,14 +344,14 @@ class AsyncBatch(BaseBatch):
             raise ValueError("_cursor not set")
         return self._cursor
 
-    async def next(self) -> t.List[t.Dict]:
+    async def next(self) -> list[dict]:
         data = await self.cursor.fetchmany(self.batch_size)
         return await self.query._process_results(data)
 
     def __aiter__(self: Self) -> Self:
         return self
 
-    async def __anext__(self) -> t.List[t.Dict]:
+    async def __anext__(self) -> list[dict]:
         response = await self.next()
         if response == []:
             raise StopAsyncIteration()
@@ -404,9 +405,9 @@ class Atomic(BaseAtomic):
     ):
         self.engine = engine
         self.transaction_type = transaction_type
-        self.queries: t.List[t.Union[Query, DDL]] = []
+        self.queries: list[Union[Query, DDL]] = []
 
-    def add(self, *query: t.Union[Query, DDL]):
+    def add(self, *query: Union[Query, DDL]):
         self.queries += list(query)
 
     async def run(self):
@@ -546,7 +547,7 @@ class SQLiteTransaction(BaseTransaction):
         self._savepoint_id += 1
         return self._savepoint_id
 
-    async def savepoint(self, name: t.Optional[str] = None) -> Savepoint:
+    async def savepoint(self, name: Optional[str] = None) -> Savepoint:
         name = name or f"savepoint_{self.get_savepoint_id()}"
         validate_savepoint_name(name)
         await self.connection.execute(f"SAVEPOINT {name}")
@@ -576,7 +577,7 @@ class SQLiteTransaction(BaseTransaction):
 ###############################################################################
 
 
-def dict_factory(cursor, row) -> t.Dict:
+def dict_factory(cursor, row) -> dict:
     return {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
 
 
@@ -672,7 +673,7 @@ class SQLiteEngine(Engine[SQLiteTransaction]):
     ###########################################################################
 
     async def batch(
-        self, query: Query, batch_size: int = 100, node: t.Optional[str] = None
+        self, query: Query, batch_size: int = 100, node: Optional[str] = None
     ) -> AsyncBatch:
         """
         :param query:
@@ -698,7 +699,7 @@ class SQLiteEngine(Engine[SQLiteTransaction]):
 
     ###########################################################################
 
-    async def _get_inserted_pk(self, cursor, table: t.Type[Table]) -> t.Any:
+    async def _get_inserted_pk(self, cursor, table: type[Table]) -> Any:
         """
         If the `pk` column is a non-integer then `ROWID` and `pk` will return
         different types. Need to query by `lastrowid` to get `pk`s in SQLite
@@ -714,9 +715,9 @@ class SQLiteEngine(Engine[SQLiteTransaction]):
     async def _run_in_new_connection(
         self,
         query: str,
-        args: t.Optional[t.List[t.Any]] = None,
+        args: Optional[list[Any]] = None,
         query_type: str = "generic",
-        table: t.Optional[t.Type[Table]] = None,
+        table: Optional[type[Table]] = None,
     ):
         if args is None:
             args = []
@@ -740,9 +741,9 @@ class SQLiteEngine(Engine[SQLiteTransaction]):
         self,
         connection,
         query: str,
-        args: t.Optional[t.List[t.Any]] = None,
+        args: Optional[list[Any]] = None,
         query_type: str = "generic",
-        table: t.Optional[t.Type[Table]] = None,
+        table: Optional[type[Table]] = None,
     ):
         """
         This is used when a transaction is currently active.

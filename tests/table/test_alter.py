@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import typing as t
+from typing import Any, Union
 from unittest import TestCase
 
 import pytest
@@ -26,7 +26,7 @@ from tests.example_apps.music.tables import Band, Manager
 class TestRenameColumn(DBTestCase):
     def _test_rename(
         self,
-        existing_column: t.Union[Column, str],
+        existing_column: Union[Column, str],
         new_column_name: str = "rating",
     ):
         self.insert_row()
@@ -90,7 +90,7 @@ class TestDropColumn(DBTestCase):
     SQLite has very limited support for ALTER statements.
     """
 
-    def _test_drop(self, column: t.Union[str, Column]):
+    def _test_drop(self, column: Union[str, Column]):
         self.insert_row()
 
         Band.alter().drop_column(column).run_sync()
@@ -109,7 +109,7 @@ class TestDropColumn(DBTestCase):
 
 class TestAddColumn(DBTestCase):
     def _test_add_column(
-        self, column: Column, column_name: str, expected_value: t.Any
+        self, column: Column, column_name: str, expected_value: Any
     ):
         self.insert_row()
         Band.alter().add_column(column_name, column).run_sync()
