@@ -1,6 +1,6 @@
 import dataclasses
 import datetime
-import typing as t
+from typing import Any
 from unittest import TestCase
 
 import pytest
@@ -181,9 +181,9 @@ DATE_DELTA = datetime.timedelta(days=1)
 class OperatorTestCase:
     description: str
     column: Column
-    initial: t.Any
+    initial: Any
     querystring: QueryString
-    expected: t.Any
+    expected: Any
 
 
 TEST_CASES = [

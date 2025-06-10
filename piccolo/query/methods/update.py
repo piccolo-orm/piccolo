@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import typing as t
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from piccolo.custom_types import Combinable, TableInstance
 from piccolo.query.base import Query
@@ -11,7 +12,7 @@ from piccolo.query.mixins import (
 )
 from piccolo.querystring import QueryString
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
 
 
@@ -19,7 +20,7 @@ class UpdateError(Exception):
     pass
 
 
-class Update(Query[TableInstance, t.List[t.Any]]):
+class Update(Query[TableInstance, list[Any]]):
     __slots__ = (
         "force",
         "returning_delegate",
@@ -28,7 +29,7 @@ class Update(Query[TableInstance, t.List[t.Any]]):
     )
 
     def __init__(
-        self, table: t.Type[TableInstance], force: bool = False, **kwargs
+        self, table: type[TableInstance], force: bool = False, **kwargs
     ):
         super().__init__(table, **kwargs)
         self.force = force
@@ -41,7 +42,7 @@ class Update(Query[TableInstance, t.List[t.Any]]):
 
     def values(
         self,
-        values: t.Optional[t.Dict[t.Union[Column, str], t.Any]] = None,
+        values: Optional[dict[Union[Column, str], Any]] = None,
         **kwargs,
     ) -> Update:
         if values is None:
@@ -50,7 +51,7 @@ class Update(Query[TableInstance, t.List[t.Any]]):
         self.values_delegate.values(values)
         return self
 
-    def where(self, *where: t.Union[Combinable, QueryString]) -> Update:
+    def where(self, *where: Union[Combinable, QueryString]) -> Update:
         self.where_delegate.where(*where)
         return self
 
@@ -85,7 +86,7 @@ class Update(Query[TableInstance, t.List[t.Any]]):
     ###########################################################################
 
     @property
-    def default_querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> Sequence[QueryString]:
         columns_str = ", ".join(
             f'"{col._meta.db_column_name}" = {{}}'
             for col, _ in self.values_delegate._values.items()

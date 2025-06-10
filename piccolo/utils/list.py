@@ -1,11 +1,12 @@
-import typing as t
+from collections.abc import Sequence
+from typing import TypeVar, Union
 
-ElementType = t.TypeVar("ElementType")
+ElementType = TypeVar("ElementType")
 
 
 def flatten(
-    items: t.Sequence[t.Union[ElementType, t.List[ElementType]]]
-) -> t.List[ElementType]:
+    items: Sequence[Union[ElementType, list[ElementType]]]
+) -> list[ElementType]:
     """
     Takes a sequence of elements, and flattens it out. For example::
 
@@ -17,7 +18,7 @@ def flatten(
         await Band.select(Band.name, Band.manager.all_columns())
 
     """
-    _items: t.List[ElementType] = []
+    _items: list[ElementType] = []
     for item in items:
         if isinstance(item, list):
             _items.extend(item)
@@ -27,9 +28,7 @@ def flatten(
     return _items
 
 
-def batch(
-    data: t.List[ElementType], chunk_size: int
-) -> t.List[t.List[ElementType]]:
+def batch(data: list[ElementType], chunk_size: int) -> list[list[ElementType]]:
     """
     Breaks the list down into sublists of the given ``chunk_size``. The last
     sublist may have fewer elements than ``chunk_size``::

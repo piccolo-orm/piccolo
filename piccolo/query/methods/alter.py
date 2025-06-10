@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import itertools
-import typing as t
+from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import ForeignKey, Numeric, Varchar
 from piccolo.query.base import DDL
 from piccolo.utils.warnings import Level, colored_warning
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import OnDelete, OnUpdate
     from piccolo.table import Table
 
@@ -52,7 +53,7 @@ class RenameConstraint(AlterStatement):
 class AlterColumnStatement(AlterStatement):
     __slots__ = ("column",)
 
-    column: t.Union[Column, str]
+    column: Union[Column, str]
 
     @property
     def column_name(self) -> str:
@@ -114,7 +115,7 @@ class SetColumnType(AlterStatement):
 
     old_column: Column
     new_column: Column
-    using_expression: t.Optional[str] = None
+    using_expression: Optional[str] = None
 
     @property
     def ddl(self) -> str:
@@ -135,7 +136,7 @@ class SetDefault(AlterColumnStatement):
     __slots__ = ("value",)
 
     column: Column
-    value: t.Any
+    value: Any
 
     @property
     def ddl(self) -> str:
@@ -215,8 +216,8 @@ class AddForeignKeyConstraint(AlterStatement):
     foreign_key_column_name: str
     referenced_table_name: str
     referenced_column_name: str
-    on_delete: t.Optional[OnDelete]
-    on_update: t.Optional[OnUpdate]
+    on_delete: Optional[OnDelete]
+    on_update: Optional[OnUpdate]
 
     @property
     def ddl(self) -> str:
@@ -236,7 +237,7 @@ class AddForeignKeyConstraint(AlterStatement):
 class SetDigits(AlterColumnStatement):
     __slots__ = ("digits", "column_type")
 
-    digits: t.Optional[t.Tuple[int, int]]
+    digits: Optional[tuple[int, int]]
     column_type: str
 
     @property
@@ -265,7 +266,7 @@ class SetSchema(AlterStatement):
 
 @dataclass
 class DropTable:
-    table: t.Type[Table]
+    table: type[Table]
     cascade: bool
     if_exists: bool
 
@@ -304,24 +305,24 @@ class Alter(DDL):
         "_rename_constraint",
     )
 
-    def __init__(self, table: t.Type[Table], **kwargs):
+    def __init__(self, table: type[Table], **kwargs):
         super().__init__(table, **kwargs)
-        self._add_foreign_key_constraint: t.List[AddForeignKeyConstraint] = []
-        self._add: t.List[AddColumn] = []
-        self._drop_constraint: t.List[DropConstraint] = []
-        self._drop_default: t.List[DropDefault] = []
-        self._drop_table: t.Optional[DropTable] = None
-        self._drop: t.List[DropColumn] = []
-        self._rename_columns: t.List[RenameColumn] = []
-        self._rename_table: t.List[RenameTable] = []
-        self._set_column_type: t.List[SetColumnType] = []
-        self._set_default: t.List[SetDefault] = []
-        self._set_digits: t.List[SetDigits] = []
-        self._set_length: t.List[SetLength] = []
-        self._set_null: t.List[SetNull] = []
-        self._set_schema: t.List[SetSchema] = []
-        self._set_unique: t.List[SetUnique] = []
-        self._rename_constraint: t.List[RenameConstraint] = []
+        self._add_foreign_key_constraint: list[AddForeignKeyConstraint] = []
+        self._add: list[AddColumn] = []
+        self._drop_constraint: list[DropConstraint] = []
+        self._drop_default: list[DropDefault] = []
+        self._drop_table: Optional[DropTable] = None
+        self._drop: list[DropColumn] = []
+        self._rename_columns: list[RenameColumn] = []
+        self._rename_table: list[RenameTable] = []
+        self._set_column_type: list[SetColumnType] = []
+        self._set_default: list[SetDefault] = []
+        self._set_digits: list[SetDigits] = []
+        self._set_length: list[SetLength] = []
+        self._set_null: list[SetNull] = []
+        self._set_schema: list[SetSchema] = []
+        self._set_unique: list[SetUnique] = []
+        self._rename_constraint: list[RenameConstraint] = []
 
     def add_column(self: Self, name: str, column: Column) -> Self:
         """
@@ -340,7 +341,7 @@ class Alter(DDL):
         self._add.append(AddColumn(column, name))
         return self
 
-    def drop_column(self, column: t.Union[str, Column]) -> Alter:
+    def drop_column(self, column: Union[str, Column]) -> Alter:
         """
         Drop a column from the table::
 
@@ -350,7 +351,7 @@ class Alter(DDL):
         self._drop.append(DropColumn(column))
         return self
 
-    def drop_default(self, column: t.Union[str, Column]) -> Alter:
+    def drop_default(self, column: Union[str, Column]) -> Alter:
         """
         Drop the default from a column::
 
@@ -406,7 +407,7 @@ class Alter(DDL):
         return self
 
     def rename_column(
-        self, column: t.Union[str, Column], new_name: str
+        self, column: Union[str, Column], new_name: str
     ) -> Alter:
         """
         Rename a column on the table::
@@ -425,7 +426,7 @@ class Alter(DDL):
         self,
         old_column: Column,
         new_column: Column,
-        using_expression: t.Optional[str] = None,
+        using_expression: Optional[str] = None,
     ) -> Alter:
         """
         Change the type of a column::
@@ -448,7 +449,7 @@ class Alter(DDL):
         )
         return self
 
-    def set_default(self, column: Column, value: t.Any) -> Alter:
+    def set_default(self, column: Column, value: Any) -> Alter:
         """
         Set the default for a column::
 
@@ -459,7 +460,7 @@ class Alter(DDL):
         return self
 
     def set_null(
-        self, column: t.Union[str, Column], boolean: bool = True
+        self, column: Union[str, Column], boolean: bool = True
     ) -> Alter:
         """
         Change a column to be nullable or not::
@@ -475,7 +476,7 @@ class Alter(DDL):
         return self
 
     def set_unique(
-        self, column: t.Union[str, Column], boolean: bool = True
+        self, column: Union[str, Column], boolean: bool = True
     ) -> Alter:
         """
         Make a column unique or not::
@@ -490,7 +491,7 @@ class Alter(DDL):
         self._set_unique.append(SetUnique(column, boolean))
         return self
 
-    def set_length(self, column: t.Union[str, Varchar], length: int) -> Alter:
+    def set_length(self, column: Union[str, Varchar], length: int) -> Alter:
         """
         Change the max length of a varchar column. Unfortunately, this isn't
         supported by SQLite, but SQLite also doesn't enforce any length limits
@@ -518,7 +519,7 @@ class Alter(DDL):
         self._set_length.append(SetLength(column, length))
         return self
 
-    def _get_constraint_name(self, column: t.Union[str, ForeignKey]) -> str:
+    def _get_constraint_name(self, column: Union[str, ForeignKey]) -> str:
         column_name = AlterColumnStatement(column=column).column_name
         tablename = self.table._meta.tablename
         return f"{tablename}_{column_name}_fkey"
@@ -530,7 +531,7 @@ class Alter(DDL):
         return self
 
     def drop_foreign_key_constraint(
-        self, column: t.Union[str, ForeignKey]
+        self, column: Union[str, ForeignKey]
     ) -> Alter:
         constraint_name = self._get_constraint_name(column=column)
         self._drop_constraint.append(
@@ -540,12 +541,12 @@ class Alter(DDL):
 
     def add_foreign_key_constraint(
         self,
-        column: t.Union[str, ForeignKey],
-        referenced_table_name: t.Optional[str] = None,
-        referenced_column_name: t.Optional[str] = None,
-        constraint_name: t.Optional[str] = None,
-        on_delete: t.Optional[OnDelete] = None,
-        on_update: t.Optional[OnUpdate] = None,
+        column: Union[str, ForeignKey],
+        referenced_table_name: Optional[str] = None,
+        referenced_column_name: Optional[str] = None,
+        constraint_name: Optional[str] = None,
+        on_delete: Optional[OnDelete] = None,
+        on_update: Optional[OnUpdate] = None,
     ) -> Alter:
         """
         Add a new foreign key constraint::
@@ -591,8 +592,8 @@ class Alter(DDL):
 
     def set_digits(
         self,
-        column: t.Union[str, Numeric],
-        digits: t.Optional[t.Tuple[int, int]],
+        column: Union[str, Numeric],
+        digits: Optional[tuple[int, int]],
     ) -> Alter:
         """
         Alter the precision and scale for a ``Numeric`` column.
@@ -623,7 +624,7 @@ class Alter(DDL):
         return self
 
     @property
-    def default_ddl(self) -> t.Sequence[str]:
+    def default_ddl(self) -> Sequence[str]:
         if self._drop_table is not None:
             return [self._drop_table.ddl]
 
@@ -660,4 +661,4 @@ class Alter(DDL):
         return [query]
 
 
-Self = t.TypeVar("Self", bound=Alter)
+Self = TypeVar("Self", bound=Alter)

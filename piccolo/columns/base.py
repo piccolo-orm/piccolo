@@ -4,10 +4,20 @@ import copy
 import datetime
 import decimal
 import inspect
-import typing as t
 import uuid
+from collections.abc import Iterable
 from dataclasses import dataclass, field, fields
 from enum import Enum
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generic,
+    Optional,
+    TypedDict,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from piccolo.columns.choices import Choice
 from piccolo.columns.combination import Where
@@ -34,7 +44,7 @@ from piccolo.columns.reference import LazyTableReference
 from piccolo.querystring import QueryString, Selectable
 from piccolo.utils.warnings import colored_warning
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.column_types import ForeignKey
     from piccolo.table import Table
 
@@ -77,19 +87,19 @@ class OnUpdate(str, Enum):
         return self.__str__()
 
 
-ReferencedTable = t.TypeVar("ReferencedTable", bound="Table")
+ReferencedTable = TypeVar("ReferencedTable", bound="Table")
 
 
 @dataclass
-class ForeignKeyMeta(t.Generic[ReferencedTable]):
-    references: t.Union[t.Type[ReferencedTable], LazyTableReference]
+class ForeignKeyMeta(Generic[ReferencedTable]):
+    references: Union[type[ReferencedTable], LazyTableReference]
     on_delete: OnDelete
     on_update: OnUpdate
-    target_column: t.Union[Column, str, None]
-    proxy_columns: t.List[Column] = field(default_factory=list)
+    target_column: Union[Column, str, None]
+    proxy_columns: list[Column] = field(default_factory=list)
 
     @property
-    def resolved_references(self) -> t.Type[Table]:
+    def resolved_references(self) -> type[Table]:
         """
         Evaluates the ``references`` attribute if it's a ``LazyTableReference``,
         raising a ``ValueError`` if it fails, otherwise returns a ``Table``
@@ -154,18 +164,18 @@ class ColumnMeta:
     index: bool = False
     index_method: IndexMethod = IndexMethod.btree
     required: bool = False
-    help_text: t.Optional[str] = None
-    choices: t.Optional[t.Type[Enum]] = None
+    help_text: Optional[str] = None
+    choices: Optional[type[Enum]] = None
     secret: bool = False
-    auto_update: t.Any = ...
+    auto_update: Any = ...
 
     # Used for representing the table in migrations and the playground.
-    params: t.Dict[str, t.Any] = field(default_factory=dict)
+    params: dict[str, Any] = field(default_factory=dict)
 
     ###########################################################################
 
     # Lets you to map a column to a database column with a different name.
-    _db_column_name: t.Optional[str] = None
+    _db_column_name: Optional[str] = None
 
     @property
     def db_column_name(self) -> str:
@@ -178,8 +188,8 @@ class ColumnMeta:
     ###########################################################################
 
     # Set by the Table Metaclass:
-    _name: t.Optional[str] = None
-    _table: t.Optional[t.Type[Table]] = None
+    _name: Optional[str] = None
+    _table: Optional[type[Table]] = None
 
     @property
     def name(self) -> str:
@@ -194,7 +204,7 @@ class ColumnMeta:
         self._name = value
 
     @property
-    def table(self) -> t.Type[Table]:
+    def table(self) -> type[Table]:
         if not self._table:
             raise ValueError(
                 "`_table` isn't defined - the Table Metaclass should set it."
@@ -202,13 +212,13 @@ class ColumnMeta:
         return self._table
 
     @table.setter
-    def table(self, value: t.Type[Table]):
+    def table(self, value: type[Table]):
         self._table = value
 
     ###########################################################################
 
     # Used by Foreign Keys:
-    call_chain: t.List["ForeignKey"] = field(default_factory=list)
+    call_chain: list["ForeignKey"] = field(default_factory=list)
 
     ###########################################################################
 
@@ -220,7 +230,7 @@ class ColumnMeta:
         else:
             raise ValueError("The table has no engine defined.")
 
-    def get_choices_dict(self) -> t.Optional[t.Dict[str, t.Any]]:
+    def get_choices_dict(self) -> Optional[dict[str, Any]]:
         """
         Return the choices Enum as a dict. It maps the attribute name to a
         dict containing the display name, and value.
@@ -251,8 +261,7 @@ class ColumnMeta:
         if self.call_chain:
             column_name = (
                 ".".join(
-                    t.cast(str, i._meta.db_column_name)
-                    for i in self.call_chain
+                    cast(str, i._meta.db_column_name) for i in self.call_chain
                 )
                 + f".{column_name}"
             )
@@ -350,18 +359,18 @@ class ColumnMeta:
         return self.copy()
 
 
-class ColumnKwargs(t.TypedDict, total=False):
+class ColumnKwargs(TypedDict, total=False):
     null: bool
     primary_key: bool
     unique: bool
     index: bool
     index_method: IndexMethod
     required: bool
-    help_text: t.Optional[str]
-    choices: t.Optional[t.Type[Enum]]
-    db_column_name: t.Optional[str]
+    help_text: Optional[str]
+    choices: Optional[type[Enum]]
+    db_column_name: Optional[str]
     secret: bool
-    auto_update: t.Any
+    auto_update: Any
 
 
 class Column(Selectable):
@@ -463,8 +472,8 @@ class Column(Selectable):
 
     """
 
-    value_type: t.Type = int
-    default: t.Any
+    value_type: type = int
+    default: Any
 
     def __init__(
         self,
@@ -474,11 +483,11 @@ class Column(Selectable):
         index: bool = False,
         index_method: IndexMethod = IndexMethod.btree,
         required: bool = False,
-        help_text: t.Optional[str] = None,
-        choices: t.Optional[t.Type[Enum]] = None,
-        db_column_name: t.Optional[str] = None,
+        help_text: Optional[str] = None,
+        choices: Optional[type[Enum]] = None,
+        db_column_name: Optional[str] = None,
         secret: bool = False,
-        auto_update: t.Any = ...,
+        auto_update: Any = ...,
         **kwargs,
     ) -> None:
         # This is for backwards compatibility - originally the `primary_key`
@@ -522,12 +531,12 @@ class Column(Selectable):
             auto_update=auto_update,
         )
 
-        self._alias: t.Optional[str] = None
+        self._alias: Optional[str] = None
 
     def _validate_default(
         self,
-        default: t.Any,
-        allowed_types: t.Iterable[t.Union[None, t.Type[t.Any]]],
+        default: Any,
+        allowed_types: Iterable[Union[None, type[Any]]],
         allow_recursion: bool = True,
     ) -> bool:
         """
@@ -564,7 +573,7 @@ class Column(Selectable):
         )
 
     def _validate_choices(
-        self, choices: t.Type[Enum], allowed_type: t.Type[t.Any]
+        self, choices: type[Enum], allowed_type: type[Any]
     ) -> bool:
         """
         Make sure the choices value has values of the allowed_type.
@@ -590,14 +599,14 @@ class Column(Selectable):
 
         return True
 
-    def is_in(self, values: t.List[t.Any]) -> Where:
+    def is_in(self, values: list[Any]) -> Where:
         if len(values) == 0:
             raise ValueError(
                 "The `values` list argument must contain at least one value."
             )
         return Where(column=self, values=values, operator=In)
 
-    def not_in(self, values: t.List[t.Any]) -> Where:
+    def not_in(self, values: list[Any]) -> Where:
         if len(values) == 0:
             raise ValueError(
                 "The `values` list argument must contain at least one value."
@@ -628,7 +637,7 @@ class Column(Selectable):
 
         """
         if self._meta.engine_type in ("postgres", "cockroach"):
-            operator: t.Type[ComparisonOperator] = ILike
+            operator: type[ComparisonOperator] = ILike
         else:
             colored_warning(
                 "SQLite doesn't support ILIKE, falling back to LIKE."
@@ -799,7 +808,7 @@ class Column(Selectable):
         virtual_foreign_key.set_proxy_columns()
         return virtual_foreign_key
 
-    def get_default_value(self) -> t.Any:
+    def get_default_value(self) -> Any:
         """
         If the column has a default attribute, return it. If it's callable,
         return the response instead.
@@ -845,7 +854,7 @@ class Column(Selectable):
 
     def get_sql_value(
         self,
-        value: t.Any,
+        value: Any,
         delimiter: str = "'",
     ) -> str:
         """
@@ -946,8 +955,8 @@ class Column(Selectable):
         if not self._meta.null:
             query += " NOT NULL"
 
-        foreign_key_meta = t.cast(
-            t.Optional[ForeignKeyMeta],
+        foreign_key_meta = cast(
+            Optional[ForeignKeyMeta],
             getattr(self, "_foreign_key_meta", None),
         )
         if foreign_key_meta:
@@ -1004,4 +1013,4 @@ class Column(Selectable):
         )
 
 
-Self = t.TypeVar("Self", bound=Column)
+Self = TypeVar("Self", bound=Column)

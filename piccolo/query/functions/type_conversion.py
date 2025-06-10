@@ -1,4 +1,4 @@
-import typing as t
+from typing import Optional, Union
 
 from piccolo.columns.base import Column
 from piccolo.querystring import QueryString
@@ -7,9 +7,9 @@ from piccolo.querystring import QueryString
 class Cast(QueryString):
     def __init__(
         self,
-        identifier: t.Union[Column, QueryString],
+        identifier: Union[Column, QueryString],
         as_type: Column,
-        alias: t.Optional[str] = None,
+        alias: Optional[str] = None,
     ):
         """
         Cast a value to a different type. For example::
@@ -46,7 +46,7 @@ class Cast(QueryString):
         # on which database is being used.
         from piccolo.table import Table, create_table_class
 
-        table: t.Optional[t.Type[Table]] = None
+        table: Optional[type[Table]] = None
 
         if isinstance(identifier, Column):
             table = identifier._meta.table

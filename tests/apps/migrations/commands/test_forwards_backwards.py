@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-import typing as t
+from typing import TYPE_CHECKING
 from unittest import TestCase
 from unittest.mock import MagicMock, call, patch
 
@@ -22,10 +22,10 @@ from tests.example_apps.music.tables import (
     Venue,
 )
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
-TABLE_CLASSES: t.List[t.Type[Table]] = [
+TABLE_CLASSES: list[type[Table]] = [
     Manager,
     Band,
     Venue,

@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import inspect
 import logging
-import typing as t
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
+from typing import Any, Optional, Union
 
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
 from piccolo.apps.migrations.auto.operations import (
@@ -34,19 +35,19 @@ class AddColumnClass:
     column: Column
     table_class_name: str
     tablename: str
-    schema: t.Optional[str]
+    schema: Optional[str]
 
 
 @dataclass
 class AddColumnCollection:
-    add_columns: t.List[AddColumnClass] = field(default_factory=list)
+    add_columns: list[AddColumnClass] = field(default_factory=list)
 
     def append(self, add_column: AddColumnClass):
         self.add_columns.append(add_column)
 
     def for_table_class_name(
         self, table_class_name: str
-    ) -> t.List[AddColumnClass]:
+    ) -> list[AddColumnClass]:
         return [
             i
             for i in self.add_columns
@@ -55,7 +56,7 @@ class AddColumnCollection:
 
     def columns_for_table_class_name(
         self, table_class_name: str
-    ) -> t.List[Column]:
+    ) -> list[Column]:
         return [
             i.column
             for i in self.add_columns
@@ -63,20 +64,18 @@ class AddColumnCollection:
         ]
 
     @property
-    def table_class_names(self) -> t.List[str]:
+    def table_class_names(self) -> list[str]:
         return list({i.table_class_name for i in self.add_columns})
 
 
 @dataclass
 class DropColumnCollection:
-    drop_columns: t.List[DropColumn] = field(default_factory=list)
+    drop_columns: list[DropColumn] = field(default_factory=list)
 
     def append(self, drop_column: DropColumn):
         self.drop_columns.append(drop_column)
 
-    def for_table_class_name(
-        self, table_class_name: str
-    ) -> t.List[DropColumn]:
+    def for_table_class_name(self, table_class_name: str) -> list[DropColumn]:
         return [
             i
             for i in self.drop_columns
@@ -84,20 +83,20 @@ class DropColumnCollection:
         ]
 
     @property
-    def table_class_names(self) -> t.List[str]:
+    def table_class_names(self) -> list[str]:
         return list({i.table_class_name for i in self.drop_columns})
 
 
 @dataclass
 class RenameColumnCollection:
-    rename_columns: t.List[RenameColumn] = field(default_factory=list)
+    rename_columns: list[RenameColumn] = field(default_factory=list)
 
     def append(self, rename_column: RenameColumn):
         self.rename_columns.append(rename_column)
 
     def for_table_class_name(
         self, table_class_name: str
-    ) -> t.List[RenameColumn]:
+    ) -> list[RenameColumn]:
         return [
             i
             for i in self.rename_columns
@@ -105,20 +104,18 @@ class RenameColumnCollection:
         ]
 
     @property
-    def table_class_names(self) -> t.List[str]:
+    def table_class_names(self) -> list[str]:
         return list({i.table_class_name for i in self.rename_columns})
 
 
 @dataclass
 class AlterColumnCollection:
-    alter_columns: t.List[AlterColumn] = field(default_factory=list)
+    alter_columns: list[AlterColumn] = field(default_factory=list)
 
     def append(self, alter_column: AlterColumn):
         self.alter_columns.append(alter_column)
 
-    def for_table_class_name(
-        self, table_class_name: str
-    ) -> t.List[AlterColumn]:
+    def for_table_class_name(self, table_class_name: str) -> list[AlterColumn]:
         return [
             i
             for i in self.alter_columns
@@ -126,7 +123,7 @@ class AlterColumnCollection:
         ]
 
     @property
-    def table_class_names(self) -> t.List[str]:
+    def table_class_names(self) -> list[str]:
         return list({i.table_class_name for i in self.alter_columns})
 
 
@@ -135,12 +132,12 @@ class AddCompositeIndexClass:
     composite_index: Composite
     table_class_name: str
     tablename: str
-    schema: t.Optional[str]
+    schema: Optional[str]
 
 
 @dataclass
 class AddCompositeIndexCollection:
-    add_composite_indexes: t.List[AddCompositeIndexClass] = field(
+    add_composite_indexes: list[AddCompositeIndexClass] = field(
         default_factory=list
     )
 
@@ -149,7 +146,7 @@ class AddCompositeIndexCollection:
 
     def for_table_class_name(
         self, table_class_name: str
-    ) -> t.List[AddCompositeIndexClass]:
+    ) -> list[AddCompositeIndexClass]:
         return [
             i
             for i in self.add_composite_indexes
@@ -158,7 +155,7 @@ class AddCompositeIndexCollection:
 
     def composite_indexes_for_table_class_name(
         self, table_class_name: str
-    ) -> t.List[Composite]:
+    ) -> list[Composite]:
         return [
             i.composite_index
             for i in self.add_composite_indexes
@@ -166,13 +163,13 @@ class AddCompositeIndexCollection:
         ]
 
     @property
-    def table_class_names(self) -> t.List[str]:
+    def table_class_names(self) -> list[str]:
         return list({i.table_class_name for i in self.add_composite_indexes})
 
 
 @dataclass
 class DropCompositeIndexCollection:
-    drop_composite_indexes: t.List[DropCompositeIndex] = field(
+    drop_composite_indexes: list[DropCompositeIndex] = field(
         default_factory=list
     )
 
@@ -181,7 +178,7 @@ class DropCompositeIndexCollection:
 
     def for_table_class_name(
         self, table_class_name: str
-    ) -> t.List[DropCompositeIndex]:
+    ) -> list[DropCompositeIndex]:
         return [
             i
             for i in self.drop_composite_indexes
@@ -189,11 +186,11 @@ class DropCompositeIndexCollection:
         ]
 
     @property
-    def table_class_names(self) -> t.List[str]:
+    def table_class_names(self) -> list[str]:
         return list({i.table_class_name for i in self.drop_composite_indexes})
 
 
-AsyncFunction = t.Callable[[], t.Coroutine]
+AsyncFunction = Callable[[], Coroutine]
 
 
 class SkippedTransaction:
@@ -223,12 +220,10 @@ class MigrationManager:
     app_name: str = ""
     description: str = ""
     preview: bool = False
-    add_tables: t.List[DiffableTable] = field(default_factory=list)
-    drop_tables: t.List[DiffableTable] = field(default_factory=list)
-    rename_tables: t.List[RenameTable] = field(default_factory=list)
-    change_table_schemas: t.List[ChangeTableSchema] = field(
-        default_factory=list
-    )
+    add_tables: list[DiffableTable] = field(default_factory=list)
+    drop_tables: list[DiffableTable] = field(default_factory=list)
+    rename_tables: list[RenameTable] = field(default_factory=list)
+    change_table_schemas: list[ChangeTableSchema] = field(default_factory=list)
     add_columns: AddColumnCollection = field(
         default_factory=AddColumnCollection
     )
@@ -247,10 +242,8 @@ class MigrationManager:
     drop_composite_indexes: DropCompositeIndexCollection = field(
         default_factory=DropCompositeIndexCollection
     )
-    raw: t.List[t.Union[t.Callable, AsyncFunction]] = field(
-        default_factory=list
-    )
-    raw_backwards: t.List[t.Union[t.Callable, AsyncFunction]] = field(
+    raw: list[Union[Callable, AsyncFunction]] = field(default_factory=list)
+    raw_backwards: list[Union[Callable, AsyncFunction]] = field(
         default_factory=list
     )
     fake: bool = False
@@ -260,8 +253,8 @@ class MigrationManager:
         self,
         class_name: str,
         tablename: str,
-        schema: t.Optional[str] = None,
-        columns: t.Optional[t.List[Column]] = None,
+        schema: Optional[str] = None,
+        columns: Optional[list[Column]] = None,
     ):
         if not columns:
             columns = []
@@ -276,7 +269,7 @@ class MigrationManager:
         )
 
     def drop_table(
-        self, class_name: str, tablename: str, schema: t.Optional[str] = None
+        self, class_name: str, tablename: str, schema: Optional[str] = None
     ):
         self.drop_tables.append(
             DiffableTable(
@@ -288,8 +281,8 @@ class MigrationManager:
         self,
         class_name: str,
         tablename: str,
-        new_schema: t.Optional[str] = None,
-        old_schema: t.Optional[str] = None,
+        new_schema: Optional[str] = None,
+        old_schema: Optional[str] = None,
     ):
         self.change_table_schemas.append(
             ChangeTableSchema(
@@ -306,7 +299,7 @@ class MigrationManager:
         old_tablename: str,
         new_class_name: str,
         new_tablename: str,
-        schema: t.Optional[str] = None,
+        schema: Optional[str] = None,
     ):
         self.rename_tables.append(
             RenameTable(
@@ -323,11 +316,11 @@ class MigrationManager:
         table_class_name: str,
         tablename: str,
         column_name: str,
-        db_column_name: t.Optional[str] = None,
+        db_column_name: Optional[str] = None,
         column_class_name: str = "",
-        column_class: t.Optional[t.Type[Column]] = None,
-        params: t.Optional[t.Dict[str, t.Any]] = None,
-        schema: t.Optional[str] = None,
+        column_class: Optional[type[Column]] = None,
+        params: Optional[dict[str, Any]] = None,
+        schema: Optional[str] = None,
     ):
         """
         Add a new column to the table.
@@ -368,8 +361,8 @@ class MigrationManager:
         table_class_name: str,
         tablename: str,
         column_name: str,
-        db_column_name: t.Optional[str] = None,
-        schema: t.Optional[str] = None,
+        db_column_name: Optional[str] = None,
+        schema: Optional[str] = None,
     ):
         self.drop_columns.append(
             DropColumn(
@@ -387,9 +380,9 @@ class MigrationManager:
         tablename: str,
         old_column_name: str,
         new_column_name: str,
-        old_db_column_name: t.Optional[str] = None,
-        new_db_column_name: t.Optional[str] = None,
-        schema: t.Optional[str] = None,
+        old_db_column_name: Optional[str] = None,
+        new_db_column_name: Optional[str] = None,
+        schema: Optional[str] = None,
     ):
         self.rename_columns.append(
             RenameColumn(
@@ -408,12 +401,12 @@ class MigrationManager:
         table_class_name: str,
         tablename: str,
         column_name: str,
-        db_column_name: t.Optional[str] = None,
-        params: t.Optional[t.Dict[str, t.Any]] = None,
-        old_params: t.Optional[t.Dict[str, t.Any]] = None,
-        column_class: t.Optional[t.Type[Column]] = None,
-        old_column_class: t.Optional[t.Type[Column]] = None,
-        schema: t.Optional[str] = None,
+        db_column_name: Optional[str] = None,
+        params: Optional[dict[str, Any]] = None,
+        old_params: Optional[dict[str, Any]] = None,
+        column_class: Optional[type[Column]] = None,
+        old_column_class: Optional[type[Column]] = None,
+        schema: Optional[str] = None,
     ):
         """
         All possible alterations aren't currently supported.
@@ -441,9 +434,9 @@ class MigrationManager:
         table_class_name: str,
         tablename: str,
         composite_index_name: str,
-        composite_index_class: t.Type[Composite],
-        params: t.Dict[str, t.Any],
-        schema: t.Optional[str] = None,
+        composite_index_class: type[Composite],
+        params: dict[str, Any],
+        schema: Optional[str] = None,
     ):
         if composite_index_class is CompositeIndex:
             composite_index = CompositeIndex(**params)
@@ -478,14 +471,14 @@ class MigrationManager:
             )
         )
 
-    def add_raw(self, raw: t.Union[t.Callable, AsyncFunction]):
+    def add_raw(self, raw: Union[Callable, AsyncFunction]):
         """
         A migration manager can execute arbitrary functions or coroutines when
         run. This is useful if you want to execute raw SQL.
         """
         self.raw.append(raw)
 
-    def add_raw_backwards(self, raw: t.Union[t.Callable, AsyncFunction]):
+    def add_raw_backwards(self, raw: Union[Callable, AsyncFunction]):
         """
         When reversing a migration, you may want to run extra code to help
         clean up.
@@ -497,10 +490,10 @@ class MigrationManager:
     async def get_table_from_snapshot(
         self,
         table_class_name: str,
-        app_name: t.Optional[str],
+        app_name: Optional[str],
         offset: int = 0,
-        migration_id: t.Optional[str] = None,
-    ) -> t.Type[Table]:
+        migration_id: Optional[str] = None,
+    ) -> type[Table]:
         """
         Returns a Table subclass which can be used for modifying data within
         a migration.
@@ -529,13 +522,13 @@ class MigrationManager:
     ###########################################################################
 
     @staticmethod
-    async def _print_query(query: t.Union[DDL, Query, SchemaDDLBase]):
+    async def _print_query(query: Union[DDL, Query, SchemaDDLBase]):
         if isinstance(query, DDL):
             print("\n", ";".join(query.ddl) + ";")
         else:
             print(str(query))
 
-    async def _run_query(self, query: t.Union[DDL, Query, SchemaDDLBase]):
+    async def _run_query(self, query: Union[DDL, Query, SchemaDDLBase]):
         """
         If MigrationManager is not in the preview mode,
          executes the queries. else, prints the query.
@@ -554,7 +547,7 @@ class MigrationManager:
             if not alter_columns:
                 continue
 
-            _Table: t.Type[Table] = create_table_class(
+            _Table: type[Table] = create_table_class(
                 class_name=table_class_name,
                 class_kwargs={
                     "tablename": alter_columns[0].tablename,
@@ -607,7 +600,7 @@ class MigrationManager:
                             alter_column.db_column_name
                         )
 
-                        using_expression: t.Optional[str] = None
+                        using_expression: Optional[str] = None
 
                         # Postgres won't automatically cast some types to
                         # others. We may as well try, as it will definitely
@@ -852,7 +845,7 @@ class MigrationManager:
                 else rename_table.new_tablename
             )
 
-            _Table: t.Type[Table] = create_table_class(
+            _Table: type[Table] = create_table_class(
                 class_name=class_name,
                 class_kwargs={
                     "tablename": tablename,
@@ -873,7 +866,7 @@ class MigrationManager:
             if not columns:
                 continue
 
-            _Table: t.Type[Table] = create_table_class(
+            _Table: type[Table] = create_table_class(
                 class_name=table_class_name,
                 class_kwargs={
                     "tablename": columns[0].tablename,
@@ -901,17 +894,17 @@ class MigrationManager:
                 )
 
     async def _run_add_tables(self, backwards: bool = False):
-        table_classes: t.List[t.Type[Table]] = []
+        table_classes: list[type[Table]] = []
         for add_table in self.add_tables:
-            add_columns: t.List[AddColumnClass] = (
+            add_columns: list[AddColumnClass] = (
                 self.add_columns.for_table_class_name(add_table.class_name)
             )
-            add_composite_indexes: t.List[AddCompositeIndexClass] = (
+            add_composite_indexes: list[AddCompositeIndexClass] = (
                 self.add_composite_indexes.for_table_class_name(
                     add_table.class_name
                 )
             )
-            class_members: t.Dict[str, t.Any] = {}
+            class_members: dict[str, Any] = {}
             for add_column in add_columns:
                 class_members[add_column.column._meta.name] = add_column.column
             for add_composite_index in add_composite_indexes:
@@ -919,7 +912,7 @@ class MigrationManager:
                     add_composite_index.composite_index._meta.name
                 ] = add_composite_index.composite_index
 
-            _Table: t.Type[Table] = create_table_class(
+            _Table: type[Table] = create_table_class(
                 class_name=add_table.class_name,
                 class_kwargs={
                     "tablename": add_table.tablename,
@@ -968,7 +961,7 @@ class MigrationManager:
                 if table_class_name in [i.class_name for i in self.add_tables]:
                     continue  # No need to add columns to new tables
 
-                add_columns: t.List[AddColumnClass] = (
+                add_columns: list[AddColumnClass] = (
                     self.add_columns.for_table_class_name(table_class_name)
                 )
 

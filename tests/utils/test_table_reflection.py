@@ -1,4 +1,3 @@
-import typing as t
 from unittest import TestCase
 
 from piccolo.columns import Varchar
@@ -22,7 +21,7 @@ class TestTableStorage(TestCase):
             table_class.alter().drop_table(if_exists=True).run_sync()
 
     def _compare_table_columns(
-        self, table_1: t.Type[Table], table_2: t.Type[Table]
+        self, table_1: type[Table], table_2: type[Table]
     ):
         """
         Make sure that for each column in table_1, there is a corresponding

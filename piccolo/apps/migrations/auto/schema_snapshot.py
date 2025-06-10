@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing as t
 from dataclasses import dataclass, field
 
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
@@ -15,7 +14,7 @@ class SchemaSnapshot:
     """
 
     # In ascending order of date created.
-    managers: t.List[MigrationManager] = field(default_factory=list)
+    managers: list[MigrationManager] = field(default_factory=list)
 
     ###########################################################################
 
@@ -28,8 +27,8 @@ class SchemaSnapshot:
 
     ###########################################################################
 
-    def get_snapshot(self) -> t.List[DiffableTable]:
-        tables: t.List[DiffableTable] = []
+    def get_snapshot(self) -> list[DiffableTable]:
+        tables: list[DiffableTable] = []
 
         # Make sure the managers are sorted correctly:
         sorted_managers = sorted(self.managers, key=lambda x: x.migration_id)

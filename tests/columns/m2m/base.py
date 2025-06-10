@@ -1,4 +1,4 @@
-import typing as t
+from typing import Optional
 
 from piccolo.columns.column_types import (
     ForeignKey,
@@ -41,7 +41,7 @@ class M2MBase:
     (public vs non-public).
     """
 
-    def _setUp(self, schema: t.Optional[str] = None):
+    def _setUp(self, schema: Optional[str] = None):
         self.schema = schema
 
         for table_class in (Band, Genre, GenreToBand):

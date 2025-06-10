@@ -5,12 +5,13 @@ import builtins
 import datetime
 import decimal
 import inspect
-import typing as t
 import uuid
 import warnings
+from collections.abc import Callable, Iterable
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any, Optional
 
 from piccolo.columns import Column
 from piccolo.columns.defaults.base import Default
@@ -61,8 +62,8 @@ class UniqueGlobalNamesMeta(type):
 
     @staticmethod
     def get_unique_class_attribute_values(
-        class_attributes: t.Dict[str, t.Any],
-    ) -> t.Set[t.Any]:
+        class_attributes: dict[str, Any],
+    ) -> set[Any]:
         """
         Return class attribute values.
 
@@ -87,9 +88,9 @@ class UniqueGlobalNamesMeta(type):
 
     @staticmethod
     def merge_class_attributes(
-        class_attributes1: t.Dict[str, t.Any],
-        class_attributes2: t.Dict[str, t.Any],
-    ) -> t.Dict[str, t.Any]:
+        class_attributes1: dict[str, Any],
+        class_attributes2: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Merges two class attribute dictionaries.
 
@@ -104,12 +105,12 @@ class UniqueGlobalNamesMeta(type):
         return dict(**class_attributes1, **class_attributes2)
 
     @staticmethod
-    def get_column_class_attributes() -> t.Dict[str, str]:
+    def get_column_class_attributes() -> dict[str, str]:
         """Automatically generates global names for each column type."""
 
         import piccolo.columns.column_types
 
-        class_attributes: t.Dict[str, str] = {}
+        class_attributes: dict[str, str] = {}
         for module_global in piccolo.columns.column_types.__dict__.values():
             try:
                 if module_global is not Column and issubclass(
@@ -150,7 +151,7 @@ class UniqueGlobalNames(metaclass=UniqueGlobalNamesMeta):
     EXTERNAL_UUID = f"{EXTERNAL_MODULE_UUID}.{uuid.UUID.__name__}"
 
     # This attribute is set in metaclass
-    unique_names: t.Set[str]
+    unique_names: set[str]
 
     @classmethod
     def warn_if_is_conflicting_name(
@@ -172,7 +173,7 @@ class UniqueGlobalNames(metaclass=UniqueGlobalNamesMeta):
 
     @staticmethod
     def warn_if_are_conflicting_objects(
-        objects: t.Iterable[CanConflictWithGlobalNames],
+        objects: Iterable[CanConflictWithGlobalNames],
     ) -> None:
         """
         Call each object's ``raise_if_is_conflicting_with_global_name`` method.
@@ -192,8 +193,8 @@ class UniqueGlobalNameConflictWarning(UserWarning):
 @dataclass
 class Import(CanConflictWithGlobalNames):
     module: str
-    target: t.Optional[str] = None
-    expect_conflict_with_global_name: t.Optional[str] = None
+    target: Optional[str] = None
+    expect_conflict_with_global_name: Optional[str] = None
 
     def __post_init__(self) -> None:
         if (
@@ -256,9 +257,9 @@ class Definition(CanConflictWithGlobalNames, abc.ABC):
 
 @dataclass
 class SerialisedParams:
-    params: t.Dict[str, t.Any]
-    extra_imports: t.List[Import]
-    extra_definitions: t.List[Definition] = field(default_factory=list)
+    params: dict[str, Any]
+    extra_imports: list[Import]
+    extra_definitions: list[Definition] = field(default_factory=list)
 
 
 ###############################################################################
@@ -273,7 +274,7 @@ def check_equality(self, other):
 
 @dataclass
 class SerialisedBuiltin:
-    builtin: t.Any
+    builtin: Any
 
     def __hash__(self):
         return hash(self.builtin.__name__)
@@ -335,7 +336,7 @@ class SerialisedEnumInstance:
 
 @dataclass
 class SerialisedTableType(Definition):
-    table_type: t.Type[Table]
+    table_type: type[Table]
 
     def __hash__(self):
         return hash(
@@ -361,7 +362,7 @@ class SerialisedTableType(Definition):
 
         # When creating a ForeignKey, the user can specify a column other than
         # the primary key to reference.
-        serialised_target_columns: t.Set[SerialisedColumnInstance] = set()
+        serialised_target_columns: set[SerialisedColumnInstance] = set()
 
         for fk_column in self.table_type._meta._foreign_key_references:
             target_column = fk_column._foreign_key_meta.target_column
@@ -426,7 +427,7 @@ class SerialisedTableType(Definition):
 
 @dataclass
 class SerialisedEnumType:
-    enum_type: t.Type[Enum]
+    enum_type: type[Enum]
 
     def __hash__(self):
         return hash(self.__repr__())
@@ -442,7 +443,7 @@ class SerialisedEnumType:
 
 @dataclass
 class SerialisedCallable:
-    callable_: t.Callable
+    callable_: Callable
 
     def __hash__(self):
         return hash(self.callable_.__name__)
@@ -487,14 +488,14 @@ class SerialisedDecimal:
 ###############################################################################
 
 
-def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
+def serialise_params(params: dict[str, Any]) -> SerialisedParams:
     """
     When writing column params to a migration file, we need to serialise some
     of the values.
     """
     params = deepcopy(params)
-    extra_imports: t.List[Import] = []
-    extra_definitions: t.List[Definition] = []
+    extra_imports: list[Import] = []
+    extra_definitions: list[Definition] = []
 
     for key, value in params.items():
         # Builtins, such as str, list and dict.
@@ -725,7 +726,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
     )
 
 
-def deserialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+def deserialise_params(params: dict[str, Any]) -> dict[str, Any]:
     """
     When reading column params from a migration file, we need to convert
     them from their serialised form.
