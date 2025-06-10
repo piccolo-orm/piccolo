@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 
 import importlib
 import types
-import typing as t
+from typing import Any
 
 
 class LazyLoader(types.ModuleType):
@@ -48,10 +48,10 @@ class LazyLoader(types.ModuleType):
             else:
                 raise exc from exc
 
-    def __getattr__(self, item) -> t.Any:
+    def __getattr__(self, item) -> Any:
         module = self._load()
         return getattr(module, item)
 
-    def __dir__(self) -> t.List[str]:
+    def __dir__(self) -> list[str]:
         module = self._load()
         return dir(module)

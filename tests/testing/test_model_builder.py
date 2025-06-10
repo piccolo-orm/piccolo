@@ -1,6 +1,5 @@
 import asyncio
 import json
-import typing as t
 import unittest
 
 from piccolo.columns import (
@@ -83,7 +82,7 @@ class TestModelBuilder(unittest.TestCase):
         drop_db_tables_sync(*TABLES)
 
     def test_async(self):
-        async def build_model(table_class: t.Type[Table]):
+        async def build_model(table_class: type[Table]):
             return await ModelBuilder.build(table_class)
 
         for table_class in TABLES:

@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-import typing as t
 from abc import ABCMeta, abstractmethod
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from importlib.util import find_spec
 from string import Formatter
+from typing import TYPE_CHECKING, Any, Optional
 
-if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.table import Table
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
+    from piccolo.table import Table
 
 from uuid import UUID
 
@@ -26,7 +27,7 @@ class Selectable(metaclass=ABCMeta):
 
     __slots__ = ("_alias",)
 
-    _alias: t.Optional[str]
+    _alias: Optional[str]
 
     @abstractmethod
     def get_select_string(
@@ -74,10 +75,10 @@ class QueryString(Selectable):
     def __init__(
         self,
         template: str,
-        *args: t.Any,
+        *args: Any,
         query_type: str = "generic",
-        table: t.Optional[t.Type[Table]] = None,
-        alias: t.Optional[str] = None,
+        table: Optional[type[Table]] = None,
+        alias: Optional[str] = None,
     ) -> None:
         """
         :param template:
@@ -99,15 +100,13 @@ class QueryString(Selectable):
         self.template = template
         self.query_type = query_type
         self.table = table
-        self._frozen_compiled_strings: t.Optional[
-            t.Tuple[str, t.List[t.Any]]
-        ] = None
+        self._frozen_compiled_strings: Optional[tuple[str, list[Any]]] = None
         self._alias = alias
         self.args, self.columns = self.process_args(args)
 
     def process_args(
-        self, args: t.Sequence[t.Any]
-    ) -> t.Tuple[t.Sequence[t.Any], t.Sequence[Column]]:
+        self, args: Sequence[Any]
+    ) -> tuple[Sequence[Any], Sequence[Column]]:
         """
         If a Column is passed in, we convert it to the name of the column
         (including joins).
@@ -168,8 +167,8 @@ class QueryString(Selectable):
     def bundle(
         self,
         start_index: int = 1,
-        bundled: t.Optional[t.List[Fragment]] = None,
-        combined_args: t.Optional[t.List] = None,
+        bundled: Optional[list[Fragment]] = None,
+        combined_args: Optional[list] = None,
     ):
         # Split up the string, separating by {}.
         fragments = [
@@ -206,7 +205,7 @@ class QueryString(Selectable):
 
     def compile_string(
         self, engine_type: str = "postgres"
-    ) -> t.Tuple[str, t.List[t.Any]]:
+    ) -> tuple[str, list[Any]]:
         """
         Compiles the template ready for the engine - keeping the arguments
         separate from the template.

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import typing as t
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from piccolo.query.base import DDL
 from piccolo.query.methods.create_index import CreateIndex
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
@@ -18,7 +19,7 @@ class Create(DDL):
 
     def __init__(
         self,
-        table: t.Type[Table],
+        table: type[Table],
         if_not_exists: bool = False,
         only_default_columns: bool = False,
         auto_create_schema: bool = True,
@@ -43,8 +44,8 @@ class Create(DDL):
         self.auto_create_schema = auto_create_schema
 
     @property
-    def default_ddl(self) -> t.Sequence[str]:
-        ddl: t.List[str] = []
+    def default_ddl(self) -> Sequence[str]:
+        ddl: list[str] = []
 
         schema_name = self.table._meta.schema
         if (

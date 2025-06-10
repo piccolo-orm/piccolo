@@ -1,5 +1,5 @@
 import asyncio
-import typing as t
+from typing import cast
 from unittest import TestCase
 
 import pytest
@@ -169,7 +169,7 @@ class TestTransactionExists(TestCase):
         """
         Make sure we can detect when code is within a transaction.
         """
-        engine = t.cast(SQLiteEngine, Manager._meta.db)
+        engine = cast(SQLiteEngine, Manager._meta.db)
 
         async def run_inside_transaction():
             async with engine.transaction():
@@ -198,7 +198,7 @@ class TestTransactionType(TestCase):
 
         https://github.com/piccolo-orm/piccolo/issues/687
         """
-        engine = t.cast(SQLiteEngine, Manager._meta.db)
+        engine = cast(SQLiteEngine, Manager._meta.db)
 
         async def run_transaction(name: str):
             async with engine.transaction(
@@ -234,7 +234,7 @@ class TestTransactionType(TestCase):
         """
         Similar to above, but with ``Atomic``.
         """
-        engine = t.cast(SQLiteEngine, Manager._meta.db)
+        engine = cast(SQLiteEngine, Manager._meta.db)
 
         async def run_atomic(name: str):
             atomic = engine.atomic(transaction_type=TransactionType.immediate)

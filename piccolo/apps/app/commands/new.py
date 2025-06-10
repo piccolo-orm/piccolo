@@ -5,7 +5,7 @@ import os
 import pathlib
 import string
 import sys
-import typing as t
+from typing import Any
 
 import black
 import jinja2
@@ -46,7 +46,7 @@ def validate_app_name(app_name: str):
 
     """
     for char in app_name:
-        if not char.lower() in APP_NAME_ALLOWED_CHARACTERS:
+        if char.lower() not in APP_NAME_ALLOWED_CHARACTERS:
             raise ValueError(
                 f"The app name contains a disallowed character: `{char}`. "
                 "It must only include a-z, 0-9, and _ characters."
@@ -81,7 +81,7 @@ def new_app(app_name: str, root: str = ".", register: bool = False):
     with open(os.path.join(app_root, "__init__.py"), "w"):
         pass
 
-    templates: t.Dict[str, t.Any] = {
+    templates: dict[str, Any] = {
         "piccolo_app.py": {"app_name": app_name},
         "tables.py": {},
     }

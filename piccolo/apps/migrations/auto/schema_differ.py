@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import inspect
-import typing as t
+from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import dataclass, field
+from typing import Any, Optional
 
 from piccolo.apps.migrations.auto.diffable_table import (
     DiffableTable,
@@ -26,7 +27,7 @@ from piccolo.utils.printing import get_fixed_length_string
 
 @dataclass
 class RenameTableCollection:
-    rename_tables: t.List[RenameTable] = field(default_factory=list)
+    rename_tables: list[RenameTable] = field(default_factory=list)
 
     def append(self, renamed_table: RenameTable):
         self.rename_tables.append(renamed_table)
@@ -48,7 +49,7 @@ class RenameTableCollection:
                 return True
         return False
 
-    def renamed_from(self, new_class_name: str) -> t.Optional[str]:
+    def renamed_from(self, new_class_name: str) -> Optional[str]:
         """
         Returns the old class name, if it exists.
         """
@@ -60,7 +61,7 @@ class RenameTableCollection:
 
 @dataclass
 class ChangeTableSchemaCollection:
-    collection: t.List[ChangeTableSchema] = field(default_factory=list)
+    collection: list[ChangeTableSchema] = field(default_factory=list)
 
     def append(self, change_table_schema: ChangeTableSchema):
         self.collection.append(change_table_schema)
@@ -68,14 +69,14 @@ class ChangeTableSchemaCollection:
 
 @dataclass
 class RenameColumnCollection:
-    rename_columns: t.List[RenameColumn] = field(default_factory=list)
+    rename_columns: list[RenameColumn] = field(default_factory=list)
 
     def append(self, rename_column: RenameColumn):
         self.rename_columns.append(rename_column)
 
     def for_table_class_name(
         self, table_class_name: str
-    ) -> t.List[RenameColumn]:
+    ) -> list[RenameColumn]:
         return [
             i
             for i in self.rename_columns
@@ -93,9 +94,9 @@ class RenameColumnCollection:
 
 @dataclass
 class AlterStatements:
-    statements: t.List[str] = field(default_factory=list)
-    extra_imports: t.List[Import] = field(default_factory=list)
-    extra_definitions: t.List[Definition] = field(default_factory=list)
+    statements: list[str] = field(default_factory=list)
+    extra_imports: list[Import] = field(default_factory=list)
+    extra_definitions: list[Definition] = field(default_factory=list)
 
     def extend(self, alter_statements: AlterStatements):
         self.statements.extend(alter_statements.statements)
@@ -112,19 +113,19 @@ class SchemaDiffer:
     sure - for example, whether a column was renamed.
     """
 
-    schema: t.List[DiffableTable]
-    schema_snapshot: t.List[DiffableTable]
+    schema: list[DiffableTable]
+    schema_snapshot: list[DiffableTable]
 
     # Sometimes the SchemaDiffer requires input from a user - for example,
     # asking if a table was renamed or not. When running in non-interactive
     # mode (like in a unittest), we can set a default to be used instead, like
     # 'y'.
-    auto_input: t.Optional[str] = None
+    auto_input: Optional[str] = None
 
     ###########################################################################
 
     def __post_init__(self) -> None:
-        self.schema_snapshot_map: t.Dict[str, DiffableTable] = {
+        self.schema_snapshot_map: dict[str, DiffableTable] = {
             i.class_name: i for i in self.schema_snapshot
         }
         self.table_schema_changes_collection = (
@@ -137,11 +138,11 @@ class SchemaDiffer:
         """
         Work out whether any of the tables were renamed.
         """
-        drop_tables: t.List[DiffableTable] = list(
+        drop_tables: list[DiffableTable] = list(
             set(self.schema_snapshot) - set(self.schema)
         )
 
-        new_tables: t.List[DiffableTable] = list(
+        new_tables: list[DiffableTable] = list(
             set(self.schema) - set(self.schema_snapshot)
         )
 
@@ -267,7 +268,7 @@ class SchemaDiffer:
             # We track which dropped columns have already been identified by
             # the user as renames, so we don't ask them if another column
             # was also renamed from it.
-            used_drop_column_names: t.List[str] = []
+            used_drop_column_names: list[str] = []
 
             for add_column in delta.add_columns:
                 for drop_column in delta.drop_columns:
@@ -300,9 +301,9 @@ class SchemaDiffer:
 
     def _stringify_func(
         self,
-        func: t.Callable,
-        params: t.Dict[str, t.Any],
-        prefix: t.Optional[str] = None,
+        func: Callable,
+        params: dict[str, Any],
+        prefix: Optional[str] = None,
     ) -> AlterStatements:
         """
         Generates a string representing how to call the given function with the
@@ -348,7 +349,7 @@ class SchemaDiffer:
 
     @property
     def create_tables(self) -> AlterStatements:
-        new_tables: t.List[DiffableTable] = list(
+        new_tables: list[DiffableTable] = list(
             set(self.schema) - set(self.schema_snapshot)
         )
 
@@ -379,7 +380,7 @@ class SchemaDiffer:
 
     @property
     def drop_tables(self) -> AlterStatements:
-        drop_tables: t.List[DiffableTable] = list(
+        drop_tables: list[DiffableTable] = list(
             set(self.schema_snapshot) - set(self.schema)
         )
 
@@ -442,7 +443,7 @@ class SchemaDiffer:
 
     def _get_snapshot_table(
         self, table_class_name: str
-    ) -> t.Optional[DiffableTable]:
+    ) -> Optional[DiffableTable]:
         snapshot_table = self.schema_snapshot_map.get(table_class_name, None)
         if snapshot_table:
             return snapshot_table
@@ -463,9 +464,9 @@ class SchemaDiffer:
 
     @property
     def alter_columns(self) -> AlterStatements:
-        response: t.List[str] = []
-        extra_imports: t.List[Import] = []
-        extra_definitions: t.List[Definition] = []
+        response: list[str] = []
+        extra_imports: list[Import] = []
+        extra_definitions: list[Definition] = []
         for table in self.schema:
             snapshot_table = self._get_snapshot_table(table.class_name)
             if snapshot_table:
@@ -563,9 +564,9 @@ class SchemaDiffer:
 
     @property
     def add_columns(self) -> AlterStatements:
-        response: t.List[str] = []
-        extra_imports: t.List[Import] = []
-        extra_definitions: t.List[Definition] = []
+        response: list[str] = []
+        extra_imports: list[Import] = []
+        extra_definitions: list[Definition] = []
         for table in self.schema:
             snapshot_table = self._get_snapshot_table(table.class_name)
             if snapshot_table:
@@ -632,13 +633,13 @@ class SchemaDiffer:
 
     @property
     def new_table_columns(self) -> AlterStatements:
-        new_tables: t.List[DiffableTable] = list(
+        new_tables: list[DiffableTable] = list(
             set(self.schema) - set(self.schema_snapshot)
         )
 
-        response: t.List[str] = []
-        extra_imports: t.List[Import] = []
-        extra_definitions: t.List[Definition] = []
+        response: list[str] = []
+        extra_imports: list[Import] = []
+        extra_definitions: list[Definition] = []
         for table in new_tables:
             if (
                 table.class_name
@@ -681,11 +682,11 @@ class SchemaDiffer:
 
     ###########################################################################
 
-    def get_alter_statements(self) -> t.List[AlterStatements]:
+    def get_alter_statements(self) -> list[AlterStatements]:
         """
         Call to execute the necessary alter commands on the database.
         """
-        alter_statements: t.Dict[str, AlterStatements] = {
+        alter_statements: dict[str, AlterStatements] = {
             "Created tables": self.create_tables,
             "Dropped tables": self.drop_tables,
             "Renamed tables": self.rename_tables,

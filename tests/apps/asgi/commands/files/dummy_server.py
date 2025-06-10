@@ -1,13 +1,14 @@
 import asyncio
 import importlib
 import sys
-import typing as t
+from collections.abc import Callable
+from typing import Union, cast
 
 from httpx import ASGITransport, AsyncClient
 from uvicorn import Config, Server
 
 
-async def dummy_server(app: t.Union[str, t.Callable] = "app:app") -> None:
+async def dummy_server(app: Union[str, Callable] = "app:app") -> None:
     """
     A very simplistic ASGI server. It's used to run the generated ASGI
     applications in unit tests.
@@ -23,7 +24,7 @@ async def dummy_server(app: t.Union[str, t.Callable] = "app:app") -> None:
     if isinstance(app, str):
         path, app_name = app.rsplit(":")
         module = importlib.import_module(path)
-        app = t.cast(t.Callable, getattr(module, app_name))
+        app = cast(Callable, getattr(module, app_name))
 
     try:
         async with AsyncClient(transport=ASGITransport(app=app)) as client:

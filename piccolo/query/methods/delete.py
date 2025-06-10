@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-import typing as t
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, TypeVar, Union
 
 from piccolo.custom_types import Combinable
 from piccolo.query.base import Query
 from piccolo.query.mixins import ReturningDelegate, WhereDelegate
 from piccolo.querystring import QueryString
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
     from piccolo.table import Table
 
@@ -24,13 +25,13 @@ class Delete(Query):
         "where_delegate",
     )
 
-    def __init__(self, table: t.Type[Table], force: bool = False, **kwargs):
+    def __init__(self, table: type[Table], force: bool = False, **kwargs):
         super().__init__(table, **kwargs)
         self.force = force
         self.returning_delegate = ReturningDelegate()
         self.where_delegate = WhereDelegate()
 
-    def where(self: Self, *where: t.Union[Combinable, QueryString]) -> Self:
+    def where(self: Self, *where: Union[Combinable, QueryString]) -> Self:
         self.where_delegate.where(*where)
         return self
 
@@ -52,7 +53,7 @@ class Delete(Query):
             )
 
     @property
-    def default_querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> Sequence[QueryString]:
         query = f"DELETE FROM {self.table._meta.get_formatted_tablename()}"
 
         querystring = QueryString(query)
@@ -74,4 +75,4 @@ class Delete(Query):
         return [querystring]
 
 
-Self = t.TypeVar("Self", bound=Delete)
+Self = TypeVar("Self", bound=Delete)
