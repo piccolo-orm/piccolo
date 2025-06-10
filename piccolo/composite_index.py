@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import typing as t
 from dataclasses import dataclass, field
+from typing import Any, Optional
 
 
 class Composite:
@@ -24,10 +24,10 @@ class CompositeMeta:
     """
 
     # Used for representing the table in migrations.
-    params: t.Dict[str, t.Any] = field(default_factory=dict)
+    params: dict[str, Any] = field(default_factory=dict)
 
     # Set by the Table Metaclass:
-    _name: t.Optional[str] = None
+    _name: Optional[str] = None
 
     @property
     def name(self) -> str:
@@ -46,7 +46,7 @@ class CompositeIndex(Composite):
 
     def __init__(
         self,
-        columns: t.List[str],
+        columns: list[str],
         **kwargs,
     ) -> None:
         """

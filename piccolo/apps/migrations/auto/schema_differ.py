@@ -631,9 +631,9 @@ class SchemaDiffer:
 
     @property
     def add_composite_indexes(self) -> AlterStatements:
-        response: t.List[str] = []
-        extra_imports: t.List[Import] = []
-        extra_definitions: t.List[Definition] = []
+        response: list[str] = []
+        extra_imports: list[Import] = []
+        extra_definitions: list[Definition] = []
         for table in self.schema:
             snapshot_table = self._get_snapshot_table(table.class_name)
             if snapshot_table:
@@ -747,13 +747,13 @@ class SchemaDiffer:
 
     @property
     def new_table_composite_indexes(self) -> AlterStatements:
-        new_tables: t.List[DiffableTable] = list(
+        new_tables: list[DiffableTable] = list(
             set(self.schema) - set(self.schema_snapshot)
         )
 
-        response: t.List[str] = []
-        extra_imports: t.List[Import] = []
-        extra_definitions: t.List[Definition] = []
+        response: list[str] = []
+        extra_imports: list[Import] = []
+        extra_definitions: list[Definition] = []
         for table in new_tables:
             if (
                 table.class_name

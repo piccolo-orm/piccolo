@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from piccolo.columns.base import Column
 from piccolo.query.base import Query
@@ -17,7 +17,7 @@ class DropIndex(Query):
         table: type[Table],
         columns: Union[list[Column], list[str]],
         if_exists: bool = True,
-        name: t.Optional[str] = None,
+        name: Optional[str] = None,
         **kwargs,
     ):
         self.columns = columns

@@ -1309,7 +1309,7 @@ class Table(metaclass=TableMetaclass):
         columns: Union[list[Column], list[str]],
         method: IndexMethod = IndexMethod.btree,
         if_not_exists: bool = False,
-        name: t.Optional[str] = None,
+        name: Optional[str] = None,
     ) -> CreateIndex:
         """
         Create a table index. If multiple columns are specified, this refers
@@ -1333,7 +1333,7 @@ class Table(metaclass=TableMetaclass):
         cls,
         columns: Union[list[Column], list[str]],
         if_exists: bool = True,
-        name: t.Optional[str] = None,
+        name: Optional[str] = None,
     ) -> DropIndex:
         """
         Drop a table index. If multiple columns are specified, this refers

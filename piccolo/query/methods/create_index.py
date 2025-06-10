@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from piccolo.columns import Column
 from piccolo.columns.indexes import IndexMethod
@@ -18,7 +18,7 @@ class CreateIndex(DDL):
         columns: Union[list[Column], list[str]],
         method: IndexMethod = IndexMethod.btree,
         if_not_exists: bool = False,
-        name: t.Optional[str] = None,
+        name: Optional[str] = None,
         **kwargs,
     ):
         self.columns = columns

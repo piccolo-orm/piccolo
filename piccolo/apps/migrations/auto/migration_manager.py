@@ -460,7 +460,7 @@ class MigrationManager:
         table_class_name: str,
         tablename: str,
         composite_index_name: str,
-        schema: t.Optional[str] = None,
+        schema: Optional[str] = None,
     ):
         self.drop_composite_indexes.append(
             DropCompositeIndex(
@@ -1123,7 +1123,7 @@ class MigrationManager:
             for (
                 table_class_name
             ) in self.add_composite_indexes.table_class_names:
-                add_composite_indexes: t.List[AddCompositeIndexClass] = (
+                add_composite_indexes: list[AddCompositeIndexClass] = (
                     self.add_composite_indexes.for_table_class_name(
                         table_class_name
                     )
