@@ -1086,7 +1086,7 @@ class TestTargetColumn(MigrationTestCase):
 class TestForeignKeySelf(MigrationTestCase):
     def setUp(self) -> None:
         class TableA(Table):
-            id = UUID(primary_key=True)
+            id = UUID(primary_key=True, unique=True)
             table_a: ForeignKey[TableA] = ForeignKey("self")
 
         self.table_classes: list[type[Table]] = [TableA]
@@ -1136,14 +1136,16 @@ class TestAddForeignKeySelf(MigrationTestCase):
                 [
                     create_table_class(
                         class_name="MyTable",
-                        class_members={"id": UUID(primary_key=True)},
+                        class_members={
+                            "id": UUID(primary_key=True, unique=True)
+                        },
                     )
                 ],
                 [
                     create_table_class(
                         class_name="MyTable",
                         class_members={
-                            "id": UUID(primary_key=True),
+                            "id": UUID(primary_key=True, unique=True),
                             "fk": ForeignKey("self"),
                         },
                     )
