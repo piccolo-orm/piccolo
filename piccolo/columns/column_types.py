@@ -336,6 +336,9 @@ class Varchar(Column):
 
         self.length = length
         self.default = default
+        # Check the uniqueness of the primary key
+        if self._validate_primary_key_uniqueness(kwargs) is False:
+            raise ValueError("The primary key must be unique.")
         super().__init__(length=length, default=default, **kwargs)
 
     @property
@@ -442,6 +445,9 @@ class Text(Column):
     ) -> None:
         self._validate_default(default, (str, None))
         self.default = default
+        # Check the uniqueness of the primary key
+        if self._validate_primary_key_uniqueness(kwargs) is False:
+            raise ValueError("The primary key must be unique.")
         super().__init__(default=default, **kwargs)
 
     ###########################################################################
@@ -524,6 +530,9 @@ class UUID(Column):
                 ) from e
 
         self.default = default
+        # Check the uniqueness of the primary key
+        if self._validate_primary_key_uniqueness(kwargs) is False:
+            raise ValueError("The primary key must be unique.")
         super().__init__(default=default, **kwargs)
 
     ###########################################################################
@@ -571,6 +580,9 @@ class Integer(Column):
     ) -> None:
         self._validate_default(default, (int, None))
         self.default = default
+        # Check the uniqueness of the primary key
+        if self._validate_primary_key_uniqueness(kwargs) is False:
+            raise ValueError("The primary key must be unique.")
         super().__init__(default=default, **kwargs)
 
     ###########################################################################

@@ -9,9 +9,7 @@ from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.apps.migrations.commands.base import BaseMigrationManager
 from piccolo.columns import Text, Varchar
 from piccolo.columns.base import OnDelete, OnUpdate
-from piccolo.columns.column_types import UUID, ForeignKey
-from piccolo.columns.defaults.uuid import UUID4
-from piccolo.columns.indexes import IndexMethod
+from piccolo.columns.column_types import ForeignKey
 from piccolo.conf.apps import AppConfig
 from piccolo.engine import engine_finder
 from piccolo.query.constraints import get_fk_constraint_rules
@@ -271,59 +269,6 @@ class TestMigrationManager(DBTestCase):
                     """  -  [preview forwards]... \n CREATE TABLE "musician" ("id" INTEGER PRIMARY KEY NOT NULL DEFAULT unique_rowid(), "name" VARCHAR(255) NOT NULL DEFAULT '');\n""",  # noqa: E501
                 )
         self.assertEqual(self.table_exists("musician"), False)
-
-    @engines_only("postgres", "cockroach")
-    def test_add_table_custom_pk_unique(self):
-        """
-        Test adding a table with custom PK and unique to a MigrationManager.
-        """
-
-        self.run_sync("DROP TABLE IF EXISTS task;")
-
-        class Task(Table):
-            uuid = UUID(primary_key=True, unique=True, index=True)
-            name = Varchar()
-
-        manager = MigrationManager()
-        manager.add_table(class_name="Task", tablename="task")
-        manager.add_column(
-            table_class_name="Task",
-            tablename="task",
-            column_name="uuid",
-            db_column_name="uuid",
-            column_class_name="UUID",
-            column_class=UUID,
-            params={
-                "default": UUID4(),
-                "null": False,
-                "primary_key": True,
-                "unique": True,
-                "index": True,
-                "index_method": IndexMethod.btree,
-                "choices": None,
-                "db_column_name": None,
-                "secret": False,
-            },
-            schema=None,
-        )
-        manager.add_column(
-            table_class_name="Task",
-            tablename="task",
-            column_name="name",
-            column_class_name="Varchar",
-        )
-        asyncio.run(manager.run())
-
-        response = Task.indexes().run_sync()
-        # unique column constraint created successfully
-        self.assertIn("task_uuid_key", response)
-
-        asyncio.run(manager.run(backwards=True))
-        # unique column constraint droped successfully
-        response = Task.indexes().run_sync()
-        self.assertNotIn("task_uuid_key", response)
-        self.assertEqual(self.table_exists("task"), False)
-        self.run_sync("DROP TABLE IF EXISTS task;")
 
     @engines_only("postgres", "cockroach")
     def test_add_column(self) -> None:

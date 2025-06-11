@@ -599,6 +599,16 @@ class Column(Selectable):
 
         return True
 
+    def _validate_primary_key_uniqueness(self, kwargs: ColumnKwargs) -> bool:
+        """
+        Ensure that the primary key is unique and prevent the ``unique``
+        argument from being set to False if the ``primary_key`` argument
+        is set to True.
+        """
+        if kwargs.get("primary_key") is True and kwargs.get("unique") is False:
+            return False
+        return True
+
     def is_in(self, values: list[Any]) -> Where:
         if len(values) == 0:
             raise ValueError(
