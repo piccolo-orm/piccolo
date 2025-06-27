@@ -12,3 +12,4 @@ Functions can be used to modify how queries are run, and what is returned.
     ./datetime
     ./type_conversion
     ./aggregate
+    ./array
