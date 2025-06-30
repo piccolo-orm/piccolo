@@ -1,7 +1,39 @@
-from typing import Any
+from typing import Any, Union
 
 from piccolo.columns.base import Column
 from piccolo.querystring import QueryString
+
+
+class ArrayCat(QueryString):
+    def __init__(self, column: Column, value: Union[Any, list[Any]]):
+        """
+        Concatenate two arrays.
+
+        :param columns:
+            Identifies the column.
+        :param value:
+            The value to concatenate.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: ArrayCat(Ticket.seat_numbers, [10])
+            ... }).where(Ticket.id == 1)
+
+        """
+        engine_type = column._meta.engine_type
+        if engine_type not in ("postgres", "cockroach"):
+            raise ValueError(
+                "Only Postgres and Cockroach support array concatenating."
+            )
+
+        if not isinstance(value, list):
+            value = [value]
+
+        super().__init__(
+            f'array_cat("{column._meta.db_column_name}", {{}})',
+            value,
+        )
 
 
 class ArrayAppend(QueryString):
@@ -24,7 +56,7 @@ class ArrayAppend(QueryString):
         engine_type = column._meta.engine_type
         if engine_type not in ("postgres", "cockroach"):
             raise ValueError(
-                "Only Postgres and Cockroach support array removing."
+                "Only Postgres and Cockroach support array appending."
             )
 
         super().__init__(
@@ -53,7 +85,7 @@ class ArrayPrepend(QueryString):
         engine_type = column._meta.engine_type
         if engine_type not in ("postgres", "cockroach"):
             raise ValueError(
-                "Only Postgres and Cockroach support array removing."
+                "Only Postgres and Cockroach support array prepending."
             )
 
         super().__init__(
@@ -84,7 +116,7 @@ class ArrayReplace(QueryString):
         engine_type = column._meta.engine_type
         if engine_type not in ("postgres", "cockroach"):
             raise ValueError(
-                "Only Postgres and Cockroach support array removing."
+                "Only Postgres and Cockroach support array substitution."
             )
 
         super().__init__(
@@ -125,6 +157,7 @@ class ArrayRemove(QueryString):
 
 
 __all__ = (
+    "ArrayCat",
     "ArrayAppend",
     "ArrayPrepend",
     "ArrayReplace",

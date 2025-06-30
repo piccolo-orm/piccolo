@@ -15,7 +15,7 @@ from piccolo.columns.column_types import (
 from piccolo.querystring import QueryString
 from piccolo.table import Table
 from piccolo.testing.test_case import TableTest
-from tests.base import engines_only, engines_skip, sqlite_only
+from tests.base import engines_only, engines_skip
 
 
 class MyTable(Table):
@@ -180,67 +180,6 @@ class TestArray(TableTest):
             .where(MyTable.value.not_any(QueryString("{}::INTEGER", 4)))
             .run_sync(),
             [{"value": [1, 2, 3]}],
-        )
-
-    @engines_skip("sqlite")
-    @pytest.mark.cockroach_array_slow
-    def test_cat(self):
-        """
-        Make sure values can be appended to an array.
-
-        In CockroachDB <= v22.2.0 we had this error:
-
-        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-
-        In newer CockroachDB versions, it runs but is very slow:
-
-        * https://github.com/piccolo-orm/piccolo/issues/1005
-
-        """  # noqa: E501
-        MyTable(value=[1, 1, 1]).save().run_sync()
-
-        MyTable.update(
-            {MyTable.value: MyTable.value.cat([2])}, force=True
-        ).run_sync()
-
-        self.assertEqual(
-            MyTable.select(MyTable.value).run_sync(),
-            [{"value": [1, 1, 1, 2]}],
-        )
-
-        # Try plus symbol
-
-        MyTable.update(
-            {MyTable.value: MyTable.value + [3]}, force=True
-        ).run_sync()
-
-        self.assertEqual(
-            MyTable.select(MyTable.value).run_sync(),
-            [{"value": [1, 1, 1, 2, 3]}],
-        )
-
-        # Make sure non-list values work
-
-        MyTable.update(
-            {MyTable.value: MyTable.value + 4}, force=True
-        ).run_sync()
-
-        self.assertEqual(
-            MyTable.select(MyTable.value).run_sync(),
-            [{"value": [1, 1, 1, 2, 3, 4]}],
-        )
-
-    @sqlite_only
-    def test_cat_sqlite(self):
-        """
-        If using SQLite then an exception should be raised currently.
-        """
-        with self.assertRaises(ValueError) as manager:
-            MyTable.value.cat([2])
-
-        self.assertEqual(
-            str(manager.exception),
-            "Only Postgres and Cockroach support array appending.",
         )
 
 

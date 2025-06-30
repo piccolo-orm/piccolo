@@ -437,9 +437,3 @@ all
 ===
 
 .. automethod:: Array.all
-
-===
-cat
-===
-
-.. automethod:: Array.cat

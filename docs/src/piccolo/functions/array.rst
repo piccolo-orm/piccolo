@@ -5,6 +5,11 @@ Array functions
 
 .. note:: This is for Postgres / Cockroach only.
 
+ArrayCat
+--------
+
+.. autoclass:: ArrayCat
+
 ArrayAppend
 -----------
 
