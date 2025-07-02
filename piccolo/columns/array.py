@@ -9,7 +9,7 @@ class ArrayCat(QueryString):
         """
         Concatenate two arrays.
 
-        :param columns:
+        :param column:
             Identifies the column.
         :param value:
             The value to concatenate.
@@ -35,7 +35,7 @@ class ArrayAppend(QueryString):
         """
         Append an element to the end of an array.
 
-        :param columns:
+        :param column:
             Identifies the column.
         :param value:
             The value to append.
@@ -60,7 +60,7 @@ class ArrayPrepend(QueryString):
 
         :param value:
             The value to prepend.
-        :param columns:
+        :param column:
             Identifies the column.
 
         """
@@ -81,7 +81,7 @@ class ArrayReplace(QueryString):
         """
         Replace each array element equal to the given value with a new value.
 
-        :param columns:
+        :param column:
             Identifies the column.
         :param old_value:
             The old value to be replaced.
@@ -108,7 +108,7 @@ class ArrayRemove(QueryString):
         Remove all elements equal to the given value
         from the array (array must be one-dimensional).
 
-        :param columns:
+        :param column:
             Identifies the column.
         :param value:
             The value to remove.
