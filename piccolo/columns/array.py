@@ -24,10 +24,7 @@ class ArrayCat(QueryString):
         if not isinstance(value, list):
             value = [value]
 
-        super().__init__(
-            f'array_cat("{column._meta.db_column_name}", {{}})',
-            value,
-        )
+        super().__init__("array_cat({}, {})", column, value)
 
 
 class ArrayAppend(QueryString):
@@ -47,10 +44,7 @@ class ArrayAppend(QueryString):
                 "Only Postgres and Cockroach support array appending."
             )
 
-        super().__init__(
-            f'array_append("{column._meta.db_column_name}", {{}})',
-            value,
-        )
+        super().__init__("array_append({}, {})", column, value)
 
 
 class ArrayPrepend(QueryString):
@@ -70,10 +64,7 @@ class ArrayPrepend(QueryString):
                 "Only Postgres and Cockroach support array prepending."
             )
 
-        super().__init__(
-            f'array_prepend({{}}, "{column._meta.db_column_name}")',
-            value,
-        )
+        super().__init__("array_prepend({}, {})", value, column)
 
 
 class ArrayReplace(QueryString):
@@ -96,9 +87,7 @@ class ArrayReplace(QueryString):
             )
 
         super().__init__(
-            f'array_replace("{column._meta.db_column_name}", {{}}, {{}})',
-            old_value,
-            new_value,
+            "array_replace({}, {}, {})", column, old_value, new_value
         )
 
 
@@ -120,10 +109,7 @@ class ArrayRemove(QueryString):
                 "Only Postgres and Cockroach support array removing."
             )
 
-        super().__init__(
-            f'array_remove("{column._meta.db_column_name}", {{}})',
-            value,
-        )
+        super().__init__("array_remove({}, {})", column, value)
 
 
 __all__ = (

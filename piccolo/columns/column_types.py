@@ -2849,14 +2849,6 @@ class Array(Column):
             ...     Ticket.seat_numbers: Ticket.seat_numbers.remove(1000)
             ... }).where(Ticket.id == 1)
 
-        You can also use the ``-`` symbol if you prefer:
-
-        .. code-block:: python
-
-            >>> await Ticket.update({
-            ...     Ticket.seat_numbers: Ticket.seat_numbers - 1000
-            ... }).where(Ticket.id == 1)
-
         """
         return ArrayRemove(self, value=value)
 
@@ -2902,9 +2894,6 @@ class Array(Column):
 
     def __add__(self, value: Union[Any, list[Any]]) -> QueryString:
         return self.cat(value)
-
-    def __sub__(self, value: Any) -> QueryString:
-        return self.remove(value)
 
     ###########################################################################
     # Descriptors

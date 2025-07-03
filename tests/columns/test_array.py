@@ -386,17 +386,6 @@ class TestArray(TableTest):
             [{"value": [1, 3]}],
         )
 
-        # Try minus symbol
-
-        MyTable.update(
-            {MyTable.value: MyTable.value - 3}, force=True
-        ).run_sync()
-
-        self.assertEqual(
-            MyTable.select(MyTable.value).run_sync(),
-            [{"value": [1]}],
-        )
-
     @sqlite_only
     def test_remove_sqlite(self):
         """
