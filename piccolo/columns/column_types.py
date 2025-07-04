@@ -2813,7 +2813,7 @@ class Array(Column):
 
     def cat(self, value: Union[Any, list[Any]]) -> QueryString:
         """
-        Used in an ``update`` query to append items to an array.
+        Used in an ``update`` query to concatenate two arrays.
 
         .. code-block:: python
 
@@ -2830,17 +2830,70 @@ class Array(Column):
             ... }).where(Ticket.id == 1)
 
         """
-        engine_type = self._meta.engine_type
-        if engine_type != "postgres" and engine_type != "cockroach":
-            raise ValueError(
-                "Only Postgres and Cockroach support array appending."
-            )
+        from piccolo.query.functions.array import ArrayCat
 
-        if not isinstance(value, list):
-            value = [value]
+        return ArrayCat(self, value=value)
 
-        db_column_name = self._meta.db_column_name
-        return QueryString(f'array_cat("{db_column_name}", {{}})', value)
+    def remove(self, value: Any) -> QueryString:
+        """
+        Used in an ``update`` query to remove item from an array.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.remove(1000)
+            ... }).where(Ticket.id == 1)
+
+        """
+        from piccolo.query.functions.array import ArrayRemove
+
+        return ArrayRemove(self, value=value)
+
+    def prepend(self, value: Any) -> QueryString:
+        """
+        Used in an ``update`` query to prepend item to an array.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.prepend(1000)
+            ... }).where(Ticket.id == 1)
+
+        """
+        from piccolo.query.functions.array import ArrayPrepend
+
+        return ArrayPrepend(self, value=value)
+
+    def append(self, value: Any) -> QueryString:
+        """
+        Used in an ``update`` query to append item to an array.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.append(1000)
+            ... }).where(Ticket.id == 1)
+
+        """
+        from piccolo.query.functions.array import ArrayAppend
+
+        return ArrayAppend(self, value=value)
+
+    def replace(self, old_value: Any, new_value: Any) -> QueryString:
+        """
+        Used in an ``update`` query to replace each array item
+        equal to the given value with a new value.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.replace(1000, 500)
+            ... }).where(Ticket.id == 1)
+
+        """
+        from piccolo.query.functions.array import ArrayReplace
+
+        return ArrayReplace(self, old_value=old_value, new_value=new_value)
 
     def __add__(self, value: Union[Any, list[Any]]) -> QueryString:
         return self.cat(value)
