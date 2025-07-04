@@ -47,13 +47,6 @@ from typing import (
 
 from typing_extensions import Unpack
 
-from piccolo.columns.array import (
-    ArrayAppend,
-    ArrayCat,
-    ArrayPrepend,
-    ArrayRemove,
-    ArrayReplace,
-)
 from piccolo.columns.base import (
     Column,
     ColumnKwargs,
@@ -2837,6 +2830,8 @@ class Array(Column):
             ... }).where(Ticket.id == 1)
 
         """
+        from piccolo.query.functions.array import ArrayCat
+
         return ArrayCat(self, value=value)
 
     def remove(self, value: Any) -> QueryString:
@@ -2850,6 +2845,8 @@ class Array(Column):
             ... }).where(Ticket.id == 1)
 
         """
+        from piccolo.query.functions.array import ArrayRemove
+
         return ArrayRemove(self, value=value)
 
     def prepend(self, value: Any) -> QueryString:
@@ -2863,6 +2860,8 @@ class Array(Column):
             ... }).where(Ticket.id == 1)
 
         """
+        from piccolo.query.functions.array import ArrayPrepend
+
         return ArrayPrepend(self, value=value)
 
     def append(self, value: Any) -> QueryString:
@@ -2876,6 +2875,8 @@ class Array(Column):
             ... }).where(Ticket.id == 1)
 
         """
+        from piccolo.query.functions.array import ArrayAppend
+
         return ArrayAppend(self, value=value)
 
     def replace(self, old_value: Any, new_value: Any) -> QueryString:
@@ -2890,6 +2891,8 @@ class Array(Column):
             ... }).where(Ticket.id == 1)
 
         """
+        from piccolo.query.functions.array import ArrayReplace
+
         return ArrayReplace(self, old_value=old_value, new_value=new_value)
 
     def __add__(self, value: Union[Any, list[Any]]) -> QueryString:
