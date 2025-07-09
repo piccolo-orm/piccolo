@@ -12,6 +12,7 @@ from enum import Enum
 from piccolo.columns import (
     JSON,
     UUID,
+    Array,
     Boolean,
     Date,
     ForeignKey,
@@ -149,6 +150,7 @@ class Album(Table):
     band = ForeignKey(Band)
     release_date = Date()
     recorded_at = ForeignKey(RecordingStudio)
+    awards = Array(Varchar())
 
     @classmethod
     def get_readable(cls) -> Readable:
@@ -265,6 +267,7 @@ def populate():
                 Album.recorded_at: recording_studio_1,
                 Album.band: pythonistas,
                 Album.release_date: datetime.date(year=2021, month=1, day=1),
+                Album.awards: ["Grammy Award 2021"],
             }
         ),
         Album(
@@ -273,6 +276,7 @@ def populate():
                 Album.recorded_at: recording_studio_2,
                 Album.band: rustaceans,
                 Album.release_date: datetime.date(year=2022, month=2, day=2),
+                Album.awards: ["Mercury Prize 2022"],
             }
         ),
     ).run_sync()
