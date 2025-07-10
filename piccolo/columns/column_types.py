@@ -2836,7 +2836,7 @@ class Array(Column):
 
     def remove(self, value: Any) -> QueryString:
         """
-        Used in an ``update`` query to remove item from an array.
+        Used in an ``update`` query to remove an item from an array.
 
         .. code-block:: python
 
@@ -2851,7 +2851,7 @@ class Array(Column):
 
     def prepend(self, value: Any) -> QueryString:
         """
-        Used in an ``update`` query to prepend item to an array.
+        Used in an ``update`` query to prepend an item to an array.
 
         .. code-block:: python
 
@@ -2866,7 +2866,7 @@ class Array(Column):
 
     def append(self, value: Any) -> QueryString:
         """
-        Used in an ``update`` query to append item to an array.
+        Used in an ``update`` query to append an item to an array.
 
         .. code-block:: python
 
