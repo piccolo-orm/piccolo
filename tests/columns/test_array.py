@@ -186,7 +186,7 @@ class TestArray(TableTest):
     @pytest.mark.cockroach_array_slow
     def test_cat(self):
         """
-        Make sure values can be appended to an array.
+        Make sure values can be appended to an array and that we can concatenate two arrays.
 
         In CockroachDB <= v22.2.0 we had this error:
 
@@ -240,7 +240,163 @@ class TestArray(TableTest):
 
         self.assertEqual(
             str(manager.exception),
+            "Only Postgres and Cockroach support array concatenating.",
+        )
+
+    @engines_skip("sqlite")
+    @pytest.mark.cockroach_array_slow
+    def test_prepend(self):
+        """
+        Make sure values can be added to the beginning of the array.
+
+        In CockroachDB <= v22.2.0 we had this error:
+
+        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+
+        In newer CockroachDB versions, it runs but is very slow:
+
+        * https://github.com/piccolo-orm/piccolo/issues/1005
+
+        """  # noqa: E501
+        MyTable(value=[1, 1, 1]).save().run_sync()
+
+        MyTable.update(
+            {MyTable.value: MyTable.value.prepend(3)}, force=True
+        ).run_sync()
+
+        self.assertEqual(
+            MyTable.select(MyTable.value).run_sync(),
+            [{"value": [3, 1, 1, 1]}],
+        )
+
+    @sqlite_only
+    def test_prepend_sqlite(self):
+        """
+        If using SQLite then an exception should be raised currently.
+        """
+        with self.assertRaises(ValueError) as manager:
+            MyTable.value.prepend(2)
+
+        self.assertEqual(
+            str(manager.exception),
+            "Only Postgres and Cockroach support array prepending.",
+        )
+
+    @engines_skip("sqlite")
+    @pytest.mark.cockroach_array_slow
+    def test_append(self):
+        """
+        Make sure values can be appended to an array.
+
+        In CockroachDB <= v22.2.0 we had this error:
+
+        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+
+        In newer CockroachDB versions, it runs but is very slow:
+
+        * https://github.com/piccolo-orm/piccolo/issues/1005
+
+        """  # noqa: E501
+        MyTable(value=[1, 1, 1]).save().run_sync()
+
+        MyTable.update(
+            {MyTable.value: MyTable.value.append(3)}, force=True
+        ).run_sync()
+
+        self.assertEqual(
+            MyTable.select(MyTable.value).run_sync(),
+            [{"value": [1, 1, 1, 3]}],
+        )
+
+    @sqlite_only
+    def test_append_sqlite(self):
+        """
+        If using SQLite then an exception should be raised currently.
+        """
+        with self.assertRaises(ValueError) as manager:
+            MyTable.value.append(2)
+
+        self.assertEqual(
+            str(manager.exception),
             "Only Postgres and Cockroach support array appending.",
+        )
+
+    @engines_skip("sqlite")
+    @pytest.mark.cockroach_array_slow
+    def test_replace(self):
+        """
+        Make sure values can be swapped in the array.
+
+        In CockroachDB <= v22.2.0 we had this error:
+
+        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+
+        In newer CockroachDB versions, it runs but is very slow:
+
+        * https://github.com/piccolo-orm/piccolo/issues/1005
+
+        """  # noqa: E501
+        MyTable(value=[1, 1, 1]).save().run_sync()
+
+        MyTable.update(
+            {MyTable.value: MyTable.value.replace(1, 2)}, force=True
+        ).run_sync()
+
+        self.assertEqual(
+            MyTable.select(MyTable.value).run_sync(),
+            [{"value": [2, 2, 2]}],
+        )
+
+    @sqlite_only
+    def test_replace_sqlite(self):
+        """
+        If using SQLite then an exception should be raised currently.
+        """
+        with self.assertRaises(ValueError) as manager:
+            MyTable.value.replace(1, 2)
+
+        self.assertEqual(
+            str(manager.exception),
+            "Only Postgres and Cockroach support array substitution.",
+        )
+
+    @engines_skip("sqlite")
+    @pytest.mark.cockroach_array_slow
+    def test_remove(self):
+        """
+        Make sure values can be removed from an array.
+
+        In CockroachDB <= v22.2.0 we had this error:
+
+        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+
+        In newer CockroachDB versions, it runs but is very slow:
+
+        * https://github.com/piccolo-orm/piccolo/issues/1005
+
+        """  # noqa: E501
+        MyTable(value=[1, 2, 3]).save().run_sync()
+
+        MyTable.update(
+            {MyTable.value: MyTable.value.remove(2)}, force=True
+        ).run_sync()
+
+        self.assertEqual(
+            MyTable.select(MyTable.value).run_sync(),
+            [{"value": [1, 3]}],
+        )
+
+    @sqlite_only
+    def test_remove_sqlite(self):
+        """
+        If using SQLite then an exception should be raised currently.
+        """
+        with self.assertRaises(ValueError) as manager:
+            MyTable.value.remove(2)
+
+        self.assertEqual(
+            str(manager.exception),
+            "Only Postgres and Cockroach support array removing.",
         )
 
 
