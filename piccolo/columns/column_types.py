@@ -2829,6 +2829,8 @@ class Array(Column):
             ...     Ticket.seat_numbers: Ticket.seat_numbers + [1000]
             ... }).where(Ticket.id == 1)
 
+        .. note:: Postgres / CockroachDB only
+
         """
         from piccolo.query.functions.array import ArrayCat
 
@@ -2843,6 +2845,8 @@ class Array(Column):
             >>> await Ticket.update({
             ...     Ticket.seat_numbers: Ticket.seat_numbers.remove(1000)
             ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
 
         """
         from piccolo.query.functions.array import ArrayRemove
@@ -2859,6 +2863,8 @@ class Array(Column):
             ...     Ticket.seat_numbers: Ticket.seat_numbers.prepend(1000)
             ... }).where(Ticket.id == 1)
 
+        .. note:: Postgres / CockroachDB only
+
         """
         from piccolo.query.functions.array import ArrayPrepend
 
@@ -2873,6 +2879,8 @@ class Array(Column):
             >>> await Ticket.update({
             ...     Ticket.seat_numbers: Ticket.seat_numbers.append(1000)
             ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
 
         """
         from piccolo.query.functions.array import ArrayAppend
@@ -2889,6 +2897,8 @@ class Array(Column):
             >>> await Ticket.update({
             ...     Ticket.seat_numbers: Ticket.seat_numbers.replace(1000, 500)
             ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
 
         """
         from piccolo.query.functions.array import ArrayReplace
