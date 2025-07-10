@@ -5,9 +5,7 @@ from piccolo.querystring import QueryString
 
 
 class ArrayCat(QueryString):
-    def __init__(
-        self, column: Union[Column, QueryString], value: Union[Any, list[Any]]
-    ):
+    def __init__(self, column: Union[Column, QueryString], value: list[Any]):
         """
         Concatenate two arrays.
 
