@@ -2828,7 +2828,7 @@ class Array(Column):
 
             >>> await Ticket.update({
             ...     Ticket.seat_numbers: Ticket.seat_numbers + [1000]
-            ... }).where(Ticket.    id == 1)
+            ... }).where(Ticket.id == 1)
 
         To concatenate to the start:
 
@@ -2851,7 +2851,7 @@ class Array(Column):
         """
         from piccolo.query.functions.array import ArrayCat
 
-        return ArrayCat(self, value=value)
+        return ArrayCat(array_1=self, array_2=value)
 
     def remove(self, value: Any) -> QueryString:
         """

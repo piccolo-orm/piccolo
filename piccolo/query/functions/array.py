@@ -1,14 +1,18 @@
-from typing import Any, Union
+from typing import TYPE_CHECKING, Any, Union
 
 from typing_extensions import TypeAlias, TypeGuard
 
-from piccolo.columns.base import Column
-from piccolo.querystring import QueryString
+if TYPE_CHECKING:
+    from piccolo.columns.base import Column
+    from piccolo.querystring import QueryString
 
-ArrayType: TypeAlias = Union[Column, QueryString, list[Any]]
+    ArrayType: TypeAlias = Union[Column, QueryString, list[Any]]
 
 
 def is_array_type(value) -> TypeGuard[ArrayType]:
+    from piccolo.columns.base import Column
+    from piccolo.querystring import QueryString
+
     return isinstance(value, QueryString) or isinstance(value, Column)
 
 
@@ -53,6 +57,17 @@ class ArrayQueryString(QueryString, ArrayMethodsMixin):
     pass
 
 
+def validate_engine(value):
+    from piccolo.columns.base import Column
+
+    if isinstance(value, Column):
+        engine_type = value._meta.engine_type
+        if engine_type not in ("postgres", "cockroach"):
+            raise ValueError(
+                "Only Postgres and CockroachDB support this feature."
+            )
+
+
 class ArrayCat(ArrayQueryString):
     def __init__(
         self,
@@ -69,13 +84,7 @@ class ArrayCat(ArrayQueryString):
 
         """
         for value in (array_1, array_2):
-            if isinstance(value, Column):
-                engine_type = value._meta.engine_type
-                if engine_type not in ("postgres", "cockroach"):
-                    raise ValueError(
-                        "Only Postgres and Cockroach support array "
-                        "concatenation."
-                    )
+            validate_engine(value)
 
         super().__init__("array_cat({}, {})", array_1, array_2)
 
@@ -91,12 +100,7 @@ class ArrayAppend(ArrayQueryString):
             The value to append.
 
         """
-        if isinstance(array, Column):
-            engine_type = array._meta.engine_type
-            if engine_type not in ("postgres", "cockroach"):
-                raise ValueError(
-                    "Only Postgres and Cockroach support array appending."
-                )
+        validate_engine(array)
 
         super().__init__("array_append({}, {})", array, value)
 
@@ -112,12 +116,7 @@ class ArrayPrepend(ArrayQueryString):
             The value to prepend.
 
         """
-        if isinstance(array, Column):
-            engine_type = array._meta.engine_type
-            if engine_type not in ("postgres", "cockroach"):
-                raise ValueError(
-                    "Only Postgres and Cockroach support array prepending."
-                )
+        validate_engine(value)
 
         super().__init__("array_prepend({}, {})", value, array)
 
@@ -135,12 +134,7 @@ class ArrayReplace(ArrayQueryString):
             The new value we are replacing with.
 
         """
-        if isinstance(array, Column):
-            engine_type = array._meta.engine_type
-            if engine_type not in ("postgres", "cockroach"):
-                raise ValueError(
-                    "Only Postgres and Cockroach support array substitution."
-                )
+        validate_engine(array)
 
         super().__init__(
             "array_replace({}, {}, {})", array, old_value, new_value
@@ -159,12 +153,7 @@ class ArrayRemove(ArrayQueryString):
             The value to remove.
 
         """
-        if isinstance(array, Column):
-            engine_type = array._meta.engine_type
-            if engine_type not in ("postgres", "cockroach"):
-                raise ValueError(
-                    "Only Postgres and Cockroach support array removing."
-                )
+        validate_engine(array)
 
         super().__init__("array_remove({}, {})", array, value)
 
