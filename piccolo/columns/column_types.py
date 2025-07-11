@@ -2821,29 +2821,114 @@ class Array(Column):
             ...     Ticket.seat_numbers: Ticket.seat_numbers.cat([1000])
             ... }).where(Ticket.id == 1)
 
-        You can also use the ``+`` symbol if you prefer:
+        You can also use the ``+`` symbol if you prefer. To concatenate to
+        the end:
 
         .. code-block:: python
 
             >>> await Ticket.update({
             ...     Ticket.seat_numbers: Ticket.seat_numbers + [1000]
+            ... }).where(Ticket.    id == 1)
+
+        To concatenate to the start:
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: [1000] + Ticket.seat_numbers
             ... }).where(Ticket.id == 1)
 
+        You can concatenate multiple arrays in one go:
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: [1000] + Ticket.seat_numbers + [2000]
+            ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
+
         """
-        engine_type = self._meta.engine_type
-        if engine_type != "postgres" and engine_type != "cockroach":
-            raise ValueError(
-                "Only Postgres and Cockroach support array appending."
-            )
+        from piccolo.query.functions.array import ArrayCat
 
-        if not isinstance(value, list):
-            value = [value]
+        return ArrayCat(self, value=value)
 
-        db_column_name = self._meta.db_column_name
-        return QueryString(f'array_cat("{db_column_name}", {{}})', value)
+    def remove(self, value: Any) -> QueryString:
+        """
+        Used in an ``update`` query to remove an item from an array.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.remove(1000)
+            ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
+
+        """
+        from piccolo.query.functions.array import ArrayRemove
+
+        return ArrayRemove(self, value=value)
+
+    def prepend(self, value: Any) -> QueryString:
+        """
+        Used in an ``update`` query to prepend an item to an array.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.prepend(1000)
+            ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
+
+        """
+        from piccolo.query.functions.array import ArrayPrepend
+
+        return ArrayPrepend(self, value=value)
+
+    def append(self, value: Any) -> QueryString:
+        """
+        Used in an ``update`` query to append an item to an array.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.append(1000)
+            ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
+
+        """
+        from piccolo.query.functions.array import ArrayAppend
+
+        return ArrayAppend(self, value=value)
+
+    def replace(self, old_value: Any, new_value: Any) -> QueryString:
+        """
+        Used in an ``update`` query to replace each array item
+        equal to the given value with a new value.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.replace(1000, 500)
+            ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
+
+        """
+        from piccolo.query.functions.array import ArrayReplace
+
+        return ArrayReplace(self, old_value=old_value, new_value=new_value)
 
     def __add__(self, value: Union[Any, list[Any]]) -> QueryString:
         return self.cat(value)
+
+    def __radd__(self, value: list[Any]) -> QueryString:
+        from piccolo.query.functions.array import ArrayCat
+
+        return ArrayCat(array_1=value, array_2=self)
 
     ###########################################################################
     # Descriptors

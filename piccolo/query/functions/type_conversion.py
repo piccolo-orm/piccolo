@@ -29,11 +29,11 @@ class Cast(QueryString):
         """
         # Make sure the identifier is a supported type.
 
-        if not isinstance(identifier, (Column, QueryString)):
-            raise ValueError(
-                "The identifier is an unsupported type - only Column and "
-                "QueryString instances are allowed."
-            )
+        # if not isinstance(identifier, (Column, QueryString)):
+        #     raise ValueError(
+        #         "The identifier is an unsupported type - only Column and "
+        #         "QueryString instances are allowed."
+        #     )
 
         #######################################################################
         # Convert `as_type` to a string which can be used in the query.
