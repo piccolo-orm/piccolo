@@ -443,3 +443,28 @@ cat
 ===
 
 .. automethod:: Array.cat
+
+======
+remove
+======
+
+.. automethod:: Array.remove
+
+======
+append
+======
+
+.. automethod:: Array.append
+
+
+=======
+prepend
+=======
+
+.. automethod:: Array.prepend
+
+=======
+replace
+=======
+
+.. automethod:: Array.replace

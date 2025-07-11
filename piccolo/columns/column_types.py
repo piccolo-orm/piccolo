@@ -2811,9 +2811,9 @@ class Array(Column):
         else:
             raise ValueError("Unrecognised engine type")
 
-    def cat(self, value: Union[Any, list[Any]]) -> QueryString:
+    def cat(self, value: list[Any]) -> QueryString:
         """
-        Used in an ``update`` query to append items to an array.
+        Used in an ``update`` query to concatenate two arrays.
 
         .. code-block:: python
 
@@ -2922,7 +2922,7 @@ class Array(Column):
 
         return ArrayReplace(self, old_value=old_value, new_value=new_value)
 
-    def __add__(self, value: Union[Any, list[Any]]) -> QueryString:
+    def __add__(self, value: list[Any]) -> QueryString:
         return self.cat(value)
 
     def __radd__(self, value: list[Any]) -> QueryString:
