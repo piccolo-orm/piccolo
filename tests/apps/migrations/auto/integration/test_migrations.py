@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import datetime
 import decimal
 import os
@@ -12,6 +13,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Optional
 from unittest.mock import MagicMock, patch
 
+from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.apps.migrations.auto.operations import RenameTable
 from piccolo.apps.migrations.commands.backwards import (
     BackwardsMigrationManager,
@@ -48,6 +50,7 @@ from piccolo.columns.column_types import (
     Varchar,
 )
 from piccolo.columns.defaults.uuid import UUID4
+from piccolo.columns.indexes import IndexMethod
 from piccolo.columns.m2m import M2M
 from piccolo.columns.reference import LazyTableReference
 from piccolo.conf.apps import AppConfig
@@ -628,65 +631,6 @@ class TestMigrations(MigrationTestCase):
                     x.data_type == "numeric",
                     x.is_nullable == "NO",
                     x.column_default == "0",
-                ]
-            ),
-        )
-
-    @engines_skip("cockroach")
-    def test_array_column_integer(self):
-        """
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/35730 "column my_column is of type int[] and thus is not indexable"
-        """  # noqa: E501
-        self._test_migrations(
-            table_snapshots=[
-                [self.table(column)]
-                for column in [
-                    Array(base_column=Integer()),
-                    Array(base_column=Integer(), default=[1, 2, 3]),
-                    Array(
-                        base_column=Integer(), default=array_default_integer
-                    ),
-                    Array(base_column=Integer(), null=True, default=None),
-                    Array(base_column=Integer(), null=False),
-                    Array(base_column=Integer(), index=True),
-                    Array(base_column=Integer(), index=False),
-                ]
-            ],
-            test_function=lambda x: all(
-                [
-                    x.data_type == "ARRAY",
-                    x.is_nullable == "NO",
-                    x.column_default == "'{}'::integer[]",
-                ]
-            ),
-        )
-
-    @engines_skip("cockroach")
-    def test_array_column_varchar(self):
-        """
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/35730 "column my_column is of type varchar[] and thus is not indexable"
-        """  # noqa: E501
-        self._test_migrations(
-            table_snapshots=[
-                [self.table(column)]
-                for column in [
-                    Array(base_column=Varchar()),
-                    Array(base_column=Varchar(), default=["a", "b", "c"]),
-                    Array(
-                        base_column=Varchar(), default=array_default_varchar
-                    ),
-                    Array(base_column=Varchar(), null=True, default=None),
-                    Array(base_column=Varchar(), null=False),
-                    Array(base_column=Varchar(), index=True),
-                    Array(base_column=Varchar(), index=False),
-                ]
-            ],
-            test_function=lambda x: all(
-                [
-                    x.data_type == "ARRAY",
-                    x.is_nullable == "NO",
-                    x.column_default
-                    in ("'{}'::character varying[]", "'':::STRING"),
                 ]
             ),
         )
@@ -1503,3 +1447,117 @@ class TestRenameTable(MigrationTestCase):
                 )
             ],
         )
+
+
+class TableA(Table):
+    array_varchar_column = Array(base_column=Varchar())
+
+
+class TableB(Table):
+    array_integer_column = Array(base_column=Integer(null=True, default=None))
+
+
+@engines_only("postgres", "cockroach")
+class TestArrayColumnMigrations(MigrationTestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        drop_db_tables_sync(Migration, TableA, TableB)
+
+    @engines_skip("cockroach")
+    def test_array_varchar_base_column(self):
+        self._test_migrations(
+            table_snapshots=[[TableA]],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "ARRAY",
+                    x.is_nullable == "NO",
+                    x.column_default
+                    in ("'{}'::character varying[]", "'':::STRING"),
+                ]
+            ),
+        )
+
+        self.assertTrue(TableA.table_exists().run_sync())
+
+    @engines_skip("cockroach")
+    def test_array_integer_base_column(self):
+        self._test_migrations(
+            table_snapshots=[[TableB]],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "ARRAY",
+                    x.is_nullable == "NO",
+                    x.column_default == "'{}'::integer[]",
+                ]
+            ),
+        )
+
+        self.assertTrue(TableB.table_exists().run_sync())
+
+    @engines_skip("cockroach")
+    def test_array_base_column_change_type(self):
+        """
+        Test change array base column type with MigrationManager.
+        """
+        self._test_migrations(
+            table_snapshots=[[TableA]],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "ARRAY",
+                    x.is_nullable == "NO",
+                    x.column_default
+                    in ("'{}'::character varying[]", "'':::STRING"),
+                ]
+            ),
+        )
+
+        # the base column is a string type
+        result = TableA._meta.array_columns[0]
+        self.assertTrue(result._meta.params["base_column"].value_type, str)
+
+        manager = MigrationManager()
+
+        manager.alter_column(
+            table_class_name="TableA",
+            tablename="table_a",
+            column_name="array_varchar_column",
+            db_column_name="array_varchar_column",
+            params={
+                "base_column": Integer(
+                    default=0,
+                    null=False,
+                    primary_key=False,
+                    unique=False,
+                    index=False,
+                    index_method=IndexMethod.btree,
+                    choices=None,
+                    db_column_name=None,
+                    secret=False,
+                )
+            },
+            old_params={
+                "base_column": Varchar(
+                    length=255,
+                    default="",
+                    null=False,
+                    primary_key=False,
+                    unique=False,
+                    index=False,
+                    index_method=IndexMethod.btree,
+                    choices=None,
+                    db_column_name=None,
+                    secret=False,
+                )
+            },
+            column_class=Array,
+            old_column_class=Array,
+            schema=None,
+        )
+
+        asyncio.run(manager.run())
+
+        # after migration the base column is a integer type
+        result = TableA._meta.array_columns[0]
+        self.assertTrue(result._meta.params["base_column"].value_type, int)
