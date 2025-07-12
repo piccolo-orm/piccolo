@@ -112,6 +112,23 @@ And all rows with a value not contained in the list:
         Band.name.not_in(['Terrible Band', 'Awful Band'])
     )
 
+For tables with a foreign key relationships, you can use a subquery 
+in the ``is_in`` clause to get the result in a single database query like this:
+
+.. code-block:: python
+
+    await Band.select().where(
+        Band.id.is_in(Concert.select(Concert.band_1).where(Concert.band_1 == 1))
+    )
+
+The same can be used in the ``not_in`` clause like this:
+
+.. code-block:: python
+
+    await Band.select().where(
+        Band.id.not_in(Concert.select(Concert.band_1).where(Concert.band_1 == 1))
+    )
+
 -------------------------------------------------------------------------------
 
 ``is_null`` / ``is_not_null``

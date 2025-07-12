@@ -1,6 +1,6 @@
 import unittest
 
-from tests.example_apps.music.tables import Band
+from tests.example_apps.music.tables import Band, Concert
 
 
 class TestWhere(unittest.TestCase):
@@ -29,6 +29,20 @@ class TestWhere(unittest.TestCase):
         with self.assertRaises(ValueError):
             Band.name.is_in([])
 
+    def test_is_in_subquery(self):
+        _where = Band.id.is_in(
+            Concert.select(Concert.band_1).where(Concert.band_1 == 1)
+        )
+        sql = _where.__str__()
+        self.assertEqual(
+            sql,
+            '"band"."id" IN (SELECT ALL "concert"."band_1" AS "band_1" FROM "concert" WHERE "concert"."band_1" = 1)',  # noqa: E501
+        )
+
+        # a sub select must only return a single column
+        with self.assertRaises(ValueError):
+            Band.id.is_in(Concert.select().where(Concert.band_1 == 1))
+
     def test_not_in(self):
         _where = Band.name.not_in(["CSharps"])
         sql = _where.__str__()
@@ -36,6 +50,20 @@ class TestWhere(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             Band.name.not_in([])
+
+    def test_not_in_subquery(self):
+        _where = Band.id.not_in(
+            Concert.select(Concert.band_1).where(Concert.band_1 == 1)
+        )
+        sql = _where.__str__()
+        self.assertEqual(
+            sql,
+            '"band"."id" NOT IN (SELECT ALL "concert"."band_1" AS "band_1" FROM "concert" WHERE "concert"."band_1" = 1)',  # noqa: E501
+        )
+
+        # a sub select must only return a single column
+        with self.assertRaises(ValueError):
+            Band.id.not_in(Concert.select().where(Concert.band_1 == 1))
 
 
 class TestAnd(unittest.TestCase):
