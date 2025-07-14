@@ -8,7 +8,19 @@ from piccolo.querystring import QueryString
 ArrayType: TypeAlias = Union[Column, QueryString, list[Any]]
 
 
-class ArrayCat(QueryString):
+class ArrayQueryString(QueryString):
+    def __add__(self, array: ArrayType):
+        """
+        QueryString will use the ``+`` operator by default for addition, but
+        for arrays we want to concatenate them instead.
+        """
+        return ArrayCat(array_1=self, array_2=array)
+
+    def __radd__(self, array: ArrayType):
+        return ArrayCat(array_1=array, array_2=self)
+
+
+class ArrayCat(ArrayQueryString):
     def __init__(
         self,
         array_1: ArrayType,
@@ -35,7 +47,7 @@ class ArrayCat(QueryString):
         super().__init__("array_cat({}, {})", array_1, array_2)
 
 
-class ArrayAppend(QueryString):
+class ArrayAppend(ArrayQueryString):
     def __init__(self, column: Union[Column, QueryString], value: Any):
         """
         Append an element to the end of an array.
@@ -56,7 +68,7 @@ class ArrayAppend(QueryString):
         super().__init__("array_append({}, {})", column, value)
 
 
-class ArrayPrepend(QueryString):
+class ArrayPrepend(ArrayQueryString):
     def __init__(self, column: Union[Column, QueryString], value: Any):
         """
         Append an element to the beginning of an array.
@@ -77,7 +89,7 @@ class ArrayPrepend(QueryString):
         super().__init__("array_prepend({}, {})", value, column)
 
 
-class ArrayReplace(QueryString):
+class ArrayReplace(ArrayQueryString):
     def __init__(
         self,
         column: Union[Column, QueryString],
@@ -107,7 +119,7 @@ class ArrayReplace(QueryString):
         )
 
 
-class ArrayRemove(QueryString):
+class ArrayRemove(ArrayQueryString):
     def __init__(self, column: Union[Column, QueryString], value: Any):
         """
         Remove all elements equal to the given value

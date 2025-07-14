@@ -2834,7 +2834,7 @@ class Array(Column):
         """
         from piccolo.query.functions.array import ArrayCat
 
-        return ArrayCat(self, value=value)
+        return ArrayCat(array_1=self, array_2=value)
 
     def remove(self, value: Any) -> QueryString:
         """
@@ -2907,6 +2907,11 @@ class Array(Column):
 
     def __add__(self, value: list[Any]) -> QueryString:
         return self.cat(value)
+
+    def __radd__(self, value: list[Any]) -> QueryString:
+        from piccolo.query.functions.array import ArrayCat
+
+        return ArrayCat(array_1=value, array_2=self)
 
     ###########################################################################
     # Descriptors
