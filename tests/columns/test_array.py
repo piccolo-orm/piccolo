@@ -240,7 +240,7 @@ class TestArray(TableTest):
 
         self.assertEqual(
             str(manager.exception),
-            "Only Postgres and Cockroach support array concatenating.",
+            "Only Postgres and Cockroach support array concatenation.",
         )
 
     @engines_skip("sqlite")
