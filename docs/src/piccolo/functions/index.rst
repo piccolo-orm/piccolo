@@ -11,8 +11,10 @@ Functions can be used to modify how queries are run, and what is returned.
     :maxdepth: 1
 
     ./basic_usage
-    ./string
-    ./math
-    ./datetime
-    ./type_conversion
     ./aggregate
+    ./array
+    ./datetime
+    ./math
+    ./string
+    ./type_conversion
+    ./custom
