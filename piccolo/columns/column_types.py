@@ -2834,6 +2834,11 @@ class Array(Column):
         """
         from piccolo.query.functions.array import ArrayCat
 
+        # Keep this for backwards compatibility - we had this as a convenience
+        # for users, but it would be nice to remove it in the future.
+        if not isinstance(value, list):
+            value = [value]
+
         return ArrayCat(array_1=self, array_2=value)
 
     def remove(self, value: Any) -> QueryString:
