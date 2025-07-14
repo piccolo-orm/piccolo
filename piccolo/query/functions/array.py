@@ -19,6 +19,43 @@ def is_array_type(value) -> TypeGuard[ArrayType]:
 class ArrayMethodsMixin:
 
     def cat(self, array: ArrayType):
+        """
+        Used in an ``update`` query to concatenate two arrays.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.cat([1000])
+            ... }).where(Ticket.id == 1)
+
+        You can also use the ``+`` symbol if you prefer. To concatenate to
+        the end:
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers + [1000]
+            ... }).where(Ticket.id == 1)
+
+        To concatenate to the start:
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: [1000] + Ticket.seat_numbers
+            ... }).where(Ticket.id == 1)
+
+        You can concatenate multiple arrays in one go:
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: [1000] + Ticket.seat_numbers + [2000]
+            ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
+
+        """
         assert is_array_type(self)
         return ArrayCat(array_1=self, array_2=array)
 
@@ -35,20 +72,69 @@ class ArrayMethodsMixin:
         return ArrayCat(array_1=array, array_2=self)
 
     def remove(self, value: Any):
+        """
+        Used in an ``update`` query to remove an item from an array.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.remove(1000)
+            ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
+
+        """
         assert is_array_type(self)
         return ArrayRemove(array=self, value=value)
 
     def replace(self, old_value: Any, new_value: Any):
+        """
+        Used in an ``update`` query to replace each array item
+        equal to the given value with a new value.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.replace(1000, 500)
+            ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
+
+        """
         assert is_array_type(self)
         return ArrayReplace(
             array=self, old_value=old_value, new_value=new_value
         )
 
     def append(self, value: Any):
+        """
+        Used in an ``update`` query to append an item to an array.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.append(1000)
+            ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
+
+        """
         assert is_array_type(self)
         return ArrayAppend(array=self, value=value)
 
     def prepend(self, value: Any):
+        """
+        Used in an ``update`` query to prepend an item to an array.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.prepend(1000)
+            ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
+
+        """
         assert is_array_type(self)
         return ArrayPrepend(array=self, value=value)
 

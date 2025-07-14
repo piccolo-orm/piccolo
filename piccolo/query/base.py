@@ -4,7 +4,6 @@ from collections.abc import Generator, Sequence
 from time import time
 from typing import TYPE_CHECKING, Any, Generic, Optional, Union, cast
 
-from piccolo.columns.column_types import JSON, JSONB
 from piccolo.custom_types import QueryResponseType, TableInstance
 from piccolo.query.mixins import ColumnsDelegate
 from piccolo.query.operators.json import JSONQueryString
@@ -61,6 +60,8 @@ class Query(Generic[TableInstance, QueryResponseType]):
         )
 
         #######################################################################
+
+        from piccolo.columns.column_types import JSON, JSONB
 
         if output and output._output.load_json:
             columns_delegate: Optional[ColumnsDelegate] = getattr(
