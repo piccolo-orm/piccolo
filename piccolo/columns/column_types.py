@@ -2821,12 +2821,29 @@ class Array(Column):
             ...     Ticket.seat_numbers: Ticket.seat_numbers.cat([1000])
             ... }).where(Ticket.id == 1)
 
-        You can also use the ``+`` symbol if you prefer:
+        You can also use the ``+`` symbol if you prefer. To concatenate to
+        the end:
 
         .. code-block:: python
 
             >>> await Ticket.update({
             ...     Ticket.seat_numbers: Ticket.seat_numbers + [1000]
+            ... }).where(Ticket.id == 1)
+
+        To concatenate to the start:
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: [1000] + Ticket.seat_numbers
+            ... }).where(Ticket.id == 1)
+
+        You can concatenate multiple arrays in one go:
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: [1000] + Ticket.seat_numbers + [2000]
             ... }).where(Ticket.id == 1)
 
         .. note:: Postgres / CockroachDB only
