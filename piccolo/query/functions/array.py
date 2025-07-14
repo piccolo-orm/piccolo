@@ -1,31 +1,38 @@
 from typing import Any, Union
 
+from typing_extensions import TypeAlias
+
 from piccolo.columns.base import Column
 from piccolo.querystring import QueryString
 
+ArrayType: TypeAlias = Union[Column, QueryString, list[Any]]
+
 
 class ArrayCat(QueryString):
-    def __init__(self, column: Union[Column, QueryString], value: list[Any]):
+    def __init__(
+        self,
+        array_1: ArrayType,
+        array_2: ArrayType,
+    ):
         """
         Concatenate two arrays.
 
-        :param column:
-            Identifies the column.
-        :param value:
-            The value to concatenate.
+        :param array_1:
+            These values will be at the start of the new array.
+        :param array_2:
+            These values will be at the end of the new array.
 
         """
-        if isinstance(column, Column):
-            engine_type = column._meta.engine_type
-            if engine_type not in ("postgres", "cockroach"):
-                raise ValueError(
-                    "Only Postgres and Cockroach support array concatenating."
-                )
+        for value in (array_1, array_2):
+            if isinstance(value, Column):
+                engine_type = value._meta.engine_type
+                if engine_type not in ("postgres", "cockroach"):
+                    raise ValueError(
+                        "Only Postgres and Cockroach support array "
+                        "concatenation."
+                    )
 
-        if not isinstance(value, list):
-            value = [value]
-
-        super().__init__("array_cat({}, {})", column, value)
+        super().__init__("array_cat({}, {})", array_1, array_2)
 
 
 class ArrayAppend(QueryString):
