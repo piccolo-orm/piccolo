@@ -1,35 +1,54 @@
 from typing import Any, Union
 
+from typing_extensions import TypeAlias
+
 from piccolo.columns.base import Column
 from piccolo.querystring import QueryString
 
+ArrayType: TypeAlias = Union[Column, QueryString, list[Any]]
 
-class ArrayCat(QueryString):
-    def __init__(self, column: Union[Column, QueryString], value: list[Any]):
+
+class ArrayQueryString(QueryString):
+    def __add__(self, array: ArrayType):
+        """
+        QueryString will use the ``+`` operator by default for addition, but
+        for arrays we want to concatenate them instead.
+        """
+        return ArrayCat(array_1=self, array_2=array)
+
+    def __radd__(self, array: ArrayType):
+        return ArrayCat(array_1=array, array_2=self)
+
+
+class ArrayCat(ArrayQueryString):
+    def __init__(
+        self,
+        array_1: ArrayType,
+        array_2: ArrayType,
+    ):
         """
         Concatenate two arrays.
 
-        :param column:
-            Identifies the column.
-        :param value:
-            The value to concatenate.
+        :param array_1:
+            These values will be at the start of the new array.
+        :param array_2:
+            These values will be at the end of the new array.
 
         """
-        if isinstance(column, Column):
-            engine_type = column._meta.engine_type
-            if engine_type not in ("postgres", "cockroach"):
-                raise ValueError(
-                    "Only Postgres and Cockroach support array concatenating."
-                )
+        for value in (array_1, array_2):
+            if isinstance(value, Column):
+                engine_type = value._meta.engine_type
+                if engine_type not in ("postgres", "cockroach"):
+                    raise ValueError(
+                        "Only Postgres and Cockroach support array "
+                        "concatenation."
+                    )
 
-        if not isinstance(value, list):
-            value = [value]
-
-        super().__init__("array_cat({}, {})", column, value)
+        super().__init__("array_cat({}, {})", array_1, array_2)
 
 
-class ArrayAppend(QueryString):
-    def __init__(self, column: Union[Column, QueryString], value: Any):
+class ArrayAppend(ArrayQueryString):
+    def __init__(self, array: ArrayType, value: Any):
         """
         Append an element to the end of an array.
 
@@ -39,18 +58,18 @@ class ArrayAppend(QueryString):
             The value to append.
 
         """
-        if isinstance(column, Column):
-            engine_type = column._meta.engine_type
+        if isinstance(array, Column):
+            engine_type = array._meta.engine_type
             if engine_type not in ("postgres", "cockroach"):
                 raise ValueError(
                     "Only Postgres and Cockroach support array appending."
                 )
 
-        super().__init__("array_append({}, {})", column, value)
+        super().__init__("array_append({}, {})", array, value)
 
 
-class ArrayPrepend(QueryString):
-    def __init__(self, column: Union[Column, QueryString], value: Any):
+class ArrayPrepend(ArrayQueryString):
+    def __init__(self, array: ArrayType, value: Any):
         """
         Append an element to the beginning of an array.
 
@@ -60,20 +79,20 @@ class ArrayPrepend(QueryString):
             Identifies the column.
 
         """
-        if isinstance(column, Column):
-            engine_type = column._meta.engine_type
+        if isinstance(array, Column):
+            engine_type = array._meta.engine_type
             if engine_type not in ("postgres", "cockroach"):
                 raise ValueError(
                     "Only Postgres and Cockroach support array prepending."
                 )
 
-        super().__init__("array_prepend({}, {})", value, column)
+        super().__init__("array_prepend({}, {})", value, array)
 
 
-class ArrayReplace(QueryString):
+class ArrayReplace(ArrayQueryString):
     def __init__(
         self,
-        column: Union[Column, QueryString],
+        array: ArrayType,
         old_value: Any,
         new_value: Any,
     ):
@@ -88,20 +107,20 @@ class ArrayReplace(QueryString):
             The new value we are replacing with.
 
         """
-        if isinstance(column, Column):
-            engine_type = column._meta.engine_type
+        if isinstance(array, Column):
+            engine_type = array._meta.engine_type
             if engine_type not in ("postgres", "cockroach"):
                 raise ValueError(
                     "Only Postgres and Cockroach support array substitution."
                 )
 
         super().__init__(
-            "array_replace({}, {}, {})", column, old_value, new_value
+            "array_replace({}, {}, {})", array, old_value, new_value
         )
 
 
-class ArrayRemove(QueryString):
-    def __init__(self, column: Union[Column, QueryString], value: Any):
+class ArrayRemove(ArrayQueryString):
+    def __init__(self, array: ArrayType, value: Any):
         """
         Remove all elements equal to the given value
         from the array (array must be one-dimensional).
@@ -112,14 +131,14 @@ class ArrayRemove(QueryString):
             The value to remove.
 
         """
-        if isinstance(column, Column):
-            engine_type = column._meta.engine_type
+        if isinstance(array, Column):
+            engine_type = array._meta.engine_type
             if engine_type not in ("postgres", "cockroach"):
                 raise ValueError(
                     "Only Postgres and Cockroach support array removing."
                 )
 
-        super().__init__("array_remove({}, {})", column, value)
+        super().__init__("array_remove({}, {})", array, value)
 
 
 __all__ = (

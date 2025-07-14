@@ -2821,7 +2821,8 @@ class Array(Column):
             ...     Ticket.seat_numbers: Ticket.seat_numbers.cat([1000])
             ... }).where(Ticket.id == 1)
 
-        You can also use the ``+`` symbol if you prefer:
+        You can also use the ``+`` symbol if you prefer. To concatenate to
+        the end:
 
         .. code-block:: python
 
@@ -2829,12 +2830,33 @@ class Array(Column):
             ...     Ticket.seat_numbers: Ticket.seat_numbers + [1000]
             ... }).where(Ticket.id == 1)
 
+        To concatenate to the start:
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: [1000] + Ticket.seat_numbers
+            ... }).where(Ticket.id == 1)
+
+        You can concatenate multiple arrays in one go:
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: [1000] + Ticket.seat_numbers + [2000]
+            ... }).where(Ticket.id == 1)
+
         .. note:: Postgres / CockroachDB only
 
         """
         from piccolo.query.functions.array import ArrayCat
 
-        return ArrayCat(self, value=value)
+        # Keep this for backwards compatibility - we had this as a convenience
+        # for users, but it would be nice to remove it in the future.
+        if not isinstance(value, list):
+            value = [value]
+
+        return ArrayCat(array_1=self, array_2=value)
 
     def remove(self, value: Any) -> QueryString:
         """
@@ -2851,7 +2873,7 @@ class Array(Column):
         """
         from piccolo.query.functions.array import ArrayRemove
 
-        return ArrayRemove(self, value=value)
+        return ArrayRemove(array=self, value=value)
 
     def prepend(self, value: Any) -> QueryString:
         """
@@ -2868,7 +2890,7 @@ class Array(Column):
         """
         from piccolo.query.functions.array import ArrayPrepend
 
-        return ArrayPrepend(self, value=value)
+        return ArrayPrepend(array=self, value=value)
 
     def append(self, value: Any) -> QueryString:
         """
@@ -2885,7 +2907,7 @@ class Array(Column):
         """
         from piccolo.query.functions.array import ArrayAppend
 
-        return ArrayAppend(self, value=value)
+        return ArrayAppend(array=self, value=value)
 
     def replace(self, old_value: Any, new_value: Any) -> QueryString:
         """
@@ -2907,6 +2929,11 @@ class Array(Column):
 
     def __add__(self, value: list[Any]) -> QueryString:
         return self.cat(value)
+
+    def __radd__(self, value: list[Any]) -> QueryString:
+        from piccolo.query.functions.array import ArrayCat
+
+        return ArrayCat(array_1=value, array_2=self)
 
     ###########################################################################
     # Descriptors

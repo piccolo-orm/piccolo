@@ -197,37 +197,47 @@ class TestArray(TableTest):
         * https://github.com/piccolo-orm/piccolo/issues/1005
 
         """  # noqa: E501
-        MyTable(value=[1, 1, 1]).save().run_sync()
+        MyTable(value=[5]).save().run_sync()
 
         MyTable.update(
-            {MyTable.value: MyTable.value.cat([2])}, force=True
+            {MyTable.value: MyTable.value.cat([6])}, force=True
         ).run_sync()
 
         self.assertEqual(
             MyTable.select(MyTable.value).run_sync(),
-            [{"value": [1, 1, 1, 2]}],
+            [{"value": [5, 6]}],
         )
 
-        # Try plus symbol
+        # Try plus symbol - add array to the end
 
         MyTable.update(
-            {MyTable.value: MyTable.value + [3]}, force=True
+            {MyTable.value: MyTable.value + [7]}, force=True
         ).run_sync()
 
         self.assertEqual(
             MyTable.select(MyTable.value).run_sync(),
-            [{"value": [1, 1, 1, 2, 3]}],
+            [{"value": [5, 6, 7]}],
         )
 
-        # Make sure non-list values work
+        # Add array to the start
 
         MyTable.update(
-            {MyTable.value: MyTable.value + 4}, force=True
+            {MyTable.value: [4] + MyTable.value}, force=True
         ).run_sync()
 
         self.assertEqual(
             MyTable.select(MyTable.value).run_sync(),
-            [{"value": [1, 1, 1, 2, 3, 4]}],
+            [{"value": [4, 5, 6, 7]}],
+        )
+
+        # Add array to the start and end
+        MyTable.update(
+            {MyTable.value: [3] + MyTable.value + [8]}, force=True
+        ).run_sync()
+
+        self.assertEqual(
+            MyTable.select(MyTable.value).run_sync(),
+            [{"value": [3, 4, 5, 6, 7, 8]}],
         )
 
     @sqlite_only
@@ -240,7 +250,7 @@ class TestArray(TableTest):
 
         self.assertEqual(
             str(manager.exception),
-            "Only Postgres and Cockroach support array concatenating.",
+            "Only Postgres and Cockroach support array concatenation.",
         )
 
     @engines_skip("sqlite")
