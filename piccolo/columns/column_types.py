@@ -2851,7 +2851,7 @@ class Array(Column):
         """
         from piccolo.query.functions.array import ArrayRemove
 
-        return ArrayRemove(self, value=value)
+        return ArrayRemove(array=self, value=value)
 
     def prepend(self, value: Any) -> QueryString:
         """
@@ -2868,7 +2868,7 @@ class Array(Column):
         """
         from piccolo.query.functions.array import ArrayPrepend
 
-        return ArrayPrepend(self, value=value)
+        return ArrayPrepend(array=self, value=value)
 
     def append(self, value: Any) -> QueryString:
         """
@@ -2885,7 +2885,7 @@ class Array(Column):
         """
         from piccolo.query.functions.array import ArrayAppend
 
-        return ArrayAppend(self, value=value)
+        return ArrayAppend(array=self, value=value)
 
     def replace(self, old_value: Any, new_value: Any) -> QueryString:
         """
