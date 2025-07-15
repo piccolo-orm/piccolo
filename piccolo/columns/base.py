@@ -614,6 +614,9 @@ class Column(Selectable):
                 raise ValueError(
                     "A sub select must only return a single column."
                 )
+            return Where(
+                column=self, values=values.querystrings[0], operator=In
+            )
 
         return Where(column=self, values=values, operator=In)
 
@@ -631,6 +634,9 @@ class Column(Selectable):
                 raise ValueError(
                     "A sub select must only return a single column."
                 )
+            return Where(
+                column=self, values=values.querystrings[0], operator=NotIn
+            )
 
         return Where(column=self, values=values, operator=NotIn)
 
