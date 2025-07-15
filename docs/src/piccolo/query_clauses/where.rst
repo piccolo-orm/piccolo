@@ -112,22 +112,44 @@ And all rows with a value not contained in the list:
         Band.name.not_in(['Terrible Band', 'Awful Band'])
     )
 
-For tables with a foreign key relationships, you can use a subquery
-in the ``is_in`` clause to get the result in a single database query like this:
+You can also pass a subquery into the ``is_in`` clause:
 
 .. code-block:: python
 
     await Band.select().where(
-        Band.id.is_in(Concert.select(Concert.band_1).where(Concert.band_1 == 1))
+        Band.id.is_in(
+            Concert.select(Concert.band_1).where(
+                Concert.starts >= datetime.datetime(year=2025, month=1, day=1)
+            )
+        )
     )
 
-The same can be used in the ``not_in`` clause:
+.. hint::
+    In SQL there are often several ways of solving the same problem. You
+    can also solve the above using :meth:`join_on <piccolo.columns.base.Column.join_on>`.
+
+    .. code-block:: python
+
+        >>> await Band.select().where(
+        ...     Band.id.join_on(Concert.band_1).starts >= datetime.datetime(
+        ...        year=2025, month=1, day=1
+        ...     )
+        ... )
+
+    Use whichever you prefer, and whichever suits the situation best.
+
+Subqueries can also be passed into the ``not_in`` clause:
 
 .. code-block:: python
 
     await Band.select().where(
-        Band.id.not_in(Concert.select(Concert.band_1).where(Concert.band_1 == 1))
+        Band.id.not_in(
+            Concert.select(Concert.band_1).where(
+                Concert.starts >= datetime.datetime(year=2025, month=1, day=1)
+            )
+        )
     )
+
 
 -------------------------------------------------------------------------------
 
