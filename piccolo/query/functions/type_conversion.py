@@ -3,13 +3,14 @@ from __future__ import annotations
 from typing import Optional, Union
 
 from piccolo.columns.base import Column
+from piccolo.custom_types import BasicTypes
 from piccolo.querystring import QueryString
 
 
 class Cast(QueryString):
     def __init__(
         self,
-        identifier: Union[Column, QueryString, object],
+        identifier: Union[Column, QueryString, BasicTypes],
         as_type: Column,
         alias: Optional[str] = None,
     ):
@@ -23,8 +24,28 @@ class Cast(QueryString):
             ... )
             [{"start_time": datetime.time(19, 0)}]
 
+        You may also need ``Cast`` to explicitly tell the database which type
+        you're sending in the query (though this is an edge case). Here is a
+        contrived example::
+
+            >>> from piccolo.query.functions.math import Count
+
+            # This fails with asyncpg:
+            >>> await Band.select(Count([1,2,3]))
+
+        If we explicitly specify the type of the array, then it works::
+
+            >>> await Band.select(
+            ...     Count(
+            ...         Cast(
+            ...             [1,2,3],
+            ...             Array(Integer())
+            ...         ),
+            ...     )
+            ... )
+
         :param identifier:
-            Identifies what is being converted (e.g. a column).
+            Identifies what is being converted (e.g. a column, or a raw value).
         :param as_type:
             The type to be converted to.
         :param table:
