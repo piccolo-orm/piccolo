@@ -600,7 +600,7 @@ class Column(Selectable):
 
         return True
 
-    def is_in(self, values: Union[Select, list[Any]]) -> Where:
+    def is_in(self, values: Union[Select, QueryString, list[Any]]) -> Where:
         from piccolo.query.methods.select import Select
 
         if isinstance(values, list):
@@ -614,13 +614,11 @@ class Column(Selectable):
                 raise ValueError(
                     "A sub select must only return a single column."
                 )
-            return Where(
-                column=self, values=values.querystrings[0], operator=In
-            )
+            values = values.querystrings[0]
 
         return Where(column=self, values=values, operator=In)
 
-    def not_in(self, values: Union[Select, list[Any]]) -> Where:
+    def not_in(self, values: Union[Select, QueryString, list[Any]]) -> Where:
         from piccolo.query.methods.select import Select
 
         if isinstance(values, list):
@@ -634,9 +632,7 @@ class Column(Selectable):
                 raise ValueError(
                     "A sub select must only return a single column."
                 )
-            return Where(
-                column=self, values=values.querystrings[0], operator=NotIn
-            )
+            values = values.querystrings[0]
 
         return Where(column=self, values=values, operator=NotIn)
 
