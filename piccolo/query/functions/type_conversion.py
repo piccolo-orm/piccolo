@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import Optional, Union
 
 from piccolo.columns.base import Column
 from piccolo.querystring import QueryString
-
-if TYPE_CHECKING:
-    from piccolo.table import Table
 
 
 class Cast(QueryString):
@@ -15,7 +12,6 @@ class Cast(QueryString):
         identifier: Union[Column, QueryString, object],
         as_type: Column,
         alias: Optional[str] = None,
-        table: Optional[type[Table]] = None,
     ):
         """
         Cast a value to a different type. For example::
@@ -45,15 +41,16 @@ class Cast(QueryString):
         # the database engine, as the column type is sometimes dependent
         # on which database is being used.
 
-        if table is None:
-            if isinstance(identifier, Column):
-                table = identifier._meta.table
-            elif isinstance(identifier, QueryString):
-                table = (
-                    identifier.columns[0]._meta.table
-                    if identifier.columns
-                    else None
-                )
+        table = None
+
+        if isinstance(identifier, Column):
+            table = identifier._meta.table
+        elif isinstance(identifier, QueryString):
+            table = (
+                identifier.columns[0]._meta.table
+                if identifier.columns
+                else None
+            )
 
         from piccolo.table import create_table_class
 
