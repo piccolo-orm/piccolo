@@ -83,6 +83,7 @@ from piccolo.utils.warnings import colored_warning
 
 if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import ColumnMeta
+    from piccolo.query.functions.array import ArrayItemType, ArrayType
     from piccolo.query.operators.json import (
         GetChildElement,
         GetElementFromPath,
@@ -2811,7 +2812,7 @@ class Array(Column):
         else:
             raise ValueError("Unrecognised engine type")
 
-    def cat(self, value: list[Any]) -> QueryString:
+    def cat(self, value: ArrayType) -> QueryString:
         """
         Used in an ``update`` query to concatenate two arrays.
 
@@ -2858,7 +2859,7 @@ class Array(Column):
 
         return ArrayCat(array_1=self, array_2=value)
 
-    def remove(self, value: Any) -> QueryString:
+    def remove(self, value: ArrayItemType) -> QueryString:
         """
         Used in an ``update`` query to remove an item from an array.
 
@@ -2875,7 +2876,7 @@ class Array(Column):
 
         return ArrayRemove(array=self, value=value)
 
-    def prepend(self, value: Any) -> QueryString:
+    def prepend(self, value: ArrayItemType) -> QueryString:
         """
         Used in an ``update`` query to prepend an item to an array.
 
@@ -2892,7 +2893,7 @@ class Array(Column):
 
         return ArrayPrepend(array=self, value=value)
 
-    def append(self, value: Any) -> QueryString:
+    def append(self, value: ArrayItemType) -> QueryString:
         """
         Used in an ``update`` query to append an item to an array.
 
@@ -2909,7 +2910,9 @@ class Array(Column):
 
         return ArrayAppend(array=self, value=value)
 
-    def replace(self, old_value: Any, new_value: Any) -> QueryString:
+    def replace(
+        self, old_value: ArrayItemType, new_value: ArrayItemType
+    ) -> QueryString:
         """
         Used in an ``update`` query to replace each array item
         equal to the given value with a new value.
@@ -2927,10 +2930,10 @@ class Array(Column):
 
         return ArrayReplace(self, old_value=old_value, new_value=new_value)
 
-    def __add__(self, value: list[Any]) -> QueryString:
+    def __add__(self, value: ArrayType) -> QueryString:
         return self.cat(value)
 
-    def __radd__(self, value: list[Any]) -> QueryString:
+    def __radd__(self, value: ArrayType) -> QueryString:
         from piccolo.query.functions.array import ArrayCat
 
         return ArrayCat(array_1=value, array_2=self)
