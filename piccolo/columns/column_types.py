@@ -2814,6 +2814,9 @@ class Array(Column):
 
     def cat(self, value: ArrayType) -> QueryString:
         """
+        A convenient way of accessing the
+        :class:`ArrayCat <piccolo.query.functions.array.ArrayCat>` function.
+
         Used in an ``update`` query to concatenate two arrays.
 
         .. code-block:: python
@@ -2861,6 +2864,10 @@ class Array(Column):
 
     def remove(self, value: ArrayItemType) -> QueryString:
         """
+        A convenient way of accessing the
+        :class:`ArrayRemove <piccolo.query.functions.array.ArrayRemove>`
+        function.
+
         Used in an ``update`` query to remove an item from an array.
 
         .. code-block:: python
@@ -2878,6 +2885,10 @@ class Array(Column):
 
     def prepend(self, value: ArrayItemType) -> QueryString:
         """
+        A convenient way of accessing the
+        :class:`ArrayPrepend <piccolo.query.functions.array.ArrayPrepend>`
+        function.
+
         Used in an ``update`` query to prepend an item to an array.
 
         .. code-block:: python
@@ -2895,6 +2906,10 @@ class Array(Column):
 
     def append(self, value: ArrayItemType) -> QueryString:
         """
+        A convenient way of accessing the
+        :class:`ArrayAppend <piccolo.query.functions.array.ArrayAppend>`
+        function.
+
         Used in an ``update`` query to append an item to an array.
 
         .. code-block:: python
@@ -2914,6 +2929,10 @@ class Array(Column):
         self, old_value: ArrayItemType, new_value: ArrayItemType
     ) -> QueryString:
         """
+        A convenient way of accessing the
+        :class:`ArrayReplace <piccolo.query.functions.array.ArrayReplace>`
+        function.
+
         Used in an ``update`` query to replace each array item
         equal to the given value with a new value.
 
