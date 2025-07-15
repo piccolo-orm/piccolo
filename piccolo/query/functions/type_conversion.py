@@ -1,15 +1,21 @@
-from typing import Optional, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional, Union
 
 from piccolo.columns.base import Column
 from piccolo.querystring import QueryString
+
+if TYPE_CHECKING:
+    from piccolo.table import Table
 
 
 class Cast(QueryString):
     def __init__(
         self,
-        identifier: Union[Column, QueryString],
+        identifier: Union[Column, QueryString, object],
         as_type: Column,
         alias: Optional[str] = None,
+        table: Optional[type[Table]] = None,
     ):
         """
         Cast a value to a different type. For example::
@@ -17,7 +23,7 @@ class Cast(QueryString):
             >>> from piccolo.query.functions import Cast
 
             >>> await Concert.select(
-            ...     Cast(Concert.starts, Time(), "start_time")
+            ...     Cast(Concert.starts, Time(), alias="start_time")
             ... )
             [{"start_time": datetime.time(19, 0)}]
 
@@ -25,17 +31,11 @@ class Cast(QueryString):
             Identifies what is being converted (e.g. a column).
         :param as_type:
             The type to be converted to.
+        :param table:
+            The column type is sometimes dependent on the database engine. If
+            this argument isn't given, we try and infer the database engine.
 
         """
-        # Make sure the identifier is a supported type.
-
-        if not isinstance(identifier, (Column, QueryString)):
-            raise ValueError(
-                "The identifier is an unsupported type - only Column and "
-                "QueryString instances are allowed."
-            )
-
-        #######################################################################
         # Convert `as_type` to a string which can be used in the query.
 
         if not isinstance(as_type, Column):
@@ -44,18 +44,18 @@ class Cast(QueryString):
         # We need to give the column a reference to a table, and hence
         # the database engine, as the column type is sometimes dependent
         # on which database is being used.
-        from piccolo.table import Table, create_table_class
 
-        table: Optional[type[Table]] = None
+        if table is None:
+            if isinstance(identifier, Column):
+                table = identifier._meta.table
+            elif isinstance(identifier, QueryString):
+                table = (
+                    identifier.columns[0]._meta.table
+                    if identifier.columns
+                    else None
+                )
 
-        if isinstance(identifier, Column):
-            table = identifier._meta.table
-        elif isinstance(identifier, QueryString):
-            table = (
-                identifier.columns[0]._meta.table
-                if identifier.columns
-                else None
-            )
+        from piccolo.table import create_table_class
 
         as_type._meta.table = table or create_table_class("Table")
         as_type_string = as_type.column_type
