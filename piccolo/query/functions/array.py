@@ -1,11 +1,12 @@
-from typing import Any, Union
+from typing import Union
 
 from typing_extensions import TypeAlias
 
 from piccolo.columns.base import Column
 from piccolo.querystring import QueryString
 
-ArrayType: TypeAlias = Union[Column, QueryString, list[Any]]
+ArrayType: TypeAlias = Union[Column, QueryString, list[object]]
+ArrayItemType: TypeAlias = Union[Column, QueryString, object]
 
 
 class ArrayQueryString(QueryString):
@@ -48,7 +49,7 @@ class ArrayCat(ArrayQueryString):
 
 
 class ArrayAppend(ArrayQueryString):
-    def __init__(self, array: ArrayType, value: Any):
+    def __init__(self, array: ArrayType, value: ArrayItemType):
         """
         Append an element to the end of an array.
 
@@ -69,7 +70,7 @@ class ArrayAppend(ArrayQueryString):
 
 
 class ArrayPrepend(ArrayQueryString):
-    def __init__(self, array: ArrayType, value: Any):
+    def __init__(self, array: ArrayType, value: ArrayItemType):
         """
         Append an element to the beginning of an array.
 
@@ -93,8 +94,8 @@ class ArrayReplace(ArrayQueryString):
     def __init__(
         self,
         array: ArrayType,
-        old_value: Any,
-        new_value: Any,
+        old_value: ArrayItemType,
+        new_value: ArrayItemType,
     ):
         """
         Replace each array element equal to the given value with a new value.
@@ -120,7 +121,7 @@ class ArrayReplace(ArrayQueryString):
 
 
 class ArrayRemove(ArrayQueryString):
-    def __init__(self, array: ArrayType, value: Any):
+    def __init__(self, array: ArrayType, value: ArrayItemType):
         """
         Remove all elements equal to the given value
         from the array (array must be one-dimensional).
