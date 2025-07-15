@@ -41,7 +41,9 @@ class Cast(QueryString):
         # the database engine, as the column type is sometimes dependent
         # on which database is being used.
 
-        table = None
+        from piccolo.table import Table, create_table_class
+
+        table: Optional[type[Table]] = None
 
         if isinstance(identifier, Column):
             table = identifier._meta.table
@@ -51,8 +53,6 @@ class Cast(QueryString):
                 if identifier.columns
                 else None
             )
-
-        from piccolo.table import create_table_class
 
         as_type._meta.table = table or create_table_class("Table")
         as_type_string = as_type.column_type
