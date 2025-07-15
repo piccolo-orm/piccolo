@@ -48,9 +48,6 @@ class Cast(QueryString):
             Identifies what is being converted (e.g. a column, or a raw value).
         :param as_type:
             The type to be converted to.
-        :param table:
-            The column type is sometimes dependent on the database engine. If
-            this argument isn't given, we try and infer the database engine.
 
         """
         # Convert `as_type` to a string which can be used in the query.
