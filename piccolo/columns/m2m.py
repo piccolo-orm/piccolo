@@ -16,7 +16,7 @@ from piccolo.querystring import QueryString, Selectable
 from piccolo.utils.list import flatten
 from piccolo.utils.sync import run_sync
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
