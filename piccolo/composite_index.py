@@ -75,6 +75,8 @@ class CompositeIndex(Composite):
 
         :param index_type:
             Index type for a composite index. Default to ``B-tree``.
+            An Postgres extension must be created to use an index
+            type other than a ``B-tree``.
 
         """
         self.columns = columns

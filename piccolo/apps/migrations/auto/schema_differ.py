@@ -642,6 +642,11 @@ class SchemaDiffer:
                 continue
 
             for add_composite_index in delta.add_composite_indexes:
+                params = serialise_params(add_composite_index.params)
+                cleaned_params = params.params
+                extra_imports.extend(params.extra_imports)
+                extra_definitions.extend(params.extra_definitions)
+
                 composite_index_class = (
                     add_composite_index.composite_index_class
                 )
@@ -664,7 +669,7 @@ class SchemaDiffer:
                 )
 
                 response.append(
-                    f"manager.add_composite_index(table_class_name='{table.class_name}', tablename='{table.tablename}', composite_index_name='{add_composite_index.composite_index_name}', composite_index_class={composite_index_class.__name__}, params={add_composite_index.params}, schema={schema_str})"  # noqa: E501
+                    f"manager.add_composite_index(table_class_name='{table.class_name}', tablename='{table.tablename}', composite_index_name='{add_composite_index.composite_index_name}', composite_index_class={composite_index_class.__name__}, params={str(cleaned_params)}, schema={schema_str})"  # noqa: E501
                 )
         return AlterStatements(
             statements=response,
