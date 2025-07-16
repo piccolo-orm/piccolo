@@ -635,6 +635,65 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @engines_skip("cockroach")
+    def test_array_column_integer(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/35730 "column my_column is of type int[] and thus is not indexable"
+        """  # noqa: E501
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Array(base_column=Integer()),
+                    Array(base_column=Integer(), default=[1, 2, 3]),
+                    Array(
+                        base_column=Integer(), default=array_default_integer
+                    ),
+                    Array(base_column=Integer(), null=True, default=None),
+                    Array(base_column=Integer(), null=False),
+                    Array(base_column=Integer(), index=True),
+                    Array(base_column=Integer(), index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "ARRAY",
+                    x.is_nullable == "NO",
+                    x.column_default == "'{}'::integer[]",
+                ]
+            ),
+        )
+
+    @engines_skip("cockroach")
+    def test_array_column_varchar(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/35730 "column my_column is of type varchar[] and thus is not indexable"
+        """  # noqa: E501
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Array(base_column=Varchar()),
+                    Array(base_column=Varchar(), default=["a", "b", "c"]),
+                    Array(
+                        base_column=Varchar(), default=array_default_varchar
+                    ),
+                    Array(base_column=Varchar(), null=True, default=None),
+                    Array(base_column=Varchar(), null=False),
+                    Array(base_column=Varchar(), index=True),
+                    Array(base_column=Varchar(), index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "ARRAY",
+                    x.is_nullable == "NO",
+                    x.column_default
+                    in ("'{}'::character varying[]", "'':::STRING"),
+                ]
+            ),
+        )
+
     def test_array_column_bigint(self):
         """
         There was a bug with using an array of ``BigInt`` - see issue 500 on
@@ -1464,37 +1523,6 @@ class TestArrayColumnMigrations(MigrationTestCase):
 
     def tearDown(self):
         drop_db_tables_sync(Migration, TableA, TableB)
-
-    @engines_skip("cockroach")
-    def test_array_varchar_base_column(self):
-        self._test_migrations(
-            table_snapshots=[[TableA]],
-            test_function=lambda x: all(
-                [
-                    x.data_type == "ARRAY",
-                    x.is_nullable == "NO",
-                    x.column_default
-                    in ("'{}'::character varying[]", "'':::STRING"),
-                ]
-            ),
-        )
-
-        self.assertTrue(TableA.table_exists().run_sync())
-
-    @engines_skip("cockroach")
-    def test_array_integer_base_column(self):
-        self._test_migrations(
-            table_snapshots=[[TableB]],
-            test_function=lambda x: all(
-                [
-                    x.data_type == "ARRAY",
-                    x.is_nullable == "NO",
-                    x.column_default == "'{}'::integer[]",
-                ]
-            ),
-        )
-
-        self.assertTrue(TableB.table_exists().run_sync())
 
     @engines_skip("cockroach")
     def test_array_base_column_change_type(self):

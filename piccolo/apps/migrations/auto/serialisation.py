@@ -522,8 +522,8 @@ def serialise_params(params: dict[str, Any]) -> SerialisedParams:
             )
 
             column_class_name = column.__class__.__name__
-            # we need to manually re-assign the base column
-            column._meta.name = f"{column_class_name.upper()}"
+            # we need to re-assign the base column
+            column._meta.name = column_class_name.upper()
 
             # Include the extra imports and definitions required for the
             # column params.
