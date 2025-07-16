@@ -83,6 +83,7 @@ from piccolo.utils.warnings import colored_warning
 
 if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import ColumnMeta
+    from piccolo.query.functions.array import ArrayItemType, ArrayType
     from piccolo.query.operators.json import (
         GetChildElement,
         GetElementFromPath,
@@ -1553,6 +1554,10 @@ class Real(Column):
         default: Union[float, Enum, Callable[[], float], None] = 0.0,
         **kwargs: Unpack[ColumnKwargs],
     ) -> None:
+        if isinstance(default, int):
+            # For example, allow `0` as a valid default.
+            default = float(default)
+
         self._validate_default(default, (float, None))
         self.default = default
         super().__init__(default=default, **kwargs)
@@ -2811,9 +2816,12 @@ class Array(Column):
         else:
             raise ValueError("Unrecognised engine type")
 
-    def cat(self, value: Union[Any, list[Any]]) -> QueryString:
+    def cat(self, value: ArrayType) -> QueryString:
         """
-        Used in an ``update`` query to append items to an array.
+        A convenient way of accessing the
+        :class:`ArrayCat <piccolo.query.functions.array.ArrayCat>` function.
+
+        Used in an ``update`` query to concatenate two arrays.
 
         .. code-block:: python
 
@@ -2821,7 +2829,8 @@ class Array(Column):
             ...     Ticket.seat_numbers: Ticket.seat_numbers.cat([1000])
             ... }).where(Ticket.id == 1)
 
-        You can also use the ``+`` symbol if you prefer:
+        You can also use the ``+`` symbol if you prefer. To concatenate to
+        the end:
 
         .. code-block:: python
 
@@ -2829,21 +2838,128 @@ class Array(Column):
             ...     Ticket.seat_numbers: Ticket.seat_numbers + [1000]
             ... }).where(Ticket.id == 1)
 
-        """
-        engine_type = self._meta.engine_type
-        if engine_type != "postgres" and engine_type != "cockroach":
-            raise ValueError(
-                "Only Postgres and Cockroach support array appending."
-            )
+        To concatenate to the start:
 
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: [1000] + Ticket.seat_numbers
+            ... }).where(Ticket.id == 1)
+
+        You can concatenate multiple arrays in one go:
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: [1000] + Ticket.seat_numbers + [2000]
+            ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
+
+        """
+        from piccolo.query.functions.array import ArrayCat
+
+        # Keep this for backwards compatibility - we had this as a convenience
+        # for users, but it would be nice to remove it in the future.
         if not isinstance(value, list):
             value = [value]
 
-        db_column_name = self._meta.db_column_name
-        return QueryString(f'array_cat("{db_column_name}", {{}})', value)
+        return ArrayCat(array_1=self, array_2=value)
 
-    def __add__(self, value: Union[Any, list[Any]]) -> QueryString:
+    def remove(self, value: ArrayItemType) -> QueryString:
+        """
+        A convenient way of accessing the
+        :class:`ArrayRemove <piccolo.query.functions.array.ArrayRemove>`
+        function.
+
+        Used in an ``update`` query to remove an item from an array.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.remove(1000)
+            ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
+
+        """
+        from piccolo.query.functions.array import ArrayRemove
+
+        return ArrayRemove(array=self, value=value)
+
+    def prepend(self, value: ArrayItemType) -> QueryString:
+        """
+        A convenient way of accessing the
+        :class:`ArrayPrepend <piccolo.query.functions.array.ArrayPrepend>`
+        function.
+
+        Used in an ``update`` query to prepend an item to an array.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.prepend(1000)
+            ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
+
+        """
+        from piccolo.query.functions.array import ArrayPrepend
+
+        return ArrayPrepend(array=self, value=value)
+
+    def append(self, value: ArrayItemType) -> QueryString:
+        """
+        A convenient way of accessing the
+        :class:`ArrayAppend <piccolo.query.functions.array.ArrayAppend>`
+        function.
+
+        Used in an ``update`` query to append an item to an array.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.append(1000)
+            ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
+
+        """
+        from piccolo.query.functions.array import ArrayAppend
+
+        return ArrayAppend(array=self, value=value)
+
+    def replace(
+        self, old_value: ArrayItemType, new_value: ArrayItemType
+    ) -> QueryString:
+        """
+        A convenient way of accessing the
+        :class:`ArrayReplace <piccolo.query.functions.array.ArrayReplace>`
+        function.
+
+        Used in an ``update`` query to replace each array item
+        equal to the given value with a new value.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.replace(1000, 500)
+            ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
+
+        """
+        from piccolo.query.functions.array import ArrayReplace
+
+        return ArrayReplace(self, old_value=old_value, new_value=new_value)
+
+    def __add__(self, value: ArrayType) -> QueryString:
         return self.cat(value)
+
+    def __radd__(self, value: ArrayType) -> QueryString:
+        from piccolo.query.functions.array import ArrayCat
+
+        return ArrayCat(array_1=value, array_2=self)
 
     ###########################################################################
     # Descriptors

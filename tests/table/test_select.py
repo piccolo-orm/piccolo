@@ -258,6 +258,64 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(response, [{"name": "Rustaceans"}])
 
+    def test_is_in(self):
+        self.insert_rows()
+
+        response = (
+            Band.select(Band.name)
+            .where(Band.manager._.name.is_in(["Guido"]))
+            .run_sync()
+        )
+
+        self.assertListEqual(response, [{"name": "Pythonistas"}])
+
+    def test_is_in_subquery(self):
+        self.insert_rows()
+
+        # This is a contrived example, just for testing.
+        response = (
+            Band.select(Band.name)
+            .where(
+                Band.manager.is_in(
+                    Manager.select(Manager.id).where(Manager.name == "Guido")
+                )
+            )
+            .run_sync()
+        )
+
+        self.assertListEqual(response, [{"name": "Pythonistas"}])
+
+    def test_not_in(self):
+        self.insert_rows()
+
+        response = (
+            Band.select(Band.name)
+            .where(Band.manager._.name.not_in(["Guido"]))
+            .run_sync()
+        )
+
+        self.assertListEqual(
+            response, [{"name": "Rustaceans"}, {"name": "CSharps"}]
+        )
+
+    def test_not_in_subquery(self):
+        self.insert_rows()
+
+        # This is a contrived example, just for testing.
+        response = (
+            Band.select(Band.name)
+            .where(
+                Band.manager.not_in(
+                    Manager.select(Manager.id).where(Manager.name == "Guido")
+                )
+            )
+            .run_sync()
+        )
+
+        self.assertListEqual(
+            response, [{"name": "Rustaceans"}, {"name": "CSharps"}]
+        )
+
     def test_where_is_null(self):
         self.insert_rows()
 
