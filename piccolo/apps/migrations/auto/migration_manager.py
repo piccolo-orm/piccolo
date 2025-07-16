@@ -1142,6 +1142,9 @@ class MigrationManager:
                         columns=add_composite_indexes[
                             0
                         ].composite_index._meta.params["columns"],
+                        method=add_composite_indexes[
+                            0
+                        ].composite_index._meta.params["index_type"],
                         name=add_composite_indexes[
                             0
                         ].composite_index._meta.name,
@@ -1168,6 +1171,9 @@ class MigrationManager:
                     _Table.create_index(
                         columns=composite_index_to_restore._meta.params[
                             "columns"
+                        ],
+                        method=composite_index_to_restore._meta.params[
+                            "index_type"
                         ],
                         name=composite_index_to_restore._meta._name,
                     )

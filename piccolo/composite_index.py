@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+from piccolo.columns.indexes import IndexMethod
+
 
 class Composite:
     """
@@ -47,6 +49,7 @@ class CompositeIndex(Composite):
     def __init__(
         self,
         columns: list[str],
+        index_type: IndexMethod = IndexMethod.btree,
         **kwargs,
     ) -> None:
         """
@@ -70,7 +73,11 @@ class CompositeIndex(Composite):
         :param columns:
             The table column name that should be in composite index.
 
+        :param index_type:
+            Index type for a composite index. Default to ``B-tree``.
+
         """
         self.columns = columns
-        kwargs.update({"columns": columns})
+        self.index_type = index_type
+        kwargs.update({"columns": columns, "index_type": index_type})
         super().__init__(**kwargs)

@@ -10,6 +10,7 @@ from piccolo.apps.migrations.commands.base import BaseMigrationManager
 from piccolo.columns import Text, Varchar
 from piccolo.columns.base import OnDelete, OnUpdate
 from piccolo.columns.column_types import ForeignKey
+from piccolo.columns.indexes import IndexMethod
 from piccolo.composite_index import CompositeIndex
 from piccolo.conf.apps import AppConfig
 from piccolo.engine import engine_finder
@@ -1123,7 +1124,10 @@ class TestMigrationManager(DBTestCase):
             tablename="musician",
             composite_index_name="name_label",
             composite_index_class=CompositeIndex,
-            params={"columns": ["name", "label"]},
+            params={
+                "columns": ["name", "label"],
+                "index_type": IndexMethod.btree,
+            },
             schema=None,
         )
         asyncio.run(manager.run())
@@ -1169,7 +1173,10 @@ class TestMigrationManager(DBTestCase):
             tablename="musician",
             composite_index_name="name_label",
             composite_index_class=CompositeIndex,
-            params={"columns": ["name", "label"]},
+            params={
+                "columns": ["name", "label"],
+                "index_type": IndexMethod.btree,
+            },
         )
         asyncio.run(manager_2.run())
 
