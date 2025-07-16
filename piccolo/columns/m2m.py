@@ -16,7 +16,7 @@ from piccolo.querystring import QueryString, Selectable
 from piccolo.utils.list import flatten
 from piccolo.utils.sync import run_sync
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
@@ -275,7 +275,9 @@ class M2MAddRelated:
         unsaved = [i for i in rows if not i._exists_in_db]
 
         if unsaved:
-            await rows[0].__class__.insert(*unsaved).run()
+            await rows[0].__class__.insert(*unsaved).on_conflict(
+                action="DO NOTHING"
+            ).run()
 
         joining_table = self.m2m._meta.resolved_joining_table
 
@@ -303,7 +305,11 @@ class M2MAddRelated:
             )
             joining_table_rows.append(joining_table_row)
 
-        return await joining_table.insert(*joining_table_rows).run()
+        return (
+            await joining_table.insert(*joining_table_rows)
+            .on_conflict(action="DO NOTHING")
+            .run()
+        )
 
     async def run(self):
         """
@@ -373,24 +379,16 @@ class M2MGetRelated:
 
         secondary_table = self.m2m._meta.secondary_table
 
-        # TODO - replace this with a subquery in the future.
-        ids = (
-            await joining_table.select(
-                getattr(
-                    self.m2m._meta.secondary_foreign_key,
-                    secondary_table._meta.primary_key._meta.name,
-                )
+        # use a subquery to make only one db query
+        results = await secondary_table.objects().where(
+            secondary_table._meta.primary_key.is_in(
+                joining_table.select(
+                    getattr(
+                        self.m2m._meta.secondary_foreign_key,
+                        secondary_table._meta.primary_key._meta.name,
+                    )
+                ).where(self.m2m._meta.primary_foreign_key == self.row)
             )
-            .where(self.m2m._meta.primary_foreign_key == self.row)
-            .output(as_list=True)
-        )
-
-        results = (
-            await secondary_table.objects().where(
-                secondary_table._meta.primary_key.is_in(ids)
-            )
-            if len(ids) > 0
-            else []
         )
 
         return results
