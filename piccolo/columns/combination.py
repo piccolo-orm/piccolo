@@ -146,7 +146,7 @@ class Where(CombinableMixin):
         self,
         column: Column,
         value: Any = UNDEFINED,
-        values: Union[CustomIterable, Undefined] = UNDEFINED,
+        values: Union[CustomIterable, Undefined, QueryString] = UNDEFINED,
         operator: type[ComparisonOperator] = ComparisonOperator,
     ) -> None:
         """
@@ -156,7 +156,7 @@ class Where(CombinableMixin):
         self.column = column
 
         self.value = value if value == UNDEFINED else self.clean_value(value)
-        if values == UNDEFINED:
+        if (values == UNDEFINED) or isinstance(values, QueryString):
             self.values = values
         else:
             self.values = [self.clean_value(i) for i in values]  # type: ignore
@@ -191,6 +191,9 @@ class Where(CombinableMixin):
     @property
     def values_querystring(self) -> QueryString:
         values = self.values
+
+        if isinstance(values, QueryString):
+            return values
 
         if isinstance(values, Undefined):
             raise ValueError("values is undefined")
