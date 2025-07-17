@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import datetime
 import decimal
 import os
@@ -50,7 +49,6 @@ from piccolo.columns.column_types import (
     Varchar,
 )
 from piccolo.columns.defaults.uuid import UUID4
-from piccolo.columns.indexes import IndexMethod
 from piccolo.columns.m2m import M2M
 from piccolo.columns.reference import LazyTableReference
 from piccolo.conf.apps import AppConfig
