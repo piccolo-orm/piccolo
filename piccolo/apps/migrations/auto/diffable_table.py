@@ -192,7 +192,7 @@ class DiffableTable:
                         tablename=self.tablename,
                         column_name=column._meta.name,
                         db_column_name=column._meta.db_column_name,
-                        params=deserialise_params(params),
+                        params=deserialise_params(delta),
                         old_params=old_params,
                         column_class=column.__class__,
                         old_column_class=existing_column.__class__,
