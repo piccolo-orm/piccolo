@@ -730,7 +730,14 @@ class TestMigrations(MigrationTestCase):
                     Array(base_column=Varchar()),
                     Array(base_column=Text()),
                 ]
-            ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "ARRAY",
+                    x.is_nullable == "NO",
+                    x.column_default == "'{}'::text[]",
+                ]
+            ),
         )
 
     ###########################################################################
@@ -1530,86 +1537,3 @@ class TestRenameTable(MigrationTestCase):
                 )
             ],
         )
-
-
-class TableA(Table):
-    array_varchar_column = Array(base_column=Varchar())
-
-
-class TableB(Table):
-    array_integer_column = Array(base_column=Integer(null=True, default=None))
-
-
-@engines_only("postgres", "cockroach")
-class TestArrayColumnMigrations(MigrationTestCase):
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        drop_db_tables_sync(Migration, TableA, TableB)
-
-    @engines_skip("cockroach")
-    def test_array_base_column_change_type(self):
-        """
-        Test change array base column type with MigrationManager.
-        """
-        self._test_migrations(
-            table_snapshots=[[TableA]],
-            test_function=lambda x: all(
-                [
-                    x.data_type == "ARRAY",
-                    x.is_nullable == "NO",
-                    x.column_default
-                    in ("'{}'::character varying[]", "'':::STRING"),
-                ]
-            ),
-        )
-
-        # the base column is a string type
-        result = TableA._meta.array_columns[0]
-        self.assertTrue(result._meta.params["base_column"].value_type, str)
-
-        manager = MigrationManager()
-
-        manager.alter_column(
-            table_class_name="TableA",
-            tablename="table_a",
-            column_name="array_varchar_column",
-            db_column_name="array_varchar_column",
-            params={
-                "base_column": Integer(
-                    default=0,
-                    null=False,
-                    primary_key=False,
-                    unique=False,
-                    index=False,
-                    index_method=IndexMethod.btree,
-                    choices=None,
-                    db_column_name=None,
-                    secret=False,
-                )
-            },
-            old_params={
-                "base_column": Varchar(
-                    length=255,
-                    default="",
-                    null=False,
-                    primary_key=False,
-                    unique=False,
-                    index=False,
-                    index_method=IndexMethod.btree,
-                    choices=None,
-                    db_column_name=None,
-                    secret=False,
-                )
-            },
-            column_class=Array,
-            old_column_class=Array,
-            schema=None,
-        )
-
-        asyncio.run(manager.run())
-
-        # after migration the base column is a integer type
-        result = TableA._meta.array_columns[0]
-        self.assertTrue(result._meta.params["base_column"].value_type, int)
