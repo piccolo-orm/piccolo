@@ -12,7 +12,6 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Optional
 from unittest.mock import MagicMock, patch
 
-from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.apps.migrations.auto.operations import RenameTable
 from piccolo.apps.migrations.commands.backwards import (
     BackwardsMigrationManager,
