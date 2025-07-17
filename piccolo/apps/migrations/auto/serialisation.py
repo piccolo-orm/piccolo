@@ -741,6 +741,8 @@ def deserialise_params(params: dict[str, Any]) -> dict[str, Any]:
         if isinstance(value, str) and not isinstance(value, Enum):
             if value != "self":
                 params[key] = deserialise_legacy_params(name=key, value=value)
+        elif isinstance(value, SerialisedColumnInstance):
+            params[key] = value.instance
         elif isinstance(value, SerialisedClassInstance):
             params[key] = value.instance
         elif isinstance(value, SerialisedUUID):
