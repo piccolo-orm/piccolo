@@ -176,10 +176,6 @@ class DiffableTable:
                 serialise_params(existing_column._meta.params).params,
             )
 
-            params = {
-                key: column._meta.params.get(key) for key, _ in delta.items()
-            }
-
             old_params = {
                 key: existing_column._meta.params.get(key)
                 for key, _ in delta.items()
