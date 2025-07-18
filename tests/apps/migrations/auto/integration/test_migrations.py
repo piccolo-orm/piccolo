@@ -710,7 +710,8 @@ class TestMigrations(MigrationTestCase):
             ]
         )
 
-    def test_array_base_column_change(self):
+    @engines_only("postgres")
+    def test_array_base_column_change_postgres(self):
         """
         There was a bug when trying to change the base column of an array:
 
@@ -733,6 +734,34 @@ class TestMigrations(MigrationTestCase):
                     x.data_type == "ARRAY",
                     x.is_nullable == "NO",
                     x.column_default == "'{}'::text[]",
+                ]
+            ),
+        )
+
+    @engines_only("cockroach")
+    def test_array_base_column_change_cockroach(self):
+        """
+        There was a bug when trying to change the base column of an array:
+
+        https://github.com/piccolo-orm/piccolo/issues/1076
+
+        It wasn't importing the base column, e.g. for ``Array(Text())`` it
+        wasn't importing ``Text``.
+
+        """
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Array(base_column=Varchar()),
+                    Array(base_column=Text()),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "ARRAY",
+                    x.is_nullable == "NO",
+                    x.column_default == "ARRAY[]",
                 ]
             ),
         )
