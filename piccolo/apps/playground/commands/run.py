@@ -25,7 +25,7 @@ from piccolo.columns import (
     Varchar,
 )
 from piccolo.columns.readable import Readable
-from piccolo.engine import PostgresEngine, SQLiteEngine
+from piccolo.engine import CockroachEngine, PostgresEngine, SQLiteEngine
 from piccolo.engine.base import Engine
 from piccolo.table import Table
 from piccolo.utils.warnings import colored_string
@@ -295,7 +295,8 @@ def run(
     Creates a test database to play with.
 
     :param engine:
-        Which database engine to use - options are sqlite or postgres
+        Which database engine to use - options are sqlite, postgres or
+        cockroach
     :param user:
         Postgres user
     :param password:
@@ -327,6 +328,16 @@ def run(
                 "user": user,
                 "password": password,
                 "port": port,
+            }
+        )
+    elif engine.upper() == "COCKROACH":
+        db = CockroachEngine(
+            {
+                "host": host,
+                "database": database,
+                "user": "root",
+                "password": "",
+                "port": 26257,
             }
         )
     else:
