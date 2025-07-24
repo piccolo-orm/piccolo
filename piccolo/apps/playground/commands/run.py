@@ -285,8 +285,8 @@ def populate():
 
 def run(
     engine: str = "sqlite",
-    user: str = "piccolo",
-    password: str = "piccolo",
+    user: Optional[str] = None,
+    password: Optional[str] = None,
     database: str = "piccolo_playground",
     host: str = "localhost",
     port: Optional[int] = None,
@@ -299,15 +299,15 @@ def run(
         Which database engine to use - options are sqlite, postgres or
         cockroach
     :param user:
-        Postgres user
+        Database user (ignored for SQLite)
     :param password:
-        Postgres password
+        Database password (ignored for SQLite)
     :param database:
-        Postgres database
+        Database name (ignored for SQLite)
     :param host:
-        Postgres host
+        Database host (ignored for SQLite)
     :param port:
-        Postgres port
+        Database port (ignored for SQLite)
     :param ipython_profile:
         Set to true to use your own IPython profile. Located at ~/.ipython/.
         For more info see the IPython docs
@@ -326,8 +326,8 @@ def run(
             {
                 "host": host,
                 "database": database,
-                "user": user,
-                "password": password,
+                "user": user or "piccolo",
+                "password": password or "piccolo",
                 "port": port or 5432,
             }
         )
@@ -336,8 +336,8 @@ def run(
             {
                 "host": host,
                 "database": database,
-                "user": "root",
-                "password": "",
+                "user": user or "root",
+                "password": password or "",
                 "port": port or 26257,
             }
         )
