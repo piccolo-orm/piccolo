@@ -8,6 +8,7 @@ import sys
 import uuid
 from decimal import Decimal
 from enum import Enum
+from typing import Optional
 
 from piccolo.columns import (
     JSON,
@@ -288,7 +289,7 @@ def run(
     password: str = "piccolo",
     database: str = "piccolo_playground",
     host: str = "localhost",
-    port: int = 5432,
+    port: Optional[int] = None,
     ipython_profile: bool = False,
 ):
     """
@@ -327,7 +328,7 @@ def run(
                 "database": database,
                 "user": user,
                 "password": password,
-                "port": port,
+                "port": port or 5432,
             }
         )
     elif engine.upper() == "COCKROACH":
@@ -337,7 +338,7 @@ def run(
                 "database": database,
                 "user": "root",
                 "password": "",
-                "port": 26257,
+                "port": port or 26257,
             }
         )
     else:
