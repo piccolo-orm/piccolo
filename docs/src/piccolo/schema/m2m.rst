@@ -133,6 +133,36 @@ given genre:
         {"name": "Classical", "bands": ["C-Sharps"]},
     ]
 
+Bidirectional select queries
+----------------------------
+
+The ``bidirectional`` argument is **only** used for self-referencing tables
+in many to many relationships. If set to ``True``, a bidirectional
+query is performed to obtain the correct result in a symmetric
+many to many relationships on self-referencing tables.
+
+.. code-block:: python
+
+    class Member(Table):
+        name = Varchar()
+        # self-reference many to many
+        followers = M2M(
+            LazyTableReference("MemberToFollower", module_path=__name__)
+        )
+        followings = M2M(
+            LazyTableReference("MemberToFollower", module_path=__name__)
+        )
+
+
+    class MemberToFollower(Table):
+        follower_id = ForeignKey(Member)
+        following_id = ForeignKey(Member)
+
+    >>> await Member.select(
+            Member.followers(Member.name, as_list=True, bidirectional=True)
+        ).where(Member.name == "Bob")
+    [{"followers": ["Fred", "John", "Mia"]}]
+
 -------------------------------------------------------------------------------
 
 Objects queries
