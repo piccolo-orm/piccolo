@@ -8,6 +8,7 @@ import sys
 import uuid
 from decimal import Decimal
 from enum import Enum
+from typing import Optional
 
 from piccolo.columns import (
     JSON,
@@ -25,7 +26,7 @@ from piccolo.columns import (
     Varchar,
 )
 from piccolo.columns.readable import Readable
-from piccolo.engine import PostgresEngine, SQLiteEngine
+from piccolo.engine import CockroachEngine, PostgresEngine, SQLiteEngine
 from piccolo.engine.base import Engine
 from piccolo.table import Table
 from piccolo.utils.warnings import colored_string
@@ -284,28 +285,29 @@ def populate():
 
 def run(
     engine: str = "sqlite",
-    user: str = "piccolo",
-    password: str = "piccolo",
+    user: Optional[str] = None,
+    password: Optional[str] = None,
     database: str = "piccolo_playground",
     host: str = "localhost",
-    port: int = 5432,
+    port: Optional[int] = None,
     ipython_profile: bool = False,
 ):
     """
     Creates a test database to play with.
 
     :param engine:
-        Which database engine to use - options are sqlite or postgres
+        Which database engine to use - options are sqlite, postgres or
+        cockroach
     :param user:
-        Postgres user
+        Database user (ignored for SQLite)
     :param password:
-        Postgres password
+        Database password (ignored for SQLite)
     :param database:
-        Postgres database
+        Database name (ignored for SQLite)
     :param host:
-        Postgres host
+        Database host (ignored for SQLite)
     :param port:
-        Postgres port
+        Database port (ignored for SQLite)
     :param ipython_profile:
         Set to true to use your own IPython profile. Located at ~/.ipython/.
         For more info see the IPython docs
@@ -324,9 +326,19 @@ def run(
             {
                 "host": host,
                 "database": database,
-                "user": user,
-                "password": password,
-                "port": port,
+                "user": user or "piccolo",
+                "password": password or "piccolo",
+                "port": port or 5432,
+            }
+        )
+    elif engine.upper() == "COCKROACH":
+        db = CockroachEngine(
+            {
+                "host": host,
+                "database": database,
+                "user": user or "root",
+                "password": password or "",
+                "port": port or 26257,
             }
         )
     else:
