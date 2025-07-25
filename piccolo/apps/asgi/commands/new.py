@@ -15,7 +15,7 @@ ROUTER_DEPENDENCIES = {
     "blacksheep": ["blacksheep"],
     "litestar": ["litestar"],
     "esmerald": ["esmerald"],
-    "lilya": ["lilya", "orjson"],
+    "lilya": ["lilya"],
     "quart": ["quart", "quart_schema"],
     "falcon": ["falcon"],
     "sanic": ["sanic", "sanic_ext"],
