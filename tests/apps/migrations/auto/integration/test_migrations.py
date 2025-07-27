@@ -693,15 +693,39 @@ class TestMigrations(MigrationTestCase):
 
     def test_array_column_bigint(self):
         """
-        There was a bug with using an array of ``BigInt`` - see issue 500 on
-        GitHub. It's because ``BigInt`` requires access to the parent table to
+        There was a bug with using an array of ``BigInt``:
+
+        http://github.com/piccolo-orm/piccolo/issues/500/
+
+        It's because ``BigInt`` requires access to the parent table to
         determine what the column type is.
+
         """
         self._test_migrations(
             table_snapshots=[
                 [self.table(column)]
                 for column in [
                     Array(base_column=BigInt()),
+                ]
+            ]
+        )
+
+    def test_array_base_column_change(self):
+        """
+        There was a bug when trying to change the base column of an array:
+
+        https://github.com/piccolo-orm/piccolo/issues/1076
+
+        It wasn't importing the base column, e.g. for ``Array(Text())`` it
+        wasn't importing ``Text``.
+
+        """
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Array(base_column=Varchar()),
+                    Array(base_column=Text()),
                 ]
             ]
         )
