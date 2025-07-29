@@ -198,6 +198,40 @@ it's better to copy the relevant tables into your migration file:
         manager.add_raw(run)
         return manager
 
+Another alternative is to use ``MigrationManager.get_table_from_snapshot`` method
+to get a table from the migration history. This is a preferred and convenient way 
+if the table is very large, with many foreign keys.
+
+.. code-block:: python
+
+    from piccolo.apps.migrations.auto.migration_manager import MigrationManager
+
+
+    ID = "2025-07-28T09:51:54:296860"
+    VERSION = "1.27.1"
+    DESCRIPTION = ""
+
+
+    async def forwards():
+        manager = MigrationManager(
+            migration_id=ID,
+            app_name="",
+            description=DESCRIPTION
+        )
+
+        async def run():
+            # We get a table from the migration history.
+            Task = await manager.get_table_from_snapshot(
+                app_name="home", table_class_name="Task"
+            )
+            await Task.raw(
+                "CREATE UNIQUE INDEX unique_name_completed ON task(name, completed)"
+            )
+
+        manager.add_raw(run)
+
+        return manager
+
 -------------------------------------------------------------------------------
 
 .. _AutoMigrations:
