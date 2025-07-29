@@ -12,6 +12,7 @@ from typing import Optional
 
 from piccolo.columns import (
     JSON,
+    M2M,
     UUID,
     Array,
     Boolean,
@@ -19,6 +20,7 @@ from piccolo.columns import (
     ForeignKey,
     Integer,
     Interval,
+    LazyTableReference,
     Numeric,
     Serial,
     Text,
@@ -161,6 +163,39 @@ class Album(Table):
         )
 
 
+class Movie(Table):
+    id: Serial
+    name = Varchar()
+    genres = M2M(LazyTableReference("GenreToMovie", module_path=__name__))
+
+    @classmethod
+    def get_readable(cls) -> Readable:
+        return Readable(
+            template="%s",
+            columns=[cls.name],
+        )
+
+
+class Genre(Table):
+    id: Serial
+    name = Varchar()
+    movies = M2M(LazyTableReference("GenreToMovie", module_path=__name__))
+
+    @classmethod
+    def get_readable(cls) -> Readable:
+        return Readable(
+            template="%s",
+            columns=[cls.name],
+        )
+
+
+class GenreToMovie(Table):
+    id: Serial
+    movie = ForeignKey(Movie)
+    genre = ForeignKey(Genre)
+    reason = Text(help_text="For testing additional columns on join tables.")
+
+
 TABLES = (
     Manager,
     Band,
@@ -171,6 +206,9 @@ TABLES = (
     DiscountCode,
     RecordingStudio,
     Album,
+    Movie,
+    Genre,
+    GenreToMovie,
 )
 
 
@@ -280,6 +318,25 @@ def populate():
                 Album.awards: ["Mercury Prize 2022"],
             }
         ),
+    ).run_sync()
+
+    movies = Movie.insert(
+        Movie(name="The Empire Strikes Back"),
+        Movie(name="Alien: Romulus"),
+        Movie(name="The Thinking Game"),
+    ).run_sync()
+
+    genres = Genre.insert(
+        Genre(name="Sci-Fi"),
+        Genre(name="Horror"),
+        Genre(name="Documentary"),
+    ).run_sync()
+
+    GenreToMovie.insert(
+        GenreToMovie(movie=movies[0]["id"], genre=genres[0]["id"]),
+        GenreToMovie(movie=movies[1]["id"], genre=genres[0]["id"]),
+        GenreToMovie(movie=movies[1]["id"], genre=genres[1]["id"]),
+        GenreToMovie(movie=movies[2]["id"], genre=genres[2]["id"]),
     ).run_sync()
 
 
