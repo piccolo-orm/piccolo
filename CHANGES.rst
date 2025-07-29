@@ -1,6 +1,86 @@
 Changes
 =======
 
+1.28.0
+------
+
+Playground improvements
+~~~~~~~~~~~~~~~~~~~~~~~
+
+* Added an ``Array`` column to the playground (``Album.awards``), for easier
+  experimentation with array columns.
+* CoachroachDB is now supported in the playground (thanks to @sinisaos for this).
+
+  .. code-block:: bash
+
+    piccolo playground run --engine=cockroach
+
+Functions
+~~~~~~~~~
+
+Added lots of useful array functions (thanks to @sinisaos for this).
+
+Here's an example, where we can easily fix a typo in an array using ``replace``:
+
+.. code-block:: python
+
+  >>> await Album.update({
+  ...     Album.awards: Album.awards.replace('Grammy Award 2021', 'Grammy Award 2022')
+  ... }, force=True)
+
+The documentation for functions has also been improved (e.g. how to create a
+custom function).
+
+The ``Cast`` function is now more flexible.
+
+``Array`` concantenation
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Values can be prepended:
+
+.. code-block:: python
+
+  >>> await Album.update({
+  ...     Album.awards: ['Grammy Award 2020'] + Album.awards
+  ... }, force=True)
+
+And multiple arrays can be concatenated in one go:
+
+.. code-block:: python
+
+  >>> await Album.update({
+  ...     Album.awards: ['Grammy Award 2020'] + Album.awards + ['Grammy Award 2025']
+  ... }, force=True)
+
+``is_in`` and ``not_in`` sub queries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can now use sub queries within ``is_in`` and ``not_in``  Thanks to
+@sinisaos for this.
+
+.. code-block:: python
+
+  >>> await Band.select().where(
+  ...     Band.id.is_in(
+  ...         Concert.select(Concert.band_1).where(
+  ...             Concert.starts >= datetime.datetime(year=2025, month=1, day=1)
+  ...         )
+  ...     )
+  ... )
+
+Other improvements
+~~~~~~~~~~~~~~~~~~
+
+* Auto convert a default value of ``0`` to ``0.0`` in ``Float`` columns.
+* Modernised the type hints throughout the codebase (e.g. using ``list``
+  instead of ``typing.List``). Thanks to @sinisaos for this.
+* Fixed a bug with auto migrations, where the ``Array`` base column class
+  wasn't being imported.
+* Improved M2M query performance by using sub selects (thanks to @sinisaos for
+  this).
+
+-------------------------------------------------------------------------------
+
 1.27.1
 ------
 
