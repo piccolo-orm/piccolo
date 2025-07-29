@@ -54,17 +54,17 @@ first.
 Install CockroachDB
 ~~~~~~~~~~~~~~~~~~~
 
-See `installation guide for your OS <https://www.cockroachlabs.com/docs/v25.2/install-cockroachdb-linux/>`_.
+See the `installation guide for your OS <https://www.cockroachlabs.com/docs/v25.2/install-cockroachdb-linux/>`_.
 
 Create database
 ~~~~~~~~~~~~~~~
-The playground is for testing and learning purposes only, so you can start a CockroachDB 
-`single node with the insecure flag <https://www.cockroachlabs.com/docs/v25.2/cockroach-start-single-node.html/>`_ 
-(for non-production testing only) like this: 
+The playground is for testing and learning purposes only, so you can start a CockroachDB
+`single node with the insecure flag <https://www.cockroachlabs.com/docs/v25.2/cockroach-start-single-node.html/>`_
+(for non-production testing only) like this:
 
 .. code-block:: bash
 
-    cockroach start-single-node --insecure 
+    cockroach start-single-node --insecure
 
 After that, in a new terminal window, you can create a database like this:
 
