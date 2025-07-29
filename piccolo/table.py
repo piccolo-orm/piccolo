@@ -648,7 +648,9 @@ class Table(metaclass=TableMetaclass):
 
         return GetRelated(foreign_key=foreign_key, row=self)
 
-    def get_m2m(self, m2m: M2M) -> M2MGetRelated:
+    def get_m2m(
+        self, m2m: M2M, bidirectional: Optional[bool] = None
+    ) -> M2MGetRelated:
         """
         Get all matching rows via the join table.
 
@@ -658,8 +660,34 @@ class Table(metaclass=TableMetaclass):
             >>> await band.get_m2m(Band.genres)
             [<Genre: 1>, <Genre: 2>]
 
-        """
-        return M2MGetRelated(row=self, m2m=m2m)
+        The ``bidirectional`` argument is only used for self-referencing tables
+        in many to many relationships. If set to ``True``, a bidirectional
+        query is performed to obtain the correct result in a symmetric
+        many-to-many relationships on self-referencing tables.
+
+        .. code-block:: python
+
+            class Member(Table):
+                name = Varchar()
+                # self-reference many to many
+                followers = M2M(
+                    LazyTableReference("MemberToFollower", module_path=__name__)
+                )
+                followings = M2M(
+                    LazyTableReference("MemberToFollower", module_path=__name__)
+                )
+
+
+            class MemberToFollower(Table):
+                follower_id = ForeignKey(Member)
+                following_id = ForeignKey(Member)
+
+            >>> member = await Member.objects().get(Member.name == "Bob")
+            >>> await member.get_m2m(Member.followers, bidirectional=True)
+            [<Member: 3>, <Member: 4>, <Member: 5>]
+
+        """  # noqa: E501
+        return M2MGetRelated(row=self, m2m=m2m, bidirectional=bidirectional)
 
     def add_m2m(
         self,
