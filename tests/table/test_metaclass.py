@@ -109,6 +109,19 @@ class TestMetaClass(TestCase):
             Classified._meta.secret_columns, [Classified.top_secret]
         )
 
+    def test_secret_columns_with_argument(self):
+        """
+        Make sure TableMeta.secret_columns are setup correctly
+        with ``secret=True`` argument.
+        """
+
+        class Classified(Table):
+            top_secret = Varchar(secret=True)
+
+        self.assertEqual(
+            Classified._meta.secret_columns, [Classified.top_secret]
+        )
+
     def test_json_columns(self):
         """
         Make sure TableMeta.json_columns are setup correctly.
