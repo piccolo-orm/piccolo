@@ -51,6 +51,7 @@ class Band(Table):
     name = Varchar(length=50)
     manager = ForeignKey(references=Manager, null=True)
     popularity = Integer()
+    genres = M2M(LazyTableReference("GenreToBand", module_path=__name__))
 
     @classmethod
     def get_readable(cls) -> Readable:
@@ -163,23 +164,10 @@ class Album(Table):
         )
 
 
-class Movie(Table):
-    id: Serial
-    name = Varchar()
-    genres = M2M(LazyTableReference("GenreToMovie", module_path=__name__))
-
-    @classmethod
-    def get_readable(cls) -> Readable:
-        return Readable(
-            template="%s",
-            columns=[cls.name],
-        )
-
-
 class Genre(Table):
     id: Serial
     name = Varchar()
-    movies = M2M(LazyTableReference("GenreToMovie", module_path=__name__))
+    bands = M2M(LazyTableReference("GenreToBand", module_path=__name__))
 
     @classmethod
     def get_readable(cls) -> Readable:
@@ -189,9 +177,9 @@ class Genre(Table):
         )
 
 
-class GenreToMovie(Table):
+class GenreToBand(Table):
     id: Serial
-    movie = ForeignKey(Movie)
+    band = ForeignKey(Band)
     genre = ForeignKey(Genre)
     reason = Text(help_text="For testing additional columns on join tables.")
 
@@ -206,9 +194,8 @@ TABLES = (
     DiscountCode,
     RecordingStudio,
     Album,
-    Movie,
     Genre,
-    GenreToMovie,
+    GenreToBand,
 )
 
 
@@ -320,23 +307,18 @@ def populate():
         ),
     ).run_sync()
 
-    movies = Movie.insert(
-        Movie(name="The Empire Strikes Back"),
-        Movie(name="Alien: Romulus"),
-        Movie(name="The Thinking Game"),
-    ).run_sync()
-
     genres = Genre.insert(
-        Genre(name="Sci-Fi"),
-        Genre(name="Horror"),
-        Genre(name="Documentary"),
+        Genre(name="Rock"),
+        Genre(name="Classical"),
+        Genre(name="Folk"),
     ).run_sync()
 
-    GenreToMovie.insert(
-        GenreToMovie(movie=movies[0]["id"], genre=genres[0]["id"]),
-        GenreToMovie(movie=movies[1]["id"], genre=genres[0]["id"]),
-        GenreToMovie(movie=movies[1]["id"], genre=genres[1]["id"]),
-        GenreToMovie(movie=movies[2]["id"], genre=genres[2]["id"]),
+    GenreToBand.insert(
+        GenreToBand(band=pythonistas.id, genre=genres[0]["id"]),
+        GenreToBand(band=pythonistas.id, genre=genres[2]["id"]),
+        GenreToBand(band=rustaceans.id, genre=genres[2]["id"]),
+        GenreToBand(band=c_sharps.id, genre=genres[0]["id"]),
+        GenreToBand(band=c_sharps.id, genre=genres[1]["id"]),
     ).run_sync()
 
 
