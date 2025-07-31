@@ -11,7 +11,7 @@ from piccolo.columns.m2m import M2M
 from piccolo.engine.finder import engine_finder
 from piccolo.schema import SchemaManager
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
-from tests.base import engine_is, engines_skip
+from tests.base import engines_skip
 
 engine = engine_finder()
 
@@ -51,54 +51,25 @@ class M2MBase:
 
         create_db_tables_sync(*self.all_tables, if_not_exists=True)
 
-        if engine_is("cockroach"):
-            bands = (
-                Band.insert(
-                    Band(name="Pythonistas"),
-                    Band(name="Rustaceans"),
-                    Band(name="C-Sharps"),
-                )
-                .returning(Band.id)
-                .run_sync()
-            )
+        bands = Band.insert(
+            Band(name="Pythonistas"),
+            Band(name="Rustaceans"),
+            Band(name="C-Sharps"),
+        ).run_sync()
 
-            genres = (
-                Genre.insert(
-                    Genre(name="Rock"),
-                    Genre(name="Folk"),
-                    Genre(name="Classical"),
-                )
-                .returning(Genre.id)
-                .run_sync()
-            )
+        genres = Genre.insert(
+            Genre(name="Rock"),
+            Genre(name="Folk"),
+            Genre(name="Classical"),
+        ).run_sync()
 
-            GenreToBand.insert(
-                GenreToBand(band=bands[0]["id"], genre=genres[0]["id"]),
-                GenreToBand(band=bands[0]["id"], genre=genres[1]["id"]),
-                GenreToBand(band=bands[1]["id"], genre=genres[1]["id"]),
-                GenreToBand(band=bands[2]["id"], genre=genres[0]["id"]),
-                GenreToBand(band=bands[2]["id"], genre=genres[2]["id"]),
-            ).run_sync()
-        else:
-            Band.insert(
-                Band(name="Pythonistas"),
-                Band(name="Rustaceans"),
-                Band(name="C-Sharps"),
-            ).run_sync()
-
-            Genre.insert(
-                Genre(name="Rock"),
-                Genre(name="Folk"),
-                Genre(name="Classical"),
-            ).run_sync()
-
-            GenreToBand.insert(
-                GenreToBand(band=1, genre=1),
-                GenreToBand(band=1, genre=2),
-                GenreToBand(band=2, genre=2),
-                GenreToBand(band=3, genre=1),
-                GenreToBand(band=3, genre=3),
-            ).run_sync()
+        GenreToBand.insert(
+            GenreToBand(band=bands[0]["id"], genre=genres[0]["id"]),
+            GenreToBand(band=bands[0]["id"], genre=genres[1]["id"]),
+            GenreToBand(band=bands[1]["id"], genre=genres[1]["id"]),
+            GenreToBand(band=bands[2]["id"], genre=genres[0]["id"]),
+            GenreToBand(band=bands[2]["id"], genre=genres[2]["id"]),
+        ).run_sync()
 
     def tearDown(self):
         drop_db_tables_sync(*self.all_tables)
