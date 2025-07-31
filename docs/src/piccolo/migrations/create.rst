@@ -149,7 +149,7 @@ We have to be quite careful with this. Here's an example:
         )
 
         async def run():
-            await Band.update({Band.popularity: 1000})
+            await Band.update({Band.popularity: 1000}, force=True)
 
         manager.add_raw(run)
         return manager
@@ -193,7 +193,7 @@ it's better to copy the relevant tables into your migration file:
         )
 
         async def run():
-            await Band.update({Band.popularity: 1000})
+            await Band.update({Band.popularity: 1000}, force=True)
 
         manager.add_raw(run)
         return manager
@@ -221,12 +221,10 @@ if the table is very large, with many foreign keys.
 
         async def run():
             # We get a table from the migration history.
-            Task = await manager.get_table_from_snapshot(
-                app_name="home", table_class_name="Task"
+            Band = await manager.get_table_from_snapshot(
+                app_name="music", table_class_name="Band"
             )
-            await Task.raw(
-                "CREATE UNIQUE INDEX unique_name_completed ON task(name, completed)"
-            )
+            await Band.update({"popularity": 1000}, force=True)
 
         manager.add_raw(run)
 
