@@ -16,7 +16,6 @@ from piccolo.columns.column_types import (
     Email,
     ForeignKey,
     ReferencedTable,
-    Secret,
     Serial,
 )
 from piccolo.columns.defaults.base import Default
@@ -315,14 +314,14 @@ class Table(metaclass=TableMetaclass):
                 if isinstance(column, Email):
                     email_columns.append(column)
 
-                if isinstance(column, Secret) or column._meta.secret:
-                    secret_columns.append(column)
-
                 if isinstance(column, ForeignKey):
                     foreign_key_columns.append(column)
 
                 if isinstance(column, (JSON, JSONB)):
                     json_columns.append(column)
+
+                if column._meta.secret:
+                    secret_columns.append(column)
 
                 if column._meta.auto_update is not ...:
                     auto_update_columns.append(column)
