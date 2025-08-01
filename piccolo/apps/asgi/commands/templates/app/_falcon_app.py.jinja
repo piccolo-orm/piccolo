@@ -98,7 +98,7 @@ class TaskItemResource:
 app: Any = falcon.asgi.App(middleware=LifespanMiddleware())
 app.add_static_route("/static", directory=os.path.abspath("static"))
 app.add_route("/", HomeEndpoint())
-app.add_route("/tasks", TaskCollectionResource())
+app.add_route("/tasks/", TaskCollectionResource())
 app.add_route("/tasks/{task_id:int}", TaskItemResource())
 
 

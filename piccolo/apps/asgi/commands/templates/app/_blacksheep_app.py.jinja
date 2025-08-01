@@ -37,7 +37,6 @@ TaskModelIn: Any = create_pydantic_model(
     table=Task,
     model_name="TaskModelIn",
 )
-
 TaskModelOut: Any = create_pydantic_model(
     table=Task,
     include_default_columns=True,

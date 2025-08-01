@@ -102,7 +102,7 @@ async def delete_task(request: Request, task_id: int):
         .callback(check_record_not_found)
     )
     await task.remove()
-    return json(None, status=204)
+    return json({}, status=200)
 
 
 async def open_database_connection_pool():

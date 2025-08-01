@@ -108,8 +108,7 @@ async def delete_task(task_id: int):
         .callback(check_record_not_found)
     )
     await task.remove()
-
-    return {}, HTTPStatus.NO_CONTENT
+    return {}, HTTPStatus.OK
 
 
 @app.before_serving
