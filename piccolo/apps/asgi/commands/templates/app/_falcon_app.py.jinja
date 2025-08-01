@@ -102,7 +102,7 @@ app.add_route("/tasks", TaskCollectionResource())
 app.add_route("/tasks/{task_id:int}", TaskItemResource())
 
 
-# enable the Admin app using DispatcherMiddleware
+# enable the admin application using DispatcherMiddleware
 app = DispatcherMiddleware(  # type: ignore
     {
         "/admin": create_admin(
