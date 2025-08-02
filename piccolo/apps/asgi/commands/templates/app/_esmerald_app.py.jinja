@@ -68,7 +68,7 @@ class TaskAPIView(APIView):
         tasks = await Task.select().order_by(Task._meta.primary_key, ascending=False)
         return [TaskModelOut(**task) for task in tasks]
 
-    @get("/{task_id}", tags=["Task"])
+    @get("/{task_id}")
     async def single_task(self, task_id: int) -> TaskModelOut:
         task = (
             await Task.select()
