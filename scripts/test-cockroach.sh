@@ -5,7 +5,7 @@
 # To run a single test tests/test_foo.py::TestFoo::test_foo
 
 export PICCOLO_CONF="tests.cockroach_conf"
-python3 -m pytest \
+python -m pytest \
     --cov=piccolo \
     --cov-report=xml \
     --cov-report=html \
