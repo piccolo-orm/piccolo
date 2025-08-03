@@ -79,8 +79,8 @@ If you want to run raw SQL within your migration, you can do so as follows:
     from piccolo.table import Table
 
 
-    ID = "2022-02-26T17:38:44:758593"
-    VERSION = "0.69.2"
+    ID = "2025-07-28T09:51:54:296860"
+    VERSION = "1.27.1"
     DESCRIPTION = "Updating each band's popularity"
 
 
@@ -136,8 +136,8 @@ We have to be quite careful with this. Here's an example:
     from music.tables import Band
 
 
-    ID = "2022-02-26T17:38:44:758593"
-    VERSION = "0.69.2"
+    ID = "2025-07-28T09:51:54:296860"
+    VERSION = "1.27.1"
     DESCRIPTION = "Updating each band's popularity"
 
 
@@ -175,8 +175,8 @@ it's better to copy the relevant tables into your migration file:
     from piccolo.table import Table
 
 
-    ID = "2022-02-26T17:38:44:758593"
-    VERSION = "0.69.2"
+    ID = "2025-07-28T09:51:54:296860"
+    VERSION = "1.27.1"
     DESCRIPTION = "Updating each band's popularity"
 
 
@@ -198,9 +198,9 @@ it's better to copy the relevant tables into your migration file:
         manager.add_raw(run)
         return manager
 
-Another alternative is to use ``MigrationManager.get_table_from_snapshot`` method
-to get a table from the migration history. This is a preferred and convenient way 
-if the table is very large, with many foreign keys.
+Another alternative is to use the ``MigrationManager.get_table_from_snapshot``
+method to get a table from the migration history. This is very convenient,
+especially if the table is large, with many foreign keys.
 
 .. code-block:: python
 
@@ -209,7 +209,7 @@ if the table is very large, with many foreign keys.
 
     ID = "2025-07-28T09:51:54:296860"
     VERSION = "1.27.1"
-    DESCRIPTION = ""
+    DESCRIPTION = "Updating each band's popularity"
 
 
     async def forwards():
