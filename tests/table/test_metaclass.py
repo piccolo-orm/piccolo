@@ -99,34 +99,8 @@ class TestMetaClass(TestCase):
 
     def test_secret_columns(self):
         """
-        Make sure TableMeta.secret_columns are setup correctly.
-        """
-
-        class Classified(Table):
-            top_secret = Secret()
-
-        self.assertEqual(
-            Classified._meta.secret_columns, [Classified.top_secret]
-        )
-
-    def test_secret_columns_with_argument(self):
-        """
-        Make sure TableMeta.secret_columns are setup correctly
-        with ``secret=True`` argument.
-        """
-
-        class Classified(Table):
-            top_secret = Varchar(secret=True)
-            public = Varchar()
-
-        self.assertEqual(
-            Classified._meta.secret_columns, [Classified.top_secret]
-        )
-
-    def test_secret_columns_with_secret_argument_and_secret_column(self):
-        """
-        Make sure TableMeta.secret_columns are setup correctly
-        with ``secret=True`` argument and ``Secret`` column type.
+        Make sure TableMeta.secret_columns are setup correctly with the
+        ``secret=True`` argument and ``Secret`` column type.
         """
 
         class Classified(Table):
