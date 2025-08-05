@@ -181,7 +181,7 @@ class GenreToBand(Table):
     id: Serial
     band = ForeignKey(Band)
     genre = ForeignKey(Genre)
-    reason = Text(help_text="For testing additional columns on join tables.")
+    reason = Text(null=True, default=None)
 
 
 TABLES = (
@@ -314,7 +314,11 @@ def populate():
     ).run_sync()
 
     GenreToBand.insert(
-        GenreToBand(band=pythonistas.id, genre=genres[0]["id"]),
+        GenreToBand(
+            band=pythonistas.id,
+            genre=genres[0]["id"],
+            reason="Because they rock.",
+        ),
         GenreToBand(band=pythonistas.id, genre=genres[2]["id"]),
         GenreToBand(band=rustaceans.id, genre=genres[2]["id"]),
         GenreToBand(band=c_sharps.id, genre=genres[0]["id"]),
