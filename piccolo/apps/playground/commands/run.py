@@ -12,6 +12,7 @@ from typing import Optional
 
 from piccolo.columns import (
     JSON,
+    M2M,
     UUID,
     Array,
     Boolean,
@@ -19,6 +20,7 @@ from piccolo.columns import (
     ForeignKey,
     Integer,
     Interval,
+    LazyTableReference,
     Numeric,
     Serial,
     Text,
@@ -49,6 +51,7 @@ class Band(Table):
     name = Varchar(length=50)
     manager = ForeignKey(references=Manager, null=True)
     popularity = Integer()
+    genres = M2M(LazyTableReference("GenreToBand", module_path=__name__))
 
     @classmethod
     def get_readable(cls) -> Readable:
@@ -161,6 +164,26 @@ class Album(Table):
         )
 
 
+class Genre(Table):
+    id: Serial
+    name = Varchar()
+    bands = M2M(LazyTableReference("GenreToBand", module_path=__name__))
+
+    @classmethod
+    def get_readable(cls) -> Readable:
+        return Readable(
+            template="%s",
+            columns=[cls.name],
+        )
+
+
+class GenreToBand(Table):
+    id: Serial
+    band = ForeignKey(Band)
+    genre = ForeignKey(Genre)
+    reason = Text(null=True, default=None)
+
+
 TABLES = (
     Manager,
     Band,
@@ -171,6 +194,8 @@ TABLES = (
     DiscountCode,
     RecordingStudio,
     Album,
+    Genre,
+    GenreToBand,
 )
 
 
@@ -280,6 +305,24 @@ def populate():
                 Album.awards: ["Mercury Prize 2022"],
             }
         ),
+    ).run_sync()
+
+    genres = Genre.insert(
+        Genre(name="Rock"),
+        Genre(name="Classical"),
+        Genre(name="Folk"),
+    ).run_sync()
+
+    GenreToBand.insert(
+        GenreToBand(
+            band=pythonistas.id,
+            genre=genres[0]["id"],
+            reason="Because they rock.",
+        ),
+        GenreToBand(band=pythonistas.id, genre=genres[2]["id"]),
+        GenreToBand(band=rustaceans.id, genre=genres[2]["id"]),
+        GenreToBand(band=c_sharps.id, genre=genres[0]["id"]),
+        GenreToBand(band=c_sharps.id, genre=genres[1]["id"]),
     ).run_sync()
 
 
