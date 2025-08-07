@@ -501,7 +501,7 @@ class MigrationManager:
                             column_class.value_type == list
                             and old_column_class.value_type == list
                         ):
-                            # drop the default old column
+                            # Drop the old default value
                             await self._run_query(
                                 _Table.alter().drop_default(old_column)
                             )
@@ -510,7 +510,7 @@ class MigrationManager:
                                 new_column._meta.db_column_name,
                                 new_column.column_type,
                             )
-                            # then set a new column type
+                            # Set a new column type
                             await self._run_query(
                                 _Table.alter().set_column_type(
                                     old_column=old_column,
@@ -518,8 +518,7 @@ class MigrationManager:
                                     using_expression=using_expression,
                                 )
                             )
-                            # finally set a new default value for
-                            # the array column
+                            # Set a new default value
                             await self._run_query(
                                 _Table.alter().set_default(
                                     column=new_column,
