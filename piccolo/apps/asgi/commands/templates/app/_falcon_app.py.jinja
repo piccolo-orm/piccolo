@@ -1,11 +1,10 @@
 import os
-import typing as t
+from typing import Any
 
 import falcon.asgi
 from hypercorn.middleware import DispatcherMiddleware
 from piccolo.engine import engine_finder
 from piccolo_admin.endpoints import create_admin
-from piccolo_api.crud.endpoints import PiccoloCRUD
 
 from home.endpoints import HomeEndpoint
 from home.piccolo_app import APP_CONFIG
@@ -28,25 +27,82 @@ async def close_database_connection_pool():
         print("Unable to connect to the database")
 
 
+# Check if the record is None. Use for query callback
+def check_record_not_found(result: dict[str, Any]) -> dict[str, Any]:
+    if result is None:
+        raise falcon.HTTPNotFound()
+    return result
+
+
 class LifespanMiddleware:
     async def process_startup(
-        self, scope: t.Dict[str, t.Any], event: t.Dict[str, t.Any]
+        self, scope: dict[str, Any], event: dict[str, Any]
     ) -> None:
         await open_database_connection_pool()
 
     async def process_shutdown(
-        self, scope: t.Dict[str, t.Any], event: t.Dict[str, t.Any]
+        self, scope: dict[str, Any], event: dict[str, Any]
     ) -> None:
         await close_database_connection_pool()
 
 
-app: t.Any = falcon.asgi.App(middleware=LifespanMiddleware())
+class TaskCollectionResource:
+    async def on_get(self, req, resp):
+        tasks = await Task.select().order_by(Task._meta.primary_key, ascending=False)
+        resp.media = tasks
+
+    async def on_post(self, req, resp):
+        data = await req.media
+        task = Task(**data)
+        await task.save()
+        resp.status = falcon.HTTP_201
+        resp.media = task.to_dict()
+
+
+class TaskItemResource:
+    async def on_get(self, req, resp, task_id):
+        task = (
+            await Task.select()
+            .where(Task._meta.primary_key == task_id)
+            .first()
+            .callback(check_record_not_found)
+        )
+        resp.status = falcon.HTTP_200
+        resp.media = task
+
+    async def on_put(self, req, resp, task_id):
+        task = (
+            await Task.objects()
+            .get(Task._meta.primary_key == task_id)
+            .callback(check_record_not_found)
+        )
+
+        data = await req.media
+        for key, value in data.items():
+            setattr(task, key, value)
+
+        await task.save()
+        resp.status = falcon.HTTP_200
+        resp.media = task.to_dict()
+
+    async def on_delete(self, req, resp, task_id):
+        task = (
+            await Task.objects()
+            .get(Task._meta.primary_key == task_id)
+            .callback(check_record_not_found)
+        )
+        resp.status = falcon.HTTP_204
+        await task.remove()
+
+
+app: Any = falcon.asgi.App(middleware=LifespanMiddleware())
 app.add_static_route("/static", directory=os.path.abspath("static"))
 app.add_route("/", HomeEndpoint())
+app.add_route("/tasks/", TaskCollectionResource())
+app.add_route("/tasks/{task_id:int}", TaskItemResource())
 
-PICCOLO_CRUD: t.Any = PiccoloCRUD(table=Task)
 
-# enable the Admin and PiccoloCrud app using DispatcherMiddleware
+# enable the admin application using DispatcherMiddleware
 app = DispatcherMiddleware(  # type: ignore
     {
         "/admin": create_admin(
@@ -54,7 +110,6 @@ app = DispatcherMiddleware(  # type: ignore
             # Required when running under HTTPS:
             # allowed_hosts=['my_site.com']
         ),
-        "/tasks": PICCOLO_CRUD,
         "": app,
     }
 )

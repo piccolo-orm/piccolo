@@ -1,11 +1,10 @@
-import asyncio
-import typing as t
+from typing import Any
 
 from hypercorn.middleware import DispatcherMiddleware
 from piccolo.engine import engine_finder
 from piccolo_admin.endpoints import create_admin
 from piccolo_api.crud.serializers import create_pydantic_model
-from sanic import Request, Sanic, json
+from sanic import NotFound, Request, Sanic, json
 from sanic_ext import openapi
 
 from home.endpoints import index
@@ -16,15 +15,22 @@ app = Sanic(__name__)
 app.static("/static/", "static")
 
 
-TaskModelIn: t.Any = create_pydantic_model(
+TaskModelIn: Any = create_pydantic_model(
     table=Task,
     model_name="TaskModelIn",
 )
-TaskModelOut: t.Any = create_pydantic_model(
+TaskModelOut: Any = create_pydantic_model(
     table=Task,
     include_default_columns=True,
     model_name="TaskModelOut",
 )
+
+
+# Check if the record is None. Use for query callback
+def check_record_not_found(result: dict[str, Any]) -> dict[str, Any]:
+    if result is None:
+        raise NotFound(message="Record not found")
+    return result
 
 
 @app.get("/")
@@ -41,6 +47,19 @@ async def tasks(request: Request):
         await Task.select().order_by(Task._meta.primary_key, ascending=False),
         status=200,
     )
+
+
+@app.get("/tasks/<task_id:int>/")
+@openapi.tag("Task")
+@openapi.response(200, {"application/json": TaskModelOut.model_json_schema()})
+async def single_task(request: Request, task_id: int):
+    task = (
+        await Task.select()
+        .where(Task._meta.primary_key == task_id)
+        .first()
+        .callback(check_record_not_found)
+    )
+    return json(task, status=200)
 
 
 @app.post("/tasks/")
@@ -62,9 +81,11 @@ async def create_task(request: Request):
 )
 @openapi.response(200, {"application/json": TaskModelOut.model_json_schema()})
 async def update_task(request: Request, task_id: int):
-    task = await Task.objects().get(Task._meta.primary_key == task_id)
-    if not task:
-        return json({}, status=404)
+    task = (
+        await Task.objects()
+        .get(Task._meta.primary_key == task_id)
+        .callback(check_record_not_found)
+    )
     for key, value in request.json.items():
         setattr(task, key, value)
 
@@ -75,9 +96,11 @@ async def update_task(request: Request, task_id: int):
 @app.delete("/tasks/<task_id:int>/")
 @openapi.tag("Task")
 async def delete_task(request: Request, task_id: int):
-    task = await Task.objects().get(Task._meta.primary_key == task_id)
-    if not task:
-        return json({}, status=404)
+    task = (
+        await Task.objects()
+        .get(Task._meta.primary_key == task_id)
+        .callback(check_record_not_found)
+    )
     await task.remove()
     return json({}, status=200)
 
