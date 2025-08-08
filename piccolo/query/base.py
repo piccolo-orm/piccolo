@@ -1,17 +1,19 @@
 from __future__ import annotations
 
-import itertools
-import typing as t
+from collections.abc import Generator, Sequence
 from time import time
+from typing import TYPE_CHECKING, Any, Generic, Optional, Union, cast
 
 from piccolo.columns.column_types import JSON, JSONB
+from piccolo.custom_types import QueryResponseType, TableInstance
 from piccolo.query.mixins import ColumnsDelegate
+from piccolo.query.operators.json import JSONQueryString
 from piccolo.querystring import QueryString
-from piccolo.utils.encoding import dump_json, load_json
+from piccolo.utils.encoding import load_json
 from piccolo.utils.objects import make_nested_object
 from piccolo.utils.sync import run_sync
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.query.mixins import OutputDelegate
     from piccolo.table import Table  # noqa
 
@@ -25,14 +27,13 @@ class Timer:
         print(f"Duration: {self.end - self.start}s")
 
 
-class Query:
-
+class Query(Generic[TableInstance, QueryResponseType]):
     __slots__ = ("table", "_frozen_querystrings")
 
     def __init__(
         self,
-        table: t.Type[Table],
-        frozen_querystrings: t.Optional[t.Sequence[QueryString]] = None,
+        table: type[TableInstance],
+        frozen_querystrings: Optional[Sequence[QueryString]] = None,
     ):
         self.table = table
         self._frozen_querystrings = frozen_querystrings
@@ -45,60 +46,46 @@ class Query:
         else:
             raise ValueError("Engine isn't defined.")
 
-    async def _process_results(self, results):  # noqa: C901
-        if results:
-            keys = results[0].keys()
-            keys = [i.replace("$", ".") for i in keys]
-            if self.engine_type == "postgres":
-                # asyncpg returns a special Record object. We can pass it
-                # directly into zip without calling `values` on it. This can
-                # save us hundreds of microseconds, depending on the number of
-                # results.
-                raw = [dict(zip(keys, i)) for i in results]
-            else:
-                # SQLite returns a list of dictionaries.
-                raw = [dict(zip(keys, i.values())) for i in results]
-        else:
-            raw = []
+    async def _process_results(self, results) -> QueryResponseType:
+        raw = (
+            self.table._meta.db.transform_response_to_dicts(results)
+            if results
+            else []
+        )
 
-        if hasattr(self, "run_callback"):
-            self.run_callback(raw)
+        if hasattr(self, "_raw_response_callback"):
+            self._raw_response_callback(raw)
 
-        output: t.Optional[OutputDelegate] = getattr(
+        output: Optional[OutputDelegate] = getattr(
             self, "output_delegate", None
         )
 
         #######################################################################
 
         if output and output._output.load_json:
-            columns_delegate: t.Optional[ColumnsDelegate] = getattr(
+            columns_delegate: Optional[ColumnsDelegate] = getattr(
                 self, "columns_delegate", None
             )
 
+            json_column_names: list[str] = []
+
             if columns_delegate is not None:
-                json_columns = [
-                    i
-                    for i in columns_delegate.selected_columns
-                    if isinstance(i, (JSON, JSONB))
-                ]
+                json_columns: list[Union[JSON, JSONB]] = []
+
+                for column in columns_delegate.selected_columns:
+                    if isinstance(column, (JSON, JSONB)):
+                        json_columns.append(column)
+                    elif isinstance(column, JSONQueryString):
+                        if alias := column._alias:
+                            json_column_names.append(alias)
             else:
                 json_columns = self.table._meta.json_columns
 
-            json_column_names = []
             for column in json_columns:
-                if column.alias is not None:
-                    json_column_names.append(column.alias)
-                elif column.json_operator is not None:
-                    # If no alias is specified, then the default column name
-                    # that Postgres gives when using the `->` operator is
-                    # `?column?`.
-                    json_column_names.append("?column?")
+                if column._alias is not None:
+                    json_column_names.append(column._alias)
                 elif len(column._meta.call_chain) > 0:
-                    json_column_names.append(
-                        column.get_select_string(
-                            engine_type=column._meta.engine_type
-                        )
-                    )
+                    json_column_names.append(column._meta.get_default_alias())
                 else:
                     json_column_names.append(column._meta.name)
 
@@ -120,37 +107,21 @@ class Query:
 
         if output:
             if output._output.as_objects:
-                # When using .first() we get a single row, not a list
-                # of rows.
-                if type(raw) is list:
-                    if output._output.nested:
-                        raw = [
-                            make_nested_object(row, self.table) for row in raw
-                        ]
-                    else:
-                        raw = [
-                            self.table(**columns, exists_in_db=True)
+                if output._output.nested:
+                    return cast(
+                        QueryResponseType,
+                        [make_nested_object(row, self.table) for row in raw],
+                    )
+                else:
+                    return cast(
+                        QueryResponseType,
+                        [
+                            self.table(**columns, _exists_in_db=True)
                             for columns in raw
-                        ]
-                elif raw is not None:
-                    if output._output.nested:
-                        raw = make_nested_object(raw, self.table)
-                    else:
-                        raw = self.table(**raw, exists_in_db=True)
-            elif type(raw) is list:
-                if output._output.as_list:
-                    if len(raw) == 0:
-                        return []
-                    if len(raw[0].keys()) != 1:
-                        raise ValueError(
-                            "Each row returned more than one value"
-                        )
-                    else:
-                        raw = list(itertools.chain(*[j.values() for j in raw]))
-                if output._output.as_json:
-                    raw = dump_json(raw)
+                        ],
+                    )
 
-        return raw
+        return cast(QueryResponseType, raw)
 
     def _validate(self):
         """
@@ -160,14 +131,16 @@ class Query:
         """
         pass
 
-    def __await__(self):
+    def __await__(self) -> Generator[None, None, QueryResponseType]:
         """
         If the user doesn't explicity call .run(), proxy to it as a
         convenience.
         """
         return self.run().__await__()
 
-    async def run(self, node: t.Optional[str] = None, in_pool: bool = True):
+    async def _run(
+        self, node: Optional[str] = None, in_pool: bool = True
+    ) -> QueryResponseType:
         """
         Run the query on the database.
 
@@ -209,10 +182,22 @@ class Query:
                 results = await engine.run_querystring(
                     querystring, in_pool=in_pool
                 )
-                responses.append(await self._process_results(results))
-            return responses
+                processed_results = await self._process_results(results)
 
-    def run_sync(self, timed=False, in_pool=False, *args, **kwargs):
+                responses.append(processed_results)
+            return cast(QueryResponseType, responses)
+
+    async def run(
+        self, node: Optional[str] = None, in_pool: bool = True
+    ) -> QueryResponseType:
+        return await self._run(node=node, in_pool=in_pool)
+
+    def run_sync(
+        self,
+        node: Optional[str] = None,
+        timed: bool = False,
+        in_pool: bool = False,
+    ) -> QueryResponseType:
         """
         A convenience method for running the coroutine synchronously.
 
@@ -226,14 +211,14 @@ class Query:
             `issue 505 <https://github.com/piccolo-orm/piccolo/issues/505>`_.
 
         """
-        coroutine = self.run(in_pool=in_pool, *args, **kwargs)
+        coroutine = self.run(node=node, in_pool=in_pool)
 
         if not timed:
             return run_sync(coroutine)
         with Timer():
             return run_sync(coroutine)
 
-    async def response_handler(self, response):
+    async def response_handler(self, response: list) -> Any:
         """
         Subclasses can override this to modify the raw response returned by
         the database driver.
@@ -243,19 +228,23 @@ class Query:
     ###########################################################################
 
     @property
-    def sqlite_querystrings(self) -> t.Sequence[QueryString]:
+    def sqlite_querystrings(self) -> Sequence[QueryString]:
         raise NotImplementedError
 
     @property
-    def postgres_querystrings(self) -> t.Sequence[QueryString]:
+    def postgres_querystrings(self) -> Sequence[QueryString]:
         raise NotImplementedError
 
     @property
-    def default_querystrings(self) -> t.Sequence[QueryString]:
+    def cockroach_querystrings(self) -> Sequence[QueryString]:
         raise NotImplementedError
 
     @property
-    def querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> Sequence[QueryString]:
+        raise NotImplementedError
+
+    @property
+    def querystrings(self) -> Sequence[QueryString]:
         """
         Calls the correct underlying method, depending on the current engine.
         """
@@ -271,6 +260,11 @@ class Query:
         elif engine_type == "sqlite":
             try:
                 return self.sqlite_querystrings
+            except NotImplementedError:
+                return self.default_querystrings
+        elif engine_type == "cockroach":
+            try:
+                return self.cockroach_querystrings
             except NotImplementedError:
                 return self.default_querystrings
         else:
@@ -342,6 +336,9 @@ class Query:
         return "; ".join([i.__str__() for i in self.querystrings])
 
 
+###############################################################################
+
+
 class FrozenQuery:
     def __init__(self, query: Query):
         self.query = query
@@ -365,11 +362,13 @@ class FrozenQuery:
         return self.query.__str__()
 
 
-class DDL:
+###############################################################################
 
+
+class DDL:
     __slots__ = ("table",)
 
-    def __init__(self, table: t.Type[Table], **kwargs):
+    def __init__(self, table: type[Table], **kwargs):
         self.table = table
 
     @property
@@ -381,19 +380,23 @@ class DDL:
             raise ValueError("Engine isn't defined.")
 
     @property
-    def sqlite_ddl(self) -> t.Sequence[str]:
+    def sqlite_ddl(self) -> Sequence[str]:
         raise NotImplementedError
 
     @property
-    def postgres_ddl(self) -> t.Sequence[str]:
+    def postgres_ddl(self) -> Sequence[str]:
         raise NotImplementedError
 
     @property
-    def default_ddl(self) -> t.Sequence[str]:
+    def cockroach_ddl(self) -> Sequence[str]:
         raise NotImplementedError
 
     @property
-    def ddl(self) -> t.Sequence[str]:
+    def default_ddl(self) -> Sequence[str]:
+        raise NotImplementedError
+
+    @property
+    def ddl(self) -> Sequence[str]:
         """
         Calls the correct underlying method, depending on the current engine.
         """
@@ -406,6 +409,11 @@ class DDL:
         elif engine_type == "sqlite":
             try:
                 return self.sqlite_ddl
+            except NotImplementedError:
+                return self.default_ddl
+        elif engine_type == "cockroach":
+            try:
+                return self.cockroach_ddl
             except NotImplementedError:
                 return self.default_ddl
         else:
@@ -431,7 +439,6 @@ class DDL:
         if len(self.ddl) == 1:
             return await engine.run_ddl(self.ddl[0], in_pool=in_pool)
         responses = []
-        # TODO - run in a transaction
         for ddl in self.ddl:
             response = await engine.run_ddl(ddl, in_pool=in_pool)
             responses.append(response)

@@ -1,25 +1,27 @@
 from __future__ import annotations
 
-import typing as t
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
+from typing import Any
 
 from piccolo.utils.repr import repr_class_instance
 
 
 class Default(ABC):
-    @abstractproperty
+    @property
+    @abstractmethod
     def postgres(self) -> str:
         pass
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def sqlite(self) -> str:
         pass
 
     @abstractmethod
-    def python(self):
+    def python(self) -> Any:
         pass
 
-    def get_postgres_interval_string(self, attributes: t.List[str]) -> str:
+    def get_postgres_interval_string(self, attributes: list[str]) -> str:
         """
         Returns a string usable as an interval argument in Postgres e.g.
         "1 day 2 hour".
@@ -37,7 +39,7 @@ class Default(ABC):
 
         return " ".join(interval_components)
 
-    def get_sqlite_interval_string(self, attributes: t.List[str]) -> str:
+    def get_sqlite_interval_string(self, attributes: list[str]) -> str:
         """
         Returns a string usable as an interval argument in SQLite e.g.
         "'-2 hours', '1 days'".

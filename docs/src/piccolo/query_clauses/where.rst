@@ -5,6 +5,7 @@ where
 
 You can use ``where`` clauses with the following queries:
 
+* :ref:`Count`
 * :ref:`Delete`
 * :ref:`Exists`
 * :ref:`Objects`
@@ -52,8 +53,8 @@ You can use the ``<, >, <=, >=`` operators, which work as you expect.
 
 -------------------------------------------------------------------------------
 
-like / ilike
--------------
+``like`` / ``ilike``
+--------------------
 
 The percentage operator is required to designate where the match should occur.
 
@@ -79,8 +80,8 @@ The percentage operator is required to designate where the match should occur.
 
 -------------------------------------------------------------------------------
 
-not_like
---------
+``not_like``
+------------
 
 Usage is the same as ``like`` excepts it excludes matching rows.
 
@@ -92,8 +93,8 @@ Usage is the same as ``like`` excepts it excludes matching rows.
 
 -------------------------------------------------------------------------------
 
-is_in / not_in
---------------
+``is_in`` / ``not_in``
+----------------------
 
 You can get all rows with a value contained in the list:
 
@@ -111,10 +112,49 @@ And all rows with a value not contained in the list:
         Band.name.not_in(['Terrible Band', 'Awful Band'])
     )
 
+You can also pass a subquery into the ``is_in`` clause:
+
+.. code-block:: python
+
+    await Band.select().where(
+        Band.id.is_in(
+            Concert.select(Concert.band_1).where(
+                Concert.starts >= datetime.datetime(year=2025, month=1, day=1)
+            )
+        )
+    )
+
+.. hint::
+    In SQL there are often several ways of solving the same problem. You
+    can also solve the above using :meth:`join_on <piccolo.columns.base.Column.join_on>`.
+
+    .. code-block:: python
+
+        >>> await Band.select().where(
+        ...     Band.id.join_on(Concert.band_1).starts >= datetime.datetime(
+        ...        year=2025, month=1, day=1
+        ...     )
+        ... )
+
+    Use whichever you prefer, and whichever suits the situation best.
+
+Subqueries can also be passed into the ``not_in`` clause:
+
+.. code-block:: python
+
+    await Band.select().where(
+        Band.id.not_in(
+            Concert.select(Concert.band_1).where(
+                Concert.starts >= datetime.datetime(year=2025, month=1, day=1)
+            )
+        )
+    )
+
+
 -------------------------------------------------------------------------------
 
-is_null / is_not_null
----------------------
+``is_null`` / ``is_not_null``
+-----------------------------
 
 These queries work, but some linters will complain about doing a comparison
 with ``None``:
@@ -170,6 +210,9 @@ careful to include brackets in the correct place.
 
     ((b.popularity >= 100) & (b.manager.name ==  'Guido')) | (b.popularity > 1000)
 
+Multiple ``where`` clauses
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Using multiple ``where`` clauses is equivalent to an AND.
 
 .. code-block:: python
@@ -198,8 +241,8 @@ Also, multiple arguments inside ``where`` clause is equivalent to an AND.
         Band.popularity >= 100, Band.popularity < 1000
     )
 
-Using And / Or directly
-~~~~~~~~~~~~~~~~~~~~~~~
+Using ``And`` / ``Or`` directly
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Rather than using the ``|`` and ``&`` characters, you can use the ``And`` and
 ``Or`` classes, which are what's used under the hood.
@@ -217,8 +260,8 @@ Rather than using the ``|`` and ``&`` characters, you can use the ``And`` and
 
 -------------------------------------------------------------------------------
 
-WhereRaw
---------
+``WhereRaw``
+------------
 
 In certain situations you may want to have raw SQL in your where clause.
 
@@ -252,3 +295,34 @@ untrusted source, otherwise it could lead to a SQL injection attack.
     await Band.select().where(
         WhereRaw("name = 'Pythonistas'") | (Band.popularity > 1000)
     )
+
+-------------------------------------------------------------------------------
+
+Joins
+-----
+
+The ``where`` clause has full support for joins. For example:
+
+.. code-block:: python
+
+    >>> await Band.select(Band.name).where(Band.manager.name == 'Guido')
+    [{'name': 'Pythonistas'}]
+
+-------------------------------------------------------------------------------
+
+Conditional ``where`` clauses
+-----------------------------
+
+You can add ``where`` clauses conditionally (e.g. based on user input):
+
+.. code-block:: python
+
+    async def get_band_names(only_popular_bands: bool) -> list[str]:
+        query = Band.select(Band.name).output(as_list=True)
+
+        if only_popular_bands:
+            query = query.where(Band.popularity >= 1000)
+
+        return await query
+
+.. hint:: This works with all clauses, not just ``where`` clauses.

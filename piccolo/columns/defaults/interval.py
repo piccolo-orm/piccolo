@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import datetime
-import typing as t
+from collections.abc import Callable
 from enum import Enum
+from typing import Union
 
 from .base import Default
 
 
-class IntervalCustom(Default):  # lgtm [py/missing-equals]
+class IntervalCustom(Default):
     def __init__(
         self,
         weeks: int = 0,
@@ -54,6 +55,10 @@ class IntervalCustom(Default):  # lgtm [py/missing-equals]
         return f"'{value}'"
 
     @property
+    def cockroach(self):
+        return self.postgres
+
+    @property
     def sqlite(self):
         return self.timedelta.total_seconds()
 
@@ -71,11 +76,12 @@ class IntervalCustom(Default):  # lgtm [py/missing-equals]
 
 ###############################################################################
 
-IntervalArg = t.Union[
+IntervalArg = Union[
     IntervalCustom,
     Enum,
     None,
     datetime.timedelta,
+    Callable[[], datetime.timedelta],
 ]
 
 

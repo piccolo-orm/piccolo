@@ -3,8 +3,8 @@ from __future__ import annotations
 import importlib
 import os
 import sys
-import typing as t
 from dataclasses import dataclass
+from typing import Optional, cast
 
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
 from piccolo.apps.migrations.auto.migration_manager import MigrationManager
@@ -16,7 +16,7 @@ from piccolo.conf.apps import AppConfig, Finder, MigrationModule
 @dataclass
 class MigrationResult:
     success: bool
-    message: t.Optional[str] = None
+    message: Optional[str] = None
 
 
 class BaseMigrationManager(Finder):
@@ -32,7 +32,7 @@ class BaseMigrationManager(Finder):
 
     def get_migration_modules(
         self, folder_path: str
-    ) -> t.Dict[str, MigrationModule]:
+    ) -> dict[str, MigrationModule]:
         """
         Imports the migration modules in the given folder path, and returns
         a mapping of migration ID to the corresponding migration module.
@@ -50,8 +50,8 @@ class BaseMigrationManager(Finder):
             if ((i not in excluded) and i.endswith(".py"))
         ]
 
-        modules: t.List[MigrationModule] = [
-            t.cast(MigrationModule, importlib.import_module(name))
+        modules: list[MigrationModule] = [
+            cast(MigrationModule, importlib.import_module(name))
             for name in migration_names
         ]
         for m in modules:
@@ -62,8 +62,8 @@ class BaseMigrationManager(Finder):
         return migration_modules
 
     def get_migration_ids(
-        self, migration_module_dict: t.Dict[str, MigrationModule]
-    ) -> t.List[str]:
+        self, migration_module_dict: dict[str, MigrationModule]
+    ) -> list[str]:
         """
         Returns a list of migration IDs, from the Python migration files.
         """
@@ -72,9 +72,9 @@ class BaseMigrationManager(Finder):
     async def get_migration_managers(
         self,
         app_config: AppConfig,
-        max_migration_id: t.Optional[str] = None,
+        max_migration_id: Optional[str] = None,
         offset: int = 0,
-    ) -> t.List[MigrationManager]:
+    ) -> list[MigrationManager]:
         """
         Call the forwards coroutine in each migration module. Each one should
         return a `MigrationManger`. Combine all of the results, and return in
@@ -84,13 +84,13 @@ class BaseMigrationManager(Finder):
             If set, only MigrationManagers up to and including the given
             migration ID will be returned.
         """
-        migration_managers: t.List[MigrationManager] = []
+        migration_managers: list[MigrationManager] = []
 
-        migrations_folder = app_config.migrations_folder_path
+        migrations_folder = app_config.resolved_migrations_folder_path
 
-        migration_modules: t.Dict[
-            str, MigrationModule
-        ] = self.get_migration_modules(migrations_folder)
+        migration_modules: dict[str, MigrationModule] = (
+            self.get_migration_modules(migrations_folder)
+        )
 
         migration_ids = sorted(migration_modules.keys())
 
@@ -114,11 +114,11 @@ class BaseMigrationManager(Finder):
         else:
             return migration_managers
 
-    async def get_table_from_snaphot(
+    async def get_table_from_snapshot(
         self,
         app_name: str,
         table_class_name: str,
-        max_migration_id: t.Optional[str] = None,
+        max_migration_id: Optional[str] = None,
         offset: int = 0,
     ) -> DiffableTable:
         """

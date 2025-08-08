@@ -1,29 +1,34 @@
 from __future__ import annotations
 
-import typing as t
 from unittest import TestCase
 from unittest.mock import MagicMock, call, patch
 
-from piccolo.apps.migrations.auto import DiffableTable, SchemaDiffer
+from piccolo.apps.migrations.auto.schema_differ import (
+    DiffableTable,
+    RenameColumn,
+    RenameColumnCollection,
+    RenameTable,
+    RenameTableCollection,
+    SchemaDiffer,
+)
 from piccolo.columns.column_types import Numeric, Varchar
 
 
 class TestSchemaDiffer(TestCase):
-
     maxDiff = None
 
-    def test_add_table(self):
+    def test_add_table(self) -> None:
         """
         Test adding a new table.
         """
         name_column = Varchar()
         name_column._meta.name = "name"
-        schema: t.List[DiffableTable] = [
+        schema: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band", tablename="band", columns=[name_column]
             )
         ]
-        schema_snapshot: t.List[DiffableTable] = []
+        schema_snapshot: list[DiffableTable] = []
         schema_differ = SchemaDiffer(
             schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
         )
@@ -32,22 +37,22 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(create_tables.statements) == 1)
         self.assertEqual(
             create_tables.statements[0],
-            "manager.add_table('Band', tablename='band')",
+            "manager.add_table(class_name='Band', tablename='band', schema=None, columns=None)",  # noqa: E501
         )
 
         new_table_columns = schema_differ.new_table_columns
         self.assertTrue(len(new_table_columns.statements) == 1)
         self.assertEqual(
             new_table_columns.statements[0],
-            "manager.add_column(table_class_name='Band', tablename='band', column_name='name', db_column_name='name', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None, 'secret': False})",  # noqa
+            "manager.add_column(table_class_name='Band', tablename='band', column_name='name', db_column_name='name', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None, 'secret': False}, schema=None)",  # noqa
         )
 
-    def test_drop_table(self):
+    def test_drop_table(self) -> None:
         """
         Test dropping an existing table.
         """
-        schema: t.List[DiffableTable] = []
-        schema_snapshot: t.List[DiffableTable] = [
+        schema: list[DiffableTable] = []
+        schema_snapshot: list[DiffableTable] = [
             DiffableTable(class_name="Band", tablename="band", columns=[])
         ]
         schema_differ = SchemaDiffer(
@@ -57,22 +62,22 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(schema_differ.drop_tables.statements) == 1)
         self.assertEqual(
             schema_differ.drop_tables.statements[0],
-            "manager.drop_table(class_name='Band', tablename='band')",
+            "manager.drop_table(class_name='Band', tablename='band', schema=None)",  # noqa: E501
         )
 
-    def test_rename_table(self):
+    def test_rename_table(self) -> None:
         """
         Test renaming a table.
         """
         name_column = Varchar()
         name_column._meta.name = "name"
 
-        schema: t.List[DiffableTable] = [
+        schema: list[DiffableTable] = [
             DiffableTable(
                 class_name="Act", tablename="act", columns=[name_column]
             )
         ]
-        schema_snapshot: t.List[DiffableTable] = [
+        schema_snapshot: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band", tablename="band", columns=[name_column]
             )
@@ -85,13 +90,48 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(schema_differ.rename_tables.statements) == 1)
         self.assertEqual(
             schema_differ.rename_tables.statements[0],
-            "manager.rename_table(old_class_name='Band', old_tablename='band', new_class_name='Act', new_tablename='act')",  # noqa
+            "manager.rename_table(old_class_name='Band', old_tablename='band', new_class_name='Act', new_tablename='act', schema=None)",  # noqa: E501
         )
 
         self.assertEqual(schema_differ.create_tables.statements, [])
         self.assertEqual(schema_differ.drop_tables.statements, [])
 
-    def test_add_column(self):
+    def test_change_schema(self) -> None:
+        """
+        Testing changing the schema.
+        """
+        schema: list[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[],
+                schema="schema_1",
+            )
+        ]
+        schema_snapshot: list[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[],
+                schema=None,
+            )
+        ]
+
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
+        )
+
+        self.assertEqual(len(schema_differ.change_table_schemas.statements), 1)
+
+        self.assertEqual(
+            schema_differ.change_table_schemas.statements[0],
+            "manager.change_table_schema(class_name='Band', tablename='band', new_schema='schema_1', old_schema=None)",  # noqa: E501
+        )
+
+        self.assertListEqual(schema_differ.create_tables.statements, [])
+        self.assertListEqual(schema_differ.drop_tables.statements, [])
+
+    def test_add_column(self) -> None:
         """
         Test adding a column to an existing table.
         """
@@ -101,14 +141,14 @@ class TestSchemaDiffer(TestCase):
         genre_column = Varchar()
         genre_column._meta.name = "genre"
 
-        schema: t.List[DiffableTable] = [
+        schema: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
                 columns=[name_column, genre_column],
             )
         ]
-        schema_snapshot: t.List[DiffableTable] = [
+        schema_snapshot: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
@@ -123,10 +163,10 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(schema_differ.add_columns.statements) == 1)
         self.assertEqual(
             schema_differ.add_columns.statements[0],
-            "manager.add_column(table_class_name='Band', tablename='band', column_name='genre', db_column_name='genre', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None, 'secret': False})",  # noqa
+            "manager.add_column(table_class_name='Band', tablename='band', column_name='genre', db_column_name='genre', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None, 'secret': False}, schema=None)",  # noqa: E501
         )
 
-    def test_drop_column(self):
+    def test_drop_column(self) -> None:
         """
         Test dropping a column from an existing table.
         """
@@ -136,14 +176,14 @@ class TestSchemaDiffer(TestCase):
         genre_column = Varchar()
         genre_column._meta.name = "genre"
 
-        schema: t.List[DiffableTable] = [
+        schema: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
                 columns=[name_column],
             )
         ]
-        schema_snapshot: t.List[DiffableTable] = [
+        schema_snapshot: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
@@ -158,10 +198,10 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(schema_differ.drop_columns.statements) == 1)
         self.assertEqual(
             schema_differ.drop_columns.statements[0],
-            "manager.drop_column(table_class_name='Band', tablename='band', column_name='genre', db_column_name='genre')",  # noqa
+            "manager.drop_column(table_class_name='Band', tablename='band', column_name='genre', db_column_name='genre', schema=None)",  # noqa: E501
         )
 
-    def test_rename_column(self):
+    def test_rename_column(self) -> None:
         """
         Test renaming a column in an existing table.
         """
@@ -172,14 +212,14 @@ class TestSchemaDiffer(TestCase):
         title_column = Varchar()
         title_column._meta.name = "title"
 
-        schema_snapshot: t.List[DiffableTable] = [
+        schema_snapshot: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
                 columns=[title_column],
             )
         ]
-        schema: t.List[DiffableTable] = [
+        schema: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
@@ -196,7 +236,7 @@ class TestSchemaDiffer(TestCase):
         self.assertEqual(
             schema_differ.rename_columns.statements,
             [
-                "manager.rename_column(table_class_name='Band', tablename='band', old_column_name='title', new_column_name='name', old_db_column_name='title', new_db_column_name='name')"  # noqa
+                "manager.rename_column(table_class_name='Band', tablename='band', old_column_name='title', new_column_name='name', old_db_column_name='title', new_db_column_name='name', schema=None)"  # noqa: E501
             ],
         )
 
@@ -207,19 +247,19 @@ class TestSchemaDiffer(TestCase):
         self.assertEqual(
             schema_differ.add_columns.statements,
             [
-                "manager.add_column(table_class_name='Band', tablename='band', column_name='name', db_column_name='name', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None, 'secret': False})"  # noqa: E501
+                "manager.add_column(table_class_name='Band', tablename='band', column_name='name', db_column_name='name', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None, 'secret': False}, schema=None)"  # noqa: E501
             ],
         )
         self.assertEqual(
             schema_differ.drop_columns.statements,
             [
-                "manager.drop_column(table_class_name='Band', tablename='band', column_name='title', db_column_name='title')"  # noqa: E501
+                "manager.drop_column(table_class_name='Band', tablename='band', column_name='title', db_column_name='title', schema=None)"  # noqa: E501
             ],
         )
         self.assertTrue(schema_differ.rename_columns.statements == [])
 
     @patch("piccolo.apps.migrations.auto.schema_differ.input")
-    def test_rename_multiple_columns(self, input: MagicMock):
+    def test_rename_multiple_columns(self, input: MagicMock) -> None:
         """
         Make sure renaming columns works when several columns have been
         renamed.
@@ -237,14 +277,14 @@ class TestSchemaDiffer(TestCase):
         b2 = Varchar()
         b2._meta.name = "b2"
 
-        schema_snapshot: t.List[DiffableTable] = [
+        schema_snapshot: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
                 columns=[a1, b1],
             )
         ]
-        schema: t.List[DiffableTable] = [
+        schema: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
@@ -277,8 +317,8 @@ class TestSchemaDiffer(TestCase):
         self.assertEqual(
             schema_differ.rename_columns.statements,
             [
-                "manager.rename_column(table_class_name='Band', tablename='band', old_column_name='a1', new_column_name='a2', old_db_column_name='a1', new_db_column_name='a2')",  # noqa: E501
-                "manager.rename_column(table_class_name='Band', tablename='band', old_column_name='b1', new_column_name='b2', old_db_column_name='b1', new_db_column_name='b2')",  # noqa: E501
+                "manager.rename_column(table_class_name='Band', tablename='band', old_column_name='a1', new_column_name='a2', old_db_column_name='a1', new_db_column_name='a2', schema=None)",  # noqa: E501
+                "manager.rename_column(table_class_name='Band', tablename='band', old_column_name='b1', new_column_name='b2', old_db_column_name='b1', new_db_column_name='b2', schema=None)",  # noqa: E501
             ],
         )
 
@@ -314,14 +354,14 @@ class TestSchemaDiffer(TestCase):
         b2 = Varchar()
         b2._meta.name = "b2"
 
-        schema_snapshot: t.List[DiffableTable] = [
+        schema_snapshot: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
                 columns=[a1, b1],
             )
         ]
-        schema: t.List[DiffableTable] = [
+        schema: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
@@ -349,19 +389,19 @@ class TestSchemaDiffer(TestCase):
         self.assertEqual(
             schema_differ.add_columns.statements,
             [
-                "manager.add_column(table_class_name='Band', tablename='band', column_name='b2', db_column_name='b2', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None, 'secret': False})"  # noqa: E501
+                "manager.add_column(table_class_name='Band', tablename='band', column_name='b2', db_column_name='b2', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None, 'secret': False}, schema=None)"  # noqa: E501
             ],
         )
         self.assertEqual(
             schema_differ.drop_columns.statements,
             [
-                "manager.drop_column(table_class_name='Band', tablename='band', column_name='b1', db_column_name='b1')"  # noqa: E501
+                "manager.drop_column(table_class_name='Band', tablename='band', column_name='b1', db_column_name='b1', schema=None)"  # noqa: E501
             ],
         )
         self.assertEqual(
             schema_differ.rename_columns.statements,
             [
-                "manager.rename_column(table_class_name='Band', tablename='band', old_column_name='a1', new_column_name='a2', old_db_column_name='a1', new_db_column_name='a2')",  # noqa: E501
+                "manager.rename_column(table_class_name='Band', tablename='band', old_column_name='a1', new_column_name='a2', old_db_column_name='a1', new_db_column_name='a2', schema=None)",  # noqa: E501
             ],
         )
 
@@ -377,21 +417,21 @@ class TestSchemaDiffer(TestCase):
             ],
         )
 
-    def test_alter_column_precision(self):
+    def test_alter_column_precision(self) -> None:
         price_1 = Numeric(digits=(4, 2))
         price_1._meta.name = "price"
 
         price_2 = Numeric(digits=(5, 2))
         price_2._meta.name = "price"
 
-        schema: t.List[DiffableTable] = [
+        schema: list[DiffableTable] = [
             DiffableTable(
                 class_name="Ticket",
                 tablename="ticket",
                 columns=[price_1],
             )
         ]
-        schema_snapshot: t.List[DiffableTable] = [
+        schema_snapshot: list[DiffableTable] = [
             DiffableTable(
                 class_name="Ticket",
                 tablename="ticket",
@@ -406,8 +446,97 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(schema_differ.alter_columns.statements) == 1)
         self.assertEqual(
             schema_differ.alter_columns.statements[0],
-            "manager.alter_column(table_class_name='Ticket', tablename='ticket', column_name='price', params={'digits': (4, 2)}, old_params={'digits': (5, 2)}, column_class=Numeric, old_column_class=Numeric)",  # noqa
+            "manager.alter_column(table_class_name='Ticket', tablename='ticket', column_name='price', db_column_name='price', params={'digits': (4, 2)}, old_params={'digits': (5, 2)}, column_class=Numeric, old_column_class=Numeric, schema=None)",  # noqa
+        )
+
+    def test_db_column_name(self) -> None:
+        """
+        Make sure alter statements use the ``db_column_name`` if provided.
+
+        https://github.com/piccolo-orm/piccolo/issues/513
+
+        """
+        price_1 = Numeric(digits=(4, 2), db_column_name="custom")
+        price_1._meta.name = "price"
+
+        price_2 = Numeric(digits=(5, 2), db_column_name="custom")
+        price_2._meta.name = "price"
+
+        schema: list[DiffableTable] = [
+            DiffableTable(
+                class_name="Ticket",
+                tablename="ticket",
+                columns=[price_1],
+            )
+        ]
+        schema_snapshot: list[DiffableTable] = [
+            DiffableTable(
+                class_name="Ticket",
+                tablename="ticket",
+                columns=[price_2],
+            )
+        ]
+
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
+        )
+
+        self.assertTrue(len(schema_differ.alter_columns.statements) == 1)
+        self.assertEqual(
+            schema_differ.alter_columns.statements[0],
+            "manager.alter_column(table_class_name='Ticket', tablename='ticket', column_name='price', db_column_name='custom', params={'digits': (4, 2)}, old_params={'digits': (5, 2)}, column_class=Numeric, old_column_class=Numeric, schema=None)",  # noqa
         )
 
     def test_alter_default(self):
         pass
+
+
+class TestRenameTableCollection(TestCase):
+    collection = RenameTableCollection(
+        rename_tables=[
+            RenameTable(
+                old_class_name="Manager",
+                old_tablename="manager",
+                new_class_name="Manager1",
+                new_tablename="manager_1",
+            )
+        ]
+    )
+
+    def test_was_renamed_from(self):
+        self.assertTrue(
+            self.collection.was_renamed_from(old_class_name="Manager")
+        )
+        self.assertFalse(
+            self.collection.was_renamed_from(old_class_name="Band")
+        )
+
+    def test_renamed_from(self):
+        self.assertEqual(
+            self.collection.renamed_from(new_class_name="Manager1"), "Manager"
+        )
+        self.assertIsNone(
+            self.collection.renamed_from(new_class_name="Band"),
+        )
+
+
+class TestRenameColumnCollection(TestCase):
+    def test_for_table_class_name(self):
+        rename_column = RenameColumn(
+            table_class_name="Manager",
+            tablename="manager",
+            old_column_name="name",
+            new_column_name="full_name",
+            old_db_column_name="name",
+            new_db_column_name="full_name",
+        )
+
+        collection = RenameColumnCollection(rename_columns=[rename_column])
+
+        self.assertListEqual(
+            collection.for_table_class_name(table_class_name="Manager"),
+            [rename_column],
+        )
+        self.assertListEqual(
+            collection.for_table_class_name(table_class_name="Band"), []
+        )

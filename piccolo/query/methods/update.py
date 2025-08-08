@@ -1,33 +1,49 @@
 from __future__ import annotations
 
-import typing as t
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Optional, Union
 
-from piccolo.custom_types import Combinable
+from piccolo.custom_types import Combinable, TableInstance
 from piccolo.query.base import Query
-from piccolo.query.mixins import ValuesDelegate, WhereDelegate
+from piccolo.query.mixins import (
+    ReturningDelegate,
+    ValuesDelegate,
+    WhereDelegate,
+)
 from piccolo.querystring import QueryString
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
-    from piccolo.table import Table
 
 
 class UpdateError(Exception):
     pass
 
 
-class Update(Query):
+class Update(Query[TableInstance, list[Any]]):
+    __slots__ = (
+        "force",
+        "returning_delegate",
+        "values_delegate",
+        "where_delegate",
+    )
 
-    __slots__ = ("force", "values_delegate", "where_delegate")
-
-    def __init__(self, table: t.Type[Table], force: bool = False, **kwargs):
+    def __init__(
+        self, table: type[TableInstance], force: bool = False, **kwargs
+    ):
         super().__init__(table, **kwargs)
         self.force = force
+        self.returning_delegate = ReturningDelegate()
         self.values_delegate = ValuesDelegate(table=table)
         self.where_delegate = WhereDelegate()
 
+    ###########################################################################
+    # Clauses
+
     def values(
-        self, values: t.Dict[t.Union[Column, str], t.Any] = None, **kwargs
+        self,
+        values: Optional[dict[Union[Column, str], Any]] = None,
+        **kwargs,
     ) -> Update:
         if values is None:
             values = {}
@@ -35,11 +51,21 @@ class Update(Query):
         self.values_delegate.values(values)
         return self
 
-    def where(self, *where: Combinable) -> Update:
+    def where(self, *where: Union[Combinable, QueryString]) -> Update:
         self.where_delegate.where(*where)
         return self
 
+    def returning(self, *columns: Column) -> Update:
+        self.returning_delegate.returning(columns)
+        return self
+
+    ###########################################################################
+
     def _validate(self):
+        """
+        Called at the start of :meth:`piccolo.query.base.Query.run` to make
+        sure the user has configured the query correctly before running it.
+        """
         if len(self.values_delegate._values) == 0:
             raise ValueError("No values were specified to update.")
 
@@ -57,25 +83,36 @@ class Update(Query):
                 f"`{classname}.update`. Otherwise, add a where clause."
             )
 
+    ###########################################################################
+
     @property
-    def default_querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> Sequence[QueryString]:
         columns_str = ", ".join(
             f'"{col._meta.db_column_name}" = {{}}'
             for col, _ in self.values_delegate._values.items()
         )
 
-        query = f"UPDATE {self.table._meta.tablename} SET {columns_str}"
+        query = f"UPDATE {self.table._meta.get_formatted_tablename()} SET {columns_str}"  # noqa: E501
 
         querystring = QueryString(
             query, *self.values_delegate.get_sql_values()
         )
 
-        if not self.where_delegate._where:
-            return [querystring]
+        if self.where_delegate._where:
+            # The JOIN syntax isn't allowed in SQL UPDATE queries, so we need
+            # to write the WHERE clause differently, using a sub select.
 
-        where_querystring = QueryString(
-            "{} WHERE {}",
-            querystring,
-            self.where_delegate._where.querystring,
-        )
-        return [where_querystring]
+            querystring = QueryString(
+                "{} WHERE {}",
+                querystring,
+                self.where_delegate._where.querystring_for_update_and_delete,
+            )
+
+        if self.returning_delegate._returning:
+            querystring = QueryString(
+                "{}{}",
+                querystring,
+                self.returning_delegate._returning.querystring,
+            )
+
+        return [querystring]

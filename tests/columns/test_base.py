@@ -121,7 +121,7 @@ class TestEquals(TestCase):
         Make sure non-column values don't match.
         """
         for value in (1, "abc", None):
-            self.assertFalse(Manager.name._equals(value))
+            self.assertFalse(Manager.name._equals(value))  # type: ignore
 
     def test_equals(self):
         """

@@ -1,27 +1,22 @@
 import os
-from unittest import TestCase
 
 from piccolo.columns.column_types import SmallInt
 from piccolo.table import Table
-
-from ..base import postgres_only
+from piccolo.testing.test_case import TableTest
+from tests.base import engines_only
 
 
 class MyTable(Table):
     value = SmallInt()
 
 
-@postgres_only
-class TestSmallIntPostgres(TestCase):
+@engines_only("postgres", "cockroach")
+class TestSmallIntPostgres(TableTest):
     """
     Make sure a SmallInt column in Postgres can only store small numbers.
     """
 
-    def setUp(self):
-        MyTable.create_table().run_sync()
-
-    def tearDown(self):
-        MyTable.alter().drop_table().run_sync()
+    tables = [MyTable]
 
     def _test_length(self):
         # Can store 2 bytes, but split between positive and negative values.

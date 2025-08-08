@@ -7,7 +7,8 @@ controlled way. Each migration belongs to a :ref:`Piccolo app <PiccoloApps>`.
 You can either manually populate migrations, or allow Piccolo to do it for you
 automatically.
 
-We recommend using automatic migrations where possible, as it saves you time.
+We recommend using :ref:`auto migrations <AutoMigrations>` where possible,
+as it saves you time.
 
 -------------------------------------------------------------------------------
 
@@ -20,15 +21,20 @@ First, let's create an empty migration:
 
     piccolo migrations new my_app
 
-This creates a new migration file in the migrations folder of the app. The
-migration filename is a timestamp:
+This creates a new migration file in the migrations folder of the app. By
+default, the migration filename is the name of the app, followed by a timestamp,
+but you can rename it to anything you want:
 
 .. code-block:: bash
 
     piccolo_migrations/
-        2022-02-26T17-38-44-758593.py
+        my_app_2022_12_06T13_58_23_024723.py
 
-.. hint:: You can rename this file if you like to make it more memorable.
+.. note::
+    We changed the naming convention for migration files in version ``0.102.0``
+    (previously they were like ``2022-12-06T13-58-23-024723.py``). As mentioned,
+    the name isn't important - change it to anything you want. The new format
+    was chosen because a Python file should start with a letter by convention.
 
 The contents of an empty migration file looks like this:
 
@@ -73,8 +79,8 @@ If you want to run raw SQL within your migration, you can do so as follows:
     from piccolo.table import Table
 
 
-    ID = "2022-02-26T17:38:44:758593"
-    VERSION = "0.69.2"
+    ID = "2025-07-28T09:51:54:296860"
+    VERSION = "1.27.1"
     DESCRIPTION = "Updating each band's popularity"
 
 
@@ -90,10 +96,26 @@ If you want to run raw SQL within your migration, you can do so as follows:
             description=DESCRIPTION
         )
 
+        #############################################################
+        # This will get run when using `piccolo migrations forwards`:
+
         async def run():
             await RawTable.raw('UPDATE band SET popularity={}', 1000)
 
         manager.add_raw(run)
+
+        #############################################################
+        # If we want to run some code when reversing the migration,
+        # using `piccolo migrations backwards`:
+
+        async def run_backwards():
+            await RawTable.raw('UPDATE band SET popularity={}', 0)
+
+        manager.add_raw_backwards(run_backwards)
+
+        #############################################################
+        # We must always return the MigrationManager:
+
         return manager
 
 .. hint:: You can learn more about :ref:`raw queries here <Raw>`.
@@ -114,8 +136,8 @@ We have to be quite careful with this. Here's an example:
     from music.tables import Band
 
 
-    ID = "2022-02-26T17:38:44:758593"
-    VERSION = "0.69.2"
+    ID = "2025-07-28T09:51:54:296860"
+    VERSION = "1.27.1"
     DESCRIPTION = "Updating each band's popularity"
 
 
@@ -127,7 +149,7 @@ We have to be quite careful with this. Here's an example:
         )
 
         async def run():
-            await Band.update({Band.popularity: 1000})
+            await Band.update({Band.popularity: 1000}, force=True)
 
         manager.add_raw(run)
         return manager
@@ -153,8 +175,8 @@ it's better to copy the relevant tables into your migration file:
     from piccolo.table import Table
 
 
-    ID = "2022-02-26T17:38:44:758593"
-    VERSION = "0.69.2"
+    ID = "2025-07-28T09:51:54:296860"
+    VERSION = "1.27.1"
     DESCRIPTION = "Updating each band's popularity"
 
 
@@ -171,12 +193,46 @@ it's better to copy the relevant tables into your migration file:
         )
 
         async def run():
-            await Band.update({Band.popularity: 1000})
+            await Band.update({Band.popularity: 1000}, force=True)
 
         manager.add_raw(run)
         return manager
 
+Another alternative is to use the ``MigrationManager.get_table_from_snapshot``
+method to get a table from the migration history. This is very convenient,
+especially if the table is large, with many foreign keys.
+
+.. code-block:: python
+
+    from piccolo.apps.migrations.auto.migration_manager import MigrationManager
+
+
+    ID = "2025-07-28T09:51:54:296860"
+    VERSION = "1.27.1"
+    DESCRIPTION = "Updating each band's popularity"
+
+
+    async def forwards():
+        manager = MigrationManager(
+            migration_id=ID,
+            app_name="",
+            description=DESCRIPTION
+        )
+
+        async def run():
+            # We get a table from the migration history.
+            Band = await manager.get_table_from_snapshot(
+                app_name="music", table_class_name="Band"
+            )
+            await Band.update({"popularity": 1000}, force=True)
+
+        manager.add_raw(run)
+
+        return manager
+
 -------------------------------------------------------------------------------
+
+.. _AutoMigrations:
 
 Auto migrations
 ---------------

@@ -3,6 +3,60 @@
 Advanced
 ========
 
+.. _Schemas:
+
+Schemas
+-------
+
+Postgres and CoackroachDB have a concept called **schemas**.
+
+It's a way of grouping the tables in a database. To learn more:
+
+* `Postgres docs <https://www.postgresql.org/docs/current/ddl-schemas.html>`_
+* `CockroachDB docs <https://www.cockroachlabs.com/docs/stable/schema-design-overview.html>`_
+
+To specify a table's schema, do the following:
+
+.. code-block:: python
+
+    class Band(Table, schema="music"):
+        ...
+
+    # The table will be created in the `music` schema.
+    # The music schema will also be created if it doesn't already exist.
+    >>> await Band.create_table()
+
+If the ``schema`` argument isn't specified, then the table is created in the
+``public`` schema.
+
+Migration support
+~~~~~~~~~~~~~~~~~
+
+Schemas are fully supported in :ref:`database migrations <AutoMigrations>`.
+For example, if we change the ``schema`` argument:
+
+.. code-block:: python
+
+    class Band(Table, schema="music_2"):
+        ...
+
+Then create an automatic migration and run it, then the table will be moved to
+the new schema:
+
+.. code-block:: bash
+
+    >>> piccolo migrations new my_app --auto
+    >>> piccolo migrations forwards my_app
+
+``SchemaManager``
+~~~~~~~~~~~~~~~~~
+
+The :class:`SchemaManager <piccolo.schema.SchemaManager>` class is used
+internally by Piccolo to interact with schemas. You may find it useful if you
+want to write a script to interact with schemas (create / delete / list etc).
+
+-------------------------------------------------------------------------------
+
 Readable
 --------
 
@@ -139,6 +193,42 @@ By using choices, you get the following benefits:
 * Signalling to other programmers what values are acceptable for the column.
 * Improved storage efficiency (we can store ``'l'`` instead of ``'large'``).
 * Piccolo Admin support
+
+``Array`` columns
+~~~~~~~~~~~~~~~~~
+
+You can also use choices with :class:`Array <piccolo.columns.column_types.Array>`
+columns.
+
+.. code-block:: python
+
+    class Ticket(Table):
+        class Extras(str, enum.Enum):
+            drink = "drink"
+            snack = "snack"
+            program = "program"
+
+        extras = Array(Varchar(), choices=Extras)
+
+Note how you pass ``choices`` to ``Array``, and not the ``base_column``:
+
+.. code-block:: python
+
+    # CORRECT:
+    Array(Varchar(), choices=Extras)
+
+    # INCORRECT:
+    Array(Varchar(choices=Extras))
+
+We can then use the ``Enum`` in our queries:
+
+.. code-block:: python
+
+    >>> await Ticket.insert(
+    ...     Ticket(extras=[Extras.drink, Extras.snack]),
+    ...     Ticket(extras=[Extras.program]),
+    ... )
+
 
 -------------------------------------------------------------------------------
 

@@ -1,27 +1,22 @@
 import os
-from unittest import TestCase
 
 from piccolo.columns.column_types import BigInt
 from piccolo.table import Table
-
-from ..base import postgres_only
+from piccolo.testing.test_case import TableTest
+from tests.base import engines_only
 
 
 class MyTable(Table):
     value = BigInt()
 
 
-@postgres_only
-class TestBigIntPostgres(TestCase):
+@engines_only("postgres", "cockroach")
+class TestBigIntPostgres(TableTest):
     """
     Make sure a BigInt column in Postgres can store a large number.
     """
 
-    def setUp(self):
-        MyTable.create_table().run_sync()
-
-    def tearDown(self):
-        MyTable.alter().drop_table().run_sync()
+    tables = [MyTable]
 
     def _test_length(self):
         # Can store 8 bytes, but split between positive and negative values.

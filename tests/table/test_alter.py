@@ -1,20 +1,32 @@
 from __future__ import annotations
 
-import typing as t
+from typing import Any, Union
 from unittest import TestCase
+
+import pytest
 
 from piccolo.columns import BigInt, Integer, Numeric, Varchar
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import ForeignKey, Text
+from piccolo.schema import SchemaManager
 from piccolo.table import Table
-from tests.base import DBTestCase, postgres_only
+from tests.base import (
+    DBTestCase,
+    engine_version_lt,
+    engines_only,
+    is_running_sqlite,
+)
 from tests.example_apps.music.tables import Band, Manager
 
 
+@pytest.mark.skipif(
+    is_running_sqlite() and engine_version_lt(3.25),
+    reason="SQLite version not supported",
+)
 class TestRenameColumn(DBTestCase):
     def _test_rename(
         self,
-        existing_column: t.Union[Column, str],
+        existing_column: Union[Column, str],
         new_column_name: str = "rating",
     ):
         self.insert_row()
@@ -70,7 +82,7 @@ class TestRenameTable(DBTestCase):
         self.run_sync("DROP TABLE IF EXISTS act")
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestDropColumn(DBTestCase):
     """
     Unfortunately this only works with Postgres at the moment.
@@ -78,7 +90,7 @@ class TestDropColumn(DBTestCase):
     SQLite has very limited support for ALTER statements.
     """
 
-    def _test_drop(self, column: str):
+    def _test_drop(self, column: Union[str, Column]):
         self.insert_row()
 
         Band.alter().drop_column(column).run_sync()
@@ -97,7 +109,7 @@ class TestDropColumn(DBTestCase):
 
 class TestAddColumn(DBTestCase):
     def _test_add_column(
-        self, column: Column, column_name: str, expected_value: t.Any
+        self, column: Column, column_name: str, expected_value: Any
     ):
         self.insert_row()
         Band.alter().add_column(column_name, column).run_sync()
@@ -142,9 +154,13 @@ class TestAddColumn(DBTestCase):
         )
 
 
-@postgres_only
 class TestUnique(DBTestCase):
+    @engines_only("postgres")
     def test_unique(self):
+        """
+        Test altering a column uniqueness with MigrationManager.
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/42840 "unimplemented: cannot drop UNIQUE constraint "manager_name_key" using ALTER TABLE DROP CONSTRAINT, use DROP INDEX CASCADE instead"
+        """  # noqa: E501
         unique_query = Manager.alter().set_unique(Manager.name, True)
         unique_query.run_sync()
 
@@ -169,7 +185,7 @@ class TestUnique(DBTestCase):
         self.assertTrue(len(response), 2)
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestMultiple(DBTestCase):
     """
     Make sure multiple alter statements work correctly.
@@ -193,7 +209,7 @@ class TestMultiple(DBTestCase):
 
 
 # TODO - test more conversions.
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestSetColumnType(DBTestCase):
     def test_integer_to_bigint(self):
         """
@@ -213,10 +229,9 @@ class TestSetColumnType(DBTestCase):
             "BIGINT",
         )
 
-        popularity = (
-            Band.select(Band.popularity).first().run_sync()["popularity"]
-        )
-        self.assertEqual(popularity, 1000)
+        row = Band.select(Band.popularity).first().run_sync()
+        assert row is not None
+        self.assertEqual(row["popularity"], 1000)
 
     def test_integer_to_varchar(self):
         """
@@ -236,10 +251,9 @@ class TestSetColumnType(DBTestCase):
             "CHARACTER VARYING",
         )
 
-        popularity = (
-            Band.select(Band.popularity).first().run_sync()["popularity"]
-        )
-        self.assertEqual(popularity, "1000")
+        row = Band.select(Band.popularity).first().run_sync()
+        assert row is not None
+        self.assertEqual(row["popularity"], "1000")
 
     def test_using_expression(self):
         """
@@ -255,11 +269,12 @@ class TestSetColumnType(DBTestCase):
         )
         alter_query.run_sync()
 
-        popularity = Band.select(Band.name).first().run_sync()["name"]
-        self.assertEqual(popularity, 1)
+        row = Band.select(Band.name).first().run_sync()
+        assert row is not None
+        self.assertEqual(row["name"], 1)
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestSetNull(DBTestCase):
     def test_set_null(self):
         query = """
@@ -278,7 +293,7 @@ class TestSetNull(DBTestCase):
         self.assertEqual(response[0]["is_nullable"], "NO")
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestSetLength(DBTestCase):
     def test_set_length(self):
         query = """
@@ -294,7 +309,7 @@ class TestSetLength(DBTestCase):
             self.assertEqual(response[0]["character_maximum_length"], length)
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestSetDefault(DBTestCase):
     def test_set_default(self):
         Manager.alter().set_default(Manager.name, "Pending").run_sync()
@@ -305,7 +320,66 @@ class TestSetDefault(DBTestCase):
         ).run_sync()
 
         manager = Manager.objects().first().run_sync()
+        assert manager is not None
         self.assertEqual(manager.name, "Pending")
+
+
+@engines_only("postgres", "cockroach")
+class TestSetSchema(TestCase):
+    schema_manager = SchemaManager()
+    schema_name = "schema_1"
+
+    def setUp(self):
+        Manager.create_table().run_sync()
+        self.schema_manager.create_schema(
+            schema_name=self.schema_name
+        ).run_sync()
+
+    def tearDown(self):
+        Manager.alter().drop_table(if_exists=True).run_sync()
+        self.schema_manager.drop_schema(
+            schema_name=self.schema_name, cascade=True
+        ).run_sync()
+
+    def test_set_schema(self):
+        Manager.alter().set_schema(schema_name=self.schema_name).run_sync()
+
+        self.assertIn(
+            Manager._meta.tablename,
+            self.schema_manager.list_tables(
+                schema_name=self.schema_name
+            ).run_sync(),
+        )
+
+
+@engines_only("postgres", "cockroach")
+class TestDropTable(TestCase):
+    class Manager(Table, schema="schema_1"):
+        pass
+
+    schema_manager = SchemaManager()
+
+    def tearDown(self):
+        self.schema_manager.drop_schema(
+            schema_name="schema_1", if_exists=True, cascade=True
+        ).run_sync()
+
+    def test_drop_table_with_schema(self):
+        Manager = self.Manager
+
+        Manager.create_table().run_sync()
+
+        self.assertIn(
+            "manager",
+            self.schema_manager.list_tables(schema_name="schema_1").run_sync(),
+        )
+
+        Manager.alter().drop_table().run_sync()
+
+        self.assertNotIn(
+            "manager",
+            self.schema_manager.list_tables(schema_name="schema_1").run_sync(),
+        )
 
 
 ###############################################################################
@@ -315,7 +389,6 @@ class Ticket(Table):
     price = Numeric(digits=(5, 2))
 
 
-@postgres_only
 class TestSetDigits(TestCase):
     def setUp(self):
         Ticket.create_table().run_sync()
@@ -323,6 +396,7 @@ class TestSetDigits(TestCase):
     def tearDown(self):
         Ticket.alter().drop_table().run_sync()
 
+    @engines_only("postgres")
     def test_set_digits(self):
         query = """
             SELECT numeric_precision, numeric_scale

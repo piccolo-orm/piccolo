@@ -1,7 +1,6 @@
-from unittest import TestCase
-
 from piccolo.columns.column_types import JSON
 from piccolo.table import Table
+from piccolo.testing.test_case import TableTest
 
 
 class MyTable(Table):
@@ -20,12 +19,8 @@ class MyTableDefault(Table):
     json_none = JSON(default=None, null=True)
 
 
-class TestJSONSave(TestCase):
-    def setUp(self):
-        MyTable.create_table().run_sync()
-
-    def tearDown(self):
-        MyTable.alter().drop_table().run_sync()
+class TestJSONSave(TableTest):
+    tables = [MyTable]
 
     def test_json_string(self):
         """
@@ -34,11 +29,11 @@ class TestJSONSave(TestCase):
         row = MyTable(json='{"a": 1}')
         row.save().run_sync()
 
+        row_from_db = MyTable.select(MyTable.json).first().run_sync()
+        assert row_from_db is not None
+
         self.assertEqual(
-            MyTable.select(MyTable.json)
-            .first()
-            .run_sync()["json"]
-            .replace(" ", ""),
+            row_from_db["json"].replace(" ", ""),
             '{"a":1}',
         )
 
@@ -49,21 +44,17 @@ class TestJSONSave(TestCase):
         row = MyTable(json={"a": 1})
         row.save().run_sync()
 
+        row_from_db = MyTable.select(MyTable.json).first().run_sync()
+        assert row_from_db is not None
+
         self.assertEqual(
-            MyTable.select(MyTable.json)
-            .first()
-            .run_sync()["json"]
-            .replace(" ", ""),
+            row_from_db["json"].replace(" ", ""),
             '{"a":1}',
         )
 
 
-class TestJSONDefault(TestCase):
-    def setUp(self):
-        MyTableDefault.create_table().run_sync()
-
-    def tearDown(self):
-        MyTableDefault.alter().drop_table().run_sync()
+class TestJSONDefault(TableTest):
+    tables = [MyTableDefault]
 
     def test_json_default(self):
         row = MyTableDefault()
@@ -78,22 +69,17 @@ class TestJSONDefault(TestCase):
     def test_invalid_default(self):
         with self.assertRaises(ValueError):
             for value in ("a", 1, ("x", "y", "z")):
-                JSON(default=value)
+                JSON(default=value)  # type: ignore
 
 
-class TestJSONInsert(TestCase):
-    def setUp(self):
-        MyTable.create_table().run_sync()
-
-    def tearDown(self):
-        MyTable.alter().drop_table().run_sync()
+class TestJSONInsert(TableTest):
+    tables = [MyTable]
 
     def check_response(self):
+        row = MyTable.select(MyTable.json).first().run_sync()
+        assert row is not None
         self.assertEqual(
-            MyTable.select(MyTable.json)
-            .first()
-            .run_sync()["json"]
-            .replace(" ", ""),
+            row["json"].replace(" ", ""),
             '{"message":"original"}',
         )
 
@@ -113,23 +99,18 @@ class TestJSONInsert(TestCase):
         MyTable.insert(row).run_sync()
 
 
-class TestJSONUpdate(TestCase):
-    def setUp(self):
-        MyTable.create_table().run_sync()
-
-    def tearDown(self):
-        MyTable.alter().drop_table().run_sync()
+class TestJSONUpdate(TableTest):
+    tables = [MyTable]
 
     def add_row(self):
         row = MyTable(json={"message": "original"})
         row.save().run_sync()
 
     def check_response(self):
+        row = MyTable.select(MyTable.json).first().run_sync()
+        assert row is not None
         self.assertEqual(
-            MyTable.select(MyTable.json)
-            .first()
-            .run_sync()["json"]
-            .replace(" ", ""),
+            row["json"].replace(" ", ""),
             '{"message":"updated"}',
         )
 

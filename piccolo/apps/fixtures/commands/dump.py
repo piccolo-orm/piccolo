@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import typing as t
+from typing import Any, Optional
 
 from piccolo.apps.fixtures.commands.shared import (
     FixtureConfig,
@@ -11,8 +11,8 @@ from piccolo.table import sort_table_classes
 
 
 async def get_dump(
-    fixture_configs: t.List[FixtureConfig],
-) -> t.Dict[str, t.Any]:
+    fixture_configs: list[FixtureConfig],
+) -> dict[str, Any]:
     """
     Gets the data for each table specified and returns a data structure like:
 
@@ -32,7 +32,7 @@ async def get_dump(
     """
     finder = Finder()
 
-    output: t.Dict[str, t.Any] = {}
+    output: dict[str, Any] = {}
 
     for fixture_config in fixture_configs:
         app_config = finder.get_app_config(app_name=fixture_config.app_name)
@@ -53,7 +53,7 @@ async def get_dump(
 
 
 async def dump_to_json_string(
-    fixture_configs: t.List[FixtureConfig],
+    fixture_configs: list[FixtureConfig],
 ) -> str:
     """
     Dumps all of the data for the given tables into a JSON string.
@@ -62,10 +62,10 @@ async def dump_to_json_string(
     pydantic_model = create_pydantic_fixture_model(
         fixture_configs=fixture_configs
     )
-    return pydantic_model(**dump).json()
+    return pydantic_model(**dump).model_dump_json(indent=4)
 
 
-def parse_args(apps: str, tables: str) -> t.List[FixtureConfig]:
+def parse_args(apps: str, tables: str) -> list[FixtureConfig]:
     """
     Works out which apps and tables the user is referring to.
     """
@@ -80,11 +80,11 @@ def parse_args(apps: str, tables: str) -> t.List[FixtureConfig]:
         # Must be a single app name
         app_names.append(apps)
 
-    table_class_names: t.Optional[t.List[str]] = None
+    table_class_names: Optional[list[str]] = None
 
     if tables != "all":
         table_class_names = tables.split(",") if "," in tables else [tables]
-    output: t.List[FixtureConfig] = []
+    output: list[FixtureConfig] = []
 
     for app_name in app_names:
         app_config = finder.get_app_config(app_name=app_name)

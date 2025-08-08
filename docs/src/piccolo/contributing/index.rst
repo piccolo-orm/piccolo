@@ -8,6 +8,25 @@ instructions.
 
 -------------------------------------------------------------------------------
 
+Running Cockroach
+-----------------
+
+To get a local Cockroach instance running, you can use:
+
+.. code-block:: console
+
+    cockroach start-single-node --insecure --store=type=mem,size=2GiB
+
+Make sure the test database exists:
+
+.. code-block:: console
+
+    cockroach sql --insecure
+    >>> create database piccolo
+    >>> use piccolo
+
+-------------------------------------------------------------------------------
+
 Get the tests running
 ---------------------
 
@@ -17,9 +36,11 @@ Get the tests running
 * Install default dependencies: ``pip install -r requirements/requirements.txt``
 * Install development dependencies: ``pip install -r requirements/dev-requirements.txt``
 * Install test dependencies: ``pip install -r requirements/test-requirements.txt``
-* Setup Postgres
+* Install database drivers: ``pip install -r requirements/extras/postgres.txt -r requirements/extras/sqlite.txt``
+* Setup Postgres, and make sure a database called ``piccolo`` exists (see ``tests/postgres_conf.py``).
 * Run the automated code linting/formatting tools: ``./scripts/lint.sh``
 * Run the test suite with Postgres: ``./scripts/test-postgres.sh``
+* Run the test suite with Cockroach: ``./scripts/test-cockroach.sh``
 * Run the test suite with Sqlite: ``./scripts/test-sqlite.sh``
 
 -------------------------------------------------------------------------------

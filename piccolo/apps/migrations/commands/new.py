@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import datetime
 import os
-import sys
-import typing as t
+import string
 from dataclasses import dataclass
 from itertools import chain
 from types import ModuleType
+from typing import Optional
 
 import black
 import jinja2
@@ -20,6 +20,8 @@ from piccolo.apps.migrations.auto import (
 )
 from piccolo.conf.apps import AppConfig, Finder
 from piccolo.engine import SQLiteEngine
+from piccolo.utils.printing import print_heading
+from piccolo.utils.warnings import colored_warning
 
 from .base import BaseMigrationManager
 
@@ -31,8 +33,9 @@ JINJA_ENV = jinja2.Environment(
     loader=jinja2.FileSystemLoader(searchpath=TEMPLATE_DIRECTORY),
 )
 
+MIGRATION_MODULES: dict[str, ModuleType] = {}
 
-MIGRATION_MODULES: t.Dict[str, ModuleType] = {}
+VALID_PYTHON_MODULE_CHARACTERS = string.ascii_lowercase + string.digits + "_"
 
 
 def render_template(**kwargs):
@@ -60,6 +63,13 @@ class NewMigrationMeta:
     migration_path: str
 
 
+def now():
+    """
+    In a separate function so it's easier to patch in tests.
+    """
+    return datetime.datetime.now()
+
+
 def _generate_migration_meta(app_config: AppConfig) -> NewMigrationMeta:
     """
     Generates the migration ID and filename.
@@ -68,15 +78,29 @@ def _generate_migration_meta(app_config: AppConfig) -> NewMigrationMeta:
     # chance that the IDs would clash if the migrations are generated
     # programatically in quick succession (e.g. in a unit test), so they had
     # to be added. The trade off is a longer ID.
-    _id = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S:%f")
+    _id = now().strftime("%Y-%m-%dT%H:%M:%S:%f")
 
     # Originally we just used the _id as the filename, but colons aren't
     # supported in Windows, so we need to sanitize it. We don't want to
     # change the _id format though, as it would break existing migrations.
     # The filename doesn't have any special significance - only the id matters.
-    filename = _id.replace(":", "-")
+    cleaned_id = _id.replace(":", "_").replace("-", "_").lower()
 
-    path = os.path.join(app_config.migrations_folder_path, f"{filename}.py")
+    # Just in case the app name contains characters which aren't valid for
+    # a Python module.
+    cleaned_app_name = "".join(
+        [
+            i
+            for i in app_config.app_name.lower().replace("-", "_")
+            if i in VALID_PYTHON_MODULE_CHARACTERS
+        ]
+    )
+
+    filename = f"{cleaned_app_name}_{cleaned_id}"
+
+    path = os.path.join(
+        app_config.resolved_migrations_folder_path, f"{filename}.py"
+    )
 
     return NewMigrationMeta(
         migration_id=_id, migration_filename=filename, migration_path=path
@@ -91,7 +115,7 @@ async def _create_new_migration(
     app_config: AppConfig,
     auto: bool = False,
     description: str = "",
-    auto_input: t.Optional[str] = None,
+    auto_input: Optional[str] = None,
 ) -> NewMigrationMeta:
     """
     Creates a new migration file on disk.
@@ -146,13 +170,13 @@ async def _create_new_migration(
 
 
 class AutoMigrationManager(BaseMigrationManager):
-    def __init__(self, auto_input: t.Optional[str] = None, *args, **kwargs):
+    def __init__(self, auto_input: Optional[str] = None, *args, **kwargs):
         self.auto_input = auto_input
         super().__init__(*args, **kwargs)
 
     async def get_alter_statements(
         self, app_config: AppConfig
-    ) -> t.List[AlterStatements]:
+    ) -> list[AlterStatements]:
         """
         Works out which alter statements are required.
         """
@@ -169,6 +193,7 @@ class AutoMigrationManager(BaseMigrationManager):
                 class_name=i.__name__,
                 tablename=i._meta.tablename,
                 columns=i._meta.non_default_columns,
+                schema=i._meta.schema,
             )
             for i in app_config.table_classes
         ]
@@ -189,13 +214,14 @@ async def new(
     app_name: str,
     auto: bool = False,
     desc: str = "",
-    auto_input: t.Optional[str] = None,
+    auto_input: Optional[str] = None,
 ):
     """
     Creates a new migration file in the migrations folder.
 
     :param app_name:
-        The app to create a migration for.
+        The app to create a migration for. Specify a value of 'all' to create
+        migrations for all apps (use in conjunction with --auto).
     :param auto:
         Auto create the migration contents.
     :param desc:
@@ -206,22 +232,41 @@ async def new(
         entered. For example, --auto_input='y'.
 
     """
-    print("Creating new migration ...")
-
     engine = Finder().get_engine()
     if auto and isinstance(engine, SQLiteEngine):
-        sys.exit("Auto migrations aren't currently supported by SQLite.")
+        colored_warning("Auto migrations aren't fully supported by SQLite.")
 
-    app_config = Finder().get_app_config(app_name=app_name)
-
-    _create_migrations_folder(app_config.migrations_folder_path)
-    try:
-        await _create_new_migration(
-            app_config=app_config,
-            auto=auto,
-            description=desc,
-            auto_input=auto_input,
+    if app_name == "all" and not auto:
+        raise ValueError(
+            "Only use `--app_name=all` in conjunction with `--auto`."
         )
-    except NoChanges:
-        print("No changes detected - exiting.")
-        sys.exit(0)
+
+    app_names = (
+        sorted(
+            BaseMigrationManager().get_app_names(
+                sort_by_migration_dependencies=False
+            )
+        )
+        if app_name == "all"
+        else [app_name]
+    )
+
+    for app_name in app_names:
+        print_heading(app_name)
+        print("🚀 Creating new migration ...")
+
+        app_config = Finder().get_app_config(app_name=app_name)
+
+        _create_migrations_folder(app_config.resolved_migrations_folder_path)
+
+        try:
+            await _create_new_migration(
+                app_config=app_config,
+                auto=auto,
+                description=desc,
+                auto_input=auto_input,
+            )
+        except NoChanges:
+            print("🏁 No changes detected.")
+
+    print("\n✅ Finished\n")

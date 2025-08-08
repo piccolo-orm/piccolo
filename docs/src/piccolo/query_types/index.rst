@@ -12,6 +12,7 @@ typical ORM.
 
     ./select
     ./objects
+    ./count
     ./alter
     ./create_table
     ./delete
@@ -19,7 +20,17 @@ typical ORM.
     ./insert
     ./raw
     ./update
+
+-------------------------------------------------------------------------------
+
+Features
+--------
+
+.. toctree::
+    :maxdepth: 1
+
     ./transactions
+    ./joins
 
 -------------------------------------------------------------------------------
 

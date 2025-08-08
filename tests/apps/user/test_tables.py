@@ -109,7 +109,37 @@ class TestLogin(TestCase):
             BaseUser.update_password_sync(username, malicious_password)
         self.assertEqual(
             manager.exception.__str__(),
-            "The password is too long.",
+            f"The password is too long. (max {BaseUser._max_password_length})",
+        )
+
+        # Test short passwords
+        short_password = "abc"
+        with self.assertRaises(ValueError) as manager:
+            BaseUser.update_password_sync(username, short_password)
+        self.assertEqual(
+            manager.exception.__str__(),
+            (
+                "The password is too short. (min "
+                f"{BaseUser._min_password_length})"
+            ),
+        )
+
+        # Test no password
+        empty_password = ""
+        with self.assertRaises(ValueError) as manager:
+            BaseUser.update_password_sync(username, empty_password)
+        self.assertEqual(
+            manager.exception.__str__(),
+            "A password must be provided.",
+        )
+
+        # Test hashed password
+        hashed_password = "pbkdf2_sha256$abc123"
+        with self.assertRaises(ValueError) as manager:
+            BaseUser.update_password_sync(username, hashed_password)
+        self.assertEqual(
+            manager.exception.__str__(),
+            "Do not pass a hashed password.",
         )
 
 
@@ -178,7 +208,11 @@ class TestCreateUser(TestCase):
             BaseUser.create_user_sync(username="bob", password="abc")
 
         self.assertEqual(
-            manager.exception.__str__(), "The password is too short."
+            manager.exception.__str__(),
+            (
+                "The password is too short. (min "
+                f"{BaseUser._min_password_length})"
+            ),
         )
 
     def test_long_password_error(self):
@@ -189,12 +223,16 @@ class TestCreateUser(TestCase):
             )
 
         self.assertEqual(
-            manager.exception.__str__(), "The password is too long."
+            manager.exception.__str__(),
+            f"The password is too long. (max {BaseUser._max_password_length})",
         )
 
     def test_no_username_error(self):
         with self.assertRaises(ValueError) as manager:
-            BaseUser.create_user_sync(username=None, password="abc123")
+            BaseUser.create_user_sync(
+                username=None,  # type: ignore
+                password="abc123",
+            )
 
         self.assertEqual(
             manager.exception.__str__(), "A username must be provided."
@@ -202,8 +240,68 @@ class TestCreateUser(TestCase):
 
     def test_no_password_error(self):
         with self.assertRaises(ValueError) as manager:
-            BaseUser.create_user_sync(username="bob", password=None)
+            BaseUser.create_user_sync(
+                username="bob",
+                password=None,  # type: ignore
+            )
 
         self.assertEqual(
             manager.exception.__str__(), "A password must be provided."
+        )
+
+
+class TestAutoHashingUpdate(TestCase):
+    """
+    Make sure that users with passwords which were hashed in earlier Piccolo
+    versions are automatically re-hashed, meeting current best practices with
+    the number of hashing iterations.
+    """
+
+    def setUp(self):
+        BaseUser.create_table().run_sync()
+
+    def tearDown(self):
+        BaseUser.alter().drop_table().run_sync()
+
+    def test_hash_update(self):
+        # Create a user
+        username = "bob"
+        password = "abc123"
+        user = BaseUser.create_user_sync(username=username, password=password)
+
+        # Update their password, so it uses less than the recommended number
+        # of hashing iterations.
+        BaseUser.update(
+            {
+                BaseUser.password: BaseUser.hash_password(
+                    password=password,
+                    iterations=int(BaseUser._pbkdf2_iteration_count / 2),
+                )
+            }
+        ).where(BaseUser.id == user.id).run_sync()
+
+        # Login the user - Piccolo should detect their password needs rehashing
+        # and update it.
+        self.assertIsNotNone(
+            BaseUser.login_sync(username=username, password=password)
+        )
+
+        user_data = (
+            BaseUser.select(BaseUser.password)
+            .where(BaseUser.id == user.id)
+            .first()
+            .run_sync()
+        )
+        assert user_data is not None
+        hashed_password = user_data["password"]
+
+        algorithm, iterations_, salt, hashed = BaseUser.split_stored_password(
+            hashed_password
+        )
+
+        self.assertEqual(int(iterations_), BaseUser._pbkdf2_iteration_count)
+
+        # Make sure subsequent logins work as expected
+        self.assertIsNotNone(
+            BaseUser.login_sync(username=username, password=password)
         )

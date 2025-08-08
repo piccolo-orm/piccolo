@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ast
 import asyncio
-import typing as t
+from typing import cast
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
@@ -20,14 +20,14 @@ from piccolo.columns.column_types import (
     Varchar,
 )
 from piccolo.columns.indexes import IndexMethod
-from piccolo.engine import Engine, engine_finder
-from piccolo.table import Table
+from piccolo.schema import SchemaManager
+from piccolo.table import Table, create_db_tables_sync
 from piccolo.utils.sync import run_sync
-from tests.base import AsyncMock, postgres_only
+from tests.base import AsyncMock, engines_only, engines_skip
 from tests.example_apps.mega.tables import MegaTable, SmallTable
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestGenerate(TestCase):
     def setUp(self):
         for table_class in (SmallTable, MegaTable):
@@ -38,7 +38,7 @@ class TestGenerate(TestCase):
             table_class.alter().drop_table().run_sync()
 
     def _compare_table_columns(
-        self, table_1: t.Type[Table], table_2: t.Type[Table]
+        self, table_1: type[Table], table_2: type[Table]
     ):
         """
         Make sure that for each column in table_1, there is a corresponding
@@ -64,7 +64,7 @@ class TestGenerate(TestCase):
             # Make sure the unique constraint is the same
             self.assertEqual(col_1._meta.unique, col_2._meta.unique)
 
-    def test_get_output_schema(self):
+    def test_get_output_schema(self) -> None:
         """
         Make sure that the a Piccolo schema can be generated from the database.
         """
@@ -75,9 +75,11 @@ class TestGenerate(TestCase):
         self.assertTrue(len(output_schema.imports) > 0)
 
         MegaTable_ = output_schema.get_table_with_name("MegaTable")
+        assert MegaTable_ is not None
         self._compare_table_columns(MegaTable, MegaTable_)
 
         SmallTable_ = output_schema.get_table_with_name("SmallTable")
+        assert SmallTable_ is not None
         self._compare_table_columns(SmallTable, SmallTable_)
 
     @patch("piccolo.apps.schema.commands.generate.print")
@@ -92,7 +94,9 @@ class TestGenerate(TestCase):
         # exception otherwise).
         ast.parse(file_contents)
 
-    def test_unknown_column_type(self):
+    # Cockroach throws FeatureNotSupportedError, which does not pass this test.
+    @engines_skip("cockroach")
+    def test_unknown_column_type(self) -> None:
         """
         Make sure unknown column types are handled gracefully.
         """
@@ -117,11 +121,13 @@ class TestGenerate(TestCase):
         for table in output_schema.tables:
             if table.__name__ == "MegaTable":
                 self.assertEqual(
-                    output_schema.tables[1].my_column.__class__.__name__,
+                    output_schema.tables[1]
+                    ._meta.get_column_by_name("my_column")
+                    .__class__.__name__,
                     "Column",
                 )
 
-    def test_generate_required_tables(self):
+    def test_generate_required_tables(self) -> None:
         """
         Make sure only tables passed to `tablenames` are created.
         """
@@ -130,9 +136,10 @@ class TestGenerate(TestCase):
         )
         self.assertEqual(len(output_schema.tables), 1)
         SmallTable_ = output_schema.get_table_with_name("SmallTable")
+        assert SmallTable_ is not None
         self._compare_table_columns(SmallTable, SmallTable_)
 
-    def test_exclude_table(self):
+    def test_exclude_table(self) -> None:
         """
         Make sure exclude works.
         """
@@ -141,9 +148,11 @@ class TestGenerate(TestCase):
         )
         self.assertEqual(len(output_schema.tables), 1)
         SmallTable_ = output_schema.get_table_with_name("SmallTable")
+        assert SmallTable_ is not None
         self._compare_table_columns(SmallTable, SmallTable_)
 
-    def test_self_referencing_fk(self):
+    @engines_skip("cockroach")
+    def test_self_referencing_fk(self) -> None:
         """
         Make sure self-referencing foreign keys are handled correctly.
         """
@@ -157,12 +166,15 @@ class TestGenerate(TestCase):
         # Make sure the 'references' value of the generated column is "self".
         for table in output_schema.tables:
             if table.__name__ == "MegaTable":
-                column: ForeignKey = output_schema.tables[
-                    1
-                ].self_referencing_fk
+                column = cast(
+                    ForeignKey,
+                    output_schema.tables[1]._meta.get_column_by_name(
+                        "self_referencing_fk"
+                    ),
+                )
 
                 self.assertEqual(
-                    column._foreign_key_meta.references._meta.tablename,
+                    column._foreign_key_meta.resolved_references._meta.tablename,  # noqa: E501
                     MegaTable._meta.tablename,
                 )
                 self.assertEqual(column._meta.params["references"], "self")
@@ -179,7 +191,7 @@ class Concert(Table):
     capacity = Integer(index=False)
 
 
-@postgres_only
+@engines_only("postgres")
 class TestGenerateWithIndexes(TestCase):
     def setUp(self):
         Concert.create_table().run_sync()
@@ -187,33 +199,34 @@ class TestGenerateWithIndexes(TestCase):
     def tearDown(self):
         Concert.alter().drop_table(if_exists=True).run_sync()
 
-    def test_index(self):
+    def test_index(self) -> None:
         """
         Make sure that a table with an index is reflected correctly.
         """
         output_schema: OutputSchema = run_sync(get_output_schema())
         Concert_ = output_schema.tables[0]
 
-        self.assertEqual(Concert_.name._meta.index, True)
-        self.assertEqual(Concert_.name._meta.index_method, IndexMethod.hash)
+        name_column = Concert_._meta.get_column_by_name("name")
+        self.assertTrue(name_column._meta.index)
+        self.assertEqual(name_column._meta.index_method, IndexMethod.hash)
 
-        self.assertEqual(Concert_.time._meta.index, True)
-        self.assertEqual(Concert_.time._meta.index_method, IndexMethod.btree)
+        time_column = Concert_._meta.get_column_by_name("time")
+        self.assertTrue(time_column._meta.index)
+        self.assertEqual(time_column._meta.index_method, IndexMethod.btree)
 
-        self.assertEqual(Concert_.capacity._meta.index, False)
-        self.assertEqual(
-            Concert_.capacity._meta.index_method, IndexMethod.btree
-        )
+        capacity_column = Concert_._meta.get_column_by_name("capacity")
+        self.assertEqual(capacity_column._meta.index, False)
+        self.assertEqual(capacity_column._meta.index_method, IndexMethod.btree)
 
 
 ###############################################################################
 
 
-class Publication(Table, tablename="schema2.publication"):
+class Publication(Table, tablename="publication", schema="schema_2"):
     name = Varchar(length=50)
 
 
-class Writer(Table, tablename="schema1.writer"):
+class Writer(Table, tablename="writer", schema="schema_1"):
     name = Varchar(length=50)
     publication = ForeignKey(Publication, null=True)
 
@@ -224,30 +237,29 @@ class Book(Table):
     popularity = Integer(default=0)
 
 
-@postgres_only
+@engines_only("postgres")
 class TestGenerateWithSchema(TestCase):
+    tables = [Publication, Writer, Book]
+
+    schema_manager = SchemaManager()
+
     def setUp(self) -> None:
-        engine: t.Optional[Engine] = engine_finder()
+        for schema_name in ("schema_1", "schema_2"):
+            self.schema_manager.create_schema(
+                schema_name=schema_name, if_not_exists=True
+            ).run_sync()
 
-        class Schema(Table, db=engine):
-            """
-            Only for raw query execution
-            """
-
-            pass
-
-        Schema.raw("CREATE SCHEMA IF NOT EXISTS schema1").run_sync()
-        Schema.raw("CREATE SCHEMA IF NOT EXISTS schema2").run_sync()
-        Publication.create_table().run_sync()
-        Writer.create_table().run_sync()
-        Book.create_table().run_sync()
+        create_db_tables_sync(*self.tables)
 
     def tearDown(self) -> None:
         Book.alter().drop_table().run_sync()
-        Writer.alter().drop_table().run_sync()
-        Publication.alter().drop_table().run_sync()
 
-    def test_reference_to_another_schema(self):
+        for schema_name in ("schema_1", "schema_2"):
+            self.schema_manager.drop_schema(
+                schema_name=schema_name, if_exists=True, cascade=True
+            ).run_sync()
+
+    def test_reference_to_another_schema(self) -> None:
         output_schema: OutputSchema = run_sync(get_output_schema())
         self.assertEqual(len(output_schema.tables), 3)
         publication = output_schema.tables[0]
@@ -260,11 +272,13 @@ class TestGenerateWithSchema(TestCase):
         self.assertEqual(Writer._meta.tablename, writer._meta.tablename)
 
         # Make sure foreign key values are correct.
-        self.assertEqual(writer.publication, publication)
-        self.assertEqual(book.writer, writer)
+        self.assertEqual(
+            writer._meta.get_column_by_name("publication"), publication
+        )
+        self.assertEqual(book._meta.get_column_by_name("writer"), writer)
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestGenerateWithException(TestCase):
     def setUp(self):
         for table_class in (SmallTable, MegaTable):
@@ -280,8 +294,8 @@ class TestGenerateWithException(TestCase):
     )
     def test_exception(self, create_table_class_from_db_mock: AsyncMock):
         """
-        Make sure that a GenerateError exception
-         is raised with all the exceptions gathered.
+        Make sure that a GenerateError exception is raised with all the
+        exceptions gathered.
         """
         create_table_class_from_db_mock.side_effect = [
             ValueError("Test"),

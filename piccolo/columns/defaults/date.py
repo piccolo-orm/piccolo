@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import datetime
-import typing as t
+from collections.abc import Callable
 from enum import Enum
+from typing import Union
 
 from .base import Default
 
@@ -36,6 +37,10 @@ class DateOffset(Default):
         return f"CURRENT_DATE + INTERVAL '{interval_string}'"
 
     @property
+    def cockroach(self):
+        return self.postgres
+
+    @property
     def sqlite(self):
         interval_string = self.get_sqlite_interval_string(["days"])
         return f"(datetime(CURRENT_TIMESTAMP, {interval_string}))"
@@ -50,6 +55,10 @@ class DateNow(Default):
     @property
     def postgres(self):
         return "CURRENT_DATE"
+
+    @property
+    def cockroach(self):
+        return self.postgres
 
     @property
     def sqlite(self):
@@ -76,6 +85,10 @@ class DateCustom(Default):
         return f"'{self.date.isoformat()}'"
 
     @property
+    def cockroach(self):
+        return self.postgres
+
+    @property
     def sqlite(self):
         return f"'{self.date.isoformat()}'"
 
@@ -90,7 +103,15 @@ class DateCustom(Default):
 
 
 # Might add an enum back which encapsulates all of the options.
-DateArg = t.Union[DateOffset, DateCustom, DateNow, Enum, None, datetime.date]
+DateArg = Union[
+    DateOffset,
+    DateCustom,
+    DateNow,
+    Enum,
+    None,
+    datetime.date,
+    Callable[[], datetime.date],
+]
 
 
 __all__ = ["DateArg", "DateOffset", "DateCustom", "DateNow"]

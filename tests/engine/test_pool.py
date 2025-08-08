@@ -1,19 +1,20 @@
 import asyncio
 import os
 import tempfile
+from typing import cast
 from unittest import TestCase
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import call, patch
 
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
-from tests.base import DBTestCase, postgres_only, sqlite_only
+from tests.base import DBTestCase, engine_is, engines_only, sqlite_only
 from tests.example_apps.music.tables import Manager
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestPool(DBTestCase):
-    async def _create_pool(self):
-        engine: PostgresEngine = Manager._meta.db
+    async def _create_pool(self) -> None:
+        engine = cast(PostgresEngine, Manager._meta.db)
 
         await engine.start_connection_pool()
         assert engine.pool is not None
@@ -37,7 +38,12 @@ class TestPool(DBTestCase):
 
         async def get_data():
             response = await Manager.select().run()
-            self.assertEqual(response, [{"id": 1, "name": "Bob"}])
+            if engine_is("cockroach"):
+                self.assertEqual(
+                    response, [{"id": response[0]["id"], "name": "Bob"}]
+                )
+            else:
+                self.assertEqual(response, [{"id": 1, "name": "Bob"}])
 
         await asyncio.gather(*[get_data() for _ in range(500)])
 
@@ -63,10 +69,10 @@ class TestPool(DBTestCase):
         asyncio.run(self._make_many_queries())
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestPoolProxyMethods(DBTestCase):
-    async def _create_pool(self):
-        engine: PostgresEngine = Manager._meta.db
+    async def _create_pool(self) -> None:
+        engine = cast(PostgresEngine, Manager._meta.db)
 
         # Deliberate typo ('nnn'):
         await engine.start_connnection_pool()
@@ -89,28 +95,29 @@ class TestConnectionPoolWarning(TestCase):
     async def _create_pool(self):
         sqlite_file = os.path.join(tempfile.gettempdir(), "engine.sqlite")
         engine = SQLiteEngine(path=sqlite_file)
-        await engine.start_connection_pool()
-        await engine.close_connection_pool()
 
-    @patch("piccolo.engine.base.colored_warning")
-    def test_warnings(self, colored_warning: MagicMock):
+        with patch("piccolo.engine.base.colored_warning") as colored_warning:
+            await engine.start_connection_pool()
+            await engine.close_connection_pool()
+
+            self.assertEqual(
+                colored_warning.call_args_list,
+                [
+                    call(
+                        "Connection pooling is not supported for sqlite.",
+                        stacklevel=3,
+                    ),
+                    call(
+                        "Connection pooling is not supported for sqlite.",
+                        stacklevel=3,
+                    ),
+                ],
+            )
+
+    def test_warnings(self):
         """
         Make sure that when trying to start and close a connection pool with
         SQLite, a warning is printed out, as connection pools aren't currently
         supported.
         """
         asyncio.run(self._create_pool())
-
-        self.assertEqual(
-            colored_warning.call_args_list,
-            [
-                call(
-                    "Connection pooling is not supported for sqlite.",
-                    stacklevel=3,
-                ),
-                call(
-                    "Connection pooling is not supported for sqlite.",
-                    stacklevel=3,
-                ),
-            ],
-        )

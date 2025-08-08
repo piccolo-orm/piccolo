@@ -177,6 +177,16 @@ Piccolo has something similar:
     >>> band.manager
     <Manager: 1>
 
+-------------------------------------------------------------------------------
+
+Schema
+------
+
+OneToOneField
+~~~~~~~~~~~~~
+
+To do this in Piccolo, use a ``ForeignKey`` with a unique constraint - see
+:ref:`One to One<OneToOne>`.
 
 -------------------------------------------------------------------------------
 

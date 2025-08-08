@@ -1,8 +1,15 @@
-from tests.base import DBTestCase
+import enum
+
+from piccolo.columns.column_types import Array, Varchar
+from piccolo.table import Table
+from piccolo.testing.test_case import TableTest
+from tests.base import engines_only
 from tests.example_apps.music.tables import Shirt
 
 
-class TestChoices(DBTestCase):
+class TestChoices(TableTest):
+    tables = [Shirt]
+
     def _insert_shirts(self):
         Shirt.insert(
             Shirt(size=Shirt.Size.small),
@@ -23,6 +30,7 @@ class TestChoices(DBTestCase):
         """
         Shirt().save().run_sync()
         shirt = Shirt.objects().first().run_sync()
+        assert shirt is not None
         self.assertEqual(shirt.size, "l")
 
     def test_update(self):
@@ -63,3 +71,71 @@ class TestChoices(DBTestCase):
         )
         self.assertEqual(len(shirts), 1)
         self.assertEqual(shirts[0].size, "s")
+
+
+class Ticket(Table):
+    class Extras(str, enum.Enum):
+        drink = "drink"
+        snack = "snack"
+        program = "program"
+
+    extras = Array(Varchar(), choices=Extras)
+
+
+@engines_only("postgres", "sqlite")
+class TestArrayChoices(TableTest):
+    """
+    🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
+    """  # noqa: E501
+
+    tables = [Ticket]
+
+    def test_string(self):
+        """
+        Make sure strings can be passed in as choices.
+        """
+        ticket = Ticket(extras=["drink", "snack", "program"])
+        ticket.save().run_sync()
+
+        self.assertListEqual(
+            Ticket.select(Ticket.extras).run_sync(),
+            [{"extras": ["drink", "snack", "program"]}],
+        )
+
+    def test_enum(self):
+        """
+        Make sure enums can be passed in as choices.
+        """
+        ticket = Ticket(
+            extras=[
+                Ticket.Extras.drink,
+                Ticket.Extras.snack,
+                Ticket.Extras.program,
+            ]
+        )
+        ticket.save().run_sync()
+
+        self.assertListEqual(
+            Ticket.select(Ticket.extras).run_sync(),
+            [{"extras": ["drink", "snack", "program"]}],
+        )
+
+    def test_invalid_choices(self):
+        """
+        Make sure an invalid choices Enum is rejected.
+        """
+        with self.assertRaises(ValueError) as manager:
+
+            class Ticket(Table):
+                # This will be rejected, because the values are ints, and the
+                # Array's base_column is Varchar.
+                class Extras(int, enum.Enum):
+                    drink = 1
+                    snack = 2
+                    program = 3
+
+                extras = Array(Varchar(), choices=Extras)
+
+        self.assertEqual(
+            manager.exception.__str__(), "drink doesn't have the correct type"
+        )

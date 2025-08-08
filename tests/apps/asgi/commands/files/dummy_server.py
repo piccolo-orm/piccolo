@@ -1,10 +1,14 @@
 import asyncio
 import importlib
 import sys
-import typing as t
+from collections.abc import Callable
+from typing import Union, cast
+
+from httpx import ASGITransport, AsyncClient
+from uvicorn import Config, Server
 
 
-def dummy_server(app: t.Union[str, t.Callable] = "app:app"):
+async def dummy_server(app: Union[str, Callable] = "app:app") -> None:
     """
     A very simplistic ASGI server. It's used to run the generated ASGI
     applications in unit tests.
@@ -20,33 +24,19 @@ def dummy_server(app: t.Union[str, t.Callable] = "app:app"):
     if isinstance(app, str):
         path, app_name = app.rsplit(":")
         module = importlib.import_module(path)
-        app = getattr(module, app_name)
+        app = cast(Callable, getattr(module, app_name))
 
-    async def send(message):
-        if message["type"] == "http.response.start":
-            if message["status"] == 200:
-                print("Received 200")
-            else:
-                sys.exit("200 not received from app")
-
-    async def receive():
-        pass
-
-    scope = {
-        "scheme": "http",
-        "type": "http",
-        "path": "/",
-        "raw_path": b"/",
-        "method": "GET",
-        "query_string": b"",
-        "headers": [],
-    }
-    if callable(app):
-        asyncio.run(app(scope, receive, send))
-        print("Exiting dummy server ...")
-    else:
-        sys.exit("The app isn't callable!")
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app)) as client:
+            response = await client.get("http://localhost:8000")
+            if response.status_code != 200:
+                sys.exit("The app isn't callable!")
+    except Exception:
+        config = Config(app=app)
+        server = Server(config=config)
+        asyncio.create_task(server.serve())
+        await asyncio.sleep(0.1)
 
 
 if __name__ == "__main__":
-    dummy_server()
+    asyncio.run(dummy_server())

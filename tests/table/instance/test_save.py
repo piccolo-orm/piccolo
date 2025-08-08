@@ -1,15 +1,16 @@
 from unittest import TestCase
 
-from piccolo.table import create_tables, drop_tables
+from piccolo.table import create_db_tables_sync, drop_db_tables_sync
+from tests.base import engines_only, engines_skip
 from tests.example_apps.music.tables import Band, Manager
 
 
 class TestSave(TestCase):
     def setUp(self):
-        create_tables(Manager, Band)
+        create_db_tables_sync(Manager, Band)
 
     def tearDown(self):
-        drop_tables(Manager, Band)
+        drop_db_tables_sync(Manager, Band)
 
     def test_save_new(self):
         """
@@ -36,6 +37,7 @@ class TestSave(TestCase):
         self.assertTrue("Maz2" in names)
         self.assertTrue("Maz" not in names)
 
+    @engines_skip("cockroach")
     def test_save_specific_columns(self):
         """
         Make sure that we can save a subset of columns.
@@ -75,8 +77,6 @@ class TestSave(TestCase):
             ],
         )
 
-        #######################################################################
-
         # Also test it using strings to identify columns
         band.name = "Pythonistas 3"
         band.popularity = 3000
@@ -90,6 +90,64 @@ class TestSave(TestCase):
                     "id": 1,
                     "name": "Pythonistas 2",
                     "manager": 1,
+                    "popularity": 3000,
+                }
+            ],
+        )
+
+    @engines_only("cockroach")
+    def test_save_specific_columns_alt(self):
+        """
+        Make sure that we can save a subset of columns.
+        """
+        manager = Manager(name="Guido")
+        manager.save().run_sync()
+
+        band = Band(name="Pythonistas", popularity=1000, manager=manager)
+        band.save().run_sync()
+
+        self.assertEqual(
+            Band.select().run_sync(),
+            [
+                {
+                    "id": band.id,
+                    "name": "Pythonistas",
+                    "manager": band.manager.id,
+                    "popularity": 1000,
+                }
+            ],
+        )
+
+        band.name = "Pythonistas 2"
+        band.popularity = 2000
+        band.save(columns=[Band.name]).run_sync()
+
+        # Only the name should update, and not the popularity:
+        self.assertEqual(
+            Band.select().run_sync(),
+            [
+                {
+                    "id": band.id,
+                    "name": "Pythonistas 2",
+                    "manager": band.manager.id,
+                    "popularity": 1000,
+                }
+            ],
+        )
+
+        # Also test it using strings to identify columns
+        band.name = "Pythonistas 3"
+        band.popularity = 3000
+        band.save(columns=["popularity"]).run_sync()
+
+        # Only the popularity should update, and not the name:
+        self.assertEqual(
+            Band.select().run_sync(),
+            [
+                {
+                    "id": band.id,
+                    "name": "Pythonistas 2",
+                    "manager": band.manager.id,
                     "popularity": 3000,
                 }
             ],

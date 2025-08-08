@@ -1,31 +1,29 @@
 from __future__ import annotations
 
 import asyncio
-import typing as t
-from concurrent.futures import ThreadPoolExecutor
+from collections.abc import Coroutine
+from concurrent.futures import Future, ThreadPoolExecutor
+from typing import Any, TypeVar
+
+ReturnType = TypeVar("ReturnType")
 
 
-def run_sync(coroutine: t.Coroutine):
+def run_sync(
+    coroutine: Coroutine[Any, Any, ReturnType],
+) -> ReturnType:
     """
     Run the coroutine synchronously - trying to accommodate as many edge cases
     as possible.
-
      1. When called within a coroutine.
      2. When called from ``python -m asyncio``, or iPython with %autoawait
         enabled, which means an event loop may already be running in the
         current thread.
-
     """
     try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
+        # We try this first, as in most situations this will work.
         return asyncio.run(coroutine)
-    else:
-        if not loop.is_running():
-            return loop.run_until_complete(coroutine)
-
-        new_loop = asyncio.new_event_loop()
-
+    except RuntimeError:
+        # An event loop already exists.
         with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(new_loop.run_until_complete, coroutine)
+            future: Future = executor.submit(asyncio.run, coroutine)
             return future.result()

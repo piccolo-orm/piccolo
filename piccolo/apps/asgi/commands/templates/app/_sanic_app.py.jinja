@@ -1,0 +1,121 @@
+import asyncio
+import typing as t
+
+from hypercorn.middleware import DispatcherMiddleware
+from piccolo.engine import engine_finder
+from piccolo_admin.endpoints import create_admin
+from piccolo_api.crud.serializers import create_pydantic_model
+from sanic import Request, Sanic, json
+from sanic_ext import openapi
+
+from home.endpoints import index
+from home.piccolo_app import APP_CONFIG
+from home.tables import Task
+
+app = Sanic(__name__)
+app.static("/static/", "static")
+
+
+TaskModelIn: t.Any = create_pydantic_model(
+    table=Task,
+    model_name="TaskModelIn",
+)
+TaskModelOut: t.Any = create_pydantic_model(
+    table=Task,
+    include_default_columns=True,
+    model_name="TaskModelOut",
+)
+
+
+@app.get("/")
+@openapi.exclude()
+def home(request: Request):
+    return index()
+
+
+@app.get("/tasks/")
+@openapi.tag("Task")
+@openapi.response(200, {"application/json": TaskModelOut.model_json_schema()})
+async def tasks(request: Request):
+    return json(
+        await Task.select().order_by(Task._meta.primary_key, ascending=False),
+        status=200,
+    )
+
+
+@app.post("/tasks/")
+@openapi.definition(
+    body={"application/json": TaskModelIn.model_json_schema()},
+    tag="Task",
+)
+@openapi.response(201, {"application/json": TaskModelOut.model_json_schema()})
+async def create_task(request: Request):
+    task = Task(**request.json)
+    await task.save()
+    return json(task.to_dict(), status=201)
+
+
+@app.put("/tasks/<task_id:int>/")
+@openapi.definition(
+    body={"application/json": TaskModelIn.model_json_schema()},
+    tag="Task",
+)
+@openapi.response(200, {"application/json": TaskModelOut.model_json_schema()})
+async def update_task(request: Request, task_id: int):
+    task = await Task.objects().get(Task._meta.primary_key == task_id)
+    if not task:
+        return json({}, status=404)
+    for key, value in request.json.items():
+        setattr(task, key, value)
+
+    await task.save()
+    return json(task.to_dict(), status=200)
+
+
+@app.delete("/tasks/<task_id:int>/")
+@openapi.tag("Task")
+async def delete_task(request: Request, task_id: int):
+    task = await Task.objects().get(Task._meta.primary_key == task_id)
+    if not task:
+        return json({}, status=404)
+    await task.remove()
+    return json({}, status=200)
+
+
+async def open_database_connection_pool():
+    try:
+        engine = engine_finder()
+        await engine.start_connection_pool()
+    except Exception:
+        print("Unable to connect to the database")
+
+
+async def close_database_connection_pool():
+    try:
+        engine = engine_finder()
+        await engine.close_connection_pool()
+    except Exception:
+        print("Unable to connect to the database")
+
+
+@app.after_server_start
+async def startup(app, loop):
+    await open_database_connection_pool()
+
+
+@app.before_server_stop
+async def shutdown(app, loop):
+    await close_database_connection_pool()
+
+
+# enable the admin application using DispatcherMiddleware
+app = DispatcherMiddleware(  # type: ignore
+    {
+        "/admin": create_admin(
+            tables=APP_CONFIG.table_classes,
+            # Required when running under HTTPS:
+            # allowed_hosts=['my_site.com']
+        ),
+        "": app,
+    }
+)

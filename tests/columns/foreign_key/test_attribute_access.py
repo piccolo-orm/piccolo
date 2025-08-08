@@ -7,7 +7,7 @@ from piccolo.table import Table
 
 class Manager(Table):
     name = Varchar()
-    manager = ForeignKey("self")
+    manager: ForeignKey["Manager"] = ForeignKey("self")
 
 
 class BandA(Table):
@@ -15,19 +15,22 @@ class BandA(Table):
 
 
 class BandB(Table):
-    manager = ForeignKey(references="Manager")
+    manager: ForeignKey["Manager"] = ForeignKey(references="Manager")
 
 
 class BandC(Table):
-    manager = ForeignKey(
+    manager: ForeignKey["Manager"] = ForeignKey(
         references=LazyTableReference(
-            table_class_name="Manager", module_path=__name__
+            table_class_name="Manager",
+            module_path=__name__,
         )
     )
 
 
 class BandD(Table):
-    manager = ForeignKey(references=f"{__name__}.Manager")
+    manager: ForeignKey["Manager"] = ForeignKey(
+        references=f"{__name__}.Manager"
+    )
 
 
 class TestAttributeAccess(TestCase):
@@ -37,9 +40,9 @@ class TestAttributeAccess(TestCase):
         references.
         """
         for band_table in (BandA, BandB, BandC, BandD):
-            self.assertTrue(isinstance(band_table.manager.name, Varchar))
+            self.assertIsInstance(band_table.manager.name, Varchar)
 
-    def test_recursion_limit(self):
+    def test_recursion_limit(self) -> None:
         """
         When a table has a ForeignKey to itself, an Exception should be raised
         if the call chain is too large.
@@ -47,16 +50,16 @@ class TestAttributeAccess(TestCase):
         # Should be fine:
         column: Column = Manager.manager.name
         self.assertTrue(len(column._meta.call_chain), 1)
-        self.assertTrue(isinstance(column, Varchar))
+        self.assertIsInstance(column, Varchar)
 
         with self.assertRaises(Exception):
-            Manager.manager.manager.manager.manager.manager.manager.manager.manager.manager.manager.manager.name  # noqa
+            Manager.manager.manager.manager.manager.manager.manager.manager.manager.manager.manager.manager.name  # type: ignore  # noqa: E501
 
     def test_recursion_time(self):
         """
         Make sure that a really large call chain doesn't take too long.
         """
         start = time.time()
-        Manager.manager.manager.manager.manager.manager.manager.name
+        Manager.manager._.manager._.manager._.manager._.manager._.manager._.name  # noqa: E501
         end = time.time()
-        self.assertTrue(end - start < 1.0)
+        self.assertLess(end - start, 1.0)

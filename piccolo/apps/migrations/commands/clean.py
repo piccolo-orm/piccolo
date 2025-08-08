@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import typing as t
+from typing import cast
 
 from piccolo.apps.migrations.commands.base import BaseMigrationManager
 from piccolo.apps.migrations.tables import Migration
@@ -12,7 +12,7 @@ class CleanMigrationManager(BaseMigrationManager):
         self.auto_agree = auto_agree
         super().__init__()
 
-    def get_migration_ids_to_remove(self) -> t.List[str]:
+    def get_migration_ids_to_remove(self) -> list[str]:
         """
         Returns a list of migration ID strings, which are rows in the table,
         but don't have a corresponding migration module on disk.
@@ -20,7 +20,7 @@ class CleanMigrationManager(BaseMigrationManager):
         app_config = self.get_app_config(app_name=self.app_name)
 
         migration_module_dict = self.get_migration_modules(
-            folder_path=app_config.migrations_folder_path
+            folder_path=app_config.resolved_migrations_folder_path
         )
 
         # The migration IDs which are in migration modules.
@@ -37,7 +37,7 @@ class CleanMigrationManager(BaseMigrationManager):
         if len(migration_ids) > 0:
             query = query.where(Migration.name.not_in(migration_ids))
 
-        return query.run_sync()
+        return cast(list[str], query.run_sync())
 
     async def run(self):
         print("Checking the migration table ...")

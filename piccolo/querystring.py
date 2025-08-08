@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-import typing as t
+from abc import ABCMeta, abstractmethod
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from importlib.util import find_spec
 from string import Formatter
+from typing import TYPE_CHECKING, Any, Optional
 
-if t.TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
+    from piccolo.columns import Column
     from piccolo.table import Table
 
 from uuid import UUID
@@ -17,22 +20,32 @@ else:
     apgUUID = UUID
 
 
-@dataclass
-class Unquoted:
+class Selectable(metaclass=ABCMeta):
     """
-    Used when we want the value to be unquoted because it's a Postgres
-    keyword - for example DEFAULT.
+    Anything which inherits from this can be used in a select query.
     """
 
-    __slots__ = ("value",)
+    __slots__ = ("_alias",)
 
-    value: str
+    _alias: Optional[str]
 
-    def __repr__(self):
-        return f"{self.value}"
+    @abstractmethod
+    def get_select_string(
+        self, engine_type: str, with_alias: bool = True
+    ) -> QueryString:
+        """
+        In a query, what to output after the select statement - could be a
+        column name, a sub query, a function etc. For a column it will be the
+        column name.
+        """
+        raise NotImplementedError()
 
-    def __str__(self):
-        return f"{self.value}"
+    def as_alias(self, alias: str) -> Selectable:
+        """
+        Allows column names to be changed in the result of a select.
+        """
+        self._alias = alias
+        return self
 
 
 @dataclass
@@ -42,7 +55,7 @@ class Fragment:
     no_arg: bool = False
 
 
-class QueryString:
+class QueryString(Selectable):
     """
     When we're composing complex queries, we're combining QueryStrings, rather
     than concatenating strings directly. The reason for this is QueryStrings
@@ -56,28 +69,69 @@ class QueryString:
         "query_type",
         "table",
         "_frozen_compiled_strings",
+        "columns",
     )
 
     def __init__(
         self,
         template: str,
-        *args: t.Any,
+        *args: Any,
         query_type: str = "generic",
-        table: t.Optional[t.Type[Table]] = None,
+        table: Optional[type[Table]] = None,
+        alias: Optional[str] = None,
     ) -> None:
         """
-        Example template: "WHERE {} = {}"
+        :param template:
+            The SQL query, with curly brackets as placeholders for any values::
 
-        The query type is sometimes used by the engine to modify how the query
-        is run.
+                "WHERE {} = {}"
+
+        :param args:
+            The values to insert (one value is needed for each set of curly
+            braces in the template).
+        :param query_type:
+            The query type is sometimes used by the engine to modify how the
+            query is run. For example, INSERT queries on old SQLite versions.
+        :param table:
+            Sometimes the ``piccolo.engine.base.Engine`` needs access to the
+            table that the query is being run on.
+
         """
         self.template = template
-        self.args = args
         self.query_type = query_type
         self.table = table
-        self._frozen_compiled_strings: t.Optional[
-            t.Tuple[str, t.List[t.Any]]
-        ] = None
+        self._frozen_compiled_strings: Optional[tuple[str, list[Any]]] = None
+        self._alias = alias
+        self.args, self.columns = self.process_args(args)
+
+    def process_args(
+        self, args: Sequence[Any]
+    ) -> tuple[Sequence[Any], Sequence[Column]]:
+        """
+        If a Column is passed in, we convert it to the name of the column
+        (including joins).
+        """
+        from piccolo.columns import Column
+
+        processed_args = []
+        columns = []
+
+        for arg in args:
+            if isinstance(arg, Column):
+                columns.append(arg)
+                arg = QueryString(
+                    f"{arg._meta.get_full_name(with_alias=False)}"
+                )
+            elif isinstance(arg, QueryString):
+                columns.extend(arg.columns)
+
+            processed_args.append(arg)
+
+        return (processed_args, columns)
+
+    def as_alias(self, alias: str) -> QueryString:
+        self._alias = alias
+        return self
 
     def __str__(self):
         """
@@ -113,8 +167,8 @@ class QueryString:
     def bundle(
         self,
         start_index: int = 1,
-        bundled: t.Optional[t.List[Fragment]] = None,
-        combined_args: t.Optional[t.List] = None,
+        bundled: Optional[list[Fragment]] = None,
+        combined_args: Optional[list] = None,
     ):
         # Split up the string, separating by {}.
         fragments = [
@@ -132,7 +186,7 @@ class QueryString:
                 fragment.no_arg = True
                 bundled.append(fragment)
             else:
-                if type(value) == self.__class__:
+                if isinstance(value, QueryString):
                     fragment.no_arg = True
                     bundled.append(fragment)
 
@@ -151,7 +205,7 @@ class QueryString:
 
     def compile_string(
         self, engine_type: str = "postgres"
-    ) -> t.Tuple[str, t.List[t.Any]]:
+    ) -> tuple[str, list[Any]]:
         """
         Compiles the template ready for the engine - keeping the arguments
         separate from the template.
@@ -162,7 +216,7 @@ class QueryString:
         _, bundled, combined_args = self.bundle(
             start_index=1, bundled=[], combined_args=[]
         )
-        if engine_type == "postgres":
+        if engine_type in ("postgres", "cockroach"):
             string = "".join(
                 fragment.prefix
                 + ("" if fragment.no_arg else f"${fragment.index}")
@@ -184,3 +238,89 @@ class QueryString:
         self._frozen_compiled_strings = self.compile_string(
             engine_type=engine_type
         )
+
+    ###########################################################################
+
+    def get_select_string(
+        self, engine_type: str, with_alias: bool = True
+    ) -> QueryString:
+        if with_alias and self._alias:
+            return QueryString("{} AS " + f'"{self._alias}"', self)
+        else:
+            return self
+
+    def get_where_string(self, engine_type: str) -> QueryString:
+        return self.get_select_string(
+            engine_type=engine_type, with_alias=False
+        )
+
+    ###########################################################################
+    # Basic logic
+
+    def __eq__(self, value) -> QueryString:  # type: ignore[override]
+        if value is None:
+            return QueryString("{} IS NULL", self)
+        else:
+            return QueryString("{} = {}", self, value)
+
+    def __ne__(self, value) -> QueryString:  # type: ignore[override]
+        if value is None:
+            return QueryString("{} IS NOT NULL", self, value)
+        else:
+            return QueryString("{} != {}", self, value)
+
+    def eq(self, value) -> QueryString:
+        return self.__eq__(value)
+
+    def ne(self, value) -> QueryString:
+        return self.__ne__(value)
+
+    def __add__(self, value) -> QueryString:
+        return QueryString("{} + {}", self, value)
+
+    def __sub__(self, value) -> QueryString:
+        return QueryString("{} - {}", self, value)
+
+    def __gt__(self, value) -> QueryString:
+        return QueryString("{} > {}", self, value)
+
+    def __ge__(self, value) -> QueryString:
+        return QueryString("{} >= {}", self, value)
+
+    def __lt__(self, value) -> QueryString:
+        return QueryString("{} < {}", self, value)
+
+    def __le__(self, value) -> QueryString:
+        return QueryString("{} <= {}", self, value)
+
+    def __truediv__(self, value) -> QueryString:
+        return QueryString("{} / {}", self, value)
+
+    def __mul__(self, value) -> QueryString:
+        return QueryString("{} * {}", self, value)
+
+    def __pow__(self, value) -> QueryString:
+        return QueryString("{} ^ {}", self, value)
+
+    def __mod__(self, value) -> QueryString:
+        return QueryString("{} % {}", self, value)
+
+    def is_in(self, value) -> QueryString:
+        return QueryString("{} IN {}", self, value)
+
+    def not_in(self, value) -> QueryString:
+        return QueryString("{} NOT IN {}", self, value)
+
+    def like(self, value: str) -> QueryString:
+        return QueryString("{} LIKE {}", self, value)
+
+    def ilike(self, value: str) -> QueryString:
+        return QueryString("{} ILIKE {}", self, value)
+
+
+class Unquoted(QueryString):
+    """
+    This is deprecated - just use QueryString directly.
+    """
+
+    pass

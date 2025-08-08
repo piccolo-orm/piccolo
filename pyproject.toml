@@ -1,6 +1,6 @@
 [tool.black]
 line-length = 79
-target-version = ['py37', 'py38', 'py39', 'py310']
+target-version = ['py38', 'py39', 'py310']
 
 [tool.isort]
 profile = "black"
@@ -13,8 +13,11 @@ module = [
     "colorama",
     "dateutil",
     "IPython",
+    "IPython.core.interactiveshell",
     "jinja2",
-    "orjson"
+    "orjson",
+    "aiosqlite",
+    "uvicorn"
 ]
 ignore_missing_imports = true
 
@@ -22,7 +25,23 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 markers = [
     "integration",
+    "speed",
+    "cockroach_array_slow"
 ]
 
 [tool.coverage.run]
-omit = ["*.jinja", "**/piccolo_migrations/*", "**/piccolo_app.py"]
+omit = [
+    "*.jinja",
+    "**/piccolo_migrations/*",
+    "**/piccolo_app.py",
+    "**/utils/graphlib/*",
+]
+
+[tool.coverage.report]
+# Note, we have to re-specify "pragma: no cover"
+# https://coverage.readthedocs.io/en/6.3.3/excluding.html#advanced-exclusion
+exclude_lines = [
+    "raise NotImplementedError",
+    "pragma: no cover",
+    "pass"
+]

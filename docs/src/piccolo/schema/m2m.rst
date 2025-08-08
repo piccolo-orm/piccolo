@@ -4,6 +4,10 @@
 M2M
 ###
 
+.. note::
+
+   There is a `video tutorial on YouTube <https://youtu.be/J9YFt8Hxm4I>`_.
+
 Sometimes in database design you need `many-to-many (M2M) <https://en.wikipedia.org/wiki/Many-to-many_(data_model)>`_
 relationships.
 
@@ -50,8 +54,9 @@ We create it in Piccolo like this:
 
 
 .. note::
-    We use ``LazyTableReference`` because when Python evaluates ``Band`` and
-    ``Genre``, the ``GenreToBand`` class doesn't exist yet.
+    We use :class:`LazyTableReference <piccolo.columns.reference.LazyTableReference>`
+    because when Python evaluates ``Band`` and ``Genre``, the ``GenreToBand``
+    class doesn't exist yet.
 
 By using ``M2M`` it unlocks some powerful and convenient features.
 

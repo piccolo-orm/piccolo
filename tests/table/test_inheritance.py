@@ -61,6 +61,7 @@ class TestInheritance(TestCase):
         ).save().run_sync()
 
         response = Manager.select().first().run_sync()
+        assert response is not None
         self.assertEqual(response["started_on"], started_on)
         self.assertEqual(response["name"], name)
         self.assertEqual(response["favourite"], favourite)
@@ -98,6 +99,7 @@ class TestRepeatedMixin(TestCase):
             _Table(name=name, started_on=started_on).save().run_sync()
 
             response = _Table.select().first().run_sync()
+            assert response is not None
             self.assertEqual(response["started_on"], started_on)
             self.assertEqual(response["name"], name)
 

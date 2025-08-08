@@ -1,3 +1,4 @@
+from typing import cast
 from unittest import TestCase
 from unittest.mock import MagicMock
 
@@ -5,10 +6,10 @@ from piccolo.columns.column_types import Varchar
 from piccolo.engine import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.table import Table
-from tests.base import AsyncMock, postgres_only
+from tests.base import AsyncMock, engines_only
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestExtraNodes(TestCase):
     def test_extra_nodes(self):
         """
@@ -16,6 +17,9 @@ class TestExtraNodes(TestCase):
         """
         # Get the test database credentials:
         test_engine = engine_finder()
+        assert test_engine is not None
+
+        test_engine = cast(PostgresEngine, test_engine)
 
         EXTRA_NODE = MagicMock(spec=PostgresEngine(config=test_engine.config))
         EXTRA_NODE.run_querystring = AsyncMock(return_value=[])

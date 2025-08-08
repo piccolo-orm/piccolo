@@ -1,22 +1,31 @@
 from __future__ import annotations
 
 import inspect
-import typing as t
+import logging
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
+from typing import Any, Optional, Union
 
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
 from piccolo.apps.migrations.auto.operations import (
     AlterColumn,
+    ChangeTableSchema,
     DropColumn,
     RenameColumn,
     RenameTable,
 )
 from piccolo.apps.migrations.auto.serialisation import deserialise_params
 from piccolo.columns import Column, column_types
-from piccolo.columns.column_types import Serial
+from piccolo.columns.column_types import ForeignKey, Serial
 from piccolo.engine import engine_finder
+from piccolo.query import Query
+from piccolo.query.base import DDL
+from piccolo.query.constraints import get_fk_constraint_name
+from piccolo.schema import SchemaDDLBase
 from piccolo.table import Table, create_table_class, sort_table_classes
 from piccolo.utils.warnings import colored_warning
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -24,18 +33,19 @@ class AddColumnClass:
     column: Column
     table_class_name: str
     tablename: str
+    schema: Optional[str]
 
 
 @dataclass
 class AddColumnCollection:
-    add_columns: t.List[AddColumnClass] = field(default_factory=list)
+    add_columns: list[AddColumnClass] = field(default_factory=list)
 
     def append(self, add_column: AddColumnClass):
         self.add_columns.append(add_column)
 
     def for_table_class_name(
         self, table_class_name: str
-    ) -> t.List[AddColumnClass]:
+    ) -> list[AddColumnClass]:
         return [
             i
             for i in self.add_columns
@@ -44,7 +54,7 @@ class AddColumnCollection:
 
     def columns_for_table_class_name(
         self, table_class_name: str
-    ) -> t.List[Column]:
+    ) -> list[Column]:
         return [
             i.column
             for i in self.add_columns
@@ -52,20 +62,18 @@ class AddColumnCollection:
         ]
 
     @property
-    def table_class_names(self) -> t.List[str]:
+    def table_class_names(self) -> list[str]:
         return list({i.table_class_name for i in self.add_columns})
 
 
 @dataclass
 class DropColumnCollection:
-    drop_columns: t.List[DropColumn] = field(default_factory=list)
+    drop_columns: list[DropColumn] = field(default_factory=list)
 
     def append(self, drop_column: DropColumn):
         self.drop_columns.append(drop_column)
 
-    def for_table_class_name(
-        self, table_class_name: str
-    ) -> t.List[DropColumn]:
+    def for_table_class_name(self, table_class_name: str) -> list[DropColumn]:
         return [
             i
             for i in self.drop_columns
@@ -73,20 +81,20 @@ class DropColumnCollection:
         ]
 
     @property
-    def table_class_names(self) -> t.List[str]:
+    def table_class_names(self) -> list[str]:
         return list({i.table_class_name for i in self.drop_columns})
 
 
 @dataclass
 class RenameColumnCollection:
-    rename_columns: t.List[RenameColumn] = field(default_factory=list)
+    rename_columns: list[RenameColumn] = field(default_factory=list)
 
     def append(self, rename_column: RenameColumn):
         self.rename_columns.append(rename_column)
 
     def for_table_class_name(
         self, table_class_name: str
-    ) -> t.List[RenameColumn]:
+    ) -> list[RenameColumn]:
         return [
             i
             for i in self.rename_columns
@@ -94,20 +102,18 @@ class RenameColumnCollection:
         ]
 
     @property
-    def table_class_names(self) -> t.List[str]:
+    def table_class_names(self) -> list[str]:
         return list({i.table_class_name for i in self.rename_columns})
 
 
 @dataclass
 class AlterColumnCollection:
-    alter_columns: t.List[AlterColumn] = field(default_factory=list)
+    alter_columns: list[AlterColumn] = field(default_factory=list)
 
     def append(self, alter_column: AlterColumn):
         self.alter_columns.append(alter_column)
 
-    def for_table_class_name(
-        self, table_class_name: str
-    ) -> t.List[AlterColumn]:
+    def for_table_class_name(self, table_class_name: str) -> list[AlterColumn]:
         return [
             i
             for i in self.alter_columns
@@ -115,8 +121,19 @@ class AlterColumnCollection:
         ]
 
     @property
-    def table_class_names(self) -> t.List[str]:
+    def table_class_names(self) -> list[str]:
         return list({i.table_class_name for i in self.alter_columns})
+
+
+AsyncFunction = Callable[[], Coroutine]
+
+
+class SkippedTransaction:
+    async def __aenter__(self):
+        print("Automatic transaction disabled")
+
+    async def __aexit__(self, *args, **kwargs):
+        pass
 
 
 @dataclass
@@ -124,14 +141,24 @@ class MigrationManager:
     """
     Each auto generated migration returns a MigrationManager. It contains
     all of the schema changes that migration wants to make.
+
+    :param wrap_in_transaction:
+        By default, the migration is wrapped in a transaction, so if anything
+        fails, the whole migration will get rolled back. You can disable this
+        behaviour if you want - for example, in a manual migration you might
+        want to create the transaction yourself (perhaps you're using
+        savepoints), or you may want multiple transactions.
+
     """
 
     migration_id: str = ""
     app_name: str = ""
     description: str = ""
-    add_tables: t.List[DiffableTable] = field(default_factory=list)
-    drop_tables: t.List[DiffableTable] = field(default_factory=list)
-    rename_tables: t.List[RenameTable] = field(default_factory=list)
+    preview: bool = False
+    add_tables: list[DiffableTable] = field(default_factory=list)
+    drop_tables: list[DiffableTable] = field(default_factory=list)
+    rename_tables: list[RenameTable] = field(default_factory=list)
+    change_table_schemas: list[ChangeTableSchema] = field(default_factory=list)
     add_columns: AddColumnCollection = field(
         default_factory=AddColumnCollection
     )
@@ -144,30 +171,55 @@ class MigrationManager:
     alter_columns: AlterColumnCollection = field(
         default_factory=AlterColumnCollection
     )
-    raw: t.List[t.Union[t.Callable, t.Coroutine]] = field(default_factory=list)
-    raw_backwards: t.List[t.Union[t.Callable, t.Coroutine]] = field(
+    raw: list[Union[Callable, AsyncFunction]] = field(default_factory=list)
+    raw_backwards: list[Union[Callable, AsyncFunction]] = field(
         default_factory=list
     )
     fake: bool = False
+    wrap_in_transaction: bool = True
 
     def add_table(
         self,
         class_name: str,
         tablename: str,
-        columns: t.Optional[t.List[Column]] = None,
+        schema: Optional[str] = None,
+        columns: Optional[list[Column]] = None,
     ):
         if not columns:
             columns = []
 
         self.add_tables.append(
             DiffableTable(
-                class_name=class_name, tablename=tablename, columns=columns
+                class_name=class_name,
+                tablename=tablename,
+                columns=columns,
+                schema=schema,
             )
         )
 
-    def drop_table(self, class_name: str, tablename: str):
+    def drop_table(
+        self, class_name: str, tablename: str, schema: Optional[str] = None
+    ):
         self.drop_tables.append(
-            DiffableTable(class_name=class_name, tablename=tablename)
+            DiffableTable(
+                class_name=class_name, tablename=tablename, schema=schema
+            )
+        )
+
+    def change_table_schema(
+        self,
+        class_name: str,
+        tablename: str,
+        new_schema: Optional[str] = None,
+        old_schema: Optional[str] = None,
+    ):
+        self.change_table_schemas.append(
+            ChangeTableSchema(
+                class_name=class_name,
+                tablename=tablename,
+                new_schema=new_schema,
+                old_schema=old_schema,
+            )
         )
 
     def rename_table(
@@ -176,6 +228,7 @@ class MigrationManager:
         old_tablename: str,
         new_class_name: str,
         new_tablename: str,
+        schema: Optional[str] = None,
     ):
         self.rename_tables.append(
             RenameTable(
@@ -183,6 +236,7 @@ class MigrationManager:
                 old_tablename=old_tablename,
                 new_class_name=new_class_name,
                 new_tablename=new_tablename,
+                schema=schema,
             )
         )
 
@@ -191,10 +245,11 @@ class MigrationManager:
         table_class_name: str,
         tablename: str,
         column_name: str,
-        db_column_name: t.Optional[str] = None,
+        db_column_name: Optional[str] = None,
         column_class_name: str = "",
-        column_class: t.Optional[t.Type[Column]] = None,
-        params: t.Dict[str, t.Any] = None,
+        column_class: Optional[type[Column]] = None,
+        params: Optional[dict[str, Any]] = None,
+        schema: Optional[str] = None,
     ):
         """
         Add a new column to the table.
@@ -218,13 +273,15 @@ class MigrationManager:
         cleaned_params = deserialise_params(params=params)
         column = column_class(**cleaned_params)
         column._meta.name = column_name
-        column._meta.db_column_name = db_column_name
+        if db_column_name:
+            column._meta.db_column_name = db_column_name
 
         self.add_columns.append(
             AddColumnClass(
                 column=column,
                 tablename=tablename,
                 table_class_name=table_class_name,
+                schema=schema,
             )
         )
 
@@ -233,7 +290,8 @@ class MigrationManager:
         table_class_name: str,
         tablename: str,
         column_name: str,
-        db_column_name: t.Optional[str] = None,
+        db_column_name: Optional[str] = None,
+        schema: Optional[str] = None,
     ):
         self.drop_columns.append(
             DropColumn(
@@ -241,6 +299,7 @@ class MigrationManager:
                 column_name=column_name,
                 db_column_name=db_column_name or column_name,
                 tablename=tablename,
+                schema=schema,
             )
         )
 
@@ -250,8 +309,9 @@ class MigrationManager:
         tablename: str,
         old_column_name: str,
         new_column_name: str,
-        old_db_column_name: t.Optional[str] = None,
-        new_db_column_name: t.Optional[str] = None,
+        old_db_column_name: Optional[str] = None,
+        new_db_column_name: Optional[str] = None,
+        schema: Optional[str] = None,
     ):
         self.rename_columns.append(
             RenameColumn(
@@ -261,6 +321,7 @@ class MigrationManager:
                 new_column_name=new_column_name,
                 old_db_column_name=old_db_column_name or old_column_name,
                 new_db_column_name=new_db_column_name or new_column_name,
+                schema=schema,
             )
         )
 
@@ -269,11 +330,12 @@ class MigrationManager:
         table_class_name: str,
         tablename: str,
         column_name: str,
-        db_column_name: t.Optional[str] = None,
-        params: t.Dict[str, t.Any] = None,
-        old_params: t.Dict[str, t.Any] = None,
-        column_class: t.Optional[t.Type[Column]] = None,
-        old_column_class: t.Optional[t.Type[Column]] = None,
+        db_column_name: Optional[str] = None,
+        params: Optional[dict[str, Any]] = None,
+        old_params: Optional[dict[str, Any]] = None,
+        column_class: Optional[type[Column]] = None,
+        old_column_class: Optional[type[Column]] = None,
+        schema: Optional[str] = None,
     ):
         """
         All possible alterations aren't currently supported.
@@ -292,17 +354,18 @@ class MigrationManager:
                 old_params=old_params,
                 column_class=column_class,
                 old_column_class=old_column_class,
+                schema=schema,
             )
         )
 
-    def add_raw(self, raw: t.Union[t.Callable, t.Coroutine]):
+    def add_raw(self, raw: Union[Callable, AsyncFunction]):
         """
         A migration manager can execute arbitrary functions or coroutines when
         run. This is useful if you want to execute raw SQL.
         """
         self.raw.append(raw)
 
-    def add_raw_backwards(self, raw: t.Union[t.Callable, t.Coroutine]):
+    def add_raw_backwards(self, raw: Union[Callable, AsyncFunction]):
         """
         When reversing a migration, you may want to run extra code to help
         clean up.
@@ -311,13 +374,13 @@ class MigrationManager:
 
     ###########################################################################
 
-    async def get_table_from_snaphot(
+    async def get_table_from_snapshot(
         self,
         table_class_name: str,
-        app_name: t.Optional[str],
+        app_name: Optional[str],
         offset: int = 0,
-        migration_id: t.Optional[str] = None,
-    ) -> t.Type[Table]:
+        migration_id: Optional[str] = None,
+    ) -> type[Table]:
         """
         Returns a Table subclass which can be used for modifying data within
         a migration.
@@ -335,7 +398,7 @@ class MigrationManager:
         if app_name is None:
             app_name = self.app_name
 
-        diffable_table = await BaseMigrationManager().get_table_from_snaphot(
+        diffable_table = await BaseMigrationManager().get_table_from_snapshot(
             app_name=app_name,
             table_class_name=table_class_name,
             max_migration_id=migration_id,
@@ -345,7 +408,24 @@ class MigrationManager:
 
     ###########################################################################
 
-    async def _run_alter_columns(self, backwards=False):
+    @staticmethod
+    async def _print_query(query: Union[DDL, Query, SchemaDDLBase]):
+        if isinstance(query, DDL):
+            print("\n", ";".join(query.ddl) + ";")
+        else:
+            print(str(query))
+
+    async def _run_query(self, query: Union[DDL, Query, SchemaDDLBase]):
+        """
+        If MigrationManager is in preview mode then it just print the query
+        instead of executing it.
+        """
+        if self.preview:
+            await self._print_query(query)
+        else:
+            await query.run()
+
+    async def _run_alter_columns(self, backwards: bool = False):
         for table_class_name in self.alter_columns.table_class_names:
             alter_columns = self.alter_columns.for_table_class_name(
                 table_class_name
@@ -354,13 +434,15 @@ class MigrationManager:
             if not alter_columns:
                 continue
 
-            _Table: t.Type[Table] = create_table_class(
+            _Table: type[Table] = create_table_class(
                 class_name=table_class_name,
-                class_kwargs={"tablename": alter_columns[0].tablename},
+                class_kwargs={
+                    "tablename": alter_columns[0].tablename,
+                    "schema": alter_columns[0].schema,
+                },
             )
 
             for alter_column in alter_columns:
-
                 params = (
                     alter_column.old_params
                     if backwards
@@ -405,7 +487,7 @@ class MigrationManager:
                             alter_column.db_column_name
                         )
 
-                        using_expression: t.Optional[str] = None
+                        using_expression: Optional[str] = None
 
                         # Postgres won't automatically cast some types to
                         # others. We may as well try, as it will definitely
@@ -416,9 +498,9 @@ class MigrationManager:
                                 # something which can be cast to the new type,
                                 # it will also fail. Drop the default value for
                                 # now - the proper default is set later on.
-                                await _Table.alter().drop_default(
-                                    old_column
-                                ).run()
+                                await self._run_query(
+                                    _Table.alter().drop_default(old_column)
+                                )
 
                             using_expression = "{}::{}".format(
                                 alter_column.db_column_name,
@@ -436,25 +518,64 @@ class MigrationManager:
                                 "vice versa. This must be done manually."
                             )
                         else:
-                            await _Table.alter().set_column_type(
-                                old_column=old_column,
-                                new_column=new_column,
-                                using_expression=using_expression,
-                            ).run()
+                            await self._run_query(
+                                _Table.alter().set_column_type(
+                                    old_column=old_column,
+                                    new_column=new_column,
+                                    using_expression=using_expression,
+                                )
+                            )
 
                 ###############################################################
 
+                on_delete = params.get("on_delete")
+                on_update = params.get("on_update")
+                if on_delete is not None or on_update is not None:
+                    existing_table = await self.get_table_from_snapshot(
+                        table_class_name=table_class_name,
+                        app_name=self.app_name,
+                    )
+
+                    fk_column = existing_table._meta.get_column_by_name(
+                        alter_column.column_name
+                    )
+
+                    assert isinstance(fk_column, ForeignKey)
+
+                    # First drop the existing foreign key constraint
+                    constraint_name = await get_fk_constraint_name(
+                        column=fk_column
+                    )
+                    await self._run_query(
+                        _Table.alter().drop_constraint(
+                            constraint_name=constraint_name
+                        )
+                    )
+
+                    # Then add a new foreign key constraint
+                    await self._run_query(
+                        _Table.alter().add_foreign_key_constraint(
+                            column=fk_column,
+                            on_delete=on_delete,
+                            on_update=on_update,
+                        )
+                    )
+
                 null = params.get("null")
                 if null is not None:
-                    await _Table.alter().set_null(
-                        column=alter_column.db_column_name, boolean=null
-                    ).run()
+                    await self._run_query(
+                        _Table.alter().set_null(
+                            column=alter_column.db_column_name, boolean=null
+                        )
+                    )
 
                 length = params.get("length")
                 if length is not None:
-                    await _Table.alter().set_length(
-                        column=alter_column.db_column_name, length=length
-                    ).run()
+                    await self._run_query(
+                        _Table.alter().set_length(
+                            column=alter_column.db_column_name, length=length
+                        )
+                    )
 
                 unique = params.get("unique")
                 if unique is not None:
@@ -464,9 +585,11 @@ class MigrationManager:
                     column._meta._table = _Table
                     column._meta._name = alter_column.column_name
                     column._meta.db_column_name = alter_column.db_column_name
-                    await _Table.alter().set_unique(
-                        column=column, boolean=unique
-                    ).run()
+                    await self._run_query(
+                        _Table.alter().set_unique(
+                            column=column, boolean=unique
+                        )
+                    )
 
                 index = params.get("index")
                 index_method = params.get("index_method")
@@ -481,10 +604,14 @@ class MigrationManager:
                         column._meta.db_column_name = (
                             alter_column.db_column_name
                         )
-                        await _Table.drop_index([column]).run()
-                        await _Table.create_index(
-                            [column], method=index_method, if_not_exists=True
-                        ).run()
+                        await self._run_query(_Table.drop_index([column]))
+                        await self._run_query(
+                            _Table.create_index(
+                                [column],
+                                method=index_method,
+                                if_not_exists=True,
+                            )
+                        )
                 else:
                     # If the index value has changed, then we are either
                     # dropping, or creating an index.
@@ -497,11 +624,13 @@ class MigrationManager:
                         kwargs = (
                             {"method": index_method} if index_method else {}
                         )
-                        await _Table.create_index(
-                            [column], if_not_exists=True, **kwargs
-                        ).run()
+                        await self._run_query(
+                            _Table.create_index(
+                                [column], if_not_exists=True, **kwargs
+                            )
+                        )
                     else:
-                        await _Table.drop_index([column]).run()
+                        await self._run_query(_Table.drop_index([column]))
 
                 # None is a valid value, so retrieve ellipsis if not found.
                 default = params.get("default", ...)
@@ -512,39 +641,45 @@ class MigrationManager:
                     column._meta.db_column_name = alter_column.db_column_name
 
                     if default is None:
-                        await _Table.alter().drop_default(column=column).run()
+                        await self._run_query(
+                            _Table.alter().drop_default(column=column)
+                        )
                     else:
                         column.default = default
-                        await _Table.alter().set_default(
-                            column=column, value=column.get_default_value()
-                        ).run()
+                        await self._run_query(
+                            _Table.alter().set_default(
+                                column=column, value=column.get_default_value()
+                            )
+                        )
 
                 # None is a valid value, so retrieve ellipsis if not found.
                 digits = params.get("digits", ...)
                 if digits is not ...:
-                    await _Table.alter().set_digits(
-                        column=alter_column.db_column_name,
-                        digits=digits,
-                    ).run()
+                    await self._run_query(
+                        _Table.alter().set_digits(
+                            column=alter_column.db_column_name,
+                            digits=digits,
+                        )
+                    )
 
     async def _run_drop_tables(self, backwards=False):
         for diffable_table in self.drop_tables:
             if backwards:
-                _Table = await self.get_table_from_snaphot(
+                _Table = await self.get_table_from_snapshot(
                     table_class_name=diffable_table.class_name,
                     app_name=self.app_name,
                     offset=-1,
                 )
-                await _Table.create_table().run()
+                await self._run_query(_Table.create_table())
             else:
-                await (
-                    diffable_table.to_table_class().alter().drop_table().run()
+                await self._run_query(
+                    diffable_table.to_table_class().alter().drop_table()
                 )
 
-    async def _run_drop_columns(self, backwards=False):
+    async def _run_drop_columns(self, backwards: bool = False):
         if backwards:
             for drop_column in self.drop_columns.drop_columns:
-                _Table = await self.get_table_from_snaphot(
+                _Table = await self.get_table_from_snapshot(
                     table_class_name=drop_column.table_class_name,
                     app_name=self.app_name,
                     offset=-1,
@@ -552,9 +687,11 @@ class MigrationManager:
                 column_to_restore = _Table._meta.get_column_by_name(
                     drop_column.column_name
                 )
-                await _Table.alter().add_column(
-                    name=drop_column.column_name, column=column_to_restore
-                ).run()
+                await self._run_query(
+                    _Table.alter().add_column(
+                        name=drop_column.column_name, column=column_to_restore
+                    )
+                )
         else:
             for table_class_name in self.drop_columns.table_class_names:
                 columns = self.drop_columns.for_table_class_name(
@@ -564,17 +701,20 @@ class MigrationManager:
                 if not columns:
                     continue
 
-                _Table: t.Type[Table] = create_table_class(
+                _Table = create_table_class(
                     class_name=table_class_name,
-                    class_kwargs={"tablename": columns[0].tablename},
+                    class_kwargs={
+                        "tablename": columns[0].tablename,
+                        "schema": columns[0].schema,
+                    },
                 )
 
                 for column in columns:
-                    await _Table.alter().drop_column(
-                        column=column.column_name
-                    ).run()
+                    await self._run_query(
+                        _Table.alter().drop_column(column=column.column_name)
+                    )
 
-    async def _run_rename_tables(self, backwards=False):
+    async def _run_rename_tables(self, backwards: bool = False):
         for rename_table in self.rename_tables:
             class_name = (
                 rename_table.new_class_name
@@ -592,13 +732,19 @@ class MigrationManager:
                 else rename_table.new_tablename
             )
 
-            _Table: t.Type[Table] = create_table_class(
-                class_name=class_name, class_kwargs={"tablename": tablename}
+            _Table: type[Table] = create_table_class(
+                class_name=class_name,
+                class_kwargs={
+                    "tablename": tablename,
+                    "schema": rename_table.schema,
+                },
             )
 
-            await _Table.alter().rename_table(new_name=new_tablename).run()
+            await self._run_query(
+                _Table.alter().rename_table(new_name=new_tablename)
+            )
 
-    async def _run_rename_columns(self, backwards=False):
+    async def _run_rename_columns(self, backwards: bool = False):
         for table_class_name in self.rename_columns.table_class_names:
             columns = self.rename_columns.for_table_class_name(
                 table_class_name
@@ -607,9 +753,12 @@ class MigrationManager:
             if not columns:
                 continue
 
-            _Table: t.Type[Table] = create_table_class(
+            _Table: type[Table] = create_table_class(
                 class_name=table_class_name,
-                class_kwargs={"tablename": columns[0].tablename},
+                class_kwargs={
+                    "tablename": columns[0].tablename,
+                    "schema": columns[0].schema,
+                },
             )
 
             for rename_column in columns:
@@ -624,20 +773,25 @@ class MigrationManager:
                     else rename_column.new_db_column_name
                 )
 
-                await _Table.alter().rename_column(
-                    column=column,
-                    new_name=new_name,
-                ).run()
+                await self._run_query(
+                    _Table.alter().rename_column(
+                        column=column,
+                        new_name=new_name,
+                    )
+                )
 
-    async def _run_add_tables(self, backwards=False):
-        table_classes: t.List[t.Type[Table]] = []
+    async def _run_add_tables(self, backwards: bool = False):
+        table_classes: list[type[Table]] = []
         for add_table in self.add_tables:
-            add_columns: t.List[
-                AddColumnClass
-            ] = self.add_columns.for_table_class_name(add_table.class_name)
-            _Table: t.Type[Table] = create_table_class(
+            add_columns: list[AddColumnClass] = (
+                self.add_columns.for_table_class_name(add_table.class_name)
+            )
+            _Table: type[Table] = create_table_class(
                 class_name=add_table.class_name,
-                class_kwargs={"tablename": add_table.tablename},
+                class_kwargs={
+                    "tablename": add_table.tablename,
+                    "schema": add_table.schema,
+                },
                 class_members={
                     add_column.column._meta.name: add_column.column
                     for add_column in add_columns
@@ -650,12 +804,12 @@ class MigrationManager:
 
         if backwards:
             for _Table in reversed(sorted_table_classes):
-                await _Table.alter().drop_table(cascade=True).run()
+                await self._run_query(_Table.alter().drop_table(cascade=True))
         else:
             for _Table in sorted_table_classes:
-                await _Table.create_table().run()
+                await self._run_query(_Table.create_table())
 
-    async def _run_add_columns(self, backwards=False):
+    async def _run_add_columns(self, backwards: bool = False):
         """
         Add columns, which belong to existing tables
         """
@@ -668,31 +822,84 @@ class MigrationManager:
                     # be deleted.
                     continue
 
-                _Table: t.Type[Table] = create_table_class(
+                _Table = create_table_class(
                     class_name=add_column.table_class_name,
-                    class_kwargs={"tablename": add_column.tablename},
+                    class_kwargs={
+                        "tablename": add_column.tablename,
+                        "schema": add_column.schema,
+                    },
                 )
 
-                await _Table.alter().drop_column(add_column.column).run()
+                await self._run_query(
+                    _Table.alter().drop_column(add_column.column)
+                )
         else:
             for table_class_name in self.add_columns.table_class_names:
                 if table_class_name in [i.class_name for i in self.add_tables]:
                     continue  # No need to add columns to new tables
 
-                add_columns: t.List[
-                    AddColumnClass
-                ] = self.add_columns.for_table_class_name(table_class_name)
+                add_columns: list[AddColumnClass] = (
+                    self.add_columns.for_table_class_name(table_class_name)
+                )
 
+                ###############################################################
                 # Define the table, with the columns, so the metaclass
                 # sets up the columns correctly.
-                _Table: t.Type[Table] = create_table_class(
+
+                table_class_members = {
+                    add_column.column._meta.name: add_column.column
+                    for add_column in add_columns
+                }
+
+                # There's an extreme edge case, when we're adding a foreign
+                # key which references its own table, for example:
+                #
+                #   fk = ForeignKey('self')
+                #
+                # And that table has a custom primary key, for example:
+                #
+                #   id = UUID(primary_key=True)
+                #
+                # In this situation, we need to know the primary key of the
+                # table in order to correctly add this new foreign key.
+                for add_column in add_columns:
+                    if (
+                        isinstance(add_column.column, ForeignKey)
+                        and add_column.column._meta.params.get("references")
+                        == "self"
+                    ):
+                        try:
+                            existing_table = (
+                                await self.get_table_from_snapshot(
+                                    table_class_name=table_class_name,
+                                    app_name=self.app_name,
+                                    offset=-1,
+                                )
+                            )
+                        except ValueError:
+                            logger.error(
+                                "Unable to find primary key for the table - "
+                                "assuming Serial."
+                            )
+                        else:
+                            primary_key = existing_table._meta.primary_key
+
+                            table_class_members[primary_key._meta.name] = (
+                                primary_key
+                            )
+
+                        break
+
+                _Table = create_table_class(
                     class_name=add_columns[0].table_class_name,
-                    class_kwargs={"tablename": add_columns[0].tablename},
-                    class_members={
-                        add_column.column._meta.name: add_column.column
-                        for add_column in add_columns
+                    class_kwargs={
+                        "tablename": add_columns[0].tablename,
+                        "schema": add_columns[0].schema,
                     },
+                    class_members=table_class_members,
                 )
+
+                ###############################################################
 
                 for add_column in add_columns:
                     # We fetch the column from the Table, as the metaclass
@@ -700,56 +907,107 @@ class MigrationManager:
                     column = _Table._meta.get_column_by_name(
                         add_column.column._meta.name
                     )
-                    await _Table.alter().add_column(
-                        name=column._meta.name, column=column
-                    ).run()
+
+                    await self._run_query(
+                        _Table.alter().add_column(
+                            name=column._meta.name, column=column
+                        )
+                    )
                     if add_column.column._meta.index:
-                        await _Table.create_index([add_column.column]).run()
+                        await self._run_query(
+                            _Table.create_index([add_column.column])
+                        )
 
-    async def run(self):
-        print(f"  - {self.migration_id} [forwards]... ", end="")
+    async def _run_change_table_schema(self, backwards: bool = False):
+        from piccolo.schema import SchemaManager
+
+        schema_manager = SchemaManager()
+
+        for change_table_schema in self.change_table_schemas:
+            if backwards:
+                # Note, we don't try dropping any schemas we may have created.
+                # It's dangerous to do so, just in case the user manually
+                # added tables etc to the schema, and we delete them.
+
+                if (
+                    change_table_schema.old_schema
+                    and change_table_schema.old_schema != "public"
+                ):
+                    await self._run_query(
+                        schema_manager.create_schema(
+                            schema_name=change_table_schema.old_schema,
+                            if_not_exists=True,
+                        )
+                    )
+
+                await self._run_query(
+                    schema_manager.move_table(
+                        table_name=change_table_schema.tablename,
+                        new_schema=change_table_schema.old_schema or "public",
+                        current_schema=change_table_schema.new_schema,
+                    )
+                )
+
+            else:
+                if (
+                    change_table_schema.new_schema
+                    and change_table_schema.new_schema != "public"
+                ):
+                    await self._run_query(
+                        schema_manager.create_schema(
+                            schema_name=change_table_schema.new_schema,
+                            if_not_exists=True,
+                        )
+                    )
+
+                await self._run_query(
+                    schema_manager.move_table(
+                        table_name=change_table_schema.tablename,
+                        new_schema=change_table_schema.new_schema or "public",
+                        current_schema=change_table_schema.old_schema,
+                    )
+                )
+
+    async def run(self, backwards: bool = False):
+        direction = "backwards" if backwards else "forwards"
+        if self.preview:
+            direction = "preview " + direction
+        print(f"  - {self.migration_id} [{direction}]... ", end="")
 
         engine = engine_finder()
 
         if not engine:
             raise Exception("Can't find engine")
 
-        async with engine.transaction():
-
-            for raw in self.raw:
-                if inspect.iscoroutinefunction(raw):
-                    await raw()
+        async with (
+            engine.transaction()
+            if self.wrap_in_transaction
+            else SkippedTransaction()
+        ):
+            if not self.preview:
+                if direction == "backwards":
+                    raw_list = self.raw_backwards
                 else:
-                    raw()
+                    raw_list = self.raw
 
-            await self._run_add_tables()
-            await self._run_rename_tables()
-            await self._run_add_columns()
-            await self._run_drop_columns()
-            await self._run_drop_tables()
-            await self._run_rename_columns()
-            await self._run_alter_columns()
+                for raw in raw_list:
+                    if inspect.iscoroutinefunction(raw):
+                        await raw()
+                    else:
+                        raw()
 
-    async def run_backwards(self):
-        print(f" - {self.migration_id} [backwards]... ", end="")
+            await self._run_add_tables(backwards=backwards)
+            await self._run_change_table_schema(backwards=backwards)
+            await self._run_rename_tables(backwards=backwards)
+            await self._run_add_columns(backwards=backwards)
+            await self._run_drop_columns(backwards=backwards)
+            await self._run_drop_tables(backwards=backwards)
+            await self._run_rename_columns(backwards=backwards)
+            # We can remove this for cockroach when resolved.
+            # https://github.com/cockroachdb/cockroach/issues/49351
+            # "ALTER COLUMN TYPE is not supported inside a transaction"
+            if engine.engine_type != "cockroach":
+                await self._run_alter_columns(backwards=backwards)
 
-        engine = engine_finder()
-
-        if not engine:
-            raise Exception("Can't find engine")
-
-        async with engine.transaction():
-
-            for raw in self.raw_backwards:
-                if inspect.iscoroutinefunction(raw):
-                    await raw()
-                else:
-                    raw()
-
-            await self._run_add_columns(backwards=True)
-            await self._run_add_tables(backwards=True)
-            await self._run_drop_tables(backwards=True)
-            await self._run_rename_tables(backwards=True)
-            await self._run_drop_columns(backwards=True)
-            await self._run_rename_columns(backwards=True)
-            await self._run_alter_columns(backwards=True)
+        if engine.engine_type == "cockroach":
+            await self._run_alter_columns(backwards=backwards)

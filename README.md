@@ -4,8 +4,6 @@
 ![Release](https://github.com/piccolo-orm/piccolo/actions/workflows/release.yaml/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/piccolo-orm/badge/?version=latest)](https://piccolo-orm.readthedocs.io/en/latest/?badge=latest)
 [![PyPI](https://img.shields.io/pypi/v/piccolo?color=%2334D058&label=pypi)](https://pypi.org/project/piccolo/)
-[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/piccolo-orm/piccolo.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/piccolo-orm/piccolo/context:python)
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/piccolo-orm/piccolo.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/piccolo-orm/piccolo/alerts/)
 [![codecov](https://codecov.io/gh/piccolo-orm/piccolo/branch/master/graph/badge.svg?token=V19CWH7MXX)](https://codecov.io/gh/piccolo-orm/piccolo)
 
 Piccolo is a fast, user friendly ORM and query builder which supports asyncio. [Read the docs](https://piccolo-orm.readthedocs.io/en/latest/).
@@ -96,7 +94,7 @@ Let Piccolo scaffold you an ASGI web app, using Piccolo as the ORM:
 piccolo asgi new
 ```
 
-[Starlette](https://www.starlette.io/), [FastAPI](https://fastapi.tiangolo.com/), [BlackSheep](https://www.neoteroi.dev/blacksheep/) and [Xpresso](https://xpresso-api.dev/) are currently supported.
+[Starlette](https://www.starlette.io/), [FastAPI](https://fastapi.tiangolo.com/), [BlackSheep](https://www.neoteroi.dev/blacksheep/), [Litestar](https://litestar.dev/), [Esmerald](https://esmerald.dev/), [Lilya](https://lilya.dev), [Quart](https://quart.palletsprojects.com/en/latest/), [Falcon](https://falconframework.org/) and [Sanic](https://sanic.dev/en/) are currently supported.
 
 ## Are you a Django user?
 

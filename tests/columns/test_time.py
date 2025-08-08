@@ -1,10 +1,11 @@
 import datetime
 from functools import partial
-from unittest import TestCase
 
 from piccolo.columns.column_types import Time
 from piccolo.columns.defaults.time import TimeNow
 from piccolo.table import Table
+from piccolo.testing.test_case import TableTest
+from tests.base import engines_skip
 
 
 class MyTable(Table):
@@ -15,29 +16,24 @@ class MyTableDefault(Table):
     created_on = Time(default=TimeNow())
 
 
-class TestTime(TestCase):
-    def setUp(self):
-        MyTable.create_table().run_sync()
+class TestTime(TableTest):
+    tables = [MyTable]
 
-    def tearDown(self):
-        MyTable.alter().drop_table().run_sync()
-
+    @engines_skip("cockroach")
     def test_timestamp(self):
         created_on = datetime.datetime.now().time()
         row = MyTable(created_on=created_on)
         row.save().run_sync()
 
         result = MyTable.objects().first().run_sync()
+        assert result is not None
         self.assertEqual(result.created_on, created_on)
 
 
-class TestTimeDefault(TestCase):
-    def setUp(self):
-        MyTableDefault.create_table().run_sync()
+class TestTimeDefault(TableTest):
+    tables = [MyTableDefault]
 
-    def tearDown(self):
-        MyTableDefault.alter().drop_table().run_sync()
-
+    @engines_skip("cockroach")
     def test_timestamp(self):
         created_on = datetime.datetime.now().time()
         row = MyTableDefault()
@@ -46,6 +42,7 @@ class TestTimeDefault(TestCase):
         _datetime = partial(datetime.datetime, year=2020, month=1, day=1)
 
         result = MyTableDefault.objects().first().run_sync()
+        assert result is not None
         self.assertLess(
             _datetime(
                 hour=result.created_on.hour,

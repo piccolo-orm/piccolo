@@ -1,19 +1,17 @@
 import typing as t
 
-from piccolo_admin.endpoints import create_admin
-from piccolo_api.crud.serializers import create_pydantic_model
-from piccolo.engine import engine_finder
-
 from blacksheep.server import Application
 from blacksheep.server.bindings import FromJSON
-from blacksheep.server.responses import json
 from blacksheep.server.openapi.v3 import OpenAPIHandler
+from blacksheep.server.responses import json
 from openapidocs.v3 import Info
+from piccolo.engine import engine_finder
+from piccolo_admin.endpoints import create_admin
+from piccolo_api.crud.serializers import create_pydantic_model
 
 from home.endpoints import home
 from home.piccolo_app import APP_CONFIG
 from home.tables import Task
-
 
 app = Application()
 
@@ -47,7 +45,7 @@ TaskModelPartial: t.Any = create_pydantic_model(
 
 @app.router.get("/tasks/")
 async def tasks() -> t.List[TaskModelOut]:
-    return await Task.select().order_by(Task.id)
+    return await Task.select().order_by(Task._meta.primary_key, ascending=False)
 
 
 @app.router.post("/tasks/")
@@ -58,10 +56,8 @@ async def create_task(task_model: FromJSON[TaskModelIn]) -> TaskModelOut:
 
 
 @app.router.put("/tasks/{task_id}/")
-async def put_task(
-    task_id: int, task_model: FromJSON[TaskModelIn]
-) -> TaskModelOut:
-    task = await Task.objects().get(Task.id == task_id)
+async def put_task(task_id: int, task_model: FromJSON[TaskModelIn]) -> TaskModelOut:
+    task = await Task.objects().get(Task._meta.primary_key == task_id)
     if not task:
         return json({}, status=404)
 
@@ -77,7 +73,7 @@ async def put_task(
 async def patch_task(
     task_id: int, task_model: FromJSON[TaskModelPartial]
 ) -> TaskModelOut:
-    task = await Task.objects().get(Task.id == task_id)
+    task = await Task.objects().get(Task._meta.primary_key == task_id)
     if not task:
         return json({}, status=404)
 
@@ -92,7 +88,7 @@ async def patch_task(
 
 @app.router.delete("/tasks/{task_id}/")
 async def delete_task(task_id: int):
-    task = await Task.objects().get(Task.id == task_id)
+    task = await Task.objects().get(Task._meta.primary_key == task_id)
     if not task:
         return json({}, status=404)
 
@@ -119,3 +115,5 @@ async def close_database_connection_pool(application):
 
 app.on_start += open_database_connection_pool
 app.on_stop += close_database_connection_pool
+
+app.router.apply_routes()

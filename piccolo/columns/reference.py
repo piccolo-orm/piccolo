@@ -1,14 +1,15 @@
 """
 Dataclasses for storing lazy references between ForeignKey columns and tables.
 """
+
 from __future__ import annotations
 
 import importlib
 import inspect
-import typing as t
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Optional
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.column_types import ForeignKey
     from piccolo.table import Table
 
@@ -29,11 +30,14 @@ class LazyTableReference:
         If specified, the ``Table`` subclass is imported from this path.
         For example, ``'my_app.tables'``.
 
+        .. hint::
+            If the table is in the same file, you can pass in ``__name__``.
+
     """
 
     table_class_name: str
-    app_name: t.Optional[str] = None
-    module_path: t.Optional[str] = None
+    app_name: Optional[str] = None
+    module_path: Optional[str] = None
 
     def __post_init__(self):
         if self.app_name is None and self.module_path is None:
@@ -45,7 +49,7 @@ class LazyTableReference:
                 "Specify either app_name or module_path - not both."
             )
 
-    def resolve(self) -> t.Type[Table]:
+    def resolve(self) -> type[Table]:
         if self.app_name is not None:
             from piccolo.conf.apps import Finder
 
@@ -56,7 +60,7 @@ class LazyTableReference:
 
         if self.module_path:
             module = importlib.import_module(self.module_path)
-            table: t.Optional[t.Type[Table]] = getattr(
+            table: Optional[type[Table]] = getattr(
                 module, self.table_class_name, None
             )
 
@@ -87,9 +91,9 @@ class LazyTableReference:
 
 @dataclass
 class LazyColumnReferenceStore:
-    foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
+    foreign_key_columns: list[ForeignKey] = field(default_factory=list)
 
-    def for_table(self, table: t.Type[Table]) -> t.List[ForeignKey]:
+    def for_table(self, table: type[Table]) -> list[ForeignKey]:
         return [
             i
             for i in self.foreign_key_columns
@@ -97,7 +101,7 @@ class LazyColumnReferenceStore:
             and i._foreign_key_meta.references.resolve() is table
         ]
 
-    def for_tablename(self, tablename: str) -> t.List[ForeignKey]:
+    def for_tablename(self, tablename: str) -> list[ForeignKey]:
         return [
             i
             for i in self.foreign_key_columns

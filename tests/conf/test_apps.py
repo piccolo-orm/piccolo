@@ -1,12 +1,22 @@
+from __future__ import annotations
+
 import pathlib
+import tempfile
 from unittest import TestCase
 
 from piccolo.apps.user.tables import BaseUser
-from piccolo.conf.apps import AppConfig, AppRegistry, Finder, table_finder
+from piccolo.conf.apps import (
+    AppConfig,
+    AppRegistry,
+    Finder,
+    PiccoloConfUpdater,
+    table_finder,
+)
 from tests.example_apps.mega.tables import MegaTable, SmallTable
 from tests.example_apps.music.tables import (
     Band,
     Concert,
+    Instrument,
     Manager,
     Poster,
     RecordingStudio,
@@ -82,7 +92,7 @@ class TestAppConfig(TestCase):
         config = AppConfig(
             app_name="music", migrations_folder_path=pathlib.Path(__file__)
         )
-        self.assertEqual(config.migrations_folder_path, __file__)
+        self.assertEqual(config.resolved_migrations_folder_path, __file__)
 
     def test_get_table_with_name(self):
         """
@@ -111,6 +121,7 @@ class TestTableFinder(TestCase):
             [
                 "Band",
                 "Concert",
+                "Instrument",
                 "Manager",
                 "Poster",
                 "RecordingStudio",
@@ -137,6 +148,7 @@ class TestTableFinder(TestCase):
             [
                 "Band",
                 "Concert",
+                "Instrument",
                 "Manager",
                 "Poster",
                 "RecordingStudio",
@@ -180,6 +192,7 @@ class TestTableFinder(TestCase):
             [
                 "Band",
                 "Concert",
+                "Instrument",
                 "Manager",
                 "RecordingStudio",
                 "Shirt",
@@ -221,38 +234,46 @@ class TestFinder(TestCase):
         """
         finder = Finder()
 
-        self.assertEqual(
-            finder.get_table_classes(),
+        self.assertListEqual(
+            sorted(finder.get_table_classes(), key=lambda i: i.__name__),
             [
-                Manager,
                 Band,
-                Venue,
                 Concert,
-                Ticket,
-                Poster,
-                Shirt,
-                RecordingStudio,
+                Instrument,
+                Manager,
                 MegaTable,
-                SmallTable,
-            ],
-        )
-
-        self.assertEqual(
-            finder.get_table_classes(include_apps=["music"]),
-            [
-                Manager,
-                Band,
-                Venue,
-                Concert,
-                Ticket,
                 Poster,
-                Shirt,
                 RecordingStudio,
+                Shirt,
+                SmallTable,
+                Ticket,
+                Venue,
             ],
         )
 
-        self.assertEqual(
-            finder.get_table_classes(exclude_apps=["music"]),
+        self.assertListEqual(
+            sorted(
+                finder.get_table_classes(include_apps=["music"]),
+                key=lambda i: i.__name__,
+            ),
+            [
+                Band,
+                Concert,
+                Instrument,
+                Manager,
+                Poster,
+                RecordingStudio,
+                Shirt,
+                Ticket,
+                Venue,
+            ],
+        )
+
+        self.assertListEqual(
+            sorted(
+                finder.get_table_classes(exclude_apps=["music"]),
+                key=lambda i: i.__name__,
+            ),
             [
                 MegaTable,
                 SmallTable,
@@ -264,3 +285,76 @@ class TestFinder(TestCase):
             finder.get_table_classes(
                 exclude_apps=["music"], include_apps=["mega"]
             )
+
+    def test_sort_app_configs(self):
+        """
+        Make sure we can sort ``AppConfig`` based on their migration
+        dependencies.
+        """
+        app_config_1 = AppConfig(
+            app_name="app_1",
+            migrations_folder_path="",
+        )
+
+        app_config_1._migration_dependency_app_configs = [
+            AppConfig(
+                app_name="app_2",
+                migrations_folder_path="",
+            )
+        ]
+
+        app_config_2 = AppConfig(
+            app_name="app_2",
+            migrations_folder_path="",
+        )
+
+        app_config_2._migration_dependency_app_configs = []
+
+        sorted_app_configs = Finder().sort_app_configs(
+            [app_config_2, app_config_1]
+        )
+
+        self.assertListEqual(
+            [i.app_name for i in sorted_app_configs], ["app_2", "app_1"]
+        )
+
+
+class TestPiccoloConfUpdater(TestCase):
+
+    def test_modify_app_registry_src(self):
+        """
+        Make sure the `piccolo_conf.py` source code can be modified
+        successfully.
+        """
+        updater = PiccoloConfUpdater()
+
+        new_src = updater._modify_app_registry_src(
+            src="APP_REGISTRY = AppRegistry(apps=[])",
+            app_module="music.piccolo_app",
+        )
+        self.assertEqual(
+            new_src.strip(),
+            'APP_REGISTRY = AppRegistry(apps=["music.piccolo_app"])',
+        )
+
+    def test_register_app(self):
+        """
+        Make sure the new contents get written to disk.
+        """
+        temp_dir = tempfile.gettempdir()
+        piccolo_conf_path = pathlib.Path(temp_dir) / "piccolo_conf.py"
+
+        src = "APP_REGISTRY = AppRegistry(apps=[])"
+
+        with open(piccolo_conf_path, "wt") as f:
+            f.write(src)
+
+        updater = PiccoloConfUpdater(piccolo_conf_path=str(piccolo_conf_path))
+        updater.register_app(app_module="music.piccolo_app")
+
+        with open(piccolo_conf_path) as f:
+            contents = f.read().strip()
+
+        self.assertEqual(
+            contents, 'APP_REGISTRY = AppRegistry(apps=["music.piccolo_app"])'
+        )

@@ -1,5 +1,4 @@
 import dataclasses
-import typing as t
 
 from piccolo.apps.migrations.commands.base import BaseMigrationManager
 from piccolo.apps.migrations.tables import Migration
@@ -19,11 +18,11 @@ class CheckMigrationManager(BaseMigrationManager):
         self.app_name = app_name
         super().__init__()
 
-    async def get_migration_statuses(self) -> t.List[MigrationStatus]:
+    async def get_migration_statuses(self) -> list[MigrationStatus]:
         # Make sure the migration table exists, otherwise we'll get an error.
         await self.create_migration_table()
 
-        migration_statuses: t.List[MigrationStatus] = []
+        migration_statuses: list[MigrationStatus] = []
 
         app_modules = self.get_app_modules()
 
@@ -36,7 +35,7 @@ class CheckMigrationManager(BaseMigrationManager):
                 continue
 
             migration_modules = self.get_migration_modules(
-                app_config.migrations_folder_path
+                app_config.resolved_migrations_folder_path
             )
             ids = self.get_migration_ids(migration_modules)
             for _id in ids:
