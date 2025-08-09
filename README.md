@@ -102,8 +102,6 @@ piccolo asgi new
 
 Piccolo Admin is a powerful admin interface / content management system for Python, built on top of Piccolo.
 
-![Screenshot](https://raw.githubusercontent.com/piccolo-orm/piccolo_admin/master/docs/images/screenshot.png "Screenshot")
-
 It was created at a design agency to serve the needs of customers who demand a high quality, beautiful admin interface for their websites. It's a modern alternative to tools like Wordpress and Django Admin.
 
 It's built using the latest technologies, with Vue.js on the front end, and a powerful REST backend.
@@ -137,8 +135,6 @@ Includes a bunch of useful ASGI middleware:
 - CSRF
 - Content Security Policy (CSP)
 - And more
-
-It also contains excellent Pydantic support, allowing you to easily create Pydantic models based on your Piccolo tables.
 
 You can read the docs [here](https://piccolo-api.readthedocs.io/en/latest/).
 
