@@ -1,4 +1,4 @@
-import typing as t
+from typing import Any
 
 from litestar import Litestar, asgi, delete, get, patch, post
 from litestar.contrib.jinja import JinjaTemplateEngine
@@ -21,11 +21,11 @@ you can use `create_pydantic_model` as in other asgi templates
 
 from piccolo.utils.pydantic import create_pydantic_model
 
-TaskModelIn: t.Any = create_pydantic_model(
+TaskModelIn: Any = create_pydantic_model(
     table=Task,
     model_name="TaskModelIn",
 )
-TaskModelOut: t.Any = create_pydantic_model(
+TaskModelOut: Any = create_pydantic_model(
     table=Task,
     include_default_columns=True,
     model_name="TaskModelOut",
@@ -50,10 +50,28 @@ async def admin(scope: "Scope", receive: "Receive", send: "Send") -> None:
     await create_admin(tables=APP_CONFIG.table_classes)(scope, receive, send)
 
 
+# Check if the record is None. Use for query callback
+def check_record_not_found(result: dict[str, Any]) -> dict[str, Any]:
+    if result is None:
+        raise NotFoundException(detail="Record not found")
+    return result
+
+
 @get("/tasks", tags=["Task"])
-async def tasks() -> t.List[TaskModelOut]:
+async def tasks() -> list[TaskModelOut]:
     tasks = await Task.select().order_by(Task._meta.primary_key, ascending=False)
     return [TaskModelOut(**task) for task in tasks]
+
+
+@get("/tasks/{task_id:int}", tags=["Task"])
+async def single_task(task_id: int) -> TaskModelOut:
+    task = (
+        await Task.select()
+        .where(Task._meta.primary_key == task_id)
+        .first()
+        .callback(check_record_not_found)
+    )
+    return TaskModelOut(**task)
 
 
 @post("/tasks", tags=["Task"])
@@ -65,9 +83,12 @@ async def create_task(data: TaskModelIn) -> TaskModelOut:
 
 @patch("/tasks/{task_id:int}", tags=["Task"])
 async def update_task(task_id: int, data: TaskModelIn) -> TaskModelOut:
-    task = await Task.objects().get(Task._meta.primary_key == task_id)
-    if not task:
-        raise NotFoundException("Task does not exist")
+    task = (
+        await Task.objects()
+        .get(Task._meta.primary_key == task_id)
+        .callback(check_record_not_found)
+    )
+
     for key, value in data.model_dump().items():
         setattr(task, key, value)
 
@@ -77,9 +98,11 @@ async def update_task(task_id: int, data: TaskModelIn) -> TaskModelOut:
 
 @delete("/tasks/{task_id:int}", tags=["Task"])
 async def delete_task(task_id: int) -> None:
-    task = await Task.objects().get(Task._meta.primary_key == task_id)
-    if not task:
-        raise NotFoundException("Task does not exist")
+    task = (
+        await Task.objects()
+        .get(Task._meta.primary_key == task_id)
+        .callback(check_record_not_found)
+    )
     await task.remove()
 
 
@@ -104,6 +127,7 @@ app = Litestar(
         admin,
         home,
         tasks,
+        single_task,
         create_task,
         update_task,
         delete_task,
