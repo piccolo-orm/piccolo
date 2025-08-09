@@ -1,7 +1,8 @@
 from typing import Any
+
 from litestar import Litestar, asgi, delete, get, patch, post
-from litestar.exceptions import NotFoundException
 from litestar.contrib.jinja import JinjaTemplateEngine
+from litestar.exceptions import NotFoundException
 from litestar.static_files import StaticFilesConfig
 from litestar.template import TemplateConfig
 from litestar.types import Receive, Scope, Send
