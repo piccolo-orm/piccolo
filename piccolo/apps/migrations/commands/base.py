@@ -31,7 +31,7 @@ class BaseMigrationManager(Finder):
         return False
 
     def get_migration_modules(
-        self, folder_path: str
+        self, folder_path: Optional[str] = None
     ) -> dict[str, MigrationModule]:
         """
         Imports the migration modules in the given folder path, and returns
@@ -40,7 +40,8 @@ class BaseMigrationManager(Finder):
         """
         migration_modules = {}
 
-        sys.path.insert(0, folder_path)
+        if folder_path is not None:
+            sys.path.insert(0, folder_path)
 
         folder_contents = os.listdir(folder_path)
         excluded = ("__init__.py",)
