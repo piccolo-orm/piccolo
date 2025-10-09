@@ -158,7 +158,8 @@ class MathDelegate:
                 raise ValueError(
                     "Adding values across joins isn't currently supported."
                 )
-            return QueryString(f"{column_name} {operator} {value._meta.db_column_name}")
+            other_column_name = value._meta.db_column_name
+            return QueryString(f"{column_name} {operator} {other_column_name}")
         elif isinstance(value, (int, float)):
             if reverse:
                 return QueryString(f"{{}} {operator} {column_name}", value)
