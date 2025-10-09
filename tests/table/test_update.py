@@ -158,6 +158,7 @@ class TestUpdate(DBTestCase):
 
 class MyTable(Table):
     integer = Integer(null=True)
+    other_integer = Integer(null=True)
     timestamp = Timestamp(null=True)
     timestamptz = Timestamptz(null=True)
     date = Date(null=True)
