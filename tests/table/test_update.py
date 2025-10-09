@@ -304,6 +304,27 @@ TEST_CASES = [
         expected=995,
     ),
     OperatorTestCase(
+        description="Add Integer Columns",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=MyTable.integer + MyTable.other_integer,
+        expected=1005,
+    ),
+    OperatorTestCase(
+        description="Integer > Other Integer",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=MyTable.integer > MyTable.other_integer,
+        expected=True,
+    ),
+    OperatorTestCase(
+        description="Integer < Other Integer",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=MyTable.integer < MyTable.other_integer,
+        expected=False,
+    ),
+    OperatorTestCase(
         description="Multiply Integer",
         column=MyTable.integer,
         initial=1000,
