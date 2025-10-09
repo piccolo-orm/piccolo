@@ -158,7 +158,7 @@ class TestUpdate(DBTestCase):
 
 class MyTable(Table):
     integer = Integer(null=True)
-    other_integer = Integer(null=True)
+    other_integer = Integer(null=True, default=5)
     timestamp = Timestamp(null=True)
     timestamptz = Timestamptz(null=True)
     date = Date(null=True)
@@ -295,6 +295,13 @@ TEST_CASES = [
         initial=1000,
         querystring=2000 - MyTable.integer,
         expected=1000,
+    ),
+    OperatorTestCase(
+        description="Subtract Integer Columns",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=MyTable.integer - MyTable.other_integer,
+        expected=995,
     ),
     OperatorTestCase(
         description="Multiply Integer",
@@ -544,6 +551,21 @@ class TestOperators(TestCase):
 
             # Clean up
             MyTable.delete(force=True).run_sync()
+
+    def test_subtract_two_integer_columns(self):
+        MyTable(integer=10, other_integer=5).save().run_sync()
+
+        MyTable.update(
+            {MyTable.integer: MyTable.integer + MyTable.other_integer},
+            force=True,
+        ).run_sync()
+
+        instance = MyTable.objects().first().run_sync()
+        self.assertIsNotNone(instance)
+        self.assertEqual(instance.integer, 15)
+        self.assertEqual(instance.other_integer, 5)
+
+        MyTable.delete(force=True).run_sync()
 
     @sqlite_only
     def test_edge_cases(self):
