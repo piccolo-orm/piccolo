@@ -1372,6 +1372,15 @@ class Table(metaclass=TableMetaclass):
             columns.append(
                 f"{col._meta.name} = {col.__class__.__name__}({params_string})"
             )
+
+        for m2m_relationship in cls._meta.m2m_relationships:
+            joining_table_name = (
+                m2m_relationship._meta.resolved_joining_table.__name__
+            )
+            columns.append(
+                f"{m2m_relationship._meta.name} = M2M({joining_table_name})"
+            )
+
         columns_string = spacer.join(columns)
         tablename = repr(cls._meta.tablename)
 
