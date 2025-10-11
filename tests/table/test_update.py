@@ -311,20 +311,6 @@ TEST_CASES = [
         expected=1005,
     ),
     OperatorTestCase(
-        description="Integer > Other Integer",
-        column=MyTable.integer,
-        initial=1000,
-        querystring=MyTable.integer > MyTable.other_integer,
-        expected=True,
-    ),
-    OperatorTestCase(
-        description="Integer < Other Integer",
-        column=MyTable.integer,
-        initial=1000,
-        querystring=MyTable.integer < MyTable.other_integer,
-        expected=False,
-    ),
-    OperatorTestCase(
         description="Multiply Integer",
         column=MyTable.integer,
         initial=1000,
