@@ -12,7 +12,7 @@ SERVERS = ["uvicorn", "Hypercorn", "granian"]
 ROUTER_DEPENDENCIES = {
     "starlette": ["starlette"],
     "fastapi": ["fastapi"],
-    "blacksheep": ["blacksheep"],
+    "blacksheep": ["blacksheep[full]"],
     "litestar": ["litestar"],
     "esmerald": ["esmerald"],
     "lilya": ["lilya"],
