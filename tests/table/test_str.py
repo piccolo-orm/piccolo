@@ -1,10 +1,10 @@
 from unittest import TestCase
 
-from tests.example_apps.music.tables import Manager
+from piccolo.apps.playground.commands.run import Genre, Manager
 
 
 class TestTableStr(TestCase):
-    def test_str(self):
+    def test_all_attributes(self):
         self.assertEqual(
             Manager._table_str(),
             (
@@ -14,6 +14,7 @@ class TestTableStr(TestCase):
             ),
         )
 
+    def test_abbreviated(self):
         self.assertEqual(
             Manager._table_str(abbreviated=True),
             (
@@ -23,5 +24,23 @@ class TestTableStr(TestCase):
             ),
         )
 
-        # We should also be able to print it directly.
+    def test_m2m(self):
+        """
+        Make sure M2M relationships appear in the Table string.
+        """
+
+        self.assertEqual(
+            Genre._table_str(abbreviated=True),
+            (
+                "class Genre(Table):\n"
+                "    id = Serial()\n"
+                "    name = Varchar()\n"
+                "    bands = M2M(GenreToBand)\n"
+            ),
+        )
+
+    def test_print(self):
+        """
+        Make sure we can print it directly without any errors.
+        """
         print(Manager)
