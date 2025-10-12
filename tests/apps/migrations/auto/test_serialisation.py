@@ -61,13 +61,11 @@ class TestUniqueGlobals:
         assert getattr(UniqueGlobalNames, "COLUMN_ARRAY", "Array")
 
     def test_warn_if_is_conflicting_name(self):
-        with pytest.warns(None) as recorded_warnings:
+        with warnings.catch_warnings() as recorded_warnings:
+            warnings.simplefilter("error")
             UniqueGlobalNames.warn_if_is_conflicting_name(
                 "SuperMassiveBlackHole"
             )
-
-            if len(recorded_warnings) != 0:
-                pytest.fail("Unexpected warning!")
 
         with pytest.warns(
             UniqueGlobalNameConflictWarning
@@ -97,13 +95,11 @@ class TestUniqueGlobals:
             def warn_if_is_conflicting_with_global_name(self):
                 warnings.warn("test", UniqueGlobalNameConflictWarning)
 
-        with pytest.warns(None) as recorded_warnings:
+        with warnings.catch_warnings() as recorded_warnings:
+            warnings.simplefilter("error")
             UniqueGlobalNames.warn_if_are_conflicting_objects(
                 [ConflictingCls1(), ConflictingCls2()]
             )
-
-            if len(recorded_warnings) != 0:
-                pytest.fail("Unexpected warning!")
 
         with pytest.warns(
             UniqueGlobalNameConflictWarning
@@ -124,11 +120,9 @@ class TestImport:
         assert repr(Import(module="a.b", target="c")) == "from a.b import c"
 
     def test_warn_if_is_conflicting_with_global_name_with_module_only(self):
-        with pytest.warns(None) as recorded_warnings:
+        with warnings.catch_warnings() as recorded_warnings:
+            warnings.simplefilter("error")
             Import(module="a.b.c").warn_if_is_conflicting_with_global_name()
-
-            if len(recorded_warnings) != 0:
-                pytest.fail("Unexpected warning!")
 
         with pytest.warns(
             UniqueGlobalNameConflictWarning
@@ -138,24 +132,20 @@ class TestImport:
             if len(recorded_warnings) != 1:
                 pytest.fail("Expected 1 warning!")
 
-        with pytest.warns(None) as recorded_warnings:
+        with warnings.catch_warnings() as recorded_warnings:
+            warnings.simplefilter("error")
             Import(
                 module="Varchar", expect_conflict_with_global_name="Varchar"
             ).warn_if_is_conflicting_with_global_name()
 
-            if len(recorded_warnings) != 0:
-                pytest.fail("Unexpected warning!")
-
     def test_warn_if_is_conflicting_with_global_name_with_module_and_target(
         self,
     ):
-        with pytest.warns(None) as recorded_warnings:
+        with warnings.catch_warnings() as recorded_warnings:
+            warnings.simplefilter("error")
             Import(
                 module="a.b", target="c"
             ).warn_if_is_conflicting_with_global_name()
-
-            if len(recorded_warnings) != 0:
-                pytest.fail("Unexpected warning!")
 
         with pytest.warns(
             UniqueGlobalNameConflictWarning
@@ -167,15 +157,13 @@ class TestImport:
             if len(recorded_warnings) != 1:
                 pytest.fail("Expected 1 warning!")
 
-        with pytest.warns(None) as recorded_warnings:
+        with warnings.catch_warnings() as recorded_warnings:
+            warnings.simplefilter("error")
             Import(
                 module="a.b",
                 target="Varchar",
                 expect_conflict_with_global_name="Varchar",
             ).warn_if_is_conflicting_with_global_name()
-
-            if len(recorded_warnings) != 0:
-                pytest.fail("Unexpected warning!")
 
 
 def example_function():
