@@ -4,7 +4,7 @@ on:
     push:
         branches: ["master", "v1"]
         paths-ignore:
-          - "docs/**"
+            - "docs/**"
     pull_request:
         branches: ["master", "v1"]
         paths-ignore:
@@ -86,7 +86,7 @@ jobs:
         strategy:
             matrix:
                 python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-                postgres-version: [12, 13, 14, 15, 16, 17]
+                postgres-version: [13, 14, 15, 16, 17, 18]
 
         # Service containers to run with `container-job`
         services:
