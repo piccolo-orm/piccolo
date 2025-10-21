@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+from piccolo.apps.migrations.commands.base import Migration
 from piccolo.columns import Varchar
 from piccolo.table import Table
 from piccolo.table_reflection import TableStorage
@@ -11,6 +12,7 @@ from tests.example_apps.music.tables import Band, Manager
 @engines_only("postgres", "cockroach")
 class TestTableStorage(TestCase):
     def setUp(self) -> None:
+        Migration.raw("DROP TABLE IF EXISTS migration").run_sync()
         self.table_storage = TableStorage()
         for table_class in (Manager, Band):
             table_class.create_table().run_sync()
@@ -48,7 +50,7 @@ class TestTableStorage(TestCase):
             self.assertEqual(col_1._meta.unique, col_2._meta.unique)
 
     def test_reflect_all_tables(self):
-        run_sync(self.table_storage.reflect(exclude=["migration"]))
+        run_sync(self.table_storage.reflect())
         reflected_tables = self.table_storage.tables
         self.assertEqual(len(reflected_tables), 2)
         for table_class in (Manager, Band):
@@ -57,17 +59,13 @@ class TestTableStorage(TestCase):
             )
 
     def test_reflect_with_include(self):
-        run_sync(
-            self.table_storage.reflect(
-                include=["manager"], exclude=["migration"]
-            )
-        )
+        run_sync(self.table_storage.reflect(include=["manager"]))
         reflected_tables = self.table_storage.tables
         self.assertEqual(len(reflected_tables), 1)
         self._compare_table_columns(reflected_tables["manager"], Manager)
 
     def test_reflect_with_exclude(self):
-        run_sync(self.table_storage.reflect(exclude=["band", "migration"]))
+        run_sync(self.table_storage.reflect(exclude=["band"]))
         reflected_tables = self.table_storage.tables
         self.assertEqual(len(reflected_tables), 1)
         self._compare_table_columns(reflected_tables["manager"], Manager)
@@ -78,7 +76,7 @@ class TestTableStorage(TestCase):
         self._compare_table_columns(table, Manager)
 
     def test_get_unavailable_table(self):
-        run_sync(self.table_storage.reflect(exclude=["band", "migration"]))
+        run_sync(self.table_storage.reflect(exclude=["band"]))
         # make sure only one table is present
         self.assertEqual(len(self.table_storage.tables), 1)
         table = run_sync(self.table_storage.get_table(tablename="band"))
