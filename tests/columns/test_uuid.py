@@ -1,19 +1,22 @@
 import uuid
 
 from piccolo.columns.column_types import UUID
+from piccolo.columns.defaults.uuid import UUID7
 from piccolo.table import Table
-from piccolo.testing.test_case import TableTest
+from piccolo.testing.test_case import AsyncTableTest
 
 
 class MyTable(Table):
     uuid = UUID()
+    uuid_v7 = UUID(default=UUID7())
 
 
-class TestUUID(TableTest):
+class TestUUID(AsyncTableTest):
     tables = [MyTable]
 
-    def test_return_type(self):
+    async def test_return_type(self):
         row = MyTable()
-        row.save().run_sync()
+        await row.save()
 
         self.assertIsInstance(row.uuid, uuid.UUID)
+        self.assertIsInstance(row.uuid_v7, uuid.UUID)
