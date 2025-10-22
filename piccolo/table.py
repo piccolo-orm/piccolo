@@ -6,6 +6,7 @@ import types
 import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from graphlib import TopologicalSorter
 from typing import TYPE_CHECKING, Any, Optional, Union, cast, overload
 
 from piccolo.columns import Column
@@ -50,7 +51,6 @@ from piccolo.query.methods.objects import GetRelated, UpdateSelf
 from piccolo.query.methods.refresh import Refresh
 from piccolo.querystring import QueryString
 from piccolo.utils import _camel_to_snake
-from piccolo.utils.graphlib import TopologicalSorter
 from piccolo.utils.sql_values import convert_to_sql_value
 from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import colored_warning
