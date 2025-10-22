@@ -41,7 +41,7 @@ class UUID7(Default):
     @property
     def postgres(self):
         """
-        Supported in Python 3.14 and above.
+        Supported in Postgres 18 and above.
         """
         return "uuidv7()"
 
