@@ -1396,7 +1396,7 @@ class Table(metaclass=TableMetaclass):
 
         for m2m_relationship in cls._meta.m2m_relationships:
             joining_table_name = (
-                m2m_relationship._meta.resolved_joining_table.__name__
+                m2m_relationship._meta.resolved_joining_table.__name__  # type: ignore  # noqa: E501
             )
             columns.append(
                 f"{m2m_relationship._meta.name} = M2M({joining_table_name})"
