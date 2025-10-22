@@ -232,14 +232,18 @@ class TestOnConflict(TestCase):
         """
         Band = self.Band
 
-        constraint_name = Band.raw(
-            """
+        constraint_name = [
+            i["constraint_name"]
+            for i in Band.raw(
+                """
             SELECT constraint_name
             FROM information_schema.constraint_column_usage
             WHERE column_name = 'name'
                 AND table_name = 'band';
             """
-        ).run_sync()[0]["constraint_name"]
+            ).run_sync()
+            if i["constraint_name"].endswith("_key")
+        ][0]
 
         query = Band.insert(Band(name=self.band.name)).on_conflict(
             target=constraint_name,
