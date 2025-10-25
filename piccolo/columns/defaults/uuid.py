@@ -47,8 +47,11 @@ class UUID7(Default):
 
     @property
     def cockroach(self):
-        # Supported?
-        return self.postgres
+        """
+        Unfortunately CockroachDB doesn't current support this, but it will
+        probably change in the future.
+        """
+        raise NotImplementedError()
 
     @property
     def sqlite(self):
