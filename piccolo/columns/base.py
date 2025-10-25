@@ -361,6 +361,11 @@ class ColumnMeta:
 
 
 class ColumnKwargs(TypedDict, total=False):
+    """
+    Additional arguments which can be passed to :class:`Column` from
+    subclasses.
+    """
+
     null: bool
     primary_key: bool
     unique: bool
