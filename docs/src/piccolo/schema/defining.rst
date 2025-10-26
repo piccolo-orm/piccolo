@@ -31,7 +31,7 @@ Primary Key
 -----------
 
 Piccolo tables are automatically given a primary key column called ``id``,
-which is an auto incrementing integer.
+which is an auto incrementing integer (a ``Serial(primary_key=True)`` column).
 
 There is currently experimental support for specifying a custom primary key
 column. For example:
