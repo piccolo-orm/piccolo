@@ -851,7 +851,7 @@ class Table(metaclass=TableMetaclass):
         )
         return f"<{self.__class__.__name__}: {pk}>"
 
-    def __eq__(self, other: t.Any) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """
         Lets us check if two ``Table`` instances represent the same row in the
         database, based on their primary key value::
