@@ -9,6 +9,7 @@ import traceback
 from abc import abstractmethod
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from graphlib import TopologicalSorter
 from importlib import import_module
 from types import ModuleType
 from typing import Optional, Union, cast
@@ -18,7 +19,6 @@ import black
 from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.engine.base import Engine
 from piccolo.table import Table
-from piccolo.utils.graphlib import TopologicalSorter
 from piccolo.utils.warnings import Level, colored_warning
 
 
