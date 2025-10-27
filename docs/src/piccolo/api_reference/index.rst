@@ -30,6 +30,10 @@ Column
     :members:
 
 
+.. autoclass:: ColumnKwargs
+    :members:
+    :undoc-members:
+
 -------------------------------------------------------------------------------
 
 Aggregate functions

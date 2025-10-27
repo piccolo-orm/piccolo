@@ -670,6 +670,21 @@ def serialise_params(params: dict[str, Any]) -> SerialisedParams:
                     expect_conflict_with_global_name=UniqueGlobalNames.TABLE,
                 )
             )
+            # also add missing primary key to extra_imports when creating a
+            # migration with a ForeignKey that uses a LazyTableReference
+            # https://github.com/piccolo-orm/piccolo/issues/865
+            primary_key_class = table_type._meta.primary_key.__class__
+            extra_imports.append(
+                Import(
+                    module=primary_key_class.__module__,
+                    target=primary_key_class.__name__,
+                    expect_conflict_with_global_name=getattr(
+                        UniqueGlobalNames,
+                        f"COLUMN_{primary_key_class.__name__.upper()}",
+                        None,
+                    ),
+                )
+            )
             continue
 
         # Replace any Table class values into class and table names
