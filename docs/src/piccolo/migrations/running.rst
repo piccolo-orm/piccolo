@@ -13,7 +13,6 @@ When the migration is run, the forwards function is executed. To do this:
 
     piccolo migrations forwards my_app
 
-
 Multiple apps
 ~~~~~~~~~~~~~
 
@@ -22,6 +21,13 @@ If you have multiple apps you can run them all using:
 .. code-block:: bash
 
     piccolo migrations forwards all
+
+Migration table
+~~~~~~~~~~~~~~~
+
+When running the migrations, Piccolo will automatically create a database table
+called ``migration`` if it doesn't already exist. Each time a migration is
+succesfully ran, a new row is added to this table.
 
 .. _FakeMigration:
 

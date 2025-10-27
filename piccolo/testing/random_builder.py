@@ -1,4 +1,5 @@
 import datetime
+import decimal
 import enum
 import random
 import string
@@ -42,6 +43,17 @@ class RandomBuilder:
     @classmethod
     def next_float(cls, minimum=0, maximum=2147483647, scale=5) -> float:
         return round(random.uniform(minimum, maximum), scale)
+
+    @classmethod
+    def next_decimal(
+        cls, precision: int = 4, scale: int = 2
+    ) -> decimal.Decimal:
+        # For precision 4 and scale 2, maximum needs to be 99.99.
+        maximum = (10 ** (precision - scale)) - (10 ** (-1 * scale))
+        float_number = cls.next_float(maximum=maximum, scale=scale)
+        # We convert float_number to a string first, otherwise the decimal
+        # value is slightly off due to floating point precision.
+        return decimal.Decimal(str(float_number))
 
     @classmethod
     def next_int(cls, minimum=0, maximum=2147483647) -> int:

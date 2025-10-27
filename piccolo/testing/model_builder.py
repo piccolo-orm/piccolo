@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import decimal
 import json
 from collections.abc import Callable
 from decimal import Decimal
@@ -20,6 +21,7 @@ class ModelBuilder:
         datetime.date: RandomBuilder.next_date,
         datetime.datetime: RandomBuilder.next_datetime,
         float: RandomBuilder.next_float,
+        decimal.Decimal: RandomBuilder.next_decimal,
         int: RandomBuilder.next_int,
         str: RandomBuilder.next_str,
         datetime.time: RandomBuilder.next_time,
@@ -163,8 +165,8 @@ class ModelBuilder:
         random_value: Any
         if column.value_type == Decimal:
             precision, scale = column._meta.params["digits"] or (4, 2)
-            random_value = RandomBuilder.next_float(
-                maximum=10 ** (precision - scale), scale=scale
+            random_value = RandomBuilder.next_decimal(
+                precision=precision, scale=scale
             )
         elif column.value_type == datetime.datetime:
             tz_aware = getattr(column, "tz_aware", False)

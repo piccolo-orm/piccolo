@@ -1,10 +1,9 @@
-import typing as t
+from typing import Any
 
+from blacksheep.exceptions import HTTPException
 from blacksheep.server import Application
 from blacksheep.server.bindings import FromJSON
-from blacksheep.server.openapi.v3 import OpenAPIHandler
-from blacksheep.server.responses import json
-from openapidocs.v3 import Info
+from blacksheep.server.openapi.v3 import OpenAPIHandler, Info
 from piccolo.engine import engine_finder
 from piccolo_admin.endpoints import create_admin
 from piccolo_api.crud.serializers import create_pydantic_model
@@ -34,38 +33,67 @@ app.serve_files("static", root_path="/static")
 app.router.add_get("/", home)
 
 
-TaskModelIn: t.Any = create_pydantic_model(table=Task, model_name="TaskModelIn")
-TaskModelOut: t.Any = create_pydantic_model(
-    table=Task, include_default_columns=True, model_name="TaskModelOut"
+TaskModelIn: Any = create_pydantic_model(
+    table=Task,
+    model_name="TaskModelIn",
 )
-TaskModelPartial: t.Any = create_pydantic_model(
-    table=Task, model_name="TaskModelPartial", all_optional=True
+TaskModelOut: Any = create_pydantic_model(
+    table=Task,
+    include_default_columns=True,
+    model_name="TaskModelOut",
 )
+TaskModelPartial: Any = (
+    create_pydantic_model(
+        table=Task,
+        model_name="TaskModelPartial",
+        all_optional=True,
+    ),
+)
+
+
+# Check if the record is None. Use for query callback
+def check_record_not_found(result: dict[str, Any]) -> dict[str, Any]:
+    if result is None:
+        raise HTTPException(status=404)
+    return result
 
 
 @app.router.get("/tasks/")
-async def tasks() -> t.List[TaskModelOut]:
-    return await Task.select().order_by(Task._meta.primary_key, ascending=False)
+async def tasks() -> list[TaskModelOut]:
+    tasks = await Task.select().order_by(Task._meta.primary_key, ascending=False)
+    return [TaskModelOut(**task) for task in tasks]
+
+
+@app.router.get("/tasks/{task_id}/")
+async def single_task(task_id: int) -> TaskModelOut:
+    task = (
+        await Task.select()
+        .where(Task._meta.primary_key == task_id)
+        .first()
+        .callback(check_record_not_found)
+    )
+    return TaskModelOut(**task)
 
 
 @app.router.post("/tasks/")
 async def create_task(task_model: FromJSON[TaskModelIn]) -> TaskModelOut:
-    task = Task(**task_model.value.dict())
+    task = Task(**task_model.value.model_dump())
     await task.save()
     return TaskModelOut(**task.to_dict())
 
 
 @app.router.put("/tasks/{task_id}/")
 async def put_task(task_id: int, task_model: FromJSON[TaskModelIn]) -> TaskModelOut:
-    task = await Task.objects().get(Task._meta.primary_key == task_id)
-    if not task:
-        return json({}, status=404)
+    task = (
+        await Task.objects()
+        .get(Task._meta.primary_key == task_id)
+        .callback(check_record_not_found)
+    )
 
-    for key, value in task_model.value.dict().items():
+    for key, value in task_model.value.model_dump().items():
         setattr(task, key, value)
 
     await task.save()
-
     return TaskModelOut(**task.to_dict())
 
 
@@ -73,28 +101,28 @@ async def put_task(task_id: int, task_model: FromJSON[TaskModelIn]) -> TaskModel
 async def patch_task(
     task_id: int, task_model: FromJSON[TaskModelPartial]
 ) -> TaskModelOut:
-    task = await Task.objects().get(Task._meta.primary_key == task_id)
-    if not task:
-        return json({}, status=404)
+    task = (
+        await Task.objects()
+        .get(Task._meta.primary_key == task_id)
+        .callback(check_record_not_found)
+    )
 
-    for key, value in task_model.value.dict().items():
+    for key, value in task_model.value.model_dump().items():
         if value is not None:
             setattr(task, key, value)
 
     await task.save()
-
     return TaskModelOut(**task.to_dict())
 
 
 @app.router.delete("/tasks/{task_id}/")
-async def delete_task(task_id: int):
-    task = await Task.objects().get(Task._meta.primary_key == task_id)
-    if not task:
-        return json({}, status=404)
-
+async def delete_task(task_id: int) -> None:
+    task = (
+        await Task.objects()
+        .get(Task._meta.primary_key == task_id)
+        .callback(check_record_not_found)
+    )
     await task.remove()
-
-    return json({})
 
 
 async def open_database_connection_pool(application):

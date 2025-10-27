@@ -1,4 +1,4 @@
-import typing as t
+from typing import Any
 from http import HTTPStatus
 
 from hypercorn.middleware import DispatcherMiddleware
@@ -6,6 +6,7 @@ from piccolo.engine import engine_finder
 from piccolo_admin.endpoints import create_admin
 from piccolo_api.crud.serializers import create_pydantic_model
 from quart import Quart
+from quart.helpers import abort
 from quart_schema import (
     Info,
     QuartSchema,
@@ -24,15 +25,22 @@ app = Quart(__name__, static_folder="static")
 QuartSchema(app, info=Info(title="Quart API", version="0.1.0"))
 
 
-TaskModelIn: t.Any = create_pydantic_model(
+TaskModelIn: Any = create_pydantic_model(
     table=Task,
     model_name="TaskModelIn",
 )
-TaskModelOut: t.Any = create_pydantic_model(
+TaskModelOut: Any = create_pydantic_model(
     table=Task,
     include_default_columns=True,
     model_name="TaskModelOut",
 )
+
+
+# Check if the record is None. Use for query callback
+def check_record_not_found(result: dict[str, Any]) -> dict[str, Any]:
+    if result is None:
+        abort(code=HTTPStatus.NOT_FOUND)
+    return result
 
 
 @app.get("/")
@@ -42,10 +50,24 @@ def home():
 
 
 @app.get("/tasks/")
-@validate_response(t.List[TaskModelOut])
+@validate_response(list[TaskModelOut])
 @tag(["Task"])
 async def tasks():
-    return await Task.select().order_by(Task._meta.primary_key, ascending=False)
+    tasks = await Task.select().order_by(Task._meta.primary_key, ascending=False)
+    return [TaskModelOut(**task) for task in tasks], HTTPStatus.OK
+
+
+@app.get("/tasks/<int:task_id>/")
+@validate_response(TaskModelOut)
+@tag(["Task"])
+async def single_task(task_id: int):
+    task = (
+        await Task.select()
+        .where(Task._meta.primary_key == task_id)
+        .first()
+        .callback(check_record_not_found)
+    )
+    return TaskModelOut(**task), HTTPStatus.OK
 
 
 @app.post("/tasks/")
@@ -63,28 +85,29 @@ async def create_task(data: TaskModelIn):
 @validate_response(TaskModelOut)
 @tag(["Task"])
 async def update_task(task_id: int, data: TaskModelIn):
-    task = await Task.objects().get(Task._meta.primary_key == task_id)
-    if not task:
-        return {}, HTTPStatus.NOT_FOUND
+    task = (
+        await Task.objects()
+        .get(Task._meta.primary_key == task_id)
+        .callback(check_record_not_found)
+    )
 
     for key, value in data.model_dump().items():
         setattr(task, key, value)
 
     await task.save()
 
-    return task.to_dict(), HTTPStatus.OK
+    return TaskModelOut(**task.to_dict()), HTTPStatus.OK
 
 
 @app.delete("/tasks/<int:task_id>/")
-@validate_response(TaskModelOut)
 @tag(["Task"])
 async def delete_task(task_id: int):
-    task = await Task.objects().get(Task._meta.primary_key == task_id)
-    if not task:
-        return {}, HTTPStatus.NOT_FOUND
-
+    task = (
+        await Task.objects()
+        .get(Task._meta.primary_key == task_id)
+        .callback(check_record_not_found)
+    )
     await task.remove()
-
     return {}, HTTPStatus.OK
 
 
