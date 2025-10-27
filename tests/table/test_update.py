@@ -158,6 +158,7 @@ class TestUpdate(DBTestCase):
 
 class MyTable(Table):
     integer = Integer(null=True)
+    other_integer = Integer(null=True, default=5)
     timestamp = Timestamp(null=True)
     timestamptz = Timestamptz(null=True)
     date = Date(null=True)
@@ -294,6 +295,20 @@ TEST_CASES = [
         initial=1000,
         querystring=2000 - MyTable.integer,
         expected=1000,
+    ),
+    OperatorTestCase(
+        description="Subtract Integer Columns",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=MyTable.integer - MyTable.other_integer,
+        expected=995,
+    ),
+    OperatorTestCase(
+        description="Add Integer Columns",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=MyTable.integer + MyTable.other_integer,
+        expected=1005,
     ),
     OperatorTestCase(
         description="Multiply Integer",
