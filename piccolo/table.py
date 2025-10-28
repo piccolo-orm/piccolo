@@ -6,6 +6,7 @@ import types
 import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from graphlib import TopologicalSorter
 from typing import TYPE_CHECKING, Any, Optional, Union, cast, overload
 
 from piccolo.columns import Column
@@ -54,7 +55,6 @@ from piccolo.query.methods.objects import GetRelated, UpdateSelf
 from piccolo.query.methods.refresh import Refresh
 from piccolo.querystring import QueryString
 from piccolo.utils import _camel_to_snake
-from piccolo.utils.graphlib import TopologicalSorter
 from piccolo.utils.sql_values import convert_to_sql_value
 from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import colored_warning
@@ -871,6 +871,72 @@ class Table(metaclass=TableMetaclass):
             else getattr(self, self._meta.primary_key._meta.name, None)
         )
         return f"<{self.__class__.__name__}: {pk}>"
+
+    def __eq__(self, other: Any) -> bool:
+        """
+        Lets us check if two ``Table`` instances represent the same row in the
+        database, based on their primary key value::
+
+            band_1 = await Band.objects().where(
+                Band.name == "Pythonistas"
+            ).first()
+
+            band_2 = await Band.objects().where(
+                Band.name == "Pythonistas"
+            ).first()
+
+            band_3 = await Band.objects().where(
+                Band.name == "Rustaceans"
+            ).first()
+
+            >>> band_1 == band_2
+            True
+
+            >>> band_1 == band_3
+            False
+
+        """
+        if not isinstance(other, Table):
+            # This is the correct way to tell Python that this operation
+            # isn't supported:
+            # https://docs.python.org/3/library/constants.html#NotImplemented
+            return NotImplemented
+
+        # Make sure we're comparing the same table.
+        # There are several ways we could do this (like comparing tablename),
+        # but this should be OK.
+        if not isinstance(other, self.__class__):
+            return False
+
+        pk = self._meta.primary_key
+
+        pk_value = getattr(
+            self,
+            pk._meta.name,
+        )
+
+        other_pk_value = getattr(
+            other,
+            pk._meta.name,
+        )
+
+        # Make sure the primary key values are of the correct type.
+        # We need this for `Serial` columns, which have a `QueryString`
+        # value until saved in the database. We don't want to use `==` on
+        # two QueryString values, because QueryString has a custom `__eq__`
+        # method which doesn't return a boolean.
+        if isinstance(
+            pk_value,
+            pk.value_type,
+        ) and isinstance(
+            other_pk_value,
+            pk.value_type,
+        ):
+            return pk_value == other_pk_value
+        else:
+            # As a fallback, even if it hasn't been saved in the database,
+            # an object should still be equal to itself.
+            return other is self
 
     ###########################################################################
     # Classmethods

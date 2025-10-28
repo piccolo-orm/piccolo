@@ -785,7 +785,7 @@ class Serial(Column):
             return "INTEGER"
         raise Exception("Unrecognized engine type")
 
-    def default(self):
+    def default(self) -> QueryString:
         engine_type = self._meta.engine_type
 
         if engine_type == "postgres":
