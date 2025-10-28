@@ -1402,7 +1402,9 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def _table_str(
-        cls, abbreviated=False, excluded_params: Optional[list[str]] = None
+        cls,
+        abbreviated: bool = False,
+        excluded_params: Optional[list[str]] = None,
     ):
         """
         Returns a basic string representation of the table and its columns.
@@ -1418,6 +1420,17 @@ class Table(metaclass=TableMetaclass):
         """
         if excluded_params is None:
             excluded_params = []
+
+        # If abbreviated, we still need certain params otherwise the column
+        # definitions make no sense.
+        # The function determines whether to include the param (e.g. if
+        # primary_key=False then we don't want to include it because it's
+        # redundant).
+        required_params = {
+            "references": lambda _: True,
+            "primary_key": lambda value: value is True,
+        }
+
         spacer = "\n    "
         columns = []
         for col in cls._meta.columns:
@@ -1426,14 +1439,17 @@ class Table(metaclass=TableMetaclass):
                 if key in excluded_params:
                     continue
 
-                _value: str = ""
                 if inspect.isclass(value):
                     _value = value.__name__
-                    params.append(f"{key}={_value}")
                 else:
                     _value = repr(value)
-                    if not abbreviated:
-                        params.append(f"{key}={_value}")
+
+                if (
+                    key in required_params
+                    and required_params[key](value)
+                    or not abbreviated
+                ):
+                    params.append(f"{key}={_value}")
             params_string = ", ".join(params)
             columns.append(
                 f"{col._meta.name} = {col.__class__.__name__}({params_string})"
