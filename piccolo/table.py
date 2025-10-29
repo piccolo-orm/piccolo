@@ -1411,7 +1411,8 @@ class Table(metaclass=TableMetaclass):
         Used by the playground.
 
         :param abbreviated:
-            If True, a very high level representation is printed out.
+            If True, a very high level representation is printed out (it just
+            shows any non-default values).
         :param excluded_params:
             Lets us find a middle ground between outputting every kwarg, and
             the abbreviated version with very few kwargs. For example
@@ -1420,11 +1421,6 @@ class Table(metaclass=TableMetaclass):
         """
         if excluded_params is None:
             excluded_params = []
-
-        from piccolo.columns.base import ColumnMeta
-
-        default_column_meta = ColumnMeta()
-        default_column_meta.name = "example"
 
         spacer = "\n    "
         columns = []
