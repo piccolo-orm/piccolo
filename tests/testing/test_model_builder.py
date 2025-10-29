@@ -117,7 +117,8 @@ class TestModelBuilder(unittest.TestCase):
         """
         instance = ModelBuilder.build_sync(TableWithArrayField)
         for value in instance.choices:
-            assert value in TableWithArrayField.Choices
+            # Will raise an exception if the enum value isn't found:
+            TableWithArrayField.Choices[value]
 
     def test_datetime(self):
         """
