@@ -1425,7 +1425,6 @@ class Table(metaclass=TableMetaclass):
         spacer = "\n    "
         columns = []
         for col in cls._meta.columns:
-
             base_column_defaults = {
                 key: value.default
                 for key, value in inspect.signature(Column).parameters.items()
@@ -1436,7 +1435,6 @@ class Table(metaclass=TableMetaclass):
                     col.__class__
                 ).parameters.items()
             }
-
             defaults = {**base_column_defaults, **column_defaults}
 
             params: list[str] = []
