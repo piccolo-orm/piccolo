@@ -1429,6 +1429,20 @@ class Table(metaclass=TableMetaclass):
         spacer = "\n    "
         columns = []
         for col in cls._meta.columns:
+
+            base_column_defaults = {
+                key: value.default
+                for key, value in inspect.signature(Column).parameters.items()
+            }
+            column_defaults = {
+                key: value.default
+                for key, value in inspect.signature(
+                    col.__class__
+                ).parameters.items()
+            }
+
+            defaults = {**base_column_defaults, **column_defaults}
+
             params: list[str] = []
             for key, value in col._meta.params.items():
                 if key in excluded_params:
@@ -1436,19 +1450,13 @@ class Table(metaclass=TableMetaclass):
 
                 if abbreviated:
                     # If the value is just the default one, don't include it.
-                    if getattr(default_column_meta, key, ...) == value:
+                    if defaults.get(key, ...) == value:
                         continue
 
-                    # If db_column name isn't included or is the same as the
-                    # column name then don't include it - it doesn nothing.
-                    if (
-                        key == "db_column_name"
-                        and value is None
-                        or value == col._meta.name
-                    ):
+                    # If db_column is the same as the column name then don't
+                    # include it - it does nothing.
+                    if key == "db_column_name" and value == col._meta.name:
                         continue
-
-                    # Now ... foreign key values ...
 
                 if inspect.isclass(value):
                     _value = value.__name__
