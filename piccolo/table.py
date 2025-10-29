@@ -1437,7 +1437,7 @@ class Table(metaclass=TableMetaclass):
             }
             defaults = {**base_column_defaults, **column_defaults}
 
-            params: list[str] = []
+            params = {}
             for key, value in col._meta.params.items():
                 if key in excluded_params:
                     continue
@@ -1452,13 +1452,17 @@ class Table(metaclass=TableMetaclass):
                     if key == "db_column_name" and value == col._meta.name:
                         continue
 
-                if inspect.isclass(value):
-                    _value = value.__name__
-                else:
-                    _value = repr(value)
+                params[key] = value
 
-                params.append(f"{key}={_value}")
-            params_string = ", ".join(params)
+            from piccolo.apps.migrations.auto.serialisation import (
+                serialise_params,
+            )
+
+            serialised_params = serialise_params(params)
+            params_string = ", ".join(
+                f"{key}={value}"
+                for key, value in serialised_params.params.items()
+            )
             columns.append(
                 f"{col._meta.name} = {col.__class__.__name__}({params_string})"
             )
