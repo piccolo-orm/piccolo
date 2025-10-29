@@ -1460,7 +1460,7 @@ class Table(metaclass=TableMetaclass):
 
             serialised_params = serialise_params(params)
             params_string = ", ".join(
-                f"{key}={value}"
+                f"{key}={repr(value)}"
                 for key, value in serialised_params.params.items()
             )
             columns.append(
