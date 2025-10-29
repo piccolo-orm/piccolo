@@ -1419,11 +1419,17 @@ class Table(metaclass=TableMetaclass):
             `['index_method']`, if we want to show all kwargs but index_method.
 
         """
+        from piccolo.apps.migrations.auto.serialisation import (
+            SerialisedEnumTypeDefinition,
+            serialise_params,
+        )
+
         if excluded_params is None:
             excluded_params = []
 
         spacer = "\n    "
         columns = []
+        extra_definitions = []
         for col in cls._meta.columns:
             base_column_defaults = {
                 key: value.default
@@ -1454,17 +1460,20 @@ class Table(metaclass=TableMetaclass):
 
                 params[key] = value
 
-            from piccolo.apps.migrations.auto.serialisation import (
-                serialise_params,
-            )
-
-            serialised_params = serialise_params(params)
+            serialised_params = serialise_params(params, inline_enums=False)
             params_string = ", ".join(
                 f"{key}={repr(value)}"
                 for key, value in serialised_params.params.items()
             )
             columns.append(
                 f"{col._meta.name} = {col.__class__.__name__}({params_string})"
+            )
+            extra_definitions.extend(
+                [
+                    i
+                    for i in serialised_params.extra_definitions
+                    if isinstance(i, SerialisedEnumTypeDefinition)
+                ]
             )
 
         for m2m_relationship in cls._meta.m2m_relationships:
@@ -1475,6 +1484,9 @@ class Table(metaclass=TableMetaclass):
                 f"{m2m_relationship._meta.name} = M2M({joining_table_name})"
             )
 
+        extra_definitions_string = spacer.join(
+            [repr(i) for i in extra_definitions]
+        )
         columns_string = spacer.join(columns)
         tablename = repr(cls._meta.tablename)
 
@@ -1486,9 +1498,11 @@ class Table(metaclass=TableMetaclass):
             else f"{parent_class_name}, tablename={tablename}"
         )
 
-        return (
-            f"class {cls.__name__}({class_args}):\n" f"    {columns_string}\n"
-        )
+        output = f"class {cls.__name__}({class_args}):\n"
+        if extra_definitions_string:
+            output += f"    {extra_definitions_string}\n"
+        output += f"    {columns_string}\n"
+        return output
 
 
 def create_table_class(
