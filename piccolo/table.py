@@ -1421,15 +1421,10 @@ class Table(metaclass=TableMetaclass):
         if excluded_params is None:
             excluded_params = []
 
-        # If abbreviated, we still need certain params otherwise the column
-        # definitions make no sense.
-        # The function determines whether to include the param (e.g. if
-        # primary_key=False then we don't want to include it because it's
-        # redundant).
-        required_params = {
-            "references": lambda _: True,
-            "primary_key": lambda value: value is True,
-        }
+        from piccolo.columns.base import ColumnMeta
+
+        default_column_meta = ColumnMeta()
+        default_column_meta.name = "example"
 
         spacer = "\n    "
         columns = []
@@ -1439,17 +1434,28 @@ class Table(metaclass=TableMetaclass):
                 if key in excluded_params:
                     continue
 
+                if abbreviated:
+                    # If the value is just the default one, don't include it.
+                    if getattr(default_column_meta, key, ...) == value:
+                        continue
+
+                    # If db_column name isn't included or is the same as the
+                    # column name then don't include it - it doesn nothing.
+                    if (
+                        key == "db_column_name"
+                        and value is None
+                        or value == col._meta.name
+                    ):
+                        continue
+
+                    # Now ... foreign key values ...
+
                 if inspect.isclass(value):
                     _value = value.__name__
                 else:
                     _value = repr(value)
 
-                if (
-                    key in required_params
-                    and required_params[key](value)
-                    or not abbreviated
-                ):
-                    params.append(f"{key}={_value}")
+                params.append(f"{key}={_value}")
             params_string = ", ".join(params)
             columns.append(
                 f"{col._meta.name} = {col.__class__.__name__}({params_string})"
