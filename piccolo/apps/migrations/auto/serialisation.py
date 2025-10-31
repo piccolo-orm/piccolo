@@ -335,6 +335,20 @@ class SerialisedEnumInstance:
 
 
 @dataclass
+class SerialisedReference:
+    name: str
+
+    def __hash__(self):
+        return hash(self.__repr__())
+
+    def __eq__(self, other):
+        return check_equality(self, other)
+
+    def __repr__(self):
+        return self.name
+
+
+@dataclass
 class SerialisedTableType(Definition):
     table_type: type[Table]
 
@@ -426,7 +440,7 @@ class SerialisedTableType(Definition):
 
 
 @dataclass
-class SerialisedEnumType:
+class InlineSerialisedEnumType:
     enum_type: type[Enum]
 
     def __hash__(self):
@@ -439,6 +453,26 @@ class SerialisedEnumType:
         class_name = self.enum_type.__name__
         params = {i.name: i.value for i in self.enum_type}
         return f"{UniqueGlobalNames.STD_LIB_ENUM}('{class_name}', {params})"
+
+
+@dataclass
+class SerialisedEnumTypeDefinition(Definition):
+    enum_type: type[Enum]
+
+    def __hash__(self):
+        return hash(self.enum_type.__name__)
+
+    def __eq__(self, other):
+        return check_equality(self, other)
+
+    def __repr__(self):
+        definition = InlineSerialisedEnumType(
+            enum_type=self.enum_type
+        ).__repr__()
+        return f"{self.enum_type.__name__} = {definition}"
+
+    def warn_if_is_conflicting_with_global_name(self) -> None:
+        UniqueGlobalNames.warn_if_is_conflicting_name(self.enum_type.__name__)
 
 
 @dataclass
@@ -488,10 +522,25 @@ class SerialisedDecimal:
 ###############################################################################
 
 
-def serialise_params(params: dict[str, Any]) -> SerialisedParams:
+def serialise_params(
+    params: dict[str, Any], inline_enums: bool = True
+) -> SerialisedParams:
     """
-    When writing column params to a migration file, we need to serialise some
-    of the values.
+    When writing column params to a migration file, or outputting to the
+    playground, we need to serialise some of the values.
+
+    :param inline_enums:
+        If ``True``, enum value are inlined, for example::
+
+            value=Enum('MyEnum', {'some_value': 'some_value'}))
+
+        Otherwise, it is reproduced as::
+
+            value=MyEnum
+
+        And the enum definition is added to
+        ``SerialisedParams.extra_definitions``.
+
     """
     params = deepcopy(params)
     extra_imports: list[Import] = []
@@ -624,7 +673,6 @@ def serialise_params(params: dict[str, Any]) -> SerialisedParams:
 
         # Enum types
         if inspect.isclass(value) and issubclass(value, Enum):
-            params[key] = SerialisedEnumType(enum_type=value)
             extra_imports.append(
                 Import(
                     module="enum",
@@ -643,6 +691,14 @@ def serialise_params(params: dict[str, Any]) -> SerialisedParams:
                     extra_imports.append(
                         Import(module=module_name, target=type_.__name__)
                     )
+
+            if inline_enums:
+                params[key] = InlineSerialisedEnumType(enum_type=value)
+            else:
+                params[key] = SerialisedReference(name=value.__name__)
+                extra_definitions.append(
+                    SerialisedEnumTypeDefinition(enum_type=value)
+                )
 
         # Functions
         if inspect.isfunction(value):
@@ -768,7 +824,7 @@ def deserialise_params(params: dict[str, Any]) -> dict[str, Any]:
             params[key] = value.callable_
         elif isinstance(value, SerialisedTableType):
             params[key] = value.table_type
-        elif isinstance(value, SerialisedEnumType):
+        elif isinstance(value, InlineSerialisedEnumType):
             params[key] = value.enum_type
         elif isinstance(value, SerialisedEnumInstance):
             params[key] = value.instance
