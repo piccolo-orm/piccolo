@@ -84,6 +84,13 @@ class TestAppRegistry(TestCase):
 
 
 class TestAppConfig(TestCase):
+    def test_migrations_folder_path_is_none(self):
+        """
+        Make sure that ``migrations_folder_path`` argument can be ``None``.
+        """
+        config = AppConfig(app_name="music", migrations_folder_path=None)
+        self.assertEqual(config.resolved_migrations_folder_path, None)
+
     def test_pathlib(self):
         """
         Make sure a ``pathlib.Path`` instance can be passed in as a
