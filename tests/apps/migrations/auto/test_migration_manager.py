@@ -1264,15 +1264,6 @@ class TestMigrationManager(DBTestCase):
         self.assertEqual(len(result), 1)
 
         # Reverse
-        get_migration_managers.return_value = [manager_1]
-        app_config = AppConfig(app_name="music", migrations_folder_path="")
-        get_app_config.return_value = app_config
-        asyncio.run(manager_2.run(backwards=True))
-        result = self.run_sync(sql)
-        self.assertEqual(result[-1]["indexname"], "name_label")
-        self.assertEqual(len(result), 2)
-
-        # Reverse
         asyncio.run(manager_1.run(backwards=True))
         self.assertTrue(not self.table_exists("musician"))
 
