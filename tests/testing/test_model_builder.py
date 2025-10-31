@@ -1,4 +1,5 @@
 import asyncio
+import enum
 import json
 import unittest
 
@@ -30,9 +31,14 @@ from tests.example_apps.music.tables import (
 
 
 class TableWithArrayField(Table):
+    class Choices(enum.Enum):
+        a = "a"
+        b = "b"
+
     strings = Array(Varchar(30))
     integers = Array(Integer())
     floats = Array(Real())
+    choices = Array(Varchar(), choices=Choices)
 
 
 class TableWithDecimal(Table):
@@ -103,6 +109,16 @@ class TestModelBuilder(unittest.TestCase):
             queried_shirt.size,
             ["s", "l", "m"],
         )
+
+    def test_array_choices(self):
+        """
+        Make sure that ``ModelBuilder`` generates arrays where each array
+        element is a valid choice.
+        """
+        instance = ModelBuilder.build_sync(TableWithArrayField)
+        for value in instance.choices:
+            # Will raise an exception if the enum value isn't found:
+            TableWithArrayField.Choices[value]
 
     def test_datetime(self):
         """
