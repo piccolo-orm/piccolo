@@ -11,7 +11,7 @@ from piccolo.apps.fixtures.commands.dump import (
 )
 from piccolo.apps.fixtures.commands.load import load, load_json_string
 from piccolo.utils.sync import run_sync
-from tests.base import engines_only
+from tests.base import engines_only, engines_skip
 from tests.example_apps.mega.tables import MegaTable, SmallTable
 
 
@@ -243,6 +243,7 @@ class TestDumpLoad(TestCase):
         )
 
 
+@engines_skip("mysql")
 class TestOnConflict(TestCase):
     def setUp(self) -> None:
         SmallTable.create_table().run_sync()

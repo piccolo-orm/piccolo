@@ -10,7 +10,7 @@ from tests.example_apps.music.tables import Band, Manager
 
 class TestDropTables(TestCase):
     def setUp(self):
-        create_db_tables_sync(Band, Manager)
+        create_db_tables_sync(Manager, Band)
 
     def test_drop_db_tables(self):
         """

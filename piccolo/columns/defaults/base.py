@@ -17,6 +17,11 @@ class Default(ABC):
     def sqlite(self) -> str:
         pass
 
+    @property
+    @abstractmethod
+    def mysql(self) -> str:
+        pass
+
     @abstractmethod
     def python(self) -> Any:
         pass
@@ -56,6 +61,27 @@ class Default(ABC):
                 interval_components.append(f"'{attr} {attr_name}'")
 
         return ", ".join(interval_components)
+
+    def get_mysql_interval_string(self, attributes: list[str]) -> str:
+        """
+        In MySQL the interval string is different and we should use
+        CURRENT_TIMESTAMP + INTERVAL 7 DAY + INTERVAL 10 HOUR etc.
+        but I can't get that to work so I convert to seconds and
+        use that interval of seconds with the DATE_ADD() function.
+        """
+        interval_components = []
+        for attr_name in attributes:
+            attr = getattr(self, attr_name, None)
+            if attr is not None:
+                if attr_name == "days":
+                    attr += attr * 86400
+                elif attr_name == "hours":
+                    attr += attr * 3600
+                elif attr_name == "minutes":
+                    attr += attr * 60
+                interval_components.append(attr)
+
+        return sum(interval_components)
 
     def __repr__(self):
         return repr_class_instance(self)

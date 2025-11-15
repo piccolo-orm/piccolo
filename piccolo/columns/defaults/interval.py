@@ -62,6 +62,10 @@ class IntervalCustom(Default):
     def sqlite(self):
         return self.timedelta.total_seconds()
 
+    @property
+    def mysql(self):
+        return self.timedelta.total_seconds()
+
     def python(self):
         return self.timedelta
 

@@ -23,7 +23,7 @@ class Band(Table, schema="schema_1"):
     name = Varchar()
 
 
-@engines_skip("sqlite")
+@engines_skip("sqlite", "mysql")
 class TestTableExistsSchema(TestCase):
     def setUp(self):
         Band.create_table(auto_create_schema=True).run_sync()

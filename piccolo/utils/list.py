@@ -5,7 +5,7 @@ ElementType = TypeVar("ElementType")
 
 
 def flatten(
-    items: Sequence[Union[ElementType, list[ElementType]]]
+    items: Sequence[Union[ElementType, list[ElementType]]],
 ) -> list[ElementType]:
     """
     Takes a sequence of elements, and flattens it out. For example::

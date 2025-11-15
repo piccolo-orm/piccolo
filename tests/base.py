@@ -11,6 +11,7 @@ import pytest
 from piccolo.apps.schema.commands.generate import RowMeta
 from piccolo.engine.cockroach import CockroachEngine
 from piccolo.engine.finder import engine_finder
+from piccolo.engine.mysql import MySQLEngine
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
 from piccolo.table import (
@@ -38,6 +39,10 @@ def is_running_sqlite() -> bool:
 
 def is_running_cockroach() -> bool:
     return type(ENGINE) is CockroachEngine
+
+
+def is_running_mysql() -> bool:
+    return type(ENGINE) is MySQLEngine
 
 
 postgres_only = pytest.mark.skipif(
@@ -230,6 +235,57 @@ class DBTestCase(TestCase):
             tablename=tablename, column_name=column_name
         ).character_maximum_length
 
+    # MySQL specific utils
+
+    def get_mysql_column_definition(
+        self, tablename: str, column_name: str
+    ) -> RowMeta:
+        query = """
+            SELECT {columns} FROM information_schema.columns
+            WHERE table_name = '{tablename}'
+            AND table_catalog = 'piccolo'
+            AND table_schema = DATABASE()'
+            AND column_name = '{column_name}'
+        """.format(
+            columns=RowMeta.get_column_name_str(),
+            tablename=tablename,
+            column_name=column_name,
+        )
+        response = self.run_sync(query)
+        if len(response) > 0:
+            return RowMeta(**response[0])
+        else:
+            raise ValueError("No such column")
+
+    def get_mysql_column_type(self, tablename: str, column_name: str) -> str:
+        """
+        Fetches the column type as a string, from the database.
+        """
+        return self.get_mysql_column_definition(
+            tablename=tablename, column_name=column_name
+        ).data_type.upper()
+
+    def get_mysql_is_nullable(self, tablename, column_name: str) -> bool:
+        """
+        Fetches whether the column is defined as nullable, from the database.
+        """
+        return (
+            self.get_mysql_column_definition(
+                tablename=tablename, column_name=column_name
+            ).is_nullable.upper()
+            == "YES"
+        )
+
+    def get_mysql_varchar_length(
+        self, tablename, column_name: str
+    ) -> Optional[int]:
+        """
+        Fetches whether the column is defined as nullable, from the database.
+        """
+        return self.get_mysql_column_definition(
+            tablename=tablename, column_name=column_name
+        ).character_maximum_length
+
     ###########################################################################
 
     def create_tables(self):
@@ -308,6 +364,44 @@ class DBTestCase(TestCase):
                 """
                 CREATE TABLE shirt (
                     id SERIAL PRIMARY KEY,
+                    size VARCHAR(1)
+                );"""
+            )
+        elif ENGINE.engine_type == "mysql":
+            self.run_sync(
+                """
+                CREATE TABLE manager (
+                    id INTEGER AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(50)
+                );"""
+            )
+            self.run_sync(
+                """
+                CREATE TABLE band (
+                    id INTEGER AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(50),
+                    manager INTEGER REFERENCES manager,
+                    popularity SMALLINT
+                );"""
+            )
+            self.run_sync(
+                """
+                CREATE TABLE ticket (
+                    id INTEGER AUTO_INCREMENT PRIMARY KEY,
+                    price NUMERIC(5,2)
+                );"""
+            )
+            self.run_sync(
+                """
+                CREATE TABLE poster (
+                    id INTEGER AUTO_INCREMENT PRIMARY KEY,
+                    content TEXT
+                );"""
+            )
+            self.run_sync(
+                """
+                CREATE TABLE shirt (
+                    id INTEGER AUTO_INCREMENT PRIMARY KEY,
                     size VARCHAR(1)
                 );"""
             )
@@ -441,12 +535,12 @@ class DBTestCase(TestCase):
     def drop_tables(self):
         assert ENGINE is not None
 
-        if ENGINE.engine_type in ("postgres", "cockroach"):
+        if ENGINE.engine_type in ("postgres", "cockroach", "mysql"):
             self.run_sync("DROP TABLE IF EXISTS band CASCADE;")
-            self.run_sync("DROP TABLE IF EXISTS manager CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS ticket CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS poster CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS shirt CASCADE;")
+            self.run_sync("DROP TABLE IF EXISTS manager CASCADE;")
         elif ENGINE.engine_type == "sqlite":
             self.run_sync("DROP TABLE IF EXISTS band;")
             self.run_sync("DROP TABLE IF EXISTS manager;")

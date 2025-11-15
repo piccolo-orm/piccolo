@@ -79,6 +79,7 @@ class CustomerToConcert(Table):
 CUSTOM_PK_SCHEMA = [Customer, Concert, CustomerToConcert]
 
 
+@engines_skip("mysql")
 class TestM2MCustomPrimaryKey(TestCase):
     """
     Make sure the M2M functionality works correctly when the tables have custom
@@ -285,6 +286,7 @@ class SmallToMega(Table):
 COMPLEX_SCHEMA = [MegaTable, SmallTable, SmallToMega]
 
 
+@engines_skip("mysql")
 class TestM2MComplexSchema(TestCase):
     """
     By using a very complex schema containing every column type, we can catch

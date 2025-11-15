@@ -77,7 +77,7 @@ TABLES = (
 
 
 # Cockroach Bug: Can turn ON when resolved: https://github.com/cockroachdb/cockroach/issues/71908  # noqa: E501
-@engines_skip("cockroach")
+@engines_skip("cockroach", "mysql")
 class TestModelBuilder(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

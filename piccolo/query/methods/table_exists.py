@@ -43,3 +43,14 @@ class TableExists(Query[TableInstance, bool]):
     @property
     def cockroach_querystrings(self) -> Sequence[QueryString]:
         return self.postgres_querystrings
+
+    @property
+    def mysql_querystrings(self) -> Sequence[QueryString]:
+        query = QueryString(
+            "SELECT EXISTS("
+            "SELECT 1 FROM INFORMATION_SCHEMA.TABLES "
+            "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = {}"
+            ") AS `exists`",
+            self.table._meta.tablename,
+        )
+        return [query]

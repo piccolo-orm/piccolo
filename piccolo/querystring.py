@@ -229,6 +229,12 @@ class QueryString(Selectable):
                 for fragment in bundled
             )
 
+        elif engine_type == "mysql":
+            string = "".join(
+                fragment.prefix + ("" if fragment.no_arg else "%s")
+                for fragment in bundled
+            )
+
         else:
             raise Exception("Engine type not recognised")
 

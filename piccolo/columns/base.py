@@ -1001,6 +1001,20 @@ class Column(Selectable):
                 f" ON UPDATE {on_update}"
             )
 
+            if self._meta.engine_type == "mysql":
+                query = query.split("REFERENCES")[0].strip().rstrip(",")
+
+                # Add proper FOREIGN KEY clause ?
+                query += (
+                    f", FOREIGN KEY ({self._meta.db_column_name})"
+                    f" REFERENCES {tablename}({target_column_name})"
+                    f" ON DELETE {on_delete} "
+                    f" ON UPDATE {on_update}"
+                )
+                # ugly hack - find something better
+                query[0].replace("DEFAULT null", "")
+                return query
+
         # Always ran for Cockroach because unique_rowid() is directly
         # defined for Cockroach Serial and BigSerial.
         # Postgres and SQLite will not run this for Serial and BigSerial.

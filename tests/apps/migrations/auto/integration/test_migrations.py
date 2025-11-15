@@ -691,6 +691,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @engines_skip("mysql")
     def test_array_column_bigint(self):
         """
         There was a bug with using an array of ``BigInt``:
@@ -710,6 +711,7 @@ class TestMigrations(MigrationTestCase):
             ]
         )
 
+    @engines_skip("mysql")
     def test_array_base_column_change(self):
         """
         There was a bug when trying to change the base column of an array:

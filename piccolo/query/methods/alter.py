@@ -77,6 +77,24 @@ class RenameColumn(AlterColumnStatement):
 
 
 @dataclass
+class RenameColumnMysql(AlterColumnStatement):
+    __slots__ = ("new_name",)
+
+    new_name: str
+
+    @property
+    def ddl(self) -> str:
+        if not isinstance(self.column, Column):
+            raise ValueError("MySQL requires a column instance for renaming.")
+        col_type = self.column.column_type
+        null_sql = "NULL" if self.column._meta.null else "NOT NULL"
+        return (
+            f"CHANGE `{self.column_name}` `{self.new_name}` "
+            f"{col_type} {null_sql}"
+        )
+
+
+@dataclass
 class DropColumn(AlterColumnStatement):
     @property
     def ddl(self) -> str:
@@ -94,6 +112,19 @@ class AddColumn(AlterColumnStatement):
     def ddl(self) -> str:
         self.column._meta.name = self.name
         return f"ADD COLUMN {self.column.ddl}"
+
+
+@dataclass
+class AddColumnMysql(AlterColumnStatement):
+    __slots__ = ("name",)
+
+    column: Column
+    name: str
+
+    @property
+    def ddl(self) -> str:
+        self.column._meta.name = self.name
+        return f"ADD COLUMN {self.column.ddl} {self.column.column_type}"
 
 
 @dataclass
@@ -128,6 +159,25 @@ class SetColumnType(AlterStatement):
         )
         if self.using_expression is not None:
             query += f" USING {self.using_expression}"
+        return query
+
+
+@dataclass
+class SetColumnTypeMysql(AlterStatement):
+
+    old_column: Column
+    new_column: Column
+
+    @property
+    def ddl(self) -> str:
+        if self.new_column._meta._table is None:
+            self.new_column._meta._table = self.old_column._meta.table
+
+        column_name = self.old_column._meta.db_column_name
+        coltype = self.new_column.column_type
+        # null_sql = "NULL" if self.new_column._meta.null else "NOT NULL"
+        query = f"MODIFY `{column_name}` {coltype}"  # {null_sql}"
+
         return query
 
 
@@ -188,6 +238,17 @@ class SetLength(AlterColumnStatement):
     @property
     def ddl(self) -> str:
         return f'ALTER COLUMN "{self.column_name}" TYPE VARCHAR({self.length})'
+
+
+@dataclass
+class SetLengthMysql(AlterColumnStatement):
+    __slots__ = ("length",)
+
+    length: int
+
+    @property
+    def ddl(self) -> str:
+        return f'MODIFY "{self.column_name}" VARCHAR({self.length})'
 
 
 @dataclass
@@ -254,6 +315,26 @@ class SetDigits(AlterColumnStatement):
 
 
 @dataclass
+class SetDigitsMysql(AlterColumnStatement):
+    __slots__ = ("digits", "column_type")
+
+    digits: Optional[tuple[int, int]]
+    column_type: str
+
+    @property
+    def ddl(self) -> str:
+        if self.digits is None:
+            return f'MODIFY "{self.column_name}" {self.column_type}'
+
+        precision = self.digits[0]
+        scale = self.digits[1]
+        return (
+            f'MODIFY "{self.column_name}" '
+            f"{self.column_type}({precision}, {scale})"
+        )
+
+
+@dataclass
 class SetSchema(AlterStatement):
     __slots__ = ("schema_name",)
 
@@ -313,12 +394,14 @@ class Alter(DDL):
         self._drop_default: list[DropDefault] = []
         self._drop_table: Optional[DropTable] = None
         self._drop: list[DropColumn] = []
-        self._rename_columns: list[RenameColumn] = []
+        self._rename_columns: list[Union[RenameColumn, RenameColumnMysql]] = []
         self._rename_table: list[RenameTable] = []
-        self._set_column_type: list[SetColumnType] = []
+        self._set_column_type: list[
+            Union[SetColumnType, SetColumnTypeMysql]
+        ] = []
         self._set_default: list[SetDefault] = []
-        self._set_digits: list[SetDigits] = []
-        self._set_length: list[SetLength] = []
+        self._set_digits: list[Union[SetDigits, SetDigitsMysql]] = []
+        self._set_length: list[Union[SetLength, SetLengthMysql]] = []
         self._set_null: list[SetNull] = []
         self._set_schema: list[SetSchema] = []
         self._set_unique: list[SetUnique] = []
@@ -419,7 +502,10 @@ class Alter(DDL):
             >>> await Band.alter().rename_column('popularity', 'rating')
 
         """
-        self._rename_columns.append(RenameColumn(column, new_name))
+        if self.engine_type == "mysql":
+            self._rename_columns.append(RenameColumnMysql(column, new_name))
+        else:
+            self._rename_columns.append(RenameColumn(column, new_name))
         return self
 
     def set_column_type(
@@ -440,13 +526,21 @@ class Alter(DDL):
             ``'name::integer'``.
 
         """
-        self._set_column_type.append(
-            SetColumnType(
-                old_column=old_column,
-                new_column=new_column,
-                using_expression=using_expression,
+        if self.engine_type == "mysql":
+            self._set_column_type.append(
+                SetColumnTypeMysql(
+                    old_column=old_column,
+                    new_column=new_column,
+                )
             )
-        )
+        else:
+            self._set_column_type.append(
+                SetColumnType(
+                    old_column=old_column,
+                    new_column=new_column,
+                    using_expression=using_expression,
+                )
+            )
         return self
 
     def set_default(self, column: Column, value: Any) -> Alter:
@@ -516,7 +610,10 @@ class Alter(DDL):
                 "Only Varchar columns can have their length changed."
             )
 
-        self._set_length.append(SetLength(column, length))
+        if self.engine_type == "mysql":
+            self._set_length.append(SetLengthMysql(column, length))
+        else:
+            self._set_length.append(SetLength(column, length))
         return self
 
     def _get_constraint_name(self, column: Union[str, ForeignKey]) -> str:
@@ -603,13 +700,22 @@ class Alter(DDL):
             if isinstance(column, Numeric)
             else "NUMERIC"
         )
-        self._set_digits.append(
-            SetDigits(
-                digits=digits,
-                column=column,
-                column_type=column_type,
+        if self.engine_type == "mysql":
+            self._set_digits.append(
+                SetDigitsMysql(
+                    digits=digits,
+                    column=column,
+                    column_type=column_type,
+                )
             )
-        )
+        else:
+            self._set_digits.append(
+                SetDigits(
+                    digits=digits,
+                    column=column,
+                    column_type=column_type,
+                )
+            )
         return self
 
     def set_schema(self, schema_name: str) -> Alter:

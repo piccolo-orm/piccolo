@@ -3,7 +3,7 @@ from unittest import TestCase
 from piccolo.columns import Varchar
 from piccolo.schema import SchemaManager
 from piccolo.table import Table
-from tests.base import engines_only
+from tests.base import engines_only, engines_skip
 from tests.example_apps.music.tables import Manager
 
 
@@ -31,6 +31,7 @@ class TestCreateWithIndexes(TestCase):
         index_name = BandMember._get_index_name(["name"])
         self.assertIn(index_name, index_names)
 
+    @engines_skip("mysql")
     def test_create_if_not_exists_with_indexes(self):
         """
         Make sure that if the same table is created again, with the

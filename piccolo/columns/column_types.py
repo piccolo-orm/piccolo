@@ -253,12 +253,12 @@ class TimedeltaDelegate:
         if not isinstance(value, timedelta):
             raise ValueError("Only timedelta values can be added.")
 
-        if engine_type in ("postgres", "cockroach"):
+        if engine_type in ("postgres", "cockroach", "mysql"):
             value_string = self.get_postgres_interval_string(interval=value)
             return QueryString(
                 f'"{column_name}" {operator} INTERVAL {value_string}',
             )
-        elif engine_type == "sqlite":
+        elif engine_type in ("sqlite", "mysql"):
             if isinstance(column, Interval):
                 # SQLite doesn't have a proper Interval type. Instead we store
                 # the number of seconds.
@@ -442,7 +442,8 @@ class Text(Column):
         **kwargs: Unpack[ColumnKwargs],
     ) -> None:
         self._validate_default(default, (str, None))
-        self.default = default
+
+        self.default = QueryString(f"('{default}')")
         super().__init__(default=default, **kwargs)
 
     ###########################################################################
@@ -501,6 +502,15 @@ class UUID(Column):
     """
 
     value_type = uuid.UUID
+
+    @property
+    def column_type(self):
+        engine_type = self._meta.engine_type
+        if engine_type in ("postgres", "cockroach", "sqlite"):
+            return "UUID"
+        elif engine_type == "mysql":
+            return "CHAR(36)"
+        raise Exception("Unrecognized engine type")
 
     def __init__(
         self,
@@ -686,7 +696,7 @@ class BigInt(Integer):
     """
 
     def _get_column_type(self, engine_type: str):
-        if engine_type == "postgres":
+        if engine_type in ("postgres", "mysql"):
             return "BIGINT"
         elif engine_type == "cockroach":
             return "BIGINT"
@@ -738,7 +748,7 @@ class SmallInt(Integer):
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres":
+        if engine_type in ("postgres", "mysql"):
             return "SMALLINT"
         elif engine_type == "cockroach":
             return "SMALLINT"
@@ -783,6 +793,8 @@ class Serial(Column):
             return "INTEGER"
         elif engine_type == "sqlite":
             return "INTEGER"
+        elif engine_type == "mysql":
+            return "INT AUTO_INCREMENT"
         raise Exception("Unrecognized engine type")
 
     def default(self) -> QueryString:
@@ -793,6 +805,8 @@ class Serial(Column):
         elif engine_type == "cockroach":
             return QueryString("unique_rowid()")
         elif engine_type == "sqlite":
+            return NULL
+        elif engine_type == "mysql":
             return NULL
         raise Exception("Unrecognized engine type")
 
@@ -826,6 +840,8 @@ class BigSerial(Serial):
             return "BIGINT"
         elif engine_type == "sqlite":
             return "INTEGER"
+        elif engine_type == "mysql":
+            return "BIGINT AUTO_INCREMENT"
         raise Exception("Unrecognized engine type")
 
     ###########################################################################
@@ -1274,6 +1290,9 @@ class Interval(Column):
             # make it an integer - but we need a text field.
             # https://sqlite.org/datatype3.html#determination_of_column_affinity
             return "SECONDS"
+        elif engine_type == "mysql":
+            # In MySQL, 'INTERVAL' is a keyword, not a data type.
+            return "REAL"  # ??? how to handle this, with TIME or ???
         raise Exception("Unrecognized engine type")
 
     ###########################################################################
@@ -1348,6 +1367,12 @@ class Boolean(Column):
         self._validate_default(default, (bool, None))
         self.default = default
         super().__init__(default=default, **kwargs)
+
+    # @property
+    # def column_type(self):
+    #     engine_type = self._meta.engine_type
+    #     if engine_type == "mysql":
+    #         return "TINYINT(1)"
 
     def eq(self, value) -> Where:
         """
@@ -2339,14 +2364,6 @@ class JSON(Column):
 
         self.json_operator: Optional[str] = None
 
-    @property
-    def column_type(self):
-        engine_type = self._meta.engine_type
-        if engine_type == "cockroach":
-            return "JSONB"  # Cockroach is always JSONB.
-        else:
-            return "JSON"
-
     ###########################################################################
 
     def arrow(self, key: Union[str, int, QueryString]) -> GetChildElement:
@@ -2496,7 +2513,7 @@ class Bytea(Column):
         engine_type = self._meta.engine_type
         if engine_type in ("postgres", "cockroach"):
             return "BYTEA"
-        elif engine_type == "sqlite":
+        elif engine_type in ("sqlite", "mysql"):
             return "BLOB"
         raise Exception("Unrecognized engine type")
 
@@ -2639,7 +2656,7 @@ class Array(Column):
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type in ("postgres", "cockroach"):
+        if engine_type in ("postgres", "cockroach", "mysql"):
             return f"{self.base_column.column_type}[]"
         elif engine_type == "sqlite":
             inner_column = self._get_inner_column()

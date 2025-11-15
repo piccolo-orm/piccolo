@@ -22,6 +22,7 @@ class MyTable(Table):
     value = Array(base_column=Integer())
 
 
+@engines_skip("mysql")
 class TestArrayDefault(TestCase):
     def test_array_default(self):
         """
@@ -33,6 +34,7 @@ class TestArrayDefault(TestCase):
         self.assertTrue(column.default is list)
 
 
+@engines_skip("mysql")
 class TestArray(TableTest):
     """
     Make sure an Array column can be created, and works correctly.
@@ -425,6 +427,7 @@ class DateTimeArrayTable(Table):
     timestamptz_nullable = Array(Timestamptz(), null=True)
 
 
+@engines_skip("mysql")
 class TestDateTimeArray(TestCase):
     """
     Make sure that data can be stored and retrieved when using arrays of
@@ -492,6 +495,7 @@ class NestedArrayTable(Table):
     value = Array(base_column=Array(base_column=BigInt()))
 
 
+@engines_skip("mysql")
 class TestNestedArray(TestCase):
     """
     Make sure that tables with nested arrays can be created, and work
@@ -524,6 +528,7 @@ class TestNestedArray(TestCase):
         self.assertEqual(row.value, [[1, 2, 3], [4, 5, 6]])
 
 
+@engines_skip("mysql")
 class TestGetDimensions(TestCase):
     def test_get_dimensions(self):
         """
@@ -534,6 +539,7 @@ class TestGetDimensions(TestCase):
         self.assertEqual(Array(Array(Array(Integer())))._get_dimensions(), 3)
 
 
+@engines_skip("mysql")
 class TestGetInnerValueType(TestCase):
     def test_get_inner_value_type(self):
         """
