@@ -221,10 +221,16 @@ class TestSerialiseParams(TestCase):
             self.assertTrue(
                 serialised.params["references"].__repr__() == "Manager"
             )
+            # sorted extra_imports for consistency between tests
+            sorted_extra_imports = sorted(serialised.extra_imports)
 
-            self.assertTrue(len(serialised.extra_imports) == 1)
+            self.assertTrue(len(serialised.extra_imports) == 2)
             self.assertEqual(
-                serialised.extra_imports[0].__str__(),
+                sorted_extra_imports[0].__str__(),
+                "from piccolo.columns.column_types import Serial",
+            )
+            self.assertEqual(
+                sorted_extra_imports[1].__str__(),
                 "from piccolo.table import Table",
             )
 

@@ -19,8 +19,8 @@ class TestTableStr(TestCase):
             Manager._table_str(abbreviated=True),
             (
                 "class Manager(Table):\n"
-                "    id = Serial()\n"
-                "    name = Varchar()\n"
+                "    id = Serial(primary_key=True)\n"
+                "    name = Varchar(length=50)\n"
             ),
         )
 
@@ -33,7 +33,7 @@ class TestTableStr(TestCase):
             Genre._table_str(abbreviated=True),
             (
                 "class Genre(Table):\n"
-                "    id = Serial()\n"
+                "    id = Serial(primary_key=True)\n"
                 "    name = Varchar()\n"
                 "    bands = M2M(GenreToBand)\n"
             ),

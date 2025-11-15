@@ -6,6 +6,7 @@ import types
 import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from graphlib import TopologicalSorter
 from typing import TYPE_CHECKING, Any, Optional, Union, cast, overload
 
 from piccolo.columns import Column
@@ -50,7 +51,6 @@ from piccolo.query.methods.objects import GetRelated, UpdateSelf
 from piccolo.query.methods.refresh import Refresh
 from piccolo.querystring import QueryString
 from piccolo.utils import _camel_to_snake
-from piccolo.utils.graphlib import TopologicalSorter
 from piccolo.utils.sql_values import convert_to_sql_value
 from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import colored_warning
@@ -851,6 +851,72 @@ class Table(metaclass=TableMetaclass):
         )
         return f"<{self.__class__.__name__}: {pk}>"
 
+    def __eq__(self, other: Any) -> bool:
+        """
+        Lets us check if two ``Table`` instances represent the same row in the
+        database, based on their primary key value::
+
+            band_1 = await Band.objects().where(
+                Band.name == "Pythonistas"
+            ).first()
+
+            band_2 = await Band.objects().where(
+                Band.name == "Pythonistas"
+            ).first()
+
+            band_3 = await Band.objects().where(
+                Band.name == "Rustaceans"
+            ).first()
+
+            >>> band_1 == band_2
+            True
+
+            >>> band_1 == band_3
+            False
+
+        """
+        if not isinstance(other, Table):
+            # This is the correct way to tell Python that this operation
+            # isn't supported:
+            # https://docs.python.org/3/library/constants.html#NotImplemented
+            return NotImplemented
+
+        # Make sure we're comparing the same table.
+        # There are several ways we could do this (like comparing tablename),
+        # but this should be OK.
+        if not isinstance(other, self.__class__):
+            return False
+
+        pk = self._meta.primary_key
+
+        pk_value = getattr(
+            self,
+            pk._meta.name,
+        )
+
+        other_pk_value = getattr(
+            other,
+            pk._meta.name,
+        )
+
+        # Make sure the primary key values are of the correct type.
+        # We need this for `Serial` columns, which have a `QueryString`
+        # value until saved in the database. We don't want to use `==` on
+        # two QueryString values, because QueryString has a custom `__eq__`
+        # method which doesn't return a boolean.
+        if isinstance(
+            pk_value,
+            pk.value_type,
+        ) and isinstance(
+            other_pk_value,
+            pk.value_type,
+        ):
+            return pk_value == other_pk_value
+        else:
+            # As a fallback, even if it hasn't been saved in the database,
+            # an object should still be equal to itself.
+            return other is self
+
     ###########################################################################
     # Classmethods
 
@@ -1336,41 +1402,78 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def _table_str(
-        cls, abbreviated=False, excluded_params: Optional[list[str]] = None
+        cls,
+        abbreviated: bool = False,
+        excluded_params: Optional[list[str]] = None,
     ):
         """
         Returns a basic string representation of the table and its columns.
         Used by the playground.
 
         :param abbreviated:
-            If True, a very high level representation is printed out.
+            If True, a very high level representation is printed out (it just
+            shows any non-default values).
         :param excluded_params:
             Lets us find a middle ground between outputting every kwarg, and
             the abbreviated version with very few kwargs. For example
             `['index_method']`, if we want to show all kwargs but index_method.
 
         """
+        from piccolo.apps.migrations.auto.serialisation import (
+            SerialisedEnumTypeDefinition,
+            serialise_params,
+        )
+
         if excluded_params is None:
             excluded_params = []
+
         spacer = "\n    "
         columns = []
+        extra_definitions = []
         for col in cls._meta.columns:
-            params: list[str] = []
+            base_column_defaults = {
+                key: value.default
+                for key, value in inspect.signature(Column).parameters.items()
+            }
+            column_defaults = {
+                key: value.default
+                for key, value in inspect.signature(
+                    col.__class__
+                ).parameters.items()
+            }
+            defaults = {**base_column_defaults, **column_defaults}
+
+            params = {}
             for key, value in col._meta.params.items():
                 if key in excluded_params:
                     continue
 
-                _value: str = ""
-                if inspect.isclass(value):
-                    _value = value.__name__
-                    params.append(f"{key}={_value}")
-                else:
-                    _value = repr(value)
-                    if not abbreviated:
-                        params.append(f"{key}={_value}")
-            params_string = ", ".join(params)
+                if abbreviated:
+                    # If the value is just the default one, don't include it.
+                    if defaults.get(key, ...) == value:
+                        continue
+
+                    # If db_column is the same as the column name then don't
+                    # include it - it does nothing.
+                    if key == "db_column_name" and value == col._meta.name:
+                        continue
+
+                params[key] = value
+
+            serialised_params = serialise_params(params, inline_enums=False)
+            params_string = ", ".join(
+                f"{key}={repr(value)}"
+                for key, value in serialised_params.params.items()
+            )
             columns.append(
                 f"{col._meta.name} = {col.__class__.__name__}({params_string})"
+            )
+            extra_definitions.extend(
+                [
+                    i
+                    for i in serialised_params.extra_definitions
+                    if isinstance(i, SerialisedEnumTypeDefinition)
+                ]
             )
 
         for m2m_relationship in cls._meta.m2m_relationships:
@@ -1381,6 +1484,9 @@ class Table(metaclass=TableMetaclass):
                 f"{m2m_relationship._meta.name} = M2M({joining_table_name})"
             )
 
+        extra_definitions_string = spacer.join(
+            [repr(i) for i in extra_definitions]
+        )
         columns_string = spacer.join(columns)
         tablename = repr(cls._meta.tablename)
 
@@ -1392,9 +1498,11 @@ class Table(metaclass=TableMetaclass):
             else f"{parent_class_name}, tablename={tablename}"
         )
 
-        return (
-            f"class {cls.__name__}({class_args}):\n" f"    {columns_string}\n"
-        )
+        output = f"class {cls.__name__}({class_args}):\n"
+        if extra_definitions_string:
+            output += f"    {extra_definitions_string}\n"
+        output += f"    {columns_string}\n"
+        return output
 
 
 def create_table_class(

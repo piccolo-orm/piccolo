@@ -173,10 +173,16 @@ class ModelBuilder:
             random_value = RandomBuilder.next_datetime(tz_aware=tz_aware)
         elif column.value_type == list:
             length = RandomBuilder.next_int(maximum=10)
-            base_type = cast(Array, column).base_column.value_type
-            random_value = [
-                cls.__DEFAULT_MAPPER[base_type]() for _ in range(length)
-            ]
+            if column._meta.choices:
+                random_value = [
+                    RandomBuilder.next_enum(column._meta.choices)
+                    for _ in range(length)
+                ]
+            else:
+                base_type = cast(Array, column).base_column.value_type
+                random_value = [
+                    cls.__DEFAULT_MAPPER[base_type]() for _ in range(length)
+                ]
         elif column._meta.choices:
             random_value = RandomBuilder.next_enum(column._meta.choices)
         else:
