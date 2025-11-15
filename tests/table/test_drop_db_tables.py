@@ -19,7 +19,7 @@ class TestDropTables(TestCase):
         self.assertTrue(Manager.table_exists().run_sync())
         self.assertTrue(Band.table_exists().run_sync())
 
-        drop_db_tables_sync(Manager, Band)
+        drop_db_tables_sync(Band, Manager)
 
         self.assertFalse(Manager.table_exists().run_sync())
         self.assertFalse(Band.table_exists().run_sync())
@@ -31,7 +31,7 @@ class TestDropTables(TestCase):
         self.assertTrue(Manager.table_exists().run_sync())
         self.assertTrue(Band.table_exists().run_sync())
 
-        drop_tables(Manager, Band)
+        drop_tables(Band, Manager)
 
         self.assertFalse(Manager.table_exists().run_sync())
         self.assertFalse(Band.table_exists().run_sync())

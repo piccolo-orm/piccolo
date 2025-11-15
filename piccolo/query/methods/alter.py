@@ -175,8 +175,7 @@ class SetColumnTypeMysql(AlterStatement):
 
         column_name = self.old_column._meta.db_column_name
         coltype = self.new_column.column_type
-        # null_sql = "NULL" if self.new_column._meta.null else "NOT NULL"
-        query = f"MODIFY `{column_name}` {coltype}"  # {null_sql}"
+        query = f"MODIFY `{column_name}` {coltype}"
 
         return query
 

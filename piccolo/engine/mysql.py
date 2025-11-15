@@ -28,6 +28,8 @@ if TYPE_CHECKING:  # pragma: no cover
     from asyncmy.cursors import Cursor
     from asyncmy.pool import Pool
 
+    from piccolo.table import Table
+
 
 def backticks_format_querystring(querysting: str) -> str:
     return querysting.replace('"', "`")
@@ -307,7 +309,19 @@ class MySQLEngine(Engine[MySQLTransaction]):
 
     #########################################################################
 
-    async def _run_in_pool(self, query: str, args: list[Any] = []):
+    async def _get_inserted_pk(self, cursor, table: type[Table]) -> Any:
+        """
+        Retrieve the inserted primary key for MySQL.
+        """
+        return cursor.lastrowid
+
+    async def _run_in_pool(
+        self,
+        query: str,
+        args: list[Any] = [],
+        query_type: str = "generic",
+        table: Optional[type[Table]] = None,
+    ):
         if args is None:
             args = []
         if not self.pool:
@@ -315,6 +329,11 @@ class MySQLEngine(Engine[MySQLTransaction]):
 
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
+                if query_type == "insert":
+                    # We can't use the RETURNING clause in MySQL.
+                    assert table is not None
+                    pk = await self._get_inserted_pk(cur, table)
+                    return [{table._meta.primary_key._meta.db_column_name: pk}]
                 await cur.execute(query, args)
                 rows = await cur.fetchall()
                 cols = (
@@ -323,13 +342,24 @@ class MySQLEngine(Engine[MySQLTransaction]):
                 await conn.autocommit(True)
                 return [dict(zip(cols, row)) for row in rows]
 
-    async def _run_in_new_connection(self, query: str, args: list[Any] = []):
+    async def _run_in_new_connection(
+        self,
+        query: str,
+        args: list[Any] = [],
+        query_type: str = "generic",
+        table: Optional[type[Table]] = None,
+    ):
         if args is None:
             args = []
         conn = await self.get_new_connection()
         try:
             async with conn.cursor() as cur:
                 await cur.execute(query, args)
+                if query_type == "insert":
+                    # We can't use the RETURNING clause in MySQL.
+                    assert table is not None
+                    pk = await self._get_inserted_pk(cur, table)
+                    return [{table._meta.primary_key._meta.db_column_name: pk}]
                 rows = await cur.fetchall()
                 cols = (
                     [d[0] for d in cur.description] if cur.description else []
@@ -358,11 +388,17 @@ class MySQLEngine(Engine[MySQLTransaction]):
                 rows = await cur.fetchall()
         elif in_pool and self.pool:
             rows = await self._run_in_pool(
-                query=backticks_format_querystring(query), args=query_args
+                query=backticks_format_querystring(query),
+                args=query_args,
+                query_type=querystring.query_type,
+                table=querystring.table,
             )
         else:
             rows = await self._run_in_new_connection(
-                query=backticks_format_querystring(query), args=query_args
+                query=backticks_format_querystring(query),
+                args=query_args,
+                query_type=querystring.query_type,
+                table=querystring.table,
             )
 
         if self.log_responses:

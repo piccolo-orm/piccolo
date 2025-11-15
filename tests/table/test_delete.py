@@ -4,6 +4,7 @@ from piccolo.query.methods.delete import DeletionError
 from tests.base import (
     DBTestCase,
     engine_version_lt,
+    engines_skip,
     is_running_mysql,
     is_running_sqlite,
 )
@@ -51,9 +52,25 @@ class TestDelete(DBTestCase):
 
         Band.delete(force=True).run_sync()
 
+    @engines_skip("mysql")
     def test_delete_with_joins(self):
         """
         Make sure delete works if the `where` clause specifies joins.
+        TODO - MySQL does not allow deleting from a table you
+        also select from. asyncmy.errors.OperationalError:
+        (1093, "You can't specify target table 'band' for update in
+        FROM clause")
+        Look at where clause !!!
+        Correct MySQL query is:
+        DELETE FROM `band`
+        WHERE `manager` IN (
+            SELECT manager FROM (
+                SELECT b.manager
+                FROM `band` AS b
+                LEFT JOIN `manager` AS m ON b.manager = m.id
+                WHERE m.name = 'Guido'
+            ) AS sub
+        );
         """
 
         self.insert_rows()

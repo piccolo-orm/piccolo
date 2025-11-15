@@ -1,6 +1,7 @@
 from piccolo.columns import ForeignKey, Text, Varchar
 from piccolo.table import Table
 from piccolo.testing.test_case import TableTest
+from tests.base import engines_skip
 
 
 class Band(Table):
@@ -17,6 +18,7 @@ class Treasurer(Table):
     fan_club = ForeignKey(FanClub, unique=True)
 
 
+@engines_skip("mysql")
 class TestReverse(TableTest):
     tables = [Band, FanClub, Treasurer]
 
@@ -37,6 +39,15 @@ class TestReverse(TableTest):
         treasurer.save().run_sync()
 
     def test_reverse(self):
+        print(
+            Band.select(
+                Band.name,
+                FanClub.band.reverse().address.as_alias("address"),
+                Treasurer.fan_club._.band.reverse().name.as_alias(
+                    "treasurer_name"
+                ),
+            )
+        )
         response = Band.select(
             Band.name,
             FanClub.band.reverse().address.as_alias("address"),

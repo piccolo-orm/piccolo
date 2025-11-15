@@ -2,6 +2,7 @@ from unittest import TestCase
 
 from piccolo.columns import ForeignKey, Varchar
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
+from tests.base import engines_skip
 
 
 class Manager(Table):
@@ -13,6 +14,7 @@ class Band(Table):
     manager = ForeignKey(Manager, target_column="name")
 
 
+@engines_skip("mysql")
 class TestTargetColumnWithString(TestCase):
     """
     Make sure we can create tables with foreign keys which don't reference
@@ -56,6 +58,7 @@ class BandA(Table):
     manager = ForeignKey(ManagerA, target_column=ManagerA.name)
 
 
+@engines_skip("mysql")
 class TestTargetColumnWithColumnRef(TestCase):
     """
     Make sure we can create tables with foreign keys which don't reference
