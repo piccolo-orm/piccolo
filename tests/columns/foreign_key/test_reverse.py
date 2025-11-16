@@ -39,15 +39,7 @@ class TestReverse(TableTest):
         treasurer.save().run_sync()
 
     def test_reverse(self):
-        print(
-            Band.select(
-                Band.name,
-                FanClub.band.reverse().address.as_alias("address"),
-                Treasurer.fan_club._.band.reverse().name.as_alias(
-                    "treasurer_name"
-                ),
-            )
-        )
+
         response = Band.select(
             Band.name,
             FanClub.band.reverse().address.as_alias("address"),
