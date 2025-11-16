@@ -311,9 +311,12 @@ class MySQLEngine(Engine[MySQLTransaction]):
 
     async def _get_inserted_pk(self, cursor, table: type[Table]) -> Any:
         """
-        Retrieve the inserted primary key for MySQL.
+        Retrieve the inserted primary keys for MySQL.
         """
-        return cursor.lastrowid
+        first_id = cursor.lastrowid
+        count = cursor.rowcount
+        ids = list(range(first_id, first_id + count))
+        return ids
 
     async def _run_in_pool(
         self,
@@ -351,8 +354,12 @@ class MySQLEngine(Engine[MySQLTransaction]):
                 if query_type == "insert":
                     # We can't use the RETURNING clause in MySQL.
                     assert table is not None
-                    pk = await self._get_inserted_pk(cur, table)
-                    return [{table._meta.primary_key._meta.db_column_name: pk}]
+                    ids = []
+                    for pk in await self._get_inserted_pk(cur, table):
+                        ids.append(
+                            {table._meta.primary_key._meta.db_column_name: pk}
+                        )
+                    return ids
                 rows = await cur.fetchall()
                 cols = (
                     [d[0] for d in cur.description] if cur.description else []

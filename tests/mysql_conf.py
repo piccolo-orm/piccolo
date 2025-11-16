@@ -8,7 +8,7 @@ DB = MySQLEngine(
         "host": os.environ.get("MY_HOST", "localhost"),
         "port": os.environ.get("MY_PORT", 3306),
         "user": os.environ.get("MY_USER", "root"),
-        "password": os.environ.get("MY_PASSWORD", ""),
+        "password": os.environ.get("MY_PASSWORD", "Root123!"),
         "db": os.environ.get("MY_DATABASE", "piccolo"),
     }
 )

@@ -270,6 +270,7 @@ class TestUUIDColumn(TestCase):
 
         ticket = Ticket()
         ticket.save().run_sync()
+
         # We'll also fetch it from the DB in case the database adapter's UUID
         # is used.
         ticket_from_db = Ticket.objects().first().run_sync()

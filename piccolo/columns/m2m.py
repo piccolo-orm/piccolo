@@ -146,6 +146,80 @@ class M2MSelect(Selectable):
                 AS "{m2m_relationship_name} [M2M]"
             """
             )
+        elif engine_type == "mysql":
+            if self.as_list:
+                column_name = self.columns[0]._meta.db_column_name
+                inner_select_mysql = f"""
+                    SELECT `inner_{table_2_name}`.`{column_name}`
+                    FROM {m2m_table_name_with_schema.replace('"', '`')}
+                    JOIN {table_1_name_with_schema.replace('"', '`')} AS `inner_{table_1_name}` ON (
+                        {m2m_table_name_with_schema.replace('"', '`')}.`{fk_1_name}` = `inner_{table_1_name}`.`{table_1_pk_name}`
+                    )
+                    JOIN {table_2_name_with_schema.replace('"', '`')} AS `inner_{table_2_name}` ON (
+                        {m2m_table_name_with_schema.replace('"', '`')}.`{fk_2_name}` = `inner_{table_2_name}`.`{table_2_pk_name}`
+                    )
+                    WHERE {m2m_table_name_with_schema.replace('"', '`')}.`{fk_1_name}` = `{table_1_name}`.`{table_1_pk_name}`
+                """  # noqa: E501
+
+                return QueryString(
+                    f"""
+                    (
+                        SELECT JSON_ARRAYAGG(`inner_table`.`{column_name}`)
+                        FROM (
+                            {inner_select_mysql}
+                        ) AS `inner_table`
+                    ) AS `{m2m_relationship_name}`
+                    """
+                )
+            elif not self.serialisation_safe:
+                column_name = table_2_pk_name
+                inner_select_mysql = f"""
+                    SELECT `inner_{table_2_name}`.`{column_name}`
+                    FROM {m2m_table_name_with_schema.replace('"', '`')}
+                    JOIN {table_1_name_with_schema.replace('"', '`')} AS `inner_{table_1_name}` ON (
+                        {m2m_table_name_with_schema.replace('"', '`')}.`{fk_1_name}` = `inner_{table_1_name}`.`{table_1_pk_name}`
+                    )
+                    JOIN {table_2_name_with_schema.replace('"', '`')} AS `inner_{table_2_name}` ON (
+                        {m2m_table_name_with_schema.replace('"', '`')}.`{fk_2_name}` = `inner_{table_2_name}`.`{table_2_pk_name}`
+                    )
+                    WHERE {m2m_table_name_with_schema.replace('"', '`')}.`{fk_1_name}` = `{table_1_name}`.`{table_1_pk_name}`
+                """  # noqa: E501
+
+                return QueryString(
+                    f"""
+                    (
+                        SELECT JSON_ARRAYAGG(inner_table.`{column_name}`)
+                        FROM (
+                            {inner_select_mysql}
+                        ) AS `inner_table`
+                    ) AS `{m2m_relationship_name}`
+                    """
+                )
+            else:
+                column_names = ", ".join(
+                    f"inner_{table_2_name}.`{column._meta.db_column_name}`"
+                    for column in self.columns
+                )
+                json_object_fields = ", ".join(
+                    f"'{column._meta.db_column_name}', {m2m_relationship_name}_results.`{column._meta.db_column_name}`"  # noqa: E501
+                    for column in self.columns
+                )
+
+                return QueryString(
+                    f"""
+                    (
+                        SELECT JSON_ARRAYAGG(
+                            JSON_OBJECT(
+                                {json_object_fields}
+                            )
+                        )
+                        FROM (
+                            SELECT {column_names}
+                            FROM {inner_select}
+                        ) AS {m2m_relationship_name}_results
+                    ) AS `{m2m_relationship_name}`
+                    """
+                )
         else:
             raise ValueError(f"{engine_type} is an unrecognised engine type")
 
