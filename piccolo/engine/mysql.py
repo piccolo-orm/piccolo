@@ -319,8 +319,6 @@ class MySQLEngine(Engine[MySQLTransaction]):
         self,
         query: str,
         args: list[Any] = [],
-        query_type: str = "generic",
-        table: Optional[type[Table]] = None,
     ):
         if args is None:
             args = []
@@ -329,11 +327,6 @@ class MySQLEngine(Engine[MySQLTransaction]):
 
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
-                if query_type == "insert":
-                    # We can't use the RETURNING clause in MySQL.
-                    assert table is not None
-                    pk = await self._get_inserted_pk(cur, table)
-                    return [{table._meta.primary_key._meta.db_column_name: pk}]
                 await cur.execute(query, args)
                 rows = await cur.fetchall()
                 cols = (
@@ -390,8 +383,6 @@ class MySQLEngine(Engine[MySQLTransaction]):
             rows = await self._run_in_pool(
                 query=backticks_format_querystring(query),
                 args=query_args,
-                query_type=querystring.query_type,
-                table=querystring.table,
             )
         else:
             rows = await self._run_in_new_connection(

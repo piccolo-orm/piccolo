@@ -57,6 +57,10 @@ cockroach_only = pytest.mark.skipif(
     not is_running_cockroach(), reason="Only running for Cockroach"
 )
 
+mysql_only = pytest.mark.skipif(
+    not is_running_mysql(), reason="Only running for MySQL"
+)
+
 unix_only = pytest.mark.skipif(
     sys.platform.startswith("win"), reason="Only running on a Unix system"
 )
