@@ -50,7 +50,7 @@ class Readable(Selectable):
     def mysql_string(self) -> QueryString:
         """
         MySQL has no FORMAT for string templates, so we manually
-        expand '%s' placeholders into a CONCAT() expression.
+        expand placeholders into a CONCAT() expression.
         """
         parts: list[str] = []
         template_parts = self.template.split("%s")
@@ -65,7 +65,7 @@ class Readable(Selectable):
                 col = self.columns[i]._meta.get_full_name(with_alias=False)
                 parts.append(col)
 
-        concat_expr = "CONCAT(" + ", ".join(parts) + ")"
+        concat_expr = f"CONCAT({', '.join(parts)})"
         return QueryString(f"{concat_expr} AS {self.output_name}")
 
     def get_select_string(

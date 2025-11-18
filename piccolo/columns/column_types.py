@@ -1368,12 +1368,6 @@ class Boolean(Column):
         self.default = default
         super().__init__(default=default, **kwargs)
 
-    # @property
-    # def column_type(self):
-    #     engine_type = self._meta.engine_type
-    #     if engine_type == "mysql":
-    #         return "TINYINT(1)"
-
     def eq(self, value) -> Where:
         """
         When using ``Boolean`` columns in ``where`` clauses, some Python

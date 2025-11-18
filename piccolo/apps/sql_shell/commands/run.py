@@ -90,7 +90,7 @@ def run() -> None:
         if password := config.get("password"):
             subprocess_env["MYSQLPASSWORD"] = str(password)
         try:
-            # Allow SIGINT to pass to psql to abort queries.
+            # Allow SIGINT to pass to mysql to abort queries.
             signal.signal(signal.SIGINT, signal.SIG_IGN)
             print("Enter \\q to exit")
             subprocess.run(args, check=True, env=subprocess_env)

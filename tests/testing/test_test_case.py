@@ -8,6 +8,7 @@ from piccolo.testing.test_case import (
     AsyncTransactionTest,
     TableTest,
 )
+from tests.base import engines_skip
 from tests.example_apps.music.tables import Band, Manager
 
 
@@ -36,6 +37,7 @@ class TestAsyncTableTest(AsyncTableTest):
 
 
 @pytest.mark.skipif(sys.version_info <= (3, 11), reason="Python 3.11 required")
+@engines_skip("mysql")
 class TestAsyncTransaction(AsyncTransactionTest):
     """
     Make sure that the test exists within a transaction.
@@ -48,6 +50,7 @@ class TestAsyncTransaction(AsyncTransactionTest):
 
 
 @pytest.mark.skipif(sys.version_info <= (3, 11), reason="Python 3.11 required")
+@engines_skip("mysql")
 class TestAsyncTransactionRolledBack(AsyncTransactionTest):
     """
     Make sure that the changes get rolled back automatically.

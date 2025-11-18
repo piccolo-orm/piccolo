@@ -252,7 +252,7 @@ class MySQLEngine(Engine[MySQLTransaction]):
             engine_type="mysql",
             log_queries=log_queries,
             log_responses=log_responses,
-            min_version_number=5.7,
+            min_version_number=8.4,
         )
 
     @staticmethod
@@ -311,18 +311,14 @@ class MySQLEngine(Engine[MySQLTransaction]):
 
     async def _get_inserted_pk(self, cursor, table: type[Table]) -> Any:
         """
-        Retrieve the inserted primary keys for MySQL.
+        Retrieve the inserted auto-increment primary keys for MySQL.
         """
-        first_id = cursor.lastrowid
+        initial_id = cursor.lastrowid
         count = cursor.rowcount
-        ids = list(range(first_id, first_id + count))
+        ids = list(range(initial_id, initial_id + count))
         return ids
 
-    async def _run_in_pool(
-        self,
-        query: str,
-        args: list[Any] = [],
-    ):
+    async def _run_in_pool(self, query: str, args: list[Any] = []):
         if args is None:
             args = []
         if not self.pool:

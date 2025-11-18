@@ -455,7 +455,6 @@ class DDL:
             )
 
         if len(self.ddl) == 1:
-            # print(self.ddl[0])
             return await engine.run_ddl(self.ddl[0], in_pool=in_pool)
         responses = []
         for ddl in self.ddl:
