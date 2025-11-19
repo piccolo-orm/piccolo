@@ -253,7 +253,7 @@ class TimedeltaDelegate:
         if not isinstance(value, timedelta):
             raise ValueError("Only timedelta values can be added.")
 
-        if engine_type in ("postgres", "cockroach", "mysql"):
+        if engine_type in ("postgres", "cockroach"):
             value_string = self.get_postgres_interval_string(interval=value)
             return QueryString(
                 f'"{column_name}" {operator} INTERVAL {value_string}',
@@ -443,8 +443,19 @@ class Text(Column):
     ) -> None:
         self._validate_default(default, (str, None))
 
-        self.default = QueryString(f"('{default}')")
+        self.default = default
         super().__init__(default=default, **kwargs)
+
+    def get_default_value(self):
+        """
+        MySQL does not allow unquoted TEXT literals in a
+        DEFAULT clause
+        """
+        engine_type = self._meta.engine_type
+
+        if engine_type == "mysql":
+            return QueryString(f"('{self.default}')")
+        return super().get_default_value()
 
     ###########################################################################
     # For update queries
@@ -926,6 +937,14 @@ class Timestamp(Column):
     value_type = datetime
     timedelta_delegate = TimedeltaDelegate()
 
+    @property
+    def column_type(self):
+        engine_type = self._meta.engine_type
+        if engine_type == "mysql":
+            return "TIMESTAMP(6)"
+        else:
+            return "TIMESTAMP"
+
     def __init__(
         self,
         default: TimestampArg = TimestampNow(),
@@ -1291,8 +1310,7 @@ class Interval(Column):
             # https://sqlite.org/datatype3.html#determination_of_column_affinity
             return "SECONDS"
         elif engine_type == "mysql":
-            # In MySQL, 'INTERVAL' is a keyword, not a data type.
-            return "REAL"  # ??? how to handle this, with TIME or ???
+            return "TIME(6)"
         raise Exception("Unrecognized engine type")
 
     ###########################################################################
@@ -2358,6 +2376,17 @@ class JSON(Column):
 
         self.json_operator: Optional[str] = None
 
+    def get_default_value(self):
+        """
+        MySQL does not allow unquoted JSON literals in a
+        DEFAULT clause
+        """
+        engine_type = self._meta.engine_type
+
+        if engine_type == "mysql":
+            return QueryString(f"('{self.default}')")
+        return super().get_default_value()
+
     ###########################################################################
 
     def arrow(self, key: Union[str, int, QueryString]) -> GetChildElement:
@@ -2530,6 +2559,18 @@ class Bytea(Column):
 
         self.default = default
         super().__init__(default=default, **kwargs)
+
+    def get_default_value(self):
+        """
+        MySQL does not allow unquoted BLOB literals in a
+        DEFAULT clause
+        """
+        engine_type = self._meta.engine_type
+
+        if engine_type == "mysql":
+            return QueryString(f"({self.default})")
+
+        return super().get_default_value()
 
     ###########################################################################
     # Descriptors

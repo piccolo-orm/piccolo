@@ -69,7 +69,7 @@ class TimestampNow(Default):
 
     @property
     def mysql(self):
-        return "current_timestamp"
+        return "current_timestamp(6)"
 
     def python(self):
         return datetime.datetime.now()

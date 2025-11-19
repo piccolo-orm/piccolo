@@ -64,7 +64,18 @@ class IntervalCustom(Default):
 
     @property
     def mysql(self):
-        return self.timedelta.total_seconds()
+        value = self.get_mysql_interval_string(
+            attributes=[
+                "weeks",
+                "days",
+                "hours",
+                "minutes",
+                "seconds",
+                "milliseconds",
+                "microseconds",
+            ]
+        )
+        return f"(SEC_TO_TIME({value}))"
 
     def python(self):
         return self.timedelta
