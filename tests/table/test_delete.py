@@ -4,7 +4,6 @@ from piccolo.query.methods.delete import DeletionError
 from tests.base import (
     DBTestCase,
     engine_version_lt,
-    engines_skip,
     is_running_mysql,
     is_running_sqlite,
 )

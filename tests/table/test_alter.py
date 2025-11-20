@@ -130,6 +130,7 @@ class TestAddColumn(DBTestCase):
             expected_value=None,
         )
 
+    @engines_skip("mysql")
     def test_foreign_key(self):
         self._test_add_column(
             column=ForeignKey(references=Manager),

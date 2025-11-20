@@ -1,5 +1,6 @@
 from typing import cast
 
+from piccolo.query.functions.string import Concat
 from piccolo.testing.test_case import TableTest
 from tests.base import DBTestCase, engines_skip
 from tests.example_apps.music.tables import (
@@ -11,7 +12,6 @@ from tests.example_apps.music.tables import (
 )
 
 
-@engines_skip("mysql")
 class TestRefresh(DBTestCase):
     def setUp(self):
         super().setUp()
@@ -28,7 +28,7 @@ class TestRefresh(DBTestCase):
 
         # Modify the data in the database.
         Band.update(
-            {Band.name: Band.name + "!!!", Band.popularity: 8000}
+            {Band.name: Concat(Band.name, "!!!"), Band.popularity: 8000}
         ).where(Band.name == "Pythonistas").run_sync()
 
         # Refresh `band`, and make sure it has the correct data.
@@ -95,7 +95,7 @@ class TestRefresh(DBTestCase):
 
         # Modify the data in the database.
         Band.update(
-            {Band.name: Band.name + "!!!", Band.popularity: 8000}
+            {Band.name: Concat(Band.name, "!!!"), Band.popularity: 8000}
         ).where(Band.name == "Pythonistas").run_sync()
 
         # Refresh `band`, and make sure it has the correct data.
