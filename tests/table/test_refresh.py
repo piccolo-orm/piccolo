@@ -1,7 +1,7 @@
 from typing import cast
 
 from piccolo.testing.test_case import TableTest
-from tests.base import DBTestCase
+from tests.base import DBTestCase, engines_skip
 from tests.example_apps.music.tables import (
     Band,
     Concert,
@@ -11,6 +11,7 @@ from tests.example_apps.music.tables import (
 )
 
 
+@engines_skip("mysql")
 class TestRefresh(DBTestCase):
     def setUp(self):
         super().setUp()
@@ -142,6 +143,7 @@ class TestRefresh(DBTestCase):
         )
 
 
+@engines_skip("mysql")
 class TestRefreshWithPrefetch(TableTest):
 
     tables = [Manager, Band, Concert, Venue]
@@ -257,6 +259,7 @@ class TestRefreshWithPrefetch(TableTest):
         self.concert.refresh(columns=[Concert.band_1]).run_sync()
 
 
+@engines_skip("mysql")
 class TestRefreshWithLoadJSON(TableTest):
 
     tables = [RecordingStudio]

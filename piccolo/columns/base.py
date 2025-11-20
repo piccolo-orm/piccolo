@@ -1007,7 +1007,7 @@ class Column(Selectable):
                 query += (
                     f", FOREIGN KEY ({self._meta.db_column_name})"
                     f" REFERENCES {tablename}({target_column_name})"
-                    f" ON DELETE {on_delete} "
+                    f" ON DELETE {on_delete}"
                     f" ON UPDATE {on_update}"
                 )
                 return query

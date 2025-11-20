@@ -45,9 +45,9 @@ class ThingFour(Table):
 
 
 TABLES = [
-    Band,
-    Concert,
     Manager,
+    Concert,
+    Band,
     Venue,
     Ticket,
     ThingOne,
@@ -100,7 +100,19 @@ class TestGetRelatedReadable(TestCase):
         ).run_sync()
 
     def tearDown(self):
-        drop_db_tables_sync(*TABLES)
+        # We need to create a specific order for dropping tables
+        # due to the behavior of MySQL transactions.
+        drop_db_tables_sync(
+            Ticket,
+            Concert,
+            Band,
+            Manager,
+            Venue,
+            ThingFour,
+            ThingThree,
+            ThingTwo,
+            ThingOne,
+        )
 
     def test_get_related_readable(self):
         """

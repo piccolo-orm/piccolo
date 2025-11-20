@@ -11,6 +11,7 @@ from tests.base import (
     DBTestCase,
     engine_version_lt,
     engines_only,
+    engines_skip,
     is_running_sqlite,
 )
 from tests.example_apps.music.tables import Band, Manager
@@ -63,6 +64,7 @@ class TestInsert(DBTestCase):
         is_running_sqlite() and engine_version_lt(3.35),
         reason="SQLite version not supported",
     )
+    @engines_skip("mysql")
     def test_insert_returning(self):
         """
         Make sure update works with the `returning` clause.
@@ -79,6 +81,7 @@ class TestInsert(DBTestCase):
         is_running_sqlite() and engine_version_lt(3.35),
         reason="SQLite version not supported",
     )
+    @engines_skip("mysql")
     def test_insert_returning_alias(self):
         """
         Make sure update works with the `returning` clause.
@@ -96,6 +99,7 @@ class TestInsert(DBTestCase):
     is_running_sqlite() and engine_version_lt(3.24),
     reason="SQLite version not supported",
 )
+@engines_skip("mysql")
 class TestOnConflict(TestCase):
     class Band(Table):
         id: Serial

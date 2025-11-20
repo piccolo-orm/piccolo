@@ -15,11 +15,13 @@ from piccolo.columns.column_types import (
     Timestamptz,
     Varchar,
 )
+from piccolo.query.functions.string import Concat
 from piccolo.querystring import QueryString
 from piccolo.table import Table
 from tests.base import (
     DBTestCase,
     engine_version_lt,
+    engines_only,
     engines_skip,
     is_running_sqlite,
     sqlite_only,
@@ -117,6 +119,7 @@ class TestUpdate(DBTestCase):
         is_running_sqlite() and engine_version_lt(3.35),
         reason="SQLite version not supported",
     )
+    @engines_skip("mysql")
     def test_update_returning(self):
         """
         Make sure update works with the `returning` clause.
@@ -136,6 +139,7 @@ class TestUpdate(DBTestCase):
         is_running_sqlite() and engine_version_lt(3.35),
         reason="SQLite version not supported",
     )
+    @engines_skip("mysql")
     def test_update_returning_alias(self):
         """
         Make sure update works with the `returning` clause.
@@ -523,6 +527,309 @@ TEST_CASES = [
     ),
 ]
 
+###############################################################################
+# Test operators - MySQL
+
+
+class MyTableMysql(Table):
+    integer_col = Integer(null=True)
+    other_integer_col = Integer(null=True, default=5)
+    timestamp_col = Timestamp(null=True)
+    date_col = Date(null=True)
+    interval_col = Interval(null=True)
+    varchar_col = Varchar(null=True)
+    text_col = Text(null=True)
+
+
+@dataclasses.dataclass
+class OperatorTestCaseMysql:
+    description: str
+    column: Column
+    initial: Any
+    querystring: QueryString
+    expected: Any
+
+
+TEST_CASES_MYSQL = [
+    # Text
+    OperatorTestCase(
+        description="Add Text",
+        column=MyTableMysql.text_col,
+        initial="Pythonistas",
+        querystring=Concat(MyTableMysql.text_col, "!!!"),
+        expected="Pythonistas!!!",
+    ),
+    OperatorTestCase(
+        description="Add Text columns",
+        column=MyTableMysql.text_col,
+        initial="Pythonistas",
+        querystring=Concat(MyTableMysql.text_col, MyTableMysql.text_col),
+        expected="PythonistasPythonistas",
+    ),
+    OperatorTestCase(
+        description="Reverse add Text",
+        column=MyTableMysql.text_col,
+        initial="Pythonistas",
+        querystring=Concat("!!!", MyTableMysql.text_col),
+        expected="!!!Pythonistas",
+    ),
+    OperatorTestCase(
+        description="Text is null",
+        column=MyTableMysql.text_col,
+        initial=None,
+        querystring=Concat(MyTableMysql.text_col, "!!!"),
+        expected=None,
+    ),
+    OperatorTestCase(
+        description="Reverse Text is null",
+        column=MyTableMysql.text_col,
+        initial=None,
+        querystring=Concat("!!!", MyTableMysql.text_col),
+        expected=None,
+    ),
+    # Varchar
+    OperatorTestCase(
+        description="Add Varchar",
+        column=MyTableMysql.varchar_col,
+        initial="Pythonistas",
+        querystring=Concat(MyTableMysql.varchar_col, "!!!"),
+        expected="Pythonistas!!!",
+    ),
+    OperatorTestCase(
+        description="Add Varchar columns",
+        column=MyTableMysql.varchar_col,
+        initial="Pythonistas",
+        querystring=Concat(MyTableMysql.varchar_col, MyTableMysql.varchar_col),
+        expected="PythonistasPythonistas",
+    ),
+    OperatorTestCase(
+        description="Reverse add Varchar",
+        column=MyTableMysql.varchar_col,
+        initial="Pythonistas",
+        querystring=Concat("!!!", MyTableMysql.varchar_col),
+        expected="!!!Pythonistas",
+    ),
+    OperatorTestCase(
+        description="Varchar is null",
+        column=MyTableMysql.varchar_col,
+        initial=None,
+        querystring=Concat(MyTableMysql.varchar_col, "!!!"),
+        expected=None,
+    ),
+    OperatorTestCase(
+        description="Reverse Varchar is null",
+        column=MyTableMysql.varchar_col,
+        initial=None,
+        querystring=Concat("!!!", MyTableMysql.varchar_col),
+        expected=None,
+    ),
+    # Integer
+    OperatorTestCase(
+        description="Add Integer",
+        column=MyTableMysql.integer_col,
+        initial=1000,
+        querystring=MyTableMysql.integer_col + 10,
+        expected=1010,
+    ),
+    OperatorTestCase(
+        description="Reverse add Integer",
+        column=MyTableMysql.integer_col,
+        initial=1000,
+        querystring=10 + MyTableMysql.integer_col,
+        expected=1010,
+    ),
+    OperatorTestCase(
+        description="Add Integer colums together",
+        column=MyTableMysql.integer_col,
+        initial=1000,
+        querystring=MyTableMysql.integer_col + MyTableMysql.integer_col,
+        expected=2000,
+    ),
+    OperatorTestCase(
+        description="Subtract Integer",
+        column=MyTableMysql.integer_col,
+        initial=1000,
+        querystring=MyTableMysql.integer_col - 10,
+        expected=990,
+    ),
+    OperatorTestCase(
+        description="Reverse subtract Integer",
+        column=MyTableMysql.integer_col,
+        initial=1000,
+        querystring=2000 - MyTableMysql.integer_col,
+        expected=1000,
+    ),
+    OperatorTestCase(
+        description="Subtract Integer Columns",
+        column=MyTableMysql.integer_col,
+        initial=1000,
+        querystring=MyTableMysql.integer_col - MyTableMysql.other_integer_col,
+        expected=995,
+    ),
+    OperatorTestCase(
+        description="Add Integer Columns",
+        column=MyTableMysql.integer_col,
+        initial=1000,
+        querystring=MyTableMysql.integer_col + MyTableMysql.other_integer_col,
+        expected=1005,
+    ),
+    OperatorTestCase(
+        description="Multiply Integer",
+        column=MyTableMysql.integer_col,
+        initial=1000,
+        querystring=MyTableMysql.integer_col * 2,
+        expected=2000,
+    ),
+    OperatorTestCase(
+        description="Reverse multiply Integer",
+        column=MyTableMysql.integer_col,
+        initial=1000,
+        querystring=2 * MyTableMysql.integer_col,
+        expected=2000,
+    ),
+    OperatorTestCase(
+        description="Divide Integer",
+        column=MyTableMysql.integer_col,
+        initial=1000,
+        querystring=MyTableMysql.integer_col / 10,
+        expected=100,
+    ),
+    OperatorTestCase(
+        description="Reverse divide Integer",
+        column=MyTableMysql.integer_col,
+        initial=1000,
+        querystring=2000 / MyTableMysql.integer_col,
+        expected=2,
+    ),
+    OperatorTestCase(
+        description="Integer is null",
+        column=MyTableMysql.integer_col,
+        initial=None,
+        querystring=MyTableMysql.integer_col + 1,
+        expected=None,
+    ),
+    OperatorTestCase(
+        description="Reverse Integer is null",
+        column=MyTableMysql.integer_col,
+        initial=None,
+        querystring=1 + MyTableMysql.integer_col,
+        expected=None,
+    ),
+    # Timestamp
+    OperatorTestCase(
+        description="Add Timestamp",
+        column=MyTableMysql.timestamp_col,
+        initial=INITIAL_DATETIME,
+        querystring=MyTableMysql.timestamp_col + DATETIME_DELTA,
+        expected=datetime.datetime(
+            year=2022,
+            month=1,
+            day=2,
+            hour=22,
+            minute=1,
+            second=30,
+            microsecond=1000,
+        ),
+    ),
+    OperatorTestCase(
+        description="Reverse add Timestamp",
+        column=MyTableMysql.timestamp_col,
+        initial=INITIAL_DATETIME,
+        querystring=DATETIME_DELTA + MyTableMysql.timestamp_col,
+        expected=datetime.datetime(
+            year=2022,
+            month=1,
+            day=2,
+            hour=22,
+            minute=1,
+            second=30,
+            microsecond=1000,
+        ),
+    ),
+    OperatorTestCase(
+        description="Subtract Timestamp",
+        column=MyTableMysql.timestamp_col,
+        initial=INITIAL_DATETIME,
+        querystring=MyTableMysql.timestamp_col - DATETIME_DELTA,
+        expected=datetime.datetime(
+            year=2021,
+            month=12,
+            day=31,
+            hour=19,
+            minute=58,
+            second=29,
+            microsecond=999000,
+        ),
+    ),
+    OperatorTestCase(
+        description="Timestamp is null",
+        column=MyTableMysql.timestamp_col,
+        initial=None,
+        querystring=MyTableMysql.timestamp_col + DATETIME_DELTA,
+        expected=None,
+    ),
+    # Date
+    OperatorTestCase(
+        description="Add Date",
+        column=MyTableMysql.date_col,
+        initial=INITIAL_DATETIME,
+        querystring=MyTableMysql.date_col + DATE_DELTA,
+        expected=datetime.date(year=2022, month=1, day=2),
+    ),
+    OperatorTestCase(
+        description="Reverse add Date",
+        column=MyTableMysql.date_col,
+        initial=INITIAL_DATETIME,
+        querystring=DATE_DELTA + MyTableMysql.date_col,
+        expected=datetime.date(year=2022, month=1, day=2),
+    ),
+    OperatorTestCase(
+        description="Subtract Date",
+        column=MyTableMysql.date_col,
+        initial=INITIAL_DATETIME,
+        querystring=MyTableMysql.date_col - DATE_DELTA,
+        expected=datetime.date(year=2021, month=12, day=31),
+    ),
+    OperatorTestCase(
+        description="Date is null",
+        column=MyTableMysql.date_col,
+        initial=None,
+        querystring=MyTableMysql.date_col + DATE_DELTA,
+        expected=None,
+    ),
+    # Interval
+    OperatorTestCase(
+        description="Add Interval",
+        column=MyTableMysql.interval_col,
+        initial=INITIAL_INTERVAL,
+        querystring=MyTableMysql.interval_col + DATETIME_DELTA,
+        expected=datetime.timedelta(days=2, seconds=7350, microseconds=1000),
+    ),
+    OperatorTestCase(
+        description="Reverse add Interval",
+        column=MyTableMysql.interval_col,
+        initial=INITIAL_INTERVAL,
+        querystring=DATETIME_DELTA + MyTableMysql.interval_col,
+        expected=datetime.timedelta(days=2, seconds=7350, microseconds=1000),
+    ),
+    OperatorTestCase(
+        description="Subtract Interval",
+        column=MyTableMysql.interval_col,
+        initial=INITIAL_INTERVAL,
+        querystring=MyTableMysql.interval_col - DATETIME_DELTA,
+        expected=datetime.timedelta(
+            days=-1, seconds=86369, microseconds=999000
+        ),
+    ),
+    OperatorTestCase(
+        description="Interval is null",
+        column=MyTableMysql.interval_col,
+        initial=None,
+        querystring=MyTableMysql.interval_col + DATETIME_DELTA,
+        expected=None,
+    ),
+]
+
 
 class TestOperators(TestCase):
     def setUp(self):
@@ -531,7 +838,7 @@ class TestOperators(TestCase):
     def tearDown(self):
         MyTable.alter().drop_table().run_sync()
 
-    @engines_skip("cockroach")
+    @engines_skip("cockroach", "mysql")
     def test_operators(self):
         for test_case in TEST_CASES:
             print(test_case.description)
@@ -558,6 +865,42 @@ class TestOperators(TestCase):
 
             # Clean up
             MyTable.delete(force=True).run_sync()
+
+
+class TestOperatorsMysql(TestCase):
+    def setUp(self):
+        MyTableMysql.create_table().run_sync()
+
+    def tearDown(self):
+        MyTableMysql.alter().drop_table().run_sync()
+
+    @engines_only("mysql")
+    def test_operators(self):
+        for test_case in TEST_CASES_MYSQL:
+            print(test_case.description)
+
+            # Create the initial data in the database.
+            instance = MyTableMysql()
+            setattr(instance, test_case.column._meta.name, test_case.initial)
+            instance.save().run_sync()
+
+            # Apply the update.
+            MyTableMysql.update(
+                {test_case.column: test_case.querystring}, force=True
+            ).run_sync()
+
+            # Make sure the value returned from the database is correct.
+            new_value = getattr(
+                MyTableMysql.objects().first().run_sync(),
+                test_case.column._meta.name,
+            )
+
+            self.assertEqual(
+                new_value, test_case.expected, msg=test_case.description
+            )
+
+            # Clean up
+            MyTableMysql.delete(force=True).run_sync()
 
     @sqlite_only
     def test_edge_cases(self):

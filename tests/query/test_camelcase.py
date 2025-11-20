@@ -18,7 +18,7 @@ class TestCamelCase(TestCase):
         create_db_tables_sync(Manager, Band)
 
     def tearDown(self):
-        drop_db_tables_sync(Manager, Band)
+        drop_db_tables_sync(Band, Manager)
 
     def test_queries(self):
         """

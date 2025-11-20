@@ -241,6 +241,10 @@ class TimedeltaDelegate:
         output_string = ", ".join(output)
         return output_string
 
+    def get_mysql_interval_string(self, interval: timedelta) -> str:
+        total_seconds = interval.total_seconds()
+        return f"{total_seconds} SECOND"
+
     def get_querystring(
         self,
         column: Column,
@@ -258,7 +262,12 @@ class TimedeltaDelegate:
             return QueryString(
                 f'"{column_name}" {operator} INTERVAL {value_string}',
             )
-        elif engine_type in ("sqlite", "mysql"):
+        elif engine_type == "mysql":
+            value_string = self.get_mysql_interval_string(interval=value)
+            return QueryString(
+                f"`{column_name}` {operator} INTERVAL {value_string}",
+            )
+        elif engine_type in ("sqlite"):
             if isinstance(column, Interval):
                 # SQLite doesn't have a proper Interval type. Instead we store
                 # the number of seconds.
