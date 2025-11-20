@@ -7,6 +7,14 @@ from .base import Default
 
 
 class UUID4(Default):
+    """
+    This makes the default value for a
+    :class:`UUID <piccolo.columns.column_types.UUID>` column a randomly
+    generated UUID v4 value. The advantage over using :func:`uuid.uuid4` from
+    the standard library, is the default is set on the column definition in the
+    database too.
+    """
+
     @property
     def postgres(self):
         return "uuid_generate_v4()"
