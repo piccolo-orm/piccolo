@@ -2497,7 +2497,21 @@ class JSONB(JSON):
 
     @property
     def column_type(self):
+        engine_type = self._meta.engine_type
+        if engine_type == "mysql":
+            return "JSON"
         return "JSONB"  # Must be defined, we override column_type() in JSON()
+
+    def get_default_value(self):
+        """
+        MySQL does not allow unquoted JSON literals in a
+        DEFAULT clause
+        """
+        engine_type = self._meta.engine_type
+
+        if engine_type == "mysql":
+            return QueryString("('')")
+        return super().get_default_value()
 
     ###########################################################################
     # Descriptors
@@ -2700,7 +2714,7 @@ class Array(Column):
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type in ("postgres", "cockroach", "mysql"):
+        if engine_type in ("postgres", "cockroach"):
             return f"{self.base_column.column_type}[]"
         elif engine_type == "sqlite":
             inner_column = self._get_inner_column()
@@ -2711,7 +2725,20 @@ class Array(Column):
                 )
                 else "ARRAY"
             )
+        elif engine_type == "mysql":
+            return "JSON"  # use JSON column
         raise Exception("Unrecognized engine type")
+
+    def get_default_value(self):
+        """
+        MySQL does not allow unquoted JSON literals in a
+        DEFAULT clause
+        """
+        engine_type = self._meta.engine_type
+
+        if engine_type == "mysql":
+            return QueryString("('')")
+        return super().get_default_value()
 
     def _setup_base_column(self, table_class: type[Table]):
         """

@@ -151,14 +151,14 @@ class M2MSelect(Selectable):
                 column_name = self.columns[0]._meta.db_column_name
                 inner_select_mysql = f"""
                     SELECT `inner_{table_2_name}`.`{column_name}`
-                    FROM {m2m_table_name_with_schema.replace('"', '`')}
-                    JOIN {table_1_name_with_schema.replace('"', '`')} AS `inner_{table_1_name}` ON (
-                        {m2m_table_name_with_schema.replace('"', '`')}.`{fk_1_name}` = `inner_{table_1_name}`.`{table_1_pk_name}`
+                    FROM {m2m_table_name_with_schema}
+                    JOIN {table_1_name_with_schema} AS `inner_{table_1_name}` ON (
+                        {m2m_table_name_with_schema}.`{fk_1_name}` = `inner_{table_1_name}`.`{table_1_pk_name}`
                     )
-                    JOIN {table_2_name_with_schema.replace('"', '`')} AS `inner_{table_2_name}` ON (
-                        {m2m_table_name_with_schema.replace('"', '`')}.`{fk_2_name}` = `inner_{table_2_name}`.`{table_2_pk_name}`
+                    JOIN {table_2_name_with_schema} AS `inner_{table_2_name}` ON (
+                        {m2m_table_name_with_schema}.`{fk_2_name}` = `inner_{table_2_name}`.`{table_2_pk_name}`
                     )
-                    WHERE {m2m_table_name_with_schema.replace('"', '`')}.`{fk_1_name}` = `{table_1_name}`.`{table_1_pk_name}`
+                    WHERE {m2m_table_name_with_schema}.`{fk_1_name}` = `{table_1_name}`.`{table_1_pk_name}`
                 """  # noqa: E501
 
                 return QueryString(
@@ -175,14 +175,14 @@ class M2MSelect(Selectable):
                 column_name = table_2_pk_name
                 inner_select_mysql = f"""
                     SELECT `inner_{table_2_name}`.`{column_name}`
-                    FROM {m2m_table_name_with_schema.replace('"', '`')}
-                    JOIN {table_1_name_with_schema.replace('"', '`')} AS `inner_{table_1_name}` ON (
-                        {m2m_table_name_with_schema.replace('"', '`')}.`{fk_1_name}` = `inner_{table_1_name}`.`{table_1_pk_name}`
+                    FROM {m2m_table_name_with_schema}
+                    JOIN {table_1_name_with_schema} AS `inner_{table_1_name}` ON (
+                        {m2m_table_name_with_schema}.`{fk_1_name}` = `inner_{table_1_name}`.`{table_1_pk_name}`
                     )
-                    JOIN {table_2_name_with_schema.replace('"', '`')} AS `inner_{table_2_name}` ON (
-                        {m2m_table_name_with_schema.replace('"', '`')}.`{fk_2_name}` = `inner_{table_2_name}`.`{table_2_pk_name}`
+                    JOIN {table_2_name_with_schema} AS `inner_{table_2_name}` ON (
+                        {m2m_table_name_with_schema}.`{fk_2_name}` = `inner_{table_2_name}`.`{table_2_pk_name}`
                     )
-                    WHERE {m2m_table_name_with_schema.replace('"', '`')}.`{fk_1_name}` = `{table_1_name}`.`{table_1_pk_name}`
+                    WHERE {m2m_table_name_with_schema}.`{fk_1_name}` = `{table_1_name}`.`{table_1_pk_name}`
                 """  # noqa: E501
 
                 return QueryString(
@@ -388,10 +388,10 @@ class M2MAddRelated:
         # MySQL cannot safely do M2M inserts inside transactions
         # asyncmy and MySQL transacion model limitation
         if engine.engine_type == "mysql":
-            await self._run()
+            return await self._run()
         else:
             async with engine.transaction():
-                await self._run()
+                return await self._run()
 
     def run_sync(self):
         return run_sync(self.run())

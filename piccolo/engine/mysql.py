@@ -31,7 +31,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
-def backticks_format_querystring(querysting: str) -> str:
+def backticks_format(querysting: str) -> str:
     return querysting.replace('"', "`")
 
 
@@ -72,7 +72,7 @@ class AsyncBatch(BaseBatch):
 
         self._cursor = self.connection.cursor()
         async with self._cursor as cur:
-            await cur.execute(backticks_format_querystring(query), args)
+            await cur.execute(backticks_format(query), args)
         return self
 
     async def __aexit__(self, exception_type, exception, traceback):
@@ -378,18 +378,16 @@ class MySQLEngine(Engine[MySQLTransaction]):
         current_tx = self.current_transaction.get()
         if current_tx:
             async with current_tx.connection.cursor() as cur:
-                await cur.execute(
-                    backticks_format_querystring(query), query_args
-                )
+                await cur.execute(backticks_format(query), query_args)
                 rows = await cur.fetchall()
         elif in_pool and self.pool:
             rows = await self._run_in_pool(
-                query=backticks_format_querystring(query),
+                query=backticks_format(query),
                 args=query_args,
             )
         else:
             rows = await self._run_in_new_connection(
-                query=backticks_format_querystring(query),
+                query=backticks_format(query),
                 args=query_args,
                 query_type=querystring.query_type,
                 table=querystring.table,
@@ -408,13 +406,11 @@ class MySQLEngine(Engine[MySQLTransaction]):
         current_tx = self.current_transaction.get()
         if current_tx:
             async with current_tx.connection.cursor() as cur:
-                await cur.execute(backticks_format_querystring(ddl))
+                await cur.execute(backticks_format(ddl))
         elif in_pool and self.pool:
-            await self._run_in_pool(backticks_format_querystring(ddl))
+            await self._run_in_pool(backticks_format(ddl))
         else:
-            await self._run_in_new_connection(
-                backticks_format_querystring(ddl)
-            )
+            await self._run_in_new_connection(backticks_format(ddl))
 
     async def batch(
         self, query: Query, batch_size: int = 100, node: Optional[str] = None

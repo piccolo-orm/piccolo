@@ -77,7 +77,7 @@ TABLES = (
 
 
 # Cockroach Bug: Can turn ON when resolved: https://github.com/cockroachdb/cockroach/issues/71908  # noqa: E501
-@engines_skip("cockroach", "mysql")
+@engines_skip("cockroach")
 class TestModelBuilder(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -85,8 +85,22 @@ class TestModelBuilder(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        drop_db_tables_sync(*TABLES)
+        drop_db_tables_sync(
+            BandWithLazyReference,
+            Ticket,
+            Concert,
+            Band,
+            Manager,
+            Poster,
+            RecordingStudio,
+            Shirt,
+            Venue,
+            TableWithArrayField,
+            TableWithDecimal,
+            BandWithRecursiveReference,
+        )
 
+    @engines_skip("mysql")
     def test_async(self):
         async def build_model(table_class: type[Table]):
             return await ModelBuilder.build(table_class)
@@ -94,6 +108,7 @@ class TestModelBuilder(unittest.TestCase):
         for table_class in TABLES:
             asyncio.run(build_model(table_class))
 
+    @engines_skip("mysql")
     def test_sync(self):
         for table_class in TABLES:
             ModelBuilder.build_sync(table_class)
@@ -110,6 +125,7 @@ class TestModelBuilder(unittest.TestCase):
             ["s", "l", "m"],
         )
 
+    @engines_skip("mysql")
     def test_array_choices(self):
         """
         Make sure that ``ModelBuilder`` generates arrays where each array
@@ -212,6 +228,7 @@ class TestModelBuilder(unittest.TestCase):
 
         self.assertEqual(manager._meta.primary_key, band.manager)
 
+    @engines_skip("mysql")
     def test_valid_foreign_key_string(self):
         manager = ModelBuilder.build_sync(Manager)
 
