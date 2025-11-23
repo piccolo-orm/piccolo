@@ -999,13 +999,13 @@ class GenreToBand(Table):
     genre = ForeignKey(Genre)
 
 
-@engines_only("postgres", "cockroach")
+@engines_only("postgres", "cockroach", "mysql")
 class TestM2MMigrations(MigrationTestCase):
     def setUp(self):
         pass
 
     def tearDown(self):
-        drop_db_tables_sync(Migration, Band, Genre, GenreToBand)
+        drop_db_tables_sync(Migration, GenreToBand, Genre, Band)
 
     def test_m2m(self):
         """
@@ -1023,7 +1023,7 @@ class TestM2MMigrations(MigrationTestCase):
 ###############################################################################
 
 
-@engines_only("postgres", "cockroach")
+@engines_only("postgres", "cockroach", "mysql")
 class TestForeignKeys(MigrationTestCase):
     def setUp(self):
         class TableA(Table):
@@ -1044,7 +1044,7 @@ class TestForeignKeys(MigrationTestCase):
         self.table_classes = [TableA, TableB, TableC, TableD, TableE]
 
     def tearDown(self):
-        drop_db_tables_sync(Migration, *self.table_classes)
+        drop_db_tables_sync(Migration, *self.table_classes[::-1])
 
     def test_foreign_keys(self):
         """

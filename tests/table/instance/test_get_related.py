@@ -1,13 +1,11 @@
 from typing import cast
 
 from piccolo.testing.test_case import AsyncTableTest
-from tests.base import engines_skip
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
 
-@engines_skip("mysql")  # skip async test in transaction
 class TestGetRelated(AsyncTableTest):
-    tables = [Manager, Band, Concert, Venue]
+    tables = [Concert, Venue, Band, Manager]
 
     async def asyncSetUp(self):
         await super().asyncSetUp()

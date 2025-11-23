@@ -14,9 +14,9 @@ class Instrument(Table):
     studio = ForeignKey(RecordingStudio)
 
 
-@engines_only("postgres", "cockroach")
+@engines_only("postgres", "cockroach", "mysql")
 class TestJSONB(TableTest):
-    tables = [RecordingStudio, Instrument]
+    tables = [Instrument, RecordingStudio]
 
     def test_json(self):
         """
@@ -72,6 +72,7 @@ class TestJSONB(TableTest):
             ],
         )
 
+    @engines_skip("mysql")
     def test_where(self):
         """
         Test using the where clause to match a subset of rows.
@@ -140,7 +141,7 @@ class TestJSONB(TableTest):
 
 @engines_only("postgres", "cockroach")
 class TestArrow(AsyncTableTest):
-    tables = [RecordingStudio, Instrument]
+    tables = [Instrument, RecordingStudio]
 
     async def insert_row(self):
         await RecordingStudio(

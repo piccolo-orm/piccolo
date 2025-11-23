@@ -278,7 +278,17 @@ class MySQLEngine(Engine[MySQLTransaction]):
     def get_version_sync(self) -> float:
         return run_sync(self.get_version())
 
-    async def prep_database(self): ...
+    async def prep_database(self):
+        # Some globals for safer MySQL behavior
+        await self._run_in_new_connection(
+            """
+            SET GLOBAL sql_mode = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION,NO_ZERO_DATE,NO_ZERO_IN_DATE';
+            SET GLOBAL foreign_key_checks = 1;
+            SET GLOBAL innodb_strict_mode = ON;
+            SET GLOBAL character_set_server = 'utf8mb4';
+            SET GLOBAL collation_server = 'utf8mb4_unicode_ci';
+            """  # noqa: E501
+        )
 
     async def start_connection_pool(self, **kwargs):
         if self.pool:
