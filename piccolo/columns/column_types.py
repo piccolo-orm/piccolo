@@ -267,7 +267,7 @@ class TimedeltaDelegate:
             return QueryString(
                 f"`{column_name}` {operator} INTERVAL {value_string}",
             )
-        elif engine_type in ("sqlite"):
+        elif engine_type == "sqlite":
             if isinstance(column, Interval):
                 # SQLite doesn't have a proper Interval type. Instead we store
                 # the number of seconds.

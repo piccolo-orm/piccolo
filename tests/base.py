@@ -247,7 +247,6 @@ class DBTestCase(TestCase):
         query = """
             SELECT {columns} FROM information_schema.columns
             WHERE table_name = '{tablename}'
-            AND table_catalog = 'piccolo'
             AND table_schema = DATABASE()'
             AND column_name = '{column_name}'
         """.format(
