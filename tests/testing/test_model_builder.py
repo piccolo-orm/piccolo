@@ -100,7 +100,6 @@ class TestModelBuilder(unittest.TestCase):
             BandWithRecursiveReference,
         )
 
-    @engines_skip("mysql")
     def test_async(self):
         async def build_model(table_class: type[Table]):
             return await ModelBuilder.build(table_class)
@@ -108,7 +107,6 @@ class TestModelBuilder(unittest.TestCase):
         for table_class in TABLES:
             asyncio.run(build_model(table_class))
 
-    @engines_skip("mysql")
     def test_sync(self):
         for table_class in TABLES:
             ModelBuilder.build_sync(table_class)
@@ -125,7 +123,6 @@ class TestModelBuilder(unittest.TestCase):
             ["s", "l", "m"],
         )
 
-    @engines_skip("mysql")
     def test_array_choices(self):
         """
         Make sure that ``ModelBuilder`` generates arrays where each array
@@ -228,7 +225,6 @@ class TestModelBuilder(unittest.TestCase):
 
         self.assertEqual(manager._meta.primary_key, band.manager)
 
-    @engines_skip("mysql")
     def test_valid_foreign_key_string(self):
         manager = ModelBuilder.build_sync(Manager)
 

@@ -2,7 +2,7 @@ import json
 from unittest import TestCase
 
 from piccolo.table import create_db_tables_sync, drop_db_tables_sync
-from tests.base import DBTestCase, engines_skip
+from tests.base import DBTestCase
 from tests.example_apps.music.tables import Band, Instrument, RecordingStudio
 
 
@@ -32,9 +32,8 @@ class TestOutputJSON(DBTestCase):
         self.assertEqual(json.loads(response), [{"name": "Pythonistas"}])
 
 
-@engines_skip("mysql")
 class TestOutputLoadJSON(TestCase):
-    tables = [RecordingStudio, Instrument]
+    tables = [Instrument, RecordingStudio]
     json = {"a": 123}
 
     def setUp(self):

@@ -37,7 +37,6 @@ class TestAsyncTableTest(AsyncTableTest):
 
 
 @pytest.mark.skipif(sys.version_info <= (3, 11), reason="Python 3.11 required")
-@engines_skip("mysql")
 class TestAsyncTransaction(AsyncTransactionTest):
     """
     Make sure that the test exists within a transaction.

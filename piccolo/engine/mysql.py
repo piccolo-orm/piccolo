@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextvars
+import json
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Mapping, Optional, Union
@@ -33,6 +34,12 @@ if TYPE_CHECKING:  # pragma: no cover
 
 def backticks_format(querysting: str) -> str:
     return querysting.replace('"', "`")
+
+
+def converter(value: list) -> str:
+    if isinstance(value, list):
+        return json.dumps(value)
+    return value
 
 
 @dataclass
@@ -356,9 +363,12 @@ class MySQLEngine(Engine[MySQLTransaction]):
         if args is None:
             args = []
         connection = await self.get_new_connection()
+        # fixing asyncmy TypeError: Argument 'val' has
+        # incorrect type (expected tuple, got list)
+        params = tuple(converter(arg) for arg in args)
         try:
             async with connection.cursor() as cursor:
-                await cursor.execute(query, args)
+                await cursor.execute(query, params)
                 if query_type == "insert":
                     # We can't use the RETURNING clause in MySQL.
                     assert table is not None
