@@ -126,13 +126,13 @@ class Savepoint:
 
     async def rollback_to(self):
         validate_savepoint_name(self.name)
-        async with self.transaction.connection.cursor() as cur:
-            await cur.execute(f"ROLLBACK TO SAVEPOINT `{self.name}`")
+        async with self.transaction.connection.cursor() as cursor:
+            await cursor.execute(f"ROLLBACK TO SAVEPOINT `{self.name}`")
 
     async def release(self):
         validate_savepoint_name(self.name)
-        async with self.transaction.connection.cursor() as cur:
-            await cur.execute(f"RELEASE SAVEPOINT `{self.name}`")
+        async with self.transaction.connection.cursor() as cursor:
+            await cursor.execute(f"RELEASE SAVEPOINT `{self.name}`")
 
 
 class MySQLTransaction(BaseTransaction):
@@ -196,17 +196,17 @@ class MySQLTransaction(BaseTransaction):
         self._savepoint_id += 1
         name = name or f"savepoint_{self._savepoint_id}"
         validate_savepoint_name(name)
-        async with self.connection.cursor() as cur:
-            await cur.execute(f"SAVEPOINT `{name}`")
+        async with self.connection.cursor() as cursor:
+            await cursor.execute(f"SAVEPOINT `{name}`")
         return Savepoint(name=name, transaction=self)
 
     ##########################################################################
 
-    async def __aexit__(self, exc_type, exc, tb):
+    async def __aexit__(self, exception_type, exception, traceback) -> bool:
         if self._parent:
-            return exc is None
+            return exception is None
 
-        if exc:
+        if exception:
             if not self._rolled_back:
                 await self.rollback()
         else:
@@ -219,7 +219,7 @@ class MySQLTransaction(BaseTransaction):
             self.connection.close()
 
         self.engine.current_transaction.reset(self.context)
-        return exc is None
+        return exception is None
 
 
 ##########################################################################
@@ -312,10 +312,10 @@ class MySQLEngine(Engine[MySQLTransaction]):
     ##########################################################################
 
     async def get_new_connection(self) -> Connection:
-        conn = await asyncmy.connect(**self.config)
+        connection = await asyncmy.connect(**self.config)
         # Enable autocommit by default
-        await conn.autocommit(True)
-        return conn
+        await connection.autocommit(True)
+        return connection
 
     #########################################################################
 
@@ -334,15 +334,17 @@ class MySQLEngine(Engine[MySQLTransaction]):
         if not self.pool:
             raise ValueError("A pool isn't currently running.")
 
-        async with self.pool.acquire() as conn:
-            async with conn.cursor() as cur:
-                await cur.execute(query, args)
-                rows = await cur.fetchall()
-                cols = (
-                    [d[0] for d in cur.description] if cur.description else []
+        async with self.pool.acquire() as connection:
+            async with connection.cursor() as cursor:
+                await cursor.execute(query, args)
+                rows = await cursor.fetchall()
+                columns = (
+                    [desc[0] for desc in cursor.description]
+                    if cursor.description
+                    else []
                 )
-                await conn.autocommit(True)
-                return [dict(zip(cols, row)) for row in rows]
+                await connection.autocommit(True)
+                return [dict(zip(columns, row)) for row in rows]
 
     async def _run_in_new_connection(
         self,
@@ -353,26 +355,28 @@ class MySQLEngine(Engine[MySQLTransaction]):
     ):
         if args is None:
             args = []
-        conn = await self.get_new_connection()
+        connection = await self.get_new_connection()
         try:
-            async with conn.cursor() as cur:
-                await cur.execute(query, args)
+            async with connection.cursor() as cursor:
+                await cursor.execute(query, args)
                 if query_type == "insert":
                     # We can't use the RETURNING clause in MySQL.
                     assert table is not None
                     ids = []
-                    for pk in await self._get_inserted_pk(cur, table):
+                    for pk in await self._get_inserted_pk(cursor, table):
                         ids.append(
                             {table._meta.primary_key._meta.db_column_name: pk}
                         )
                     return ids
-                rows = await cur.fetchall()
-                cols = (
-                    [d[0] for d in cur.description] if cur.description else []
+                rows = await cursor.fetchall()
+                columns = (
+                    [desc[0] for desc in cursor.description]
+                    if cursor.description
+                    else []
                 )
-                return [dict(zip(cols, row)) for row in rows]
+                return [dict(zip(columns, row)) for row in rows]
         finally:
-            conn.close()
+            connection.close()
 
     async def run_querystring(
         self, querystring: QueryString, in_pool: bool = True
@@ -385,11 +389,11 @@ class MySQLEngine(Engine[MySQLTransaction]):
         if self.log_queries:
             self.print_query(query_id=query_id, query=query)
 
-        current_tx = self.current_transaction.get()
-        if current_tx:
-            async with current_tx.connection.cursor() as cur:
-                await cur.execute(backticks_format(query), query_args)
-                rows = await cur.fetchall()
+        current_transaction = self.current_transaction.get()
+        if current_transaction:
+            async with current_transaction.connection.cursor() as cursor:
+                await cursor.execute(backticks_format(query), query_args)
+                rows = await cursor.fetchall()
         elif in_pool and self.pool:
             rows = await self._run_in_pool(
                 query=backticks_format(query),
@@ -413,10 +417,10 @@ class MySQLEngine(Engine[MySQLTransaction]):
         if self.log_queries:
             self.print_query(query_id=query_id, query=ddl)
 
-        current_tx = self.current_transaction.get()
-        if current_tx:
-            async with current_tx.connection.cursor() as cur:
-                await cur.execute(backticks_format(ddl))
+        current_transaction = self.current_transaction.get()
+        if current_transaction:
+            async with current_transaction.connection.cursor() as cursor:
+                await cursor.execute(backticks_format(ddl))
         elif in_pool and self.pool:
             await self._run_in_pool(backticks_format(ddl))
         else:

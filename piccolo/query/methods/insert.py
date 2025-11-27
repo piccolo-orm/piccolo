@@ -69,13 +69,13 @@ class Insert(
             )
 
         if (
-            self.engine_type in ("postgres", "cockroach")
+            self.engine_type in ("postgres", "cockroach", "mysql")
             and len(self.on_conflict_delegate._on_conflict.on_conflict_items)
             == 1
         ):
             raise NotImplementedError(
-                "Postgres and Cockroach only support a single ON CONFLICT "
-                "clause."
+                "Postgres, Cockroach and MySQL only support a single "
+                "ON CONFLICT clause."
             )
 
         self.on_conflict_delegate.on_conflict(
@@ -92,19 +92,45 @@ class Insert(
         """
         Assign the ids of the created rows to the model instances.
         """
-        for index, row in enumerate(results):
-            table_instance: Table = self.add_delegate._add[index]
-            setattr(
-                table_instance,
-                self.table._meta.primary_key._meta.name,
-                row.get(
-                    self.table._meta.primary_key._meta.db_column_name, None
-                ),
-            )
-            table_instance._exists_in_db = True
+        try:
+            for index, row in enumerate(results):
+                table_instance: Table = self.add_delegate._add[index]
+                setattr(
+                    table_instance,
+                    self.table._meta.primary_key._meta.name,
+                    row.get(
+                        self.table._meta.primary_key._meta.db_column_name, None
+                    ),
+                )
+                table_instance._exists_in_db = True
+        except IndexError:
+            ...
+
+    @property
+    def mysql_insert_ignore(self) -> bool:
+        # detect DO_NOTHING action for MySQL
+        for item in self.on_conflict_delegate._on_conflict.on_conflict_items:
+            if item.action == OnConflictAction.do_nothing:
+                return True
+        return False
 
     @property
     def default_querystrings(self) -> Sequence[QueryString]:
+        if self.engine_type == "mysql" and self.mysql_insert_ignore:
+            base = f"INSERT IGNORE INTO {self.table._meta.get_formatted_tablename()}"  # noqa: E501
+            columns = ",".join(
+                f'"{i._meta.db_column_name}"' for i in self.table._meta.columns
+            )
+            values = ",".join("{}" for _ in self.add_delegate._add)
+            query = f"{base} ({columns}) VALUES {values}"
+            querystring = QueryString(
+                query,
+                *[i.querystring for i in self.add_delegate._add],
+                query_type="insert",
+                table=self.table,
+            )
+            return [querystring]
+
         base = f"INSERT INTO {self.table._meta.get_formatted_tablename()}"
         columns = ",".join(
             f'"{i._meta.db_column_name}"' for i in self.table._meta.columns
