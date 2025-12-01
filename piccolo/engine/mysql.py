@@ -233,6 +233,34 @@ class MySQLTransaction(BaseTransaction):
 
 
 class MySQLEngine(Engine[MySQLTransaction]):
+    """
+    Used to connect to MySQL.
+
+    :param config:
+        The config dictionary is passed to the underlying database adapter,
+        asyncmy. Common arguments you're likely to need are:
+
+        * host
+        * port
+        * user
+        * password
+        * db
+
+        For example, ``{'host': 'localhost', 'port': 3306}``.
+
+    :param log_queries:
+        If ``True``, all SQL and DDL statements are printed out before being
+        run. Useful for debugging.
+
+    :param log_responses:
+        If ``True``, the raw response from each query is printed out. Useful
+        for debugging.
+
+    :param extra_nodes:
+        For now, just for compatibility.
+
+    """
+
     __slots__ = ("config", "extra_nodes", "pool")
 
     def __init__(
