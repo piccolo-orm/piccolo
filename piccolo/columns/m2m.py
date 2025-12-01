@@ -385,8 +385,8 @@ class M2MAddRelated:
         transaction, or wrapped in a new transaction.
         """
         engine = self.rows[0]._meta.db
-        # MySQL cannot safely do M2M inserts inside transactions
-        # asyncmy and MySQL transacion model limitation
+        # MySQL cannot safely do M2M inserts inside transactions.
+        # MySQL transaction model limitation
         if engine.engine_type == "mysql":
             return await self._run()
         else:

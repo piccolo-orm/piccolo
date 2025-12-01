@@ -22,12 +22,12 @@ from piccolo.utils.lazy_loader import LazyLoader
 from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import colored_warning
 
-asyncmy = LazyLoader("asyncmy", globals(), "asyncmy")
+aiomysql = LazyLoader("aiomysql", globals(), "aiomysql")
 
 if TYPE_CHECKING:  # pragma: no cover
-    from asyncmy.connection import Connection
-    from asyncmy.cursors import Cursor
-    from asyncmy.pool import Pool
+    from aiomysql.connection import Connection
+    from aiomysql.cursors import Cursor
+    from aiomysql.pool import Pool
 
     from piccolo.table import Table
 
@@ -77,7 +77,7 @@ class AsyncBatch(BaseBatch):
         querystring = self.query.querystrings[0]
         query, args = querystring.compile_string()
 
-        self._cursor = self.connection.cursor()
+        self._cursor = await self.connection.cursor()
         async with self._cursor as cur:
             await cur.execute(backticks_format(query), args)
         return self
@@ -238,7 +238,7 @@ class MySQLEngine(Engine[MySQLTransaction]):
 
     :param config:
         The config dictionary is passed to the underlying database adapter,
-        asyncmy. Common arguments you're likely to need are:
+        aiomysql. Common arguments you're likely to need are:
 
         * host
         * port
@@ -334,7 +334,7 @@ class MySQLEngine(Engine[MySQLTransaction]):
         else:
             config = dict(self.config)
             config.update(**kwargs)
-            self.pool = await asyncmy.create_pool(**config)
+            self.pool = await aiomysql.create_pool(**config)
 
     async def close_connection_pool(self):
         if self.pool:
@@ -347,7 +347,7 @@ class MySQLEngine(Engine[MySQLTransaction]):
     ##########################################################################
 
     async def get_new_connection(self) -> Connection:
-        connection = await asyncmy.connect(**self.config)
+        connection = await aiomysql.connect(**self.config)
         # Enable autocommit by default
         await connection.autocommit(True)
         return connection
@@ -391,8 +391,7 @@ class MySQLEngine(Engine[MySQLTransaction]):
         if args is None:
             args = []
         connection = await self.get_new_connection()
-        # fixing asyncmy TypeError: Argument 'val' has
-        # incorrect type (expected tuple, got list)
+        # convert lists
         params = tuple(converter(arg) for arg in args)
         try:
             async with connection.cursor() as cursor:

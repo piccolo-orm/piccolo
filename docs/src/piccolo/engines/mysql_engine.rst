@@ -23,9 +23,8 @@ Configuration
 config
 ~~~~~~
 
-The config dictionary is passed directly to the underlying database adapter,
-asyncmy (API compatible with aiomysql). See the 
-`aiomysql docs <https://aiomysql.readthedocs.io/en/stable/connection.html#connection>`_
+The config dictionary is passed directly to the underlying 
+database adapter, aiomysql. See the `aiomysql docs <https://aiomysql.readthedocs.io/en/stable/connection.html#connection>`_
 to learn more.
 
 -------------------------------------------------------------------------------
