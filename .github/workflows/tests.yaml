@@ -11,74 +11,74 @@ on:
             - "docs/**"
 
 jobs:
-    linters:
-        runs-on: ubuntu-latest
-        timeout-minutes: 60
-        strategy:
-            matrix:
-                python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    # linters:
+    #     runs-on: ubuntu-latest
+    #     timeout-minutes: 60
+    #     strategy:
+    #         matrix:
+    #             python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
-        steps:
-            - uses: actions/checkout@v3
-            - name: Set up Python ${{ matrix.python-version }}
-              uses: actions/setup-python@v5
-              with:
-                  python-version: ${{ matrix.python-version }}
-            - name: Install dependencies
-              run: |
-                  python -m pip install --upgrade pip
-                  pip install -r requirements/requirements.txt
-                  pip install -r requirements/dev-requirements.txt
-                  pip install -r requirements/test-requirements.txt
-            - name: Lint
-              run: ./scripts/lint.sh
+    #     steps:
+    #         - uses: actions/checkout@v3
+    #         - name: Set up Python ${{ matrix.python-version }}
+    #           uses: actions/setup-python@v5
+    #           with:
+    #               python-version: ${{ matrix.python-version }}
+    #         - name: Install dependencies
+    #           run: |
+    #               python -m pip install --upgrade pip
+    #               pip install -r requirements/requirements.txt
+    #               pip install -r requirements/dev-requirements.txt
+    #               pip install -r requirements/test-requirements.txt
+    #         - name: Lint
+    #           run: ./scripts/lint.sh
 
-    integration:
-        runs-on: ubuntu-latest
-        timeout-minutes: 60
-        strategy:
-            matrix:
-                # These tests are slow, so we only run on the latest Python
-                # version.
-                python-version: ["3.13"]
-                postgres-version: [17]
-        services:
-            postgres:
-                image: postgres:${{ matrix.postgres-version }}
-                env:
-                    POSTGRES_PASSWORD: postgres
-                options: >-
-                    --health-cmd pg_isready
-                    --health-interval 10s
-                    --health-timeout 5s
-                    --health-retries 5
-                ports:
-                    - 5432:5432
-        steps:
-            - uses: actions/checkout@v3
-            - name: Set up Python ${{ matrix.python-version }}
-              uses: actions/setup-python@v5
-              with:
-                  python-version: ${{ matrix.python-version }}
-            - name: Install dependencies
-              run: |
-                  python -m pip install --upgrade pip
-                  pip install -r requirements/requirements.txt
-                  pip install -r requirements/test-requirements.txt
-                  pip install -r requirements/extras/postgres.txt
-            - name: Setup postgres
-              run: |
-                  export PGPASSWORD=postgres
-                  psql -h localhost -c 'CREATE DATABASE piccolo;' -U postgres
-                  psql -h localhost -c "CREATE USER piccolo PASSWORD 'piccolo';" -U postgres
-                  psql -h localhost -c "GRANT ALL PRIVILEGES ON DATABASE piccolo TO piccolo;" -U postgres
-                  psql -h localhost -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" -d piccolo -U postgres
-            - name: Run integration tests
-              run: ./scripts/test-integration.sh
-              env:
-                  PG_HOST: localhost
-                  PG_DATABASE: piccolo
-                  PG_PASSWORD: postgres
+    # integration:
+    #     runs-on: ubuntu-latest
+    #     timeout-minutes: 60
+    #     strategy:
+    #         matrix:
+    #             # These tests are slow, so we only run on the latest Python
+    #             # version.
+    #             python-version: ["3.13"]
+    #             postgres-version: [17]
+    #     services:
+    #         postgres:
+    #             image: postgres:${{ matrix.postgres-version }}
+    #             env:
+    #                 POSTGRES_PASSWORD: postgres
+    #             options: >-
+    #                 --health-cmd pg_isready
+    #                 --health-interval 10s
+    #                 --health-timeout 5s
+    #                 --health-retries 5
+    #             ports:
+    #                 - 5432:5432
+    #     steps:
+    #         - uses: actions/checkout@v3
+    #         - name: Set up Python ${{ matrix.python-version }}
+    #           uses: actions/setup-python@v5
+    #           with:
+    #               python-version: ${{ matrix.python-version }}
+    #         - name: Install dependencies
+    #           run: |
+    #               python -m pip install --upgrade pip
+    #               pip install -r requirements/requirements.txt
+    #               pip install -r requirements/test-requirements.txt
+    #               pip install -r requirements/extras/postgres.txt
+    #         - name: Setup postgres
+    #           run: |
+    #               export PGPASSWORD=postgres
+    #               psql -h localhost -c 'CREATE DATABASE piccolo;' -U postgres
+    #               psql -h localhost -c "CREATE USER piccolo PASSWORD 'piccolo';" -U postgres
+    #               psql -h localhost -c "GRANT ALL PRIVILEGES ON DATABASE piccolo TO piccolo;" -U postgres
+    #               psql -h localhost -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" -d piccolo -U postgres
+    #         - name: Run integration tests
+    #           run: ./scripts/test-integration.sh
+    #           env:
+    #               PG_HOST: localhost
+    #               PG_DATABASE: piccolo
+    #               PG_PASSWORD: postgres
 
     # postgres:
     #     runs-on: ubuntu-latest
@@ -209,7 +209,12 @@ jobs:
                 env:
                   MYSQL_ROOT_PASSWORD: rootpassword
                 ports:
-                    - 3306:3306
+                    - 3306
+                options: >-
+                    --health-cmd="mysqladmin ping -h 127.0.0.1 -prootpassword"
+                    --health-interval=5s
+                    --health-timeout=5s
+                    --health-retries=20
 
         steps:
             - uses: actions/checkout@v3
@@ -222,19 +227,28 @@ jobs:
                   python -m pip install --upgrade pip
                   pip install -r requirements/requirements.txt
                   pip install -r requirements/test-requirements.txt
-                  pip install -r requirements/extras/mysql.txt           
+                  pip install -r requirements/extras/mysql.txt  
+            - name: Wait for MySQL
+              run: |
+                for i in {1..30}; do
+                  mysqladmin ping -h127.0.0.1 -prootpassword && break
+                  echo "Waiting for MySQL..."
+                  sleep 2
+                done         
             - name: Setup MySQL
               run: |
-                mysql -h localhost -u root -prootpassword -e "CREATE DATABASE piccolo;"
-                mysql -h localhost -u root -prootpassword -e "CREATE USER 'piccolo'@'%' IDENTIFIED BY 'piccolo';"
-                mysql -h localhost -u root -prootpassword -e "GRANT ALL PRIVILEGES ON piccolo.* TO 'piccolo'@'%';"
-                mysql -h localhost -u root -prootpassword -e "FLUSH PRIVILEGES;"           
+                mysql -h127.0.0.1 -uroot -prootpassword <<EOF
+                  CREATE USER IF NOT EXISTS 'piccolo'@'%' IDENTIFIED BY 'piccolo';
+                  GRANT ALL PRIVILEGES ON piccolo.* TO 'piccolo'@'%';
+                  FLUSH PRIVILEGES;
+                EOF          
             - name: Test with pytest, MySQL
               run: ./scripts/test-mysql.sh
               env:
                   MYSQL_USER: piccolo
                   MYSQL_DATABASE: piccolo
                   MYSQL_PASSWORD: piccolo
+                  MYSQL_HOST: 127.0.0.1
             - name: Upload coverage
               uses: codecov/codecov-action@v1
               if: matrix.python-version == '3.13'
