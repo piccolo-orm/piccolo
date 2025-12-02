@@ -27,10 +27,10 @@ class TestLazyLoader(TestCase):
                 lazy_loader._load()
 
     @mysql_only
-    def test_lazy_loader_asyncmy_exception(self):
-        lazy_loader = LazyLoader("asyncmy", globals(), "asyncmy.connect")
+    def test_lazy_loader_aiomysql_exception(self):
+        lazy_loader = LazyLoader("aiomysql", globals(), "aiomysql.connect")
 
-        with mock.patch("asyncmy.connect") as module:
+        with mock.patch("aiomysql.connect") as module:
             module.side_effect = ModuleNotFoundError()
             with self.assertRaises(ModuleNotFoundError):
                 lazy_loader._load()

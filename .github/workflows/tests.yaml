@@ -2,7 +2,7 @@ name: Test Suite
 
 on:
     push:
-        branches: ["master", "v1"]
+        branches: ["master", "v1", "mysql_engine"]
         paths-ignore:
             - "docs/**"
     pull_request:
@@ -191,6 +191,50 @@ jobs:
                   pip install -r requirements/extras/sqlite.txt
             - name: Test with pytest, SQLite
               run: ./scripts/test-sqlite.sh
+            - name: Upload coverage
+              uses: codecov/codecov-action@v1
+              if: matrix.python-version == '3.13'
+
+    mysql:
+        runs-on: ubuntu-latest
+        timeout-minutes: 60
+        strategy:
+            matrix:
+                python-version: ["3.10", "3.11", "3.12", "3.13"]
+                mysql-version: [8.4]
+
+        services:
+            mysql:
+                image: mysql:${{ matrix.mysql-version }}
+                env:
+                  MYSQL_ROOT_PASSWORD: rootpassword
+                ports:
+                    - 3306:3306
+
+        steps:
+            - uses: actions/checkout@v3
+            - name: Set up Python ${{ matrix.python-version }}
+              uses: actions/setup-python@v5
+              with:
+                  python-version: ${{ matrix.python-version }}
+            - name: Install dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install -r requirements/requirements.txt
+                  pip install -r requirements/test-requirements.txt
+                  pip install -r requirements/extras/mysql.txt           
+            - name: Setup MySQL
+              run: |
+                mysql -h 127.0.0.1 -u root -prootpassword -e "CREATE DATABASE piccolo;"
+                mysql -h 127.0.0.1 -u root -prootpassword -e "CREATE USER 'piccolo'@'%' IDENTIFIED BY 'piccolo';"
+                mysql -h 127.0.0.1 -u root -prootpassword -e "GRANT ALL PRIVILEGES ON piccolo.* TO 'piccolo'@'%';"
+                mysql -h 127.0.0.1 -u root -prootpassword -e "FLUSH PRIVILEGES;"           
+            - name: Test with pytest, MySQL
+              run: ./scripts/test-mysql.sh
+              env:
+                  MYSQL_USER: piccolo
+                  MYSQL_DATABASE: piccolo
+                  MYSQL_PASSWORD: piccolo
             - name: Upload coverage
               uses: codecov/codecov-action@v1
               if: matrix.python-version == '3.13'
