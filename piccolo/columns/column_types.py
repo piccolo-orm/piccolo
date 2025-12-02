@@ -72,8 +72,11 @@ from piccolo.columns.defaults.timestamptz import (
 from piccolo.columns.defaults.uuid import UUID4, UUIDArg
 from piccolo.columns.operators.comparison import (
     ArrayAll,
+    ArrayAllMysql,
     ArrayAny,
+    ArrayAnyMysql,
     ArrayNotAny,
+    ArrayNotAnyMysql,
 )
 from piccolo.columns.operators.string import Concat
 from piccolo.columns.reference import LazyTableReference
@@ -2863,6 +2866,8 @@ class Array(Column):
 
         if engine_type in ("postgres", "cockroach"):
             return Where(column=self, value=value, operator=ArrayAny)
+        if engine_type == "mysql":
+            return Where(column=self, value=value, operator=ArrayAnyMysql)
         elif engine_type == "sqlite":
             return self.like(f"%{value}%")
         else:
@@ -2881,6 +2886,8 @@ class Array(Column):
 
         if engine_type in ("postgres", "cockroach"):
             return Where(column=self, value=value, operator=ArrayNotAny)
+        if engine_type == "mysql":
+            return Where(column=self, value=value, operator=ArrayNotAnyMysql)
         elif engine_type == "sqlite":
             return self.not_like(f"%{value}%")
         else:
@@ -2899,6 +2906,8 @@ class Array(Column):
 
         if engine_type in ("postgres", "cockroach"):
             return Where(column=self, value=value, operator=ArrayAll)
+        if engine_type == "mysql":
+            return Where(column=self, value=value, operator=ArrayAllMysql)
         elif engine_type == "sqlite":
             raise ValueError("Unsupported by SQLite")
         else:
