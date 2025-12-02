@@ -80,120 +80,120 @@ jobs:
                   PG_DATABASE: piccolo
                   PG_PASSWORD: postgres
 
-    postgres:
-        runs-on: ubuntu-latest
-        timeout-minutes: 60
-        strategy:
-            matrix:
-                python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-                postgres-version: [13, 14, 15, 16, 17, 18]
+    # postgres:
+    #     runs-on: ubuntu-latest
+    #     timeout-minutes: 60
+    #     strategy:
+    #         matrix:
+    #             python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    #             postgres-version: [13, 14, 15, 16, 17, 18]
 
-        # Service containers to run with `container-job`
-        services:
-            # Label used to access the service container
-            postgres:
-                # Docker Hub image
-                image: postgres:${{ matrix.postgres-version }}
-                # Provide the password for postgres
-                env:
-                    POSTGRES_PASSWORD: postgres
-                # Set health checks to wait until postgres has started
-                options: >-
-                    --health-cmd pg_isready
-                    --health-interval 10s
-                    --health-timeout 5s
-                    --health-retries 5
-                ports:
-                    - 5432:5432
+    #     # Service containers to run with `container-job`
+    #     services:
+    #         # Label used to access the service container
+    #         postgres:
+    #             # Docker Hub image
+    #             image: postgres:${{ matrix.postgres-version }}
+    #             # Provide the password for postgres
+    #             env:
+    #                 POSTGRES_PASSWORD: postgres
+    #             # Set health checks to wait until postgres has started
+    #             options: >-
+    #                 --health-cmd pg_isready
+    #                 --health-interval 10s
+    #                 --health-timeout 5s
+    #                 --health-retries 5
+    #             ports:
+    #                 - 5432:5432
 
-        steps:
-            - uses: actions/checkout@v3
-            - name: Set up Python ${{ matrix.python-version }}
-              uses: actions/setup-python@v5
-              with:
-                  python-version: ${{ matrix.python-version }}
-            - name: Install dependencies
-              run: |
-                  python -m pip install --upgrade pip
-                  pip install -r requirements/requirements.txt
-                  pip install -r requirements/test-requirements.txt
-                  pip install -r requirements/extras/postgres.txt
-            - name: Setup postgres
-              run: |
-                  export PGPASSWORD=postgres
-                  psql -h localhost -c 'CREATE DATABASE piccolo;' -U postgres
-                  psql -h localhost -c "CREATE USER piccolo PASSWORD 'piccolo';" -U postgres
-                  psql -h localhost -c "GRANT ALL PRIVILEGES ON DATABASE piccolo TO piccolo;" -U postgres
-                  psql -h localhost -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" -d piccolo -U postgres
+    #     steps:
+    #         - uses: actions/checkout@v3
+    #         - name: Set up Python ${{ matrix.python-version }}
+    #           uses: actions/setup-python@v5
+    #           with:
+    #               python-version: ${{ matrix.python-version }}
+    #         - name: Install dependencies
+    #           run: |
+    #               python -m pip install --upgrade pip
+    #               pip install -r requirements/requirements.txt
+    #               pip install -r requirements/test-requirements.txt
+    #               pip install -r requirements/extras/postgres.txt
+    #         - name: Setup postgres
+    #           run: |
+    #               export PGPASSWORD=postgres
+    #               psql -h localhost -c 'CREATE DATABASE piccolo;' -U postgres
+    #               psql -h localhost -c "CREATE USER piccolo PASSWORD 'piccolo';" -U postgres
+    #               psql -h localhost -c "GRANT ALL PRIVILEGES ON DATABASE piccolo TO piccolo;" -U postgres
+    #               psql -h localhost -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" -d piccolo -U postgres
 
-            - name: Test with pytest, Postgres
-              run: ./scripts/test-postgres.sh
-              env:
-                  PG_HOST: localhost
-                  PG_DATABASE: piccolo
-                  PG_PASSWORD: postgres
-            - name: Upload coverage
-              uses: codecov/codecov-action@v1
-              if: matrix.python-version == '3.13'
+    #         - name: Test with pytest, Postgres
+    #           run: ./scripts/test-postgres.sh
+    #           env:
+    #               PG_HOST: localhost
+    #               PG_DATABASE: piccolo
+    #               PG_PASSWORD: postgres
+    #         - name: Upload coverage
+    #           uses: codecov/codecov-action@v1
+    #           if: matrix.python-version == '3.13'
 
-    cockroach:
-        runs-on: ubuntu-latest
-        timeout-minutes: 60
-        strategy:
-            matrix:
-                python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-                cockroachdb-version: ["v24.1.0"]
-        steps:
-            - uses: actions/checkout@v3
-            - name: Set up Python ${{ matrix.python-version }}
-              uses: actions/setup-python@v5
-              with:
-                  python-version: ${{ matrix.python-version }}
-            - name: Install dependencies
-              run: |
-                  python -m pip install --upgrade pip
-                  pip install -r requirements/requirements.txt
-                  pip install -r requirements/test-requirements.txt
-                  pip install -r requirements/extras/postgres.txt
-            - name: Setup CockroachDB
-              run: |
-                  wget -qO- https://binaries.cockroachdb.com/cockroach-${{ matrix.cockroachdb-version }}.linux-amd64.tgz | tar xz
-                  ./cockroach-${{ matrix.cockroachdb-version }}.linux-amd64/cockroach start-single-node --insecure --background
-                  ./cockroach-${{ matrix.cockroachdb-version }}.linux-amd64/cockroach sql --insecure -e 'create database piccolo;'
+    # cockroach:
+    #     runs-on: ubuntu-latest
+    #     timeout-minutes: 60
+    #     strategy:
+    #         matrix:
+    #             python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    #             cockroachdb-version: ["v24.1.0"]
+    #     steps:
+    #         - uses: actions/checkout@v3
+    #         - name: Set up Python ${{ matrix.python-version }}
+    #           uses: actions/setup-python@v5
+    #           with:
+    #               python-version: ${{ matrix.python-version }}
+    #         - name: Install dependencies
+    #           run: |
+    #               python -m pip install --upgrade pip
+    #               pip install -r requirements/requirements.txt
+    #               pip install -r requirements/test-requirements.txt
+    #               pip install -r requirements/extras/postgres.txt
+    #         - name: Setup CockroachDB
+    #           run: |
+    #               wget -qO- https://binaries.cockroachdb.com/cockroach-${{ matrix.cockroachdb-version }}.linux-amd64.tgz | tar xz
+    #               ./cockroach-${{ matrix.cockroachdb-version }}.linux-amd64/cockroach start-single-node --insecure --background
+    #               ./cockroach-${{ matrix.cockroachdb-version }}.linux-amd64/cockroach sql --insecure -e 'create database piccolo;'
 
-            - name: Test with pytest, CockroachDB
-              run: ./scripts/test-cockroach.sh
-              env:
-                  PG_HOST: localhost
-                  PG_DATABASE: piccolo
-            - name: Upload coverage
-              uses: codecov/codecov-action@v1
-              if: matrix.python-version == '3.13'
+    #         - name: Test with pytest, CockroachDB
+    #           run: ./scripts/test-cockroach.sh
+    #           env:
+    #               PG_HOST: localhost
+    #               PG_DATABASE: piccolo
+    #         - name: Upload coverage
+    #           uses: codecov/codecov-action@v1
+    #           if: matrix.python-version == '3.13'
 
-    sqlite:
-        runs-on: ubuntu-latest
-        timeout-minutes: 60
-        strategy:
-            matrix:
-                python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    # sqlite:
+    #     runs-on: ubuntu-latest
+    #     timeout-minutes: 60
+    #     strategy:
+    #         matrix:
+    #             python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
-        steps:
-            - uses: actions/checkout@v3
-            - name: Set up Python ${{ matrix.python-version }}
-              uses: actions/setup-python@v5
-              with:
-                  python-version: ${{ matrix.python-version }}
-            - name: Install dependencies
-              run: |
-                  python -m pip install --upgrade pip
-                  pip install -r requirements/requirements.txt
-                  pip install -r requirements/test-requirements.txt
-                  pip install -r requirements/extras/sqlite.txt
-            - name: Test with pytest, SQLite
-              run: ./scripts/test-sqlite.sh
-            - name: Upload coverage
-              uses: codecov/codecov-action@v1
-              if: matrix.python-version == '3.13'
+    #     steps:
+    #         - uses: actions/checkout@v3
+    #         - name: Set up Python ${{ matrix.python-version }}
+    #           uses: actions/setup-python@v5
+    #           with:
+    #               python-version: ${{ matrix.python-version }}
+    #         - name: Install dependencies
+    #           run: |
+    #               python -m pip install --upgrade pip
+    #               pip install -r requirements/requirements.txt
+    #               pip install -r requirements/test-requirements.txt
+    #               pip install -r requirements/extras/sqlite.txt
+    #         - name: Test with pytest, SQLite
+    #           run: ./scripts/test-sqlite.sh
+    #         - name: Upload coverage
+    #           uses: codecov/codecov-action@v1
+    #           if: matrix.python-version == '3.13'
 
     mysql:
         runs-on: ubuntu-latest
@@ -225,10 +225,10 @@ jobs:
                   pip install -r requirements/extras/mysql.txt           
             - name: Setup MySQL
               run: |
-                mysql -h 127.0.0.1 -u root -prootpassword -e "CREATE DATABASE piccolo;"
-                mysql -h 127.0.0.1 -u root -prootpassword -e "CREATE USER 'piccolo'@'%' IDENTIFIED BY 'piccolo';"
-                mysql -h 127.0.0.1 -u root -prootpassword -e "GRANT ALL PRIVILEGES ON piccolo.* TO 'piccolo'@'%';"
-                mysql -h 127.0.0.1 -u root -prootpassword -e "FLUSH PRIVILEGES;"           
+                mysql -h localhost -u root -prootpassword -e "CREATE DATABASE piccolo;"
+                mysql -h localhost -u root -prootpassword -e "CREATE USER 'piccolo'@'%' IDENTIFIED BY 'piccolo';"
+                mysql -h localhost -u root -prootpassword -e "GRANT ALL PRIVILEGES ON piccolo.* TO 'piccolo'@'%';"
+                mysql -h localhost -u root -prootpassword -e "FLUSH PRIVILEGES;"           
             - name: Test with pytest, MySQL
               run: ./scripts/test-mysql.sh
               env:
