@@ -199,6 +199,7 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 60
         strategy:
+            fail-fast: false
             matrix:
                 python-version: ["3.10", "3.11", "3.12", "3.13"]
                 mysql-version: [8.4]
@@ -207,17 +208,18 @@ jobs:
             mysql:
                 image: mysql:${{ matrix.mysql-version }}
                 env:
-                  MYSQL_ROOT_PASSWORD: rootpassword
-                ports:
-                    - 3306
+                    MYSQL_ROOT_PASSWORD: rootpassword
+                    MYSQL_DATABASE: piccolo
                 options: >-
-                    --health-cmd="mysqladmin ping -h 127.0.0.1 -prootpassword"
+                    --health-cmd="mysqladmin ping -hmysql -prootpassword"
                     --health-interval=5s
                     --health-timeout=5s
                     --health-retries=20
 
         steps:
-            - uses: actions/checkout@v3
+            - name: Checkout code
+              uses: actions/checkout@v4
+
             - name: Set up Python ${{ matrix.python-version }}
               uses: actions/setup-python@v5
               with:
@@ -231,13 +233,13 @@ jobs:
             - name: Wait for MySQL
               run: |
                 for i in {1..30}; do
-                  mysqladmin ping -h127.0.0.1 -prootpassword && break
+                  mysqladmin ping -hmysql -prootpassword && break
                   echo "Waiting for MySQL… ($i/30)"
                   sleep 2
                 done       
             - name: Setup MySQL
               run: |
-                mysql -h127.0.0.1 -uroot -prootpassword <<'EOF'
+                mysql -hmysql -uroot -prootpassword <<EOF
                   CREATE USER IF NOT EXISTS 'piccolo'@'%' IDENTIFIED BY 'piccolo';
                   GRANT ALL PRIVILEGES ON piccolo.* TO 'piccolo'@'%';
                   FLUSH PRIVILEGES;
@@ -245,10 +247,10 @@ jobs:
             - name: Test with pytest, MySQL
               run: ./scripts/test-mysql.sh
               env:
+                  MYSQL_HOST: mysql
                   MYSQL_USER: piccolo
                   MYSQL_DATABASE: piccolo
                   MYSQL_PASSWORD: piccolo
-                  MYSQL_HOST: 127.0.0.1
             - name: Upload coverage
               uses: codecov/codecov-action@v1
               if: matrix.python-version == '3.13'
