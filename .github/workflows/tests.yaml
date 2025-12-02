@@ -232,12 +232,12 @@ jobs:
               run: |
                 for i in {1..30}; do
                   mysqladmin ping -h127.0.0.1 -prootpassword && break
-                  echo "Waiting for MySQL..."
+                  echo "Waiting for MySQL… ($i/30)"
                   sleep 2
-                done         
+                done       
             - name: Setup MySQL
               run: |
-                mysql -h127.0.0.1 -uroot -prootpassword <<EOF
+                mysql -h127.0.0.1 -uroot -prootpassword <<'EOF'
                   CREATE USER IF NOT EXISTS 'piccolo'@'%' IDENTIFIED BY 'piccolo';
                   GRANT ALL PRIVILEGES ON piccolo.* TO 'piccolo'@'%';
                   FLUSH PRIVILEGES;
