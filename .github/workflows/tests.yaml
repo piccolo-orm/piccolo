@@ -209,12 +209,7 @@ jobs:
                 image: mysql:${{ matrix.mysql-version }}
                 env:
                     MYSQL_ROOT_PASSWORD: rootpassword
-                    MYSQL_DATABASE: piccolo
-                options: >-
-                    --health-cmd="mysqladmin ping -hmysql -prootpassword"
-                    --health-interval=5s
-                    --health-timeout=5s
-                    --health-retries=20
+                options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
 
         steps:
             - name: Checkout code
@@ -229,28 +224,14 @@ jobs:
                   python -m pip install --upgrade pip
                   pip install -r requirements/requirements.txt
                   pip install -r requirements/test-requirements.txt
-                  pip install -r requirements/extras/mysql.txt  
-            - name: Wait for MySQL
-              run: |
-                for i in {1..30}; do
-                  mysqladmin ping -hmysql -prootpassword && break
-                  echo "Waiting for MySQL… ($i/30)"
-                  sleep 2
-                done       
+                  pip install -r requirements/extras/mysql.txt      
             - name: Setup MySQL
               run: |
-                mysql -hmysql -uroot -prootpassword <<EOF
-                  CREATE USER IF NOT EXISTS 'piccolo'@'%' IDENTIFIED BY 'piccolo';
-                  GRANT ALL PRIVILEGES ON piccolo.* TO 'piccolo'@'%';
-                  FLUSH PRIVILEGES;
-                EOF          
+                mysql --host 127.0.0.1 --port 3306 -uroot -prootpassword -e "CREATE DATABASE piccolo"
+         
             - name: Test with pytest, MySQL
               run: ./scripts/test-mysql.sh
-              env:
-                  MYSQL_HOST: mysql
-                  MYSQL_USER: piccolo
-                  MYSQL_DATABASE: piccolo
-                  MYSQL_PASSWORD: piccolo
+        
             - name: Upload coverage
               uses: codecov/codecov-action@v1
               if: matrix.python-version == '3.13'
