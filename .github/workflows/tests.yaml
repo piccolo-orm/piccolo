@@ -217,6 +217,9 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
+            - name: List hosts
+              run: cat /etc/hosts
+
             - name: Set up Python ${{ matrix.python-version }}
               uses: actions/setup-python@v5
               with:
