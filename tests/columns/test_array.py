@@ -22,7 +22,6 @@ class MyTable(Table):
     value = Array(base_column=Integer())
 
 
-@engines_skip("mysql")
 class TestArrayDefault(TestCase):
     def test_array_default(self):
         """
