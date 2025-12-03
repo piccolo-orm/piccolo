@@ -203,7 +203,7 @@ jobs:
 
         services:
             mysql:
-                image: mysql:8.0
+                image: mysql:8.4
                 env:
                     MYSQL_ROOT_PASSWORD: rootpassword
                     MYSQL_DATABASE: piccolo
@@ -237,7 +237,6 @@ jobs:
 
             - name: Wait for MySQL (localhost:3306)
               run: |
-                # Try to reach the service via 127.0.0.1:3306 (ports mapping makes the service available here).
                 set -e
                 for i in {1..60}; do
                     if mysqladmin ping -h127.0.0.1 -P3306 -uroot -prootpassword > /dev/null 2>&1; then
