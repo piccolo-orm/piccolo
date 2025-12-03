@@ -61,6 +61,7 @@ class TestArray(TableTest):
         assert row is not None
         self.assertEqual(row.value, [1, 2, 3])
 
+    @engines_only("mysql")
     def test_storage_mysql(self):
         MyTable(value=[1, 2, 3]).save().run_sync()
 
