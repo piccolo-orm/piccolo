@@ -66,7 +66,8 @@ class TimeNow(Default):
 
     @property
     def mysql(self):
-        return "CURRENT_TIME"
+        # must use string literal
+        return f"'{datetime.datetime.now().time().strftime('%H:%M:%S')}'"
 
     def python(self):
         return datetime.datetime.now().time()

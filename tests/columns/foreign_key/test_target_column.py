@@ -2,7 +2,6 @@ from unittest import TestCase
 
 from piccolo.columns import ForeignKey, Varchar
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
-from tests.base import engines_skip
 
 
 class Manager(Table):
@@ -14,7 +13,6 @@ class Band(Table):
     manager = ForeignKey(Manager, target_column="name")
 
 
-@engines_skip("mysql")
 class TestTargetColumnWithString(TestCase):
     """
     Make sure we can create tables with foreign keys which don't reference
@@ -22,10 +20,10 @@ class TestTargetColumnWithString(TestCase):
     """
 
     def setUp(self):
-        create_db_tables_sync(Manager, Band)
+        create_db_tables_sync(Band, Manager)
 
     def tearDown(self):
-        drop_db_tables_sync(Manager, Band)
+        drop_db_tables_sync(Band, Manager)
 
     def test_queries(self):
         manager_1 = Manager.objects().create(name="Guido").run_sync()
@@ -58,7 +56,6 @@ class BandA(Table):
     manager = ForeignKey(ManagerA, target_column=ManagerA.name)
 
 
-@engines_skip("mysql")
 class TestTargetColumnWithColumnRef(TestCase):
     """
     Make sure we can create tables with foreign keys which don't reference
@@ -66,10 +63,10 @@ class TestTargetColumnWithColumnRef(TestCase):
     """
 
     def setUp(self):
-        create_db_tables_sync(ManagerA, BandA)
+        create_db_tables_sync(BandA, ManagerA)
 
     def tearDown(self):
-        drop_db_tables_sync(ManagerA, BandA)
+        drop_db_tables_sync(BandA, ManagerA)
 
     def test_queries(self):
         manager_1 = ManagerA.objects().create(name="Guido").run_sync()
