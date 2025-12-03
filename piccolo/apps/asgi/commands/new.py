@@ -13,7 +13,7 @@ ROUTER_DEPENDENCIES = {
     "starlette": ["starlette"],
     "fastapi": ["fastapi"],
     "blacksheep": ["blacksheep[full]"],
-    "litestar": ["litestar"],
+    "litestar": ["litestar", "sniffio"],
     "esmerald": ["esmerald"],
     "lilya": ["lilya"],
     "quart": ["quart", "quart_schema"],
