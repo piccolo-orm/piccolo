@@ -195,7 +195,7 @@ jobs:
               uses: codecov/codecov-action@v1
               if: matrix.python-version == '3.13'
               
-    mysql:
+    mysql-tests:
         runs-on: ubuntu-latest
         strategy:
             matrix:
