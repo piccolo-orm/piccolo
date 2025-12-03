@@ -136,14 +136,14 @@ class TestJSONUpdate(TableTest):
         self.check_response()
 
 
-class TestJSONSelect(TableTest):
+@engines_only("mysql")
+class TestJSONFuntcionMysql(TableTest):
     tables = [MyTable]
 
     def add_row(self):
         row = MyTable(json={"message": "original"})
         row.save().run_sync()
 
-    @engines_only("mysql")
     def test_from_path_mysql(self):
         """
         Make sure ``from_path`` can be used for complex nested data.
@@ -156,14 +156,6 @@ class TestJSONSelect(TableTest):
                 ]
             },
         ).save().run_sync()
-
-        print(
-            MyTable.select(
-                MyTable.json.from_path(["$.message[0].name"]).as_alias(
-                    "message_alias"
-                )
-            )
-        )
 
         response = (
             MyTable.select(
@@ -178,7 +170,6 @@ class TestJSONSelect(TableTest):
         assert response is not None
         self.assertListEqual(response, [{"message_alias": "original"}])
 
-    @engines_only("mysql")
     def test_arrow_mysql(self):
         """
         Test using the arrow function to retrieve a subset of the JSON.
@@ -195,7 +186,6 @@ class TestJSONSelect(TableTest):
         assert response is not None
         self.assertEqual(response["json"], "original")
 
-    @engines_only("mysql")
     def test_arrow_as_alias_mysql(self):
         """
         Test using the arrow function with alias.
@@ -212,7 +202,6 @@ class TestJSONSelect(TableTest):
         assert response is not None
         self.assertEqual(response["alias_name"], "original")
 
-    @engines_only("mysql")
     def test_square_brackets_mysql(self):
         """
         Make sure we can use square brackets instead of calling ``arrow``
@@ -230,7 +219,6 @@ class TestJSONSelect(TableTest):
         assert response is not None
         self.assertEqual(response["json"], "original")
 
-    @engines_only("mysql")
     def test_multiple_levels_deep_square_brackets_mysql(self):
         """
         Make sure elements can be extracted multiple levels deep using
@@ -256,7 +244,6 @@ class TestJSONSelect(TableTest):
         assert response is not None
         self.assertListEqual(response, [{"message_alias": "original"}])
 
-    @engines_only("mysql")
     def test_arrow_where_mysql(self):
         """
         Make sure the arrow function can be used within a WHERE clause.
