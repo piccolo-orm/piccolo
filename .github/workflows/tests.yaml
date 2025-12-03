@@ -207,11 +207,14 @@ jobs:
                 env:
                     MYSQL_ROOT_PASSWORD: rootpassword
                     MYSQL_DATABASE: piccolo
+                    MYSQL_ROOT_HOST: '%'
                 options: >-
-                    --health-cmd="mysqladmin ping -uroot -prootpassword" 
-                    --health-interval=5s 
-                    --health-timeout=2s 
-                    --health-retries=3
+                    --health-cmd="mysqladmin ping -uroot -prootpassword"
+                    --health-interval=5s
+                    --health-timeout=2s
+                    --health-retries=10
+                ports:
+                    - 3306:3306
 
         steps:
             - name: Checkout code
@@ -220,33 +223,48 @@ jobs:
             - name: Set up Python ${{ matrix.python-version }}
               uses: actions/setup-python@v5
               with:
-                  python-version: ${{ matrix.python-version }}
+                python-version: ${{ matrix.python-version }}
+
             - name: Install dependencies
               run: |
-                  python -m pip install --upgrade pip
-                  pip install -r requirements/requirements.txt
-                  pip install -r requirements/test-requirements.txt
-                  pip install -r requirements/extras/mysql.txt 
+                python -m pip install --upgrade pip
+                pip install -r requirements/requirements.txt
+                pip install -r requirements/test-requirements.txt
+                pip install -r requirements/extras/mysql.txt
+
             - name: Install MySQL Client
               run: sudo apt-get update && sudo apt-get install -y mysql-client
-            - name: Wait for MySQL
+
+            - name: Wait for MySQL (localhost:3306)
               run: |
-                  for i in {1..30}; do
-                    mysqladmin ping -hmysql -uroot -prootpassword && break
-                    echo "Waiting for MySQL… ($i/30)"
-                    sleep 2
-                    if [ "$i" -eq 30 ]; then
-                        echo "MySQL did not become ready in time!" >&2
-                        exit 1
+                # Try to reach the service via 127.0.0.1:3306 (ports mapping makes the service available here).
+                set -e
+                for i in {1..60}; do
+                    if mysqladmin ping -h127.0.0.1 -P3306 -uroot -prootpassword > /dev/null 2>&1; then
+                    echo "MySQL is up"
+                    break
                     fi
-                  done     
-            - name: Setup MySQL
+                    echo "Waiting for MySQL… ($i/60)"
+                    sleep 2
+                    if [ "$i" -eq 60 ]; then
+                    echo "MySQL did not become ready in time!" >&2
+                    mysqladmin ping -h127.0.0.1 -P3306 -uroot -prootpassword || true
+                    exit 1
+                    fi
+                done
+
+            - name: Setup MySQL (create database)
               run: |
-                  mysql -hmysql -uroot -prootpassword -e "CREATE DATABASE piccolo"
-         
+                mysql -h127.0.0.1 -P3306 -uroot -prootpassword -e "CREATE DATABASE IF NOT EXISTS piccolo;"
+
             - name: Test with pytest, MySQL
               run: ./scripts/test-mysql.sh
-        
+              env:
+                MYSQL_HOST: 127.0.0.1
+            
+            - name: Test with pytest, MySQL
+              run: ./scripts/test-mysql.sh
+            
             - name: Upload coverage
               uses: codecov/codecov-action@v1
               if: matrix.python-version == '3.13'
