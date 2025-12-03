@@ -673,11 +673,11 @@ class OnConflictItem:
                 return QueryString(OnConflictAction.do_nothing.value)
             elif action == OnConflictAction.do_update:
                 values = []
-                if engine is not None:
-                    if engine.engine_type == "mysql":
-                        query = ""
-                    else:
-                        query = f"{OnConflictAction.do_update.value} SET"
+                assert engine
+                if engine.engine_type == "mysql":
+                    query = ""
+                else:
+                    query = f"{OnConflictAction.do_update.value} SET"
 
                 if not self.values:
                     raise ValueError("No values specified for `on conflict`")

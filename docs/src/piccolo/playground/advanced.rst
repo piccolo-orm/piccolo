@@ -109,7 +109,6 @@ Create database
 By default the playground expects a local database to exist with the following
 credentials:
 
-
 .. code-block:: bash
 
     user: "root"

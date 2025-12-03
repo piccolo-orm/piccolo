@@ -195,17 +195,18 @@ jobs:
               uses: codecov/codecov-action@v1
               if: matrix.python-version == '3.13'
               
-    mysql-tests:
+    mysql:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                python-version: ["3.10", "3.11", "3.12", "3.13"]
+                python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
         services:
             mysql:
-                image: mysql:8.4
+                image: mysql:8.0
                 env:
                     MYSQL_ROOT_PASSWORD: rootpassword
+                    MYSQL_DATABASE: piccolo
                 options: >-
                     --health-cmd="mysqladmin ping -uroot -prootpassword" 
                     --health-interval=5s 
@@ -226,13 +227,15 @@ jobs:
                   pip install -r requirements/requirements.txt
                   pip install -r requirements/test-requirements.txt
                   pip install -r requirements/extras/mysql.txt 
+            - name: Install MySQL Client
+              run: sudo apt-get update && sudo apt-get install -y mysql-client
             - name: Wait for MySQL
               run: |
-                  for i in {1..40}; do
+                  for i in {1..30}; do
                     mysqladmin ping -hmysql -uroot -prootpassword && break
-                    echo "Waiting for MySQL… ($i/40)"
+                    echo "Waiting for MySQL… ($i/30)"
                     sleep 2
-                    if [ "$i" -eq 40 ]; then
+                    if [ "$i" -eq 30 ]; then
                         echo "MySQL did not become ready in time!" >&2
                         exit 1
                     fi
