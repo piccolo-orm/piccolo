@@ -1074,6 +1074,14 @@ class Timestamptz(Column):
         self.default = default
         super().__init__(default=default, **kwargs)
 
+    @property
+    def column_type(self):
+        engine_type = self._meta.engine_type
+        if engine_type == "mysql":
+            return "TIMESTAMP(6)"
+        else:
+            return "TIMESTAMPTZ"
+
     ###########################################################################
     # For update queries
 
