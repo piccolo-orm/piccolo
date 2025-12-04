@@ -51,7 +51,7 @@ class TestRun(TestCase):
             "-u",
             "root",
             "-h",
-            "127.1.0.0",
+            "127.0.0.1",
             "-p",
             "3306",
             "piccolo",

@@ -5,7 +5,7 @@ from piccolo.engine.mysql import MySQLEngine
 
 DB = MySQLEngine(
     config={
-        "host": os.environ.get("MY_HOST", "127.1.0.0"),
+        "host": os.environ.get("MY_HOST", "127.0.0.1"),
         "port": int(os.environ.get("MY_PORT", 3306)),
         "user": os.environ.get("MY_USER", "root"),
         "password": os.environ.get("MY_PASSWORD", ""),
