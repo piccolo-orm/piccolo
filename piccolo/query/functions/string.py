@@ -115,7 +115,7 @@ class Concat(QueryString):
         from piccolo.engine.finder import engine_finder
 
         engine = engine_finder()
-        return engine.engine_type
+        return engine.engine_type if engine is not None else None
 
 
 __all__ = (

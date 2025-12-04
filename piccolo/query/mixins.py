@@ -12,7 +12,6 @@ from piccolo.columns import And, Column, Or, Where
 from piccolo.columns.column_types import ForeignKey
 from piccolo.columns.combination import WhereRaw
 from piccolo.custom_types import Combinable
-from piccolo.engine.finder import engine_finder
 from piccolo.querystring import QueryString
 from piccolo.utils.list import flatten
 from piccolo.utils.sql_values import convert_to_sql_value
@@ -665,6 +664,8 @@ class OnConflictItem:
 
     @property
     def action_string(self) -> QueryString:
+        from piccolo.engine.finder import engine_finder
+
         engine = engine_finder()
         action = self.action
 
@@ -709,18 +710,20 @@ class OnConflictItem:
 
     @property
     def querystring(self) -> QueryString:
+        from piccolo.engine.finder import engine_finder
+
         engine = engine_finder()
         values = []
 
         # MySQL on_conflict has different syntax
-        if engine is not None:
-            if engine.engine_type == "mysql":
-                query = " ON DUPLICATE KEY UPDATE "
+        assert engine
+        if engine.engine_type == "mysql":
+            query = " ON DUPLICATE KEY UPDATE "
 
-                if self.action:
-                    values.append(self.action_string)
+            if self.action:
+                values.append(self.action_string)
 
-                return QueryString(query, *values)
+            return QueryString(query, *values)
 
         query = " ON CONFLICT"
 
