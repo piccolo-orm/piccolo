@@ -235,7 +235,7 @@ jobs:
             - name: Install MySQL Client
               run: sudo apt-get update && sudo apt-get install -y mysql-client
 
-            - name: Wait for MySQL (localhost:3306)
+            - name: Wait for MySQL
               run: |
                 set -e
                 for i in {1..60}; do
@@ -260,9 +260,9 @@ jobs:
               run: ./scripts/test-mysql.sh
               env:
                 MYSQL_HOST: 127.0.0.1
-            
-            - name: Test with pytest, MySQL
-              run: ./scripts/test-mysql.sh
+                MYSQL_USER: root
+                MYSQL_PASSWORD: rootpassword
+                MYSQL_DATABASE: piccolo
             
             - name: Upload coverage
               uses: codecov/codecov-action@v1
