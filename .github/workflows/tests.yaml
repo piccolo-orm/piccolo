@@ -259,10 +259,11 @@ jobs:
             - name: Test with pytest, MySQL
               run: ./scripts/test-mysql.sh
               env:
-                MYSQL_HOST: 127.0.0.1
-                MYSQL_USER: root
-                MYSQL_PASSWORD: rootpassword
-                MYSQL_DATABASE: piccolo
+                MY_HOST: 127.0.0.1
+                MY_PORT: 3306
+                MY_USER: root
+                MY_PASSWORD: rootpassword
+                MY_DATABASE: piccolo
             
             - name: Upload coverage
               uses: codecov/codecov-action@v1
