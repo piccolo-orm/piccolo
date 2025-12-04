@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import contextvars
 import json
+import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Mapping, Optional, Union
 
+from pymysql.constants import FIELD_TYPE
+from pymysql.converters import conversions
 from typing_extensions import Self
 
 from piccolo.engine.base import (
@@ -32,14 +35,43 @@ if TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
+# converters and formaters
 def backticks_format(querysting: str) -> str:
     return querysting.replace('"', "`")
 
 
-def converter(value: list) -> str:
+def convert_list(value: list) -> str:
     if isinstance(value, list):
         return json.dumps(value)
     return value
+
+
+def convert_bool(value: int) -> bool:
+    return bool(int(value)) if value is not None else None
+
+
+def convert_uuid(value: Any) -> Union[str, uuid.UUID]:
+    if isinstance(value, (bytes, bytearray)):
+        value = value.decode()
+    value = value.strip()
+    # check if string is uuid string
+    if len(value) == 36 and value.count("-") == 4:
+        try:
+            return uuid.UUID(value)
+        except ValueError:
+            return value
+    return value
+
+
+converters = conversions.copy()
+custom_decoders: dict[str, Any] = {
+    FIELD_TYPE.STRING: convert_uuid,
+    FIELD_TYPE.VAR_STRING: convert_uuid,
+    FIELD_TYPE.VARCHAR: convert_uuid,
+    FIELD_TYPE.CHAR: convert_uuid,
+    FIELD_TYPE.TINY: convert_bool,
+}
+converters.update(custom_decoders)
 
 
 @dataclass
@@ -282,6 +314,8 @@ class MySQLEngine(Engine[MySQLTransaction]):
         self.current_transaction = contextvars.ContextVar(
             f"mysql_current_transaction_{db_name}", default=None
         )
+        # converters
+        config["conv"] = converters
 
         super().__init__(
             engine_type="mysql",
@@ -392,7 +426,7 @@ class MySQLEngine(Engine[MySQLTransaction]):
             args = []
         connection = await self.get_new_connection()
         # convert lists
-        params = tuple(converter(arg) for arg in args)
+        params = tuple(convert_list(arg) for arg in args)
         try:
             async with connection.cursor() as cursor:
                 await cursor.execute(query, params)

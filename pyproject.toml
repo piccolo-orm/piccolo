@@ -11,6 +11,7 @@ line_length = 79
 module = [
     "asyncpg.*",
     "aiomysql.*",
+    "pymysql.*",
     "colorama",
     "dateutil",
     "IPython",

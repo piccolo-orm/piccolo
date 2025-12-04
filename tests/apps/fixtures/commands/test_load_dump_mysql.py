@@ -116,7 +116,7 @@ class TestDumpLoad(TestCase):
             {
                 "id": 1,
                 "bigint_col": 1,
-                "boolean_col": 1,
+                "boolean_col": True,
                 "bytea_col": b"hello",
                 "date_col": datetime.date(2021, 1, 1),
                 "foreignkey_col": 1,
@@ -131,7 +131,7 @@ class TestDumpLoad(TestCase):
                 "text_col": "hello",
                 "timestamp_col": datetime.datetime(2021, 1, 1, 0, 0),
                 "timestamptz_col": datetime.datetime(2021, 1, 1, 0, 0),
-                "uuid_col": "12783854-c012-4c15-8183-8eecb46f2c4e",
+                "uuid_col": uuid.UUID("12783854-c012-4c15-8183-8eecb46f2c4e"),
                 "varchar_col": "hello",
                 "unique_col": "hello",
                 "null_col": None,
