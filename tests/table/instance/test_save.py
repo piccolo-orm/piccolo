@@ -7,10 +7,10 @@ from tests.example_apps.music.tables import Band, Manager
 
 class TestSave(TestCase):
     def setUp(self):
-        create_db_tables_sync(Band, Manager)
+        create_db_tables_sync(Manager, Band)
 
     def tearDown(self):
-        drop_db_tables_sync(Band, Manager)
+        drop_db_tables_sync(Manager, Band)
 
     def test_save_new(self):
         """

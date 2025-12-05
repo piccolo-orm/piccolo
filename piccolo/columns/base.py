@@ -1005,7 +1005,6 @@ class Column(Selectable):
                 query = query.split("REFERENCES")[0].strip().rstrip(",")
 
                 query += (
-                    f", FOREIGN KEY ({self._meta.db_column_name})"
                     f" REFERENCES {tablename}({target_column_name})"
                     f" ON DELETE {on_delete}"
                     f" ON UPDATE {on_update}"

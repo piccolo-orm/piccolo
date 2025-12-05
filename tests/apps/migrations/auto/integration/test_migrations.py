@@ -173,11 +173,17 @@ class MigrationTestCase(DBTestCase):
             column_name = column._meta.db_column_name
             schema = column._meta.table._meta.schema
             tablename = column._meta.table._meta.tablename
-            row_meta = self.get_postgres_column_definition(
-                tablename=tablename,
-                column_name=column_name,
-                schema=schema or "public",
-            )
+            if column._meta.engine_type == "mysql":
+                row_meta = self.get_mysql_column_definition(
+                    tablename=tablename,
+                    column_name=column_name,
+                )
+            else:
+                row_meta = self.get_postgres_column_definition(
+                    tablename=tablename,
+                    column_name=column_name,
+                    schema=schema or "public",
+                )
             self.assertTrue(
                 test_function(row_meta),
                 msg=f"Meta is incorrect: {row_meta}",
@@ -1005,7 +1011,7 @@ class TestM2MMigrations(MigrationTestCase):
         pass
 
     def tearDown(self):
-        drop_db_tables_sync(Migration, GenreToBand, Genre, Band)
+        drop_db_tables_sync(Migration, Band, Genre, GenreToBand)
 
     def test_m2m(self):
         """
@@ -1044,7 +1050,7 @@ class TestForeignKeys(MigrationTestCase):
         self.table_classes = [TableA, TableB, TableC, TableD, TableE]
 
     def tearDown(self):
-        drop_db_tables_sync(Migration, *self.table_classes[::-1])
+        drop_db_tables_sync(Migration, *self.table_classes)
 
     def test_foreign_keys(self):
         """
@@ -1108,7 +1114,7 @@ class TestTargetColumn(MigrationTestCase):
         self.assertTrue(response[0]["exists"])
 
 
-@engines_only("postgres", "cockroach")
+@engines_only("postgres", "cockroach", "mysql")
 class TestForeignKeySelf(MigrationTestCase):
     def setUp(self) -> None:
         class TableA(Table):
@@ -1128,16 +1134,21 @@ class TestForeignKeySelf(MigrationTestCase):
         * The table has a custom primary key type (e.g. UUID).
 
         """
+        engine_identifier = (
+            "char"
+            if self.table_classes[0]._meta.db.engine_type == "mysql"
+            else "uuid"
+        )
         self._test_migrations(
             table_snapshots=[self.table_classes],
-            test_function=lambda x: x.data_type == "uuid",
+            test_function=lambda x: x.data_type == engine_identifier,
         )
 
         for table_class in self.table_classes:
             self.assertTrue(table_class.table_exists().run_sync())
 
 
-@engines_only("postgres", "cockroach")
+@engines_only("postgres", "cockroach", "mysql")
 class TestAddForeignKeySelf(MigrationTestCase):
     def setUp(self):
         pass
@@ -1155,6 +1166,12 @@ class TestAddForeignKeySelf(MigrationTestCase):
         * The table has a custom primary key (e.g. UUID).
 
         """
+        from piccolo.engine import engine_finder
+
+        engine = engine_finder()
+        assert engine
+        engine_identifier = "char" if engine.engine_type == "mysql" else "uuid"
+
         get_app_config.return_value = self._get_app_config()
 
         self._test_migrations(
@@ -1175,7 +1192,7 @@ class TestAddForeignKeySelf(MigrationTestCase):
                     )
                 ],
             ],
-            test_function=lambda x: x.data_type == "uuid",
+            test_function=lambda x: x.data_type == engine_identifier,
         )
 
 

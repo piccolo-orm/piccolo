@@ -33,7 +33,7 @@ class TestOutputJSON(DBTestCase):
 
 
 class TestOutputLoadJSON(TestCase):
-    tables = [Instrument, RecordingStudio]
+    tables = [RecordingStudio, Instrument]
     json = {"a": 123}
 
     def setUp(self):

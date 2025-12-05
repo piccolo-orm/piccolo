@@ -5,7 +5,7 @@ from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
 
 class TestGetRelated(AsyncTableTest):
-    tables = [Concert, Venue, Band, Manager]
+    tables = [Manager, Band, Concert, Venue]
 
     async def asyncSetUp(self):
         await super().asyncSetUp()

@@ -85,20 +85,7 @@ class TestModelBuilder(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        drop_db_tables_sync(
-            BandWithLazyReference,
-            Ticket,
-            Concert,
-            Band,
-            Manager,
-            Poster,
-            RecordingStudio,
-            Shirt,
-            Venue,
-            TableWithArrayField,
-            TableWithDecimal,
-            BandWithRecursiveReference,
-        )
+        drop_db_tables_sync(*TABLES)
 
     def test_async(self):
         async def build_model(table_class: type[Table]):

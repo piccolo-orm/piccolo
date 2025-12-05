@@ -20,10 +20,10 @@ class TestTargetColumnWithString(TestCase):
     """
 
     def setUp(self):
-        create_db_tables_sync(Band, Manager)
+        create_db_tables_sync(Manager, Band)
 
     def tearDown(self):
-        drop_db_tables_sync(Band, Manager)
+        drop_db_tables_sync(Manager, Band)
 
     def test_queries(self):
         manager_1 = Manager.objects().create(name="Guido").run_sync()
@@ -63,10 +63,10 @@ class TestTargetColumnWithColumnRef(TestCase):
     """
 
     def setUp(self):
-        create_db_tables_sync(BandA, ManagerA)
+        create_db_tables_sync(ManagerA, BandA)
 
     def tearDown(self):
-        drop_db_tables_sync(BandA, ManagerA)
+        drop_db_tables_sync(ManagerA, BandA)
 
     def test_queries(self):
         manager_1 = ManagerA.objects().create(name="Guido").run_sync()

@@ -247,14 +247,15 @@ class DBTestCase(TestCase):
         query = """
             SELECT {columns} FROM information_schema.columns
             WHERE table_name = '{tablename}'
-            AND table_schema = DATABASE()'
+            AND table_schema = DATABASE()
             AND column_name = '{column_name}'
         """.format(
             columns=RowMeta.get_column_name_str(),
             tablename=tablename,
             column_name=column_name,
         )
-        response = self.run_sync(query)
+        raw_response = self.run_sync(query)
+        response = [{k.lower(): v for k, v in raw_response[0].items()}]
         if len(response) > 0:
             return RowMeta(**response[0])
         else:
@@ -540,10 +541,10 @@ class DBTestCase(TestCase):
 
         if ENGINE.engine_type in ("postgres", "cockroach", "mysql"):
             self.run_sync("DROP TABLE IF EXISTS band CASCADE;")
+            self.run_sync("DROP TABLE IF EXISTS manager CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS ticket CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS poster CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS shirt CASCADE;")
-            self.run_sync("DROP TABLE IF EXISTS manager CASCADE;")
         elif ENGINE.engine_type == "sqlite":
             self.run_sync("DROP TABLE IF EXISTS band;")
             self.run_sync("DROP TABLE IF EXISTS manager;")

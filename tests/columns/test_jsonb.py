@@ -16,7 +16,7 @@ class Instrument(Table):
 
 @engines_only("postgres", "cockroach", "mysql")
 class TestJSONB(TableTest):
-    tables = [Instrument, RecordingStudio]
+    tables = [RecordingStudio, Instrument]
 
     def test_json(self):
         """
@@ -141,7 +141,7 @@ class TestJSONB(TableTest):
 
 @engines_only("postgres", "cockroach")
 class TestArrow(AsyncTableTest):
-    tables = [Instrument, RecordingStudio]
+    tables = [RecordingStudio, Instrument]
 
     async def insert_row(self):
         await RecordingStudio(
