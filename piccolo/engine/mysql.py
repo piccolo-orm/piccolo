@@ -5,6 +5,7 @@ import json
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Mapping, Optional, Union
 
 from pymysql.constants import FIELD_TYPE
@@ -63,6 +64,26 @@ def convert_uuid(value: Any) -> Union[str, uuid.UUID]:
     return value
 
 
+def parse_mysql_datetime(value: str) -> datetime:
+    # handle microseconds
+    if "." in value:
+        fmt = "%Y-%m-%d %H:%M:%S.%f"
+    else:
+        fmt = "%Y-%m-%d %H:%M:%S"
+
+    return datetime.strptime(value, fmt)
+
+
+def convert_timestamptz(value: str) -> datetime:
+    dt = parse_mysql_datetime(value)
+    # attach timezone
+    return dt.replace(tzinfo=timezone.utc)
+
+
+def convert_timestamp(value: str) -> datetime:
+    return parse_mysql_datetime(value)
+
+
 converters = conversions.copy()
 custom_decoders: dict[str, Any] = {
     FIELD_TYPE.STRING: convert_uuid,
@@ -70,6 +91,8 @@ custom_decoders: dict[str, Any] = {
     FIELD_TYPE.VARCHAR: convert_uuid,
     FIELD_TYPE.CHAR: convert_uuid,
     FIELD_TYPE.TINY: convert_bool,
+    FIELD_TYPE.TIMESTAMP: convert_timestamptz,
+    FIELD_TYPE.DATETIME: convert_timestamp,
 }
 converters.update(custom_decoders)
 

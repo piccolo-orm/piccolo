@@ -953,7 +953,7 @@ class Timestamp(Column):
     def column_type(self):
         engine_type = self._meta.engine_type
         if engine_type == "mysql":
-            return "TIMESTAMP(6)"
+            return "DATETIME(6)"
         else:
             return "TIMESTAMP"
 
