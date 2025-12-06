@@ -24,13 +24,12 @@ The config dictionary is passed directly to the underlying database adapter,
 asyncpg. See the `asyncpg docs <https://magicstack.github.io/asyncpg/current/api/index.html#connection>`_
 to learn more.
 
-connection pool
-~~~~~~~~~~~~~~~
+-------------------------------------------------------------------------------
 
-.. toctree::
-    :maxdepth: 1
+Connection Pool
+---------------
 
-    ./connection_pool
+See :ref:`ConnectionPool`.
 
 -------------------------------------------------------------------------------
 

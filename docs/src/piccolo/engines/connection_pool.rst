@@ -1,14 +1,40 @@
-Connection pool
+.. _ConnectionPool:
+
+Connection Pool
 ===============
 
-Pool
-~~~~
-Connection pool can be used with Postgres and CockroachDB. To use a connection 
-pool, you need to first initialise it. The best place to do
-this is in the startup event handler of whichever web framework you are using.
+.. hint:: Connection pools can be used with Postgres and CockroachDB.
 
-Here's an example using Starlette. Notice that we also close the connection
-pool in the shutdown event handler.
+Setup
+~~~~~
+
+To use a connection pool, you need to first initialise it. The best place to do
+this is in the startup event handler of whichever web framework you are using.
+We also want to close the connection pool in the shutdown event handler.
+
+The recommended way for Starlette and FastAPI apps is to use the ``lifespan``
+parameter:
+
+.. code-block:: python
+
+    from contextlib import asynccontextmanager
+    from piccolo.engine import engine_finder
+    from starlette.applications import Starlette
+
+
+    @asynccontextmanager
+    async def lifespan(app: Starlette):
+        engine = engine_finder()
+        assert engine
+        await engine.start_connection_pool()
+        yield
+        await engine.close_connection_pool()
+
+
+    app = Starlette(lifespan=lifespan)
+
+In older versions of Starlette and FastAPI, you may need event handlers
+instead:
 
 .. code-block:: python
 
@@ -29,41 +55,6 @@ pool in the shutdown event handler.
     async def close_database_connection_pool():
         engine = engine_finder()
         await engine.close_connection_pool()
-
-The recommended way for Starlette and FastAPI apps is to use ``lifespan`` handler 
-(since ``startup`` and ``shutdown`` events are deprecated)
-
-.. code-block:: python
-
-    from contextlib import asynccontextmanager
-    from piccolo.engine import engine_finder
-    from starlette.applications import Starlette
-
-
-    async def open_database_connection_pool():
-        try:
-            engine = engine_finder()
-            await engine.start_connection_pool()
-        except Exception:
-            print("Unable to connect to the database")
-
-
-    async def close_database_connection_pool():
-        try:
-            engine = engine_finder()
-            await engine.close_connection_pool()
-        except Exception:
-            print("Unable to connect to the database")
-
-
-    @asynccontextmanager
-    async def lifespan(app: Starlette):
-        await open_database_connection_pool()
-        yield
-        await close_database_connection_pool()
-
-
-    app = Starlette(lifespan=lifespan)
 
 .. hint:: Using a connection pool helps with performance, since connections
     are reused instead of being created for each query.
