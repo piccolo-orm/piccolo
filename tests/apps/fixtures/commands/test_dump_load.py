@@ -143,7 +143,7 @@ class TestDumpLoad(TestCase):
         # Make sure subsequent inserts work.
         SmallTable().save().run_sync()
 
-    @engines_only("postgres", "sqlite")
+    @engines_only("postgres", "sqlite", "mysql")
     def test_dump_load(self):
         """
         Make sure we can dump some rows into a JSON fixture, then load them
@@ -151,7 +151,7 @@ class TestDumpLoad(TestCase):
         """
         self._run_comparison(table_class_names=["SmallTable", "MegaTable"])
 
-    @engines_only("postgres", "sqlite")
+    @engines_only("postgres", "sqlite", "mysql")
     def test_dump_load_ordering(self):
         """
         Similar to `test_dump_load` - but we need to make sure it inserts

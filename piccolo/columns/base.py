@@ -1001,6 +1001,16 @@ class Column(Selectable):
                 f" ON UPDATE {on_update}"
             )
 
+            if self._meta.engine_type == "mysql":
+                query = query.split("REFERENCES")[0].strip().rstrip(",")
+
+                query += (
+                    f" REFERENCES {tablename}({target_column_name})"
+                    f" ON DELETE {on_delete}"
+                    f" ON UPDATE {on_update}"
+                )
+                return query
+
         # Always ran for Cockroach because unique_rowid() is directly
         # defined for Cockroach Serial and BigSerial.
         # Postgres and SQLite will not run this for Serial and BigSerial.
