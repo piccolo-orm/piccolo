@@ -128,3 +128,4 @@ Engine types
     ./postgres_engine
     ./cockroach_engine
     ./mysql_engine
+    ./connection_pool
