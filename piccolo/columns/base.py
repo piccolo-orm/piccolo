@@ -1002,13 +1002,10 @@ class Column(Selectable):
             )
 
             if self._meta.engine_type == "mysql":
-                query = query.split("REFERENCES")[0].strip().rstrip(",")
-
-                query += (
-                    f" REFERENCES {tablename}({target_column_name})"
-                    f" ON DELETE {on_delete}"
-                    f" ON UPDATE {on_update}"
-                )
+                # TODO - doesn't work for non-primary FKs because MySQL
+                # doesn't allow inline syntax for creating FKs
+                # (like Postgres) even though target_column is
+                # UNIQUE and should work, but it doesn't.
                 return query
 
         # Always ran for Cockroach because unique_rowid() is directly

@@ -54,7 +54,7 @@ from piccolo.conf.apps import AppConfig
 from piccolo.schema import SchemaManager
 from piccolo.table import Table, create_table_class, drop_db_tables_sync
 from piccolo.utils.sync import run_sync
-from tests.base import DBTestCase, engines_only, engines_skip
+from tests.base import DBTestCase, engines_only
 
 if TYPE_CHECKING:
     from piccolo.columns.base import Column
@@ -230,7 +230,6 @@ class MigrationTestCase(DBTestCase):
         )
 
 
-@engines_only("postgres", "cockroach")
 class TestMigrations(MigrationTestCase):
     def setUp(self):
         pass
@@ -251,7 +250,7 @@ class TestMigrations(MigrationTestCase):
             class_name="MyTable", class_members={"my_column": column}
         )
 
-    @engines_skip("cockroach")
+    @engines_only("postgres")
     def test_varchar_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -269,7 +268,7 @@ class TestMigrations(MigrationTestCase):
             ],
             test_function=lambda x: all(
                 [
-                    x.data_type == "character varying",
+                    x.data_type in ("varchar", "character varying"),
                     x.is_nullable == "NO",
                     x.column_default
                     in ("''::character varying", "'':::STRING"),
@@ -277,6 +276,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @engines_only("postgres", "cockroach")
     def test_text_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -305,6 +305,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @engines_only("postgres", "cockroach")
     def test_integer_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -328,6 +329,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @engines_only("postgres", "cockroach")
     def test_real_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -350,6 +352,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @engines_only("postgres", "cockroach")
     def test_double_precision_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -372,6 +375,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @engines_only("postgres", "cockroach")
     def test_smallint_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -395,6 +399,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @engines_only("postgres", "cockroach")
     def test_bigint_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -418,6 +423,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @engines_only("postgres", "cockroach")
     def test_uuid_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -448,6 +454,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @engines_only("postgres", "cockroach")
     def test_timestamp_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -480,7 +487,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_skip("cockroach")
+    @engines_only("postgres")
     def test_time_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -506,6 +513,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @engines_only("postgres", "cockroach")
     def test_date_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -535,6 +543,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @engines_only("postgres", "cockroach")
     def test_interval_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -563,6 +572,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @engines_only("postgres", "cockroach")
     def test_boolean_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -586,7 +596,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_skip("cockroach")
+    @engines_only("postgres")
     def test_numeric_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -612,7 +622,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_skip("cockroach")
+    @engines_only("postgres")
     def test_decimal_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -638,7 +648,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_skip("cockroach")
+    @engines_only("postgres")
     def test_array_column_integer(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/35730 "column my_column is of type int[] and thus is not indexable"
@@ -667,7 +677,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_skip("cockroach")
+    @engines_only("postgres")
     def test_array_column_varchar(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/35730 "column my_column is of type varchar[] and thus is not indexable"
@@ -697,7 +707,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_skip("mysql")
+    @engines_only("postgres", "cockroach")
     def test_array_column_bigint(self):
         """
         There was a bug with using an array of ``BigInt``:
@@ -717,7 +727,7 @@ class TestMigrations(MigrationTestCase):
             ]
         )
 
-    @engines_skip("mysql")
+    @engines_only("postgres", "cockroach")
     def test_array_base_column_change(self):
         """
         There was a bug when trying to change the base column of an array:
@@ -743,7 +753,7 @@ class TestMigrations(MigrationTestCase):
     # We deliberately don't test setting JSON or JSONB columns as indexes, as
     # we know it'll fail.
 
-    @engines_skip("cockroach")
+    @engines_only("postgres")
     def test_json_column(self):
         """
         Cockroach sees all json as jsonb, so we can skip this.
@@ -769,6 +779,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @engines_only("postgres", "cockroach")
     def test_jsonb_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -798,6 +809,7 @@ class TestMigrations(MigrationTestCase):
 
     ###########################################################################
 
+    @engines_only("postgres", "cockroach")
     def test_db_column_name(self):
         self._test_migrations(
             table_snapshots=[
@@ -823,6 +835,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @engines_only("postgres", "cockroach")
     def test_db_column_name_initial(self):
         """
         Make sure that if a new table is created which contains a column with
@@ -853,6 +866,7 @@ class TestMigrations(MigrationTestCase):
 
     # Column type conversion
 
+    @engines_only("postgres", "cockroach", "mysql")
     def test_column_type_conversion_string(self):
         """
         We can't manage all column type conversions, but should be able to
@@ -869,7 +883,7 @@ class TestMigrations(MigrationTestCase):
             ]
         )
 
-    @engines_skip("cockroach")
+    @engines_only("postgres", "mysql")
     def test_column_type_conversion_integer(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
@@ -887,7 +901,7 @@ class TestMigrations(MigrationTestCase):
             ]
         )
 
-    @engines_skip("cockroach")
+    @engines_only("postgres", "mysql")
     def test_column_type_conversion_string_to_integer(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
@@ -903,7 +917,7 @@ class TestMigrations(MigrationTestCase):
             ]
         )
 
-    @engines_skip("cockroach")
+    @engines_only("postgres", "mysql")
     def test_column_type_conversion_float_decimal(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
@@ -921,6 +935,7 @@ class TestMigrations(MigrationTestCase):
             ]
         )
 
+    @engines_only("postgres", "cockroach", "mysql")
     def test_column_type_conversion_integer_float(self):
         """
         Make sure conversion between ``Integer`` and ``Real`` works - related
@@ -940,6 +955,7 @@ class TestMigrations(MigrationTestCase):
             ]
         )
 
+    @engines_only("postgres", "cockroach", "mysql")
     def test_column_type_conversion_json(self):
         self._test_migrations(
             table_snapshots=[
@@ -952,6 +968,7 @@ class TestMigrations(MigrationTestCase):
             ]
         )
 
+    @engines_only("postgres", "cockroach")
     def test_column_type_conversion_timestamp(self):
         self._test_migrations(
             table_snapshots=[
@@ -965,6 +982,7 @@ class TestMigrations(MigrationTestCase):
         )
 
     @patch("piccolo.apps.migrations.auto.migration_manager.colored_warning")
+    @engines_only("postgres", "cockroach")
     def test_column_type_conversion_serial(self, colored_warning: MagicMock):
         """
         This isn't possible, as neither SERIAL or BIGSERIAL are actual types.
@@ -987,7 +1005,7 @@ class TestMigrations(MigrationTestCase):
         )
 
 
-###############################################################################
+##############################################################################
 
 
 class Band(Table):
