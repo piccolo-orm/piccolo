@@ -54,7 +54,7 @@ from piccolo.conf.apps import AppConfig
 from piccolo.schema import SchemaManager
 from piccolo.table import Table, create_table_class, drop_db_tables_sync
 from piccolo.utils.sync import run_sync
-from tests.base import DBTestCase, engines_only
+from tests.base import DBTestCase, engines_only, engines_skip
 
 if TYPE_CHECKING:
     from piccolo.columns.base import Column
@@ -230,6 +230,7 @@ class MigrationTestCase(DBTestCase):
         )
 
 
+@engines_only("postgres", "cockroach")
 class TestMigrations(MigrationTestCase):
     def setUp(self):
         pass
@@ -250,7 +251,7 @@ class TestMigrations(MigrationTestCase):
             class_name="MyTable", class_members={"my_column": column}
         )
 
-    @engines_only("postgres")
+    @engines_skip("cockroach")
     def test_varchar_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -268,7 +269,7 @@ class TestMigrations(MigrationTestCase):
             ],
             test_function=lambda x: all(
                 [
-                    x.data_type in ("varchar", "character varying"),
+                    x.data_type == "character varying",
                     x.is_nullable == "NO",
                     x.column_default
                     in ("''::character varying", "'':::STRING"),
@@ -276,7 +277,6 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_only("postgres", "cockroach")
     def test_text_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -305,7 +305,6 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_only("postgres", "cockroach")
     def test_integer_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -329,7 +328,6 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_only("postgres", "cockroach")
     def test_real_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -352,7 +350,6 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_only("postgres", "cockroach")
     def test_double_precision_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -375,7 +372,6 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_only("postgres", "cockroach")
     def test_smallint_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -399,7 +395,6 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_only("postgres", "cockroach")
     def test_bigint_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -423,7 +418,6 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_only("postgres", "cockroach")
     def test_uuid_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -454,7 +448,6 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_only("postgres", "cockroach")
     def test_timestamp_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -487,7 +480,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_only("postgres")
+    @engines_skip("cockroach")
     def test_time_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -513,7 +506,6 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_only("postgres", "cockroach")
     def test_date_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -543,7 +535,6 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_only("postgres", "cockroach")
     def test_interval_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -572,7 +563,6 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_only("postgres", "cockroach")
     def test_boolean_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -596,7 +586,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_only("postgres")
+    @engines_skip("cockroach")
     def test_numeric_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -622,7 +612,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_only("postgres")
+    @engines_skip("cockroach")
     def test_decimal_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -648,7 +638,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_only("postgres")
+    @engines_skip("cockroach")
     def test_array_column_integer(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/35730 "column my_column is of type int[] and thus is not indexable"
@@ -677,7 +667,7 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_only("postgres")
+    @engines_skip("cockroach")
     def test_array_column_varchar(self):
         """
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/35730 "column my_column is of type varchar[] and thus is not indexable"
@@ -707,7 +697,6 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_only("postgres", "cockroach")
     def test_array_column_bigint(self):
         """
         There was a bug with using an array of ``BigInt``:
@@ -727,7 +716,6 @@ class TestMigrations(MigrationTestCase):
             ]
         )
 
-    @engines_only("postgres", "cockroach")
     def test_array_base_column_change(self):
         """
         There was a bug when trying to change the base column of an array:
@@ -753,7 +741,7 @@ class TestMigrations(MigrationTestCase):
     # We deliberately don't test setting JSON or JSONB columns as indexes, as
     # we know it'll fail.
 
-    @engines_only("postgres")
+    @engines_skip("cockroach")
     def test_json_column(self):
         """
         Cockroach sees all json as jsonb, so we can skip this.
@@ -779,7 +767,6 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_only("postgres", "cockroach")
     def test_jsonb_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -809,7 +796,6 @@ class TestMigrations(MigrationTestCase):
 
     ###########################################################################
 
-    @engines_only("postgres", "cockroach")
     def test_db_column_name(self):
         self._test_migrations(
             table_snapshots=[
@@ -835,7 +821,6 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
-    @engines_only("postgres", "cockroach")
     def test_db_column_name_initial(self):
         """
         Make sure that if a new table is created which contains a column with
@@ -858,6 +843,369 @@ class TestMigrations(MigrationTestCase):
                         "''::character varying",
                         "'':::STRING",
                     ),
+                ]
+            ),
+        )
+
+    ###########################################################################
+
+    # Column type conversion
+
+    def test_column_type_conversion_string(self):
+        """
+        We can't manage all column type conversions, but should be able to
+        manage most simple ones (e.g. Varchar to Text).
+        """
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Varchar(),
+                    Text(),
+                    Varchar(),
+                ]
+            ]
+        )
+
+    @engines_skip("cockroach")
+    def test_column_type_conversion_integer(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
+        """  # noqa: E501
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Integer(),
+                    BigInt(),
+                    SmallInt(),
+                    BigInt(),
+                    Integer(),
+                ]
+            ]
+        )
+
+    @engines_skip("cockroach")
+    def test_column_type_conversion_string_to_integer(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
+        """  # noqa: E501
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Varchar(default="1"),
+                    Integer(default=1),
+                    Varchar(default="1"),
+                ]
+            ]
+        )
+
+    @engines_skip("cockroach")
+    def test_column_type_conversion_float_decimal(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
+        """  # noqa: E501
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Real(default=1.0),
+                    DoublePrecision(default=1.0),
+                    Real(default=1.0),
+                    Numeric(),
+                    Real(default=1.0),
+                ]
+            ]
+        )
+
+    def test_column_type_conversion_integer_float(self):
+        """
+        Make sure conversion between ``Integer`` and ``Real`` works - related
+        to this bug:
+
+        https://github.com/piccolo-orm/piccolo/issues/1071
+
+        """
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Real(default=1.0),
+                    Integer(default=1),
+                    Real(default=1.0),
+                ]
+            ]
+        )
+
+    def test_column_type_conversion_json(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    JSON(),
+                    JSONB(),
+                    JSON(),
+                ]
+            ]
+        )
+
+    def test_column_type_conversion_timestamp(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Timestamp(),
+                    Timestamptz(),
+                    Timestamp(),
+                ]
+            ]
+        )
+
+    @patch("piccolo.apps.migrations.auto.migration_manager.colored_warning")
+    def test_column_type_conversion_serial(self, colored_warning: MagicMock):
+        """
+        This isn't possible, as neither SERIAL or BIGSERIAL are actual types.
+        They're just shortcuts. Make sure the migration doesn't crash - it
+        should just output a warning.
+        """
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Serial(),
+                    BigSerial(),
+                ]
+            ]
+        )
+
+        colored_warning.assert_called_once_with(
+            "Unable to migrate Serial to BigSerial and vice versa. This must "
+            "be done manually."
+        )
+
+
+###############################################################################
+
+
+@engines_only("mysql")
+class TestMigrationsMysql(MigrationTestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        create_table_class("MyTable").alter().drop_table(
+            if_exists=True
+        ).run_sync()
+        Migration.alter().drop_table(if_exists=True).run_sync()
+
+    ###########################################################################
+
+    def table(self, column: Column):
+        """
+        A utility for creating Piccolo tables with the given column.
+        """
+        return create_table_class(
+            class_name="MyTable", class_members={"my_column": column}
+        )
+
+    def test_varchar_column(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Varchar(),
+                    Varchar(length=100),
+                    Varchar(default="hello world"),
+                    Varchar(default=string_default),
+                    Varchar(null=False),
+                    Varchar(index=True),
+                    Varchar(index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "varchar",
+                    x.is_nullable == "YES",
+                    x.column_default == "",
+                ]
+            ),
+        )
+
+    def test_integer_column(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Integer(),
+                    Integer(default=1),
+                    Integer(default=integer_default),
+                    Integer(null=False),
+                    Integer(index=True),
+                    Integer(index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "int",
+                    x.is_nullable == "NO",
+                    x.column_default == "0",
+                ]
+            ),
+        )
+
+    def test_real_column(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Real(),
+                    Real(default=1.1),
+                    Real(null=False),
+                    Real(index=True),
+                    Real(index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "double",
+                    x.is_nullable == "NO",
+                    x.column_default == "0",
+                ]
+            ),
+        )
+
+    def test_double_precision_column(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    DoublePrecision(),
+                    DoublePrecision(default=1.1),
+                    DoublePrecision(null=False),
+                    DoublePrecision(index=True),
+                    DoublePrecision(index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "double",
+                    x.is_nullable == "NO",
+                    x.column_default == "0",
+                ]
+            ),
+        )
+
+    def test_smallint_column(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    SmallInt(),
+                    SmallInt(default=1),
+                    SmallInt(default=integer_default),
+                    SmallInt(null=False),
+                    SmallInt(index=True),
+                    SmallInt(index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "smallint",
+                    x.is_nullable == "NO",
+                    x.column_default == "0",
+                ]
+            ),
+        )
+
+    def test_bigint_column(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    BigInt(),
+                    BigInt(default=1),
+                    BigInt(default=integer_default),
+                    BigInt(null=False),
+                    BigInt(index=True),
+                    BigInt(index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "bigint",
+                    x.is_nullable == "NO",
+                    x.column_default == "0",
+                ]
+            ),
+        )
+
+    def test_boolean_column(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Boolean(),
+                    Boolean(default=True),
+                    Boolean(default=boolean_default),
+                    Boolean(null=False),
+                    Boolean(index=True),
+                    Boolean(index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "tinyint",
+                    x.is_nullable == "NO",
+                    x.column_default == "0",
+                ]
+            ),
+        )
+
+    def test_numeric_column(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Numeric(),
+                    Numeric(digits=(4, 2)),
+                    Numeric(digits=None),
+                    Numeric(default=decimal.Decimal("1.2")),
+                    Numeric(default=numeric_default),
+                    Numeric(null=False),
+                    Numeric(index=True),
+                    Numeric(index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "decimal",
+                    x.is_nullable == "YES",
+                    x.column_default == "0",
+                ]
+            ),
+        )
+
+    def test_decimal_column(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Decimal(),
+                    Decimal(digits=(4, 2)),
+                    Decimal(digits=None),
+                    Decimal(default=decimal.Decimal("1.2")),
+                    Decimal(default=numeric_default),
+                    Decimal(null=False),
+                    Decimal(index=True),
+                    Decimal(index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "decimal",
+                    x.is_nullable == "YES",
+                    x.column_default == "0",
                 ]
             ),
         )

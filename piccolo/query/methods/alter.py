@@ -84,13 +84,13 @@ class RenameColumnMysql(AlterColumnStatement):
 
     @property
     def ddl(self) -> str:
-        if not isinstance(self.column, Column):
+        if isinstance(self.column, str):
             raise ValueError("MySQL requires a column instance for renaming.")
-        col_type = self.column.column_type
+        column_type = self.column.column_type
         null_sql = "NULL" if self.column._meta.null else "NOT NULL"
         return (
             f"CHANGE `{self.column_name}` `{self.new_name}` "
-            f"{col_type} {null_sql}"
+            f"{column_type} {null_sql}"
         )
 
 

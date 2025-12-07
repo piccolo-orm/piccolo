@@ -82,9 +82,7 @@ class CreateIndex(DDL):
         tablename = self.table._meta.get_formatted_tablename()
 
         column_names_str = ", ".join([f"`{i}`" for i in self.column_names])
+        prefix = "CREATE INDEX"
         return [
-            (
-                f"{self.prefix} {index_name} ON {tablename} "
-                f"({column_names_str})"
-            )
+            f"{prefix} {index_name} ON {tablename} " f"({column_names_str})"
         ]
