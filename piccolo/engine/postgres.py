@@ -354,7 +354,7 @@ class PostgresEngine(Engine[PostgresTransaction]):
     def __init__(
         self,
         config: dict[str, Any],
-        extensions: Sequence[str] = ("uuid-ossp",),
+        extensions: Sequence[str] = tuple(),
         log_queries: bool = False,
         log_responses: bool = False,
         extra_nodes: Optional[Mapping[str, PostgresEngine]] = None,
