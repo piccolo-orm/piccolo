@@ -460,8 +460,10 @@ class Text(Column):
 
     def get_default_value(self):
         """
-        MySQL does not allow unquoted TEXT literals in a
-        DEFAULT clause
+        MySQL does not allow unquoted TEXT literals in the DEFAULT
+        clause, so we use the expression in parentheses.
+        Only works in CREATE TABLE. MySQL does not allow default
+        values for TEXT columns in ALTER statements.
         """
         engine_type = self._meta.engine_type
 
@@ -2398,8 +2400,10 @@ class JSON(Column):
 
     def get_default_value(self):
         """
-        MySQL does not allow unquoted JSON literals in a
-        DEFAULT clause
+        MySQL does not allow unquoted JSON literals in the DEFAULT
+        clause, so we use the expression in parentheses.
+        Only works in CREATE TABLE. MySQL does not allow default
+        values for TEXT columns in ALTER statements.
         """
         engine_type = self._meta.engine_type
 
@@ -2596,8 +2600,10 @@ class Bytea(Column):
 
     def get_default_value(self):
         """
-        MySQL does not allow unquoted BLOB literals in a
-        DEFAULT clause
+        MySQL does not allow unquoted BLOB literals in the DEFAULT
+        clause, so we use the expression in parentheses.
+        Only works in CREATE TABLE. MySQL does not allow default
+        values for TEXT columns in ALTER statements.
         """
         engine_type = self._meta.engine_type
 
@@ -2742,8 +2748,10 @@ class Array(Column):
 
     def get_default_value(self):
         """
-        MySQL does not allow unquoted JSON literals in a
-        DEFAULT clause
+        MySQL does not allow unquoted JSON literals in the DEFAULT
+        clause, so we use the expression in parentheses.
+        Only works in CREATE TABLE. MySQL does not allow default
+        values for TEXT columns in ALTER statements.
         """
         engine_type = self._meta.engine_type
 

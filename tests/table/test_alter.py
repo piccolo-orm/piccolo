@@ -17,7 +17,7 @@ from tests.base import (
     engines_skip,
     is_running_sqlite,
 )
-from tests.example_apps.music.tables import Band, Manager
+from tests.example_apps.music.tables import Band, Manager, Poster
 
 
 @pytest.mark.skipif(
@@ -404,6 +404,13 @@ class TestSetDefault(DBTestCase):
         manager = Manager.objects().first().run_sync()
         assert manager is not None
         self.assertEqual(manager.name, "Pending")
+
+
+@engines_only("mysql")
+class TestSetDefaultMysql(DBTestCase):
+    def test_set_default_text_or_json(self):
+        with self.assertRaises(ValueError):
+            Poster.alter().set_default(Poster.content, "Content").run_sync()
 
 
 @engines_only("postgres", "cockroach")

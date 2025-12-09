@@ -174,8 +174,8 @@ class SetColumnTypeMysql(AlterStatement):
             self.new_column._meta._table = self.old_column._meta.table
 
         column_name = self.old_column._meta.db_column_name
-        coltype = self.new_column.column_type
-        query = f"MODIFY `{column_name}` {coltype}"
+        column_type = self.new_column.column_type
+        query = f"MODIFY `{column_name}` {column_type}"
 
         return query
 

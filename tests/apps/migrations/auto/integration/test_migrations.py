@@ -1032,6 +1032,55 @@ class TestMigrationsMysql(MigrationTestCase):
             ),
         )
 
+    def test_text_column(self):
+        with self.assertRaises(ValueError):
+            self._test_migrations(
+                table_snapshots=[
+                    [self.table(column)]
+                    for column in [
+                        Text(),
+                        Text(default="hello world"),
+                        Text(default=string_default),
+                        Text(null=False),
+                        Text(index=True),
+                        Text(index=False),
+                    ]
+                ],
+                test_function=lambda x: all(
+                    [
+                        x.data_type == "text",
+                        x.is_nullable == "NO",
+                        x.column_default
+                        in (
+                            "''",
+                            "''::text",
+                            "'':::STRING",
+                        ),
+                    ]
+                ),
+            )
+
+    def test_json_column(self):
+        with self.assertRaises(ValueError):
+            self._test_migrations(
+                table_snapshots=[
+                    [self.table(column)]
+                    for column in [
+                        JSON(),
+                        JSON(default=["a", "b", "c"]),
+                        JSON(default={"name": "bob"}),
+                        JSON(default='{"name": "Sally"}'),
+                    ]
+                ],
+                test_function=lambda x: all(
+                    [
+                        x.data_type == "json",
+                        x.is_nullable == "NO",
+                        x.column_default == "'{}'",
+                    ]
+                ),
+            )
+
     def test_integer_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -1070,6 +1119,8 @@ class TestMigrationsMysql(MigrationTestCase):
                 [
                     x.data_type == "double",
                     x.is_nullable == "NO",
+                    # MySQL does not preserve trailing decimal zeros
+                    # for defaults and this is correct result
                     x.column_default == "0",
                 ]
             ),
@@ -1091,6 +1142,8 @@ class TestMigrationsMysql(MigrationTestCase):
                 [
                     x.data_type == "double",
                     x.is_nullable == "NO",
+                    # MySQL does not preserve trailing decimal zeros
+                    # for defaults and this is correct result
                     x.column_default == "0",
                 ]
             ),
@@ -1181,6 +1234,8 @@ class TestMigrationsMysql(MigrationTestCase):
                 [
                     x.data_type == "decimal",
                     x.is_nullable == "YES",
+                    # MySQL does not preserve trailing decimal zeros
+                    # for defaults and this is correct result
                     x.column_default == "0",
                 ]
             ),
@@ -1205,6 +1260,8 @@ class TestMigrationsMysql(MigrationTestCase):
                 [
                     x.data_type == "decimal",
                     x.is_nullable == "YES",
+                    # MySQL does not preserve trailing decimal zeros
+                    # for defaults and this is correct result
                     x.column_default == "0",
                 ]
             ),

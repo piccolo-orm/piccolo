@@ -16,7 +16,7 @@ from piccolo.apps.migrations.auto.operations import (
 )
 from piccolo.apps.migrations.auto.serialisation import deserialise_params
 from piccolo.columns import Column, column_types
-from piccolo.columns.column_types import ForeignKey, Serial
+from piccolo.columns.column_types import JSON, Blob, ForeignKey, Serial, Text
 from piccolo.engine import engine_finder
 from piccolo.query import Query
 from piccolo.query.base import DDL
@@ -639,6 +639,16 @@ class MigrationManager:
                     column._meta._table = _Table
                     column._meta._name = alter_column.column_name
                     column._meta.db_column_name = alter_column.db_column_name
+
+                    if _Table._meta.db.engine_type == "mysql" and (
+                        column_class == Text
+                        or column_class == JSON
+                        or column_class == Blob
+                    ):
+                        raise ValueError(
+                            "MySQL does not support default value in alter "
+                            "statement for TEXT, JSON and BLOB columns"
+                        )
 
                     if default is None:
                         await self._run_query(
