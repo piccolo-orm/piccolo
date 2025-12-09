@@ -84,10 +84,6 @@ Set whether a column is nullable or not.
     # To stop a row being nullable:
     await Band.alter().set_null(Band.name, False)
 
-Piccolo does not support ``set_null`` for MySQL because MySQL requires the column type 
-in DDL (``ALTER TABLE table_name MODIFY column_name COLUMN_TYPE NULL``) so we 
-have to do it in a manual migration with raw SQL.
-
 -------------------------------------------------------------------------------
 
 set_schema
