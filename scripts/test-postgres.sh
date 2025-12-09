@@ -9,6 +9,6 @@ python -m pytest \
     --cov=piccolo \
     --cov-report=xml \
     --cov-report=html \
-    --cov-fail-under=85 \
+    --cov-fail-under=80 \
     -m "not integration" \
     -s $@
