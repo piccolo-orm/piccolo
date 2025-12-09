@@ -230,11 +230,6 @@ especially if the table is large, with many foreign keys.
 
         return manager
 
-.. warning:: For MySQL we need to run migrations outside transaction due to 
-    MySQL limitations. We can achive that by setting the ``MigrationManager`` 
-    argument ``wrap_in_transaction`` to ``False`` so that the migration 
-    is not wrapped in a transaction.
-
 -------------------------------------------------------------------------------
 
 .. _AutoMigrations:
