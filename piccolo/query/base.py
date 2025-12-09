@@ -455,17 +455,6 @@ class DDL:
             )
 
         if len(self.ddl) == 1:
-            if engine.engine_type == "mysql":
-                for column in self.table._meta.columns:
-                    if column.column_type in (
-                        "TEXT",
-                        "JSON",
-                        "BLOB",
-                    ) and self.ddl[0].startswith("ALTER"):
-                        raise ValueError(
-                            "MySQL does not support default value in alter "
-                            "statement for TEXT, JSON and BLOB columns"
-                        )
             return await engine.run_ddl(self.ddl[0], in_pool=in_pool)
         responses = []
         for ddl in self.ddl:

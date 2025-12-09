@@ -54,7 +54,7 @@ from piccolo.conf.apps import AppConfig
 from piccolo.schema import SchemaManager
 from piccolo.table import Table, create_table_class, drop_db_tables_sync
 from piccolo.utils.sync import run_sync
-from tests.base import DBTestCase, engines_only, engines_skip
+from tests.base import DBTestCase, engine_is, engines_only, engines_skip
 
 if TYPE_CHECKING:
     from piccolo.columns.base import Column
@@ -173,7 +173,7 @@ class MigrationTestCase(DBTestCase):
             column_name = column._meta.db_column_name
             schema = column._meta.table._meta.schema
             tablename = column._meta.table._meta.tablename
-            if column._meta.engine_type == "mysql":
+            if engine_is("mysql"):
                 row_meta = self.get_mysql_column_definition(
                     tablename=tablename,
                     column_name=column_name,
@@ -1589,11 +1589,7 @@ class TestAddForeignKeySelf(MigrationTestCase):
         * The table has a custom primary key (e.g. UUID).
 
         """
-        from piccolo.engine import engine_finder
-
-        engine = engine_finder()
-        assert engine
-        engine_identifier = "char" if engine.engine_type == "mysql" else "uuid"
+        engine_identifier = "char" if engine_is("mysql") else "uuid"
 
         get_app_config.return_value = self._get_app_config()
 

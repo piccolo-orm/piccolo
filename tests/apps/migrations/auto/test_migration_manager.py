@@ -505,7 +505,7 @@ class TestMigrationManager(DBTestCase):
             ],
         )
 
-    @engines_only("postgres", "cockroach")
+    @engines_only("postgres", "cockroach", "mysql")
     def test_add_non_nullable_column(self):
         """
         Test adding a non nullable column to a MigrationManager.
@@ -748,6 +748,25 @@ class TestMigrationManager(DBTestCase):
                 tablename="manager", column_name="name"
             )
         )
+
+    @engines_only("mysql")
+    def test_alter_column_set_null_mysql(self):
+        """
+        We can't test altering column with MigrationManager
+        because MySQL need column instance, not string.
+        """
+        with self.assertRaises(ValueError):
+            manager = MigrationManager()
+
+            manager.alter_column(
+                table_class_name="Manager",
+                tablename="manager",
+                column_name="name",
+                params={"null": True},
+                old_params={"null": False},
+            )
+
+            asyncio.run(manager.run())
 
     def _get_column_precision_and_scale(
         self, tablename="ticket", column_name="price"

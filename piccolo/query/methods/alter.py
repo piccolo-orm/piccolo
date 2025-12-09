@@ -194,6 +194,24 @@ class SetDefault(AlterColumnStatement):
 
 
 @dataclass
+class SetDefaultMysql(AlterColumnStatement):
+    __slots__ = ("value",)
+
+    column: Column
+    value: Any
+
+    @property
+    def ddl(self) -> str:
+        if self.column.column_type in ("TEXT", "JSON", "BLOB"):
+            raise ValueError(
+                "MySQL does not support default value in alter "
+                "statement for TEXT, JSON and BLOB columns"
+            )
+        sql_value = self.column.get_sql_value(self.value)
+        return f'ALTER COLUMN "{self.column_name}" SET DEFAULT {sql_value}'
+
+
+@dataclass
 class SetUnique(AlterColumnStatement):
     __slots__ = ("boolean",)
 
@@ -226,6 +244,25 @@ class SetNull(AlterColumnStatement):
             return f'ALTER COLUMN "{self.column_name}" DROP NOT NULL'
         else:
             return f'ALTER COLUMN "{self.column_name}" SET NOT NULL'
+
+
+@dataclass
+class SetNullMysql(AlterColumnStatement):
+    __slots__ = ("boolean",)
+
+    boolean: bool
+
+    @property
+    def ddl(self) -> str:
+        if isinstance(self.column, str):
+            raise ValueError(
+                "MySQL requires a column instance for setting null."
+            )
+        column_type = self.column.column_type
+        if self.boolean:
+            return f"MODIFY `{self.column_name}` {column_type} NULL"
+        else:
+            return f"MODIFY `{self.column_name}` {column_type} NOT NULL"
 
 
 @dataclass
@@ -398,10 +435,10 @@ class Alter(DDL):
         self._set_column_type: list[
             Union[SetColumnType, SetColumnTypeMysql]
         ] = []
-        self._set_default: list[SetDefault] = []
+        self._set_default: list[Union[SetDefault, SetDefaultMysql]] = []
         self._set_digits: list[Union[SetDigits, SetDigitsMysql]] = []
         self._set_length: list[Union[SetLength, SetLengthMysql]] = []
-        self._set_null: list[SetNull] = []
+        self._set_null: list[Union[SetNull, SetNullMysql]] = []
         self._set_schema: list[SetSchema] = []
         self._set_unique: list[SetUnique] = []
         self._rename_constraint: list[RenameConstraint] = []
@@ -549,7 +586,12 @@ class Alter(DDL):
             >>> await Band.alter().set_default(Band.popularity, 0)
 
         """
-        self._set_default.append(SetDefault(column=column, value=value))
+        if self.engine_type == "mysql":
+            self._set_default.append(
+                SetDefaultMysql(column=column, value=value)
+            )
+        else:
+            self._set_default.append(SetDefault(column=column, value=value))
         return self
 
     def set_null(
@@ -561,11 +603,17 @@ class Alter(DDL):
             # Specify the column using a `Column` instance:
             >>> await Band.alter().set_null(Band.name, True)
 
-            # Or using a string:
+            # Or using a string in Postgres:
             >>> await Band.alter().set_null('name', True)
 
+            # Can't use a string because MySQL requires
+            # column instance
+
         """
-        self._set_null.append(SetNull(column, boolean))
+        if self.engine_type == "mysql":
+            self._set_null.append(SetNullMysql(column, boolean))
+        else:
+            self._set_null.append(SetNull(column, boolean))
         return self
 
     def set_unique(
