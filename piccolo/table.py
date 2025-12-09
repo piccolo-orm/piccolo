@@ -29,6 +29,7 @@ from piccolo.columns.m2m import (
 )
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
+from piccolo.composite_index import Composite
 from piccolo.custom_types import TableInstance
 from piccolo.engine import Engine, engine_finder
 from piccolo.query import (
@@ -84,6 +85,7 @@ class TableMeta:
     primary_key: Column = field(default_factory=Column)
     json_columns: list[Union[JSON, JSONB]] = field(default_factory=list)
     secret_columns: list[Column] = field(default_factory=list)
+    composite_indexes: list[Composite] = field(default_factory=list)
     auto_update_columns: list[Column] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
     help_text: Optional[str] = None
@@ -172,6 +174,17 @@ class TableMeta:
                     ) from e
 
         return column_object
+
+    def get_composite_index_by_name(self, name: str) -> Composite:
+        """
+        Returns a composite index which matches the given name.
+        """
+        for composite_index in self.composite_indexes:
+            if composite_index._meta.name == name:
+                return composite_index
+        raise ValueError(
+            f"No matching composite index found with name == {name}"
+        )
 
     def get_auto_update_values(self) -> dict[Column, Any]:
         """
@@ -279,6 +292,7 @@ class Table(metaclass=TableMetaclass):
         auto_update_columns: list[Column] = []
         primary_key: Optional[Column] = None
         m2m_relationships: list[M2M] = []
+        composite_indexes: list[Composite] = []
 
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]
@@ -331,6 +345,10 @@ class Table(metaclass=TableMetaclass):
                 attribute._meta._table = cls
                 m2m_relationships.append(attribute)
 
+            if isinstance(attribute, Composite):
+                attribute._meta.name = attribute_name
+                composite_indexes.append(attribute)
+
         if not primary_key:
             primary_key = cls._create_serial_primary_key()
             setattr(cls, "id", primary_key)
@@ -355,6 +373,7 @@ class Table(metaclass=TableMetaclass):
             _db=db,
             m2m_relationships=m2m_relationships,
             schema=schema,
+            composite_indexes=composite_indexes,
         )
 
         for foreign_key_column in foreign_key_columns:
@@ -1355,6 +1374,7 @@ class Table(metaclass=TableMetaclass):
         columns: Union[list[Column], list[str]],
         method: IndexMethod = IndexMethod.btree,
         if_not_exists: bool = False,
+        name: Optional[str] = None,
     ) -> CreateIndex:
         """
         Create a table index. If multiple columns are specified, this refers
@@ -1370,6 +1390,7 @@ class Table(metaclass=TableMetaclass):
             columns=columns,
             method=method,
             if_not_exists=if_not_exists,
+            name=name,
         )
 
     @classmethod
@@ -1377,6 +1398,7 @@ class Table(metaclass=TableMetaclass):
         cls,
         columns: Union[list[Column], list[str]],
         if_exists: bool = True,
+        name: Optional[str] = None,
     ) -> DropIndex:
         """
         Drop a table index. If multiple columns are specified, this refers
@@ -1387,7 +1409,12 @@ class Table(metaclass=TableMetaclass):
             await Band.drop_index([Band.name])
 
         """
-        return DropIndex(table=cls, columns=columns, if_exists=if_exists)
+        return DropIndex(
+            table=cls,
+            columns=columns,
+            if_exists=if_exists,
+            name=name,
+        )
 
     ###########################################################################
 
