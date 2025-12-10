@@ -20,7 +20,10 @@ from piccolo.columns.column_types import JSON, Blob, ForeignKey, Serial, Text
 from piccolo.engine import engine_finder
 from piccolo.query import Query
 from piccolo.query.base import DDL
-from piccolo.query.constraints import get_fk_constraint_name
+from piccolo.query.constraints import (
+    get_fk_constraint_name,
+    get_fk_constraint_name_mysql,
+)
 from piccolo.schema import SchemaDDLBase
 from piccolo.table import Table, create_table_class, sort_table_classes
 from piccolo.utils.warnings import colored_warning
@@ -543,9 +546,28 @@ class MigrationManager:
                     assert isinstance(fk_column, ForeignKey)
 
                     # First drop the existing foreign key constraint
-                    constraint_name = await get_fk_constraint_name(
-                        column=fk_column
-                    )
+                    if existing_table._meta.db.engine_type == "mysql":
+                        constraint_name = await get_fk_constraint_name_mysql(
+                            column=fk_column
+                        )
+                        await self._run_query(
+                            _Table.alter().drop_constraint(
+                                constraint_name=constraint_name
+                            )
+                        )
+
+                        # Then add a new foreign key constraint
+                        await self._run_query(
+                            _Table.alter().add_foreign_key_constraint(
+                                column=fk_column,
+                                on_delete=on_delete,
+                                on_update=on_update,
+                            )
+                        )
+                    else:
+                        constraint_name = await get_fk_constraint_name(
+                            column=fk_column
+                        )
                     await self._run_query(
                         _Table.alter().drop_constraint(
                             constraint_name=constraint_name

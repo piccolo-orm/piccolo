@@ -375,37 +375,40 @@ class DBTestCase(TestCase):
             self.run_sync(
                 """
                 CREATE TABLE manager (
-                    id INTEGER AUTO_INCREMENT PRIMARY KEY,
+                    id INT AUTO_INCREMENT PRIMARY KEY,
                     name VARCHAR(50)
                 );"""
             )
             self.run_sync(
                 """
                 CREATE TABLE band (
-                    id INTEGER AUTO_INCREMENT PRIMARY KEY,
+                    id INT AUTO_INCREMENT PRIMARY KEY,
                     name VARCHAR(50),
-                    manager INTEGER REFERENCES manager,
-                    popularity SMALLINT
+                    manager INT,
+                    popularity SMALLINT,
+                    CONSTRAINT band_manager_fkey
+                    FOREIGN KEY (manager)
+                        REFERENCES manager(id)
                 );"""
             )
             self.run_sync(
                 """
                 CREATE TABLE ticket (
-                    id INTEGER AUTO_INCREMENT PRIMARY KEY,
+                    id INT AUTO_INCREMENT PRIMARY KEY,
                     price NUMERIC(5,2)
                 );"""
             )
             self.run_sync(
                 """
                 CREATE TABLE poster (
-                    id INTEGER AUTO_INCREMENT PRIMARY KEY,
+                    id INT AUTO_INCREMENT PRIMARY KEY,
                     content TEXT
                 );"""
             )
             self.run_sync(
                 """
                 CREATE TABLE shirt (
-                    id INTEGER AUTO_INCREMENT PRIMARY KEY,
+                    id INT AUTO_INCREMENT PRIMARY KEY,
                     size VARCHAR(1)
                 );"""
             )
@@ -539,12 +542,25 @@ class DBTestCase(TestCase):
     def drop_tables(self):
         assert ENGINE is not None
 
-        if ENGINE.engine_type in ("postgres", "cockroach", "mysql"):
+        if ENGINE.engine_type in ("postgres", "cockroach"):
             self.run_sync("DROP TABLE IF EXISTS band CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS manager CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS ticket CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS poster CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS shirt CASCADE;")
+        elif ENGINE.engine_type == "mysql":
+            # temporarily disabling foreign key checks for tests
+            self.run_sync(
+                """
+                SET FOREIGN_KEY_CHECKS = 0;
+                DROP TABLE IF EXISTS band;
+                DROP TABLE IF EXISTS manager;
+                DROP TABLE IF EXISTS ticket;
+                DROP TABLE IF EXISTS poster;
+                DROP TABLE IF EXISTS shirt;
+                SET FOREIGN_KEY_CHECKS = 1;
+                """
+            )
         elif ENGINE.engine_type == "sqlite":
             self.run_sync("DROP TABLE IF EXISTS band;")
             self.run_sync("DROP TABLE IF EXISTS manager;")

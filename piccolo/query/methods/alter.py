@@ -299,6 +299,17 @@ class DropConstraint(AlterStatement):
 
 
 @dataclass
+class DropConstraintMysql(AlterStatement):
+    __slots__ = ("constraint_name",)
+
+    constraint_name: str
+
+    @property
+    def ddl(self) -> str:
+        return f"DROP FOREIGN KEY {self.constraint_name}"
+
+
+@dataclass
 class AddForeignKeyConstraint(AlterStatement):
     __slots__ = (
         "constraint_name",
@@ -426,7 +437,9 @@ class Alter(DDL):
         super().__init__(table, **kwargs)
         self._add_foreign_key_constraint: list[AddForeignKeyConstraint] = []
         self._add: list[AddColumn] = []
-        self._drop_constraint: list[DropConstraint] = []
+        self._drop_constraint: list[
+            Union[DropConstraint, DropConstraintMysql]
+        ] = []
         self._drop_default: list[DropDefault] = []
         self._drop_table: Optional[DropTable] = None
         self._drop: list[DropColumn] = []
@@ -669,18 +682,29 @@ class Alter(DDL):
         return f"{tablename}_{column_name}_fkey"
 
     def drop_constraint(self, constraint_name: str) -> Alter:
-        self._drop_constraint.append(
-            DropConstraint(constraint_name=constraint_name)
-        )
+        if self.engine_type == "mysql":
+            self._drop_constraint.append(
+                DropConstraintMysql(constraint_name=constraint_name)
+            )
+        else:
+            self._drop_constraint.append(
+                DropConstraint(constraint_name=constraint_name)
+            )
         return self
 
     def drop_foreign_key_constraint(
         self, column: Union[str, ForeignKey]
     ) -> Alter:
-        constraint_name = self._get_constraint_name(column=column)
-        self._drop_constraint.append(
-            DropConstraint(constraint_name=constraint_name)
-        )
+        if self.engine_type == "mysql":
+            constraint_name = self._get_constraint_name(column=column)
+            self._drop_constraint.append(
+                DropConstraintMysql(constraint_name=constraint_name)
+            )
+        else:
+            constraint_name = self._get_constraint_name(column=column)
+            self._drop_constraint.append(
+                DropConstraint(constraint_name=constraint_name)
+            )
         return self
 
     def add_foreign_key_constraint(
