@@ -77,7 +77,7 @@ class RenameColumn(AlterColumnStatement):
 
 
 @dataclass
-class RenameColumnMysql(AlterColumnStatement):
+class RenameColumnMySQL(AlterColumnStatement):
     __slots__ = ("new_name",)
 
     new_name: str
@@ -115,7 +115,7 @@ class AddColumn(AlterColumnStatement):
 
 
 @dataclass
-class AddColumnMysql(AlterColumnStatement):
+class AddColumnMySQL(AlterColumnStatement):
     __slots__ = ("name",)
 
     column: Column
@@ -163,7 +163,7 @@ class SetColumnType(AlterStatement):
 
 
 @dataclass
-class SetColumnTypeMysql(AlterStatement):
+class SetColumnTypeMySQL(AlterStatement):
 
     old_column: Column
     new_column: Column
@@ -194,7 +194,7 @@ class SetDefault(AlterColumnStatement):
 
 
 @dataclass
-class SetDefaultMysql(AlterColumnStatement):
+class SetDefaultMySQL(AlterColumnStatement):
     __slots__ = ("value",)
 
     column: Column
@@ -247,7 +247,7 @@ class SetNull(AlterColumnStatement):
 
 
 @dataclass
-class SetNullMysql(AlterColumnStatement):
+class SetNullMySQL(AlterColumnStatement):
     __slots__ = ("boolean",)
 
     boolean: bool
@@ -277,7 +277,7 @@ class SetLength(AlterColumnStatement):
 
 
 @dataclass
-class SetLengthMysql(AlterColumnStatement):
+class SetLengthMySQL(AlterColumnStatement):
     __slots__ = ("length",)
 
     length: int
@@ -299,7 +299,7 @@ class DropConstraint(AlterStatement):
 
 
 @dataclass
-class DropConstraintMysql(AlterStatement):
+class DropConstraintMySQL(AlterStatement):
     __slots__ = ("constraint_name",)
 
     constraint_name: str
@@ -362,7 +362,7 @@ class SetDigits(AlterColumnStatement):
 
 
 @dataclass
-class SetDigitsMysql(AlterColumnStatement):
+class SetDigitsMySQL(AlterColumnStatement):
     __slots__ = ("digits", "column_type")
 
     digits: Optional[tuple[int, int]]
@@ -438,20 +438,20 @@ class Alter(DDL):
         self._add_foreign_key_constraint: list[AddForeignKeyConstraint] = []
         self._add: list[AddColumn] = []
         self._drop_constraint: list[
-            Union[DropConstraint, DropConstraintMysql]
+            Union[DropConstraint, DropConstraintMySQL]
         ] = []
         self._drop_default: list[DropDefault] = []
         self._drop_table: Optional[DropTable] = None
         self._drop: list[DropColumn] = []
-        self._rename_columns: list[Union[RenameColumn, RenameColumnMysql]] = []
+        self._rename_columns: list[Union[RenameColumn, RenameColumnMySQL]] = []
         self._rename_table: list[RenameTable] = []
         self._set_column_type: list[
-            Union[SetColumnType, SetColumnTypeMysql]
+            Union[SetColumnType, SetColumnTypeMySQL]
         ] = []
-        self._set_default: list[Union[SetDefault, SetDefaultMysql]] = []
-        self._set_digits: list[Union[SetDigits, SetDigitsMysql]] = []
-        self._set_length: list[Union[SetLength, SetLengthMysql]] = []
-        self._set_null: list[Union[SetNull, SetNullMysql]] = []
+        self._set_default: list[Union[SetDefault, SetDefaultMySQL]] = []
+        self._set_digits: list[Union[SetDigits, SetDigitsMySQL]] = []
+        self._set_length: list[Union[SetLength, SetLengthMySQL]] = []
+        self._set_null: list[Union[SetNull, SetNullMySQL]] = []
         self._set_schema: list[SetSchema] = []
         self._set_unique: list[SetUnique] = []
         self._rename_constraint: list[RenameConstraint] = []
@@ -552,7 +552,7 @@ class Alter(DDL):
 
         """
         if self.engine_type == "mysql":
-            self._rename_columns.append(RenameColumnMysql(column, new_name))
+            self._rename_columns.append(RenameColumnMySQL(column, new_name))
         else:
             self._rename_columns.append(RenameColumn(column, new_name))
         return self
@@ -577,7 +577,7 @@ class Alter(DDL):
         """
         if self.engine_type == "mysql":
             self._set_column_type.append(
-                SetColumnTypeMysql(
+                SetColumnTypeMySQL(
                     old_column=old_column,
                     new_column=new_column,
                 )
@@ -601,7 +601,7 @@ class Alter(DDL):
         """
         if self.engine_type == "mysql":
             self._set_default.append(
-                SetDefaultMysql(column=column, value=value)
+                SetDefaultMySQL(column=column, value=value)
             )
         else:
             self._set_default.append(SetDefault(column=column, value=value))
@@ -624,7 +624,7 @@ class Alter(DDL):
 
         """
         if self.engine_type == "mysql":
-            self._set_null.append(SetNullMysql(column, boolean))
+            self._set_null.append(SetNullMySQL(column, boolean))
         else:
             self._set_null.append(SetNull(column, boolean))
         return self
@@ -671,7 +671,7 @@ class Alter(DDL):
             )
 
         if self.engine_type == "mysql":
-            self._set_length.append(SetLengthMysql(column, length))
+            self._set_length.append(SetLengthMySQL(column, length))
         else:
             self._set_length.append(SetLength(column, length))
         return self
@@ -684,7 +684,7 @@ class Alter(DDL):
     def drop_constraint(self, constraint_name: str) -> Alter:
         if self.engine_type == "mysql":
             self._drop_constraint.append(
-                DropConstraintMysql(constraint_name=constraint_name)
+                DropConstraintMySQL(constraint_name=constraint_name)
             )
         else:
             self._drop_constraint.append(
@@ -698,7 +698,7 @@ class Alter(DDL):
         if self.engine_type == "mysql":
             constraint_name = self._get_constraint_name(column=column)
             self._drop_constraint.append(
-                DropConstraintMysql(constraint_name=constraint_name)
+                DropConstraintMySQL(constraint_name=constraint_name)
             )
         else:
             constraint_name = self._get_constraint_name(column=column)
@@ -773,7 +773,7 @@ class Alter(DDL):
         )
         if self.engine_type == "mysql":
             self._set_digits.append(
-                SetDigitsMysql(
+                SetDigitsMySQL(
                     digits=digits,
                     column=column,
                     column_type=column_type,

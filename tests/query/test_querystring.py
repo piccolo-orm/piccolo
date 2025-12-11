@@ -167,7 +167,7 @@ class TestQueryStringOperators(TestCase):
 
 
 @mysql_only
-class TestQueryStringOperatorsMysql(TestCase):
+class TestQueryStringOperatorsMySQL(TestCase):
     """
     Make sure basic operations can be used on ``QueryString``.
     """

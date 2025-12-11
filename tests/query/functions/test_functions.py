@@ -31,7 +31,6 @@ class TestNested(BandTest):
         If we wrap a function in a custom QueryString - make sure the columns
         are still accessible, so joins are successful.
         """
-        # Use Concat() for compatibility with all databases
         response = Band.select(
             QueryString(
                 "CONCAT({}, '!') AS concat", Upper(Band.manager._.name)

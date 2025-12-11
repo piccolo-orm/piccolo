@@ -989,7 +989,7 @@ class TestMigrations(MigrationTestCase):
 
 
 @engines_only("mysql")
-class TestMigrationsMysql(MigrationTestCase):
+class TestMigrationsMySQL(MigrationTestCase):
     def setUp(self):
         pass
 

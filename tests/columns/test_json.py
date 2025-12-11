@@ -137,7 +137,7 @@ class TestJSONUpdate(TableTest):
 
 
 @engines_only("mysql")
-class TestJSONFuntcionMysql(TableTest):
+class TestJSONFunctionMySQL(TableTest):
     tables = [MyTable]
 
     def add_row(self):

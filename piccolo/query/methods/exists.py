@@ -29,18 +29,11 @@ class Exists(Query[TableInstance, bool]):
     def default_querystrings(self) -> Sequence[QueryString]:
         select = Select(table=self.table)
         select.where_delegate._where = self.where_delegate._where
-        if self.engine_type == "mysql":
-            return [
-                QueryString(
-                    "SELECT EXISTS({}) AS `exists`", select.querystrings[0]
-                )
-            ]
-        else:
-            return [
-                QueryString(
-                    'SELECT EXISTS({}) AS "exists"', select.querystrings[0]
-                )
-            ]
+        return [
+            QueryString(
+                'SELECT EXISTS({}) AS "exists"', select.querystrings[0]
+            )
+        ]
 
 
 Self = TypeVar("Self", bound=Exists)

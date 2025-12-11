@@ -31,7 +31,7 @@ class TestVersionParsing(TestCase):
 
 
 @engines_only("mysql")
-class TestVersionParsingMysql(TestCase):
+class TestVersionParsingMySQL(TestCase):
     def test_version_parsing(self):
         """
         Make sure the version number can correctly be parsed from a range

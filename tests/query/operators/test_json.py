@@ -57,7 +57,7 @@ class TestGetElementFromPath(TestCase):
 
 
 @engines_only("mysql")
-class TestGetElementFromPathMysql(TestCase):
+class TestGetElementFromPathMySQL(TestCase):
 
     def test_query(self):
         """

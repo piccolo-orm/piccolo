@@ -71,7 +71,7 @@ class TestPool(DBTestCase):
 
 
 @engines_only("mysql")
-class TestPoolMysql(DBTestCase):
+class TestPoolMySQL(DBTestCase):
     async def _create_pool(self) -> None:
         engine = cast(MySQLEngine, Manager._meta.db)
 

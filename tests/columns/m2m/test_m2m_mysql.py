@@ -35,7 +35,7 @@ class GenreToBand(Table):
 
 
 @engines_only("mysql")
-class M2MMysqlTestSerialPK(TestCase):
+class M2MMySQLTestSerialPK(TestCase):
     """
     This allows us to test M2M when the tables are in different schemas
     (public vs non-public).

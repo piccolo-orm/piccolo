@@ -17,9 +17,8 @@ together in production. The main missing feature is support for
 :ref:`automatic database migrations <AutoMigrations>` due to SQLite's limited
 support for ``ALTER TABLE`` ``DDL`` statements.
 
-`MySQL <https://www.mysql.com/>`_ is supported with some MySQL limitations.
-MySQL doesn't have specific column types (like Postgres) and there may be some 
-features not supported, but it's OK to use. :ref:`Automatic database migrations <AutoMigrations>` 
+`MySQL <https://www.mysql.com/>`_ is also supported. There may be some features 
+not supported, but it's OK to use. :ref:`Automatic database migrations <AutoMigrations>` 
 is supported but we must be careful because MySQL ``DDL`` statements
 `is not transactional <https://dev.mysql.com/doc/refman/8.4/en/atomic-ddl.html>`_ 
 and MySQL will commit the changes in transaction.

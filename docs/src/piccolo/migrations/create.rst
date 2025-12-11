@@ -257,7 +257,7 @@ Creating an auto migration:
     opposed to changing the tables themselves.
 
 .. warning:: Auto migrations for SQLite and MySQL are supported, with limitations.
-    SQLite has extremely limited support for SQL Alter statements and MySQL DDL triggers 
+    SQLite has extremely limited support for SQL ALTER statements and MySQL DDL triggers 
     an implicit commit in transaction and we cannot roll back a DDL using ROLLBACK
     (non-transactional DDL). This might change in the future.
 

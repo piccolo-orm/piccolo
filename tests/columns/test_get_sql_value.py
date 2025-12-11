@@ -67,7 +67,7 @@ class TestArraySQLite(TestCase):
 
 
 @engines_only("mysql")
-class TestArrayMysql(TestCase):
+class TestArrayMySQL(TestCase):
     """
     Arrays in MySQL is just JSON strings
     """

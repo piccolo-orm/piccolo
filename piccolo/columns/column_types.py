@@ -72,11 +72,11 @@ from piccolo.columns.defaults.timestamptz import (
 from piccolo.columns.defaults.uuid import UUID4, UUIDArg
 from piccolo.columns.operators.comparison import (
     ArrayAll,
-    ArrayAllMysql,
+    ArrayAllMySQL,
     ArrayAny,
-    ArrayAnyMysql,
+    ArrayAnyMySQL,
     ArrayNotAny,
-    ArrayNotAnyMysql,
+    ArrayNotAnyMySQL,
 )
 from piccolo.columns.operators.string import Concat
 from piccolo.columns.reference import LazyTableReference
@@ -2403,7 +2403,7 @@ class JSON(Column):
         MySQL does not allow unquoted JSON literals in the DEFAULT
         clause, so we use the expression in parentheses.
         Only works in CREATE TABLE. MySQL does not allow default
-        values for TEXT columns in ALTER statements.
+        values for JSON columns in ALTER statements.
         """
         engine_type = self._meta.engine_type
 
@@ -2519,8 +2519,10 @@ class JSONB(JSON):
 
     def get_default_value(self):
         """
-        MySQL does not allow unquoted JSON literals in a
-        DEFAULT clause
+        MySQL does not allow unquoted JSON literals in the DEFAULT
+        clause, so we use the expression in parentheses.
+        Only works in CREATE TABLE. MySQL does not allow default
+        values for JSON columns in ALTER statements.
         """
         engine_type = self._meta.engine_type
 
@@ -2603,7 +2605,7 @@ class Bytea(Column):
         MySQL does not allow unquoted BLOB literals in the DEFAULT
         clause, so we use the expression in parentheses.
         Only works in CREATE TABLE. MySQL does not allow default
-        values for TEXT columns in ALTER statements.
+        values for BLOB columns in ALTER statements.
         """
         engine_type = self._meta.engine_type
 
@@ -2883,7 +2885,7 @@ class Array(Column):
         if engine_type in ("postgres", "cockroach"):
             return Where(column=self, value=value, operator=ArrayAny)
         if engine_type == "mysql":
-            return Where(column=self, value=value, operator=ArrayAnyMysql)
+            return Where(column=self, value=value, operator=ArrayAnyMySQL)
         elif engine_type == "sqlite":
             return self.like(f"%{value}%")
         else:
@@ -2903,7 +2905,7 @@ class Array(Column):
         if engine_type in ("postgres", "cockroach"):
             return Where(column=self, value=value, operator=ArrayNotAny)
         if engine_type == "mysql":
-            return Where(column=self, value=value, operator=ArrayNotAnyMysql)
+            return Where(column=self, value=value, operator=ArrayNotAnyMySQL)
         elif engine_type == "sqlite":
             return self.not_like(f"%{value}%")
         else:
@@ -2923,7 +2925,7 @@ class Array(Column):
         if engine_type in ("postgres", "cockroach"):
             return Where(column=self, value=value, operator=ArrayAll)
         if engine_type == "mysql":
-            return Where(column=self, value=value, operator=ArrayAllMysql)
+            return Where(column=self, value=value, operator=ArrayAllMySQL)
         elif engine_type == "sqlite":
             raise ValueError("Unsupported by SQLite")
         else:

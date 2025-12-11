@@ -196,7 +196,7 @@ update should be made:
 
 .. warning:: Not supported for MySQL. A workaround is possible by using an  
     ``IF`` or ``CASE`` condition in the ``UPDATE`` clause or by first
-    performing a separate ``UPDATE``, but this is not covered in Piccolo.
+    performing a separate ``UPDATE``, but this is not currently supported in Piccolo.
 
 Multiple ``on_conflict`` clauses
 --------------------------------

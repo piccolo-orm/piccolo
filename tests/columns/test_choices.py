@@ -2,12 +2,12 @@ import enum
 
 from piccolo.columns.column_types import Array, Varchar
 from piccolo.table import Table
-from piccolo.testing.test_case import TableTest
+from piccolo.testing.test_case import AsyncTableTest
 from tests.base import engines_only
 from tests.example_apps.music.tables import Shirt
 
 
-class TestChoices(TableTest):
+class TestChoices(AsyncTableTest):
     tables = [Shirt]
 
     def _insert_shirts(self):
@@ -83,7 +83,7 @@ class Ticket(Table):
 
 
 @engines_only("mysql")
-class TestArrayChoicesMysql(TableTest):
+class TestArrayChoicesMySQL(AsyncTableTest):
     tables = [Ticket]
 
     def test_string(self):
@@ -138,7 +138,7 @@ class TestArrayChoicesMysql(TableTest):
 
 
 @engines_only("postgres", "sqlite")
-class TestArrayChoices(TableTest):
+class TestArrayChoices(AsyncTableTest):
     """
     🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
     """  # noqa: E501

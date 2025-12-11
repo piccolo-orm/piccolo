@@ -19,10 +19,10 @@ Using ``mysql``:
 
     mysql -u root -p
 
-Enter the your password and create database:
+Enter the your password and create the database:
 
 .. code-block:: bash
 
     CREATE DATABASE "my_database_name";
 
-For Windows you can use some GUI tool.
+Alternatively, use a GUI tool.
