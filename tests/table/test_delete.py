@@ -1,7 +1,12 @@
 import pytest
 
 from piccolo.query.methods.delete import DeletionError
-from tests.base import DBTestCase, engine_version_lt, is_running_sqlite
+from tests.base import (
+    DBTestCase,
+    engine_version_lt,
+    is_running_mysql,
+    is_running_sqlite,
+)
 from tests.example_apps.music.tables import Band
 
 
@@ -16,6 +21,7 @@ class TestDelete(DBTestCase):
         self.assertEqual(response, 0)
 
     @pytest.mark.skipif(
+        is_running_mysql(),
         is_running_sqlite() and engine_version_lt(3.35),
         reason="SQLite version not supported",
     )

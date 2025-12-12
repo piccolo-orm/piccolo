@@ -67,11 +67,22 @@ class RowMeta:
     data_type: str
     numeric_precision: Optional[Union[int, str]]
     numeric_scale: Optional[Union[int, str]]
-    numeric_precision_radix: Optional[Literal[2, 10]]
+    numeric_precision_radix: Optional[Literal[2, 10]] = None
 
     @classmethod
     def get_column_name_str(cls) -> str:
-        return ", ".join(i.name for i in dataclasses.fields(cls))
+        from piccolo.engine import engine_finder
+
+        engine = engine_finder()
+        assert engine
+        if engine.engine_type == "mysql":
+            return ", ".join(
+                i.name
+                for i in dataclasses.fields(cls)
+                if i.name != "numeric_precision_radix"
+            )
+        else:
+            return ", ".join(i.name for i in dataclasses.fields(cls))
 
 
 @dataclasses.dataclass
@@ -615,6 +626,12 @@ async def get_table_schema(
         table.
 
     """
+    schema_name = (
+        "DATABASE()"
+        if table_class._meta.db.engine_type == "mysql"
+        else schema_name
+    )
+
     row_meta_list = await table_class.raw(
         (
             f"SELECT {RowMeta.get_column_name_str()} FROM "

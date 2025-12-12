@@ -72,8 +72,11 @@ from piccolo.columns.defaults.timestamptz import (
 from piccolo.columns.defaults.uuid import UUID4, UUIDArg
 from piccolo.columns.operators.comparison import (
     ArrayAll,
+    ArrayAllMySQL,
     ArrayAny,
+    ArrayAnyMySQL,
     ArrayNotAny,
+    ArrayNotAnyMySQL,
 )
 from piccolo.columns.operators.string import Concat
 from piccolo.columns.reference import LazyTableReference
@@ -241,6 +244,10 @@ class TimedeltaDelegate:
         output_string = ", ".join(output)
         return output_string
 
+    def get_mysql_interval_string(self, interval: timedelta) -> str:
+        total_seconds = interval.total_seconds()
+        return f"{total_seconds} SECOND"
+
     def get_querystring(
         self,
         column: Column,
@@ -257,6 +264,11 @@ class TimedeltaDelegate:
             value_string = self.get_postgres_interval_string(interval=value)
             return QueryString(
                 f'"{column_name}" {operator} INTERVAL {value_string}',
+            )
+        elif engine_type == "mysql":
+            value_string = self.get_mysql_interval_string(interval=value)
+            return QueryString(
+                f"`{column_name}` {operator} INTERVAL {value_string}",
             )
         elif engine_type == "sqlite":
             if isinstance(column, Interval):
@@ -442,8 +454,22 @@ class Text(Column):
         **kwargs: Unpack[ColumnKwargs],
     ) -> None:
         self._validate_default(default, (str, None))
+
         self.default = default
         super().__init__(default=default, **kwargs)
+
+    def get_default_value(self):
+        """
+        MySQL does not allow unquoted TEXT literals in the DEFAULT
+        clause, so we use the expression in parentheses.
+        Only works in CREATE TABLE. MySQL does not allow default
+        values for TEXT columns in ALTER statements.
+        """
+        engine_type = self._meta.engine_type
+
+        if engine_type == "mysql":
+            return QueryString(f"('{self.default}')")
+        return super().get_default_value()
 
     ###########################################################################
     # For update queries
@@ -501,6 +527,15 @@ class UUID(Column):
     """
 
     value_type = uuid.UUID
+
+    @property
+    def column_type(self):
+        engine_type = self._meta.engine_type
+        if engine_type in ("postgres", "cockroach", "sqlite"):
+            return "UUID"
+        elif engine_type == "mysql":
+            return "CHAR(36)"
+        raise Exception("Unrecognized engine type")
 
     def __init__(
         self,
@@ -686,7 +721,7 @@ class BigInt(Integer):
     """
 
     def _get_column_type(self, engine_type: str):
-        if engine_type == "postgres":
+        if engine_type in ("postgres", "mysql"):
             return "BIGINT"
         elif engine_type == "cockroach":
             return "BIGINT"
@@ -738,7 +773,7 @@ class SmallInt(Integer):
     @property
     def column_type(self):
         engine_type = self._meta.engine_type
-        if engine_type == "postgres":
+        if engine_type in ("postgres", "mysql"):
             return "SMALLINT"
         elif engine_type == "cockroach":
             return "SMALLINT"
@@ -783,6 +818,8 @@ class Serial(Column):
             return "INTEGER"
         elif engine_type == "sqlite":
             return "INTEGER"
+        elif engine_type == "mysql":
+            return "INT AUTO_INCREMENT"
         raise Exception("Unrecognized engine type")
 
     def default(self) -> QueryString:
@@ -793,6 +830,8 @@ class Serial(Column):
         elif engine_type == "cockroach":
             return QueryString("unique_rowid()")
         elif engine_type == "sqlite":
+            return NULL
+        elif engine_type == "mysql":
             return NULL
         raise Exception("Unrecognized engine type")
 
@@ -826,6 +865,8 @@ class BigSerial(Serial):
             return "BIGINT"
         elif engine_type == "sqlite":
             return "INTEGER"
+        elif engine_type == "mysql":
+            return "BIGINT AUTO_INCREMENT"
         raise Exception("Unrecognized engine type")
 
     ###########################################################################
@@ -909,6 +950,14 @@ class Timestamp(Column):
 
     value_type = datetime
     timedelta_delegate = TimedeltaDelegate()
+
+    @property
+    def column_type(self):
+        engine_type = self._meta.engine_type
+        if engine_type == "mysql":
+            return "DATETIME(6)"
+        else:
+            return "TIMESTAMP"
 
     def __init__(
         self,
@@ -1026,6 +1075,14 @@ class Timestamptz(Column):
 
         self.default = default
         super().__init__(default=default, **kwargs)
+
+    @property
+    def column_type(self):
+        engine_type = self._meta.engine_type
+        if engine_type == "mysql":
+            return "TIMESTAMP(6)"
+        else:
+            return "TIMESTAMPTZ"
 
     ###########################################################################
     # For update queries
@@ -1274,6 +1331,8 @@ class Interval(Column):
             # make it an integer - but we need a text field.
             # https://sqlite.org/datatype3.html#determination_of_column_affinity
             return "SECONDS"
+        elif engine_type == "mysql":
+            return "TIME(6)"
         raise Exception("Unrecognized engine type")
 
     ###########################################################################
@@ -2339,13 +2398,18 @@ class JSON(Column):
 
         self.json_operator: Optional[str] = None
 
-    @property
-    def column_type(self):
+    def get_default_value(self):
+        """
+        MySQL does not allow unquoted JSON literals in the DEFAULT
+        clause, so we use the expression in parentheses.
+        Only works in CREATE TABLE. MySQL does not allow default
+        values for JSON columns in ALTER statements.
+        """
         engine_type = self._meta.engine_type
-        if engine_type == "cockroach":
-            return "JSONB"  # Cockroach is always JSONB.
-        else:
-            return "JSON"
+
+        if engine_type == "mysql":
+            return QueryString(f"('{self.default}')")
+        return super().get_default_value()
 
     ###########################################################################
 
@@ -2448,7 +2512,23 @@ class JSONB(JSON):
 
     @property
     def column_type(self):
+        engine_type = self._meta.engine_type
+        if engine_type == "mysql":
+            return "JSON"
         return "JSONB"  # Must be defined, we override column_type() in JSON()
+
+    def get_default_value(self):
+        """
+        MySQL does not allow unquoted JSON literals in the DEFAULT
+        clause, so we use the expression in parentheses.
+        Only works in CREATE TABLE. MySQL does not allow default
+        values for JSON columns in ALTER statements.
+        """
+        engine_type = self._meta.engine_type
+
+        if engine_type == "mysql":
+            return QueryString("('')")
+        return super().get_default_value()
 
     ###########################################################################
     # Descriptors
@@ -2496,7 +2576,7 @@ class Bytea(Column):
         engine_type = self._meta.engine_type
         if engine_type in ("postgres", "cockroach"):
             return "BYTEA"
-        elif engine_type == "sqlite":
+        elif engine_type in ("sqlite", "mysql"):
             return "BLOB"
         raise Exception("Unrecognized engine type")
 
@@ -2519,6 +2599,20 @@ class Bytea(Column):
 
         self.default = default
         super().__init__(default=default, **kwargs)
+
+    def get_default_value(self):
+        """
+        MySQL does not allow unquoted BLOB literals in the DEFAULT
+        clause, so we use the expression in parentheses.
+        Only works in CREATE TABLE. MySQL does not allow default
+        values for BLOB columns in ALTER statements.
+        """
+        engine_type = self._meta.engine_type
+
+        if engine_type == "mysql":
+            return QueryString(f"({self.default})")
+
+        return super().get_default_value()
 
     ###########################################################################
     # Descriptors
@@ -2650,7 +2744,22 @@ class Array(Column):
                 )
                 else "ARRAY"
             )
+        elif engine_type == "mysql":
+            return "JSON"  # use JSON column
         raise Exception("Unrecognized engine type")
+
+    def get_default_value(self):
+        """
+        MySQL does not allow unquoted JSON literals in the DEFAULT
+        clause, so we use the expression in parentheses.
+        Only works in CREATE TABLE. MySQL does not allow default
+        values for TEXT columns in ALTER statements.
+        """
+        engine_type = self._meta.engine_type
+
+        if engine_type == "mysql":
+            return QueryString("('')")
+        return super().get_default_value()
 
     def _setup_base_column(self, table_class: type[Table]):
         """
@@ -2775,6 +2884,8 @@ class Array(Column):
 
         if engine_type in ("postgres", "cockroach"):
             return Where(column=self, value=value, operator=ArrayAny)
+        if engine_type == "mysql":
+            return Where(column=self, value=value, operator=ArrayAnyMySQL)
         elif engine_type == "sqlite":
             return self.like(f"%{value}%")
         else:
@@ -2793,6 +2904,8 @@ class Array(Column):
 
         if engine_type in ("postgres", "cockroach"):
             return Where(column=self, value=value, operator=ArrayNotAny)
+        if engine_type == "mysql":
+            return Where(column=self, value=value, operator=ArrayNotAnyMySQL)
         elif engine_type == "sqlite":
             return self.not_like(f"%{value}%")
         else:
@@ -2811,6 +2924,8 @@ class Array(Column):
 
         if engine_type in ("postgres", "cockroach"):
             return Where(column=self, value=value, operator=ArrayAll)
+        if engine_type == "mysql":
+            return Where(column=self, value=value, operator=ArrayAllMySQL)
         elif engine_type == "sqlite":
             raise ValueError("Unsupported by SQLite")
         else:

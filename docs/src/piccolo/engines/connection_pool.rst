@@ -3,7 +3,7 @@
 Connection Pool
 ===============
 
-.. hint:: Connection pools can be used with Postgres and CockroachDB.
+.. hint:: Connection pools can be used with Postgres, CockroachDB and MySQL.
 
 Setup
 ~~~~~

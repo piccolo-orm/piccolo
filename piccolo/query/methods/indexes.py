@@ -30,5 +30,17 @@ class Indexes(Query):
         tablename = self.table._meta.tablename
         return [QueryString(f"PRAGMA index_list({tablename})")]
 
+    @property
+    def mysql_querystrings(self) -> Sequence[QueryString]:
+        return [
+            QueryString(
+                "SELECT DISTINCT INDEX_NAME AS name "
+                "FROM INFORMATION_SCHEMA.STATISTICS "
+                "WHERE TABLE_SCHEMA = DATABASE() "
+                "AND TABLE_NAME = {}",
+                self.table._meta.get_formatted_tablename(quoted=False),
+            )
+        ]
+
     async def response_handler(self, response):
         return [i["name"] for i in response]

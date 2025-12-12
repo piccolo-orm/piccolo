@@ -54,7 +54,7 @@ from piccolo.conf.apps import AppConfig
 from piccolo.schema import SchemaManager
 from piccolo.table import Table, create_table_class, drop_db_tables_sync
 from piccolo.utils.sync import run_sync
-from tests.base import DBTestCase, engines_only, engines_skip
+from tests.base import DBTestCase, engine_is, engines_only, engines_skip
 
 if TYPE_CHECKING:
     from piccolo.columns.base import Column
@@ -173,11 +173,17 @@ class MigrationTestCase(DBTestCase):
             column_name = column._meta.db_column_name
             schema = column._meta.table._meta.schema
             tablename = column._meta.table._meta.tablename
-            row_meta = self.get_postgres_column_definition(
-                tablename=tablename,
-                column_name=column_name,
-                schema=schema or "public",
-            )
+            if engine_is("mysql"):
+                row_meta = self.get_mysql_column_definition(
+                    tablename=tablename,
+                    column_name=column_name,
+                )
+            else:
+                row_meta = self.get_postgres_column_definition(
+                    tablename=tablename,
+                    column_name=column_name,
+                    schema=schema or "public",
+                )
             self.assertTrue(
                 test_function(row_meta),
                 msg=f"Meta is incorrect: {row_meta}",
@@ -982,6 +988,431 @@ class TestMigrations(MigrationTestCase):
 ###############################################################################
 
 
+@engines_only("mysql")
+class TestMigrationsMySQL(MigrationTestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        create_table_class("MyTable").alter().drop_table(
+            if_exists=True
+        ).run_sync()
+        Migration.alter().drop_table(if_exists=True).run_sync()
+
+    ###########################################################################
+
+    def table(self, column: Column):
+        """
+        A utility for creating Piccolo tables with the given column.
+        """
+        return create_table_class(
+            class_name="MyTable", class_members={"my_column": column}
+        )
+
+    def test_varchar_column(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Varchar(),
+                    Varchar(length=100),
+                    Varchar(default="hello world"),
+                    Varchar(default=string_default),
+                    Varchar(null=False),
+                    Varchar(index=True),
+                    Varchar(index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "varchar",
+                    x.is_nullable == "YES",
+                    x.column_default == "",
+                ]
+            ),
+        )
+
+    def test_text_column(self):
+        with self.assertRaises(ValueError):
+            self._test_migrations(
+                table_snapshots=[
+                    [self.table(column)]
+                    for column in [
+                        Text(),
+                        Text(default="hello world"),
+                        Text(default=string_default),
+                        Text(null=False),
+                        Text(index=True),
+                        Text(index=False),
+                    ]
+                ],
+                test_function=lambda x: all(
+                    [
+                        x.data_type == "text",
+                        x.is_nullable == "NO",
+                        x.column_default
+                        in (
+                            "''",
+                            "''::text",
+                            "'':::STRING",
+                        ),
+                    ]
+                ),
+            )
+
+    def test_json_column(self):
+        with self.assertRaises(ValueError):
+            self._test_migrations(
+                table_snapshots=[
+                    [self.table(column)]
+                    for column in [
+                        JSON(),
+                        JSON(default=["a", "b", "c"]),
+                        JSON(default={"name": "bob"}),
+                        JSON(default='{"name": "Sally"}'),
+                    ]
+                ],
+                test_function=lambda x: all(
+                    [
+                        x.data_type == "json",
+                        x.is_nullable == "NO",
+                        x.column_default == "'{}'",
+                    ]
+                ),
+            )
+
+    def test_integer_column(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Integer(),
+                    Integer(default=1),
+                    Integer(default=integer_default),
+                    Integer(null=False),
+                    Integer(index=True),
+                    Integer(index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "int",
+                    x.is_nullable == "NO",
+                    x.column_default == "0",
+                ]
+            ),
+        )
+
+    def test_real_column(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Real(),
+                    Real(default=1.1),
+                    Real(null=False),
+                    Real(index=True),
+                    Real(index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "double",
+                    x.is_nullable == "NO",
+                    # MySQL does not preserve trailing decimal zeros
+                    # for defaults and this is correct result
+                    x.column_default == "0",
+                ]
+            ),
+        )
+
+    def test_double_precision_column(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    DoublePrecision(),
+                    DoublePrecision(default=1.1),
+                    DoublePrecision(null=False),
+                    DoublePrecision(index=True),
+                    DoublePrecision(index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "double",
+                    x.is_nullable == "NO",
+                    # MySQL does not preserve trailing decimal zeros
+                    # for defaults and this is correct result
+                    x.column_default == "0",
+                ]
+            ),
+        )
+
+    def test_smallint_column(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    SmallInt(),
+                    SmallInt(default=1),
+                    SmallInt(default=integer_default),
+                    SmallInt(null=False),
+                    SmallInt(index=True),
+                    SmallInt(index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "smallint",
+                    x.is_nullable == "NO",
+                    x.column_default == "0",
+                ]
+            ),
+        )
+
+    def test_bigint_column(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    BigInt(),
+                    BigInt(default=1),
+                    BigInt(default=integer_default),
+                    BigInt(null=False),
+                    BigInt(index=True),
+                    BigInt(index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "bigint",
+                    x.is_nullable == "NO",
+                    x.column_default == "0",
+                ]
+            ),
+        )
+
+    def test_boolean_column(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Boolean(),
+                    Boolean(default=True),
+                    Boolean(default=boolean_default),
+                    Boolean(null=False),
+                    Boolean(index=True),
+                    Boolean(index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "tinyint",
+                    x.is_nullable == "NO",
+                    x.column_default == "0",
+                ]
+            ),
+        )
+
+    def test_numeric_column(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Numeric(),
+                    Numeric(digits=(4, 2)),
+                    Numeric(digits=None),
+                    Numeric(default=decimal.Decimal("1.2")),
+                    Numeric(default=numeric_default),
+                    Numeric(null=False),
+                    Numeric(index=True),
+                    Numeric(index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "decimal",
+                    x.is_nullable == "YES",
+                    # MySQL does not preserve trailing decimal zeros
+                    # for defaults and this is correct result
+                    x.column_default == "0",
+                ]
+            ),
+        )
+
+    def test_decimal_column(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Decimal(),
+                    Decimal(digits=(4, 2)),
+                    Decimal(digits=None),
+                    Decimal(default=decimal.Decimal("1.2")),
+                    Decimal(default=numeric_default),
+                    Decimal(null=False),
+                    Decimal(index=True),
+                    Decimal(index=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "decimal",
+                    x.is_nullable == "YES",
+                    # MySQL does not preserve trailing decimal zeros
+                    # for defaults and this is correct result
+                    x.column_default == "0",
+                ]
+            ),
+        )
+
+    ###########################################################################
+
+    # Column type conversion
+
+    @engines_only("postgres", "cockroach", "mysql")
+    def test_column_type_conversion_string(self):
+        """
+        We can't manage all column type conversions, but should be able to
+        manage most simple ones (e.g. Varchar to Text).
+        """
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Varchar(),
+                    Text(),
+                    Varchar(),
+                ]
+            ]
+        )
+
+    @engines_only("postgres", "mysql")
+    def test_column_type_conversion_integer(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
+        """  # noqa: E501
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Integer(),
+                    BigInt(),
+                    SmallInt(),
+                    BigInt(),
+                    Integer(),
+                ]
+            ]
+        )
+
+    @engines_only("postgres", "mysql")
+    def test_column_type_conversion_string_to_integer(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
+        """  # noqa: E501
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Varchar(default="1"),
+                    Integer(default=1),
+                    Varchar(default="1"),
+                ]
+            ]
+        )
+
+    @engines_only("postgres", "mysql")
+    def test_column_type_conversion_float_decimal(self):
+        """
+        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
+        """  # noqa: E501
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Real(default=1.0),
+                    DoublePrecision(default=1.0),
+                    Real(default=1.0),
+                    Numeric(),
+                    Real(default=1.0),
+                ]
+            ]
+        )
+
+    @engines_only("postgres", "cockroach", "mysql")
+    def test_column_type_conversion_integer_float(self):
+        """
+        Make sure conversion between ``Integer`` and ``Real`` works - related
+        to this bug:
+
+        https://github.com/piccolo-orm/piccolo/issues/1071
+
+        """
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Real(default=1.0),
+                    Integer(default=1),
+                    Real(default=1.0),
+                ]
+            ]
+        )
+
+    @engines_only("postgres", "cockroach", "mysql")
+    def test_column_type_conversion_json(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    JSON(),
+                    JSONB(),
+                    JSON(),
+                ]
+            ]
+        )
+
+    @engines_only("postgres", "cockroach")
+    def test_column_type_conversion_timestamp(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Timestamp(),
+                    Timestamptz(),
+                    Timestamp(),
+                ]
+            ]
+        )
+
+    @patch("piccolo.apps.migrations.auto.migration_manager.colored_warning")
+    @engines_only("postgres", "cockroach")
+    def test_column_type_conversion_serial(self, colored_warning: MagicMock):
+        """
+        This isn't possible, as neither SERIAL or BIGSERIAL are actual types.
+        They're just shortcuts. Make sure the migration doesn't crash - it
+        should just output a warning.
+        """
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Serial(),
+                    BigSerial(),
+                ]
+            ]
+        )
+
+        colored_warning.assert_called_once_with(
+            "Unable to migrate Serial to BigSerial and vice versa. This must "
+            "be done manually."
+        )
+
+
+##############################################################################
+
+
 class Band(Table):
     name = Varchar()
     genres = M2M(LazyTableReference("GenreToBand", module_path=__name__))
@@ -997,7 +1428,7 @@ class GenreToBand(Table):
     genre = ForeignKey(Genre)
 
 
-@engines_only("postgres", "cockroach")
+@engines_only("postgres", "cockroach", "mysql")
 class TestM2MMigrations(MigrationTestCase):
     def setUp(self):
         pass
@@ -1021,7 +1452,7 @@ class TestM2MMigrations(MigrationTestCase):
 ###############################################################################
 
 
-@engines_only("postgres", "cockroach")
+@engines_only("postgres", "cockroach", "mysql")
 class TestForeignKeys(MigrationTestCase):
     def setUp(self):
         class TableA(Table):
@@ -1106,7 +1537,7 @@ class TestTargetColumn(MigrationTestCase):
         self.assertTrue(response[0]["exists"])
 
 
-@engines_only("postgres", "cockroach")
+@engines_only("postgres", "cockroach", "mysql")
 class TestForeignKeySelf(MigrationTestCase):
     def setUp(self) -> None:
         class TableA(Table):
@@ -1126,16 +1557,21 @@ class TestForeignKeySelf(MigrationTestCase):
         * The table has a custom primary key type (e.g. UUID).
 
         """
+        engine_identifier = (
+            "char"
+            if self.table_classes[0]._meta.db.engine_type == "mysql"
+            else "uuid"
+        )
         self._test_migrations(
             table_snapshots=[self.table_classes],
-            test_function=lambda x: x.data_type == "uuid",
+            test_function=lambda x: x.data_type == engine_identifier,
         )
 
         for table_class in self.table_classes:
             self.assertTrue(table_class.table_exists().run_sync())
 
 
-@engines_only("postgres", "cockroach")
+@engines_only("postgres", "cockroach", "mysql")
 class TestAddForeignKeySelf(MigrationTestCase):
     def setUp(self):
         pass
@@ -1153,6 +1589,8 @@ class TestAddForeignKeySelf(MigrationTestCase):
         * The table has a custom primary key (e.g. UUID).
 
         """
+        engine_identifier = "char" if engine_is("mysql") else "uuid"
+
         get_app_config.return_value = self._get_app_config()
 
         self._test_migrations(
@@ -1173,7 +1611,7 @@ class TestAddForeignKeySelf(MigrationTestCase):
                     )
                 ],
             ],
-            test_function=lambda x: x.data_type == "uuid",
+            test_function=lambda x: x.data_type == engine_identifier,
         )
 
 
