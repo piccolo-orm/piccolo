@@ -545,29 +545,16 @@ class MigrationManager:
 
                     assert isinstance(fk_column, ForeignKey)
 
-                    # First drop the existing foreign key constraint
                     if existing_table._meta.db.engine_type == "mysql":
                         constraint_name = await get_fk_constraint_name_mysql(
                             column=fk_column
-                        )
-                        await self._run_query(
-                            _Table.alter().drop_constraint(
-                                constraint_name=constraint_name
-                            )
-                        )
-
-                        # Then add a new foreign key constraint
-                        await self._run_query(
-                            _Table.alter().add_foreign_key_constraint(
-                                column=fk_column,
-                                on_delete=on_delete,
-                                on_update=on_update,
-                            )
                         )
                     else:
                         constraint_name = await get_fk_constraint_name(
                             column=fk_column
                         )
+
+                    # First drop the existing foreign key constraint
                     await self._run_query(
                         _Table.alter().drop_constraint(
                             constraint_name=constraint_name
