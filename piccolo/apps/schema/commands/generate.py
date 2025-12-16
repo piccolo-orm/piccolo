@@ -75,14 +75,16 @@ class RowMeta:
 
         engine = engine_finder()
         assert engine
+
+        excluded_columns = []
         if engine.engine_type == "mysql":
-            return ", ".join(
-                i.name
-                for i in dataclasses.fields(cls)
-                if i.name != "numeric_precision_radix"
-            )
-        else:
-            return ", ".join(i.name for i in dataclasses.fields(cls))
+            excluded_columns = ["numeric_precision_radix"]
+
+        return ", ".join(
+            i.name
+            for i in dataclasses.fields(cls)
+            if i.name not in excluded_columns
+        )
 
 
 @dataclasses.dataclass

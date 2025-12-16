@@ -20,7 +20,7 @@ support for ``ALTER TABLE`` ``DDL`` statements.
 `MySQL <https://www.mysql.com/>`_ is also supported. There may be some features 
 not supported, but it's OK to use. :ref:`Automatic database migrations <AutoMigrations>` 
 is supported but we must be careful because MySQL ``DDL`` statements
-`is not transactional <https://dev.mysql.com/doc/refman/8.4/en/atomic-ddl.html>`_ 
+`are not transactional <https://dev.mysql.com/doc/refman/8.4/en/atomic-ddl.html>`_ 
 and MySQL will commit the changes in transaction.
 
 What about other databases?

@@ -19,7 +19,7 @@ Using ``mysql``:
 
     mysql -u root -p
 
-Enter the your password and create the database:
+Enter your password and create the database:
 
 .. code-block:: bash
 

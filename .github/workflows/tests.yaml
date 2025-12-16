@@ -239,7 +239,7 @@ jobs:
               run: |
                 set -e
                 for i in {1..60}; do
-                    if mysqladmin ping -h127.0.0.1 -P3306 -uroot -prootpassword > /dev/null 2>&1; then
+                    if mysqladmin ping -h 127.0.0.1 -P 3306 -u root -p rootpassword > /dev/null 2>&1; then
                     echo "MySQL is up"
                     break
                     fi
@@ -247,14 +247,14 @@ jobs:
                     sleep 2
                     if [ "$i" -eq 60 ]; then
                     echo "MySQL did not become ready in time!" >&2
-                    mysqladmin ping -h127.0.0.1 -P3306 -uroot -prootpassword || true
+                    mysqladmin ping -h 127.0.0.1 -P 3306 -u root -p rootpassword || true
                     exit 1
                     fi
                 done
 
             - name: Setup MySQL (create database)
               run: |
-                mysql -h127.0.0.1 -P3306 -uroot -prootpassword -e "CREATE DATABASE IF NOT EXISTS piccolo;"
+                mysql -h 127.0.0.1 -P 3306 -u root -p rootpassword -e "CREATE DATABASE IF NOT EXISTS piccolo;"
 
             - name: Test with pytest, MySQL
               run: ./scripts/test-mysql.sh
