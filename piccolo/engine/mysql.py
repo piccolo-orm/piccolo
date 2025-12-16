@@ -8,8 +8,6 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Mapping, Optional, Union
 
-from pymysql.constants import FIELD_TYPE
-from pymysql.converters import conversions
 from typing_extensions import Self
 
 from piccolo.engine.base import (
@@ -27,6 +25,7 @@ from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import colored_warning
 
 aiomysql = LazyLoader("aiomysql", globals(), "aiomysql")
+pymysql = LazyLoader("pymysql", globals(), "pymysql")
 
 if TYPE_CHECKING:  # pragma: no cover
     from aiomysql.connection import Connection
@@ -37,8 +36,8 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 # converters and formaters
-def backticks_format(querysting: str) -> str:
-    return querysting.replace('"', "`")
+def backticks_format(querystring: str) -> str:
+    return querystring.replace('"', "`")
 
 
 def convert_list(value: list) -> str:
@@ -84,17 +83,19 @@ def convert_timestamp(value: str) -> datetime:
     return parse_mysql_datetime(value)
 
 
-converters = conversions.copy()
-custom_decoders: dict[str, Any] = {
-    FIELD_TYPE.STRING: convert_uuid,
-    FIELD_TYPE.VAR_STRING: convert_uuid,
-    FIELD_TYPE.VARCHAR: convert_uuid,
-    FIELD_TYPE.CHAR: convert_uuid,
-    FIELD_TYPE.TINY: convert_bool,
-    FIELD_TYPE.TIMESTAMP: convert_timestamptz,
-    FIELD_TYPE.DATETIME: convert_timestamp,
-}
-converters.update(custom_decoders)
+def converters_map() -> dict[str, Any]:
+    converters = pymysql.converters.conversions.copy()
+    custom_decoders: dict[str, Any] = {
+        pymysql.constants.FIELD_TYPE.STRING: convert_uuid,
+        pymysql.constants.FIELD_TYPE.VAR_STRING: convert_uuid,
+        pymysql.constants.FIELD_TYPE.VARCHAR: convert_uuid,
+        pymysql.constants.FIELD_TYPE.CHAR: convert_uuid,
+        pymysql.constants.FIELD_TYPE.TINY: convert_bool,
+        pymysql.constants.FIELD_TYPE.TIMESTAMP: convert_timestamptz,
+        pymysql.constants.FIELD_TYPE.DATETIME: convert_timestamp,
+    }
+    converters.update(custom_decoders)
+    return converters
 
 
 @dataclass
@@ -338,7 +339,7 @@ class MySQLEngine(Engine[MySQLTransaction]):
             f"mysql_current_transaction_{db_name}", default=None
         )
         # converters
-        config["conv"] = converters
+        config["conv"] = converters_map()
 
         super().__init__(
             engine_type="mysql",
