@@ -30,6 +30,12 @@ class JSONQueryString(QueryString):
     def ne(self, value) -> QueryString:
         return self.__ne__(value)
 
+    def engine(self) -> Union[str, None]:
+        from piccolo.engine import engine_finder
+
+        engine = engine_finder()
+        return engine.engine_type if engine is not None else None
+
 
 class GetChildElement(JSONQueryString):
     """
@@ -103,9 +109,13 @@ class GetElementFromPath(JSONQueryString):
             For example: ``["technician", 0, "name"]``.
 
         """
+        # we need to change the path to "".join(path) because MySQL needs
+        # to use json path as a string like this ["$.message[0].name"] not
+        # as a list of items ["message", 0, "name"] like Postgres
+        path_ = [str(i) if isinstance(i, int) else i for i in path]
         super().__init__(
-            "{} #> {}",
+            "{} -> {}" if self.engine() == "mysql" else "{} #> {}",
             identifier,
-            [str(i) if isinstance(i, int) else i for i in path],
+            "".join(path_) if self.engine() == "mysql" else path_,
             alias=alias,
         )

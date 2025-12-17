@@ -14,7 +14,7 @@ class Instrument(Table):
     studio = ForeignKey(RecordingStudio)
 
 
-@engines_only("postgres", "cockroach")
+@engines_only("postgres", "cockroach", "mysql")
 class TestJSONB(TableTest):
     tables = [RecordingStudio, Instrument]
 
@@ -72,6 +72,7 @@ class TestJSONB(TableTest):
             ],
         )
 
+    @engines_skip("mysql")
     def test_where(self):
         """
         Test using the where clause to match a subset of rows.

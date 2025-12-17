@@ -1,4 +1,4 @@
-from typing import Optional
+from unittest import TestCase
 
 from piccolo.columns.column_types import (
     ForeignKey,
@@ -9,9 +9,8 @@ from piccolo.columns.column_types import (
 )
 from piccolo.columns.m2m import M2M
 from piccolo.engine.finder import engine_finder
-from piccolo.schema import SchemaManager
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
-from tests.base import engines_skip
+from tests.base import engines_only
 
 engine = engine_finder()
 
@@ -35,22 +34,15 @@ class GenreToBand(Table):
     reason = Text(help_text="For testing additional columns on join tables.")
 
 
-@engines_skip("mysql")
-class M2MBase:
+@engines_only("mysql")
+class M2MMySQLTestSerialPK(TestCase):
     """
     This allows us to test M2M when the tables are in different schemas
     (public vs non-public).
     """
 
-    def _setUp(self, schema: Optional[str] = None):
-        self.schema = schema
-
-        for table_class in (Band, Genre, GenreToBand):
-            table_class._meta.schema = schema
-
-        self.all_tables = [Band, Genre, GenreToBand]
-
-        create_db_tables_sync(*self.all_tables, if_not_exists=True)
+    def setUp(self):
+        create_db_tables_sync(*[Band, Genre, GenreToBand], if_not_exists=True)
 
         bands = Band.insert(
             Band(name="Pythonistas"),
@@ -73,24 +65,9 @@ class M2MBase:
         ).run_sync()
 
     def tearDown(self):
-        drop_db_tables_sync(*self.all_tables)
+        drop_db_tables_sync(*[GenreToBand, Genre, Band])
 
-        if self.schema:
-            SchemaManager().drop_schema(
-                schema_name="schema_1", cascade=True
-            ).run_sync()
-
-    def assertEqual(self, first, second, msg=None):
-        assert first == second
-
-    def assertTrue(self, first, msg=None):
-        assert first is True
-
-    @engines_skip("cockroach")
     def test_select_name(self):
-        """
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """  # noqa: E501
         response = Band.select(
             Band.name, Band.genres(Genre.name, as_list=True)
         ).run_sync()
@@ -116,14 +93,10 @@ class M2MBase:
             ],
         )
 
-    @engines_skip("cockroach")
     def test_no_related(self):
         """
         Make sure it still works correctly if there are no related values.
         """
-        """
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """  # noqa: E501
 
         GenreToBand.delete(force=True).run_sync()
 
@@ -154,11 +127,7 @@ class M2MBase:
             ],
         )
 
-    @engines_skip("cockroach")
     def test_select_multiple(self):
-        """
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """  # noqa: E501
 
         response = Band.select(
             Band.name, Band.genres(Genre.id, Genre.name)
@@ -214,11 +183,7 @@ class M2MBase:
             ],
         )
 
-    @engines_skip("cockroach")
     def test_select_id(self):
-        """
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """  # noqa: E501
 
         response = Band.select(
             Band.name, Band.genres(Genre.id, as_list=True)
@@ -245,17 +210,13 @@ class M2MBase:
             ],
         )
 
-    @engines_skip("cockroach")
     def test_select_all_columns(self):
         """
         Make sure ``all_columns`` can be passed in as an argument. ``M2M``
         should flatten the arguments. Reported here:
 
         https://github.com/piccolo-orm/piccolo/issues/728
-
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-
-        """  # noqa: E501
+        """
 
         response = Band.select(
             Band.name, Band.genres(Genre.all_columns(exclude=(Genre.id,)))

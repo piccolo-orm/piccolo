@@ -8,7 +8,7 @@ class MyTable(Table):
     name = Varchar(length=10)
 
 
-@engines_only("postgres", "cockroach")
+@engines_only("postgres", "cockroach", "mysql")
 class TestVarchar(TableTest):
     """
     SQLite doesn't enforce any constraints on max character length.

@@ -35,6 +35,13 @@ class TimeOffset(Default):
         )
         return f"(time(CURRENT_TIME, {interval_string}))"
 
+    @property
+    def mysql(self):
+        interval_string = self.get_postgres_interval_string(
+            ["hours", "minutes", "seconds"]
+        )
+        return f"(CURRENT_TIME() + INTERVAL {interval_string}))"
+
     def python(self):
         return (
             datetime.datetime.now()
@@ -56,6 +63,11 @@ class TimeNow(Default):
     @property
     def sqlite(self):
         return "CURRENT_TIME"
+
+    @property
+    def mysql(self):
+        # must use string literal
+        return f"'{datetime.datetime.now().time().strftime('%H:%M:%S')}'"
 
     def python(self):
         return datetime.datetime.now().time()
@@ -79,6 +91,10 @@ class TimeCustom(Default):
     @property
     def sqlite(self):
         return f"'{self.time.isoformat()}'"
+
+    @property
+    def mysql(self):
+        return f"`{self.time.isoformat()}`"
 
     def python(self):
         return self.time

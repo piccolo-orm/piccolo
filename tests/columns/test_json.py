@@ -1,6 +1,7 @@
 from piccolo.columns.column_types import JSON
 from piccolo.table import Table
 from piccolo.testing.test_case import TableTest
+from tests.base import engines_only
 
 
 class MyTable(Table):
@@ -133,3 +134,132 @@ class TestJSONUpdate(TableTest):
             {MyTable.json: {"message": "updated"}}, force=True
         ).run_sync()
         self.check_response()
+
+
+@engines_only("mysql")
+class TestJSONFunctionMySQL(TableTest):
+    tables = [MyTable]
+
+    def add_row(self):
+        row = MyTable(json={"message": "original"})
+        row.save().run_sync()
+
+    def test_from_path_mysql(self):
+        """
+        Make sure ``from_path`` can be used for complex nested data.
+        """
+        MyTable(
+            json={
+                "message": [
+                    {"name": "original"},
+                    {"name": "copy"},
+                ]
+            },
+        ).save().run_sync()
+
+        response = (
+            MyTable.select(
+                MyTable.json.from_path(["$.message[0].name"]).as_alias(
+                    "message_alias"
+                )
+            )
+            .output(load_json=True)
+            .run_sync()
+        )
+
+        assert response is not None
+        self.assertListEqual(response, [{"message_alias": "original"}])
+
+    def test_arrow_mysql(self):
+        """
+        Test using the arrow function to retrieve a subset of the JSON.
+        """
+        MyTable(json={"name": "original"}).save().run_sync()
+
+        response = (
+            MyTable.select(MyTable.json.arrow("$.name"))
+            .output(load_json=True)
+            .first()
+            .run_sync()
+        )
+
+        assert response is not None
+        self.assertEqual(response["json"], "original")
+
+    def test_arrow_as_alias_mysql(self):
+        """
+        Test using the arrow function with alias.
+        """
+        MyTable(json={"name": "original"}).save().run_sync()
+
+        response = (
+            MyTable.select(MyTable.json.arrow("$.name").as_alias("alias_name"))
+            .output(load_json=True)
+            .first()
+            .run_sync()
+        )
+
+        assert response is not None
+        self.assertEqual(response["alias_name"], "original")
+
+    def test_square_brackets_mysql(self):
+        """
+        Make sure we can use square brackets instead of calling ``arrow``
+        explicitly.
+        """
+        MyTable(json={"name": "original"}).save().run_sync()
+
+        response = (
+            MyTable.select(MyTable.json["$.name"])
+            .output(load_json=True)
+            .first()
+            .run_sync()
+        )
+
+        assert response is not None
+        self.assertEqual(response["json"], "original")
+
+    def test_multiple_levels_deep_square_brackets_mysql(self):
+        """
+        Make sure elements can be extracted multiple levels deep using
+        square brackets, not arrow functions
+        """
+        MyTable(
+            json={
+                "message": [
+                    {"name": "original"},
+                    {"name": "copy"},
+                ]
+            },
+        ).save().run_sync()
+
+        response = (
+            MyTable.select(
+                MyTable.json["$.message[0].name"].as_alias("message_alias")
+            )
+            .output(load_json=True)
+            .run_sync()
+        )
+
+        assert response is not None
+        self.assertListEqual(response, [{"message_alias": "original"}])
+
+    def test_arrow_where_mysql(self):
+        """
+        Make sure the arrow function can be used within a WHERE clause.
+        """
+        MyTable(json={"name": "original"}).save().run_sync()
+
+        self.assertEqual(
+            MyTable.count()
+            .where(MyTable.json.arrow("$.name").eq("original"))
+            .run_sync(),
+            1,
+        )
+
+        self.assertEqual(
+            MyTable.count()
+            .where(MyTable.json.arrow("$.name").eq("copy"))
+            .run_sync(),
+            0,
+        )
