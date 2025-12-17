@@ -29,7 +29,7 @@ class UUID4(Default):
 
     @property
     def mysql(self):
-        return f"'{uuid.uuid4()}'"
+        return "''"
 
     def python(self):
         return uuid.uuid4()
