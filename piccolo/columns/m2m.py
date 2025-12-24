@@ -350,11 +350,8 @@ class M2MAddRelated:
         transaction, or wrapped in a new transaction.
         """
         engine = self.rows[0]._meta.db
-        if engine.transaction_exists():
-            await self._run()
-        else:
-            async with engine.transaction():
-                await self._run()
+        async with engine.transaction():
+            return await self._run()
 
     def run_sync(self):
         return run_sync(self.run())
