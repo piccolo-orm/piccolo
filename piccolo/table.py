@@ -1423,41 +1423,78 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def _table_str(
-        cls, abbreviated=False, excluded_params: Optional[list[str]] = None
+        cls,
+        abbreviated: bool = False,
+        excluded_params: Optional[list[str]] = None,
     ):
         """
         Returns a basic string representation of the table and its columns.
         Used by the playground.
 
         :param abbreviated:
-            If True, a very high level representation is printed out.
+            If True, a very high level representation is printed out (it just
+            shows any non-default values).
         :param excluded_params:
             Lets us find a middle ground between outputting every kwarg, and
             the abbreviated version with very few kwargs. For example
             `['index_method']`, if we want to show all kwargs but index_method.
 
         """
+        from piccolo.apps.migrations.auto.serialisation import (
+            SerialisedEnumTypeDefinition,
+            serialise_params,
+        )
+
         if excluded_params is None:
             excluded_params = []
+
         spacer = "\n    "
         columns = []
+        extra_definitions = []
         for col in cls._meta.columns:
-            params: list[str] = []
+            base_column_defaults = {
+                key: value.default
+                for key, value in inspect.signature(Column).parameters.items()
+            }
+            column_defaults = {
+                key: value.default
+                for key, value in inspect.signature(
+                    col.__class__
+                ).parameters.items()
+            }
+            defaults = {**base_column_defaults, **column_defaults}
+
+            params = {}
             for key, value in col._meta.params.items():
                 if key in excluded_params:
                     continue
 
-                _value: str = ""
-                if inspect.isclass(value):
-                    _value = value.__name__
-                    params.append(f"{key}={_value}")
-                else:
-                    _value = repr(value)
-                    if not abbreviated:
-                        params.append(f"{key}={_value}")
-            params_string = ", ".join(params)
+                if abbreviated:
+                    # If the value is just the default one, don't include it.
+                    if defaults.get(key, ...) == value:
+                        continue
+
+                    # If db_column is the same as the column name then don't
+                    # include it - it does nothing.
+                    if key == "db_column_name" and value == col._meta.name:
+                        continue
+
+                params[key] = value
+
+            serialised_params = serialise_params(params, inline_enums=False)
+            params_string = ", ".join(
+                f"{key}={repr(value)}"
+                for key, value in serialised_params.params.items()
+            )
             columns.append(
                 f"{col._meta.name} = {col.__class__.__name__}({params_string})"
+            )
+            extra_definitions.extend(
+                [
+                    i
+                    for i in serialised_params.extra_definitions
+                    if isinstance(i, SerialisedEnumTypeDefinition)
+                ]
             )
 
         for m2m_relationship in cls._meta.m2m_relationships:
@@ -1468,6 +1505,9 @@ class Table(metaclass=TableMetaclass):
                 f"{m2m_relationship._meta.name} = M2M({joining_table_name})"
             )
 
+        extra_definitions_string = spacer.join(
+            [repr(i) for i in extra_definitions]
+        )
         columns_string = spacer.join(columns)
         tablename = repr(cls._meta.tablename)
 
@@ -1479,9 +1519,11 @@ class Table(metaclass=TableMetaclass):
             else f"{parent_class_name}, tablename={tablename}"
         )
 
-        return (
-            f"class {cls.__name__}({class_args}):\n" f"    {columns_string}\n"
-        )
+        output = f"class {cls.__name__}({class_args}):\n"
+        if extra_definitions_string:
+            output += f"    {extra_definitions_string}\n"
+        output += f"    {columns_string}\n"
+        return output
 
 
 def create_table_class(
