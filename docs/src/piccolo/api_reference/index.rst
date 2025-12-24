@@ -106,6 +106,13 @@ Date
 .. autoclass:: DateOffset
     :members:
 
+
+UUID
+~~~~
+
+.. autoclass:: UUID4
+    :members:
+
 -------------------------------------------------------------------------------
 
 Testing
