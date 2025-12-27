@@ -386,6 +386,15 @@ class Email(Varchar):
     pass
 
 
+class Char(Varchar):
+    """
+    This is the same as ``Varchar`` in SQLite.
+
+    In Postgres it is 'blank padded'. For example, if the length is 5, and you
+    store `'foo'`, then you will get ``'foo  '`` back from the database.
+    """
+
+
 class Secret(Varchar):
     """
     This is just an alias to ``Varchar(secret=True)``. It's here for backwards
