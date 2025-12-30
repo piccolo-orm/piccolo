@@ -2,7 +2,7 @@ name: Test Suite
 
 on:
     push:
-        branches: ["master", "v1", "cockroach_upgrade"]
+        branches: ["master", "v1"]
         paths-ignore:
             - "docs/**"
     pull_request:
