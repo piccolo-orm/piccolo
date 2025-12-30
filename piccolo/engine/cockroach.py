@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from piccolo.utils.lazy_loader import LazyLoader
-from piccolo.utils.warnings import Level, colored_warning
 
 from .postgres import PostgresEngine
 
 asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")
+
+if TYPE_CHECKING:  # pragma: no cover
+    from asyncpg.connection import Connection
 
 
 class CockroachEngine(PostgresEngine):
@@ -35,15 +37,14 @@ class CockroachEngine(PostgresEngine):
         self.engine_type = "cockroach"
         self.min_version_number = 0
 
-    async def prep_database(self):
-        try:
-            await self._run_in_new_connection(
-                "SET CLUSTER SETTING sql.defaults.experimental_alter_column_type.enabled = true;"  # noqa: E501
-            )
-        except asyncpg.exceptions.InsufficientPrivilegeError:
-            colored_warning(
-                "=> Unable to set up Cockroach DB "
-                "functionality may not behave as expected. Make sure "
-                "your database user has permission to set cluster options.",
-                level=Level.medium,
-            )
+    async def get_new_connection(self) -> Connection:
+        """
+        Set `autocommit_before_ddl` to off (enabled by default since v25.2)
+        to prevent automatic DDL commits in transactions and enable rollback
+        """
+        connection = await super().get_new_connection()
+        await connection.execute(
+            "SET autocommit_before_ddl = off;"
+            "ALTER ROLE ALL SET autocommit_before_ddl = false;"
+        )
+        return connection

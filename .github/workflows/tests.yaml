@@ -2,7 +2,7 @@ name: Test Suite
 
 on:
     push:
-        branches: ["master", "v1"]
+        branches: ["master", "v1", "cockroach_upgrade"]
         paths-ignore:
             - "docs/**"
     pull_request:
@@ -142,7 +142,7 @@ jobs:
         strategy:
             matrix:
                 python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-                cockroachdb-version: ["v24.1.0"]
+                cockroachdb-version: ["v25.4.2"]
         steps:
             - uses: actions/checkout@v3
             - name: Set up Python ${{ matrix.python-version }}
