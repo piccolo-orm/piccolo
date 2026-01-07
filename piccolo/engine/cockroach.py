@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any, Optional
 
-from piccolo.utils.lazy_loader import LazyLoader
+from .postgres import PostgresEngine, PostgresTransaction
 
-from .postgres import PostgresEngine
 
-asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")
-
-if TYPE_CHECKING:  # pragma: no cover
-    from asyncpg.connection import Connection
+class CockroachTransaction(PostgresTransaction):
+    async def begin(self):
+        await self.transaction.start()
+        # Set `autocommit_before_ddl` to off (enabled by default since v25.2)
+        # to prevent automatic DDL commits in transactions and enable rollback.
+        # Applies only to the current transaction and automatically reverted
+        # when the transaction commits or rollback.
+        await self.connection.execute("SET LOCAL autocommit_before_ddl = off")
 
 
 class CockroachEngine(PostgresEngine):
@@ -37,14 +40,5 @@ class CockroachEngine(PostgresEngine):
         self.engine_type = "cockroach"
         self.min_version_number = 0
 
-    async def get_new_connection(self) -> Connection:
-        """
-        Set `autocommit_before_ddl` to off (enabled by default since v25.2)
-        to prevent automatic DDL commits in transactions and enable rollback
-        """
-        connection = await super().get_new_connection()
-        await connection.execute(
-            "SET autocommit_before_ddl = off;"
-            "ALTER ROLE ALL SET autocommit_before_ddl = false;"
-        )
-        return connection
+    def transaction(self, allow_nested: bool = True) -> CockroachTransaction:
+        return CockroachTransaction(engine=self, allow_nested=allow_nested)
