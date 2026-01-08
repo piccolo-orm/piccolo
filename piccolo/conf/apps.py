@@ -188,7 +188,7 @@ class AppConfig:
     commands: list[Union[Callable, Command]] = field(default_factory=list)
 
     @property
-    def resolved_migrations_folder_path(self) -> Union[str, None]:
+    def resolved_migrations_folder_path(self) -> Optional[str]:
         return (
             str(self.migrations_folder_path)
             if isinstance(self.migrations_folder_path, pathlib.Path)

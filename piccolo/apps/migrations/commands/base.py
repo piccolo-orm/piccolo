@@ -40,7 +40,7 @@ class BaseMigrationManager(Finder):
         """
         migration_modules = {}
 
-        if folder_path is not None:
+        if folder_path:
             sys.path.insert(0, folder_path)
 
         folder_contents = os.listdir(folder_path)
