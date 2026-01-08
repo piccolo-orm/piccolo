@@ -22,7 +22,7 @@ Routing frameworks
 
 `Starlette <https://www.starlette.io/>`_, `FastAPI <https://fastapi.tiangolo.com/>`_,
 `BlackSheep <https://www.neoteroi.dev/blacksheep/>`_,
-`Litestar <https://litestar.dev/>`_, `Esmerald <https://esmerald.dev/>`_,
+`Litestar <https://litestar.dev/>`_, `Ravyn <https://www.ravyn.dev/>`_,
 `Lilya <https://lilya.dev/>`_,
 `Quart <https://quart.palletsprojects.com/en/latest/>`_,
 `Falcon <https://falconframework.org/>`_
