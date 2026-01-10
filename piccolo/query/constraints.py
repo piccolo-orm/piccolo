@@ -44,9 +44,7 @@ async def get_fk_constraint_name(column: ForeignKey) -> Optional[str]:
     # if we change the column type from a non-FK column to
     # an FK column, the previous column type has no FK constraints
     # and we skip this to allow the migration to continue
-    if not constraints:
-        return None
-    return constraints[0]["fk_constraint_name"]
+    return constraints[0]["fk_constraint_name"] if constraints else None
 
 
 @dataclass
