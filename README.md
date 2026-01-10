@@ -94,7 +94,7 @@ Let Piccolo scaffold you an ASGI web app, using Piccolo as the ORM:
 piccolo asgi new
 ```
 
-[Starlette](https://www.starlette.io/), [FastAPI](https://fastapi.tiangolo.com/), [BlackSheep](https://www.neoteroi.dev/blacksheep/), [Litestar](https://litestar.dev/), [Esmerald](https://esmerald.dev/), [Lilya](https://lilya.dev), [Quart](https://quart.palletsprojects.com/en/latest/), [Falcon](https://falconframework.org/) and [Sanic](https://sanic.dev/en/) are currently supported.
+[Starlette](https://www.starlette.io/), [FastAPI](https://fastapi.tiangolo.com/), [BlackSheep](https://www.neoteroi.dev/blacksheep/), [Litestar](https://litestar.dev/), [Ravyn](https://www.ravyn.dev/), [Lilya](https://lilya.dev/), [Quart](https://quart.palletsprojects.com/en/latest/), [Falcon](https://falconframework.org/) and [Sanic](https://sanic.dev/en/) are currently supported.
 
 ## Piccolo ecosystem
 

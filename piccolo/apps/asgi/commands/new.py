@@ -14,7 +14,7 @@ ROUTER_DEPENDENCIES = {
     "fastapi": ["fastapi"],
     "blacksheep": ["blacksheep[full]"],
     "litestar": ["litestar"],
-    "esmerald": ["esmerald"],
+    "ravyn": ["ravyn"],
     "lilya": ["lilya"],
     "quart": ["quart", "quart_schema"],
     "falcon": ["falcon"],
