@@ -438,7 +438,7 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "uuid",
                     x.is_nullable == "NO",
-                    x.column_default == "uuid_generate_v4()",
+                    x.column_default == "gen_random_uuid()",
                 ]
             ),
         )
