@@ -1,10 +1,11 @@
 from dataclasses import dataclass
+from typing import Optional
 
 from piccolo.columns import ForeignKey
 from piccolo.columns.base import OnDelete, OnUpdate
 
 
-async def get_fk_constraint_name(column: ForeignKey) -> str:
+async def get_fk_constraint_name(column: ForeignKey) -> Optional[str]:
     """
     Checks what the foreign key constraint is called in the database.
     """
@@ -40,7 +41,10 @@ async def get_fk_constraint_name(column: ForeignKey) -> str:
         column_name,
     )
 
-    return constraints[0]["fk_constraint_name"]
+    # if we change the column type from a non-FK column to
+    # an FK column, the previous column type has no FK constraints
+    # and we skip this to allow the migration to continue
+    return constraints[0]["fk_constraint_name"] if constraints else None
 
 
 @dataclass
