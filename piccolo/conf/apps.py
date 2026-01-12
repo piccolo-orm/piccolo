@@ -182,13 +182,13 @@ class AppConfig:
     """
 
     app_name: str
-    migrations_folder_path: Union[str, pathlib.Path]
+    migrations_folder_path: Union[str, pathlib.Path, None]
     table_classes: list[type[Table]] = field(default_factory=list)
     migration_dependencies: list[str] = field(default_factory=list)
     commands: list[Union[Callable, Command]] = field(default_factory=list)
 
     @property
-    def resolved_migrations_folder_path(self) -> str:
+    def resolved_migrations_folder_path(self) -> Optional[str]:
         return (
             str(self.migrations_folder_path)
             if isinstance(self.migrations_folder_path, pathlib.Path)

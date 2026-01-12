@@ -148,10 +148,11 @@ class MigrationTestCase(DBTestCase):
 
         migrations_folder_path = app_config.resolved_migrations_folder_path
 
-        if os.path.exists(migrations_folder_path):
-            shutil.rmtree(migrations_folder_path)
+        if migrations_folder_path:
+            if os.path.exists(migrations_folder_path):
+                shutil.rmtree(migrations_folder_path)
 
-        _create_migrations_folder(migrations_folder_path)
+            _create_migrations_folder(migrations_folder_path)
 
         for table_snapshot in table_snapshots:
             app_config.table_classes = table_snapshot
