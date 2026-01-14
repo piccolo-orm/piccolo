@@ -769,6 +769,11 @@ class OnConflictDelegate:
         else:
             raise ValueError("Unrecognised `on conflict` action.")
 
+        if target is None and action_ == OnConflictAction.do_update:
+            raise ValueError(
+                "The `target` option must be provided with DO UPDATE."
+            )
+
         if where and action_ == OnConflictAction.do_nothing:
             raise ValueError(
                 "The `where` option can only be used with DO NOTHING."
