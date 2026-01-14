@@ -420,3 +420,106 @@ class TestM2MComplexSchema(TestCase):
                     returned_value,
                     msg=f"{column_name} doesn't match",
                 )
+
+
+###############################################################################
+
+# A schema using self-reference tables
+
+
+class Member(Table):
+    name = Varchar()
+    # self-reference many to many
+    followers = M2M(
+        LazyTableReference("MemberToFollower", module_path=__name__)
+    )
+    followings = M2M(
+        LazyTableReference("MemberToFollower", module_path=__name__)
+    )
+
+
+class MemberToFollower(Table):
+    follower_id = ForeignKey(Member)
+    following_id = ForeignKey(Member)
+
+
+SELF_REFERENCE_SCHEMA = [Member, MemberToFollower]
+
+
+class TestM2MSelfReference(TestCase):
+    """
+    Make sure the M2M functionality works correctly when the tables is
+    the same (self-reference tables).
+    """
+
+    def setUp(self):
+        create_db_tables_sync(*SELF_REFERENCE_SCHEMA, if_not_exists=True)
+
+        bob = Member.objects().create(name="Bob").run_sync()
+        sally = Member.objects().create(name="Sally").run_sync()
+        fred = Member.objects().create(name="Fred").run_sync()
+        john = Member.objects().create(name="John").run_sync()
+        mia = Member.objects().create(name="Mia").run_sync()
+
+        MemberToFollower.insert(
+            MemberToFollower(follower_id=fred, following_id=bob),
+            MemberToFollower(follower_id=bob, following_id=sally),
+            MemberToFollower(follower_id=fred, following_id=sally),
+            MemberToFollower(follower_id=john, following_id=bob),
+            MemberToFollower(follower_id=mia, following_id=bob),
+            MemberToFollower(follower_id=bob, following_id=john),
+        ).run_sync()
+
+    def tearDown(self):
+        drop_db_tables_sync(*SELF_REFERENCE_SCHEMA)
+
+    def test_select_bidirectional(self):
+        """
+        Make sure we can select related items for self-reference table.
+        """
+        followings = (
+            Member.select(Member.followings(Member.name, as_list=True))
+            .where(Member.name == "Bob")
+            .run_sync()
+        )
+
+        self.assertEqual(followings, [{"followings": ["Sally", "John"]}])
+
+        # Now we use the bidirectional argument to get the correct result.
+        # Without it, we cannot get the correct result for symmetric
+        # self-referencing many to many relations.
+        followers = (
+            Member.select(
+                Member.followers(Member.name, as_list=True, bidirectional=True)
+            )
+            .where(Member.name == "Bob")
+            .run_sync()
+        )
+
+        self.assertEqual(followers, [{"followers": ["Fred", "John", "Mia"]}])
+
+    def test_get_m2m_bidirectional(self):
+        """
+        Make sure we can get related items for self-reference table.
+        """
+        member = Member.objects().get(Member.name == "Bob").run_sync()
+        assert member is not None
+
+        followings = member.get_m2m(Member.followings).run_sync()
+
+        self.assertTrue(all(isinstance(i, Table) for i in followings))
+
+        self.assertCountEqual([i.name for i in followings], ["Sally", "John"])
+
+        # Now we use the bidirectional argument to get the correct result.
+        # Without it, we cannot get the correct result for symmetric
+        # self-referencing many to many relations.
+        followers = member.get_m2m(
+            Member.followers, bidirectional=True
+        ).run_sync()
+
+        self.assertTrue(all(isinstance(i, Table) for i in followers))
+
+        self.assertCountEqual(
+            [i.name for i in followers], ["Fred", "John", "Mia"]
+        )
