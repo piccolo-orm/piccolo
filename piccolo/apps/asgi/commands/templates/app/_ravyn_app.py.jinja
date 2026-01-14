@@ -1,9 +1,9 @@
 from typing import Any
 from pathlib import Path
 
-from esmerald import (
+from ravyn import (
     APIView,
-    Esmerald,
+    Ravyn,
     Gateway,
     HTTPException,
     Include,
@@ -12,7 +12,7 @@ from esmerald import (
     post,
     put,
 )
-from esmerald.core.config import StaticFilesConfig
+from ravyn.core.config import StaticFilesConfig
 from piccolo.engine import engine_finder
 from piccolo.utils.pydantic import create_pydantic_model
 from piccolo_admin.endpoints import create_admin
@@ -107,7 +107,7 @@ class TaskAPIView(APIView):
         await task.remove()
 
 
-app = Esmerald(
+app = Ravyn(
     routes=[
         Gateway("/", handler=home),
         Gateway("/tasks", handler=TaskAPIView),
