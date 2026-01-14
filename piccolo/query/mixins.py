@@ -789,6 +789,10 @@ class OnConflictDelegate:
         values: Optional[Sequence[Union[Column, tuple[Column, Any]]]] = None,
         where: Optional[Combinable] = None,
     ):
+        from piccolo.engine import engine_finder
+
+        engine = engine_finder()
+
         action_: OnConflictAction
         if isinstance(action, OnConflictAction):
             action_ = action
@@ -797,10 +801,11 @@ class OnConflictDelegate:
         else:
             raise ValueError("Unrecognised `on conflict` action.")
 
-        if target is None and action_ == OnConflictAction.do_update:
-            raise ValueError(
-                "The `target` option must be provided with DO UPDATE."
-            )
+        if engine.engine_type != "mysql":
+            if target is None and action_ == OnConflictAction.do_update:
+                raise ValueError(
+                    "The `target` option must be provided with DO UPDATE."
+                )
 
         if where and action_ == OnConflictAction.do_nothing:
             raise ValueError(

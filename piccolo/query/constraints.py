@@ -96,7 +96,7 @@ async def get_fk_constraint_rules(column: ForeignKey) -> ConstraintRules:
     )
 
 
-async def get_fk_constraint_name_mysql(column: ForeignKey) -> str:
+async def get_fk_constraint_name_mysql(column: ForeignKey) -> Optional[str]:
     """
     Checks what the foreign key constraint is called in the MySQL
     database.
@@ -133,8 +133,8 @@ async def get_fk_constraint_name_mysql(column: ForeignKey) -> str:
         table_name,
         column_name,
     )
-
-    return constraints[0][0]
+    print(constraints)
+    return constraints[0][0] if constraints else None
 
 
 async def get_fk_constraint_rules_mysql(column: ForeignKey) -> ConstraintRules:

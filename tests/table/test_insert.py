@@ -240,12 +240,16 @@ class TestOnConflict(TestCase):
                 }
             ],
         )
-        
-    @engines_skip("mysql")   
+
+    @engines_skip("mysql")
     def test_do_update_no_target(self):
         """
         Make sure that `DO UPDATE` with no `target` raises an exception.
         """
+        Band = self.Band
+
+        new_popularity = self.band.popularity + 1000
+
         with self.assertRaises(ValueError) as manager:
             Band.insert(
                 Band(name=self.band.name, popularity=new_popularity)
