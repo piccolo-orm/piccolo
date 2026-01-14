@@ -792,6 +792,7 @@ class OnConflictDelegate:
         from piccolo.engine import engine_finder
 
         engine = engine_finder()
+        assert engine
 
         action_: OnConflictAction
         if isinstance(action, OnConflictAction):
