@@ -555,11 +555,15 @@ class MigrationManager:
                         )
 
                     # First drop the existing foreign key constraint
-                    await self._run_query(
-                        _Table.alter().drop_constraint(
-                            constraint_name=constraint_name
-                        )
+                    constraint_name = await get_fk_constraint_name(
+                        column=fk_column
                     )
+                    if constraint_name:
+                        await self._run_query(
+                            _Table.alter().drop_constraint(
+                                constraint_name=constraint_name
+                            )
+                        )
 
                     # Then add a new foreign key constraint
                     await self._run_query(

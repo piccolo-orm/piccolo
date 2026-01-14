@@ -17,7 +17,7 @@ class UUID4(Default):
 
     @property
     def postgres(self):
-        return "uuid_generate_v4()"
+        return "gen_random_uuid()"
 
     @property
     def cockroach(self):
