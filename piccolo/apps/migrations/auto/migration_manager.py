@@ -712,7 +712,9 @@ class MigrationManager:
 
                 for column in columns:
                     await self._run_query(
-                        _Table.alter().drop_column(column=column.column_name)
+                        _Table.alter().drop_column(
+                            column=column.db_column_name
+                        )
                     )
 
     async def _run_rename_tables(self, backwards: bool = False):
