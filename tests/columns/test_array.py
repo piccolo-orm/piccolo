@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal
 from unittest import TestCase
 
 import pytest
@@ -8,6 +9,7 @@ from piccolo.columns.column_types import (
     BigInt,
     Date,
     Integer,
+    Numeric,
     Time,
     Timestamp,
     Timestamptz,
@@ -411,21 +413,23 @@ class TestArray(TableTest):
 
 
 ###############################################################################
-# Date and time arrays
+# Date, time and decimal arrays
 
 
-class DateTimeArrayTable(Table):
+class DateTimeDecimalArrayTable(Table):
     date = Array(Date())
     time = Array(Time())
     timestamp = Array(Timestamp())
     timestamptz = Array(Timestamptz())
+    decimal = Array(Numeric(digits=(5, 2)))
     date_nullable = Array(Date(), null=True)
     time_nullable = Array(Time(), null=True)
     timestamp_nullable = Array(Timestamp(), null=True)
     timestamptz_nullable = Array(Timestamptz(), null=True)
+    decimal_nullable = Array(Numeric(digits=(5, 2)), null=True)
 
 
-class TestDateTimeArray(TestCase):
+class TestDateTimeDecimalArray(TestCase):
     """
     Make sure that data can be stored and retrieved when using arrays of
     date / time / timestamp.
@@ -436,10 +440,10 @@ class TestDateTimeArray(TestCase):
     """
 
     def setUp(self):
-        DateTimeArrayTable.create_table().run_sync()
+        DateTimeDecimalArrayTable.create_table().run_sync()
 
     def tearDown(self):
-        DateTimeArrayTable.alter().drop_table().run_sync()
+        DateTimeDecimalArrayTable.alter().drop_table().run_sync()
 
     @engines_only("postgres", "sqlite")
     def test_storage(self):
@@ -456,32 +460,37 @@ class TestDateTimeArray(TestCase):
             minute=0,
             tzinfo=datetime.timezone.utc,
         )
+        test_decimal = Decimal("50.0")
 
-        DateTimeArrayTable(
+        DateTimeDecimalArrayTable(
             {
-                DateTimeArrayTable.date: [test_date],
-                DateTimeArrayTable.time: [test_time],
-                DateTimeArrayTable.timestamp: [test_timestamp],
-                DateTimeArrayTable.timestamptz: [test_timestamptz],
-                DateTimeArrayTable.date_nullable: None,
-                DateTimeArrayTable.time_nullable: None,
-                DateTimeArrayTable.timestamp_nullable: None,
-                DateTimeArrayTable.timestamptz_nullable: None,
+                DateTimeDecimalArrayTable.date: [test_date],
+                DateTimeDecimalArrayTable.time: [test_time],
+                DateTimeDecimalArrayTable.timestamp: [test_timestamp],
+                DateTimeDecimalArrayTable.timestamptz: [test_timestamptz],
+                DateTimeDecimalArrayTable.decimal: [test_decimal],
+                DateTimeDecimalArrayTable.date_nullable: None,
+                DateTimeDecimalArrayTable.time_nullable: None,
+                DateTimeDecimalArrayTable.timestamp_nullable: None,
+                DateTimeDecimalArrayTable.timestamptz_nullable: None,
+                DateTimeDecimalArrayTable.decimal_nullable: None,
             }
         ).save().run_sync()
 
-        row = DateTimeArrayTable.objects().first().run_sync()
+        row = DateTimeDecimalArrayTable.objects().first().run_sync()
         assert row is not None
 
         self.assertListEqual(row.date, [test_date])
         self.assertListEqual(row.time, [test_time])
         self.assertListEqual(row.timestamp, [test_timestamp])
         self.assertListEqual(row.timestamptz, [test_timestamptz])
+        self.assertListEqual(row.decimal, [test_decimal])
 
         self.assertIsNone(row.date_nullable)
         self.assertIsNone(row.time_nullable)
         self.assertIsNone(row.timestamp_nullable)
         self.assertIsNone(row.timestamptz_nullable)
+        self.assertIsNone(row.decimal_nullable)
 
 
 ###############################################################################
