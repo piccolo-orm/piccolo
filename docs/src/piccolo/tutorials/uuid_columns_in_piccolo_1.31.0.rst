@@ -25,7 +25,7 @@ simply do this:
 
     DB = PostgresEngine(extensions=['uuid-ossp'])
 
-If you want to migrate an existing ``UUID`` columns over to use
+If you want to migrate an existing ``UUID`` column over to use
 ``gen_random_uuid()`` then run this script:
 
 .. code-block:: sql
