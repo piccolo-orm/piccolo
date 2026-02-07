@@ -1,4 +1,4 @@
-from tests.base import DBTestCase, engines_only, sqlite_only
+from tests.base import DBTestCase, engines_only
 from tests.example_apps.music.tables import Band
 
 
@@ -21,7 +21,7 @@ class TestInstance(DBTestCase):
             Pythonistas.__str__(), "(unique_rowid(),'Pythonistas',null,0)"
         )
 
-    @sqlite_only
+    @engines_only("sqlite", "mysql")
     def test_insert_sqlite(self):
         Pythonistas = Band(name="Pythonistas")
         self.assertEqual(Pythonistas.__str__(), "(null,'Pythonistas',null,0)")

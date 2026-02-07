@@ -46,6 +46,28 @@ class Readable(Selectable):
     def cockroach_string(self) -> QueryString:
         return self._get_string(operator="FORMAT")
 
+    @property
+    def mysql_string(self) -> QueryString:
+        """
+        MySQL has no FORMAT for string templates, so we manually
+        expand placeholders into a CONCAT() expression.
+        """
+        parts: list[str] = []
+        template_parts = self.template.split("%s")
+        num_placeholders = len(template_parts) - 1
+
+        for i, part in enumerate(template_parts):
+            # Add literal string part
+            if part:
+                parts.append(f"'{part}'")
+            # Add column if within placeholders
+            if i < num_placeholders:
+                col = self.columns[i]._meta.get_full_name(with_alias=False)
+                parts.append(col)
+
+        concat_expr = f"CONCAT({', '.join(parts)})"
+        return QueryString(f"{concat_expr} AS {self.output_name}")
+
     def get_select_string(
         self, engine_type: str, with_alias=True
     ) -> QueryString:

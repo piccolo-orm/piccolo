@@ -12,5 +12,6 @@ Getting Started
     ./setup_postgres
     ./setup_cockroach
     ./setup_sqlite
+    ./setup_mysql
     ./example_schema
     ./sync_and_async

@@ -16,11 +16,14 @@ from piccolo.apps.migrations.auto.operations import (
 )
 from piccolo.apps.migrations.auto.serialisation import deserialise_params
 from piccolo.columns import Column, column_types
-from piccolo.columns.column_types import ForeignKey, Serial
+from piccolo.columns.column_types import JSON, Blob, ForeignKey, Serial, Text
 from piccolo.engine import engine_finder
 from piccolo.query import Query
 from piccolo.query.base import DDL
-from piccolo.query.constraints import get_fk_constraint_name
+from piccolo.query.constraints import (
+    get_fk_constraint_name,
+    get_fk_constraint_name_mysql,
+)
 from piccolo.schema import SchemaDDLBase
 from piccolo.table import Table, create_table_class, sort_table_classes
 from piccolo.utils.warnings import colored_warning
@@ -542,10 +545,16 @@ class MigrationManager:
 
                     assert isinstance(fk_column, ForeignKey)
 
+                    if existing_table._meta.db.engine_type == "mysql":
+                        constraint_name = await get_fk_constraint_name_mysql(
+                            column=fk_column
+                        )
+                    else:
+                        constraint_name = await get_fk_constraint_name(
+                            column=fk_column
+                        )
+
                     # First drop the existing foreign key constraint
-                    constraint_name = await get_fk_constraint_name(
-                        column=fk_column
-                    )
                     if constraint_name:
                         await self._run_query(
                             _Table.alter().drop_constraint(
@@ -640,6 +649,16 @@ class MigrationManager:
                     column._meta._table = _Table
                     column._meta._name = alter_column.column_name
                     column._meta.db_column_name = alter_column.db_column_name
+
+                    if _Table._meta.db.engine_type == "mysql" and (
+                        column_class == Text
+                        or column_class == JSON
+                        or column_class == Blob
+                    ):
+                        raise ValueError(
+                            "MySQL does not support default value in alter "
+                            "statement for TEXT, JSON and BLOB columns"
+                        )
 
                     if default is None:
                         await self._run_query(

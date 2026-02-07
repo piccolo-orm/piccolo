@@ -98,13 +98,24 @@ class Concat(QueryString):
                 isinstance(arg, Column)
                 and not isinstance(arg, (Varchar, Text))
             ):
-                processed_args.append(QueryString("CAST({} AS TEXT)", arg))
+                cast_identifier = (
+                    "CHAR" if self.engine_type() == "mysql" else "TEXT"
+                )
+                processed_args.append(
+                    QueryString("CAST({} AS " + f"{cast_identifier})", arg)
+                )
             else:
                 processed_args.append(arg)
 
         super().__init__(
             f"CONCAT({placeholders})", *processed_args, alias=alias
         )
+
+    def engine_type(self):
+        from piccolo.engine.finder import engine_finder
+
+        engine = engine_finder()
+        return engine.engine_type if engine is not None else None
 
 
 __all__ = (

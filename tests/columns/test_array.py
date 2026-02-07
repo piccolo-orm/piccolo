@@ -43,6 +43,7 @@ class TestArray(TableTest):
     tables = [MyTable]
 
     @pytest.mark.cockroach_array_slow
+    @engines_skip("mysql")
     def test_storage(self):
         """
         Make sure data can be stored and retrieved.
@@ -62,7 +63,15 @@ class TestArray(TableTest):
         assert row is not None
         self.assertEqual(row.value, [1, 2, 3])
 
-    @engines_skip("sqlite")
+    @engines_only("mysql")
+    def test_storage_mysql(self):
+        MyTable(value=[1, 2, 3]).save().run_sync()
+
+        row = MyTable.objects().first().run_sync()
+        assert row is not None
+        self.assertEqual(row.value, "[1, 2, 3]")
+
+    @engines_skip("sqlite", "mysql")
     @pytest.mark.cockroach_array_slow
     def test_index(self):
         """
@@ -83,7 +92,7 @@ class TestArray(TableTest):
             MyTable.select(MyTable.value[0]).first().run_sync(), {"value": 1}
         )
 
-    @engines_skip("sqlite")
+    @engines_skip("sqlite", "mysql")
     @pytest.mark.cockroach_array_slow
     def test_all(self):
         """
@@ -119,7 +128,28 @@ class TestArray(TableTest):
             None,
         )
 
-    @engines_skip("sqlite")
+    @engines_only("mysql")
+    def test_all_mysql(self):
+        MyTable(value=[1, 1, 1]).save().run_sync()
+
+        self.assertEqual(
+            MyTable.select(MyTable.value)
+            .where(MyTable.value.all(QueryString("{}", 1)))
+            .first()
+            .run_sync(),
+            {"value": "[1, 1, 1]"},
+        )
+
+        # We have to explicitly specify the type, so CockroachDB works.
+        self.assertEqual(
+            MyTable.select(MyTable.value)
+            .where(MyTable.value.all(QueryString("{}", 0)))
+            .first()
+            .run_sync(),
+            None,
+        )
+
+    @engines_skip("sqlite", "mysql")
     @pytest.mark.cockroach_array_slow
     def test_any(self):
         """
@@ -156,7 +186,27 @@ class TestArray(TableTest):
             None,
         )
 
-    @engines_skip("sqlite")
+    @engines_only("mysql")
+    def test_any_mysql(self):
+        MyTable(value=[1, 2, 3]).save().run_sync()
+
+        self.assertEqual(
+            MyTable.select(MyTable.value)
+            .where(MyTable.value.any(QueryString("{}", 1)))
+            .first()
+            .run_sync(),
+            {"value": "[1, 2, 3]"},
+        )
+
+        self.assertEqual(
+            MyTable.select(MyTable.value)
+            .where(MyTable.value.any(QueryString("{}", 4)))
+            .first()
+            .run_sync(),
+            None,
+        )
+
+    @engines_skip("sqlite", "mysql")
     @pytest.mark.cockroach_array_slow
     def test_not_any(self):
         """
@@ -184,7 +234,27 @@ class TestArray(TableTest):
             [{"value": [1, 2, 3]}],
         )
 
-    @engines_skip("sqlite")
+    @engines_only("mysql")
+    def test_not_any_mysql(self):
+        MyTable(value=[1, 2, 3]).save().run_sync()
+
+        self.assertEqual(
+            MyTable.select(MyTable.value)
+            .where(MyTable.value.not_any(QueryString("{}", 4)))
+            .first()
+            .run_sync(),
+            {"value": "[1, 2, 3]"},
+        )
+
+        self.assertEqual(
+            MyTable.select(MyTable.value)
+            .where(MyTable.value.not_any(QueryString("{}", 1)))
+            .first()
+            .run_sync(),
+            None,
+        )
+
+    @engines_skip("sqlite", "mysql")
     @pytest.mark.cockroach_array_slow
     def test_cat(self):
         """
@@ -255,7 +325,7 @@ class TestArray(TableTest):
             "Only Postgres and Cockroach support array concatenation.",
         )
 
-    @engines_skip("sqlite")
+    @engines_skip("sqlite", "mysql")
     @pytest.mark.cockroach_array_slow
     def test_prepend(self):
         """
@@ -294,7 +364,7 @@ class TestArray(TableTest):
             "Only Postgres and Cockroach support array prepending.",
         )
 
-    @engines_skip("sqlite")
+    @engines_skip("sqlite", "mysql")
     @pytest.mark.cockroach_array_slow
     def test_append(self):
         """
@@ -333,7 +403,7 @@ class TestArray(TableTest):
             "Only Postgres and Cockroach support array appending.",
         )
 
-    @engines_skip("sqlite")
+    @engines_skip("sqlite", "mysql")
     @pytest.mark.cockroach_array_slow
     def test_replace(self):
         """
@@ -372,7 +442,7 @@ class TestArray(TableTest):
             "Only Postgres and Cockroach support array substitution.",
         )
 
-    @engines_skip("sqlite")
+    @engines_skip("sqlite", "mysql")
     @pytest.mark.cockroach_array_slow
     def test_remove(self):
         """
@@ -429,6 +499,7 @@ class DateTimeDecimalArrayTable(Table):
     decimal_nullable = Array(Numeric(digits=(5, 2)), null=True)
 
 
+@engines_skip("mysql")
 class TestDateTimeDecimalArray(TestCase):
     """
     Make sure that data can be stored and retrieved when using arrays of
@@ -501,6 +572,7 @@ class NestedArrayTable(Table):
     value = Array(base_column=Array(base_column=BigInt()))
 
 
+@engines_skip("mysql")
 class TestNestedArray(TestCase):
     """
     Make sure that tables with nested arrays can be created, and work
@@ -533,6 +605,7 @@ class TestNestedArray(TestCase):
         self.assertEqual(row.value, [[1, 2, 3], [4, 5, 6]])
 
 
+@engines_skip("mysql")
 class TestGetDimensions(TestCase):
     def test_get_dimensions(self):
         """
@@ -543,6 +616,7 @@ class TestGetDimensions(TestCase):
         self.assertEqual(Array(Array(Array(Integer())))._get_dimensions(), 3)
 
 
+@engines_skip("mysql")
 class TestGetInnerValueType(TestCase):
     def test_get_inner_value_type(self):
         """

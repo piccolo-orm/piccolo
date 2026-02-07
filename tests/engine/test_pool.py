@@ -5,6 +5,7 @@ from typing import cast
 from unittest import TestCase
 from unittest.mock import call, patch
 
+from piccolo.engine.mysql import MySQLEngine
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
 from tests.base import DBTestCase, engine_is, engines_only, sqlite_only
@@ -44,6 +45,59 @@ class TestPool(DBTestCase):
                 )
             else:
                 self.assertEqual(response, [{"id": 1, "name": "Bob"}])
+
+        await asyncio.gather(*[get_data() for _ in range(500)])
+
+        await Manager._meta.db.close_connection_pool()
+
+    def test_creation(self):
+        """
+        Make sure a connection pool can be created.
+        """
+        asyncio.run(self._create_pool())
+
+    def test_query(self):
+        """
+        Make several queries using a connection pool.
+        """
+        asyncio.run(self._make_query())
+
+    def test_many_queries(self):
+        """
+        Make sure the connection pool is working correctly, and we don't
+        exceed a connection limit - queries should queue, then succeed.
+        """
+        asyncio.run(self._make_many_queries())
+
+
+@engines_only("mysql")
+class TestPoolMySQL(DBTestCase):
+    async def _create_pool(self) -> None:
+        engine = cast(MySQLEngine, Manager._meta.db)
+
+        await engine.start_connection_pool()
+        assert engine.pool is not None
+
+        await engine.close_connection_pool()
+        assert engine.pool is None
+
+    async def _make_query(self):
+        await Manager._meta.db.start_connection_pool()
+
+        await Manager(name="Bob").save().run()
+        response = await Manager.select().run()
+        self.assertIn("Bob", [i["name"] for i in response])
+
+        await Manager._meta.db.close_connection_pool()
+
+    async def _make_many_queries(self):
+        await Manager._meta.db.start_connection_pool()
+
+        await Manager(name="Bob").save().run()
+
+        async def get_data():
+            response = await Manager.select().run()
+            self.assertEqual(response, [{"id": 1, "name": "Bob"}])
 
         await asyncio.gather(*[get_data() for _ in range(500)])
 

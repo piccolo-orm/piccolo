@@ -664,13 +664,21 @@ class OnConflictItem:
 
     @property
     def action_string(self) -> QueryString:
+        from piccolo.engine.finder import engine_finder
+
+        engine = engine_finder()
         action = self.action
+
         if isinstance(action, OnConflictAction):
             if action == OnConflictAction.do_nothing:
                 return QueryString(OnConflictAction.do_nothing.value)
             elif action == OnConflictAction.do_update:
                 values = []
-                query = f"{OnConflictAction.do_update.value} SET"
+                assert engine
+                if engine.engine_type == "mysql":
+                    query = ""
+                else:
+                    query = f"{OnConflictAction.do_update.value} SET"
 
                 if not self.values:
                     raise ValueError("No values specified for `on conflict`")
@@ -678,10 +686,16 @@ class OnConflictItem:
                 for value in self.values:
                     if isinstance(value, Column):
                         column_name = value._meta.db_column_name
-                        query += f' "{column_name}"=EXCLUDED."{column_name}",'
+                        if value._meta.engine_type == "mysql":
+                            query += (
+                                f' `{column_name}` = VALUES("{column_name}"),'
+                            )
+                        else:
+                            query += (
+                                f' "{column_name}"=EXCLUDED."{column_name}",'
+                            )
                     elif isinstance(value, tuple):
-                        column = value[0]
-                        value_ = value[1]
+                        column, value_ = value
                         if isinstance(column, Column):
                             column_name = column._meta.db_column_name
                         else:
@@ -696,8 +710,22 @@ class OnConflictItem:
 
     @property
     def querystring(self) -> QueryString:
-        query = " ON CONFLICT"
+        from piccolo.engine.finder import engine_finder
+
+        engine = engine_finder()
         values = []
+
+        # MySQL on_conflict has different syntax
+        assert engine
+        if engine.engine_type == "mysql":
+            query = " ON DUPLICATE KEY UPDATE "
+
+            if self.action:
+                values.append(self.action_string)
+
+            return QueryString(query, *values)
+
+        query = " ON CONFLICT"
 
         if self.target:
             query += f" {self.target_string}"
@@ -761,6 +789,11 @@ class OnConflictDelegate:
         values: Optional[Sequence[Union[Column, tuple[Column, Any]]]] = None,
         where: Optional[Combinable] = None,
     ):
+        from piccolo.engine import engine_finder
+
+        engine = engine_finder()
+        assert engine
+
         action_: OnConflictAction
         if isinstance(action, OnConflictAction):
             action_ = action
@@ -769,10 +802,11 @@ class OnConflictDelegate:
         else:
             raise ValueError("Unrecognised `on conflict` action.")
 
-        if target is None and action_ == OnConflictAction.do_update:
-            raise ValueError(
-                "The `target` option must be provided with DO UPDATE."
-            )
+        if engine.engine_type != "mysql":
+            if target is None and action_ == OnConflictAction.do_update:
+                raise ValueError(
+                    "The `target` option must be provided with DO UPDATE."
+                )
 
         if where and action_ == OnConflictAction.do_nothing:
             raise ValueError(

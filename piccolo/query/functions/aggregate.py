@@ -88,6 +88,10 @@ class Count(QueryString):
             else:
                 column_names = ", ".join("{}" for _ in distinct)
 
+            if engine_type == "mysql":
+                return super().__init__(
+                    f"COUNT(DISTINCT {column_names})", *distinct, alias=alias
+                )
             return super().__init__(
                 f"COUNT(DISTINCT({column_names}))", *distinct, alias=alias
             )

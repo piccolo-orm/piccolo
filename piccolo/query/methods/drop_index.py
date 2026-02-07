@@ -37,3 +37,15 @@ class DropIndex(Query):
         if self.if_exists:
             query += " IF EXISTS"
         return [QueryString(f"{query} {index_name}")]
+
+    @property
+    def mysql_querystrings(self) -> Sequence[QueryString]:
+        column_names = self.column_names
+        index_name = self.table._get_index_name(column_names)
+        query = "DROP INDEX"
+        return [
+            QueryString(
+                f"ALTER TABLE {self.table._meta.tablename} "
+                f"{query} {index_name}"
+            )
+        ]

@@ -45,6 +45,11 @@ class DateOffset(Default):
         interval_string = self.get_sqlite_interval_string(["days"])
         return f"(datetime(CURRENT_TIMESTAMP, {interval_string}))"
 
+    @property
+    def mysql(self):
+        interval_string = self.get_sqlite_interval_string(["days"])
+        return f"(DATE(NOW()) + INTERVAL {interval_string}"
+
     def python(self):
         return (
             datetime.datetime.now() + datetime.timedelta(days=self.days)
@@ -63,6 +68,10 @@ class DateNow(Default):
     @property
     def sqlite(self):
         return "CURRENT_DATE"
+
+    @property
+    def mysql(self):
+        return "(DATE(CURRENT_TIMESTAMP))"
 
     def python(self):
         return datetime.datetime.now().date()
@@ -91,6 +100,10 @@ class DateCustom(Default):
     @property
     def sqlite(self):
         return f"'{self.date.isoformat()}'"
+
+    @property
+    def mysql(self):
+        return f"{self.date.isoformat()}"
 
     def python(self):
         return self.date

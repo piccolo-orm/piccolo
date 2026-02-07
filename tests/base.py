@@ -11,6 +11,7 @@ import pytest
 from piccolo.apps.schema.commands.generate import RowMeta
 from piccolo.engine.cockroach import CockroachEngine
 from piccolo.engine.finder import engine_finder
+from piccolo.engine.mysql import MySQLEngine
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
 from piccolo.table import (
@@ -40,6 +41,10 @@ def is_running_cockroach() -> bool:
     return type(ENGINE) is CockroachEngine
 
 
+def is_running_mysql() -> bool:
+    return type(ENGINE) is MySQLEngine
+
+
 postgres_only = pytest.mark.skipif(
     not is_running_postgres(), reason="Only running for Postgres"
 )
@@ -50,6 +55,10 @@ sqlite_only = pytest.mark.skipif(
 
 cockroach_only = pytest.mark.skipif(
     not is_running_cockroach(), reason="Only running for Cockroach"
+)
+
+mysql_only = pytest.mark.skipif(
+    not is_running_mysql(), reason="Only running for MySQL"
 )
 
 unix_only = pytest.mark.skipif(
@@ -230,6 +239,57 @@ class DBTestCase(TestCase):
             tablename=tablename, column_name=column_name
         ).character_maximum_length
 
+    # MySQL specific utils
+
+    def get_mysql_column_definition(
+        self, tablename: str, column_name: str
+    ) -> RowMeta:
+        query = """
+            SELECT {columns} FROM information_schema.columns
+            WHERE table_name = '{tablename}'
+            AND table_schema = DATABASE()
+            AND column_name = '{column_name}'
+        """.format(
+            columns=RowMeta.get_column_name_str(),
+            tablename=tablename,
+            column_name=column_name,
+        )
+        raw_response = self.run_sync(query)
+        response = [{k.lower(): v for k, v in raw_response[0].items()}]
+        if len(response) > 0:
+            return RowMeta(**response[0])
+        else:
+            raise ValueError("No such column")
+
+    def get_mysql_column_type(self, tablename: str, column_name: str) -> str:
+        """
+        Fetches the column type as a string, from the database.
+        """
+        return self.get_mysql_column_definition(
+            tablename=tablename, column_name=column_name
+        ).data_type.upper()
+
+    def get_mysql_is_nullable(self, tablename, column_name: str) -> bool:
+        """
+        Fetches whether the column is defined as nullable, from the database.
+        """
+        return (
+            self.get_mysql_column_definition(
+                tablename=tablename, column_name=column_name
+            ).is_nullable.upper()
+            == "YES"
+        )
+
+    def get_mysql_varchar_length(
+        self, tablename, column_name: str
+    ) -> Optional[int]:
+        """
+        Fetches whether the column is defined as nullable, from the database.
+        """
+        return self.get_mysql_column_definition(
+            tablename=tablename, column_name=column_name
+        ).character_maximum_length
+
     ###########################################################################
 
     def create_tables(self):
@@ -308,6 +368,47 @@ class DBTestCase(TestCase):
                 """
                 CREATE TABLE shirt (
                     id SERIAL PRIMARY KEY,
+                    size VARCHAR(1)
+                );"""
+            )
+        elif ENGINE.engine_type == "mysql":
+            self.run_sync(
+                """
+                CREATE TABLE manager (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(50)
+                );"""
+            )
+            self.run_sync(
+                """
+                CREATE TABLE band (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(50),
+                    manager INT,
+                    popularity SMALLINT,
+                    CONSTRAINT band_manager_fkey
+                    FOREIGN KEY (manager)
+                        REFERENCES manager(id)
+                );"""
+            )
+            self.run_sync(
+                """
+                CREATE TABLE ticket (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    price NUMERIC(5,2)
+                );"""
+            )
+            self.run_sync(
+                """
+                CREATE TABLE poster (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    content TEXT
+                );"""
+            )
+            self.run_sync(
+                """
+                CREATE TABLE shirt (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
                     size VARCHAR(1)
                 );"""
             )
@@ -447,6 +548,19 @@ class DBTestCase(TestCase):
             self.run_sync("DROP TABLE IF EXISTS ticket CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS poster CASCADE;")
             self.run_sync("DROP TABLE IF EXISTS shirt CASCADE;")
+        elif ENGINE.engine_type == "mysql":
+            # temporarily disabling foreign key checks for tests
+            self.run_sync(
+                """
+                SET FOREIGN_KEY_CHECKS = 0;
+                DROP TABLE IF EXISTS band;
+                DROP TABLE IF EXISTS manager;
+                DROP TABLE IF EXISTS ticket;
+                DROP TABLE IF EXISTS poster;
+                DROP TABLE IF EXISTS shirt;
+                SET FOREIGN_KEY_CHECKS = 1;
+                """
+            )
         elif ENGINE.engine_type == "sqlite":
             self.run_sync("DROP TABLE IF EXISTS band;")
             self.run_sync("DROP TABLE IF EXISTS manager;")

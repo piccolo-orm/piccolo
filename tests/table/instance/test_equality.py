@@ -1,6 +1,7 @@
 from piccolo.columns.column_types import UUID, Varchar
 from piccolo.table import Table
 from piccolo.testing.test_case import AsyncTableTest
+from tests.base import engines_skip
 from tests.example_apps.music.tables import Manager
 
 
@@ -46,6 +47,7 @@ class TestInstanceEquality(AsyncTableTest):
         manager_unsaved = Manager()
         self.assertEqual(manager_unsaved, manager_unsaved)
 
+    @engines_skip("mysql")
     async def test_instance_equality_uuid(self) -> None:
         """
         Make sure instance equality works, for tables with a `UUID` primary

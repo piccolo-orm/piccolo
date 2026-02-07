@@ -44,7 +44,7 @@ class TestNewMigrationCommand(TestCase):
 
         self.assertTrue(len(migration_modules.keys()) == 1)
 
-    @engines_only("postgres")
+    @engines_only("postgres", "mysql")
     @patch("piccolo.apps.migrations.commands.new.print")
     def test_auto(self, print_: MagicMock):
         """
@@ -61,7 +61,7 @@ class TestNewMigrationCommand(TestCase):
             ],
         )
 
-    @engines_only("postgres")
+    @engines_only("postgres", "mysql")
     @patch("piccolo.apps.migrations.commands.new.print")
     def test_auto_all(self, print_: MagicMock):
         """
@@ -79,7 +79,7 @@ class TestNewMigrationCommand(TestCase):
             ],
         )
 
-    @engines_only("postgres")
+    @engines_only("postgres", "mysql")
     def test_auto_all_error(self):
         """
         Call the command, when no migration changes are needed.

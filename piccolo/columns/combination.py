@@ -232,9 +232,20 @@ class Where(CombinableMixin):
         column = self.column
 
         if column._meta.call_chain:
-            # Use a sub select to find the correct ID.
             root_column = column._meta.call_chain[0]
-            sub_query = root_column._meta.table.select(root_column).where(self)
+            if column._meta.engine_type == "mysql":
+                # MySQL does not allow updating a table when it appears
+                # inside a subquery used by the same UPDATE, so we use
+                # joins to replace subqueries in MySQL
+                root_column_joins = (
+                    root_column._foreign_key_meta.resolved_references
+                )
+                sub_query = root_column_joins.select(root_column).where(self)
+            else:
+                # Use a sub select to find the correct ID.
+                sub_query = root_column._meta.table.select(root_column).where(
+                    self
+                )
 
             column_name = column._meta.call_chain[0]._meta.name
             return QueryString(

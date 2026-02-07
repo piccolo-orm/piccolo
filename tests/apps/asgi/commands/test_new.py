@@ -10,7 +10,7 @@ from unittest.mock import patch
 import pytest
 
 from piccolo.apps.asgi.commands.new import ROUTERS, SERVERS, new
-from tests.base import unix_only
+from tests.base import engines_skip, unix_only
 
 
 class TestNewApp(TestCase):
@@ -49,6 +49,7 @@ class TestNewApp(TestCase):
                             f.close()
 
 
+@engines_skip("mysql")
 class TestNewAppRuns(TestCase):
     @unix_only
     @pytest.mark.integration

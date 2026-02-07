@@ -240,6 +240,10 @@ class Query(Generic[TableInstance, QueryResponseType]):
         raise NotImplementedError
 
     @property
+    def mysql_querystrings(self) -> Sequence[QueryString]:
+        raise NotImplementedError
+
+    @property
     def default_querystrings(self) -> Sequence[QueryString]:
         raise NotImplementedError
 
@@ -265,6 +269,11 @@ class Query(Generic[TableInstance, QueryResponseType]):
         elif engine_type == "cockroach":
             try:
                 return self.cockroach_querystrings
+            except NotImplementedError:
+                return self.default_querystrings
+        elif engine_type == "mysql":
+            try:
+                return self.mysql_querystrings
             except NotImplementedError:
                 return self.default_querystrings
         else:
@@ -392,6 +401,10 @@ class DDL:
         raise NotImplementedError
 
     @property
+    def mysql_ddl(self) -> Sequence[str]:
+        raise NotImplementedError
+
+    @property
     def default_ddl(self) -> Sequence[str]:
         raise NotImplementedError
 
@@ -414,6 +427,11 @@ class DDL:
         elif engine_type == "cockroach":
             try:
                 return self.cockroach_ddl
+            except NotImplementedError:
+                return self.default_ddl
+        elif engine_type == "mysql":
+            try:
+                return self.mysql_ddl
             except NotImplementedError:
                 return self.default_ddl
         else:

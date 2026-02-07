@@ -10,6 +10,7 @@ from piccolo.columns.defaults.timestamptz import (
 )
 from piccolo.table import Table
 from piccolo.testing.test_case import TableTest
+from tests.base import engines_skip
 
 
 class MyTable(Table):
@@ -34,6 +35,7 @@ class CustomTimezone(datetime.tzinfo):
     pass
 
 
+@engines_skip("mysql")
 class TestTimestamptz(TableTest):
     tables = [MyTable]
 
@@ -74,6 +76,7 @@ class TestTimestamptz(TableTest):
             self.assertEqual(result.created_on.tzinfo, datetime.timezone.utc)
 
 
+@engines_skip("mysql")
 class TestTimestamptzDefault(TableTest):
     tables = [MyTableDefault]
 

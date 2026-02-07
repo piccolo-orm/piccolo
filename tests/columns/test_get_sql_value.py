@@ -64,3 +64,38 @@ class TestArraySQLite(TestCase):
             Band.name.get_sql_value([datetime.time(hour=8, minute=0)]),
             "'[\"08:00:00\"]'",
         )
+
+
+@engines_only("mysql")
+class TestArrayMySQL(TestCase):
+    """
+    Arrays in MySQL is just JSON strings
+    """
+
+    def test_string(self):
+        self.assertEqual(
+            Band.name.get_sql_value(["a", "b", "c"]),
+            "['a', 'b', 'c']",
+        )
+
+    def test_int(self):
+        self.assertEqual(
+            Band.name.get_sql_value([1, 2, 3]),
+            "[1, 2, 3]",
+        )
+
+    def test_nested(self):
+        self.assertEqual(
+            Band.name.get_sql_value([1, 2, 3, [4, 5, 6]]),
+            "[1, 2, 3, [4, 5, 6]]",
+        )
+
+    def test_time(self):
+        # MySQL JSON only supports: strings, numbers, boolean, null,
+        # arrays, objects not datetime.time, so we must convert it
+        self.assertEqual(
+            Band.name.get_sql_value(
+                [datetime.time(hour=8, minute=0).strftime("%H:%M:%S")]
+            ),
+            "['08:00:00']",
+        )

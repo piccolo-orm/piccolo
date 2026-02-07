@@ -45,6 +45,14 @@ class LazyLoader(types.ModuleType):
                     "SQLite driver not found. "
                     "Try running `pip install 'piccolo[sqlite]'`"
                 ) from exc
+            elif (
+                str(exc) == "No module named 'aiomysql'"
+                or str(exc) == "No module named 'pymysql'"
+            ):
+                raise ModuleNotFoundError(
+                    "MySQL driver not found. "
+                    "Try running `pip install 'piccolo[mysql]'`"
+                ) from exc
             else:
                 raise exc from exc
 

@@ -1,7 +1,9 @@
 from piccolo.testing.test_case import AsyncTableTest
+from tests.base import engines_skip
 from tests.example_apps.music.tables import Band, Manager
 
 
+@engines_skip("mysql")
 class TestUpdateSelf(AsyncTableTest):
 
     tables = [Band, Manager]

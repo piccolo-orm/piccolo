@@ -38,6 +38,13 @@ class TimestampOffset(Default):
         )
         return f"(datetime(CURRENT_TIMESTAMP, {interval_string}))"
 
+    @property
+    def mysql(self):
+        interval_string = self.get_mysql_interval_string(
+            ["days", "hours", "minutes", "seconds"]
+        )
+        return f"(DATE_ADD(NOW(), INTERVAL {interval_string} SECOND))"
+
     def python(self):
         return datetime.datetime.now() + datetime.timedelta(
             days=self.days,
@@ -59,6 +66,10 @@ class TimestampNow(Default):
     @property
     def sqlite(self):
         return "current_timestamp"
+
+    @property
+    def mysql(self):
+        return "current_timestamp(6)"
 
     def python(self):
         return datetime.datetime.now()
@@ -107,6 +118,10 @@ class TimestampCustom(Default):
 
     @property
     def sqlite(self):
+        return "'{}'".format(self.datetime.isoformat().replace("T", " "))
+
+    @property
+    def mysql(self):
         return "'{}'".format(self.datetime.isoformat().replace("T", " "))
 
     def python(self):

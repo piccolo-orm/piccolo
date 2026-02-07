@@ -18,6 +18,7 @@ from tests.base import (
     engines_only,
     engines_skip,
     is_running_cockroach,
+    is_running_mysql,
     is_running_sqlite,
     sqlite_only,
 )
@@ -741,7 +742,7 @@ class TestSelect(DBTestCase):
         response = Band.select(Avg(Band.popularity)).first().run_sync()
         assert response is not None
 
-        self.assertEqual(float(response["avg"]), 1003.3333333333334)
+        self.assertEqual(float(round(response["avg"], 4)), 1003.3333)
 
     def test_avg_alias(self):
         self.insert_rows()
@@ -753,7 +754,9 @@ class TestSelect(DBTestCase):
         )
         assert response is not None
 
-        self.assertEqual(float(response["popularity_avg"]), 1003.3333333333334)
+        self.assertEqual(
+            float(round(response["popularity_avg"], 4)), 1003.3333
+        )
 
     def test_avg_as_alias_method(self):
         self.insert_rows()
@@ -765,7 +768,9 @@ class TestSelect(DBTestCase):
         )
         assert response is not None
 
-        self.assertEqual(float(response["popularity_avg"]), 1003.3333333333334)
+        self.assertEqual(
+            float(round(response["popularity_avg"], 4)), 1003.3333
+        )
 
     def test_avg_with_where_clause(self):
         self.insert_rows()
@@ -967,7 +972,7 @@ class TestSelect(DBTestCase):
         )
         assert response is not None
 
-        self.assertEqual(float(response["avg"]), 1003.3333333333334)
+        self.assertEqual(float(round(response["avg"], 4)), 1003.3333)
         self.assertEqual(response["sum"], 3010)
 
     def test_chain_different_functions_alias(self):
@@ -983,7 +988,9 @@ class TestSelect(DBTestCase):
         )
         assert response is not None
 
-        self.assertEqual(float(response["popularity_avg"]), 1003.3333333333334)
+        self.assertEqual(
+            float(round(response["popularity_avg"], 4)), 1003.3333
+        )
         self.assertEqual(response["popularity_sum"], 3010)
 
     def test_columns(self):
@@ -1074,6 +1081,13 @@ class TestSelect(DBTestCase):
             "Cockroach raises an error when trying to use the log function."
         ),
     )
+    @pytest.mark.skipif(
+        is_running_mysql(),
+        reason=(
+            "MySQL uses a different logarithmic function. "
+            "We should use log10() to get the same result."
+        ),
+    )
     def test_select_raw(self):
         """
         Make sure ``SelectRaw`` can be used in select queries.
@@ -1081,6 +1095,20 @@ class TestSelect(DBTestCase):
         self.insert_row()
         response = Band.select(
             Band.name, SelectRaw("round(log(popularity)) AS popularity_log")
+        ).run_sync()
+        self.assertListEqual(
+            response, [{"name": "Pythonistas", "popularity_log": 3.0}]
+        )
+
+    @engines_only("mysql")
+    def test_select_raw_mysql(self):
+        """
+        Make sure ``SelectRaw`` can be used in select queries.
+        We get the same results as Postgres.
+        """
+        self.insert_row()
+        response = Band.select(
+            Band.name, SelectRaw("round(log10(popularity)) AS popularity_log")
         ).run_sync()
         self.assertListEqual(
             response, [{"name": "Pythonistas", "popularity_log": 3.0}]

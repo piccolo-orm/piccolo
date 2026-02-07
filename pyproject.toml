@@ -10,6 +10,8 @@ line_length = 79
 [[tool.mypy.overrides]]
 module = [
     "asyncpg.*",
+    "aiomysql.*",
+    "pymysql.*",
     "colorama",
     "dateutil",
     "IPython",

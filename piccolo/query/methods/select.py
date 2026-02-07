@@ -361,7 +361,7 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
                             m2m_select,
                         )
 
-            elif self.engine_type in ("postgres", "cockroach"):
+            elif self.engine_type in ("postgres", "cockroach", "mysql"):
                 if m2m_select.as_list:
                     # We get the data back as an array, and can just return it
                     # unless it's JSON.
@@ -372,6 +372,13 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
                         for row in response:
                             data = row[m2m_name]
                             row[m2m_name] = [load_json(i) for i in data]
+                    if self.engine_type == "mysql":
+                        # for MySQL
+                        for row in response:
+                            data = row[m2m_name]
+                            row[m2m_name] = (
+                                load_json(data) if data is not None else []
+                            )
                 elif m2m_select.serialisation_safe:
                     # If the columns requested can be safely serialised, they
                     # are returned as a JSON string, so we need to deserialise

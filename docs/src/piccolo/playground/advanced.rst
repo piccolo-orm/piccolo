@@ -94,6 +94,41 @@ When you have the database setup, you can connect to it as follows:
 
     piccolo playground run --engine=cockroach
 
+
+MySQL
+-----
+
+Install MySQL
+~~~~~~~~~~~~~
+
+See :ref:`the docs on settings up MySQL <setting_up_mysql>`.
+
+Create database
+~~~~~~~~~~~~~~~
+
+By default the playground expects a local database to exist with the following
+credentials:
+
+.. code-block:: bash
+
+    user: "root"
+    password: ""
+    host: "localhost"
+    db: "piccolo_playground"
+    port: 3306
+
+If you want to use different credentials, you can pass them into the playground
+command (use ``piccolo playground run --help`` for details).
+
+Connecting
+~~~~~~~~~~
+
+When you have the database setup, you can connect to it as follows:
+
+.. code-block:: bash
+
+    piccolo playground run --engine=mysql
+
 iPython
 -------
 

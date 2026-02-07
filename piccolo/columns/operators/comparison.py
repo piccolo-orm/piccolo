@@ -68,3 +68,15 @@ class ArrayNotAny(ComparisonOperator):
 
 class ArrayAll(ComparisonOperator):
     template = "{value} = ALL ({name})"
+
+
+class ArrayAllMySQL(ComparisonOperator):
+    template = "{value} MEMBER OF({name})"
+
+
+class ArrayAnyMySQL(ComparisonOperator):
+    template = "{value} MEMBER OF({name})"
+
+
+class ArrayNotAnyMySQL(ComparisonOperator):
+    template = "NOT ({value} MEMBER OF({name}))"

@@ -11,6 +11,7 @@ from tests.base import (
     DBTestCase,
     engine_version_lt,
     engines_only,
+    engines_skip,
     is_running_sqlite,
 )
 from tests.example_apps.music.tables import Band, Manager
@@ -63,6 +64,7 @@ class TestInsert(DBTestCase):
         is_running_sqlite() and engine_version_lt(3.35),
         reason="SQLite version not supported",
     )
+    @engines_skip("mysql")
     def test_insert_returning(self):
         """
         Make sure update works with the `returning` clause.
@@ -79,6 +81,7 @@ class TestInsert(DBTestCase):
         is_running_sqlite() and engine_version_lt(3.35),
         reason="SQLite version not supported",
     )
+    @engines_skip("mysql")
     def test_insert_returning_alias(self):
         """
         Make sure update works with the `returning` clause.
@@ -112,6 +115,7 @@ class TestOnConflict(TestCase):
         Band = self.Band
         Band.alter().drop_table().run_sync()
 
+    @engines_skip("mysql")
     def test_do_update(self):
         """
         Make sure that `DO UPDATE` works.
@@ -139,6 +143,34 @@ class TestOnConflict(TestCase):
             ],
         )
 
+    @engines_only("mysql")
+    def test_do_update_mysql(self):
+        """
+        Make sure that `DO UPDATE` works in MySQL.
+        """
+        Band = self.Band
+
+        new_popularity = self.band.popularity + 1000
+
+        Band.insert(
+            Band(name=self.band.name, popularity=new_popularity)
+        ).on_conflict(
+            action="DO UPDATE",
+            values=[Band.popularity],
+        ).run_sync()
+
+        self.assertListEqual(
+            Band.select().run_sync(),
+            [
+                {
+                    "id": self.band.id,
+                    "name": self.band.name,
+                    "popularity": new_popularity,  # changed
+                }
+            ],
+        )
+
+    @engines_skip("mysql")
     def test_do_update_tuple_values(self):
         """
         Make sure we can use tuples in ``values``.
@@ -174,6 +206,42 @@ class TestOnConflict(TestCase):
             ],
         )
 
+    @engines_only("mysql")
+    def test_do_update_tuple_values_mysql(self):
+        """
+        Make sure we can use tuples in ``values``.
+        """
+        Band = self.Band
+
+        new_popularity = self.band.popularity + 1000
+        new_name = "Rustaceans"
+
+        Band.insert(
+            Band(
+                id=self.band.id,
+                name=new_name,
+                popularity=new_popularity,
+            )
+        ).on_conflict(
+            action="DO UPDATE",
+            values=[
+                (Band.name, new_name),
+                (Band.popularity, new_popularity + 2000),
+            ],
+        ).run_sync()
+
+        self.assertListEqual(
+            Band.select().run_sync(),
+            [
+                {
+                    "id": self.band.id,
+                    "name": new_name,
+                    "popularity": new_popularity + 2000,
+                }
+            ],
+        )
+
+    @engines_skip("mysql")
     def test_do_update_no_target(self):
         """
         Make sure that `DO UPDATE` with no `target` raises an exception.
@@ -273,6 +341,7 @@ class TestOnConflict(TestCase):
         self.assertIn(f'ON CONSTRAINT "{constraint_name}"', query.__str__())
         query.run_sync()
 
+    @engines_skip("mysql")  # MySQL does not support target in conflicts
     def test_violate_non_target(self):
         """
         Make sure that if we specify a target constraint, but violate a
@@ -298,6 +367,7 @@ class TestOnConflict(TestCase):
         elif self.Band._meta.db.engine_type == "sqlite":
             self.assertIsInstance(manager.exception, sqlite3.IntegrityError)
 
+    @engines_skip("mysql")  # MySQL does not support where in conflicts
     def test_where(self):
         """
         Make sure we can pass in a `where` argument.
@@ -422,7 +492,7 @@ class TestOnConflict(TestCase):
             ],
         )
 
-    @engines_only("postgres", "cockroach")
+    @engines_only("postgres", "cockroach", "mysql")
     def test_mutiple_error(self):
         """
         Postgres and Cockroach don't support multiple `ON CONFLICT` clauses.
@@ -435,9 +505,11 @@ class TestOnConflict(TestCase):
             ).run_sync()
 
         assert manager.exception.__str__() == (
-            "Postgres and Cockroach only support a single ON CONFLICT clause."
+            "Postgres, Cockroach and MySQL only support a single "
+            "ON CONFLICT clause."
         )
 
+    @engines_skip("mysql")
     def test_all_columns(self):
         """
         We can use ``all_columns`` instead of specifying the ``values``
@@ -458,6 +530,41 @@ class TestOnConflict(TestCase):
         ).on_conflict(
             action="DO UPDATE",
             target=Band.id,
+            values=Band.all_columns(),
+        )
+        q.run_sync()
+
+        self.assertListEqual(
+            Band.select().run_sync(),
+            [
+                {
+                    "id": self.band.id,
+                    "name": new_name,
+                    "popularity": new_popularity,
+                }
+            ],
+        )
+
+    @engines_only("mysql")
+    def test_all_columns_mysql(self):
+        """
+        We can use ``all_columns`` instead of specifying the ``values``
+        manually.
+        """
+        Band = self.Band
+
+        new_popularity = self.band.popularity + 1000
+        new_name = "Rustaceans"
+
+        # Conflicting with ID - should be ignored.
+        q = Band.insert(
+            Band(
+                id=self.band.id,
+                name=new_name,
+                popularity=new_popularity,
+            )
+        ).on_conflict(
+            action="DO UPDATE",
             values=Band.all_columns(),
         )
         q.run_sync()
