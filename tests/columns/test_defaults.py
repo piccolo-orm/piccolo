@@ -27,6 +27,13 @@ from piccolo.columns.defaults.timestamptz import TimestamptzCustom
 from piccolo.table import Table
 
 
+def get_custom_default(base):
+    class CustomDefault(base):
+        pass
+
+    return CustomDefault()
+
+
 class TestDefaults(TestCase):
     """
     Columns check the type of the default argument.
@@ -68,6 +75,7 @@ class TestDefaults(TestCase):
         UUID(default=None, null=True)
         UUID(default=UUID4())
         UUID(default=uuid.uuid4())
+        UUID(default=get_custom_default(UUID4))
         with self.assertRaises(ValueError):
             UUID(default="hello world")
 
@@ -75,6 +83,7 @@ class TestDefaults(TestCase):
         Time(default=None, null=True)
         Time(default=TimeNow())
         Time(default=datetime.datetime.now().time())
+        Time(default=get_custom_default(TimeNow))
         with self.assertRaises(ValueError):
             Time(default="hello world")  # type: ignore
 
@@ -82,6 +91,7 @@ class TestDefaults(TestCase):
         Date(default=None, null=True)
         Date(default=DateNow())
         Date(default=datetime.datetime.now().date())
+        Date(default=get_custom_default(DateNow))
         with self.assertRaises(ValueError):
             Date(default="hello world")  # type: ignore
 
@@ -89,6 +99,7 @@ class TestDefaults(TestCase):
         Timestamp(default=None, null=True)
         Timestamp(default=TimestampNow())
         Timestamp(default=datetime.datetime.now())
+        Timestamp(default=get_custom_default(TimestampNow))
         with self.assertRaises(ValueError):
             Timestamp(default="hello world")  # type: ignore
 
