@@ -1,4 +1,4 @@
-.. _UsingSQLitAndAsyncioEffectively:
+.. _UsingSQLiteAndAsyncioEffectively:
 
 Using SQLite and asyncio effectively
 ====================================
