@@ -17,6 +17,7 @@ from piccolo.columns import Column, Selectable
 from piccolo.columns.column_types import JSON, JSONB
 from piccolo.columns.m2m import M2MSelect
 from piccolo.columns.readable import Readable
+from piccolo.columns.reverse_lookup import ReverseLookupSelect
 from piccolo.custom_types import TableInstance
 from piccolo.engine.base import BaseBatch
 from piccolo.query.base import Query
@@ -250,33 +251,33 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
         )
         return self
 
-    async def _splice_m2m_rows(
+    async def _splice_related_rows(
         self,
         response: list[dict[str, Any]],
         secondary_table: type[Table],
         secondary_table_pk: Column,
-        m2m_name: str,
-        m2m_select: M2MSelect,
+        related_name: str,
+        related_select: Union[M2MSelect, ReverseLookupSelect],
         as_list: bool = False,
     ):
         row_ids = list(
-            set(itertools.chain(*[row[m2m_name] for row in response]))
+            set(itertools.chain(*[row[related_name] for row in response]))
         )
         extra_rows = (
             (
                 await secondary_table.select(
-                    *m2m_select.columns,
+                    *related_select.columns,
                     secondary_table_pk.as_alias("mapping_key"),
                 )
                 .where(secondary_table_pk.is_in(row_ids))
-                .output(load_json=m2m_select.load_json)
+                .output(load_json=related_select.load_json)
                 .run()
             )
             if row_ids
             else []
         )
         if as_list:
-            column_name = m2m_select.columns[0]._meta.name
+            column_name = related_select.columns[0]._meta.name
             extra_rows_map = {
                 row["mapping_key"]: row[column_name] for row in extra_rows
             }
@@ -290,14 +291,21 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
                 for row in extra_rows
             }
         for row in response:
-            row[m2m_name] = [extra_rows_map.get(i) for i in row[m2m_name]]
+            row[related_name] = [
+                extra_rows_map.get(i) for i in row[related_name]
+            ]
         return response
 
-    async def response_handler(self, response):
+    async def response_handler(self, response: list[dict[str, Any]]):
         m2m_selects = [
             i
             for i in self.columns_delegate.selected_columns
             if isinstance(i, M2MSelect)
+        ]
+        reverse_lookup_selects = [
+            i
+            for i in self.columns_delegate.selected_columns
+            if isinstance(i, ReverseLookupSelect)
         ]
         for m2m_select in m2m_selects:
             m2m_name = m2m_select.m2m._meta.name
@@ -334,7 +342,7 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
                     if m2m_select.serialisation_safe:
                         pass
                     else:
-                        response = await self._splice_m2m_rows(
+                        response = await self._splice_related_rows(
                             response,
                             secondary_table,
                             secondary_table_pk,
@@ -353,7 +361,7 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
                                 {column_name: i} for i in row[m2m_name]
                             ]
                     else:
-                        response = await self._splice_m2m_rows(
+                        response = await self._splice_related_rows(
                             response,
                             secondary_table,
                             secondary_table_pk,
@@ -383,12 +391,174 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
                     # If the data can't be safely serialised as JSON, we get
                     # back an array of primary key values, and need to
                     # splice in the correct values using Python.
-                    response = await self._splice_m2m_rows(
+                    response = await self._splice_related_rows(
                         response,
                         secondary_table,
                         secondary_table_pk,
                         m2m_name,
                         m2m_select,
+                    )
+
+        for reverse_lookup_select in reverse_lookup_selects:
+            reverse_lookup = reverse_lookup_select.reverse_lookup
+            reverse_table = (
+                reverse_lookup._meta.resolved_reverse_joining_table  # noqa: E501
+            )
+            reverse_lookup_name = reverse_lookup._meta.name
+
+            if self.engine_type == "sqlite":
+                # With ReverseLookup queries in SQLite, we always get
+                # the value back as a list of strings, so we need to
+                # do some type conversion.
+                value_type = (
+                    reverse_lookup_select.columns[0].__class__.value_type
+                    if reverse_lookup_select.as_list
+                    and reverse_lookup_select.serialisation_safe
+                    else reverse_table._meta.primary_key.value_type
+                )
+                try:
+                    for row in response:
+                        data = row[reverse_lookup_name]
+                        row[reverse_lookup_name] = (
+                            [value_type(i) for i in row[reverse_lookup_name]]
+                            if data
+                            else []
+                        )
+                except ValueError:
+                    colored_warning(
+                        "Unable to do type conversion for the "
+                        f"{reverse_lookup_name} relation"
+                    )
+
+                # If the user requested a single column, we just return that
+                # from the database. Otherwise we request the primary key
+                # value, so we can fetch the rest of the data in a subsequent
+                # SQL query - see below.
+                if reverse_lookup_select.as_list:
+                    if reverse_lookup_select.serialisation_safe:
+                        pass
+                    else:
+                        response = await self._splice_related_rows(
+                            response,
+                            reverse_table,
+                            reverse_table._meta.primary_key,
+                            reverse_lookup_name,
+                            reverse_lookup_select,
+                            as_list=True,
+                        )
+                else:
+                    if (
+                        len(reverse_lookup_select.columns) == 1
+                        and reverse_lookup_select.serialisation_safe
+                    ):
+                        column_name = reverse_lookup_select.columns[
+                            0
+                        ]._meta.name
+                        for row in response:
+                            if row[reverse_lookup_name] is None:
+                                row[reverse_lookup_name] = []
+                            row[reverse_lookup_name] = [
+                                {column_name: i}
+                                for i in row[reverse_lookup_name]
+                            ]
+                    elif (
+                        len(reverse_lookup_select.columns) == 0
+                        and reverse_lookup_select.serialisation_safe
+                    ):
+                        # if user request all columns
+                        row_ids = list(
+                            set(
+                                itertools.chain(
+                                    *[
+                                        row[reverse_lookup_name]
+                                        for row in response
+                                    ]
+                                )
+                            )
+                        )
+                        extra_rows = (
+                            (
+                                await reverse_table.select(
+                                    *reverse_table._meta.columns,
+                                    reverse_table._meta.primary_key.as_alias(
+                                        "mapping_key"
+                                    ),
+                                )
+                                .where(
+                                    reverse_table._meta.primary_key.is_in(
+                                        row_ids
+                                    )
+                                )
+                                .output(
+                                    load_json=reverse_lookup_select.load_json
+                                )
+                                .run()
+                            )
+                            if row_ids
+                            else []
+                        )
+                        extra_rows_map = {
+                            row["mapping_key"]: {
+                                key: value
+                                for key, value in row.items()
+                                if key != "mapping_key"
+                            }
+                            for row in extra_rows
+                        }
+                        for row in response:
+                            row[reverse_lookup_name] = [
+                                extra_rows_map.get(i)
+                                for i in row[reverse_lookup_name]
+                            ]
+                    else:
+                        response = await self._splice_related_rows(
+                            response,
+                            reverse_table,
+                            reverse_table._meta.primary_key,
+                            reverse_lookup_name,
+                            reverse_lookup_select,
+                            as_list=False,
+                        )
+            if self.engine_type in ("postgres", "cockroach"):
+                if reverse_lookup_select.as_list:
+                    # We get the data back as an array, and can just return it
+                    # unless it's JSON.
+                    if (
+                        type(reverse_lookup_select.columns[0]) in (JSON, JSONB)
+                        and reverse_lookup_select.load_json
+                    ):
+                        for row in response:
+                            data = row[str(reverse_lookup_select.columns[0])]
+                            row[str(reverse_lookup_select.columns[0])] = [
+                                load_json(i) for i in data
+                            ]
+
+                elif reverse_lookup_select.serialisation_safe:
+                    # If the columns requested can be safely serialised, they
+                    # are returned as a JSON string, so we need to deserialise
+                    # it.
+                    for row in response:
+                        data = row[reverse_lookup_name]
+                        row[reverse_lookup_name] = (
+                            load_json(data) if data else []
+                        )
+                else:
+                    # If the data can't be safely serialised as JSON, we get
+                    # back an array of primary key values, and need to
+                    # splice in the correct values using Python.
+                    response = await self._splice_related_rows(
+                        response,
+                        reverse_table,
+                        reverse_table._meta.primary_key,
+                        reverse_lookup_name,
+                        reverse_lookup_select,
+                        as_list=False,
+                    )
+
+            if reverse_lookup_select.descending:
+                for row in response:
+                    row[reverse_lookup_name] = list(
+                        reversed(row[reverse_lookup_name])
                     )
 
         #######################################################################
