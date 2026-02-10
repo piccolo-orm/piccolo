@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 from .postgres import Atomic, PostgresEngine, PostgresTransaction
 
@@ -37,8 +37,9 @@ class CockroachAtomic(Atomic):
         super().__init__(engine)
         self.autocommit_before_ddl = autocommit_before_ddl
 
-    async def setup_transaction(self, transaction: CockroachTransaction):
+    async def setup_transaction(self, transaction: PostgresTransaction):
         if self.autocommit_before_ddl is not None:
+            transaction = cast(CockroachTransaction, transaction)
             await transaction.autocommit_before_ddl(
                 enabled=self.autocommit_before_ddl
             )
