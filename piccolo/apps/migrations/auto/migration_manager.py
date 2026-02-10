@@ -988,7 +988,7 @@ class MigrationManager:
         ) as transaction:
             if isinstance(transaction, CockroachTransaction):
                 # To enable DDL rollbacks in CockroachDB.
-                await transaction.autocommit_before_ddl(False)
+                await transaction.autocommit_before_ddl(enabled=False)
 
             if not self.preview:
                 if direction == "backwards":
