@@ -3,31 +3,10 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any, Optional
 
-from piccolo.query.base import DDL, Query
-
 from .postgres import Atomic, PostgresEngine, PostgresTransaction
 
 
 class CockroachAtomic(Atomic):
-    """
-    :param autocommit_before_ddl:
-        Default to ``False`` to prevent automatic DDL commits
-        in transactions and enable rollback.
-        Applies only to the current transaction and automatically
-        reverted when the transaction commits or rollback.
-
-    Usage::
-
-        # Default to ``False`` (``autocommit_before_ddl = off``)
-        transaction = engine.atomic()
-        transaction.add(Foo.create_table())
-
-        # If we want set ``autocommit_before_ddl = on``
-        # which is default Cockroach session setting.
-        transaction = engine.atomic(autocommit_before_ddl=True)
-        transaction.add(Foo.create_table())
-
-    """
 
     __slots__ = ("autocommit_before_ddl",)
 
@@ -36,67 +15,38 @@ class CockroachAtomic(Atomic):
         engine: CockroachEngine,
         autocommit_before_ddl: Optional[bool] = False,
     ):
+        """
+        :param autocommit_before_ddl:
+            Defaults to ``False`` to prevent automatic DDL commits
+            in transactions (preventing rollbacks). Applies only to the current
+            transaction and is automatically reverted when the transaction
+            commits or is rolled back.
+
+        Usage::
+            # Default to ``False`` (``autocommit_before_ddl = off``)
+            transaction = engine.atomic()
+            transaction.add(Foo.create_table())
+
+            # If we want to set ``autocommit_before_ddl = on``,
+            # which is the default Cockroach session setting.
+            transaction = engine.atomic(autocommit_before_ddl=True)
+            transaction.add(Foo.create_table())
+
+        """
         super().__init__(engine)
         self.autocommit_before_ddl = autocommit_before_ddl
 
-    async def run(self):
-        from piccolo.query.methods.objects import Create, GetOrCreate
-
-        try:
-            async with self.engine.transaction(
-                autocommit_before_ddl=self.autocommit_before_ddl
-            ):
-                for query in self.queries:
-                    if isinstance(query, (Query, DDL, Create, GetOrCreate)):
-                        await query.run()
-                    else:
-                        raise ValueError("Unrecognised query")
-
-            self.queries = []
-
-        except Exception as exception:
-            self.queries = []
-            raise exception from exception
+    async def setup_transaction(self, transaction: CockroachTransaction):
+        if self.autocommit_before_ddl is not None:
+            await transaction.autocommit_before_ddl(
+                enabled=self.autocommit_before_ddl
+            )
 
 
 class CockroachTransaction(PostgresTransaction):
-    """
-    :param autocommit_before_ddl:
-        Default to ``False`` to prevent automatic DDL commits
-        in transactions and enable rollback. Applies only
-        to the current transaction and automatically
-        reverted when the transaction commits or rollback.
 
-    Usage::
-
-        # Default to ``False`` (``autocommit_before_ddl = off``)
-        async with engine.transaction():
-            # Run some queries:
-            await Band.select().run()
-
-        # If we want set ``autocommit_before_ddl = on``
-        # which is default Cockroach session setting.
-        async with engine.transaction(autocommit_before_ddl=True):
-            # Run some queries:
-            await Band.select().run()
-
-    """
-
-    __slots__ = ("autocommit_before_ddl",)
-
-    def __init__(
-        self,
-        autocommit_before_ddl: Optional[bool] = False,
-        *args,
-        **kwargs,
-    ):
-        super().__init__(*args, **kwargs)
-        self.autocommit_before_ddl = autocommit_before_ddl
-
-    async def begin(self):
-        await self.transaction.start()
-
-        value = "on" if self.autocommit_before_ddl else "off"
+    async def autocommit_before_ddl(self, enabled: bool = True):
+        value = "on" if enabled else "off"
         await self.connection.execute(
             f"SET LOCAL autocommit_before_ddl = {value}"
         )
@@ -138,10 +88,8 @@ class CockroachEngine(PostgresEngine):
     def transaction(
         self,
         allow_nested: bool = True,
-        autocommit_before_ddl: Optional[bool] = False,
     ) -> CockroachTransaction:
         return CockroachTransaction(
             engine=self,
             allow_nested=allow_nested,
-            autocommit_before_ddl=autocommit_before_ddl,
         )
