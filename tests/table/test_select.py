@@ -11,6 +11,7 @@ from piccolo.query.functions.aggregate import Avg, Count, Max, Min, Sum
 from piccolo.query.methods.select import SelectRaw
 from piccolo.query.mixins import DistinctOnError
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
+from piccolo.testing.test_case import AsyncTableTest
 from tests.base import (
     DBTestCase,
     engine_is,
@@ -1507,3 +1508,37 @@ class TestDistinctOn(TestCase):
             Album.select().distinct(on=[Album.band]).order_by(
                 Album.release_date
             ).run_sync()
+
+
+class TestHaving(AsyncTableTest):
+    tables = [Album]
+
+    @engines_only("postgres", "cockroach")
+    async def test_having(self):
+        await Album.insert(
+            Album(
+                {
+                    Album.band: "Pythonistas",
+                }
+            ),
+            Album(
+                {
+                    Album.band: "Pythonistas",
+                }
+            ),
+            Album(
+                {
+                    Album.band: "Rustaceans",
+                }
+            ),
+        )
+
+        response = (
+            await Album.select(Album.band)
+            .group_by(Album.band)
+            .having(Count() >= 2)
+            .output(as_list=True)
+        )
+
+        self.assertIn("Pythonistas", response)
+        self.assertNotIn("Rustaceans", response)

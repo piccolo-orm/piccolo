@@ -480,7 +480,7 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
         return self
 
     def having(self: Self, *where: Union[Combinable, QueryString]) -> Self:
-        self.where_delegate.where(*where)
+        self.having_delegate.where(*where)
         return self
 
     async def batch(
@@ -638,7 +638,7 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
             query += "{}"
             args.append(self.group_by_delegate._group_by.querystring)
 
-        if self.having_delegate:
+        if self.having_delegate._where:
             query += " HAVING {}"
             args.append(self.having_delegate._where.querystring)
 
