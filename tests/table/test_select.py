@@ -1513,7 +1513,6 @@ class TestDistinctOn(TestCase):
 class TestHaving(AsyncTableTest):
     tables = [Album]
 
-    @engines_only("postgres", "cockroach")
     async def test_having(self):
         await Album.insert(
             Album(
