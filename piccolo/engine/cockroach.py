@@ -22,15 +22,16 @@ class CockroachAtomic(Atomic):
             transaction and is automatically reverted when the transaction
             commits or is rolled back.
 
-        Usage::
-            # Default to ``False`` (``autocommit_before_ddl = off``)
-            transaction = engine.atomic()
-            transaction.add(Foo.create_table())
+            Usage::
 
-            # If we want to set ``autocommit_before_ddl = on``,
-            # which is the default Cockroach session setting.
-            transaction = engine.atomic(autocommit_before_ddl=True)
-            transaction.add(Foo.create_table())
+                # Defaults to ``False`` (``autocommit_before_ddl = off``)
+                transaction = engine.atomic()
+                transaction.add(Foo.create_table())
+
+                # If we want to set ``autocommit_before_ddl = on``,
+                # which is the default Cockroach session setting.
+                transaction = engine.atomic(autocommit_before_ddl=True)
+                transaction.add(Foo.create_table())
 
         """
         super().__init__(engine)
