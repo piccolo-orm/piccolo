@@ -2,11 +2,12 @@ import enum
 
 from piccolo.columns.column_types import Array, Varchar
 from piccolo.table import Table
-from piccolo.testing.test_case import TableTest
+from piccolo.testing.test_case import AsyncTableTest
+from tests.base import engines_only, engines_skip
 from tests.example_apps.music.tables import Shirt
 
 
-class TestChoices(TableTest):
+class TestChoices(AsyncTableTest):
     tables = [Shirt]
 
     def _insert_shirts(self):
@@ -81,7 +82,63 @@ class Ticket(Table):
     extras = Array(Varchar(), choices=Extras)
 
 
-class TestArrayChoices(TableTest):
+@engines_only("mysql")
+class TestArrayChoicesMySQL(AsyncTableTest):
+    tables = [Ticket]
+
+    def test_string(self):
+        """
+        Make sure strings can be passed in as choices.
+        """
+        ticket = Ticket(extras=["drink", "snack", "program"])
+        ticket.save().run_sync()
+
+        self.assertListEqual(
+            Ticket.select(Ticket.extras).run_sync(),
+            [{"extras": '["drink", "snack", "program"]'}],
+        )
+
+    def test_enum(self):
+        """
+        Make sure enums can be passed in as choices.
+        """
+        ticket = Ticket(
+            extras=[
+                Ticket.Extras.drink,
+                Ticket.Extras.snack,
+                Ticket.Extras.program,
+            ]
+        )
+        ticket.save().run_sync()
+
+        self.assertListEqual(
+            Ticket.select(Ticket.extras).run_sync(),
+            [{"extras": '["drink", "snack", "program"]'}],
+        )
+
+    def test_invalid_choices(self):
+        """
+        Make sure an invalid choices Enum is rejected.
+        """
+        with self.assertRaises(ValueError) as manager:
+
+            class Ticket(Table):
+                # This will be rejected, because the values are ints, and the
+                # Array's base_column is Varchar.
+                class Extras(int, enum.Enum):
+                    drink = 1
+                    snack = 2
+                    program = 3
+
+                extras = Array(Varchar(), choices=Extras)
+
+        self.assertEqual(
+            manager.exception.__str__(), "drink doesn't have the correct type"
+        )
+
+
+@engines_skip("mysql")
+class TestArrayChoices(AsyncTableTest):
 
     tables = [Ticket]
 

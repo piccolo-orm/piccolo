@@ -5,6 +5,7 @@ import sys
 from typing import cast
 
 from piccolo.engine.finder import engine_finder
+from piccolo.engine.mysql import MySQLEngine
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.engine.sqlite import SQLiteEngine
 
@@ -64,3 +65,35 @@ def run() -> None:
 
         print("Enter .quit to exit")
         subprocess.run(["sqlite3", database], check=True)
+
+    if isinstance(engine, MySQLEngine):
+        engine = cast(MySQLEngine, engine)
+
+        args = ["mysql"]
+
+        config = engine.config
+
+        if dsn := config.get("dsn"):
+            args += [dsn]
+        else:
+            if user := config.get("user"):
+                args += ["-u", user]
+            if host := config.get("host"):
+                args += ["-h", host]
+            if port := config.get("port"):
+                args += ["-p", str(port)]
+            if database := config.get("db"):
+                args += [database]
+
+        sigint_handler = signal.getsignal(signal.SIGINT)
+        subprocess_env = os.environ.copy()
+        if password := config.get("password"):
+            subprocess_env["MYSQLPASSWORD"] = str(password)
+        try:
+            # Allow SIGINT to pass to mysql to abort queries.
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+            print("Enter \\q to exit")
+            subprocess.run(args, check=True, env=subprocess_env)
+        finally:
+            # Restore the original SIGINT handler.
+            signal.signal(signal.SIGINT, sigint_handler)

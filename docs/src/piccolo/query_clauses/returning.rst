@@ -49,4 +49,6 @@ how many rows were affected or processed by the operation.
 .. warning:: This works for all versions of Postgres, but only
     `SQLite 3.35.0 <https://www.sqlite.org/lang_returning.html>`_ and above
     support the returning clause. See the :ref:`docs <check_sqlite_version>` on
-    how to check your SQLite version.
+    how to check your SQLite version. 
+
+    Not supported for MySQL because there is no ``RETURNING`` clause in MySQL.

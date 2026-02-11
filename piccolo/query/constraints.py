@@ -94,3 +94,86 @@ async def get_fk_constraint_rules(column: ForeignKey) -> ConstraintRules:
         on_delete=OnDelete(constraints[0]["delete_rule"]),
         on_update=OnUpdate(constraints[0]["update_rule"]),
     )
+
+
+async def get_fk_constraint_name_mysql(column: ForeignKey) -> Optional[str]:
+    """
+    Checks what the foreign key constraint is called in the MySQL
+    database.
+    """
+
+    table = column._meta.table
+
+    if table._meta.db.engine_type == "sqlite":
+        # TODO - add the query for SQLite
+        raise ValueError("SQLite isn't currently supported.")
+
+    table_name = table._meta.tablename
+    column_name = column._meta.db_column_name
+
+    constraints = await table.raw(
+        """
+        SELECT
+            kcu.CONSTRAINT_NAME,
+            kcu.TABLE_NAME,
+            kcu.COLUMN_NAME,
+            rc.UPDATE_RULE,
+            rc.DELETE_RULE
+        FROM
+            information_schema.KEY_COLUMN_USAGE AS kcu
+        JOIN
+            information_schema.REFERENTIAL_CONSTRAINTS AS rc
+            ON  kcu.CONSTRAINT_NAME = rc.CONSTRAINT_NAME
+            AND kcu.CONSTRAINT_SCHEMA = rc.CONSTRAINT_SCHEMA
+        WHERE
+            kcu.TABLE_SCHEMA = DATABASE() AND
+            kcu.TABLE_NAME = {} AND
+            kcu.COLUMN_NAME = {};
+        """,
+        table_name,
+        column_name,
+    )
+    print(constraints)
+    return constraints[0][0] if constraints else None
+
+
+async def get_fk_constraint_rules_mysql(column: ForeignKey) -> ConstraintRules:
+    """
+    Checks the constraint rules for this foreign key in the MySQL database.
+    """
+    table = column._meta.table
+
+    if table._meta.db.engine_type == "sqlite":
+        # TODO - add the query for SQLite
+        raise ValueError("SQLite isn't currently supported.")
+
+    table_name = table._meta.tablename
+    column_name = column._meta.db_column_name
+
+    constraints = await table.raw(
+        """
+        SELECT
+            kcu.CONSTRAINT_NAME,
+            kcu.TABLE_NAME,
+            kcu.COLUMN_NAME,
+            rc.UPDATE_RULE,
+            rc.DELETE_RULE
+        FROM
+            information_schema.KEY_COLUMN_USAGE AS kcu
+        INNER JOIN
+            information_schema.REFERENTIAL_CONSTRAINTS AS rc
+                ON kcu.CONSTRAINT_NAME = rc.CONSTRAINT_NAME
+                AND kcu.CONSTRAINT_SCHEMA = rc.CONSTRAINT_SCHEMA
+        WHERE
+            kcu.TABLE_SCHEMA = DATABASE() AND
+            kcu.TABLE_NAME = {} AND
+            kcu.COLUMN_NAME = {};
+        """,
+        table_name,
+        column_name,
+    )
+
+    return ConstraintRules(
+        on_delete=OnDelete(constraints[0]["DELETE_RULE"]),
+        on_update=OnUpdate(constraints[0]["UPDATE_RULE"]),
+    )

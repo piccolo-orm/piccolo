@@ -133,6 +133,8 @@ You can also specify the name of a constraint using a string:
     ...     target='some_constraint'
     ... )
 
+.. warning:: Not supported for MySQL.
+
 ``values``
 ----------
 
@@ -194,11 +196,15 @@ update should be made:
     ...     where=Band.popularity < 1000
     ... )
 
+.. warning:: Not supported for MySQL. A workaround is possible by using an  
+    ``IF`` or ``CASE`` condition in the ``UPDATE`` clause or by first
+    performing a separate ``UPDATE``, but this is not currently supported in Piccolo.
+
 Multiple ``on_conflict`` clauses
 --------------------------------
 
-SQLite allows you to specify multiple ``ON CONFLICT`` clauses, but Postgres and
-Cockroach don't.
+SQLite allows you to specify multiple ``ON CONFLICT`` clauses, but Postgres,
+Cockroach and MySQL don't.
 
 .. code-block:: python
 
@@ -218,6 +224,7 @@ Learn more
 * `Postgres docs <https://www.postgresql.org/docs/current/sql-insert.html#SQL-ON-CONFLICT>`_
 * `Cockroach docs <https://www.cockroachlabs.com/docs/v2.0/insert.html#on-conflict-clause>`_
 * `SQLite docs <https://www.sqlite.org/lang_UPSERT.html>`_
+* `MySQL docs <https://dev.mysql.com/doc/refman/8.4/en/insert.html>`_
 
 Source
 ------

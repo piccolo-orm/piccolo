@@ -28,7 +28,12 @@ from piccolo.columns import (
     Varchar,
 )
 from piccolo.columns.readable import Readable
-from piccolo.engine import CockroachEngine, PostgresEngine, SQLiteEngine
+from piccolo.engine import (
+    CockroachEngine,
+    MySQLEngine,
+    PostgresEngine,
+    SQLiteEngine,
+)
 from piccolo.engine.base import Engine
 from piccolo.table import Table
 from piccolo.utils.warnings import colored_string
@@ -391,6 +396,16 @@ def run(
                 "user": user or "root",
                 "password": password or "",
                 "port": port or 26257,
+            }
+        )
+    elif engine.upper() == "MYSQL":
+        db = MySQLEngine(
+            {
+                "host": host,
+                "db": database,
+                "user": user or "root",
+                "password": password or "",
+                "port": port or 3306,
             }
         )
     else:

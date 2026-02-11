@@ -5,7 +5,7 @@ from tests.base import engines_skip
 from .base import M2MBase
 
 
-@engines_skip("sqlite")
+@engines_skip("sqlite", "mysql")
 class TestM2MWithSchema(M2MBase, TestCase):
     """
     Make sure that when the tables exist in a non-public schema, that M2M still

@@ -12,7 +12,10 @@ from piccolo.columns.base import OnDelete, OnUpdate
 from piccolo.columns.column_types import ForeignKey
 from piccolo.conf.apps import AppConfig
 from piccolo.engine import engine_finder
-from piccolo.query.constraints import get_fk_constraint_rules
+from piccolo.query.constraints import (
+    get_fk_constraint_rules,
+    get_fk_constraint_rules_mysql,
+)
 from piccolo.table import Table, sort_table_classes
 from piccolo.utils.lazy_loader import LazyLoader
 from piccolo.utils.sync import run_sync
@@ -116,7 +119,7 @@ class TestSortTableClasses(TestCase):
 
 
 class TestMigrationManager(DBTestCase):
-    @engines_only("postgres", "cockroach")
+    @engines_only("postgres", "cockroach", "mysql")
     def test_rename_column(self):
         """
         Test running a MigrationManager which contains a column rename
@@ -125,35 +128,46 @@ class TestMigrationManager(DBTestCase):
         self.insert_row()
 
         manager = MigrationManager()
-        manager.rename_column(
-            table_class_name="Band",
-            tablename="band",
-            old_column_name="name",
-            new_column_name="title",
-        )
-        asyncio.run(manager.run())
 
-        response = self.run_sync("SELECT * FROM band;")
-        self.assertTrue("title" in response[0].keys())
-        self.assertTrue("name" not in response[0].keys())
-
-        # Reverse
-        asyncio.run(manager.run(backwards=True))
-        response = self.run_sync("SELECT * FROM band;")
-        self.assertTrue("title" not in response[0].keys())
-        self.assertTrue("name" in response[0].keys())
-
-        # Preview
-        manager.preview = True
-        with patch("sys.stdout", new=StringIO()) as fake_out:
-            asyncio.run(manager.run())
-            self.assertEqual(
-                fake_out.getvalue(),
-                """  -  [preview forwards]... \n ALTER TABLE "band" RENAME COLUMN "name" TO "title";\n""",  # noqa: E501
+        if engine_is("mysql"):
+            with self.assertRaises(ValueError):
+                manager.rename_column(
+                    table_class_name="Band",
+                    tablename="band",
+                    old_column_name="name",
+                    new_column_name="title",
+                )
+                asyncio.run(manager.run())
+        else:
+            manager.rename_column(
+                table_class_name="Band",
+                tablename="band",
+                old_column_name="name",
+                new_column_name="title",
             )
-        response = self.run_sync("SELECT * FROM band;")
-        self.assertTrue("title" not in response[0].keys())
-        self.assertTrue("name" in response[0].keys())
+            asyncio.run(manager.run())
+
+            response = self.run_sync("SELECT * FROM band;")
+            self.assertTrue("title" in response[0].keys())
+            self.assertTrue("name" not in response[0].keys())
+
+            # Reverse
+            asyncio.run(manager.run(backwards=True))
+            response = self.run_sync("SELECT * FROM band;")
+            self.assertTrue("title" not in response[0].keys())
+            self.assertTrue("name" in response[0].keys())
+
+            # Preview
+            manager.preview = True
+            with patch("sys.stdout", new=StringIO()) as fake_out:
+                asyncio.run(manager.run())
+                self.assertEqual(
+                    fake_out.getvalue(),
+                    """  -  [preview forwards]... \n ALTER TABLE "band" RENAME COLUMN "name" TO "title";\n""",  # noqa: E501
+                )
+            response = self.run_sync("SELECT * FROM band;")
+            self.assertTrue("title" not in response[0].keys())
+            self.assertTrue("name" in response[0].keys())
 
     def test_raw_function(self):
         """
@@ -173,6 +187,7 @@ class TestMigrationManager(DBTestCase):
             raise HasRunBackwards("I was run backwards!")
 
         manager = MigrationManager()
+
         manager.add_raw(run)
         manager.add_raw_backwards(run_back)
 
@@ -211,7 +226,7 @@ class TestMigrationManager(DBTestCase):
         with self.assertRaises(HasRunBackwards):
             asyncio.run(manager.run(backwards=True))
 
-    @engines_only("postgres", "cockroach")
+    @engines_only("postgres", "cockroach", "mysql")
     @patch.object(BaseMigrationManager, "get_app_config")
     def test_add_table(self, get_app_config: MagicMock):
         """
@@ -220,6 +235,7 @@ class TestMigrationManager(DBTestCase):
         self.run_sync("DROP TABLE IF EXISTS musician;")
 
         manager = MigrationManager()
+
         manager.add_table(class_name="Musician", tablename="musician")
         manager.add_column(
             table_class_name="Musician",
@@ -270,12 +286,13 @@ class TestMigrationManager(DBTestCase):
                 )
         self.assertEqual(self.table_exists("musician"), False)
 
-    @engines_only("postgres", "cockroach")
+    @engines_only("postgres", "cockroach", "mysql")
     def test_add_column(self) -> None:
         """
         Test adding a column to a MigrationManager.
         """
         manager = MigrationManager()
+
         manager.add_column(
             table_class_name="Manager",
             tablename="manager",
@@ -293,7 +310,7 @@ class TestMigrationManager(DBTestCase):
         )
         asyncio.run(manager.run())
 
-        if engine_is("postgres"):
+        if engine_is("postgres", "mysql"):
             self.run_sync(
                 "INSERT INTO \"manager\" VALUES (default, 'Dave', 'dave@me.com');"  # noqa: E501
             )
@@ -333,17 +350,18 @@ class TestMigrationManager(DBTestCase):
             )
 
         response = self.run_sync("SELECT * FROM manager;")
-        if engine_is("postgres"):
+        if engine_is("postgres", "mysql"):
             self.assertEqual(response, [{"id": 1, "name": "Dave"}])
         if engine_is("cockroach"):
             self.assertEqual(response, [{"id": row_id, "name": "Dave"}])
 
-    @engines_only("postgres", "cockroach")
+    @engines_only("postgres", "cockroach", "mysql")
     def test_add_column_with_index(self):
         """
         Test adding a column with an index to a MigrationManager.
         """
         manager = MigrationManager()
+
         manager.add_column(
             table_class_name="Manager",
             tablename="manager",
@@ -372,16 +390,25 @@ class TestMigrationManager(DBTestCase):
         manager.preview = True
         with patch("sys.stdout", new=StringIO()) as fake_out:
             asyncio.run(manager.run())
-            self.assertEqual(
-                fake_out.getvalue(),
-                (
-                    """  -  [preview forwards]... \n ALTER TABLE "manager" ADD COLUMN "email" VARCHAR(100) UNIQUE DEFAULT '';\n"""  # noqa: E501
-                    """\n CREATE INDEX manager_email ON "manager" USING btree ("email");\n"""  # noqa: E501
-                ),
-            )
+            if engine_is("mysql"):
+                self.assertEqual(
+                    fake_out.getvalue(),
+                    (
+                        """  -  [preview forwards]... \n ALTER TABLE "manager" ADD COLUMN "email" VARCHAR(100) UNIQUE DEFAULT '';\n"""  # noqa: E501
+                        """\n CREATE INDEX manager_email ON "manager" (`email`);\n"""  # noqa: E501
+                    ),
+                )
+            else:
+                self.assertEqual(
+                    fake_out.getvalue(),
+                    (
+                        """  -  [preview forwards]... \n ALTER TABLE "manager" ADD COLUMN "email" VARCHAR(100) UNIQUE DEFAULT '';\n"""  # noqa: E501
+                        """\n CREATE INDEX manager_email ON "manager" USING btree ("email");\n"""  # noqa: E501
+                    ),
+                )
         self.assertTrue(index_name not in Manager.indexes().run_sync())
 
-    @engines_only("postgres")
+    @engines_only("postgres", "mysql")
     def test_add_foreign_key_self_column(self):
         """
         Test adding a ForeignKey column to a MigrationManager, with a
@@ -481,7 +508,7 @@ class TestMigrationManager(DBTestCase):
             ],
         )
 
-    @engines_only("postgres", "cockroach")
+    @engines_only("postgres", "cockroach", "mysql")
     def test_add_non_nullable_column(self):
         """
         Test adding a non nullable column to a MigrationManager.
@@ -508,7 +535,7 @@ class TestMigrationManager(DBTestCase):
         )
         asyncio.run(manager.run())
 
-    @engines_only("postgres", "cockroach")
+    @engines_only("postgres", "cockroach", "mysql")
     @patch.object(
         BaseMigrationManager, "get_migration_managers", new_callable=AsyncMock
     )
@@ -574,7 +601,7 @@ class TestMigrationManager(DBTestCase):
                 response, [{"id": id[0]["id"], "name": ""}]  # type: ignore
             )
 
-    @engines_only("postgres", "cockroach")
+    @engines_only("postgres", "cockroach", "mysql")
     def test_rename_table(self):
         """
         Test renaming a table with MigrationManager.
@@ -663,6 +690,60 @@ class TestMigrationManager(DBTestCase):
             OnDelete.no_action,
         )
 
+    @engines_only("mysql")
+    def test_alter_fk_on_delete_on_update_mysql(self):
+        """
+        Test altering OnDelete and OnUpdate with MigrationManager.
+        """
+        # before performing migrations - OnDelete.no_action
+        self.assertEqual(
+            run_sync(
+                get_fk_constraint_rules_mysql(column=Band.manager)
+            ).on_delete,
+            OnDelete.no_action,
+        )
+
+        manager = MigrationManager(app_name="music")
+        manager.alter_column(
+            table_class_name="Band",
+            tablename="band",
+            column_name="manager",
+            db_column_name="manager",
+            params={
+                "on_delete": OnDelete.set_null,
+                "on_update": OnUpdate.set_null,
+            },
+            old_params={
+                "on_delete": OnDelete.no_action,
+                "on_update": OnUpdate.no_action,
+            },
+            column_class=ForeignKey,
+            old_column_class=ForeignKey,
+            schema=None,
+        )
+
+        asyncio.run(manager.run())
+
+        # after performing migrations - OnDelete.set_null
+        self.assertEqual(
+            run_sync(
+                get_fk_constraint_rules_mysql(column=Band.manager)
+            ).on_delete,
+            OnDelete.set_null,
+        )
+
+        # Reverse
+        asyncio.run(manager.run(backwards=True))
+
+        # after performing reverse migrations we have
+        # OnDelete.no_action again
+        self.assertEqual(
+            run_sync(
+                get_fk_constraint_rules_mysql(column=Band.manager)
+            ).on_delete,
+            OnDelete.no_action,
+        )
+
     @engines_only("postgres")
     def test_alter_column_unique(self):
         """
@@ -725,6 +806,25 @@ class TestMigrationManager(DBTestCase):
             )
         )
 
+    @engines_only("mysql")
+    def test_alter_column_set_null_mysql(self):
+        """
+        We can't test altering column with MigrationManager
+        because MySQL need column instance, not string.
+        """
+        with self.assertRaises(ValueError):
+            manager = MigrationManager()
+
+            manager.alter_column(
+                table_class_name="Manager",
+                tablename="manager",
+                column_name="name",
+                params={"null": True},
+                old_params={"null": False},
+            )
+
+            asyncio.run(manager.run())
+
     def _get_column_precision_and_scale(
         self, tablename="ticket", column_name="price"
     ):
@@ -743,7 +843,7 @@ class TestMigrationManager(DBTestCase):
             f"AND column_name = '{column_name}';"
         )
 
-    @engines_only("postgres")
+    @engines_only("postgres", "mysql")
     def test_alter_column_digits(self):
         """
         Test altering a column digits with MigrationManager.
@@ -759,19 +859,34 @@ class TestMigrationManager(DBTestCase):
             old_params={"digits": (5, 2)},
         )
 
-        asyncio.run(manager.run())
-        self.assertEqual(
-            self._get_column_precision_and_scale(),
-            [{"numeric_precision": 6, "numeric_scale": 2}],
-        )
+        engine = engine_finder()
 
-        asyncio.run(manager.run(backwards=True))
-        self.assertEqual(
-            self._get_column_precision_and_scale(),
-            [{"numeric_precision": 5, "numeric_scale": 2}],
-        )
+        if engine.engine_type == "mysql":
+            asyncio.run(manager.run())
+            self.assertEqual(
+                self._get_column_precision_and_scale(),
+                [{"numeric_precision".upper(): 6, "numeric_scale".upper(): 2}],
+            )
 
-    @engines_only("postgres")
+            asyncio.run(manager.run(backwards=True))
+            self.assertEqual(
+                self._get_column_precision_and_scale(),
+                [{"numeric_precision".upper(): 5, "numeric_scale".upper(): 2}],
+            )
+        else:
+            asyncio.run(manager.run())
+            self.assertEqual(
+                self._get_column_precision_and_scale(),
+                [{"numeric_precision": 6, "numeric_scale": 2}],
+            )
+
+            asyncio.run(manager.run(backwards=True))
+            self.assertEqual(
+                self._get_column_precision_and_scale(),
+                [{"numeric_precision": 5, "numeric_scale": 2}],
+            )
+
+    @engines_only("postgres", "mysql")
     def test_alter_column_set_default(self):
         """
         Test altering a column default with MigrationManager.
@@ -786,17 +901,30 @@ class TestMigrationManager(DBTestCase):
             old_params={"default": ""},
         )
 
-        asyncio.run(manager.run())
-        self.assertEqual(
-            self._get_column_default(),
-            [{"column_default": "'Unknown'::character varying"}],
-        )
+        if engine_is("mysql"):
+            asyncio.run(manager.run())
+            self.assertEqual(
+                self._get_column_default(),
+                [{"COLUMN_DEFAULT": "Unknown"}],
+            )
 
-        asyncio.run(manager.run(backwards=True))
-        self.assertEqual(
-            self._get_column_default(),
-            [{"column_default": "''::character varying"}],
-        )
+            asyncio.run(manager.run(backwards=True))
+            self.assertEqual(
+                self._get_column_default(),
+                [{"COLUMN_DEFAULT": ""}],
+            )
+        else:
+            asyncio.run(manager.run())
+            self.assertEqual(
+                self._get_column_default(),
+                [{"column_default": "'Unknown'::character varying"}],
+            )
+
+            asyncio.run(manager.run(backwards=True))
+            self.assertEqual(
+                self._get_column_default(),
+                [{"column_default": "''::character varying"}],
+            )
 
     @engines_only("cockroach")
     def test_alter_column_set_default_alt(self):
@@ -825,13 +953,14 @@ class TestMigrationManager(DBTestCase):
             ["''", "'':::STRING"],
         )
 
-    @engines_only("postgres")
+    @engines_only("postgres", "mysql")
     def test_alter_column_drop_default(self):
         """
         Test setting a column default to None with MigrationManager.
         """
         # Make sure it has a non-null default to start with.
         manager_1 = MigrationManager()
+
         manager_1.alter_column(
             table_class_name="Manager",
             tablename="manager",
@@ -840,13 +969,20 @@ class TestMigrationManager(DBTestCase):
             old_params={"default": None},
         )
         asyncio.run(manager_1.run())
-        self.assertEqual(
-            self._get_column_default(),
-            [{"column_default": "'Mr Manager'::character varying"}],
-        )
+        if engine_is("mysql"):
+            self.assertEqual(
+                self._get_column_default(),
+                [{"COLUMN_DEFAULT": "Mr Manager"}],
+            )
+        else:
+            self.assertEqual(
+                self._get_column_default(),
+                [{"column_default": "'Mr Manager'::character varying"}],
+            )
 
         # Drop the default.
         manager_2 = MigrationManager()
+
         manager_2.alter_column(
             table_class_name="Manager",
             tablename="manager",
@@ -855,37 +991,69 @@ class TestMigrationManager(DBTestCase):
             old_params={"default": "Mr Manager"},
         )
         asyncio.run(manager_2.run())
-        self.assertEqual(
-            self._get_column_default(),
-            [{"column_default": None}],
-        )
+        if engine_is("mysql"):
+            self.assertEqual(
+                self._get_column_default(),
+                [{"COLUMN_DEFAULT": None}],
+            )
+        else:
+            self.assertEqual(
+                self._get_column_default(),
+                [{"column_default": None}],
+            )
 
         # And add it back once more to be sure.
+        manager_3 = MigrationManager()
+
         manager_3 = manager_1
         asyncio.run(manager_3.run())
-        self.assertEqual(
-            self._get_column_default(),
-            [{"column_default": "'Mr Manager'::character varying"}],
-        )
+        if engine_is("mysql"):
+            self.assertEqual(
+                self._get_column_default(),
+                [{"COLUMN_DEFAULT": "Mr Manager"}],
+            )
+        else:
+            self.assertEqual(
+                self._get_column_default(),
+                [{"column_default": "'Mr Manager'::character varying"}],
+            )
 
         # Run them all backwards
         asyncio.run(manager_3.run(backwards=True))
-        self.assertEqual(
-            self._get_column_default(),
-            [{"column_default": None}],
-        )
+        if engine_is("mysql"):
+            self.assertEqual(
+                self._get_column_default(),
+                [{"COLUMN_DEFAULT": None}],
+            )
+        else:
+            self.assertEqual(
+                self._get_column_default(),
+                [{"column_default": None}],
+            )
 
         asyncio.run(manager_2.run(backwards=True))
-        self.assertEqual(
-            self._get_column_default(),
-            [{"column_default": "'Mr Manager'::character varying"}],
-        )
+        if engine_is("mysql"):
+            self.assertEqual(
+                self._get_column_default(),
+                [{"COLUMN_DEFAULT": "Mr Manager"}],
+            )
+        else:
+            self.assertEqual(
+                self._get_column_default(),
+                [{"column_default": "'Mr Manager'::character varying"}],
+            )
 
         asyncio.run(manager_1.run(backwards=True))
-        self.assertEqual(
-            self._get_column_default(),
-            [{"column_default": None}],
-        )
+        if engine_is("mysql"):
+            self.assertEqual(
+                self._get_column_default(),
+                [{"COLUMN_DEFAULT": None}],
+            )
+        else:
+            self.assertEqual(
+                self._get_column_default(),
+                [{"column_default": None}],
+            )
 
     @engines_only("cockroach")
     def test_alter_column_drop_default_alt(self):
@@ -949,7 +1117,7 @@ class TestMigrationManager(DBTestCase):
             [{"column_default": None}],
         )
 
-    @engines_only("postgres", "cockroach")
+    @engines_only("postgres", "cockroach", "mysql")
     def test_alter_column_add_index(self):
         """
         Test altering a column to add an index with MigrationManager.
@@ -1004,12 +1172,46 @@ class TestMigrationManager(DBTestCase):
         )
         self.assertEqual(column_type_str, "CHARACTER VARYING")
 
+    @engines_only("mysql")
+    def test_alter_column_set_type_mysql(self):
+        """
+        Test altering a column to change it's type with MigrationManager
+        in MySQL.
+        """
+        self.run_sync("DROP TABLE IF EXISTS director;")
+
+        manager = MigrationManager()
+
+        manager.alter_column(
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="name",
+            params={},
+            old_params={},
+            column_class=Text,
+            old_column_class=Varchar,
+        )
+
+        asyncio.run(manager.run())
+        column_type_str = self.get_mysql_column_type(
+            tablename="manager", column_name="name"
+        )
+        self.assertEqual(column_type_str, "TEXT")
+
+        asyncio.run(manager.run(backwards=True))
+        column_type_str = self.get_mysql_column_type(
+            tablename="manager", column_name="name"
+        )
+        self.assertEqual(column_type_str, "VARCHAR")
+
     @engines_only("postgres")
     def test_alter_column_set_length(self):
         """
         Test altering a Varchar column's length with MigrationManager.
         🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/49351 "ALTER COLUMN TYPE is not supported inside a transaction"
         """  # noqa: E501
+        self.run_sync("DROP TABLE IF EXISTS director;")
+
         manager = MigrationManager()
 
         manager.alter_column(
@@ -1038,7 +1240,39 @@ class TestMigrationManager(DBTestCase):
             200,
         )
 
-    @engines_only("postgres", "cockroach")
+    @engines_only("mysql")
+    def test_alter_column_set_length_mysql(self):
+        self.run_sync("DROP TABLE IF EXISTS director;")
+
+        manager = MigrationManager()
+
+        manager.alter_column(
+            table_class_name="Manager",
+            tablename="manager",
+            column_name="name",
+            params={"length": 500},
+            old_params={"length": 200},
+            column_class=Text,
+            old_column_class=Varchar,
+        )
+
+        asyncio.run(manager.run())
+        self.assertEqual(
+            self.get_mysql_varchar_length(
+                tablename="manager", column_name="name"
+            ),
+            500,
+        )
+
+        asyncio.run(manager.run(backwards=True))
+        self.assertEqual(
+            self.get_mysql_varchar_length(
+                tablename="manager", column_name="name"
+            ),
+            200,
+        )
+
+    @engines_only("postgres", "cockroach", "mysql")
     @patch.object(
         BaseMigrationManager, "get_migration_managers", new_callable=AsyncMock
     )

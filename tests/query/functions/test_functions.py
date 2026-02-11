@@ -32,7 +32,9 @@ class TestNested(BandTest):
         are still accessible, so joins are successful.
         """
         response = Band.select(
-            QueryString("CONCAT({}, '!')", Upper(Band.manager._.name)),
+            QueryString(
+                "CONCAT({}, '!') AS concat", Upper(Band.manager._.name)
+            ),
         ).run_sync()
 
         self.assertListEqual(response, [{"concat": "GUIDO!"}])

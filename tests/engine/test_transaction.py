@@ -8,11 +8,12 @@ from piccolo.engine.cockroach import CockroachTransaction
 from piccolo.engine.sqlite import SQLiteEngine, TransactionType
 from piccolo.table import drop_db_tables_sync
 from piccolo.utils.sync import run_sync
-from tests.base import engines_only
+from tests.base import engines_only, engines_skip
 from tests.example_apps.music.tables import Band, Manager
 
 
 class TestAtomic(TestCase):
+    @engines_skip("mysql")
     def test_error(self):
         """
         Make sure queries in a transaction aren't committed if a query fails.
@@ -125,6 +126,7 @@ class TestTransaction(TestCase):
         asyncio.run(run_transaction())
         self.assertTrue(Manager.table_exists().run_sync())
 
+    @engines_skip("mysql")
     def test_manual_rollback(self):
         """
         The context manager will automatically rollback changes if an exception

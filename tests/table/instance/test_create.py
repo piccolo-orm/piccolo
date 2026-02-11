@@ -2,6 +2,7 @@ from unittest import TestCase
 
 from piccolo.columns import Integer, Varchar
 from piccolo.table import Table
+from tests.base import engines_skip
 
 
 class Band(Table):
@@ -9,6 +10,7 @@ class Band(Table):
     popularity = Integer()
 
 
+@engines_skip("mysql")
 class TestCreate(TestCase):
     def setUp(self):
         Band.create_table().run_sync()
