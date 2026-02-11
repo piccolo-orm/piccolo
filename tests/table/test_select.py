@@ -17,7 +17,6 @@ from tests.base import (
     engine_is,
     engine_version_lt,
     engines_only,
-    engines_skip,
     is_running_cockroach,
     is_running_sqlite,
     sqlite_only,
@@ -467,17 +466,18 @@ class TestSelect(DBTestCase):
             response, [{"name": "CSharps"}, {"name": "Rustaceans"}]
         )
 
-    @engines_skip("cockroach")
     def test_multiple_where(self):
         """
         Test that chaining multiple where clauses works results in an AND.
         """
         self.insert_rows()
 
+        managers = Manager.select().run_sync()
+
         query = (
             Band.select(Band.name)
             .where(Band.name == "Rustaceans")
-            .where(Band.manager == 2)
+            .where(Band.manager == managers[1]["id"])
         )
 
         response = query.run_sync()
@@ -485,18 +485,25 @@ class TestSelect(DBTestCase):
         self.assertEqual(response, [{"name": "Rustaceans"}])
         self.assertIn("AND", query.__str__())
 
-    @engines_skip("cockroach")
     def test_complex_where(self):
         """
         Test a complex where clause - combining AND, and OR.
         """
         self.insert_rows()
 
+        managers = Manager.select().run_sync()
+
         query = (
             Band.select(Band.name)
             .where(
-                ((Band.popularity == 2000) & (Band.manager == 2))
-                | ((Band.popularity == 10) & (Band.manager == 3))
+                (
+                    (Band.popularity == 2000)
+                    & (Band.manager == managers[1]["id"])
+                )
+                | (
+                    (Band.popularity == 10)
+                    & (Band.manager == managers[2]["id"])
+                )
             )
             .order_by(Band.name)
         )
