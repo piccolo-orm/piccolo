@@ -1,6 +1,78 @@
 Changes
 =======
 
+1.32.0
+------
+
+Added the ``having`` clause, which is useful when working with ``group_by``.
+
+For example, here we get the number of albums per band, but exclude any bands
+with less than 2 albums:
+
+.. code-block:: python
+
+    >>> from piccolo.query.functions.aggregate import Count
+
+    >>> await Album.select(
+    ...     Album.band.name.as_alias('band_name'),
+    ...     Count()
+    ... ).group_by(
+    ...     Album.band
+    ... ).having(
+    ...     Count() >= 2
+    ... )
+
+    [
+        {"band_name": "Pythonistas", "count": 2},
+    ]
+
+We also updated our CockroachDB support to the latest version (thanks to
+@sinisaos for this).
+
+-------------------------------------------------------------------------------
+
+1.31.0
+------
+
+* Added official Postgres 18 support.
+* Removed graphlib backport (no longer needed in supported Python versions).
+* Improved documentation for column kwargs.
+* Updated README to mention other parts of the Piccolo ecosystem (thanks to
+  @sinisaos for this).
+* Table instances can now be compared using the ``==`` operator, and will
+  return ``True`` if they have the same primary key value (thanks to @aarcex3
+  and @Skelmis for this).
+* Fixed missing import for auto migrations when tables use
+  ``LazyTableReference`` (thanks to @sinisaos for this).
+* Improved docs for the auto generated primary key (thanks to @badlydrawnrob
+  for this).
+* Improved ``Table._table_str`` (this is most obvious in the playground, where
+  the table definitions printed out now show more information - thanks to
+  @badlydrawnrob for raising this issue).
+* Fixed a bug with ``ModelBuilder`` when using ``Array`` columns with
+  ``choices`` defined.
+* ``add_m2m`` now returns the id of the joining table row, to match the docs
+  (thanks to @diklios5768 for reporting this).
+* Improved the docs for ``UUID`` columns (what the ``UUID4`` default value
+  does).
+* Moved connection pooling to its own page in the docs.
+* Improved the ``on_conflict`` clause - a ``target`` must be specified if
+  using ``DO UPDATE`` (thanks to @mafuyuuu1 for raising this issue, and
+  @sinisaos for this fix).
+* Changed Esmerald to Ravyn in the ASGI templates (thanks to @sinisaos for
+  this).
+* Fixed a bug with auto migrations when changing a column to a foreign key - an
+  exception was being raised (thanks to @gsavchuk for raising this issue and
+  @sinisaos for this fix).
+* ``Array(Numeric())`` columns now work with SQLite (thanks to @sinisaos for
+  this).
+* UUID columns now use the built-in ``gen_random_uuid()`` function in Postgres
+  to generate a default value, instead of using the ``uuid-ossp`` extension
+  (thanks to @sinisaos for this). See
+  :ref:`this tutorial <UUIDColumnsMigrationTutorial>` for more details.
+
+-------------------------------------------------------------------------------
+
 1.30.0
 ------
 

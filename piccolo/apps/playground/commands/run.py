@@ -299,6 +299,15 @@ def populate():
         Album(
             {
                 Album.name: "Awesome album 2",
+                Album.recorded_at: recording_studio_1,
+                Album.band: pythonistas,
+                Album.release_date: datetime.date(year=2025, month=1, day=1),
+                Album.awards: ["Grammy Award 2025"],
+            }
+        ),
+        Album(
+            {
+                Album.name: "Awesome album 3",
                 Album.recorded_at: recording_studio_2,
                 Album.band: rustaceans,
                 Album.release_date: datetime.date(year=2022, month=2, day=2),

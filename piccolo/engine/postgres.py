@@ -113,11 +113,15 @@ class Atomic(BaseAtomic):
     def add(self, *query: Union[Query, DDL]):
         self.queries += list(query)
 
+    async def setup_transaction(self, transaction: PostgresTransaction):
+        pass
+
     async def run(self):
         from piccolo.query.methods.objects import Create, GetOrCreate
 
         try:
-            async with self.engine.transaction():
+            async with self.engine.transaction() as transaction:
+                await self.setup_transaction(transaction=transaction)
                 for query in self.queries:
                     if isinstance(query, (Query, DDL, Create, GetOrCreate)):
                         await query.run()

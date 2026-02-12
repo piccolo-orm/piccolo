@@ -105,7 +105,8 @@ def convert_array_in(value: list) -> str:
             if isinstance(item, list):
                 output.append(serialise(item))
             elif isinstance(
-                item, (datetime.datetime, datetime.time, datetime.date)
+                item,
+                (datetime.datetime, datetime.time, datetime.date, Decimal),
             ):
                 if adapter := ADAPTERS.get(type(item)):
                     output.append(adapter(item))
@@ -317,7 +318,7 @@ sqlite3.register_converter("ARRAY", convert_array_out)
 
 # We have special column types for arrays of timestamps etc, as simply loading
 # the JSON isn't sufficient.
-for column_name in ("TIMESTAMP", "TIMESTAMPTZ", "DATE", "TIME"):
+for column_name in ("TIMESTAMP", "TIMESTAMPTZ", "DATE", "TIME", "NUMERIC"):
     sqlite3.register_converter(
         f"ARRAY_{column_name}",
         partial(

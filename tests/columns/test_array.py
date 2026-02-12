@@ -1,13 +1,13 @@
 import datetime
+from decimal import Decimal
 from unittest import TestCase
-
-import pytest
 
 from piccolo.columns.column_types import (
     Array,
     BigInt,
     Date,
     Integer,
+    Numeric,
     Time,
     Timestamp,
     Timestamptz,
@@ -40,20 +40,10 @@ class TestArray(TableTest):
 
     tables = [MyTable]
 
-    @pytest.mark.cockroach_array_slow
     def test_storage(self):
         """
         Make sure data can be stored and retrieved.
-
-        In CockroachDB <= v22.2.0 we had this error:
-
-        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-
-        In newer CockroachDB versions, it runs but is very slow:
-
-        * https://github.com/piccolo-orm/piccolo/issues/1005
-
-        """  # noqa: E501
+        """
         MyTable(value=[1, 2, 3]).save().run_sync()
 
         row = MyTable.objects().first().run_sync()
@@ -61,20 +51,10 @@ class TestArray(TableTest):
         self.assertEqual(row.value, [1, 2, 3])
 
     @engines_skip("sqlite")
-    @pytest.mark.cockroach_array_slow
     def test_index(self):
         """
         Indexes should allow individual array elements to be queried.
-
-        In CockroachDB <= v22.2.0 we had this error:
-
-        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-
-        In newer CockroachDB versions, it runs but is very slow:
-
-        * https://github.com/piccolo-orm/piccolo/issues/1005
-
-        """  # noqa: E501
+        """
         MyTable(value=[1, 2, 3]).save().run_sync()
 
         self.assertEqual(
@@ -82,21 +62,11 @@ class TestArray(TableTest):
         )
 
     @engines_skip("sqlite")
-    @pytest.mark.cockroach_array_slow
     def test_all(self):
         """
         Make sure rows can be retrieved where all items in an array match a
         given value.
-
-        In CockroachDB <= v22.2.0 we had this error:
-
-        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-
-        In newer CockroachDB versions, it runs but is very slow:
-
-        * https://github.com/piccolo-orm/piccolo/issues/1005
-
-        """  # noqa: E501
+        """
         MyTable(value=[1, 1, 1]).save().run_sync()
 
         # We have to explicitly specify the type, so CockroachDB works.
@@ -118,22 +88,11 @@ class TestArray(TableTest):
         )
 
     @engines_skip("sqlite")
-    @pytest.mark.cockroach_array_slow
     def test_any(self):
         """
         Make sure rows can be retrieved where any items in an array match a
         given value.
-
-        In CockroachDB <= v22.2.0 we had this error:
-
-        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-
-        In newer CockroachDB versions, it runs but is very slow:
-
-        * https://github.com/piccolo-orm/piccolo/issues/1005
-
-        """  # noqa: E501
-
+        """
         MyTable(value=[1, 2, 3]).save().run_sync()
 
         # We have to explicitly specify the type, so CockroachDB works.
@@ -155,22 +114,11 @@ class TestArray(TableTest):
         )
 
     @engines_skip("sqlite")
-    @pytest.mark.cockroach_array_slow
     def test_not_any(self):
         """
         Make sure rows can be retrieved where the array doesn't contain a
         certain value.
-
-        In CockroachDB <= v22.2.0 we had this error:
-
-        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-
-        In newer CockroachDB versions, it runs but is very slow:
-
-        * https://github.com/piccolo-orm/piccolo/issues/1005
-
-        """  # noqa: E501
-
+        """
         MyTable(value=[1, 2, 3]).save().run_sync()
         MyTable(value=[4, 5, 6]).save().run_sync()
 
@@ -183,20 +131,11 @@ class TestArray(TableTest):
         )
 
     @engines_skip("sqlite")
-    @pytest.mark.cockroach_array_slow
     def test_cat(self):
         """
-        Make sure values can be appended to an array and that we can concatenate two arrays.
-
-        In CockroachDB <= v22.2.0 we had this error:
-
-        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-
-        In newer CockroachDB versions, it runs but is very slow:
-
-        * https://github.com/piccolo-orm/piccolo/issues/1005
-
-        """  # noqa: E501
+        Make sure values can be appended to an array and that we can
+        concatenate two arrays.
+        """
         MyTable(value=[5]).save().run_sync()
 
         MyTable.update(
@@ -254,20 +193,10 @@ class TestArray(TableTest):
         )
 
     @engines_skip("sqlite")
-    @pytest.mark.cockroach_array_slow
     def test_prepend(self):
         """
         Make sure values can be added to the beginning of the array.
-
-        In CockroachDB <= v22.2.0 we had this error:
-
-        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-
-        In newer CockroachDB versions, it runs but is very slow:
-
-        * https://github.com/piccolo-orm/piccolo/issues/1005
-
-        """  # noqa: E501
+        """
         MyTable(value=[1, 1, 1]).save().run_sync()
 
         MyTable.update(
@@ -293,20 +222,10 @@ class TestArray(TableTest):
         )
 
     @engines_skip("sqlite")
-    @pytest.mark.cockroach_array_slow
     def test_append(self):
         """
         Make sure values can be appended to an array.
-
-        In CockroachDB <= v22.2.0 we had this error:
-
-        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-
-        In newer CockroachDB versions, it runs but is very slow:
-
-        * https://github.com/piccolo-orm/piccolo/issues/1005
-
-        """  # noqa: E501
+        """
         MyTable(value=[1, 1, 1]).save().run_sync()
 
         MyTable.update(
@@ -332,20 +251,10 @@ class TestArray(TableTest):
         )
 
     @engines_skip("sqlite")
-    @pytest.mark.cockroach_array_slow
     def test_replace(self):
         """
         Make sure values can be swapped in the array.
-
-        In CockroachDB <= v22.2.0 we had this error:
-
-        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-
-        In newer CockroachDB versions, it runs but is very slow:
-
-        * https://github.com/piccolo-orm/piccolo/issues/1005
-
-        """  # noqa: E501
+        """
         MyTable(value=[1, 1, 1]).save().run_sync()
 
         MyTable.update(
@@ -371,20 +280,10 @@ class TestArray(TableTest):
         )
 
     @engines_skip("sqlite")
-    @pytest.mark.cockroach_array_slow
     def test_remove(self):
         """
         Make sure values can be removed from an array.
-
-        In CockroachDB <= v22.2.0 we had this error:
-
-        * https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-
-        In newer CockroachDB versions, it runs but is very slow:
-
-        * https://github.com/piccolo-orm/piccolo/issues/1005
-
-        """  # noqa: E501
+        """
         MyTable(value=[1, 2, 3]).save().run_sync()
 
         MyTable.update(
@@ -411,21 +310,23 @@ class TestArray(TableTest):
 
 
 ###############################################################################
-# Date and time arrays
+# Date, time and decimal arrays
 
 
-class DateTimeArrayTable(Table):
+class DateTimeDecimalArrayTable(Table):
     date = Array(Date())
     time = Array(Time())
     timestamp = Array(Timestamp())
     timestamptz = Array(Timestamptz())
+    decimal = Array(Numeric(digits=(5, 2)))
     date_nullable = Array(Date(), null=True)
     time_nullable = Array(Time(), null=True)
     timestamp_nullable = Array(Timestamp(), null=True)
     timestamptz_nullable = Array(Timestamptz(), null=True)
+    decimal_nullable = Array(Numeric(digits=(5, 2)), null=True)
 
 
-class TestDateTimeArray(TestCase):
+class TestDateTimeDecimalArray(TestCase):
     """
     Make sure that data can be stored and retrieved when using arrays of
     date / time / timestamp.
@@ -436,10 +337,10 @@ class TestDateTimeArray(TestCase):
     """
 
     def setUp(self):
-        DateTimeArrayTable.create_table().run_sync()
+        DateTimeDecimalArrayTable.create_table().run_sync()
 
     def tearDown(self):
-        DateTimeArrayTable.alter().drop_table().run_sync()
+        DateTimeDecimalArrayTable.alter().drop_table().run_sync()
 
     @engines_only("postgres", "sqlite")
     def test_storage(self):
@@ -456,32 +357,37 @@ class TestDateTimeArray(TestCase):
             minute=0,
             tzinfo=datetime.timezone.utc,
         )
+        test_decimal = Decimal("50.0")
 
-        DateTimeArrayTable(
+        DateTimeDecimalArrayTable(
             {
-                DateTimeArrayTable.date: [test_date],
-                DateTimeArrayTable.time: [test_time],
-                DateTimeArrayTable.timestamp: [test_timestamp],
-                DateTimeArrayTable.timestamptz: [test_timestamptz],
-                DateTimeArrayTable.date_nullable: None,
-                DateTimeArrayTable.time_nullable: None,
-                DateTimeArrayTable.timestamp_nullable: None,
-                DateTimeArrayTable.timestamptz_nullable: None,
+                DateTimeDecimalArrayTable.date: [test_date],
+                DateTimeDecimalArrayTable.time: [test_time],
+                DateTimeDecimalArrayTable.timestamp: [test_timestamp],
+                DateTimeDecimalArrayTable.timestamptz: [test_timestamptz],
+                DateTimeDecimalArrayTable.decimal: [test_decimal],
+                DateTimeDecimalArrayTable.date_nullable: None,
+                DateTimeDecimalArrayTable.time_nullable: None,
+                DateTimeDecimalArrayTable.timestamp_nullable: None,
+                DateTimeDecimalArrayTable.timestamptz_nullable: None,
+                DateTimeDecimalArrayTable.decimal_nullable: None,
             }
         ).save().run_sync()
 
-        row = DateTimeArrayTable.objects().first().run_sync()
+        row = DateTimeDecimalArrayTable.objects().first().run_sync()
         assert row is not None
 
         self.assertListEqual(row.date, [test_date])
         self.assertListEqual(row.time, [test_time])
         self.assertListEqual(row.timestamp, [test_timestamp])
         self.assertListEqual(row.timestamptz, [test_timestamptz])
+        self.assertListEqual(row.decimal, [test_decimal])
 
         self.assertIsNone(row.date_nullable)
         self.assertIsNone(row.time_nullable)
         self.assertIsNone(row.timestamp_nullable)
         self.assertIsNone(row.timestamptz_nullable)
+        self.assertIsNone(row.decimal_nullable)
 
 
 ###############################################################################
@@ -514,9 +420,9 @@ class TestNestedArray(TestCase):
         """
         Make sure data can be stored and retrieved.
 
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-
-        """  # noqa: E501
+        🐛 Cockroach bug: https://go.crdb.dev/issue-v/32552/v25.4
+        asyncpg.exceptions.FeatureNotSupportedError
+        """
         NestedArrayTable(value=[[1, 2, 3], [4, 5, 6]]).save().run_sync()
 
         row = NestedArrayTable.objects().first().run_sync()

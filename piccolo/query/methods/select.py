@@ -161,6 +161,7 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
         "output_delegate",
         "callback_delegate",
         "where_delegate",
+        "having_delegate",
         "lock_rows_delegate",
     )
 
@@ -186,6 +187,7 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
         self.output_delegate = OutputDelegate()
         self.callback_delegate = CallbackDelegate()
         self.where_delegate = WhereDelegate()
+        self.having_delegate = WhereDelegate()
         self.lock_rows_delegate = LockRowsDelegate()
 
         self.columns(*columns_list)
@@ -477,6 +479,10 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
         self.where_delegate.where(*where)
         return self
 
+    def having(self: Self, *where: Union[Combinable, QueryString]) -> Self:
+        self.having_delegate.where(*where)
+        return self
+
     async def batch(
         self,
         batch_size: Optional[int] = None,
@@ -569,13 +575,18 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
 
         select_joins = self._get_joins(self.columns_delegate.selected_columns)
         where_joins = self._get_joins(self.where_delegate.get_where_columns())
+        having_joins = self._get_joins(
+            self.having_delegate.get_where_columns()
+        )
         order_by_joins = self._get_joins(
             self.order_by_delegate.get_order_by_columns()
         )
 
         # Combine all joins, and remove duplicates
         joins: list[str] = list(
-            OrderedDict.fromkeys(select_joins + where_joins + order_by_joins)
+            OrderedDict.fromkeys(
+                select_joins + where_joins + having_joins + order_by_joins
+            )
         )
 
         #######################################################################
@@ -626,6 +637,10 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
         if self.group_by_delegate._group_by:
             query += "{}"
             args.append(self.group_by_delegate._group_by.querystring)
+
+        if self.having_delegate._where:
+            query += " HAVING {}"
+            args.append(self.having_delegate._where.querystring)
 
         if self.order_by_delegate._order_by.order_by_items:
             query += "{}"
