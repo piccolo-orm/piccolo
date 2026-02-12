@@ -3,7 +3,7 @@ from __future__ import annotations
 import contextvars
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Mapping, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, Mapping, Optional, Union
 
 from typing_extensions import Self
 
@@ -352,6 +352,7 @@ class PostgresEngine(Engine[PostgresTransaction]):
         "config",
         "extensions",
         "extra_nodes",
+        "polyfills",
         "pool",
     )
 
@@ -362,12 +363,14 @@ class PostgresEngine(Engine[PostgresTransaction]):
         log_queries: bool = False,
         log_responses: bool = False,
         extra_nodes: Optional[Mapping[str, PostgresEngine]] = None,
+        polyfills: list[Literal["uuidv7"]] = [],
     ) -> None:
         if extra_nodes is None:
             extra_nodes = {}
 
         self.config = config
         self.extensions = extensions
+        self.polyfills = polyfills
         self.log_queries = log_queries
         self.log_responses = log_responses
         self.extra_nodes = extra_nodes
@@ -380,7 +383,7 @@ class PostgresEngine(Engine[PostgresTransaction]):
             engine_type="postgres",
             log_queries=log_queries,
             log_responses=log_responses,
-            min_version_number=10,
+            min_version_number=13,
         )
 
     @staticmethod
@@ -433,6 +436,11 @@ class PostgresEngine(Engine[PostgresTransaction]):
                     f'`CREATE EXTENSION "{extension}";`',
                     level=Level.medium,
                 )
+
+        if "uuidv7" in self.polyfills:
+            from piccolo.utils.uuid import UUID7_DB_POLYFILL
+
+            await self._run_in_new_connection(UUID7_DB_POLYFILL)
 
     ###########################################################################
     # These typos existed in the codebase for a while, so leaving these proxy
