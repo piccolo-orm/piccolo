@@ -5,6 +5,7 @@ except ImportError:
     from ._uuid_backport import uuid7
 
 
+# https://github.com/dverite/postgres-uuidv7-sql/blob/396a44433e6e0eb63b1d9d1517e9098256d97351/sql/uuidv7-sql--1.0.sql#L6-L19
 UUID7_DB_POLYFILL = """
     CREATE OR REPLACE FUNCTION uuidv7(
         timestamptz DEFAULT clock_timestamp()
