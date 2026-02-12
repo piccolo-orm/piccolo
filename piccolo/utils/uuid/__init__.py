@@ -1,3 +1,5 @@
+from typing import Literal
+
 try:
     from uuid import uuid7  # type: ignore
 except ImportError:
@@ -5,7 +7,10 @@ except ImportError:
     from ._uuid_backport import uuid7
 
 
-UUID7_DB_POLYFILL = """
+def get_uuid7_db_polyfill(engine_type: Literal["postgres", "cockroach"]):
+    parallel_safe = engine_type == "postgres"
+
+    return f"""
     CREATE OR REPLACE FUNCTION uuidv7(
         timestamptz DEFAULT clock_timestamp()
     ) RETURNS uuid
@@ -21,8 +26,8 @@ UUID7_DB_POLYFILL = """
         from 1 for 6),
         52, 1),
         53, 1), 'hex')::uuid;
-    $$ LANGUAGE sql volatile parallel safe;
+    $$ LANGUAGE sql volatile {'parallel safe' if parallel_safe else ''};
     """
 
 
-__all__ = ("uuid7", "UUID7_DB_POLYFILL")
+__all__ = ("uuid7", "get_uuid7_db_polyfill")
