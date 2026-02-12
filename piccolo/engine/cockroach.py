@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Literal, Optional, cast
+from typing import Any, Optional, cast
 
 from .postgres import Atomic, PostgresEngine, PostgresTransaction
 
@@ -67,7 +67,6 @@ class CockroachEngine(PostgresEngine):
         log_queries: bool = False,
         log_responses: bool = False,
         extra_nodes: Optional[dict[str, CockroachEngine]] = None,
-        polyfills: list[Literal["uuidv7"]] = ["uuidv7"],
     ) -> None:
         super().__init__(
             config=config,
@@ -75,7 +74,6 @@ class CockroachEngine(PostgresEngine):
             log_queries=log_queries,
             log_responses=log_responses,
             extra_nodes=extra_nodes,
-            polyfills=polyfills,
         )
         self.engine_type = "cockroach"
         self.min_version_number = 0

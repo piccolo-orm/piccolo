@@ -3,8 +3,10 @@ UUID v7 support
 
 With Postgres 18 and above, UUID v7 is natively supported.
 
-For this to work in older versions of Postgres, or CockroachDB, a custom
-function has to be registered in the database.
+For this to work in older versions of Postgres a function has to be registered
+in the database.
+
+.. note:: CockroachDB does not currently support UUID v7.
 
 You can find many such scripts online. Here's
 `one such example <https://github.com/dverite/postgres-uuidv7-sql/blob/396a44433e6e0eb63b1d9d1517e9098256d97351/sql/uuidv7-sql--1.0.sql#L6-L19>`_,

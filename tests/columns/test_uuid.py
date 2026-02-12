@@ -4,7 +4,7 @@ from piccolo.columns.column_types import UUID
 from piccolo.columns.defaults.uuid import UUID7
 from piccolo.table import Table
 from piccolo.testing.test_case import AsyncTableTest
-from tests.base import postgres_only
+from tests.base import engines_only
 
 
 class UUIDTable(Table):
@@ -25,7 +25,7 @@ class UUID7Table(Table):
     uuid_7 = UUID(default=UUID7())
 
 
-@postgres_only
+@engines_only("postgres", "sqlite")
 class TestUUID7(AsyncTableTest):
     tables = [UUID7Table]
 

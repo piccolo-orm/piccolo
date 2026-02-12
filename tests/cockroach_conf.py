@@ -11,7 +11,6 @@ DB = CockroachEngine(
         "password": os.environ.get("PG_PASSWORD", ""),
         "database": os.environ.get("PG_DATABASE", "piccolo"),
     },
-    polyfills=["uuidv7"],
 )
 
 

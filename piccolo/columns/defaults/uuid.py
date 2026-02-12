@@ -51,8 +51,8 @@ class UUID7(Default):
         """
         Supported in Postgres 18 and above.
 
-        For other versions. a custom function has to be loaded into the
-        database.
+        For older versions. a custom function has to be loaded into the
+        database (see ``PostgresEngine.polyfills``).
 
         """
         return "uuidv7()"
@@ -60,11 +60,9 @@ class UUID7(Default):
     @property
     def cockroach(self):
         """
-        Unfortunately CockroachDB doesn't current support this, so a custom
-        function has to be loaded into the database.
-
+        Unfortunately CockroachDB doesn't current support this.
         """
-        return self.postgres
+        raise NotImplementedError()
 
     @property
     def sqlite(self):

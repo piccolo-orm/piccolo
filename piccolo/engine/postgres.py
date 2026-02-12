@@ -438,11 +438,9 @@ class PostgresEngine(Engine[PostgresTransaction]):
                 )
 
         if "uuidv7" in self.polyfills:
-            from piccolo.utils.uuid import get_uuid7_db_polyfill
+            from piccolo.utils.uuid import UUID7_DB_POLYFILL
 
-            await self._run_in_new_connection(
-                get_uuid7_db_polyfill(engine_type=self.engine_type)
-            )
+            await self._run_in_new_connection(UUID7_DB_POLYFILL)
 
     ###########################################################################
     # These typos existed in the codebase for a while, so leaving these proxy
