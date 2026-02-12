@@ -27,3 +27,6 @@ copied below for convenience:
         52, 1),
         53, 1), 'hex')::uuid;
     $$ LANGUAGE sql volatile parallel safe;
+
+Simply paste this into ``psql``, or any other means of executing SQL on your
+database.
