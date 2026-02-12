@@ -14,3 +14,4 @@ help you solve common problems:
     ./avoiding_circular_imports
     ./moving_table_between_apps
     ./uuid_columns_in_piccolo_1.31.0
+    ./uuid_v7_support.rst
