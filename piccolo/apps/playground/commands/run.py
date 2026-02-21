@@ -25,6 +25,7 @@ from piccolo.columns import (
     Serial,
     Text,
     Timestamp,
+    Timestamptz,
     Varchar,
 )
 from piccolo.columns.readable import Readable
@@ -49,7 +50,7 @@ class Manager(Table):
 class Band(Table):
     id: Serial
     name = Varchar(length=50)
-    manager = ForeignKey(references=Manager, null=True, db_column_name='manager_id')
+    manager = ForeignKey(references=Manager, null=True)
     popularity = Integer()
     genres = M2M(LazyTableReference("GenreToBand", module_path=__name__))
 
@@ -184,6 +185,17 @@ class GenreToBand(Table):
     reason = Text(null=True, default=None)
 
 
+class Signing(Table):
+    """
+    Useful for testing ``db_column_name``.
+    """
+
+    id: Serial
+    address = Text()
+    with_ = ForeignKey(Band, db_column_name="with")
+    starts = Timestamptz()
+
+
 TABLES = (
     Manager,
     Band,
@@ -196,6 +208,7 @@ TABLES = (
     Album,
     Genre,
     GenreToBand,
+    Signing,
 )
 
 
@@ -332,6 +345,19 @@ def populate():
         GenreToBand(band=rustaceans.id, genre=genres[2]["id"]),
         GenreToBand(band=c_sharps.id, genre=genres[0]["id"]),
         GenreToBand(band=c_sharps.id, genre=genres[1]["id"]),
+    ).run_sync()
+
+    Signing.insert(
+        Signing(
+            with_=pythonistas,
+            address="Awesome Music Store, London",
+            starts=datetime.datetime(2026, 12, 20, 10),
+        ),
+        Signing(
+            with_=pythonistas,
+            address="Awesome Music Store, Liverpool",
+            starts=datetime.datetime(2026, 11, 25, 12),
+        ),
     ).run_sync()
 
 
