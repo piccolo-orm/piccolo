@@ -49,7 +49,7 @@ class Manager(Table):
 class Band(Table):
     id: Serial
     name = Varchar(length=50)
-    manager = ForeignKey(references=Manager, null=True)
+    manager = ForeignKey(references=Manager, null=True, db_column_name='manager_id')
     popularity = Integer()
     genres = M2M(LazyTableReference("GenreToBand", module_path=__name__))
 
