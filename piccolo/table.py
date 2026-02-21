@@ -149,18 +149,38 @@ class TableMeta:
             raise ValueError("The engine can't be found")
         self.db = engine
 
-    def get_column_by_name(self, name: str) -> Column:
+    def get_column_by_name(
+        self,
+        name: str,
+        match_db_column_name: bool = False,
+    ) -> Column:
         """
         Returns a column which matches the given name. It will try and follow
         foreign keys too, for example if the name is 'foo.bar', where foo is
         a foreign key, and bar is a column on the referenced table.
+
+        :param match_db_column_name:
+            If ``True``, we also check the column's ``db_column_name`` for a
+            match.
+
         """
         components = name.split(".")
         column_name = components[0]
-        column = [i for i in self.columns if i._meta.name == column_name]
-        if len(column) != 1:
+        column_object = next(
+            (
+                i
+                for i in self.columns
+                if (i._meta.name == column_name)
+                or (
+                    i._meta.db_column_name == column_name
+                    if match_db_column_name
+                    else False
+                )
+            ),
+            None,
+        )
+        if column_object is None:
             raise ValueError(f"No matching column found with name == {name}")
-        column_object = column[0]
 
         if len(components) > 1:
             for reference_name in components[1:]:
