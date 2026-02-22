@@ -186,10 +186,6 @@ class GenreToBand(Table):
 
 
 class Signing(Table):
-    """
-    Useful for testing ``db_column_name``.
-    """
-
     id: Serial
     address = Text()
     with_ = ForeignKey(Band, db_column_name="with")
