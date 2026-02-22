@@ -1,4 +1,4 @@
-import typing as t
+from typing import cast
 from unittest import TestCase
 from unittest.mock import MagicMock
 
@@ -19,7 +19,7 @@ class TestExtraNodes(TestCase):
         test_engine = engine_finder()
         assert test_engine is not None
 
-        test_engine = t.cast(PostgresEngine, test_engine)
+        test_engine = cast(PostgresEngine, test_engine)
 
         EXTRA_NODE = MagicMock(spec=PostgresEngine(config=test_engine.config))
         EXTRA_NODE.run_querystring = AsyncMock(return_value=[])

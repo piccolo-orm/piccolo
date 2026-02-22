@@ -1,13 +1,13 @@
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
-from piccolo.columns import Secret
 from piccolo.columns.column_types import (
     JSON,
     JSONB,
     Array,
     Email,
     ForeignKey,
+    Secret,
     Varchar,
 )
 from piccolo.table import TABLENAME_WARNING, Table
@@ -99,14 +99,18 @@ class TestMetaClass(TestCase):
 
     def test_secret_columns(self):
         """
-        Make sure TableMeta.secret_columns are setup correctly.
+        Make sure TableMeta.secret_columns are setup correctly with the
+        ``secret=True`` argument and ``Secret`` column type.
         """
 
         class Classified(Table):
             top_secret = Secret()
+            confidential = Varchar(secret=True)
+            public = Varchar()
 
         self.assertEqual(
-            Classified._meta.secret_columns, [Classified.top_secret]
+            Classified._meta.secret_columns,
+            [Classified.top_secret, Classified.confidential],
         )
 
     def test_json_columns(self):

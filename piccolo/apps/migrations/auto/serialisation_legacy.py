@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import datetime
-import typing as t
+from typing import Any
 
 from piccolo.columns.column_types import OnDelete, OnUpdate
 from piccolo.columns.defaults.timestamp import TimestampNow
 from piccolo.table import create_table_class
 
 
-def deserialise_legacy_params(name: str, value: str) -> t.Any:
+def deserialise_legacy_params(name: str, value: str) -> Any:
     """
     Earlier versions of Piccolo serialised parameters differently. This is
     here purely for backwards compatibility.

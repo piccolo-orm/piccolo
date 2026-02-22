@@ -1,3 +1,5 @@
+from piccolo.columns.column_types import ForeignKey
+from piccolo.testing.test_case import AsyncTableTest
 from tests.base import DBTestCase, engines_only, sqlite_only
 from tests.example_apps.music.tables import Band, Manager
 
@@ -268,3 +270,32 @@ class TestGetOrCreate(DBTestCase):
         self.assertIsInstance(band.manager, Manager)
         self.assertEqual(band.name, "New Band 2")
         self.assertEqual(band.manager.name, "Guido")
+
+
+class BandNotNull(Band, tablename="band"):
+    manager = ForeignKey(Manager, null=False)
+
+
+class TestGetOrCreateNotNull(AsyncTableTest):
+
+    tables = [BandNotNull, Manager]
+
+    async def test_not_null(self):
+        """
+        There was a bug where `get_or_create` would fail for columns with
+        `default=None` and `null=False`, even if the value for those columns
+        was specified in the where clause.
+
+        https://github.com/piccolo-orm/piccolo/issues/1152
+
+        """
+
+        manager = Manager({Manager.name: "Test"})
+        await manager.save()
+
+        self.assertIsInstance(
+            await BandNotNull.objects().get_or_create(
+                BandNotNull.manager == manager
+            ),
+            BandNotNull,
+        )

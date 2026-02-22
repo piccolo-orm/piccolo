@@ -1,4 +1,11 @@
 from .aggregate import Avg, Count, Max, Min, Sum
+from .array import (
+    ArrayAppend,
+    ArrayCat,
+    ArrayPrepend,
+    ArrayRemove,
+    ArrayReplace,
+)
 from .datetime import Day, Extract, Hour, Month, Second, Strftime, Year
 from .math import Abs, Ceil, Floor, Round
 from .string import Concat, Length, Lower, Ltrim, Reverse, Rtrim, Upper
@@ -30,4 +37,9 @@ __all__ = (
     "Sum",
     "Upper",
     "Year",
+    "ArrayAppend",
+    "ArrayCat",
+    "ArrayPrepend",
+    "ArrayRemove",
+    "ArrayReplace",
 )

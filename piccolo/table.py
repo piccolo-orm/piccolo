@@ -3,9 +3,11 @@ from __future__ import annotations
 import inspect
 import itertools
 import types
-import typing as t
 import warnings
+from collections.abc import Sequence
 from dataclasses import dataclass, field
+from graphlib import TopologicalSorter
+from typing import TYPE_CHECKING, Any, Optional, Union, cast, overload
 
 from piccolo.columns import Column
 from piccolo.columns.column_types import (
@@ -15,7 +17,6 @@ from piccolo.columns.column_types import (
     Email,
     ForeignKey,
     ReferencedTable,
-    Secret,
     Serial,
 )
 from piccolo.columns.defaults.base import Default
@@ -50,12 +51,11 @@ from piccolo.query.methods.objects import GetRelated, UpdateSelf
 from piccolo.query.methods.refresh import Refresh
 from piccolo.querystring import QueryString
 from piccolo.utils import _camel_to_snake
-from piccolo.utils.graphlib import TopologicalSorter
 from piccolo.utils.sql_values import convert_to_sql_value
 from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import colored_warning
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.querystring import Selectable
 
 PROTECTED_TABLENAMES = ("user",)
@@ -65,7 +65,7 @@ TABLENAME_WARNING = (
 )
 
 
-TABLE_REGISTRY: t.List[t.Type[Table]] = []
+TABLE_REGISTRY: list[type[Table]] = []
 
 
 @dataclass
@@ -75,26 +75,26 @@ class TableMeta:
     """
 
     tablename: str = ""
-    columns: t.List[Column] = field(default_factory=list)
-    default_columns: t.List[Column] = field(default_factory=list)
-    non_default_columns: t.List[Column] = field(default_factory=list)
-    array_columns: t.List[Array] = field(default_factory=list)
-    email_columns: t.List[Email] = field(default_factory=list)
-    foreign_key_columns: t.List[ForeignKey] = field(default_factory=list)
+    columns: list[Column] = field(default_factory=list)
+    default_columns: list[Column] = field(default_factory=list)
+    non_default_columns: list[Column] = field(default_factory=list)
+    array_columns: list[Array] = field(default_factory=list)
+    email_columns: list[Email] = field(default_factory=list)
+    foreign_key_columns: list[ForeignKey] = field(default_factory=list)
     primary_key: Column = field(default_factory=Column)
-    json_columns: t.List[t.Union[JSON, JSONB]] = field(default_factory=list)
-    secret_columns: t.List[Secret] = field(default_factory=list)
-    auto_update_columns: t.List[Column] = field(default_factory=list)
-    tags: t.List[str] = field(default_factory=list)
-    help_text: t.Optional[str] = None
-    _db: t.Optional[Engine] = None
-    m2m_relationships: t.List[M2M] = field(default_factory=list)
-    schema: t.Optional[str] = None
+    json_columns: list[Union[JSON, JSONB]] = field(default_factory=list)
+    secret_columns: list[Column] = field(default_factory=list)
+    auto_update_columns: list[Column] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
+    help_text: Optional[str] = None
+    _db: Optional[Engine] = None
+    m2m_relationships: list[M2M] = field(default_factory=list)
+    schema: Optional[str] = None
 
     # Records reverse foreign key relationships - i.e. when the current table
     # is the target of a foreign key. Used by external libraries such as
     # Piccolo API.
-    _foreign_key_references: t.List[ForeignKey] = field(default_factory=list)
+    _foreign_key_references: list[ForeignKey] = field(default_factory=list)
 
     def get_formatted_tablename(
         self, include_schema: bool = True, quoted: bool = True
@@ -120,8 +120,8 @@ class TableMeta:
             return ".".join(components)
 
     @property
-    def foreign_key_references(self) -> t.List[ForeignKey]:
-        foreign_keys: t.List[ForeignKey] = list(self._foreign_key_references)
+    def foreign_key_references(self) -> list[ForeignKey]:
+        foreign_keys: list[ForeignKey] = list(self._foreign_key_references)
         lazy_column_references = LAZY_COLUMN_REFERENCES.for_tablename(
             tablename=self.tablename
         )
@@ -149,18 +149,38 @@ class TableMeta:
             raise ValueError("The engine can't be found")
         self.db = engine
 
-    def get_column_by_name(self, name: str) -> Column:
+    def get_column_by_name(
+        self,
+        name: str,
+        match_db_column_name: bool = False,
+    ) -> Column:
         """
         Returns a column which matches the given name. It will try and follow
         foreign keys too, for example if the name is 'foo.bar', where foo is
         a foreign key, and bar is a column on the referenced table.
+
+        :param match_db_column_name:
+            If ``True``, we also check the column's ``db_column_name`` for a
+            match.
+
         """
         components = name.split(".")
         column_name = components[0]
-        column = [i for i in self.columns if i._meta.name == column_name]
-        if len(column) != 1:
+        column_object = next(
+            (
+                i
+                for i in self.columns
+                if (i._meta.name == column_name)
+                or (
+                    i._meta.db_column_name == column_name
+                    if match_db_column_name
+                    else False
+                )
+            ),
+            None,
+        )
+        if column_object is None:
             raise ValueError(f"No matching column found with name == {name}")
-        column_object = column[0]
 
         if len(components) > 1:
             for reference_name in components[1:]:
@@ -173,11 +193,11 @@ class TableMeta:
 
         return column_object
 
-    def get_auto_update_values(self) -> t.Dict[Column, t.Any]:
+    def get_auto_update_values(self) -> dict[Column, Any]:
         """
         If columns have ``auto_update`` defined, then we retrieve these values.
         """
-        output: t.Dict[Column, t.Any] = {}
+        output: dict[Column, Any] = {}
         for column in self.auto_update_columns:
             value = column._meta.auto_update
             if callable(value):
@@ -203,7 +223,7 @@ class TableMetaclass(type):
 
             # `SessionsBase` is a `Table` subclass:
             def session_auth(
-                session_table: t.Type[SessionsBase] = SessionsBase
+                session_table: type[SessionsBase] = SessionsBase
             ):
                 ...
 
@@ -227,11 +247,11 @@ class Table(metaclass=TableMetaclass):
 
     def __init_subclass__(
         cls,
-        tablename: t.Optional[str] = None,
-        db: t.Optional[Engine] = None,
-        tags: t.Optional[t.List[str]] = None,
-        help_text: t.Optional[str] = None,
-        schema: t.Optional[str] = None,
+        tablename: Optional[str] = None,
+        db: Optional[Engine] = None,
+        tags: Optional[list[str]] = None,
+        help_text: Optional[str] = None,
+        schema: Optional[str] = None,
     ):  # sourcery no-metrics
         """
         Automatically populate the _meta, which includes the tablename, and
@@ -268,17 +288,17 @@ class Table(metaclass=TableMetaclass):
         if tablename in PROTECTED_TABLENAMES:
             warnings.warn(TABLENAME_WARNING.format(tablename=tablename))
 
-        columns: t.List[Column] = []
-        default_columns: t.List[Column] = []
-        non_default_columns: t.List[Column] = []
-        array_columns: t.List[Array] = []
-        foreign_key_columns: t.List[ForeignKey] = []
-        secret_columns: t.List[Secret] = []
-        json_columns: t.List[t.Union[JSON, JSONB]] = []
-        email_columns: t.List[Email] = []
-        auto_update_columns: t.List[Column] = []
-        primary_key: t.Optional[Column] = None
-        m2m_relationships: t.List[M2M] = []
+        columns: list[Column] = []
+        default_columns: list[Column] = []
+        non_default_columns: list[Column] = []
+        array_columns: list[Array] = []
+        foreign_key_columns: list[ForeignKey] = []
+        secret_columns: list[Column] = []
+        json_columns: list[Union[JSON, JSONB]] = []
+        email_columns: list[Email] = []
+        auto_update_columns: list[Column] = []
+        primary_key: Optional[Column] = None
+        m2m_relationships: list[M2M] = []
 
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]
@@ -314,14 +334,14 @@ class Table(metaclass=TableMetaclass):
                 if isinstance(column, Email):
                     email_columns.append(column)
 
-                if isinstance(column, Secret):
-                    secret_columns.append(column)
-
                 if isinstance(column, ForeignKey):
                     foreign_key_columns.append(column)
 
                 if isinstance(column, (JSON, JSONB)):
                     json_columns.append(column)
+
+                if column._meta.secret:
+                    secret_columns.append(column)
 
                 if column._meta.auto_update is not ...:
                     auto_update_columns.append(column)
@@ -372,7 +392,7 @@ class Table(metaclass=TableMetaclass):
 
     def __init__(
         self,
-        _data: t.Optional[t.Dict[Column, t.Any]] = None,
+        _data: Optional[dict[Column, Any]] = None,
         _ignore_missing: bool = False,
         _exists_in_db: bool = False,
         **kwargs,
@@ -412,7 +432,7 @@ class Table(metaclass=TableMetaclass):
 
         # This is used by get_or_create to indicate to the user whether it
         # was an existing row or not.
-        self._was_created: t.Optional[bool] = None
+        self._was_created: Optional[bool] = None
 
         for column in self._meta.columns:
             value = _data.get(column, ...)
@@ -423,7 +443,7 @@ class Table(metaclass=TableMetaclass):
 
                 if value is ...:
                     value = kwargs.pop(
-                        t.cast(str, column._meta.db_column_name), ...
+                        cast(str, column._meta.db_column_name), ...
                     )
 
             if value is ...:
@@ -456,7 +476,7 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def from_dict(
-        cls: t.Type[TableInstance], data: t.Dict[str, t.Any]
+        cls: type[TableInstance], data: dict[str, Any]
     ) -> TableInstance:
         """
         Used when loading fixtures. It can be overriden by subclasses in case
@@ -468,8 +488,8 @@ class Table(metaclass=TableMetaclass):
     ###########################################################################
 
     def save(
-        self, columns: t.Optional[t.Sequence[t.Union[Column, str]]] = None
-    ) -> t.Union[Insert, Update]:
+        self, columns: Optional[Sequence[Union[Column, str]]] = None
+    ) -> Union[Insert, Update]:
         """
         A proxy to an insert or update query.
 
@@ -504,7 +524,7 @@ class Table(metaclass=TableMetaclass):
                 for i in columns
             ]
 
-        values: t.Dict[Column, t.Any] = {
+        values: dict[Column, Any] = {
             i: getattr(self, i._meta.name, None) for i in column_instances
         }
 
@@ -525,9 +545,7 @@ class Table(metaclass=TableMetaclass):
             == getattr(self, self._meta.primary_key._meta.name)
         )
 
-    def update_self(
-        self, values: t.Dict[t.Union[Column, str], t.Any]
-    ) -> UpdateSelf:
+    def update_self(self, values: dict[Union[Column, str], Any]) -> UpdateSelf:
         """
         This allows the user to update a single object - useful when the values
         are derived from the database in some way.
@@ -573,13 +591,15 @@ class Table(metaclass=TableMetaclass):
 
         setattr(self, self._meta.primary_key._meta.name, None)
 
+        self._exists_in_db = False
+
         return self.__class__.delete().where(
             self.__class__._meta.primary_key == primary_key_value
         )
 
     def refresh(
         self,
-        columns: t.Optional[t.Sequence[Column]] = None,
+        columns: Optional[Sequence[Column]] = None,
         load_json: bool = False,
     ) -> Refresh:
         """
@@ -609,16 +629,16 @@ class Table(metaclass=TableMetaclass):
         """
         return Refresh(instance=self, columns=columns, load_json=load_json)
 
-    @t.overload
+    @overload
     def get_related(
         self, foreign_key: ForeignKey[ReferencedTable]
     ) -> GetRelated[ReferencedTable]: ...
 
-    @t.overload
+    @overload
     def get_related(self, foreign_key: str) -> GetRelated[Table]: ...
 
     def get_related(
-        self, foreign_key: t.Union[str, ForeignKey[ReferencedTable]]
+        self, foreign_key: Union[str, ForeignKey[ReferencedTable]]
     ) -> GetRelated[ReferencedTable]:
         """
         Used to fetch a ``Table`` instance, for the target of a foreign key.
@@ -664,7 +684,7 @@ class Table(metaclass=TableMetaclass):
         self,
         *rows: Table,
         m2m: M2M,
-        extra_column_values: t.Dict[t.Union[Column, str], t.Any] = {},
+        extra_column_values: dict[Union[Column, str], Any] = {},
     ) -> M2MAddRelated:
         """
         Save the row if it doesn't already exist in the database, and insert
@@ -731,7 +751,7 @@ class Table(metaclass=TableMetaclass):
             m2m=m2m,
         )
 
-    def to_dict(self, *columns: Column) -> t.Dict[str, t.Any]:
+    def to_dict(self, *columns: Column) -> dict[str, Any]:
         """
         A convenience method which returns a dictionary, mapping column names
         to values for this table instance.
@@ -783,7 +803,7 @@ class Table(metaclass=TableMetaclass):
             )
         return output
 
-    def __setitem__(self, key: str, value: t.Any):
+    def __setitem__(self, key: str, value: Any):
         setattr(self, key, value)
 
     def __getitem__(self, key: str):
@@ -851,13 +871,79 @@ class Table(metaclass=TableMetaclass):
         )
         return f"<{self.__class__.__name__}: {pk}>"
 
+    def __eq__(self, other: Any) -> bool:
+        """
+        Lets us check if two ``Table`` instances represent the same row in the
+        database, based on their primary key value::
+
+            band_1 = await Band.objects().where(
+                Band.name == "Pythonistas"
+            ).first()
+
+            band_2 = await Band.objects().where(
+                Band.name == "Pythonistas"
+            ).first()
+
+            band_3 = await Band.objects().where(
+                Band.name == "Rustaceans"
+            ).first()
+
+            >>> band_1 == band_2
+            True
+
+            >>> band_1 == band_3
+            False
+
+        """
+        if not isinstance(other, Table):
+            # This is the correct way to tell Python that this operation
+            # isn't supported:
+            # https://docs.python.org/3/library/constants.html#NotImplemented
+            return NotImplemented
+
+        # Make sure we're comparing the same table.
+        # There are several ways we could do this (like comparing tablename),
+        # but this should be OK.
+        if not isinstance(other, self.__class__):
+            return False
+
+        pk = self._meta.primary_key
+
+        pk_value = getattr(
+            self,
+            pk._meta.name,
+        )
+
+        other_pk_value = getattr(
+            other,
+            pk._meta.name,
+        )
+
+        # Make sure the primary key values are of the correct type.
+        # We need this for `Serial` columns, which have a `QueryString`
+        # value until saved in the database. We don't want to use `==` on
+        # two QueryString values, because QueryString has a custom `__eq__`
+        # method which doesn't return a boolean.
+        if isinstance(
+            pk_value,
+            pk.value_type,
+        ) and isinstance(
+            other_pk_value,
+            pk.value_type,
+        ):
+            return pk_value == other_pk_value
+        else:
+            # As a fallback, even if it hasn't been saved in the database,
+            # an object should still be equal to itself.
+            return other is self
+
     ###########################################################################
     # Classmethods
 
     @classmethod
     def all_related(
-        cls, exclude: t.Optional[t.List[t.Union[str, ForeignKey]]] = None
-    ) -> t.List[ForeignKey]:
+        cls, exclude: Optional[list[Union[str, ForeignKey]]] = None
+    ) -> list[ForeignKey]:
         """
         Used in conjunction with ``objects`` queries. Just as we can use
         ``all_related`` on a ``ForeignKey``, you can also use it for the table
@@ -906,8 +992,8 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def all_columns(
-        cls, exclude: t.Optional[t.Sequence[t.Union[str, Column]]] = None
-    ) -> t.List[Column]:
+        cls, exclude: Optional[Sequence[Union[str, Column]]] = None
+    ) -> list[Column]:
         """
         Used in conjunction with ``select`` queries. Just as we can use
         ``all_columns`` to retrieve all of the columns from a related table,
@@ -973,7 +1059,7 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def insert(
-        cls: t.Type[TableInstance], *rows: TableInstance
+        cls: type[TableInstance], *rows: TableInstance
     ) -> Insert[TableInstance]:
         """
         Insert rows into the database.
@@ -991,7 +1077,7 @@ class Table(metaclass=TableMetaclass):
         return query
 
     @classmethod
-    def raw(cls, sql: str, *args: t.Any) -> Raw:
+    def raw(cls, sql: str, *args: Any) -> Raw:
         """
         Execute raw SQL queries on the underlying engine - use with caution!
 
@@ -1010,8 +1096,8 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def _process_column_args(
-        cls, *columns: t.Union[Selectable, str]
-    ) -> t.Sequence[Selectable]:
+        cls, *columns: Union[Selectable, str]
+    ) -> Sequence[Selectable]:
         """
         Users can specify some column arguments as either Column instances, or
         as strings representing the column name, for convenience.
@@ -1028,7 +1114,7 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def select(
-        cls, *columns: t.Union[Selectable, str], exclude_secrets=False
+        cls, *columns: Union[Selectable, str], exclude_secrets=False
     ) -> Select:
         """
         Get data in the form of a list of dictionaries, with each dictionary
@@ -1107,8 +1193,8 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def objects(
-        cls: t.Type[TableInstance],
-        *prefetch: t.Union[ForeignKey, t.List[ForeignKey]],
+        cls: type[TableInstance],
+        *prefetch: Union[ForeignKey, list[ForeignKey]],
     ) -> Objects[TableInstance]:
         """
         Returns a list of table instances (each representing a row), which you
@@ -1149,8 +1235,8 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def count(
         cls,
-        column: t.Optional[Column] = None,
-        distinct: t.Optional[t.Sequence[Column]] = None,
+        column: Optional[Column] = None,
+        distinct: Optional[Sequence[Column]] = None,
     ) -> Count:
         """
         Count the number of matching rows::
@@ -1222,7 +1308,7 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def update(
         cls,
-        values: t.Optional[t.Dict[t.Union[Column, str], t.Any]] = None,
+        values: Optional[dict[Union[Column, str], Any]] = None,
         force: bool = False,
         use_auto_update: bool = True,
         **kwargs,
@@ -1286,7 +1372,7 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def create_index(
         cls,
-        columns: t.Union[t.List[Column], t.List[str]],
+        columns: Union[list[Column], list[str]],
         method: IndexMethod = IndexMethod.btree,
         if_not_exists: bool = False,
     ) -> CreateIndex:
@@ -1309,7 +1395,7 @@ class Table(metaclass=TableMetaclass):
     @classmethod
     def drop_index(
         cls,
-        columns: t.Union[t.List[Column], t.List[str]],
+        columns: Union[list[Column], list[str]],
         if_exists: bool = True,
     ) -> DropIndex:
         """
@@ -1326,7 +1412,7 @@ class Table(metaclass=TableMetaclass):
     ###########################################################################
 
     @classmethod
-    def _get_index_name(cls, column_names: t.List[str]) -> str:
+    def _get_index_name(cls, column_names: list[str]) -> str:
         """
         Generates an index name from the table name and column names.
         """
@@ -1336,42 +1422,91 @@ class Table(metaclass=TableMetaclass):
 
     @classmethod
     def _table_str(
-        cls, abbreviated=False, excluded_params: t.Optional[t.List[str]] = None
+        cls,
+        abbreviated: bool = False,
+        excluded_params: Optional[list[str]] = None,
     ):
         """
         Returns a basic string representation of the table and its columns.
         Used by the playground.
 
         :param abbreviated:
-            If True, a very high level representation is printed out.
+            If True, a very high level representation is printed out (it just
+            shows any non-default values).
         :param excluded_params:
             Lets us find a middle ground between outputting every kwarg, and
             the abbreviated version with very few kwargs. For example
             `['index_method']`, if we want to show all kwargs but index_method.
 
         """
+        from piccolo.apps.migrations.auto.serialisation import (
+            SerialisedEnumTypeDefinition,
+            serialise_params,
+        )
+
         if excluded_params is None:
             excluded_params = []
+
         spacer = "\n    "
         columns = []
+        extra_definitions = []
         for col in cls._meta.columns:
-            params: t.List[str] = []
+            base_column_defaults = {
+                key: value.default
+                for key, value in inspect.signature(Column).parameters.items()
+            }
+            column_defaults = {
+                key: value.default
+                for key, value in inspect.signature(
+                    col.__class__
+                ).parameters.items()
+            }
+            defaults = {**base_column_defaults, **column_defaults}
+
+            params = {}
             for key, value in col._meta.params.items():
                 if key in excluded_params:
                     continue
 
-                _value: str = ""
-                if inspect.isclass(value):
-                    _value = value.__name__
-                    params.append(f"{key}={_value}")
-                else:
-                    _value = repr(value)
-                    if not abbreviated:
-                        params.append(f"{key}={_value}")
-            params_string = ", ".join(params)
+                if abbreviated:
+                    # If the value is just the default one, don't include it.
+                    if defaults.get(key, ...) == value:
+                        continue
+
+                    # If db_column is the same as the column name then don't
+                    # include it - it does nothing.
+                    if key == "db_column_name" and value == col._meta.name:
+                        continue
+
+                params[key] = value
+
+            serialised_params = serialise_params(params, inline_enums=False)
+            params_string = ", ".join(
+                f"{key}={repr(value)}"
+                for key, value in serialised_params.params.items()
+            )
             columns.append(
                 f"{col._meta.name} = {col.__class__.__name__}({params_string})"
             )
+            extra_definitions.extend(
+                [
+                    i
+                    for i in serialised_params.extra_definitions
+                    if isinstance(i, SerialisedEnumTypeDefinition)
+                ]
+            )
+
+        for m2m_relationship in cls._meta.m2m_relationships:
+            joining_table_name = (
+                m2m_relationship._meta.resolved_joining_table.__name__
+            )
+            columns.append(
+                f"{m2m_relationship._meta.name} = M2M({joining_table_name})"
+            )
+
+        extra_definitions_string = spacer.join(
+            [repr(i) for i in extra_definitions]
+        )
         columns_string = spacer.join(columns)
         tablename = repr(cls._meta.tablename)
 
@@ -1383,17 +1518,19 @@ class Table(metaclass=TableMetaclass):
             else f"{parent_class_name}, tablename={tablename}"
         )
 
-        return (
-            f"class {cls.__name__}({class_args}):\n" f"    {columns_string}\n"
-        )
+        output = f"class {cls.__name__}({class_args}):\n"
+        if extra_definitions_string:
+            output += f"    {extra_definitions_string}\n"
+        output += f"    {columns_string}\n"
+        return output
 
 
 def create_table_class(
     class_name: str,
-    bases: t.Tuple[t.Type] = (Table,),
-    class_kwargs: t.Dict[str, t.Any] = {},
-    class_members: t.Dict[str, t.Any] = {},
-) -> t.Type[Table]:
+    bases: tuple[type] = (Table,),
+    class_kwargs: dict[str, Any] = {},
+    class_members: dict[str, Any] = {},
+) -> type[Table]:
     """
     Used to dynamically create ``Table``subclasses at runtime. Most users
     will not require this. It's mostly used internally for Piccolo's
@@ -1409,8 +1546,8 @@ def create_table_class(
         For example, `{'my_column': Varchar()}`.
 
     """
-    return t.cast(
-        t.Type[Table],
+    return cast(
+        type[Table],
         types.new_class(
             name=class_name,
             bases=bases,
@@ -1425,7 +1562,7 @@ def create_table_class(
 
 
 async def create_db_tables(
-    *tables: t.Type[Table], if_not_exists: bool = False
+    *tables: type[Table], if_not_exists: bool = False
 ) -> None:
     """
     Creates the database table for each ``Table`` class passed in. The tables
@@ -1456,7 +1593,7 @@ async def create_db_tables(
 
 
 def create_db_tables_sync(
-    *tables: t.Type[Table], if_not_exists: bool = False
+    *tables: type[Table], if_not_exists: bool = False
 ) -> None:
     """
     A sync wrapper around :func:`create_db_tables`.
@@ -1464,7 +1601,7 @@ def create_db_tables_sync(
     run_sync(create_db_tables(*tables, if_not_exists=if_not_exists))
 
 
-def create_tables(*tables: t.Type[Table], if_not_exists: bool = False) -> None:
+def create_tables(*tables: type[Table], if_not_exists: bool = False) -> None:
     """
     This original implementation has been replaced, because it was synchronous,
     and felt at odds with the rest of the Piccolo codebase which is async
@@ -1483,7 +1620,7 @@ def create_tables(*tables: t.Type[Table], if_not_exists: bool = False) -> None:
     return create_db_tables_sync(*tables, if_not_exists=if_not_exists)
 
 
-async def drop_db_tables(*tables: t.Type[Table]) -> None:
+async def drop_db_tables(*tables: type[Table]) -> None:
     """
     Drops the database table for each ``Table`` class passed in. The tables
     are dropped in the correct order, based on their foreign keys.
@@ -1516,14 +1653,14 @@ async def drop_db_tables(*tables: t.Type[Table]) -> None:
     await atomic.run()
 
 
-def drop_db_tables_sync(*tables: t.Type[Table]) -> None:
+def drop_db_tables_sync(*tables: type[Table]) -> None:
     """
     A sync wrapper around :func:`drop_db_tables`.
     """
     run_sync(drop_db_tables(*tables))
 
 
-def drop_tables(*tables: t.Type[Table]) -> None:
+def drop_tables(*tables: type[Table]) -> None:
     """
     This original implementation has been replaced, because it was synchronous,
     and felt at odds with the rest of the Piccolo codebase which is async
@@ -1546,8 +1683,8 @@ def drop_tables(*tables: t.Type[Table]) -> None:
 
 
 def sort_table_classes(
-    table_classes: t.List[t.Type[Table]],
-) -> t.List[t.Type[Table]]:
+    table_classes: list[type[Table]],
+) -> list[type[Table]]:
     """
     Sort the table classes based on their foreign keys, so they can be created
     in the correct order.
@@ -1562,7 +1699,7 @@ def sort_table_classes(
     sorter = TopologicalSorter(graph)
     ordered_tablenames = tuple(sorter.static_order())
 
-    output: t.List[t.Type[Table]] = []
+    output: list[type[Table]] = []
     for tablename in ordered_tablenames:
         table_class = table_class_dict.get(tablename)
         if table_class is not None:
@@ -1572,10 +1709,10 @@ def sort_table_classes(
 
 
 def _get_graph(
-    table_classes: t.List[t.Type[Table]],
+    table_classes: list[type[Table]],
     iterations: int = 0,
     max_iterations: int = 5,
-) -> t.Dict[str, t.Set[str]]:
+) -> dict[str, set[str]]:
     """
     Analyses the tables based on their foreign keys, and returns a data
     structure like:
@@ -1588,13 +1725,13 @@ def _get_graph(
     to it via a foreign key.
 
     """
-    output: t.Dict[str, t.Set[str]] = {}
+    output: dict[str, set[str]] = {}
 
     if iterations >= max_iterations:
         return output
 
     for table_class in table_classes:
-        dependents: t.Set[str] = set()
+        dependents: set[str] = set()
         for fk in table_class._meta.foreign_key_columns:
             referenced_table = fk._foreign_key_meta.resolved_references
 

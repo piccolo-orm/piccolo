@@ -1,6 +1,16 @@
 from __future__ import annotations
 
-import typing as t
+from collections.abc import Callable, Generator, Sequence
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generic,
+    Literal,
+    Optional,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from piccolo.columns.column_types import ForeignKey, ReferencedTable
 from piccolo.columns.combination import And, Where
@@ -27,7 +37,7 @@ from piccolo.querystring import QueryString
 from piccolo.utils.dictionary import make_nested
 from piccolo.utils.sync import run_sync
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
     from piccolo.table import Table
 
@@ -36,14 +46,14 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 
 class GetOrCreate(
-    Proxy["Objects[TableInstance]", TableInstance], t.Generic[TableInstance]
+    Proxy["Objects[TableInstance]", TableInstance], Generic[TableInstance]
 ):
     def __init__(
         self,
         query: Objects[TableInstance],
-        table_class: t.Type[TableInstance],
+        table_class: type[TableInstance],
         where: Combinable,
-        defaults: t.Dict[Column, t.Any],
+        defaults: dict[Column, Any],
     ):
         self.query = query
         self.table_class = table_class
@@ -51,7 +61,7 @@ class GetOrCreate(
         self.defaults = defaults
 
     async def run(
-        self, node: t.Optional[str] = None, in_pool: bool = True
+        self, node: Optional[str] = None, in_pool: bool = True
     ) -> TableInstance:
         """
         :raises ValueError:
@@ -65,22 +75,20 @@ class GetOrCreate(
             instance._was_created = False
             return instance
 
-        instance = self.table_class(_data=self.defaults)
+        data = {**self.defaults}
 
         # If it's a complex `where`, there can be several column values to
         # extract e.g. (Band.name == 'Pythonistas') & (Band.popularity == 1000)
         if isinstance(self.where, Where):
-            setattr(
-                instance,
-                self.where.column._meta.name,  # type: ignore
-                self.where.value,  # type: ignore
-            )
+            data[self.where.column] = self.where.value
         elif isinstance(self.where, And):
             for column, value in self.where.get_column_values().items():
                 if len(column._meta.call_chain) == 0:
                     # Make sure we only set the value if the column belongs
                     # to this table.
-                    setattr(instance, column._meta.name, value)
+                    data[column] = value
+
+        instance = self.table_class(_data=data)
 
         await instance.save().run(node=node, in_pool=in_pool)
 
@@ -102,32 +110,32 @@ class GetOrCreate(
                 .run()
             )
 
-        instance = t.cast(TableInstance, instance)
+        instance = cast(TableInstance, instance)
         instance._was_created = True
         return instance
 
 
 class Get(
-    Proxy["First[TableInstance]", t.Optional[TableInstance]],
-    t.Generic[TableInstance],
+    Proxy["First[TableInstance]", Optional[TableInstance]],
+    Generic[TableInstance],
 ):
     pass
 
 
 class First(
-    Proxy["Objects[TableInstance]", t.Optional[TableInstance]],
-    t.Generic[TableInstance],
+    Proxy["Objects[TableInstance]", Optional[TableInstance]],
+    Generic[TableInstance],
 ):
     async def run(
-        self, node: t.Optional[str] = None, in_pool: bool = True
-    ) -> t.Optional[TableInstance]:
+        self, node: Optional[str] = None, in_pool: bool = True
+    ) -> Optional[TableInstance]:
         objects = await self.query.run(
             node=node, in_pool=in_pool, use_callbacks=False
         )
 
         results = objects[0] if objects else None
 
-        modified_response: t.Optional[TableInstance] = (
+        modified_response: Optional[TableInstance] = (
             await self.query.callback_delegate.invoke(
                 results=results, kind=CallbackType.success
             )
@@ -135,7 +143,7 @@ class First(
         return modified_response
 
 
-class Create(t.Generic[TableInstance]):
+class Create(Generic[TableInstance]):
     """
     This is provided as a simple convenience. Rather than running::
 
@@ -150,22 +158,22 @@ class Create(t.Generic[TableInstance]):
 
     def __init__(
         self,
-        table_class: t.Type[TableInstance],
-        columns: t.Dict[str, t.Any],
+        table_class: type[TableInstance],
+        columns: dict[str, Any],
     ):
         self.table_class = table_class
         self.columns = columns
 
     async def run(
         self,
-        node: t.Optional[str] = None,
+        node: Optional[str] = None,
         in_pool: bool = True,
     ) -> TableInstance:
         instance = self.table_class(**self.columns)
         await instance.save().run(node=node, in_pool=in_pool)
         return instance
 
-    def __await__(self) -> t.Generator[None, None, TableInstance]:
+    def __await__(self) -> Generator[None, None, TableInstance]:
         """
         If the user doesn't explicity call .run(), proxy to it as a
         convenience.
@@ -181,14 +189,14 @@ class UpdateSelf:
     def __init__(
         self,
         row: Table,
-        values: t.Dict[t.Union[Column, str], t.Any],
+        values: dict[Union[Column, str], Any],
     ):
         self.row = row
         self.values = values
 
     async def run(
         self,
-        node: t.Optional[str] = None,
+        node: Optional[str] = None,
         in_pool: bool = True,
     ) -> None:
         if not self.row._exists_in_db:
@@ -220,7 +228,7 @@ class UpdateSelf:
         for key, value in response[0].items():
             setattr(self.row, key, value)
 
-    def __await__(self) -> t.Generator[None, None, None]:
+    def __await__(self) -> Generator[None, None, None]:
         """
         If the user doesn't explicity call .run(), proxy to it as a
         convenience.
@@ -231,7 +239,7 @@ class UpdateSelf:
         return run_sync(self.run(*args, **kwargs))
 
 
-class GetRelated(t.Generic[ReferencedTable]):
+class GetRelated(Generic[ReferencedTable]):
 
     def __init__(self, row: Table, foreign_key: ForeignKey[ReferencedTable]):
         self.row = row
@@ -239,9 +247,9 @@ class GetRelated(t.Generic[ReferencedTable]):
 
     async def run(
         self,
-        node: t.Optional[str] = None,
+        node: Optional[str] = None,
         in_pool: bool = True,
-    ) -> t.Optional[ReferencedTable]:
+    ) -> Optional[ReferencedTable]:
         if not self.row._exists_in_db:
             raise ValueError("The object doesn't exist in the database.")
 
@@ -266,8 +274,8 @@ class GetRelated(t.Generic[ReferencedTable]):
         if data is None or not any(data.values()):
             return None
 
-        references = t.cast(
-            t.Type[ReferencedTable],
+        references = cast(
+            type[ReferencedTable],
             self.foreign_key._foreign_key_meta.resolved_references,
         )
 
@@ -277,14 +285,14 @@ class GetRelated(t.Generic[ReferencedTable]):
 
     def __await__(
         self,
-    ) -> t.Generator[None, None, t.Optional[ReferencedTable]]:
+    ) -> Generator[None, None, Optional[ReferencedTable]]:
         """
         If the user doesn't explicity call .run(), proxy to it as a
         convenience.
         """
         return self.run().__await__()
 
-    def run_sync(self, *args, **kwargs) -> t.Optional[ReferencedTable]:
+    def run_sync(self, *args, **kwargs) -> Optional[ReferencedTable]:
         return run_sync(self.run(*args, **kwargs))
 
 
@@ -292,7 +300,7 @@ class GetRelated(t.Generic[ReferencedTable]):
 
 
 class Objects(
-    Query[TableInstance, t.List[TableInstance]], t.Generic[TableInstance]
+    Query[TableInstance, list[TableInstance]], Generic[TableInstance]
 ):
     """
     Almost identical to select, except you have to select all fields, and
@@ -314,8 +322,8 @@ class Objects(
 
     def __init__(
         self,
-        table: t.Type[TableInstance],
-        prefetch: t.Sequence[t.Union[ForeignKey, t.List[ForeignKey]]] = (),
+        table: type[TableInstance],
+        prefetch: Sequence[Union[ForeignKey, list[ForeignKey]]] = (),
         **kwargs,
     ):
         super().__init__(table, **kwargs)
@@ -339,7 +347,7 @@ class Objects(
 
     def callback(
         self: Self,
-        callbacks: t.Union[t.Callable, t.List[t.Callable]],
+        callbacks: Union[Callable, list[Callable]],
         *,
         on: CallbackType = CallbackType.success,
     ) -> Self:
@@ -357,7 +365,7 @@ class Objects(
         return self
 
     def prefetch(
-        self: Self, *fk_columns: t.Union[ForeignKey, t.List[ForeignKey]]
+        self: Self, *fk_columns: Union[ForeignKey, list[ForeignKey]]
     ) -> Self:
         self.prefetch_delegate.prefetch(*fk_columns)
         return self
@@ -367,9 +375,9 @@ class Objects(
         return self
 
     def order_by(
-        self: Self, *columns: t.Union[Column, str, OrderByRaw], ascending=True
+        self: Self, *columns: Union[Column, str, OrderByRaw], ascending=True
     ) -> Self:
-        _columns: t.List[t.Union[Column, OrderByRaw]] = []
+        _columns: list[Union[Column, OrderByRaw]] = []
         for column in columns:
             if isinstance(column, str):
                 _columns.append(self.table._meta.get_column_by_name(column))
@@ -379,7 +387,7 @@ class Objects(
         self.order_by_delegate.order_by(*_columns, ascending=ascending)
         return self
 
-    def where(self: Self, *where: t.Union[Combinable, QueryString]) -> Self:
+    def where(self: Self, *where: Union[Combinable, QueryString]) -> Self:
         self.where_delegate.where(*where)
         return self
 
@@ -391,9 +399,9 @@ class Objects(
 
     def lock_rows(
         self: Self,
-        lock_strength: t.Union[
+        lock_strength: Union[
             LockStrength,
-            t.Literal[
+            Literal[
                 "UPDATE",
                 "NO KEY UPDATE",
                 "KEY SHARE",
@@ -402,7 +410,7 @@ class Objects(
         ] = LockStrength.update,
         nowait: bool = False,
         skip_locked: bool = False,
-        of: t.Tuple[type[Table], ...] = (),
+        of: tuple[type[Table], ...] = (),
     ) -> Self:
         self.lock_rows_delegate.lock_rows(
             lock_strength, nowait, skip_locked, of
@@ -417,7 +425,7 @@ class Objects(
     def get_or_create(
         self,
         where: Combinable,
-        defaults: t.Optional[t.Dict[Column, t.Any]] = None,
+        defaults: Optional[dict[Column, Any]] = None,
     ) -> GetOrCreate[TableInstance]:
         if defaults is None:
             defaults = {}
@@ -425,15 +433,15 @@ class Objects(
             query=self, table_class=self.table, where=where, defaults=defaults
         )
 
-    def create(self, **columns: t.Any) -> Create[TableInstance]:
+    def create(self, **columns: Any) -> Create[TableInstance]:
         return Create[TableInstance](table_class=self.table, columns=columns)
 
     ###########################################################################
 
     async def batch(
         self,
-        batch_size: t.Optional[int] = None,
-        node: t.Optional[str] = None,
+        batch_size: Optional[int] = None,
+        node: Optional[str] = None,
         **kwargs,
     ) -> BaseBatch:
         if batch_size:
@@ -449,7 +457,7 @@ class Objects(
             return response
 
     @property
-    def default_querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> Sequence[QueryString]:
         select = Select(table=self.table)
 
         for attr in (
@@ -483,17 +491,17 @@ class Objects(
 
     async def run(
         self,
-        node: t.Optional[str] = None,
+        node: Optional[str] = None,
         in_pool: bool = True,
         use_callbacks: bool = True,
-    ) -> t.List[TableInstance]:
+    ) -> list[TableInstance]:
         results = await super().run(node=node, in_pool=in_pool)
 
         if use_callbacks:
             # With callbacks, the user can return any data that they want.
             # Assume that most of the time they will still return a list of
             # Table instances.
-            modified: t.List[TableInstance] = (
+            modified: list[TableInstance] = (
                 await self.callback_delegate.invoke(
                     results, kind=CallbackType.success
                 )
@@ -504,8 +512,8 @@ class Objects(
 
     def __await__(
         self,
-    ) -> t.Generator[None, None, t.List[TableInstance]]:
+    ) -> Generator[None, None, list[TableInstance]]:
         return super().__await__()
 
 
-Self = t.TypeVar("Self", bound=Objects)
+Self = TypeVar("Self", bound=Objects)

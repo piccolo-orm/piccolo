@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import datetime
-import typing as t
+from collections.abc import Callable
 from enum import Enum
+from typing import Union
 
 from .timestamp import TimestampCustom, TimestampNow, TimestampOffset
 
@@ -47,6 +48,7 @@ class TimestamptzCustom(TimestampCustom):
             month=self.month,
             day=self.day,
             hour=self.hour,
+            minute=self.minute,
             second=self.second,
             microsecond=self.microsecond,
             tzinfo=datetime.timezone.utc,
@@ -59,20 +61,22 @@ class TimestamptzCustom(TimestampCustom):
         return cls(
             year=instance.year,
             month=instance.month,
-            day=instance.month,
+            day=instance.day,
             hour=instance.hour,
+            minute=instance.minute,
             second=instance.second,
             microsecond=instance.microsecond,
         )
 
 
-TimestamptzArg = t.Union[
+TimestamptzArg = Union[
     TimestamptzCustom,
     TimestamptzNow,
     TimestamptzOffset,
     Enum,
     None,
     datetime.datetime,
+    Callable[[], datetime.datetime],
 ]
 
 

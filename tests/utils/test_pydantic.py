@@ -1,5 +1,5 @@
 import decimal
-import typing as t
+from typing import Optional, cast
 from unittest import TestCase
 
 import pydantic
@@ -29,10 +29,10 @@ from piccolo.utils.pydantic import create_pydantic_model
 
 class TestVarcharColumn(TestCase):
     def test_varchar_length(self):
-        class Director(Table):
+        class Manager(Table):
             name = Varchar(length=10)
 
-        pydantic_model = create_pydantic_model(table=Director)
+        pydantic_model = create_pydantic_model(table=Manager)
 
         with self.assertRaises(ValidationError):
             pydantic_model(name="This is a really long name")
@@ -42,10 +42,10 @@ class TestVarcharColumn(TestCase):
 
 class TestEmailColumn(TestCase):
     def test_email(self):
-        class Director(Table):
+        class Manager(Table):
             email = Email()
 
-        pydantic_model = create_pydantic_model(table=Director)
+        pydantic_model = create_pydantic_model(table=Manager)
 
         self.assertEqual(
             pydantic_model.model_json_schema()["properties"]["email"]["anyOf"][
@@ -67,28 +67,28 @@ class TestNumericColumn(TestCase):
     """
 
     def test_numeric_digits(self):
-        class Movie(Table):
-            box_office = Numeric(digits=(5, 1))
+        class Band(Table):
+            royalties = Numeric(digits=(5, 1))
 
-        pydantic_model = create_pydantic_model(table=Movie)
+        pydantic_model = create_pydantic_model(table=Band)
 
         with self.assertRaises(ValidationError):
             # This should fail as there are too much numbers after the decimal
             # point
-            pydantic_model(box_office=decimal.Decimal("1.11"))
+            pydantic_model(royalties=decimal.Decimal("1.11"))
 
         with self.assertRaises(ValidationError):
             # This should fail as there are too much numbers in total
-            pydantic_model(box_office=decimal.Decimal("11111.1"))
+            pydantic_model(royalties=decimal.Decimal("11111.1"))
 
-        pydantic_model(box_office=decimal.Decimal("1.0"))
+        pydantic_model(royalties=decimal.Decimal("1.0"))
 
     def test_numeric_without_digits(self):
-        class Movie(Table):
-            box_office = Numeric()
+        class Band(Table):
+            royalties = Numeric()
 
         try:
-            create_pydantic_model(table=Movie)
+            create_pydantic_model(table=Band)
         except TypeError:
             self.fail(
                 "Creating numeric field without"
@@ -138,7 +138,7 @@ class TestArrayColumn(TestCase):
 
         self.assertEqual(
             pydantic_model.model_fields["members"].annotation,
-            t.List[t.List[pydantic.constr(max_length=255)]],
+            list[list[pydantic.constr(max_length=255)]],
         )
 
         # Should not raise a validation error:
@@ -297,13 +297,13 @@ class TestColumnHelpText(TestCase):
     def test_column_help_text_present(self):
         help_text = "In millions of US dollars."
 
-        class Movie(Table):
-            box_office = Numeric(digits=(5, 1), help_text=help_text)
+        class Band(Table):
+            royalties = Numeric(digits=(5, 1), help_text=help_text)
 
-        pydantic_model = create_pydantic_model(table=Movie)
+        pydantic_model = create_pydantic_model(table=Band)
 
         self.assertEqual(
-            pydantic_model.model_json_schema()["properties"]["box_office"][
+            pydantic_model.model_json_schema()["properties"]["royalties"][
                 "extra"
             ]["help_text"],
             help_text,
@@ -317,12 +317,12 @@ class TestTableHelpText(TestCase):
     """
 
     def test_table_help_text_present(self):
-        help_text = "Movies which were released in cinemas."
+        help_text = "Bands playing concerts."
 
-        class Movie(Table, help_text=help_text):
+        class Band(Table, help_text=help_text):
             name = Varchar()
 
-        pydantic_model = create_pydantic_model(table=Movie)
+        pydantic_model = create_pydantic_model(table=Band)
 
         self.assertEqual(
             pydantic_model.model_json_schema()["extra"]["help_text"],
@@ -332,10 +332,10 @@ class TestTableHelpText(TestCase):
 
 class TestUniqueColumn(TestCase):
     def test_unique_column_true(self):
-        class Director(Table):
+        class Manager(Table):
             name = Varchar(unique=True)
 
-        pydantic_model = create_pydantic_model(table=Director)
+        pydantic_model = create_pydantic_model(table=Manager)
 
         self.assertEqual(
             pydantic_model.model_json_schema()["properties"]["name"]["extra"][
@@ -345,10 +345,10 @@ class TestUniqueColumn(TestCase):
         )
 
     def test_unique_column_false(self):
-        class Director(Table):
+        class Manager(Table):
             name = Varchar()
 
-        pydantic_model = create_pydantic_model(table=Director)
+        pydantic_model = create_pydantic_model(table=Manager)
 
         self.assertEqual(
             pydantic_model.model_json_schema()["properties"]["name"]["extra"][
@@ -360,48 +360,66 @@ class TestUniqueColumn(TestCase):
 
 class TestJSONColumn(TestCase):
     def test_default(self):
-        class Movie(Table):
-            meta = JSON()
-            meta_b = JSONB()
+        class Studio(Table):
+            facilities = JSON()
+            facilities_b = JSONB()
 
-        pydantic_model = create_pydantic_model(table=Movie)
+        pydantic_model = create_pydantic_model(table=Studio)
 
-        json_string = '{"code": 12345}'
+        json_string = '{"guitar_amps": 6}'
 
-        model_instance = pydantic_model(meta=json_string, meta_b=json_string)
-        self.assertEqual(model_instance.meta, json_string)  # type: ignore
-        self.assertEqual(model_instance.meta_b, json_string)  # type: ignore
-
-    def test_deserialize_json(self):
-        class Movie(Table):
-            meta = JSON()
-            meta_b = JSONB()
-
-        pydantic_model = create_pydantic_model(
-            table=Movie, deserialize_json=True
+        model_instance = pydantic_model(
+            facilities=json_string, facilities_b=json_string
+        )
+        self.assertEqual(
+            model_instance.facilities,
+            json_string,
+        )
+        self.assertEqual(
+            model_instance.facilities_b,
+            json_string,
         )
 
-        json_string = '{"code": 12345}'
-        output = {"code": 12345}
+    def test_deserialize_json(self):
+        class Studio(Table):
+            facilities = JSON()
+            facilities_b = JSONB()
 
-        model_instance = pydantic_model(meta=json_string, meta_b=json_string)
-        self.assertEqual(model_instance.meta, output)  # type: ignore
-        self.assertEqual(model_instance.meta_b, output)  # type: ignore
+        pydantic_model = create_pydantic_model(
+            table=Studio, deserialize_json=True
+        )
+
+        json_string = '{"guitar_amps": 6}'
+        output = {"guitar_amps": 6}
+
+        model_instance = pydantic_model(
+            facilities=json_string, facilities_b=json_string
+        )
+        self.assertEqual(
+            model_instance.facilities,
+            output,
+        )
+        self.assertEqual(
+            model_instance.facilities_b,
+            output,
+        )
 
     def test_validation(self):
-        class Movie(Table):
-            meta = JSON()
-            meta_b = JSONB()
+        class Studio(Table):
+            facilities = JSON()
+            facilities_b = JSONB()
 
         for deserialize_json in (True, False):
             pydantic_model = create_pydantic_model(
-                table=Movie, deserialize_json=deserialize_json
+                table=Studio, deserialize_json=deserialize_json
             )
 
             json_string = "error"
 
             with self.assertRaises(pydantic.ValidationError):
-                pydantic_model(meta=json_string, meta_b=json_string)
+                pydantic_model(
+                    facilities=json_string, facilities_b=json_string
+                )
 
     def test_json_widget(self):
         """
@@ -409,112 +427,112 @@ class TestJSONColumn(TestCase):
         special widget in Piccolo Admin.
         """
 
-        class Movie(Table):
-            features = JSON()
+        class Studio(Table):
+            facilities = JSON()
 
-        pydantic_model = create_pydantic_model(table=Movie)
+        pydantic_model = create_pydantic_model(table=Studio)
 
         self.assertEqual(
-            pydantic_model.model_json_schema()["properties"]["features"][
+            pydantic_model.model_json_schema()["properties"]["facilities"][
                 "extra"
             ]["widget"],
             "json",
         )
 
     def test_null_value(self):
-        class Movie(Table):
-            meta = JSON(null=True)
-            meta_b = JSONB(null=True)
+        class Studio(Table):
+            facilities = JSON(null=True)
+            facilities_b = JSONB(null=True)
 
-        pydantic_model = create_pydantic_model(table=Movie)
-        movie = pydantic_model(meta=None, meta_b=None)
+        pydantic_model = create_pydantic_model(table=Studio)
+        movie = pydantic_model(facilities=None, facilities_b=None)
 
-        self.assertIsNone(movie.meta)  # type: ignore
-        self.assertIsNone(movie.meta_b)  # type: ignore
+        self.assertIsNone(movie.facilities)
+        self.assertIsNone(movie.facilities_b)
 
 
 class TestExcludeColumns(TestCase):
     def test_all(self):
-        class Computer(Table):
-            CPU = Varchar()
-            GPU = Varchar()
+        class Band(Table):
+            name = Varchar()
+            bio = Text()
 
-        pydantic_model = create_pydantic_model(Computer, exclude_columns=())
+        pydantic_model = create_pydantic_model(Band, exclude_columns=())
 
         properties = pydantic_model.model_json_schema()["properties"]
-        self.assertIsInstance(properties["GPU"], dict)
-        self.assertIsInstance(properties["CPU"], dict)
+        self.assertIsInstance(properties["name"], dict)
+        self.assertIsInstance(properties["bio"], dict)
 
     def test_exclude(self):
-        class Computer(Table):
-            CPU = Varchar()
-            GPU = Varchar()
+        class Band(Table):
+            name = Varchar()
+            album = Varchar()
 
         pydantic_model = create_pydantic_model(
-            Computer,
-            exclude_columns=(Computer.CPU,),
+            Band,
+            exclude_columns=(Band.name,),
         )
 
         properties = pydantic_model.model_json_schema()["properties"]
-        self.assertIsInstance(properties.get("GPU"), dict)
-        self.assertIsNone(properties.get("CPU"))
+        self.assertIsInstance(properties.get("album"), dict)
+        self.assertIsNone(properties.get("dict"))
 
     def test_exclude_all_manually(self):
-        class Computer(Table):
-            GPU = Varchar()
-            CPU = Varchar()
+        class Band(Table):
+            name = Varchar()
+            album = Varchar()
 
         pydantic_model = create_pydantic_model(
-            Computer,
-            exclude_columns=(Computer.GPU, Computer.CPU),
+            Band,
+            exclude_columns=(Band.name, Band.album),
         )
 
         self.assertEqual(pydantic_model.model_json_schema()["properties"], {})
 
     def test_exclude_all_meta(self):
-        class Computer(Table):
-            GPU = Varchar()
-            CPU = Varchar()
+        class Band(Table):
+            name = Varchar()
+            album = Varchar()
 
         pydantic_model = create_pydantic_model(
-            Computer,
-            exclude_columns=tuple(Computer._meta.columns),
+            Band,
+            exclude_columns=tuple(Band._meta.columns),
         )
 
         self.assertEqual(pydantic_model.model_json_schema()["properties"], {})
 
     def test_invalid_column_str(self):
-        class Computer(Table):
-            CPU = Varchar()
-            GPU = Varchar()
+        class Band(Table):
+            name = Varchar()
+            album = Varchar()
 
         with self.assertRaises(ValueError):
             create_pydantic_model(
-                Computer,
-                exclude_columns=("CPU",),  # type: ignore
+                Band,
+                exclude_columns=("album",),
             )
 
     def test_invalid_column_different_table(self):
-        class Computer(Table):
-            CPU = Varchar()
-            GPU = Varchar()
+        class Band(Table):
+            name = Varchar()
+            album = Varchar()
 
-        class Computer2(Table):
-            SSD = Varchar()
+        class Band2(Table):
+            photo = Varchar()
 
         with self.assertRaises(ValueError):
-            create_pydantic_model(Computer, exclude_columns=(Computer2.SSD,))
+            create_pydantic_model(Band, exclude_columns=(Band2.photo,))
 
     def test_invalid_column_different_table_same_type(self):
-        class Computer(Table):
-            CPU = Varchar()
-            GPU = Varchar()
+        class Band(Table):
+            name = Varchar()
+            album = Varchar()
 
-        class Computer2(Table):
-            CPU = Varchar()
+        class Band2(Table):
+            name = Varchar()
 
         with self.assertRaises(ValueError):
-            create_pydantic_model(Computer, exclude_columns=(Computer2.CPU,))
+            create_pydantic_model(Band, exclude_columns=(Band2.name,))
 
     def test_exclude_nested(self):
         class Manager(Table):
@@ -630,8 +648,8 @@ class TestNestedModel(TestCase):
 
         #######################################################################
 
-        ManagerModel = t.cast(
-            t.Type[pydantic.BaseModel],
+        ManagerModel = cast(
+            type[pydantic.BaseModel],
             BandModel.model_fields["manager"].annotation,
         )
         self.assertTrue(issubclass(ManagerModel, pydantic.BaseModel))
@@ -641,8 +659,8 @@ class TestNestedModel(TestCase):
 
         #######################################################################
 
-        CountryModel = t.cast(
-            t.Type[pydantic.BaseModel],
+        CountryModel = cast(
+            type[pydantic.BaseModel],
             ManagerModel.model_fields["country"].annotation,
         )
         self.assertTrue(issubclass(CountryModel, pydantic.BaseModel))
@@ -681,8 +699,8 @@ class TestNestedModel(TestCase):
 
         BandModel = create_pydantic_model(table=Band, nested=(Band.manager,))
 
-        ManagerModel = t.cast(
-            t.Type[pydantic.BaseModel],
+        ManagerModel = cast(
+            type[pydantic.BaseModel],
             BandModel.model_fields["manager"].annotation,
         )
         self.assertTrue(issubclass(ManagerModel, pydantic.BaseModel))
@@ -694,7 +712,7 @@ class TestNestedModel(TestCase):
         AssistantManagerType = BandModel.model_fields[
             "assistant_manager"
         ].annotation
-        self.assertIs(AssistantManagerType, t.Optional[int])
+        self.assertIs(AssistantManagerType, Optional[int])
 
         #######################################################################
         # Test two levels deep
@@ -703,8 +721,8 @@ class TestNestedModel(TestCase):
             table=Band, nested=(Band.manager._.country,)
         )
 
-        ManagerModel = t.cast(
-            t.Type[pydantic.BaseModel],
+        ManagerModel = cast(
+            type[pydantic.BaseModel],
             BandModel.model_fields["manager"].annotation,
         )
         self.assertTrue(issubclass(ManagerModel, pydantic.BaseModel))
@@ -713,14 +731,14 @@ class TestNestedModel(TestCase):
         )
         self.assertEqual(ManagerModel.__qualname__, "Band.manager")
 
-        AssistantManagerType = t.cast(
-            t.Type[pydantic.BaseModel],
+        AssistantManagerType = cast(
+            type[pydantic.BaseModel],
             BandModel.model_fields["assistant_manager"].annotation,
         )
-        self.assertIs(AssistantManagerType, t.Optional[int])
+        self.assertIs(AssistantManagerType, Optional[int])
 
-        CountryModel = t.cast(
-            t.Type[pydantic.BaseModel],
+        CountryModel = cast(
+            type[pydantic.BaseModel],
             ManagerModel.model_fields["country"].annotation,
         )
         self.assertTrue(issubclass(CountryModel, pydantic.BaseModel))
@@ -737,10 +755,10 @@ class TestNestedModel(TestCase):
         )
 
         VenueModel = ConcertModel.model_fields["venue"].annotation
-        self.assertIs(VenueModel, t.Optional[int])
+        self.assertIs(VenueModel, Optional[int])
 
-        BandModel = t.cast(
-            t.Type[pydantic.BaseModel],
+        BandModel = cast(
+            type[pydantic.BaseModel],
             ConcertModel.model_fields["band_1"].annotation,
         )
         self.assertTrue(issubclass(BandModel, pydantic.BaseModel))
@@ -750,8 +768,8 @@ class TestNestedModel(TestCase):
         )
         self.assertEqual(BandModel.__qualname__, "Concert.band_1")
 
-        ManagerModel = t.cast(
-            t.Type[pydantic.BaseModel],
+        ManagerModel = cast(
+            type[pydantic.BaseModel],
             BandModel.model_fields["manager"].annotation,
         )
         self.assertTrue(issubclass(ManagerModel, pydantic.BaseModel))
@@ -764,10 +782,10 @@ class TestNestedModel(TestCase):
         AssistantManagerType = BandModel.model_fields[
             "assistant_manager"
         ].annotation
-        self.assertIs(AssistantManagerType, t.Optional[int])
+        self.assertIs(AssistantManagerType, Optional[int])
 
         CountryModel = ManagerModel.model_fields["country"].annotation
-        self.assertIs(CountryModel, t.Optional[int])
+        self.assertIs(CountryModel, Optional[int])
 
         #######################################################################
         # Test with `model_name` arg
@@ -778,8 +796,8 @@ class TestNestedModel(TestCase):
             model_name="MyConcertModel",
         )
 
-        BandModel = t.cast(
-            t.Type[pydantic.BaseModel],
+        BandModel = cast(
+            type[pydantic.BaseModel],
             MyConcertModel.model_fields["band_1"].annotation,
         )
         self.assertEqual(BandModel.__qualname__, "MyConcertModel.band_1")
@@ -810,8 +828,8 @@ class TestNestedModel(TestCase):
             table=Band, nested=True, include_default_columns=True
         )
 
-        ManagerModel = t.cast(
-            t.Type[pydantic.BaseModel],
+        ManagerModel = cast(
+            type[pydantic.BaseModel],
             BandModel.model_fields["manager"].annotation,
         )
         self.assertTrue(issubclass(ManagerModel, pydantic.BaseModel))
@@ -820,8 +838,8 @@ class TestNestedModel(TestCase):
             ["id", "name", "country"],
         )
 
-        CountryModel = t.cast(
-            t.Type[pydantic.BaseModel],
+        CountryModel = cast(
+            type[pydantic.BaseModel],
             ManagerModel.model_fields["country"].annotation,
         )
         self.assertTrue(issubclass(CountryModel, pydantic.BaseModel))
@@ -855,27 +873,27 @@ class TestRecursionDepth(TestCase):
             table=Concert, nested=True, max_recursion_depth=2
         )
 
-        VenueModel = t.cast(
-            t.Type[pydantic.BaseModel],
+        VenueModel = cast(
+            type[pydantic.BaseModel],
             ConcertModel.model_fields["venue"].annotation,
         )
         self.assertTrue(issubclass(VenueModel, pydantic.BaseModel))
 
-        BandModel = t.cast(
-            t.Type[pydantic.BaseModel],
+        BandModel = cast(
+            type[pydantic.BaseModel],
             ConcertModel.model_fields["band"].annotation,
         )
         self.assertTrue(issubclass(BandModel, pydantic.BaseModel))
 
-        ManagerModel = t.cast(
-            t.Type[pydantic.BaseModel],
+        ManagerModel = cast(
+            type[pydantic.BaseModel],
             BandModel.model_fields["manager"].annotation,
         )
         self.assertTrue(issubclass(ManagerModel, pydantic.BaseModel))
 
         # We should have hit the recursion depth:
         CountryModel = ManagerModel.model_fields["country"].annotation
-        self.assertIs(CountryModel, t.Optional[int])
+        self.assertIs(CountryModel, Optional[int])
 
 
 class TestDBColumnName(TestCase):
@@ -892,7 +910,7 @@ class TestDBColumnName(TestCase):
 
         model = BandModel(regrettable_column_name="test")
 
-        self.assertEqual(model.name, "test")  # type: ignore
+        self.assertEqual(model.name, "test")
 
 
 class TestJSONSchemaExtra(TestCase):

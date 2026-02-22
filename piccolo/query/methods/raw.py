@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-import typing as t
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Optional
 
 from piccolo.engine.base import BaseBatch
 from piccolo.query.base import Query
 from piccolo.querystring import QueryString
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
@@ -15,7 +16,7 @@ class Raw(Query):
 
     def __init__(
         self,
-        table: t.Type[Table],
+        table: type[Table],
         querystring: QueryString = QueryString(""),
         **kwargs,
     ):
@@ -24,8 +25,8 @@ class Raw(Query):
 
     async def batch(
         self,
-        batch_size: t.Optional[int] = None,
-        node: t.Optional[str] = None,
+        batch_size: Optional[int] = None,
+        node: Optional[str] = None,
         **kwargs,
     ) -> BaseBatch:
         if batch_size:
@@ -35,5 +36,5 @@ class Raw(Query):
         return await self.table._meta.db.batch(self, **kwargs)
 
     @property
-    def default_querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> Sequence[QueryString]:
         return [self.querystring]

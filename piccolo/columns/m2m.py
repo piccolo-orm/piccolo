@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import inspect
-import typing as t
+from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from piccolo.columns.column_types import (
     JSON,
@@ -15,7 +16,7 @@ from piccolo.querystring import QueryString, Selectable
 from piccolo.utils.list import flatten
 from piccolo.utils.sync import run_sync
 
-if t.TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
@@ -151,12 +152,12 @@ class M2MSelect(Selectable):
 
 @dataclass
 class M2MMeta:
-    joining_table: t.Union[t.Type[Table], LazyTableReference]
-    _foreign_key_columns: t.Optional[t.List[ForeignKey]] = None
+    joining_table: Union[type[Table], LazyTableReference]
+    _foreign_key_columns: Optional[list[ForeignKey]] = None
 
     # Set by the Table Metaclass:
-    _name: t.Optional[str] = None
-    _table: t.Optional[t.Type[Table]] = None
+    _name: Optional[str] = None
+    _table: Optional[type[Table]] = None
 
     @property
     def name(self) -> str:
@@ -167,7 +168,7 @@ class M2MMeta:
         return self._name
 
     @property
-    def table(self) -> t.Type[Table]:
+    def table(self) -> type[Table]:
         if not self._table:
             raise ValueError(
                 "`_table` isn't defined - the Table Metaclass should set it."
@@ -175,7 +176,7 @@ class M2MMeta:
         return self._table
 
     @property
-    def resolved_joining_table(self) -> t.Type[Table]:
+    def resolved_joining_table(self) -> type[Table]:
         """
         Evaluates the ``joining_table`` attribute if it's a
         ``LazyTableReference``, raising a ``ValueError`` if it fails, otherwise
@@ -196,7 +197,7 @@ class M2MMeta:
             )
 
     @property
-    def foreign_key_columns(self) -> t.List[ForeignKey]:
+    def foreign_key_columns(self) -> list[ForeignKey]:
         if not self._foreign_key_columns:
             self._foreign_key_columns = (
                 self.resolved_joining_table._meta.foreign_key_columns[:2]
@@ -236,7 +237,7 @@ class M2MMeta:
         raise ValueError("No matching foreign key column found!")
 
     @property
-    def primary_table(self) -> t.Type[Table]:
+    def primary_table(self) -> type[Table]:
         return self.primary_foreign_key._foreign_key_meta.resolved_references
 
     @property
@@ -251,7 +252,7 @@ class M2MMeta:
         raise ValueError("No matching foreign key column found!")
 
     @property
-    def secondary_table(self) -> t.Type[Table]:
+    def secondary_table(self) -> type[Table]:
         return self.secondary_foreign_key._foreign_key_meta.resolved_references
 
 
@@ -259,11 +260,11 @@ class M2MMeta:
 class M2MAddRelated:
     target_row: Table
     m2m: M2M
-    rows: t.Sequence[Table]
-    extra_column_values: t.Dict[t.Union[Column, str], t.Any]
+    rows: Sequence[Table]
+    extra_column_values: dict[Union[Column, str], Any]
 
     @property
-    def resolved_extra_column_values(self) -> t.Dict[str, t.Any]:
+    def resolved_extra_column_values(self) -> dict[str, Any]:
         return {
             i._meta.name if isinstance(i, Column) else i: j
             for i, j in self.extra_column_values.items()
@@ -310,11 +311,8 @@ class M2MAddRelated:
         transaction, or wrapped in a new transaction.
         """
         engine = self.rows[0]._meta.db
-        if engine.transaction_exists():
-            await self._run()
-        else:
-            async with engine.transaction():
-                await self._run()
+        async with engine.transaction():
+            return await self._run()
 
     def run_sync(self):
         return run_sync(self.run())
@@ -327,7 +325,7 @@ class M2MAddRelated:
 class M2MRemoveRelated:
     target_row: Table
     m2m: M2M
-    rows: t.Sequence[Table]
+    rows: Sequence[Table]
 
     async def run(self):
         fk = self.m2m._meta.secondary_foreign_key
@@ -372,24 +370,16 @@ class M2MGetRelated:
 
         secondary_table = self.m2m._meta.secondary_table
 
-        # TODO - replace this with a subquery in the future.
-        ids = (
-            await joining_table.select(
-                getattr(
-                    self.m2m._meta.secondary_foreign_key,
-                    secondary_table._meta.primary_key._meta.name,
-                )
+        # use a subquery to make only one db query
+        results = await secondary_table.objects().where(
+            secondary_table._meta.primary_key.is_in(
+                joining_table.select(
+                    getattr(
+                        self.m2m._meta.secondary_foreign_key,
+                        secondary_table._meta.primary_key._meta.name,
+                    )
+                ).where(self.m2m._meta.primary_foreign_key == self.row)
             )
-            .where(self.m2m._meta.primary_foreign_key == self.row)
-            .output(as_list=True)
-        )
-
-        results = (
-            await secondary_table.objects().where(
-                secondary_table._meta.primary_key.is_in(ids)
-            )
-            if len(ids) > 0
-            else []
         )
 
         return results
@@ -404,8 +394,8 @@ class M2MGetRelated:
 class M2M:
     def __init__(
         self,
-        joining_table: t.Union[t.Type[Table], LazyTableReference],
-        foreign_key_columns: t.Optional[t.List[ForeignKey]] = None,
+        joining_table: Union[type[Table], LazyTableReference],
+        foreign_key_columns: Optional[list[ForeignKey]] = None,
     ):
         """
         :param joining_table:
@@ -428,7 +418,7 @@ class M2M:
 
     def __call__(
         self,
-        *columns: t.Union[Column, t.List[Column]],
+        *columns: Union[Column, list[Column]],
         as_list: bool = False,
         load_json: bool = False,
     ) -> M2MSelect:

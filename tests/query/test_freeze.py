@@ -1,6 +1,6 @@
 import timeit
-import typing as t
 from dataclasses import dataclass
+from typing import Any, Union
 from unittest import mock
 
 from piccolo.columns import Integer, Varchar
@@ -12,8 +12,8 @@ from tests.example_apps.music.tables import Band
 
 @dataclass
 class QueryResponse:
-    query: t.Union[Query, FrozenQuery]
-    response: t.Any
+    query: Union[Query, FrozenQuery]
+    response: Any
 
 
 class TestFreeze(DBTestCase):
@@ -23,7 +23,7 @@ class TestFreeze(DBTestCase):
         """
         self.insert_rows()
 
-        query_responses: t.List[QueryResponse] = [
+        query_responses: list[QueryResponse] = [
             QueryResponse(
                 query=(
                     Band.select(Band.name)

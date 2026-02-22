@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-import typing as t
+from typing import TYPE_CHECKING, Any, Union
 
 from piccolo.columns.operators.comparison import (
     ComparisonOperator,
     Equal,
     IsNull,
 )
-from piccolo.custom_types import Combinable, Iterable
+from piccolo.custom_types import Combinable, CustomIterable
 from piccolo.querystring import QueryString
 from piccolo.utils.sql_values import convert_to_sql_value
 
-if t.TYPE_CHECKING:
+if TYPE_CHECKING:
     from piccolo.columns.base import Column
 
 
@@ -45,11 +45,11 @@ class Combination(CombinableMixin):
         )
 
     @property
-    def querystring_for_update(self) -> QueryString:
+    def querystring_for_update_and_delete(self) -> QueryString:
         return QueryString(
             "({} " + self.operator + " {})",
-            self.first.querystring_for_update,
-            self.second.querystring_for_update,
+            self.first.querystring_for_update_and_delete,
+            self.second.querystring_for_update_and_delete,
         )
 
     def __str__(self):
@@ -59,7 +59,7 @@ class Combination(CombinableMixin):
 class And(Combination):
     operator = "AND"
 
-    def get_column_values(self) -> t.Dict[Column, t.Any]:
+    def get_column_values(self) -> dict[Column, Any]:
         """
         This is used by `get_or_create` to know which values to assign if
         the row doesn't exist in the database.
@@ -109,7 +109,7 @@ UNDEFINED = Undefined()
 class WhereRaw(CombinableMixin):
     __slots__ = ("querystring",)
 
-    def __init__(self, sql: str, *args: t.Any) -> None:
+    def __init__(self, sql: str, *args: Any) -> None:
         """
         Execute raw SQL queries in your where clause. Use with caution!
 
@@ -131,7 +131,7 @@ class WhereRaw(CombinableMixin):
         self.querystring = QueryString(sql, *args)
 
     @property
-    def querystring_for_update(self) -> QueryString:
+    def querystring_for_update_and_delete(self) -> QueryString:
         return self.querystring
 
     def __str__(self):
@@ -145,9 +145,9 @@ class Where(CombinableMixin):
     def __init__(
         self,
         column: Column,
-        value: t.Any = UNDEFINED,
-        values: t.Union[Iterable, Undefined] = UNDEFINED,
-        operator: t.Type[ComparisonOperator] = ComparisonOperator,
+        value: Any = UNDEFINED,
+        values: Union[CustomIterable, Undefined, QueryString] = UNDEFINED,
+        operator: type[ComparisonOperator] = ComparisonOperator,
     ) -> None:
         """
         We use the UNDEFINED value to show the value was deliberately
@@ -156,14 +156,14 @@ class Where(CombinableMixin):
         self.column = column
 
         self.value = value if value == UNDEFINED else self.clean_value(value)
-        if values == UNDEFINED:
+        if (values == UNDEFINED) or isinstance(values, QueryString):
             self.values = values
         else:
             self.values = [self.clean_value(i) for i in values]  # type: ignore
 
         self.operator = operator
 
-    def clean_value(self, value: t.Any) -> t.Any:
+    def clean_value(self, value: Any) -> Any:
         """
         If a where clause contains a ``Table`` instance, we should convert that
         to a column reference. For example:
@@ -192,6 +192,9 @@ class Where(CombinableMixin):
     def values_querystring(self) -> QueryString:
         values = self.values
 
+        if isinstance(values, QueryString):
+            return values
+
         if isinstance(values, Undefined):
             raise ValueError("values is undefined")
 
@@ -200,7 +203,7 @@ class Where(CombinableMixin):
 
     @property
     def querystring(self) -> QueryString:
-        args: t.List[t.Any] = []
+        args: list[Any] = []
         if self.value != UNDEFINED:
             args.append(self.value)
 
@@ -218,8 +221,8 @@ class Where(CombinableMixin):
         return QueryString(template, *args)
 
     @property
-    def querystring_for_update(self) -> QueryString:
-        args: t.List[t.Any] = []
+    def querystring_for_update_and_delete(self) -> QueryString:
+        args: list[Any] = []
         if self.value != UNDEFINED:
             args.append(self.value)
 

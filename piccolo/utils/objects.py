@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-import typing as t
+from typing import TYPE_CHECKING, Any
 
 from piccolo.columns.column_types import ForeignKey
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
-def make_nested_object(
-    row: t.Dict[str, t.Any], table_class: t.Type[Table]
-) -> Table:
+def make_nested_object(row: dict[str, Any], table_class: type[Table]) -> Table:
     """
     Takes a nested dictionary such as this:
 
@@ -38,12 +36,15 @@ def make_nested_object(
         1
 
     """
-    table_params: t.Dict[str, t.Any] = {}
+    table_params: dict[str, Any] = {}
 
     for key, value in row.items():
         if isinstance(value, dict):
             # This is probably a related table.
-            fk_column = table_class._meta.get_column_by_name(key)
+            fk_column = table_class._meta.get_column_by_name(
+                key,
+                match_db_column_name=True,
+            )
 
             if isinstance(fk_column, ForeignKey):
                 related_table_class = (

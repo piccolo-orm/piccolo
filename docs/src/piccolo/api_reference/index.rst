@@ -30,6 +30,10 @@ Column
     :members:
 
 
+.. autoclass:: ColumnKwargs
+    :members:
+    :undoc-members:
+
 -------------------------------------------------------------------------------
 
 Aggregate functions
@@ -102,6 +106,13 @@ Date
 .. autoclass:: DateOffset
     :members:
 
+
+UUID
+~~~~
+
+.. autoclass:: UUID4
+    :members:
+
 -------------------------------------------------------------------------------
 
 Testing
@@ -124,3 +135,12 @@ create_db_tables / drop_db_tables
 .. autofunction:: create_db_tables_sync
 .. autofunction:: drop_db_tables
 .. autofunction:: drop_db_tables_sync
+
+-------------------------------------------------------------------------------
+
+QueryString
+-----------
+
+.. currentmodule:: piccolo.querystring
+
+.. autoclass:: QueryString

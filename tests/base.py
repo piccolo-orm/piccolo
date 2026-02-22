@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
-import typing as t
+from typing import Optional
 from unittest import TestCase
 from unittest.mock import MagicMock
 
@@ -169,7 +169,7 @@ class DBTestCase(TestCase):
         return _Table.raw(query).run_sync()
 
     def table_exists(self, tablename: str) -> bool:
-        _Table: t.Type[Table] = create_table_class(
+        _Table: type[Table] = create_table_class(
             class_name=tablename.upper(), class_kwargs={"tablename": tablename}
         )
         return _Table.table_exists().run_sync()
@@ -222,7 +222,7 @@ class DBTestCase(TestCase):
 
     def get_postgres_varchar_length(
         self, tablename, column_name: str
-    ) -> t.Optional[int]:
+    ) -> Optional[int]:
         """
         Fetches whether the column is defined as nullable, from the database.
         """
@@ -466,7 +466,7 @@ class TableTest(TestCase):
     Used for tests where we need to create Piccolo tables.
     """
 
-    tables: t.List[t.Type[Table]]
+    tables: list[type[Table]]
 
     def setUp(self) -> None:
         create_db_tables_sync(*self.tables)

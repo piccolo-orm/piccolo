@@ -1,6 +1,6 @@
 import asyncio
+import enum
 import json
-import typing as t
 import unittest
 
 from piccolo.columns import (
@@ -17,7 +17,6 @@ from piccolo.columns import (
 )
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
 from piccolo.testing.model_builder import ModelBuilder
-from tests.base import engines_skip
 from tests.example_apps.music.tables import (
     Band,
     Concert,
@@ -31,9 +30,14 @@ from tests.example_apps.music.tables import (
 
 
 class TableWithArrayField(Table):
+    class Choices(enum.Enum):
+        a = "a"
+        b = "b"
+
     strings = Array(Varchar(30))
     integers = Array(Integer())
     floats = Array(Real())
+    choices = Array(Varchar(), choices=Choices)
 
 
 class TableWithDecimal(Table):
@@ -71,8 +75,6 @@ TABLES = (
 )
 
 
-# Cockroach Bug: Can turn ON when resolved: https://github.com/cockroachdb/cockroach/issues/71908  # noqa: E501
-@engines_skip("cockroach")
 class TestModelBuilder(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -83,7 +85,7 @@ class TestModelBuilder(unittest.TestCase):
         drop_db_tables_sync(*TABLES)
 
     def test_async(self):
-        async def build_model(table_class: t.Type[Table]):
+        async def build_model(table_class: type[Table]):
             return await ModelBuilder.build(table_class)
 
         for table_class in TABLES:
@@ -104,6 +106,16 @@ class TestModelBuilder(unittest.TestCase):
             queried_shirt.size,
             ["s", "l", "m"],
         )
+
+    def test_array_choices(self):
+        """
+        Make sure that ``ModelBuilder`` generates arrays where each array
+        element is a valid choice.
+        """
+        instance = ModelBuilder.build_sync(TableWithArrayField)
+        for value in instance.choices:
+            # Will raise an exception if the enum value isn't found:
+            TableWithArrayField.Choices[value]
 
     def test_datetime(self):
         """

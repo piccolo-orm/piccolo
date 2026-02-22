@@ -1,4 +1,4 @@
-import typing as t
+from typing import Any
 
 from piccolo.apps.user.tables import BaseUser
 from piccolo.columns import Column
@@ -11,7 +11,7 @@ ORDER_BY_COLUMN_NAMES = [
 
 async def get_users(
     order_by: Column, ascending: bool, limit: int, page: int
-) -> t.List[t.Dict[str, t.Any]]:
+) -> list[dict[str, Any]]:
     return (
         await BaseUser.select(
             *BaseUser.all_columns(exclude=[BaseUser.password])

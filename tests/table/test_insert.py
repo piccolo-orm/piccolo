@@ -174,6 +174,27 @@ class TestOnConflict(TestCase):
             ],
         )
 
+    def test_do_update_no_target(self):
+        """
+        Make sure that `DO UPDATE` with no `target` raises an exception.
+        """
+        Band = self.Band
+
+        new_popularity = self.band.popularity + 1000
+
+        with self.assertRaises(ValueError) as manager:
+            Band.insert(
+                Band(name=self.band.name, popularity=new_popularity)
+            ).on_conflict(
+                action="DO UPDATE",
+                values=[(Band.popularity, new_popularity + 2000)],
+            ).run_sync()
+
+        self.assertEqual(
+            manager.exception.__str__(),
+            "The `target` option must be provided with DO UPDATE.",
+        )
+
     def test_do_update_no_values(self):
         """
         Make sure that `DO UPDATE` with no `values` raises an exception.
@@ -201,7 +222,7 @@ class TestOnConflict(TestCase):
         Make sure that a composite unique constraint can be used as a target.
 
         We only run it on Postgres and Cockroach because we use ALTER TABLE
-        to add a contraint, which SQLite doesn't support.
+        to add a constraint, which SQLite doesn't support.
         """
         Band = self.Band
 
@@ -232,14 +253,18 @@ class TestOnConflict(TestCase):
         """
         Band = self.Band
 
-        constraint_name = Band.raw(
-            """
+        constraint_name = [
+            i["constraint_name"]
+            for i in Band.raw(
+                """
             SELECT constraint_name
             FROM information_schema.constraint_column_usage
             WHERE column_name = 'name'
                 AND table_name = 'band';
             """
-        ).run_sync()[0]["constraint_name"]
+            ).run_sync()
+            if i["constraint_name"].endswith("_key")
+        ][0]
 
         query = Band.insert(Band(name=self.band.name)).on_conflict(
             target=constraint_name,

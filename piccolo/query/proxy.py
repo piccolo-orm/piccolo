@@ -1,5 +1,6 @@
 import inspect
-import typing as t
+from collections.abc import Generator
+from typing import Generic, Optional, TypeVar
 
 from typing_extensions import Protocol
 
@@ -8,22 +9,20 @@ from piccolo.utils.sync import run_sync
 
 
 class Runnable(Protocol):
-    async def run(
-        self, node: t.Optional[str] = None, in_pool: bool = True
-    ): ...
+    async def run(self, node: Optional[str] = None, in_pool: bool = True): ...
 
 
-QueryType = t.TypeVar("QueryType", bound=Runnable)
-ResponseType = t.TypeVar("ResponseType")
+QueryType = TypeVar("QueryType", bound=Runnable)
+ResponseType = TypeVar("ResponseType")
 
 
-class Proxy(t.Generic[QueryType, ResponseType]):
+class Proxy(Generic[QueryType, ResponseType]):
     def __init__(self, query: QueryType):
         self.query = query
 
     async def run(
         self,
-        node: t.Optional[str] = None,
+        node: Optional[str] = None,
         in_pool: bool = True,
     ) -> ResponseType:
         return await self.query.run(node=node, in_pool=in_pool)
@@ -33,7 +32,7 @@ class Proxy(t.Generic[QueryType, ResponseType]):
 
     def __await__(
         self,
-    ) -> t.Generator[None, None, ResponseType]:
+    ) -> Generator[None, None, ResponseType]:
         """
         If the user doesn't explicity call .run(), proxy to it as a
         convenience.

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import shutil
-import typing as t
 
 import black
 import colorama
@@ -13,10 +12,13 @@ SERVERS = ["uvicorn", "Hypercorn", "granian"]
 ROUTER_DEPENDENCIES = {
     "starlette": ["starlette"],
     "fastapi": ["fastapi"],
-    "blacksheep": ["blacksheep"],
+    "blacksheep": ["blacksheep[full]"],
     "litestar": ["litestar"],
-    "esmerald": ["esmerald"],
+    "ravyn": ["ravyn"],
     "lilya": ["lilya"],
+    "quart": ["quart", "quart_schema"],
+    "falcon": ["falcon"],
+    "sanic": ["sanic", "sanic_ext"],
 }
 ROUTERS = list(ROUTER_DEPENDENCIES.keys())
 
@@ -25,7 +27,7 @@ def print_instruction(message: str):
     print(f"{colorama.Fore.CYAN}{message}{colorama.Fore.RESET}")
 
 
-def get_options_string(options: t.List[str]):
+def get_options_string(options: list[str]):
     return ", ".join(f"{name} [{index}]" for index, name in enumerate(options))
 
 

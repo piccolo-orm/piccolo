@@ -1,12 +1,17 @@
-from unittest import TestCase
+from unittest import IsolatedAsyncioTestCase
 from unittest.mock import MagicMock, patch
 
 from piccolo.apps.migrations.commands.check import CheckMigrationManager, check
+from piccolo.apps.migrations.tables import Migration
 from piccolo.conf.apps import AppRegistry
 from piccolo.utils.sync import run_sync
 
 
-class TestCheckMigrationCommand(TestCase):
+class TestCheckMigrationCommand(IsolatedAsyncioTestCase):
+
+    async def asyncTearDown(self):
+        await Migration.alter().drop_table(if_exists=True)
+
     @patch.object(
         CheckMigrationManager,
         "get_app_registry",

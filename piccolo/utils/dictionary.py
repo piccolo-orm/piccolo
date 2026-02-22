@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import typing as t
+from typing import Any
 
 
-def make_nested(dictionary: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+def make_nested(dictionary: dict[str, Any]) -> dict[str, Any]:
     """
     Rows are returned from the database as a flat dictionary, with keys such
     as ``'manager.name'`` if the column belongs to a related table.
@@ -20,7 +20,7 @@ def make_nested(dictionary: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
         {'name': 'Pythonistas', 'band': {'name': 'Guido'}}
 
     """
-    output: t.Dict[str, t.Any] = {}
+    output: dict[str, Any] = {}
 
     items = list(dictionary.items())
     items.sort(key=lambda x: x[0])

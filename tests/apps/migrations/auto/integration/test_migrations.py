@@ -7,8 +7,9 @@ import random
 import shutil
 import tempfile
 import time
-import typing as t
 import uuid
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Optional
 from unittest.mock import MagicMock, patch
 
 from piccolo.apps.migrations.auto.operations import RenameTable
@@ -55,7 +56,7 @@ from piccolo.table import Table, create_table_class, drop_db_tables_sync
 from piccolo.utils.sync import run_sync
 from tests.base import DBTestCase, engines_only, engines_skip
 
-if t.TYPE_CHECKING:
+if TYPE_CHECKING:
     from piccolo.columns.base import Column
 
 
@@ -127,8 +128,8 @@ class MigrationTestCase(DBTestCase):
 
     def _test_migrations(
         self,
-        table_snapshots: t.List[t.List[t.Type[Table]]],
-        test_function: t.Optional[t.Callable[[RowMeta], bool]] = None,
+        table_snapshots: list[list[type[Table]]],
+        test_function: Optional[Callable[[RowMeta], bool]] = None,
     ):
         """
         Writes a migration file to disk and runs it.
@@ -436,7 +437,7 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "uuid",
                     x.is_nullable == "NO",
-                    x.column_default == "uuid_generate_v4()",
+                    x.column_default == "gen_random_uuid()",
                 ]
             ),
         )
@@ -692,15 +693,39 @@ class TestMigrations(MigrationTestCase):
 
     def test_array_column_bigint(self):
         """
-        There was a bug with using an array of ``BigInt`` - see issue 500 on
-        GitHub. It's because ``BigInt`` requires access to the parent table to
+        There was a bug with using an array of ``BigInt``:
+
+        http://github.com/piccolo-orm/piccolo/issues/500/
+
+        It's because ``BigInt`` requires access to the parent table to
         determine what the column type is.
+
         """
         self._test_migrations(
             table_snapshots=[
                 [self.table(column)]
                 for column in [
                     Array(base_column=BigInt()),
+                ]
+            ]
+        )
+
+    def test_array_base_column_change(self):
+        """
+        There was a bug when trying to change the base column of an array:
+
+        https://github.com/piccolo-orm/piccolo/issues/1076
+
+        It wasn't importing the base column, e.g. for ``Array(Text())`` it
+        wasn't importing ``Text``.
+
+        """
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Array(base_column=Varchar()),
+                    Array(base_column=Text()),
                 ]
             ]
         )
@@ -1088,7 +1113,7 @@ class TestForeignKeySelf(MigrationTestCase):
             id = UUID(primary_key=True)
             table_a: ForeignKey[TableA] = ForeignKey("self")
 
-        self.table_classes: t.List[t.Type[Table]] = [TableA]
+        self.table_classes: list[type[Table]] = [TableA]
 
     def tearDown(self):
         drop_db_tables_sync(Migration, *self.table_classes)

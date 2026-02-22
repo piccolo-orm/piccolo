@@ -5,7 +5,7 @@ https://www.postgresql.org/docs/current/functions-string.html
 
 """
 
-import typing as t
+from typing import Optional, Union
 
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import Text, Varchar
@@ -72,8 +72,8 @@ class Upper(Function):
 class Concat(QueryString):
     def __init__(
         self,
-        *args: t.Union[Column, QueryString, str],
-        alias: t.Optional[str] = None,
+        *args: Union[Column, QueryString, str],
+        alias: Optional[str] = None,
     ):
         """
         Concatenate multiple values into a single string.
@@ -91,7 +91,7 @@ class Concat(QueryString):
 
         placeholders = ", ".join("{}" for _ in args)
 
-        processed_args: t.List[t.Union[QueryString, Column]] = []
+        processed_args: list[Union[QueryString, Column]] = []
 
         for arg in args:
             if isinstance(arg, str) or (

@@ -56,7 +56,7 @@
                 <li><a href="/admin/">Admin</a></li>
                 <li><a href="/schema/swagger">Swagger API</a></li>
             </ul>
-            <h3>Esmerald</h3>
+            <h3>Ravyn</h3>
             <ul>
                 <li><a href="/admin/">Admin</a></li>
                 <li><a href="/docs/swagger">Swagger API</a></li>
@@ -65,6 +65,21 @@
             <ul>
                 <li><a href="/admin/">Admin</a></li>
                 <li><a href="/tasks/">JSON endpoint</a></li>
+            </ul>
+            <h3>Quart</h3>
+            <ul>
+                <li><a href="/admin/">Admin</a></li>
+                <li><a href="/docs">Swagger API</a></li>
+            </ul>
+            <h3>Falcon</h3>
+            <ul>
+                <li><a href="/admin/">Admin</a></li>
+                <li><a href="/tasks/">JSON endpoint</a></li>
+            </ul>
+            <h3>Sanic</h3>
+            <ul>
+                <li><a href="/admin/">Admin</a></li>
+                <li><a href="/docs/swagger">Swagger API</a></li>
             </ul>
         </section>
     </div>
