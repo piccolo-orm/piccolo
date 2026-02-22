@@ -10,6 +10,7 @@ from piccolo.columns import (
     Serial,
     Text,
     Varchar,
+    Timestamptz,
 )
 from piccolo.columns.readable import Readable
 from piccolo.engine.finder import engine_finder
@@ -125,3 +126,14 @@ class Instrument(Table):
     id: Serial
     name = Varchar()
     recording_studio = ForeignKey(RecordingStudio)
+
+
+class Signing(Table):
+    """
+    Used for testing ``db_column_name``.
+    """
+
+    id: Serial
+    address = Text()
+    with_ = ForeignKey(Band, db_column_name="with")
+    starts = Timestamptz()
