@@ -9,8 +9,8 @@ from piccolo.columns import (
     Numeric,
     Serial,
     Text,
-    Varchar,
     Timestamptz,
+    Varchar,
 )
 from piccolo.columns.readable import Readable
 from piccolo.engine.finder import engine_finder
