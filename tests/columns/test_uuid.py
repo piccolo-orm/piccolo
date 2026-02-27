@@ -36,7 +36,7 @@ class UUID7Table(Table):
         and is_running_postgres()
         and engine_version_gte(18)
     ),
-    reason="Only >= Python 3.14 and >= Postgres 18 are supported.",
+    reason="Only Python >= 3.14 and Postgres >= 18 are supported.",
 )
 class TestUUID7(AsyncTableTest):
     tables = [UUID7Table]
