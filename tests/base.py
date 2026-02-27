@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import decimal
 import sys
 from typing import Optional
 from unittest import TestCase
@@ -32,8 +33,8 @@ def engine_version_gte(version: float) -> bool:
     return ENGINE is not None and run_sync(ENGINE.get_version()) > version
 
 
-def python_version_gte(version: float) -> bool:
-    return version >= float(
+def python_version_gte(version: decimal.Decimal) -> bool:
+    return version >= decimal.Decimal(
         f"{sys.version_info.major}.{sys.version_info.minor}"
     )
 
