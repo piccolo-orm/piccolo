@@ -1,5 +1,7 @@
 import uuid
 
+import pytest
+
 from piccolo.columns.column_types import UUID
 from piccolo.columns.defaults.uuid import UUID7
 from piccolo.table import Table
@@ -9,7 +11,6 @@ from tests.base import (
     is_running_postgres,
     python_version_gte,
 )
-import pytest
 
 
 class UUIDTable(Table):
