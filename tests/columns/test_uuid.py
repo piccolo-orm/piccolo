@@ -1,3 +1,4 @@
+import decimal
 import uuid
 
 import pytest
@@ -33,7 +34,7 @@ class UUID7Table(Table):
 
 @pytest.mark.skipif(
     not (
-        python_version_gte(3.14)
+        python_version_gte(decimal.Decimal("3.14"))
         and is_running_postgres()
         and engine_version_gte(18)
     ),
