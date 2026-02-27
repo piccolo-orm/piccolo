@@ -46,6 +46,13 @@ class UUID4(Default):
 
 
 class UUID7(Default):
+    """
+    This makes the default value for a
+    :class:`UUID <piccolo.columns.column_types.UUID>` column a randomly
+    generated UUID v7 value. Postgres >= 18 and Python >= 3.14 only. UUID7 can
+    be more efficiently indexed than UUID, and inserts can be faster.
+    """
+
     @property
     def postgres(self):
         """
