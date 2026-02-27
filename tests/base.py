@@ -28,6 +28,16 @@ def engine_version_lt(version: float) -> bool:
     return ENGINE is not None and run_sync(ENGINE.get_version()) < version
 
 
+def engine_version_gte(version: float) -> bool:
+    return ENGINE is not None and run_sync(ENGINE.get_version()) > version
+
+
+def python_version_gte(version: float) -> bool:
+    return version >= float(
+        f"{sys.version_info.major}.{sys.version_info.minor}"
+    )
+
+
 def is_running_postgres() -> bool:
     return type(ENGINE) is PostgresEngine
 

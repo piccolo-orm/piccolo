@@ -10,7 +10,7 @@ DB = CockroachEngine(
         "user": os.environ.get("PG_USER", "root"),
         "password": os.environ.get("PG_PASSWORD", ""),
         "database": os.environ.get("PG_DATABASE", "piccolo"),
-    },
+    }
 )
 
 

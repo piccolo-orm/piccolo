@@ -50,10 +50,6 @@ class UUID7(Default):
     def postgres(self):
         """
         Supported in Postgres 18 and above.
-
-        For older versions. a custom function has to be loaded into the
-        database (see ``PostgresEngine.polyfills``).
-
         """
         return "uuidv7()"
 
