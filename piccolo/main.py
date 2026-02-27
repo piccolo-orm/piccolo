@@ -22,6 +22,7 @@ from piccolo.apps.schema.piccolo_app import APP_CONFIG as schema_config
 from piccolo.apps.shell.piccolo_app import APP_CONFIG as shell_config
 from piccolo.apps.sql_shell.piccolo_app import APP_CONFIG as sql_shell_config
 from piccolo.apps.tester.piccolo_app import APP_CONFIG as tester_config
+from piccolo.apps.user.piccolo_app import APP_CONFIG as user_config
 from piccolo.conf.apps import AppRegistry, Finder
 from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import Level, colored_warning
@@ -69,6 +70,7 @@ def main() -> None:
         shell_config,
         sql_shell_config,
         tester_config,
+        user_config,
     ]:
         for command in _app_config.get_commands():
             cli.register(
