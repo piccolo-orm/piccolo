@@ -80,59 +80,38 @@ class M2MSelect(Selectable):
         fk_2 = self.m2m._meta.secondary_foreign_key
         fk_2_name = fk_2._meta.db_column_name
         table_2 = fk_2._foreign_key_meta.resolved_references
+        table_2_name_with_schema = table_2._meta.get_formatted_tablename()
+        table_2_pk_name = table_2._meta.primary_key._meta.db_column_name
+
+        # always use unique aliases for inner_select
+        alias_1 = f"inner_{fk_1_name}"
+        alias_2 = f"inner_{fk_2_name}"
+
         # self-reference table (if primary and secondary table are the same)
-        if table_1 == table_2:
-            table_2_name = table_1._meta.tablename
-            table_2_name_with_schema = table_1._meta.get_formatted_tablename()
-            table_2_pk_name = table_1._meta.primary_key._meta.db_column_name
-            # check bidirectional argument. If True change direction in query
-            if self.bidirectional:
-                inner_select = f"""
-                    {m2m_table_name_with_schema}
-                    JOIN {table_1_name_with_schema} "inner_{table_1_name}" ON (
-                        {m2m_table_name_with_schema}."{fk_1_name}" = "inner_{table_1_name}"."{table_1_pk_name}"
-                    )
-                    WHERE {m2m_table_name_with_schema}."{fk_2_name}" = "{table_2_name}"."{table_2_pk_name}"
-                """  # noqa: E501
-            else:
-                inner_select = f"""
-                    {m2m_table_name_with_schema}
-                    JOIN {table_2_name_with_schema} "inner_{table_2_name}" ON (
-                        {m2m_table_name_with_schema}."{fk_2_name}" = "inner_{table_2_name}"."{table_2_pk_name}"
-                    )
-                    WHERE {m2m_table_name_with_schema}."{fk_1_name}" = "{table_1_name}"."{table_1_pk_name}"
-                """  # noqa: E501
+        if self.bidirectional:
+            where_fk = fk_2_name
+            where_pk = table_2_pk_name
+            unique_alias = alias_1
         else:
-            table_1_name = table_1._meta.tablename
-            table_1_name_with_schema = table_1._meta.get_formatted_tablename()
-            table_1_pk_name = table_1._meta.primary_key._meta.db_column_name
+            where_fk = fk_1_name
+            where_pk = table_1_pk_name
+            unique_alias = alias_2
 
-            fk_2 = self.m2m._meta.secondary_foreign_key
-            fk_2_name = fk_2._meta.db_column_name
-            table_2 = fk_2._foreign_key_meta.resolved_references
-            table_2_name = table_2._meta.tablename
-            table_2_name_with_schema = table_2._meta.get_formatted_tablename()
-            table_2_pk_name = table_2._meta.primary_key._meta.db_column_name
-
-            inner_select = f"""
-                {m2m_table_name_with_schema}
-                JOIN {table_1_name_with_schema} "inner_{table_1_name}" ON (
-                    {m2m_table_name_with_schema}."{fk_1_name}" = "inner_{table_1_name}"."{table_1_pk_name}"
-                )
-                JOIN {table_2_name_with_schema} "inner_{table_2_name}" ON (
-                    {m2m_table_name_with_schema}."{fk_2_name}" = "inner_{table_2_name}"."{table_2_pk_name}"
-                )
-                WHERE {m2m_table_name_with_schema}."{fk_1_name}" = "{table_1_name}"."{table_1_pk_name}"
-            """  # noqa: E501
-
+        inner_select = f"""
+            {m2m_table_name_with_schema}
+            JOIN {table_1_name_with_schema} AS {alias_1}
+                ON {m2m_table_name_with_schema}.{fk_1_name} = {alias_1}.{table_1_pk_name}
+            JOIN {table_2_name_with_schema} AS {alias_2}
+                ON {m2m_table_name_with_schema}.{fk_2_name} = {alias_2}.{table_2_pk_name}
+            WHERE {m2m_table_name_with_schema}.{where_fk} = {table_1_name}.{where_pk}
+        """  # noqa: E501
         if engine_type in ("postgres", "cockroach"):
             if self.as_list:
                 column_name = self.columns[0]._meta.db_column_name
                 return QueryString(
                     f"""
                     ARRAY(
-                        SELECT
-                            "inner_{table_2_name}"."{column_name}"
+                        SELECT {unique_alias}."{column_name}"
                         FROM {inner_select}
                     ) AS "{m2m_relationship_name}"
                 """
@@ -142,24 +121,24 @@ class M2MSelect(Selectable):
                 return QueryString(
                     f"""
                     ARRAY(
-                        SELECT
-                            "inner_{table_2_name}"."{column_name}"
+                        SELECT {unique_alias}."{column_name}"
                         FROM {inner_select}
                     ) AS "{m2m_relationship_name}"
                 """
                 )
             else:
                 column_names = ", ".join(
-                    f'"inner_{table_2_name}"."{column._meta.db_column_name}"'
+                    f'{unique_alias}."{column._meta.db_column_name}"'
                     for column in self.columns
                 )
                 return QueryString(
                     f"""
                     (
-                        SELECT JSON_AGG({m2m_relationship_name}_results)
+                        SELECT JSON_AGG(results)
                         FROM (
-                            SELECT {column_names} FROM {inner_select}
-                        ) AS "{m2m_relationship_name}_results"
+                            SELECT {column_names}
+                            FROM {inner_select}
+                        ) AS results
                     ) AS "{m2m_relationship_name}"
                 """
                 )
@@ -173,12 +152,9 @@ class M2MSelect(Selectable):
             return QueryString(
                 f"""
                 (
-                    SELECT group_concat(
-                        "inner_{table_2_name}"."{column_name}"
-                    )
+                    SELECT group_concat({unique_alias}."{column_name}")
                     FROM {inner_select}
-                )
-                AS "{m2m_relationship_name} [M2M]"
+                ) AS "{m2m_relationship_name} [M2M]"
             """
             )
         else:
