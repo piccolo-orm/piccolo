@@ -46,6 +46,7 @@ from piccolo.utils.warnings import colored_warning
 
 if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.column_types import ForeignKey
+    from piccolo.query.functions.conditional import Coalesce
     from piccolo.query.methods.select import Select
     from piccolo.table import Table
 
@@ -675,6 +676,13 @@ class Column(Selectable):
 
     def not_like(self, value: str) -> Where:
         return Where(column=self, value=value, operator=NotLike)
+
+    def __or__(self, value) -> Coalesce:
+        from piccolo.query.functions.conditional import Coalesce
+
+        return Coalesce(
+            self, value, alias=self._alias or self._meta.get_default_alias()
+        )
 
     def __lt__(self, value) -> Where:
         return Where(column=self, value=value, operator=LessThan)
