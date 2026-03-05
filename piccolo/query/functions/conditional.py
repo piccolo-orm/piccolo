@@ -21,6 +21,22 @@ class Coalesce(QueryString):
         if len(args) < 2:
             raise ValueError("At least two values must be passed in.")
 
+        #######################################################################
+        # Preserve the original alias from the column.
+
+        first_arg = args[0]
+
+        if isinstance(first_arg, Column):
+            alias = (
+                alias
+                or first_arg._alias
+                or first_arg._meta.get_default_alias()
+            )
+        elif isinstance(first_arg, QueryString):
+            alias = alias or first_arg._alias
+
+        #######################################################################
+
         placeholders = ", ".join("{}" for _ in args)
 
         super().__init__(f"COALESCE({placeholders})", *args, alias=alias)

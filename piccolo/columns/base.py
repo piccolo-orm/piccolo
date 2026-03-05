@@ -680,9 +680,7 @@ class Column(Selectable):
     def __or__(self, value) -> Coalesce:
         from piccolo.query.functions.conditional import Coalesce
 
-        return Coalesce(
-            self, value, alias=self._alias or self._meta.get_default_alias()
-        )
+        return Coalesce(self, value)
 
     def __lt__(self, value) -> Where:
         return Where(column=self, value=value, operator=LessThan)
