@@ -51,7 +51,7 @@ class Band(Table):
     id: Serial
     name = Varchar(length=50)
     manager = ForeignKey(references=Manager, null=True)
-    popularity = Integer(null=True, default=None)
+    popularity = Integer()
     genres = M2M(LazyTableReference("GenreToBand", module_path=__name__))
 
     @classmethod
@@ -153,7 +153,7 @@ class Album(Table):
     id: Serial
     name = Varchar()
     band = ForeignKey(Band)
-    release_date = Date()
+    release_date = Date(null=True, default=None)
     recorded_at = ForeignKey(RecordingStudio)
     awards = Array(Varchar())
 
@@ -321,6 +321,15 @@ def populate():
                 Album.band: rustaceans,
                 Album.release_date: datetime.date(year=2022, month=2, day=2),
                 Album.awards: ["Mercury Prize 2022"],
+            }
+        ),
+        Album(
+            {
+                Album.name: "Awesome album 4",
+                Album.recorded_at: recording_studio_2,
+                Album.band: rustaceans,
+                Album.release_date: None,
+                Album.awards: [],
             }
         ),
     ).run_sync()
