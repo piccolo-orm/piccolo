@@ -24,6 +24,8 @@ class Coalesce(QueryString):
         #######################################################################
         # Preserve the original alias from the column.
 
+        from piccolo.columns import Column
+
         first_arg = args[0]
 
         if isinstance(first_arg, Column):

@@ -17,8 +17,11 @@ class TestCoalesce(AsyncTableTest):
         await Band({Band.popularity: None}).save()
 
     async def test_coalesce(self):
-        response = await Band.select(
-            Coalesce(Band.popularity, 10, alias="popularity")
-        )
+        response = await Band.select(Coalesce(Band.popularity, 10))
+
+        self.assertListEqual(response, [{"popularity": 10}])
+
+    async def test_coalesce_pipe_syntax(self):
+        response = await Band.select(Band.popularity | 10)
 
         self.assertListEqual(response, [{"popularity": 10}])
