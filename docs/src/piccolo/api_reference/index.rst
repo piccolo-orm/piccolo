@@ -144,3 +144,15 @@ QueryString
 .. currentmodule:: piccolo.querystring
 
 .. autoclass:: QueryString
+
+-------------------------------------------------------------------------------
+
+Custom Types
+------------
+
+BasicTypes
+~~~~~~~~~~
+
+.. currentmodule:: piccolo.custom_types
+
+.. autoclass:: BasicTypes
