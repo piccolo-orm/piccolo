@@ -18,6 +18,7 @@ from piccolo.apps.migrations.auto.serialisation import deserialise_params
 from piccolo.columns import Column, column_types
 from piccolo.columns.column_types import ForeignKey, Serial
 from piccolo.engine import engine_finder
+from piccolo.engine.cockroach import CockroachTransaction
 from piccolo.query import Query
 from piccolo.query.base import DDL
 from piccolo.query.constraints import get_fk_constraint_name
@@ -984,7 +985,11 @@ class MigrationManager:
             engine.transaction()
             if self.wrap_in_transaction
             else SkippedTransaction()
-        ):
+        ) as transaction:
+            if isinstance(transaction, CockroachTransaction):
+                # To enable DDL rollbacks in CockroachDB.
+                await transaction.autocommit_before_ddl(enabled=False)
+
             if not self.preview:
                 if direction == "backwards":
                     raw_list = self.raw_backwards

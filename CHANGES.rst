@@ -1,6 +1,36 @@
 Changes
 =======
 
+1.32.0
+------
+
+Added the ``having`` clause, which is useful when working with ``group_by``.
+
+For example, here we get the number of albums per band, but exclude any bands
+with less than 2 albums:
+
+.. code-block:: python
+
+    >>> from piccolo.query.functions.aggregate import Count
+
+    >>> await Album.select(
+    ...     Album.band.name.as_alias('band_name'),
+    ...     Count()
+    ... ).group_by(
+    ...     Album.band
+    ... ).having(
+    ...     Count() >= 2
+    ... )
+
+    [
+        {"band_name": "Pythonistas", "count": 2},
+    ]
+
+We also updated our CockroachDB support to the latest version (thanks to
+@sinisaos for this).
+
+-------------------------------------------------------------------------------
+
 1.31.0
 ------
 

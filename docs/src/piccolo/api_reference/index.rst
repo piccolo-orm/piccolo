@@ -111,6 +111,32 @@ UUID
 ~~~~
 
 .. autoclass:: UUID4
+
+.. autoclass:: UUID7
+
+
+Timestamp
+~~~~~~~~~
+
+.. autoclass:: TimestampCustom
+    :members:
+
+.. autoclass:: TimestampOffset
+    :members:
+
+.. autoclass:: TimestampNow
+    :members:
+
+Timestamptz
+~~~~~~~~~~~
+
+.. autoclass:: TimestamptzCustom
+    :members:
+
+.. autoclass:: TimestamptzOffset
+    :members:
+
+.. autoclass:: TimestamptzNow
     :members:
 
 -------------------------------------------------------------------------------
@@ -144,3 +170,15 @@ QueryString
 .. currentmodule:: piccolo.querystring
 
 .. autoclass:: QueryString
+
+-------------------------------------------------------------------------------
+
+Custom Types
+------------
+
+BasicTypes
+~~~~~~~~~~
+
+.. currentmodule:: piccolo.custom_types
+
+.. autoclass:: BasicTypes

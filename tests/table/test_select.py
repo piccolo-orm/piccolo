@@ -11,12 +11,12 @@ from piccolo.query.functions.aggregate import Avg, Count, Max, Min, Sum
 from piccolo.query.methods.select import SelectRaw
 from piccolo.query.mixins import DistinctOnError
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
+from piccolo.testing.test_case import AsyncTableTest
 from tests.base import (
     DBTestCase,
     engine_is,
     engine_version_lt,
     engines_only,
-    engines_skip,
     is_running_cockroach,
     is_running_sqlite,
     sqlite_only,
@@ -466,17 +466,18 @@ class TestSelect(DBTestCase):
             response, [{"name": "CSharps"}, {"name": "Rustaceans"}]
         )
 
-    @engines_skip("cockroach")
     def test_multiple_where(self):
         """
         Test that chaining multiple where clauses works results in an AND.
         """
         self.insert_rows()
 
+        managers = Manager.select().run_sync()
+
         query = (
             Band.select(Band.name)
             .where(Band.name == "Rustaceans")
-            .where(Band.manager == 2)
+            .where(Band.manager == managers[1]["id"])
         )
 
         response = query.run_sync()
@@ -484,18 +485,25 @@ class TestSelect(DBTestCase):
         self.assertEqual(response, [{"name": "Rustaceans"}])
         self.assertIn("AND", query.__str__())
 
-    @engines_skip("cockroach")
     def test_complex_where(self):
         """
         Test a complex where clause - combining AND, and OR.
         """
         self.insert_rows()
 
+        managers = Manager.select().run_sync()
+
         query = (
             Band.select(Band.name)
             .where(
-                ((Band.popularity == 2000) & (Band.manager == 2))
-                | ((Band.popularity == 10) & (Band.manager == 3))
+                (
+                    (Band.popularity == 2000)
+                    & (Band.manager == managers[1]["id"])
+                )
+                | (
+                    (Band.popularity == 10)
+                    & (Band.manager == managers[2]["id"])
+                )
             )
             .order_by(Band.name)
         )
@@ -1507,3 +1515,36 @@ class TestDistinctOn(TestCase):
             Album.select().distinct(on=[Album.band]).order_by(
                 Album.release_date
             ).run_sync()
+
+
+class TestHaving(AsyncTableTest):
+    tables = [Album]
+
+    async def test_having(self):
+        await Album.insert(
+            Album(
+                {
+                    Album.band: "Pythonistas",
+                }
+            ),
+            Album(
+                {
+                    Album.band: "Pythonistas",
+                }
+            ),
+            Album(
+                {
+                    Album.band: "Rustaceans",
+                }
+            ),
+        )
+
+        response = (
+            await Album.select(Album.band)
+            .group_by(Album.band)
+            .having(Count() >= 2)
+            .output(as_list=True)
+        )
+
+        self.assertIn("Pythonistas", response)
+        self.assertNotIn("Rustaceans", response)

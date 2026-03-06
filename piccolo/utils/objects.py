@@ -41,7 +41,10 @@ def make_nested_object(row: dict[str, Any], table_class: type[Table]) -> Table:
     for key, value in row.items():
         if isinstance(value, dict):
             # This is probably a related table.
-            fk_column = table_class._meta.get_column_by_name(key)
+            fk_column = table_class._meta.get_column_by_name(
+                key,
+                match_db_column_name=True,
+            )
 
             if isinstance(fk_column, ForeignKey):
                 related_table_class = (

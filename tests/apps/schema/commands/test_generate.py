@@ -151,7 +151,6 @@ class TestGenerate(TestCase):
         assert SmallTable_ is not None
         self._compare_table_columns(SmallTable, SmallTable_)
 
-    @engines_skip("cockroach")
     def test_self_referencing_fk(self) -> None:
         """
         Make sure self-referencing foreign keys are handled correctly.

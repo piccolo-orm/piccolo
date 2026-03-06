@@ -1,7 +1,6 @@
 from unittest import TestCase
 
 from piccolo.table import create_db_tables_sync, drop_db_tables_sync
-from tests.base import engines_only, engines_skip
 from tests.example_apps.music.tables import Band, Manager
 
 
@@ -37,7 +36,6 @@ class TestSave(TestCase):
         self.assertTrue("Maz2" in names)
         self.assertTrue("Maz" not in names)
 
-    @engines_skip("cockroach")
     def test_save_specific_columns(self):
         """
         Make sure that we can save a subset of columns.
@@ -52,9 +50,9 @@ class TestSave(TestCase):
             Band.select().run_sync(),
             [
                 {
-                    "id": 1,
+                    "id": band.id,
                     "name": "Pythonistas",
-                    "manager": 1,
+                    "manager": manager.id,
                     "popularity": 1000,
                 }
             ],
@@ -69,9 +67,9 @@ class TestSave(TestCase):
             Band.select().run_sync(),
             [
                 {
-                    "id": 1,
+                    "id": band.id,
                     "name": "Pythonistas 2",
-                    "manager": 1,
+                    "manager": manager.id,
                     "popularity": 1000,
                 }
             ],
@@ -87,15 +85,14 @@ class TestSave(TestCase):
             Band.select().run_sync(),
             [
                 {
-                    "id": 1,
+                    "id": band.id,
                     "name": "Pythonistas 2",
-                    "manager": 1,
+                    "manager": manager.id,
                     "popularity": 3000,
                 }
             ],
         )
 
-    @engines_only("cockroach")
     def test_save_specific_columns_alt(self):
         """
         Make sure that we can save a subset of columns.

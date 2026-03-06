@@ -4,6 +4,7 @@ from typing import Optional
 from unittest import IsolatedAsyncioTestCase, TestCase
 
 from piccolo.engine import Engine, engine_finder
+from piccolo.engine.cockroach import CockroachTransaction
 from piccolo.table import (
     Table,
     create_db_tables,
@@ -112,8 +113,12 @@ class AsyncTransactionTest(IsolatedAsyncioTestCase):
         db = self.db or engine_finder()
         assert db is not None
         self.transaction = db.transaction()
+
         # This is only available in Python 3.11 and above:
         await self.enterAsyncContext(cm=self.transaction)  # type: ignore
+
+        if isinstance(self.transaction, CockroachTransaction):
+            await self.transaction.autocommit_before_ddl(False)
 
     async def asyncTearDown(self):
         await super().asyncTearDown()
