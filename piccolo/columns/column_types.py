@@ -885,7 +885,8 @@ class PrimaryKey(Serial):
 
 class Timestamp(Column):
     """
-    Used for storing datetimes. Uses the ``datetime`` type for values.
+    Used for storing timezone naive datetimes. Uses the ``datetime`` type for
+    values.
 
     **Example**
 

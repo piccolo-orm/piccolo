@@ -132,6 +132,24 @@ TimestampNow
 .. autoclass:: TimestampNow
     :members:
 
+TimestamptzCustom
+~~~~~~~~~~~~~~~~~
+
+.. autoclass:: TimestamptzCustom
+    :members:
+
+TimestamptzOffset
+~~~~~~~~~~~~~~~~~
+
+.. autoclass:: TimestamptzOffset
+    :members:
+
+TimestamptzNow
+~~~~~~~~~~~~~~
+
+.. autoclass:: TimestamptzNow
+    :members:
+
 -------------------------------------------------------------------------------
 
 Testing
