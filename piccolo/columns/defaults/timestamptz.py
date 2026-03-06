@@ -28,6 +28,10 @@ class TimestamptzOffset(TimestampOffset):
 
 
 class TimestamptzNow(TimestampNow):
+    """
+    The current timestamp in UTC.
+    """
+
     @property
     def cockroach(self):
         return "current_timestamp"

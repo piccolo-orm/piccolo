@@ -113,6 +113,43 @@ UUID
 .. autoclass:: UUID4
     :members:
 
+
+TimestampCustom
+~~~~~~~~~~~~~~~
+
+.. autoclass:: TimestampCustom
+    :members:
+
+TimestampOffset
+~~~~~~~~~~~~~~~
+
+.. autoclass:: TimestampOffset
+    :members:
+
+TimestampNow
+~~~~~~~~~~~~
+
+.. autoclass:: TimestampNow
+    :members:
+
+TimestamptzCustom
+~~~~~~~~~~~~~~~~~
+
+.. autoclass:: TimestamptzCustom
+    :members:
+
+TimestamptzOffset
+~~~~~~~~~~~~~~~~~
+
+.. autoclass:: TimestamptzOffset
+    :members:
+
+TimestamptzNow
+~~~~~~~~~~~~~~
+
+.. autoclass:: TimestamptzNow
+    :members:
+
 -------------------------------------------------------------------------------
 
 Testing
