@@ -68,29 +68,6 @@ class TimestampNow(Default):
         return datetime.datetime.now()
 
 
-class TimestampNowUTC(Default):
-    """
-    The current timestamp, in UTC.
-    """
-
-    @property
-    def postgres(self):
-        return "(current_timestamp AT TIME ZONE 'utc')"
-
-    @property
-    def cockroach(self):
-        return "(current_timestamp AT TIME ZONE 'utc')::TIMESTAMP"
-
-    @property
-    def sqlite(self):
-        return "current_timestamp"
-
-    def python(self):
-        return datetime.datetime.now(tz=datetime.timezone.utc).replace(
-            tzinfo=None
-        )
-
-
 class TimestampCustom(Default):
     def __init__(
         self,
@@ -171,7 +148,6 @@ TimestampArg = Union[
     datetime.datetime,
     DatetimeDefault,
     Callable[[], datetime.datetime],
-    TimestampNowUTC,
 ]
 
 
@@ -180,5 +156,4 @@ __all__ = [
     "TimestampCustom",
     "TimestampNow",
     "TimestampOffset",
-    "TimestampNowUTC",
 ]
