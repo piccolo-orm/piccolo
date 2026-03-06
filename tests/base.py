@@ -34,8 +34,9 @@ def engine_version_gte(version: float) -> bool:
 
 
 def python_version_gte(version: decimal.Decimal) -> bool:
-    return version >= decimal.Decimal(
-        f"{sys.version_info.major}.{sys.version_info.minor}"
+    return (
+        decimal.Decimal(f"{sys.version_info.major}.{sys.version_info.minor}")
+        >= version
     )
 
 
