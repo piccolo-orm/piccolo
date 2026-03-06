@@ -905,6 +905,11 @@ class Timestamp(Column):
         >>> await Concert.select(Concert.starts)
         {'starts': datetime.datetime(2050, 1, 1, 0, 0)}
 
+    .. note::
+        We recommend using
+        :class:`Timestamptz <piccolo.columns.column_types.Timestamptz>`
+        columns instead as timezone aware datetime objects aren't ambiguous.
+
     """
 
     value_type = datetime
