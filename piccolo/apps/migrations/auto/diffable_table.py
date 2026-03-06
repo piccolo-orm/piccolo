@@ -5,14 +5,17 @@ from typing import Any, Optional
 
 from piccolo.apps.migrations.auto.operations import (
     AddColumn,
+    AddCompositeIndex,
     AlterColumn,
     DropColumn,
+    DropCompositeIndex,
 )
 from piccolo.apps.migrations.auto.serialisation import (
     deserialise_params,
     serialise_params,
 )
 from piccolo.columns.base import Column
+from piccolo.composite_index import Composite
 from piccolo.table import Table, create_table_class
 
 
@@ -62,6 +65,12 @@ class TableDelta:
     add_columns: list[AddColumn] = field(default_factory=list)
     drop_columns: list[DropColumn] = field(default_factory=list)
     alter_columns: list[AlterColumn] = field(default_factory=list)
+    add_composite_indexes: list[AddCompositeIndex] = field(
+        default_factory=list
+    )
+    drop_composite_indexes: list[DropCompositeIndex] = field(
+        default_factory=list
+    )
 
     def __eq__(self, value: TableDelta) -> bool:  # type: ignore
         """
@@ -93,6 +102,22 @@ class ColumnComparison:
 
 
 @dataclass
+class CompositeIndexComparison:
+    composite_index: Composite
+
+    def __hash__(self) -> int:
+        return self.composite_index.__hash__()
+
+    def __eq__(self, value) -> bool:
+        if isinstance(value, CompositeIndexComparison):
+            return (
+                self.composite_index._meta.name
+                == value.composite_index._meta.name
+            )
+        return False
+
+
+@dataclass
 class DiffableTable:
     """
     Represents a Table. When we substract two instances, it returns the
@@ -103,6 +128,7 @@ class DiffableTable:
     tablename: str
     schema: Optional[str] = None
     columns: list[Column] = field(default_factory=list)
+    composite_indexes: list[Composite] = field(default_factory=list)
     previous_class_name: Optional[str] = None
 
     def __post_init__(self) -> None:
@@ -196,10 +222,54 @@ class DiffableTable:
                     )
                 )
 
+        add_composite_indexes = [
+            AddCompositeIndex(
+                table_class_name=self.class_name,
+                composite_index_name=i.composite_index._meta.name,
+                composite_index_class_name=i.composite_index.__class__.__name__,  # noqa: E501
+                composite_index_class=i.composite_index.__class__,
+                params=i.composite_index._meta.params,
+                schema=self.schema,
+            )
+            for i in sorted(
+                {
+                    CompositeIndexComparison(composite_index=composite_index)
+                    for composite_index in self.composite_indexes
+                }
+                - {
+                    CompositeIndexComparison(composite_index=composite_index)
+                    for composite_index in value.composite_indexes
+                },
+                key=lambda x: x.composite_index._meta.name,
+            )
+        ]
+
+        drop_composite_indexes = [
+            DropCompositeIndex(
+                table_class_name=self.class_name,
+                composite_index_name=i.composite_index._meta.name,
+                tablename=value.tablename,
+                schema=self.schema,
+            )
+            for i in sorted(
+                {
+                    CompositeIndexComparison(composite_index=composite_index)
+                    for composite_index in value.composite_indexes
+                }
+                - {
+                    CompositeIndexComparison(composite_index=composite_index)
+                    for composite_index in self.composite_indexes
+                },
+                key=lambda x: x.composite_index._meta.name,
+            )
+        ]
+
         return TableDelta(
             add_columns=add_columns,
             drop_columns=drop_columns,
             alter_columns=alter_columns,
+            add_composite_indexes=add_composite_indexes,
+            drop_composite_indexes=drop_composite_indexes,
         )
 
     def __hash__(self) -> int:
@@ -225,10 +295,14 @@ class DiffableTable:
         """
         Converts the DiffableTable into a Table subclass.
         """
+        class_members: dict[str, Any] = {}
+        for column in self.columns:
+            class_members[column._meta.name] = column
+        for composite_index in self.composite_indexes:
+            class_members[composite_index._meta.name] = composite_index
+
         return create_table_class(
             class_name=self.class_name,
             class_kwargs={"tablename": self.tablename, "schema": self.schema},
-            class_members={
-                column._meta.name: column for column in self.columns
-            },
+            class_members=class_members,
         )
