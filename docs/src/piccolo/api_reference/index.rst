@@ -111,41 +111,30 @@ UUID
 ~~~~
 
 .. autoclass:: UUID4
-    :members:
+
+.. autoclass:: UUID7
 
 
-TimestampCustom
-~~~~~~~~~~~~~~~
+Timestamp
+~~~~~~~~~
 
 .. autoclass:: TimestampCustom
     :members:
 
-TimestampOffset
-~~~~~~~~~~~~~~~
-
 .. autoclass:: TimestampOffset
     :members:
-
-TimestampNow
-~~~~~~~~~~~~
 
 .. autoclass:: TimestampNow
     :members:
 
-TimestamptzCustom
-~~~~~~~~~~~~~~~~~
+Timestamptz
+~~~~~~~~~~~
 
 .. autoclass:: TimestamptzCustom
     :members:
 
-TimestamptzOffset
-~~~~~~~~~~~~~~~~~
-
 .. autoclass:: TimestamptzOffset
     :members:
-
-TimestamptzNow
-~~~~~~~~~~~~~~
 
 .. autoclass:: TimestamptzNow
     :members:
