@@ -98,10 +98,12 @@ def _generate_migration_meta(app_config: AppConfig) -> NewMigrationMeta:
 
     filename = f"{cleaned_app_name}_{cleaned_id}"
 
-    if app_config.resolved_migrations_folder_path:
-        path = os.path.join(
-            app_config.resolved_migrations_folder_path, f"{filename}.py"
-        )
+    if app_config.resolved_migrations_folder_path is None:
+        raise ValueError("Migrations disabled in this app!")
+
+    path = os.path.join(
+        app_config.resolved_migrations_folder_path, f"{filename}.py"
+    )
 
     return NewMigrationMeta(
         migration_id=_id, migration_filename=filename, migration_path=path
