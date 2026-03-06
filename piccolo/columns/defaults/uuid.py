@@ -39,7 +39,7 @@ class UUID4(Default):
 
     @property
     def sqlite(self):
-        return "''"
+        return None
 
     def python(self):
         return uuid.uuid4()
@@ -63,13 +63,13 @@ class UUID7(Default):
     @property
     def cockroach(self):
         """
-        Unfortunately CockroachDB doesn't current support this.
+        CockroachDB doesn't currently have a uuidv7 function.
         """
-        raise NotImplementedError()
+        return None
 
     @property
     def sqlite(self):
-        return "''"
+        return None
 
     def python(self):
         return uuid7()
