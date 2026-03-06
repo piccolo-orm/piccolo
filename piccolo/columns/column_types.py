@@ -908,7 +908,8 @@ class Timestamp(Column):
     .. note::
         We recommend using
         :class:`Timestamptz <piccolo.columns.column_types.Timestamptz>`
-        columns instead as timezone aware datetime objects aren't ambiguous.
+        columns if possible - having timezone information makes the timestamp
+        unambiguous.
 
     """
 
