@@ -49,7 +49,8 @@ class TimestampOffset(Default):
 
 class TimestampNow(Default):
     """
-    The current timestamp, in the timezone of the server / database.
+    The current timestamp, in the local time of the machine that Python is
+    running on.
     """
 
     @property
