@@ -61,7 +61,7 @@ class TimestampNow(Default):
         return "current_timestamp"
 
     def python(self):
-        return datetime.datetime.now()
+        return datetime.datetime.now(tz=datetime.timezone.utc).replace(tzinfo=None)
 
 
 class TimestampCustom(Default):
