@@ -4,6 +4,7 @@ from unittest import TestCase
 
 import pytest
 
+from piccolo.engine.cockroach import CockroachTransaction
 from piccolo.engine.sqlite import SQLiteEngine, TransactionType
 from piccolo.table import drop_db_tables_sync
 from piccolo.utils.sync import run_sync
@@ -132,6 +133,9 @@ class TestTransaction(TestCase):
 
         async def run_transaction():
             async with Band._meta.db.transaction() as transaction:
+                if isinstance(transaction, CockroachTransaction):
+                    await transaction.autocommit_before_ddl(enabled=False)
+
                 await Manager.create_table()
                 await transaction.rollback()
 
