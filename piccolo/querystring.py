@@ -275,6 +275,11 @@ class QueryString(Selectable):
     def ne(self, value) -> QueryString:
         return self.__ne__(value)
 
+    def __or__(self, value) -> QueryString:
+        from piccolo.query.functions.conditional import Coalesce
+
+        return Coalesce(self, value, alias=self._alias)
+
     def __add__(self, value) -> QueryString:
         return QueryString("{} + {}", self, value)
 
