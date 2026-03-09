@@ -31,6 +31,7 @@ class M2MSelect(Selectable):
         m2m: M2M,
         as_list: bool = False,
         load_json: bool = False,
+        bidirectional: Optional[bool] = False,
     ):
         """
         :param columns:
@@ -40,12 +41,16 @@ class M2MSelect(Selectable):
             flattened list will be returned, rather than a list of objects.
         :param load_json:
             If ``True``, any JSON strings are loaded as Python objects.
+        :param bidirectional:
+            Only used for self-referencing tables. If ``True``, a
+            bidirectional query is performed against self-referencing tables.
 
         """
         self.as_list = as_list
         self.columns = columns
         self.m2m = m2m
         self.load_json = load_json
+        self.bidirectional = bidirectional
 
         safe_types = (int, str)
 
@@ -75,29 +80,38 @@ class M2MSelect(Selectable):
         fk_2 = self.m2m._meta.secondary_foreign_key
         fk_2_name = fk_2._meta.db_column_name
         table_2 = fk_2._foreign_key_meta.resolved_references
-        table_2_name = table_2._meta.tablename
         table_2_name_with_schema = table_2._meta.get_formatted_tablename()
         table_2_pk_name = table_2._meta.primary_key._meta.db_column_name
 
+        # always use unique aliases for inner_select
+        alias_1 = f"inner_{fk_1_name}"
+        alias_2 = f"inner_{fk_2_name}"
+
+        # self-reference table (if primary and secondary table are the same)
+        if self.bidirectional:
+            where_fk = fk_2_name
+            where_pk = table_2_pk_name
+            unique_alias = alias_1
+        else:
+            where_fk = fk_1_name
+            where_pk = table_1_pk_name
+            unique_alias = alias_2
+
         inner_select = f"""
             {m2m_table_name_with_schema}
-            JOIN {table_1_name_with_schema} "inner_{table_1_name}" ON (
-                {m2m_table_name_with_schema}."{fk_1_name}" = "inner_{table_1_name}"."{table_1_pk_name}"
-            )
-            JOIN {table_2_name_with_schema} "inner_{table_2_name}" ON (
-                {m2m_table_name_with_schema}."{fk_2_name}" = "inner_{table_2_name}"."{table_2_pk_name}"
-            )
-            WHERE {m2m_table_name_with_schema}."{fk_1_name}" = "{table_1_name}"."{table_1_pk_name}"
+            JOIN {table_1_name_with_schema} AS {alias_1}
+                ON {m2m_table_name_with_schema}.{fk_1_name} = {alias_1}.{table_1_pk_name}
+            JOIN {table_2_name_with_schema} AS {alias_2}
+                ON {m2m_table_name_with_schema}.{fk_2_name} = {alias_2}.{table_2_pk_name}
+            WHERE {m2m_table_name_with_schema}.{where_fk} = {table_1_name}.{where_pk}
         """  # noqa: E501
-
         if engine_type in ("postgres", "cockroach"):
             if self.as_list:
                 column_name = self.columns[0]._meta.db_column_name
                 return QueryString(
                     f"""
                     ARRAY(
-                        SELECT
-                            "inner_{table_2_name}"."{column_name}"
+                        SELECT {unique_alias}."{column_name}"
                         FROM {inner_select}
                     ) AS "{m2m_relationship_name}"
                 """
@@ -107,24 +121,24 @@ class M2MSelect(Selectable):
                 return QueryString(
                     f"""
                     ARRAY(
-                        SELECT
-                            "inner_{table_2_name}"."{column_name}"
+                        SELECT {unique_alias}."{column_name}"
                         FROM {inner_select}
                     ) AS "{m2m_relationship_name}"
                 """
                 )
             else:
                 column_names = ", ".join(
-                    f'"inner_{table_2_name}"."{column._meta.db_column_name}"'
+                    f'{unique_alias}."{column._meta.db_column_name}"'
                     for column in self.columns
                 )
                 return QueryString(
                     f"""
                     (
-                        SELECT JSON_AGG({m2m_relationship_name}_results)
+                        SELECT JSON_AGG(results)
                         FROM (
-                            SELECT {column_names} FROM {inner_select}
-                        ) AS "{m2m_relationship_name}_results"
+                            SELECT {column_names}
+                            FROM {inner_select}
+                        ) AS results
                     ) AS "{m2m_relationship_name}"
                 """
                 )
@@ -138,12 +152,9 @@ class M2MSelect(Selectable):
             return QueryString(
                 f"""
                 (
-                    SELECT group_concat(
-                        "inner_{table_2_name}"."{column_name}"
-                    )
+                    SELECT group_concat({unique_alias}."{column_name}")
                     FROM {inner_select}
-                )
-                AS "{m2m_relationship_name} [M2M]"
+                ) AS "{m2m_relationship_name} [M2M]"
             """
             )
         else:
@@ -248,7 +259,11 @@ class M2MMeta:
         for fk_column in self.foreign_key_columns:
             if fk_column._foreign_key_meta.resolved_references != self.table:
                 return fk_column
-
+            if (
+                fk_column._foreign_key_meta.resolved_references
+                == self.primary_table
+            ):
+                return self.foreign_key_columns[-1]
         raise ValueError("No matching foreign key column found!")
 
     @property
@@ -364,23 +379,39 @@ class M2MRemoveRelated:
 class M2MGetRelated:
     row: Table
     m2m: M2M
+    bidirectional: Optional[bool] = False
 
     async def run(self):
         joining_table = self.m2m._meta.resolved_joining_table
 
         secondary_table = self.m2m._meta.secondary_table
 
-        # use a subquery to make only one db query
-        results = await secondary_table.objects().where(
-            secondary_table._meta.primary_key.is_in(
-                joining_table.select(
-                    getattr(
-                        self.m2m._meta.secondary_foreign_key,
-                        secondary_table._meta.primary_key._meta.name,
-                    )
-                ).where(self.m2m._meta.primary_foreign_key == self.row)
+        # bidirectional argument which is used to distinguish
+        # the direction in which we execute queries in the
+        # self-reference table (reference the same table)
+        if self.bidirectional:
+            results = await secondary_table.objects().where(
+                secondary_table._meta.primary_key.is_in(
+                    joining_table.select(
+                        getattr(
+                            self.m2m._meta.primary_foreign_key,
+                            secondary_table._meta.primary_key._meta.name,
+                        )
+                    ).where(self.m2m._meta.secondary_foreign_key == self.row)
+                )
             )
-        )
+        else:
+            # use a subquery to make only one db query
+            results = await secondary_table.objects().where(
+                secondary_table._meta.primary_key.is_in(
+                    joining_table.select(
+                        getattr(
+                            self.m2m._meta.secondary_foreign_key,
+                            secondary_table._meta.primary_key._meta.name,
+                        )
+                    ).where(self.m2m._meta.primary_foreign_key == self.row)
+                )
+            )
 
         return results
 
@@ -421,6 +452,7 @@ class M2M:
         *columns: Union[Column, list[Column]],
         as_list: bool = False,
         load_json: bool = False,
+        bidirectional: Optional[bool] = False,
     ) -> M2MSelect:
         """
         :param columns:
@@ -431,6 +463,10 @@ class M2M:
             flattened list will be returned, rather than a list of objects.
         :param load_json:
             If ``True``, any JSON strings are loaded as Python objects.
+        :param bidirectional:
+            Only used for self-referencing tables. If ``True``, a
+            bidirectional query is performed against self-referencing tables.
+
         """
         columns_ = flatten(columns)
 
@@ -443,5 +479,9 @@ class M2M:
             )
 
         return M2MSelect(
-            *columns_, m2m=self, as_list=as_list, load_json=load_json
+            *columns_,
+            m2m=self,
+            as_list=as_list,
+            load_json=load_json,
+            bidirectional=bidirectional,
         )
