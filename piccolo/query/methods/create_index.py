@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from piccolo.columns import Column
 from piccolo.columns.indexes import IndexMethod
@@ -18,11 +18,13 @@ class CreateIndex(DDL):
         columns: Union[list[Column], list[str]],
         method: IndexMethod = IndexMethod.btree,
         if_not_exists: bool = False,
+        name: Optional[str] = None,
         **kwargs,
     ):
         self.columns = columns
         self.method = method
         self.if_not_exists = if_not_exists
+        self.name = name
         super().__init__(table, **kwargs)
 
     @property
@@ -42,7 +44,10 @@ class CreateIndex(DDL):
     @property
     def postgres_ddl(self) -> Sequence[str]:
         column_names = self.column_names
-        index_name = self.table._get_index_name(column_names)
+        if self.name is not None:
+            index_name = self.name
+        else:
+            index_name = self.table._get_index_name(column_names)
         tablename = self.table._meta.get_formatted_tablename()
         method_name = self.method.value
         column_names_str = ", ".join([f'"{i}"' for i in self.column_names])
@@ -60,7 +65,10 @@ class CreateIndex(DDL):
     @property
     def sqlite_ddl(self) -> Sequence[str]:
         column_names = self.column_names
-        index_name = self.table._get_index_name(column_names)
+        if self.name is not None:
+            index_name = self.name
+        else:
+            index_name = self.table._get_index_name(column_names)
         tablename = self.table._meta.get_formatted_tablename()
 
         method_name = self.method.value
