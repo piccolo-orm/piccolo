@@ -3,6 +3,8 @@ from collections.abc import Callable
 from enum import Enum
 from typing import Union
 
+from piccolo.utils.uuid import uuid7
+
 from .base import Default
 
 
@@ -17,6 +19,18 @@ class UUID4(Default):
 
     @property
     def postgres(self):
+        """
+        Historically we had to use `uuid_generate_v4()` from the `uuid-ossp`
+        extension.
+
+        Since Postgres 13 there is a built-in `gen_random_uuid` function which
+        generates UUID v4 values.
+
+        In Postgres 18, `uuidv4` was added, which is the same as
+        `gen_random_uuid`, but more precisely named. We will move to this at
+        some point in the future.
+
+        """
         return "gen_random_uuid()"
 
     @property
@@ -25,7 +39,7 @@ class UUID4(Default):
 
     @property
     def sqlite(self):
-        return "''"
+        return None
 
     @property
     def mysql(self):
@@ -35,7 +49,49 @@ class UUID4(Default):
         return uuid.uuid4()
 
 
-UUIDArg = Union[UUID4, uuid.UUID, str, Enum, None, Callable[[], uuid.UUID]]
+class UUID7(Default):
+    """
+    This makes the default value for a
+    :class:`UUID <piccolo.columns.column_types.UUID>` column a randomly
+    generated UUID v7 value. Postgres >= 18 and Python >= 3.14 only. UUID7 can
+    be more efficiently indexed than UUID, and inserts can be faster.
+
+    For this to work in older versions of Postgres, register an extension such
+    as `pg_uuidv7 <https://github.com/fboulnois/pg_uuidv7>`_.
+
+    """  # noqa: E501
+
+    @property
+    def postgres(self):
+        """
+        Supported in Postgres 18 and above.
+        """
+        return "uuidv7()"
+
+    @property
+    def cockroach(self):
+        """
+        CockroachDB doesn't currently have a uuidv7 function.
+        """
+        return None
+
+    @property
+    def sqlite(self):
+        return None
+
+    def python(self):
+        return uuid7()
 
 
-__all__ = ["UUIDArg", "UUID4"]
+UUIDArg = Union[
+    UUID4,
+    UUID7,
+    uuid.UUID,
+    str,
+    Enum,
+    None,
+    Callable[[], uuid.UUID],
+]
+
+
+__all__ = ["UUIDArg", "UUID4", "UUID7"]

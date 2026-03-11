@@ -13,6 +13,7 @@ Functions can be used to modify how queries are run, and what is returned.
     ./basic_usage
     ./aggregate
     ./array
+    ./conditional
     ./datetime
     ./math
     ./string

@@ -55,6 +55,11 @@ class TimestampOffset(Default):
 
 
 class TimestampNow(Default):
+    """
+    The current timestamp, in the local time of the machine that Python is
+    running on.
+    """
+
     @property
     def postgres(self):
         return "current_timestamp"

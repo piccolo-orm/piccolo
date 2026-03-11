@@ -247,9 +247,9 @@ class Where(CombinableMixin):
                     self
                 )
 
-            column_name = column._meta.call_chain[0]._meta.name
+            column_name = column._meta.call_chain[0]._meta.db_column_name
             return QueryString(
-                f"{column_name} IN ({{}})",
+                f'"{column_name}" IN ({{}})',
                 sub_query.querystrings[0],
             )
         else:

@@ -18,6 +18,7 @@ from piccolo.columns.column_types import (
 from piccolo.query.functions.string import Concat
 from piccolo.querystring import QueryString
 from piccolo.table import Table
+from piccolo.testing.test_case import AsyncTableTest
 from tests.base import (
     DBTestCase,
     engine_version_lt,
@@ -26,7 +27,7 @@ from tests.base import (
     is_running_sqlite,
     sqlite_only,
 )
-from tests.example_apps.music.tables import Band, Manager
+from tests.example_apps.music.tables import Band, Manager, Signing
 
 
 class TestUpdate(DBTestCase):
@@ -1081,3 +1082,63 @@ class TestUpdateWithJoin(DBTestCase):
         self.assertEqual(
             Band.count().where(Band.name == "New name").run_sync(), 2
         )
+
+
+###############################################################################
+# Test db_column_name
+
+
+class TestDBColumnName(AsyncTableTest):
+
+    tables = [Signing, Band, Manager]
+
+    async def test_db_column_name(self):
+        """
+        Make sure `update` queries using the `where` clause work when columns
+        use `db_column_name`.
+
+        https://github.com/piccolo-orm/piccolo/issues/1361
+
+        """
+        band_1 = Band({Band.name: "Pythonistas"})
+        await band_1.save()
+
+        band_2 = Band({Band.name: "Rustaceans"})
+        await band_2.save()
+
+        starts = datetime.datetime(
+            2026,
+            2,
+            25,
+            10,
+            30,
+            tzinfo=datetime.timezone.utc,
+        )
+
+        signing_1 = Signing(
+            {
+                Signing.with_: band_1,
+                Signing.address: "Awesome Music Store, London",
+                Signing.starts: starts,
+            }
+        )
+        await signing_1.save()
+
+        signing_2 = Signing(
+            {
+                Signing.with_: band_2,
+                Signing.address: "Awesome Music Store, Liverpool",
+                Signing.starts: starts,
+            }
+        )
+        await signing_2.save()
+
+        await Signing.update(
+            {Signing.starts: Signing.starts + datetime.timedelta(days=1)}
+        ).where(Signing.with_._.name == "Pythonistas")
+
+        await signing_1.refresh()
+        self.assertEqual(signing_1.starts.day, 26)
+
+        await signing_2.refresh()
+        self.assertEqual(signing_2.starts, starts)

@@ -926,7 +926,8 @@ class PrimaryKey(Serial):
 
 class Timestamp(Column):
     """
-    Used for storing datetimes. Uses the ``datetime`` type for values.
+    Used for storing timezone naive datetimes. Uses the ``datetime`` type for
+    values.
 
     **Example**
 
@@ -945,6 +946,12 @@ class Timestamp(Column):
         # Query
         >>> await Concert.select(Concert.starts)
         {'starts': datetime.datetime(2050, 1, 1, 0, 0)}
+
+    .. note::
+        We recommend using
+        :class:`Timestamptz <piccolo.columns.column_types.Timestamptz>`
+        columns if possible - having timezone information makes the timestamp
+        unambiguous.
 
     """
 
