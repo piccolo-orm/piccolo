@@ -17,7 +17,6 @@ from piccolo.columns import (
 )
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
 from piccolo.testing.model_builder import ModelBuilder
-from tests.base import engines_skip
 from tests.example_apps.music.tables import (
     Band,
     Concert,
@@ -76,8 +75,6 @@ TABLES = (
 )
 
 
-# Cockroach Bug: Can turn ON when resolved: https://github.com/cockroachdb/cockroach/issues/71908  # noqa: E501
-@engines_skip("cockroach")
 class TestModelBuilder(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

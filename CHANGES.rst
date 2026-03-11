@@ -1,6 +1,94 @@
 Changes
 =======
 
+1.33.0
+------
+
+UUID v7
+~~~~~~~
+
+Added support for UUID v7.
+
+.. code-block:: python
+
+  from piccolo.columns.defaults.uuid import UUID7
+
+  class MyTable(Table):
+      my_column = UUID(default=UUID7())
+
+This provides superior insert performance and easier indexing compared to
+UUID v4.
+
+Requires Python 3.14, and Postgres 18 (otherwise extensions are needed).
+
+``Coalesce``
+~~~~~~~~~~~~
+
+Added the ``Coalesce`` function - which lets you specify a fall back if a null
+value is found.
+
+For example:
+
+.. code-block:: python
+
+  >>> await Album.select(
+  ...     Coalesce(Album.release_date, datetime.date(2050, 1, 1))
+  ... )
+
+
+Or you can use this abbreviated syntax:
+
+.. code-block:: python
+
+    >>> await Album.select(
+    ...     Album.release_date | datetime.date(2050, 1, 1)
+    ... )
+
+
+Other changes
+~~~~~~~~~~~~~
+
+* Fixed a bug with the Piccolo CLI, where custom names for commands weren't
+  being applied (thanks to @sinisaos for this and @pelid for reporting the
+  issue).
+* Fixed typo in the ``get_related`` docstring (thanks to @nightcityblade for
+  this).
+* Fixed bugs with queries when a column has ``db_column_name`` defined (thanks
+  to @VladislavYar for raising these issues).
+* Improved the docs for ``Timestamp`` and ``Timestamptz`` columns.
+
+-------------------------------------------------------------------------------
+
+1.32.0
+------
+
+Added the ``having`` clause, which is useful when working with ``group_by``.
+
+For example, here we get the number of albums per band, but exclude any bands
+with less than 2 albums:
+
+.. code-block:: python
+
+    >>> from piccolo.query.functions.aggregate import Count
+
+    >>> await Album.select(
+    ...     Album.band.name.as_alias('band_name'),
+    ...     Count()
+    ... ).group_by(
+    ...     Album.band
+    ... ).having(
+    ...     Count() >= 2
+    ... )
+
+    [
+        {"band_name": "Pythonistas", "count": 2},
+    ]
+
+We also updated our CockroachDB support to the latest version (thanks to
+@sinisaos for this).
+
+-------------------------------------------------------------------------------
+
 1.31.0
 ------
 
