@@ -41,6 +41,10 @@ class UUID4(Default):
     def sqlite(self):
         return None
 
+    @property
+    def mysql(self):
+        return "''"
+
     def python(self):
         return uuid.uuid4()
 
@@ -73,6 +77,10 @@ class UUID7(Default):
 
     @property
     def sqlite(self):
+        return None
+
+    @property
+    def mysql(self):
         return None
 
     def python(self):

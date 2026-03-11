@@ -1,6 +1,7 @@
 from piccolo.columns.column_types import Bytea
 from piccolo.table import Table
 from piccolo.testing.test_case import TableTest
+from tests.base import engines_skip
 
 
 class MyTable(Table):
@@ -35,6 +36,7 @@ class TestBytea(TableTest):
         )
 
 
+@engines_skip("mysql")
 class TestByteaDefault(TableTest):
     tables = [MyTableDefault]
 

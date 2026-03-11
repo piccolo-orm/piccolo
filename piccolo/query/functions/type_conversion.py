@@ -85,6 +85,13 @@ class Cast(QueryString):
                 or identifier._meta.get_default_alias()
             )
 
+        # for MySQL we need to change as_type_string
+        if as_type._meta.table._meta.db.engine_type == "mysql":
+            if as_type_string == "INTEGER":
+                as_type_string = "SIGNED"
+            else:
+                as_type_string = "CHAR"
+
         #######################################################################
 
         super().__init__(

@@ -14,9 +14,10 @@ from tests.base import (
     DBTestCase,
     engine_version_lt,
     engines_only,
+    engines_skip,
     is_running_sqlite,
 )
-from tests.example_apps.music.tables import Band, Manager
+from tests.example_apps.music.tables import Band, Manager, Poster
 
 
 @pytest.mark.skipif(
@@ -56,6 +57,7 @@ class TestRenameColumn(DBTestCase):
         """
         self._test_rename(Band.popularity)
 
+    @engines_skip("mysql")
     def test_string(self):
         """
         Make sure a string argument works.
@@ -82,7 +84,7 @@ class TestRenameTable(DBTestCase):
         self.run_sync("DROP TABLE IF EXISTS act")
 
 
-@engines_only("postgres", "cockroach")
+@engines_only("postgres", "cockroach", "mysql")
 class TestDropColumn(DBTestCase):
     """
     Unfortunately this only works with Postgres at the moment.
@@ -128,6 +130,7 @@ class TestAddColumn(DBTestCase):
             expected_value=None,
         )
 
+    @engines_skip("mysql")
     def test_foreign_key(self):
         self._test_add_column(
             column=ForeignKey(references=Manager),
@@ -136,11 +139,10 @@ class TestAddColumn(DBTestCase):
         )
 
     def test_text(self):
-        bio = "An amazing band"
         self._test_add_column(
-            column=Text(default=bio),
+            column=Text(default="An amazing band"),
             column_name="bio",
-            expected_value=bio,
+            expected_value="An amazing band",
         )
 
     def test_problematic_name(self):
@@ -185,7 +187,7 @@ class TestUnique(DBTestCase):
         self.assertTrue(len(response), 2)
 
 
-@engines_only("postgres", "cockroach")
+@engines_only("postgres", "cockroach", "mysql")
 class TestMultiple(DBTestCase):
     """
     Make sure multiple alter statements work correctly.
@@ -233,6 +235,29 @@ class TestSetColumnType(DBTestCase):
         assert row is not None
         self.assertEqual(row["popularity"], 1000)
 
+    @engines_only("mysql")
+    def test_integer_to_bigint_mysql(self):
+        """
+        Test converting an Integer column to BigInt.
+        """
+        self.insert_row()
+
+        alter_query = Band.alter().set_column_type(
+            old_column=Band.popularity, new_column=BigInt()
+        )
+        alter_query.run_sync()
+
+        self.assertEqual(
+            self.get_mysql_column_type(
+                tablename="band", column_name="popularity"
+            ),
+            "BIGINT",
+        )
+
+        row = Band.select(Band.popularity).first().run_sync()
+        assert row is not None
+        self.assertEqual(row["popularity"], 1000)
+
     def test_integer_to_varchar(self):
         """
         Test converting an Integer column to Varchar.
@@ -255,6 +280,30 @@ class TestSetColumnType(DBTestCase):
         assert row is not None
         self.assertEqual(row["popularity"], "1000")
 
+    @engines_only("mysql")
+    def test_integer_to_varchar_mysql(self):
+        """
+        Test converting an Integer column to Varchar.
+        """
+        self.insert_row()
+
+        alter_query = Band.alter().set_column_type(
+            old_column=Band.popularity, new_column=Varchar()
+        )
+        alter_query.run_sync()
+
+        self.assertEqual(
+            self.get_mysql_column_type(
+                tablename="band", column_name="popularity"
+            ),
+            "CHARACTER VARYING",
+        )
+
+        row = Band.select(Band.popularity).first().run_sync()
+        assert row is not None
+        self.assertEqual(row["popularity"], "1000")
+
+    @engines_skip("mysql")
     def test_using_expression(self):
         """
         Test the `using_expression` option, which can be used to tell Postgres
@@ -276,6 +325,7 @@ class TestSetColumnType(DBTestCase):
 
 @engines_only("postgres", "cockroach")
 class TestSetNull(DBTestCase):
+    @engines_skip("mysql")
     def test_set_null(self):
         query = """
             SELECT is_nullable FROM information_schema.columns
@@ -292,9 +342,27 @@ class TestSetNull(DBTestCase):
         response = Band.raw(query).run_sync()
         self.assertEqual(response[0]["is_nullable"], "NO")
 
+    @engines_only("mysql")
+    def test_set_null_mysql(self):
+        query = """
+            SELECT is_nullable FROM information_schema.columns
+            WHERE table_name = 'band'
+            AND AND table_schema = 'piccolo'
+            AND column_name = 'popularity'
+            """
 
-@engines_only("postgres", "cockroach")
+        Band.alter().set_null(Band.popularity, boolean=True).run_sync()
+        response = Band.raw(query).run_sync()
+        self.assertEqual(response[0]["is_nullable"], "YES")
+
+        Band.alter().set_null(Band.popularity, boolean=False).run_sync()
+        response = Band.raw(query).run_sync()
+        self.assertEqual(response[0]["is_nullable"], "NO")
+
+
+@engines_only("postgres", "cockroach", "mysql")
 class TestSetLength(DBTestCase):
+    @engines_skip("mysql")
     def test_set_length(self):
         query = """
             SELECT character_maximum_length FROM information_schema.columns
@@ -308,8 +376,22 @@ class TestSetLength(DBTestCase):
             response = Band.raw(query).run_sync()
             self.assertEqual(response[0]["character_maximum_length"], length)
 
+    @engines_only("mysql")
+    def test_set_length_mysql(self):
+        query = """
+            SELECT character_maximum_length FROM information_schema.columns
+            WHERE table_name = 'band'
+            AND table_schema = 'piccolo'
+            AND column_name = 'name'
+            """
 
-@engines_only("postgres", "cockroach")
+        for length in (5, 20, 50):
+            Band.alter().set_length(Band.name, length=length).run_sync()
+            response = Band.raw(query).run_sync()
+            self.assertEqual(response[0]["CHARACTER_MAXIMUM_LENGTH"], length)
+
+
+@engines_only("postgres", "cockroach", "mysql")
 class TestSetDefault(DBTestCase):
     def test_set_default(self):
         Manager.alter().set_default(Manager.name, "Pending").run_sync()
@@ -322,6 +404,13 @@ class TestSetDefault(DBTestCase):
         manager = Manager.objects().first().run_sync()
         assert manager is not None
         self.assertEqual(manager.name, "Pending")
+
+
+@engines_only("mysql")
+class TestSetDefaultMysql(DBTestCase):
+    def test_set_default_text_or_json(self):
+        with self.assertRaises(ValueError):
+            Poster.alter().set_default(Poster.content, "Content").run_sync()
 
 
 @engines_only("postgres", "cockroach")
@@ -417,3 +506,28 @@ class TestSetDigits(TestCase):
         response = Ticket.raw(query).run_sync()
         self.assertIsNone(response[0]["numeric_precision"])
         self.assertIsNone(response[0]["numeric_scale"])
+
+    @engines_only("mysql")
+    def test_set_digits_mysql(self):
+        query = """
+            SELECT numeric_precision, numeric_scale
+            FROM information_schema.columns
+            WHERE table_name = 'ticket'
+            AND table_schema = 'piccolo'
+            AND column_name = 'price'
+            """
+
+        Ticket.alter().set_digits(
+            column=Ticket.price, digits=(6, 2)
+        ).run_sync()
+        response = Ticket.raw(query).run_sync()
+        self.assertEqual(response[0]["numeric_precision".upper()], 6)
+        self.assertEqual(response[0]["numeric_scale".upper()], 2)
+
+        Ticket.alter().set_digits(column=Ticket.price, digits=None).run_sync()
+        response = Ticket.raw(query).run_sync()
+        # In MySQL, when you create or alter a DECIMAL / NUMERIC column
+        # without specifying precision and scale, MySQL automatically
+        # assigns a default which is DECIMAL(10,0)
+        self.assertEqual(response[0]["numeric_precision".upper()], 10)
+        self.assertEqual(response[0]["numeric_scale".upper()], 0)

@@ -9,6 +9,7 @@ from piccolo.columns.column_types import (
 )
 from piccolo.table import Table
 from piccolo.testing.test_case import TableTest
+from tests.base import engines_skip
 
 
 class MyTableDefaultPrimaryKey(Table):
@@ -63,6 +64,7 @@ class TestPrimaryKeyBigSerial(TableTest):
         self.assertIsInstance(row["pk"], int)
 
 
+@engines_skip("mysql")
 class TestPrimaryKeyUUID(TableTest):
     tables = [MyTablePrimaryKeyUUID]
 
@@ -85,6 +87,7 @@ class Band(Table):
     manager = ForeignKey(Manager)
 
 
+@engines_skip("mysql")
 class TestPrimaryKeyQueries(TableTest):
     tables = [Manager, Band]
 

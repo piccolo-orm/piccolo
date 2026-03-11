@@ -36,6 +36,10 @@ class TimestamptzNow(TimestampNow):
     def cockroach(self):
         return "current_timestamp"
 
+    @property
+    def mysql(self):
+        return "current_timestamp(6)"
+
     def python(self):
         return datetime.datetime.now(tz=datetime.timezone.utc)
 

@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from piccolo.querystring import QueryString
+from tests.base import mysql_only
 
 
 # TODO - add more extensive tests (increased nesting and argument count).
@@ -161,4 +162,139 @@ class TestQueryStringOperators(TestCase):
         self.assertEqual(
             query.compile_string(),
             ("SELECT price NOT IN $1", [[10, 20, 30]]),
+        )
+
+
+@mysql_only
+class TestQueryStringOperatorsMySQL(TestCase):
+    """
+    Make sure basic operations can be used on ``QueryString``.
+    """
+
+    def test_add(self):
+        query = QueryString("SELECT price") + 1
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(engine_type="mysql"),
+            ("SELECT price + %s", [1]),
+        )
+
+    def test_multiply(self):
+        query = QueryString("SELECT price") * 2
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(engine_type="mysql"),
+            ("SELECT price * %s", [2]),
+        )
+
+    def test_divide(self):
+        query = QueryString("SELECT price") / 1
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(engine_type="mysql"),
+            ("SELECT price / %s", [1]),
+        )
+
+    def test_power(self):
+        query = QueryString("SELECT price") ** 2
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(engine_type="mysql"),
+            ("SELECT price ^ %s", [2]),
+        )
+
+    def test_subtract(self):
+        query = QueryString("SELECT price") - 1
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(engine_type="mysql"),
+            ("SELECT price - %s", [1]),
+        )
+
+    def test_modulus(self):
+        query = QueryString("SELECT price") % 1
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(engine_type="mysql"),
+            ("SELECT price % %s", [1]),
+        )
+
+    def test_like(self):
+        query = QueryString("strip(name)").like("Python%")
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(engine_type="mysql"),
+            ("strip(name) LIKE %s", ["Python%"]),
+        )
+
+    def test_ilike(self):
+        query = QueryString("strip(name)").ilike("Python%")
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(engine_type="mysql"),
+            ("strip(name) ILIKE %s", ["Python%"]),
+        )
+
+    def test_greater_than(self):
+        query = QueryString("SELECT price") > 10
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(engine_type="mysql"),
+            ("SELECT price > %s", [10]),
+        )
+
+    def test_greater_equal_than(self):
+        query = QueryString("SELECT price") >= 10
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(engine_type="mysql"),
+            ("SELECT price >= %s", [10]),
+        )
+
+    def test_less_than(self):
+        query = QueryString("SELECT price") < 10
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(engine_type="mysql"),
+            ("SELECT price < %s", [10]),
+        )
+
+    def test_less_equal_than(self):
+        query = QueryString("SELECT price") <= 10
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(engine_type="mysql"),
+            ("SELECT price <= %s", [10]),
+        )
+
+    def test_equals(self):
+        query = QueryString("SELECT price") == 10
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(engine_type="mysql"),
+            ("SELECT price = %s", [10]),
+        )
+
+    def test_not_equals(self):
+        query = QueryString("SELECT price") != 10
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(engine_type="mysql"),
+            ("SELECT price != %s", [10]),
+        )
+
+    def test_is_in(self):
+        query = QueryString("SELECT price").is_in([10, 20, 30])
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(engine_type="mysql"),
+            ("SELECT price IN %s", [[10, 20, 30]]),
+        )
+
+    def test_not_in(self):
+        query = QueryString("SELECT price").not_in([10, 20, 30])
+        self.assertIsInstance(query, QueryString)
+        self.assertEqual(
+            query.compile_string(engine_type="mysql"),
+            ("SELECT price NOT IN %s", [[10, 20, 30]]),
         )

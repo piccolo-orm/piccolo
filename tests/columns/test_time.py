@@ -19,7 +19,7 @@ class MyTableDefault(Table):
 class TestTime(TableTest):
     tables = [MyTable]
 
-    @engines_skip("cockroach")
+    @engines_skip("cockroach", "mysql")
     def test_timestamp(self):
         created_on = datetime.datetime.now().time()
         row = MyTable(created_on=created_on)
@@ -33,7 +33,7 @@ class TestTime(TableTest):
 class TestTimeDefault(TableTest):
     tables = [MyTableDefault]
 
-    @engines_skip("cockroach")
+    @engines_skip("cockroach", "mysql")
     def test_timestamp(self):
         created_on = datetime.datetime.now().time()
         row = MyTableDefault()
