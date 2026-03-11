@@ -115,9 +115,34 @@ class Refresh:
                     # primary key value must be null.
                     setattr(instance, key, None)
                 else:
-                    self._update_instance(getattr(instance, key), value)
+                    self._update_instance(
+                        getattr(
+                            instance,
+                            # We have to do this just in case a column uses
+                            # db_column_name.
+                            # We should try and optimise this in the future to
+                            # minimise the overhead of searching for a matching
+                            # column.
+                            instance._meta.get_column_by_name(
+                                key,
+                                match_db_column_name=True,
+                            )._meta.name,
+                        ),
+                        value,
+                    )
             else:
-                setattr(instance, key, value)
+                setattr(
+                    instance,
+                    # We have to do this just in case a column uses
+                    # db_column_name.
+                    # We should try and optimise this in the future to minimise
+                    # the overhead of searching for a matching column.
+                    instance._meta.get_column_by_name(
+                        key,
+                        match_db_column_name=True,
+                    )._meta.name,
+                    value,
+                )
 
     async def run(
         self, in_pool: bool = True, node: Optional[str] = None

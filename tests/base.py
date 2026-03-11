@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import decimal
 import sys
 from typing import Optional
 from unittest import TestCase
@@ -26,6 +27,17 @@ ENGINE = engine_finder()
 
 def engine_version_lt(version: float) -> bool:
     return ENGINE is not None and run_sync(ENGINE.get_version()) < version
+
+
+def engine_version_gte(version: float) -> bool:
+    return ENGINE is not None and run_sync(ENGINE.get_version()) > version
+
+
+def python_version_gte(version: decimal.Decimal) -> bool:
+    return (
+        decimal.Decimal(f"{sys.version_info.major}.{sys.version_info.minor}")
+        >= version
+    )
 
 
 def is_running_postgres() -> bool:

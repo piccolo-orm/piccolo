@@ -25,6 +25,7 @@ from piccolo.columns import (
     Serial,
     Text,
     Timestamp,
+    Timestamptz,
     Varchar,
 )
 from piccolo.columns.readable import Readable
@@ -152,7 +153,7 @@ class Album(Table):
     id: Serial
     name = Varchar()
     band = ForeignKey(Band)
-    release_date = Date()
+    release_date = Date(null=True, default=None)
     recorded_at = ForeignKey(RecordingStudio)
     awards = Array(Varchar())
 
@@ -184,6 +185,13 @@ class GenreToBand(Table):
     reason = Text(null=True, default=None)
 
 
+class Signing(Table):
+    id: Serial
+    address = Text()
+    with_ = ForeignKey(Band, db_column_name="with")
+    starts = Timestamptz()
+
+
 TABLES = (
     Manager,
     Band,
@@ -196,6 +204,7 @@ TABLES = (
     Album,
     Genre,
     GenreToBand,
+    Signing,
 )
 
 
@@ -314,6 +323,15 @@ def populate():
                 Album.awards: ["Mercury Prize 2022"],
             }
         ),
+        Album(
+            {
+                Album.name: "Awesome album 4",
+                Album.recorded_at: recording_studio_2,
+                Album.band: rustaceans,
+                Album.release_date: None,
+                Album.awards: [],
+            }
+        ),
     ).run_sync()
 
     genres = Genre.insert(
@@ -332,6 +350,19 @@ def populate():
         GenreToBand(band=rustaceans.id, genre=genres[2]["id"]),
         GenreToBand(band=c_sharps.id, genre=genres[0]["id"]),
         GenreToBand(band=c_sharps.id, genre=genres[1]["id"]),
+    ).run_sync()
+
+    Signing.insert(
+        Signing(
+            with_=pythonistas,
+            address="Awesome Music Store, London",
+            starts=datetime.datetime(2026, 12, 20, 10),
+        ),
+        Signing(
+            with_=pythonistas,
+            address="Awesome Music Store, Liverpool",
+            starts=datetime.datetime(2026, 11, 25, 12),
+        ),
     ).run_sync()
 
 
