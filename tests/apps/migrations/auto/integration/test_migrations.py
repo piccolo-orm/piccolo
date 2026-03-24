@@ -1089,8 +1089,7 @@ class TestTargetColumn(MigrationTestCase):
             self.assertTrue(table_class.table_exists().run_sync())
 
         # Make sure the constraint was created correctly.
-        response = self.run_sync(
-            """
+        response = self.run_sync("""
             SELECT EXISTS(
                 SELECT 1
                 FROM INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE CCU
@@ -1101,8 +1100,7 @@ class TestTargetColumn(MigrationTestCase):
                     AND CCU.TABLE_NAME = 'table_a'
                     AND CCU.COLUMN_NAME = 'name'
             )
-            """
-        )
+            """)
         self.assertTrue(response[0]["exists"])
 
 

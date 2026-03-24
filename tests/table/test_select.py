@@ -688,8 +688,7 @@ class TestSelect(DBTestCase):
         """
         self.insert_rows()
         self.insert_rows()
-        self.run_sync(
-            """
+        self.run_sync("""
             INSERT INTO band (
                 name,
                 manager,
@@ -698,8 +697,7 @@ class TestSelect(DBTestCase):
                 'SomeBand',
                 null,
                 1000
-            );"""
-        )
+            );""")
 
         response = (
             Band.select(Band.manager.name, Count(Band.manager))

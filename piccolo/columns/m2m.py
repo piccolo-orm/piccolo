@@ -93,41 +93,35 @@ class M2MSelect(Selectable):
         if engine_type in ("postgres", "cockroach"):
             if self.as_list:
                 column_name = self.columns[0]._meta.db_column_name
-                return QueryString(
-                    f"""
+                return QueryString(f"""
                     ARRAY(
                         SELECT
                             "inner_{table_2_name}"."{column_name}"
                         FROM {inner_select}
                     ) AS "{m2m_relationship_name}"
-                """
-                )
+                """)
             elif not self.serialisation_safe:
                 column_name = table_2_pk_name
-                return QueryString(
-                    f"""
+                return QueryString(f"""
                     ARRAY(
                         SELECT
                             "inner_{table_2_name}"."{column_name}"
                         FROM {inner_select}
                     ) AS "{m2m_relationship_name}"
-                """
-                )
+                """)
             else:
                 column_names = ", ".join(
                     f'"inner_{table_2_name}"."{column._meta.db_column_name}"'
                     for column in self.columns
                 )
-                return QueryString(
-                    f"""
+                return QueryString(f"""
                     (
                         SELECT JSON_AGG({m2m_relationship_name}_results)
                         FROM (
                             SELECT {column_names} FROM {inner_select}
                         ) AS "{m2m_relationship_name}_results"
                     ) AS "{m2m_relationship_name}"
-                """
-                )
+                """)
         elif engine_type == "sqlite":
             if len(self.columns) > 1 or not self.serialisation_safe:
                 column_name = table_2_pk_name
@@ -135,8 +129,7 @@ class M2MSelect(Selectable):
                 assert len(self.columns) > 0
                 column_name = self.columns[0]._meta.db_column_name
 
-            return QueryString(
-                f"""
+            return QueryString(f"""
                 (
                     SELECT group_concat(
                         "inner_{table_2_name}"."{column_name}"
@@ -144,8 +137,7 @@ class M2MSelect(Selectable):
                     FROM {inner_select}
                 )
                 AS "{m2m_relationship_name} [M2M]"
-            """
-            )
+            """)
         else:
             raise ValueError(f"{engine_type} is an unrecognised engine type")
 
