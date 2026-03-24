@@ -248,81 +248,61 @@ class DBTestCase(TestCase):
         assert ENGINE is not None
 
         if ENGINE.engine_type in ("postgres", "cockroach"):
-            self.run_sync(
-                """
+            self.run_sync("""
                 CREATE TABLE manager (
                     id SERIAL PRIMARY KEY,
                     name VARCHAR(50)
-                );"""
-            )
-            self.run_sync(
-                """
+                );""")
+            self.run_sync("""
                 CREATE TABLE band (
                     id SERIAL PRIMARY KEY,
                     name VARCHAR(50),
                     manager INTEGER REFERENCES manager,
                     popularity SMALLINT
-                );"""
-            )
-            self.run_sync(
-                """
+                );""")
+            self.run_sync("""
                 CREATE TABLE ticket (
                     id SERIAL PRIMARY KEY,
                     price NUMERIC(5,2)
-                );"""
-            )
-            self.run_sync(
-                """
+                );""")
+            self.run_sync("""
                 CREATE TABLE poster (
                     id SERIAL PRIMARY KEY,
                     content TEXT
-                );"""
-            )
-            self.run_sync(
-                """
+                );""")
+            self.run_sync("""
                 CREATE TABLE shirt (
                     id SERIAL PRIMARY KEY,
                     size VARCHAR(1)
-                );"""
-            )
+                );""")
         elif ENGINE.engine_type == "sqlite":
-            self.run_sync(
-                """
+            self.run_sync("""
                 CREATE TABLE manager (
                     id INTEGER PRIMARY KEY,
                     name VARCHAR(50)
-                );"""
-            )
-            self.run_sync(
-                """
+                );""")
+            self.run_sync("""
                 CREATE TABLE band (
                     id INTEGER PRIMARY KEY,
                     name VARCHAR(50),
                     manager INTEGER REFERENCES manager,
                     popularity SMALLINT
-                );"""
-            )
-            self.run_sync(
-                """
+                );""")
+            self.run_sync("""
                 CREATE TABLE ticket (
                     id SERIAL PRIMARY KEY,
                     price NUMERIC(5,2)
-                );"""
-            )
-            self.run_sync(
-                """
+                );""")
+            self.run_sync("""
                 CREATE TABLE poster (
                     id SERIAL PRIMARY KEY,
                     content TEXT
-                );"""
-            )
-            self.run_sync(
-                """
+                );""")
+            self.run_sync("""
                 CREATE TABLE shirt (
                     id SERIAL PRIMARY KEY,
                     size VARCHAR(1)
-                );"""
-            )
+                );""")
         else:
             raise Exception("Unrecognised engine")
 
@@ -330,16 +310,13 @@ class DBTestCase(TestCase):
         assert ENGINE is not None
 
         if ENGINE.engine_type == "cockroach":
-            id = self.run_sync(
-                """
+            id = self.run_sync("""
                 INSERT INTO manager (
                     name
                 ) VALUES (
                     'Guido'
-                ) RETURNING id;"""
-            )
-            self.run_sync(
-                f"""
+                ) RETURNING id;""")
+            self.run_sync(f"""
                 INSERT INTO band (
                     name,
                     manager,
@@ -348,19 +325,15 @@ class DBTestCase(TestCase):
                     'Pythonistas',
                     {id[0]["id"]},
                     1000
-                );"""
-            )
+                );""")
         else:
-            self.run_sync(
-                """
+            self.run_sync("""
                 INSERT INTO manager (
                     name
                 ) VALUES (
                     'Guido'
-                );"""
-            )
-            self.run_sync(
-                """
+                );""")
+            self.run_sync("""
                 INSERT INTO band (
                     name,
                     manager,
@@ -369,15 +342,13 @@ class DBTestCase(TestCase):
                     'Pythonistas',
                     1,
                     1000
-                );"""
-            )
+                );""")
 
     def insert_rows(self):
         assert ENGINE is not None
 
         if ENGINE.engine_type == "cockroach":
-            id = self.run_sync(
-                """
+            id = self.run_sync("""
                 INSERT INTO manager (
                     name
                 ) VALUES (
@@ -386,10 +357,8 @@ class DBTestCase(TestCase):
                     'Graydon'
                 ),(
                     'Mads'
-                ) RETURNING id;"""
-            )
-            self.run_sync(
-                f"""
+                ) RETURNING id;""")
+            self.run_sync(f"""
                 INSERT INTO band (
                     name,
                     manager,
@@ -406,11 +375,9 @@ class DBTestCase(TestCase):
                     'CSharps',
                     {id[2]["id"]},
                     10
-                );"""
-            )
+                );""")
         else:
-            self.run_sync(
-                """
+            self.run_sync("""
                 INSERT INTO manager (
                     name
                 ) VALUES (
@@ -419,10 +386,8 @@ class DBTestCase(TestCase):
                     'Graydon'
                 ),(
                     'Mads'
-                );"""
-            )
-            self.run_sync(
-                """
+                );""")
+            self.run_sync("""
                 INSERT INTO band (
                     name,
                     manager,
@@ -439,8 +404,7 @@ class DBTestCase(TestCase):
                     'CSharps',
                     3,
                     10
-                );"""
-            )
+                );""")
 
     def insert_many_rows(self, row_count=10000):
         """
