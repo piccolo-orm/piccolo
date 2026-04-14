@@ -72,6 +72,7 @@ class Venue(Table):
     id: Serial
     name = Varchar(length=100)
     capacity = Integer(default=0)
+    address = Text(null=True)
 
     @classmethod
     def get_readable(cls) -> Readable:

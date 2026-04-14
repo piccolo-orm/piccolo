@@ -1,5 +1,5 @@
-from piccolo.columns import Integer
-from piccolo.query.functions.conditional import Coalesce
+from piccolo.columns import Integer, Text, Varchar
+from piccolo.query.functions.conditional import Coalesce, NullIf
 from piccolo.table import Table
 from piccolo.testing.test_case import AsyncTableTest
 
@@ -23,3 +23,22 @@ class TestCoalesce(AsyncTableTest):
     async def test_coalesce_pipe_syntax(self):
         response = await Band.select(Band.popularity | 10)
         self.assertListEqual(response, [{"popularity": 10}])
+
+
+class Venue(Table):
+    name = Varchar()
+    address = Text(null=True)
+
+
+class TestNullIf(AsyncTableTest):
+
+    tables = [Venue]
+
+    async def test_null_if(self):
+        await Venue({Venue.name: "Amazing Venue", Venue.address: ""}).save()
+
+        response = await Venue.select(Venue.name, NullIf(Venue.address, ""))
+
+        self.assertListEqual(
+            response, [{"name": "Amazing Venue", "address": None}]
+        )

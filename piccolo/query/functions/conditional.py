@@ -78,3 +78,45 @@ class Coalesce(QueryString):
         placeholders = ", ".join("{}" for _ in args)
 
         super().__init__(f"COALESCE({placeholders})", *args, alias=alias)
+
+
+class NullIf(QueryString):
+    def __init__(
+        self,
+        identifier: Union[Column, QueryString],
+        value: Union[BasicTypes, QueryString],
+        alias: Optional[str] = None,
+    ):
+        """
+        Returns null if the value in the database equals ``value``.
+
+        An example is where a ``Varchar`` or ``Text`` column contains a mix of
+        empty strings and null. We might want to standardise the response so
+        it's just null.
+
+        For example::
+
+            class Venue(Table):
+                name = Varchar()
+                address = Text(null=True)
+
+            >>> await Venue.select(Venue.name, NullIf(Venue.address, ''))
+            [{'name': 'Amazing venue', 'address': None}]
+
+        """
+        # Preserve the original alias from the column.
+
+        from piccolo.columns import Column
+
+        if isinstance(identifier, Column):
+            alias = (
+                alias
+                or identifier._alias
+                or identifier._meta.get_default_alias()
+            )
+        elif isinstance(identifier, QueryString):
+            alias = alias or identifier._alias
+
+        #######################################################################
+
+        super().__init__("NULLIF({}, {})", identifier, value, alias=alias)
