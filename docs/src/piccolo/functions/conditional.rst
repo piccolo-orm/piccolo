@@ -7,3 +7,9 @@ Coalesce
 --------
 
 .. autoclass:: Coalesce
+
+
+NullIf
+------
+
+.. autoclass:: NullIf
