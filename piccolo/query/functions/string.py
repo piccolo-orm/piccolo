@@ -9,6 +9,7 @@ from typing import Optional, Union
 
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import Text, Varchar
+from piccolo.custom_types import BasicTypes
 from piccolo.querystring import QueryString
 
 from .base import Function
@@ -107,10 +108,55 @@ class Concat(QueryString):
         )
 
 
+class Replace(QueryString):
+    def __init__(
+        self,
+        identifier: Union[Column, QueryString],
+        old: str,
+        new: str,
+        alias: Optional[str] = None,
+    ):
+        """
+        Replace any instances of ``old`` in the string with ``new``.
+
+        For example, a really basic slugify implementation::
+
+            class Venue(Table):
+                name = Varchar()
+
+            >>> await Venue.select(Replace(Venue.name, ' ', '-'))
+            [{'name': 'Amazing-Venue'}]
+
+        """
+        # Preserve the original alias from the column.
+
+        from piccolo.columns import Column
+
+        if isinstance(identifier, Column):
+            alias = (
+                alias
+                or identifier._alias
+                or identifier._meta.get_default_alias()
+            )
+        elif isinstance(identifier, QueryString):
+            alias = alias or identifier._alias
+
+        #######################################################################
+
+        super().__init__(
+            "REPLACE({}, {}, {})",
+            identifier,
+            old,
+            new,
+            alias=alias,
+        )
+
+
 __all__ = (
     "Length",
     "Lower",
     "Ltrim",
+    "Replace",
     "Reverse",
     "Rtrim",
     "Upper",
