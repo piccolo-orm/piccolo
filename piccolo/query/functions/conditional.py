@@ -98,7 +98,7 @@ class NullIf(QueryString):
 
             class Venue(Table):
                 name = Varchar()
-                address = Text(default=None, null=True)
+                address = Text(null=True)
 
             >>> await Venue.select(Venue.name, NullIf(Venue.address, ''))
             [{'name': 'Amazing venue', 'address': None}]
