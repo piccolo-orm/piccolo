@@ -9,7 +9,6 @@ from typing import Optional, Union
 
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import Text, Varchar
-from piccolo.custom_types import BasicTypes
 from piccolo.querystring import QueryString
 
 from .base import Function
