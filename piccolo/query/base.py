@@ -110,7 +110,14 @@ class Query(Generic[TableInstance, QueryResponseType]):
                 if output._output.nested:
                     return cast(
                         QueryResponseType,
-                        [make_nested_object(row, self.table) for row in raw],
+                        [
+                            make_nested_object(
+                                row,
+                                self.table,
+                                load_json=output._output.load_json,
+                            )
+                            for row in raw
+                        ],
                     )
                 else:
                     return cast(
