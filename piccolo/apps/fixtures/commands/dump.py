@@ -46,7 +46,9 @@ async def get_dump(
         output[fixture_config.app_name] = {}
 
         for table_class in sorted_table_classes:
-            data = await table_class.select().run()
+            data = await table_class.select().order_by(
+                table_class._meta.primary_key
+            )
             output[fixture_config.app_name][table_class.__name__] = data
 
     return output
