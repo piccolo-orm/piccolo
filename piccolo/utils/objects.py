@@ -3,12 +3,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from piccolo.columns.column_types import ForeignKey
+from piccolo.utils import encoding
 
 if TYPE_CHECKING:  # pragma: no cover
     from piccolo.table import Table
 
 
-def make_nested_object(row: dict[str, Any], table_class: type[Table]) -> Table:
+def make_nested_object(
+    row: dict[str, Any],
+    table_class: type[Table],
+    load_json: bool = False,
+) -> Table:
     """
     Takes a nested dictionary such as this:
 
@@ -38,6 +43,12 @@ def make_nested_object(row: dict[str, Any], table_class: type[Table]) -> Table:
     """
     table_params: dict[str, Any] = {}
 
+    json_column_names = (
+        [column._meta.name for column in table_class._meta.json_columns]
+        if load_json
+        else []
+    )
+
     for key, value in row.items():
         if isinstance(value, dict):
             # This is probably a related table.
@@ -51,12 +62,15 @@ def make_nested_object(row: dict[str, Any], table_class: type[Table]) -> Table:
                     fk_column._foreign_key_meta.resolved_references
                 )
                 table_params[key] = make_nested_object(
-                    value, related_table_class
+                    value,
+                    related_table_class,
+                    load_json=load_json,
                 )
             else:
                 # The value doesn't belong to a foreign key, so just append it.
                 table_params[key] = value
-
+        elif load_json and key in json_column_names:
+            table_params[key] = encoding.load_json(value)
         else:
             table_params[key] = value
 

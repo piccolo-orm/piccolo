@@ -1,11 +1,13 @@
 import decimal
-from unittest import TestCase
 
+from piccolo.testing.test_case import TableTest
 from tests.base import engine_is
 from tests.example_apps.music.tables import (
     Band,
     Concert,
+    Instrument,
     Manager,
+    RecordingStudio,
     Signing,
     Ticket,
     Venue,
@@ -23,12 +25,20 @@ class TestCreateJoin:
             table.alter().drop_table().run_sync()
 
 
-class TestJoin(TestCase):
-    tables = [Manager, Band, Venue, Concert, Ticket, Signing]
+class TestJoin(TableTest):
+    tables = [
+        Manager,
+        Band,
+        Venue,
+        Concert,
+        Ticket,
+        Signing,
+        Instrument,
+        RecordingStudio,
+    ]
 
     def setUp(self):
-        for table in self.tables:
-            table.create_table().run_sync()
+        super().setUp()
 
         manager_1 = Manager(name="Guido")
         manager_1.save().run_sync()
@@ -56,9 +66,13 @@ class TestJoin(TestCase):
         signing = Signing(with_=band_1)
         signing.save().run_sync()
 
-    def tearDown(self):
-        for table in reversed(self.tables):
-            table.alter().drop_table().run_sync()
+        recording_studio = RecordingStudio(facilities={"restaurant": True})
+        recording_studio.save().run_sync()
+
+        instrument = Instrument(
+            name="Piccolo", recording_studio=recording_studio
+        )
+        instrument.save().run_sync()
 
     ###########################################################################
 
@@ -398,6 +412,26 @@ class TestJoin(TestCase):
         self.assertIsInstance(ticket.concert.venue, Venue)
         self.assertIsInstance(ticket.concert.band_1.manager, Manager)
         self.assertIsInstance(ticket.concert.band_2.manager, Manager)
+
+    def test_objects_nested_with_load_json(self):
+        """
+        Make sure that nested objects works alongside ``load_json`` (i.e. the
+        JSON on nested objects gets loaded).
+
+        https://github.com/piccolo-orm/piccolo/issues/1383
+
+        """
+        instrument = (
+            Instrument.objects(Instrument.recording_studio)
+            .output(load_json=True)
+            .first()
+            .run_sync()
+        )
+        assert instrument is not None
+        self.assertDictEqual(
+            instrument.recording_studio.facilities,
+            {"restaurant": True},
+        )
 
     def test_objects_prefetch_clause(self):
         """
