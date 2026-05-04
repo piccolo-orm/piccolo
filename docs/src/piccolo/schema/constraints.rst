@@ -20,8 +20,7 @@ argument of ``Column``:
 Advanced constraints
 =====================
 
-You can add you can implement powerful ``UNIQUE`` and ``CHECK`` constraints
-on your ``Table``.
+You can add powerful ``UNIQUE`` and ``CHECK`` constraints to your ``Table``.
 
 ``Unique``
 ----------
