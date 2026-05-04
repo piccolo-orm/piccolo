@@ -119,6 +119,12 @@ UUID
 Text
 ****
 
+====
+Char
+====
+
+.. autoclass:: Char
+
 ======
 Secret
 ======
