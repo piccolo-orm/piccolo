@@ -3,20 +3,27 @@ from enum import Enum
 from piccolo.columns import (
     JSON,
     JSONB,
+    BigInt,
     ForeignKey,
     Integer,
     Numeric,
+    Serial,
     Text,
+    Timestamptz,
     Varchar,
 )
 from piccolo.columns.readable import Readable
+from piccolo.engine.finder import engine_finder
 from piccolo.table import Table
+
+engine = engine_finder()
 
 ###############################################################################
 # Simple example
 
 
 class Manager(Table):
+    id: Serial
     name = Varchar(length=50)
 
     @classmethod
@@ -25,9 +32,18 @@ class Manager(Table):
 
 
 class Band(Table):
+    id: Serial
     name = Varchar(length=50)
     manager = ForeignKey(Manager, null=True)
-    popularity = Integer(default=0)
+    popularity = (
+        BigInt(default=0)
+        if engine and engine.engine_type == "cockroach"
+        else Integer(default=0)
+    )
+
+    @classmethod
+    def get_readable(cls) -> Readable:
+        return Readable(template="%s", columns=[cls.name])
 
 
 ###############################################################################
@@ -35,17 +51,36 @@ class Band(Table):
 
 
 class Venue(Table):
+    id: Serial
     name = Varchar(length=100)
     capacity = Integer(default=0, secret=True)
 
+    @classmethod
+    def get_readable(cls) -> Readable:
+        return Readable(template="%s", columns=[cls.name])
+
 
 class Concert(Table):
+    id: Serial
     band_1 = ForeignKey(Band)
     band_2 = ForeignKey(Band)
     venue = ForeignKey(Venue)
 
+    @classmethod
+    def get_readable(cls) -> Readable:
+        return Readable(
+            template="%s and %s at %s, capacity %s",
+            columns=[
+                cls.band_1.name,
+                cls.band_2.name,
+                cls.venue.name,
+                cls.venue.capacity,
+            ],
+        )
+
 
 class Ticket(Table):
+    id: Serial
     concert = ForeignKey(Concert)
     price = Numeric(digits=(5, 2))
 
@@ -55,6 +90,7 @@ class Poster(Table, tags=["special"]):
     Has tags for tests which need it.
     """
 
+    id: Serial
     content = Text()
 
 
@@ -68,6 +104,7 @@ class Shirt(Table):
         medium = "m"
         large = "l"
 
+    id: Serial
     size = Varchar(length=1, choices=Size, default=Size.large)
 
 
@@ -76,5 +113,27 @@ class RecordingStudio(Table):
     Used for testing JSON and JSONB columns.
     """
 
+    id: Serial
     facilities = JSON()
     facilities_b = JSONB()
+
+
+class Instrument(Table):
+    """
+    Used for testing foreign keys to a table with a JSON column.
+    """
+
+    id: Serial
+    name = Varchar()
+    recording_studio = ForeignKey(RecordingStudio)
+
+
+class Signing(Table):
+    """
+    Used for testing ``db_column_name``.
+    """
+
+    id: Serial
+    address = Text()
+    with_ = ForeignKey(Band, db_column_name="with")
+    starts = Timestamptz()

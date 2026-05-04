@@ -1,6 +1,31 @@
-from tests.example_apps.music.tables import Band, Poster
+import dataclasses
+import datetime
+from typing import Any
+from unittest import TestCase
 
-from ..base import DBTestCase
+import pytest
+
+from piccolo.columns.base import Column
+from piccolo.columns.column_types import (
+    Date,
+    Integer,
+    Interval,
+    Text,
+    Timestamp,
+    Timestamptz,
+    Varchar,
+)
+from piccolo.querystring import QueryString
+from piccolo.table import Table
+from piccolo.testing.test_case import AsyncTableTest
+from tests.base import (
+    DBTestCase,
+    engine_version_lt,
+    engines_skip,
+    is_running_sqlite,
+    sqlite_only,
+)
+from tests.example_apps.music.tables import Band, Manager, Signing
 
 
 class TestUpdate(DBTestCase):
@@ -89,156 +114,688 @@ class TestUpdate(DBTestCase):
 
         self.check_response()
 
+    @pytest.mark.skipif(
+        is_running_sqlite() and engine_version_lt(3.35),
+        reason="SQLite version not supported",
+    )
+    def test_update_returning(self):
+        """
+        Make sure update works with the `returning` clause.
+        """
+        self.insert_rows()
 
-class TestIntUpdateOperators(DBTestCase):
-    def test_add(self):
-        self.insert_row()
+        response = (
+            Band.update({Band.name: "Pythonistas 2"})
+            .where(Band.name == "Pythonistas")
+            .returning(Band.name)
+            .run_sync()
+        )
 
-        Band.update({Band.popularity: Band.popularity + 10}).run_sync()
+        self.assertEqual(response, [{"name": "Pythonistas 2"}])
 
-        response = Band.select(Band.popularity).first().run_sync()
+    @pytest.mark.skipif(
+        is_running_sqlite() and engine_version_lt(3.35),
+        reason="SQLite version not supported",
+    )
+    def test_update_returning_alias(self):
+        """
+        Make sure update works with the `returning` clause.
+        """
+        self.insert_rows()
 
-        self.assertEqual(response["popularity"], 1010)
+        response = (
+            Band.update({Band.name: "Pythonistas 2"})
+            .where(Band.name == "Pythonistas")
+            .returning(Band.name.as_alias("band name"))
+            .run_sync()
+        )
 
-    def test_add_column(self):
-        self.insert_row()
-
-        Band.update(
-            {Band.popularity: Band.popularity + Band.popularity}
-        ).run_sync()
-
-        response = Band.select(Band.popularity).first().run_sync()
-
-        self.assertEqual(response["popularity"], 2000)
-
-    def test_radd(self):
-        self.insert_row()
-
-        Band.update({Band.popularity: 10 + Band.popularity}).run_sync()
-
-        response = Band.select(Band.popularity).first().run_sync()
-
-        self.assertEqual(response["popularity"], 1010)
-
-    def test_sub(self):
-        self.insert_row()
-
-        Band.update({Band.popularity: Band.popularity - 10}).run_sync()
-
-        response = Band.select(Band.popularity).first().run_sync()
-
-        self.assertEqual(response["popularity"], 990)
-
-    def test_rsub(self):
-        self.insert_row()
-
-        Band.update({Band.popularity: 1100 - Band.popularity}).run_sync()
-
-        response = Band.select(Band.popularity).first().run_sync()
-
-        self.assertEqual(response["popularity"], 100)
-
-    def test_mul(self):
-        self.insert_row()
-
-        Band.update({Band.popularity: Band.popularity * 2}).run_sync()
-
-        response = Band.select(Band.popularity).first().run_sync()
-
-        self.assertEqual(response["popularity"], 2000)
-
-    def test_rmul(self):
-        self.insert_row()
-
-        Band.update({Band.popularity: 2 * Band.popularity}).run_sync()
-
-        response = Band.select(Band.popularity).first().run_sync()
-
-        self.assertEqual(response["popularity"], 2000)
-
-    def test_div(self):
-        self.insert_row()
-
-        Band.update({Band.popularity: Band.popularity / 10}).run_sync()
-
-        response = Band.select(Band.popularity).first().run_sync()
-
-        self.assertEqual(response["popularity"], 100)
-
-    def test_rdiv(self):
-        self.insert_row()
-
-        Band.update({Band.popularity: 1000 / Band.popularity}).run_sync()
-
-        response = Band.select(Band.popularity).first().run_sync()
-
-        self.assertEqual(response["popularity"], 1)
+        self.assertEqual(response, [{"band name": "Pythonistas 2"}])
 
 
-class TestVarcharUpdateOperators(DBTestCase):
-    def test_add(self):
-        self.insert_row()
-
-        Band.update({Band.name: Band.name + "!!!"}).run_sync()
-
-        response = Band.select(Band.name).first().run_sync()
-
-        self.assertEqual(response["name"], "Pythonistas!!!")
-
-    def test_add_column(self):
-        self.insert_row()
-
-        Band.update({Band.name: Band.name + Band.name}).run_sync()
-
-        response = Band.select(Band.name).first().run_sync()
-
-        self.assertEqual(response["name"], "PythonistasPythonistas")
-
-    def test_radd(self):
-        self.insert_row()
-
-        Band.update({Band.name: "!!!" + Band.name}).run_sync()
-
-        response = Band.select(Band.name).first().run_sync()
-
-        self.assertEqual(response["name"], "!!!Pythonistas")
+###############################################################################
+# Test operators
 
 
-class TestTextUpdateOperators(DBTestCase):
+class MyTable(Table):
+    integer = Integer(null=True)
+    other_integer = Integer(null=True, default=5)
+    timestamp = Timestamp(null=True)
+    timestamptz = Timestamptz(null=True)
+    date = Date(null=True)
+    interval = Interval(null=True)
+    varchar = Varchar(null=True)
+    text = Text(null=True)
+
+
+INITIAL_DATETIME = datetime.datetime(
+    year=2022, month=1, day=1, hour=21, minute=0
+)
+INITIAL_INTERVAL = datetime.timedelta(days=1, hours=1, minutes=1)
+
+DATETIME_DELTA = datetime.timedelta(
+    days=1, hours=1, minutes=1, seconds=30, microseconds=1000
+)
+DATE_DELTA = datetime.timedelta(days=1)
+
+
+@dataclasses.dataclass
+class OperatorTestCase:
+    description: str
+    column: Column
+    initial: Any
+    querystring: QueryString
+    expected: Any
+
+
+TEST_CASES = [
+    # Text
+    OperatorTestCase(
+        description="Add Text",
+        column=MyTable.text,
+        initial="Pythonistas",
+        querystring=MyTable.text + "!!!",
+        expected="Pythonistas!!!",
+    ),
+    OperatorTestCase(
+        description="Add Text columns",
+        column=MyTable.text,
+        initial="Pythonistas",
+        querystring=MyTable.text + MyTable.text,
+        expected="PythonistasPythonistas",
+    ),
+    OperatorTestCase(
+        description="Reverse add Text",
+        column=MyTable.text,
+        initial="Pythonistas",
+        querystring="!!!" + MyTable.text,
+        expected="!!!Pythonistas",
+    ),
+    OperatorTestCase(
+        description="Text is null",
+        column=MyTable.text,
+        initial=None,
+        querystring=MyTable.text + "!!!",
+        expected=None,
+    ),
+    OperatorTestCase(
+        description="Reverse Text is null",
+        column=MyTable.text,
+        initial=None,
+        querystring="!!!" + MyTable.text,
+        expected=None,
+    ),
+    # Varchar
+    OperatorTestCase(
+        description="Add Varchar",
+        column=MyTable.varchar,
+        initial="Pythonistas",
+        querystring=MyTable.varchar + "!!!",
+        expected="Pythonistas!!!",
+    ),
+    OperatorTestCase(
+        description="Add Varchar columns",
+        column=MyTable.varchar,
+        initial="Pythonistas",
+        querystring=MyTable.varchar + MyTable.varchar,
+        expected="PythonistasPythonistas",
+    ),
+    OperatorTestCase(
+        description="Reverse add Varchar",
+        column=MyTable.varchar,
+        initial="Pythonistas",
+        querystring="!!!" + MyTable.varchar,
+        expected="!!!Pythonistas",
+    ),
+    OperatorTestCase(
+        description="Varchar is null",
+        column=MyTable.varchar,
+        initial=None,
+        querystring=MyTable.varchar + "!!!",
+        expected=None,
+    ),
+    OperatorTestCase(
+        description="Reverse Varchar is null",
+        column=MyTable.varchar,
+        initial=None,
+        querystring="!!!" + MyTable.varchar,
+        expected=None,
+    ),
+    # Integer
+    OperatorTestCase(
+        description="Add Integer",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=MyTable.integer + 10,
+        expected=1010,
+    ),
+    OperatorTestCase(
+        description="Reverse add Integer",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=10 + MyTable.integer,
+        expected=1010,
+    ),
+    OperatorTestCase(
+        description="Add Integer colums together",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=MyTable.integer + MyTable.integer,
+        expected=2000,
+    ),
+    OperatorTestCase(
+        description="Subtract Integer",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=MyTable.integer - 10,
+        expected=990,
+    ),
+    OperatorTestCase(
+        description="Reverse subtract Integer",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=2000 - MyTable.integer,
+        expected=1000,
+    ),
+    OperatorTestCase(
+        description="Subtract Integer Columns",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=MyTable.integer - MyTable.other_integer,
+        expected=995,
+    ),
+    OperatorTestCase(
+        description="Add Integer Columns",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=MyTable.integer + MyTable.other_integer,
+        expected=1005,
+    ),
+    OperatorTestCase(
+        description="Multiply Integer",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=MyTable.integer * 2,
+        expected=2000,
+    ),
+    OperatorTestCase(
+        description="Reverse multiply Integer",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=2 * MyTable.integer,
+        expected=2000,
+    ),
+    OperatorTestCase(
+        description="Divide Integer",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=MyTable.integer / 10,
+        expected=100,
+    ),
+    OperatorTestCase(
+        description="Reverse divide Integer",
+        column=MyTable.integer,
+        initial=1000,
+        querystring=2000 / MyTable.integer,
+        expected=2,
+    ),
+    OperatorTestCase(
+        description="Integer is null",
+        column=MyTable.integer,
+        initial=None,
+        querystring=MyTable.integer + 1,
+        expected=None,
+    ),
+    OperatorTestCase(
+        description="Reverse Integer is null",
+        column=MyTable.integer,
+        initial=None,
+        querystring=1 + MyTable.integer,
+        expected=None,
+    ),
+    # Timestamp
+    OperatorTestCase(
+        description="Add Timestamp",
+        column=MyTable.timestamp,
+        initial=INITIAL_DATETIME,
+        querystring=MyTable.timestamp + DATETIME_DELTA,
+        expected=datetime.datetime(
+            year=2022,
+            month=1,
+            day=2,
+            hour=22,
+            minute=1,
+            second=30,
+            microsecond=1000,
+        ),
+    ),
+    OperatorTestCase(
+        description="Reverse add Timestamp",
+        column=MyTable.timestamp,
+        initial=INITIAL_DATETIME,
+        querystring=DATETIME_DELTA + MyTable.timestamp,
+        expected=datetime.datetime(
+            year=2022,
+            month=1,
+            day=2,
+            hour=22,
+            minute=1,
+            second=30,
+            microsecond=1000,
+        ),
+    ),
+    OperatorTestCase(
+        description="Subtract Timestamp",
+        column=MyTable.timestamp,
+        initial=INITIAL_DATETIME,
+        querystring=MyTable.timestamp - DATETIME_DELTA,
+        expected=datetime.datetime(
+            year=2021,
+            month=12,
+            day=31,
+            hour=19,
+            minute=58,
+            second=29,
+            microsecond=999000,
+        ),
+    ),
+    OperatorTestCase(
+        description="Timestamp is null",
+        column=MyTable.timestamp,
+        initial=None,
+        querystring=MyTable.timestamp + DATETIME_DELTA,
+        expected=None,
+    ),
+    # Timestamptz
+    OperatorTestCase(
+        description="Add Timestamptz",
+        column=MyTable.timestamptz,
+        initial=INITIAL_DATETIME,
+        querystring=MyTable.timestamptz + DATETIME_DELTA,
+        expected=datetime.datetime(
+            year=2022,
+            month=1,
+            day=2,
+            hour=22,
+            minute=1,
+            second=30,
+            microsecond=1000,
+            tzinfo=datetime.timezone.utc,
+        ),
+    ),
+    OperatorTestCase(
+        description="Reverse add Timestamptz",
+        column=MyTable.timestamptz,
+        initial=INITIAL_DATETIME,
+        querystring=DATETIME_DELTA + MyTable.timestamptz,
+        expected=datetime.datetime(
+            year=2022,
+            month=1,
+            day=2,
+            hour=22,
+            minute=1,
+            second=30,
+            microsecond=1000,
+            tzinfo=datetime.timezone.utc,
+        ),
+    ),
+    OperatorTestCase(
+        description="Subtract Timestamptz",
+        column=MyTable.timestamptz,
+        initial=INITIAL_DATETIME,
+        querystring=MyTable.timestamptz - DATETIME_DELTA,
+        expected=datetime.datetime(
+            year=2021,
+            month=12,
+            day=31,
+            hour=19,
+            minute=58,
+            second=29,
+            microsecond=999000,
+            tzinfo=datetime.timezone.utc,
+        ),
+    ),
+    OperatorTestCase(
+        description="Timestamptz is null",
+        column=MyTable.timestamptz,
+        initial=None,
+        querystring=MyTable.timestamptz + DATETIME_DELTA,
+        expected=None,
+    ),
+    # Date
+    OperatorTestCase(
+        description="Add Date",
+        column=MyTable.date,
+        initial=INITIAL_DATETIME,
+        querystring=MyTable.date + DATE_DELTA,
+        expected=datetime.date(year=2022, month=1, day=2),
+    ),
+    OperatorTestCase(
+        description="Reverse add Date",
+        column=MyTable.date,
+        initial=INITIAL_DATETIME,
+        querystring=DATE_DELTA + MyTable.date,
+        expected=datetime.date(year=2022, month=1, day=2),
+    ),
+    OperatorTestCase(
+        description="Subtract Date",
+        column=MyTable.date,
+        initial=INITIAL_DATETIME,
+        querystring=MyTable.date - DATE_DELTA,
+        expected=datetime.date(year=2021, month=12, day=31),
+    ),
+    OperatorTestCase(
+        description="Date is null",
+        column=MyTable.date,
+        initial=None,
+        querystring=MyTable.date + DATE_DELTA,
+        expected=None,
+    ),
+    # Interval
+    OperatorTestCase(
+        description="Add Interval",
+        column=MyTable.interval,
+        initial=INITIAL_INTERVAL,
+        querystring=MyTable.interval + DATETIME_DELTA,
+        expected=datetime.timedelta(days=2, seconds=7350, microseconds=1000),
+    ),
+    OperatorTestCase(
+        description="Reverse add Interval",
+        column=MyTable.interval,
+        initial=INITIAL_INTERVAL,
+        querystring=DATETIME_DELTA + MyTable.interval,
+        expected=datetime.timedelta(days=2, seconds=7350, microseconds=1000),
+    ),
+    OperatorTestCase(
+        description="Subtract Interval",
+        column=MyTable.interval,
+        initial=INITIAL_INTERVAL,
+        querystring=MyTable.interval - DATETIME_DELTA,
+        expected=datetime.timedelta(
+            days=-1, seconds=86369, microseconds=999000
+        ),
+    ),
+    OperatorTestCase(
+        description="Interval is null",
+        column=MyTable.interval,
+        initial=None,
+        querystring=MyTable.interval + DATETIME_DELTA,
+        expected=None,
+    ),
+]
+
+
+class TestOperators(TestCase):
     def setUp(self):
-        super().setUp()
-        Poster(content="Join us for this amazing show").save().run_sync()
+        MyTable.create_table().run_sync()
 
-    def test_add(self):
-        Poster.update({Poster.content: Poster.content + "!!!"}).run_sync()
+    def tearDown(self):
+        MyTable.alter().drop_table().run_sync()
 
-        response = Poster.select(Poster.content).first().run_sync()
+    @engines_skip("cockroach")
+    def test_operators(self):
+        for test_case in TEST_CASES:
+            print(test_case.description)
 
-        self.assertEqual(
-            response["content"], "Join us for this amazing show!!!"
+            # Create the initial data in the database.
+            instance = MyTable()
+            setattr(instance, test_case.column._meta.name, test_case.initial)
+            instance.save().run_sync()
+
+            # Apply the update.
+            MyTable.update(
+                {test_case.column: test_case.querystring}, force=True
+            ).run_sync()
+
+            # Make sure the value returned from the database is correct.
+            new_value = getattr(
+                MyTable.objects().first().run_sync(),
+                test_case.column._meta.name,
+            )
+
+            self.assertEqual(
+                new_value, test_case.expected, msg=test_case.description
+            )
+
+            # Clean up
+            MyTable.delete(force=True).run_sync()
+
+    @sqlite_only
+    def test_edge_cases(self):
+        """
+        Some usecases aren't supported by SQLite, and should raise a
+        ``ValueError``.
+        """
+        with self.assertRaises(ValueError):
+            # An error should be raised because we can't save at this level
+            # of resolution - 1 millisecond is the minimum.
+            MyTable.timestamp + datetime.timedelta(  # type: ignore
+                microseconds=1
+            )
+
+
+###############################################################################
+# Test auto_update
+
+
+class AutoUpdateTable(Table, tablename="my_table"):
+    name = Varchar()
+    modified_on = Timestamp(
+        auto_update=datetime.datetime.now, null=True, default=None
+    )
+
+
+class TestAutoUpdate(TestCase):
+    def setUp(self):
+        AutoUpdateTable.create_table().run_sync()
+
+    def tearDown(self):
+        AutoUpdateTable.alter().drop_table().run_sync()
+
+    def test_save(self):
+        """
+        Make sure the ``save`` method uses ``auto_update`` columns correctly.
+        """
+        row = AutoUpdateTable(name="test")
+
+        # Saving for the first time is an INSERT, so `auto_update` shouldn't
+        # be triggered.
+        row.save().run_sync()
+        self.assertIsNone(row.modified_on)
+
+        # A subsequent save is an UPDATE, so `auto_update` should be triggered.
+        row.name = "test 2"
+        row.save().run_sync()
+        self.assertIsInstance(row.modified_on, datetime.datetime)
+
+        # If we save it again, `auto_update` should be applied again.
+        existing_modified_on = row.modified_on
+        row.name = "test 3"
+        row.save().run_sync()
+        self.assertIsInstance(row.modified_on, datetime.datetime)
+        self.assertGreater(row.modified_on, existing_modified_on)
+
+    def test_update(self):
+        """
+        Make sure the update method uses ``auto_update`` columns correctly.
+        """
+        # Insert a row for us to update
+        AutoUpdateTable.insert(AutoUpdateTable(name="test")).run_sync()
+
+        data = (
+            AutoUpdateTable.select(
+                AutoUpdateTable.name, AutoUpdateTable.modified_on
+            )
+            .first()
+            .run_sync()
         )
 
-    def test_add_column(self):
-        self.insert_row()
+        assert data is not None
 
-        Poster.update(
-            {Poster.content: Poster.content + Poster.content}
+        self.assertDictEqual(
+            data,
+            {"name": "test", "modified_on": None},
+        )
+
+        # Update the row
+        AutoUpdateTable.update(
+            {AutoUpdateTable.name: "test 2"}, force=True
         ).run_sync()
 
-        response = Poster.select(Poster.content).first().run_sync()
+        # Retrieve the row
+        updated_row = (
+            AutoUpdateTable.select(
+                AutoUpdateTable.name, AutoUpdateTable.modified_on
+            )
+            .first()
+            .run_sync()
+        )
+        assert updated_row is not None
+        self.assertIsInstance(updated_row["modified_on"], datetime.datetime)
+        self.assertEqual(updated_row["name"], "test 2")
+
+
+###############################################################################
+# Test update with joins
+
+
+class TestUpdateWithJoin(DBTestCase):
+    def test_join(self):
+        """
+        Make sure updates work when the where clause needs a join.
+        """
+        self.insert_rows()
+        Band.update({Band.name: "New name"}).where(
+            Band.manager.name == "Guido"
+        ).run_sync()
 
         self.assertEqual(
-            response["content"],
-            "Join us for this amazing show" * 2,
+            Band.count().where(Band.name == "New name").run_sync(), 1
         )
 
-    def test_radd(self):
-        self.insert_row()
+    def test_multiple_matches(self):
+        """
+        Make sure it works when the join has multiple matching values.
+        """
+        self.insert_rows()
 
-        Poster.update({Poster.content: "!!!" + Poster.content}).run_sync()
+        # Create an additional band with the same manager.
+        manager = Manager.objects().get(Manager.name == "Guido").run_sync()
+        band = Band(name="Pythonistas 2", manager=manager)
+        band.save().run_sync()
 
-        response = Poster.select(Poster.content).first().run_sync()
+        Band.update({Band.name: "New name"}).where(
+            Band.manager.name == "Guido"
+        ).run_sync()
 
         self.assertEqual(
-            response["content"], "!!!Join us for this amazing show"
+            Band.count().where(Band.name == "New name").run_sync(), 2
         )
+
+    def test_no_matches(self):
+        """
+        Make sure it works when the join has no matching values.
+        """
+        self.insert_rows()
+
+        Band.update({Band.name: "New name"}).where(
+            Band.manager.name == "Mr Manager"
+        ).run_sync()
+
+        self.assertEqual(
+            Band.count().where(Band.name == "New name").run_sync(), 0
+        )
+
+    def test_and(self):
+        """
+        Make sure it works when combined with other where clauses using AND.
+        """
+        self.insert_rows()
+
+        # Create an additional band with the same manager, and different
+        # popularity.
+        manager = Manager.objects().get(Manager.name == "Guido").run_sync()
+        band = Band(name="Pythonistas 2", manager=manager, popularity=10000)
+        band.save().run_sync()
+
+        Band.update({Band.name: "New name"}).where(
+            Band.manager.name == "Guido", Band.popularity == 10000
+        ).run_sync()
+
+        self.assertEqual(
+            Band.count().where(Band.name == "New name").run_sync(), 1
+        )
+
+    def test_or(self):
+        """
+        Make sure it works when combined with other where clauses using OR.
+        """
+        self.insert_rows()
+
+        Band.update({Band.name: "New name"}).where(
+            (Band.manager.name == "Guido") | (Band.manager.name == "Graydon")
+        ).run_sync()
+
+        self.assertEqual(
+            Band.count().where(Band.name == "New name").run_sync(), 2
+        )
+
+
+###############################################################################
+# Test db_column_name
+
+
+class TestDBColumnName(AsyncTableTest):
+
+    tables = [Signing, Band, Manager]
+
+    async def test_db_column_name(self):
+        """
+        Make sure `update` queries using the `where` clause work when columns
+        use `db_column_name`.
+
+        https://github.com/piccolo-orm/piccolo/issues/1361
+
+        """
+        band_1 = Band({Band.name: "Pythonistas"})
+        await band_1.save()
+
+        band_2 = Band({Band.name: "Rustaceans"})
+        await band_2.save()
+
+        starts = datetime.datetime(
+            2026,
+            2,
+            25,
+            10,
+            30,
+            tzinfo=datetime.timezone.utc,
+        )
+
+        signing_1 = Signing(
+            {
+                Signing.with_: band_1,
+                Signing.address: "Awesome Music Store, London",
+                Signing.starts: starts,
+            }
+        )
+        await signing_1.save()
+
+        signing_2 = Signing(
+            {
+                Signing.with_: band_2,
+                Signing.address: "Awesome Music Store, Liverpool",
+                Signing.starts: starts,
+            }
+        )
+        await signing_2.save()
+
+        await Signing.update(
+            {Signing.starts: Signing.starts + datetime.timedelta(days=1)}
+        ).where(Signing.with_._.name == "Pythonistas")
+
+        await signing_1.refresh()
+        self.assertEqual(signing_1.starts.day, 26)
+
+        await signing_2.refresh()
+        self.assertEqual(signing_2.starts, starts)

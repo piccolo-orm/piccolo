@@ -1,5 +1,5 @@
-import typing as t
 from dataclasses import dataclass
+from typing import Any, Optional
 
 from piccolo.columns.base import Column
 
@@ -10,6 +10,15 @@ class RenameTable:
     old_tablename: str
     new_class_name: str
     new_tablename: str
+    schema: Optional[str] = None
+
+
+@dataclass
+class ChangeTableSchema:
+    class_name: str
+    tablename: str
+    old_schema: Optional[str]
+    new_schema: Optional[str]
 
 
 @dataclass
@@ -20,6 +29,7 @@ class RenameColumn:
     new_column_name: str
     old_db_column_name: str
     new_db_column_name: str
+    schema: Optional[str] = None
 
 
 @dataclass
@@ -28,10 +38,11 @@ class AlterColumn:
     column_name: str
     db_column_name: str
     tablename: str
-    params: t.Dict[str, t.Any]
-    old_params: t.Dict[str, t.Any]
-    column_class: t.Optional[t.Type[Column]] = None
-    old_column_class: t.Optional[t.Type[Column]] = None
+    params: dict[str, Any]
+    old_params: dict[str, Any]
+    column_class: Optional[type[Column]] = None
+    old_column_class: Optional[type[Column]] = None
+    schema: Optional[str] = None
 
 
 @dataclass
@@ -40,6 +51,7 @@ class DropColumn:
     column_name: str
     db_column_name: str
     tablename: str
+    schema: Optional[str] = None
 
 
 @dataclass
@@ -48,5 +60,6 @@ class AddColumn:
     column_name: str
     db_column_name: str
     column_class_name: str
-    column_class: t.Type[Column]
-    params: t.Dict[str, t.Any]
+    column_class: type[Column]
+    params: dict[str, Any]
+    schema: Optional[str] = None

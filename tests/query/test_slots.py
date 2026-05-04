@@ -41,4 +41,4 @@ class TestSlots(TestCase):
                 AttributeError, msg=f"{class_name} didn't raised an error"
             ):
                 print(f"Setting {class_name} attribute")
-                query_class(table=Manager).abc = 123
+                query_class(table=Manager).abc = 123  # type: ignore

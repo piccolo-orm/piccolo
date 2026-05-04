@@ -3,7 +3,6 @@
 
 import itertools
 import os
-import typing as t
 
 from setuptools import find_packages, setup
 
@@ -18,7 +17,7 @@ with open(os.path.join(directory, "README.md")) as f:
     LONG_DESCRIPTION = f.read()
 
 
-def parse_requirement(req_path: str) -> t.List[str]:
+def parse_requirement(req_path: str) -> list[str]:
     """
     Parse requirement file.
     Example:
@@ -32,16 +31,18 @@ def parse_requirement(req_path: str) -> t.List[str]:
         return [i.strip() for i in contents.strip().split("\n")]
 
 
-def extras_require() -> t.Dict[str, t.List[str]]:
+def extras_require() -> dict[str, list[str]]:
     """
     Parse requirements in requirements/extras directory
     """
-    extra_requirements = {extra: parse_requirement(
-            os.path.join("extras", extra + ".txt")
-        ) for extra in extras}
-    extra_requirements["all"] = [
-        i for i in itertools.chain.from_iterable(extra_requirements.values())
-    ]
+    extra_requirements = {
+        extra: parse_requirement(os.path.join("extras", f"{extra}.txt"))
+        for extra in extras
+    }
+
+    extra_requirements["all"] = list(
+        itertools.chain.from_iterable(extra_requirements.values())
+    )
 
     return extra_requirements
 
@@ -56,7 +57,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Daniel Townsend",
     author_email="dan@dantownsend.co.uk",
-    python_requires=">=3.7.0",
+    python_requires=">=3.10.0",
     url="https://github.com/piccolo-orm/piccolo",
     packages=find_packages(exclude=("tests",)),
     package_data={
@@ -68,6 +69,13 @@ setup(
         ],
         "piccolo": ["py.typed"],
     },
+    project_urls={
+        "Documentation": (
+            "https://piccolo-orm.readthedocs.io/en/latest/index.html"
+        ),
+        "Source": "https://github.com/piccolo-orm/piccolo",
+        "Tracker": "https://github.com/piccolo-orm/piccolo/issues",
+    },
     install_requires=parse_requirement("requirements.txt"),
     extras_require=extras_require(),
     license="MIT",
@@ -75,10 +83,11 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
         "Programming Language :: Python :: Implementation :: CPython",
         "Framework :: AsyncIO",
         "Typing :: Typed",

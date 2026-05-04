@@ -7,6 +7,7 @@ Call them from the root of the project, e.g. `./scripts/lint.sh`.
 - `scripts/format.sh` - Format the code to the required standards.
 - `scripts/lint.sh` - Run the automated code linting/formatting tools.
 - `scripts/piccolo.sh` - Run the Piccolo CLI on the example project in the `tests` folder.
+- `scripts/profile.sh` - Run a profiler to test performance.
 - `scripts/release.sh` - Publish package to PyPI.
 - `scripts/test-postgres.sh` - Run the test suite with Postgres.
 - `scripts/test-sqlite.sh` - Run the test suite with SQLite.

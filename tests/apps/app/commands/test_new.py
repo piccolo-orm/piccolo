@@ -3,7 +3,12 @@ import shutil
 import tempfile
 from unittest import TestCase
 
-from piccolo.apps.app.commands.new import module_exists, new
+from piccolo.apps.app.commands.new import (
+    get_app_module,
+    module_exists,
+    new,
+    validate_app_name,
+)
 
 
 class TestModuleExists(TestCase):
@@ -39,5 +44,41 @@ class TestNewApp(TestCase):
 
         exception = context.exception
         self.assertTrue(
-            exception.code.startswith("A module called sys already exists")
+            str(exception.code).startswith(
+                "A module called sys already exists"
+            )
         )
+
+
+class TestValidateAppName(TestCase):
+
+    def test_validate_app_name(self):
+        """
+        Make sure only app names which work as valid Python package names are
+        allowed.
+        """
+        # Should be rejected:
+        for app_name in ("MY APP", "app/my_app", "my.app"):
+            with self.assertRaises(ValueError):
+                validate_app_name(app_name=app_name)
+
+        # Should work fine:
+        validate_app_name(app_name="music")
+
+
+class TestGetAppIdentifier(TestCase):
+
+    def test_get_app_module(self):
+        """
+        Make sure the the ``root`` argument is handled correctly.
+        """
+        self.assertEqual(
+            get_app_module(app_name="music", root="."),
+            "music.piccolo_app",
+        )
+
+        for root in ("apps", "./apps", "./apps/"):
+            self.assertEqual(
+                get_app_module(app_name="music", root=root),
+                "apps.music.piccolo_app",
+            )

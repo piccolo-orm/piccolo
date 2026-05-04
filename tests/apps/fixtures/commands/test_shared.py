@@ -56,5 +56,5 @@ class TestShared(TestCase):
         }
 
         model = pydantic_model(**data)
-        self.assertEqual(model.mega.SmallTable[0].id, 1)
-        self.assertEqual(model.mega.MegaTable[0].id, 1)
+        self.assertEqual(model.mega.SmallTable[0].id, 1)  # type: ignore
+        self.assertEqual(model.mega.MegaTable[0].id, 1)  # type: ignore

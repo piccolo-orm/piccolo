@@ -2,22 +2,32 @@ from __future__ import annotations
 
 import os
 import shutil
-import typing as t
 
-import black  # type: ignore
-import colorama  # type: ignore
+import black
+import colorama
 from jinja2 import Environment, FileSystemLoader
 
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates/app/")
-SERVERS = ["uvicorn", "Hypercorn"]
-ROUTERS = ["starlette", "fastapi", "blacksheep"]
+SERVERS = ["uvicorn", "Hypercorn", "granian"]
+ROUTER_DEPENDENCIES = {
+    "starlette": ["starlette"],
+    "fastapi": ["fastapi"],
+    "blacksheep": ["blacksheep[full]"],
+    "litestar": ["litestar"],
+    "ravyn": ["ravyn"],
+    "lilya": ["lilya"],
+    "quart": ["quart", "quart_schema"],
+    "falcon": ["falcon"],
+    "sanic": ["sanic", "sanic_ext"],
+}
+ROUTERS = list(ROUTER_DEPENDENCIES.keys())
 
 
 def print_instruction(message: str):
     print(f"{colorama.Fore.CYAN}{message}{colorama.Fore.RESET}")
 
 
-def get_options_string(options: t.List[str]):
+def get_options_string(options: list[str]):
     return ", ".join(f"{name} [{index}]" for index, name in enumerate(options))
 
 
@@ -47,8 +57,11 @@ def new(root: str = ".", name: str = "piccolo_project"):
     """
     tree = os.walk(TEMPLATE_DIR)
 
+    router = get_routing_framework()
+
     template_context = {
-        "router": get_routing_framework(),
+        "router": router,
+        "router_dependencies": ROUTER_DEPENDENCIES.get(router) or [router],
         "server": get_server(),
         "project_identifier": name.replace(" ", "_").lower(),
     }
@@ -96,7 +109,7 @@ def new(root: str = ".", name: str = "piccolo_project"):
                         )
                     except Exception as exception:
                         print(f"Problem processing {output_file_name}")
-                        raise exception
+                        raise exception from exception
 
                 with open(
                     os.path.join(output_dir_path, output_file_name), "w"

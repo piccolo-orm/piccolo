@@ -7,7 +7,7 @@ build/
 .doctrees/
 .vscode/
 piccolo.egg-info/
-build/
+.idea/
 dist/
 piccolo.sqlite
 _build/
@@ -18,3 +18,9 @@ htmlcov/
 prof/
 .env/
 .venv/
+result.json
+
+# CockroachDB
+cockroach-data/
+heap_profiler/
+goroutine_dump/

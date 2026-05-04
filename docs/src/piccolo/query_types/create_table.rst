@@ -9,7 +9,7 @@ This creates the table and columns in the database.
 
 .. code-block:: python
 
-    >>> Band.create_table().run_sync()
+    >>> await Band.create_table()
     []
 
 
@@ -17,15 +17,23 @@ To prevent an error from being raised if the table already exists:
 
 .. code-block:: python
 
-    >>> Band.create_table(if_not_exists=True).run_sync()
+    >>> await Band.create_table(if_not_exists=True)
     []
 
-Also, you can create multiple tables at once.
+create_db_tables / create_db_tables_sync
+----------------------------------------
 
-This function will automatically sort tables based on their foreign keys so they're created in the right order:
+You can create multiple tables at once.
+
+This function will automatically sort tables based on their foreign keys so
+they're created in the right order:
 
 .. code-block:: python
-    
-    >>> from piccolo.table import create_tables 
-    >>> create_tables(Band, Manager, if_not_exists=True)
-   
+
+    # async version
+    >>> from piccolo.table import create_db_tables
+    >>> await create_db_tables(Band, Manager, if_not_exists=True)
+
+    # sync version
+    >>> from piccolo.table import create_db_tables_sync
+    >>> create_db_tables_sync(Band, Manager, if_not_exists=True)

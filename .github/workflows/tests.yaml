@@ -1,22 +1,27 @@
 name: Test Suite
 
 on:
-  push:
-    branches: ["master"]
-  pull_request:
-    branches: ["master"]
+    push:
+        branches: ["master", "v1"]
+        paths-ignore:
+            - "docs/**"
+    pull_request:
+        branches: ["master", "v1"]
+        paths-ignore:
+            - "docs/**"
 
 jobs:
     linters:
         runs-on: ubuntu-latest
+        timeout-minutes: 60
         strategy:
             matrix:
-                python-version: ['3.7', '3.8', '3.9', '3.10']
+                python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
             - name: Set up Python ${{ matrix.python-version }}
-              uses: actions/setup-python@v2
+              uses: actions/setup-python@v5
               with:
                   python-version: ${{ matrix.python-version }}
             - name: Install dependencies
@@ -28,12 +33,60 @@ jobs:
             - name: Lint
               run: ./scripts/lint.sh
 
-    postgres:
+    integration:
         runs-on: ubuntu-latest
+        timeout-minutes: 60
         strategy:
             matrix:
-                python-version: ['3.7', '3.8', '3.9', '3.10']
-                postgres-version: [9.6, 10, 11, 12, 13, 14]
+                # These tests are slow, so we only run on the latest Python
+                # version.
+                python-version: ["3.13"]
+                postgres-version: [17]
+        services:
+            postgres:
+                image: postgres:${{ matrix.postgres-version }}
+                env:
+                    POSTGRES_PASSWORD: postgres
+                options: >-
+                    --health-cmd pg_isready
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+                ports:
+                    - 5432:5432
+        steps:
+            - uses: actions/checkout@v3
+            - name: Set up Python ${{ matrix.python-version }}
+              uses: actions/setup-python@v5
+              with:
+                  python-version: ${{ matrix.python-version }}
+            - name: Install dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install -r requirements/requirements.txt
+                  pip install -r requirements/test-requirements.txt
+                  pip install -r requirements/extras/postgres.txt
+            - name: Setup postgres
+              run: |
+                  export PGPASSWORD=postgres
+                  psql -h localhost -c 'CREATE DATABASE piccolo;' -U postgres
+                  psql -h localhost -c "CREATE USER piccolo PASSWORD 'piccolo';" -U postgres
+                  psql -h localhost -c "GRANT ALL PRIVILEGES ON DATABASE piccolo TO piccolo;" -U postgres
+                  psql -h localhost -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" -d piccolo -U postgres
+            - name: Run integration tests
+              run: ./scripts/test-integration.sh
+              env:
+                  PG_HOST: localhost
+                  PG_DATABASE: piccolo
+                  PG_PASSWORD: postgres
+
+    postgres:
+        runs-on: ubuntu-latest
+        timeout-minutes: 60
+        strategy:
+            matrix:
+                python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+                postgres-version: [13, 14, 15, 16, 17, 18]
 
         # Service containers to run with `container-job`
         services:
@@ -54,9 +107,9 @@ jobs:
                     - 5432:5432
 
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
             - name: Set up Python ${{ matrix.python-version }}
-              uses: actions/setup-python@v2
+              uses: actions/setup-python@v5
               with:
                   python-version: ${{ matrix.python-version }}
             - name: Install dependencies
@@ -81,18 +134,53 @@ jobs:
                   PG_PASSWORD: postgres
             - name: Upload coverage
               uses: codecov/codecov-action@v1
-              if: matrix.python-version == '3.7'
+              if: matrix.python-version == '3.13'
+
+    cockroach:
+        runs-on: ubuntu-latest
+        timeout-minutes: 60
+        strategy:
+            matrix:
+                python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+                cockroachdb-version: ["v25.4.3"]
+        steps:
+            - uses: actions/checkout@v3
+            - name: Set up Python ${{ matrix.python-version }}
+              uses: actions/setup-python@v5
+              with:
+                  python-version: ${{ matrix.python-version }}
+            - name: Install dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install -r requirements/requirements.txt
+                  pip install -r requirements/test-requirements.txt
+                  pip install -r requirements/extras/postgres.txt
+            - name: Setup CockroachDB
+              run: |
+                  wget -qO- https://binaries.cockroachdb.com/cockroach-${{ matrix.cockroachdb-version }}.linux-amd64.tgz | tar xz
+                  ./cockroach-${{ matrix.cockroachdb-version }}.linux-amd64/cockroach start-single-node --insecure --background
+                  ./cockroach-${{ matrix.cockroachdb-version }}.linux-amd64/cockroach sql --insecure -e 'create database piccolo;'
+
+            - name: Test with pytest, CockroachDB
+              run: ./scripts/test-cockroach.sh
+              env:
+                  PG_HOST: localhost
+                  PG_DATABASE: piccolo
+            - name: Upload coverage
+              uses: codecov/codecov-action@v1
+              if: matrix.python-version == '3.13'
 
     sqlite:
         runs-on: ubuntu-latest
+        timeout-minutes: 60
         strategy:
             matrix:
-                python-version: ['3.7', '3.8', '3.9', '3.10']
+                python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
             - name: Set up Python ${{ matrix.python-version }}
-              uses: actions/setup-python@v2
+              uses: actions/setup-python@v5
               with:
                   python-version: ${{ matrix.python-version }}
             - name: Install dependencies
@@ -105,4 +193,4 @@ jobs:
               run: ./scripts/test-sqlite.sh
             - name: Upload coverage
               uses: codecov/codecov-action@v1
-              if: matrix.python-version == '3.7'
+              if: matrix.python-version == '3.13'

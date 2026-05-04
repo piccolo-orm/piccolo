@@ -43,9 +43,9 @@ class TestGetMigrationModules(TestCase):
 
 class TestGetTableFromSnapshot(TestCase):
     @patch.object(BaseMigrationManager, "get_app_config")
-    def test_get_table_from_snaphot(self, get_app_config: MagicMock):
+    def test_get_table_from_snapshot(self, get_app_config: MagicMock):
         """
-        Test the get_table_from_snaphot method.
+        Test the get_table_from_snapshot method.
         """
         get_app_config.return_value = AppConfig(
             app_name="music",
@@ -55,7 +55,7 @@ class TestGetTableFromSnapshot(TestCase):
         )
 
         table = run_sync(
-            BaseMigrationManager().get_table_from_snaphot(
+            BaseMigrationManager().get_table_from_snapshot(
                 app_name="music", table_class_name="Band"
             )
         )

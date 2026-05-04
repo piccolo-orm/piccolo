@@ -3,11 +3,65 @@
 Advanced
 ========
 
+.. _Schemas:
+
+Schemas
+-------
+
+Postgres and CoackroachDB have a concept called **schemas**.
+
+It's a way of grouping the tables in a database. To learn more:
+
+* `Postgres docs <https://www.postgresql.org/docs/current/ddl-schemas.html>`_
+* `CockroachDB docs <https://www.cockroachlabs.com/docs/stable/schema-design-overview.html>`_
+
+To specify a table's schema, do the following:
+
+.. code-block:: python
+
+    class Band(Table, schema="music"):
+        ...
+
+    # The table will be created in the `music` schema.
+    # The music schema will also be created if it doesn't already exist.
+    >>> await Band.create_table()
+
+If the ``schema`` argument isn't specified, then the table is created in the
+``public`` schema.
+
+Migration support
+~~~~~~~~~~~~~~~~~
+
+Schemas are fully supported in :ref:`database migrations <AutoMigrations>`.
+For example, if we change the ``schema`` argument:
+
+.. code-block:: python
+
+    class Band(Table, schema="music_2"):
+        ...
+
+Then create an automatic migration and run it, then the table will be moved to
+the new schema:
+
+.. code-block:: bash
+
+    >>> piccolo migrations new my_app --auto
+    >>> piccolo migrations forwards my_app
+
+``SchemaManager``
+~~~~~~~~~~~~~~~~~
+
+The :class:`SchemaManager <piccolo.schema.SchemaManager>` class is used
+internally by Piccolo to interact with schemas. You may find it useful if you
+want to write a script to interact with schemas (create / delete / list etc).
+
+-------------------------------------------------------------------------------
+
 Readable
 --------
 
 Sometimes Piccolo needs a succinct representation of a row - for example, when
-displaying a link in the Piccolo Admin GUI (see :ref:`Ecosystem`). Rather than
+displaying a link in the :ref:`Piccolo Admin <PiccoloAdmin>`. Rather than
 just displaying the row ID, we can specify something more user friendly using
 ``Readable``.
 
@@ -32,7 +86,7 @@ tooling - you can also use it your own queries.
 
 .. code-block:: python
 
-    Band.select(Band.get_readable()).run_sync()
+    await Band.select(Band.get_readable())
 
 Here is an example of a more complex ``Readable``.
 
@@ -56,7 +110,7 @@ Table Tags
 ----------
 
 ``Table`` subclasses can be given tags. The tags can be used for filtering,
-for example with ``table_finder`` (see :ref:`TableFinder`).
+for example with :ref:`table_finder <TableFinder>`.
 
 .. code-block:: python
 
@@ -89,7 +143,7 @@ use mixins to reduce the amount of repetition.
 Choices
 -------
 
-You can specify choices for a column, using Python's ``Enum`` support.
+You can specify choices for a column, using Python's :class:`Enum <enum.Enum>` support.
 
 .. code-block:: python
 
@@ -111,9 +165,9 @@ We can then use the ``Enum`` in our queries.
 
 .. code-block:: python
 
-    >>> Shirt(size=Shirt.Size.large).save().run_sync()
+    >>> await Shirt(size=Shirt.Size.large).save()
 
-    >>> Shirt.select().run_sync()
+    >>> await Shirt.select()
     [{'id': 1, 'size': 'l'}]
 
 Note how the value stored in the database is the ``Enum`` value (in this case ``'l'``).
@@ -123,12 +177,12 @@ where a query requires a value.
 
 .. code-block:: python
 
-    >>> Shirt.insert(
-    >>>     Shirt(size=Shirt.Size.small),
-    >>>     Shirt(size=Shirt.Size.medium)
-    >>> ).run_sync()
+    >>> await Shirt.insert(
+    ...     Shirt(size=Shirt.Size.small),
+    ...     Shirt(size=Shirt.Size.medium)
+    ... )
 
-    >>> Shirt.select().where(Shirt.size == Shirt.Size.small).run_sync()
+    >>> await Shirt.select().where(Shirt.size == Shirt.Size.small)
     [{'id': 1, 'size': 's'}]
 
 Advantages
@@ -136,9 +190,45 @@ Advantages
 
 By using choices, you get the following benefits:
 
- * Signalling to other programmers what values are acceptable for the column.
- * Improved storage efficiency (we can store ``'l'`` instead of ``'large'``).
- * Piccolo Admin support
+* Signalling to other programmers what values are acceptable for the column.
+* Improved storage efficiency (we can store ``'l'`` instead of ``'large'``).
+* Piccolo Admin support
+
+``Array`` columns
+~~~~~~~~~~~~~~~~~
+
+You can also use choices with :class:`Array <piccolo.columns.column_types.Array>`
+columns.
+
+.. code-block:: python
+
+    class Ticket(Table):
+        class Extras(str, enum.Enum):
+            drink = "drink"
+            snack = "snack"
+            program = "program"
+
+        extras = Array(Varchar(), choices=Extras)
+
+Note how you pass ``choices`` to ``Array``, and not the ``base_column``:
+
+.. code-block:: python
+
+    # CORRECT:
+    Array(Varchar(), choices=Extras)
+
+    # INCORRECT:
+    Array(Varchar(choices=Extras))
+
+We can then use the ``Enum`` in our queries:
+
+.. code-block:: python
+
+    >>> await Ticket.insert(
+    ...     Ticket(extras=[Extras.drink, Extras.snack]),
+    ...     Ticket(extras=[Extras.program]),
+    ... )
+
 
 -------------------------------------------------------------------------------
 
@@ -155,9 +245,9 @@ can dynamically create them at run time, by inspecting the database. These
 
 Some example use cases:
 
- * You have a very dynamic database, where new tables are being created
-   constantly, so updating a ``tables.py`` is impractical.
- * You use Piccolo on the command line to explore databases.
+* You have a very dynamic database, where new tables are being created
+  constantly, so updating a ``tables.py`` is impractical.
+* You use Piccolo on the command line to explore databases.
 
 Full reflection
 ~~~~~~~~~~~~~~~
@@ -184,7 +274,7 @@ Then you can use them like your normal ``Table`` classes:
 
 .. code-block:: python
 
-    >>> Band.select().run_sync()
+    >>> await Band.select()
     [{'id': 1, 'name': 'Pythonistas', 'manager': 1}, ...]
 
 
@@ -231,3 +321,58 @@ is not present, it will be reflected and returned.
 .. hint:: Reflection will automatically create ``Table`` classes for referenced
     tables too. For example, if ``Table1`` references ``Table2``, then
     ``Table2`` will automatically be added to ``TableStorage``.
+
+-------------------------------------------------------------------------------
+
+How to create custom column types
+---------------------------------
+
+Sometimes, the column types shipped with Piccolo don't meet your requirements, and you
+will need to define your own column types.
+
+Generally there are two ways to define your own column types:
+
+* Create a subclass of an existing column type; or
+* Directly subclass the :ref:`Column <ColumnTypes>` class.
+
+Try to use the first method whenever possible because it is more straightforward and
+can often save you some work. Otherwise, subclass :ref:`Column <ColumnTypes>`.
+
+**Example**
+
+In this example, we create a column type called ``MyColumn``, which is fundamentally
+an ``Integer`` type but has a custom attribute ``custom_attr``:
+
+.. code-block:: python
+
+    from piccolo.columns import Integer
+
+    class MyColumn(Integer):
+        def __init__(self, *args, custom_attr: str = '', **kwargs):
+            self.custom_attr = custom_attr
+            super().__init__(*args, **kwargs)
+
+        @property
+        def column_type(self):
+            return 'INTEGER'
+
+.. hint:: It is **important** to specify the ``column_type`` property, which
+    tells the database engine the **actual** storage type of the custom
+    column.
+
+Now we can use ``MyColumn`` in our table:
+
+.. code-block:: python
+
+    from piccolo.table import Table
+
+    class MyTable(Table):
+        my_col = MyColumn(custom_attr='foo')
+        ...
+
+And later we can retrieve the value of the attribute:
+
+.. code-block:: python
+
+    >>> MyTable.my_col.custom_attr
+    'foo'

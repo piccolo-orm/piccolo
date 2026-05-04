@@ -32,7 +32,7 @@ class TestHelpText(TestCase):
         """
         help_text = "This is some important help text for users."
         column = Varchar(help_text=help_text)
-        self.assertTrue(column._meta.help_text == help_text)
+        self.assertEqual(column._meta.help_text, help_text)
 
 
 class TestSecretParameter(TestCase):
@@ -42,7 +42,7 @@ class TestSecretParameter(TestCase):
         """
         secret = False
         column = Varchar(secret=secret)
-        self.assertTrue(column._meta.secret == secret)
+        self.assertEqual(column._meta.secret, secret)
 
 
 class TestChoices(TestCase):
@@ -121,7 +121,7 @@ class TestEquals(TestCase):
         Make sure non-column values don't match.
         """
         for value in (1, "abc", None):
-            self.assertFalse(Manager.name._equals(value))
+            self.assertFalse(Manager.name._equals(value))  # type: ignore
 
     def test_equals(self):
         """

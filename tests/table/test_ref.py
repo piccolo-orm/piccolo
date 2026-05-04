@@ -7,4 +7,4 @@ from tests.example_apps.music.tables import Band
 class TestRef(TestCase):
     def test_ref(self):
         column = Band.ref("manager.name")
-        self.assertTrue(isinstance(column, Varchar))
+        self.assertIsInstance(column, Varchar)

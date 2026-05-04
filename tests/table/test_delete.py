@@ -1,7 +1,8 @@
-from piccolo.query.methods.delete import DeletionError
-from tests.example_apps.music.tables import Band
+import pytest
 
-from ..base import DBTestCase
+from piccolo.query.methods.delete import DeletionError
+from tests.base import DBTestCase, engine_version_lt, is_running_sqlite
+from tests.example_apps.music.tables import Band
 
 
 class TestDelete(DBTestCase):
@@ -14,6 +15,27 @@ class TestDelete(DBTestCase):
 
         self.assertEqual(response, 0)
 
+    @pytest.mark.skipif(
+        is_running_sqlite() and engine_version_lt(3.35),
+        reason="SQLite version not supported",
+    )
+    def test_delete_returning(self):
+        """
+        Make sure delete works with the `returning` clause.
+        """
+
+        self.insert_rows()
+
+        response = (
+            Band.delete()
+            .where(Band.name == "CSharps")
+            .returning(Band.name)
+            .run_sync()
+        )
+
+        self.assertEqual(len(response), 1)
+        self.assertEqual(response, [{"name": "CSharps"}])
+
     def test_validation(self):
         """
         Make sure you can't delete all the data without forcing it.
@@ -22,3 +44,18 @@ class TestDelete(DBTestCase):
             Band.delete().run_sync()
 
         Band.delete(force=True).run_sync()
+
+    def test_delete_with_joins(self):
+        """
+        Make sure delete works if the `where` clause specifies joins.
+        """
+
+        self.insert_rows()
+
+        Band.delete().where(Band.manager._.name == "Guido").run_sync()
+
+        response = (
+            Band.count().where(Band.manager._.name == "Guido").run_sync()
+        )
+
+        self.assertEqual(response, 0)

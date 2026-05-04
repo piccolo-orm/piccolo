@@ -2,10 +2,10 @@ from unittest import TestCase
 
 from piccolo.engine.postgres import PostgresEngine
 
-from ..base import postgres_only
+from ..base import engines_only
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestVersionParsing(TestCase):
     def test_version_parsing(self):
         """

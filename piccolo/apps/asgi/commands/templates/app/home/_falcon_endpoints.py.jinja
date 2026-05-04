@@ -1,0 +1,19 @@
+import os
+
+import falcon
+import jinja2
+
+ENVIRONMENT = jinja2.Environment(
+    loader=jinja2.FileSystemLoader(
+        searchpath=os.path.join(os.path.dirname(__file__), "templates")
+    )
+)
+
+
+class HomeEndpoint:
+    async def on_get(self, req, resp):
+        template = ENVIRONMENT.get_template("home.html.jinja")
+        content = template.render(title="Piccolo + ASGI",)
+        resp.status = falcon.HTTP_200
+        resp.content_type = "text/html"
+        resp.text = content

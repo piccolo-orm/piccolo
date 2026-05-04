@@ -10,7 +10,8 @@ to learn the basics.
 
     piccolo playground run
 
-It will create an example schema for you (see :ref:`ExampleSchema`) , populates it with data, and launches an `iPython <https://ipython.org/>`_ shell.
+It will create an :ref:`example schema <ExampleSchema>` for you, populates it
+with data, and launches an `iPython <https://ipython.org/>`_ shell.
 
 You can follow along with the tutorials without first learning advanced
 concepts like migrations.
@@ -19,7 +20,8 @@ It's a nice place to experiment with querying / inserting / deleting data using
 Piccolo, no matter how experienced you are.
 
 .. warning::
-    Each time you launch the playground it flushes out the existing tables and rebuilds them, so don't use it for anything permanent!
+   Each time you launch the playground it flushes out the existing tables and
+   rebuilds them, so don't use it for anything permanent!
 
 -------------------------------------------------------------------------------
 
@@ -35,8 +37,8 @@ A ``piccolo.sqlite`` file will get created in the current directory.
 Advanced usage
 ---------------
 
-To see how to use the playground with Postgres, and other advanced usage, see
-:ref:`PlaygroundAdvanced`.
+To see how to use the playground with Postgres or Cockroach, and other
+advanced usage, see :ref:`PlaygroundAdvanced`.
 
 -------------------------------------------------------------------------------
 
@@ -52,10 +54,10 @@ Give these queries a go:
 
 .. code-block:: python
 
-    Band.select().run_sync()
-    Band.objects().run_sync()
-    Band.select(Band.name).run_sync()
-    Band.select(Band.name, Band.manager.name).run_sync()
+    await Band.select()
+    await Band.objects()
+    await Band.select(Band.name)
+    await Band.select(Band.name, Band.manager.name)
 
 -------------------------------------------------------------------------------
 

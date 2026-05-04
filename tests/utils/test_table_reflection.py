@@ -1,15 +1,14 @@
-import typing as t
 from unittest import TestCase
 
 from piccolo.columns import Varchar
 from piccolo.table import Table
 from piccolo.table_reflection import TableStorage
 from piccolo.utils.sync import run_sync
-from tests.base import postgres_only
+from tests.base import engines_only
 from tests.example_apps.music.tables import Band, Manager
 
 
-@postgres_only
+@engines_only("postgres", "cockroach")
 class TestTableStorage(TestCase):
     def setUp(self) -> None:
         self.table_storage = TableStorage()
@@ -22,7 +21,7 @@ class TestTableStorage(TestCase):
             table_class.alter().drop_table(if_exists=True).run_sync()
 
     def _compare_table_columns(
-        self, table_1: t.Type[Table], table_2: t.Type[Table]
+        self, table_1: type[Table], table_2: type[Table]
     ):
         """
         Make sure that for each column in table_1, there is a corresponding

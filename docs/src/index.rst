@@ -1,5 +1,10 @@
-Welcome to Piccolo's documentation!
-===================================
+.. note:: These are the docs for **Piccolo v1**. :ref:`Read more here <PiccoloV1>`.
+
+   For v0.x docs `go here <https://piccolo-orm.readthedocs.io/en/0.118.0/>`_.
+
+
+Piccolo
+=======
 
 Piccolo is a modern, async query builder and ORM for Python, with lots of
 batteries included.
@@ -11,6 +16,7 @@ batteries included.
    piccolo/getting_started/index
    piccolo/query_types/index
    piccolo/query_clauses/index
+   piccolo/functions/index
    piccolo/schema/index
    piccolo/projects_and_apps/index
    piccolo/engines/index
@@ -21,11 +27,13 @@ batteries included.
    piccolo/testing/index
    piccolo/features/index
    piccolo/playground/index
-   piccolo/deployment/index
    piccolo/ecosystem/index
+   piccolo/tutorials/index
    piccolo/contributing/index
    piccolo/changes/index
    piccolo/help/index
+   piccolo/api_reference/index
+   piccolo/v1/index
 
 -------------------------------------------------------------------------------
 
@@ -52,10 +60,10 @@ Give me an ASGI web app!
 
    piccolo asgi new
 
-FastAPI, Starlette, and BlackSheep are currently supported, with more coming
-soon.
+FastAPI, Starlette, BlackSheep, Litestar, Ravyn, Lilya, Quart, Falcon and Sanic  
+are currently supported, with more coming soon.
 
--------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
 
 Videos
 ------

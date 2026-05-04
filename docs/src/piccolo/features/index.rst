@@ -4,7 +4,6 @@ Features
 .. toctree::
     :maxdepth: 1
 
-    ./tab_completion
-    ./supported_databases
+    ./types_and_tab_completion
     ./security
     ./syntax

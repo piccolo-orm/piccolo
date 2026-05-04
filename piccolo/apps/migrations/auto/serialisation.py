@@ -5,12 +5,13 @@ import builtins
 import datetime
 import decimal
 import inspect
-import typing as t
 import uuid
 import warnings
+from collections.abc import Callable, Iterable
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any, Optional
 
 from piccolo.columns import Column
 from piccolo.columns.defaults.base import Default
@@ -25,8 +26,7 @@ from .serialisation_legacy import deserialise_legacy_params
 
 class CanConflictWithGlobalNames(abc.ABC):
     @abc.abstractmethod
-    def warn_if_is_conflicting_with_global_name(self):
-        ...
+    def warn_if_is_conflicting_with_global_name(self): ...
 
 
 class UniqueGlobalNamesMeta(type):
@@ -52,18 +52,18 @@ class UniqueGlobalNamesMeta(type):
             bases,
             mcs.merge_class_attributes(
                 class_attributes_with_columns,
-                dict(
-                    unique_names=mcs.get_unique_class_attribute_values(
+                {
+                    "unique_names": mcs.get_unique_class_attribute_values(
                         class_attributes_with_columns
                     )
-                ),
+                },
             ),
         )
 
     @staticmethod
     def get_unique_class_attribute_values(
-        class_attributes: t.Dict[str, t.Any]
-    ) -> t.Set[t.Any]:
+        class_attributes: dict[str, Any],
+    ) -> set[Any]:
         """
         Return class attribute values.
 
@@ -88,9 +88,9 @@ class UniqueGlobalNamesMeta(type):
 
     @staticmethod
     def merge_class_attributes(
-        class_attributes1: t.Dict[str, t.Any],
-        class_attributes2: t.Dict[str, t.Any],
-    ) -> t.Dict[str, t.Any]:
+        class_attributes1: dict[str, Any],
+        class_attributes2: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Merges two class attribute dictionaries.
 
@@ -105,12 +105,12 @@ class UniqueGlobalNamesMeta(type):
         return dict(**class_attributes1, **class_attributes2)
 
     @staticmethod
-    def get_column_class_attributes() -> t.Dict[str, str]:
+    def get_column_class_attributes() -> dict[str, str]:
         """Automatically generates global names for each column type."""
 
         import piccolo.columns.column_types
 
-        class_attributes: t.Dict[str, str] = {}
+        class_attributes: dict[str, str] = {}
         for module_global in piccolo.columns.column_types.__dict__.values():
             try:
                 if module_global is not Column and issubclass(
@@ -151,7 +151,7 @@ class UniqueGlobalNames(metaclass=UniqueGlobalNamesMeta):
     EXTERNAL_UUID = f"{EXTERNAL_MODULE_UUID}.{uuid.UUID.__name__}"
 
     # This attribute is set in metaclass
-    unique_names: t.Set[str]
+    unique_names: set[str]
 
     @classmethod
     def warn_if_is_conflicting_name(
@@ -173,7 +173,7 @@ class UniqueGlobalNames(metaclass=UniqueGlobalNamesMeta):
 
     @staticmethod
     def warn_if_are_conflicting_objects(
-        objects: t.Iterable[CanConflictWithGlobalNames],
+        objects: Iterable[CanConflictWithGlobalNames],
     ) -> None:
         """
         Call each object's ``raise_if_is_conflicting_with_global_name`` method.
@@ -193,8 +193,8 @@ class UniqueGlobalNameConflictWarning(UserWarning):
 @dataclass
 class Import(CanConflictWithGlobalNames):
     module: str
-    target: t.Optional[str] = None
-    expect_conflict_with_global_name: t.Optional[str] = None
+    target: Optional[str] = None
+    expect_conflict_with_global_name: Optional[str] = None
 
     def __post_init__(self) -> None:
         if (
@@ -225,11 +225,7 @@ class Import(CanConflictWithGlobalNames):
         return repr(self) < repr(other)
 
     def warn_if_is_conflicting_with_global_name(self):
-        if self.target is None:
-            name = self.module
-        else:
-            name = self.target
-
+        name = self.module if self.target is None else self.target
         if name == self.expect_conflict_with_global_name:
             return
 
@@ -241,8 +237,7 @@ class Import(CanConflictWithGlobalNames):
 
 class Definition(CanConflictWithGlobalNames, abc.ABC):
     @abc.abstractmethod
-    def __repr__(self):
-        ...
+    def __repr__(self): ...
 
     ###########################################################################
     # To allow sorting:
@@ -262,9 +257,9 @@ class Definition(CanConflictWithGlobalNames, abc.ABC):
 
 @dataclass
 class SerialisedParams:
-    params: t.Dict[str, t.Any]
-    extra_imports: t.List[Import]
-    extra_definitions: t.List[Definition] = field(default_factory=list)
+    params: dict[str, Any]
+    extra_imports: list[Import]
+    extra_definitions: list[Definition] = field(default_factory=list)
 
 
 ###############################################################################
@@ -279,7 +274,7 @@ def check_equality(self, other):
 
 @dataclass
 class SerialisedBuiltin:
-    builtin: t.Any
+    builtin: Any
 
     def __hash__(self):
         return hash(self.builtin.__name__)
@@ -340,8 +335,22 @@ class SerialisedEnumInstance:
 
 
 @dataclass
+class SerialisedReference:
+    name: str
+
+    def __hash__(self):
+        return hash(self.__repr__())
+
+    def __eq__(self, other):
+        return check_equality(self, other)
+
+    def __repr__(self):
+        return self.name
+
+
+@dataclass
 class SerialisedTableType(Definition):
-    table_type: t.Type[Table]
+    table_type: type[Table]
 
     def __hash__(self):
         return hash(
@@ -351,7 +360,7 @@ class SerialisedTableType(Definition):
     def __eq__(self, other):
         return check_equality(self, other)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         tablename = self.table_type._meta.tablename
 
         # We have to add the primary key column definition too, so foreign
@@ -363,11 +372,61 @@ class SerialisedTableType(Definition):
             serialised_params=serialise_params(params=pk_column._meta.params),
         )
 
-        return (
+        #######################################################################
+
+        # When creating a ForeignKey, the user can specify a column other than
+        # the primary key to reference.
+        serialised_target_columns: set[SerialisedColumnInstance] = set()
+
+        for fk_column in self.table_type._meta._foreign_key_references:
+            target_column = fk_column._foreign_key_meta.target_column
+            if target_column is None:
+                # Just references the primary key
+                continue
+            elif type(target_column) is str:
+                column = self.table_type._meta.get_column_by_name(
+                    target_column
+                )
+            elif isinstance(target_column, Column):
+                column = self.table_type._meta.get_column_by_name(
+                    target_column._meta.name
+                )
+            else:
+                raise ValueError("Unrecognised `target_column` value.")
+
+            if column._meta.name == pk_column._meta.name:
+                # The target column is the foreign key, so no need to add
+                # it again.
+                # https://github.com/piccolo-orm/piccolo/issues/1197
+                continue
+
+            serialised_target_columns.add(
+                SerialisedColumnInstance(
+                    column,
+                    serialised_params=serialise_params(
+                        params=column._meta.params
+                    ),
+                )
+            )
+
+        #######################################################################
+
+        schema_str = (
+            "None"
+            if self.table_type._meta.schema is None
+            else f'"{self.table_type._meta.schema}"'
+        )
+
+        definition = (
             f"class {self.table_class_name}"
-            f'({UniqueGlobalNames.TABLE}, tablename="{tablename}"): '
+            f'({UniqueGlobalNames.TABLE}, tablename="{tablename}", schema={schema_str}): '  # noqa: E501
             f"{pk_column_name} = {serialised_pk_column}"
         )
+
+        for serialised_target_column in serialised_target_columns:
+            definition += f"; {serialised_target_column.instance._meta.name} = {serialised_target_column}"  # noqa: E501
+
+        return definition
 
     def __lt__(self, other):
         return repr(self) < repr(other)
@@ -381,8 +440,8 @@ class SerialisedTableType(Definition):
 
 
 @dataclass
-class SerialisedEnumType:
-    enum_type: t.Type[Enum]
+class InlineSerialisedEnumType:
+    enum_type: type[Enum]
 
     def __hash__(self):
         return hash(self.__repr__())
@@ -397,8 +456,28 @@ class SerialisedEnumType:
 
 
 @dataclass
+class SerialisedEnumTypeDefinition(Definition):
+    enum_type: type[Enum]
+
+    def __hash__(self):
+        return hash(self.enum_type.__name__)
+
+    def __eq__(self, other):
+        return check_equality(self, other)
+
+    def __repr__(self):
+        definition = InlineSerialisedEnumType(
+            enum_type=self.enum_type
+        ).__repr__()
+        return f"{self.enum_type.__name__} = {definition}"
+
+    def warn_if_is_conflicting_with_global_name(self) -> None:
+        UniqueGlobalNames.warn_if_is_conflicting_name(self.enum_type.__name__)
+
+
+@dataclass
 class SerialisedCallable:
-    callable_: t.Callable
+    callable_: Callable
 
     def __hash__(self):
         return hash(self.callable_.__name__)
@@ -443,24 +522,49 @@ class SerialisedDecimal:
 ###############################################################################
 
 
-def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
+def serialise_params(
+    params: dict[str, Any], inline_enums: bool = True
+) -> SerialisedParams:
     """
-    When writing column params to a migration file, we need to serialise some
-    of the values.
+    When writing column params to a migration file, or outputting to the
+    playground, we need to serialise some of the values.
+
+    :param inline_enums:
+        If ``True``, enum value are inlined, for example::
+
+            value=Enum('MyEnum', {'some_value': 'some_value'}))
+
+        Otherwise, it is reproduced as::
+
+            value=MyEnum
+
+        And the enum definition is added to
+        ``SerialisedParams.extra_definitions``.
+
     """
     params = deepcopy(params)
-    extra_imports: t.List[Import] = []
-    extra_definitions: t.List[Definition] = []
+    extra_imports: list[Import] = []
+    extra_definitions: list[Definition] = []
 
     for key, value in params.items():
-
         # Builtins, such as str, list and dict.
         if inspect.getmodule(value) == builtins:
             params[key] = SerialisedBuiltin(builtin=value)
             continue
 
-        # Column instances, which are used by Array definitions.
+        # Column instances
         if isinstance(value, Column):
+            # For target_column (which is used by ForeignKey), we can just
+            # serialise it as the column name:
+            if key == "target_column":
+                params[key] = value._meta.name
+                continue
+
+            ###################################################################
+
+            # For Array definitions, we want to serialise the full column
+            # definition:
+
             column: Column = value
             serialised_params: SerialisedParams = serialise_params(
                 params=column._meta.params
@@ -479,6 +583,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
                     expect_conflict_with_global_name=getattr(
                         UniqueGlobalNames,
                         f"COLUMN_{column_class_name.upper()}",
+                        None,
                     ),
                 )
             )
@@ -565,7 +670,6 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
 
         # Enum types
         if inspect.isclass(value) and issubclass(value, Enum):
-            params[key] = SerialisedEnumType(enum_type=value)
             extra_imports.append(
                 Import(
                     module="enum",
@@ -584,6 +688,14 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
                     extra_imports.append(
                         Import(module=module_name, target=type_.__name__)
                     )
+
+            if inline_enums:
+                params[key] = InlineSerialisedEnumType(enum_type=value)
+            else:
+                params[key] = SerialisedReference(name=value.__name__)
+                extra_definitions.append(
+                    SerialisedEnumTypeDefinition(enum_type=value)
+                )
 
         # Functions
         if inspect.isfunction(value):
@@ -611,6 +723,21 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
                     expect_conflict_with_global_name=UniqueGlobalNames.TABLE,
                 )
             )
+            # also add missing primary key to extra_imports when creating a
+            # migration with a ForeignKey that uses a LazyTableReference
+            # https://github.com/piccolo-orm/piccolo/issues/865
+            primary_key_class = table_type._meta.primary_key.__class__
+            extra_imports.append(
+                Import(
+                    module=primary_key_class.__module__,
+                    target=primary_key_class.__name__,
+                    expect_conflict_with_global_name=getattr(
+                        UniqueGlobalNames,
+                        f"COLUMN_{primary_key_class.__name__.upper()}",
+                        None,
+                    ),
+                )
+            )
             continue
 
         # Replace any Table class values into class and table names
@@ -633,6 +760,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
                     expect_conflict_with_global_name=getattr(
                         UniqueGlobalNames,
                         f"COLUMN_{primary_key_class.__name__.upper()}",
+                        None,
                     ),
                 )
             )
@@ -656,10 +784,10 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
 
         # All other types can remain as is.
 
-    unique_extra_imports = [i for i in set(extra_imports)]
+    unique_extra_imports = list(set(extra_imports))
     UniqueGlobalNames.warn_if_are_conflicting_objects(unique_extra_imports)
 
-    unique_extra_definitions = [i for i in set(extra_definitions)]
+    unique_extra_definitions = list(set(extra_definitions))
     UniqueGlobalNames.warn_if_are_conflicting_objects(unique_extra_definitions)
 
     return SerialisedParams(
@@ -669,7 +797,7 @@ def serialise_params(params: t.Dict[str, t.Any]) -> SerialisedParams:
     )
 
 
-def deserialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+def deserialise_params(params: dict[str, Any]) -> dict[str, Any]:
     """
     When reading column params from a migration file, we need to convert
     them from their serialised form.
@@ -681,6 +809,8 @@ def deserialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
         if isinstance(value, str) and not isinstance(value, Enum):
             if value != "self":
                 params[key] = deserialise_legacy_params(name=key, value=value)
+        elif isinstance(value, SerialisedColumnInstance):
+            params[key] = value.instance
         elif isinstance(value, SerialisedClassInstance):
             params[key] = value.instance
         elif isinstance(value, SerialisedUUID):
@@ -691,7 +821,7 @@ def deserialise_params(params: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
             params[key] = value.callable_
         elif isinstance(value, SerialisedTableType):
             params[key] = value.table_type
-        elif isinstance(value, SerialisedEnumType):
+        elif isinstance(value, InlineSerialisedEnumType):
             params[key] = value.enum_type
         elif isinstance(value, SerialisedEnumInstance):
             params[key] = value.instance

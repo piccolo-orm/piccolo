@@ -7,6 +7,8 @@ A Piccolo project is a collection of apps.
 
 -------------------------------------------------------------------------------
 
+.. _PiccoloConf:
+
 piccolo_conf.py
 ---------------
 
@@ -18,8 +20,8 @@ A project requires a ``piccolo_conf.py`` file. To create this, use the following
 
 The file serves two important purposes:
 
- * Contains your database settings.
- * Is used for registering :ref:`PiccoloApps`.
+* Contains your database settings.
+* Is used for registering :ref:`PiccoloApps`.
 
 Location
 ~~~~~~~~
@@ -87,8 +89,7 @@ Here's an example:
 DB
 --
 
-The DB setting is an ``Engine`` instance. To learn more Engines, see
-:ref:`Engines`.
+The DB setting is an ``Engine`` instance (see the :ref:`Engine docs <Engines>`).
 
 -------------------------------------------------------------------------------
 

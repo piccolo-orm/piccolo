@@ -2,6 +2,11 @@ from enum import Enum
 
 
 class IndexMethod(str, Enum):
+    """
+    Used to specify the index method for a
+    :class:`Column <piccolo.columns.base.Column>`.
+    """
+
     btree = "btree"
     hash = "hash"
     gist = "gist"

@@ -1,3 +1,3 @@
-Sphinx==4.2.0
-sphinx-rtd-theme==1.0.0
-livereload==2.6.3
+Sphinx==8.3.0
+piccolo-theme==0.24.0
+sphinx-autobuild==2025.8.25

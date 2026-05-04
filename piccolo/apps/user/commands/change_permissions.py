@@ -1,17 +1,17 @@
-import typing as t
+from typing import TYPE_CHECKING, Optional, Union
 
 from piccolo.apps.user.tables import BaseUser
 from piccolo.utils.warnings import Level, colored_string
 
-if t.TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
 
 
 async def change_permissions(
     username: str,
-    admin: t.Optional[bool] = None,
-    superuser: t.Optional[bool] = None,
-    active: t.Optional[bool] = None,
+    admin: Optional[bool] = None,
+    superuser: Optional[bool] = None,
+    active: Optional[bool] = None,
 ):
     """
     Change a user's permissions.
@@ -34,7 +34,7 @@ async def change_permissions(
         )
         return
 
-    params: t.Dict[t.Union[Column, str], bool] = {}
+    params: dict[Union[Column, str], bool] = {}
 
     if admin is not None:
         params[BaseUser.admin] = admin
@@ -45,6 +45,12 @@ async def change_permissions(
     if active is not None:
         params[BaseUser.active] = active
 
-    await BaseUser.update(params).where(BaseUser.username == username).run()
+    if params:
+        await BaseUser.update(params).where(
+            BaseUser.username == username
+        ).run()
+    else:
+        print(colored_string("No changes detected", level=Level.medium))
+        return
 
     print(f"Updated permissions for {username}")

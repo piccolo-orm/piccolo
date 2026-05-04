@@ -16,7 +16,7 @@ Used to add a column to an existing table.
 
 .. code-block:: python
 
-    Band.alter().add_column('members', Integer()).run_sync()
+    await Band.alter().add_column('members', Integer())
 
 -------------------------------------------------------------------------------
 
@@ -27,7 +27,7 @@ Used to drop an existing column.
 
 .. code-block:: python
 
-    Band.alter().drop_column('popularity').run_sync()
+    await Band.alter().drop_column('popularity')
 
 -------------------------------------------------------------------------------
 
@@ -38,16 +38,25 @@ Used to drop the table - use with caution!
 
 .. code-block:: python
 
-    Band.alter().drop_table().run_sync()
+    await Band.alter().drop_table()
 
-If you have several tables which you want to drop, you can use ``drop_tables``
-instead. It will drop them in the correct order.
+drop_db_tables / drop_db_tables_sync
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you have several tables which you want to drop, you can use
+:func:`drop_db_tables <piccolo.table.drop_db_tables>` or
+:func:`drop_db_tables_sync <piccolo.table.drop_db_tables_sync>`. The tables
+will be dropped in the correct order based on their foreign keys.
 
 .. code-block:: python
 
-    from piccolo.table import drop_tables
+    # async version
+    >>> from piccolo.table import drop_db_tables
+    >>> await drop_db_tables(Band, Manager)
 
-    drop_tables(Band, Manager)
+    # sync version
+    >>> from piccolo.table import drop_db_tables_sync
+    >>> drop_db_tables_sync(Band, Manager)
 
 -------------------------------------------------------------------------------
 
@@ -58,7 +67,7 @@ Used to rename an existing column.
 
 .. code-block:: python
 
-    Band.alter().rename_column(Band.popularity, 'rating').run_sync()
+    await Band.alter().rename_column(Band.popularity, 'rating')
 
 -------------------------------------------------------------------------------
 
@@ -70,10 +79,33 @@ Set whether a column is nullable or not.
 .. code-block:: python
 
     # To make a row nullable:
-    Band.alter().set_null(Band.name, True).run_sync()
+    await Band.alter().set_null(Band.name, True)
 
     # To stop a row being nullable:
-    Band.alter().set_null(Band.name, False).run_sync()
+    await Band.alter().set_null(Band.name, False)
+
+-------------------------------------------------------------------------------
+
+set_schema
+----------
+
+Used to change the `schema <https://www.postgresql.org/docs/current/ddl-schemas.html>`_
+which a table belongs to.
+
+.. code-block:: python
+
+    await Band.alter().set_schema('schema_1')
+
+Schemas are a way of organising the tables within a database. Only Postgres and
+Cockroach support schemas. :ref:`Learn more here <Schemas>`.
+
+After changing a table's schema, you need to update your ``Table`` accordingly,
+otherwise subsequent queries will fail, as they'll be trying to find the table
+in the old schema.
+
+.. code-block:: python
+
+    Band._meta.schema = 'schema_1'
 
 -------------------------------------------------------------------------------
 
@@ -85,7 +117,7 @@ Used to change whether a column is unique or not.
 .. code-block:: python
 
     # To make a row unique:
-    Band.alter().set_unique(Band.name, True).run_sync()
+    await Band.alter().set_unique(Band.name, True)
 
     # To stop a row being unique:
-    Band.alter().set_unique(Band.name, False).run_sync()
+    await Band.alter().set_unique(Band.name, False)

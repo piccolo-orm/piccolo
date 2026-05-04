@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import datetime
-import typing as t
+from collections.abc import Callable
 from enum import Enum
+from typing import Union
 
 from .base import Default
 
@@ -19,6 +20,13 @@ class TimeOffset(Default):
             ["hours", "minutes", "seconds"]
         )
         return f"CURRENT_TIME + INTERVAL '{interval_string}'"
+
+    @property
+    def cockroach(self):
+        interval_string = self.get_postgres_interval_string(
+            ["hours", "minutes", "seconds"]
+        )
+        return f"CURRENT_TIME::TIMESTAMP + INTERVAL '{interval_string}'"
 
     @property
     def sqlite(self):
@@ -42,6 +50,10 @@ class TimeNow(Default):
         return "CURRENT_TIME"
 
     @property
+    def cockroach(self):
+        return "CURRENT_TIME::TIMESTAMP"
+
+    @property
     def sqlite(self):
         return "CURRENT_TIME"
 
@@ -61,6 +73,10 @@ class TimeCustom(Default):
         return f"'{self.time.isoformat()}'"
 
     @property
+    def cockroach(self):
+        return f"'{self.time.isoformat()}'::TIMESTAMP"
+
+    @property
     def sqlite(self):
         return f"'{self.time.isoformat()}'"
 
@@ -74,7 +90,15 @@ class TimeCustom(Default):
         )
 
 
-TimeArg = t.Union[TimeCustom, TimeNow, TimeOffset, Enum, None, datetime.time]
+TimeArg = Union[
+    TimeCustom,
+    TimeNow,
+    TimeOffset,
+    Enum,
+    None,
+    datetime.time,
+    Callable[[], datetime.time],
+]
 
 
 __all__ = ["TimeArg", "TimeCustom", "TimeNow", "TimeOffset"]
