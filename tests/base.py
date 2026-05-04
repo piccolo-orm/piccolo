@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import decimal
 import sys
-import typing as t
+from typing import Optional
 from unittest import TestCase
 from unittest.mock import MagicMock
 
@@ -26,6 +27,17 @@ ENGINE = engine_finder()
 
 def engine_version_lt(version: float) -> bool:
     return ENGINE is not None and run_sync(ENGINE.get_version()) < version
+
+
+def engine_version_gte(version: float) -> bool:
+    return ENGINE is not None and run_sync(ENGINE.get_version()) > version
+
+
+def python_version_gte(version: decimal.Decimal) -> bool:
+    return (
+        decimal.Decimal(f"{sys.version_info.major}.{sys.version_info.minor}")
+        >= version
+    )
 
 
 def is_running_postgres() -> bool:
@@ -169,7 +181,7 @@ class DBTestCase(TestCase):
         return _Table.raw(query).run_sync()
 
     def table_exists(self, tablename: str) -> bool:
-        _Table: t.Type[Table] = create_table_class(
+        _Table: type[Table] = create_table_class(
             class_name=tablename.upper(), class_kwargs={"tablename": tablename}
         )
         return _Table.table_exists().run_sync()
@@ -222,7 +234,7 @@ class DBTestCase(TestCase):
 
     def get_postgres_varchar_length(
         self, tablename, column_name: str
-    ) -> t.Optional[int]:
+    ) -> Optional[int]:
         """
         Fetches whether the column is defined as nullable, from the database.
         """
@@ -236,81 +248,61 @@ class DBTestCase(TestCase):
         assert ENGINE is not None
 
         if ENGINE.engine_type in ("postgres", "cockroach"):
-            self.run_sync(
-                """
+            self.run_sync("""
                 CREATE TABLE manager (
                     id SERIAL PRIMARY KEY,
                     name VARCHAR(50)
-                );"""
-            )
-            self.run_sync(
-                """
+                );""")
+            self.run_sync("""
                 CREATE TABLE band (
                     id SERIAL PRIMARY KEY,
                     name VARCHAR(50),
                     manager INTEGER REFERENCES manager,
                     popularity SMALLINT
-                );"""
-            )
-            self.run_sync(
-                """
+                );""")
+            self.run_sync("""
                 CREATE TABLE ticket (
                     id SERIAL PRIMARY KEY,
                     price NUMERIC(5,2)
-                );"""
-            )
-            self.run_sync(
-                """
+                );""")
+            self.run_sync("""
                 CREATE TABLE poster (
                     id SERIAL PRIMARY KEY,
                     content TEXT
-                );"""
-            )
-            self.run_sync(
-                """
+                );""")
+            self.run_sync("""
                 CREATE TABLE shirt (
                     id SERIAL PRIMARY KEY,
                     size VARCHAR(1)
-                );"""
-            )
+                );""")
         elif ENGINE.engine_type == "sqlite":
-            self.run_sync(
-                """
+            self.run_sync("""
                 CREATE TABLE manager (
                     id INTEGER PRIMARY KEY,
                     name VARCHAR(50)
-                );"""
-            )
-            self.run_sync(
-                """
+                );""")
+            self.run_sync("""
                 CREATE TABLE band (
                     id INTEGER PRIMARY KEY,
                     name VARCHAR(50),
                     manager INTEGER REFERENCES manager,
                     popularity SMALLINT
-                );"""
-            )
-            self.run_sync(
-                """
+                );""")
+            self.run_sync("""
                 CREATE TABLE ticket (
                     id SERIAL PRIMARY KEY,
                     price NUMERIC(5,2)
-                );"""
-            )
-            self.run_sync(
-                """
+                );""")
+            self.run_sync("""
                 CREATE TABLE poster (
                     id SERIAL PRIMARY KEY,
                     content TEXT
-                );"""
-            )
-            self.run_sync(
-                """
+                );""")
+            self.run_sync("""
                 CREATE TABLE shirt (
                     id SERIAL PRIMARY KEY,
                     size VARCHAR(1)
-                );"""
-            )
+                );""")
         else:
             raise Exception("Unrecognised engine")
 
@@ -318,16 +310,13 @@ class DBTestCase(TestCase):
         assert ENGINE is not None
 
         if ENGINE.engine_type == "cockroach":
-            id = self.run_sync(
-                """
+            id = self.run_sync("""
                 INSERT INTO manager (
                     name
                 ) VALUES (
                     'Guido'
-                ) RETURNING id;"""
-            )
-            self.run_sync(
-                f"""
+                ) RETURNING id;""")
+            self.run_sync(f"""
                 INSERT INTO band (
                     name,
                     manager,
@@ -336,19 +325,15 @@ class DBTestCase(TestCase):
                     'Pythonistas',
                     {id[0]["id"]},
                     1000
-                );"""
-            )
+                );""")
         else:
-            self.run_sync(
-                """
+            self.run_sync("""
                 INSERT INTO manager (
                     name
                 ) VALUES (
                     'Guido'
-                );"""
-            )
-            self.run_sync(
-                """
+                );""")
+            self.run_sync("""
                 INSERT INTO band (
                     name,
                     manager,
@@ -357,15 +342,13 @@ class DBTestCase(TestCase):
                     'Pythonistas',
                     1,
                     1000
-                );"""
-            )
+                );""")
 
     def insert_rows(self):
         assert ENGINE is not None
 
         if ENGINE.engine_type == "cockroach":
-            id = self.run_sync(
-                """
+            id = self.run_sync("""
                 INSERT INTO manager (
                     name
                 ) VALUES (
@@ -374,10 +357,8 @@ class DBTestCase(TestCase):
                     'Graydon'
                 ),(
                     'Mads'
-                ) RETURNING id;"""
-            )
-            self.run_sync(
-                f"""
+                ) RETURNING id;""")
+            self.run_sync(f"""
                 INSERT INTO band (
                     name,
                     manager,
@@ -394,11 +375,9 @@ class DBTestCase(TestCase):
                     'CSharps',
                     {id[2]["id"]},
                     10
-                );"""
-            )
+                );""")
         else:
-            self.run_sync(
-                """
+            self.run_sync("""
                 INSERT INTO manager (
                     name
                 ) VALUES (
@@ -407,10 +386,8 @@ class DBTestCase(TestCase):
                     'Graydon'
                 ),(
                     'Mads'
-                );"""
-            )
-            self.run_sync(
-                """
+                );""")
+            self.run_sync("""
                 INSERT INTO band (
                     name,
                     manager,
@@ -427,8 +404,7 @@ class DBTestCase(TestCase):
                     'CSharps',
                     3,
                     10
-                );"""
-            )
+                );""")
 
     def insert_many_rows(self, row_count=10000):
         """
@@ -466,7 +442,7 @@ class TableTest(TestCase):
     Used for tests where we need to create Piccolo tables.
     """
 
-    tables: t.List[t.Type[Table]]
+    tables: list[type[Table]]
 
     def setUp(self) -> None:
         create_db_tables_sync(*self.tables)

@@ -5,10 +5,10 @@
 # To run a single test tests/test_foo.py::TestFoo::test_foo
 
 export PICCOLO_CONF="tests.cockroach_conf"
-python3 -m pytest \
+python -m pytest \
     --cov=piccolo \
     --cov-report=xml \
     --cov-report=html \
-    --cov-fail-under=80 \
-    -m "not integration and not cockroach_array_slow" \
+    --cov-fail-under=85 \
+    -m "not integration" \
     -s $@

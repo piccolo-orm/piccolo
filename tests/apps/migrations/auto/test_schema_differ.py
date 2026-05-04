@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing as t
 from unittest import TestCase
 from unittest.mock import MagicMock, call, patch
 
@@ -25,12 +24,12 @@ class TestSchemaDiffer(TestCase):
         """
         name_column = Varchar()
         name_column._meta.name = "name"
-        schema: t.List[DiffableTable] = [
+        schema: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band", tablename="band", columns=[name_column]
             )
         ]
-        schema_snapshot: t.List[DiffableTable] = []
+        schema_snapshot: list[DiffableTable] = []
         schema_differ = SchemaDiffer(
             schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
         )
@@ -53,8 +52,8 @@ class TestSchemaDiffer(TestCase):
         """
         Test dropping an existing table.
         """
-        schema: t.List[DiffableTable] = []
-        schema_snapshot: t.List[DiffableTable] = [
+        schema: list[DiffableTable] = []
+        schema_snapshot: list[DiffableTable] = [
             DiffableTable(class_name="Band", tablename="band", columns=[])
         ]
         schema_differ = SchemaDiffer(
@@ -74,12 +73,12 @@ class TestSchemaDiffer(TestCase):
         name_column = Varchar()
         name_column._meta.name = "name"
 
-        schema: t.List[DiffableTable] = [
+        schema: list[DiffableTable] = [
             DiffableTable(
                 class_name="Act", tablename="act", columns=[name_column]
             )
         ]
-        schema_snapshot: t.List[DiffableTable] = [
+        schema_snapshot: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band", tablename="band", columns=[name_column]
             )
@@ -102,7 +101,7 @@ class TestSchemaDiffer(TestCase):
         """
         Testing changing the schema.
         """
-        schema: t.List[DiffableTable] = [
+        schema: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
@@ -110,7 +109,7 @@ class TestSchemaDiffer(TestCase):
                 schema="schema_1",
             )
         ]
-        schema_snapshot: t.List[DiffableTable] = [
+        schema_snapshot: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
@@ -143,14 +142,14 @@ class TestSchemaDiffer(TestCase):
         genre_column = Varchar()
         genre_column._meta.name = "genre"
 
-        schema: t.List[DiffableTable] = [
+        schema: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
                 columns=[name_column, genre_column],
             )
         ]
-        schema_snapshot: t.List[DiffableTable] = [
+        schema_snapshot: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
@@ -178,14 +177,14 @@ class TestSchemaDiffer(TestCase):
         genre_column = Varchar()
         genre_column._meta.name = "genre"
 
-        schema: t.List[DiffableTable] = [
+        schema: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
                 columns=[name_column],
             )
         ]
-        schema_snapshot: t.List[DiffableTable] = [
+        schema_snapshot: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
@@ -214,14 +213,14 @@ class TestSchemaDiffer(TestCase):
         title_column = Varchar()
         title_column._meta.name = "title"
 
-        schema_snapshot: t.List[DiffableTable] = [
+        schema_snapshot: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
                 columns=[title_column],
             )
         ]
-        schema: t.List[DiffableTable] = [
+        schema: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
@@ -279,14 +278,14 @@ class TestSchemaDiffer(TestCase):
         b2 = Varchar()
         b2._meta.name = "b2"
 
-        schema_snapshot: t.List[DiffableTable] = [
+        schema_snapshot: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
                 columns=[a1, b1],
             )
         ]
-        schema: t.List[DiffableTable] = [
+        schema: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
@@ -356,14 +355,14 @@ class TestSchemaDiffer(TestCase):
         b2 = Varchar()
         b2._meta.name = "b2"
 
-        schema_snapshot: t.List[DiffableTable] = [
+        schema_snapshot: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
                 columns=[a1, b1],
             )
         ]
-        schema: t.List[DiffableTable] = [
+        schema: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
@@ -426,14 +425,14 @@ class TestSchemaDiffer(TestCase):
         price_2 = Numeric(digits=(5, 2))
         price_2._meta.name = "price"
 
-        schema: t.List[DiffableTable] = [
+        schema: list[DiffableTable] = [
             DiffableTable(
                 class_name="Ticket",
                 tablename="ticket",
                 columns=[price_1],
             )
         ]
-        schema_snapshot: t.List[DiffableTable] = [
+        schema_snapshot: list[DiffableTable] = [
             DiffableTable(
                 class_name="Ticket",
                 tablename="ticket",
@@ -464,14 +463,14 @@ class TestSchemaDiffer(TestCase):
         price_2 = Numeric(digits=(5, 2), db_column_name="custom")
         price_2._meta.name = "price"
 
-        schema: t.List[DiffableTable] = [
+        schema: list[DiffableTable] = [
             DiffableTable(
                 class_name="Ticket",
                 tablename="ticket",
                 columns=[price_1],
             )
         ]
-        schema_snapshot: t.List[DiffableTable] = [
+        schema_snapshot: list[DiffableTable] = [
             DiffableTable(
                 class_name="Ticket",
                 tablename="ticket",

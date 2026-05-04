@@ -1,4 +1,3 @@
-import typing as t
 from unittest import TestCase
 
 from piccolo.columns.base import Column
@@ -52,7 +51,7 @@ class TestProblematicColumnName(TestCase):
         Make sure we can add an index to a column with a problematic name
         (which clashes with a SQL keyword).
         """
-        columns: t.List[Column] = [Concert.order]
+        columns: list[Column] = [Concert.order]
         Concert.create_index(columns=columns).run_sync()
         index_name = Concert._get_index_name([i._meta.name for i in columns])
 

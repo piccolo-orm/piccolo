@@ -1,7 +1,7 @@
 from piccolo.columns.column_types import JSONB, ForeignKey, Varchar
 from piccolo.table import Table
 from piccolo.testing.test_case import AsyncTableTest, TableTest
-from tests.base import engines_only, engines_skip
+from tests.base import engines_only
 
 
 class RecordingStudio(Table):
@@ -28,7 +28,6 @@ class TestJSONB(TableTest):
         row.save().run_sync()
         self.assertEqual(row.facilities, '{"mixing_desk": true}')
 
-    @engines_skip("cockroach")
     def test_raw(self):
         """
         Make sure raw queries convert the Python value into a JSON string.
@@ -39,18 +38,19 @@ class TestJSONB(TableTest):
             '{"mixing_desk": true}',
         ).run_sync()
 
+        recording_studio = RecordingStudio.select().run_sync()
+
         self.assertEqual(
-            RecordingStudio.select().run_sync(),
+            recording_studio,
             [
                 {
-                    "id": 1,
+                    "id": recording_studio[0]["id"],
                     "name": "Abbey Road",
                     "facilities": '{"mixing_desk": true}',
                 }
             ],
         )
 
-    @engines_only("cockroach")
     def test_raw_alt(self):
         """
         Make sure raw queries convert the Python value into a JSON string.

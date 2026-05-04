@@ -26,6 +26,11 @@ Ltrim
 .. autoclass:: Ltrim
     :class-doc-from: class
 
+Replace
+-------
+
+.. autoclass:: Replace
+
 Reverse
 -------
 

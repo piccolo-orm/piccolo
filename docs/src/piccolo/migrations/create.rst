@@ -79,8 +79,8 @@ If you want to run raw SQL within your migration, you can do so as follows:
     from piccolo.table import Table
 
 
-    ID = "2022-02-26T17:38:44:758593"
-    VERSION = "0.69.2"
+    ID = "2025-07-28T09:51:54:296860"
+    VERSION = "1.27.1"
     DESCRIPTION = "Updating each band's popularity"
 
 
@@ -136,8 +136,8 @@ We have to be quite careful with this. Here's an example:
     from music.tables import Band
 
 
-    ID = "2022-02-26T17:38:44:758593"
-    VERSION = "0.69.2"
+    ID = "2025-07-28T09:51:54:296860"
+    VERSION = "1.27.1"
     DESCRIPTION = "Updating each band's popularity"
 
 
@@ -149,7 +149,7 @@ We have to be quite careful with this. Here's an example:
         )
 
         async def run():
-            await Band.update({Band.popularity: 1000})
+            await Band.update({Band.popularity: 1000}, force=True)
 
         manager.add_raw(run)
         return manager
@@ -175,8 +175,8 @@ it's better to copy the relevant tables into your migration file:
     from piccolo.table import Table
 
 
-    ID = "2022-02-26T17:38:44:758593"
-    VERSION = "0.69.2"
+    ID = "2025-07-28T09:51:54:296860"
+    VERSION = "1.27.1"
     DESCRIPTION = "Updating each band's popularity"
 
 
@@ -193,9 +193,41 @@ it's better to copy the relevant tables into your migration file:
         )
 
         async def run():
-            await Band.update({Band.popularity: 1000})
+            await Band.update({Band.popularity: 1000}, force=True)
 
         manager.add_raw(run)
+        return manager
+
+Another alternative is to use the ``MigrationManager.get_table_from_snapshot``
+method to get a table from the migration history. This is very convenient,
+especially if the table is large, with many foreign keys.
+
+.. code-block:: python
+
+    from piccolo.apps.migrations.auto.migration_manager import MigrationManager
+
+
+    ID = "2025-07-28T09:51:54:296860"
+    VERSION = "1.27.1"
+    DESCRIPTION = "Updating each band's popularity"
+
+
+    async def forwards():
+        manager = MigrationManager(
+            migration_id=ID,
+            app_name="",
+            description=DESCRIPTION
+        )
+
+        async def run():
+            # We get a table from the migration history.
+            Band = await manager.get_table_from_snapshot(
+                app_name="music", table_class_name="Band"
+            )
+            await Band.update({"popularity": 1000}, force=True)
+
+        manager.add_raw(run)
+
         return manager
 
 -------------------------------------------------------------------------------

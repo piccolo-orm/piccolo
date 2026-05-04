@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import datetime
-import typing as t
+from collections.abc import Callable
 from enum import Enum
+from typing import Union
 
 from .base import Default
 
@@ -47,6 +48,11 @@ class TimestampOffset(Default):
 
 
 class TimestampNow(Default):
+    """
+    The current timestamp, in the local time of the machine that Python is
+    running on.
+    """
+
     @property
     def postgres(self):
         return "current_timestamp"
@@ -70,6 +76,7 @@ class TimestampCustom(Default):
         month: int = 1,
         day: int = 1,
         hour: int = 0,
+        minute: int = 0,
         second: int = 0,
         microsecond: int = 0,
     ):
@@ -77,6 +84,7 @@ class TimestampCustom(Default):
         self.month = month
         self.day = day
         self.hour = hour
+        self.minute = minute
         self.second = second
         self.microsecond = microsecond
 
@@ -87,6 +95,7 @@ class TimestampCustom(Default):
             month=self.month,
             day=self.day,
             hour=self.hour,
+            minute=self.minute,
             second=self.second,
             microsecond=self.microsecond,
         )
@@ -113,8 +122,9 @@ class TimestampCustom(Default):
         return cls(
             year=instance.year,
             month=instance.month,
-            day=instance.month,
+            day=instance.day,
             hour=instance.hour,
+            minute=instance.minute,
             second=instance.second,
             microsecond=instance.microsecond,
         )
@@ -130,7 +140,7 @@ class DatetimeDefault:
 
 ###############################################################################
 
-TimestampArg = t.Union[
+TimestampArg = Union[
     TimestampCustom,
     TimestampNow,
     TimestampOffset,
@@ -138,7 +148,7 @@ TimestampArg = t.Union[
     None,
     datetime.datetime,
     DatetimeDefault,
-    t.Callable[[], datetime.datetime],
+    Callable[[], datetime.datetime],
 ]
 
 

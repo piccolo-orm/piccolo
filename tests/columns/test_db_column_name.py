@@ -1,8 +1,8 @@
-import typing as t
+from typing import Optional
 
 from piccolo.columns.column_types import ForeignKey, Integer, Serial, Varchar
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
-from tests.base import DBTestCase, engine_is, engines_only, engines_skip
+from tests.base import DBTestCase, engine_is, engines_only
 
 
 class Manager(Table):
@@ -35,7 +35,7 @@ class TestDBColumnName(DBTestCase):
     def tearDown(self):
         drop_db_tables_sync(Band, Manager)
 
-    def insert_band(self, manager: t.Optional[Manager] = None) -> Band:
+    def insert_band(self, manager: Optional[Manager] = None) -> Band:
         band = Band(name="Pythonistas", popularity=1000, manager=manager)
         band.save().run_sync()
         return band
@@ -220,7 +220,6 @@ class TestDBColumnName(DBTestCase):
                 ],
             )
 
-    @engines_skip("cockroach")
     def test_delete(self):
         """
         Make sure delete queries work correctly.
@@ -235,13 +234,13 @@ class TestDBColumnName(DBTestCase):
             bands,
             [
                 {
-                    "id": 1,
+                    "id": bands[0]["id"],
                     "regrettable_column_name": "Pythonistas",
                     "popularity": 1000,
                     "manager_fk": None,
                 },
                 {
-                    "id": 2,
+                    "id": bands[1]["id"],
                     "regrettable_column_name": "Rustaceans",
                     "popularity": 500,
                     "manager_fk": None,
@@ -256,7 +255,7 @@ class TestDBColumnName(DBTestCase):
             bands,
             [
                 {
-                    "id": 1,
+                    "id": bands[0]["id"],
                     "regrettable_column_name": "Pythonistas",
                     "popularity": 1000,
                     "manager_fk": None,
@@ -264,7 +263,6 @@ class TestDBColumnName(DBTestCase):
             ],
         )
 
-    @engines_only("cockroach")
     def test_delete_alt(self):
         """
         Make sure delete queries work correctly.

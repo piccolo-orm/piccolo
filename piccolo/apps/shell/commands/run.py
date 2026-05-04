@@ -1,5 +1,4 @@
 import sys
-import typing as t
 
 from piccolo.conf.apps import Finder
 from piccolo.table import Table
@@ -13,7 +12,7 @@ except ImportError:
     IPYTHON = False
 
 
-def start_ipython_shell(**tables: t.Type[Table]):  # pragma: no cover
+def start_ipython_shell(**tables: type[Table]):  # pragma: no cover
     if not IPYTHON:
         sys.exit(
             "Install iPython using `pip install ipython` to use this feature."

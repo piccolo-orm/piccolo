@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import typing as t
+from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from piccolo.querystring import QueryString, Selectable
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import Column
 
 
@@ -18,7 +19,7 @@ class Readable(Selectable):
     """
 
     template: str
-    columns: t.Sequence[Column]
+    columns: Sequence[Column]
     output_name: str = "readable"
 
     @property

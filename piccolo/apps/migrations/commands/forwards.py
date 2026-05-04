@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import sys
-import typing as t
 
 from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.apps.migrations.commands.base import (
@@ -32,7 +31,7 @@ class ForwardsMigrationManager(BaseMigrationManager):
             app_name=app_config.app_name
         )
 
-        migration_modules: t.Dict[str, MigrationModule] = (
+        migration_modules: dict[str, MigrationModule] = (
             self.get_migration_modules(
                 app_config.resolved_migrations_folder_path
             )

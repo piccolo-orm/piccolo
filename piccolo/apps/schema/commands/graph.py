@@ -5,7 +5,7 @@ Credit to the Django Extensions team for inspiring this tool.
 import dataclasses
 import os
 import sys
-import typing as t
+from typing import Optional
 
 import jinja2
 
@@ -29,7 +29,7 @@ class GraphColumn:
 @dataclasses.dataclass
 class GraphTable:
     name: str
-    columns: t.List[GraphColumn]
+    columns: list[GraphColumn]
 
 
 @dataclasses.dataclass
@@ -45,7 +45,7 @@ def render_template(**kwargs):
 
 
 def graph(
-    apps: str = "all", direction: str = "LR", output: t.Optional[str] = None
+    apps: str = "all", direction: str = "LR", output: Optional[str] = None
 ):
     """
     Prints out a graphviz .dot file for your schema.
@@ -73,8 +73,8 @@ def graph(
             sys.exit(f"These apps aren't recognised: {', '.join(delta)}.")
         app_names = given_app_names
 
-    tables: t.List[GraphTable] = []
-    relations: t.List[GraphRelation] = []
+    tables: list[GraphTable] = []
+    relations: list[GraphRelation] = []
 
     for app_name in app_names:
         app_config = finder.get_app_config(app_name=app_name)

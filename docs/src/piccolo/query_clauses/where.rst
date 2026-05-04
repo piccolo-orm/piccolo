@@ -112,6 +112,45 @@ And all rows with a value not contained in the list:
         Band.name.not_in(['Terrible Band', 'Awful Band'])
     )
 
+You can also pass a subquery into the ``is_in`` clause:
+
+.. code-block:: python
+
+    await Band.select().where(
+        Band.id.is_in(
+            Concert.select(Concert.band_1).where(
+                Concert.starts >= datetime.datetime(year=2025, month=1, day=1)
+            )
+        )
+    )
+
+.. hint::
+    In SQL there are often several ways of solving the same problem. You
+    can also solve the above using :meth:`join_on <piccolo.columns.base.Column.join_on>`.
+
+    .. code-block:: python
+
+        >>> await Band.select().where(
+        ...     Band.id.join_on(Concert.band_1).starts >= datetime.datetime(
+        ...        year=2025, month=1, day=1
+        ...     )
+        ... )
+
+    Use whichever you prefer, and whichever suits the situation best.
+
+Subqueries can also be passed into the ``not_in`` clause:
+
+.. code-block:: python
+
+    await Band.select().where(
+        Band.id.not_in(
+            Concert.select(Concert.band_1).where(
+                Concert.starts >= datetime.datetime(year=2025, month=1, day=1)
+            )
+        )
+    )
+
+
 -------------------------------------------------------------------------------
 
 ``is_null`` / ``is_not_null``

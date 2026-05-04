@@ -1,4 +1,4 @@
-import typing as t
+from typing import cast
 
 from piccolo.testing.test_case import TableTest
 from tests.base import DBTestCase
@@ -293,6 +293,6 @@ class TestRefreshWithLoadJSON(TableTest):
         self.recording_studio.refresh(load_json=True).run_sync()
 
         self.assertDictEqual(
-            t.cast(dict, self.recording_studio.facilities),
+            cast(dict, self.recording_studio.facilities),
             {"electric piano": True},
         )

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import typing as t
+from typing import Optional
 from unittest import IsolatedAsyncioTestCase, TestCase
 
 from piccolo.engine import Engine, engine_finder
+from piccolo.engine.cockroach import CockroachTransaction
 from piccolo.table import (
     Table,
     create_db_tables,
@@ -30,7 +31,7 @@ class TableTest(TestCase):
 
     """  # noqa: E501
 
-    tables: t.List[t.Type[Table]]
+    tables: list[type[Table]]
 
     def setUp(self) -> None:
         create_db_tables_sync(*self.tables)
@@ -54,7 +55,7 @@ class AsyncTableTest(IsolatedAsyncioTestCase):
 
     """
 
-    tables: t.List[t.Type[Table]]
+    tables: list[type[Table]]
 
     async def asyncSetUp(self) -> None:
         await create_db_tables(*self.tables)
@@ -106,14 +107,18 @@ class AsyncTransactionTest(IsolatedAsyncioTestCase):
     #
     #     ...
     #
-    db: t.Optional[Engine] = None
+    db: Optional[Engine] = None
 
     async def asyncSetUp(self) -> None:
         db = self.db or engine_finder()
         assert db is not None
         self.transaction = db.transaction()
+
         # This is only available in Python 3.11 and above:
         await self.enterAsyncContext(cm=self.transaction)  # type: ignore
+
+        if isinstance(self.transaction, CockroachTransaction):
+            await self.transaction.autocommit_before_ddl(False)
 
     async def asyncTearDown(self):
         await super().asyncTearDown()

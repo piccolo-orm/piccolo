@@ -1,4 +1,5 @@
-import typing as t
+from collections.abc import Sequence
+from typing import Optional
 
 from piccolo.columns.base import Column
 from piccolo.querystring import QueryString
@@ -51,8 +52,8 @@ class Count(QueryString):
 
     def __init__(
         self,
-        column: t.Optional[Column] = None,
-        distinct: t.Optional[t.Sequence[Column]] = None,
+        column: Optional[Column] = None,
+        distinct: Optional[Sequence[Column]] = None,
         alias: str = "count",
     ):
         """

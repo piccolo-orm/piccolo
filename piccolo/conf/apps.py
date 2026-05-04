@@ -1,20 +1,24 @@
 from __future__ import annotations
 
+import ast
 import inspect
 import itertools
 import os
 import pathlib
 import traceback
-import typing as t
 from abc import abstractmethod
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from graphlib import TopologicalSorter
 from importlib import import_module
 from types import ModuleType
+from typing import Optional, Union, cast
+
+import black
 
 from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.engine.base import Engine
 from piccolo.table import Table
-from piccolo.utils.graphlib import TopologicalSorter
 from piccolo.utils.warnings import Level, colored_warning
 
 
@@ -32,12 +36,22 @@ class PiccoloAppModule(ModuleType):
     APP_CONFIG: AppConfig
 
 
+def get_package(name: str) -> str:
+    """
+    :param name:
+        The __name__ variable from a Python file.
+
+    """
+    return ".".join(name.split(".")[:-1])
+
+
 def table_finder(
-    modules: t.Sequence[str],
-    include_tags: t.Optional[t.Sequence[str]] = None,
-    exclude_tags: t.Optional[t.Sequence[str]] = None,
+    modules: Sequence[str],
+    package: Optional[str] = None,
+    include_tags: Optional[Sequence[str]] = None,
+    exclude_tags: Optional[Sequence[str]] = None,
     exclude_imported: bool = False,
-) -> t.List[t.Type[Table]]:
+) -> list[type[Table]]:
     """
     Rather than explicitly importing and registering table classes with the
     ``AppConfig``, ``table_finder`` can be used instead. It imports any ``Table``
@@ -46,8 +60,10 @@ def table_finder(
 
     :param modules:
         The module paths to check for ``Table`` subclasses. For example,
-        ``['blog.tables']``. The path should be from the root of your project,
-        not a relative path.
+        ``['blog.tables']``.
+    :param package:
+        This must be passed in if the modules are relative paths (e.g.
+        if ``modules=['.tables']`` then ``package='blog'``).
     :param include_tags:
         If the ``Table`` subclass has one of these tags, it will be
         imported. The special tag ``'__all__'`` will import all ``Table``
@@ -80,13 +96,22 @@ def table_finder(
         # 'blog.tables', instead of ['blog.tables'].
         modules = [modules]
 
-    table_subclasses: t.List[t.Type[Table]] = []
+    table_subclasses: list[type[Table]] = []
 
     for module_path in modules:
+        full_module_path = (
+            ".".join([package, module_path.lstrip(".")])
+            if package
+            else module_path
+        )
+
         try:
-            module = import_module(module_path)
+            module = import_module(
+                module_path,
+                package=package,
+            )
         except ImportError as exception:
-            print(f"Unable to import {module_path}")
+            print(f"Unable to import {full_module_path}")
             raise exception from exception
 
         object_names = [i for i in dir(module) if not i.startswith("_")]
@@ -100,7 +125,7 @@ def table_finder(
             ):
                 table: Table = _object  # type: ignore
 
-                if exclude_imported and table.__module__ != module_path:
+                if exclude_imported and table.__module__ != full_module_path:
                     continue
 
                 if exclude_tags and set(table._meta.tags).intersection(
@@ -127,9 +152,9 @@ class Command:
 
     """
 
-    callable: t.Callable
-    command_name: t.Optional[str] = None
-    aliases: t.List[str] = field(default_factory=list)
+    callable: Callable
+    command_name: Optional[str] = None
+    aliases: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -157,12 +182,10 @@ class AppConfig:
     """
 
     app_name: str
-    migrations_folder_path: t.Union[str, pathlib.Path]
-    table_classes: t.List[t.Type[Table]] = field(default_factory=list)
-    migration_dependencies: t.List[str] = field(default_factory=list)
-    commands: t.List[t.Union[t.Callable, Command]] = field(
-        default_factory=list
-    )
+    migrations_folder_path: Union[str, pathlib.Path]
+    table_classes: list[type[Table]] = field(default_factory=list)
+    migration_dependencies: list[str] = field(default_factory=list)
+    commands: list[Union[Callable, Command]] = field(default_factory=list)
 
     @property
     def resolved_migrations_folder_path(self) -> str:
@@ -173,21 +196,21 @@ class AppConfig:
         )
 
     def __post_init__(self) -> None:
-        self._migration_dependency_app_configs: t.Optional[
-            t.List[AppConfig]
-        ] = None
+        self._migration_dependency_app_configs: Optional[list[AppConfig]] = (
+            None
+        )
 
-    def register_table(self, table_class: t.Type[Table]):
+    def register_table(self, table_class: type[Table]):
         self.table_classes.append(table_class)
         return table_class
 
-    def get_commands(self) -> t.List[Command]:
+    def get_commands(self) -> list[Command]:
         return [
             i if isinstance(i, Command) else Command(i) for i in self.commands
         ]
 
     @property
-    def migration_dependency_app_configs(self) -> t.List[AppConfig]:
+    def migration_dependency_app_configs(self) -> list[AppConfig]:
         """
         Get all of the ``AppConfig`` instances from this app's migration
         dependencies.
@@ -195,8 +218,8 @@ class AppConfig:
         # We cache the value so it's more efficient, and also so we can set the
         # underlying value in unit tests for easier mocking.
         if self._migration_dependency_app_configs is None:
-            modules: t.List[PiccoloAppModule] = [
-                t.cast(PiccoloAppModule, import_module(module_path))
+            modules: list[PiccoloAppModule] = [
+                cast(PiccoloAppModule, import_module(module_path))
                 for module_path in self.migration_dependencies
             ]
             self._migration_dependency_app_configs = [
@@ -205,7 +228,7 @@ class AppConfig:
 
         return self._migration_dependency_app_configs
 
-    def get_table_with_name(self, table_class_name: str) -> t.Type[Table]:
+    def get_table_with_name(self, table_class_name: str) -> type[Table]:
         """
         Returns a ``Table`` subclass with the given name from this app, if it
         exists. Otherwise raises a ``ValueError``.
@@ -232,9 +255,9 @@ class AppRegistry:
 
     """
 
-    def __init__(self, apps: t.Optional[t.List[str]] = None):
+    def __init__(self, apps: Optional[list[str]] = None):
         self.apps = apps or []
-        self.app_configs: t.Dict[str, AppConfig] = {}
+        self.app_configs: dict[str, AppConfig] = {}
         app_names = []
 
         for app in self.apps:
@@ -258,7 +281,7 @@ class AppRegistry:
         self._validate_app_names(app_names)
 
     @staticmethod
-    def _validate_app_names(app_names: t.List[str]):
+    def _validate_app_names(app_names: list[str]):
         """
         Raise a ValueError if an app_name is repeated.
         """
@@ -274,10 +297,10 @@ class AppRegistry:
                     "multiple times."
                 )
 
-    def get_app_config(self, app_name: str) -> t.Optional[AppConfig]:
+    def get_app_config(self, app_name: str) -> Optional[AppConfig]:
         return self.app_configs.get(app_name)
 
-    def get_table_classes(self, app_name: str) -> t.List[t.Type[Table]]:
+    def get_table_classes(self, app_name: str) -> list[type[Table]]:
         """
         Returns each Table subclass defined in the given app if it exists.
         Otherwise raises a ValueError.
@@ -293,7 +316,7 @@ class AppRegistry:
 
     def get_table_with_name(
         self, app_name: str, table_class_name: str
-    ) -> t.Optional[t.Type[Table]]:
+    ) -> Optional[type[Table]]:
         """
         Returns a Table subclass registered with the given app if it exists.
         Otherwise raises a ValueError.
@@ -333,8 +356,8 @@ class Finder:
         self.diagnose = diagnose
 
     def _deduplicate(
-        self, config_modules: t.List[PiccoloAppModule]
-    ) -> t.List[PiccoloAppModule]:
+        self, config_modules: list[PiccoloAppModule]
+    ) -> list[PiccoloAppModule]:
         """
         Remove all duplicates - just leaving the first instance.
         """
@@ -342,8 +365,8 @@ class Finder:
         return list({c: None for c in config_modules}.keys())
 
     def _import_app_modules(
-        self, config_module_paths: t.List[str]
-    ) -> t.List[PiccoloAppModule]:
+        self, config_module_paths: list[str]
+    ) -> list[PiccoloAppModule]:
         """
         Import all piccolo_app.py modules within your apps, and all
         dependencies.
@@ -352,7 +375,7 @@ class Finder:
 
         for config_module_path in config_module_paths:
             try:
-                config_module = t.cast(
+                config_module = cast(
                     PiccoloAppModule, import_module(config_module_path)
                 )
             except ImportError as e:
@@ -368,8 +391,8 @@ class Finder:
         return config_modules
 
     def get_piccolo_conf_module(
-        self, module_name: t.Optional[str] = None
-    ) -> t.Optional[PiccoloConfModule]:
+        self, module_name: Optional[str] = None
+    ) -> Optional[PiccoloConfModule]:
         """
         Searches the path for a 'piccolo_conf.py' module to import. The
         location searched can be overriden by:
@@ -389,7 +412,7 @@ class Finder:
             module_name = DEFAULT_MODULE_NAME
 
         try:
-            module = t.cast(PiccoloConfModule, import_module(module_name))
+            module = cast(PiccoloConfModule, import_module(module_name))
         except ModuleNotFoundError as exc:
             if self.diagnose:
                 colored_warning(
@@ -416,6 +439,17 @@ class Finder:
         else:
             return module
 
+    def get_piccolo_conf_path(self) -> str:
+        piccolo_conf_module = self.get_piccolo_conf_module()
+
+        if piccolo_conf_module is None:
+            raise ModuleNotFoundError("piccolo_conf.py not found.")
+
+        module_file_path = piccolo_conf_module.__file__
+        assert module_file_path
+
+        return module_file_path
+
     def get_app_registry(self) -> AppRegistry:
         """
         Returns the ``AppRegistry`` instance within piccolo_conf.
@@ -424,10 +458,10 @@ class Finder:
         return getattr(piccolo_conf_module, "APP_REGISTRY")
 
     def get_engine(
-        self, module_name: t.Optional[str] = None
-    ) -> t.Optional[Engine]:
+        self, module_name: Optional[str] = None
+    ) -> Optional[Engine]:
         piccolo_conf = self.get_piccolo_conf_module(module_name=module_name)
-        engine: t.Optional[Engine] = getattr(piccolo_conf, ENGINE_VAR, None)
+        engine: Optional[Engine] = getattr(piccolo_conf, ENGINE_VAR, None)
 
         if not engine:
             colored_warning(
@@ -443,7 +477,7 @@ class Finder:
 
         return engine
 
-    def get_app_modules(self) -> t.List[PiccoloAppModule]:
+    def get_app_modules(self) -> list[PiccoloAppModule]:
         """
         Returns the ``piccolo_app.py`` modules for each registered Piccolo app
         in your project.
@@ -458,7 +492,7 @@ class Finder:
 
     def get_app_names(
         self, sort_by_migration_dependencies: bool = True
-    ) -> t.List[str]:
+    ) -> list[str]:
         """
         Return all of the app names.
 
@@ -474,15 +508,15 @@ class Finder:
             )
         ]
 
-    def get_sorted_app_names(self) -> t.List[str]:
+    def get_sorted_app_names(self) -> list[str]:
         """
         Just here for backwards compatibility - use ``get_app_names`` directly.
         """
         return self.get_app_names(sort_by_migration_dependencies=True)
 
     def sort_app_configs(
-        self, app_configs: t.List[AppConfig]
-    ) -> t.List[AppConfig]:
+        self, app_configs: list[AppConfig]
+    ) -> list[AppConfig]:
         app_config_map = {
             app_config.app_name: app_config for app_config in app_configs
         }
@@ -501,7 +535,7 @@ class Finder:
 
     def get_app_configs(
         self, sort_by_migration_dependencies: bool = True
-    ) -> t.List[AppConfig]:
+    ) -> list[AppConfig]:
         """
         Returns a list of ``AppConfig``, optionally sorted by migration
         dependencies.
@@ -525,7 +559,7 @@ class Finder:
 
     def get_table_with_name(
         self, app_name: str, table_class_name: str
-    ) -> t.Type[Table]:
+    ) -> type[Table]:
         """
         Returns a ``Table`` class registered with the given app if it exists.
         Otherwise it raises an ``ValueError``.
@@ -537,9 +571,9 @@ class Finder:
 
     def get_table_classes(
         self,
-        include_apps: t.Optional[t.List[str]] = None,
-        exclude_apps: t.Optional[t.List[str]] = None,
-    ) -> t.List[t.Type[Table]]:
+        include_apps: Optional[list[str]] = None,
+        exclude_apps: Optional[list[str]] = None,
+    ) -> list[type[Table]]:
         """
         Returns all ``Table`` classes registered with the given apps. If
         ``include_apps`` is ``None``, then ``Table`` classes will be returned
@@ -555,10 +589,95 @@ class Finder:
             if exclude_apps:
                 app_names = [i for i in app_names if i not in exclude_apps]
 
-        tables: t.List[t.Type[Table]] = []
+        tables: list[type[Table]] = []
 
         for app_name in app_names:
             app_config = self.get_app_config(app_name=app_name)
             tables.extend(app_config.table_classes)
 
         return tables
+
+
+###############################################################################
+
+
+class PiccoloConfUpdater:
+
+    def __init__(self, piccolo_conf_path: Optional[str] = None):
+        """
+        :param piccolo_conf_path:
+            The path to the piccolo_conf.py (e.g. `./piccolo_conf.py`). If not
+            passed in, we use our ``Finder`` class to get it.
+        """
+        self.piccolo_conf_path = (
+            piccolo_conf_path or Finder().get_piccolo_conf_path()
+        )
+
+    def _modify_app_registry_src(self, src: str, app_module: str) -> str:
+        """
+        :param src:
+            The contents of the ``piccolo_conf.py`` file.
+        :param app_module:
+            The app to add to the registry e.g. ``'music.piccolo_app'``.
+        :returns:
+            Updated Python source code string.
+
+        """
+        ast_root = ast.parse(src)
+
+        parsing_successful = False
+
+        for node in ast.walk(ast_root):
+            if isinstance(node, ast.Call):
+                if (
+                    isinstance(node.func, ast.Name)
+                    and node.func.id == "AppRegistry"
+                ):
+                    if len(node.keywords) > 0:
+                        keyword = node.keywords[0]
+                        if keyword.arg == "apps":
+                            apps = keyword.value
+                            if isinstance(apps, ast.List):
+                                apps.elts.append(
+                                    ast.Constant(app_module, kind="str")
+                                )
+                                parsing_successful = True
+                                break
+
+        if not parsing_successful:
+            raise SyntaxError(
+                "Unable to parse piccolo_conf.py - `AppRegistry(apps=...)` "
+                "not found)."
+            )
+
+        new_contents = ast.unparse(ast_root)
+
+        formatted_contents = black.format_str(
+            new_contents, mode=black.FileMode(line_length=80)
+        )
+
+        return formatted_contents
+
+    def register_app(self, app_module: str):
+        """
+        Adds the given app to the ``AppRegistry`` in ``piccolo_conf.py``.
+
+        This is used by command line tools like:
+
+        .. code-block:: bash
+
+            piccolo app new my_app --register
+
+        :param app_module:
+            The module of the app, e.g. ``'music.piccolo_app'``.
+
+        """
+        with open(self.piccolo_conf_path) as f:
+            piccolo_conf_src = f.read()
+
+        new_contents = self._modify_app_registry_src(
+            src=piccolo_conf_src, app_module=app_module
+        )
+
+        with open(self.piccolo_conf_path, "wt") as f:
+            f.write(new_contents)

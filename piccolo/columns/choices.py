@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import typing as t
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -29,5 +29,5 @@ class Choice:
 
     """
 
-    value: t.Any
+    value: Any
     display_name: str

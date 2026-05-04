@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import typing as t
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Optional
 
 from piccolo.utils.encoding import JSONDict
 from piccolo.utils.sync import run_sync
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
     from piccolo.table import Table
 
@@ -30,7 +31,7 @@ class Refresh:
     def __init__(
         self,
         instance: Table,
-        columns: t.Optional[t.Sequence[Column]] = None,
+        columns: Optional[Sequence[Column]] = None,
         load_json: bool = False,
     ):
         self.instance = instance
@@ -50,7 +51,7 @@ class Refresh:
         self.load_json = load_json
 
     @property
-    def _columns(self) -> t.Sequence[Column]:
+    def _columns(self) -> Sequence[Column]:
         """
         Works out which columns the user wants to refresh.
         """
@@ -61,7 +62,7 @@ class Refresh:
             i for i in self.instance._meta.columns if not i._meta.primary_key
         ]
 
-    def _get_columns(self, instance: Table, columns: t.Sequence[Column]):
+    def _get_columns(self, instance: Table, columns: Sequence[Column]):
         """
         If `prefetch` was used on the object, for example::
 
@@ -100,7 +101,7 @@ class Refresh:
 
         return select_columns
 
-    def _update_instance(self, instance: Table, data_dict: t.Dict):
+    def _update_instance(self, instance: Table, data_dict: dict):
         """
         Update the table instance. It is called recursively, if the instance
         has child instances.
@@ -114,12 +115,37 @@ class Refresh:
                     # primary key value must be null.
                     setattr(instance, key, None)
                 else:
-                    self._update_instance(getattr(instance, key), value)
+                    self._update_instance(
+                        getattr(
+                            instance,
+                            # We have to do this just in case a column uses
+                            # db_column_name.
+                            # We should try and optimise this in the future to
+                            # minimise the overhead of searching for a matching
+                            # column.
+                            instance._meta.get_column_by_name(
+                                key,
+                                match_db_column_name=True,
+                            )._meta.name,
+                        ),
+                        value,
+                    )
             else:
-                setattr(instance, key, value)
+                setattr(
+                    instance,
+                    # We have to do this just in case a column uses
+                    # db_column_name.
+                    # We should try and optimise this in the future to minimise
+                    # the overhead of searching for a matching column.
+                    instance._meta.get_column_by_name(
+                        key,
+                        match_db_column_name=True,
+                    )._meta.name,
+                    value,
+                )
 
     async def run(
-        self, in_pool: bool = True, node: t.Optional[str] = None
+        self, in_pool: bool = True, node: Optional[str] = None
     ) -> Table:
         """
         Run it asynchronously. For example::

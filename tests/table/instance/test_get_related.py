@@ -1,4 +1,4 @@
-import typing as t
+from typing import cast
 
 from piccolo.testing.test_case import AsyncTableTest
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
@@ -52,7 +52,7 @@ class TestGetRelated(AsyncTableTest):
         """
         Make sure it also works using a string representation of a foreign key.
         """
-        manager = t.cast(Manager, await self.band.get_related("manager"))
+        manager = cast(Manager, await self.band.get_related("manager"))
         self.assertTrue(manager.id == self.manager.id)
 
     async def test_invalid_string(self):

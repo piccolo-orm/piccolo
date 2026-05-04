@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import typing as t
 from dataclasses import dataclass, field
+from typing import Any, Optional
 
 from piccolo.apps.migrations.auto.operations import (
     AddColumn,
@@ -20,8 +20,8 @@ from piccolo.table import Table, create_table_class
 
 
 def compare_dicts(
-    dict_1: t.Dict[str, t.Any], dict_2: t.Dict[str, t.Any]
-) -> t.Dict[str, t.Any]:
+    dict_1: dict[str, Any], dict_2: dict[str, Any]
+) -> dict[str, Any]:
     """
     Returns a new dictionary which only contains key, value pairs which are in
     the first dictionary and not the second.
@@ -62,11 +62,11 @@ def compare_dicts(
 
 @dataclass
 class TableDelta:
-    add_columns: t.List[AddColumn] = field(default_factory=list)
-    drop_columns: t.List[DropColumn] = field(default_factory=list)
-    alter_columns: t.List[AlterColumn] = field(default_factory=list)
-    add_constraints: t.List[AddConstraint] = field(default_factory=list)
-    drop_constraints: t.List[DropConstraint] = field(default_factory=list)
+    add_columns: list[AddColumn] = field(default_factory=list)
+    drop_columns: list[DropColumn] = field(default_factory=list)
+    alter_columns: list[AlterColumn] = field(default_factory=list)
+    add_constraints: list[AddConstraint] = field(default_factory=list)
+    drop_constraints: list[DropConstraint] = field(default_factory=list)
 
     def __eq__(self, value: TableDelta) -> bool:  # type: ignore
         """
@@ -119,13 +119,13 @@ class DiffableTable:
 
     class_name: str
     tablename: str
-    schema: t.Optional[str] = None
-    columns: t.List[Column] = field(default_factory=list)
-    constraints: t.List[Constraint] = field(default_factory=list)
-    previous_class_name: t.Optional[str] = None
+    schema: Optional[str] = None
+    columns: list[Column] = field(default_factory=list)
+    constraints: list[Constraint] = field(default_factory=list)
+    previous_class_name: Optional[str] = None
 
     def __post_init__(self) -> None:
-        self.columns_map: t.Dict[str, Column] = {
+        self.columns_map: dict[str, Column] = {
             i._meta.name: i for i in self.columns
         }
 
@@ -182,7 +182,7 @@ class DiffableTable:
 
         #######################################################################
 
-        alter_columns: t.List[AlterColumn] = []
+        alter_columns: list[AlterColumn] = []
 
         for existing_column in value.columns:
             column = self.columns_map.get(existing_column._meta.name)
@@ -284,7 +284,7 @@ class DiffableTable:
     def __str__(self):
         return f"{self.class_name} - {self.tablename}"
 
-    def to_table_class(self) -> t.Type[Table]:
+    def to_table_class(self) -> type[Table]:
         """
         Converts the DiffableTable into a Table subclass.
         """

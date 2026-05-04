@@ -1,6 +1,6 @@
 import sys
-import typing as t
 from getpass import getpass, getuser
+from typing import Optional
 
 from piccolo.apps.user.tables import BaseUser
 
@@ -57,12 +57,12 @@ def get_is_active() -> bool:
 
 
 def create(
-    username: t.Optional[str] = None,
-    email: t.Optional[str] = None,
-    password: t.Optional[str] = None,
-    is_admin: t.Optional[bool] = None,
-    is_superuser: t.Optional[bool] = None,
-    is_active: t.Optional[bool] = None,
+    username: Optional[str] = None,
+    email: Optional[str] = None,
+    password: Optional[str] = None,
+    is_admin: Optional[bool] = None,
+    is_superuser: Optional[bool] = None,
+    is_active: Optional[bool] = None,
 ):
     """
     Create a new user.

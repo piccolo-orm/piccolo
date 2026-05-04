@@ -1,3 +1,4 @@
+import decimal
 import unittest
 from enum import Enum
 
@@ -34,6 +35,10 @@ class TestRandomBuilder(unittest.TestCase):
     def test_next_float(self):
         random_float = RandomBuilder.next_float(maximum=1000)
         self.assertLessEqual(random_float, 1000)
+
+    def test_next_decimal(self):
+        random_decimal = RandomBuilder.next_decimal(precision=4, scale=2)
+        self.assertLessEqual(random_decimal, decimal.Decimal("99.99"))
 
     def test_next_int(self):
         random_int = RandomBuilder.next_int()

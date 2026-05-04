@@ -1,4 +1,4 @@
-import typing as t
+from typing import Optional
 
 from piccolo.columns.column_types import (
     ForeignKey,
@@ -11,7 +11,6 @@ from piccolo.columns.m2m import M2M
 from piccolo.engine.finder import engine_finder
 from piccolo.schema import SchemaManager
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
-from tests.base import engine_is, engines_skip
 
 engine = engine_finder()
 
@@ -41,7 +40,7 @@ class M2MBase:
     (public vs non-public).
     """
 
-    def _setUp(self, schema: t.Optional[str] = None):
+    def _setUp(self, schema: Optional[str] = None):
         self.schema = schema
 
         for table_class in (Band, Genre, GenreToBand):
@@ -51,54 +50,25 @@ class M2MBase:
 
         create_db_tables_sync(*self.all_tables, if_not_exists=True)
 
-        if engine_is("cockroach"):
-            bands = (
-                Band.insert(
-                    Band(name="Pythonistas"),
-                    Band(name="Rustaceans"),
-                    Band(name="C-Sharps"),
-                )
-                .returning(Band.id)
-                .run_sync()
-            )
+        bands = Band.insert(
+            Band(name="Pythonistas"),
+            Band(name="Rustaceans"),
+            Band(name="C-Sharps"),
+        ).run_sync()
 
-            genres = (
-                Genre.insert(
-                    Genre(name="Rock"),
-                    Genre(name="Folk"),
-                    Genre(name="Classical"),
-                )
-                .returning(Genre.id)
-                .run_sync()
-            )
+        genres = Genre.insert(
+            Genre(name="Rock"),
+            Genre(name="Folk"),
+            Genre(name="Classical"),
+        ).run_sync()
 
-            GenreToBand.insert(
-                GenreToBand(band=bands[0]["id"], genre=genres[0]["id"]),
-                GenreToBand(band=bands[0]["id"], genre=genres[1]["id"]),
-                GenreToBand(band=bands[1]["id"], genre=genres[1]["id"]),
-                GenreToBand(band=bands[2]["id"], genre=genres[0]["id"]),
-                GenreToBand(band=bands[2]["id"], genre=genres[2]["id"]),
-            ).run_sync()
-        else:
-            Band.insert(
-                Band(name="Pythonistas"),
-                Band(name="Rustaceans"),
-                Band(name="C-Sharps"),
-            ).run_sync()
-
-            Genre.insert(
-                Genre(name="Rock"),
-                Genre(name="Folk"),
-                Genre(name="Classical"),
-            ).run_sync()
-
-            GenreToBand.insert(
-                GenreToBand(band=1, genre=1),
-                GenreToBand(band=1, genre=2),
-                GenreToBand(band=2, genre=2),
-                GenreToBand(band=3, genre=1),
-                GenreToBand(band=3, genre=3),
-            ).run_sync()
+        GenreToBand.insert(
+            GenreToBand(band=bands[0]["id"], genre=genres[0]["id"]),
+            GenreToBand(band=bands[0]["id"], genre=genres[1]["id"]),
+            GenreToBand(band=bands[1]["id"], genre=genres[1]["id"]),
+            GenreToBand(band=bands[2]["id"], genre=genres[0]["id"]),
+            GenreToBand(band=bands[2]["id"], genre=genres[2]["id"]),
+        ).run_sync()
 
     def tearDown(self):
         drop_db_tables_sync(*self.all_tables)
@@ -114,11 +84,8 @@ class M2MBase:
     def assertTrue(self, first, msg=None):
         assert first is True
 
-    @engines_skip("cockroach")
     def test_select_name(self):
-        """
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """  # noqa: E501
+
         response = Band.select(
             Band.name, Band.genres(Genre.name, as_list=True)
         ).run_sync()
@@ -144,14 +111,10 @@ class M2MBase:
             ],
         )
 
-    @engines_skip("cockroach")
     def test_no_related(self):
         """
         Make sure it still works correctly if there are no related values.
         """
-        """
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """  # noqa: E501
 
         GenreToBand.delete(force=True).run_sync()
 
@@ -182,15 +145,13 @@ class M2MBase:
             ],
         )
 
-    @engines_skip("cockroach")
     def test_select_multiple(self):
-        """
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """  # noqa: E501
 
         response = Band.select(
             Band.name, Band.genres(Genre.id, Genre.name)
         ).run_sync()
+
+        genres = Genre.select().run_sync()
 
         self.assertEqual(
             response,
@@ -198,16 +159,19 @@ class M2MBase:
                 {
                     "name": "Pythonistas",
                     "genres": [
-                        {"id": 1, "name": "Rock"},
-                        {"id": 2, "name": "Folk"},
+                        {"id": genres[0]["id"], "name": "Rock"},
+                        {"id": genres[1]["id"], "name": "Folk"},
                     ],
                 },
-                {"name": "Rustaceans", "genres": [{"id": 2, "name": "Folk"}]},
+                {
+                    "name": "Rustaceans",
+                    "genres": [{"id": genres[1]["id"], "name": "Folk"}],
+                },
                 {
                     "name": "C-Sharps",
                     "genres": [
-                        {"id": 1, "name": "Rock"},
-                        {"id": 3, "name": "Classical"},
+                        {"id": genres[0]["id"], "name": "Rock"},
+                        {"id": genres[2]["id"], "name": "Classical"},
                     ],
                 },
             ],
@@ -218,45 +182,52 @@ class M2MBase:
             Genre.name, Genre.bands(Band.id, Band.name)
         ).run_sync()
 
+        bands = Band.select().run_sync()
+
         self.assertEqual(
             response,
             [
                 {
                     "name": "Rock",
                     "bands": [
-                        {"id": 1, "name": "Pythonistas"},
-                        {"id": 3, "name": "C-Sharps"},
+                        {"id": bands[0]["id"], "name": "Pythonistas"},
+                        {"id": bands[2]["id"], "name": "C-Sharps"},
                     ],
                 },
                 {
                     "name": "Folk",
                     "bands": [
-                        {"id": 1, "name": "Pythonistas"},
-                        {"id": 2, "name": "Rustaceans"},
+                        {"id": bands[0]["id"], "name": "Pythonistas"},
+                        {"id": bands[1]["id"], "name": "Rustaceans"},
                     ],
                 },
                 {
                     "name": "Classical",
-                    "bands": [{"id": 3, "name": "C-Sharps"}],
+                    "bands": [{"id": bands[2]["id"], "name": "C-Sharps"}],
                 },
             ],
         )
 
-    @engines_skip("cockroach")
     def test_select_id(self):
-        """
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-        """  # noqa: E501
 
         response = Band.select(
             Band.name, Band.genres(Genre.id, as_list=True)
         ).run_sync()
+
+        genres = Genre.select().run_sync()
+
         self.assertEqual(
             response,
             [
-                {"name": "Pythonistas", "genres": [1, 2]},
-                {"name": "Rustaceans", "genres": [2]},
-                {"name": "C-Sharps", "genres": [1, 3]},
+                {
+                    "name": "Pythonistas",
+                    "genres": [genres[0]["id"], genres[1]["id"]],
+                },
+                {"name": "Rustaceans", "genres": [genres[1]["id"]]},
+                {
+                    "name": "C-Sharps",
+                    "genres": [genres[0]["id"], genres[2]["id"]],
+                },
             ],
         )
 
@@ -264,26 +235,23 @@ class M2MBase:
         response = Genre.select(
             Genre.name, Genre.bands(Band.id, as_list=True)
         ).run_sync()
+
+        bands = Band.select().run_sync()
+
         self.assertEqual(
             response,
             [
-                {"name": "Rock", "bands": [1, 3]},
-                {"name": "Folk", "bands": [1, 2]},
-                {"name": "Classical", "bands": [3]},
+                {"name": "Rock", "bands": [bands[0]["id"], bands[2]["id"]]},
+                {"name": "Folk", "bands": [bands[0]["id"], bands[1]["id"]]},
+                {"name": "Classical", "bands": [bands[2]["id"]]},
             ],
         )
 
-    @engines_skip("cockroach")
     def test_select_all_columns(self):
         """
         Make sure ``all_columns`` can be passed in as an argument. ``M2M``
         should flatten the arguments. Reported here:
-
-        https://github.com/piccolo-orm/piccolo/issues/728
-
-        🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-
-        """  # noqa: E501
+        """
 
         response = Band.select(
             Band.name, Band.genres(Genre.all_columns(exclude=(Genre.id,)))

@@ -22,8 +22,8 @@ Make sure the test database exists:
 .. code-block:: console
 
     cockroach sql --insecure
-    >>> create database piccolo
-    >>> use piccolo
+    >>> create database piccolo;
+    >>> use piccolo;
 
 -------------------------------------------------------------------------------
 
