@@ -31,6 +31,7 @@ from piccolo.columns.column_types import (
     BigInt,
     BigSerial,
     Boolean,
+    Char,
     Date,
     Decimal,
     DoublePrecision,
@@ -267,6 +268,25 @@ class TestMigrations(MigrationTestCase):
                     x.is_nullable == "NO",
                     x.column_default
                     in ("''::character varying", "'':::STRING"),
+                ]
+            ),
+        )
+
+    @engines_skip("cockroach")
+    def test_char_column(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Char(default="GB", length=2, null=True),
+                    Char(default="GB", length=2, null=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "character",
+                    x.is_nullable == "NO",
+                    x.column_default in ("'GB'::bpchar", "'GB':::STRING"),
                 ]
             ),
         )
