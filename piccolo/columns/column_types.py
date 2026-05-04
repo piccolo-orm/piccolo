@@ -386,6 +386,48 @@ class Email(Varchar):
     pass
 
 
+class Char(Varchar):
+    """
+    Used for storing text when you want to enforce character length limits.
+    Uses the ``str`` type for values.
+
+    .. hint::
+        :class:`Varchar` is generally recommended over :class:`Char`. However,
+        :class:`Char` may have slight performance advantages, and makes sense
+        for certain fields like country codes where you know the values will be
+        an exact length.
+
+    In Postgres the values are 'blank padded'. For example, if the length is 2,
+    and you store ``'X'``, then you will get ``'X '`` back from the database.
+
+    .. note::
+        In SQLite :class:`Char` and :class:`Varchar` behave identically.
+
+    **Example**
+
+    .. code-block:: python
+
+        class Venue(Table):
+            name = Varchar()
+            country_code = Char(length=2)
+
+        # Create
+        >>> await Venue(name='Amazing Venue', country_code='GB').save()
+
+        # Query
+        >>> await Venue.select(Venue.country_code)
+        {'country_code': 'GB'}
+
+    :param length:
+        The maximum number of characters allowed.
+
+    """
+
+    @property
+    def column_type(self):
+        return f"CHAR({self.length})" if self.length else "CHAR"
+
+
 class Secret(Varchar):
     """
     This is just an alias to ``Varchar(secret=True)``. It's here for backwards
