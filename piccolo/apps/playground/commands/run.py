@@ -16,6 +16,7 @@ from piccolo.columns import (
     UUID,
     Array,
     Boolean,
+    Char,
     Date,
     ForeignKey,
     Integer,
@@ -73,6 +74,7 @@ class Venue(Table):
     name = Varchar(length=100)
     capacity = Integer(default=0)
     address = Text(null=True)
+    country_code = Char(length=2)
 
     @classmethod
     def get_readable(cls) -> Readable:
@@ -246,7 +248,7 @@ def populate():
     c_sharps = Band(name="C-Sharps", popularity=700, manager=anders.id)
     c_sharps.save().run_sync()
 
-    venue = Venue(name="Amazing Venue", capacity=5000)
+    venue = Venue(name="Amazing Venue", capacity=5000, country_code="GB")
     venue.save().run_sync()
 
     concert = Concert(
