@@ -267,7 +267,7 @@ class Where(CombinableMixin):
         def stringify_column(column: Column) -> str:
             return f'"{column._meta.db_column_name}"'
 
-        args: t.List[t.Any] = []
+        args: list[Any] = []
         if self.value != UNDEFINED:
             args.append(
                 QueryString(stringify_column(self.value))
@@ -284,7 +284,7 @@ class Where(CombinableMixin):
                             if isinstance(self.value, Column)
                             else self.value
                         )
-                        for value in self.values
+                        for value in self.values  # type: ignore
                     ]
                 )
             )

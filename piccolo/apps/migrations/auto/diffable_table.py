@@ -288,7 +288,7 @@ class DiffableTable:
         """
         Converts the DiffableTable into a Table subclass.
         """
-        class_members: t.Dict[str, t.Any] = {}
+        class_members: dict[str, Any] = {}
         for column in self.columns:
             class_members[column._meta.name] = column
         for constraint in self.constraints:

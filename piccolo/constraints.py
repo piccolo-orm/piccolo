@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import typing as t
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, Sequence, Union
 
-if t.TYPE_CHECKING:
+if TYPE_CHECKING:
     from piccolo.columns import Column
     from piccolo.custom_types import Combinable
 
@@ -47,7 +47,7 @@ class Unique(ConstraintConfig):
 
     def __init__(
         self,
-        columns: t.List[t.Union[Column, str]],
+        columns: list[Union[Column, str]],
         nulls_distinct: bool = True,
     ):
         if len(columns) < 1:
@@ -109,7 +109,7 @@ class Check(ConstraintConfig):
 
     def __init__(
         self,
-        condition: t.Union[Combinable, str],
+        condition: Union[Combinable, str],
     ):
         self.condition = condition
 
@@ -165,7 +165,7 @@ class ConstraintMeta:
     name: str
 
     # Used for representing the table in migrations.
-    params: t.Dict[str, t.Any] = field(default_factory=dict)
+    params: dict[str, Any] = field(default_factory=dict)
 
 
 class UniqueConstraint(Constraint):
@@ -178,7 +178,7 @@ class UniqueConstraint(Constraint):
 
     def __init__(
         self,
-        column_names: t.Sequence[str],
+        column_names: Sequence[str],
         name: str,
         nulls_distinct: bool = True,
     ) -> None:
