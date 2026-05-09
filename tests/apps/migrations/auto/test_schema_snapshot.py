@@ -208,6 +208,7 @@ class TestSchemaSnaphot(TestCase):
             constraint_name="unique_name",
             constraint_class=UniqueConstraint,
             params={
+                "name": "name_unique",
                 "column_names": ["name"],
             },
         )
