@@ -201,6 +201,12 @@ class Where(CombinableMixin):
         return convert_to_sql_value(value=value, column=self.column)
 
     def get_values_querystring(self, values) -> QueryString:
+        if isinstance(values, QueryString):
+            return values
+
+        if isinstance(values, Undefined):
+            raise ValueError("values is undefined")
+
         template = ", ".join("{}" for _ in values)
         return QueryString(template, *values)
 
