@@ -15,9 +15,10 @@ strings to null:
   from piccolo.query.functions import NullIf
 
   class Venue(Table):
-      address = Text(null=True)
+      address = Text()
 
-  await Venue.select(Venue.name, NullIf(Venue.address, ''))
+  >>> await Venue.select(NullIf(Venue.address, ''))
+  [{'address': None}]
 
 ``Replace``
 ~~~~~~~~~~~
