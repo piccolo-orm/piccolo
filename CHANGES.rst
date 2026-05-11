@@ -79,6 +79,12 @@ reporting this issue.
 
 .. code-block:: python
 
+  class RecordingStudio(Table):
+      facilities = JSONB()
+
+  class Album(Table):
+      recorded_at = ForeignKey(RecordingStudio)
+
   >>> album = await Album.objects(Album.recorded_at).output(load_json=True).first()
   >>> album.recorded_at.facilities
   {
