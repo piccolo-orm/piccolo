@@ -1,4 +1,8 @@
+from __future__ import annotations
+
+import datetime
 from typing import Literal, Optional, Union, get_args
+from zoneinfo import ZoneInfo
 
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import (
@@ -248,6 +252,81 @@ def Second(
     )
 
 
+class AtTimeZone(QueryString):
+    def __init__(
+        self,
+        identifier: Union[Time, Timestamp, Timestamptz, QueryString],
+        timezone: ZoneInfo | str | datetime.timedelta,
+        alias: Optional[str] = None,
+    ):
+        """
+        .. note:: This is for Postgres / Cockroach only.
+
+        Convert the column to the given timezone. See the
+        `Postgres docs <https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-ZONECONVERT>`_
+        for more information.
+
+        For example::
+
+            class Signing(Table):
+                starts = Timestamptz()
+
+            >>> await Signing.select(
+            ...     AtTimeZone(Signing.starts, 'EST', alias='starts_est'),
+            ...     Signing.starts,
+            ... )
+            [{
+                'starts_est': datetime.datetime(
+                    2026, 12, 20, 5, 0
+                ),
+                'starts': datetime.datetime(
+                    2026, 12, 20, 10, 0, tzinfo=datetime.timezone.utc
+                )
+            }]
+
+        :param timezone:
+            Valid arguments are ``'EST'``, ``ZoneInfo('EST')`` and
+            ``timedelta(hours=5)``.
+
+        """  # noqa: E501
+        # Preserve the original alias from the column.
+
+        from piccolo.columns import Column
+
+        if isinstance(identifier, Column):
+            alias = (
+                alias
+                or identifier._alias
+                or identifier._meta.get_default_alias()
+            )
+        elif isinstance(identifier, QueryString):
+            alias = alias or identifier._alias
+
+        #######################################################################
+
+        if isinstance(timezone, str):
+            # Validate it's a correct timezone
+            timezone = ZoneInfo(timezone)
+
+        if isinstance(timezone, datetime.timedelta):
+            total_seconds = timezone.total_seconds()
+            prefix = "+" if total_seconds >= 0 else "-"
+            timezone = (
+                f"{prefix}{datetime.timedelta(seconds=abs(total_seconds))}"
+            )
+
+        if isinstance(timezone, ZoneInfo):
+            # Validate it's a correct timezone
+            timezone = timezone.key
+
+        super().__init__(
+            "{} AT TIME ZONE {}",
+            identifier,
+            timezone,
+            alias=alias,
+        )
+
+
 __all__ = (
     "Extract",
     "Strftime",
@@ -257,4 +336,5 @@ __all__ = (
     "Hour",
     "Minute",
     "Second",
+    "AtTimeZone",
 )

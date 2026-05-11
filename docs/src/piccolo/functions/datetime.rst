@@ -6,11 +6,15 @@ Datetime functions
 Postgres / Cockroach
 --------------------
 
+AtTimeZone
+~~~~~~~~~~
+
+.. autoclass:: AtTimeZone
+
 Extract
 ~~~~~~~
 
 .. autoclass:: Extract
-
 
 SQLite
 ------

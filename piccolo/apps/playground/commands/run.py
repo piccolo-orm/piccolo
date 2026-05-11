@@ -25,6 +25,7 @@ from piccolo.columns import (
     Numeric,
     Serial,
     Text,
+    Time,
     Timestamp,
     Timestamptz,
     Varchar,
@@ -143,6 +144,8 @@ class RecordingStudio(Table):
     id: Serial
     name = Varchar(length=100)
     facilities = JSON(null=True)
+    opens_at = Time()
+    closes_at = Time()
 
     @classmethod
     def get_readable(cls) -> Readable:
@@ -279,6 +282,8 @@ def populate():
                     {"name": "Bob Williams"},
                 ],
             },
+            RecordingStudio.opens_at: datetime.time(9, 0, 0),
+            RecordingStudio.closes_at: datetime.time(17, 0, 0),
         }
     )
     recording_studio_1.save().run_sync()
@@ -294,6 +299,8 @@ def populate():
                     {"name": "Frank Smith"},
                 ],
             },
+            RecordingStudio.opens_at: datetime.time(10, 0, 0),
+            RecordingStudio.closes_at: datetime.time(20, 0, 0),
         },
     )
     recording_studio_2.save().run_sync()
