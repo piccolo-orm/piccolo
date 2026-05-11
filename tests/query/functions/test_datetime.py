@@ -1,4 +1,5 @@
 import datetime
+import zoneinfo
 
 from piccolo.columns import Timestamp, Timestamptz
 from piccolo.query.functions.datetime import (
@@ -130,7 +131,15 @@ class TestAtTimeZone(AsyncTableTest):
             )
         ).save()
 
-        self.assertEqual(
-            await Signing.select(AtTimeZone(Signing.starts, "EST")),
-            [{"starts": datetime.datetime(2026, 5, 11, 2, 0, 0)}],
-        )
+        for timezone in (
+            "EST",
+            zoneinfo.ZoneInfo("EST"),
+            datetime.timedelta(hours=5),
+        ):
+            self.assertEqual(
+                await Signing.select(AtTimeZone(Signing.starts, timezone)),
+                [{"starts": datetime.datetime(2026, 5, 11, 2, 0, 0)}],
+            )
+
+        with self.assertRaises(zoneinfo.ZoneInfoNotFoundError):
+            AtTimeZone(Signing.starts, "ABC")
