@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 from typing import Literal, Optional, Union, get_args
 from zoneinfo import ZoneInfo
 
@@ -254,15 +255,16 @@ def Second(
 class AtTimeZone(QueryString):
     def __init__(
         self,
-        identifier: Union[Timestamptz, QueryString],
-        timezone: ZoneInfo | str,
+        identifier: Union[Time, Timestamp, Timestamptz, QueryString],
+        timezone: ZoneInfo | str | datetime.timedelta,
         alias: Optional[str] = None,
     ):
         """
         .. note:: This is for Postgres / Cockroach only.
 
-        Convert the :class:`Timestamptz <piccolo.columns.column_types.Timestamptz>`
-        column to the given timezone.
+        Convert the column to the given timezone. See the
+        `Postgres docs <https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-ZONECONVERT>`_
+        for more information.
 
         For example::
 
@@ -270,7 +272,7 @@ class AtTimeZone(QueryString):
                 starts = Timestamptz()
 
             >>> await Signing.select(
-            ...     Timezone(Signing.starts, 'EST', alias='starts_est'),
+            ...     AtTimeZone(Signing.starts, 'EST', alias='starts_est'),
             ...     Signing.starts,
             ... )
             [{
@@ -281,6 +283,10 @@ class AtTimeZone(QueryString):
                     2026, 12, 20, 10, 0, tzinfo=datetime.timezone.utc
                 )
             }]
+
+        :param timezone:
+            Valid arguments are ``'EST'``, ``ZoneInfo('EST')`` and
+            ``timedelta(hours=5)``.
 
         """  # noqa: E501
         # Preserve the original alias from the column.
@@ -302,10 +308,21 @@ class AtTimeZone(QueryString):
             # Validate it's a correct timezone
             timezone = ZoneInfo(timezone)
 
+        if isinstance(timezone, datetime.timedelta):
+            total_seconds = timezone.total_seconds()
+            prefix = "+" if total_seconds >= 0 else "-"
+            timezone = (
+                f"{prefix}{datetime.timedelta(seconds=abs(total_seconds))}"
+            )
+
+        if isinstance(timezone, ZoneInfo):
+            # Validate it's a correct timezone
+            timezone = timezone.key
+
         super().__init__(
             "{} AT TIME ZONE {}",
             identifier,
-            timezone.key,
+            timezone,
             alias=alias,
         )
 
