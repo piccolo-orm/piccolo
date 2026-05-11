@@ -1,7 +1,8 @@
 import datetime
 
-from piccolo.columns import Timestamp
+from piccolo.columns import Timestamp, Timestamptz
 from piccolo.query.functions.datetime import (
+    AtTimeZone,
     Day,
     Extract,
     Hour,
@@ -12,7 +13,7 @@ from piccolo.query.functions.datetime import (
     Year,
 )
 from piccolo.table import Table
-from piccolo.testing.test_case import TableTest
+from piccolo.testing.test_case import AsyncTableTest, TableTest
 from tests.base import engines_only, sqlite_only
 
 
@@ -110,4 +111,26 @@ class TestDatabaseAgnostic(DatetimeTest):
                 Second(Concert.starts, alias="starts_second")
             ).run_sync(),
             [{"starts_second": self.concert.starts.second}],
+        )
+
+
+class Signing(Table):
+    starts = Timestamptz()
+
+
+@engines_only("cockroach", "postgres")
+class TestAtTimeZone(AsyncTableTest):
+
+    tables = [Signing]
+
+    async def test_at_time_zone(self):
+        await Signing(
+            starts=datetime.datetime(
+                2026, 5, 11, 7, 0, 0, tzinfo=datetime.timezone.utc
+            )
+        ).save()
+
+        self.assertEqual(
+            await Signing.select(AtTimeZone(Signing.starts, "EST")),
+            [{"starts": datetime.datetime(2026, 5, 11, 2, 0, 0)}],
         )

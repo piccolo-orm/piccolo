@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from typing import Literal, Optional, Union, get_args
+from zoneinfo import ZoneInfo
 
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import (
@@ -248,6 +251,65 @@ def Second(
     )
 
 
+class AtTimeZone(QueryString):
+    def __init__(
+        self,
+        identifier: Union[Timestamptz, QueryString],
+        timezone: ZoneInfo | str,
+        alias: Optional[str] = None,
+    ):
+        """
+        .. note:: This is for Postgres / Cockroach only.
+
+        Convert the :class:`Timestamptz <piccolo.columns.column_types.Timestamptz>`
+        column to the given timezone.
+
+        For example::
+
+            class Signing(Table):
+                starts = Timestamptz()
+
+            >>> await Signing.select(
+            ...     Timezone(Signing.starts, 'EST', alias='starts_est'),
+            ...     Signing.starts,
+            ... )
+            [{
+                'starts_est': datetime.datetime(
+                    2026, 12, 20, 5, 0
+                ),
+                'starts': datetime.datetime(
+                    2026, 12, 20, 10, 0, tzinfo=datetime.timezone.utc
+                )
+            }]
+
+        """  # noqa: E501
+        # Preserve the original alias from the column.
+
+        from piccolo.columns import Column
+
+        if isinstance(identifier, Column):
+            alias = (
+                alias
+                or identifier._alias
+                or identifier._meta.get_default_alias()
+            )
+        elif isinstance(identifier, QueryString):
+            alias = alias or identifier._alias
+
+        #######################################################################
+
+        if isinstance(timezone, str):
+            # Validate it's a correct timezone
+            timezone = ZoneInfo(timezone)
+
+        super().__init__(
+            "{} AT TIME ZONE {}",
+            identifier,
+            timezone.key,
+            alias=alias,
+        )
+
+
 __all__ = (
     "Extract",
     "Strftime",
@@ -257,4 +319,5 @@ __all__ = (
     "Hour",
     "Minute",
     "Second",
+    "AtTimeZone",
 )
