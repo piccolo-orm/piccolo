@@ -1,6 +1,94 @@
 Changes
 =======
 
+1.34.0
+------
+
+``NullIf``
+~~~~~~~~~~
+
+Return null if a certain condition is met - for example, convert any empty
+strings to null:
+
+.. code-block:: python
+
+  from piccolo.query.functions import NullIf
+
+  class Venue(Table):
+      address = Text(null=True)
+
+  await Venue.select(Venue.name, NullIf(Venue.address, ''))
+
+``Replace``
+~~~~~~~~~~~
+
+String replacements within queries - for example, a simple slugify
+implementation:
+
+.. code-block:: python
+
+  from piccolo.query.functions import Replace
+
+  class Venue(Table):
+      name = Varchar()
+
+  >>> await Venue.select(Replace(Venue.name, ' ', '-'))
+  [{'name': 'Amazing-Venue'}]
+
+``AtTimeZone``
+~~~~~~~~~~~~~~
+
+Convert ``Timestamptz`` columns from UTC to another timezone:
+
+.. code-block:: python
+
+  from piccolo.query.functions import AtTimeZone
+
+  class Signing(Table):
+      starts = Timestamptz()
+
+  >>> await Signing.select(
+  ...     AtTimeZone(Signing.starts, 'EST'),
+  ... )
+  [{'starts': datetime.datetime(2026, 12, 20, 5, 0)}]
+
+``Char`` column
+~~~~~~~~~~~~~~~
+
+Similar to ``Varchar`` - useful if the strings are a fixed width.
+
+.. code-block:: python
+  class Venue(Table):
+      country_code = Char(length=2)
+
+It's also useful if using Piccolo on an existing database.
+
+Fixture ordering
+~~~~~~~~~~~~~~~~
+
+When dumping fixtures using ``piccolo fixtures dump``, the data is now sorted
+by primary key, so subsequent dumps results in smaller Git diffs.
+
+``load_json`` with ``prefetch``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When using ``.output(load_json=True)`` alongside ``prefetch``, the child
+objects now load JSON strings into Python objects. Thanks to @diklios5768 for
+reporting this issue.
+
+.. code-block:: python
+
+  >>> album = await Album.objects(Album.recorded_at).output(load_json=True).first()
+  >>> album.recorded_at.facilities
+  {
+      'restaurant': True,
+      'mixing_desk': True,
+      'instruments': {'electric_guitars': 10, 'drum_kits': 2},
+      'technicians': [{'name': 'Alice Jones'}, {'name': 'Bob Williams'}]
+  }
+
+-------------------------------------------------------------------------------
+
 1.33.0
 ------
 
