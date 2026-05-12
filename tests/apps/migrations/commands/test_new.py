@@ -61,6 +61,23 @@ class TestNewMigrationCommand(TestCase):
             ],
         )
 
+    @engines_only("postgres", "cockroach")
+    def test_auto_migration_folder_is_none(self):
+        """
+        Test disabling migrations per app
+        """
+        app_config = AppConfig(
+            app_name="music",
+            migrations_folder_path=None,
+            table_classes=[Manager],
+        )
+        with self.assertRaises(ValueError) as manager:
+            run_sync(_create_new_migration(app_config, auto=True))
+
+        self.assertEqual(
+            manager.exception.__str__(), "Migrations disabled in this app!"
+        )
+
     @engines_only("postgres")
     @patch("piccolo.apps.migrations.commands.new.print")
     def test_auto_all(self, print_: MagicMock):
