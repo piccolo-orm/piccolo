@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Any, Optional
 
 from piccolo.columns.base import Column
+from piccolo.constraints import Constraint
 
 
 @dataclass
@@ -62,4 +63,22 @@ class AddColumn:
     column_class_name: str
     column_class: type[Column]
     params: dict[str, Any]
+    schema: Optional[str] = None
+
+
+@dataclass
+class AddConstraint:
+    table_class_name: str
+    constraint_name: str
+    constraint_class_name: str
+    constraint_class: type[Constraint]
+    params: dict[str, Any]
+    schema: Optional[str] = None
+
+
+@dataclass
+class DropConstraint:
+    table_class_name: str
+    constraint_name: str
+    tablename: str
     schema: Optional[str] = None
