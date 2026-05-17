@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Any, Optional
 
 from piccolo.columns.base import Column
+from piccolo.composite_index import Composite
 
 
 @dataclass
@@ -62,4 +63,22 @@ class AddColumn:
     column_class_name: str
     column_class: type[Column]
     params: dict[str, Any]
+    schema: Optional[str] = None
+
+
+@dataclass
+class AddCompositeIndex:
+    table_class_name: str
+    composite_index_name: str
+    composite_index_class_name: str
+    composite_index_class: type[Composite]
+    params: dict[str, Any]
+    schema: Optional[str] = None
+
+
+@dataclass
+class DropCompositeIndex:
+    table_class_name: str
+    composite_index_name: str
+    tablename: str
     schema: Optional[str] = None

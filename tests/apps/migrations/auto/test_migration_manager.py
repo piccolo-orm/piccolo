@@ -10,6 +10,8 @@ from piccolo.apps.migrations.commands.base import BaseMigrationManager
 from piccolo.columns import Text, Varchar
 from piccolo.columns.base import OnDelete, OnUpdate
 from piccolo.columns.column_types import ForeignKey
+from piccolo.columns.indexes import IndexMethod
+from piccolo.composite_index import CompositeIndex
 from piccolo.conf.apps import AppConfig
 from piccolo.engine import engine_finder
 from piccolo.query.constraints import get_fk_constraint_rules
@@ -1098,6 +1100,172 @@ class TestMigrationManager(DBTestCase):
                 output,
                 '  - 1 [preview forwards]... CREATE SCHEMA IF NOT EXISTS "schema_1"\nALTER TABLE "manager" SET SCHEMA "schema_1"\n',  # noqa: E501
             )
+
+    @engines_only("postgres", "cockroach")
+    def test_add_table_with_composite_index(self):
+        self.run_sync("DROP TABLE IF EXISTS musician;")
+
+        manager = MigrationManager()
+        manager.add_table(class_name="Musician", tablename="musician")
+        manager.add_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="name",
+            column_class_name="Varchar",
+        )
+        manager.add_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="label",
+            column_class_name="Varchar",
+        )
+        manager.add_composite_index(
+            table_class_name="Musician",
+            tablename="musician",
+            composite_index_name="name_label",
+            composite_index_class=CompositeIndex,
+            params={
+                "columns": ["name", "label"],
+                "index_type": IndexMethod.btree,
+            },
+            schema=None,
+        )
+        asyncio.run(manager.run())
+        result = self.run_sync(
+            "SELECT indexname FROM pg_indexes WHERE tablename='musician'"
+        )
+        self.assertEqual(result[-1]["indexname"], "name_label")
+        self.assertEqual(len(result), 2)
+
+        # Reverse
+        asyncio.run(manager.run(backwards=True))
+        self.assertTrue(not self.table_exists("musician"))
+
+    @engines_only("postgres", "cockroach")
+    @patch.object(
+        BaseMigrationManager, "get_migration_managers", new_callable=AsyncMock
+    )
+    @patch.object(BaseMigrationManager, "get_app_config")
+    def test_add_composite_index_to_existing_table(
+        self, get_app_config: MagicMock, get_migration_managers: MagicMock
+    ):
+        self.run_sync("DROP TABLE IF EXISTS musician;")
+
+        manager = MigrationManager()
+        manager.add_table(class_name="Musician", tablename="musician")
+        manager.add_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="name",
+            column_class_name="Varchar",
+        )
+        manager.add_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="label",
+            column_class_name="Varchar",
+        )
+        asyncio.run(manager.run())
+
+        manager_2 = MigrationManager()
+        manager_2.add_composite_index(
+            table_class_name="Musician",
+            tablename="musician",
+            composite_index_name="name_label",
+            composite_index_class=CompositeIndex,
+            params={
+                "columns": ["name", "label"],
+                "index_type": IndexMethod.btree,
+            },
+        )
+        asyncio.run(manager_2.run())
+
+        sql = "SELECT indexname FROM pg_indexes WHERE tablename='musician'"
+
+        result = self.run_sync(sql)
+        self.assertEqual(result[-1]["indexname"], "name_label")
+        self.assertEqual(len(result), 2)
+
+        # Reverse
+        asyncio.run(manager_2.run(backwards=True))
+
+        result = self.run_sync(sql)
+        self.assertEqual(result, [{"indexname": "musician_pkey"}])
+        self.assertEqual(len(result), 1)
+
+        asyncio.run(manager_2.run())
+
+        result = self.run_sync(sql)
+        self.assertEqual(result[-1]["indexname"], "name_label")
+        self.assertEqual(len(result), 2)
+
+        manager_2 = MigrationManager()
+        manager_2.drop_composite_index(
+            table_class_name="Musician",
+            tablename="musician",
+            composite_index_name="name_label",
+        )
+        asyncio.run(manager_2.run())
+        result = self.run_sync(sql)
+        self.assertEqual(result, [{"indexname": "musician_pkey"}])
+        self.assertEqual(len(result), 1)
+
+        self.run_sync("DROP TABLE IF EXISTS musician;")
+
+    @engines_only("postgres", "cockroach")
+    @patch.object(
+        BaseMigrationManager, "get_migration_managers", new_callable=AsyncMock
+    )
+    @patch.object(BaseMigrationManager, "get_app_config")
+    def test_drop_composite_index_from_existing_table(
+        self, get_app_config: MagicMock, get_migration_managers: MagicMock
+    ):
+        self.run_sync("DROP TABLE IF EXISTS musician;")
+
+        manager_1 = MigrationManager()
+        manager_1.add_table(class_name="Musician", tablename="musician")
+        manager_1.add_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="name",
+            column_class_name="Varchar",
+        )
+        manager_1.add_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="label",
+            column_class_name="Varchar",
+        )
+        manager_1.add_composite_index(
+            table_class_name="Musician",
+            tablename="musician",
+            composite_index_name="name_label",
+            composite_index_class=CompositeIndex,
+            params={"columns": ["name", "label"]},
+        )
+        asyncio.run(manager_1.run())
+
+        sql = "SELECT indexname FROM pg_indexes WHERE tablename='musician'"
+
+        result = self.run_sync(sql)
+        self.assertEqual(result[-1]["indexname"], "name_label")
+        self.assertEqual(len(result), 2)
+
+        manager_2 = MigrationManager()
+        manager_2.drop_composite_index(
+            table_class_name="Musician",
+            tablename="musician",
+            composite_index_name="name_label",
+        )
+        asyncio.run(manager_2.run())
+
+        result = self.run_sync(sql)
+        self.assertEqual(result, [{"indexname": "musician_pkey"}])
+        self.assertEqual(len(result), 1)
+
+        # Reverse
+        asyncio.run(manager_1.run(backwards=True))
+        self.assertTrue(not self.table_exists("musician"))
 
 
 class TestWrapInTransaction(IsolatedAsyncioTestCase):
