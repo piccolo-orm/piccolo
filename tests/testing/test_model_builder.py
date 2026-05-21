@@ -240,4 +240,4 @@ class TestModelBuilder(TableTest):
         """
         row = ModelBuilder.build_sync(TableWithEmail)
         self.assertIn("@", row.email)
-        self.assertEndsWith(row.email, ".com")
+        self.assertTrue(row.email.endswith(".com"))
