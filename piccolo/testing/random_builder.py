@@ -4,7 +4,7 @@ import enum
 import random
 import string
 import uuid
-from typing import Any
+from typing import Any, Sequence
 
 
 class RandomBuilder:
@@ -13,7 +13,7 @@ class RandomBuilder:
         return random.choice([True, False])
 
     @classmethod
-    def next_bytes(cls, length=8) -> bytes:
+    def next_bytes(cls, length: int = 8) -> bytes:
         return random.getrandbits(length * 8).to_bytes(length, "little")
 
     @classmethod
@@ -41,7 +41,9 @@ class RandomBuilder:
         return random.choice([item.value for item in e])
 
     @classmethod
-    def next_float(cls, minimum=0, maximum=2147483647, scale=5) -> float:
+    def next_float(
+        cls, minimum: int = 0, maximum: int = 2147483647, scale: int = 5
+    ) -> float:
         return round(random.uniform(minimum, maximum), scale)
 
     @classmethod
@@ -56,14 +58,21 @@ class RandomBuilder:
         return decimal.Decimal(str(float_number))
 
     @classmethod
-    def next_int(cls, minimum=0, maximum=2147483647) -> int:
+    def next_int(cls, minimum: int = 0, maximum: int = 2147483647) -> int:
         return random.randint(minimum, maximum)
 
     @classmethod
-    def next_str(cls, length=16) -> str:
-        return "".join(
-            random.choice(string.ascii_letters) for _ in range(length)
-        )
+    def next_str(
+        cls, length: int = 16, choices: Sequence = string.ascii_letters
+    ) -> str:
+        return "".join(random.choice(choices) for _ in range(length))
+
+    @classmethod
+    def next_email(cls) -> str:
+        choices = string.ascii_lowercase + string.digits
+        local = cls.next_str(length=random.randint(1, 10), choices=choices)
+        domain = cls.next_str(length=random.randint(1, 10), choices=choices)
+        return f"{local}@{domain}.com"
 
     @classmethod
     def next_time(cls) -> datetime.time:

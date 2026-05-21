@@ -1,11 +1,11 @@
 import asyncio
 import enum
 import json
-import unittest
 
 from piccolo.columns import (
     Array,
     Decimal,
+    Email,
     ForeignKey,
     Integer,
     LazyTableReference,
@@ -15,8 +15,9 @@ from piccolo.columns import (
     Timestamptz,
     Varchar,
 )
-from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
+from piccolo.table import Table
 from piccolo.testing.model_builder import ModelBuilder
+from piccolo.testing.test_case import TableTest
 from tests.example_apps.music.tables import (
     Band,
     Concert,
@@ -47,6 +48,10 @@ class TableWithDecimal(Table):
     decimal_with_digits = Decimal(digits=(4, 2))
 
 
+class TableWithEmail(Table):
+    email = Email()
+
+
 class BandWithLazyReference(Table):
     manager: ForeignKey["Manager"] = ForeignKey(
         references=LazyTableReference(
@@ -59,40 +64,33 @@ class BandWithRecursiveReference(Table):
     manager: ForeignKey["Manager"] = ForeignKey("self")
 
 
-TABLES = (
-    Manager,
-    Band,
-    Poster,
-    RecordingStudio,
-    Shirt,
-    Venue,
-    Concert,
-    Ticket,
-    TableWithArrayField,
-    TableWithDecimal,
-    BandWithLazyReference,
-    BandWithRecursiveReference,
-)
+class TestModelBuilder(TableTest):
 
-
-class TestModelBuilder(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        create_db_tables_sync(*TABLES)
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        drop_db_tables_sync(*TABLES)
+    tables = [
+        Manager,
+        Band,
+        Poster,
+        RecordingStudio,
+        Shirt,
+        Venue,
+        Concert,
+        Ticket,
+        TableWithArrayField,
+        TableWithDecimal,
+        TableWithEmail,
+        BandWithLazyReference,
+        BandWithRecursiveReference,
+    ]
 
     def test_async(self):
         async def build_model(table_class: type[Table]):
             return await ModelBuilder.build(table_class)
 
-        for table_class in TABLES:
+        for table_class in self.tables:
             asyncio.run(build_model(table_class))
 
     def test_sync(self):
-        for table_class in TABLES:
+        for table_class in self.tables:
             ModelBuilder.build_sync(table_class)
 
     def test_choices(self):
@@ -235,3 +233,11 @@ class TestModelBuilder(unittest.TestCase):
             .run_sync()
         ):
             self.assertIsInstance(facilities, dict)
+
+    def test_email(self):
+        """
+        Make sure that valid email addresses are generated.
+        """
+        row = ModelBuilder.build_sync(TableWithEmail)
+        self.assertIn("@", row.email)
+        self.assertEndsWith(row.email, ".com")
