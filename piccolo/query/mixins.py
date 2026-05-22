@@ -67,9 +67,9 @@ class Distinct:
         else:
             if not self.on:
                 validated = False
-            elif isinstance(first_order_column, Column) and not self.on[
-                0
-            ]._equals(first_order_column):
+            elif not isinstance(first_order_column, Column):
+                validated = False
+            elif not self.on[0]._equals(first_order_column):
                 validated = False
 
         if not validated:
@@ -153,7 +153,7 @@ class OrderByRaw:
 class OrderByItem:
     __slots__ = ("columns", "ascending")
 
-    columns: Sequence[Union[Column, OrderByRaw]]
+    columns: Sequence[Union[Column, OrderByRaw, QueryString]]
     ascending: bool
 
 
@@ -163,20 +163,24 @@ class OrderBy:
 
     @property
     def querystring(self) -> QueryString:
-        order_by_strings: list[str] = []
+        parts: list[QueryString] = []
         for order_by_item in self.order_by_items:
             order = "ASC" if order_by_item.ascending else "DESC"
             for column in order_by_item.columns:
                 if isinstance(column, Column):
                     expression = column._meta.get_full_name(with_alias=False)
+                    parts.append(QueryString(f"{expression} {order}"))
                 elif isinstance(column, OrderByRaw):
-                    expression = column.sql
+                    parts.append(QueryString(f"{column.sql} {order}"))
+                elif isinstance(column, QueryString):
+                    parts.append(QueryString(f"{{}} {order}", column))
                 else:
                     raise ValueError("Unrecognised order_by")
 
-                order_by_strings.append(f"{expression} {order}")
-
-        return QueryString(f" ORDER BY {', '.join(order_by_strings)}")
+        if not parts:
+            return QueryString(" ORDER BY ")
+        template = " ORDER BY " + ", ".join("{}" for _ in parts)
+        return QueryString(template, *parts)
 
     def __str__(self):
         return self.querystring.__str__()
@@ -291,7 +295,9 @@ class OrderByDelegate:
             if isinstance(i, Column)
         ]
 
-    def order_by(self, *columns: Union[Column, OrderByRaw], ascending=True):
+    def order_by(
+        self, *columns: Union[Column, OrderByRaw, QueryString], ascending=True
+    ):
         if len(columns) < 1:
             raise ValueError("At least one column must be passed to order_by.")
 
