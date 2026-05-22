@@ -15,6 +15,7 @@ from piccolo.engine.base import (
     validate_savepoint_name,
 )
 from piccolo.engine.exceptions import TransactionError
+from piccolo.engine.extensions import register_codecs
 from piccolo.query.base import DDL, Query
 from piccolo.querystring import QueryString
 from piccolo.utils.lazy_loader import LazyLoader
@@ -465,7 +466,7 @@ class PostgresEngine(Engine[PostgresTransaction]):
         else:
             config = dict(self.config)
             config.update(**kwargs)
-            self.pool = await asyncpg.create_pool(**config)
+            self.pool = await asyncpg.create_pool(**config, init=register_codecs)
 
     async def close_connection_pool(self) -> None:
         if self.pool:
@@ -480,7 +481,9 @@ class PostgresEngine(Engine[PostgresTransaction]):
         """
         Returns a new connection - doesn't retrieve it from the pool.
         """
-        return await asyncpg.connect(**self.config)
+        conn = await asyncpg.connect(**self.config)
+        await register_codecs(conn)
+        return conn
 
     ###########################################################################
 
