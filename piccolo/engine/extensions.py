@@ -42,7 +42,8 @@ async def check_extensions_for_index(
 
 
 def _encode_vector(v: object) -> str:
-    return "[" + ",".join(str(x) for x in v) + "]"  # type: ignore[union-attr]
+    parts = ",".join(str(x) for x in v)  # type: ignore[attr-defined]
+    return f"[{parts}]"
 
 
 def _decode_vector(s: str) -> list:
@@ -52,7 +53,7 @@ def _decode_vector(s: str) -> list:
 async def register_codecs(conn: object) -> None:
     """Register asyncpg codecs for PostgreSQL extension types."""
     try:
-        await conn.set_type_codec(  # type: ignore[union-attr]
+        await conn.set_type_codec(  # type: ignore[attr-defined]
             "vector",
             encoder=_encode_vector,
             decoder=_decode_vector,

@@ -30,9 +30,7 @@ class TestDistinctValidateOn(TestCase):
         """
         order_by = OrderBy(
             order_by_items=[
-                OrderByItem(
-                    columns=[QueryString("random()")], ascending=True
-                )
+                OrderByItem(columns=[QueryString("random()")], ascending=True)
             ]
         )
         with self.assertRaises(DistinctOnError):
@@ -46,9 +44,7 @@ class TestDistinctValidateOn(TestCase):
         """
         order_by = OrderBy(
             order_by_items=[
-                OrderByItem(
-                    columns=[OrderByRaw("random()")], ascending=True
-                )
+                OrderByItem(columns=[OrderByRaw("random()")], ascending=True)
             ]
         )
         with self.assertRaises(DistinctOnError):
@@ -60,9 +56,7 @@ class TestDistinctValidateOn(TestCase):
         raise DistinctOnError.
         """
         order_by = OrderBy(
-            order_by_items=[
-                OrderByItem(columns=[Album.title], ascending=True)
-            ]
+            order_by_items=[OrderByItem(columns=[Album.title], ascending=True)]
         )
         with self.assertRaises(DistinctOnError):
             self._distinct_on_band().validate_on(order_by)
@@ -72,8 +66,6 @@ class TestDistinctValidateOn(TestCase):
         A Column matching the distinct on column must not raise.
         """
         order_by = OrderBy(
-            order_by_items=[
-                OrderByItem(columns=[Album.band], ascending=True)
-            ]
+            order_by_items=[OrderByItem(columns=[Album.band], ascending=True)]
         )
         self._distinct_on_band().validate_on(order_by)

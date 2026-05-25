@@ -43,9 +43,7 @@ class ToTsquery(QueryString):
         alias: Optional[str] = "to_tsquery",
     ):
         if config is not None:
-            super().__init__(
-                "to_tsquery({}, {})", config, query, alias=alias
-            )
+            super().__init__("to_tsquery({}, {})", config, query, alias=alias)
         else:
             super().__init__("to_tsquery({})", query, alias=alias)
 
@@ -104,9 +102,7 @@ class WebsearchToTsquery(QueryString):
                 "websearch_to_tsquery({}, {})", config, query, alias=alias
             )
         else:
-            super().__init__(
-                "websearch_to_tsquery({})", query, alias=alias
-            )
+            super().__init__("websearch_to_tsquery({})", query, alias=alias)
 
 
 class TsRank(QueryString):
@@ -161,9 +157,7 @@ class TsRankCd(QueryString):
                 alias=alias,
             )
         else:
-            super().__init__(
-                "ts_rank_cd({}, {})", vector, query, alias=alias
-            )
+            super().__init__("ts_rank_cd({}, {})", vector, query, alias=alias)
 
 
 class Setweight(QueryString):

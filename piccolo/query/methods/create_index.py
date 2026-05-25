@@ -64,9 +64,7 @@ class CreateIndex(DDL):
                 [f'"{i}" {self.operator_class}' for i in self.column_names]
             )
         else:
-            column_names_str = ", ".join(
-                [f'"{i}"' for i in self.column_names]
-            )
+            column_names_str = ", ".join([f'"{i}"' for i in self.column_names])
         ddl = (
             f"{self.prefix} {index_name} ON {tablename} USING "
             f"{method_name} ({column_names_str})"

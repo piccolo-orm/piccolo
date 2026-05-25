@@ -309,10 +309,16 @@ class TrigramMixin:
     """
 
     def trigram_similar(self, value: str) -> Where:
-        return Where(column=self, value=value, operator=TrgmSimilar)  # type: ignore[arg-type]
+        return Where(
+            column=self,  # type: ignore[arg-type]
+            value=value,
+            operator=TrgmSimilar,
+        )
 
     def trigram_distance(self, value: str) -> QueryString:
-        return QueryString("({} <-> {})", self, value)  # type: ignore[arg-type]
+        return QueryString(  # type: ignore[arg-type]
+            "({} <-> {})", self, value
+        )
 
 
 class Varchar(TrigramMixin, Column):

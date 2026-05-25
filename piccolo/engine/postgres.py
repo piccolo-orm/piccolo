@@ -466,7 +466,9 @@ class PostgresEngine(Engine[PostgresTransaction]):
         else:
             config = dict(self.config)
             config.update(**kwargs)
-            self.pool = await asyncpg.create_pool(**config, init=register_codecs)
+            self.pool = await asyncpg.create_pool(
+                **config, init=register_codecs
+            )
 
     async def close_connection_pool(self) -> None:
         if self.pool:

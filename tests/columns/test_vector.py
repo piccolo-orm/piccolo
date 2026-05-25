@@ -13,7 +13,12 @@ from piccolo.query.methods.create_index import CreateIndex
 from piccolo.querystring import QueryString
 from piccolo.table import Table
 from piccolo.testing.test_case import TableTest
-from tests.base import engines_only, pg_trgm_installed, pgvector_installed, postgres_only
+from tests.base import (
+    engines_only,
+    pg_trgm_installed,
+    pgvector_installed,
+    postgres_only,
+)
 
 
 class ItemTable(Table):
@@ -233,9 +238,7 @@ class TestTsvectorIntegration(TableTest):
         ).save().run_sync()
         rows = (
             ArticleTable.select()
-            .where(
-                ArticleTable.search_vector.matches(ToTsquery("javascript"))
-            )
+            .where(ArticleTable.search_vector.matches(ToTsquery("javascript")))
             .run_sync()
         )
         self.assertEqual(len(rows), 0)
@@ -258,9 +261,7 @@ class TestTrigramIntegration(TableTest):
         self.assertEqual(len(rows), 1)
 
     def test_trigram_distance_order_by(self):
-        ArticleTable(
-            title="Python programming", body="body"
-        ).save().run_sync()
+        ArticleTable(title="Python programming", body="body").save().run_sync()
         ArticleTable(title="Java development", body="body").save().run_sync()
         rows = (
             ArticleTable.select()

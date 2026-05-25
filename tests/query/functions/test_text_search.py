@@ -173,9 +173,7 @@ class TestTsRankCd(TestCase):
         Make sure ts_rank_cd is generated with the normalization argument
         when provided.
         """
-        qs = TsRankCd(
-            ToTsvector("text"), ToTsquery("python"), normalization=2
-        )
+        qs = TsRankCd(ToTsvector("text"), ToTsquery("python"), normalization=2)
         sql = str(qs)
         self.assertIn("ts_rank_cd", sql)
 
@@ -197,9 +195,7 @@ class TestTsHeadline(TestCase):
         Make sure ts_headline is generated with the config as the first
         argument when provided.
         """
-        qs = TsHeadline(
-            "document text", ToTsquery("python"), config="english"
-        )
+        qs = TsHeadline("document text", ToTsquery("python"), config="english")
         sql = str(qs)
         self.assertIn("ts_headline", sql)
         self.assertIn("english", sql)

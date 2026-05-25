@@ -35,7 +35,9 @@ class TestCreateIndexDDL(TestCase):
         Make sure existing DDL generation is unaffected when no
         operator_class or index_params are provided.
         """
-        idx = CreateIndex(ItemTable, [ItemTable.name], method=IndexMethod.btree)
+        idx = CreateIndex(
+            ItemTable, [ItemTable.name], method=IndexMethod.btree
+        )
         ddl = idx.postgres_ddl[0]
         self.assertIn("USING btree", ddl)
         self.assertIn('"name"', ddl)
