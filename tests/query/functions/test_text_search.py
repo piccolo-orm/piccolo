@@ -4,6 +4,7 @@ from piccolo.query.functions.string import Similarity, WordSimilarity
 from piccolo.query.functions.text_search import (
     PhrasetoTsquery,
     PlaintoTsquery,
+    Setweight,
     ToTsquery,
     ToTsvector,
     TsHeadline,
@@ -245,3 +246,23 @@ class TestWordSimilarity(TestCase):
         Make sure WordSimilarity returns a QueryString instance.
         """
         self.assertIsInstance(WordSimilarity("a", "b"), QueryString)
+
+
+@postgres_only
+class TestSetweight(TestCase):
+
+    def test_sql_output(self):
+        qs = Setweight(ToTsvector("some text"), "A")
+        sql = str(qs)
+        self.assertIn("setweight", sql)
+        self.assertIn("to_tsvector", sql)
+
+    def test_all_weights(self):
+        for weight in ("A", "B", "C", "D"):
+            qs = Setweight(ToTsvector("some text"), weight)
+            self.assertIn(weight, str(qs))
+
+    def test_returns_querystring(self):
+        self.assertIsInstance(
+            Setweight(ToTsvector("some text"), "A"), QueryString
+        )

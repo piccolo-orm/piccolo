@@ -166,6 +166,22 @@ class TsRankCd(QueryString):
             )
 
 
+class Setweight(QueryString):
+    """
+    Assigns a weight label ('A', 'B', 'C', or 'D') to a tsvector.
+
+    Used to give different importance to columns when ranking search results.
+    """
+
+    def __init__(
+        self,
+        vector: Union[Column, QueryString],
+        weight: str,
+        alias: Optional[str] = "setweight",
+    ):
+        super().__init__("setweight({}, {})", vector, weight, alias=alias)
+
+
 class TsHeadline(QueryString):
     """
     Highlights matching terms in a document for display.
@@ -196,6 +212,7 @@ class TsHeadline(QueryString):
 __all__ = (
     "PhrasetoTsquery",
     "PlaintoTsquery",
+    "Setweight",
     "ToTsquery",
     "ToTsvector",
     "TsHeadline",

@@ -33,6 +33,7 @@ from .string import (
 from .text_search import (
     PhrasetoTsquery,
     PlaintoTsquery,
+    Setweight,
     ToTsquery,
     ToTsvector,
     TsHeadline,
@@ -74,6 +75,7 @@ __all__ = (
     "Round",
     "Rtrim",
     "Second",
+    "Setweight",
     "Similarity",
     "Strftime",
     "Sum",
