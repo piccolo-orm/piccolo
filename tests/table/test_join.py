@@ -433,6 +433,32 @@ class TestJoin(TableTest):
             {"restaurant": True},
         )
 
+    def test_objects_nested_with_load_json_null(self):
+        """
+        Make sure that nested objects works alongside ``load_json``, when
+        the nested object has a null value for a JSON column.
+
+        https://github.com/piccolo-orm/piccolo/issues/1391
+
+        """
+        RecordingStudio.update(
+            {
+                RecordingStudio.facilities: None,
+            },
+            force=True,
+        ).run_sync()
+
+        instrument = (
+            Instrument.objects(Instrument.recording_studio)
+            .output(load_json=True)
+            .first()
+            .run_sync()
+        )
+        assert instrument is not None
+        self.assertIsNone(
+            instrument.recording_studio.facilities,
+        )
+
     def test_objects_prefetch_clause(self):
         """
         Make sure that ``prefetch`` clause works correctly.
