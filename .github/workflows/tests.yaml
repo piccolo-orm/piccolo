@@ -42,18 +42,6 @@ jobs:
                 # version.
                 python-version: ["3.13"]
                 postgres-version: [17]
-        services:
-            postgres:
-                image: postgres:${{ matrix.postgres-version }}
-                env:
-                    POSTGRES_PASSWORD: postgres
-                options: >-
-                    --health-cmd pg_isready
-                    --health-interval 10s
-                    --health-timeout 5s
-                    --health-retries 5
-                ports:
-                    - 5432:5432
         steps:
             - uses: actions/checkout@v3
             - name: Set up Python ${{ matrix.python-version }}
@@ -66,19 +54,10 @@ jobs:
                   pip install -r requirements/requirements.txt
                   pip install -r requirements/test-requirements.txt
                   pip install -r requirements/extras/postgres.txt
-            - name: Setup postgres
-              run: |
-                  export PGPASSWORD=postgres
-                  psql -h localhost -c 'CREATE DATABASE piccolo;' -U postgres
-                  psql -h localhost -c "CREATE USER piccolo PASSWORD 'piccolo';" -U postgres
-                  psql -h localhost -c "GRANT ALL PRIVILEGES ON DATABASE piccolo TO piccolo;" -U postgres
-                  psql -h localhost -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" -d piccolo -U postgres
             - name: Run integration tests
               run: ./scripts/test-integration.sh
               env:
-                  PG_HOST: localhost
-                  PG_DATABASE: piccolo
-                  PG_PASSWORD: postgres
+                  TC_POSTGRES_VERSION: ${{ matrix.postgres-version }}
 
     postgres:
         runs-on: ubuntu-latest
@@ -88,24 +67,6 @@ jobs:
                 python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
                 postgres-version: [13, 14, 15, 16, 17, 18]
 
-        # Service containers to run with `container-job`
-        services:
-            # Label used to access the service container
-            postgres:
-                # Docker Hub image
-                image: postgres:${{ matrix.postgres-version }}
-                # Provide the password for postgres
-                env:
-                    POSTGRES_PASSWORD: postgres
-                # Set health checks to wait until postgres has started
-                options: >-
-                    --health-cmd pg_isready
-                    --health-interval 10s
-                    --health-timeout 5s
-                    --health-retries 5
-                ports:
-                    - 5432:5432
-
         steps:
             - uses: actions/checkout@v3
             - name: Set up Python ${{ matrix.python-version }}
@@ -118,20 +79,10 @@ jobs:
                   pip install -r requirements/requirements.txt
                   pip install -r requirements/test-requirements.txt
                   pip install -r requirements/extras/postgres.txt
-            - name: Setup postgres
-              run: |
-                  export PGPASSWORD=postgres
-                  psql -h localhost -c 'CREATE DATABASE piccolo;' -U postgres
-                  psql -h localhost -c "CREATE USER piccolo PASSWORD 'piccolo';" -U postgres
-                  psql -h localhost -c "GRANT ALL PRIVILEGES ON DATABASE piccolo TO piccolo;" -U postgres
-                  psql -h localhost -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" -d piccolo -U postgres
-
             - name: Test with pytest, Postgres
               run: ./scripts/test-postgres.sh
               env:
-                  PG_HOST: localhost
-                  PG_DATABASE: piccolo
-                  PG_PASSWORD: postgres
+                  TC_POSTGRES_VERSION: ${{ matrix.postgres-version }}
             - name: Upload coverage
               uses: codecov/codecov-action@v1
               if: matrix.python-version == '3.13'
@@ -155,17 +106,10 @@ jobs:
                   pip install -r requirements/requirements.txt
                   pip install -r requirements/test-requirements.txt
                   pip install -r requirements/extras/postgres.txt
-            - name: Setup CockroachDB
-              run: |
-                  wget -qO- https://binaries.cockroachdb.com/cockroach-${{ matrix.cockroachdb-version }}.linux-amd64.tgz | tar xz
-                  ./cockroach-${{ matrix.cockroachdb-version }}.linux-amd64/cockroach start-single-node --insecure --background
-                  ./cockroach-${{ matrix.cockroachdb-version }}.linux-amd64/cockroach sql --insecure -e 'create database piccolo;'
-
             - name: Test with pytest, CockroachDB
               run: ./scripts/test-cockroach.sh
               env:
-                  PG_HOST: localhost
-                  PG_DATABASE: piccolo
+                  TC_COCKROACH_VERSION: ${{ matrix.cockroachdb-version }}
             - name: Upload coverage
               uses: codecov/codecov-action@v1
               if: matrix.python-version == '3.13'

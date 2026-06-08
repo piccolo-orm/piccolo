@@ -3,4 +3,5 @@ httpx==0.28.1
 pytest-cov==7.1.0
 pytest==9.0.3
 python-dateutil==2.9.0
+testcontainers>=4.0.0
 typing-extensions>=4.15.0
