@@ -590,6 +590,7 @@ class SQLiteEngine(Engine[SQLiteTransaction]):
         path: str = "piccolo.sqlite",
         log_queries: bool = False,
         log_responses: bool = False,
+        enable_wal_mode: bool = False,
         **connection_kwargs,
     ) -> None:
         """
@@ -618,6 +619,7 @@ class SQLiteEngine(Engine[SQLiteTransaction]):
 
         self.log_queries = log_queries
         self.log_responses = log_responses
+        self.enable_wal_mode = enable_wal_mode
         self.connection_kwargs = {
             **default_connection_kwargs,
             **connection_kwargs,
@@ -696,6 +698,10 @@ class SQLiteEngine(Engine[SQLiteTransaction]):
         connection = await aiosqlite.connect(**self.connection_kwargs)
         connection.row_factory = dict_factory  # type: ignore
         await connection.execute("PRAGMA foreign_keys = 1")
+
+        if self.enable_wal_mode:
+            await connection.execute("PRAGMA journal_mode = WAL")
+
         return connection
 
     ###########################################################################
@@ -724,6 +730,9 @@ class SQLiteEngine(Engine[SQLiteTransaction]):
             args = []
         async with aiosqlite.connect(**self.connection_kwargs) as connection:
             await connection.execute("PRAGMA foreign_keys = 1")
+            
+            if self.enable_wal_mode:
+                await connection.execute("PRAGMA journal_mode = WAL")
 
             connection.row_factory = dict_factory  # type: ignore
             async with connection.execute(query, args) as cursor:
@@ -753,6 +762,9 @@ class SQLiteEngine(Engine[SQLiteTransaction]):
             args = []
         await connection.execute("PRAGMA foreign_keys = 1")
 
+        if self.enable_wal_mode:
+                await connection.execute("PRAGMA journal_mode = WAL")
+                
         connection.row_factory = dict_factory
         async with connection.execute(query, args) as cursor:
             response = await cursor.fetchall()
