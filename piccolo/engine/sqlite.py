@@ -603,6 +603,9 @@ class SQLiteEngine(Engine[SQLiteTransaction]):
         :param log_responses:
             If ``True``, the raw response from each query is printed out.
             Useful for debugging.
+        :param enable_wal_mode:
+            If ``True``, set the journal mode to write ahead logging (WAL)
+            i.e. execute `PRAGMA journal_mode = WAL` when returning the db connection.
         :param connection_kwargs:
             These are passed directly to the database adapter. We recommend
             setting ``timeout`` if you expect your application to process a
@@ -764,7 +767,7 @@ class SQLiteEngine(Engine[SQLiteTransaction]):
 
         if self.enable_wal_mode:
                 await connection.execute("PRAGMA journal_mode = WAL")
-                
+
         connection.row_factory = dict_factory
         async with connection.execute(query, args) as cursor:
             response = await cursor.fetchall()
