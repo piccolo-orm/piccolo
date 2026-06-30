@@ -59,6 +59,13 @@ class ConstraintTable:
 
 
 @dataclasses.dataclass
+class NumericInfo:
+    numeric_precision: Optional[Union[int, str]]
+    numeric_scale: Optional[Union[int, str]]
+    numeric_precision_radix: Optional[Literal[2, 10]]
+
+
+@dataclasses.dataclass
 class RowMeta:
     column_default: str
     column_name: str
@@ -66,13 +73,41 @@ class RowMeta:
     table_name: str
     character_maximum_length: Optional[int]
     data_type: str
-    numeric_precision: Optional[Union[int, str]]
-    numeric_scale: Optional[Union[int, str]]
-    numeric_precision_radix: Optional[Literal[2, 10]]
+    numeric_info: Optional[NumericInfo] = None
+    numeric_precision: dataclasses.InitVar[Optional[Union[int, str]]] = None
+    numeric_scale: dataclasses.InitVar[Optional[Union[int, str]]] = None
+    numeric_precision_radix: dataclasses.InitVar[Optional[Literal[2, 10]]] = None
+
+    def __post_init__(
+        self,
+        numeric_precision: Optional[Union[int, str]],
+        numeric_scale: Optional[Union[int, str]],
+        numeric_precision_radix: Optional[Literal[2, 10]],
+    ) -> None:
+        if self.numeric_info is None:
+            self.numeric_info = NumericInfo(
+                numeric_precision=numeric_precision,
+                numeric_scale=numeric_scale,
+                numeric_precision_radix=numeric_precision_radix,
+            )
+
+    @property
+    def numeric_precision(self) -> Optional[Union[int, str]]:
+        return self.numeric_info.numeric_precision if self.numeric_info else None
+
+    @property
+    def numeric_scale(self) -> Optional[Union[int, str]]:
+        return self.numeric_info.numeric_scale if self.numeric_info else None
+
+    @property
+    def numeric_precision_radix(self) -> Optional[Literal[2, 10]]:
+        return self.numeric_info.numeric_precision_radix if self.numeric_info else None
 
     @classmethod
     def get_column_name_str(cls) -> str:
-        return ", ".join(i.name for i in dataclasses.fields(cls))
+        return ", ".join(
+            i.name for i in dataclasses.fields(cls) if i.name != "numeric_info"
+        )
 
 
 @dataclasses.dataclass
