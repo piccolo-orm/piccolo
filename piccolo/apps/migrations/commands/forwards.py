@@ -75,11 +75,11 @@ class ForwardsMigrationManager(BaseMigrationManager):
                 response = await migration_module.forwards()
 
                 if isinstance(response, MigrationManager):
-                    if self.fake or response.fake:
+                    if self.fake or response.meta.fake:
                         print(f"- {_id}: faked! ⏭️")
                     else:
                         if self.preview:
-                            response.preview = True
+                            response.meta.preview = True
                         await response.run()
 
                 print("ok! ✔️")

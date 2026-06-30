@@ -1535,7 +1535,7 @@ class TestRenameTable(MigrationTestCase):
         migration_managers = self._get_migration_managers()
 
         self.assertListEqual(
-            migration_managers[-1].rename_tables,
+            migration_managers[-1].operations.table_operations.rename_tables,
             [
                 RenameTable(
                     old_class_name="Manager",

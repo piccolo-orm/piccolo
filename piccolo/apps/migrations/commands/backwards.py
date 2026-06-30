@@ -90,7 +90,7 @@ class BackwardsMigrationManager(BaseMigrationManager):
 
                 if isinstance(response, MigrationManager):
                     if self.preview:
-                        response.preview = True
+                        response.meta.preview = True
                     await response.run(backwards=True)
                 if not self.preview:
                     await Migration.delete().where(

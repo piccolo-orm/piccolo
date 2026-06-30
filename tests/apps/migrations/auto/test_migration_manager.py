@@ -144,7 +144,7 @@ class TestMigrationManager(DBTestCase):
         self.assertTrue("name" in response[0].keys())
 
         # Preview
-        manager.preview = True
+        manager.meta.preview = True
         with patch("sys.stdout", new=StringIO()) as fake_out:
             asyncio.run(manager.run())
             self.assertEqual(
@@ -254,7 +254,7 @@ class TestMigrationManager(DBTestCase):
         self.run_sync("DROP TABLE IF EXISTS musician;")
 
         # Preview
-        manager.preview = True
+        manager.meta.preview = True
         with patch("sys.stdout", new=StringIO()) as fake_out:
             asyncio.run(manager.run())
 
@@ -324,7 +324,7 @@ class TestMigrationManager(DBTestCase):
             self.assertEqual(response, [{"id": row_id, "name": "Dave"}])
 
         # Preview
-        manager.preview = True
+        manager.meta.preview = True
         with patch("sys.stdout", new=StringIO()) as fake_out:
             asyncio.run(manager.run())
             self.assertEqual(
@@ -369,7 +369,7 @@ class TestMigrationManager(DBTestCase):
         self.assertTrue(index_name not in Manager.indexes().run_sync())
 
         # Preview
-        manager.preview = True
+        manager.meta.preview = True
         with patch("sys.stdout", new=StringIO()) as fake_out:
             asyncio.run(manager.run())
             self.assertEqual(
@@ -1088,7 +1088,7 @@ class TestMigrationManager(DBTestCase):
         )
 
         # Preview
-        manager.preview = True
+        manager.meta.preview = True
         with patch("sys.stdout", new=StringIO()) as fake_out:
             asyncio.run(manager.run())
 
