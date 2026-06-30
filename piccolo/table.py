@@ -69,12 +69,14 @@ TABLE_REGISTRY: list[type[Table]] = []
 
 
 @dataclass
-class TableMeta:
+class _ColumnGroups:  # pylint: disable=too-many-instance-attributes
     """
-    This is used to store info about the table.
+    Groups all column-related attributes for a Table.
+
+    This reduces the number of instance attributes on TableMeta, keeping
+    the Pylint too-many-instance-attributes warning under control.
     """
 
-    tablename: str = ""
     columns: list[Column] = field(default_factory=list)
     default_columns: list[Column] = field(default_factory=list)
     non_default_columns: list[Column] = field(default_factory=list)
@@ -85,16 +87,75 @@ class TableMeta:
     json_columns: list[Union[JSON, JSONB]] = field(default_factory=list)
     secret_columns: list[Column] = field(default_factory=list)
     auto_update_columns: list[Column] = field(default_factory=list)
+    m2m_relationships: list[M2M] = field(default_factory=list)
+
+
+@dataclass
+class TableMeta:
+    """
+    This is used to store info about the table.
+    """
+
+    tablename: str = ""
     tags: list[str] = field(default_factory=list)
     help_text: Optional[str] = None
-    _db: Optional[Engine] = None
-    m2m_relationships: list[M2M] = field(default_factory=list)
     schema: Optional[str] = None
+    _db: Optional[Engine] = None
 
     # Records reverse foreign key relationships - i.e. when the current table
     # is the target of a foreign key. Used by external libraries such as
     # Piccolo API.
     _foreign_key_references: list[ForeignKey] = field(default_factory=list)
+
+    _column_groups: _ColumnGroups = field(default_factory=_ColumnGroups)
+
+    # ------------------------------------------------------------------ #
+    # Backward-compatible properties delegating to _column_groups
+    # ------------------------------------------------------------------ #
+
+    @property
+    def columns(self) -> list[Column]:
+        return self._column_groups.columns
+
+    @property
+    def default_columns(self) -> list[Column]:
+        return self._column_groups.default_columns
+
+    @property
+    def non_default_columns(self) -> list[Column]:
+        return self._column_groups.non_default_columns
+
+    @property
+    def array_columns(self) -> list[Array]:
+        return self._column_groups.array_columns
+
+    @property
+    def email_columns(self) -> list[Email]:
+        return self._column_groups.email_columns
+
+    @property
+    def foreign_key_columns(self) -> list[ForeignKey]:
+        return self._column_groups.foreign_key_columns
+
+    @property
+    def primary_key(self) -> Column:
+        return self._column_groups.primary_key
+
+    @property
+    def json_columns(self) -> list[Union[JSON, JSONB]]:
+        return self._column_groups.json_columns
+
+    @property
+    def secret_columns(self) -> list[Column]:
+        return self._column_groups.secret_columns
+
+    @property
+    def auto_update_columns(self) -> list[Column]:
+        return self._column_groups.auto_update_columns
+
+    @property
+    def m2m_relationships(self) -> list[M2M]:
+        return self._column_groups.m2m_relationships
 
     def get_formatted_tablename(
         self, include_schema: bool = True, quoted: bool = True
@@ -147,7 +208,7 @@ class TableMeta:
         engine = engine_finder()
         if engine is None:
             raise ValueError("The engine can't be found")
-        self.db = engine
+        self._db = engine
 
     def get_column_by_name(
         self,
@@ -360,21 +421,23 @@ class Table(metaclass=TableMetaclass):
 
         cls._meta = TableMeta(
             tablename=tablename,
-            columns=columns,
-            default_columns=default_columns,
-            non_default_columns=non_default_columns,
-            array_columns=array_columns,
-            email_columns=email_columns,
-            primary_key=primary_key,
-            foreign_key_columns=foreign_key_columns,
-            json_columns=json_columns,
-            secret_columns=secret_columns,
-            auto_update_columns=auto_update_columns,
             tags=tags,
             help_text=help_text,
             _db=db,
-            m2m_relationships=m2m_relationships,
             schema=schema,
+            _column_groups=_ColumnGroups(
+                columns=columns,
+                default_columns=default_columns,
+                non_default_columns=non_default_columns,
+                array_columns=array_columns,
+                email_columns=email_columns,
+                foreign_key_columns=foreign_key_columns,
+                primary_key=primary_key,
+                json_columns=json_columns,
+                secret_columns=secret_columns,
+                auto_update_columns=auto_update_columns,
+                m2m_relationships=m2m_relationships,
+            ),
         )
 
         for foreign_key_column in foreign_key_columns:
