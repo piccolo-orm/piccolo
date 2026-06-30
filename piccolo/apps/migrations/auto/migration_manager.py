@@ -426,6 +426,26 @@ class MigrationManager:
         else:
             await query.run()
 
+    ###########################################################################
+
+    @staticmethod
+    def _get_alter_params(
+        alter_column: AlterColumn, backwards: bool
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        if backwards:
+            return alter_column.old_params, alter_column.params
+        return alter_column.params, alter_column.old_params
+
+    @staticmethod
+    def _get_alter_classes(
+        alter_column: AlterColumn, backwards: bool
+    ) -> tuple[type[Column], type[Column]]:
+        if backwards:
+            return alter_column.old_column_class, alter_column.column_class
+        return alter_column.column_class, alter_column.old_column_class
+
+    ###########################################################################
+
     async def _run_alter_columns(self, backwards: bool = False):
         for table_class_name in self.alter_columns.table_class_names:
             alter_columns = self.alter_columns.for_table_class_name(
@@ -444,225 +464,264 @@ class MigrationManager:
             )
 
             for alter_column in alter_columns:
-                params = (
-                    alter_column.old_params
-                    if backwards
-                    else alter_column.params
+                params, old_params = self._get_alter_params(
+                    alter_column, backwards
+                )
+                column_class, old_column_class = self._get_alter_classes(
+                    alter_column, backwards
                 )
 
-                old_params = (
-                    alter_column.params
-                    if backwards
-                    else alter_column.old_params
+                await self._run_alter_column_type(
+                    alter_column=alter_column,
+                    params=params,
+                    old_params=old_params,
+                    column_class=column_class,
+                    old_column_class=old_column_class,
+                    _Table=_Table,
+                )
+                await self._run_alter_fk_constraints(
+                    alter_column=alter_column,
+                    params=params,
+                    table_class_name=table_class_name,
+                    _Table=_Table,
+                )
+                await self._run_alter_nullable(
+                    alter_column=alter_column, params=params, _Table=_Table
+                )
+                await self._run_alter_length(
+                    alter_column=alter_column, params=params, _Table=_Table
+                )
+                await self._run_alter_unique(
+                    alter_column=alter_column, params=params, _Table=_Table
+                )
+                await self._run_alter_index(
+                    alter_column=alter_column, params=params, _Table=_Table
+                )
+                await self._run_alter_default(
+                    alter_column=alter_column, params=params, _Table=_Table
+                )
+                await self._run_alter_digits(
+                    alter_column=alter_column, params=params, _Table=_Table
                 )
 
-                ###############################################################
+    ###########################################################################
+    # Helper methods for _run_alter_columns
+    ###########################################################################
 
-                # Change the column type if possible
-                column_class = (
-                    alter_column.old_column_class
-                    if backwards
-                    else alter_column.column_class
-                )
-                old_column_class = (
-                    alter_column.column_class
-                    if backwards
-                    else alter_column.old_column_class
-                )
+    async def _run_alter_column_type(
+        self,
+        alter_column: AlterColumn,
+        params: dict[str, Any],
+        old_params: dict[str, Any],
+        column_class: type[Column],
+        old_column_class: type[Column],
+        _Table: type[Table],
+    ):
+        if (old_column_class is not None) and (column_class is not None):
+            if old_column_class != column_class:
+                old_column = old_column_class(**old_params)
+                old_column._meta._table = _Table
+                old_column._meta._name = alter_column.column_name
+                old_column._meta.db_column_name = alter_column.db_column_name
 
-                if (old_column_class is not None) and (
-                    column_class is not None
+                new_column = column_class(**params)
+                new_column._meta._table = _Table
+                new_column._meta._name = alter_column.column_name
+                new_column._meta.db_column_name = alter_column.db_column_name
+
+                using_expression: Optional[str] = None
+
+                if new_column.value_type != old_column.value_type:
+                    if old_params.get("default", ...) is not None:
+                        await self._run_query(
+                            _Table.alter().drop_default(old_column)
+                        )
+
+                    using_expression = "{}::{}".format(
+                        alter_column.db_column_name,
+                        new_column.column_type,
+                    )
+
+                if issubclass(column_class, Serial) and issubclass(
+                    old_column_class, Serial
                 ):
-                    if old_column_class != column_class:
-                        old_column = old_column_class(**old_params)
-                        old_column._meta._table = _Table
-                        old_column._meta._name = alter_column.column_name
-                        old_column._meta.db_column_name = (
-                            alter_column.db_column_name
-                        )
-
-                        new_column = column_class(**params)
-                        new_column._meta._table = _Table
-                        new_column._meta._name = alter_column.column_name
-                        new_column._meta.db_column_name = (
-                            alter_column.db_column_name
-                        )
-
-                        using_expression: Optional[str] = None
-
-                        # Postgres won't automatically cast some types to
-                        # others. We may as well try, as it will definitely
-                        # fail otherwise.
-                        if new_column.value_type != old_column.value_type:
-                            if old_params.get("default", ...) is not None:
-                                # Unless the column's default value is also
-                                # something which can be cast to the new type,
-                                # it will also fail. Drop the default value for
-                                # now - the proper default is set later on.
-                                await self._run_query(
-                                    _Table.alter().drop_default(old_column)
-                                )
-
-                            using_expression = "{}::{}".format(
-                                alter_column.db_column_name,
-                                new_column.column_type,
-                            )
-
-                        # We can't migrate a SERIAL to a BIGSERIAL or vice
-                        # versa, as SERIAL isn't a true type, just an alias to
-                        # other commands.
-                        if issubclass(column_class, Serial) and issubclass(
-                            old_column_class, Serial
-                        ):
-                            colored_warning(
-                                "Unable to migrate Serial to BigSerial and "
-                                "vice versa. This must be done manually."
-                            )
-                        else:
-                            await self._run_query(
-                                _Table.alter().set_column_type(
-                                    old_column=old_column,
-                                    new_column=new_column,
-                                    using_expression=using_expression,
-                                )
-                            )
-
-                ###############################################################
-
-                on_delete = params.get("on_delete")
-                on_update = params.get("on_update")
-                if on_delete is not None or on_update is not None:
-                    existing_table = await self.get_table_from_snapshot(
-                        table_class_name=table_class_name,
-                        app_name=self.app_name,
+                    colored_warning(
+                        "Unable to migrate Serial to BigSerial and "
+                        "vice versa. This must be done manually."
                     )
-
-                    fk_column = existing_table._meta.get_column_by_name(
-                        alter_column.column_name
-                    )
-
-                    assert isinstance(fk_column, ForeignKey)
-
-                    # First drop the existing foreign key constraint
-                    constraint_name = await get_fk_constraint_name(
-                        column=fk_column
-                    )
-                    if constraint_name:
-                        await self._run_query(
-                            _Table.alter().drop_constraint(
-                                constraint_name=constraint_name
-                            )
-                        )
-
-                    # Then add a new foreign key constraint
-                    await self._run_query(
-                        _Table.alter().add_foreign_key_constraint(
-                            column=fk_column,
-                            on_delete=on_delete,
-                            on_update=on_update,
-                        )
-                    )
-
-                null = params.get("null")
-                if null is not None:
-                    await self._run_query(
-                        _Table.alter().set_null(
-                            column=alter_column.db_column_name, boolean=null
-                        )
-                    )
-
-                length = params.get("length")
-                if length is not None:
-                    await self._run_query(
-                        _Table.alter().set_length(
-                            column=alter_column.db_column_name, length=length
-                        )
-                    )
-
-                unique = params.get("unique")
-                if unique is not None:
-                    # When modifying unique constraints, we need to pass in
-                    # a column type, and not just the column name.
-                    column = Column()
-                    column._meta._table = _Table
-                    column._meta._name = alter_column.column_name
-                    column._meta.db_column_name = alter_column.db_column_name
-                    await self._run_query(
-                        _Table.alter().set_unique(
-                            column=column, boolean=unique
-                        )
-                    )
-
-                index = params.get("index")
-                index_method = params.get("index_method")
-                if index is None:
-                    if index_method is not None:
-                        # If the index value hasn't changed, but the
-                        # index_method value has, this indicates we need
-                        # to change the index type.
-                        column = Column()
-                        column._meta._table = _Table
-                        column._meta._name = alter_column.column_name
-                        column._meta.db_column_name = (
-                            alter_column.db_column_name
-                        )
-                        await self._run_query(_Table.drop_index([column]))
-                        await self._run_query(
-                            _Table.create_index(
-                                [column],
-                                method=index_method,
-                                if_not_exists=True,
-                            )
-                        )
                 else:
-                    # If the index value has changed, then we are either
-                    # dropping, or creating an index.
-                    column = Column()
-                    column._meta._table = _Table
-                    column._meta._name = alter_column.column_name
-                    column._meta.db_column_name = alter_column.db_column_name
-
-                    if index is True:
-                        kwargs = (
-                            {"method": index_method} if index_method else {}
-                        )
-                        await self._run_query(
-                            _Table.create_index(
-                                [column], if_not_exists=True, **kwargs
-                            )
-                        )
-                    else:
-                        await self._run_query(_Table.drop_index([column]))
-
-                # None is a valid value, so retrieve ellipsis if not found.
-                default = params.get("default", ...)
-                if default is not ...:
-                    column = Column()
-                    column._meta._table = _Table
-                    column._meta._name = alter_column.column_name
-                    column._meta.db_column_name = alter_column.db_column_name
-
-                    if default is None:
-                        await self._run_query(
-                            _Table.alter().drop_default(column=column)
-                        )
-                    else:
-                        column.default = default
-                        await self._run_query(
-                            _Table.alter().set_default(
-                                column=column, value=column.get_default_value()
-                            )
-                        )
-
-                # None is a valid value, so retrieve ellipsis if not found.
-                digits = params.get("digits", ...)
-                if digits is not ...:
                     await self._run_query(
-                        _Table.alter().set_digits(
-                            column=alter_column.db_column_name,
-                            digits=digits,
+                        _Table.alter().set_column_type(
+                            old_column=old_column,
+                            new_column=new_column,
+                            using_expression=using_expression,
                         )
                     )
+
+    async def _run_alter_fk_constraints(
+        self,
+        alter_column: AlterColumn,
+        params: dict[str, Any],
+        table_class_name: str,
+        _Table: type[Table],
+    ):
+        on_delete = params.get("on_delete")
+        on_update = params.get("on_update")
+        if on_delete is not None or on_update is not None:
+            existing_table = await self.get_table_from_snapshot(
+                table_class_name=table_class_name,
+                app_name=self.app_name,
+            )
+
+            fk_column = existing_table._meta.get_column_by_name(
+                alter_column.column_name
+            )
+
+            assert isinstance(fk_column, ForeignKey)
+
+            constraint_name = await get_fk_constraint_name(
+                column=fk_column
+            )
+            if constraint_name:
+                await self._run_query(
+                    _Table.alter().drop_constraint(
+                        constraint_name=constraint_name
+                    )
+                )
+
+            await self._run_query(
+                _Table.alter().add_foreign_key_constraint(
+                    column=fk_column,
+                    on_delete=on_delete,
+                    on_update=on_update,
+                )
+            )
+
+    async def _run_alter_nullable(
+        self,
+        alter_column: AlterColumn,
+        params: dict[str, Any],
+        _Table: type[Table],
+    ):
+        null = params.get("null")
+        if null is not None:
+            await self._run_query(
+                _Table.alter().set_null(
+                    column=alter_column.db_column_name, boolean=null
+                )
+            )
+
+    async def _run_alter_length(
+        self,
+        alter_column: AlterColumn,
+        params: dict[str, Any],
+        _Table: type[Table],
+    ):
+        length = params.get("length")
+        if length is not None:
+            await self._run_query(
+                _Table.alter().set_length(
+                    column=alter_column.db_column_name, length=length
+                )
+            )
+
+    async def _run_alter_unique(
+        self,
+        alter_column: AlterColumn,
+        params: dict[str, Any],
+        _Table: type[Table],
+    ):
+        unique = params.get("unique")
+        if unique is not None:
+            column = Column()
+            column._meta._table = _Table
+            column._meta._name = alter_column.column_name
+            column._meta.db_column_name = alter_column.db_column_name
+            await self._run_query(
+                _Table.alter().set_unique(
+                    column=column, boolean=unique
+                )
+            )
+
+    async def _run_alter_index(
+        self,
+        alter_column: AlterColumn,
+        params: dict[str, Any],
+        _Table: type[Table],
+    ):
+        index = params.get("index")
+        index_method = params.get("index_method")
+        if index is None:
+            if index_method is not None:
+                column = Column()
+                column._meta._table = _Table
+                column._meta._name = alter_column.column_name
+                column._meta.db_column_name = alter_column.db_column_name
+                await self._run_query(_Table.drop_index([column]))
+                await self._run_query(
+                    _Table.create_index(
+                        [column],
+                        method=index_method,
+                        if_not_exists=True,
+                    )
+                )
+        else:
+            column = Column()
+            column._meta._table = _Table
+            column._meta._name = alter_column.column_name
+            column._meta.db_column_name = alter_column.db_column_name
+
+            if index is True:
+                kwargs = (
+                    {"method": index_method} if index_method else {}
+                )
+                await self._run_query(
+                    _Table.create_index(
+                        [column], if_not_exists=True, **kwargs
+                    )
+                )
+            else:
+                await self._run_query(_Table.drop_index([column]))
+
+    async def _run_alter_default(
+        self,
+        alter_column: AlterColumn,
+        params: dict[str, Any],
+        _Table: type[Table],
+    ):
+        default = params.get("default", ...)
+        if default is not ...:
+            column = Column()
+            column._meta._table = _Table
+            column._meta._name = alter_column.column_name
+            column._meta.db_column_name = alter_column.db_column_name
+
+            if default is None:
+                await self._run_query(
+                    _Table.alter().drop_default(column=column)
+                )
+            else:
+                column.default = default
+                await self._run_query(
+                    _Table.alter().set_default(
+                        column=column, value=column.get_default_value()
+                    )
+                )
+
+    async def _run_alter_digits(
+        self,
+        alter_column: AlterColumn,
+        params: dict[str, Any],
+        _Table: type[Table],
+    ):
+        digits = params.get("digits", ...)
+        if digits is not ...:
+            await self._run_query(
+                _Table.alter().set_digits(
+                    column=alter_column.db_column_name,
+                    digits=digits,
+                )
+            )
 
     async def _run_drop_tables(self, backwards=False):
         for diffable_table in self.drop_tables:
