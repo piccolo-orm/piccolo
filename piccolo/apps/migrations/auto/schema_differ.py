@@ -522,12 +522,12 @@ class SchemaDiffer:
 
                 schema_str = (
                     "None"
-                    if alter_column.schema is None
-                    else f'"{alter_column.schema}"'
+                    if alter_column.table.schema is None
+                    else f'"{alter_column.table.schema}"'
                 )
 
                 response.append(
-                    f"manager.alter_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{alter_column.column_name}', db_column_name='{alter_column.db_column_name}', params={new_params.params}, old_params={old_params.params}, column_class={column_class}, old_column_class={old_column_class}, schema={schema_str})"  # noqa: E501
+                    f"manager.alter_column(table_class_name='{table.class_name}', tablename='{table.tablename}', column_name='{alter_column.column.name}', db_column_name='{alter_column.column.db_column_name}', params={new_params.params}, old_params={old_params.params}, column_class={column_class}, old_column_class={old_column_class}, schema={schema_str})"  # noqa: E501
                 )
 
         return AlterStatements(

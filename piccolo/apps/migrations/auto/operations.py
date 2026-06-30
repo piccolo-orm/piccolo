@@ -33,16 +33,26 @@ class RenameColumn:
 
 
 @dataclass
-class AlterColumn:
-    table_class_name: str
-    column_name: str
-    db_column_name: str
+class TableRef:
+    class_name: str
     tablename: str
+    schema: Optional[str] = None
+
+
+@dataclass
+class ColumnRef:
+    name: str
+    db_column_name: str
+
+
+@dataclass
+class AlterColumn:
+    table: TableRef
+    column: ColumnRef
     params: dict[str, Any]
     old_params: dict[str, Any]
     column_class: Optional[type[Column]] = None
     old_column_class: Optional[type[Column]] = None
-    schema: Optional[str] = None
 
 
 @dataclass

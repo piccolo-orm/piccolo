@@ -10,9 +10,11 @@ from piccolo.apps.migrations.auto.diffable_table import DiffableTable
 from piccolo.apps.migrations.auto.operations import (
     AlterColumn,
     ChangeTableSchema,
+    ColumnRef,
     DropColumn,
     RenameColumn,
     RenameTable,
+    TableRef,
 )
 from piccolo.apps.migrations.auto.serialisation import deserialise_params
 from piccolo.columns import Column, column_types
@@ -118,12 +120,12 @@ class AlterColumnCollection:
         return [
             i
             for i in self.alter_columns
-            if i.table_class_name == table_class_name
+            if i.table.class_name == table_class_name
         ]
 
     @property
     def table_class_names(self) -> list[str]:
-        return list({i.table_class_name for i in self.alter_columns})
+        return list({i.table.class_name for i in self.alter_columns})
 
 
 AsyncFunction = Callable[[], Coroutine]
@@ -406,15 +408,19 @@ class MigrationManager:
             old_params = {}
         self.operations.column_operations.alter_columns.append(
             AlterColumn(
-                table_class_name=table_class_name,
-                tablename=tablename,
-                column_name=column_name,
-                db_column_name=db_column_name or column_name,
+                table=TableRef(
+                    class_name=table_class_name,
+                    tablename=tablename,
+                    schema=schema,
+                ),
+                column=ColumnRef(
+                    name=column_name,
+                    db_column_name=db_column_name or column_name,
+                ),
                 params=params,
                 old_params=old_params,
                 column_class=column_class,
                 old_column_class=old_column_class,
-                schema=schema,
             )
         )
 
@@ -497,8 +503,8 @@ class MigrationManager:
             _Table: type[Table] = create_table_class(
                 class_name=table_class_name,
                 class_kwargs={
-                    "tablename": alter_columns[0].tablename,
-                    "schema": alter_columns[0].schema,
+                    "tablename": alter_columns[0].table.tablename,
+                    "schema": alter_columns[0].table.schema,
                 },
             )
 
@@ -535,16 +541,16 @@ class MigrationManager:
                     if old_column_class != column_class:
                         old_column = old_column_class(**old_params)
                         old_column._meta._table = _Table
-                        old_column._meta._name = alter_column.column_name
+                        old_column._meta._name = alter_column.column.name
                         old_column._meta.db_column_name = (
-                            alter_column.db_column_name
+                            alter_column.column.db_column_name
                         )
 
                         new_column = column_class(**params)
                         new_column._meta._table = _Table
-                        new_column._meta._name = alter_column.column_name
+                        new_column._meta._name = alter_column.column.name
                         new_column._meta.db_column_name = (
-                            alter_column.db_column_name
+                            alter_column.column.db_column_name
                         )
 
                         using_expression: Optional[str] = None
@@ -563,7 +569,7 @@ class MigrationManager:
                                 )
 
                             using_expression = "{}::{}".format(
-                                alter_column.db_column_name,
+                                alter_column.column.db_column_name,
                                 new_column.column_type,
                             )
 
@@ -597,7 +603,7 @@ class MigrationManager:
                     )
 
                     fk_column = existing_table._meta.get_column_by_name(
-                        alter_column.column_name
+                        alter_column.column.name
                     )
 
                     assert isinstance(fk_column, ForeignKey)
@@ -626,7 +632,7 @@ class MigrationManager:
                 if null is not None:
                     await self._run_query(
                         _Table.alter().set_null(
-                            column=alter_column.db_column_name, boolean=null
+                            column=alter_column.column.db_column_name, boolean=null
                         )
                     )
 
@@ -634,7 +640,7 @@ class MigrationManager:
                 if length is not None:
                     await self._run_query(
                         _Table.alter().set_length(
-                            column=alter_column.db_column_name, length=length
+                            column=alter_column.column.db_column_name, length=length
                         )
                     )
 
@@ -644,8 +650,8 @@ class MigrationManager:
                     # a column type, and not just the column name.
                     column = Column()
                     column._meta._table = _Table
-                    column._meta._name = alter_column.column_name
-                    column._meta.db_column_name = alter_column.db_column_name
+                    column._meta._name = alter_column.column.name
+                    column._meta.db_column_name = alter_column.column.db_column_name
                     await self._run_query(
                         _Table.alter().set_unique(
                             column=column, boolean=unique
@@ -661,9 +667,9 @@ class MigrationManager:
                         # to change the index type.
                         column = Column()
                         column._meta._table = _Table
-                        column._meta._name = alter_column.column_name
+                        column._meta._name = alter_column.column.name
                         column._meta.db_column_name = (
-                            alter_column.db_column_name
+                            alter_column.column.db_column_name
                         )
                         await self._run_query(_Table.drop_index([column]))
                         await self._run_query(
@@ -678,8 +684,8 @@ class MigrationManager:
                     # dropping, or creating an index.
                     column = Column()
                     column._meta._table = _Table
-                    column._meta._name = alter_column.column_name
-                    column._meta.db_column_name = alter_column.db_column_name
+                    column._meta._name = alter_column.column.name
+                    column._meta.db_column_name = alter_column.column.db_column_name
 
                     if index is True:
                         kwargs = (
@@ -698,8 +704,8 @@ class MigrationManager:
                 if default is not ...:
                     column = Column()
                     column._meta._table = _Table
-                    column._meta._name = alter_column.column_name
-                    column._meta.db_column_name = alter_column.db_column_name
+                    column._meta._name = alter_column.column.name
+                    column._meta.db_column_name = alter_column.column.db_column_name
 
                     if default is None:
                         await self._run_query(
@@ -718,7 +724,7 @@ class MigrationManager:
                 if digits is not ...:
                     await self._run_query(
                         _Table.alter().set_digits(
-                            column=alter_column.db_column_name,
+                            column=alter_column.column.db_column_name,
                             digits=digits,
                         )
                     )

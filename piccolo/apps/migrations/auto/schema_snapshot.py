@@ -82,7 +82,7 @@ class SchemaSnapshot:
                 )
                 for alter_column in alter_columns:
                     for index, column in enumerate(table.columns):
-                        if column._meta.name == alter_column.column_name:
+                        if column._meta.name == alter_column.column.name:
                             for key, value in alter_column.params.items():
                                 setattr(column._meta, key, value)
                                 column._meta.params.update({key: value})
