@@ -568,9 +568,9 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
                 )
         return True
 
-    @property
-    def default_querystrings(self) -> Sequence[QueryString]:
-        # JOIN
+    def _resolve_joined_columns(
+        self,
+    ) -> tuple[list[str], list[QueryString], str]:
         self._check_valid_call_chain(self.columns_delegate.selected_columns)
 
         select_joins = self._get_joins(self.columns_delegate.selected_columns)
@@ -582,21 +582,15 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
             self.order_by_delegate.get_order_by_columns()
         )
 
-        # Combine all joins, and remove duplicates
         joins: list[str] = list(
             OrderedDict.fromkeys(
                 select_joins + where_joins + having_joins + order_by_joins
             )
         )
 
-        #######################################################################
-
-        # If no columns have been specified for selection, select all columns
-        # on the table:
         if len(self.columns_delegate.selected_columns) == 0:
             self.columns_delegate.selected_columns = self.table._meta.columns
 
-        # If secret fields need to be omitted, remove them from the list.
         if self.exclude_secrets:
             self.columns_delegate.remove_secret_columns()
 
@@ -607,8 +601,14 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
             for c in self.columns_delegate.selected_columns
         ]
 
-        #######################################################################
+        return joins, select_strings, engine_type
 
+    def _build_querystring(
+        self,
+        joins: list[str],
+        select_strings: list[QueryString],
+        engine_type: str,
+    ) -> QueryString:
         args: list[Any] = []
 
         query = "SELECT"
@@ -620,7 +620,9 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
         args.append(distinct.querystring)
 
         columns_str = ", ".join("{}" for _ in select_strings)
-        query += f" {columns_str} FROM {self.table._meta.get_formatted_tablename()}"  # noqa: E501
+        query += (
+            f" {columns_str} FROM {self.table._meta.get_formatted_tablename()}"
+        )
         args.extend(select_strings)
 
         for join in joins:
@@ -674,8 +676,12 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
             query += "{}"
             args.append(self.lock_rows_delegate._lock_rows.querystring)
 
-        querystring = QueryString(query, *args)
+        return QueryString(query, *args)
 
+    @property
+    def default_querystrings(self) -> Sequence[QueryString]:
+        joins, select_strings, engine_type = self._resolve_joined_columns()
+        querystring = self._build_querystring(joins, select_strings, engine_type)
         return [querystring]
 
     async def run(
