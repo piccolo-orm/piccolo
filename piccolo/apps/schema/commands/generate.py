@@ -683,6 +683,114 @@ async def get_foreign_key_reference(
         return ConstraintTable()
 
 
+def _get_column_type(
+    data_type: str, engine_type: str
+) -> Optional[type[Column]]:
+    if engine_type == "cockroach":
+        return COLUMN_TYPE_MAP_COCKROACH.get(data_type)
+    return COLUMN_TYPE_MAP.get(data_type)
+
+
+def _apply_primary_key_override(
+    column_type: type[Column],
+) -> type[Column]:
+    if column_type == Integer:
+        return Serial
+    if column_type == BigInt:
+        return Serial
+    return column_type
+
+
+def _apply_index_params(
+    indexes: TableIndexes, column_name: str, kwargs: dict[str, Any]
+) -> None:
+    index = indexes.get_column_index(column_name=column_name)
+    if index is not None:
+        kwargs["index"] = True
+        kwargs["index_method"] = index.method
+
+
+def _apply_type_specific_params(
+    column_type: type[Column], pg_row_meta: RowMeta
+) -> dict[str, Any]:
+    params: dict[str, Any] = {}
+    if column_type is Varchar:
+        params["length"] = pg_row_meta.character_maximum_length
+    elif isinstance(column_type, Numeric):
+        radix = pg_row_meta.numeric_precision_radix
+        if radix:
+            precision = int(str(pg_row_meta.numeric_precision), radix)
+            scale = int(str(pg_row_meta.numeric_scale), radix)
+            params["digits"] = (precision, scale)
+        else:
+            params["digits"] = None
+    return params
+
+
+async def _resolve_foreign_key(
+    column_name: str,
+    constraints: TableConstraints,
+    triggers: TableTriggers,
+    table_class: type[Table],
+    tablename: str,
+    engine_type: str,
+    output_schema: OutputSchema,
+    kwargs: dict[str, Any],
+) -> tuple[type[Column], dict[str, Any], OutputSchema]:
+    fk_constraint_table = constraints.get_foreign_key_constraint_name(
+        column_name=column_name
+    )
+    column_type: type[Column] = ForeignKey
+    constraint_table = await get_foreign_key_reference(
+        table_class=table_class,
+        constraint_name=fk_constraint_table.name,
+        constraint_schema=fk_constraint_table.schema,
+    )
+    if constraint_table.name:
+        if constraint_table.name == tablename:
+            referenced_output_schema = output_schema
+            referenced_table: Union[str, Optional[type[Table]]] = "self"
+        else:
+            referenced_output_schema = (
+                await create_table_class_from_db(
+                    table_class=table_class,
+                    tablename=constraint_table.name,
+                    schema_name=constraint_table.schema,
+                    engine_type=engine_type,
+                )
+            )
+            referenced_table = (
+                referenced_output_schema.get_table_with_name(
+                    tablename=constraint_table.name
+                )
+            )
+
+        kwargs["references"] = (
+            referenced_table
+            if referenced_table is not None
+            else ForeignKeyPlaceholder
+        )
+
+        trigger = triggers.get_column_ref_trigger(
+            column_name, constraint_table.name
+        )
+        if trigger:
+            kwargs["on_update"] = OnUpdate(trigger.on_update)
+            kwargs["on_delete"] = OnDelete(trigger.on_delete)
+        else:
+            output_schema.trigger_warnings.append(
+                f"{tablename}.{column_name}"
+            )
+
+        output_schema = sum(  # type: ignore
+            [output_schema, referenced_output_schema]  # type: ignore
+        )  # type: ignore
+    else:
+        kwargs["references"] = ForeignKeyPlaceholder
+
+    return column_type, kwargs, output_schema
+
+
 async def create_table_class_from_db(
     table_class: type[Table],
     tablename: str,
@@ -709,18 +817,15 @@ async def create_table_class_from_db(
     columns: dict[str, Column] = {}
 
     for pg_row_meta in table_schema:
-        data_type = pg_row_meta.data_type
-
-        if engine_type == "cockroach":
-            column_type = COLUMN_TYPE_MAP_COCKROACH.get(data_type, None)
-        else:
-            column_type = COLUMN_TYPE_MAP.get(data_type, None)
-
         column_name = pg_row_meta.column_name
-        column_default = pg_row_meta.column_default
+
+        column_type = _get_column_type(
+            data_type=pg_row_meta.data_type,
+            engine_type=engine_type,
+        )
         if not column_type:
             output_schema.warnings.append(
-                f"{tablename}.{column_name} ['{data_type}']"
+                f"{tablename}.{column_name} ['{pg_row_meta.data_type}']"
             )
             column_type = Column
 
@@ -729,91 +834,36 @@ async def create_table_class_from_db(
             "unique": constraints.is_unique(column_name=column_name),
         }
 
-        index = indexes.get_column_index(column_name=column_name)
-        if index is not None:
-            kwargs["index"] = True
-            kwargs["index_method"] = index.method
+        _apply_index_params(indexes, column_name, kwargs)
 
         if constraints.is_primary_key(column_name=column_name):
             kwargs["primary_key"] = True
-            if column_type == Integer:
-                column_type = Serial
-            if column_type == BigInt:
-                column_type = Serial
-                # column_type = BigSerial
+            column_type = _apply_primary_key_override(column_type)
 
         if constraints.is_foreign_key(column_name=column_name):
-            fk_constraint_table = constraints.get_foreign_key_constraint_name(
-                column_name=column_name
-            )
-            column_type = ForeignKey
-            constraint_table = await get_foreign_key_reference(
+            column_type, kwargs, output_schema = await _resolve_foreign_key(
+                column_name=column_name,
+                constraints=constraints,
+                triggers=triggers,
                 table_class=table_class,
-                constraint_name=fk_constraint_table.name,
-                constraint_schema=fk_constraint_table.schema,
+                tablename=tablename,
+                engine_type=engine_type,
+                output_schema=output_schema,
+                kwargs=kwargs,
             )
-            if constraint_table.name:
-                referenced_table: Union[str, Optional[type[Table]]]
-
-                if constraint_table.name == tablename:
-                    referenced_output_schema = output_schema
-                    referenced_table = "self"
-                else:
-                    referenced_output_schema = (
-                        await create_table_class_from_db(
-                            table_class=table_class,
-                            tablename=constraint_table.name,
-                            schema_name=constraint_table.schema,
-                            engine_type=engine_type,
-                        )
-                    )
-                    referenced_table = (
-                        referenced_output_schema.get_table_with_name(
-                            tablename=constraint_table.name
-                        )
-                    )
-                kwargs["references"] = (
-                    referenced_table
-                    if referenced_table is not None
-                    else ForeignKeyPlaceholder
-                )
-
-                trigger = triggers.get_column_ref_trigger(
-                    column_name, constraint_table.name
-                )
-                if trigger:
-                    kwargs["on_update"] = OnUpdate(trigger.on_update)
-                    kwargs["on_delete"] = OnDelete(trigger.on_delete)
-                else:
-                    output_schema.trigger_warnings.append(
-                        f"{tablename}.{column_name}"
-                    )
-
-                output_schema = sum(  # type: ignore
-                    [output_schema, referenced_output_schema]  # type: ignore
-                )  # type: ignore
-            else:
-                kwargs["references"] = ForeignKeyPlaceholder
 
         output_schema.imports.append(
             "from piccolo.columns.column_types import "
             + column_type.__name__  # type: ignore
         )
 
-        if column_type is Varchar:
-            kwargs["length"] = pg_row_meta.character_maximum_length
-        elif isinstance(column_type, Numeric):
-            radix = pg_row_meta.numeric_precision_radix
-            if radix:
-                precision = int(str(pg_row_meta.numeric_precision), radix)
-                scale = int(str(pg_row_meta.numeric_scale), radix)
-                kwargs["digits"] = (precision, scale)
-            else:
-                kwargs["digits"] = None
+        kwargs.update(
+            _apply_type_specific_params(column_type, pg_row_meta)
+        )
 
-        if column_default:
+        if pg_row_meta.column_default:
             default_value = get_column_default(
-                column_type, column_default, engine_type
+                column_type, pg_row_meta.column_default, engine_type
             )
             if default_value:
                 kwargs["default"] = default_value
