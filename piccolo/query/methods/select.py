@@ -295,6 +295,93 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
             row[m2m_name] = [extra_rows_map.get(i) for i in row[m2m_name]]
         return response
 
+    async def _handle_m2m_sqlite(
+        self, response: list, m2m_select: M2MSelect
+    ) -> list:
+        m2m_name = m2m_select.m2m._meta.name
+        secondary_table = m2m_select.m2m._meta.secondary_table
+        secondary_table_pk = secondary_table._meta.primary_key
+
+        value_type = (
+            m2m_select.columns[0].__class__.value_type
+            if m2m_select.as_list and m2m_select.serialisation_safe
+            else secondary_table_pk.value_type
+        )
+        try:
+            for row in response:
+                data = row[m2m_name]
+                row[m2m_name] = (
+                    [value_type(i) for i in row[m2m_name]]
+                    if data
+                    else []
+                )
+        except ValueError:
+            colored_warning(
+                "Unable to do type conversion for the "
+                f"{m2m_name} relation"
+            )
+
+        if m2m_select.as_list:
+            if not m2m_select.serialisation_safe:
+                response = await self._splice_m2m_rows(
+                    response,
+                    secondary_table,
+                    secondary_table_pk,
+                    m2m_name,
+                    m2m_select,
+                    as_list=True,
+                )
+        else:
+            if (
+                len(m2m_select.columns) == 1
+                and m2m_select.serialisation_safe
+            ):
+                column_name = m2m_select.columns[0]._meta.name
+                for row in response:
+                    row[m2m_name] = [
+                        {column_name: i} for i in row[m2m_name]
+                    ]
+            else:
+                response = await self._splice_m2m_rows(
+                    response,
+                    secondary_table,
+                    secondary_table_pk,
+                    m2m_name,
+                    m2m_select,
+                )
+
+        return response
+
+    async def _handle_m2m_postgres(
+        self, response: list, m2m_select: M2MSelect
+    ) -> list:
+        m2m_name = m2m_select.m2m._meta.name
+        secondary_table = m2m_select.m2m._meta.secondary_table
+        secondary_table_pk = secondary_table._meta.primary_key
+
+        if m2m_select.as_list:
+            if (
+                type(m2m_select.columns[0]) in (JSON, JSONB)
+                and m2m_select.load_json
+            ):
+                for row in response:
+                    data = row[m2m_name]
+                    row[m2m_name] = [load_json(i) for i in data]
+        elif m2m_select.serialisation_safe:
+            for row in response:
+                data = row[m2m_name]
+                row[m2m_name] = load_json(data) if data else []
+        else:
+            response = await self._splice_m2m_rows(
+                response,
+                secondary_table,
+                secondary_table_pk,
+                m2m_name,
+                m2m_select,
+            )
+
+        return response
+
     async def response_handler(self, response):
         m2m_selects = [
             i
@@ -302,101 +389,15 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
             if isinstance(i, M2MSelect)
         ]
         for m2m_select in m2m_selects:
-            m2m_name = m2m_select.m2m._meta.name
-            secondary_table = m2m_select.m2m._meta.secondary_table
-            secondary_table_pk = secondary_table._meta.primary_key
-
             if self.engine_type == "sqlite":
-                # With M2M queries in SQLite, we always get the value back as a
-                # list of strings, so we need to do some type conversion.
-                value_type = (
-                    m2m_select.columns[0].__class__.value_type
-                    if m2m_select.as_list and m2m_select.serialisation_safe
-                    else secondary_table_pk.value_type
+                response = await self._handle_m2m_sqlite(
+                    response, m2m_select
                 )
-                try:
-                    for row in response:
-                        data = row[m2m_name]
-                        row[m2m_name] = (
-                            [value_type(i) for i in row[m2m_name]]
-                            if data
-                            else []
-                        )
-                except ValueError:
-                    colored_warning(
-                        "Unable to do type conversion for the "
-                        f"{m2m_name} relation"
-                    )
-
-                # If the user requested a single column, we just return that
-                # from the database. Otherwise we request the primary key
-                # value, so we can fetch the rest of the data in a subsequent
-                # SQL query - see below.
-                if m2m_select.as_list:
-                    if m2m_select.serialisation_safe:
-                        pass
-                    else:
-                        response = await self._splice_m2m_rows(
-                            response,
-                            secondary_table,
-                            secondary_table_pk,
-                            m2m_name,
-                            m2m_select,
-                            as_list=True,
-                        )
-                else:
-                    if (
-                        len(m2m_select.columns) == 1
-                        and m2m_select.serialisation_safe
-                    ):
-                        column_name = m2m_select.columns[0]._meta.name
-                        for row in response:
-                            row[m2m_name] = [
-                                {column_name: i} for i in row[m2m_name]
-                            ]
-                    else:
-                        response = await self._splice_m2m_rows(
-                            response,
-                            secondary_table,
-                            secondary_table_pk,
-                            m2m_name,
-                            m2m_select,
-                        )
-
             elif self.engine_type in ("postgres", "cockroach"):
-                if m2m_select.as_list:
-                    # We get the data back as an array, and can just return it
-                    # unless it's JSON.
-                    if (
-                        type(m2m_select.columns[0]) in (JSON, JSONB)
-                        and m2m_select.load_json
-                    ):
-                        for row in response:
-                            data = row[m2m_name]
-                            row[m2m_name] = [load_json(i) for i in data]
-                elif m2m_select.serialisation_safe:
-                    # If the columns requested can be safely serialised, they
-                    # are returned as a JSON string, so we need to deserialise
-                    # it.
-                    for row in response:
-                        data = row[m2m_name]
-                        row[m2m_name] = load_json(data) if data else []
-                else:
-                    # If the data can't be safely serialised as JSON, we get
-                    # back an array of primary key values, and need to
-                    # splice in the correct values using Python.
-                    response = await self._splice_m2m_rows(
-                        response,
-                        secondary_table,
-                        secondary_table_pk,
-                        m2m_name,
-                        m2m_select,
-                    )
+                response = await self._handle_m2m_postgres(
+                    response, m2m_select
+                )
 
-        #######################################################################
-
-        # If no columns were specified, it's a select *, so we know that
-        # no columns were selected from related tables.
         was_select_star = len(self.columns_delegate.selected_columns) == 0
 
         if self.output_delegate._output.nested and not was_select_star:
