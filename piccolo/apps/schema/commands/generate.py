@@ -382,6 +382,88 @@ COLUMN_DEFAULT_PARSER_COCKROACH: dict[type[Column], Any] = {
 }
 
 
+def _handle_boolean(value: dict[str, str]) -> bool:
+    return value["value"] == "true"
+
+
+def _handle_interval(value: dict[str, str]) -> IntervalCustom:
+    kwargs = {}
+    for period in [
+        "years",
+        "months",
+        "weeks",
+        "days",
+        "hours",
+        "minutes",
+        "seconds",
+    ]:
+        period_match = value.get(period, 0)
+        if period_match:
+            kwargs[period] = int(period_match)
+    digits = value["digits"]
+    if digits:
+        kwargs.update(
+            dict(
+                zip(
+                    ["hours", "minutes", "seconds"],
+                    [int(v) for v in digits.split(":")],
+                )
+            )
+        )
+    return IntervalCustom(**kwargs)
+
+
+def _handle_json(value: dict[str, str]) -> Any:
+    return json.loads(value["value"])
+
+
+def _handle_uuid(value: dict[str, str]) -> Any:
+    return uuid.uuid4
+
+
+def _handle_date(value: dict[str, str]) -> Any:
+    return (
+        date.today
+        if value["value"] == "CURRENT_DATE"
+        else defaults.date.DateCustom(
+            *[int(v) for v in value["value"].split("-")]
+        )
+    )
+
+
+def _handle_bytea(value: dict[str, str]) -> bytes:
+    return value["value"].encode("utf8")
+
+
+def _handle_timestamp(value: dict[str, str]) -> Any:
+    return (
+        datetime.now
+        if value["value"] == "CURRENT_TIMESTAMP"
+        else datetime.fromtimestamp(float(value["value"]))
+    )
+
+
+def _handle_timestamptz(value: dict[str, str]) -> Any:
+    return (
+        datetime.now
+        if value["value"] == "CURRENT_TIMESTAMP"
+        else datetime.fromtimestamp(float(value["value"]))
+    )
+
+
+_COLUMN_DEFAULT_HANDLERS: dict[type[Column], Any] = {
+    Boolean: _handle_boolean,
+    Interval: _handle_interval,
+    JSON: _handle_json,
+    JSONB: _handle_json,
+    UUID: _handle_uuid,
+    Date: _handle_date,
+    Bytea: _handle_bytea,
+    Timestamp: _handle_timestamp,
+    Timestamptz: _handle_timestamptz,
+}
+
+
 def get_column_default(
     column_type: type[Column], column_default: str, engine_type: str
 ) -> Any:
@@ -399,63 +481,10 @@ def get_column_default(
         match = re.match(pat, column_default)
         if match is not None:
             value = match.groupdict()
-
-            if column_type is Boolean:
-                return value["value"] == "true"
-            elif column_type is Interval:
-                kwargs = {}
-                for period in [
-                    "years",
-                    "months",
-                    "weeks",
-                    "days",
-                    "hours",
-                    "minutes",
-                    "seconds",
-                ]:
-                    period_match = value.get(period, 0)
-                    if period_match:
-                        kwargs[period] = int(period_match)
-                digits = value["digits"]
-                if digits:
-                    kwargs.update(
-                        dict(
-                            zip(
-                                ["hours", "minutes", "seconds"],
-                                [int(v) for v in digits.split(":")],
-                            )
-                        )
-                    )
-
-                return IntervalCustom(**kwargs)
-            elif column_type is JSON or column_type is JSONB:
-                return json.loads(value["value"])
-            elif column_type is UUID:
-                return uuid.uuid4
-            elif column_type is Date:
-                return (
-                    date.today
-                    if value["value"] == "CURRENT_DATE"
-                    else defaults.date.DateCustom(
-                        *[int(v) for v in value["value"].split("-")]
-                    )
-                )
-            elif column_type is Bytea:
-                return value["value"].encode("utf8")
-            elif column_type is Timestamp:
-                return (
-                    datetime.now
-                    if value["value"] == "CURRENT_TIMESTAMP"
-                    else datetime.fromtimestamp(float(value["value"]))
-                )
-            elif column_type is Timestamptz:
-                return (
-                    datetime.now
-                    if value["value"] == "CURRENT_TIMESTAMP"
-                    else datetime.fromtimestamp(float(value["value"]))
-                )
-            else:
-                return column_type.value_type(value["value"])
+            handler = _COLUMN_DEFAULT_HANDLERS.get(column_type)
+            if handler is not None:
+                return handler(value)
+            return column_type.value_type(value["value"])
 
 
 INDEX_METHOD_MAP: dict[str, IndexMethod] = {
