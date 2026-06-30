@@ -438,6 +438,12 @@ class Atomic(BaseAtomic):
 ###############################################################################
 
 
+class TransactionState(enum.Enum):
+    ACTIVE = "active"
+    COMMITTED = "committed"
+    ROLLED_BACK = "rolled_back"
+
+
 class Savepoint:
     def __init__(self, name: str, transaction: SQLiteTransaction):
         self.name = name
@@ -477,8 +483,7 @@ class SQLiteTransaction(BaseTransaction):
         "allow_nested",
         "_savepoint_id",
         "_parent",
-        "_committed",
-        "_rolled_back",
+        "_state",
     )
 
     def __init__(
@@ -501,8 +506,7 @@ class SQLiteTransaction(BaseTransaction):
 
         self._savepoint_id = 0
         self._parent = None
-        self._committed = False
-        self._rolled_back = False
+        self._state = TransactionState.ACTIVE
 
         if current_transaction:
             if allow_nested:
@@ -530,11 +534,11 @@ class SQLiteTransaction(BaseTransaction):
 
     async def commit(self):
         await self.connection.execute("COMMIT")
-        self._committed = True
+        self._state = TransactionState.COMMITTED
 
     async def rollback(self):
         await self.connection.execute("ROLLBACK")
-        self._rolled_back = True
+        self._state = TransactionState.ROLLED_BACK
 
     async def rollback_to(self, savepoint_name: str):
         """
@@ -561,12 +565,10 @@ class SQLiteTransaction(BaseTransaction):
             return exception is None
 
         if exception:
-            # The user may have manually rolled it back.
-            if not self._rolled_back:
+            if self._state is not TransactionState.ROLLED_BACK:
                 await self.rollback()
         else:
-            # The user may have manually committed it.
-            if not self._committed and not self._rolled_back:
+            if self._state is TransactionState.ACTIVE:
                 await self.commit()
 
         await self.connection.close()
