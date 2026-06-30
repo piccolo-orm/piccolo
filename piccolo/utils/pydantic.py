@@ -108,6 +108,133 @@ def get_pydantic_value_type(column: Column) -> type:
     return value_type
 
 
+def _validate_pydantic_params(
+    table: type[Table],
+    exclude_columns: tuple[Column, ...],
+    include_columns: tuple[Column, ...],
+    recursion_depth: int,
+) -> None:
+    if exclude_columns and include_columns:
+        raise ValueError(
+            "`include_columns` and `exclude_columns` can't be used at the "
+            "same time."
+        )
+
+    if recursion_depth == 0:
+        if exclude_columns:
+            if not validate_columns(columns=exclude_columns, table=table):
+                raise ValueError(
+                    f"`exclude_columns` are invalid: {exclude_columns!r}"
+                )
+
+        if include_columns:
+            if not validate_columns(columns=include_columns, table=table):
+                raise ValueError(
+                    f"`include_columns` are invalid: {include_columns!r}"
+                )
+
+
+def _get_value_type_for_column(
+    column: Column,
+    deserialize_json: bool,
+    is_optional: bool,
+    validators: dict[str, Callable],
+    column_name: str,
+) -> type:
+    if isinstance(column, (JSON, JSONB)):
+        if deserialize_json:
+            return pydantic.Json
+        validator = partial(
+            pydantic_json_validator, required=not is_optional
+        )
+        validators[
+            f"{column_name}_is_json"
+        ] = pydantic.field_validator(column_name)(
+            validator  # type: ignore
+        )
+        return column.value_type
+    return get_pydantic_value_type(column=column)
+
+
+def _build_extra_for_column(
+    column: Column,
+    model_name: str,
+    nested: Union[bool, tuple[ForeignKey, ...]],
+    include_readable: bool,
+    recursion_depth: int,
+    max_recursion_depth: int,
+    _type: type,
+    columns: dict[str, Any],
+    column_name: str,
+    include_columns: tuple[Column, ...],
+    exclude_columns: tuple[Column, ...],
+    include_default_columns: bool,
+    all_optional: bool,
+    deserialize_json: bool,
+) -> tuple[JsonDict, type]:
+    extra: JsonDict = {
+        "help_text": column._meta.help_text,
+        "choices": column._meta.get_choices_dict(),
+        "secret": column._meta.secret,
+        "nullable": column._meta.null,
+        "unique": column._meta.unique,
+    }
+
+    if isinstance(column, ForeignKey):
+        if recursion_depth < max_recursion_depth and (
+            (nested is True)
+            or (
+                isinstance(nested, tuple)
+                and any(
+                    column._equals(i)
+                    for i in itertools.chain(
+                        nested, *[i._meta.call_chain for i in nested]
+                    )
+                )
+            )
+        ):
+            nested_model_name = f"{model_name}.{column._meta.name}"
+            _type = create_pydantic_model(
+                table=column._foreign_key_meta.resolved_references,
+                nested=nested,
+                include_columns=include_columns,
+                exclude_columns=exclude_columns,
+                include_default_columns=include_default_columns,
+                include_readable=include_readable,
+                all_optional=all_optional,
+                deserialize_json=deserialize_json,
+                recursion_depth=recursion_depth + 1,
+                max_recursion_depth=max_recursion_depth,
+                model_name=nested_model_name,
+            )
+
+        tablename = (
+            column._foreign_key_meta.resolved_references._meta.tablename
+        )
+        target_column = (
+            column._foreign_key_meta.resolved_target_column._meta.name
+        )
+        extra["foreign_key"] = {
+            "to": tablename,
+            "target_column": target_column,
+        }
+
+        if include_readable:
+            columns[f"{column_name}_readable"] = (str, None)
+    else:
+        if isinstance(column, Text):
+            extra["widget"] = "text-area"
+        elif isinstance(column, (JSON, JSONB)):
+            extra["widget"] = "json"
+        elif isinstance(column, Timestamptz):
+            extra["widget"] = "timestamptz"
+
+        if isinstance(column, Array):
+            extra["dimensions"] = column._get_dimensions()
+
+    return extra, _type
+
+
 def create_pydantic_model(
     table: type[Table],
     nested: Union[bool, tuple[ForeignKey, ...]] = False,
@@ -181,24 +308,7 @@ def create_pydantic_model(
         A Pydantic model.
 
     """  # noqa: E501
-    if exclude_columns and include_columns:
-        raise ValueError(
-            "`include_columns` and `exclude_columns` can't be used at the "
-            "same time."
-        )
-
-    if recursion_depth == 0:
-        if exclude_columns:
-            if not validate_columns(columns=exclude_columns, table=table):
-                raise ValueError(
-                    f"`exclude_columns` are invalid: {exclude_columns!r}"
-                )
-
-        if include_columns:
-            if not validate_columns(columns=include_columns, table=table):
-                raise ValueError(
-                    f"`include_columns` are invalid: {include_columns!r}"
-                )
+    _validate_pydantic_params(table, exclude_columns, include_columns, recursion_depth)
 
     ###########################################################################
 
@@ -245,21 +355,9 @@ def create_pydantic_model(
         #######################################################################
         # Work out the column type
 
-        if isinstance(column, (JSON, JSONB)):
-            if deserialize_json:
-                value_type = pydantic.Json
-            else:
-                value_type = column.value_type
-                validator = partial(
-                    pydantic_json_validator, required=not is_optional
-                )
-                validators[
-                    f"{column_name}_is_json"
-                ] = pydantic.field_validator(column_name)(
-                    validator  # type: ignore
-                )
-        else:
-            value_type = get_pydantic_value_type(column=column)
+        value_type = _get_value_type_for_column(
+            column, deserialize_json, is_optional, validators, column_name
+        )
 
         _type = Optional[value_type] if is_optional else value_type
 
@@ -272,69 +370,22 @@ def create_pydantic_model(
         if column._meta.db_column_name != column._meta.name:
             params["alias"] = column._meta.db_column_name
 
-        extra: JsonDict = {
-            "help_text": column._meta.help_text,
-            "choices": column._meta.get_choices_dict(),
-            "secret": column._meta.secret,
-            "nullable": column._meta.null,
-            "unique": column._meta.unique,
-        }
-
-        if isinstance(column, ForeignKey):
-            if recursion_depth < max_recursion_depth and (
-                (nested is True)
-                or (
-                    isinstance(nested, tuple)
-                    and any(
-                        column._equals(i)
-                        for i in itertools.chain(
-                            nested, *[i._meta.call_chain for i in nested]
-                        )
-                    )
-                )
-            ):
-                nested_model_name = f"{model_name}.{column._meta.name}"
-                _type = create_pydantic_model(
-                    table=column._foreign_key_meta.resolved_references,
-                    nested=nested,
-                    include_columns=include_columns,
-                    exclude_columns=exclude_columns,
-                    include_default_columns=include_default_columns,
-                    include_readable=include_readable,
-                    all_optional=all_optional,
-                    deserialize_json=deserialize_json,
-                    recursion_depth=recursion_depth + 1,
-                    max_recursion_depth=max_recursion_depth,
-                    model_name=nested_model_name,
-                )
-
-            tablename = (
-                column._foreign_key_meta.resolved_references._meta.tablename
-            )
-            target_column = (
-                column._foreign_key_meta.resolved_target_column._meta.name
-            )
-            extra["foreign_key"] = {
-                "to": tablename,
-                "target_column": target_column,
-            }
-
-            if include_readable:
-                columns[f"{column_name}_readable"] = (str, None)
-        else:
-            # This is used to tell Piccolo Admin that we want to display these
-            # values using a specific widget.
-            if isinstance(column, Text):
-                extra["widget"] = "text-area"
-            elif isinstance(column, (JSON, JSONB)):
-                extra["widget"] = "json"
-            elif isinstance(column, Timestamptz):
-                extra["widget"] = "timestamptz"
-
-            # It is useful for Piccolo API and Piccolo Admin to easily know
-            # how many dimensions the array has.
-            if isinstance(column, Array):
-                extra["dimensions"] = column._get_dimensions()
+        extra, _type = _build_extra_for_column(
+            column,
+            model_name,
+            nested,
+            include_readable,
+            recursion_depth,
+            max_recursion_depth,
+            _type,
+            columns,
+            column_name,
+            include_columns,
+            exclude_columns,
+            include_default_columns,
+            all_optional,
+            deserialize_json,
+        )
 
         field = pydantic.Field(
             json_schema_extra={"extra": extra},
