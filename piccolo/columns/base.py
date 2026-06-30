@@ -153,13 +153,12 @@ class ForeignKeyMeta(Generic[ReferencedTable]):
 
 
 @dataclass
-class ColumnMeta:
+class ColumnConfig:
     """
-    We store as many attributes in ColumnMeta as possible, to help avoid name
-    clashes with user defined attributes.
+    Holds column configuration attributes, grouped together to reduce the
+    number of instance attributes on :class:`ColumnMeta`.
     """
 
-    # General attributes:
     null: bool = False
     primary_key: bool = False
     unique: bool = False
@@ -170,6 +169,16 @@ class ColumnMeta:
     choices: Optional[type[Enum]] = None
     secret: bool = False
     auto_update: Any = ...
+
+
+@dataclass
+class ColumnMeta:
+    """
+    We store as many attributes in ColumnMeta as possible, to help avoid name
+    clashes with user defined attributes.
+    """
+
+    config: ColumnConfig = field(default_factory=ColumnConfig)
 
     # Used for representing the table in migrations and the playground.
     params: dict[str, Any] = field(default_factory=dict)
@@ -221,6 +230,90 @@ class ColumnMeta:
 
     # Used by Foreign Keys:
     call_chain: list["ForeignKey"] = field(default_factory=list)
+
+    ###########################################################################
+    # Column configuration - delegated to self.config for backwards
+    # compatibility.
+
+    @property
+    def null(self) -> bool:
+        return self.config.null
+
+    @null.setter
+    def null(self, value: bool):
+        self.config.null = value
+
+    @property
+    def primary_key(self) -> bool:
+        return self.config.primary_key
+
+    @primary_key.setter
+    def primary_key(self, value: bool):
+        self.config.primary_key = value
+
+    @property
+    def unique(self) -> bool:
+        return self.config.unique
+
+    @unique.setter
+    def unique(self, value: bool):
+        self.config.unique = value
+
+    @property
+    def index(self) -> bool:
+        return self.config.index
+
+    @index.setter
+    def index(self, value: bool):
+        self.config.index = value
+
+    @property
+    def index_method(self) -> IndexMethod:
+        return self.config.index_method
+
+    @index_method.setter
+    def index_method(self, value: IndexMethod):
+        self.config.index_method = value
+
+    @property
+    def required(self) -> bool:
+        return self.config.required
+
+    @required.setter
+    def required(self, value: bool):
+        self.config.required = value
+
+    @property
+    def help_text(self) -> Optional[str]:
+        return self.config.help_text
+
+    @help_text.setter
+    def help_text(self, value: Optional[str]):
+        self.config.help_text = value
+
+    @property
+    def choices(self) -> Optional[type[Enum]]:
+        return self.config.choices
+
+    @choices.setter
+    def choices(self, value: Optional[type[Enum]]):
+        self.config.choices = value
+
+    @property
+    def secret(self) -> bool:
+        return self.config.secret
+
+    @secret.setter
+    def secret(self, value: bool):
+        self.config.secret = value
+
+    @property
+    def auto_update(self) -> Any:
+        return self.config.auto_update
+
+    @auto_update.setter
+    def auto_update(self, value: Any):
+        self.config.auto_update = value
 
     ###########################################################################
 
@@ -335,6 +428,7 @@ class ColumnMeta:
     def copy(self) -> ColumnMeta:
         kwargs = self.__dict__.copy()
         kwargs.update(
+            config=copy.copy(self.config),
             params=self.params.copy(),
             call_chain=self.call_chain.copy(),
         )
@@ -524,18 +618,20 @@ class Column(Selectable):
             self._validate_choices(choices, allowed_type=self.value_type)
 
         self._meta = ColumnMeta(
-            null=null,
-            primary_key=primary_key,
-            unique=unique,
-            index=index,
-            index_method=index_method,
+            config=ColumnConfig(
+                null=null,
+                primary_key=primary_key,
+                unique=unique,
+                index=index,
+                index_method=index_method,
+                required=required,
+                help_text=help_text,
+                choices=choices,
+                secret=secret,
+                auto_update=auto_update,
+            ),
             params=kwargs,
-            required=required,
-            help_text=help_text,
-            choices=choices,
             _db_column_name=db_column_name,
-            secret=secret,
-            auto_update=auto_update,
         )
 
         self._alias: Optional[str] = None
