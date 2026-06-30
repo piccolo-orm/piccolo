@@ -171,17 +171,22 @@ class TableConstraints:
 
 
 @dataclasses.dataclass
-class Trigger:
-    constraint_name: str
-    constraint_type: str
-    table_name: str
-    column_name: str
+class ForeignKeyAction:
     on_update: str
     on_delete: Literal[
         "NO ACTION", "RESTRICT", "CASCADE", "SET NULL", "SET_DEFAULT"
     ]
     references_table: str
     references_column: str
+
+
+@dataclasses.dataclass
+class Trigger:
+    constraint_name: str
+    constraint_type: str
+    table_name: str
+    column_name: str
+    action: ForeignKeyAction
 
 
 @dataclasses.dataclass
@@ -202,7 +207,7 @@ class TableTriggers:
         for trigger in self.triggers:
             if (
                 trigger.column_name == column_name
-                and trigger.references_table == references_table
+                and trigger.action.references_table == references_table
             ):
                 return trigger
 
@@ -573,7 +578,21 @@ async def get_fk_triggers(
     )
     return TableTriggers(
         tablename=tablename,
-        triggers=[Trigger(**i) for i in triggers],
+        triggers=[
+            Trigger(
+                constraint_name=i["constraint_name"],
+                constraint_type=i["constraint_type"],
+                table_name=i["table_name"],
+                column_name=i["column_name"],
+                action=ForeignKeyAction(
+                    on_update=i["on_update"],
+                    on_delete=i["on_delete"],
+                    references_table=i["references_table"],
+                    references_column=i["references_column"],
+                ),
+            )
+            for i in triggers
+        ],
     )
 
 
@@ -788,8 +807,8 @@ async def create_table_class_from_db(
                     column_name, constraint_table.name
                 )
                 if trigger:
-                    kwargs["on_update"] = OnUpdate(trigger.on_update)
-                    kwargs["on_delete"] = OnDelete(trigger.on_delete)
+                    kwargs["on_update"] = OnUpdate(trigger.action.on_update)
+                    kwargs["on_delete"] = OnDelete(trigger.action.on_delete)
                 else:
                     output_schema.trigger_warnings.append(
                         f"{tablename}.{column_name}"
