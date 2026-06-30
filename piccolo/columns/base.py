@@ -924,45 +924,60 @@ class Column(Selectable):
         elif isinstance(value, bytes):
             return f"{delimiter}{value.hex()}{delimiter}"
 
-        # SQLite specific
+        # Engine-specific
         if self._meta.engine_type == "sqlite":
-            if adapter := sqlite_adapters.get(type(value)):
-                sqlite_value = adapter(value)
-                return (
-                    f"{delimiter}{sqlite_value}{delimiter}"
-                    if isinstance(sqlite_value, str)
-                    else sqlite_value
-                )
+            return self._get_sqlite_sql_value(value, delimiter, sqlite_adapters)
 
-        # Postgres and Cockroach
-        if self._meta.engine_type in ["postgres", "cockroach"]:
-            if isinstance(value, datetime.datetime):
-                return f"{delimiter}{value.isoformat().replace('T', ' ')}{delimiter}"  # noqa: E501
-            elif isinstance(value, datetime.date):
-                return f"{delimiter}{value.isoformat()}{delimiter}"
-            elif isinstance(value, datetime.time):
-                return f"{delimiter}{value.isoformat()}{delimiter}"
-            elif isinstance(value, datetime.timedelta):
-                interval = IntervalCustom.from_timedelta(value)
-                return getattr(interval, self._meta.engine_type)
-            elif isinstance(value, uuid.UUID):
-                return f"{delimiter}{value}{delimiter}"
-            elif isinstance(value, list):
-                # Convert to the array syntax.
-                return (
-                    delimiter
-                    + "{"
-                    + ",".join(
-                        self.get_sql_value(
-                            i,
-                            delimiter="" if isinstance(i, list) else '"',
-                        )
-                        for i in value
+        if self._meta.engine_type in ("postgres", "cockroach"):
+            return self._get_postgres_sql_value(value, delimiter)
+
+        return str(value)
+
+    def _get_sqlite_sql_value(
+        self,
+        value: Any,
+        delimiter: str,
+        sqlite_adapters: dict,
+    ) -> str:
+        if adapter := sqlite_adapters.get(type(value)):
+            sqlite_value = adapter(value)
+            return (
+                f"{delimiter}{sqlite_value}{delimiter}"
+                if isinstance(sqlite_value, str)
+                else sqlite_value
+            )
+        return str(value)
+
+    def _get_postgres_sql_value(
+        self,
+        value: Any,
+        delimiter: str,
+    ) -> str:
+        if isinstance(value, datetime.datetime):
+            return f"{delimiter}{value.isoformat().replace('T', ' ')}{delimiter}"
+        elif isinstance(value, datetime.date):
+            return f"{delimiter}{value.isoformat()}{delimiter}"
+        elif isinstance(value, datetime.time):
+            return f"{delimiter}{value.isoformat()}{delimiter}"
+        elif isinstance(value, datetime.timedelta):
+            interval = IntervalCustom.from_timedelta(value)
+            return getattr(interval, self._meta.engine_type)
+        elif isinstance(value, uuid.UUID):
+            return f"{delimiter}{value}{delimiter}"
+        elif isinstance(value, list):
+            return (
+                delimiter
+                + "{"
+                + ",".join(
+                    self.get_sql_value(
+                        i,
+                        delimiter="" if isinstance(i, list) else '"',
                     )
-                    + "}"
-                    + delimiter
+                    for i in value
                 )
-
+                + "}"
+                + delimiter
+            )
         return str(value)
 
     @property
