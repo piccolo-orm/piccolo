@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Generator, Sequence
+from dataclasses import dataclass, field
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -299,6 +300,38 @@ class GetRelated(Generic[ReferencedTable]):
 ###############################################################################
 
 
+@dataclass
+class _ObjectsConditionDelegates:
+    where: WhereDelegate = field(default_factory=WhereDelegate)
+
+
+@dataclass
+class _ObjectsSortDelegates:
+    order_by: OrderByDelegate = field(default_factory=OrderByDelegate)
+
+
+@dataclass
+class _ObjectsPaginationDelegates:
+    limit: LimitDelegate = field(default_factory=LimitDelegate)
+    offset: OffsetDelegate = field(default_factory=OffsetDelegate)
+
+
+@dataclass
+class _ObjectsOutputDelegates:
+    output: OutputDelegate = field(default_factory=OutputDelegate)
+    callback: CallbackDelegate = field(default_factory=CallbackDelegate)
+
+
+@dataclass
+class _ObjectsMiscDelegates:
+    as_of: AsOfDelegate = field(default_factory=AsOfDelegate)
+    lock_rows: LockRowsDelegate = field(default_factory=LockRowsDelegate)
+    prefetch: PrefetchDelegate = field(default_factory=PrefetchDelegate)
+
+
+###############################################################################
+
+
 class Objects(
     Query[TableInstance, list[TableInstance]], Generic[TableInstance]
 ):
@@ -308,16 +341,11 @@ class Objects(
     """
 
     __slots__ = (
-        "nested",
-        "as_of_delegate",
-        "limit_delegate",
-        "offset_delegate",
-        "order_by_delegate",
-        "output_delegate",
-        "callback_delegate",
-        "prefetch_delegate",
-        "where_delegate",
-        "lock_rows_delegate",
+        "_condition",
+        "_sort",
+        "_pagination",
+        "_output",
+        "_misc",
     )
 
     def __init__(
@@ -327,17 +355,90 @@ class Objects(
         **kwargs,
     ):
         super().__init__(table, **kwargs)
-        self.as_of_delegate = AsOfDelegate()
-        self.limit_delegate = LimitDelegate()
-        self.offset_delegate = OffsetDelegate()
-        self.order_by_delegate = OrderByDelegate()
-        self.output_delegate = OutputDelegate()
-        self.output_delegate._output.as_objects = True
-        self.callback_delegate = CallbackDelegate()
-        self.prefetch_delegate = PrefetchDelegate()
+        self._condition = _ObjectsConditionDelegates()
+        self._sort = _ObjectsSortDelegates()
+        self._pagination = _ObjectsPaginationDelegates()
+        self._output = _ObjectsOutputDelegates()
+        self._output.output._output.as_objects = True
+        self._misc = _ObjectsMiscDelegates()
         self.prefetch(*prefetch)
-        self.where_delegate = WhereDelegate()
-        self.lock_rows_delegate = LockRowsDelegate()
+
+    ###########################################################################
+    # Backward-compatible properties for delegates
+
+    @property
+    def as_of_delegate(self) -> AsOfDelegate:
+        return self._misc.as_of
+
+    @as_of_delegate.setter
+    def as_of_delegate(self, value: AsOfDelegate) -> None:
+        self._misc.as_of = value
+
+    @property
+    def limit_delegate(self) -> LimitDelegate:
+        return self._pagination.limit
+
+    @limit_delegate.setter
+    def limit_delegate(self, value: LimitDelegate) -> None:
+        self._pagination.limit = value
+
+    @property
+    def offset_delegate(self) -> OffsetDelegate:
+        return self._pagination.offset
+
+    @offset_delegate.setter
+    def offset_delegate(self, value: OffsetDelegate) -> None:
+        self._pagination.offset = value
+
+    @property
+    def order_by_delegate(self) -> OrderByDelegate:
+        return self._sort.order_by
+
+    @order_by_delegate.setter
+    def order_by_delegate(self, value: OrderByDelegate) -> None:
+        self._sort.order_by = value
+
+    @property
+    def output_delegate(self) -> OutputDelegate:
+        return self._output.output
+
+    @output_delegate.setter
+    def output_delegate(self, value: OutputDelegate) -> None:
+        self._output.output = value
+
+    @property
+    def callback_delegate(self) -> CallbackDelegate:
+        return self._output.callback
+
+    @callback_delegate.setter
+    def callback_delegate(self, value: CallbackDelegate) -> None:
+        self._output.callback = value
+
+    @property
+    def prefetch_delegate(self) -> PrefetchDelegate:
+        return self._misc.prefetch
+
+    @prefetch_delegate.setter
+    def prefetch_delegate(self, value: PrefetchDelegate) -> None:
+        self._misc.prefetch = value
+
+    @property
+    def where_delegate(self) -> WhereDelegate:
+        return self._condition.where
+
+    @where_delegate.setter
+    def where_delegate(self, value: WhereDelegate) -> None:
+        self._condition.where = value
+
+    @property
+    def lock_rows_delegate(self) -> LockRowsDelegate:
+        return self._misc.lock_rows
+
+    @lock_rows_delegate.setter
+    def lock_rows_delegate(self, value: LockRowsDelegate) -> None:
+        self._misc.lock_rows = value
+
+    ###########################################################################
 
     def output(self: Self, load_json: bool = False) -> Self:
         self.output_delegate.output(
