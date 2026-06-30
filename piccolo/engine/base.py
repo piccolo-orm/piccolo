@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextvars
+import enum
 import logging
 import pprint
 import string
@@ -32,6 +33,12 @@ def validate_savepoint_name(savepoint_name: str) -> None:
             "Savepoint names can only contain the following characters:"
             f" {VALID_SAVEPOINT_CHARACTERS}"
         )
+
+
+class TransactionState(enum.Enum):
+    ACTIVE = "active"
+    COMMITTED = "committed"
+    ROLLED_BACK = "rolled_back"
 
 
 class BaseBatch(metaclass=ABCMeta):

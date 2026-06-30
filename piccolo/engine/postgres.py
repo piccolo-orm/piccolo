@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextvars
+import enum
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Mapping, Optional, Union
@@ -12,6 +13,7 @@ from piccolo.engine.base import (
     BaseBatch,
     BaseTransaction,
     Engine,
+    TransactionState,
     validate_savepoint_name,
 )
 from piccolo.engine.exceptions import TransactionError
@@ -180,8 +182,7 @@ class PostgresTransaction(BaseTransaction):
         "connection",
         "_savepoint_id",
         "_parent",
-        "_committed",
-        "_rolled_back",
+        "_state",
     )
 
     def __init__(self, engine: PostgresEngine, allow_nested: bool = True):
@@ -204,8 +205,7 @@ class PostgresTransaction(BaseTransaction):
 
         self._savepoint_id = 0
         self._parent = None
-        self._committed = False
-        self._rolled_back = False
+        self._state = TransactionState.ACTIVE
 
         if current_transaction:
             if allow_nested:
@@ -237,11 +237,11 @@ class PostgresTransaction(BaseTransaction):
 
     async def commit(self):
         await self.transaction.commit()
-        self._committed = True
+        self._state = TransactionState.COMMITTED
 
     async def rollback(self):
         await self.transaction.rollback()
-        self._rolled_back = True
+        self._state = TransactionState.ROLLED_BACK
 
     async def rollback_to(self, savepoint_name: str):
         """
@@ -269,11 +269,11 @@ class PostgresTransaction(BaseTransaction):
 
         if exception:
             # The user may have manually rolled it back.
-            if not self._rolled_back:
+            if self._state is not TransactionState.ROLLED_BACK:
                 await self.rollback()
         else:
             # The user may have manually committed it.
-            if not self._committed and not self._rolled_back:
+            if self._state is TransactionState.ACTIVE:
                 await self.commit()
 
         if self.engine.pool:

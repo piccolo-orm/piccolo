@@ -19,6 +19,7 @@ from piccolo.engine.base import (
     BaseBatch,
     BaseTransaction,
     Engine,
+    TransactionState,
     validate_savepoint_name,
 )
 from piccolo.engine.exceptions import TransactionError
@@ -436,12 +437,6 @@ class Atomic(BaseAtomic):
 
 
 ###############################################################################
-
-
-class TransactionState(enum.Enum):
-    ACTIVE = "active"
-    COMMITTED = "committed"
-    ROLLED_BACK = "rolled_back"
 
 
 class Savepoint:
