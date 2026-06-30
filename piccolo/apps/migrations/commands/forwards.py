@@ -26,6 +26,42 @@ class ForwardsMigrationManager(BaseMigrationManager):
         self.preview = preview
         super().__init__()
 
+    def _get_migration_subset(
+        self, havent_run: list[str]
+    ) -> list[str] | None:
+        if self.migration_id == "all":
+            return havent_run
+        elif self.migration_id == "1":
+            return havent_run[:1]
+        else:
+            try:
+                index = havent_run.index(self.migration_id)
+            except ValueError:
+                return None
+            else:
+                return havent_run[: index + 1]
+
+    async def _run_single_migration(
+        self,
+        _id: str,
+        response: object,
+        app_name: str,
+    ) -> None:
+        if isinstance(response, MigrationManager):
+            if self.fake or response.fake:
+                print(f"- {_id}: faked! ⏭️")
+            else:
+                if self.preview:
+                    response.preview = True
+                await response.run()
+
+        print("ok! ✔️")
+
+        if not self.preview:
+            await Migration.insert().add(
+                Migration(name=_id, app_name=app_name)
+            ).run()
+
     async def run_migrations(self, app_config: AppConfig) -> MigrationResult:
         already_ran = await Migration.get_migrations_which_ran(
             app_name=app_config.app_name
@@ -42,52 +78,29 @@ class ForwardsMigrationManager(BaseMigrationManager):
         print(f"👍 {n} migration{'s' if n != 1 else ''} already complete")
 
         havent_run = sorted(set(ids) - set(already_ran))
-        if len(havent_run) == 0:
-            # Make sure this still appears successful, as we don't want this
-            # to appear as an error in automated scripts.
+        if not havent_run:
             message = "🏁 No migrations need to be run"
             print(message)
             return MigrationResult(success=True, message=message)
-        else:
-            n = len(havent_run)
-            print(f"⏩ {n} migration{'s' if n != 1 else ''} not yet run")
 
-        if self.migration_id == "all":
-            subset = havent_run
-        elif self.migration_id == "1":
-            subset = havent_run[:1]
-        else:
-            try:
-                index = havent_run.index(self.migration_id)
-            except ValueError:
-                message = f"{self.migration_id} is unrecognised"
-                print(message, file=sys.stderr)
-                return MigrationResult(success=False, message=message)
-            else:
-                subset = havent_run[: index + 1]
+        n = len(havent_run)
+        print(f"⏩ {n} migration{'s' if n != 1 else ''} not yet run")
 
-        if subset:
-            n = len(subset)
-            print(f"🚀 Running {n} migration{'s' if n != 1 else ''}:")
+        subset = self._get_migration_subset(havent_run)
+        if subset is None:
+            message = f"{self.migration_id} is unrecognised"
+            print(message, file=sys.stderr)
+            return MigrationResult(success=False, message=message)
 
-            for _id in subset:
-                migration_module = migration_modules[_id]
-                response = await migration_module.forwards()
+        n = len(subset)
+        print(f"🚀 Running {n} migration{'s' if n != 1 else ''}:")
 
-                if isinstance(response, MigrationManager):
-                    if self.fake or response.fake:
-                        print(f"- {_id}: faked! ⏭️")
-                    else:
-                        if self.preview:
-                            response.preview = True
-                        await response.run()
-
-                print("ok! ✔️")
-
-                if not self.preview:
-                    await Migration.insert().add(
-                        Migration(name=_id, app_name=app_config.app_name)
-                    ).run()
+        for _id in subset:
+            migration_module = migration_modules[_id]
+            response = await migration_module.forwards()
+            await self._run_single_migration(
+                _id, response, app_config.app_name
+            )
 
         return MigrationResult(success=True, message="migration succeeded")
 
