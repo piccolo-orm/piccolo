@@ -236,6 +236,21 @@ class TableMetaclass(type):
         return cls.__name__
 
 
+@dataclass
+class _ClassifiedColumns:
+    columns: list[Column] = field(default_factory=list)
+    default_columns: list[Column] = field(default_factory=list)
+    non_default_columns: list[Column] = field(default_factory=list)
+    array_columns: list[Array] = field(default_factory=list)
+    foreign_key_columns: list[ForeignKey] = field(default_factory=list)
+    secret_columns: list[Column] = field(default_factory=list)
+    json_columns: list[Union[JSON, JSONB]] = field(default_factory=list)
+    email_columns: list[Email] = field(default_factory=list)
+    auto_update_columns: list[Column] = field(default_factory=list)
+    primary_key: Optional[Column] = None
+    m2m_relationships: list[M2M] = field(default_factory=list)
+
+
 class Table(metaclass=TableMetaclass):
     """
     The class represents a database table. An instance represents a row.
@@ -276,6 +291,46 @@ class Table(metaclass=TableMetaclass):
         """
         if tags is None:
             tags = []
+        tablename, schema = cls._process_tablename(tablename, schema)
+        classified = cls._classify_columns()
+
+        if not classified.primary_key:
+            primary_key = cls._create_serial_primary_key()
+            setattr(cls, "id", primary_key)
+            classified.columns.insert(0, primary_key)
+            classified.default_columns.append(primary_key)
+        else:
+            primary_key = classified.primary_key
+
+        cls._meta = TableMeta(
+            tablename=tablename,
+            columns=classified.columns,
+            default_columns=classified.default_columns,
+            non_default_columns=classified.non_default_columns,
+            array_columns=classified.array_columns,
+            email_columns=classified.email_columns,
+            primary_key=primary_key,
+            foreign_key_columns=classified.foreign_key_columns,
+            json_columns=classified.json_columns,
+            secret_columns=classified.secret_columns,
+            auto_update_columns=classified.auto_update_columns,
+            tags=tags,
+            help_text=help_text,
+            _db=db,
+            m2m_relationships=classified.m2m_relationships,
+            schema=schema,
+        )
+
+        cls._setup_foreign_keys()
+
+        TABLE_REGISTRY.append(cls)
+
+    @classmethod
+    def _process_tablename(
+        cls,
+        tablename: Optional[str],
+        schema: Optional[str],
+    ) -> tuple[str, Optional[str]]:
         tablename = tablename or _camel_to_snake(cls.__name__)
 
         if "." in tablename:
@@ -288,6 +343,10 @@ class Table(metaclass=TableMetaclass):
         if tablename in PROTECTED_TABLENAMES:
             warnings.warn(TABLENAME_WARNING.format(tablename=tablename))
 
+        return tablename, schema
+
+    @classmethod
+    def _classify_columns(cls) -> _ClassifiedColumns:
         columns: list[Column] = []
         default_columns: list[Column] = []
         non_default_columns: list[Column] = []
@@ -311,10 +370,6 @@ class Table(metaclass=TableMetaclass):
 
             attribute = getattr(cls, attribute_name)
             if isinstance(attribute, Column):
-                # We have to copy, then override the existing column
-                # definition, in case this column is inheritted from a mixin.
-                # Otherwise, when we set attributes on that column, it will
-                # effect all other users of that mixin.
                 column = attribute.copy()
                 setattr(cls, attribute_name, column)
 
@@ -351,35 +406,23 @@ class Table(metaclass=TableMetaclass):
                 attribute._meta._table = cls
                 m2m_relationships.append(attribute)
 
-        if not primary_key:
-            primary_key = cls._create_serial_primary_key()
-            setattr(cls, "id", primary_key)
-
-            columns.insert(0, primary_key)  # PK should be added first
-            default_columns.append(primary_key)
-
-        cls._meta = TableMeta(
-            tablename=tablename,
+        return _ClassifiedColumns(
             columns=columns,
             default_columns=default_columns,
             non_default_columns=non_default_columns,
             array_columns=array_columns,
-            email_columns=email_columns,
-            primary_key=primary_key,
             foreign_key_columns=foreign_key_columns,
-            json_columns=json_columns,
             secret_columns=secret_columns,
+            json_columns=json_columns,
+            email_columns=email_columns,
             auto_update_columns=auto_update_columns,
-            tags=tags,
-            help_text=help_text,
-            _db=db,
+            primary_key=primary_key,
             m2m_relationships=m2m_relationships,
-            schema=schema,
         )
 
-        for foreign_key_column in foreign_key_columns:
-            # ForeignKey columns require additional setup based on their
-            # parent Table.
+    @classmethod
+    def _setup_foreign_keys(cls) -> None:
+        for foreign_key_column in cls._meta.foreign_key_columns:
             foreign_key_setup_response = foreign_key_column._setup(
                 table_class=cls
             )
@@ -387,8 +430,6 @@ class Table(metaclass=TableMetaclass):
                 LAZY_COLUMN_REFERENCES.foreign_key_columns.append(
                     foreign_key_column
                 )
-
-        TABLE_REGISTRY.append(cls)
 
     def __init__(
         self,
