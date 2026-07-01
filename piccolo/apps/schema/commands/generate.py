@@ -59,6 +59,13 @@ class ConstraintTable:
 
 
 @dataclasses.dataclass
+class NumericInfo:
+    numeric_precision: Optional[Union[int, str]]
+    numeric_scale: Optional[Union[int, str]]
+    numeric_precision_radix: Optional[Literal[2, 10]]
+
+
+@dataclasses.dataclass
 class RowMeta:
     column_default: str
     column_name: str
@@ -66,13 +73,41 @@ class RowMeta:
     table_name: str
     character_maximum_length: Optional[int]
     data_type: str
-    numeric_precision: Optional[Union[int, str]]
-    numeric_scale: Optional[Union[int, str]]
-    numeric_precision_radix: Optional[Literal[2, 10]]
+    numeric_info: Optional[NumericInfo] = None
+    numeric_precision: dataclasses.InitVar[Optional[Union[int, str]]] = None
+    numeric_scale: dataclasses.InitVar[Optional[Union[int, str]]] = None
+    numeric_precision_radix: dataclasses.InitVar[Optional[Literal[2, 10]]] = None
+
+    def __post_init__(
+        self,
+        numeric_precision: Optional[Union[int, str]],
+        numeric_scale: Optional[Union[int, str]],
+        numeric_precision_radix: Optional[Literal[2, 10]],
+    ) -> None:
+        if self.numeric_info is None:
+            self.numeric_info = NumericInfo(
+                numeric_precision=numeric_precision,
+                numeric_scale=numeric_scale,
+                numeric_precision_radix=numeric_precision_radix,
+            )
+
+    @property
+    def numeric_precision(self) -> Optional[Union[int, str]]:
+        return self.numeric_info.numeric_precision if self.numeric_info else None
+
+    @property
+    def numeric_scale(self) -> Optional[Union[int, str]]:
+        return self.numeric_info.numeric_scale if self.numeric_info else None
+
+    @property
+    def numeric_precision_radix(self) -> Optional[Literal[2, 10]]:
+        return self.numeric_info.numeric_precision_radix if self.numeric_info else None
 
     @classmethod
     def get_column_name_str(cls) -> str:
-        return ", ".join(i.name for i in dataclasses.fields(cls))
+        return ", ".join(
+            i.name for i in dataclasses.fields(cls) if i.name != "numeric_info"
+        )
 
 
 @dataclasses.dataclass
@@ -136,17 +171,22 @@ class TableConstraints:
 
 
 @dataclasses.dataclass
-class Trigger:
-    constraint_name: str
-    constraint_type: str
-    table_name: str
-    column_name: str
+class ForeignKeyAction:
     on_update: str
     on_delete: Literal[
         "NO ACTION", "RESTRICT", "CASCADE", "SET NULL", "SET_DEFAULT"
     ]
     references_table: str
     references_column: str
+
+
+@dataclasses.dataclass
+class Trigger:
+    constraint_name: str
+    constraint_type: str
+    table_name: str
+    column_name: str
+    action: ForeignKeyAction
 
 
 @dataclasses.dataclass
@@ -167,7 +207,7 @@ class TableTriggers:
         for trigger in self.triggers:
             if (
                 trigger.column_name == column_name
-                and trigger.references_table == references_table
+                and trigger.action.references_table == references_table
             ):
                 return trigger
 
@@ -538,7 +578,21 @@ async def get_fk_triggers(
     )
     return TableTriggers(
         tablename=tablename,
-        triggers=[Trigger(**i) for i in triggers],
+        triggers=[
+            Trigger(
+                constraint_name=i["constraint_name"],
+                constraint_type=i["constraint_type"],
+                table_name=i["table_name"],
+                column_name=i["column_name"],
+                action=ForeignKeyAction(
+                    on_update=i["on_update"],
+                    on_delete=i["on_delete"],
+                    references_table=i["references_table"],
+                    references_column=i["references_column"],
+                ),
+            )
+            for i in triggers
+        ],
     )
 
 
@@ -753,8 +807,8 @@ async def create_table_class_from_db(
                     column_name, constraint_table.name
                 )
                 if trigger:
-                    kwargs["on_update"] = OnUpdate(trigger.on_update)
-                    kwargs["on_delete"] = OnDelete(trigger.on_delete)
+                    kwargs["on_update"] = OnUpdate(trigger.action.on_update)
+                    kwargs["on_delete"] = OnDelete(trigger.action.on_delete)
                 else:
                     output_schema.trigger_warnings.append(
                         f"{tablename}.{column_name}"

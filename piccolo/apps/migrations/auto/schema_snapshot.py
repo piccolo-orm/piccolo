@@ -31,39 +31,41 @@ class SchemaSnapshot:
         tables: list[DiffableTable] = []
 
         # Make sure the managers are sorted correctly:
-        sorted_managers = sorted(self.managers, key=lambda x: x.migration_id)
+        sorted_managers = sorted(
+            self.managers, key=lambda x: x.meta.migration_id
+        )
 
         for manager in sorted_managers:
-            for table in manager.add_tables:
+            for table in manager.operations.table_operations.add_tables:
                 tables.append(table)
 
-            for drop_table in manager.drop_tables:
+            for drop_table in manager.operations.table_operations.drop_tables:
                 tables = [
                     i for i in tables if i.class_name != drop_table.class_name
                 ]
 
-            for rename_table in manager.rename_tables:
+            for rename_table in manager.operations.table_operations.rename_tables:
                 for table in tables:
                     if table.class_name == rename_table.old_class_name:
                         table.class_name = rename_table.new_class_name
                         table.tablename = rename_table.new_tablename
                         break
 
-            for change_table_schema in manager.change_table_schemas:
+            for change_table_schema in manager.operations.table_operations.change_table_schemas:
                 for table in tables:
                     if table.tablename == change_table_schema.tablename:
                         table.schema = change_table_schema.new_schema
                         break
 
             for table in tables:
-                add_columns = manager.add_columns.columns_for_table_class_name(
+                add_columns = manager.operations.column_operations.add_columns.columns_for_table_class_name(
                     table.class_name
                 )
                 table.columns.extend(add_columns)
 
                 ###############################################################
 
-                drop_columns = manager.drop_columns.for_table_class_name(
+                drop_columns = manager.operations.column_operations.drop_columns.for_table_class_name(
                     table.class_name
                 )
                 for drop_column in drop_columns:
@@ -75,12 +77,12 @@ class SchemaSnapshot:
 
                 ###############################################################
 
-                alter_columns = manager.alter_columns.for_table_class_name(
+                alter_columns = manager.operations.column_operations.alter_columns.for_table_class_name(
                     table.class_name
                 )
                 for alter_column in alter_columns:
                     for index, column in enumerate(table.columns):
-                        if column._meta.name == alter_column.column_name:
+                        if column._meta.name == alter_column.column.name:
                             for key, value in alter_column.params.items():
                                 setattr(column._meta, key, value)
                                 column._meta.params.update({key: value})
@@ -101,7 +103,7 @@ class SchemaSnapshot:
 
                 for (
                     rename_column
-                ) in manager.rename_columns.for_table_class_name(
+                ) in manager.operations.column_operations.rename_columns.for_table_class_name(
                     table.class_name
                 ):
                     for column in table.columns:

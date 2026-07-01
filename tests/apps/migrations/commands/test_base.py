@@ -37,7 +37,7 @@ class TestGetMigrationModules(TestCase):
 
         self.assertTrue(len(migration_managers) == 1)
         self.assertTrue(
-            migration_managers[0].migration_id == "2020-03-31T20:38:22"
+            migration_managers[0].meta.migration_id == "2020-03-31T20:38:22"
         )
 
 

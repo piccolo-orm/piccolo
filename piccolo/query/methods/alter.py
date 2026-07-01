@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import itertools
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 from piccolo.columns.base import Column
@@ -285,44 +285,34 @@ class DropTable:
         return query
 
 
-class Alter(DDL):
-    __slots__ = (
-        "_add",
-        "_add_foreign_key_constraint",
-        "_drop_constraint",
-        "_drop_default",
-        "_drop_table",
-        "_drop",
-        "_rename_columns",
-        "_rename_table",
-        "_set_column_type",
-        "_set_default",
-        "_set_digits",
-        "_set_length",
-        "_set_null",
-        "_set_schema",
-        "_set_unique",
-        "_rename_constraint",
+@dataclass
+class _AlterOperations:  # pylint: disable=too-many-instance-attributes
+    add: list[AddColumn] = field(default_factory=list)
+    add_foreign_key_constraint: list[AddForeignKeyConstraint] = field(
+        default_factory=list
     )
+    drop: list[DropColumn] = field(default_factory=list)
+    drop_constraint: list[DropConstraint] = field(default_factory=list)
+    drop_default: list[DropDefault] = field(default_factory=list)
+    drop_table: Optional[DropTable] = None
+    rename_columns: list[RenameColumn] = field(default_factory=list)
+    rename_table: list[RenameTable] = field(default_factory=list)
+    rename_constraint: list[RenameConstraint] = field(default_factory=list)
+    set_column_type: list[SetColumnType] = field(default_factory=list)
+    set_default: list[SetDefault] = field(default_factory=list)
+    set_digits: list[SetDigits] = field(default_factory=list)
+    set_length: list[SetLength] = field(default_factory=list)
+    set_null: list[SetNull] = field(default_factory=list)
+    set_schema: list[SetSchema] = field(default_factory=list)
+    set_unique: list[SetUnique] = field(default_factory=list)
+
+
+class Alter(DDL):
+    __slots__ = ("_operations",)
 
     def __init__(self, table: type[Table], **kwargs):
         super().__init__(table, **kwargs)
-        self._add_foreign_key_constraint: list[AddForeignKeyConstraint] = []
-        self._add: list[AddColumn] = []
-        self._drop_constraint: list[DropConstraint] = []
-        self._drop_default: list[DropDefault] = []
-        self._drop_table: Optional[DropTable] = None
-        self._drop: list[DropColumn] = []
-        self._rename_columns: list[RenameColumn] = []
-        self._rename_table: list[RenameTable] = []
-        self._set_column_type: list[SetColumnType] = []
-        self._set_default: list[SetDefault] = []
-        self._set_digits: list[SetDigits] = []
-        self._set_length: list[SetLength] = []
-        self._set_null: list[SetNull] = []
-        self._set_schema: list[SetSchema] = []
-        self._set_unique: list[SetUnique] = []
-        self._rename_constraint: list[RenameConstraint] = []
+        self._operations = _AlterOperations()
 
     def add_column(self: Self, name: str, column: Column) -> Self:
         """
@@ -338,7 +328,7 @@ class Alter(DDL):
         if isinstance(column, ForeignKey):
             column._setup(table_class=self.table)
 
-        self._add.append(AddColumn(column, name))
+        self._operations.add.append(AddColumn(column, name))
         return self
 
     def drop_column(self, column: Union[str, Column]) -> Alter:
@@ -348,7 +338,7 @@ class Alter(DDL):
             >>> await Band.alter().drop_column(Band.popularity)
 
         """
-        self._drop.append(DropColumn(column))
+        self._operations.drop.append(DropColumn(column))
         return self
 
     def drop_default(self, column: Union[str, Column]) -> Alter:
@@ -358,7 +348,7 @@ class Alter(DDL):
             >>> await Band.alter().drop_default(Band.popularity)
 
         """
-        self._drop_default.append(DropDefault(column=column))
+        self._operations.drop_default.append(DropDefault(column=column))
         return self
 
     def drop_table(
@@ -370,7 +360,7 @@ class Alter(DDL):
             >>> await Band.alter().drop_table()
 
         """
-        self._drop_table = DropTable(
+        self._operations.drop_table = DropTable(
             table=self.table,
             cascade=cascade,
             if_exists=if_exists,
@@ -385,7 +375,7 @@ class Alter(DDL):
 
         """
         # We override the existing one rather than appending.
-        self._rename_table = [RenameTable(new_name=new_name)]
+        self._operations.rename_table = [RenameTable(new_name=new_name)]
         return self
 
     def rename_constraint(self, old_name: str, new_name: str) -> Alter:
@@ -398,7 +388,7 @@ class Alter(DDL):
             ... )
 
         """
-        self._rename_constraint = [
+        self._operations.rename_constraint = [
             RenameConstraint(
                 old_name=old_name,
                 new_name=new_name,
@@ -419,7 +409,7 @@ class Alter(DDL):
             >>> await Band.alter().rename_column('popularity', 'rating')
 
         """
-        self._rename_columns.append(RenameColumn(column, new_name))
+        self._operations.rename_columns.append(RenameColumn(column, new_name))
         return self
 
     def set_column_type(
@@ -440,7 +430,7 @@ class Alter(DDL):
             ``'name::integer'``.
 
         """
-        self._set_column_type.append(
+        self._operations.set_column_type.append(
             SetColumnType(
                 old_column=old_column,
                 new_column=new_column,
@@ -456,7 +446,7 @@ class Alter(DDL):
             >>> await Band.alter().set_default(Band.popularity, 0)
 
         """
-        self._set_default.append(SetDefault(column=column, value=value))
+        self._operations.set_default.append(SetDefault(column=column, value=value))
         return self
 
     def set_null(
@@ -472,7 +462,7 @@ class Alter(DDL):
             >>> await Band.alter().set_null('name', True)
 
         """
-        self._set_null.append(SetNull(column, boolean))
+        self._operations.set_null.append(SetNull(column, boolean))
         return self
 
     def set_unique(
@@ -488,7 +478,7 @@ class Alter(DDL):
             >>> await Band.alter().set_unique('name', True)
 
         """
-        self._set_unique.append(SetUnique(column, boolean))
+        self._operations.set_unique.append(SetUnique(column, boolean))
         return self
 
     def set_length(self, column: Union[str, Varchar], length: int) -> Alter:
@@ -516,7 +506,7 @@ class Alter(DDL):
                 "Only Varchar columns can have their length changed."
             )
 
-        self._set_length.append(SetLength(column, length))
+        self._operations.set_length.append(SetLength(column, length))
         return self
 
     def _get_constraint_name(self, column: Union[str, ForeignKey]) -> str:
@@ -525,7 +515,7 @@ class Alter(DDL):
         return f"{tablename}_{column_name}_fkey"
 
     def drop_constraint(self, constraint_name: str) -> Alter:
-        self._drop_constraint.append(
+        self._operations.drop_constraint.append(
             DropConstraint(constraint_name=constraint_name)
         )
         return self
@@ -534,7 +524,7 @@ class Alter(DDL):
         self, column: Union[str, ForeignKey]
     ) -> Alter:
         constraint_name = self._get_constraint_name(column=column)
-        self._drop_constraint.append(
+        self._operations.drop_constraint.append(
             DropConstraint(constraint_name=constraint_name)
         )
         return self
@@ -578,7 +568,7 @@ class Alter(DDL):
             else:
                 raise ValueError("Please pass in `referenced_table_name`.")
 
-        self._add_foreign_key_constraint.append(
+        self._operations.add_foreign_key_constraint.append(
             AddForeignKeyConstraint(
                 constraint_name=constraint_name,
                 foreign_key_column_name=column_name,
@@ -603,7 +593,7 @@ class Alter(DDL):
             if isinstance(column, Numeric)
             else "NUMERIC"
         )
-        self._set_digits.append(
+        self._operations.set_digits.append(
             SetDigits(
                 digits=digits,
                 column=column,
@@ -620,34 +610,34 @@ class Alter(DDL):
             The schema to move the table to.
 
         """
-        self._set_schema.append(SetSchema(schema_name=schema_name))
+        self._operations.set_schema.append(SetSchema(schema_name=schema_name))
         return self
 
     @property
     def default_ddl(self) -> Sequence[str]:
-        if self._drop_table is not None:
-            return [self._drop_table.ddl]
+        if self._operations.drop_table is not None:
+            return [self._operations.drop_table.ddl]
 
         query = f"ALTER TABLE {self.table._meta.get_formatted_tablename()}"
 
         alterations = [
             i.ddl
             for i in itertools.chain(
-                self._add,
-                self._add_foreign_key_constraint,
-                self._rename_columns,
-                self._rename_table,
-                self._rename_constraint,
-                self._drop,
-                self._drop_constraint,
-                self._drop_default,
-                self._set_column_type,
-                self._set_unique,
-                self._set_null,
-                self._set_length,
-                self._set_default,
-                self._set_digits,
-                self._set_schema,
+                self._operations.add,
+                self._operations.add_foreign_key_constraint,
+                self._operations.rename_columns,
+                self._operations.rename_table,
+                self._operations.rename_constraint,
+                self._operations.drop,
+                self._operations.drop_constraint,
+                self._operations.drop_default,
+                self._operations.set_column_type,
+                self._operations.set_unique,
+                self._operations.set_null,
+                self._operations.set_length,
+                self._operations.set_default,
+                self._operations.set_digits,
+                self._operations.set_schema,
             )
         ]
 

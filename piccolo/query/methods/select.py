@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import dataclass, field
+
 import itertools
 from collections import OrderedDict
 from collections.abc import Callable, Sequence
@@ -147,22 +149,46 @@ class SelectJSON(Proxy["Select", str]):
         return dump_json(rows)
 
 
+@dataclass
+class _ConditionDelegates:
+    where: WhereDelegate = field(default_factory=WhereDelegate)
+    having: WhereDelegate = field(default_factory=WhereDelegate)
+
+
+@dataclass
+class _SortDelegates:
+    order_by: OrderByDelegate = field(default_factory=OrderByDelegate)
+    group_by: GroupByDelegate = field(default_factory=GroupByDelegate)
+    distinct: DistinctDelegate = field(default_factory=DistinctDelegate)
+
+
+@dataclass
+class _PaginationDelegates:
+    limit: LimitDelegate = field(default_factory=LimitDelegate)
+    offset: OffsetDelegate = field(default_factory=OffsetDelegate)
+
+
+@dataclass
+class _OutputDelegates:
+    output: OutputDelegate = field(default_factory=OutputDelegate)
+    callback: CallbackDelegate = field(default_factory=CallbackDelegate)
+
+
+@dataclass
+class _MiscDelegates:
+    as_of: AsOfDelegate = field(default_factory=AsOfDelegate)
+    columns: ColumnsDelegate = field(default_factory=ColumnsDelegate)
+    lock_rows: LockRowsDelegate = field(default_factory=LockRowsDelegate)
+
+
 class Select(Query[TableInstance, list[dict[str, Any]]]):
     __slots__ = (
-        "columns_list",
         "exclude_secrets",
-        "as_of_delegate",
-        "columns_delegate",
-        "distinct_delegate",
-        "group_by_delegate",
-        "limit_delegate",
-        "offset_delegate",
-        "order_by_delegate",
-        "output_delegate",
-        "callback_delegate",
-        "where_delegate",
-        "having_delegate",
-        "lock_rows_delegate",
+        "_condition",
+        "_sort",
+        "_pagination",
+        "_output",
+        "_misc",
     )
 
     def __init__(
@@ -177,20 +203,114 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
         super().__init__(table, **kwargs)
         self.exclude_secrets = exclude_secrets
 
-        self.as_of_delegate = AsOfDelegate()
-        self.columns_delegate = ColumnsDelegate()
-        self.distinct_delegate = DistinctDelegate()
-        self.group_by_delegate = GroupByDelegate()
-        self.limit_delegate = LimitDelegate()
-        self.offset_delegate = OffsetDelegate()
-        self.order_by_delegate = OrderByDelegate()
-        self.output_delegate = OutputDelegate()
-        self.callback_delegate = CallbackDelegate()
-        self.where_delegate = WhereDelegate()
-        self.having_delegate = WhereDelegate()
-        self.lock_rows_delegate = LockRowsDelegate()
+        self._condition = _ConditionDelegates()
+        self._sort = _SortDelegates()
+        self._pagination = _PaginationDelegates()
+        self._output = _OutputDelegates()
+        self._misc = _MiscDelegates()
 
         self.columns(*columns_list)
+
+    ###########################################################################
+    # Backward-compatible properties for delegates
+
+    @property
+    def columns_delegate(self) -> ColumnsDelegate:
+        return self._misc.columns
+
+    @columns_delegate.setter
+    def columns_delegate(self, value: ColumnsDelegate) -> None:
+        self._misc.columns = value
+
+    @property
+    def as_of_delegate(self) -> AsOfDelegate:
+        return self._misc.as_of
+
+    @as_of_delegate.setter
+    def as_of_delegate(self, value: AsOfDelegate) -> None:
+        self._misc.as_of = value
+
+    @property
+    def lock_rows_delegate(self) -> LockRowsDelegate:
+        return self._misc.lock_rows
+
+    @lock_rows_delegate.setter
+    def lock_rows_delegate(self, value: LockRowsDelegate) -> None:
+        self._misc.lock_rows = value
+
+    @property
+    def where_delegate(self) -> WhereDelegate:
+        return self._condition.where
+
+    @where_delegate.setter
+    def where_delegate(self, value: WhereDelegate) -> None:
+        self._condition.where = value
+
+    @property
+    def having_delegate(self) -> WhereDelegate:
+        return self._condition.having
+
+    @having_delegate.setter
+    def having_delegate(self, value: WhereDelegate) -> None:
+        self._condition.having = value
+
+    @property
+    def order_by_delegate(self) -> OrderByDelegate:
+        return self._sort.order_by
+
+    @order_by_delegate.setter
+    def order_by_delegate(self, value: OrderByDelegate) -> None:
+        self._sort.order_by = value
+
+    @property
+    def group_by_delegate(self) -> GroupByDelegate:
+        return self._sort.group_by
+
+    @group_by_delegate.setter
+    def group_by_delegate(self, value: GroupByDelegate) -> None:
+        self._sort.group_by = value
+
+    @property
+    def distinct_delegate(self) -> DistinctDelegate:
+        return self._sort.distinct
+
+    @distinct_delegate.setter
+    def distinct_delegate(self, value: DistinctDelegate) -> None:
+        self._sort.distinct = value
+
+    @property
+    def limit_delegate(self) -> LimitDelegate:
+        return self._pagination.limit
+
+    @limit_delegate.setter
+    def limit_delegate(self, value: LimitDelegate) -> None:
+        self._pagination.limit = value
+
+    @property
+    def offset_delegate(self) -> OffsetDelegate:
+        return self._pagination.offset
+
+    @offset_delegate.setter
+    def offset_delegate(self, value: OffsetDelegate) -> None:
+        self._pagination.offset = value
+
+    @property
+    def output_delegate(self) -> OutputDelegate:
+        return self._output.output
+
+    @output_delegate.setter
+    def output_delegate(self, value: OutputDelegate) -> None:
+        self._output.output = value
+
+    @property
+    def callback_delegate(self) -> CallbackDelegate:
+        return self._output.callback
+
+    @callback_delegate.setter
+    def callback_delegate(self, value: CallbackDelegate) -> None:
+        self._output.callback = value
+
+    ###########################################################################
 
     def columns(self: Self, *columns: Union[Selectable, str]) -> Self:
         _columns = self.table._process_column_args(*columns)

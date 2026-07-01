@@ -6,7 +6,9 @@ from typing import Any, Optional
 from piccolo.apps.migrations.auto.operations import (
     AddColumn,
     AlterColumn,
+    ColumnRef,
     DropColumn,
+    TableRef,
 )
 from piccolo.apps.migrations.auto.serialisation import (
     deserialise_params,
@@ -184,15 +186,19 @@ class DiffableTable:
             if delta or (column.__class__ != existing_column.__class__):
                 alter_columns.append(
                     AlterColumn(
-                        table_class_name=self.class_name,
-                        tablename=self.tablename,
-                        column_name=column._meta.name,
-                        db_column_name=column._meta.db_column_name,
+                        table=TableRef(
+                            class_name=self.class_name,
+                            tablename=self.tablename,
+                            schema=self.schema,
+                        ),
+                        column=ColumnRef(
+                            name=column._meta.name,
+                            db_column_name=column._meta.db_column_name,
+                        ),
                         params=deserialise_params(delta),
                         old_params=old_params,
                         column_class=column.__class__,
                         old_column_class=existing_column.__class__,
-                        schema=self.schema,
                     )
                 )
 

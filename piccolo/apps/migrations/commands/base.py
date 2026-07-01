@@ -101,7 +101,7 @@ class BaseMigrationManager(Finder):
                 migration_managers.append(response)
                 if (
                     max_migration_id
-                    and response.migration_id == max_migration_id
+                    and response.meta.migration_id == max_migration_id
                 ):
                     break
 
