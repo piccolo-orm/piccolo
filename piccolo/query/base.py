@@ -56,77 +56,83 @@ class Query(Generic[TableInstance, QueryResponseType]):
         if hasattr(self, "_raw_response_callback"):
             self._raw_response_callback(raw)
 
+        raw = self._load_json_columns(raw)
+        raw = await self.response_handler(raw)
+        return self._process_output(raw)
+
+    def _load_json_columns(self, raw: list[dict]) -> list[dict]:
         output: Optional[OutputDelegate] = getattr(
             self, "output_delegate", None
         )
+        if not (output and output._output.load_json):
+            return raw
 
-        #######################################################################
+        columns_delegate: Optional[ColumnsDelegate] = getattr(
+            self, "columns_delegate", None
+        )
 
-        if output and output._output.load_json:
-            columns_delegate: Optional[ColumnsDelegate] = getattr(
-                self, "columns_delegate", None
-            )
+        json_column_names: list[str] = []
 
-            json_column_names: list[str] = []
+        if columns_delegate is not None:
+            json_columns: list[Union[JSON, JSONB]] = []
 
-            if columns_delegate is not None:
-                json_columns: list[Union[JSON, JSONB]] = []
+            for column in columns_delegate.selected_columns:
+                if isinstance(column, (JSON, JSONB)):
+                    json_columns.append(column)
+                elif isinstance(column, JSONQueryString):
+                    if alias := column._alias:
+                        json_column_names.append(alias)
+        else:
+            json_columns = self.table._meta.json_columns
 
-                for column in columns_delegate.selected_columns:
-                    if isinstance(column, (JSON, JSONB)):
-                        json_columns.append(column)
-                    elif isinstance(column, JSONQueryString):
-                        if alias := column._alias:
-                            json_column_names.append(alias)
+        for column in json_columns:
+            if column._alias is not None:
+                json_column_names.append(column._alias)
+            elif len(column._meta.call_chain) > 0:
+                json_column_names.append(column._meta.get_default_alias())
             else:
-                json_columns = self.table._meta.json_columns
+                json_column_names.append(column._meta.name)
 
-            for column in json_columns:
-                if column._alias is not None:
-                    json_column_names.append(column._alias)
-                elif len(column._meta.call_chain) > 0:
-                    json_column_names.append(column._meta.get_default_alias())
-                else:
-                    json_column_names.append(column._meta.name)
+        processed_raw = []
 
-            processed_raw = []
+        for row in raw:
+            new_row = {**row}
+            for json_column_name in json_column_names:
+                value = new_row.get(json_column_name)
+                if value is not None:
+                    new_row[json_column_name] = load_json(value)
+            processed_raw.append(new_row)
 
-            for row in raw:
-                new_row = {**row}
-                for json_column_name in json_column_names:
-                    value = new_row.get(json_column_name)
-                    if value is not None:
-                        new_row[json_column_name] = load_json(value)
-                processed_raw.append(new_row)
+        return processed_raw
 
-            raw = processed_raw
+    def _process_output(self, raw: list[dict]) -> QueryResponseType:
+        output: Optional[OutputDelegate] = getattr(
+            self, "output_delegate", None
+        )
+        if not output:
+            return cast(QueryResponseType, raw)
 
-        #######################################################################
-
-        raw = await self.response_handler(raw)
-
-        if output:
-            if output._output.as_objects:
-                if output._output.nested:
-                    return cast(
-                        QueryResponseType,
-                        [
-                            make_nested_object(
-                                row,
-                                self.table,
-                                load_json=output._output.load_json,
-                            )
-                            for row in raw
-                        ],
-                    )
-                else:
-                    return cast(
-                        QueryResponseType,
-                        [
-                            self.table(**columns, _exists_in_db=True)
-                            for columns in raw
-                        ],
-                    )
+        if output._output.as_objects:
+            if output._output.nested:
+                return cast(
+                    QueryResponseType,
+                    [
+                        make_nested_object(
+                            row,
+                            self.table,
+                            load_json=output._output.load_json,
+                        )
+                        for row in raw
+                    ],
+                )
+            else:
+                return cast(
+                    QueryResponseType,
+                    [
+                        self.table(**columns, _exists_in_db=True)
+                        for columns in raw
+                    ],
+                )
 
         return cast(QueryResponseType, raw)
 
