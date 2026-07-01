@@ -1,6 +1,15 @@
 Changes
 =======
 
+1.35.0
+------
+
+``ModelBuilder`` now generates proper email values for ``Email`` columns.
+
+Fixed a bug with ``output(load_json=True)`` when JSON column had null values.
+
+-------------------------------------------------------------------------------
+
 1.34.0
 ------
 
