@@ -459,6 +459,33 @@ class TestJoin(TableTest):
             instrument.recording_studio.facilities,
         )
 
+    def test_objects_nested_with_load_json_array(self):
+        """
+        Make sure that nested objects works alongside ``load_json``, when
+        the nested object has an array value for a JSON column.
+
+        https://github.com/piccolo-orm/piccolo/issues/1399#issuecomment-4864444701
+
+        """  # noqa: E501
+        RecordingStudio.update(
+            {
+                RecordingStudio.facilities: ["restaurant"],
+            },
+            force=True,
+        ).run_sync()
+
+        instrument = (
+            Instrument.objects(Instrument.recording_studio)
+            .output(load_json=True)
+            .first()
+            .run_sync()
+        )
+        assert instrument is not None
+        self.assertListEqual(
+            instrument.recording_studio.facilities,
+            ["restaurant"],
+        )
+
     def test_objects_prefetch_clause(self):
         """
         Make sure that ``prefetch`` clause works correctly.
