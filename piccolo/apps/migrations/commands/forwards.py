@@ -70,6 +70,12 @@ class ForwardsMigrationManager(BaseMigrationManager):
             n = len(subset)
             print(f"🚀 Running {n} migration{'s' if n != 1 else ''}:")
 
+            if self.fake and n > 1:
+                print(
+                    f"⚠️  --fake will mark all {n} migrations as run without "
+                    "applying them."
+                )
+
             for _id in subset:
                 migration_module = migration_modules[_id]
                 response = await migration_module.forwards()

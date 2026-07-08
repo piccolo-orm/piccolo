@@ -223,6 +223,19 @@ class TestForwardsBackwards(TestCase):
 
     @engines_only("postgres")
     @patch("piccolo.apps.migrations.commands.forwards.print")
+    def test_forwards_fake_multiple_warns(self, print_: MagicMock):
+        """
+        ``--fake`` marks migrations as run without applying them; when it
+        covers several migrations at once it should warn the user.
+
+        https://github.com/piccolo-orm/piccolo/issues/1255
+        """
+        run_sync(forwards(app_name="music", migration_id="all", fake=True))
+
+        printed = " ".join(str(c.args[0]) for c in print_.mock_calls if c.args)
+        self.assertIn("--fake will mark all", printed)
+
+    @patch("piccolo.apps.migrations.commands.forwards.print")
     def test_hardcoded_fake_migrations(self, print_: MagicMock):
         """
         Make sure that migrations that have been hardcoded as fake aren't
