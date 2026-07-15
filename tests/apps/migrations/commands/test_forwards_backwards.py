@@ -6,10 +6,13 @@ from unittest import TestCase
 from unittest.mock import MagicMock, call, patch
 
 from piccolo.apps.migrations.commands.backwards import backwards
-from piccolo.apps.migrations.commands.forwards import forwards
+from piccolo.apps.migrations.commands.forwards import (
+    ForwardsMigrationManager,
+    forwards,
+)
 from piccolo.apps.migrations.tables import Migration
 from piccolo.utils.sync import run_sync
-from tests.base import engines_only
+from tests.base import AsyncMock, engines_only
 from tests.example_apps.music.tables import (
     Band,
     Concert,
@@ -256,3 +259,57 @@ class TestForwardsBackwards(TestCase):
             table_class.alter().drop_table(
                 cascade=True, if_exists=True
             ).run_sync()
+
+
+class TestForwardsAlreadyRan(TestCase):
+    """
+    Regression test for when a specific migration ID has already run, but
+    there are later migrations which haven't. The command should succeed
+    rather than reporting the migration as unrecognised.
+    """
+
+    @patch("piccolo.apps.migrations.commands.forwards.print")
+    @patch(
+        "piccolo.apps.migrations.commands.forwards.Migration.get_migrations_which_ran",
+        new_callable=AsyncMock,
+    )
+    @patch(
+        "piccolo.apps.migrations.commands.forwards.ForwardsMigrationManager.get_migration_modules"
+    )
+    def test_already_ran_migration_with_later_unrun(
+        self,
+        get_migration_modules: MagicMock,
+        get_migrations_which_ran: MagicMock,
+        print_: MagicMock,
+    ):
+        migration_id = "2020-12-17T18:44:30"
+        later_migration_id = "2020-12-17T18:44:39"
+
+        get_migrations_which_ran.return_value = [migration_id]
+
+        first_module = MagicMock()
+        first_module.ID = migration_id
+        later_module = MagicMock()
+        later_module.ID = later_migration_id
+
+        get_migration_modules.return_value = {
+            migration_id: first_module,
+            later_migration_id: later_module,
+        }
+
+        manager = ForwardsMigrationManager(
+            app_name="music", migration_id=migration_id
+        )
+
+        app_config = MagicMock()
+        app_config.app_name = "music"
+        app_config.resolved_migrations_folder_path = "/tmp"
+
+        result = run_sync(manager.run_migrations(app_config))
+
+        self.assertTrue(result.success)
+        self.assertIn(
+            call("🏁 No migrations need to be run"), print_.mock_calls
+        )
+        first_module.forwards.assert_not_called()
+        later_module.forwards.assert_not_called()

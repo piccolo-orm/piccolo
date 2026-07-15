@@ -56,6 +56,11 @@ class ForwardsMigrationManager(BaseMigrationManager):
             subset = havent_run
         elif self.migration_id == "1":
             subset = havent_run[:1]
+        elif self.migration_id in already_ran:
+            # The migration has already been run, so there's nothing to do.
+            message = "🏁 No migrations need to be run"
+            print(message)
+            return MigrationResult(success=True, message=message)
         else:
             try:
                 index = havent_run.index(self.migration_id)
