@@ -1002,7 +1002,7 @@ class Column(Selectable):
                 foreign_key_meta.resolved_target_column._meta.name
             )
             query += (
-                f" REFERENCES {tablename} ({target_column_name})"
+                f' REFERENCES "{tablename}" ("{target_column_name}")'
                 f" ON DELETE {on_delete}"
                 f" ON UPDATE {on_update}"
             )
