@@ -459,6 +459,7 @@ class TestJoin(TableTest):
             instrument.recording_studio.facilities,
         )
 
+    # TODO - move to a separate class
     def test_objects_nested_with_load_json_array(self):
         """
         Make sure that nested objects works alongside ``load_json``, when
@@ -469,7 +470,7 @@ class TestJoin(TableTest):
         """  # noqa: E501
         RecordingStudio.update(
             {
-                RecordingStudio.facilities: ["restaurant"],
+                RecordingStudio.facilities: ["restaurant", "toilets"],
             },
             force=True,
         ).run_sync()
@@ -483,7 +484,7 @@ class TestJoin(TableTest):
         assert instrument is not None
         self.assertListEqual(
             instrument.recording_studio.facilities,
-            ["restaurant"],
+            ["restaurant", "toilets"],
         )
 
     def test_objects_prefetch_clause(self):
