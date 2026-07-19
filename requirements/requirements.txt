@@ -1,5 +1,5 @@
 black
-colorama>=0.4.0
+colorama>=0.4.6
 Jinja2>=2.11.0
 targ>=0.3.7
 inflection>=0.5.1
