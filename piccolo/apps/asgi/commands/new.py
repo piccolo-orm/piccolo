@@ -18,7 +18,7 @@ ROUTER_DEPENDENCIES = {
     "lilya": ["lilya"],
     "quart": ["quart", "quart_schema"],
     "falcon": ["falcon"],
-    "sanic": ["sanic", "sanic_ext"],
+    "sanic": ["sanic==25.12.1", "sanic_ext==25.12.0", "tracerite==2.5.2"],
 }
 ROUTERS = list(ROUTER_DEPENDENCIES.keys())
 
