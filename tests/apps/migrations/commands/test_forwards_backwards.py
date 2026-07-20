@@ -9,7 +9,7 @@ from piccolo.apps.migrations.commands.backwards import backwards
 from piccolo.apps.migrations.commands.forwards import forwards
 from piccolo.apps.migrations.tables import Migration
 from piccolo.utils.sync import run_sync
-from tests.base import engines_only
+from tests.base import AsyncMock, engines_only
 from tests.example_apps.music.tables import (
     Band,
     Concert,
@@ -139,6 +139,35 @@ class TestForwardsBackwards(TestCase):
         self.assertTrue(
             call("migration-12345 is unrecognised", file=sys.stderr)
             in print_.mock_calls
+        )
+
+    @patch("piccolo.apps.migrations.commands.forwards.print")
+    @patch(
+        "piccolo.apps.migrations.commands.forwards.Migration.get_migrations_which_ran",  # noqa: E501
+        new_callable=AsyncMock,
+    )
+    def test_already_ran(
+        self,
+        get_migrations_which_ran: MagicMock,
+        print_: MagicMock,
+    ):
+        """
+        When a specific migration ID has already run, but there are later
+        migrations which haven't, then the command should succeed rather than
+        reporting the migration as unrecognised.
+
+        https://github.com/piccolo-orm/piccolo/issues/1359
+
+        """
+        migration_id = "2020-12-17T18:44:30"
+
+        get_migrations_which_ran.return_value = [migration_id]
+
+        run_sync(forwards(app_name="music", migration_id=migration_id))
+
+        self.assertIn(
+            call(f"🏁 Migration {migration_id} has already been run"),
+            print_.mock_calls,
         )
 
     @patch("piccolo.apps.migrations.commands.backwards.print")

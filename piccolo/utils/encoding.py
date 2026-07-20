@@ -63,7 +63,7 @@ class JSONDict(dict):
     ...
 
 
-def load_json(data: str) -> Any:
+def load_json(data: str | bytes | bytearray) -> Any:
     response = (
         orjson.loads(data) if ORJSON else json.loads(data)  # type: ignore
     )
