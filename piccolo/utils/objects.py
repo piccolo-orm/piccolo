@@ -72,6 +72,10 @@ def make_nested_object(
         elif (
             load_json
             and key in json_column_names
+            # The top level might already have the JSON loaded, so check for
+            # a string, rather than it being non-null.
+            # https://github.com/piccolo-orm/piccolo/issues/1399
+            # Ideally we want a cleaner solution than this.
             and isinstance(value, (str, bytes, bytearray))
         ):
             table_params[key] = encoding.load_json(value)
