@@ -999,10 +999,10 @@ class Column(Selectable):
             on_delete = foreign_key_meta.on_delete.value
             on_update = foreign_key_meta.on_update.value
             target_column_name = (
-                foreign_key_meta.resolved_target_column._meta.name
+                foreign_key_meta.resolved_target_column._meta.db_column_name
             )
             query += (
-                f' REFERENCES "{tablename}" ("{target_column_name}")'
+                f' REFERENCES {tablename} ("{target_column_name}")'
                 f" ON DELETE {on_delete}"
                 f" ON UPDATE {on_update}"
             )
