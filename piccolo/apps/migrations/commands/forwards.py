@@ -31,6 +31,11 @@ class ForwardsMigrationManager(BaseMigrationManager):
             app_name=app_config.app_name
         )
 
+        if self.migration_id in already_ran:
+            message = f"🏁 Migration {self.migration_id} has already been run"
+            print(message)
+            return MigrationResult(success=True, message=message)
+
         migration_modules: dict[str, MigrationModule] = (
             self.get_migration_modules(
                 app_config.resolved_migrations_folder_path
