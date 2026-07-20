@@ -375,9 +375,11 @@ class Objects(
         return self
 
     def order_by(
-        self: Self, *columns: Union[Column, str, OrderByRaw], ascending=True
+        self: Self,
+        *columns: Union[Column, str, OrderByRaw, QueryString],
+        ascending=True,
     ) -> Self:
-        _columns: list[Union[Column, OrderByRaw]] = []
+        _columns: list[Union[Column, OrderByRaw, QueryString]] = []
         for column in columns:
             if isinstance(column, str):
                 _columns.append(self.table._meta.get_column_by_name(column))

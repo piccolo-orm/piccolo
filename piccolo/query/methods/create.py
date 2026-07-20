@@ -89,3 +89,13 @@ class Create(DDL):
                 )
 
         return ddl
+
+    async def run(self, in_pool: bool = True):
+        engine = self.table._meta.db
+        if engine and engine.engine_type == "postgres":
+            from piccolo.engine.extensions import check_extensions_for_create
+
+            await check_extensions_for_create(
+                engine, list(self.table._meta.columns)
+            )
+        return await super().run(in_pool=in_pool)

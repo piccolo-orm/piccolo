@@ -68,3 +68,11 @@ class ArrayNotAny(ComparisonOperator):
 
 class ArrayAll(ComparisonOperator):
     template = "{value} = ALL ({name})"
+
+
+class TrgmSimilar(ComparisonOperator):
+    template = "{name} % {value}"
+
+
+class TSMatch(ComparisonOperator):
+    template = "{name} @@ {value}"

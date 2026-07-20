@@ -74,6 +74,8 @@ from piccolo.columns.operators.comparison import (
     ArrayAll,
     ArrayAny,
     ArrayNotAny,
+    TrgmSimilar,
+    TSMatch,
 )
 from piccolo.columns.operators.string import Concat
 from piccolo.columns.reference import LazyTableReference
@@ -300,7 +302,26 @@ class TimedeltaDelegate:
 ###############################################################################
 
 
-class Varchar(Column):
+class TrigramMixin:
+    """
+    Adds pg_trgm operator methods to text column types.
+    Requires the ``pg_trgm`` extension on PostgreSQL.
+    """
+
+    def trigram_similar(self, value: str) -> Where:
+        return Where(
+            column=self,  # type: ignore[arg-type]
+            value=value,
+            operator=TrgmSimilar,
+        )
+
+    def trigram_distance(self, value: str) -> QueryString:
+        return QueryString(  # type: ignore[arg-type]
+            "({} <-> {})", self, value
+        )
+
+
+class Varchar(TrigramMixin, Column):
     """
     Used for storing text when you want to enforce character length limits.
     Uses the ``str`` type for values.
@@ -454,7 +475,7 @@ class Secret(Varchar):
         obj.__dict__[self._meta.name] = value
 
 
-class Text(Column):
+class Text(TrigramMixin, Column):
     """
     Use when you want to store large strings, and don't want to limit the
     string size. Uses the ``str`` type for values.
@@ -3024,3 +3045,104 @@ class Array(Column):
 
     def __set__(self, obj, value: list[Any]):
         obj.__dict__[self._meta.name] = value
+
+
+###############################################################################
+
+
+class Vector(Column):
+    """
+    Stores fixed-length floating-point vectors for similarity search.
+    Requires the ``pgvector`` extension on PostgreSQL.
+
+    **Example**
+
+    .. code-block:: python
+
+        class Item(Table):
+            embedding = Vector(dimensions=1536)
+
+        >>> await Item(embedding=[0.1, 0.2, 0.3]).save()
+
+    .. note:: Postgres only
+
+    """
+
+    required_extension = "vector"
+    value_type = list
+
+    def __init__(self, dimensions: int = 1536, **kwargs):
+        self.dimensions = dimensions
+        super().__init__(**kwargs)
+        self._meta.params["dimensions"] = dimensions
+
+    @property
+    def column_type(self) -> str:
+        if self._meta.engine_type != "postgres":
+            raise NotImplementedError(
+                "Vector column type is only supported on PostgreSQL."
+            )
+        return f"vector({self.dimensions})"
+
+    def cosine_distance(self, value) -> QueryString:
+        return QueryString("({} <=> {}::vector)", self, value)
+
+    def l2_distance(self, value) -> QueryString:
+        return QueryString("({} <-> {}::vector)", self, value)
+
+    def max_inner_product(self, value) -> QueryString:
+        return QueryString("({} <#> {}::vector)", self, value)
+
+
+class Tsvector(Column):
+    """
+    Stores pre-processed full-text search documents.
+    Requires PostgreSQL.
+
+    **Example**
+
+    .. code-block:: python
+
+        class Article(Table):
+            search_vector = Tsvector()
+
+        >>> await Article.select().where(
+        ...     Article.search_vector.matches(ToTsquery("python"))
+        ... )
+
+    .. note:: Postgres only
+
+    """
+
+    value_type = str
+
+    @property
+    def column_type(self) -> str:
+        if self._meta.engine_type != "postgres":
+            raise NotImplementedError(
+                "Tsvector column type is only supported on PostgreSQL."
+            )
+        return "tsvector"
+
+    def matches(self, query) -> Where:
+        return Where(column=self, value=query, operator=TSMatch)
+
+
+class Tsquery(Column):
+    """
+    Stores a full-text search query.
+    Requires PostgreSQL.
+
+    .. note:: Postgres only
+
+    """
+
+    value_type = str
+
+    @property
+    def column_type(self) -> str:
+        if self._meta.engine_type != "postgres":
+            raise NotImplementedError(
+                "Tsquery column type is only supported on PostgreSQL."
+            )
+        return "tsquery"

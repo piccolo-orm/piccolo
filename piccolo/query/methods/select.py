@@ -405,16 +405,19 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
             return response
 
     def order_by(
-        self: Self, *columns: Union[Column, str, OrderByRaw], ascending=True
+        self: Self,
+        *columns: Union[Column, str, OrderByRaw, QueryString],
+        ascending=True,
     ) -> Self:
         """
         :param columns:
             Either a :class:`piccolo.columns.base.Column` instance, a string
-            representing a column name, or :class:`piccolo.query.OrderByRaw`
-            which allows you for complex use cases like
-            ``OrderByRaw('random()')``.
+            representing a column name, a :class:`piccolo.query.OrderByRaw`
+            for raw SQL expressions, or a
+            :class:`piccolo.querystring.QueryString` for computed expressions
+            like vector distance functions.
         """
-        _columns: list[Union[Column, OrderByRaw]] = []
+        _columns: list[Union[Column, OrderByRaw, QueryString]] = []
         for column in columns:
             if isinstance(column, str):
                 _columns.append(self.table._meta.get_column_by_name(column))
