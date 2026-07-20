@@ -589,7 +589,7 @@ class TableB(Table):
 class TestObjectsNestedLoadJSONArray(AsyncTableTest):
     tables = [TableA, TableB]
 
-    async def test_objects_nested_with_load_json_parent(self):
+    async def test_objects_nested_with_load_json_array(self):
         """
         Make sure that nested objects works alongside ``load_json``, when
         the parent object has a JSON column, and it contains an array value.
@@ -604,11 +604,18 @@ class TestObjectsNestedLoadJSONArray(AsyncTableTest):
         table_a = TableA()
         await table_a.save()
 
-        table_b = TableB(data=["a", "b", "c"], table_a=table_a.id)
+        data = ["a", "b", "c"]
+        table_b = TableB(data=data, table_a=table_a.id)
         await table_b.save()
 
         # Without prefetch:
-        await TableB.objects().output(load_json=True)
+        row = await TableB.objects().output(load_json=True).first()
+        assert row
+        assert row.data == data
 
         # With prefetch:
-        await TableB.objects(TableB.table_a).output(load_json=True)
+        row = (
+            await TableB.objects(TableB.table_a).output(load_json=True).first()
+        )
+        assert row
+        assert row.data == data
