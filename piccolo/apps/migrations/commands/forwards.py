@@ -73,6 +73,20 @@ class ForwardsMigrationManager(BaseMigrationManager):
 
         if subset:
             n = len(subset)
+
+            if self.fake and n > 1:
+                if (
+                    input(
+                        f"⚠️ --fake will mark all {n} migrations as run "
+                        "without applying them. Continue? [y/N]"
+                    ).lower()
+                    != "y"
+                ):
+                    print("Migration stopped")
+                    return MigrationResult(
+                        success=False, message="Migration stopped"
+                    )
+
             print(f"🚀 Running {n} migration{'s' if n != 1 else ''}:")
 
             for _id in subset:
@@ -81,20 +95,19 @@ class ForwardsMigrationManager(BaseMigrationManager):
 
                 if isinstance(response, MigrationManager):
                     if self.fake or response.fake:
-                        print(f"- {_id}: faked! ⏭️")
+                        print(f"  - {_id}: faked! ⏭️")
                     else:
                         if self.preview:
                             response.preview = True
                         await response.run()
-
-                print("ok! ✔️")
+                        print("ok! ✔️")
 
                 if not self.preview:
                     await Migration.insert().add(
                         Migration(name=_id, app_name=app_config.app_name)
                     ).run()
 
-        return MigrationResult(success=True, message="migration succeeded")
+        return MigrationResult(success=True, message="Migration succeeded")
 
     async def run(self) -> MigrationResult:
         await self.create_migration_table()

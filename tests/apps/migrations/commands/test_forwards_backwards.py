@@ -6,8 +6,10 @@ from unittest import TestCase
 from unittest.mock import MagicMock, call, patch
 
 from piccolo.apps.migrations.commands.backwards import backwards
+from piccolo.apps.migrations.commands.base import BaseMigrationManager
 from piccolo.apps.migrations.commands.forwards import forwards
 from piccolo.apps.migrations.tables import Migration
+from piccolo.conf.apps import Finder
 from piccolo.utils.sync import run_sync
 from tests.base import AsyncMock, engines_only
 from tests.example_apps.music.tables import (
@@ -45,6 +47,16 @@ class TestForwardsBackwards(TestCase):
     """
     Test the forwards and backwards migration commands.
     """
+
+    def get_migration_names(self):
+        app_config = Finder().get_app_config(app_name="music")
+        finder = BaseMigrationManager()
+        migration_modules_dict = finder.get_migration_modules(
+            folder_path=app_config.migrations_folder_path.__str__()
+        )
+        return finder.get_migration_ids(
+            migration_module_dict=migration_modules_dict
+        )
 
     def test_forwards_backwards_all_migrations(self):
         """
@@ -221,10 +233,13 @@ class TestForwardsBackwards(TestCase):
         )
 
     @engines_only("postgres")
-    def test_forwards_fake(self):
+    @patch("piccolo.apps.migrations.commands.forwards.input")
+    def test_forwards_fake(self, _input: MagicMock):
         """
         Make sure migrations can be faked on the command line.
         """
+        _input.return_value = "y"
+
         run_sync(forwards(app_name="music", migration_id="all", fake=True))
 
         for table_class in TABLE_CLASSES:
@@ -234,23 +249,28 @@ class TestForwardsBackwards(TestCase):
             Migration.select(Migration.name).output(as_list=True).run_sync()
         )
 
-        self.assertEqual(
-            ran_migration_names,
-            # TODO - rather than hardcoding, might fetch these dynamically.
-            [
-                "2020-12-17T18:44:30",
-                "2020-12-17T18:44:39",
-                "2020-12-17T18:44:44",
-                "2021-07-25T22:38:48:009306",
-                "2021-09-06T13:58:23:024723",
-                "2021-11-13T14:01:46:114725",
-                "2024-05-28T23:15:41:018844",
-                "2024-06-19T18:11:05:793132",
-                "2026-02-22T00:41:01:493867",
-            ],
-        )
+        self.assertListEqual(ran_migration_names, self.get_migration_names())
 
     @engines_only("postgres")
+    @patch("piccolo.apps.migrations.commands.forwards.input")
+    def test_forwards_fake_multiple_warns(
+        self,
+        input_: MagicMock,
+    ):
+        """
+        ``--fake`` marks migrations as run without applying them; when it
+        covers several migrations at once it should warn the user.
+
+        https://github.com/piccolo-orm/piccolo/issues/1255
+        """
+        input_.return_value = "y"
+        run_sync(forwards(app_name="music", migration_id="all", fake=True))
+        migration_count = len(self.get_migration_names())
+        input_.assert_called_once_with(
+            f"⚠️ --fake will mark all {migration_count} migrations as run "
+            "without applying them. Continue? [y/N]"
+        )
+
     @patch("piccolo.apps.migrations.commands.forwards.print")
     def test_hardcoded_fake_migrations(self, print_: MagicMock):
         """
@@ -276,7 +296,7 @@ class TestForwardsBackwards(TestCase):
             print_.mock_calls,
         )
         self.assertIn(
-            call(f"- {migration_name}: faked! ⏭️"),
+            call(f"  - {migration_name}: faked! ⏭️"),
             print_.mock_calls,
         )
 
