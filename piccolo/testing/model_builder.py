@@ -8,7 +8,7 @@ from decimal import Decimal
 from typing import Any, Optional, Union, cast
 from uuid import UUID
 
-from piccolo.columns import JSON, JSONB, Array, Column, ForeignKey
+from piccolo.columns import JSON, JSONB, Array, Column, Email, ForeignKey
 from piccolo.custom_types import TableInstance
 from piccolo.testing.random_builder import RandomBuilder
 from piccolo.utils.sync import run_sync
@@ -163,7 +163,10 @@ class ModelBuilder:
 
         """
         random_value: Any
-        if column.value_type == Decimal:
+
+        if isinstance(column, Email):
+            random_value = RandomBuilder.next_email()
+        elif column.value_type == Decimal:
             precision, scale = column._meta.params["digits"] or (4, 2)
             random_value = RandomBuilder.next_decimal(
                 precision=precision, scale=scale
