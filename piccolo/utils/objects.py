@@ -69,7 +69,11 @@ def make_nested_object(
             else:
                 # The value doesn't belong to a foreign key, so just append it.
                 table_params[key] = value
-        elif load_json and key in json_column_names and value is not None:
+        elif (
+            load_json
+            and key in json_column_names
+            and isinstance(value, (str, bytes, bytearray))
+        ):
             table_params[key] = encoding.load_json(value)
         else:
             table_params[key] = value

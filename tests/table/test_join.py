@@ -586,21 +586,29 @@ class TableB(Table):
     table_a = ForeignKey(TableA, null=False)
 
 
-class TestObjectsNestedLoadJSONParent(AsyncTableTest):
+class TestObjectsNestedLoadJSONArray(AsyncTableTest):
     tables = [TableA, TableB]
 
     async def test_objects_nested_with_load_json_parent(self):
         """
         Make sure that nested objects works alongside ``load_json``, when
-        the parent object has a JSON column.
+        the parent object has a JSON column, and it contains an array value.
 
         https://github.com/piccolo-orm/piccolo/issues/1399#issuecomment-4864444701
+
+        The problem was because we already loaded the JSON string on the top
+        level row, and then were trying to load it again in
+        `make_nested_object`.
 
         """  # noqa: E501
         table_a = TableA()
         await table_a.save()
 
-        table_b = TableB(data={"a": 1}, table_a=table_a.id)
+        table_b = TableB(data=["a", "b", "c"], table_a=table_a.id)
         await table_b.save()
 
+        # Without prefetch:
+        await TableB.objects().output(load_json=True)
+
+        # With prefetch:
         await TableB.objects(TableB.table_a).output(load_json=True)

@@ -95,7 +95,7 @@ class Query(Generic[TableInstance, QueryResponseType]):
                 new_row = {**row}
                 for json_column_name in json_column_names:
                     value = new_row.get(json_column_name)
-                    if value is not None:
+                    if isinstance(value, (str, bytes, bytearray)):
                         new_row[json_column_name] = load_json(value)
                 processed_raw.append(new_row)
 
@@ -105,28 +105,27 @@ class Query(Generic[TableInstance, QueryResponseType]):
 
         raw = await self.response_handler(raw)
 
-        if output:
-            if output._output.as_objects:
-                if output._output.nested:
-                    return cast(
-                        QueryResponseType,
-                        [
-                            make_nested_object(
-                                row,
-                                self.table,
-                                load_json=output._output.load_json,
-                            )
-                            for row in raw
-                        ],
-                    )
-                else:
-                    return cast(
-                        QueryResponseType,
-                        [
-                            self.table(**columns, _exists_in_db=True)
-                            for columns in raw
-                        ],
-                    )
+        if output and output._output.as_objects:
+            if output._output.nested:
+                return cast(
+                    QueryResponseType,
+                    [
+                        make_nested_object(
+                            row,
+                            self.table,
+                            load_json=output._output.load_json,
+                        )
+                        for row in raw
+                    ],
+                )
+            else:
+                return cast(
+                    QueryResponseType,
+                    [
+                        self.table(**columns, _exists_in_db=True)
+                        for columns in raw
+                    ],
+                )
 
         return cast(QueryResponseType, raw)
 
