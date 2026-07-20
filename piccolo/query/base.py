@@ -95,7 +95,7 @@ class Query(Generic[TableInstance, QueryResponseType]):
                 new_row = {**row}
                 for json_column_name in json_column_names:
                     value = new_row.get(json_column_name)
-                    if isinstance(value, (str, bytes, bytearray)):
+                    if value is not None:
                         new_row[json_column_name] = load_json(value)
                 processed_raw.append(new_row)
 
