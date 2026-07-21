@@ -6,7 +6,7 @@ import pytest
 from piccolo.apps.user.tables import BaseUser
 from piccolo.columns import Date, Varchar
 from piccolo.columns.combination import WhereRaw
-from piccolo.query import OrderByRaw
+from piccolo.query import GroupByRaw, OrderByRaw
 from piccolo.query.functions.aggregate import Avg, Count, Max, Min, Sum
 from piccolo.query.methods.select import SelectRaw
 from piccolo.query.mixins import DistinctOnError
@@ -634,6 +634,16 @@ class TestSelect(DBTestCase):
                 {"name": "Rustaceans", "count": 2},
             ],
         )
+
+    def test_group_by_raw(self):
+        """
+        Raw expressions and select aliases can be used in GROUP BY clauses.
+        """
+        query = Band.select(
+            SelectRaw("SUBSTR(name, 1, 1) AS initial"), Count()
+        ).group_by(GroupByRaw("initial"), Band.popularity)
+
+        self.assertIn('GROUP BY initial, "band"."popularity"', str(query))
 
     def test_count_with_alias_group_by(self):
         """
