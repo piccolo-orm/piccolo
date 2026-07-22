@@ -6,10 +6,9 @@ import pytest
 from piccolo.apps.user.tables import BaseUser
 from piccolo.columns import Date, Varchar
 from piccolo.columns.combination import WhereRaw
-from piccolo.query import GroupByRaw, OrderByRaw
 from piccolo.query.functions.aggregate import Avg, Count, Max, Min, Sum
-from piccolo.query.methods.select import SelectRaw
 from piccolo.query.mixins import DistinctOnError
+from piccolo.querystring import QueryString
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
 from piccolo.testing.test_case import AsyncTableTest
 from tests.base import (
@@ -635,13 +634,13 @@ class TestSelect(DBTestCase):
             ],
         )
 
-    def test_group_by_raw(self):
+    def test_group_by_querystring(self):
         """
         Raw expressions and select aliases can be used in GROUP BY clauses.
         """
         query = Band.select(
-            SelectRaw("SUBSTR(name, 1, 1) AS initial"), Count()
-        ).group_by(GroupByRaw("initial"), Band.popularity)
+            QueryString("SUBSTR(name, 1, 1) AS initial"), Count()
+        ).group_by(QueryString("initial"), Band.popularity)
 
         self.assertIn('GROUP BY initial, "band"."popularity"', str(query))
 
@@ -1090,13 +1089,13 @@ class TestSelect(DBTestCase):
             "Cockroach raises an error when trying to use the log function."
         ),
     )
-    def test_select_raw(self):
+    def test_select_querystring(self):
         """
-        Make sure ``SelectRaw`` can be used in select queries.
+        Make sure ``QueryString`` can be used in select queries.
         """
         self.insert_row()
         response = Band.select(
-            Band.name, SelectRaw("round(log(popularity)) AS popularity_log")
+            Band.name, QueryString("round(log(popularity)) AS popularity_log")
         ).run_sync()
         self.assertListEqual(
             response, [{"name": "Pythonistas", "popularity_log": 3.0}]
@@ -1370,13 +1369,13 @@ class TestSelectOrderBy(TestCase):
             ],
         )
 
-    def test_order_by_raw(self):
+    def test_order_by_querystring(self):
         """
-        Maker sure ``OrderByRaw`` can be used, to order by anything the user
+        Maker sure ``QueryString`` can be used, to order by anything the user
         wants.
         """
         response = (
-            Band.select(Band.name).order_by(OrderByRaw("name")).run_sync()
+            Band.select(Band.name).order_by(QueryString("name")).run_sync()
         )
 
         self.assertEqual(

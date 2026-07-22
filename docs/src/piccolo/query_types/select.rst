@@ -293,8 +293,8 @@ And can use aliases for aggregate functions like this:
 
 -------------------------------------------------------------------------------
 
-SelectRaw
----------
+Advanced
+--------
 
 In certain situations you may want to have raw SQL in your select query.
 
@@ -303,15 +303,20 @@ isn't supported by Piccolo:
 
 .. code-block:: python
 
-    from piccolo.query import SelectRaw
+    from piccolo.querystring import QueryString
 
     >>> await Band.select(
     ...     Band.name,
-    ...     SelectRaw("log(popularity) AS log_popularity")
+    ...     QueryString("log(popularity) AS log_popularity")
     ... )
     [{'name': 'Pythonistas', 'log_popularity': 3.0}]
 
 .. warning:: Only use SQL that you trust.
+
+.. note::
+    We used to use ``SelectRaw`` for this, which still works, but you can just
+    pass :class:`QueryString <piccolo.querystring.QueryString>` in directly
+    now.
 
 -------------------------------------------------------------------------------
 

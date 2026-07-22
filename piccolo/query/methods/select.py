@@ -27,13 +27,11 @@ from piccolo.query.mixins import (
     ColumnsDelegate,
     DistinctDelegate,
     GroupByDelegate,
-    GroupByRaw,
     LimitDelegate,
     LockRowsDelegate,
     LockStrength,
     OffsetDelegate,
     OrderByDelegate,
-    OrderByRaw,
     OutputDelegate,
     WhereDelegate,
 )
@@ -57,26 +55,24 @@ from piccolo.query.functions.aggregate import (  # noqa: F401
 )
 
 
-class SelectRaw(Selectable):
-    def __init__(self, sql: str, *args: Any) -> None:
-        """
-        Execute raw SQL in your select query.
+class SelectRaw(QueryString):
+    """
+    Here for backwards compatibility - just use
+    :class:`piccolo.querystring.QueryString` directly.
 
-        .. code-block:: python
+    Execute raw SQL in your select query.
 
-            >>> await Band.select(
-            ...     Band.name,
-            ...     SelectRaw("log(popularity) AS log_popularity")
-            ... )
-            [{'name': 'Pythonistas', 'log_popularity': 3.0}]
+    .. code-block:: python
 
-        """
-        self.querystring = QueryString(sql, *args)
+        >>> await Band.select(
+        ...     Band.name,
+        ...     SelectRaw("log(popularity) AS log_popularity")
+        ... )
+        [{'name': 'Pythonistas', 'log_popularity': 3.0}]
 
-    def get_select_string(
-        self, engine_type: str, with_alias: bool = True
-    ) -> QueryString:
-        return self.querystring
+    """
+
+    pass
 
 
 OptionalDict = Optional[dict[str, Any]]
@@ -205,14 +201,17 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
         self.distinct_delegate.distinct(enabled=True, on=on)
         return self
 
-    def group_by(self: Self, *columns: Union[Column, str, GroupByRaw]) -> Self:
+    def group_by(
+        self: Self, *columns: Union[Column, str, QueryString]
+    ) -> Self:
         """
         :param columns:
             Either a :class:`piccolo.columns.base.Column` instance, a string
-            representing a column name, or :class:`piccolo.query.GroupByRaw`
-            for grouping by a raw SQL expression or select alias.
+            representing a column name, or
+            :class:`piccolo.querystring.QueryString` for grouping by a raw SQL
+            expression or select alias.
         """
-        _columns: list[Union[Column, GroupByRaw]] = []
+        _columns: list[Union[Column, QueryString]] = []
         for column in columns:
             if isinstance(column, str):
                 _columns.append(self.table._meta.get_column_by_name(column))
@@ -413,16 +412,16 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
             return response
 
     def order_by(
-        self: Self, *columns: Union[Column, str, OrderByRaw], ascending=True
+        self: Self, *columns: Union[Column, str, QueryString], ascending=True
     ) -> Self:
         """
         :param columns:
             Either a :class:`piccolo.columns.base.Column` instance, a string
-            representing a column name, or :class:`piccolo.query.OrderByRaw`
-            which allows you for complex use cases like
-            ``OrderByRaw('random()')``.
+            representing a column name, or
+            :class:`piccolo.querystring.QueryString` which allows you for
+            complex use cases like ``QueryString('random()')``.
         """
-        _columns: list[Union[Column, OrderByRaw]] = []
+        _columns: list[Union[Column, QueryString]] = []
         for column in columns:
             if isinstance(column, str):
                 _columns.append(self.table._meta.get_column_by_name(column))
