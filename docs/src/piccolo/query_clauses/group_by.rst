@@ -39,3 +39,25 @@ Other aggregate functions
 -------------------------
 
 These work the same as ``Count``. See :ref:`aggregate functions <AggregateFunctions>`.
+
+-------------------------------------------------------------------------------
+
+``GroupByRaw``
+--------------
+
+For more complex cases, use ``GroupByRaw`` to group by a raw SQL expression or
+an alias created by ``SelectRaw``. For example:
+
+.. code-block:: python
+
+    from piccolo.query import GroupByRaw, SelectRaw
+    from piccolo.query.functions.aggregate import Count
+
+    await Band.select(
+        SelectRaw("DATE(created_at) AS created_date"),
+        Count(),
+    ).group_by(
+        GroupByRaw("created_date")
+    )
+
+As with other raw query helpers, only use trusted SQL strings.

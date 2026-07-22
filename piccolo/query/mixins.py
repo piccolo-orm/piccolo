@@ -593,18 +593,32 @@ class OffsetDelegate:
 
 
 @dataclass
+class GroupByRaw:
+    __slots__ = ("sql",)
+
+    sql: str
+
+
+@dataclass
 class GroupBy:
     __slots__ = ("columns",)
 
-    columns: Sequence[Column]
+    columns: Sequence[Union[Column, GroupByRaw]]
 
     @property
     def querystring(self) -> QueryString:
-        columns_names = ", ".join(
-            i._meta.get_full_name(with_alias=False) for i in self.columns
-        )
+        column_names: list[str] = []
+        for column in self.columns:
+            if isinstance(column, Column):
+                column_names.append(
+                    column._meta.get_full_name(with_alias=False)
+                )
+            elif isinstance(column, GroupByRaw):
+                column_names.append(column.sql)
+            else:  # pragma: no cover
+                raise ValueError("Unrecognised group_by")
 
-        return QueryString(f" GROUP BY {columns_names}")
+        return QueryString(f" GROUP BY {', '.join(column_names)}")
 
     def __str__(self):
         return self.querystring.__str__()
@@ -621,7 +635,7 @@ class GroupByDelegate:
 
     _group_by: Optional[GroupBy] = None
 
-    def group_by(self, *columns: Column):
+    def group_by(self, *columns: Union[Column, GroupByRaw]):
         self._group_by = GroupBy(columns=columns)
 
 

@@ -18,7 +18,7 @@ from .methods import (
     Update,
 )
 from .methods.select import SelectRaw
-from .mixins import OrderByRaw
+from .mixins import GroupByRaw, OrderByRaw
 
 __all__ = [
     "Alter",
@@ -29,6 +29,7 @@ __all__ = [
     "Delete",
     "DropIndex",
     "Exists",
+    "GroupByRaw",
     "Insert",
     "Max",
     "Min",

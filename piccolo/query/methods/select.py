@@ -27,6 +27,7 @@ from piccolo.query.mixins import (
     ColumnsDelegate,
     DistinctDelegate,
     GroupByDelegate,
+    GroupByRaw,
     LimitDelegate,
     LockRowsDelegate,
     LockStrength,
@@ -204,12 +205,19 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
         self.distinct_delegate.distinct(enabled=True, on=on)
         return self
 
-    def group_by(self: Self, *columns: Union[Column, str]) -> Self:
-        _columns: list[Column] = [
-            i
-            for i in self.table._process_column_args(*columns)
-            if isinstance(i, Column)
-        ]
+    def group_by(self: Self, *columns: Union[Column, str, GroupByRaw]) -> Self:
+        """
+        :param columns:
+            Either a :class:`piccolo.columns.base.Column` instance, a string
+            representing a column name, or :class:`piccolo.query.GroupByRaw`
+            for grouping by a raw SQL expression or select alias.
+        """
+        _columns: list[Union[Column, GroupByRaw]] = []
+        for column in columns:
+            if isinstance(column, str):
+                _columns.append(self.table._meta.get_column_by_name(column))
+            else:
+                _columns.append(column)
         self.group_by_delegate.group_by(*_columns)
         return self
 
