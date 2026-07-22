@@ -42,22 +42,23 @@ These work the same as ``Count``. See :ref:`aggregate functions <AggregateFuncti
 
 -------------------------------------------------------------------------------
 
-``GroupByRaw``
---------------
+Advanced
+--------
 
-For more complex cases, use ``GroupByRaw`` to group by a raw SQL expression or
-an alias created by ``SelectRaw``. For example:
+For more complex cases, use :class:`QueryString <piccolo.querystring.QueryString>`
+to group by a raw SQL expression or an alias created in a select query. For
+example:
 
 .. code-block:: python
 
-    from piccolo.query import GroupByRaw, SelectRaw
     from piccolo.query.functions.aggregate import Count
+    from piccolo.querystring import QueryString
 
     await Band.select(
-        SelectRaw("DATE(created_at) AS created_date"),
+        QueryString("DATE(created_at) AS created_date"),
         Count(),
     ).group_by(
-        GroupByRaw("created_date")
+        QueryString("created_date")
     )
 
 As with other raw query helpers, only use trusted SQL strings.

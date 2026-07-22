@@ -63,21 +63,21 @@ descending, then you can do so using multiple ``order_by`` statements:
         ascending=False
     )
 
-``OrderByRaw``
-~~~~~~~~~~~~~~
+Advanced
+~~~~~~~~
 
 SQL's ``ORDER BY`` clause is surprisingly rich in functionality, and there may
 be situations where you want to specify the ``ORDER BY`` explicitly using SQL.
-To do this use ``OrderByRaw``.
+To do this use :class:`QueryString <piccolo.querystring.QueryString>`.
 
 In the example below, we are ordering the results randomly:
 
 .. code-block:: python
 
-    from piccolo.query import OrderByRaw
+    from piccolo.querystring import QueryString
 
     await Band.select(Band.name).order_by(
-        OrderByRaw('random()'),
+        QueryString('random()'),
     )
 
 The above is equivalent to the following SQL:
@@ -85,3 +85,7 @@ The above is equivalent to the following SQL:
 .. code-block:: sql
 
     SELECT "band"."name" FROM band ORDER BY random() ASC
+
+.. note::
+    We used to use ``OrderByRaw`` for this (which still works for
+    backwards compatibility).
