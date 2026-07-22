@@ -1371,7 +1371,7 @@ class TestSelectOrderBy(TestCase):
 
     def test_order_by_querystring(self):
         """
-        Maker sure ``QueryString`` can be used, to order by anything the user
+        Make sure ``QueryString`` can be used, to order by anything the user
         wants.
         """
         response = (
