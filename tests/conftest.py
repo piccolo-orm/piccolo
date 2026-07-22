@@ -1,9 +1,18 @@
 import asyncio
 import os
+import time
 import typing
 
 import pytest
+
 from piccolo.engine.finder import engine_finder
+
+# Force UTC regardless of the host's local timezone. Without this, naive
+# datetimes get encoded using the host's local offset, causing timezone
+# arithmetic tests to fail on any machine that isn't already running UTC.
+os.environ["TZ"] = "UTC"
+if hasattr(time, "tzset"):
+    time.tzset()
 
 # Set in pytest_configure and cleared in pytest_unconfigure.
 _postgres_container: typing.Any = None
@@ -21,7 +30,11 @@ def pytest_configure(config: typing.Any) -> None:
     global _postgres_container, _cockroach_container
 
     piccolo_conf = os.environ.get("PICCOLO_CONF", "")
-    if os.environ.get("TESTCONTAINERS", "true").lower() in ("false", "0", "no"):
+    if os.environ.get("TESTCONTAINERS", "true").lower() in (
+        "false",
+        "0",
+        "no",
+    ):
         return
 
     if "cockroach" in piccolo_conf:
@@ -73,24 +86,33 @@ def _start_postgres() -> typing.Any:
     os.environ["PG_PASSWORD"] = "piccolo"
     os.environ["PG_DATABASE"] = "piccolo"
 
-    asyncio.run(_exec_sql(
-        host=host, port=port,
-        user="piccolo", password="piccolo", database="piccolo",
-        sql='CREATE EXTENSION IF NOT EXISTS "uuid-ossp"',
-    ))
+    asyncio.run(
+        _exec_sql(
+            host=host,
+            port=port,
+            user="piccolo",
+            password="piccolo",
+            database="piccolo",
+            sql='CREATE EXTENSION IF NOT EXISTS "uuid-ossp"',
+        )
+    )
     return container
 
 
 def _start_cockroach() -> typing.Any:
     from testcontainers.core.container import DockerContainer
-    from testcontainers.core.wait_strategies import HealthcheckWaitStrategy
+    from testcontainers.core.wait_strategies import ExecWaitStrategy
 
     crdb_version = os.environ.get("TC_COCKROACH_VERSION", "v25.4.3")
     container = (
         DockerContainer(f"cockroachdb/cockroach:{crdb_version}")
         .with_command("start-single-node --insecure")
         .with_exposed_ports(26257)
-        .waiting_for(HealthcheckWaitStrategy())
+        .waiting_for(
+            ExecWaitStrategy(
+                ["cockroach", "sql", "--insecure", "-e", "SELECT 1"]
+            )
+        )
     )
     try:
         container.start()
@@ -110,11 +132,16 @@ def _start_cockroach() -> typing.Any:
     os.environ["PG_DATABASE"] = "piccolo"
 
     # CockroachDB starts with 'defaultdb'. Create the piccolo database.
-    asyncio.run(_exec_sql(
-        host=host, port=port,
-        user="root", password=None, database="defaultdb",
-        sql="CREATE DATABASE IF NOT EXISTS piccolo",
-    ))
+    asyncio.run(
+        _exec_sql(
+            host=host,
+            port=port,
+            user="root",
+            password=None,
+            database="defaultdb",
+            sql="CREATE DATABASE IF NOT EXISTS piccolo",
+        )
+    )
     return container
 
 
@@ -127,8 +154,13 @@ async def _exec_sql(
     sql: str,
 ) -> None:
     import asyncpg
+
     conn = await asyncpg.connect(
-        host=host, port=port, user=user, password=password, database=database,
+        host=host,
+        port=port,
+        user=user,
+        password=password,
+        database=database,
     )
     try:
         await conn.execute(sql)
@@ -161,12 +193,12 @@ async def drop_tables() -> None:
 
     if engine.engine_type == "sqlite":
         for table in tables:
-            await engine._run_in_new_connection(
+            await engine._run_in_new_connection(  # type: ignore[attr-defined]
                 f"DROP TABLE IF EXISTS {table}"
             )
     else:
         table_str = ", ".join(tables)
-        await engine._run_in_new_connection(
+        await engine._run_in_new_connection(  # type: ignore[attr-defined]
             f"DROP TABLE IF EXISTS {table_str} CASCADE"
         )
 
@@ -212,19 +244,29 @@ def custom_tablespace() -> typing.Optional[str]:
     # Create directory inside the container.
     # Works whether exec runs as root or postgres:
     #   - root: mkdir (owned root) → chown fixes it
-    #   - postgres: mkdir (owned postgres) → chown fails silently (already correct)
-    exit_code, output = _postgres_container.exec([
-        "sh", "-c",
-        f"mkdir -p {TABLESPACE_DIR} && chown postgres:postgres {TABLESPACE_DIR} 2>/dev/null || true",
-    ])
+    #   - postgres: mkdir (owned postgres) → chown fails silently (already
+    #     correct)
+    mkdir_cmd = (
+        f"mkdir -p {TABLESPACE_DIR} && "
+        f"chown postgres:postgres {TABLESPACE_DIR} 2>/dev/null || true"
+    )
+    exit_code, output = _postgres_container.exec(["sh", "-c", mkdir_cmd])
     if exit_code != 0:
         raise RuntimeError(f"tablespace dir setup failed: {output.decode()}")
 
     host = _postgres_container.get_container_host_ip()
     port = int(_postgres_container.get_exposed_port(5432))
-    asyncio.run(_exec_sql(
-        host=host, port=port,
-        user="piccolo", password="piccolo", database="piccolo",
-        sql=f"CREATE TABLESPACE {TABLESPACE_NAME} LOCATION '{TABLESPACE_DIR}'",
-    ))
+    asyncio.run(
+        _exec_sql(
+            host=host,
+            port=port,
+            user="piccolo",
+            password="piccolo",
+            database="piccolo",
+            sql=(
+                f"CREATE TABLESPACE {TABLESPACE_NAME} "
+                f"LOCATION '{TABLESPACE_DIR}'"
+            ),
+        )
+    )
     return TABLESPACE_NAME
