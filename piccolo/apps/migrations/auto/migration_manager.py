@@ -436,7 +436,7 @@ class MigrationManager:
         schema: Optional[str] = None,
     ):
         constraint = constraint_class(**params)
-        constraint._meta.name = constraint_name
+        constraint._meta._name = constraint_name
 
         self.add_constraints.append(
             AddConstraintClass(

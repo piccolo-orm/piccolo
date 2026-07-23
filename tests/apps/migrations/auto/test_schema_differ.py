@@ -12,7 +12,7 @@ from piccolo.apps.migrations.auto.schema_differ import (
     SchemaDiffer,
 )
 from piccolo.columns.column_types import Numeric, Varchar
-from piccolo.constraints import UniqueConstraint
+from piccolo.constraints import Unique
 
 
 class TestSchemaDiffer(TestCase):
@@ -498,8 +498,8 @@ class TestSchemaDiffer(TestCase):
         genre_column = Varchar()
         genre_column._meta.name = "genre"
 
-        name_genre_unique_constraint = UniqueConstraint(
-            column_names=["name", "genre"],
+        name_genre_unique_constraint = Unique(
+            columns=["name", "genre"],
             name="unique_name_genre",
         )
 
@@ -539,7 +539,7 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(new_table_constraints.statements) == 1)
         self.assertEqual(
             new_table_constraints.statements[0],
-            "manager.add_constraint(table_class_name='Band', tablename='band', constraint_name='unique_name_genre', constraint_class=UniqueConstraint, params={'column_names': ['name', 'genre']}, schema=None)",  # noqa
+            "manager.add_constraint(table_class_name='Band', tablename='band', constraint_name='unique_name_genre', constraint_class=Unique, params={'columns': ['name', 'genre'], 'nulls_distinct': True}, schema=None)",  # noqa
         )
 
     def test_add_constraint(self) -> None:
@@ -552,13 +552,13 @@ class TestSchemaDiffer(TestCase):
         genre_column = Varchar()
         genre_column._meta.name = "genre"
 
-        name_unique_constraint = UniqueConstraint(
-            column_names=["name"],
+        name_unique_constraint = Unique(
+            columns=["name"],
             name="unique_name",
         )
 
-        name_genre_unique_constraint = UniqueConstraint(
-            column_names=["name", "genre"],
+        name_genre_unique_constraint = Unique(
+            columns=["name", "genre"],
             name="unique_name_genre",
         )
 
@@ -589,7 +589,7 @@ class TestSchemaDiffer(TestCase):
         self.assertTrue(len(schema_differ.add_constraints.statements) == 1)
         self.assertEqual(
             schema_differ.add_constraints.statements[0],
-            "manager.add_constraint(table_class_name='Band', tablename='band', constraint_name='unique_name_genre', constraint_class=UniqueConstraint, params={'column_names': ['name', 'genre']}, schema=None)",  # noqa: E501
+            "manager.add_constraint(table_class_name='Band', tablename='band', constraint_name='unique_name_genre', constraint_class=Unique, params={'columns': ['name', 'genre'], 'nulls_distinct': True}, schema=None)",  # noqa: E501
         )
 
     def test_drop_constraint(self) -> None:
@@ -602,13 +602,13 @@ class TestSchemaDiffer(TestCase):
         genre_column = Varchar()
         genre_column._meta.name = "genre"
 
-        name_unique_constraint = UniqueConstraint(
-            column_names=["name"],
+        name_unique_constraint = Unique(
+            columns=["name"],
             name="unique_name",
         )
 
-        name_genre_unique_constraint = UniqueConstraint(
-            column_names=["name", "genre"],
+        name_genre_unique_constraint = Unique(
+            columns=["name", "genre"],
             name="unique_name_genre",
         )
 

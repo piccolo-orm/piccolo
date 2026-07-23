@@ -10,7 +10,9 @@ DB = PostgresEngine(
         "user": os.environ.get("PG_USER", "postgres"),
         "password": os.environ.get("PG_PASSWORD", ""),
         "database": os.environ.get("PG_DATABASE", "piccolo"),
-    }
+    },
+    # log_queries=True,
+    # log_responses=True,
 )
 
 

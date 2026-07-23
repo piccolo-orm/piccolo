@@ -11,7 +11,7 @@ from piccolo.columns import Text, Varchar
 from piccolo.columns.base import OnDelete, OnUpdate
 from piccolo.columns.column_types import ForeignKey
 from piccolo.conf.apps import AppConfig
-from piccolo.constraints import UniqueConstraint
+from piccolo.constraints import Unique
 from piccolo.engine import engine_finder
 from piccolo.query.constraints import get_fk_constraint_rules
 from piccolo.table import Table, sort_table_classes
@@ -359,9 +359,9 @@ class TestMigrationManager(DBTestCase):
             table_class_name="Musician",
             tablename="musician",
             constraint_name="unique_name_label",
-            constraint_class=UniqueConstraint,
+            constraint_class=Unique,
             params={
-                "column_names": ["name", "label"],
+                "columns": ["name", "label"],
             },
         )
         asyncio.run(manager.run())
@@ -399,9 +399,9 @@ class TestMigrationManager(DBTestCase):
             table_class_name="Musician",
             tablename="musician",
             constraint_name="unique_name_label",
-            constraint_class=UniqueConstraint,
+            constraint_class=Unique,
             params={
-                "column_names": ["name", "label"],
+                "columns": ["name", "label"],
             },
         )
         asyncio.run(manager_1.run())
@@ -454,9 +454,9 @@ class TestMigrationManager(DBTestCase):
             table_class_name="Musician",
             tablename="musician",
             constraint_name="unique_name_label",
-            constraint_class=UniqueConstraint,
+            constraint_class=Unique,
             params={
-                "column_names": ["name", "label"],
+                "columns": ["name", "label"],
             },
         )
         asyncio.run(manager_1.run())
@@ -523,9 +523,9 @@ class TestMigrationManager(DBTestCase):
             table_class_name="Musician",
             tablename="musician",
             constraint_name="musician_unique",
-            constraint_class=UniqueConstraint,
+            constraint_class=Unique,
             params={
-                "column_names": ["name", "label"],
+                "columns": ["name", "label"],
             },
         )
         asyncio.run(manager_2.run())
@@ -575,9 +575,9 @@ class TestMigrationManager(DBTestCase):
             table_class_name="Musician",
             tablename="musician",
             constraint_name="musician_unique",
-            constraint_class=UniqueConstraint,
+            constraint_class=Unique,
             params={
-                "column_names": ["name", "label"],
+                "columns": ["name", "label"],
             },
         )
         asyncio.run(manager_1.run())

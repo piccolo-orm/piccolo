@@ -29,7 +29,7 @@ from piccolo.columns.m2m import (
 )
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
-from piccolo.constraints import Constraint, ConstraintConfig
+from piccolo.constraints import Constraint
 from piccolo.custom_types import TableInstance
 from piccolo.engine import Engine, engine_finder
 from piccolo.query import (
@@ -200,7 +200,7 @@ class TableMeta:
         Returns a constraint which matches the given name.
         """
         for constraint in self.constraints:
-            if constraint._meta.name == name:
+            if constraint._meta._name == name:
                 return constraint
         raise ValueError(f"No matching constraint found with name == {name}")
 
@@ -310,7 +310,7 @@ class Table(metaclass=TableMetaclass):
         auto_update_columns: list[Column] = []
         primary_key: Optional[Column] = None
         m2m_relationships: list[M2M] = []
-        constraint_configs: list[ConstraintConfig] = []
+        constaints: list[Constraint] = []
 
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]
@@ -365,9 +365,9 @@ class Table(metaclass=TableMetaclass):
                 attribute._meta._table = cls
                 m2m_relationships.append(attribute)
 
-            if isinstance(attribute, ConstraintConfig):
-                attribute.name = attribute_name
-                constraint_configs.append(attribute)
+            if isinstance(attribute, Constraint):
+                attribute._meta._name = attribute_name
+                constaints.append(attribute)
 
         if not primary_key:
             primary_key = cls._create_serial_primary_key()
@@ -393,6 +393,7 @@ class Table(metaclass=TableMetaclass):
             _db=db,
             m2m_relationships=m2m_relationships,
             schema=schema,
+            constraints=constaints,
         )
 
         for foreign_key_column in foreign_key_columns:
@@ -406,11 +407,9 @@ class Table(metaclass=TableMetaclass):
                     foreign_key_column
                 )
 
-        # Now the table and columns are all setup, we can do the constraints.
-        constraints: list[Constraint] = []
-        for constraint_config in constraint_configs:
-            constraints.append(constraint_config.to_constraint())
-        cls._meta.constraints = constraints
+        # Now the table and columns are all setup, serialise the constraints.
+        for constraint in cls._meta.constraints:
+            constraint.serialise_self()
 
         TABLE_REGISTRY.append(cls)
 

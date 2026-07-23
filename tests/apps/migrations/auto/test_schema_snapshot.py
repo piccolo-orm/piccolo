@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from piccolo.apps.migrations.auto import MigrationManager, SchemaSnapshot
-from piccolo.constraints import UniqueConstraint
+from piccolo.constraints import Unique
 
 
 class TestSchemaSnaphot(TestCase):
@@ -206,10 +206,10 @@ class TestSchemaSnaphot(TestCase):
             table_class_name="Manager",
             tablename="manager",
             constraint_name="unique_name",
-            constraint_class=UniqueConstraint,
+            constraint_class=Unique,
             params={
                 "name": "name_unique",
-                "column_names": ["name"],
+                "columns": ["name"],
             },
         )
 
@@ -237,9 +237,9 @@ class TestSchemaSnaphot(TestCase):
             table_class_name="Manager",
             tablename="manager",
             constraint_name="unique_name",
-            constraint_class=UniqueConstraint,
+            constraint_class=Unique,
             params={
-                "column_names": ["name"],
+                "columns": ["name"],
             },
         )
 
