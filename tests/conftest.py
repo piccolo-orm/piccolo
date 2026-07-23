@@ -66,7 +66,17 @@ def _start_postgres() -> typing.Any:
         .with_env("POSTGRES_DB", "piccolo")
         .with_exposed_ports(5432)
         .waiting_for(
-            ExecWaitStrategy(["pg_isready", "-U", "piccolo", "-d", "piccolo"])
+            ExecWaitStrategy(
+                [
+                    "pg_isready",
+                    "-h",
+                    "127.0.0.1",
+                    "-U",
+                    "piccolo",
+                    "-d",
+                    "piccolo",
+                ]
+            )
         )
     )
     try:
