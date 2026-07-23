@@ -111,4 +111,23 @@ class SchemaSnapshot:
                                 rename_column.new_db_column_name
                             )
 
+                add_constraints = (
+                    manager.add_constraints.constraints_for_table_class_name(
+                        table.class_name
+                    )
+                )
+                table.constraints.extend(add_constraints)
+
+                drop_constraints = (
+                    manager.drop_constraints.for_table_class_name(
+                        table.class_name
+                    )
+                )
+                for drop_constraint in drop_constraints:
+                    table.constraints = [
+                        i
+                        for i in table.constraints
+                        if i._meta.name != drop_constraint.constraint_name
+                    ]
+
         return tables
