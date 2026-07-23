@@ -211,4 +211,4 @@ class Check(Constraint):
         return f"CHECK ({self.get_condition_str()})"
 
     def _table_str(self) -> str:
-        return f'{self._meta._name} = Check("{self.get_condition_str()}")'
+        return f"{self._meta._name} = Check('{self.get_condition_str()}')"

@@ -127,7 +127,7 @@ class SchemaSnapshot:
                     table.constraints = [
                         i
                         for i in table.constraints
-                        if i._meta._name != drop_constraint.constraint_name
+                        if i._meta.name != drop_constraint.constraint_name
                     ]
 
         return tables
