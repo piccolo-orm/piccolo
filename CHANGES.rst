@@ -1,6 +1,72 @@
 Changes
 =======
 
+1.36.0
+------
+
+Advanced Constraints
+~~~~~~~~~~~~~~~~~~~~
+
+Added support for composite unique constraints. Many thanks to @atkei for this.
+
+For example:
+
+.. code-block:: python
+
+  from piccolo.constraints import Unique
+
+  class Album(Table):
+      name = Varchar()
+      band = ForeignKey(Band)
+
+      unique_name_band = Unique([name, band])
+
+And check constraints:
+
+.. code-block:: python
+
+  from piccolo.constraints import Check
+
+  class Ticket(Table):
+      price = Decimal()
+
+      check_price_positive = Check(price >= 0)
+
+Replaced ``SelectRaw``, ``GroupByRaw`` and ``OrderByRaw`` with ``QueryString``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In certain situations we allow the user to modify Piccolo queries using
+custom SQL. This is for advanced situations not covered natively by the ORM.
+
+In the past we used custom classes for this - ``SelectRaw``, ``OrderByRaw``
+etc.
+
+These classes still work, but you can now just pass in a ``QueryString``
+instead (the building block of queries in Piccolo).
+
+.. code-block:: python
+
+    from piccolo.querystring import QueryString
+
+    await Band.select(Band.name).order_by(
+        QueryString('random()'),
+    )
+
+Other changes
+~~~~~~~~~~~~~
+
+* Improved error messages when running migrations (thanks to @pctablet505 and
+  @AnayGarodia for this).
+* Upgraded ``colorama``, so Piccolo works nicer with other libraries also
+  using ``colorama`` (thanks to @laravioli for reporting this issue).
+* Fixed a bug using ``load_json`` and ``prefetch`` together, when the JSON
+  column contains an array value (thanks to @Mekagojira8 for reporting this
+  issue).
+* Fixed bugs with title case column names (thanks to @devzzzero for reporting
+  this).
+
+-------------------------------------------------------------------------------
+
 1.35.0
 ------
 
@@ -68,6 +134,7 @@ Convert ``Timestamptz`` columns from UTC to another timezone:
 Similar to ``Varchar`` - useful if the strings are a fixed width.
 
 .. code-block:: python
+
   class Venue(Table):
       country_code = Char(length=2)
 
