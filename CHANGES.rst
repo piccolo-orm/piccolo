@@ -52,6 +52,8 @@ instead (the building block of queries in Piccolo).
         QueryString('random()'),
     )
 
+Thanks to @AnayGarodia for adding support for custom SQL in ``group_by``.
+
 Other changes
 ~~~~~~~~~~~~~
 
