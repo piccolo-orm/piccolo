@@ -38,6 +38,105 @@ To filter the rows we use the :ref:`where` clause:
     >>> await Band.objects().where(Band.name == 'Pythonistas')
     [<Band: 1>]
 
+.. _Filter:
+
+filter
+------
+
+``where`` is the recommended way of filtering rows. When the criteria arrive as
+data rather than being written by hand, ``filter`` builds the same query from
+keyword arguments:
+
+.. code-block:: python
+
+    # These are the same query:
+    >>> await Band.filter(popularity__gte=1000, manager__name='Guido')
+    [<Band: 1>]
+
+    >>> await Band.objects().where(
+    ...     Band.popularity >= 1000,
+    ...     Band.manager.name == 'Guido',
+    ... )
+    [<Band: 1>]
+
+Each keyword is a ``field[__related_field...][__transform][__op]`` lookup.
+Supported operators are ``in``, ``gte``, ``lte``, ``gt`` and ``lt``; supported
+datetime transforms are ``year``, ``month``, ``day``, ``hour``, ``minute`` and
+``second``; a bare field means equality.
+
+A column always beats a suffix which shares its name, so both of these work:
+
+.. code-block:: python
+
+    >>> await Event.filter(year=2020)          # the `year` column
+    >>> await Event.filter(starts__year=2020)  # the `year` transform
+
+The same applies to operators - if a related table has a column called ``lt``,
+then ``room__lt=1`` means ``Room.lt == 1``, not ``Booking.room < 1``. There's no
+way to spell the other meaning, so use ``where`` for those columns.
+
+It returns an ``objects`` query, so it chains as usual:
+
+.. code-block:: python
+
+    >>> await Band.filter(popularity__gte=1000).order_by(Band.name).first()
+    <Band: 1>
+
+.. _Criteria:
+
+criteria
+--------
+
+Keyword lookups are combined with ``AND``. For ``OR``, use
+:meth:`criteria <piccolo.table.Table.criteria>`, which returns the lookups as a
+where clause instead of a query:
+
+.. code-block:: python
+
+    >>> await Band.filter(
+    ...     Band.criteria(manager__name='Guido')
+    ...     | Band.criteria(manager__name='Graydon'),
+    ...     popularity__gte=1000,
+    ... )
+    [<Band: 1>]
+
+It's an ordinary where clause, so it also works in :ref:`where`, alongside the
+usual expressions:
+
+.. code-block:: python
+
+    >>> await Band.objects().where(
+    ...     Band.criteria(popularity__gte=1000)
+    ...     | (Band.name == 'Pythonistas')
+    ... )
+    [<Band: 1>]
+
+Filtering on untrusted input
+----------------------------
+
+Because the lookups are strings, a lookup from a payload is the lookup you pass
+to the query - there's no mapping layer in between:
+
+.. code-block:: python
+
+    # GET /bands?popularity__gte=1000&manager__name=Guido
+    async def list_bands(request):
+        criteria = parse_params(request.query_params)
+        return await Band.filter(**criteria)
+
+.. warning::
+   ``parse_params`` above isn't optional.
+   ``Band.filter(**request.query_params)`` lets a client filter on *any*
+   column, including ones you don't expose, and across foreign keys into other
+   tables. Allow-list the lookups you accept.
+
+   It also has to convert the values. Piccolo doesn't coerce them, and query
+   params are always strings, so ``popularity__gte="1000"`` is passed to the
+   database as-is - which SQLite accepts and Postgres rejects. That's the same
+   as ``where(Band.popularity >= "1000")``; ``filter`` doesn't change it.
+
+-------------------------------------------------------------------------------
+
 To get a single row (or ``None`` if it doesn't exist) use the :ref:`first`
 clause:
 
