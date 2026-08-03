@@ -10,6 +10,9 @@ on:
         paths-ignore:
             - "docs/**"
 
+permissions:
+  contents: read
+
 jobs:
     linters:
         runs-on: ubuntu-latest
