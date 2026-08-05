@@ -58,6 +58,7 @@ from piccolo.columns.base import (
 from piccolo.columns.combination import Where
 from piccolo.columns.defaults.date import DateArg, DateCustom, DateNow
 from piccolo.columns.defaults.interval import IntervalArg, IntervalCustom
+from piccolo.columns.defaults.numeric import Infinity, NegativeInfinity
 from piccolo.columns.defaults.time import TimeArg, TimeCustom, TimeNow
 from piccolo.columns.defaults.timestamp import (
     TimestampArg,
@@ -1520,7 +1521,12 @@ class Numeric(Column):
         self,
         digits: Optional[tuple[int, int]] = None,
         default: Union[
-            decimal.Decimal, Enum, Callable[[], decimal.Decimal], None
+            decimal.Decimal,
+            Enum,
+            Infinity,
+            NegativeInfinity,
+            Callable[[], decimal.Decimal],
+            None,
         ] = decimal.Decimal(0.0),
         **kwargs: Unpack[ColumnKwargs],
     ) -> None:
@@ -1534,7 +1540,15 @@ class Numeric(Column):
         elif digits is not None:
             raise ValueError("The digits argument should be a tuple.")
 
-        self._validate_default(default, (decimal.Decimal, None))
+        self._validate_default(
+            default,
+            (
+                decimal.Decimal,
+                None,
+                Infinity,
+                NegativeInfinity,
+            ),
+        )
 
         self.default = default
         self.digits = digits
