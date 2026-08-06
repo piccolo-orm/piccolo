@@ -22,6 +22,7 @@ from piccolo.columns.column_types import (
     TimestampNow,
     Varchar,
 )
+from piccolo.columns.defaults.numeric import Infinity, NegativeInfinity
 from piccolo.columns.defaults.timestamp import TimestampCustom
 from piccolo.columns.defaults.timestamptz import TimestamptzCustom
 from piccolo.table import Table
@@ -61,6 +62,8 @@ class TestDefaults(TestCase):
     def test_numeric(self):
         Numeric(default=decimal.Decimal(1.0))
         Numeric(default=None, null=True)
+        Numeric(default=Infinity())
+        Numeric(default=NegativeInfinity())
         with self.assertRaises(ValueError):
             Numeric(default="hello world")  # type: ignore
 
