@@ -7,7 +7,7 @@ from typing import Callable, Union
 from .base import Default
 
 
-class Infinity(Default):
+class InfinityFloat(Default):
 
     @property
     def postgres(self):
@@ -25,7 +25,7 @@ class Infinity(Default):
         return math.inf
 
 
-class NegativeInfinity(Default):
+class NegativeInfinityFloat(Default):
 
     @property
     def postgres(self):
@@ -46,15 +46,15 @@ class NegativeInfinity(Default):
 RealArg = Union[
     float,
     Enum,
-    Infinity,
-    NegativeInfinity,
+    InfinityFloat,
+    NegativeInfinityFloat,
     Callable[[], float],
     None,
 ]
 
 
 __all__ = [
-    "Infinity",
-    "NegativeInfinity",
+    "InfinityFloat",
+    "NegativeInfinityFloat",
     "RealArg",
 ]
