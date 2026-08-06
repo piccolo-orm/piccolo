@@ -106,14 +106,19 @@ Date
 .. autoclass:: DateOffset
     :members:
 
+Numeric
+~~~~~~~
 
-UUID
+.. autoclass:: InfinityDecimal
+
+.. autoclass:: NegativeInfinityDecimal
+
+Real
 ~~~~
 
-.. autoclass:: UUID4
+.. autoclass:: InfinityFloat
 
-.. autoclass:: UUID7
-
+.. autoclass:: NegativeInfinityFloat
 
 Timestamp
 ~~~~~~~~~
@@ -138,6 +143,13 @@ Timestamptz
 
 .. autoclass:: TimestamptzNow
     :members:
+
+UUID
+~~~~
+
+.. autoclass:: UUID4
+
+.. autoclass:: UUID7
 
 -------------------------------------------------------------------------------
 

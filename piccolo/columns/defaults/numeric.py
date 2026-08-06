@@ -8,6 +8,9 @@ from .base import Default
 
 
 class InfinityDecimal(Default):
+    """
+    ``Decimal('Infinity')`` in Python.
+    """
 
     @property
     def postgres(self):
@@ -26,6 +29,9 @@ class InfinityDecimal(Default):
 
 
 class NegativeInfinityDecimal(Default):
+    """
+    ``Decimal('-Infinity')`` in Python.
+    """
 
     @property
     def postgres(self):

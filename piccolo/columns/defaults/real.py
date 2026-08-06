@@ -8,6 +8,9 @@ from .base import Default
 
 
 class InfinityFloat(Default):
+    """
+    ``math.inf`` in Python.
+    """
 
     @property
     def postgres(self):
@@ -26,6 +29,9 @@ class InfinityFloat(Default):
 
 
 class NegativeInfinityFloat(Default):
+    """
+    ``-1 * math.inf`` in Python.
+    """
 
     @property
     def postgres(self):
