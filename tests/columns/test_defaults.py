@@ -26,10 +26,7 @@ from piccolo.columns.defaults.numeric import (
     InfinityDecimal,
     NegativeInfinityDecimal,
 )
-from piccolo.columns.defaults.real import (
-    InfinityFloat,
-    NegativeInfinityFloat,
-)
+from piccolo.columns.defaults.real import InfinityFloat, NegativeInfinityFloat
 from piccolo.columns.defaults.timestamp import TimestampCustom
 from piccolo.columns.defaults.timestamptz import TimestamptzCustom
 from piccolo.table import Table
