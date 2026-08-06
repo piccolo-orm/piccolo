@@ -48,6 +48,12 @@ from piccolo.columns.column_types import (
     Timestamptz,
     Varchar,
 )
+from piccolo.columns.defaults import (
+    InfinityDecimal,
+    InfinityFloat,
+    NegativeInfinityDecimal,
+    NegativeInfinityFloat,
+)
 from piccolo.columns.defaults.uuid import UUID4
 from piccolo.columns.m2m import M2M
 from piccolo.columns.reference import LazyTableReference
@@ -349,6 +355,8 @@ class TestMigrations(MigrationTestCase):
                 for column in [
                     Real(),
                     Real(default=1.1),
+                    Real(default=InfinityFloat()),
+                    Real(default=NegativeInfinityFloat()),
                     Real(null=True),
                     Real(null=False),
                     Real(index=True),
@@ -610,6 +618,8 @@ class TestMigrations(MigrationTestCase):
                     Numeric(digits=(4, 2)),
                     Numeric(digits=None),
                     Numeric(default=decimal.Decimal("1.2")),
+                    Numeric(default=InfinityDecimal()),
+                    Numeric(default=NegativeInfinityDecimal()),
                     Numeric(default=numeric_default),
                     Numeric(null=True, default=None),
                     Numeric(null=False),
