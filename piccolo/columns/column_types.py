@@ -58,7 +58,8 @@ from piccolo.columns.base import (
 from piccolo.columns.combination import Where
 from piccolo.columns.defaults.date import DateArg, DateCustom, DateNow
 from piccolo.columns.defaults.interval import IntervalArg, IntervalCustom
-from piccolo.columns.defaults.numeric import Infinity, NegativeInfinity
+from piccolo.columns.defaults.numeric import NumericArg
+from piccolo.columns.defaults.real import RealArg
 from piccolo.columns.defaults.time import TimeArg, TimeCustom, TimeNow
 from piccolo.columns.defaults.timestamp import (
     TimestampArg,
@@ -1520,14 +1521,7 @@ class Numeric(Column):
     def __init__(
         self,
         digits: Optional[tuple[int, int]] = None,
-        default: Union[
-            decimal.Decimal,
-            Enum,
-            Infinity,
-            NegativeInfinity,
-            Callable[[], decimal.Decimal],
-            None,
-        ] = decimal.Decimal(0.0),
+        default: NumericArg = decimal.Decimal(0.0),
         **kwargs: Unpack[ColumnKwargs],
     ) -> None:
         if isinstance(digits, tuple):
@@ -1542,12 +1536,7 @@ class Numeric(Column):
 
         self._validate_default(
             default,
-            (
-                decimal.Decimal,
-                None,
-                Infinity,
-                NegativeInfinity,
-            ),
+            NumericArg.__args__,  # type: ignore
         )
 
         self.default = default
@@ -1616,14 +1605,7 @@ class Real(Column):
 
     def __init__(
         self,
-        default: Union[
-            float,
-            Enum,
-            Infinity,
-            NegativeInfinity,
-            Callable[[], float],
-            None,
-        ] = 0.0,
+        default: RealArg = 0.0,
         **kwargs: Unpack[ColumnKwargs],
     ) -> None:
         if isinstance(default, int):
@@ -1632,12 +1614,7 @@ class Real(Column):
 
         self._validate_default(
             default,
-            (
-                float,
-                Infinity,
-                NegativeInfinity,
-                None,
-            ),
+            RealArg.__args__,  # type: ignore
         )
         self.default = default
         super().__init__(default=default, **kwargs)

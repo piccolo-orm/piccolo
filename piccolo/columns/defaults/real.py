@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import decimal
+import math
 from enum import Enum
 from typing import Callable, Union
 
@@ -22,7 +22,7 @@ class Infinity(Default):
         return "'Infinity'"
 
     def python(self):
-        return decimal.Decimal("Infinity")
+        return math.inf
 
 
 class NegativeInfinity(Default):
@@ -40,15 +40,15 @@ class NegativeInfinity(Default):
         return "'-Infinity'"
 
     def python(self):
-        return decimal.Decimal("-Infinity")
+        return math.inf * -1
 
 
-NumericArg = Union[
-    decimal.Decimal,
+RealArg = Union[
+    float,
     Enum,
     Infinity,
     NegativeInfinity,
-    Callable[[], decimal.Decimal],
+    Callable[[], float],
     None,
 ]
 
@@ -56,4 +56,5 @@ NumericArg = Union[
 __all__ = [
     "Infinity",
     "NegativeInfinity",
+    "RealArg",
 ]
