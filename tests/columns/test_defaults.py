@@ -22,7 +22,14 @@ from piccolo.columns.column_types import (
     TimestampNow,
     Varchar,
 )
-from piccolo.columns.defaults.numeric import Infinity, NegativeInfinity
+from piccolo.columns.defaults.numeric import (
+    InfinityDecimal,
+    NegativeInfinityDecimal,
+)
+from piccolo.columns.defaults.real import (
+    InfinityFloat,
+    NegativeInfinityFloat,
+)
 from piccolo.columns.defaults.timestamp import TimestampCustom
 from piccolo.columns.defaults.timestamptz import TimestamptzCustom
 from piccolo.table import Table
@@ -50,6 +57,8 @@ class TestDefaults(TestCase):
     def test_real(self):
         Real(default=0.0)
         Real(default=None, null=True)
+        Real(default=InfinityFloat(), null=True)
+        Real(default=NegativeInfinityFloat(), null=True)
         with self.assertRaises(ValueError):
             Real(default="hello world")  # type: ignore
 
@@ -62,8 +71,8 @@ class TestDefaults(TestCase):
     def test_numeric(self):
         Numeric(default=decimal.Decimal(1.0))
         Numeric(default=None, null=True)
-        Numeric(default=Infinity())
-        Numeric(default=NegativeInfinity())
+        Numeric(default=InfinityDecimal())
+        Numeric(default=NegativeInfinityDecimal())
         with self.assertRaises(ValueError):
             Numeric(default="hello world")  # type: ignore
 
