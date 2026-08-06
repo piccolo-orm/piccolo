@@ -1,6 +1,10 @@
 from decimal import Decimal
 
 from piccolo.columns.column_types import Numeric
+from piccolo.columns.defaults.numeric import (
+    InfinityDecimal,
+    NegativeInfinityDecimal,
+)
 from piccolo.table import Table
 from piccolo.testing.test_case import TableTest
 
@@ -8,6 +12,8 @@ from piccolo.testing.test_case import TableTest
 class MyTable(Table):
     column_a = Numeric()
     column_b = Numeric(digits=(3, 2))
+    column_c = Numeric(default=InfinityDecimal())
+    column_d = Numeric(default=NegativeInfinityDecimal())
 
 
 class TestNumeric(TableTest):
@@ -25,3 +31,6 @@ class TestNumeric(TableTest):
 
         self.assertAlmostEqual(_row.column_a, Decimal(1.23))
         self.assertAlmostEqual(_row.column_b, Decimal("1.23"))
+
+        self.assertEqual(_row.column_c, Decimal("Infinity"))
+        self.assertEqual(_row.column_d, Decimal("-Infinity"))
