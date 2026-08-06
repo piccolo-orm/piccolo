@@ -1616,14 +1616,29 @@ class Real(Column):
 
     def __init__(
         self,
-        default: Union[float, Enum, Callable[[], float], None] = 0.0,
+        default: Union[
+            float,
+            Enum,
+            Infinity,
+            NegativeInfinity,
+            Callable[[], float],
+            None,
+        ] = 0.0,
         **kwargs: Unpack[ColumnKwargs],
     ) -> None:
         if isinstance(default, int):
             # For example, allow `0` as a valid default.
             default = float(default)
 
-        self._validate_default(default, (float, None))
+        self._validate_default(
+            default,
+            (
+                float,
+                Infinity,
+                NegativeInfinity,
+                None,
+            ),
+        )
         self.default = default
         super().__init__(default=default, **kwargs)
 
