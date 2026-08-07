@@ -9,6 +9,7 @@ from piccolo.columns.base import Column
 from piccolo.columns.column_types import ForeignKey, Numeric, Varchar
 from piccolo.constraints import Constraint
 from piccolo.query.base import DDL
+from piccolo.utils.escaping import quote_ident
 from piccolo.utils.warnings import Level, colored_warning
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -234,9 +235,10 @@ class AddForeignKeyConstraint(AlterStatement):
     @property
     def ddl(self) -> str:
         query = (
-            f'ADD CONSTRAINT "{self.constraint_name}" FOREIGN KEY '
-            f'("{self.foreign_key_column_name}") REFERENCES '
-            f'"{self.referenced_table_name}" ("{self.referenced_column_name}")'
+            f"ADD CONSTRAINT {quote_ident(self.constraint_name)} FOREIGN KEY "
+            f"({quote_ident(self.foreign_key_column_name)}) REFERENCES "
+            f"{quote_ident(self.referenced_table_name)} "
+            f"({quote_ident(self.referenced_column_name)})"
         )
         if self.on_delete:
             query += f" ON DELETE {self.on_delete.value}"

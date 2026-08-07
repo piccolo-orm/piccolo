@@ -4,6 +4,8 @@ from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Union
 
+from piccolo.utils.escaping import quote_ident
+
 if TYPE_CHECKING:
     from piccolo.columns import Column
     from piccolo.custom_types import Combinable
@@ -129,15 +131,14 @@ class Unique(Constraint):
             "NULLS NOT DISTINCT " if self.nulls_distinct is False else ""
         )
         column_names = self.get_column_names()
-        columns_string = ", ".join(f'"{i}"' for i in column_names)
+        columns_string = ", ".join(quote_ident(i) for i in column_names)
         return f"UNIQUE {nulls_string}({columns_string})"
 
     def _table_str(self) -> str:
         column_names = self.get_column_names()
 
-        columns_string = ", ".join(
-            [f'"{column_name}"' for column_name in column_names]
-        )
+        # Use repr, so the column names are correctly escaped.
+        columns_string = ", ".join(repr(i) for i in column_names)
         return (
             f"{self._meta._name} = Unique([{columns_string}], "
             f"nulls_distinct={self.nulls_distinct})"
@@ -211,4 +212,6 @@ class Check(Constraint):
         return f"CHECK ({self.get_condition_str()})"
 
     def _table_str(self) -> str:
-        return f"{self._meta._name} = Check('{self.get_condition_str()}')"
+        # Use repr, so the condition is correctly escaped - it's a SQL
+        # fragment, so it usually contains quotes.
+        return f"{self._meta._name} = Check({self.get_condition_str()!r})"

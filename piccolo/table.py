@@ -52,6 +52,7 @@ from piccolo.query.methods.objects import GetRelated, UpdateSelf
 from piccolo.query.methods.refresh import Refresh
 from piccolo.querystring import QueryString
 from piccolo.utils import _camel_to_snake
+from piccolo.utils.escaping import quote_ident
 from piccolo.utils.sql_values import convert_to_sql_value
 from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import colored_warning
@@ -117,7 +118,7 @@ class TableMeta:
             components.insert(0, self.schema)
 
         if quoted:
-            return ".".join(f'"{i}"' for i in components)
+            return ".".join(quote_ident(i) for i in components)
         else:
             return ".".join(components)
 

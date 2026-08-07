@@ -277,12 +277,18 @@ class ColumnMeta:
         if self.call_chain:
             table_alias = self.call_chain[-1].table_alias
             if include_quotes:
-                return f'"{table_alias}"."{column_name}"'
+                return (
+                    f"{quote_ident(table_alias)}"
+                    f".{quote_ident(cast(str, column_name))}"
+                )
             else:
                 return f"{table_alias}.{column_name}"
         else:
             if include_quotes:
-                return f'"{self.table._meta.tablename}"."{column_name}"'
+                return (
+                    f"{quote_ident(self.table._meta.tablename)}"
+                    f".{quote_ident(cast(str, column_name))}"
+                )
             else:
                 return f"{self.table._meta.tablename}.{column_name}"
 
@@ -325,7 +331,7 @@ class ColumnMeta:
         if with_alias:
             alias = self.get_default_alias()
             if include_quotes:
-                full_name += f' AS "{alias}"'
+                full_name += f" AS {quote_ident(alias)}"
             else:
                 full_name += f" AS {alias}"
 
@@ -988,7 +994,7 @@ class Column(Selectable):
         """
         Used when creating tables.
         """
-        query = f'"{self._meta.db_column_name}" {self.column_type}'
+        query = f"{quote_ident(self._meta.db_column_name)} {self.column_type}"
         if self._meta.primary_key:
             query += " PRIMARY KEY"
         if self._meta.unique:
@@ -1009,7 +1015,8 @@ class Column(Selectable):
                 foreign_key_meta.resolved_target_column._meta.db_column_name
             )
             query += (
-                f' REFERENCES {tablename} ("{target_column_name}")'
+                f" REFERENCES {tablename} "
+                f"({quote_ident(cast(str, target_column_name))})"
                 f" ON DELETE {on_delete}"
                 f" ON UPDATE {on_update}"
             )

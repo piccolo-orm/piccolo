@@ -1,7 +1,9 @@
+import ast
 from unittest import TestCase
 
 from piccolo.columns.column_types import Varchar
-from piccolo.constraints import Check
+from piccolo.constraints import Check, Unique
+from piccolo.query.methods.alter import AddForeignKeyConstraint
 from piccolo.schema import SchemaManager
 from piccolo.table import Table
 from piccolo.utils.escaping import escape_sql_literal, quote_ident
@@ -117,6 +119,48 @@ class TestNoInjection(TestCase):
             "CHECK (\"name\" = 'x'' OR ''1''=''1')",
         )
 
+    def test_unique_ddl(self):
+        class Weird(Table):
+            name = Varchar(db_column_name='we"ird')
+            u = Unique([name])
+
+        self.assertEqual(
+            Weird._meta.constraints[0].ddl,
+            'UNIQUE ("we""ird")',
+        )
+
+    def test_tablename_and_column_ddl(self):
+        class Weird(Table, tablename='we"ird'):
+            name = Varchar(db_column_name='co"l')
+
+        self.assertEqual(Weird._meta.get_formatted_tablename(), '"we""ird"')
+        self.assertIn('"co""l" VARCHAR', Weird.name.ddl)
+
+    def test_select_full_name(self):
+        class Weird(Table, tablename='we"ird'):
+            name = Varchar(db_column_name='co"l')
+
+        self.assertEqual(
+            Weird.select(Weird.name)
+            .querystrings[0]
+            .compile_string(engine_type="postgres")[0],
+            'SELECT ALL "we""ird"."co""l" AS "co""l" FROM "we""ird"',
+        )
+
+    def test_foreign_key_constraint(self):
+        self.assertEqual(
+            AddForeignKeyConstraint(
+                constraint_name='c"1',
+                foreign_key_column_name='f"k',
+                referenced_table_name='t"bl',
+                referenced_column_name='i"d',
+                on_delete=None,
+                on_update=None,
+            ).ddl,
+            'ADD CONSTRAINT "c""1" FOREIGN KEY ("f""k") '
+            'REFERENCES "t""bl" ("i""d")',
+        )
+
     def test_schema_name(self):
         manager = SchemaManager()
 
@@ -138,3 +182,39 @@ class TestNoInjection(TestCase):
             ).ddl,
             'ALTER TABLE "s""3"."t""1" SET SCHEMA "s""2"',
         )
+
+
+class TestConstraintCodegen(TestCase):
+    """
+    ``_table_str`` outputs Python source, so the values must be escaped with
+    ``repr``, otherwise the generated code doesn't parse.
+    """
+
+    def _get_line(self, table: type[Table], prefix: str) -> str:
+        return next(
+            line.strip()
+            for line in str(table).splitlines()
+            if line.strip().startswith(prefix)
+        )
+
+    def test_check_parses(self):
+        class Ticket(Table):
+            name = Varchar()
+            constraint = Check(name != "O'Brien")
+
+        line = self._get_line(Ticket, "constraint =")
+        self.assertEqual(
+            line, "constraint = Check('\"name\" != \\'O\\'\\'Brien\\'')"
+        )
+        ast.parse(line)
+
+    def test_unique_parses(self):
+        class Ticket(Table):
+            name = Varchar(db_column_name='we"ird')
+            constraint = Unique([name])
+
+        line = self._get_line(Ticket, "constraint =")
+        self.assertEqual(
+            line, "constraint = Unique(['we\"ird'], nulls_distinct=True)"
+        )
+        ast.parse(line)
