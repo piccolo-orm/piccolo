@@ -8,6 +8,8 @@ from importlib.util import find_spec
 from string import Formatter
 from typing import TYPE_CHECKING, Any, Optional
 
+from piccolo.utils.escaping import escape_sql_literal, quote_ident
+
 if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
     from piccolo.table import Table
@@ -155,7 +157,7 @@ class QueryString(Selectable):
         for arg in combined_args:
             _type = type(arg)
             if _type == str:
-                converted_args.append(f"'{arg}'")
+                converted_args.append(f"'{escape_sql_literal(arg)}'")
             elif _type == datetime or _type == date:
                 dt_string = arg.isoformat()
                 converted_args.append(f"'{dt_string}'")
@@ -249,7 +251,7 @@ class QueryString(Selectable):
         self, engine_type: str, with_alias: bool = True
     ) -> QueryString:
         if with_alias and self._alias:
-            return QueryString("{} AS " + f'"{self._alias}"', self)
+            return QueryString("{} AS " + quote_ident(self._alias), self)
         else:
             return self
 

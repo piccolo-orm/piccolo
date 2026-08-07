@@ -6,6 +6,7 @@ from typing import Optional, cast
 from piccolo.engine.base import Engine
 from piccolo.engine.finder import engine_finder
 from piccolo.querystring import QueryString
+from piccolo.utils.escaping import quote_ident
 from piccolo.utils.sync import run_sync
 
 
@@ -53,7 +54,7 @@ class CreateSchema(SchemaDDLBase):
         query = "CREATE SCHEMA"
         if self.if_not_exists:
             query += " IF NOT EXISTS"
-        query += f' "{self.schema_name}"'
+        query += f" {quote_ident(self.schema_name)}"
 
         return query
 
@@ -77,7 +78,7 @@ class DropSchema(SchemaDDLBase):
         query = "DROP SCHEMA"
         if self.if_exists:
             query += " IF EXISTS"
-        query += f' "{self.schema_name}"'
+        query += f" {quote_ident(self.schema_name)}"
 
         if self.cascade:
             query += " CASCADE"
@@ -99,8 +100,8 @@ class RenameSchema(SchemaDDLBase):
     @property
     def ddl(self):
         return (
-            f'ALTER SCHEMA "{self.schema_name}" '
-            f'RENAME TO "{self.new_schema_name}"'
+            f"ALTER SCHEMA {quote_ident(self.schema_name)} "
+            f"RENAME TO {quote_ident(self.new_schema_name)}"
         )
 
 
@@ -119,11 +120,14 @@ class MoveTable(SchemaDDLBase):
 
     @property
     def ddl(self):
-        table_name = f'"{self.table_name}"'
+        table_name = quote_ident(self.table_name)
         if self.current_schema:
-            table_name = f'"{self.current_schema}".{table_name}'
+            table_name = f"{quote_ident(self.current_schema)}.{table_name}"
 
-        return f'ALTER TABLE {table_name} SET SCHEMA "{self.new_schema}"'
+        return (
+            f"ALTER TABLE {table_name} "
+            f"SET SCHEMA {quote_ident(self.new_schema)}"
+        )
 
 
 class ListTables:

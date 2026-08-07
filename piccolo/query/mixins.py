@@ -13,6 +13,7 @@ from piccolo.columns.column_types import ForeignKey
 from piccolo.columns.combination import WhereRaw
 from piccolo.custom_types import Combinable
 from piccolo.querystring import QueryString
+from piccolo.utils.escaping import escape_sql_literal, quote_ident
 from piccolo.utils.list import flatten
 from piccolo.utils.sql_values import convert_to_sql_value
 
@@ -118,7 +119,9 @@ class AsOf:
 
     @property
     def querystring(self) -> QueryString:
-        return QueryString(f" AS OF SYSTEM TIME '{self.interval}'")
+        return QueryString(
+            f" AS OF SYSTEM TIME '{escape_sql_literal(self.interval)}'"
+        )
 
     def __str__(self) -> str:
         return self.querystring.__str__()
@@ -200,9 +203,10 @@ class Returning:
         column_names = []
         for column in self.columns:
             column_names.append(
-                f'"{column._meta.db_column_name}" AS "{column._alias}"'
+                f"{quote_ident(column._meta.db_column_name)} AS "
+                f"{quote_ident(column._alias)}"
                 if column._alias
-                else f'"{column._meta.db_column_name}"'
+                else quote_ident(column._meta.db_column_name)
             )
 
         columns_string = ", ".join(column_names)

@@ -42,6 +42,7 @@ from piccolo.columns.operators.comparison import (
 )
 from piccolo.columns.reference import LazyTableReference
 from piccolo.querystring import QueryString, Selectable
+from piccolo.utils.escaping import escape_sql_literal, quote_ident
 from piccolo.utils.warnings import colored_warning
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -867,7 +868,9 @@ class Column(Selectable):
                 original_name = self._meta.get_full_name(
                     with_alias=False,
                 )
-                return QueryString(f'{original_name} AS "{self._alias}"')
+                return QueryString(
+                    f"{original_name} AS {quote_ident(self._alias)}"
+                )
             else:
                 return QueryString(
                     self._meta.get_full_name(
@@ -918,7 +921,9 @@ class Column(Selectable):
         elif isinstance(value, (float, decimal.Decimal)):
             return str(value)
         elif isinstance(value, str):
-            return f"{delimiter}{value}{delimiter}"
+            return (
+                f"{delimiter}{escape_sql_literal(value, delimiter)}{delimiter}"
+            )
         elif isinstance(value, bool):
             return str(value).lower()
         elif isinstance(value, bytes):
@@ -929,7 +934,9 @@ class Column(Selectable):
             if adapter := sqlite_adapters.get(type(value)):
                 sqlite_value = adapter(value)
                 return (
-                    f"{delimiter}{sqlite_value}{delimiter}"
+                    f"{delimiter}"
+                    f"{escape_sql_literal(sqlite_value, delimiter)}"
+                    f"{delimiter}"
                     if isinstance(sqlite_value, str)
                     else sqlite_value
                 )
