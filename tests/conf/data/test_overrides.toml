@@ -1,0 +1,2 @@
+# Used by test_overrides.py
+MY_TEST_VALUE = "hello world"
