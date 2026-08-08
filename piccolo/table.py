@@ -6,7 +6,9 @@ import types
 import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from functools import reduce
 from graphlib import TopologicalSorter
+from operator import and_
 from typing import TYPE_CHECKING, Any, Optional, Union, cast, overload
 
 from piccolo.columns import Column
@@ -30,7 +32,7 @@ from piccolo.columns.m2m import (
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
 from piccolo.constraints import Constraint
-from piccolo.custom_types import TableInstance
+from piccolo.custom_types import Combinable, TableInstance
 from piccolo.engine import Engine, engine_finder
 from piccolo.query import (
     Alter,
@@ -46,6 +48,7 @@ from piccolo.query import (
     TableExists,
     Update,
 )
+from piccolo.query.lookups import build_expression
 from piccolo.query.methods.create_index import CreateIndex
 from piccolo.query.methods.indexes import Indexes
 from piccolo.query.methods.objects import GetRelated, UpdateSelf
@@ -1254,6 +1257,85 @@ class Table(metaclass=TableMetaclass):
 
         """
         return Objects[TableInstance](table=cls, prefetch=prefetch)
+
+    @classmethod
+    def filter(
+        cls: type[TableInstance],
+        /,
+        *where: Combinable,
+        **lookups: Any,
+    ) -> Objects[TableInstance]:
+        """
+        A shorthand for :meth:`objects` with a ``where`` clause built from
+        keyword arguments, for when the criteria arrive as data rather than
+        being written by hand::
+
+            # These are equivalent:
+            await Band.filter(popularity__gte=1000, manager__name="Guido")
+
+            await Band.objects().where(
+                Band.popularity >= 1000,
+                Band.manager.name == "Guido",
+            )
+
+        Each keyword is a ``field[__related_field...][__transform][__op]``
+        lookup - see :mod:`piccolo.query.lookups` for the grammar. They're
+        combined with ``AND``; for ``OR``, pass :meth:`criteria` in as a
+        positional argument::
+
+            await Band.filter(
+                Band.criteria(manager__name="Guido")
+                | Band.criteria(manager__name="Graydon"),
+                popularity__gte=1000,
+            )
+
+        Returns an :class:`Objects <piccolo.query.methods.objects.Objects>`
+        query, so it chains like any other
+        (``.where(...).order_by(...).first()``).
+
+        .. warning::
+           Lookups from an untrusted source (query params, say) need an
+           allow-list - otherwise a client can filter on any column, and
+           across foreign keys into other tables. Values aren't converted
+           either.
+
+        """
+        expressions = [
+            build_expression(cls, lookup, value)
+            for lookup, value in lookups.items()
+        ]
+        return cls.objects().where(*where, *expressions)
+
+    @classmethod
+    def criteria(cls, /, **lookups: Any) -> Combinable:
+        """
+        The same lookups as :meth:`filter`, but returned as a where clause
+        instead of a query, so they can be combined with ``|`` and ``&``::
+
+            await Band.filter(
+                Band.criteria(manager__name="Guido")
+                | Band.criteria(manager__name="Graydon")
+            )
+
+        It's an ordinary where clause, so it also works in :meth:`where`,
+        alongside the usual expressions::
+
+            await Band.objects().where(
+                Band.criteria(popularity__gte=1000)
+                | (Band.name == "Pythonistas")
+            )
+
+        """
+        if not lookups:
+            raise ValueError("At least one lookup is required.")
+
+        return reduce(
+            and_,
+            (
+                build_expression(cls, lookup, value)
+                for lookup, value in lookups.items()
+            ),
+        )
 
     @classmethod
     def count(
