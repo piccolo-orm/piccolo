@@ -921,7 +921,11 @@ class MigrationManager:
 
         if backwards:
             for _Table in reversed(sorted_table_classes):
-                await self._run_query(_Table.alter().drop_table(cascade=True))
+                await self._run_query(
+                    _Table.alter().drop_table(
+                        cascade=_Table._meta.db.engine_type != "sqlite"
+                    )
+                )
         else:
             for _Table in sorted_table_classes:
                 await self._run_query(_Table.create_table())

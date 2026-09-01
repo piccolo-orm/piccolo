@@ -271,6 +271,37 @@ class TestMigrationManager(DBTestCase):
                 )
         self.assertEqual(self.table_exists("musician"), False)
 
+    @engines_only("sqlite")
+    @patch.object(BaseMigrationManager, "get_app_config")
+    def test_add_table_sqlite(self, get_app_config: MagicMock):
+        """
+        Make sure a table can be added, then the migration reversed, on
+        SQLite. Reversing used to fail, because it tried to run
+        `DROP TABLE ... CASCADE`, which SQLite doesn't support.
+
+        https://github.com/piccolo-orm/piccolo/issues/1420
+
+        """
+        self.run_sync("DROP TABLE IF EXISTS musician;")
+
+        manager = MigrationManager()
+        manager.add_table(class_name="Musician", tablename="musician")
+        manager.add_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="name",
+            column_class_name="Varchar",
+        )
+        asyncio.run(manager.run())
+        self.assertTrue(self.table_exists("musician"))
+
+        # Reverse
+        get_app_config.return_value = AppConfig(
+            app_name="music", migrations_folder_path=""
+        )
+        asyncio.run(manager.run(backwards=True))
+        self.assertFalse(self.table_exists("musician"))
+
     @engines_only("postgres", "cockroach")
     def test_add_column(self) -> None:
         """
