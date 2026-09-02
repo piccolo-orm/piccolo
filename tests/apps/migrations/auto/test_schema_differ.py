@@ -101,11 +101,14 @@ class TestSchemaDiffer(TestCase):
         """
         Testing changing the schema.
         """
+        name_column = Varchar()
+        name_column._meta.name = "name"
+
         schema: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
-                columns=[],
+                columns=[name_column],
                 schema="schema_1",
             )
         ]
@@ -113,7 +116,7 @@ class TestSchemaDiffer(TestCase):
             DiffableTable(
                 class_name="Band",
                 tablename="band",
-                columns=[],
+                columns=[name_column],
                 schema=None,
             )
         ]
@@ -131,6 +134,42 @@ class TestSchemaDiffer(TestCase):
 
         self.assertListEqual(schema_differ.create_tables.statements, [])
         self.assertListEqual(schema_differ.drop_tables.statements, [])
+
+        # A schema change alone shouldn't be misdetected as a table rename
+        # (this table has overlapping columns, which is what the rename
+        # heuristic keys off).
+        self.assertListEqual(schema_differ.rename_tables.statements, [])
+
+    def test_same_table_name_different_schema(self) -> None:
+        """
+        Two tables with the same class_name / tablename, but in different
+        schemas, are different tables - both should be created.
+
+        https://github.com/piccolo-orm/piccolo/issues/1426
+        """
+        schema: list[DiffableTable] = [
+            DiffableTable(
+                class_name="Band", tablename="band", schema="schema_1"
+            ),
+            DiffableTable(
+                class_name="Band", tablename="band", schema="schema_2"
+            ),
+        ]
+        schema_snapshot: list[DiffableTable] = []
+
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
+        )
+
+        create_tables = schema_differ.create_tables
+        self.assertEqual(len(create_tables.statements), 2)
+        self.assertEqual(
+            set(create_tables.statements),
+            {
+                "manager.add_table(class_name='Band', tablename='band', schema='schema_1', columns=None)",  # noqa: E501
+                "manager.add_table(class_name='Band', tablename='band', schema='schema_2', columns=None)",  # noqa: E501
+            },
+        )
 
     def test_add_column(self) -> None:
         """

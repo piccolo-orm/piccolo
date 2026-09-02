@@ -266,10 +266,7 @@ class DiffableTable:
         )
 
     def __hash__(self) -> int:
-        """
-        We have to return an integer, which is why convert the string this way.
-        """
-        return hash(self.class_name + self.tablename)
+        return hash((self.class_name, self.tablename, self.schema))
 
     def __eq__(self, value) -> bool:
         """
@@ -277,8 +274,10 @@ class DiffableTable:
         """
         if not isinstance(value, DiffableTable):
             return False
-        return (self.class_name == value.class_name) and (
-            self.tablename == value.tablename
+        return (
+            (self.class_name == value.class_name)
+            and (self.tablename == value.tablename)
+            and (self.schema == value.schema)
         )
 
     def __str__(self):

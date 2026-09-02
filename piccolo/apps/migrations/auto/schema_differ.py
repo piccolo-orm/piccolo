@@ -66,6 +66,10 @@ class ChangeTableSchemaCollection:
     def append(self, change_table_schema: ChangeTableSchema):
         self.collection.append(change_table_schema)
 
+    @property
+    def class_names(self) -> list[str]:
+        return [i.class_name for i in self.collection]
+
 
 @dataclass
 class RenameColumnCollection:
@@ -138,13 +142,22 @@ class SchemaDiffer:
         """
         Work out whether any of the tables were renamed.
         """
-        drop_tables: list[DiffableTable] = list(
-            set(self.schema_snapshot) - set(self.schema)
-        )
+        # Tables which just had their schema changed are handled separately
+        # by ``check_table_schema_changes`` - excluded here so a schema
+        # change alone doesn't get misdetected as a same-named rename.
+        drop_tables: list[DiffableTable] = [
+            i
+            for i in set(self.schema_snapshot) - set(self.schema)
+            if i.class_name
+            not in self.table_schema_changes_collection.class_names
+        ]
 
-        new_tables: list[DiffableTable] = list(
-            set(self.schema) - set(self.schema_snapshot)
-        )
+        new_tables: list[DiffableTable] = [
+            i
+            for i in set(self.schema) - set(self.schema_snapshot)
+            if i.class_name
+            not in self.table_schema_changes_collection.class_names
+        ]
 
         # A mapping of the old table name (i.e. dropped table) to the new
         # table name.
@@ -353,12 +366,16 @@ class SchemaDiffer:
             set(self.schema) - set(self.schema_snapshot)
         )
 
-        # Remove any which are renames
+        # Remove any which are renames, or just had their schema changed
+        # (both are handled separately, and only match on class_name, so
+        # they're unaffected by the schema-aware equality check above).
         new_tables = [
             i
             for i in new_tables
             if i.class_name
             not in self.rename_tables_collection.new_class_names
+            and i.class_name
+            not in self.table_schema_changes_collection.class_names
         ]
 
         alter_statements = AlterStatements()
@@ -384,12 +401,16 @@ class SchemaDiffer:
             set(self.schema_snapshot) - set(self.schema)
         )
 
-        # Remove any which are renames
+        # Remove any which are renames, or just had their schema changed
+        # (both are handled separately, and only match on class_name, so
+        # they're unaffected by the schema-aware equality check above).
         drop_tables = [
             i
             for i in drop_tables
             if i.class_name
             not in self.rename_tables_collection.old_class_names
+            and i.class_name
+            not in self.table_schema_changes_collection.class_names
         ]
 
         alter_statements = AlterStatements()
