@@ -516,6 +516,7 @@ class SchemaDiffer:
                             expect_conflict_with_global_name=getattr(
                                 UniqueGlobalNames,
                                 f"COLUMN_{alter_column.old_column_class.__name__.upper()}",  # noqa: E501
+                                None,
                             ),
                         )
                     )
