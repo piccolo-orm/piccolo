@@ -37,7 +37,7 @@ Get the tests running
 * Install development dependencies: ``pip install -r requirements/dev-requirements.txt``
 * Install test dependencies: ``pip install -r requirements/test-requirements.txt``
 * Install database drivers: ``pip install -r requirements/extras/postgres.txt -r requirements/extras/sqlite.txt``
-* Setup Postgres, and make sure a database called ``piccolo`` exists (see ``tests/postgres_conf.py``).
+* Setup database engines, and make sure a database called ``piccolo`` exists (see ``tests/postgres_conf.py``, ``tests/sqlite_conf.py``, ``tests/cockroach_conf.py``). For an easy test database setup, you can use the Docker composition in ``tests/docker-compose.yml``.
 * Run the automated code linting/formatting tools: ``./scripts/lint.sh``
 * Run the test suite with Postgres: ``./scripts/test-postgres.sh``
 * Run the test suite with Cockroach: ``./scripts/test-cockroach.sh``
