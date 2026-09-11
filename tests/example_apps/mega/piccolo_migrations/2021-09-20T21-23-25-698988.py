@@ -430,6 +430,28 @@ async def forwards():
     )
 
     manager.add_column(
+        table_class_name="MegaTable",
+        tablename="mega_table",
+        column_name="null_with_default_col",
+        db_column_name="null_with_default_col",
+        column_class_name="Varchar",
+        column_class=Varchar,
+        params={
+            "length": 255,
+            "default": "Default value",
+            "null": True,
+            "primary_key": False,
+            "unique": False,
+            "index": False,
+            "index_method": IndexMethod.btree,
+            "choices": None,
+            "db_column_name": None,
+            "secret": False,
+        },
+        schema=None,
+    )
+
+    manager.add_column(
         table_class_name="SmallTable",
         tablename="small_table",
         column_name="varchar_col",
