@@ -65,19 +65,22 @@ Piccolo uses `Black <https://black.readthedocs.io/en/stable/>`_  for
 formatting, preferably with a max line length of 79, to keep it consistent
 with `PEP8 <https://python.org/dev/peps/pep-0008/>`_ .
 
-You can configure `VSCode <https://code.visualstudio.com/>`_ by modifying
-``settings.json`` as follows:
+You can configure `VSCode <https://code.visualstudio.com/>`_ by  installing
+`MyPy <https://open-vsx.org/extension/ms-python/mypy-type-checker>`_ and
+`Black <https://open-vsx.org/extension/ms-python/black-formatter>`_ extensions
+and modifying ``settings.json`` as follows:
 
 .. code-block:: json
 
     {
-        "python.linting.enabled": true,
-        "python.linting.mypyEnabled": true,
-        "python.formatting.provider": "black",
-        "python.formatting.blackArgs": [
-            "--line-length",
-            "79"
-        ],
+        "mypy-type-checker.reportingScope": "workspace",
+        "mypy-type-checker.preferDaemon": true,
+        "mypy-type-checker.importStrategy": "fromEnvironment",
+        "black-formatter.importStrategy": "fromEnvironment",
+        "black-formatter.args": ["--line-length", "79"],
+        "[python]": {
+            "editor.defaultFormatter": "ms-python.black-formatter"
+        },
         "editor.formatOnSave": true
     }
 
