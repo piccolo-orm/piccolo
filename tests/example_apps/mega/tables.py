@@ -61,6 +61,7 @@ if engine.engine_type != "cockroach":  # type: ignore
         unique_col = Varchar(unique=True)
         null_col = Varchar(null=True)
         not_null_col = Varchar(null=False)
+        null_with_default_col = Varchar(null=True, default="Default value")
 
 else:
 
@@ -92,3 +93,4 @@ else:
         unique_col = Varchar(unique=True)
         null_col = Varchar(null=True)
         not_null_col = Varchar(null=False)
+        null_with_default_col = Varchar(null=True, default="Default value")
