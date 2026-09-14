@@ -129,7 +129,7 @@ short example:
 .. code-block:: json
 
     {
-        "my_wonderfull_piccolo_app": {
+        "my_wonderful_piccolo_app": {
             "Manager": [
                 { "id": 1, "name": "Dave" },
                 { "id": 2, "name": "Pythonistas" },
