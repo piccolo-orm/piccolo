@@ -1,5 +1,6 @@
 import datetime
 import decimal
+import json
 import os
 import tempfile
 import uuid
@@ -10,6 +11,7 @@ from piccolo.apps.fixtures.commands.dump import (
     dump_to_json_string,
 )
 from piccolo.apps.fixtures.commands.load import load, load_json_string
+from piccolo.apps.fixtures.commands.shared import create_pydantic_fixture_model
 from piccolo.utils.sync import run_sync
 from tests.base import engines_only
 from tests.example_apps.mega.tables import MegaTable, SmallTable
@@ -124,6 +126,7 @@ class TestDumpLoad(TestCase):
                 "json_col": '{"a":1}',
                 "jsonb_col": '{"a":1}',
                 "numeric_col": decimal.Decimal("1.1"),
+                "null_with_default_col": "Default value",
                 "real_col": 1.1,
                 "double_precision_col": 1.344,
                 "smallint_col": 1,
@@ -226,6 +229,7 @@ class TestDumpLoad(TestCase):
                 "json_col": '{"a":1}',
                 "jsonb_col": '{"a":1}',
                 "numeric_col": decimal.Decimal("1.1"),
+                "null_with_default_col": "Default value",
                 "real_col": 1.1,
                 "double_precision_col": 1.344,
                 "smallint_col": 1,
@@ -240,6 +244,85 @@ class TestDumpLoad(TestCase):
                 "null_col": None,
                 "not_null_col": "hello",
             },
+        )
+
+    def test_load_with_defaults(self):
+        """
+        Make sure we can load JSON fixtures into the database, without
+        providing columns with default values.
+        """
+        # We need to clear the data out now, otherwise when loading the data
+        # back in, there will be constraint errors over clashing primary
+        # keys.
+        MegaTable.delete(force=True).run_sync()
+
+        pydantic_model = create_pydantic_fixture_model(
+            fixture_configs=[
+                FixtureConfig(
+                    app_name="mega",
+                    table_class_names=["SmallTable", "MegaTable"],
+                )
+            ]
+        )
+
+        run_sync(
+            load_json_string(
+                pydantic_model(
+                    **{
+                        "mega": {
+                            "SmallTable": [{"id": 1, "varchar_col": "Test"}],
+                            "MegaTable": [
+                                {
+                                    "id": 1,
+                                    "bigint_col": 1,
+                                    "boolean_col": True,
+                                    "bytea_col": "hello".encode("utf8"),
+                                    "date_col": datetime.date(
+                                        year=2021, month=1, day=1
+                                    ),
+                                    "foreignkey_col": 1,
+                                    "integer_col": 1,
+                                    "interval_col": datetime.timedelta(
+                                        seconds=10
+                                    ),
+                                    "json_col": json.dumps({"a": 1}),
+                                    "jsonb_col": json.dumps({"a": 1}).encode(
+                                        "utf8"
+                                    ),
+                                    "numeric_col": decimal.Decimal("1.1"),
+                                    "real_col": 1.1,
+                                    "double_precision_col": 1.344,
+                                    "smallint_col": 1,
+                                    "text_col": "hello",
+                                    "timestamp_col": datetime.datetime(
+                                        year=2021, month=1, day=1
+                                    ),
+                                    "timestamptz_col": datetime.datetime(
+                                        year=2021,
+                                        month=1,
+                                        day=1,
+                                        tzinfo=datetime.timezone.utc,
+                                    ),
+                                    "uuid_col": uuid.UUID(
+                                        "12783854-c012-4c15-8183-8eecb46f2c4e"
+                                    ),
+                                    "varchar_col": "hello",
+                                    "unique_col": "hello",
+                                    "null_col": None,
+                                    "not_null_col": "hello",
+                                }
+                            ],
+                        }
+                    },
+                ).model_dump_json(indent=4)
+            )
+        )
+
+        mega_table_data = MegaTable.select().run_sync()
+
+        self.assertTrue(len(mega_table_data) == 1)
+        self.assertTrue(
+            mega_table_data[0]["null_with_default_col"] == "Default value"
         )
 
 
