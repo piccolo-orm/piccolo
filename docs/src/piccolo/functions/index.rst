@@ -17,5 +17,6 @@ Functions can be used to modify how queries are run, and what is returned.
     ./datetime
     ./math
     ./string
+    ./text_search
     ./type_conversion
     ./custom
