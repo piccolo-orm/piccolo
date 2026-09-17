@@ -13,3 +13,15 @@ NullIf
 ------
 
 .. autoclass:: NullIf
+
+
+Case
+----
+
+.. autoclass:: Case
+
+
+When
+----
+
+.. autoclass:: When
