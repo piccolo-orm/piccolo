@@ -119,6 +119,12 @@ if TYPE_CHECKING:
         assert_type(await ModelBuilder.build(Band), Band)
         assert_type(ModelBuilder.build_sync(Band), Band)
 
+    async def filter() -> None:
+        query = Band.filter(popularity__gte=1000)
+        assert_type(await query, list[Band])
+        assert_type(query.run_sync(), list[Band])
+        assert_type(await query.first(), Optional[Band])
+
     def run_sync_return_type() -> None:
         """
         Make sure `run_sync` returns the same type as the coroutine which is

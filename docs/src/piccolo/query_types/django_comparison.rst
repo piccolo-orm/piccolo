@@ -115,6 +115,9 @@ In bulk:
 filter
 ~~~~~~
 
+Piccolo's recommended style is an explicit column comparison passed to
+``where``:
+
 .. code-block:: python
 
     # Django
@@ -124,6 +127,42 @@ filter
     # Piccolo
     >>> Band.objects().where(Band.name == "Pythonistas").run_sync()
     [<Band: 1>]
+
+Piccolo also has :ref:`filter <Filter>`, which takes Django-style keyword
+lookups. It's useful when the criteria arrive as data:
+
+.. code-block:: python
+
+    # Piccolo
+    >>> Band.filter(popularity__gte=1000, manager__name="Guido").run_sync()
+    [<Band: 1>]
+
+Q objects
+~~~~~~~~~
+
+Django uses ``Q`` objects to build ``OR`` conditions, because its expressions
+don't compose. Piccolo's do, so an ordinary expression is usually enough:
+
+.. code-block:: python
+
+    # Django
+    >>> Band.objects.filter(Q(name="Pythonistas") | Q(name="Rustaceans"))
+
+    # Piccolo
+    >>> Band.objects().where(
+    ...     (Band.name == "Pythonistas") | (Band.name == "Rustaceans")
+    ... ).run_sync()
+
+If you're using keyword lookups, :ref:`criteria <Criteria>` is the equivalent
+of a ``Q`` object:
+
+.. code-block:: python
+
+    # Piccolo
+    >>> Band.filter(
+    ...     Band.criteria(name="Pythonistas")
+    ...     | Band.criteria(name="Rustaceans")
+    ... ).run_sync()
 
 values_list
 ~~~~~~~~~~~
