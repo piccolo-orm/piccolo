@@ -48,7 +48,11 @@ from piccolo.query import (
 )
 from piccolo.query.methods.create_index import CreateIndex
 from piccolo.query.methods.indexes import Indexes
-from piccolo.query.methods.objects import GetRelated, UpdateSelf
+from piccolo.query.methods.objects import (
+    GetRelated,
+    UpdateSelf,
+    get_relation_key,
+)
 from piccolo.query.methods.refresh import Refresh
 from piccolo.querystring import QueryString
 from piccolo.utils import _camel_to_snake
@@ -67,6 +71,9 @@ TABLENAME_WARNING = (
 
 
 TABLE_REGISTRY: list[type[Table]] = []
+
+# The suffix used for reverse relation accessor names - e.g. `band_set`.
+REVERSE_RELATION_SUFFIX = "_set"
 
 
 @dataclass
@@ -130,6 +137,53 @@ class TableMeta:
         foreign_keys.extend(lazy_column_references)
 
         return foreign_keys
+
+    @property
+    def reverse_relations(self) -> dict[str, ForeignKey]:
+        """
+        Maps an accessor name to the ``ForeignKey`` column which points at
+        this table. It's the reverse of ``foreign_key_columns``.
+
+        The names follow the same convention as Django - the tablename of the
+        table containing the foreign key, followed by ``_set``::
+
+            class Manager(Table):
+                name = Varchar()
+
+            class Band(Table):
+                name = Varchar()
+                manager = ForeignKey(Manager)
+
+            >>> Manager._meta.reverse_relations
+            {'band_manager_set': Band.manager, 'band_set': Band.manager}
+
+        Each relation gets a name which includes the column
+        (``band_manager_set``), and a shorter one which doesn't
+        (``band_set``). The shorter name is only added when it's unambiguous -
+        if a table has two foreign keys pointing at this one, then only the
+        longer names are available for them.
+
+        """
+        foreign_keys = self.foreign_key_references
+
+        counts: dict[str, int] = {}
+        for foreign_key in foreign_keys:
+            tablename = foreign_key._meta.table._meta.tablename
+            counts[tablename] = counts.get(tablename, 0) + 1
+
+        relations: dict[str, ForeignKey] = {}
+        for foreign_key in foreign_keys:
+            tablename = foreign_key._meta.table._meta.tablename
+            column_name = foreign_key._meta.name
+            relations[
+                f"{tablename}_{column_name}{REVERSE_RELATION_SUFFIX}"
+            ] = foreign_key
+            if counts[tablename] == 1:
+                relations[f"{tablename}{REVERSE_RELATION_SUFFIX}"] = (
+                    foreign_key
+                )
+
+        return relations
 
     @property
     def db(self) -> Engine:
@@ -457,6 +511,10 @@ class Table(metaclass=TableMetaclass):
         # was an existing row or not.
         self._was_created: Optional[bool] = None
 
+        # Populated by `prefetch_related` - maps a reverse relation to the
+        # rows belonging to this one.
+        self._prefetched_relations: dict[str, list[Table]] = {}
+
         for column in self._meta.columns:
             value = _data.get(column, ...)
 
@@ -689,6 +747,101 @@ class Table(metaclass=TableMetaclass):
             )
 
         return GetRelated(foreign_key=foreign_key, row=self)
+
+    def get_related_objects(
+        self, foreign_key: Union[str, ForeignKey]
+    ) -> Objects:
+        """
+        The reverse of :meth:`get_related` - it returns a query for all of the
+        rows whose foreign key points at this one.
+
+        .. code-block:: python
+
+            manager = await Manager.objects().get(Manager.name == 'Guido')
+
+            >>> await manager.get_related_objects(Band.manager)
+            [<Band: 1>]
+
+        A query is returned rather than the rows themselves, so it can be
+        narrowed down like any other::
+
+            >>> await manager.get_related_objects(Band.manager).where(
+            ...     Band.popularity > 500
+            ... )
+
+        The accessor name can be used instead of the column, which is useful
+        when the table containing the foreign key isn't imported::
+
+            >>> await manager.get_related_objects('band_set')
+
+        See :attr:`TableMeta.reverse_relations` for how the accessor names are
+        derived. Attribute access works too - ``manager.band_set`` is the same
+        as ``manager.get_related_objects('band_set')``.
+
+        :param foreign_key:
+            A ``ForeignKey`` column which points at this table, or the name of
+            a reverse relation.
+        :raises ValueError:
+            If the foreign key doesn't point at this table, or the row hasn't
+            been saved to the database yet.
+
+        """
+        if isinstance(foreign_key, str):
+            reverse_relations = self._meta.reverse_relations
+            if foreign_key not in reverse_relations:
+                raise ValueError(
+                    f"{foreign_key} isn't a reverse relation of "
+                    f"{self._meta.tablename}. The options are: "
+                    f"{', '.join(sorted(reverse_relations))}"
+                )
+            foreign_key = reverse_relations[foreign_key]
+
+        if not isinstance(foreign_key, ForeignKey):
+            raise ValueError(
+                "foreign_key isn't a ForeignKey instance, or the name of a "
+                "reverse relation."
+            )
+
+        references = foreign_key._foreign_key_meta.resolved_references
+        if references._meta.tablename != self._meta.tablename:
+            raise ValueError(
+                f"{foreign_key} doesn't reference {self._meta.tablename}."
+            )
+
+        primary_key_value = getattr(self, self._meta.primary_key._meta.name)
+        if primary_key_value is None or isinstance(
+            primary_key_value, QueryString
+        ):
+            # An unsaved row with a `Serial` primary key has a `QueryString`
+            # (`DEFAULT`) as its value.
+            raise ValueError("The object doesn't exist in the database.")
+
+        query = foreign_key._meta.table.objects().where(
+            foreign_key == primary_key_value
+        )
+        query._prefetched_results = getattr(
+            self, "_prefetched_relations", {}
+        ).get(get_relation_key(foreign_key))
+        return query
+
+    def __getattr__(self, name: str) -> Objects:
+        """
+        Reverse relations are resolved here, as they're not real attributes -
+        for example ``manager.band_set``. See
+        :meth:`get_related_objects`.
+        """
+        if name.startswith("_"):
+            raise AttributeError(name)
+
+        reverse_relations = self._meta.reverse_relations
+        if name not in reverse_relations:
+            raise AttributeError(
+                f"{self.__class__.__name__} has no attribute {name!r}. Its "
+                f"reverse relations are: "
+                f"{', '.join(sorted(reverse_relations))}"
+            )
+
+        return self.get_related_objects(reverse_relations[name])
 
     def get_m2m(self, m2m: M2M) -> M2MGetRelated:
         """

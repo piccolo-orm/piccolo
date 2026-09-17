@@ -242,6 +242,91 @@ prefer.
         Ticket.concert.all_related()
     ).first()
 
+``get_related_objects``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+``get_related`` follows a :class:`ForeignKey <piccolo.columns.column_types.ForeignKey>`
+forwards. To go the other way - to get every row whose foreign key points at
+this one - use ``get_related_objects``.
+
+.. code-block:: python
+
+    manager = await Manager.objects().where(
+        Manager.name == 'Guido'
+    ).first()
+
+    >>> await manager.get_related_objects(Band.manager)
+    [<Band: 1>]
+
+A query is returned rather than the rows themselves, so you can narrow it down
+like any other:
+
+.. code-block:: python
+
+    await manager.get_related_objects(Band.manager).where(
+        Band.popularity > 500
+    )
+
+Each reverse relation also has an accessor name, which is derived from the
+tablename containing the foreign key. It's handy when the other table isn't
+imported:
+
+.. code-block:: python
+
+    >>> await manager.band_set
+    [<Band: 1>]
+
+    # The same thing, spelled out:
+    >>> await manager.get_related_objects('band_set')
+    [<Band: 1>]
+
+The names are listed on the table's metadata:
+
+.. code-block:: python
+
+    >>> Manager._meta.reverse_relations
+    {'band_manager_set': Band.manager, 'band_set': Band.manager}
+
+Each relation gets a name including the column (``band_manager_set``), and a
+shorter one without it (``band_set``). The shorter name is only added when it's
+unambiguous - if a table has two foreign keys pointing at this one, only the
+longer names are available.
+
+``prefetch_related``
+~~~~~~~~~~~~~~~~~~~~
+
+Fetching a reverse relation for each row in a loop means a query per row.
+``prefetch_related`` fetches them all in one go instead:
+
+.. code-block:: python
+
+    # 2 queries in total, no matter how many managers there are:
+    managers = await Manager.objects().prefetch_related(Band.manager)
+
+    for manager in managers:
+        print(await manager.band_set)
+
+Each row keeps its own related rows, so accessing the relation afterwards
+doesn't hit the database again. Narrowing the relation in any way runs a
+query, as the prefetched rows can't answer it:
+
+.. code-block:: python
+
+    # Answered from memory:
+    await manager.band_set
+
+    # Runs a query:
+    await manager.band_set.where(Band.popularity > 500)
+
+If you already have the rows, you can prefetch them directly:
+
+.. code-block:: python
+
+    from piccolo.query.methods.objects import prefetch_related
+
+    managers = await Manager.objects()
+    await prefetch_related(managers, Band.manager)
+
 -------------------------------------------------------------------------------
 
 ``get_or_create``
