@@ -4,6 +4,7 @@
 ![Release](https://github.com/piccolo-orm/piccolo/actions/workflows/release.yaml/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/piccolo-orm/badge/?version=latest)](https://piccolo-orm.readthedocs.io/en/latest/?badge=latest)
 [![PyPI](https://img.shields.io/pypi/v/piccolo?color=%2334D058&label=pypi)](https://pypi.org/project/piccolo/)
+[![Plumber Score](https://score.getplumber.io/github.com/piccolo-orm/piccolo.svg)](https://score.getplumber.io/github.com/piccolo-orm/piccolo)
 [![codecov](https://codecov.io/gh/piccolo-orm/piccolo/branch/master/graph/badge.svg?token=V19CWH7MXX)](https://codecov.io/gh/piccolo-orm/piccolo)
 
 Piccolo is a fast, user friendly ORM and query builder which supports asyncio. [Read the docs](https://piccolo-orm.readthedocs.io/en/latest/).
