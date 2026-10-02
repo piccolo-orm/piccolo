@@ -17,12 +17,17 @@ from .methods import (
     TableExists,
     Update,
 )
+from .methods.cte import CTE, CTEColumn, CTEError, CTERef
 from .methods.select import SelectRaw  # for backwards compatibility
 from .mixins import OrderByRaw  # for backwards compatibility
 
 __all__ = [
     "Alter",
     "Avg",
+    "CTE",
+    "CTEColumn",
+    "CTEError",
+    "CTERef",
     "Count",
     "Create",
     "CreateIndex",
