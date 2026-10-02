@@ -228,3 +228,8 @@ where
 ~~~~~
 
 See :ref:`Where`.
+
+with\_
+~~~~~~
+
+See :ref:`with_`.
