@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
+import copy
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, TypeVar, Union
 
 if TYPE_CHECKING:
     from piccolo.columns import Column
     from piccolo.custom_types import Combinable
+
+Self = TypeVar("Self", bound="Constraint")
 
 
 @dataclass
@@ -16,6 +19,7 @@ class ConstraintMeta:
     """
 
     _name: str | None
+    _table: Any = None
 
     # Used for representing the table in migrations.
     params: dict[str, Any] = field(default_factory=dict)
@@ -33,14 +37,46 @@ class ConstraintMeta:
     def name(self, value: str):
         self._name = value
 
+    @property
+    def table(self) -> Any:
+        return self._table
+
+    @table.setter
+    def table(self, value: Any):
+        self._table = value
+
+    def copy(self) -> ConstraintMeta:
+        return ConstraintMeta(
+            _name=self._name,
+            _table=self._table,
+            params=self.params.copy(),
+        )
+
 
 class Constraint(metaclass=ABCMeta):
     """
     All other constraints inherit from ``Constraint``. Don't use it directly.
     """
 
-    def __init__(self, name: str | None = None, **kwargs) -> None:
+    def __init__(
+        self,
+        name: str | None = None,
+        prefix_tablename: bool = False,
+        **kwargs,
+    ) -> None:
+        self.prefix_tablename = prefix_tablename
+        self._explicit_name = name
+        if prefix_tablename:
+            kwargs["prefix_tablename"] = True
         self._meta = ConstraintMeta(_name=name, params=kwargs)
+
+    def copy(self: Self) -> Self:
+        constraint = copy.copy(self)
+        constraint._meta = self._meta.copy()
+        return constraint
+
+    def __deepcopy__(self, memo) -> Self:
+        return self.copy()
 
     def __hash__(self):
         return hash(self._meta._name)
@@ -80,9 +116,9 @@ class Unique(Constraint):
 
     :param columns:
         The table columns that should be unique together.
-    :param nulls_distinct:
-        See the `Postgres docs <https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS>`_
-        for more information.
+    :param prefix_tablename:
+        Whether to prefix the constraint's index name with the table name.
+        Particularly useful when unique constraints are inherited via mixins.
 
     """  # noqa: E501
 
@@ -91,6 +127,7 @@ class Unique(Constraint):
         columns: list[Union[Column, str]],
         nulls_distinct: bool = True,
         name: str | None = None,
+        prefix_tablename: bool = False,
     ):
         if len(columns) < 1:
             raise ValueError("At least 1 column must be specified.")
@@ -98,8 +135,16 @@ class Unique(Constraint):
         self.columns = columns
         self.nulls_distinct = nulls_distinct
         super().__init__(
-            name=name, columns=columns, nulls_distinct=nulls_distinct
+            name=name,
+            prefix_tablename=prefix_tablename,
+            columns=columns,
+            nulls_distinct=nulls_distinct,
         )
+
+    def copy(self: Self) -> Self:
+        constraint = super().copy()
+        constraint.columns = list(self.columns)
+        return constraint
 
     def get_column_names(self):
         from piccolo.columns import Column
@@ -122,6 +167,8 @@ class Unique(Constraint):
         the columns before calling this method.
         """
         self._meta.params["columns"] = self.get_column_names()
+        if self.prefix_tablename:
+            self._meta.params["prefix_tablename"] = True
 
     @property
     def ddl(self) -> str:
@@ -138,9 +185,12 @@ class Unique(Constraint):
         columns_string = ", ".join(
             [f'"{column_name}"' for column_name in column_names]
         )
+        prefix_str = (
+            ", prefix_tablename=True" if self.prefix_tablename else ""
+        )
         return (
             f"{self._meta._name} = Unique([{columns_string}], "
-            f"nulls_distinct={self.nulls_distinct})"
+            f"nulls_distinct={self.nulls_distinct}{prefix_str})"
         )
 
 
@@ -179,17 +229,22 @@ class Check(Constraint):
         self,
         condition: Union[Combinable, str],
         name: str | None = None,
+        prefix_tablename: bool = False,
     ):
         """
         :param condition:
             The SQL expression used to make sure the data is valid (e.g.
             ``"price > 0"``).
-        :param name:
-            The name of the constraint in the database.
+        :param prefix_tablename:
+            Whether to prefix the constraint's name with the table name.
 
         """
         self.condition = condition
-        super().__init__(name=name, condition=condition)
+        super().__init__(
+            name=name,
+            prefix_tablename=prefix_tablename,
+            condition=condition,
+        )
 
     def get_condition_str(self) -> str:
         from piccolo.columns.combination import CombinableMixin
@@ -205,10 +260,18 @@ class Check(Constraint):
         the columns before calling this method.
         """
         self._meta.params["condition"] = self.get_condition_str()
+        if self.prefix_tablename:
+            self._meta.params["prefix_tablename"] = True
 
     @property
     def ddl(self) -> str:
         return f"CHECK ({self.get_condition_str()})"
 
     def _table_str(self) -> str:
-        return f"{self._meta._name} = Check('{self.get_condition_str()}')"
+        prefix_str = (
+            ", prefix_tablename=True" if self.prefix_tablename else ""
+        )
+        return (
+            f"{self._meta._name} = "
+            f"Check('{self.get_condition_str()}'{prefix_str})"
+        )
