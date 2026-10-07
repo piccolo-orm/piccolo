@@ -27,7 +27,10 @@ from .column_types import (
     Time,
     Timestamp,
     Timestamptz,
+    Tsquery,
+    Tsvector,
     Varchar,
+    Vector,
 )
 from .combination import And, Or, Where
 from .m2m import M2M
@@ -66,7 +69,10 @@ __all__ = [
     "Time",
     "Timestamp",
     "Timestamptz",
+    "Tsquery",
+    "Tsvector",
     "Varchar",
+    "Vector",
     "And",
     "Or",
     "Where",

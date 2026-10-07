@@ -151,13 +151,45 @@ class Replace(QueryString):
         )
 
 
+class Similarity(QueryString):
+    """
+    Returns the trigram similarity between two strings (0..1).
+    Requires the ``pg_trgm`` extension on PostgreSQL.
+    """
+
+    def __init__(
+        self,
+        a: Union[Column, QueryString, str],
+        b: Union[Column, QueryString, str],
+        alias: Optional[str] = "similarity",
+    ):
+        super().__init__("similarity({}, {})", a, b, alias=alias)
+
+
+class WordSimilarity(QueryString):
+    """
+    Returns the word similarity between two strings (0..1).
+    Requires the ``pg_trgm`` extension on PostgreSQL.
+    """
+
+    def __init__(
+        self,
+        a: Union[Column, QueryString, str],
+        b: Union[Column, QueryString, str],
+        alias: Optional[str] = "word_similarity",
+    ):
+        super().__init__("word_similarity({}, {})", a, b, alias=alias)
+
+
 __all__ = (
+    "Concat",
     "Length",
     "Lower",
     "Ltrim",
     "Replace",
     "Reverse",
     "Rtrim",
+    "Similarity",
     "Upper",
-    "Concat",
+    "WordSimilarity",
 )

@@ -11,6 +11,8 @@ class IndexMethod(str, Enum):
     hash = "hash"
     gist = "gist"
     gin = "gin"
+    hnsw = "hnsw"
+    ivfflat = "ivfflat"
 
     def __str__(self):
         return f"{self.__class__.__name__}.{self.name}"

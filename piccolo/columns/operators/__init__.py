@@ -14,6 +14,8 @@ from .comparison import (
     NotEqual,
     NotIn,
     NotLike,
+    TrgmSimilar,
+    TSMatch,
 )
 from .math import Add, Divide, Multiply, Subtract
 from .string import Concat
