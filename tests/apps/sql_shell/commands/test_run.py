@@ -1,3 +1,4 @@
+import os
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
@@ -18,11 +19,11 @@ class TestRun(TestCase):
         assert subprocess.run.call_args.args[0] == [
             "psql",
             "-U",
-            "postgres",
+            os.environ.get("PG_USER", "postgres"),
             "-h",
-            "localhost",
+            os.environ.get("PG_HOST", "localhost"),
             "-p",
-            "5432",
+            os.environ.get("PG_PORT", "5432"),
             "piccolo",
         ]
 
