@@ -29,6 +29,7 @@ from piccolo.columns.m2m import (
 )
 from piccolo.columns.readable import Readable
 from piccolo.columns.reference import LAZY_COLUMN_REFERENCES
+from piccolo.constraints import Constraint
 from piccolo.custom_types import TableInstance
 from piccolo.engine import Engine, engine_finder
 from piccolo.query import (
@@ -84,6 +85,7 @@ class TableMeta:
     primary_key: Column = field(default_factory=Column)
     json_columns: list[Union[JSON, JSONB]] = field(default_factory=list)
     secret_columns: list[Column] = field(default_factory=list)
+    constraints: list[Constraint] = field(default_factory=list)
     auto_update_columns: list[Column] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
     help_text: Optional[str] = None
@@ -193,6 +195,15 @@ class TableMeta:
 
         return column_object
 
+    def get_constraint_by_name(self, name: str) -> Constraint:
+        """
+        Returns a constraint which matches the given name.
+        """
+        for constraint in self.constraints:
+            if constraint._meta._name == name:
+                return constraint
+        raise ValueError(f"No matching constraint found with name == {name}")
+
     def get_auto_update_values(self) -> dict[Column, Any]:
         """
         If columns have ``auto_update`` defined, then we retrieve these values.
@@ -299,6 +310,7 @@ class Table(metaclass=TableMetaclass):
         auto_update_columns: list[Column] = []
         primary_key: Optional[Column] = None
         m2m_relationships: list[M2M] = []
+        constaints: list[Constraint] = []
 
         attribute_names = itertools.chain(
             *[i.__dict__.keys() for i in reversed(cls.__mro__)]
@@ -311,11 +323,14 @@ class Table(metaclass=TableMetaclass):
 
             attribute = getattr(cls, attribute_name)
             if isinstance(attribute, Column):
+                column = attribute
+                column._meta._name = attribute_name
+
                 # We have to copy, then override the existing column
                 # definition, in case this column is inheritted from a mixin.
                 # Otherwise, when we set attributes on that column, it will
                 # effect all other users of that mixin.
-                column = attribute.copy()
+                column = column.copy()
                 setattr(cls, attribute_name, column)
 
                 if column._meta.primary_key:
@@ -324,7 +339,6 @@ class Table(metaclass=TableMetaclass):
                 non_default_columns.append(column)
                 columns.append(column)
 
-                column._meta._name = attribute_name
                 column._meta._table = cls
 
                 if isinstance(column, Array):
@@ -351,6 +365,10 @@ class Table(metaclass=TableMetaclass):
                 attribute._meta._table = cls
                 m2m_relationships.append(attribute)
 
+            if isinstance(attribute, Constraint):
+                attribute._meta._name = attribute_name
+                constaints.append(attribute)
+
         if not primary_key:
             primary_key = cls._create_serial_primary_key()
             setattr(cls, "id", primary_key)
@@ -375,6 +393,7 @@ class Table(metaclass=TableMetaclass):
             _db=db,
             m2m_relationships=m2m_relationships,
             schema=schema,
+            constraints=constaints,
         )
 
         for foreign_key_column in foreign_key_columns:
@@ -387,6 +406,10 @@ class Table(metaclass=TableMetaclass):
                 LAZY_COLUMN_REFERENCES.foreign_key_columns.append(
                     foreign_key_column
                 )
+
+        # Now the table and columns are all setup, serialise the constraints.
+        for constraint in cls._meta.constraints:
+            constraint.serialise_self()
 
         TABLE_REGISTRY.append(cls)
 
@@ -1504,6 +1527,11 @@ class Table(metaclass=TableMetaclass):
                 f"{m2m_relationship._meta.name} = M2M({joining_table_name})"
             )
 
+        constraint_strings: list[str] = []
+        for constraint in cls._meta.constraints:
+            constraint_strings.append(constraint._table_str())
+        constraints_string = spacer.join(constraint_strings)
+
         extra_definitions_string = spacer.join(
             [repr(i) for i in extra_definitions]
         )
@@ -1522,6 +1550,8 @@ class Table(metaclass=TableMetaclass):
         if extra_definitions_string:
             output += f"    {extra_definitions_string}\n"
         output += f"    {columns_string}\n"
+        if constraints_string:
+            output += f"    {constraints_string}\n"
         return output
 
 

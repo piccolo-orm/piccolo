@@ -1,6 +1,8 @@
 from .base import *  # noqa
 from .date import *  # noqa
 from .interval import *  # noqa
+from .numeric import *  # noqa
+from .real import *  # noqa
 from .time import *  # noqa
 from .timestamp import *  # noqa
 from .timestamptz import *  # noqa

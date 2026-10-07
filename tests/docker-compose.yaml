@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: docker.io/postgres:18-alpine
+    ports:
+      - '${PG_PORT:-5432}:5432'
+    environment:
+      POSTGRES_HOST: ${PG_HOST:-localhost}
+      POSTGRES_USER: ${PG_USER:-postgres}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${PG_DATABASE:-piccolo}
+      POSTGRES_HOST_AUTH_METHOD: trust
+
+  cockroach:
+    image: cockroachdb/cockroach:latest-v25.4
+    ports:
+      - '${PG_PORT:-26257}:26257'
+    environment:
+      COCKROACH_USER: ${PG_USER:-postgres}
+      COCKROACH_PASSWORD: ${PG_PASSWORD}
+      COCKROACH_DATABASE: ${PG_DATABASE:-piccolo}
+    command: start-single-node --insecure

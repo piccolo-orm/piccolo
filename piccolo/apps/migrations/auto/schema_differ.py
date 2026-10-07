@@ -66,6 +66,10 @@ class ChangeTableSchemaCollection:
     def append(self, change_table_schema: ChangeTableSchema):
         self.collection.append(change_table_schema)
 
+    @property
+    def class_names(self) -> list[str]:
+        return [i.class_name for i in self.collection]
+
 
 @dataclass
 class RenameColumnCollection:
@@ -138,13 +142,22 @@ class SchemaDiffer:
         """
         Work out whether any of the tables were renamed.
         """
-        drop_tables: list[DiffableTable] = list(
-            set(self.schema_snapshot) - set(self.schema)
-        )
+        # Tables which just had their schema changed are handled separately
+        # by ``check_table_schema_changes`` - excluded here so a schema
+        # change alone doesn't get misdetected as a same-named rename.
+        drop_tables: list[DiffableTable] = [
+            i
+            for i in set(self.schema_snapshot) - set(self.schema)
+            if i.class_name
+            not in self.table_schema_changes_collection.class_names
+        ]
 
-        new_tables: list[DiffableTable] = list(
-            set(self.schema) - set(self.schema_snapshot)
-        )
+        new_tables: list[DiffableTable] = [
+            i
+            for i in set(self.schema) - set(self.schema_snapshot)
+            if i.class_name
+            not in self.table_schema_changes_collection.class_names
+        ]
 
         # A mapping of the old table name (i.e. dropped table) to the new
         # table name.
@@ -353,12 +366,16 @@ class SchemaDiffer:
             set(self.schema) - set(self.schema_snapshot)
         )
 
-        # Remove any which are renames
+        # Remove any which are renames, or just had their schema changed
+        # (both are handled separately, and only match on class_name, so
+        # they're unaffected by the schema-aware equality check above).
         new_tables = [
             i
             for i in new_tables
             if i.class_name
             not in self.rename_tables_collection.new_class_names
+            and i.class_name
+            not in self.table_schema_changes_collection.class_names
         ]
 
         alter_statements = AlterStatements()
@@ -384,12 +401,16 @@ class SchemaDiffer:
             set(self.schema_snapshot) - set(self.schema)
         )
 
-        # Remove any which are renames
+        # Remove any which are renames, or just had their schema changed
+        # (both are handled separately, and only match on class_name, so
+        # they're unaffected by the schema-aware equality check above).
         drop_tables = [
             i
             for i in drop_tables
             if i.class_name
             not in self.rename_tables_collection.old_class_names
+            and i.class_name
+            not in self.table_schema_changes_collection.class_names
         ]
 
         alter_statements = AlterStatements()
@@ -516,6 +537,7 @@ class SchemaDiffer:
                             expect_conflict_with_global_name=getattr(
                                 UniqueGlobalNames,
                                 f"COLUMN_{alter_column.old_column_class.__name__.upper()}",  # noqa: E501
+                                None,
                             ),
                         )
                     )
@@ -615,6 +637,69 @@ class SchemaDiffer:
         )
 
     @property
+    def add_constraints(self) -> AlterStatements:
+        response: list[str] = []
+        extra_imports: list[Import] = []
+        extra_definitions: list[Definition] = []
+        for table in self.schema:
+            snapshot_table = self._get_snapshot_table(table.class_name)
+            if snapshot_table:
+                delta: TableDelta = table - snapshot_table
+            else:
+                continue
+
+            for add_constraint in delta.add_constraints:
+                constraint_class = add_constraint.constraint_class
+                extra_imports.append(
+                    Import(
+                        module=constraint_class.__module__,
+                        target=constraint_class.__name__,
+                        expect_conflict_with_global_name=getattr(
+                            UniqueGlobalNames,
+                            f"COLUMN_{constraint_class.__name__.upper()}",
+                            None,
+                        ),
+                    )
+                )
+
+                schema_str = (
+                    "None"
+                    if add_constraint.schema is None
+                    else f'"{add_constraint.schema}"'
+                )
+
+                response.append(
+                    f"manager.add_constraint(table_class_name='{table.class_name}', tablename='{table.tablename}', constraint_name='{add_constraint.constraint_name}', constraint_class={constraint_class.__name__}, params={add_constraint.params}, schema={schema_str})"  # noqa: E501
+                )
+        return AlterStatements(
+            statements=response,
+            extra_imports=extra_imports,
+            extra_definitions=extra_definitions,
+        )
+
+    @property
+    def drop_constraints(self) -> AlterStatements:
+        response = []
+        for table in self.schema:
+            snapshot_table = self._get_snapshot_table(table.class_name)
+            if snapshot_table:
+                delta: TableDelta = table - snapshot_table
+            else:
+                continue
+
+            for constraint in delta.drop_constraints:
+                schema_str = (
+                    "None"
+                    if constraint.schema is None
+                    else f'"{constraint.schema}"'
+                )
+
+                response.append(
+                    f"manager.drop_constraint(table_class_name='{table.class_name}', tablename='{table.tablename}', constraint_name='{constraint.constraint_name}', schema={schema_str})"  # noqa: E501
+                )
+        return AlterStatements(statements=response)
+
+    @property
     def rename_columns(self) -> AlterStatements:
         alter_statements = AlterStatements()
 
@@ -680,6 +765,48 @@ class SchemaDiffer:
             extra_definitions=extra_definitions,
         )
 
+    @property
+    def new_table_constraints(self) -> AlterStatements:
+        new_tables: list[DiffableTable] = list(
+            set(self.schema) - set(self.schema_snapshot)
+        )
+
+        response: list[str] = []
+        extra_imports: list[Import] = []
+        extra_definitions: list[Definition] = []
+        for table in new_tables:
+            if (
+                table.class_name
+                in self.rename_tables_collection.new_class_names
+            ):
+                continue
+
+            for constraint in table.constraints:
+                extra_imports.append(
+                    Import(
+                        module=constraint.__class__.__module__,
+                        target=constraint.__class__.__name__,
+                        expect_conflict_with_global_name=getattr(
+                            UniqueGlobalNames,
+                            f"COLUMN_{constraint.__class__.__name__.upper()}",
+                            None,
+                        ),
+                    )
+                )
+
+                schema_str = (
+                    "None" if table.schema is None else f'"{table.schema}"'
+                )
+
+                response.append(
+                    f"manager.add_constraint(table_class_name='{table.class_name}', tablename='{table.tablename}', constraint_name='{constraint._meta.name}', constraint_class={constraint.__class__.__name__}, params={constraint._meta.params}, schema={schema_str})"  # noqa: E501
+                )
+        return AlterStatements(
+            statements=response,
+            extra_imports=extra_imports,
+            extra_definitions=extra_definitions,
+        )
+
     ###########################################################################
 
     def get_alter_statements(self) -> list[AlterStatements]:
@@ -692,10 +819,13 @@ class SchemaDiffer:
             "Renamed tables": self.rename_tables,
             "Tables which changed schema": self.change_table_schemas,
             "Created table columns": self.new_table_columns,
+            "Created table constraints": self.new_table_constraints,
             "Dropped columns": self.drop_columns,
             "Columns added to existing tables": self.add_columns,
             "Renamed columns": self.rename_columns,
             "Altered columns": self.alter_columns,
+            "Dropped constraints": self.drop_constraints,
+            "Constraints added to existing tables": self.add_constraints,
         }
 
         for message, statements in alter_statements.items():

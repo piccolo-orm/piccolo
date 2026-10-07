@@ -142,10 +142,41 @@ class ArrayRemove(ArrayQueryString):
         super().__init__("array_remove({}, {})", array, value)
 
 
+class ArrayOverlap(QueryString):
+    def __init__(self, array_1: ArrayType, array_2: ArrayType):
+        """
+        Check whether two arrays have any values in common. This uses the
+        Postgres ``&&`` operator, and can make use of a GIN index, so it's
+        much faster than testing each value in turn.
+
+        .. code-block:: python
+
+            >>> await Ticket.select().where(
+            ...     ArrayOverlap(Ticket.seat_numbers, [510, 511])
+            ... )
+
+        :param array_1:
+            The first array.
+        :param array_2:
+            The second array.
+
+        """
+        for value in (array_1, array_2):
+            if isinstance(value, Column):
+                engine_type = value._meta.engine_type
+                if engine_type not in ("postgres", "cockroach"):
+                    raise ValueError(
+                        "Only Postgres and Cockroach support array overlap."
+                    )
+
+        super().__init__("{} && {}", array_1, array_2)
+
+
 __all__ = (
     "ArrayCat",
     "ArrayAppend",
     "ArrayPrepend",
     "ArrayReplace",
     "ArrayRemove",
+    "ArrayOverlap",
 )

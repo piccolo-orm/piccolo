@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import asyncio
+import uuid
 from typing import cast
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
@@ -10,15 +11,18 @@ from piccolo.apps.schema.commands.exceptions import GenerateError
 from piccolo.apps.schema.commands.generate import (
     OutputSchema,
     generate,
+    get_column_default,
     get_output_schema,
 )
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import (
+    UUID,
     ForeignKey,
     Integer,
     Timestamp,
     Varchar,
 )
+from piccolo.columns.defaults.uuid import UUID7
 from piccolo.columns.indexes import IndexMethod
 from piccolo.schema import SchemaManager
 from piccolo.table import Table, create_db_tables_sync
@@ -321,4 +325,30 @@ class TestGenerateWithException(TestCase):
         self.assertIn(
             "Exception occurred while generating `mega_table` table: Test",
             exception_messages,
+        )
+
+
+class TestGetColumnDefaultUUID(TestCase):
+    def test_gen_random_uuid(self):
+        self.assertIs(
+            get_column_default(UUID, "gen_random_uuid()", "postgres"),
+            uuid.uuid4,
+        )
+
+    def test_uuid_generate_v4(self):
+        self.assertIs(
+            get_column_default(UUID, "uuid_generate_v4()", "postgres"),
+            uuid.uuid4,
+        )
+
+    def test_uuidv7(self):
+        self.assertIsInstance(
+            get_column_default(UUID, "uuidv7()", "postgres"), UUID7
+        )
+
+    def test_unrecognised_default(self):
+        self.assertIsNone(
+            get_column_default(
+                UUID, "(md5((random())::text))::uuid", "postgres"
+            )
         )

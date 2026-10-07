@@ -131,6 +131,82 @@ class TestArray(TableTest):
         )
 
     @engines_skip("sqlite")
+    def test_overlap(self):
+        """
+        Make sure rows can be retrieved where the array has values in common
+        with another array.
+        """
+        MyTable(value=[1, 2, 3]).save().run_sync()
+        MyTable(value=[4, 5, 6]).save().run_sync()
+
+        # We have to explicitly specify the type, so CockroachDB works.
+        self.assertEqual(
+            MyTable.select(MyTable.value)
+            .where(
+                MyTable.value.overlap(QueryString("{}::INTEGER[]", [3, 99]))
+            )
+            .run_sync(),
+            [{"value": [1, 2, 3]}],
+        )
+
+        self.assertEqual(
+            MyTable.select(MyTable.value)
+            .where(MyTable.value.overlap(QueryString("{}::INTEGER[]", [1, 6])))
+            .order_by(MyTable.value)
+            .run_sync(),
+            [{"value": [1, 2, 3]}, {"value": [4, 5, 6]}],
+        )
+
+        self.assertEqual(
+            MyTable.select(MyTable.value)
+            .where(MyTable.value.overlap(QueryString("{}::INTEGER[]", [99])))
+            .run_sync(),
+            [],
+        )
+
+    @engines_only("postgres")
+    def test_overlap_plain_list(self):
+        """
+        Postgres can infer the type of the array from the column, so a plain
+        Python list works too.
+        """
+        MyTable(value=[1, 2, 3]).save().run_sync()
+
+        self.assertEqual(
+            MyTable.select(MyTable.value)
+            .where(MyTable.value.overlap([3, 99]))
+            .run_sync(),
+            [{"value": [1, 2, 3]}],
+        )
+
+    @engines_skip("sqlite")
+    def test_overlap_two_columns(self):
+        """
+        Make sure two array columns can be compared.
+        """
+        MyTable(value=[1, 2, 3]).save().run_sync()
+
+        self.assertEqual(
+            MyTable.select(MyTable.value)
+            .where(MyTable.value.overlap(MyTable.value))
+            .run_sync(),
+            [{"value": [1, 2, 3]}],
+        )
+
+    @sqlite_only
+    def test_overlap_sqlite(self):
+        """
+        If using SQLite then an exception should be raised currently.
+        """
+        with self.assertRaises(ValueError) as manager:
+            MyTable.value.overlap([2])
+
+        self.assertEqual(
+            str(manager.exception),
+            "Only Postgres and Cockroach support array overlap.",
+        )
+
+    @engines_skip("sqlite")
     def test_cat(self):
         """
         Make sure values can be appended to an array and that we can
