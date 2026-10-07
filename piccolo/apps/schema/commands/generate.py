@@ -370,7 +370,9 @@ COLUMN_DEFAULT_PARSER: dict[type[Column], Any] = {
             $""",
         re.VERBOSE,
     ),
-    UUID: None,
+    UUID: re.compile(
+        r"^(?P<value>gen_random_uuid|uuid_generate_v4|uuidv7)\(\)$"
+    ),
     Serial: None,
     ForeignKey: None,
 }
@@ -431,7 +433,11 @@ def get_column_default(
             elif column_type is JSON or column_type is JSONB:
                 return json.loads(value["value"])
             elif column_type is UUID:
-                return uuid.uuid4
+                return (
+                    defaults.uuid.UUID7()
+                    if value["value"] == "uuidv7"
+                    else uuid.uuid4
+                )
             elif column_type is Date:
                 return (
                     date.today

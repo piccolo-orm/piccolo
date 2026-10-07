@@ -12,6 +12,7 @@ from piccolo.apps.migrations.auto.schema_differ import (
     SchemaDiffer,
 )
 from piccolo.columns.column_types import Numeric, Varchar
+from piccolo.constraints import Unique
 
 
 class TestSchemaDiffer(TestCase):
@@ -100,11 +101,14 @@ class TestSchemaDiffer(TestCase):
         """
         Testing changing the schema.
         """
+        name_column = Varchar()
+        name_column._meta.name = "name"
+
         schema: list[DiffableTable] = [
             DiffableTable(
                 class_name="Band",
                 tablename="band",
-                columns=[],
+                columns=[name_column],
                 schema="schema_1",
             )
         ]
@@ -112,7 +116,7 @@ class TestSchemaDiffer(TestCase):
             DiffableTable(
                 class_name="Band",
                 tablename="band",
-                columns=[],
+                columns=[name_column],
                 schema=None,
             )
         ]
@@ -130,6 +134,42 @@ class TestSchemaDiffer(TestCase):
 
         self.assertListEqual(schema_differ.create_tables.statements, [])
         self.assertListEqual(schema_differ.drop_tables.statements, [])
+
+        # A schema change alone shouldn't be misdetected as a table rename
+        # (this table has overlapping columns, which is what the rename
+        # heuristic keys off).
+        self.assertListEqual(schema_differ.rename_tables.statements, [])
+
+    def test_same_table_name_different_schema(self) -> None:
+        """
+        Two tables with the same class_name / tablename, but in different
+        schemas, are different tables - both should be created.
+
+        https://github.com/piccolo-orm/piccolo/issues/1426
+        """
+        schema: list[DiffableTable] = [
+            DiffableTable(
+                class_name="Band", tablename="band", schema="schema_1"
+            ),
+            DiffableTable(
+                class_name="Band", tablename="band", schema="schema_2"
+            ),
+        ]
+        schema_snapshot: list[DiffableTable] = []
+
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
+        )
+
+        create_tables = schema_differ.create_tables
+        self.assertEqual(len(create_tables.statements), 2)
+        self.assertEqual(
+            set(create_tables.statements),
+            {
+                "manager.add_table(class_name='Band', tablename='band', schema='schema_1', columns=None)",  # noqa: E501
+                "manager.add_table(class_name='Band', tablename='band', schema='schema_2', columns=None)",  # noqa: E501
+            },
+        )
 
     def test_add_column(self) -> None:
         """
@@ -449,6 +489,53 @@ class TestSchemaDiffer(TestCase):
             "manager.alter_column(table_class_name='Ticket', tablename='ticket', column_name='price', db_column_name='price', params={'digits': (4, 2)}, old_params={'digits': (5, 2)}, column_class=Numeric, old_column_class=Numeric, schema=None)",  # noqa
         )
 
+    def test_alter_column_with_custom_old_column_class(self) -> None:
+        """
+        A column whose *old* class is a user-defined ``Column`` subclass must
+        not crash the differ.
+
+        ``UniqueGlobalNames`` only knows the built-in column classes, so the
+        lookup for the old class has to tolerate a miss the same way the lookup
+        for the new class already does.
+
+        https://github.com/piccolo-orm/piccolo/issues/1428
+
+        """
+
+        class CustomVarchar(Varchar):
+            pass
+
+        name_1 = Varchar(length=20)
+        name_1._meta.name = "name"
+
+        name_2 = CustomVarchar(length=10)
+        name_2._meta.name = "name"
+
+        schema: list[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[name_1],
+            )
+        ]
+        schema_snapshot: list[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[name_2],
+            )
+        ]
+
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
+        )
+
+        self.assertEqual(len(schema_differ.alter_columns.statements), 1)
+        self.assertIn(
+            "old_column_class=CustomVarchar",
+            schema_differ.alter_columns.statements[0],
+        )
+
     def test_db_column_name(self) -> None:
         """
         Make sure alter statements use the ``db_column_name`` if provided.
@@ -485,6 +572,160 @@ class TestSchemaDiffer(TestCase):
         self.assertEqual(
             schema_differ.alter_columns.statements[0],
             "manager.alter_column(table_class_name='Ticket', tablename='ticket', column_name='price', db_column_name='custom', params={'digits': (4, 2)}, old_params={'digits': (5, 2)}, column_class=Numeric, old_column_class=Numeric, schema=None)",  # noqa
+        )
+
+    def test_add_table_with_constraint(self) -> None:
+        """
+        Test adding a new table with a constraint.
+        """
+        name_column = Varchar()
+        name_column._meta.name = "name"
+
+        genre_column = Varchar()
+        genre_column._meta.name = "genre"
+
+        name_genre_unique_constraint = Unique(
+            columns=["name", "genre"],
+            name="unique_name_genre",
+        )
+
+        schema: list[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[name_column, genre_column],
+                constraints=[name_genre_unique_constraint],
+            )
+        ]
+        schema_snapshot: list[DiffableTable] = []
+
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
+        )
+
+        create_tables = schema_differ.create_tables
+        self.assertTrue(len(create_tables.statements) == 1)
+        self.assertEqual(
+            create_tables.statements[0],
+            "manager.add_table(class_name='Band', tablename='band', schema=None, columns=None)",  # noqa: E501
+        )
+
+        new_table_columns = schema_differ.new_table_columns
+        self.assertTrue(len(new_table_columns.statements) == 2)
+        self.assertEqual(
+            new_table_columns.statements[0],
+            "manager.add_column(table_class_name='Band', tablename='band', column_name='name', db_column_name='name', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None, 'secret': False}, schema=None)",  # noqa
+        )
+        self.assertEqual(
+            new_table_columns.statements[1],
+            "manager.add_column(table_class_name='Band', tablename='band', column_name='genre', db_column_name='genre', column_class_name='Varchar', column_class=Varchar, params={'length': 255, 'default': '', 'null': False, 'primary_key': False, 'unique': False, 'index': False, 'index_method': IndexMethod.btree, 'choices': None, 'db_column_name': None, 'secret': False}, schema=None)",  # noqa
+        )
+
+        new_table_constraints = schema_differ.new_table_constraints
+        self.assertTrue(len(new_table_constraints.statements) == 1)
+        self.assertEqual(
+            new_table_constraints.statements[0],
+            "manager.add_constraint(table_class_name='Band', tablename='band', constraint_name='unique_name_genre', constraint_class=Unique, params={'columns': ['name', 'genre'], 'nulls_distinct': True}, schema=None)",  # noqa
+        )
+
+    def test_add_constraint(self) -> None:
+        """
+        Test adding a constraint to an existing table.
+        """
+        name_column = Varchar()
+        name_column._meta.name = "name"
+
+        genre_column = Varchar()
+        genre_column._meta.name = "genre"
+
+        name_unique_constraint = Unique(
+            columns=["name"],
+            name="unique_name",
+        )
+
+        name_genre_unique_constraint = Unique(
+            columns=["name", "genre"],
+            name="unique_name_genre",
+        )
+
+        schema: list[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[name_column, genre_column],
+                constraints=[
+                    name_unique_constraint,
+                    name_genre_unique_constraint,
+                ],
+            )
+        ]
+        schema_snapshot: list[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[name_column, genre_column],
+                constraints=[name_unique_constraint],
+            )
+        ]
+
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
+        )
+
+        self.assertTrue(len(schema_differ.add_constraints.statements) == 1)
+        self.assertEqual(
+            schema_differ.add_constraints.statements[0],
+            "manager.add_constraint(table_class_name='Band', tablename='band', constraint_name='unique_name_genre', constraint_class=Unique, params={'columns': ['name', 'genre'], 'nulls_distinct': True}, schema=None)",  # noqa: E501
+        )
+
+    def test_drop_constraint(self) -> None:
+        """
+        Test dropping a constraint from an existing table.
+        """
+        name_column = Varchar()
+        name_column._meta.name = "name"
+
+        genre_column = Varchar()
+        genre_column._meta.name = "genre"
+
+        name_unique_constraint = Unique(
+            columns=["name"],
+            name="unique_name",
+        )
+
+        name_genre_unique_constraint = Unique(
+            columns=["name", "genre"],
+            name="unique_name_genre",
+        )
+
+        schema: list[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[name_column, genre_column],
+                constraints=[name_unique_constraint],
+            )
+        ]
+        schema_snapshot: list[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[name_column, genre_column],
+                constraints=[
+                    name_unique_constraint,
+                    name_genre_unique_constraint,
+                ],
+            )
+        ]
+
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
+        )
+
+        self.assertTrue(len(schema_differ.drop_constraints.statements) == 1)
+        self.assertEqual(
+            schema_differ.drop_constraints.statements[0],
+            "manager.drop_constraint(table_class_name='Band', tablename='band', constraint_name='unique_name_genre', schema=None)",  # noqa: E501
         )
 
     def test_alter_default(self):

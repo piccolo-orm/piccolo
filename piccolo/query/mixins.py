@@ -142,18 +142,20 @@ class Offset:
         return self.querystring.__str__()
 
 
-@dataclass
-class OrderByRaw:
-    __slots__ = ("sql",)
+class OrderByRaw(QueryString):
+    """
+    Here for backwards compatibility - just use
+    :class:`piccolo.querystring.QueryString` directly.
+    """
 
-    sql: str
+    pass
 
 
 @dataclass
 class OrderByItem:
     __slots__ = ("columns", "ascending")
 
-    columns: Sequence[Union[Column, OrderByRaw, QueryString]]
+    columns: Sequence[Union[Column, QueryString]]
     ascending: bool
 
 
@@ -163,24 +165,25 @@ class OrderBy:
 
     @property
     def querystring(self) -> QueryString:
-        parts: list[QueryString] = []
+        order_by_strings: list[str] = []
+        querystring_args = []
         for order_by_item in self.order_by_items:
             order = "ASC" if order_by_item.ascending else "DESC"
             for column in order_by_item.columns:
                 if isinstance(column, Column):
                     expression = column._meta.get_full_name(with_alias=False)
-                    parts.append(QueryString(f"{expression} {order}"))
-                elif isinstance(column, OrderByRaw):
-                    parts.append(QueryString(f"{column.sql} {order}"))
                 elif isinstance(column, QueryString):
-                    parts.append(QueryString(f"{{}} {order}", column))
+                    expression = "{}"
+                    querystring_args.append(column)
                 else:
                     raise ValueError("Unrecognised order_by")
 
-        if not parts:
-            return QueryString(" ORDER BY ")
-        template = " ORDER BY " + ", ".join("{}" for _ in parts)
-        return QueryString(template, *parts)
+                order_by_strings.append(f"{expression} {order}")
+
+        return QueryString(
+            f" ORDER BY {', '.join(order_by_strings)}",
+            *querystring_args,
+        )
 
     def __str__(self):
         return self.querystring.__str__()
@@ -295,9 +298,7 @@ class OrderByDelegate:
             if isinstance(i, Column)
         ]
 
-    def order_by(
-        self, *columns: Union[Column, OrderByRaw, QueryString], ascending=True
-    ):
+    def order_by(self, *columns: Union[Column, QueryString], ascending=True):
         if len(columns) < 1:
             raise ValueError("At least one column must be passed to order_by.")
 
@@ -602,15 +603,27 @@ class OffsetDelegate:
 class GroupBy:
     __slots__ = ("columns",)
 
-    columns: Sequence[Column]
+    columns: Sequence[Union[Column, QueryString]]
 
     @property
     def querystring(self) -> QueryString:
-        columns_names = ", ".join(
-            i._meta.get_full_name(with_alias=False) for i in self.columns
-        )
+        column_names: list[str] = []
+        querystring_args = []
+        for column in self.columns:
+            if isinstance(column, Column):
+                column_names.append(
+                    column._meta.get_full_name(with_alias=False)
+                )
+            elif isinstance(column, QueryString):
+                column_names.append("{}")
+                querystring_args.append(column)
+            else:  # pragma: no cover
+                raise ValueError("Unrecognised group_by")
 
-        return QueryString(f" GROUP BY {columns_names}")
+        return QueryString(
+            f" GROUP BY {', '.join(column_names)}",
+            *querystring_args,
+        )
 
     def __str__(self):
         return self.querystring.__str__()
@@ -627,7 +640,7 @@ class GroupByDelegate:
 
     _group_by: Optional[GroupBy] = None
 
-    def group_by(self, *columns: Column):
+    def group_by(self, *columns: Union[Column, QueryString]):
         self._group_by = GroupBy(columns=columns)
 
 

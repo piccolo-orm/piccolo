@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import ForeignKey, Numeric, Varchar
+from piccolo.constraints import Constraint
 from piccolo.query.base import DDL
 from piccolo.utils.warnings import Level, colored_warning
 
@@ -191,6 +192,17 @@ class SetLength(AlterColumnStatement):
 
 
 @dataclass
+class AddConstraint(AlterStatement):
+    __slots__ = ("constraint",)
+
+    constraint: Constraint
+
+    @property
+    def ddl(self) -> str:
+        return f"ADD CONSTRAINT {self.constraint._meta.name} {self.constraint.ddl}"  # noqa: E501
+
+
+@dataclass
 class DropConstraint(AlterStatement):
     __slots__ = ("constraint_name",)
 
@@ -288,6 +300,7 @@ class DropTable:
 class Alter(DDL):
     __slots__ = (
         "_add",
+        "_add_constraint",
         "_add_foreign_key_constraint",
         "_drop_constraint",
         "_drop_default",
@@ -307,6 +320,7 @@ class Alter(DDL):
 
     def __init__(self, table: type[Table], **kwargs):
         super().__init__(table, **kwargs)
+        self._add_constraint: list[AddConstraint] = []
         self._add_foreign_key_constraint: list[AddForeignKeyConstraint] = []
         self._add: list[AddColumn] = []
         self._drop_constraint: list[DropConstraint] = []
@@ -314,6 +328,7 @@ class Alter(DDL):
         self._drop_table: Optional[DropTable] = None
         self._drop: list[DropColumn] = []
         self._rename_columns: list[RenameColumn] = []
+        self._rename_constraint: list[RenameConstraint] = []
         self._rename_table: list[RenameTable] = []
         self._set_column_type: list[SetColumnType] = []
         self._set_default: list[SetDefault] = []
@@ -322,7 +337,6 @@ class Alter(DDL):
         self._set_null: list[SetNull] = []
         self._set_schema: list[SetSchema] = []
         self._set_unique: list[SetUnique] = []
-        self._rename_constraint: list[RenameConstraint] = []
 
     def add_column(self: Self, name: str, column: Column) -> Self:
         """
@@ -524,6 +538,10 @@ class Alter(DDL):
         tablename = self.table._meta.tablename
         return f"{tablename}_{column_name}_fkey"
 
+    def add_constraint(self, constraint: Constraint) -> Alter:
+        self._add_constraint.append(AddConstraint(constraint=constraint))
+        return self
+
     def drop_constraint(self, constraint_name: str) -> Alter:
         self._drop_constraint.append(
             DropConstraint(constraint_name=constraint_name)
@@ -648,6 +666,8 @@ class Alter(DDL):
                 self._set_default,
                 self._set_digits,
                 self._set_schema,
+                self._add_constraint,
+                self._drop_constraint,
             )
         ]
 

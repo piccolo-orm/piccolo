@@ -2,6 +2,7 @@ from .aggregate import Avg, Count, Max, Min, Sum
 from .array import (
     ArrayAppend,
     ArrayCat,
+    ArrayOverlap,
     ArrayPrepend,
     ArrayRemove,
     ArrayReplace,
@@ -47,6 +48,7 @@ __all__ = (
     "Abs",
     "ArrayAppend",
     "ArrayCat",
+    "ArrayOverlap",
     "ArrayPrepend",
     "ArrayRemove",
     "ArrayReplace",

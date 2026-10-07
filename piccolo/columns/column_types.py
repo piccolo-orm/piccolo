@@ -58,6 +58,8 @@ from piccolo.columns.base import (
 from piccolo.columns.combination import Where
 from piccolo.columns.defaults.date import DateArg, DateCustom, DateNow
 from piccolo.columns.defaults.interval import IntervalArg, IntervalCustom
+from piccolo.columns.defaults.numeric import NumericArg
+from piccolo.columns.defaults.real import RealArg
 from piccolo.columns.defaults.time import TimeArg, TimeCustom, TimeNow
 from piccolo.columns.defaults.timestamp import (
     TimestampArg,
@@ -161,12 +163,14 @@ class MathDelegate:
                     "Adding values across joins isn't currently supported."
                 )
             other_column_name = value._meta.db_column_name
-            return QueryString(f"{column_name} {operator} {other_column_name}")
+            return QueryString(
+                f'"{column_name}" {operator} "{other_column_name}"'
+            )
         elif isinstance(value, (int, float)):
             if reverse:
-                return QueryString(f"{{}} {operator} {column_name}", value)
+                return QueryString(f'{{}} {operator} "{column_name}"', value)
             else:
-                return QueryString(f"{column_name} {operator} {{}}", value)
+                return QueryString(f'"{column_name}" {operator} {{}}', value)
         else:
             raise ValueError(
                 "Only integers, floats, and other Integer columns can be "
@@ -1538,9 +1542,7 @@ class Numeric(Column):
     def __init__(
         self,
         digits: Optional[tuple[int, int]] = None,
-        default: Union[
-            decimal.Decimal, Enum, Callable[[], decimal.Decimal], None
-        ] = decimal.Decimal(0.0),
+        default: NumericArg = decimal.Decimal(0.0),
         **kwargs: Unpack[ColumnKwargs],
     ) -> None:
         if isinstance(digits, tuple):
@@ -1553,7 +1555,10 @@ class Numeric(Column):
         elif digits is not None:
             raise ValueError("The digits argument should be a tuple.")
 
-        self._validate_default(default, (decimal.Decimal, None))
+        self._validate_default(
+            default,
+            NumericArg.__args__,  # type: ignore
+        )
 
         self.default = default
         self.digits = digits
@@ -1621,14 +1626,17 @@ class Real(Column):
 
     def __init__(
         self,
-        default: Union[float, Enum, Callable[[], float], None] = 0.0,
+        default: RealArg = 0.0,
         **kwargs: Unpack[ColumnKwargs],
     ) -> None:
         if isinstance(default, int):
             # For example, allow `0` as a valid default.
             default = float(default)
 
-        self._validate_default(default, (float, None))
+        self._validate_default(
+            default,
+            RealArg.__args__,  # type: ignore
+        )
         self.default = default
         super().__init__(default=default, **kwargs)
 
@@ -2998,6 +3006,28 @@ class Array(Column):
         from piccolo.query.functions.array import ArrayAppend
 
         return ArrayAppend(array=self, value=value)
+
+    def overlap(self, value: ArrayType) -> QueryString:
+        """
+        A convenient way of accessing the
+        :class:`ArrayOverlap <piccolo.query.functions.array.ArrayOverlap>`
+        function.
+
+        Used in a ``where`` clause to find rows where the array has any
+        values in common with the given array.
+
+        .. code-block:: python
+
+            >>> await Ticket.select().where(
+            ...     Ticket.seat_numbers.overlap([510, 511])
+            ... )
+
+        .. note:: Postgres / CockroachDB only
+
+        """
+        from piccolo.query.functions.array import ArrayOverlap
+
+        return ArrayOverlap(array_1=self, array_2=value)
 
     def replace(
         self, old_value: ArrayItemType, new_value: ArrayItemType

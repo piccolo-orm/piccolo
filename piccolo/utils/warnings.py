@@ -5,7 +5,7 @@ from enum import Enum
 
 import colorama  # type: ignore
 
-colorama.init()
+colorama.just_fix_windows_console()
 
 
 class Level(Enum):

@@ -114,8 +114,8 @@ class RecordingStudio(Table):
     """
 
     id: Serial
-    facilities = JSON()
-    facilities_b = JSONB()
+    facilities = JSON(null=True)
+    facilities_b = JSONB(null=True)
 
 
 class Instrument(Table):

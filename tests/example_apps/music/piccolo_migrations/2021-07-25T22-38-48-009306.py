@@ -43,7 +43,7 @@ async def forwards():
         column_class=JSON,
         params={
             "default": "{}",
-            "null": False,
+            "null": True,
             "primary_key": False,
             "unique": False,
             "index": False,
@@ -60,7 +60,7 @@ async def forwards():
         column_class=JSONB,
         params={
             "default": "{}",
-            "null": False,
+            "null": True,
             "primary_key": False,
             "unique": False,
             "index": False,

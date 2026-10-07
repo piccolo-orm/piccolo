@@ -8,6 +8,11 @@ ArrayCat
 
 .. autoclass:: ArrayCat
 
+ArrayOverlap
+------------
+
+.. autoclass:: ArrayOverlap
+
 ArrayAppend
 -----------
 

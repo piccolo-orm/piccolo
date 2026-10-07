@@ -37,7 +37,7 @@ Get the tests running
 * Install development dependencies: ``pip install -r requirements/dev-requirements.txt``
 * Install test dependencies: ``pip install -r requirements/test-requirements.txt``
 * Install database drivers: ``pip install -r requirements/extras/postgres.txt -r requirements/extras/sqlite.txt``
-* Setup Postgres, and make sure a database called ``piccolo`` exists (see ``tests/postgres_conf.py``).
+* Setup database engines, and make sure a database called ``piccolo`` exists (see ``tests/postgres_conf.py``, ``tests/sqlite_conf.py``, ``tests/cockroach_conf.py``). For an easy test database setup, you can use the Docker composition in ``tests/docker-compose.yml``.
 * Run the automated code linting/formatting tools: ``./scripts/lint.sh``
 * Run the test suite with Postgres: ``./scripts/test-postgres.sh``
 * Run the test suite with Cockroach: ``./scripts/test-cockroach.sh``
@@ -65,19 +65,22 @@ Piccolo uses `Black <https://black.readthedocs.io/en/stable/>`_  for
 formatting, preferably with a max line length of 79, to keep it consistent
 with `PEP8 <https://python.org/dev/peps/pep-0008/>`_ .
 
-You can configure `VSCode <https://code.visualstudio.com/>`_ by modifying
-``settings.json`` as follows:
+You can configure `VSCode <https://code.visualstudio.com/>`_ by  installing
+`MyPy <https://open-vsx.org/extension/ms-python/mypy-type-checker>`_ and
+`Black <https://open-vsx.org/extension/ms-python/black-formatter>`_ extensions
+and modifying ``settings.json`` as follows:
 
 .. code-block:: json
 
     {
-        "python.linting.enabled": true,
-        "python.linting.mypyEnabled": true,
-        "python.formatting.provider": "black",
-        "python.formatting.blackArgs": [
-            "--line-length",
-            "79"
-        ],
+        "mypy-type-checker.reportingScope": "workspace",
+        "mypy-type-checker.preferDaemon": true,
+        "mypy-type-checker.importStrategy": "fromEnvironment",
+        "black-formatter.importStrategy": "fromEnvironment",
+        "black-formatter.args": ["--line-length", "79"],
+        "[python]": {
+            "editor.defaultFormatter": "ms-python.black-formatter"
+        },
         "editor.formatOnSave": true
     }
 

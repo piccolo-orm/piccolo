@@ -444,6 +444,12 @@ all
 
 .. automethod:: Array.all
 
+=======
+overlap
+=======
+
+.. automethod:: Array.overlap
+
 ===
 cat
 ===
