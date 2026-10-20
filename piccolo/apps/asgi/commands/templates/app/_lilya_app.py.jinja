@@ -1,14 +1,13 @@
+from lilya.apps import Lilya
+from lilya.routing import Include, Path
+from lilya.staticfiles import StaticFiles
+from piccolo.engine import engine_finder
 from piccolo_admin.endpoints import create_admin
 from piccolo_api.crud.endpoints import PiccoloCRUD
-from piccolo.engine import engine_finder
-from lilya.routing import Path, Include
-from lilya.apps import Lilya
-from lilya.staticfiles import StaticFiles
 
 from home.endpoints import HomeController
 from home.piccolo_app import APP_CONFIG
 from home.tables import Task
-
 
 app = Lilya(
     routes=[
@@ -19,10 +18,10 @@ app = Lilya(
                 tables=APP_CONFIG.table_classes,
                 # Required when running under HTTPS:
                 # allowed_hosts=['my_site.com']
-            )
+            ),
         ),
         Include("/static/", StaticFiles(directory="static")),
-        Include("/tasks/", PiccoloCRUD(table=Task))
+        Include("/tasks/", PiccoloCRUD(table=Task)),
     ],
 )
 

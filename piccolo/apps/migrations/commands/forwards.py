@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import sys
-import typing as t
 
 from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.apps.migrations.commands.base import (
@@ -32,8 +31,15 @@ class ForwardsMigrationManager(BaseMigrationManager):
             app_name=app_config.app_name
         )
 
-        migration_modules: t.Dict[str, MigrationModule] = (
-            self.get_migration_modules(app_config.migrations_folder_path)
+        if self.migration_id in already_ran:
+            message = f"🏁 Migration {self.migration_id} has already been run"
+            print(message)
+            return MigrationResult(success=True, message=message)
+
+        migration_modules: dict[str, MigrationModule] = (
+            self.get_migration_modules(
+                app_config.resolved_migrations_folder_path
+            )
         )
 
         ids = self.get_migration_ids(migration_modules)
@@ -67,27 +73,41 @@ class ForwardsMigrationManager(BaseMigrationManager):
 
         if subset:
             n = len(subset)
+
+            if self.fake and n > 1:
+                if (
+                    input(
+                        f"⚠️ --fake will mark all {n} migrations as run "
+                        "without applying them. Continue? [y/N]"
+                    ).lower()
+                    != "y"
+                ):
+                    print("Migration stopped")
+                    return MigrationResult(
+                        success=False, message="Migration stopped"
+                    )
+
             print(f"🚀 Running {n} migration{'s' if n != 1 else ''}:")
 
             for _id in subset:
-                if self.fake:
-                    print(f"- {_id}: faked! ⏭️")
-                else:
-                    migration_module = migration_modules[_id]
-                    response = await migration_module.forwards()
+                migration_module = migration_modules[_id]
+                response = await migration_module.forwards()
 
-                    if isinstance(response, MigrationManager):
+                if isinstance(response, MigrationManager):
+                    if self.fake or response.fake:
+                        print(f"  - {_id}: faked! ⏭️")
+                    else:
                         if self.preview:
                             response.preview = True
                         await response.run()
+                        print("ok! ✔️")
 
-                    print("ok! ✔️")
                 if not self.preview:
                     await Migration.insert().add(
                         Migration(name=_id, app_name=app_config.app_name)
                     ).run()
 
-        return MigrationResult(success=True, message="migration succeeded")
+        return MigrationResult(success=True, message="Migration succeeded")
 
     async def run(self) -> MigrationResult:
         await self.create_migration_table()

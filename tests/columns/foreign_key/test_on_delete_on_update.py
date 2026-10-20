@@ -1,8 +1,8 @@
-from unittest import TestCase
-
 from piccolo.columns import ForeignKey, Varchar
 from piccolo.columns.base import OnDelete, OnUpdate
+from piccolo.query.constraints import get_fk_constraint_rules
 from piccolo.table import Table
+from piccolo.testing.test_case import AsyncTableTest
 from tests.base import engines_only
 
 
@@ -23,40 +23,15 @@ class Band(Table):
 
 
 @engines_only("postgres", "cockroach")
-class TestOnDeleteOnUpdate(TestCase):
+class TestOnDeleteOnUpdate(AsyncTableTest):
     """
     Make sure that on_delete, and on_update are correctly applied in the
     database.
     """
 
-    def setUp(self):
-        for table_class in (Manager, Band):
-            table_class.create_table().run_sync()
+    tables = [Manager, Band]
 
-    def tearDown(self):
-        for table_class in (Band, Manager):
-            table_class.alter().drop_table(if_exists=True).run_sync()
-
-    def test_on_delete_on_update(self):
-        response = Band.raw(
-            """
-            SELECT
-                rc.update_rule AS on_update,
-                rc.delete_rule AS on_delete
-            FROM information_schema.table_constraints tc
-            LEFT JOIN information_schema.key_column_usage kcu
-                ON tc.constraint_catalog = kcu.constraint_catalog
-                AND tc.constraint_schema = kcu.constraint_schema
-                AND tc.constraint_name = kcu.constraint_name
-            LEFT JOIN information_schema.referential_constraints rc
-                ON tc.constraint_catalog = rc.constraint_catalog
-                AND tc.constraint_schema = rc.constraint_schema
-                AND tc.constraint_name = rc.constraint_name
-            WHERE
-                lower(tc.constraint_type) in ('foreign key')
-                AND tc.table_name = 'band'
-                AND kcu.column_name = 'manager';
-            """
-        ).run_sync()
-        self.assertTrue(response[0]["on_update"] == "SET NULL")
-        self.assertTrue(response[0]["on_delete"] == "SET NULL")
+    async def test_on_delete_on_update(self):
+        constraint_rules = await get_fk_constraint_rules(Band.manager)
+        self.assertEqual(constraint_rules.on_delete, OnDelete.set_null)
+        self.assertEqual(constraint_rules.on_update, OnDelete.set_null)

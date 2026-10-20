@@ -17,8 +17,7 @@ async def forwards():
         params={
             "default": "",
             "null": False,
-            "primary": False,
-            "key": False,
+            "primary_key": False,
             "unique": False,
             "index": False,
         },

@@ -54,8 +54,9 @@ We create it in Piccolo like this:
 
 
 .. note::
-    We use ``LazyTableReference`` because when Python evaluates ``Band`` and
-    ``Genre``, the ``GenreToBand`` class doesn't exist yet.
+    We use :class:`LazyTableReference <piccolo.columns.reference.LazyTableReference>`
+    because when Python evaluates ``Band`` and ``Genre``, the ``GenreToBand``
+    class doesn't exist yet.
 
 By using ``M2M`` it unlocks some powerful and convenient features.
 

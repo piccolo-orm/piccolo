@@ -1,18 +1,27 @@
 from __future__ import annotations
 
 import pathlib
+import tempfile
 from unittest import TestCase
 
 from piccolo.apps.user.tables import BaseUser
-from piccolo.conf.apps import AppConfig, AppRegistry, Finder, table_finder
+from piccolo.conf.apps import (
+    AppConfig,
+    AppRegistry,
+    Finder,
+    PiccoloConfUpdater,
+    table_finder,
+)
 from tests.example_apps.mega.tables import MegaTable, SmallTable
 from tests.example_apps.music.tables import (
     Band,
     Concert,
+    Instrument,
     Manager,
     Poster,
     RecordingStudio,
     Shirt,
+    Signing,
     Ticket,
     Venue,
 )
@@ -84,7 +93,7 @@ class TestAppConfig(TestCase):
         config = AppConfig(
             app_name="music", migrations_folder_path=pathlib.Path(__file__)
         )
-        self.assertEqual(config.migrations_folder_path, __file__)
+        self.assertEqual(config.resolved_migrations_folder_path, __file__)
 
     def test_get_table_with_name(self):
         """
@@ -113,10 +122,12 @@ class TestTableFinder(TestCase):
             [
                 "Band",
                 "Concert",
+                "Instrument",
                 "Manager",
                 "Poster",
                 "RecordingStudio",
                 "Shirt",
+                "Signing",
                 "Ticket",
                 "Venue",
             ],
@@ -139,10 +150,12 @@ class TestTableFinder(TestCase):
             [
                 "Band",
                 "Concert",
+                "Instrument",
                 "Manager",
                 "Poster",
                 "RecordingStudio",
                 "Shirt",
+                "Signing",
                 "Ticket",
                 "Venue",
             ],
@@ -182,9 +195,11 @@ class TestTableFinder(TestCase):
             [
                 "Band",
                 "Concert",
+                "Instrument",
                 "Manager",
                 "RecordingStudio",
                 "Shirt",
+                "Signing",
                 "Ticket",
                 "Venue",
             ],
@@ -228,11 +243,13 @@ class TestFinder(TestCase):
             [
                 Band,
                 Concert,
+                Instrument,
                 Manager,
                 MegaTable,
                 Poster,
                 RecordingStudio,
                 Shirt,
+                Signing,
                 SmallTable,
                 Ticket,
                 Venue,
@@ -247,10 +264,12 @@ class TestFinder(TestCase):
             [
                 Band,
                 Concert,
+                Instrument,
                 Manager,
                 Poster,
                 RecordingStudio,
                 Shirt,
+                Signing,
                 Ticket,
                 Venue,
             ],
@@ -303,4 +322,45 @@ class TestFinder(TestCase):
 
         self.assertListEqual(
             [i.app_name for i in sorted_app_configs], ["app_2", "app_1"]
+        )
+
+
+class TestPiccoloConfUpdater(TestCase):
+
+    def test_modify_app_registry_src(self):
+        """
+        Make sure the `piccolo_conf.py` source code can be modified
+        successfully.
+        """
+        updater = PiccoloConfUpdater()
+
+        new_src = updater._modify_app_registry_src(
+            src="APP_REGISTRY = AppRegistry(apps=[])",
+            app_module="music.piccolo_app",
+        )
+        self.assertEqual(
+            new_src.strip(),
+            'APP_REGISTRY = AppRegistry(apps=["music.piccolo_app"])',
+        )
+
+    def test_register_app(self):
+        """
+        Make sure the new contents get written to disk.
+        """
+        temp_dir = tempfile.gettempdir()
+        piccolo_conf_path = pathlib.Path(temp_dir) / "piccolo_conf.py"
+
+        src = "APP_REGISTRY = AppRegistry(apps=[])"
+
+        with open(piccolo_conf_path, "wt") as f:
+            f.write(src)
+
+        updater = PiccoloConfUpdater(piccolo_conf_path=str(piccolo_conf_path))
+        updater.register_app(app_module="music.piccolo_app")
+
+        with open(piccolo_conf_path) as f:
+            contents = f.read().strip()
+
+        self.assertEqual(
+            contents, 'APP_REGISTRY = AppRegistry(apps=["music.piccolo_app"])'
         )

@@ -1,7 +1,6 @@
-from unittest import TestCase
-
 from piccolo.columns.column_types import Integer, Varchar
 from piccolo.table import Table
+from piccolo.testing.test_case import TableTest
 
 
 class Concert(Table):
@@ -16,17 +15,13 @@ class Concert(Table):
     order = Integer()
 
 
-class TestReservedColumnNames(TestCase):
+class TestReservedColumnNames(TableTest):
     """
     Make sure the table works as expected, even though it has a problematic
     column name.
     """
 
-    def setUp(self):
-        Concert.create_table().run_sync()
-
-    def tearDown(self):
-        Concert.alter().drop_table().run_sync()
+    tables = [Concert]
 
     def test_common_operations(self):
         # Save / Insert

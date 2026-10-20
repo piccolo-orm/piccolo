@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import typing as t
+from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-from piccolo.columns.base import Selectable
+from piccolo.querystring import QueryString, Selectable
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import Column
 
 
@@ -18,7 +19,7 @@ class Readable(Selectable):
     """
 
     template: str
-    columns: t.Sequence[Column]
+    columns: Sequence[Column]
     output_name: str = "readable"
 
     @property
@@ -27,25 +28,27 @@ class Readable(Selectable):
             i._meta.get_full_name(with_alias=False) for i in self.columns
         )
 
-    def _get_string(self, operator: str) -> str:
-        return (
+    def _get_string(self, operator: str) -> QueryString:
+        return QueryString(
             f"{operator}('{self.template}', {self._columns_string}) AS "
             f"{self.output_name}"
         )
 
     @property
-    def sqlite_string(self) -> str:
+    def sqlite_string(self) -> QueryString:
         return self._get_string(operator="PRINTF")
 
     @property
-    def postgres_string(self) -> str:
+    def postgres_string(self) -> QueryString:
         return self._get_string(operator="FORMAT")
 
     @property
-    def cockroach_string(self) -> str:
+    def cockroach_string(self) -> QueryString:
         return self._get_string(operator="FORMAT")
 
-    def get_select_string(self, engine_type: str, with_alias=True) -> str:
+    def get_select_string(
+        self, engine_type: str, with_alias=True
+    ) -> QueryString:
         try:
             return getattr(self, f"{engine_type}_string")
         except AttributeError as e:

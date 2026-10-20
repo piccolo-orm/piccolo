@@ -4,11 +4,20 @@ import copy
 import datetime
 import decimal
 import inspect
-import typing as t
 import uuid
-from abc import ABCMeta, abstractmethod
+from collections.abc import Iterable
 from dataclasses import dataclass, field, fields
 from enum import Enum
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generic,
+    Optional,
+    TypedDict,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from piccolo.columns.choices import Choice
 from piccolo.columns.combination import Where
@@ -32,10 +41,13 @@ from piccolo.columns.operators.comparison import (
     NotLike,
 )
 from piccolo.columns.reference import LazyTableReference
+from piccolo.querystring import QueryString, Selectable
 from piccolo.utils.warnings import colored_warning
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.column_types import ForeignKey
+    from piccolo.query.functions.conditional import Coalesce
+    from piccolo.query.methods.select import Select
     from piccolo.table import Table
 
 
@@ -77,19 +89,19 @@ class OnUpdate(str, Enum):
         return self.__str__()
 
 
-ReferencedTable = t.TypeVar("ReferencedTable", bound="Table")
+ReferencedTable = TypeVar("ReferencedTable", bound="Table")
 
 
 @dataclass
-class ForeignKeyMeta(t.Generic[ReferencedTable]):
-    references: t.Union[t.Type[ReferencedTable], LazyTableReference]
+class ForeignKeyMeta(Generic[ReferencedTable]):
+    references: Union[type[ReferencedTable], LazyTableReference]
     on_delete: OnDelete
     on_update: OnUpdate
-    target_column: t.Union[Column, str, None]
-    proxy_columns: t.List[Column] = field(default_factory=list)
+    target_column: Union[Column, str, None]
+    proxy_columns: list[Column] = field(default_factory=list)
 
     @property
-    def resolved_references(self) -> t.Type[Table]:
+    def resolved_references(self) -> type[Table]:
         """
         Evaluates the ``references`` attribute if it's a ``LazyTableReference``,
         raising a ``ValueError`` if it fails, otherwise returns a ``Table``
@@ -154,18 +166,18 @@ class ColumnMeta:
     index: bool = False
     index_method: IndexMethod = IndexMethod.btree
     required: bool = False
-    help_text: t.Optional[str] = None
-    choices: t.Optional[t.Type[Enum]] = None
+    help_text: Optional[str] = None
+    choices: Optional[type[Enum]] = None
     secret: bool = False
-    auto_update: t.Any = ...
+    auto_update: Any = ...
 
     # Used for representing the table in migrations and the playground.
-    params: t.Dict[str, t.Any] = field(default_factory=dict)
+    params: dict[str, Any] = field(default_factory=dict)
 
     ###########################################################################
 
     # Lets you to map a column to a database column with a different name.
-    _db_column_name: t.Optional[str] = None
+    _db_column_name: Optional[str] = None
 
     @property
     def db_column_name(self) -> str:
@@ -178,8 +190,8 @@ class ColumnMeta:
     ###########################################################################
 
     # Set by the Table Metaclass:
-    _name: t.Optional[str] = None
-    _table: t.Optional[t.Type[Table]] = None
+    _name: Optional[str] = None
+    _table: Optional[type[Table]] = None
 
     @property
     def name(self) -> str:
@@ -194,18 +206,21 @@ class ColumnMeta:
         self._name = value
 
     @property
-    def table(self) -> t.Type[Table]:
+    def table(self) -> type[Table]:
         if not self._table:
             raise ValueError(
                 "`_table` isn't defined - the Table Metaclass should set it."
             )
         return self._table
 
+    @table.setter
+    def table(self, value: type[Table]):
+        self._table = value
+
     ###########################################################################
 
     # Used by Foreign Keys:
-    call_chain: t.List["ForeignKey"] = field(default_factory=list)
-    table_alias: t.Optional[str] = None
+    call_chain: list["ForeignKey"] = field(default_factory=list)
 
     ###########################################################################
 
@@ -217,7 +232,7 @@ class ColumnMeta:
         else:
             raise ValueError("The table has no engine defined.")
 
-    def get_choices_dict(self) -> t.Optional[t.Dict[str, t.Any]]:
+    def get_choices_dict(self) -> Optional[dict[str, Any]]:
         """
         Return the choices Enum as a dict. It maps the attribute name to a
         dict containing the display name, and value.
@@ -247,11 +262,10 @@ class ColumnMeta:
 
         if self.call_chain:
             column_name = (
-                "$".join(
-                    t.cast(str, i._meta.db_column_name)
-                    for i in self.call_chain
+                ".".join(
+                    cast(str, i._meta.db_column_name) for i in self.call_chain
                 )
-                + f"${column_name}"
+                + f".{column_name}"
             )
 
         return column_name
@@ -260,7 +274,7 @@ class ColumnMeta:
         column_name = self.db_column_name
 
         if self.call_chain:
-            table_alias = self.call_chain[-1]._meta.table_alias
+            table_alias = self.call_chain[-1].table_alias
             if include_quotes:
                 return f'"{table_alias}"."{column_name}"'
             else:
@@ -272,7 +286,9 @@ class ColumnMeta:
                 return f"{self.table._meta.tablename}.{column_name}"
 
     def get_full_name(
-        self, with_alias: bool = True, include_quotes: bool = True
+        self,
+        with_alias: bool = True,
+        include_quotes: bool = True,
     ) -> str:
         """
         Returns the full column name, taking into account joins.
@@ -286,7 +302,7 @@ class ColumnMeta:
                 'band$manager.name'
 
                 >>> Band.manager.name._meta.get_full_name(with_alias=True)
-                'band$manager.name AS "manager$name"'
+                'band$manager.name AS "manager.name"'
 
         :param include_quotes:
             If you're using the name in a SQL query, each component needs to be
@@ -302,11 +318,10 @@ class ColumnMeta:
                 >>> column._meta.get_full_name(include_quotes=False)
                 'my_table_name.my_column_name'
 
-
         """
         full_name = self._get_path(include_quotes=include_quotes)
 
-        if with_alias and self.call_chain:
+        if with_alias:
             alias = self.get_default_alias()
             if include_quotes:
                 full_name += f' AS "{alias}"'
@@ -346,30 +361,23 @@ class ColumnMeta:
         return self.copy()
 
 
-class Selectable(metaclass=ABCMeta):
+class ColumnKwargs(TypedDict, total=False):
     """
-    Anything which inherits from this can be used in a select query.
+    Additional arguments which can be passed to :class:`Column` from
+    subclasses.
     """
 
-    _alias: t.Optional[str]
-
-    @abstractmethod
-    def get_select_string(
-        self, engine_type: str, with_alias: bool = True
-    ) -> str:
-        """
-        In a query, what to output after the select statement - could be a
-        column name, a sub query, a function etc. For a column it will be the
-        column name.
-        """
-        raise NotImplementedError()
-
-    def as_alias(self, alias: str) -> Selectable:
-        """
-        Allows column names to be changed in the result of a select.
-        """
-        self._alias = alias
-        return self
+    null: bool
+    primary_key: bool
+    unique: bool
+    index: bool
+    index_method: IndexMethod
+    required: bool
+    help_text: Optional[str]
+    choices: Optional[type[Enum]]
+    db_column_name: Optional[str]
+    secret: bool
+    auto_update: Any
 
 
 class Column(Selectable):
@@ -471,8 +479,8 @@ class Column(Selectable):
 
     """
 
-    value_type: t.Type = int
-    default: t.Any
+    value_type: type = int
+    default: Any
 
     def __init__(
         self,
@@ -482,17 +490,16 @@ class Column(Selectable):
         index: bool = False,
         index_method: IndexMethod = IndexMethod.btree,
         required: bool = False,
-        help_text: t.Optional[str] = None,
-        choices: t.Optional[t.Type[Enum]] = None,
-        db_column_name: t.Optional[str] = None,
+        help_text: Optional[str] = None,
+        choices: Optional[type[Enum]] = None,
+        db_column_name: Optional[str] = None,
         secret: bool = False,
-        auto_update: t.Any = ...,
+        auto_update: Any = ...,
         **kwargs,
     ) -> None:
-        # This is for backwards compatibility - originally there were two
-        # separate arguments `primary` and `key`, but they have now been merged
-        # into `primary_key`.
-        if (kwargs.get("primary") is True) and (kwargs.get("key") is True):
+        # This is for backwards compatibility - originally the `primary_key`
+        # argument was called `primary`.
+        if kwargs.get("primary") is True:
             primary_key = True
 
         # Used for migrations.
@@ -531,12 +538,12 @@ class Column(Selectable):
             auto_update=auto_update,
         )
 
-        self._alias: t.Optional[str] = None
+        self._alias: Optional[str] = None
 
     def _validate_default(
         self,
-        default: t.Any,
-        allowed_types: t.Iterable[t.Union[None, t.Type[t.Any]]],
+        default: Any,
+        allowed_types: Iterable[Union[None, type[Any]]],
         allow_recursion: bool = True,
     ) -> bool:
         """
@@ -573,7 +580,7 @@ class Column(Selectable):
         )
 
     def _validate_choices(
-        self, choices: t.Type[Enum], allowed_type: t.Type[t.Any]
+        self, choices: type[Enum], allowed_type: type[Any]
     ) -> bool:
         """
         Make sure the choices value has values of the allowed_type.
@@ -599,18 +606,40 @@ class Column(Selectable):
 
         return True
 
-    def is_in(self, values: t.List[t.Any]) -> Where:
-        if len(values) == 0:
-            raise ValueError(
-                "The `values` list argument must contain at least one value."
-            )
+    def is_in(self, values: Union[Select, QueryString, list[Any]]) -> Where:
+        from piccolo.query.methods.select import Select
+
+        if isinstance(values, list):
+            if len(values) == 0:
+                raise ValueError(
+                    "The `values` list argument must contain at least one "
+                    "value."
+                )
+        elif isinstance(values, Select):
+            if len(values.columns_delegate.selected_columns) != 1:
+                raise ValueError(
+                    "A sub select must only return a single column."
+                )
+            values = values.querystrings[0]
+
         return Where(column=self, values=values, operator=In)
 
-    def not_in(self, values: t.List[t.Any]) -> Where:
-        if len(values) == 0:
-            raise ValueError(
-                "The `values` list argument must contain at least one value."
-            )
+    def not_in(self, values: Union[Select, QueryString, list[Any]]) -> Where:
+        from piccolo.query.methods.select import Select
+
+        if isinstance(values, list):
+            if len(values) == 0:
+                raise ValueError(
+                    "The `values` list argument must contain at least one "
+                    "value."
+                )
+        elif isinstance(values, Select):
+            if len(values.columns_delegate.selected_columns) != 1:
+                raise ValueError(
+                    "A sub select must only return a single column."
+                )
+            values = values.querystrings[0]
+
         return Where(column=self, values=values, operator=NotIn)
 
     def like(self, value: str) -> Where:
@@ -637,7 +666,7 @@ class Column(Selectable):
 
         """
         if self._meta.engine_type in ("postgres", "cockroach"):
-            operator: t.Type[ComparisonOperator] = ILike
+            operator: type[ComparisonOperator] = ILike
         else:
             colored_warning(
                 "SQLite doesn't support ILIKE, falling back to LIKE."
@@ -647,6 +676,11 @@ class Column(Selectable):
 
     def not_like(self, value: str) -> Where:
         return Where(column=self, value=value, operator=NotLike)
+
+    def __or__(self, value) -> Coalesce:
+        from piccolo.query.functions.conditional import Coalesce
+
+        return Coalesce(self, value)
 
     def __lt__(self, value) -> Where:
         return Where(column=self, value=value, operator=LessThan)
@@ -808,7 +842,7 @@ class Column(Selectable):
         virtual_foreign_key.set_proxy_columns()
         return virtual_foreign_key
 
-    def get_default_value(self) -> t.Any:
+    def get_default_value(self) -> Any:
         """
         If the column has a default attribute, return it. If it's callable,
         return the response instead.
@@ -822,30 +856,41 @@ class Column(Selectable):
 
     def get_select_string(
         self, engine_type: str, with_alias: bool = True
-    ) -> str:
+    ) -> QueryString:
         """
         How to refer to this column in a SQL query, taking account of any joins
         and aliases.
         """
+
         if with_alias:
             if self._alias:
                 original_name = self._meta.get_full_name(
                     with_alias=False,
                 )
-                return f'{original_name} AS "{self._alias}"'
+                return QueryString(f'{original_name} AS "{self._alias}"')
             else:
-                return self._meta.get_full_name(
-                    with_alias=True,
+                return QueryString(
+                    self._meta.get_full_name(
+                        with_alias=True,
+                    )
                 )
 
-        return self._meta.get_full_name(with_alias=False)
+        return QueryString(
+            self._meta.get_full_name(
+                with_alias=False,
+            )
+        )
 
-    def get_where_string(self, engine_type: str) -> str:
+    def get_where_string(self, engine_type: str) -> QueryString:
         return self.get_select_string(
             engine_type=engine_type, with_alias=False
         )
 
-    def get_sql_value(self, value: t.Any) -> t.Any:
+    def get_sql_value(
+        self,
+        value: Any,
+        delimiter: str = "'",
+    ) -> str:
         """
         When using DDL statements, we can't parameterise the values. An example
         is when setting the default for a column. So we have to convert from
@@ -854,11 +899,18 @@ class Column(Selectable):
 
         :param value:
             The Python value to convert to a string usable in a DDL statement
-            e.g. 1.
+            e.g. ``1``.
+        :param delimiter:
+            The string returned by this function is wrapped in delimiters,
+            ready to be added to a DDL statement. For example:
+            ``'hello world'``.
         :returns:
-            The string usable in the DDL statement e.g. '1'.
+            The string usable in the DDL statement e.g. ``'1'``.
 
         """
+        from piccolo.engine.sqlite import ADAPTERS as sqlite_adapters
+
+        # Common across all DB engines
         if isinstance(value, Default):
             return getattr(value, self._meta.engine_type)
         elif value is None:
@@ -866,41 +918,63 @@ class Column(Selectable):
         elif isinstance(value, (float, decimal.Decimal)):
             return str(value)
         elif isinstance(value, str):
-            return f"'{value}'"
+            return f"{delimiter}{value}{delimiter}"
         elif isinstance(value, bool):
             return str(value).lower()
-        elif isinstance(value, datetime.datetime):
-            return f"'{value.isoformat().replace('T', ' ')}'"
-        elif isinstance(value, datetime.date):
-            return f"'{value.isoformat()}'"
-        elif isinstance(value, datetime.time):
-            return f"'{value.isoformat()}'"
-        elif isinstance(value, datetime.timedelta):
-            interval = IntervalCustom.from_timedelta(value)
-            return getattr(interval, self._meta.engine_type)
         elif isinstance(value, bytes):
-            return f"'{value.hex()}'"
-        elif isinstance(value, uuid.UUID):
-            return f"'{value}'"
-        elif isinstance(value, list):
-            # Convert to the array syntax.
-            return (
-                "'{"
-                + ", ".join(
-                    (
-                        f'"{i}"'
-                        if isinstance(i, str)
-                        else str(self.get_sql_value(i))
-                    )
-                    for i in value
+            return f"{delimiter}{value.hex()}{delimiter}"
+
+        # SQLite specific
+        if self._meta.engine_type == "sqlite":
+            if adapter := sqlite_adapters.get(type(value)):
+                sqlite_value = adapter(value)
+                return (
+                    f"{delimiter}{sqlite_value}{delimiter}"
+                    if isinstance(sqlite_value, str)
+                    else sqlite_value
                 )
-            ) + "}'"
-        else:
-            return value
+
+        # Postgres and Cockroach
+        if self._meta.engine_type in ["postgres", "cockroach"]:
+            if isinstance(value, datetime.datetime):
+                return f"{delimiter}{value.isoformat().replace('T', ' ')}{delimiter}"  # noqa: E501
+            elif isinstance(value, datetime.date):
+                return f"{delimiter}{value.isoformat()}{delimiter}"
+            elif isinstance(value, datetime.time):
+                return f"{delimiter}{value.isoformat()}{delimiter}"
+            elif isinstance(value, datetime.timedelta):
+                interval = IntervalCustom.from_timedelta(value)
+                return getattr(interval, self._meta.engine_type)
+            elif isinstance(value, uuid.UUID):
+                return f"{delimiter}{value}{delimiter}"
+            elif isinstance(value, list):
+                # Convert to the array syntax.
+                return (
+                    delimiter
+                    + "{"
+                    + ",".join(
+                        self.get_sql_value(
+                            i,
+                            delimiter="" if isinstance(i, list) else '"',
+                        )
+                        for i in value
+                    )
+                    + "}"
+                    + delimiter
+                )
+
+        return str(value)
 
     @property
     def column_type(self):
         return self.__class__.__name__.upper()
+
+    @property
+    def table_alias(self) -> str:
+        return "$".join(
+            f"{_key._meta.table._meta.tablename}${_key._meta.name}"
+            for _key in [*self._meta.call_chain, self]
+        )
 
     @property
     def ddl(self) -> str:
@@ -915,8 +989,8 @@ class Column(Selectable):
         if not self._meta.null:
             query += " NOT NULL"
 
-        foreign_key_meta = t.cast(
-            t.Optional[ForeignKeyMeta],
+        foreign_key_meta = cast(
+            Optional[ForeignKeyMeta],
             getattr(self, "_foreign_key_meta", None),
         )
         if foreign_key_meta:
@@ -925,10 +999,10 @@ class Column(Selectable):
             on_delete = foreign_key_meta.on_delete.value
             on_update = foreign_key_meta.on_update.value
             target_column_name = (
-                foreign_key_meta.resolved_target_column._meta.name
+                foreign_key_meta.resolved_target_column._meta.db_column_name
             )
             query += (
-                f" REFERENCES {tablename} ({target_column_name})"
+                f' REFERENCES {tablename} ("{target_column_name}")'
                 f" ON DELETE {on_delete}"
                 f" ON UPDATE {on_update}"
             )
@@ -945,8 +1019,8 @@ class Column(Selectable):
 
         return query
 
-    def copy(self) -> Column:
-        column: Column = copy.copy(self)
+    def copy(self: Self) -> Self:
+        column = copy.copy(self)
         column._meta = self._meta.copy()
         return column
 
@@ -971,3 +1045,6 @@ class Column(Selectable):
             f"{table_class_name}.{self._meta.name} - "
             f"{self.__class__.__name__}"
         )
+
+
+Self = TypeVar("Self", bound=Column)

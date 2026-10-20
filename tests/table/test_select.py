@@ -6,16 +6,16 @@ import pytest
 from piccolo.apps.user.tables import BaseUser
 from piccolo.columns import Date, Varchar
 from piccolo.columns.combination import WhereRaw
-from piccolo.query import OrderByRaw
-from piccolo.query.methods.select import Avg, Count, Max, Min, SelectRaw, Sum
+from piccolo.query.functions.aggregate import Avg, Count, Max, Min, Sum
 from piccolo.query.mixins import DistinctOnError
+from piccolo.querystring import QueryString
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
+from piccolo.testing.test_case import AsyncTableTest
 from tests.base import (
     DBTestCase,
     engine_is,
     engine_version_lt,
     engines_only,
-    engines_skip,
     is_running_cockroach,
     is_running_sqlite,
     sqlite_only,
@@ -257,6 +257,64 @@ class TestSelect(DBTestCase):
 
         self.assertEqual(response, [{"name": "Rustaceans"}])
 
+    def test_is_in(self):
+        self.insert_rows()
+
+        response = (
+            Band.select(Band.name)
+            .where(Band.manager._.name.is_in(["Guido"]))
+            .run_sync()
+        )
+
+        self.assertListEqual(response, [{"name": "Pythonistas"}])
+
+    def test_is_in_subquery(self):
+        self.insert_rows()
+
+        # This is a contrived example, just for testing.
+        response = (
+            Band.select(Band.name)
+            .where(
+                Band.manager.is_in(
+                    Manager.select(Manager.id).where(Manager.name == "Guido")
+                )
+            )
+            .run_sync()
+        )
+
+        self.assertListEqual(response, [{"name": "Pythonistas"}])
+
+    def test_not_in(self):
+        self.insert_rows()
+
+        response = (
+            Band.select(Band.name)
+            .where(Band.manager._.name.not_in(["Guido"]))
+            .run_sync()
+        )
+
+        self.assertListEqual(
+            response, [{"name": "Rustaceans"}, {"name": "CSharps"}]
+        )
+
+    def test_not_in_subquery(self):
+        self.insert_rows()
+
+        # This is a contrived example, just for testing.
+        response = (
+            Band.select(Band.name)
+            .where(
+                Band.manager.not_in(
+                    Manager.select(Manager.id).where(Manager.name == "Guido")
+                )
+            )
+            .run_sync()
+        )
+
+        self.assertListEqual(
+            response, [{"name": "Rustaceans"}, {"name": "CSharps"}]
+        )
+
     def test_where_is_null(self):
         self.insert_rows()
 
@@ -407,17 +465,18 @@ class TestSelect(DBTestCase):
             response, [{"name": "CSharps"}, {"name": "Rustaceans"}]
         )
 
-    @engines_skip("cockroach")
     def test_multiple_where(self):
         """
         Test that chaining multiple where clauses works results in an AND.
         """
         self.insert_rows()
 
+        managers = Manager.select().run_sync()
+
         query = (
             Band.select(Band.name)
             .where(Band.name == "Rustaceans")
-            .where(Band.manager == 2)
+            .where(Band.manager == managers[1]["id"])
         )
 
         response = query.run_sync()
@@ -425,18 +484,25 @@ class TestSelect(DBTestCase):
         self.assertEqual(response, [{"name": "Rustaceans"}])
         self.assertIn("AND", query.__str__())
 
-    @engines_skip("cockroach")
     def test_complex_where(self):
         """
         Test a complex where clause - combining AND, and OR.
         """
         self.insert_rows()
 
+        managers = Manager.select().run_sync()
+
         query = (
             Band.select(Band.name)
             .where(
-                ((Band.popularity == 2000) & (Band.manager == 2))
-                | ((Band.popularity == 10) & (Band.manager == 3))
+                (
+                    (Band.popularity == 2000)
+                    & (Band.manager == managers[1]["id"])
+                )
+                | (
+                    (Band.popularity == 10)
+                    & (Band.manager == managers[2]["id"])
+                )
             )
             .order_by(Band.name)
         )
@@ -568,6 +634,16 @@ class TestSelect(DBTestCase):
             ],
         )
 
+    def test_group_by_querystring(self):
+        """
+        Raw expressions and select aliases can be used in GROUP BY clauses.
+        """
+        query = Band.select(
+            QueryString("SUBSTR(name, 1, 1) AS initial"), Count()
+        ).group_by(QueryString("initial"), Band.popularity)
+
+        self.assertIn('GROUP BY initial, "band"."popularity"', str(query))
+
     def test_count_with_alias_group_by(self):
         """
         Test grouping and counting all rows with alias.
@@ -621,8 +697,7 @@ class TestSelect(DBTestCase):
         """
         self.insert_rows()
         self.insert_rows()
-        self.run_sync(
-            """
+        self.run_sync("""
             INSERT INTO band (
                 name,
                 manager,
@@ -631,8 +706,7 @@ class TestSelect(DBTestCase):
                 'SomeBand',
                 null,
                 1000
-            );"""
-        )
+            );""")
 
         response = (
             Band.select(Band.manager.name, Count(Band.manager))
@@ -927,14 +1001,6 @@ class TestSelect(DBTestCase):
         self.assertEqual(float(response["popularity_avg"]), 1003.3333333333334)
         self.assertEqual(response["popularity_sum"], 3010)
 
-    def test_avg_validation(self):
-        with self.assertRaises(ValueError):
-            Band.select(Avg(Band.name)).run_sync()
-
-    def test_sum_validation(self):
-        with self.assertRaises(ValueError):
-            Band.select(Sum(Band.name)).run_sync()
-
     def test_columns(self):
         """
         Make sure the colums method can be used to specify which columns to
@@ -1023,17 +1089,51 @@ class TestSelect(DBTestCase):
             "Cockroach raises an error when trying to use the log function."
         ),
     )
-    def test_select_raw(self):
+    def test_select_querystring(self):
         """
-        Make sure ``SelectRaw`` can be used in select queries.
+        Make sure ``QueryString`` can be used in select queries.
         """
         self.insert_row()
         response = Band.select(
-            Band.name, SelectRaw("round(log(popularity)) AS popularity_log")
+            Band.name, QueryString("round(log(popularity)) AS popularity_log")
         ).run_sync()
         self.assertListEqual(
             response, [{"name": "Pythonistas", "popularity_log": 3.0}]
         )
+
+    @pytest.mark.skipif(
+        is_running_sqlite(),
+        reason="SQLite doesn't support SELECT ... FOR UPDATE.",
+    )
+    def test_lock_rows(self):
+        """
+        Make sure the for_update clause works.
+        """
+        self.insert_rows()
+
+        query = Band.select()
+        self.assertNotIn("FOR UPDATE", query.__str__())
+
+        query = query.lock_rows()
+        self.assertTrue(query.__str__().endswith("FOR UPDATE"))
+
+        query = query.lock_rows(lock_strength="KEY SHARE")
+        self.assertTrue(query.__str__().endswith("FOR KEY SHARE"))
+
+        query = query.lock_rows(skip_locked=True)
+        self.assertTrue(query.__str__().endswith("FOR UPDATE SKIP LOCKED"))
+
+        query = query.lock_rows(nowait=True)
+        self.assertTrue(query.__str__().endswith("FOR UPDATE NOWAIT"))
+
+        query = query.lock_rows(of=(Band,))
+        self.assertTrue(query.__str__().endswith('FOR UPDATE OF "band"'))
+
+        with self.assertRaises(TypeError):
+            query = query.lock_rows(skip_locked=True, nowait=True)
+
+        response = query.run_sync()
+        assert response is not None
 
 
 class TestSelectSecret(TestCase):
@@ -1269,13 +1369,13 @@ class TestSelectOrderBy(TestCase):
             ],
         )
 
-    def test_order_by_raw(self):
+    def test_order_by_querystring(self):
         """
-        Maker sure ``OrderByRaw`` can be used, to order by anything the user
+        Make sure ``QueryString`` can be used, to order by anything the user
         wants.
         """
         response = (
-            Band.select(Band.name).order_by(OrderByRaw("name")).run_sync()
+            Band.select(Band.name).order_by(QueryString("name")).run_sync()
         )
 
         self.assertEqual(
@@ -1422,3 +1522,36 @@ class TestDistinctOn(TestCase):
             Album.select().distinct(on=[Album.band]).order_by(
                 Album.release_date
             ).run_sync()
+
+
+class TestHaving(AsyncTableTest):
+    tables = [Album]
+
+    async def test_having(self):
+        await Album.insert(
+            Album(
+                {
+                    Album.band: "Pythonistas",
+                }
+            ),
+            Album(
+                {
+                    Album.band: "Pythonistas",
+                }
+            ),
+            Album(
+                {
+                    Album.band: "Rustaceans",
+                }
+            ),
+        )
+
+        response = (
+            await Album.select(Album.band)
+            .group_by(Album.band)
+            .having(Count() >= 2)
+            .output(as_list=True)
+        )
+
+        self.assertIn("Pythonistas", response)
+        self.assertNotIn("Rustaceans", response)

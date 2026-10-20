@@ -44,6 +44,56 @@ When you have the database setup, you can connect to it as follows:
 
     piccolo playground run --engine=postgres
 
+CockroachDB
+-----------
+
+If you want to use CockroachDB instead of SQLite, you need to create a database
+first.
+
+
+Install CockroachDB
+~~~~~~~~~~~~~~~~~~~
+
+See the `installation guide for your OS <https://www.cockroachlabs.com/docs/v25.2/install-cockroachdb-linux/>`_.
+
+Create database
+~~~~~~~~~~~~~~~
+The playground is for testing and learning purposes only, so you can start a CockroachDB
+`single node with the insecure flag <https://www.cockroachlabs.com/docs/v25.2/cockroach-start-single-node.html/>`_
+(for non-production testing only) like this:
+
+.. code-block:: bash
+
+    cockroach start-single-node --insecure
+
+After that, in a new terminal window, you can create a database like this:
+
+.. code-block:: bash
+
+    cockroach sql --insecure --execute="DROP DATABASE IF EXISTS piccolo_playground CASCADE;CREATE DATABASE piccolo_playground;"
+
+By default the playground expects a local database to exist with the following
+credentials:
+
+
+.. code-block:: bash
+
+    user: "root"
+    password: ""
+    host: "localhost"  # or 127.0.0.1
+    database: "piccolo_playground"
+    port: 26257
+
+
+Connecting
+~~~~~~~~~~
+
+When you have the database setup, you can connect to it as follows:
+
+.. code-block:: bash
+
+    piccolo playground run --engine=cockroach
+
 iPython
 -------
 

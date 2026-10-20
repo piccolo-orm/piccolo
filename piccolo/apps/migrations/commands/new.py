@@ -3,10 +3,10 @@ from __future__ import annotations
 import datetime
 import os
 import string
-import typing as t
 from dataclasses import dataclass
 from itertools import chain
 from types import ModuleType
+from typing import Optional
 
 import black
 import jinja2
@@ -33,7 +33,7 @@ JINJA_ENV = jinja2.Environment(
     loader=jinja2.FileSystemLoader(searchpath=TEMPLATE_DIRECTORY),
 )
 
-MIGRATION_MODULES: t.Dict[str, ModuleType] = {}
+MIGRATION_MODULES: dict[str, ModuleType] = {}
 
 VALID_PYTHON_MODULE_CHARACTERS = string.ascii_lowercase + string.digits + "_"
 
@@ -98,7 +98,9 @@ def _generate_migration_meta(app_config: AppConfig) -> NewMigrationMeta:
 
     filename = f"{cleaned_app_name}_{cleaned_id}"
 
-    path = os.path.join(app_config.migrations_folder_path, f"{filename}.py")
+    path = os.path.join(
+        app_config.resolved_migrations_folder_path, f"{filename}.py"
+    )
 
     return NewMigrationMeta(
         migration_id=_id, migration_filename=filename, migration_path=path
@@ -113,7 +115,7 @@ async def _create_new_migration(
     app_config: AppConfig,
     auto: bool = False,
     description: str = "",
-    auto_input: t.Optional[str] = None,
+    auto_input: Optional[str] = None,
 ) -> NewMigrationMeta:
     """
     Creates a new migration file on disk.
@@ -168,13 +170,13 @@ async def _create_new_migration(
 
 
 class AutoMigrationManager(BaseMigrationManager):
-    def __init__(self, auto_input: t.Optional[str] = None, *args, **kwargs):
+    def __init__(self, auto_input: Optional[str] = None, *args, **kwargs):
         self.auto_input = auto_input
         super().__init__(*args, **kwargs)
 
     async def get_alter_statements(
         self, app_config: AppConfig
-    ) -> t.List[AlterStatements]:
+    ) -> list[AlterStatements]:
         """
         Works out which alter statements are required.
         """
@@ -191,6 +193,7 @@ class AutoMigrationManager(BaseMigrationManager):
                 class_name=i.__name__,
                 tablename=i._meta.tablename,
                 columns=i._meta.non_default_columns,
+                constraints=i._meta.constraints,
                 schema=i._meta.schema,
             )
             for i in app_config.table_classes
@@ -212,7 +215,7 @@ async def new(
     app_name: str,
     auto: bool = False,
     desc: str = "",
-    auto_input: t.Optional[str] = None,
+    auto_input: Optional[str] = None,
 ):
     """
     Creates a new migration file in the migrations folder.
@@ -255,7 +258,7 @@ async def new(
 
         app_config = Finder().get_app_config(app_name=app_name)
 
-        _create_migrations_folder(app_config.migrations_folder_path)
+        _create_migrations_folder(app_config.resolved_migrations_folder_path)
 
         try:
             await _create_new_migration(

@@ -37,8 +37,8 @@ A ``piccolo.sqlite`` file will get created in the current directory.
 Advanced usage
 ---------------
 
-To see how to use the playground with Postgres, and other advanced usage, see
-:ref:`PlaygroundAdvanced`.
+To see how to use the playground with Postgres or Cockroach, and other
+advanced usage, see :ref:`PlaygroundAdvanced`.
 
 -------------------------------------------------------------------------------
 

@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-import typing as t
-from dataclasses import dataclass
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Optional
 
+from piccolo.utils.encoding import JSONDict
 from piccolo.utils.sync import run_sync
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
     from piccolo.table import Table
 
 
-@dataclass
 class Refresh:
     """
     Used to refresh :class:`Table <piccolo.table.Table>` instances with the
@@ -22,14 +22,36 @@ class Refresh:
     :param columns:
         Which columns to refresh - it not specified, then all columns are
         refreshed.
+    :param load_json:
+        Whether to load ``JSON`` / ``JSONB`` columns as objects, instead of
+        just a string.
 
     """
 
-    instance: Table
-    columns: t.Optional[t.Sequence[Column]] = None
+    def __init__(
+        self,
+        instance: Table,
+        columns: Optional[Sequence[Column]] = None,
+        load_json: bool = False,
+    ):
+        self.instance = instance
+
+        if columns:
+            for column in columns:
+                if len(column._meta.call_chain) > 0:
+                    raise ValueError(
+                        "We can't currently selectively refresh certain "
+                        "columns on child objects (e.g. Concert.band_1.name). "
+                        "Please just specify top level columns (e.g. "
+                        "Concert.band_1), and the entire child object will be "
+                        "refreshed."
+                    )
+
+        self.columns = columns
+        self.load_json = load_json
 
     @property
-    def _columns(self) -> t.Sequence[Column]:
+    def _columns(self) -> Sequence[Column]:
         """
         Works out which columns the user wants to refresh.
         """
@@ -40,8 +62,90 @@ class Refresh:
             i for i in self.instance._meta.columns if not i._meta.primary_key
         ]
 
+    def _get_columns(self, instance: Table, columns: Sequence[Column]):
+        """
+        If `prefetch` was used on the object, for example::
+
+            >>> await Band.objects(Band.manager)
+
+        We should also update the prefetched object.
+
+        It works multiple level deep. If we refresh this::
+
+            >>> await Album.objects(Album.band.manager).first()
+
+        It will update the nested `band` object, and also the `manager`
+        object.
+
+        """
+        from piccolo.columns.column_types import ForeignKey
+        from piccolo.table import Table
+
+        select_columns = []
+
+        for column in columns:
+            if isinstance(column, ForeignKey) and isinstance(
+                (child_instance := getattr(instance, column._meta.name)),
+                Table,
+            ):
+                select_columns.extend(
+                    self._get_columns(
+                        child_instance,
+                        # Fetch all columns (even the primary key, just in
+                        # case the foreign key now references a different row).
+                        column.all_columns(),
+                    )
+                )
+            else:
+                select_columns.append(column)
+
+        return select_columns
+
+    def _update_instance(self, instance: Table, data_dict: dict):
+        """
+        Update the table instance. It is called recursively, if the instance
+        has child instances.
+        """
+        for key, value in data_dict.items():
+            if isinstance(value, dict) and not isinstance(value, JSONDict):
+                # If the value is a dict, then it's a child instance.
+                if all(i is None for i in value.values()):
+                    # If all values in the nested object are None, then we can
+                    # safely assume that the object itself is null, as the
+                    # primary key value must be null.
+                    setattr(instance, key, None)
+                else:
+                    self._update_instance(
+                        getattr(
+                            instance,
+                            # We have to do this just in case a column uses
+                            # db_column_name.
+                            # We should try and optimise this in the future to
+                            # minimise the overhead of searching for a matching
+                            # column.
+                            instance._meta.get_column_by_name(
+                                key,
+                                match_db_column_name=True,
+                            )._meta.name,
+                        ),
+                        value,
+                    )
+            else:
+                setattr(
+                    instance,
+                    # We have to do this just in case a column uses
+                    # db_column_name.
+                    # We should try and optimise this in the future to minimise
+                    # the overhead of searching for a matching column.
+                    instance._meta.get_column_by_name(
+                        key,
+                        match_db_column_name=True,
+                    )._meta.name,
+                    value,
+                )
+
     async def run(
-        self, in_pool: bool = True, node: t.Optional[str] = None
+        self, in_pool: bool = True, node: Optional[str] = None
     ) -> Table:
         """
         Run it asynchronously. For example::
@@ -54,7 +158,6 @@ class Refresh:
         Modifies the instance in place, but also returns it as a convenience.
 
         """
-
         instance = self.instance
 
         if not instance._exists_in_db:
@@ -71,20 +174,24 @@ class Refresh:
         if not columns:
             raise ValueError("No columns to fetch.")
 
-        updated_values = (
-            await instance.__class__.select(*columns)
+        select_columns = self._get_columns(
+            instance=self.instance, columns=columns
+        )
+
+        data_dict = (
+            await instance.__class__.select(*select_columns)
             .where(pk_column == primary_key_value)
+            .output(nested=True, load_json=self.load_json)
             .first()
             .run(node=node, in_pool=in_pool)
         )
 
-        if updated_values is None:
+        if data_dict is None:
             raise ValueError(
                 "The object doesn't exist in the database any more."
             )
 
-        for key, value in updated_values.items():
-            setattr(instance, key, value)
+        self._update_instance(instance=instance, data_dict=data_dict)
 
         return instance
 

@@ -13,7 +13,6 @@ When the migration is run, the forwards function is executed. To do this:
 
     piccolo migrations forwards my_app
 
-
 Multiple apps
 ~~~~~~~~~~~~~
 
@@ -23,15 +22,42 @@ If you have multiple apps you can run them all using:
 
     piccolo migrations forwards all
 
+Migration table
+~~~~~~~~~~~~~~~
+
+When running the migrations, Piccolo will automatically create a database table
+called ``migration`` if it doesn't already exist. Each time a migration is
+succesfully ran, a new row is added to this table.
+
+.. _FakeMigration:
+
 Fake
 ~~~~
 
 We can 'fake' running a migration - we record that it ran in the database
 without actually running it.
 
+There are two ways to do this - by passing in the ``--fake`` flag on the
+command line:
+
 .. code-block:: bash
 
     piccolo migrations forwards my_app 2022-09-04T19:44:09 --fake
+
+Or by setting ``fake=True`` on the ``MigrationManager`` within the migration
+file.
+
+.. code-block:: python
+
+    async def forwards():
+        manager = MigrationManager(
+            migration_id=ID,
+            app_name="app",
+            description=DESCRIPTION,
+            fake=True
+        )
+        ...
+
 
 This is useful if we started from an existing database using
 ``piccolo schema generate``, and the initial migration we generated is for

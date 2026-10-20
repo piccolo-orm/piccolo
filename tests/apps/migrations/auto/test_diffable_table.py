@@ -73,6 +73,19 @@ class TestCompareDicts(TestCase):
         response = compare_dicts(dict_1, dict_2)
         self.assertEqual(response, {"a": OnDelete.set_default})
 
+    def test_numeric_values(self):
+        """
+        Make sure that if we have two numbers which are equal, but different
+        types, then they are identified as being different.
+
+        https://github.com/piccolo-orm/piccolo/issues/1071
+
+        """
+        dict_1 = {"a": 1}
+        dict_2 = {"a": 1.0}
+        response = compare_dicts(dict_1, dict_2)
+        self.assertEqual(response, {"a": 1})
+
 
 class TestDiffableTable(TestCase):
     def test_subtract(self):

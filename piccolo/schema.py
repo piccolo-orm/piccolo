@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-import typing as t
+from typing import Optional, cast
 
 from piccolo.engine.base import Engine
 from piccolo.engine.finder import engine_finder
@@ -10,10 +10,10 @@ from piccolo.utils.sync import run_sync
 
 
 class SchemaDDLBase(abc.ABC):
-
     db: Engine
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def ddl(self) -> str:
         pass
 
@@ -110,7 +110,7 @@ class MoveTable(SchemaDDLBase):
         table_name: str,
         new_schema: str,
         db: Engine,
-        current_schema: t.Optional[str] = None,
+        current_schema: Optional[str] = None,
     ):
         self.table_name = table_name
         self.current_schema = current_schema
@@ -131,16 +131,19 @@ class ListTables:
         self.db = db
         self.schema_name = schema_name
 
-    async def run(self):
-        response = await self.db.run_querystring(
-            QueryString(
-                """
+    async def run(self) -> list[str]:
+        response = cast(
+            list[dict],
+            await self.db.run_querystring(
+                QueryString(
+                    """
                 SELECT table_name
                 FROM information_schema.tables
                 WHERE table_schema = {}
                 """,
-                self.schema_name,
-            )
+                    self.schema_name,
+                )
+            ),
         )
         return [i["table_name"] for i in response]
 
@@ -155,9 +158,14 @@ class ListSchemas:
     def __init__(self, db: Engine):
         self.db = db
 
-    async def run(self):
-        response = await self.db.run_querystring(
-            QueryString("SELECT schema_name FROM information_schema.schemata")
+    async def run(self) -> list[str]:
+        response = cast(
+            list[dict],
+            await self.db.run_querystring(
+                QueryString(
+                    "SELECT schema_name FROM information_schema.schemata"
+                )
+            ),
         )
         return [i["schema_name"] for i in response]
 
@@ -169,7 +177,7 @@ class ListSchemas:
 
 
 class SchemaManager:
-    def __init__(self, db: t.Optional[Engine] = None):
+    def __init__(self, db: Optional[Engine] = None):
         """
         A useful utility class for interacting with schemas.
 
@@ -179,7 +187,7 @@ class SchemaManager:
         """
         db = db or engine_finder()
 
-        if not db:
+        if db is None:
             raise ValueError("The DB can't be found.")
 
         self.db = db
@@ -259,7 +267,7 @@ class SchemaManager:
         self,
         table_name: str,
         new_schema: str,
-        current_schema: t.Optional[str] = None,
+        current_schema: Optional[str] = None,
     ) -> MoveTable:
         """
         Moves a table to a different schema::

@@ -45,10 +45,12 @@ class TestDifferentDB(TestCase):
 
         self.assertTrue(await Musician.table_exists().run())
         musician = await Musician.select("name").first().run()
+        assert musician is not None
         self.assertEqual(musician["name"], "Bob")
 
         self.assertTrue(await Roadie.table_exists().run())
         roadie = await Roadie.select("name").first().run()
+        assert roadie is not None
         self.assertEqual(roadie["name"], "Dave")
 
     def test_nested(self):

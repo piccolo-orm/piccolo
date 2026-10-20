@@ -1,18 +1,13 @@
 import enum
-from unittest import TestCase
 
 from piccolo.columns.column_types import Array, Varchar
 from piccolo.table import Table
-from tests.base import engines_only
+from piccolo.testing.test_case import TableTest
 from tests.example_apps.music.tables import Shirt
 
 
-class TestChoices(TestCase):
-    def setUp(self):
-        Shirt.create_table().run_sync()
-
-    def tearDown(self):
-        Shirt.alter().drop_table().run_sync()
+class TestChoices(TableTest):
+    tables = [Shirt]
 
     def _insert_shirts(self):
         Shirt.insert(
@@ -86,17 +81,9 @@ class Ticket(Table):
     extras = Array(Varchar(), choices=Extras)
 
 
-@engines_only("postgres", "sqlite")
-class TestArrayChoices(TestCase):
-    """
-    🐛 Cockroach bug: https://github.com/cockroachdb/cockroach/issues/71908 "could not decorrelate subquery" error under asyncpg
-    """  # noqa: E501
+class TestArrayChoices(TableTest):
 
-    def setUp(self):
-        Ticket.create_table().run_sync()
-
-    def tearDown(self):
-        Ticket.alter().drop_table().run_sync()
+    tables = [Ticket]
 
     def test_string(self):
         """

@@ -129,10 +129,10 @@ To change a user's password:
 .. code-block:: python
 
     # From within a coroutine:
-    await BaseUser.update_password(username="bob", password="abc123")
+    await BaseUser.update_password(user="bob", password="abc123")
 
     # When not in an event loop:
-    BaseUser.update_password_sync(username="bob", password="abc123")
+    BaseUser.update_password_sync(user="bob", password="abc123")
 
 .. warning:: Don't use bulk updates for passwords - use ``update_password`` /
    ``update_password_sync``, and they'll correctly hash the password.
@@ -143,7 +143,9 @@ Limits
 ------
 
 The maximum password length allowed is 128 characters. This should be
-sufficiently long for most use cases.
+sufficiently long for most use cases.  
+
+The minimum password length allowed is 6 characters.
 
 -------------------------------------------------------------------------------
 

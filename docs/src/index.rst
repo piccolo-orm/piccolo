@@ -16,6 +16,7 @@ batteries included.
    piccolo/getting_started/index
    piccolo/query_types/index
    piccolo/query_clauses/index
+   piccolo/functions/index
    piccolo/schema/index
    piccolo/projects_and_apps/index
    piccolo/engines/index
@@ -59,10 +60,10 @@ Give me an ASGI web app!
 
    piccolo asgi new
 
-FastAPI, Starlette, BlackSheep, Litestar, Esmerald and Lilya are currently supported,
-with more coming soon.
+FastAPI, Starlette, BlackSheep, Litestar, Ravyn, Lilya, Quart, Falcon and Sanic  
+are currently supported, with more coming soon.
 
--------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
 
 Videos
 ------

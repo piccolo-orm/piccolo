@@ -1,9 +1,10 @@
 import datetime
+import decimal
 import enum
 import random
 import string
-import typing as t
 import uuid
+from typing import Any, Sequence
 
 
 class RandomBuilder:
@@ -12,7 +13,7 @@ class RandomBuilder:
         return random.choice([True, False])
 
     @classmethod
-    def next_bytes(cls, length=8) -> bytes:
+    def next_bytes(cls, length: int = 8) -> bytes:
         return random.getrandbits(length * 8).to_bytes(length, "little")
 
     @classmethod
@@ -36,22 +37,42 @@ class RandomBuilder:
         )
 
     @classmethod
-    def next_enum(cls, e: t.Type[enum.Enum]) -> t.Any:
+    def next_enum(cls, e: type[enum.Enum]) -> Any:
         return random.choice([item.value for item in e])
 
     @classmethod
-    def next_float(cls, minimum=0, maximum=2147483647, scale=5) -> float:
+    def next_float(
+        cls, minimum: int = 0, maximum: int = 2147483647, scale: int = 5
+    ) -> float:
         return round(random.uniform(minimum, maximum), scale)
 
     @classmethod
-    def next_int(cls, minimum=0, maximum=2147483647) -> int:
+    def next_decimal(
+        cls, precision: int = 4, scale: int = 2
+    ) -> decimal.Decimal:
+        # For precision 4 and scale 2, maximum needs to be 99.99.
+        maximum = (10 ** (precision - scale)) - (10 ** (-1 * scale))
+        float_number = cls.next_float(maximum=maximum, scale=scale)
+        # We convert float_number to a string first, otherwise the decimal
+        # value is slightly off due to floating point precision.
+        return decimal.Decimal(str(float_number))
+
+    @classmethod
+    def next_int(cls, minimum: int = 0, maximum: int = 2147483647) -> int:
         return random.randint(minimum, maximum)
 
     @classmethod
-    def next_str(cls, length=16) -> str:
-        return "".join(
-            random.choice(string.ascii_letters) for _ in range(length)
-        )
+    def next_str(
+        cls, length: int = 16, choices: Sequence = string.ascii_letters
+    ) -> str:
+        return "".join(random.choice(choices) for _ in range(length))
+
+    @classmethod
+    def next_email(cls) -> str:
+        choices = string.ascii_lowercase + string.digits
+        local = cls.next_str(length=random.randint(1, 10), choices=choices)
+        domain = cls.next_str(length=random.randint(1, 10), choices=choices)
+        return f"{local}@{domain}.com"
 
     @classmethod
     def next_time(cls) -> datetime.time:

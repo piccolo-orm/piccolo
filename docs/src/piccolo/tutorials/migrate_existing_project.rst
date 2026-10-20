@@ -99,7 +99,7 @@ This will create a new file in ``my_app/piccolo_migrations``:
     piccolo migrations new my_app --auto
 
 These tables already exist in the database, as it's an existing project, so
-you need to fake apply this initial migration:
+you need to :ref:`fake apply <FakeMigration>` this initial migration:
 
 .. code-block:: bash
 

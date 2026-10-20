@@ -119,6 +119,8 @@ for example with :ref:`table_finder <TableFinder>`.
 
 -------------------------------------------------------------------------------
 
+.. _Mixins:
+
 Mixins
 ------
 
@@ -127,15 +129,37 @@ use mixins to reduce the amount of repetition.
 
 .. code-block:: python
 
-    from piccolo.columns import Varchar, Boolean
+    from piccolo.columns import Date, Varchar
     from piccolo.table import Table
 
 
-    class FavouriteMixin:
-        favourite = Boolean(default=False)
+    class DateOfBirthMixin:
+        date_of_birth = Date()
 
 
-    class Manager(FavouriteMixin, Table):
+    class Manager(DateOfBirthMixin, Table):
+        name = Varchar()
+
+You can also add :ref:`constraints <AdvancedConstraints>` to your mixin classes.
+
+.. code-block:: python
+
+    import datetime
+
+    from piccolo.columns import Varchar, Date
+    from piccolo.constraints import Check
+    from piccolo.table import Table
+
+
+    class DateOfBirthMixin:
+        date_of_birth = Date()
+
+        min_date_of_birth = Check(
+            date_of_birth >= datetime.date(year=1920, month=1, day=1)
+        )
+
+
+    class Manager(DateOfBirthMixin, Table):
         name = Varchar()
 
 -------------------------------------------------------------------------------

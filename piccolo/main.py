@@ -103,6 +103,7 @@ def main() -> None:
 
                 cli.register(
                     command.callable,
+                    command_name=command.command_name,
                     group_name=app_name,
                     aliases=command.aliases,
                 )

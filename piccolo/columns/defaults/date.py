@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import datetime
-import typing as t
+from collections.abc import Callable
 from enum import Enum
+from typing import Union
 
 from .base import Default
 
@@ -102,7 +103,15 @@ class DateCustom(Default):
 
 
 # Might add an enum back which encapsulates all of the options.
-DateArg = t.Union[DateOffset, DateCustom, DateNow, Enum, None, datetime.date]
+DateArg = Union[
+    DateOffset,
+    DateCustom,
+    DateNow,
+    Enum,
+    None,
+    datetime.date,
+    Callable[[], datetime.date],
+]
 
 
 __all__ = ["DateArg", "DateOffset", "DateCustom", "DateNow"]

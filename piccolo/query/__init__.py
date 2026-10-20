@@ -1,9 +1,9 @@
 from piccolo.columns.combination import WhereRaw
 
 from .base import Query
+from .functions.aggregate import Avg, Max, Min, Sum
 from .methods import (
     Alter,
-    Avg,
     Count,
     Create,
     CreateIndex,
@@ -11,17 +11,14 @@ from .methods import (
     DropIndex,
     Exists,
     Insert,
-    Max,
-    Min,
     Objects,
     Raw,
     Select,
-    Sum,
     TableExists,
     Update,
 )
-from .methods.select import SelectRaw
-from .mixins import OrderByRaw
+from .methods.select import SelectRaw  # for backwards compatibility
+from .mixins import OrderByRaw  # for backwards compatibility
 
 __all__ = [
     "Alter",

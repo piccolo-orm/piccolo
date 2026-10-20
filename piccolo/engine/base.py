@@ -4,21 +4,23 @@ import contextvars
 import logging
 import pprint
 import string
-import typing as t
 from abc import ABCMeta, abstractmethod
+from typing import TYPE_CHECKING, Final, Generic, Optional, TypeVar, Union
+
+from typing_extensions import Self
 
 from piccolo.querystring import QueryString
 from piccolo.utils.sync import run_sync
 from piccolo.utils.warnings import Level, colored_string, colored_warning
 
-if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.query.base import Query
+if TYPE_CHECKING:  # pragma: no cover
+    from piccolo.query.base import DDL, Query
 
 
 logger = logging.getLogger(__name__)
 # This is a set to speed up lookups from O(n) when
 # using str vs O(1) when using set[str]
-VALID_SAVEPOINT_CHARACTERS: t.Final[set[str]] = set(
+VALID_SAVEPOINT_CHARACTERS: Final[set[str]] = set(
     string.ascii_letters + string.digits + "-" + "_"
 )
 
@@ -32,31 +34,76 @@ def validate_savepoint_name(savepoint_name: str) -> None:
         )
 
 
-class Batch:
-    pass
+class BaseBatch(metaclass=ABCMeta):
+    @abstractmethod
+    async def __aenter__(self: Self, *args, **kwargs) -> Self: ...
+
+    @abstractmethod
+    async def __aexit__(self, *args, **kwargs): ...
+
+    @abstractmethod
+    def __aiter__(self: Self) -> Self: ...
+
+    @abstractmethod
+    async def __anext__(self) -> list[dict]: ...
 
 
-TransactionClass = t.TypeVar("TransactionClass")
+class BaseTransaction(metaclass=ABCMeta):
+
+    __slots__: tuple[str, ...] = tuple()
+
+    @abstractmethod
+    async def __aenter__(self, *args, **kwargs): ...
+
+    @abstractmethod
+    async def __aexit__(self, *args, **kwargs) -> bool: ...
 
 
-class Engine(t.Generic[TransactionClass], metaclass=ABCMeta):
+class BaseAtomic(metaclass=ABCMeta):
 
-    __slots__ = ("query_id",)
+    __slots__: tuple[str, ...] = tuple()
 
-    def __init__(self):
+    @abstractmethod
+    def add(self, *query: Union[Query, DDL]): ...
+
+    @abstractmethod
+    async def run(self): ...
+
+    @abstractmethod
+    def run_sync(self): ...
+
+    @abstractmethod
+    def __await__(self): ...
+
+
+TransactionClass = TypeVar("TransactionClass", bound=BaseTransaction)
+
+
+class Engine(Generic[TransactionClass], metaclass=ABCMeta):
+    __slots__ = (
+        "query_id",
+        "log_queries",
+        "log_responses",
+        "engine_type",
+        "min_version_number",
+        "current_transaction",
+    )
+
+    def __init__(
+        self,
+        engine_type: str,
+        min_version_number: Union[int, float],
+        log_queries: bool = False,
+        log_responses: bool = False,
+    ):
+        self.log_queries = log_queries
+        self.log_responses = log_responses
+        self.engine_type = engine_type
+        self.min_version_number = min_version_number
+
         run_sync(self.check_version())
         run_sync(self.prep_database())
         self.query_id = 0
-
-    @property
-    @abstractmethod
-    def engine_type(self) -> str:
-        pass
-
-    @property
-    @abstractmethod
-    def min_version_number(self) -> float:
-        pass
 
     @abstractmethod
     async def get_version(self) -> float:
@@ -75,24 +122,33 @@ class Engine(t.Generic[TransactionClass], metaclass=ABCMeta):
         self,
         query: Query,
         batch_size: int = 100,
-        node: t.Optional[str] = None,
-    ) -> Batch:
+        node: Optional[str] = None,
+    ) -> BaseBatch:
         pass
 
     @abstractmethod
-    async def run_querystring(self, querystring: QueryString, in_pool: bool):
+    async def run_querystring(
+        self, querystring: QueryString, in_pool: bool = True
+    ):
         pass
+
+    def transform_response_to_dicts(self, results) -> list[dict]:
+        """
+        If the database adapter returns something other than a list of
+        dictionaries, it should perform the transformation here.
+        """
+        return results
 
     @abstractmethod
     async def run_ddl(self, ddl: str, in_pool: bool = True):
         pass
 
     @abstractmethod
-    def transaction(self):
+    def transaction(self, *args, **kwargs) -> TransactionClass:
         pass
 
     @abstractmethod
-    def atomic(self):
+    def atomic(self) -> BaseAtomic:
         pass
 
     async def check_version(self):
@@ -140,7 +196,7 @@ class Engine(t.Generic[TransactionClass], metaclass=ABCMeta):
 
     ###########################################################################
 
-    current_transaction: contextvars.ContextVar[t.Optional[TransactionClass]]
+    current_transaction: contextvars.ContextVar[Optional[TransactionClass]]
 
     def transaction_exists(self) -> bool:
         """
@@ -166,7 +222,7 @@ class Engine(t.Generic[TransactionClass], metaclass=ABCMeta):
         print(colored_string(f"\nQuery {query_id}:"))
         print(query)
 
-    def print_response(self, query_id: int, response: t.List):
+    def print_response(self, query_id: int, response: list):
         print(
             colored_string(f"\nQuery {query_id} response:", level=Level.high)
         )

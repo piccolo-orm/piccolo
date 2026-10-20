@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import typing as t
+from typing import Optional
 
 from piccolo.engine.base import Engine
 
 
-def engine_finder(module_name: t.Optional[str] = None) -> t.Optional[Engine]:
+def engine_finder(module_name: Optional[str] = None) -> Optional[Engine]:
     """
     An example module name is `my_piccolo_conf`.
 

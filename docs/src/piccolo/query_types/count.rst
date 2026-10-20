@@ -15,7 +15,7 @@ It's equivalent to this ``select`` query:
 
 .. code-block:: python
 
-    from piccolo.query.methods.select import Count
+    from piccolo.query.functions.aggregate import Count
 
     >>> response = await Band.select(Count())
     >>> response[0]['count']

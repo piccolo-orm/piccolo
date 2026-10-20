@@ -1,10 +1,19 @@
 from __future__ import annotations
 
 import contextvars
-import typing as t
+from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Mapping, Optional, Union
 
-from piccolo.engine.base import Batch, Engine, validate_savepoint_name
+from typing_extensions import Self
+
+from piccolo.engine.base import (
+    BaseAtomic,
+    BaseBatch,
+    BaseTransaction,
+    Engine,
+    validate_savepoint_name,
+)
 from piccolo.engine.exceptions import TransactionError
 from piccolo.query.base import DDL, Query
 from piccolo.querystring import QueryString
@@ -14,21 +23,22 @@ from piccolo.utils.warnings import Level, colored_warning
 
 asyncpg = LazyLoader("asyncpg", globals(), "asyncpg")
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from asyncpg.connection import Connection
     from asyncpg.cursor import Cursor
     from asyncpg.pool import Pool
+    from asyncpg.transaction import Transaction
 
 
 @dataclass
-class AsyncBatch(Batch):
+class AsyncBatch(BaseBatch):
     connection: Connection
     query: Query
     batch_size: int
 
     # Set internally
-    _transaction = None
-    _cursor: t.Optional[Cursor] = None
+    _transaction: Optional[Transaction] = None
+    _cursor: Optional[Cursor] = None
 
     @property
     def cursor(self) -> Cursor:
@@ -36,20 +46,26 @@ class AsyncBatch(Batch):
             raise ValueError("_cursor not set")
         return self._cursor
 
-    async def next(self) -> t.List[t.Dict]:
+    @property
+    def transaction(self) -> Transaction:
+        if not self._transaction:
+            raise ValueError("The transaction can't be found.")
+        return self._transaction
+
+    async def next(self) -> list[dict]:
         data = await self.cursor.fetch(self.batch_size)
         return await self.query._process_results(data)
 
-    def __aiter__(self):
+    def __aiter__(self: Self) -> Self:
         return self
 
-    async def __anext__(self):
+    async def __anext__(self) -> list[dict]:
         response = await self.next()
         if response == []:
             raise StopAsyncIteration()
         return response
 
-    async def __aenter__(self):
+    async def __aenter__(self: Self) -> Self:
         self._transaction = self.connection.transaction()
         await self._transaction.start()
         querystring = self.query.querystrings[0]
@@ -60,9 +76,9 @@ class AsyncBatch(Batch):
 
     async def __aexit__(self, exception_type, exception, traceback):
         if exception:
-            await self._transaction.rollback()
+            await self.transaction.rollback()
         else:
-            await self._transaction.commit()
+            await self.transaction.commit()
 
         await self.connection.close()
 
@@ -72,7 +88,7 @@ class AsyncBatch(Batch):
 ###############################################################################
 
 
-class Atomic:
+class Atomic(BaseAtomic):
     """
     This is useful if you want to build up a transaction programatically, by
     adding queries to it.
@@ -92,16 +108,20 @@ class Atomic:
 
     def __init__(self, engine: PostgresEngine):
         self.engine = engine
-        self.queries: t.List[t.Union[Query, DDL]] = []
+        self.queries: list[Union[Query, DDL]] = []
 
-    def add(self, *query: t.Union[Query, DDL]):
+    def add(self, *query: Union[Query, DDL]):
         self.queries += list(query)
+
+    async def setup_transaction(self, transaction: PostgresTransaction):
+        pass
 
     async def run(self):
         from piccolo.query.methods.objects import Create, GetOrCreate
 
         try:
-            async with self.engine.transaction():
+            async with self.engine.transaction() as transaction:
+                await self.setup_transaction(transaction=transaction)
                 for query in self.queries:
                     if isinstance(query, (Query, DDL, Create, GetOrCreate)):
                         await query.run()
@@ -140,7 +160,7 @@ class Savepoint:
         )
 
 
-class PostgresTransaction:
+class PostgresTransaction(BaseTransaction):
     """
     Used for wrapping queries in a transaction, using a context manager.
     Currently it's async only.
@@ -235,7 +255,7 @@ class PostgresTransaction:
         self._savepoint_id += 1
         return self._savepoint_id
 
-    async def savepoint(self, name: t.Optional[str] = None) -> Savepoint:
+    async def savepoint(self, name: Optional[str] = None) -> Savepoint:
         name = name or f"savepoint_{self.get_savepoint_id()}"
         validate_savepoint_name(name)
         await self.connection.execute(f"SAVEPOINT {name}")
@@ -243,7 +263,7 @@ class PostgresTransaction:
 
     ###########################################################################
 
-    async def __aexit__(self, exception_type, exception, traceback):
+    async def __aexit__(self, exception_type, exception, traceback) -> bool:
         if self._parent:
             return exception is None
 
@@ -269,7 +289,7 @@ class PostgresTransaction:
 ###############################################################################
 
 
-class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
+class PostgresEngine(Engine[PostgresTransaction]):
     """
     Used to connect to PostgreSQL.
 
@@ -331,23 +351,17 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
     __slots__ = (
         "config",
         "extensions",
-        "log_queries",
-        "log_responses",
         "extra_nodes",
         "pool",
-        "current_transaction",
     )
-
-    engine_type = "postgres"
-    min_version_number = 10
 
     def __init__(
         self,
-        config: t.Dict[str, t.Any],
-        extensions: t.Sequence[str] = ("uuid-ossp",),
+        config: dict[str, Any],
+        extensions: Sequence[str] = tuple(),
         log_queries: bool = False,
         log_responses: bool = False,
-        extra_nodes: t.Optional[t.Mapping[str, PostgresEngine]] = None,
+        extra_nodes: Optional[Mapping[str, PostgresEngine]] = None,
     ) -> None:
         if extra_nodes is None:
             extra_nodes = {}
@@ -357,12 +371,17 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         self.log_queries = log_queries
         self.log_responses = log_responses
         self.extra_nodes = extra_nodes
-        self.pool: t.Optional[Pool] = None
+        self.pool: Optional[Pool] = None
         database_name = config.get("database", "Unknown")
         self.current_transaction = contextvars.ContextVar(
             f"pg_current_transaction_{database_name}", default=None
         )
-        super().__init__()
+        super().__init__(
+            engine_type="postgres",
+            log_queries=log_queries,
+            log_responses=log_responses,
+            min_version_number=10,
+        )
 
     @staticmethod
     def _parse_raw_version_string(version_string: str) -> float:
@@ -382,7 +401,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         Returns the version of Postgres being run.
         """
         try:
-            response: t.Sequence[t.Dict] = await self._run_in_new_connection(
+            response: Sequence[dict] = await self._run_in_new_connection(
                 "SHOW server_version"
             )
         except ConnectionRefusedError as exception:
@@ -469,7 +488,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         self,
         query: Query,
         batch_size: int = 100,
-        node: t.Optional[str] = None,
+        node: Optional[str] = None,
     ) -> AsyncBatch:
         """
         :param query:
@@ -480,7 +499,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
             Which node to run the query on (see ``extra_nodes``). If not
             specified, it runs on the main Postgres node.
         """
-        engine: t.Any = self.extra_nodes.get(node) if node else self
+        engine: Any = self.extra_nodes.get(node) if node else self
         connection = await engine.get_new_connection()
         return AsyncBatch(
             connection=connection, query=query, batch_size=batch_size
@@ -489,7 +508,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
     ###########################################################################
 
     async def _run_in_pool(
-        self, query: str, args: t.Optional[t.Sequence[t.Any]] = None
+        self, query: str, args: Optional[Sequence[Any]] = None
     ):
         if args is None:
             args = []
@@ -502,7 +521,7 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
         return response
 
     async def _run_in_new_connection(
-        self, query: str, args: t.Optional[t.Sequence[t.Any]] = None
+        self, query: str, args: Optional[Sequence[Any]] = None
     ):
         if args is None:
             args = []
@@ -564,6 +583,13 @@ class PostgresEngine(Engine[t.Optional[PostgresTransaction]]):
             self.print_response(query_id=query_id, response=response)
 
         return response
+
+    def transform_response_to_dicts(self, results) -> list[dict]:
+        """
+        asyncpg returns a special Record object, so we need to convert it to
+        a dict.
+        """
+        return [dict(i) for i in results]
 
     def atomic(self) -> Atomic:
         return Atomic(engine=self)

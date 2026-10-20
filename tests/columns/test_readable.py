@@ -1,8 +1,7 @@
-import unittest
-
 from piccolo import columns
 from piccolo.columns.readable import Readable
 from piccolo.table import Table
+from piccolo.testing.test_case import TableTest
 
 
 class MyTable(Table):
@@ -16,14 +15,13 @@ class MyTable(Table):
         )
 
 
-class TestReadable(unittest.TestCase):
+class TestReadable(TableTest):
+    tables = [MyTable]
+
     def setUp(self):
-        MyTable.create_table().run_sync()
+        super().setUp()
         MyTable(first_name="Guido", last_name="van Rossum").save().run_sync()
 
     def test_readable(self):
         response = MyTable.select(MyTable.get_readable()).run_sync()
         self.assertEqual(response[0]["readable"], "Guido van Rossum")
-
-    def tearDown(self):
-        MyTable.alter().drop_table().run_sync()

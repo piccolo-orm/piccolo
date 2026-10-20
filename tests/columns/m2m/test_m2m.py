@@ -4,6 +4,7 @@ import decimal
 import uuid
 from unittest import TestCase
 
+from piccolo.utils.encoding import JSONDict
 from tests.base import engines_skip
 
 try:
@@ -376,6 +377,9 @@ class TestM2MComplexSchema(TestCase):
 
             if isinstance(column, UUID):
                 self.assertIn(type(returned_value), (uuid.UUID, asyncpgUUID))
+            elif isinstance(column, (JSON, JSONB)):
+                self.assertEqual(type(returned_value), JSONDict)
+                self.assertEqual(original_value, returned_value)
             else:
                 self.assertEqual(
                     type(original_value),
@@ -401,6 +405,9 @@ class TestM2MComplexSchema(TestCase):
             if isinstance(column, UUID):
                 self.assertIn(type(returned_value), (uuid.UUID, asyncpgUUID))
                 self.assertEqual(str(original_value), str(returned_value))
+            elif isinstance(column, (JSON, JSONB)):
+                self.assertEqual(type(returned_value), JSONDict)
+                self.assertEqual(original_value, returned_value)
             else:
                 self.assertEqual(
                     type(original_value),

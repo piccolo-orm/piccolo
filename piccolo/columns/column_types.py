@@ -29,14 +29,27 @@ from __future__ import annotations
 import copy
 import decimal
 import inspect
-import typing as t
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from enum import Enum
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generic,
+    Literal,
+    Optional,
+    Union,
+    cast,
+    overload,
+)
+
+from typing_extensions import Unpack
 
 from piccolo.columns.base import (
     Column,
+    ColumnKwargs,
     ForeignKeyMeta,
     OnDelete,
     OnUpdate,
@@ -45,6 +58,8 @@ from piccolo.columns.base import (
 from piccolo.columns.combination import Where
 from piccolo.columns.defaults.date import DateArg, DateCustom, DateNow
 from piccolo.columns.defaults.interval import IntervalArg, IntervalCustom
+from piccolo.columns.defaults.numeric import NumericArg
+from piccolo.columns.defaults.real import RealArg
 from piccolo.columns.defaults.time import TimeArg, TimeCustom, TimeNow
 from piccolo.columns.defaults.timestamp import (
     TimestampArg,
@@ -57,15 +72,24 @@ from piccolo.columns.defaults.timestamptz import (
     TimestamptzNow,
 )
 from piccolo.columns.defaults.uuid import UUID4, UUIDArg
-from piccolo.columns.operators.comparison import ArrayAll, ArrayAny
+from piccolo.columns.operators.comparison import (
+    ArrayAll,
+    ArrayAny,
+    ArrayNotAny,
+)
 from piccolo.columns.operators.string import Concat
 from piccolo.columns.reference import LazyTableReference
-from piccolo.querystring import QueryString, Unquoted
+from piccolo.querystring import QueryString
 from piccolo.utils.encoding import dump_json
 from piccolo.utils.warnings import colored_warning
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import ColumnMeta
+    from piccolo.query.functions.array import ArrayItemType, ArrayType
+    from piccolo.query.operators.json import (
+        GetChildElement,
+        GetElementFromPath,
+    )
     from piccolo.table import Table
 
 
@@ -82,46 +106,37 @@ class ConcatDelegate:
 
     def get_querystring(
         self,
-        column_name: str,
-        value: t.Union[str, Varchar, Text],
+        column: Column,
+        value: Union[str, Column, QueryString],
         reverse: bool = False,
     ) -> QueryString:
-        if isinstance(value, (Varchar, Text)):
-            column: Column = value
+        """
+        :param reverse:
+            By default the value is appended to the column's value. If
+            ``reverse=True`` then the value is prepended to the column's
+            value instead.
+
+        """
+        if isinstance(value, Column):
             if len(column._meta.call_chain) > 0:
                 raise ValueError(
                     "Adding values across joins isn't currently supported."
                 )
-            other_column_name = column._meta.db_column_name
-            if reverse:
-                return QueryString(
-                    Concat.template.format(
-                        value_1=other_column_name, value_2=column_name
-                    )
-                )
-            else:
-                return QueryString(
-                    Concat.template.format(
-                        value_1=column_name, value_2=other_column_name
-                    )
-                )
         elif isinstance(value, str):
-            if reverse:
-                value_1 = QueryString("CAST({} AS text)", value)
-                return QueryString(
-                    Concat.template.format(value_1="{}", value_2=column_name),
-                    value_1,
-                )
-            else:
-                value_2 = QueryString("CAST({} AS text)", value)
-                return QueryString(
-                    Concat.template.format(value_1=column_name, value_2="{}"),
-                    value_2,
-                )
-        else:
+            value = QueryString("CAST({} AS TEXT)", value)
+        elif not isinstance(value, QueryString):
             raise ValueError(
-                "Only str, Varchar columns, and Text columns can be added."
+                "Only str, Column and QueryString values can be added."
             )
+
+        args = [value, column] if reverse else [column, value]
+
+        # We use the concat operator instead of the concat function, because
+        # this is what we historically used, and they treat null values
+        # differently.
+        return QueryString(
+            Concat.template.format(value_1="{}", value_2="{}"), *args
+        )
 
 
 class MathDelegate:
@@ -135,8 +150,8 @@ class MathDelegate:
     def get_querystring(
         self,
         column_name: str,
-        operator: t.Literal["+", "-", "/", "*"],
-        value: t.Union[int, float, Integer],
+        operator: Literal["+", "-", "/", "*"],
+        value: Union[int, float, Integer],
         reverse: bool = False,
     ) -> QueryString:
         if isinstance(value, Integer):
@@ -145,13 +160,15 @@ class MathDelegate:
                 raise ValueError(
                     "Adding values across joins isn't currently supported."
                 )
-            column_name = column._meta.db_column_name
-            return QueryString(f"{column_name} {operator} {column_name}")
+            other_column_name = value._meta.db_column_name
+            return QueryString(
+                f'"{column_name}" {operator} "{other_column_name}"'
+            )
         elif isinstance(value, (int, float)):
             if reverse:
-                return QueryString(f"{{}} {operator} {column_name}", value)
+                return QueryString(f'{{}} {operator} "{column_name}"', value)
             else:
-                return QueryString(f"{column_name} {operator} {{}}", value)
+                return QueryString(f'"{column_name}" {operator} {{}}', value)
         else:
             raise ValueError(
                 "Only integers, floats, and other Integer columns can be "
@@ -182,7 +199,7 @@ class TimedeltaDelegate:
 
     # Maps the attribute name in Python's timedelta to what it's called in
     # Postgres.
-    postgres_attr_map: t.Dict[str, str] = {
+    postgres_attr_map: dict[str, str] = {
         "days": "DAYS",
         "seconds": "SECONDS",
         "microseconds": "MICROSECONDS",
@@ -231,7 +248,7 @@ class TimedeltaDelegate:
     def get_querystring(
         self,
         column: Column,
-        operator: t.Literal["+", "-"],
+        operator: Literal["+", "-"],
         value: timedelta,
         engine_type: str,
     ) -> QueryString:
@@ -316,16 +333,15 @@ class Varchar(Column):
 
     def __init__(
         self,
-        length: int = 255,
-        default: t.Union[str, Enum, t.Callable[[], str], None] = "",
-        **kwargs,
+        length: Optional[int] = 255,
+        default: Union[str, Enum, Callable[[], str], None] = "",
+        **kwargs: Unpack[ColumnKwargs],
     ) -> None:
         self._validate_default(default, (str, None))
 
         self.length = length
         self.default = default
-        kwargs.update({"length": length, "default": default})
-        super().__init__(**kwargs)
+        super().__init__(length=length, default=default, **kwargs)
 
     @property
     def column_type(self):
@@ -334,14 +350,15 @@ class Varchar(Column):
     ###########################################################################
     # For update queries
 
-    def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
+    def __add__(self, value: Union[str, Varchar, Text]) -> QueryString:
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.db_column_name, value=value
+            column=self,
+            value=value,
         )
 
-    def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
+    def __radd__(self, value: Union[str, Varchar, Text]) -> QueryString:
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.db_column_name,
+            column=self,
             value=value,
             reverse=True,
         )
@@ -349,16 +366,16 @@ class Varchar(Column):
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> str: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> Varchar: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[str, None]):
+    def __set__(self, obj, value: Union[str, None]):
         obj.__dict__[self._meta.name] = value
 
 
@@ -367,10 +384,52 @@ class Email(Varchar):
     Used for storing email addresses. It's identical to :class:`Varchar`,
     except when using :func:`create_pydantic_model <piccolo.utils.pydantic.create_pydantic_model>` -
     we add email validation to the Pydantic model. This means that :ref:`PiccoloAdmin`
-    also validates emails addresses.
+    also validates email addresses.
     """  # noqa: E501
 
     pass
+
+
+class Char(Varchar):
+    """
+    Used for storing text when you want to enforce character length limits.
+    Uses the ``str`` type for values.
+
+    .. hint::
+        :class:`Varchar` is generally recommended over :class:`Char`. However,
+        :class:`Char` may have slight performance advantages, and makes sense
+        for certain fields like country codes where you know the values will be
+        an exact length.
+
+    In Postgres the values are 'blank padded'. For example, if the length is 2,
+    and you store ``'X'``, then you will get ``'X '`` back from the database.
+
+    .. note::
+        In SQLite :class:`Char` and :class:`Varchar` behave identically.
+
+    **Example**
+
+    .. code-block:: python
+
+        class Venue(Table):
+            name = Varchar()
+            country_code = Char(length=2)
+
+        # Create
+        >>> await Venue(name='Amazing Venue', country_code='GB').save()
+
+        # Query
+        >>> await Venue.select(Venue.country_code)
+        {'country_code': 'GB'}
+
+    :param length:
+        The maximum number of characters allowed.
+
+    """
+
+    @property
+    def column_type(self):
+        return f"CHAR({self.length})" if self.length else "CHAR"
 
 
 class Secret(Varchar):
@@ -386,16 +445,16 @@ class Secret(Varchar):
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> str: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> Secret: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[str, None]):
+    def __set__(self, obj, value: Union[str, None]):
         obj.__dict__[self._meta.name] = value
 
 
@@ -425,25 +484,25 @@ class Text(Column):
 
     def __init__(
         self,
-        default: t.Union[str, Enum, None, t.Callable[[], str]] = "",
-        **kwargs,
+        default: Union[str, Enum, None, Callable[[], str]] = "",
+        **kwargs: Unpack[ColumnKwargs],
     ) -> None:
         self._validate_default(default, (str, None))
         self.default = default
-        kwargs.update({"default": default})
-        super().__init__(**kwargs)
+        super().__init__(default=default, **kwargs)
 
     ###########################################################################
     # For update queries
 
-    def __add__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
+    def __add__(self, value: Union[str, Varchar, Text]) -> QueryString:
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.db_column_name, value=value
+            column=self,
+            value=value,
         )
 
-    def __radd__(self, value: t.Union[str, Varchar, Text]) -> QueryString:
+    def __radd__(self, value: Union[str, Varchar, Text]) -> QueryString:
         return self.concat_delegate.get_querystring(
-            column_name=self._meta.db_column_name,
+            column=self,
             value=value,
             reverse=True,
         )
@@ -451,16 +510,16 @@ class Text(Column):
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> str: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> Text: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[str, None]):
+    def __set__(self, obj, value: Union[str, None]):
         obj.__dict__[self._meta.name] = value
 
 
@@ -489,7 +548,11 @@ class UUID(Column):
 
     value_type = uuid.UUID
 
-    def __init__(self, default: UUIDArg = UUID4(), **kwargs) -> None:
+    def __init__(
+        self,
+        default: UUIDArg = UUID4(),
+        **kwargs: Unpack[ColumnKwargs],
+    ) -> None:
         if default is UUID4:
             # In case the class is passed in, instead of an instance.
             default = UUID4()
@@ -508,22 +571,21 @@ class UUID(Column):
                 ) from e
 
         self.default = default
-        kwargs.update({"default": default})
-        super().__init__(**kwargs)
+        super().__init__(default=default, **kwargs)
 
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> uuid.UUID: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> UUID: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[uuid.UUID, None]):
+    def __set__(self, obj, value: Union[uuid.UUID, None]):
         obj.__dict__[self._meta.name] = value
 
 
@@ -551,23 +613,22 @@ class Integer(Column):
 
     def __init__(
         self,
-        default: t.Union[int, Enum, t.Callable[[], int], None] = 0,
-        **kwargs,
+        default: Union[int, Enum, Callable[[], int], None] = 0,
+        **kwargs: Unpack[ColumnKwargs],
     ) -> None:
         self._validate_default(default, (int, None))
         self.default = default
-        kwargs.update({"default": default})
-        super().__init__(**kwargs)
+        super().__init__(default=default, **kwargs)
 
     ###########################################################################
     # For update queries
 
-    def __add__(self, value: t.Union[int, float, Integer]) -> QueryString:
+    def __add__(self, value: Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
             column_name=self._meta.db_column_name, operator="+", value=value
         )
 
-    def __radd__(self, value: t.Union[int, float, Integer]) -> QueryString:
+    def __radd__(self, value: Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
             column_name=self._meta.db_column_name,
             operator="+",
@@ -575,12 +636,12 @@ class Integer(Column):
             reverse=True,
         )
 
-    def __sub__(self, value: t.Union[int, float, Integer]) -> QueryString:
+    def __sub__(self, value: Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
             column_name=self._meta.db_column_name, operator="-", value=value
         )
 
-    def __rsub__(self, value: t.Union[int, float, Integer]) -> QueryString:
+    def __rsub__(self, value: Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
             column_name=self._meta.db_column_name,
             operator="-",
@@ -588,12 +649,12 @@ class Integer(Column):
             reverse=True,
         )
 
-    def __mul__(self, value: t.Union[int, float, Integer]) -> QueryString:
+    def __mul__(self, value: Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
             column_name=self._meta.db_column_name, operator="*", value=value
         )
 
-    def __rmul__(self, value: t.Union[int, float, Integer]) -> QueryString:
+    def __rmul__(self, value: Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
             column_name=self._meta.db_column_name,
             operator="*",
@@ -601,12 +662,12 @@ class Integer(Column):
             reverse=True,
         )
 
-    def __truediv__(self, value: t.Union[int, float, Integer]) -> QueryString:
+    def __truediv__(self, value: Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
             column_name=self._meta.db_column_name, operator="/", value=value
         )
 
-    def __rtruediv__(self, value: t.Union[int, float, Integer]) -> QueryString:
+    def __rtruediv__(self, value: Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
             column_name=self._meta.db_column_name,
             operator="/",
@@ -614,14 +675,12 @@ class Integer(Column):
             reverse=True,
         )
 
-    def __floordiv__(self, value: t.Union[int, float, Integer]) -> QueryString:
+    def __floordiv__(self, value: Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
             column_name=self._meta.db_column_name, operator="/", value=value
         )
 
-    def __rfloordiv__(
-        self, value: t.Union[int, float, Integer]
-    ) -> QueryString:
+    def __rfloordiv__(self, value: Union[int, float, Integer]) -> QueryString:
         return self.math_delegate.get_querystring(
             column_name=self._meta.db_column_name,
             operator="/",
@@ -632,16 +691,16 @@ class Integer(Column):
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> int: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> Integer: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[int, None]):
+    def __set__(self, obj, value: Union[int, None]):
         obj.__dict__[self._meta.name] = value
 
 
@@ -688,16 +747,16 @@ class BigInt(Integer):
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> int: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> BigInt: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[int, None]):
+    def __set__(self, obj, value: Union[int, None]):
         obj.__dict__[self._meta.name] = value
 
 
@@ -736,24 +795,24 @@ class SmallInt(Integer):
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> int: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> SmallInt: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[int, None]):
+    def __set__(self, obj, value: Union[int, None]):
         obj.__dict__[self._meta.name] = value
 
 
 ###############################################################################
 
 
-DEFAULT = Unquoted("DEFAULT")
-NULL = Unquoted("null")
+DEFAULT = QueryString("DEFAULT")
+NULL = QueryString("null")
 
 
 class Serial(Column):
@@ -772,13 +831,13 @@ class Serial(Column):
             return "INTEGER"
         raise Exception("Unrecognized engine type")
 
-    def default(self):
+    def default(self) -> QueryString:
         engine_type = self._meta.engine_type
 
         if engine_type == "postgres":
             return DEFAULT
         elif engine_type == "cockroach":
-            return Unquoted("unique_rowid()")
+            return QueryString("unique_rowid()")
         elif engine_type == "sqlite":
             return NULL
         raise Exception("Unrecognized engine type")
@@ -786,16 +845,16 @@ class Serial(Column):
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> int: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> Serial: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[int, None]):
+    def __set__(self, obj, value: Union[int, None]):
         obj.__dict__[self._meta.name] = value
 
 
@@ -818,21 +877,24 @@ class BigSerial(Serial):
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> int: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> BigSerial: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[int, None]):
+    def __set__(self, obj, value: Union[int, None]):
         obj.__dict__[self._meta.name] = value
 
 
 class PrimaryKey(Serial):
-    def __init__(self, **kwargs) -> None:
+    def __init__(
+        self,
+        **kwargs: Unpack[ColumnKwargs],
+    ) -> None:
         # Set the index to False, as a database should automatically create
         # an index for a PrimaryKey column.
         kwargs.update({"primary_key": True, "index": False})
@@ -851,16 +913,16 @@ class PrimaryKey(Serial):
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> int: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> PrimaryKey: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[int, None]):
+    def __set__(self, obj, value: Union[int, None]):
         obj.__dict__[self._meta.name] = value
 
 
@@ -869,7 +931,8 @@ class PrimaryKey(Serial):
 
 class Timestamp(Column):
     """
-    Used for storing datetimes. Uses the ``datetime`` type for values.
+    Used for storing timezone naive datetimes. Uses the ``datetime`` type for
+    values.
 
     **Example**
 
@@ -889,13 +952,21 @@ class Timestamp(Column):
         >>> await Concert.select(Concert.starts)
         {'starts': datetime.datetime(2050, 1, 1, 0, 0)}
 
+    .. note::
+        We recommend using
+        :class:`Timestamptz <piccolo.columns.column_types.Timestamptz>`
+        columns if possible - having timezone information makes the timestamp
+        unambiguous.
+
     """
 
     value_type = datetime
     timedelta_delegate = TimedeltaDelegate()
 
     def __init__(
-        self, default: TimestampArg = TimestampNow(), **kwargs
+        self,
+        default: TimestampArg = TimestampNow(),
+        **kwargs: Unpack[ColumnKwargs],
     ) -> None:
         self._validate_default(default, TimestampArg.__args__)  # type: ignore
 
@@ -911,8 +982,7 @@ class Timestamp(Column):
             default = TimestampNow()
 
         self.default = default
-        kwargs.update({"default": default})
-        super().__init__(**kwargs)
+        super().__init__(default=default, **kwargs)
 
     ###########################################################################
     # For update queries
@@ -939,16 +1009,16 @@ class Timestamp(Column):
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> datetime: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> Timestamp: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[datetime, None]):
+    def __set__(self, obj, value: Union[datetime, None]):
         obj.__dict__[self._meta.name] = value
 
 
@@ -993,7 +1063,9 @@ class Timestamptz(Column):
     timedelta_delegate = TimedeltaDelegate()
 
     def __init__(
-        self, default: TimestamptzArg = TimestamptzNow(), **kwargs
+        self,
+        default: TimestamptzArg = TimestamptzNow(),
+        **kwargs: Unpack[ColumnKwargs],
     ) -> None:
         self._validate_default(
             default, TimestamptzArg.__args__  # type: ignore
@@ -1006,8 +1078,7 @@ class Timestamptz(Column):
             default = TimestamptzNow()
 
         self.default = default
-        kwargs.update({"default": default})
-        super().__init__(**kwargs)
+        super().__init__(default=default, **kwargs)
 
     ###########################################################################
     # For update queries
@@ -1034,16 +1105,16 @@ class Timestamptz(Column):
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> datetime: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> Timestamptz: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[datetime, None]):
+    def __set__(self, obj, value: Union[datetime, None]):
         obj.__dict__[self._meta.name] = value
 
 
@@ -1074,7 +1145,11 @@ class Date(Column):
     value_type = date
     timedelta_delegate = TimedeltaDelegate()
 
-    def __init__(self, default: DateArg = DateNow(), **kwargs) -> None:
+    def __init__(
+        self,
+        default: DateArg = DateNow(),
+        **kwargs: Unpack[ColumnKwargs],
+    ) -> None:
         self._validate_default(default, DateArg.__args__)  # type: ignore
 
         if isinstance(default, date):
@@ -1084,8 +1159,7 @@ class Date(Column):
             default = DateNow()
 
         self.default = default
-        kwargs.update({"default": default})
-        super().__init__(**kwargs)
+        super().__init__(default=default, **kwargs)
 
     ###########################################################################
     # For update queries
@@ -1112,16 +1186,16 @@ class Date(Column):
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> date: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> Date: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[date, None]):
+    def __set__(self, obj, value: Union[date, None]):
         obj.__dict__[self._meta.name] = value
 
 
@@ -1152,15 +1226,18 @@ class Time(Column):
     value_type = time
     timedelta_delegate = TimedeltaDelegate()
 
-    def __init__(self, default: TimeArg = TimeNow(), **kwargs) -> None:
+    def __init__(
+        self,
+        default: TimeArg = TimeNow(),
+        **kwargs: Unpack[ColumnKwargs],
+    ) -> None:
         self._validate_default(default, TimeArg.__args__)  # type: ignore
 
         if isinstance(default, time):
             default = TimeCustom.from_time(default)
 
         self.default = default
-        kwargs.update({"default": default})
-        super().__init__(**kwargs)
+        super().__init__(default=default, **kwargs)
 
     ###########################################################################
     # For update queries
@@ -1187,16 +1264,16 @@ class Time(Column):
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> time: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> Time: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[time, None]):
+    def __set__(self, obj, value: Union[time, None]):
         obj.__dict__[self._meta.name] = value
 
 
@@ -1228,7 +1305,9 @@ class Interval(Column):
     timedelta_delegate = TimedeltaDelegate()
 
     def __init__(
-        self, default: IntervalArg = IntervalCustom(), **kwargs
+        self,
+        default: IntervalArg = IntervalCustom(),
+        **kwargs: Unpack[ColumnKwargs],
     ) -> None:
         self._validate_default(default, IntervalArg.__args__)  # type: ignore
 
@@ -1236,8 +1315,7 @@ class Interval(Column):
             default = IntervalCustom.from_timedelta(default)
 
         self.default = default
-        kwargs.update({"default": default})
-        super().__init__(**kwargs)
+        super().__init__(default=default, **kwargs)
 
     @property
     def column_type(self):
@@ -1276,16 +1354,16 @@ class Interval(Column):
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> timedelta: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> Interval: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[timedelta, None]):
+    def __set__(self, obj, value: Union[timedelta, None]):
         obj.__dict__[self._meta.name] = value
 
 
@@ -1317,13 +1395,12 @@ class Boolean(Column):
 
     def __init__(
         self,
-        default: t.Union[bool, Enum, t.Callable[[], bool], None] = False,
-        **kwargs,
+        default: Union[bool, Enum, Callable[[], bool], None] = False,
+        **kwargs: Unpack[ColumnKwargs],
     ) -> None:
         self._validate_default(default, (bool, None))
         self.default = default
-        kwargs.update({"default": default})
-        super().__init__(**kwargs)
+        super().__init__(default=default, **kwargs)
 
     def eq(self, value) -> Where:
         """
@@ -1368,16 +1445,16 @@ class Boolean(Column):
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> bool: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> Boolean: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[bool, None]):
+    def __set__(self, obj, value: Union[bool, None]):
         obj.__dict__[self._meta.name] = value
 
 
@@ -1428,14 +1505,14 @@ class Numeric(Column):
             return "NUMERIC"
 
     @property
-    def precision(self) -> t.Optional[int]:
+    def precision(self) -> Optional[int]:
         """
         The total number of digits allowed.
         """
         return self.digits[0] if self.digits is not None else None
 
     @property
-    def scale(self) -> t.Optional[int]:
+    def scale(self) -> Optional[int]:
         """
         The number of digits after the decimal point.
         """
@@ -1443,11 +1520,9 @@ class Numeric(Column):
 
     def __init__(
         self,
-        digits: t.Optional[t.Tuple[int, int]] = None,
-        default: t.Union[
-            decimal.Decimal, Enum, t.Callable[[], decimal.Decimal], None
-        ] = decimal.Decimal(0.0),
-        **kwargs,
+        digits: Optional[tuple[int, int]] = None,
+        default: NumericArg = decimal.Decimal(0.0),
+        **kwargs: Unpack[ColumnKwargs],
     ) -> None:
         if isinstance(digits, tuple):
             if len(digits) != 2:
@@ -1459,26 +1534,28 @@ class Numeric(Column):
         elif digits is not None:
             raise ValueError("The digits argument should be a tuple.")
 
-        self._validate_default(default, (decimal.Decimal, None))
+        self._validate_default(
+            default,
+            NumericArg.__args__,  # type: ignore
+        )
 
         self.default = default
         self.digits = digits
-        kwargs.update({"default": default, "digits": digits})
-        super().__init__(**kwargs)
+        super().__init__(default=default, digits=digits, **kwargs)
 
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> decimal.Decimal: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> Numeric: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[decimal.Decimal, None]):
+    def __set__(self, obj, value: Union[decimal.Decimal, None]):
         obj.__dict__[self._meta.name] = value
 
 
@@ -1490,16 +1567,16 @@ class Decimal(Numeric):
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> decimal.Decimal: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> Decimal: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[decimal.Decimal, None]):
+    def __set__(self, obj, value: Union[decimal.Decimal, None]):
         obj.__dict__[self._meta.name] = value
 
 
@@ -1528,27 +1605,33 @@ class Real(Column):
 
     def __init__(
         self,
-        default: t.Union[float, Enum, t.Callable[[], float], None] = 0.0,
-        **kwargs,
+        default: RealArg = 0.0,
+        **kwargs: Unpack[ColumnKwargs],
     ) -> None:
-        self._validate_default(default, (float, None))
+        if isinstance(default, int):
+            # For example, allow `0` as a valid default.
+            default = float(default)
+
+        self._validate_default(
+            default,
+            RealArg.__args__,  # type: ignore
+        )
         self.default = default
-        kwargs.update({"default": default})
-        super().__init__(**kwargs)
+        super().__init__(default=default, **kwargs)
 
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> float: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> Real: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[float, None]):
+    def __set__(self, obj, value: Union[float, None]):
         obj.__dict__[self._meta.name] = value
 
 
@@ -1560,16 +1643,16 @@ class Float(Real):
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> float: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> Float: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[float, None]):
+    def __set__(self, obj, value: Union[float, None]):
         obj.__dict__[self._meta.name] = value
 
 
@@ -1585,16 +1668,16 @@ class DoublePrecision(Real):
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> float: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> DoublePrecision: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[float, None]):
+    def __set__(self, obj, value: Union[float, None]):
         obj.__dict__[self._meta.name] = value
 
 
@@ -1606,7 +1689,7 @@ class ForeignKeySetupResponse:
     is_lazy: bool
 
 
-class ForeignKey(Column, t.Generic[ReferencedTable]):
+class ForeignKey(Column, Generic[ReferencedTable]):
     """
     Used to reference another table. Uses the same type as the primary key
     column on the table it references.
@@ -1819,50 +1902,50 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
         target_column = self._foreign_key_meta.resolved_target_column
         return target_column.value_type
 
-    @t.overload
+    @overload
     def __init__(
         self,
-        references: t.Type[ReferencedTable],
-        default: t.Any = None,
+        references: type[ReferencedTable],
+        default: Any = None,
         null: bool = True,
         on_delete: OnDelete = OnDelete.cascade,
         on_update: OnUpdate = OnUpdate.cascade,
-        target_column: t.Union[str, Column, None] = None,
+        target_column: Union[str, Column, None] = None,
         **kwargs,
     ) -> None: ...
 
-    @t.overload
+    @overload
     def __init__(
         self,
         references: LazyTableReference,
-        default: t.Any = None,
+        default: Any = None,
         null: bool = True,
         on_delete: OnDelete = OnDelete.cascade,
         on_update: OnUpdate = OnUpdate.cascade,
-        target_column: t.Union[str, Column, None] = None,
+        target_column: Union[str, Column, None] = None,
         **kwargs,
     ) -> None: ...
 
-    @t.overload
+    @overload
     def __init__(
         self,
         references: str,
-        default: t.Any = None,
+        default: Any = None,
         null: bool = True,
         on_delete: OnDelete = OnDelete.cascade,
         on_update: OnUpdate = OnUpdate.cascade,
-        target_column: t.Union[str, Column, None] = None,
+        target_column: Union[str, Column, None] = None,
         **kwargs,
     ) -> None: ...
 
     def __init__(
         self,
-        references: t.Union[t.Type[ReferencedTable], LazyTableReference, str],
-        default: t.Any = None,
+        references: Union[type[ReferencedTable], LazyTableReference, str],
+        default: Any = None,
         null: bool = True,
         on_delete: OnDelete = OnDelete.cascade,
         on_update: OnUpdate = OnUpdate.cascade,
-        target_column: t.Union[str, Column, None] = None,
+        target_column: Union[str, Column, None] = None,
         **kwargs,
     ) -> None:
         from piccolo.table import Table
@@ -1901,7 +1984,7 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
             target_column=target_column,
         )
 
-    def _setup(self, table_class: t.Type[Table]) -> ForeignKeySetupResponse:
+    def _setup(self, table_class: type[Table]) -> ForeignKeySetupResponse:
         """
         This is called by the ``TableMetaclass``. A ``ForeignKey`` column can
         only be completely setup once it's parent ``Table`` is known.
@@ -1952,7 +2035,9 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
 
         if is_table_class:
             # Record the reverse relationship on the target table.
-            references._meta._foreign_key_references.append(self)
+            cast(type[Table], references)._meta._foreign_key_references.append(
+                self
+            )
 
             # Allow columns on the referenced table to be accessed via
             # auto completion.
@@ -1967,8 +2052,8 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
         return column
 
     def all_columns(
-        self, exclude: t.Optional[t.List[t.Union[Column, str]]] = None
-    ) -> t.List[Column]:
+        self, exclude: Optional[list[Union[Column, str]]] = None
+    ) -> list[Column]:
         """
         Allow a user to access all of the columns on the related table. This is
         intended for use with ``select`` queries, and saves the user from
@@ -2017,9 +2102,64 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
             if column._meta.name not in excluded_column_names
         ]
 
+    def reverse(self) -> ForeignKey:
+        """
+        If there's a unique foreign key, this function reverses it.
+
+        .. code-block:: python
+
+            class Band(Table):
+                name = Varchar()
+
+            class FanClub(Table):
+                band = ForeignKey(Band, unique=True)
+                address = Text()
+
+            class Treasurer(Table):
+                fan_club = ForeignKey(FanClub, unique=True)
+                name = Varchar()
+
+        It's helpful with ``get_related``, for example:
+
+        .. code-block:: python
+
+            >>> band = await Band.objects().first()
+            >>> await band.get_related(FanClub.band.reverse())
+            <Fan Club: 1>
+
+        It works multiple levels deep:
+
+        .. code-block:: python
+
+            >>> await band.get_related(Treasurer.fan_club._.band.reverse())
+            <Treasurer: 1>
+
+        """
+        if not self._meta.unique or any(
+            not i._meta.unique for i in self._meta.call_chain
+        ):
+            raise ValueError("Only reverse unique foreign keys.")
+
+        foreign_keys = [*self._meta.call_chain, self]
+
+        root_foreign_key = foreign_keys[0]
+        target_column = (
+            root_foreign_key._foreign_key_meta.resolved_target_column
+        )
+        foreign_key = target_column.join_on(root_foreign_key)
+
+        call_chain = []
+        for fk in reversed(foreign_keys[1:]):
+            target_column = fk._foreign_key_meta.resolved_target_column
+            call_chain.append(target_column.join_on(fk))
+
+        foreign_key._meta.call_chain = call_chain
+
+        return foreign_key
+
     def all_related(
-        self, exclude: t.Optional[t.List[t.Union[ForeignKey, str]]] = None
-    ) -> t.List[ForeignKey]:
+        self, exclude: Optional[list[Union[ForeignKey, str]]] = None
+    ) -> list[ForeignKey]:
         """
         Returns each ``ForeignKey`` column on the related table. This is
         intended for use with ``objects`` queries, where you want to return
@@ -2087,7 +2227,7 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
             _fk_meta.proxy_columns.append(_column)
 
     @property
-    def _(self) -> t.Type[ReferencedTable]:
+    def _(self) -> type[ReferencedTable]:
         """
         This allows us specify joins in a way which is friendly to static type
         checkers like Mypy and Pyright.
@@ -2118,9 +2258,9 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
         easily know if any of your joins contain typos.
 
         """
-        return t.cast(t.Type[ReferencedTable], self)
+        return cast(type[ReferencedTable], self)
 
-    def __getattribute__(self, name: str) -> t.Union[Column, t.Any]:
+    def __getattribute__(self, name: str) -> Union[Column, Any]:
         """
         Returns attributes unmodified unless they're Column instances, in which
         case a copy is returned with an updated call_chain (which records the
@@ -2129,7 +2269,7 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
         # If the ForeignKey is using a lazy reference, we need to set the
         # attributes here. Attributes starting with an underscore are
         # unlikely to be column names.
-        if not name.startswith("__"):
+        if not name.startswith("_") and name not in dir(self):
             try:
                 _foreign_key_meta = object.__getattribute__(
                     self, "_foreign_key_meta"
@@ -2142,15 +2282,12 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
                 ):
                     object.__getattribute__(self, "set_proxy_columns")()
 
-        try:
-            value = object.__getattribute__(self, name)
-        except AttributeError:
-            raise AttributeError
+        value = object.__getattribute__(self, name)
 
-        if name == "_":
+        if name.startswith("_"):
             return value
 
-        foreignkey_class: t.Type[ForeignKey] = object.__getattribute__(
+        foreignkey_class: type[ForeignKey] = object.__getattribute__(
             self, "__class__"
         )
 
@@ -2194,6 +2331,7 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
             column_meta: ColumnMeta = object.__getattribute__(self, "_meta")
 
             new_column._meta.call_chain = column_meta.call_chain.copy()
+
             new_column._meta.call_chain.append(self)
             return new_column
         else:
@@ -2202,21 +2340,21 @@ class ForeignKey(Column, t.Generic[ReferencedTable]):
     ###########################################################################
     # Descriptors
 
-    @t.overload
-    def __get__(self, obj: Table, objtype=None) -> t.Any: ...
+    @overload
+    def __get__(self, obj: Table, objtype=None) -> Any: ...
 
-    @t.overload
+    @overload
     def __get__(
         self, obj: None, objtype=None
     ) -> ForeignKey[ReferencedTable]: ...
 
-    @t.overload
-    def __get__(self, obj: t.Any, objtype=None) -> t.Any: ...
+    @overload
+    def __get__(self, obj: Any, objtype=None) -> Any: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Any):
+    def __set__(self, obj, value: Any):
         obj.__dict__[self._meta.name] = value
 
 
@@ -2239,14 +2377,14 @@ class JSON(Column):
 
     def __init__(
         self,
-        default: t.Union[
+        default: Union[
             str,
-            t.List,
-            t.Dict,
-            t.Callable[[], t.Union[str, t.List, t.Dict]],
+            list,
+            dict,
+            Callable[[], Union[str, list, dict]],
             None,
         ] = "{}",
-        **kwargs,
+        **kwargs: Unpack[ColumnKwargs],
     ) -> None:
         self._validate_default(default, (str, list, dict, None))
 
@@ -2254,10 +2392,9 @@ class JSON(Column):
             default = dump_json(default)
 
         self.default = default
-        kwargs.update({"default": default})
-        super().__init__(**kwargs)
+        super().__init__(default=default, **kwargs)
 
-        self.json_operator: t.Optional[str] = None
+        self.json_operator: Optional[str] = None
 
     @property
     def column_type(self):
@@ -2268,27 +2405,97 @@ class JSON(Column):
             return "JSON"
 
     ###########################################################################
+
+    def arrow(self, key: Union[str, int, QueryString]) -> GetChildElement:
+        """
+        Allows a child element of the JSON structure to be returned - for
+        example::
+
+            >>> await RecordingStudio.select(
+            ...     RecordingStudio.facilities.arrow("restaurant")
+            ... )
+
+        """
+        from piccolo.query.operators.json import GetChildElement
+
+        alias = self._alias or self._meta.get_default_alias()
+        return GetChildElement(identifier=self, key=key, alias=alias)
+
+    def __getitem__(
+        self, value: Union[str, int, QueryString]
+    ) -> GetChildElement:
+        """
+        A shortcut for the ``arrow`` method, used for retrieving a child
+        element.
+
+        For example:
+
+        .. code-block:: python
+
+            >>> await RecordingStudio.select(
+            ...     RecordingStudio.facilities["restaurant"]
+            ... )
+
+        """
+        return self.arrow(key=value)
+
+    def from_path(
+        self,
+        path: list[Union[str, int]],
+    ) -> GetElementFromPath:
+        """
+        Allows an element of the JSON structure to be returned, which can be
+        arbitrarily deep. For example::
+
+            >>> await RecordingStudio.select(
+            ...     RecordingStudio.facilities.from_path([
+            ...         "technician",
+            ...         0,
+            ...         "first_name"
+            ...     ])
+            ... )
+
+        It's the same as calling ``arrow`` multiple times, but is more
+        efficient / convenient if extracting highly nested data::
+
+            >>> await RecordingStudio.select(
+            ...     RecordingStudio.facilities.arrow(
+            ...         "technician"
+            ...     ).arrow(
+            ...         0
+            ...     ).arrow(
+            ...         "first_name"
+            ...     )
+            ... )
+
+        """
+        from piccolo.query.operators.json import GetElementFromPath
+
+        alias = self._alias or self._meta.get_default_alias()
+        return GetElementFromPath(identifier=self, path=path, alias=alias)
+
+    ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> str: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> JSON: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[str, t.Dict]):
+    def __set__(self, obj, value: Union[str, dict]):
         obj.__dict__[self._meta.name] = value
 
 
 class JSONB(JSON):
     """
-    Used for storing JSON strings - Postgres only. The data is stored in a
-    binary format, and can be queried. Insertion can be slower (as it needs to
-    be converted to the binary format). The benefits of JSONB generally
-    outweigh the downsides.
+    Used for storing JSON strings - Postgres / CochroachDB only. The data is
+    stored in a binary format, and can be queried more efficiently. Insertion
+    can be slower (as it needs to be converted to the binary format). The
+    benefits of JSONB generally outweigh the downsides.
 
     :param default:
         Either a JSON string can be provided, or a Python ``dict`` or ``list``
@@ -2300,54 +2507,19 @@ class JSONB(JSON):
     def column_type(self):
         return "JSONB"  # Must be defined, we override column_type() in JSON()
 
-    def arrow(self, key: str) -> JSONB:
-        """
-        Allows part of the JSON structure to be returned - for example,
-        for {"a": 1}, and a key value of "a", then 1 will be returned.
-        """
-        instance = t.cast(JSONB, self.copy())
-        instance.json_operator = f"-> '{key}'"
-        return instance
-
-    def get_select_string(
-        self, engine_type: str, with_alias: bool = True
-    ) -> str:
-        select_string = self._meta.get_full_name(with_alias=False)
-
-        if self.json_operator is not None:
-            select_string += f" {self.json_operator}"
-
-        if with_alias:
-            alias = self._alias or self._meta.get_default_alias()
-            select_string += f' AS "{alias}"'
-
-        return select_string
-
-    def eq(self, value) -> Where:
-        """
-        See ``Boolean.eq`` for more details.
-        """
-        return self.__eq__(value)
-
-    def ne(self, value) -> Where:
-        """
-        See ``Boolean.ne`` for more details.
-        """
-        return self.__ne__(value)
-
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> str: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> JSONB: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.Union[str, t.Dict]):
+    def __set__(self, obj, value: Union[str, dict]):
         obj.__dict__[self._meta.name] = value
 
 
@@ -2387,15 +2559,15 @@ class Bytea(Column):
 
     def __init__(
         self,
-        default: t.Union[
+        default: Union[
             bytes,
             bytearray,
             Enum,
-            t.Callable[[], bytes],
-            t.Callable[[], bytearray],
+            Callable[[], bytes],
+            Callable[[], bytearray],
             None,
         ] = b"",
-        **kwargs,
+        **kwargs: Unpack[ColumnKwargs],
     ) -> None:
         self._validate_default(default, (bytes, bytearray, None))
 
@@ -2403,16 +2575,15 @@ class Bytea(Column):
             default = bytes(default)
 
         self.default = default
-        kwargs.update({"default": default})
-        super().__init__(**kwargs)
+        super().__init__(default=default, **kwargs)
 
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> bytes: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> Bytea: ...
 
     def __get__(self, obj, objtype=None):
@@ -2430,10 +2601,10 @@ class Blob(Bytea):
     ###########################################################################
     # Descriptors
 
-    @t.overload
+    @overload
     def __get__(self, obj: Table, objtype=None) -> bytes: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> Blob: ...
 
     def __get__(self, obj, objtype=None):
@@ -2493,10 +2664,8 @@ class Array(Column):
     def __init__(
         self,
         base_column: Column,
-        default: t.Union[
-            t.List, Enum, t.Callable[[], t.List], None
-        ] = ListProxy(),
-        **kwargs,
+        default: Union[list, Enum, Callable[[], list], None] = ListProxy(),
+        **kwargs: Unpack[ColumnKwargs],
     ) -> None:
         if isinstance(base_column, ForeignKey):
             raise ValueError("Arrays of ForeignKeys aren't allowed.")
@@ -2521,9 +2690,8 @@ class Array(Column):
 
         self.base_column = base_column
         self.default = default
-        self.index: t.Optional[int] = None
-        kwargs.update({"base_column": base_column, "default": default})
-        super().__init__(**kwargs)
+        self.index: Optional[int] = None
+        super().__init__(default=default, base_column=base_column, **kwargs)
 
     @property
     def column_type(self):
@@ -2531,10 +2699,17 @@ class Array(Column):
         if engine_type in ("postgres", "cockroach"):
             return f"{self.base_column.column_type}[]"
         elif engine_type == "sqlite":
-            return "ARRAY"
+            inner_column = self._get_inner_column()
+            return (
+                f"ARRAY_{inner_column.column_type}"
+                if isinstance(
+                    inner_column, (Date, Timestamp, Timestamptz, Time)
+                )
+                else "ARRAY"
+            )
         raise Exception("Unrecognized engine type")
 
-    def _setup_base_column(self, table_class: t.Type[Table]):
+    def _setup_base_column(self, table_class: type[Table]):
         """
         Called from the ``Table.__init_subclass__`` - makes sure
         that the ``base_column`` has a reference to the parent table.
@@ -2563,7 +2738,24 @@ class Array(Column):
         else:
             return start + 1
 
-    def _get_inner_value_type(self) -> t.Type:
+    def _get_inner_column(self) -> Column:
+        """
+        A helper function to get the innermost ``Column`` for the array. For
+        example::
+
+            >>> Array(Varchar())._get_inner_column()
+            Varchar
+
+            >>> Array(Array(Varchar()))._get_inner_column()
+            Varchar
+
+        """
+        if isinstance(self.base_column, Array):
+            return self.base_column._get_inner_column()
+        else:
+            return self.base_column
+
+    def _get_inner_value_type(self) -> type:
         """
         A helper function to get the innermost value type for the array. For
         example::
@@ -2575,10 +2767,7 @@ class Array(Column):
             str
 
         """
-        if isinstance(self.base_column, Array):
-            return self.base_column._get_inner_value_type()
-        else:
-            return self.base_column.value_type
+        return self._get_inner_column().value_type
 
     def __getitem__(self, value: int) -> Array:
         """
@@ -2607,7 +2796,7 @@ class Array(Column):
             if value < 0:
                 raise ValueError("Only positive integers are allowed.")
 
-            instance = t.cast(Array, self.copy())
+            instance = cast(Array, self.copy())
 
             # We deliberately add 1, as Postgres treats the first array element
             # as index 1.
@@ -2616,7 +2805,9 @@ class Array(Column):
         else:
             raise ValueError("Only integers can be used for indexing.")
 
-    def get_select_string(self, engine_type: str, with_alias=True) -> str:
+    def get_select_string(
+        self, engine_type: str, with_alias=True
+    ) -> QueryString:
         select_string = self._meta.get_full_name(with_alias=False)
 
         if isinstance(self.index, int):
@@ -2626,9 +2817,9 @@ class Array(Column):
             alias = self._alias or self._meta.get_default_alias()
             select_string += f' AS "{alias}"'
 
-        return select_string
+        return QueryString(select_string)
 
-    def any(self, value: t.Any) -> Where:
+    def any(self, value: Any) -> Where:
         """
         Check if any of the items in the array match the given value.
 
@@ -2646,7 +2837,25 @@ class Array(Column):
         else:
             raise ValueError("Unrecognised engine type")
 
-    def all(self, value: t.Any) -> Where:
+    def not_any(self, value: Any) -> Where:
+        """
+        Check if the given value isn't in the array.
+
+        .. code-block:: python
+
+            >>> await Ticket.select().where(Ticket.seat_numbers.not_any(510))
+
+        """
+        engine_type = self._meta.engine_type
+
+        if engine_type in ("postgres", "cockroach"):
+            return Where(column=self, value=value, operator=ArrayNotAny)
+        elif engine_type == "sqlite":
+            return self.not_like(f"%{value}%")
+        else:
+            raise ValueError("Unrecognised engine type")
+
+    def all(self, value: Any) -> Where:
         """
         Check if all of the items in the array match the given value.
 
@@ -2664,9 +2873,12 @@ class Array(Column):
         else:
             raise ValueError("Unrecognised engine type")
 
-    def cat(self, value: t.List[t.Any]) -> QueryString:
+    def cat(self, value: ArrayType) -> QueryString:
         """
-        Used in an ``update`` query to append items to an array.
+        A convenient way of accessing the
+        :class:`ArrayCat <piccolo.query.functions.array.ArrayCat>` function.
+
+        Used in an ``update`` query to concatenate two arrays.
 
         .. code-block:: python
 
@@ -2674,7 +2886,8 @@ class Array(Column):
             ...     Ticket.seat_numbers: Ticket.seat_numbers.cat([1000])
             ... }).where(Ticket.id == 1)
 
-        You can also use the ``+`` symbol if you prefer:
+        You can also use the ``+`` symbol if you prefer. To concatenate to
+        the end:
 
         .. code-block:: python
 
@@ -2682,33 +2895,162 @@ class Array(Column):
             ...     Ticket.seat_numbers: Ticket.seat_numbers + [1000]
             ... }).where(Ticket.id == 1)
 
-        """
-        engine_type = self._meta.engine_type
-        if engine_type != "postgres" and engine_type != "cockroach":
-            raise ValueError(
-                "Only Postgres and Cockroach support array appending."
-            )
+        To concatenate to the start:
 
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: [1000] + Ticket.seat_numbers
+            ... }).where(Ticket.id == 1)
+
+        You can concatenate multiple arrays in one go:
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: [1000] + Ticket.seat_numbers + [2000]
+            ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
+
+        """
+        from piccolo.query.functions.array import ArrayCat
+
+        # Keep this for backwards compatibility - we had this as a convenience
+        # for users, but it would be nice to remove it in the future.
         if not isinstance(value, list):
             value = [value]
 
-        db_column_name = self._meta.db_column_name
-        return QueryString(f'array_cat("{db_column_name}", {{}})', value)
+        return ArrayCat(array_1=self, array_2=value)
 
-    def __add__(self, value: t.List[t.Any]) -> QueryString:
+    def remove(self, value: ArrayItemType) -> QueryString:
+        """
+        A convenient way of accessing the
+        :class:`ArrayRemove <piccolo.query.functions.array.ArrayRemove>`
+        function.
+
+        Used in an ``update`` query to remove an item from an array.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.remove(1000)
+            ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
+
+        """
+        from piccolo.query.functions.array import ArrayRemove
+
+        return ArrayRemove(array=self, value=value)
+
+    def prepend(self, value: ArrayItemType) -> QueryString:
+        """
+        A convenient way of accessing the
+        :class:`ArrayPrepend <piccolo.query.functions.array.ArrayPrepend>`
+        function.
+
+        Used in an ``update`` query to prepend an item to an array.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.prepend(1000)
+            ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
+
+        """
+        from piccolo.query.functions.array import ArrayPrepend
+
+        return ArrayPrepend(array=self, value=value)
+
+    def append(self, value: ArrayItemType) -> QueryString:
+        """
+        A convenient way of accessing the
+        :class:`ArrayAppend <piccolo.query.functions.array.ArrayAppend>`
+        function.
+
+        Used in an ``update`` query to append an item to an array.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.append(1000)
+            ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
+
+        """
+        from piccolo.query.functions.array import ArrayAppend
+
+        return ArrayAppend(array=self, value=value)
+
+    def overlap(self, value: ArrayType) -> QueryString:
+        """
+        A convenient way of accessing the
+        :class:`ArrayOverlap <piccolo.query.functions.array.ArrayOverlap>`
+        function.
+
+        Used in a ``where`` clause to find rows where the array has any
+        values in common with the given array.
+
+        .. code-block:: python
+
+            >>> await Ticket.select().where(
+            ...     Ticket.seat_numbers.overlap([510, 511])
+            ... )
+
+        .. note:: Postgres / CockroachDB only
+
+        """
+        from piccolo.query.functions.array import ArrayOverlap
+
+        return ArrayOverlap(array_1=self, array_2=value)
+
+    def replace(
+        self, old_value: ArrayItemType, new_value: ArrayItemType
+    ) -> QueryString:
+        """
+        A convenient way of accessing the
+        :class:`ArrayReplace <piccolo.query.functions.array.ArrayReplace>`
+        function.
+
+        Used in an ``update`` query to replace each array item
+        equal to the given value with a new value.
+
+        .. code-block:: python
+
+            >>> await Ticket.update({
+            ...     Ticket.seat_numbers: Ticket.seat_numbers.replace(1000, 500)
+            ... }).where(Ticket.id == 1)
+
+        .. note:: Postgres / CockroachDB only
+
+        """
+        from piccolo.query.functions.array import ArrayReplace
+
+        return ArrayReplace(self, old_value=old_value, new_value=new_value)
+
+    def __add__(self, value: ArrayType) -> QueryString:
         return self.cat(value)
+
+    def __radd__(self, value: ArrayType) -> QueryString:
+        from piccolo.query.functions.array import ArrayCat
+
+        return ArrayCat(array_1=value, array_2=self)
 
     ###########################################################################
     # Descriptors
 
-    @t.overload
-    def __get__(self, obj: Table, objtype=None) -> t.List[t.Any]: ...
+    @overload
+    def __get__(self, obj: Table, objtype=None) -> list[Any]: ...
 
-    @t.overload
+    @overload
     def __get__(self, obj: None, objtype=None) -> Array: ...
 
     def __get__(self, obj, objtype=None):
         return obj.__dict__[self._meta.name] if obj else self
 
-    def __set__(self, obj, value: t.List[t.Any]):
+    def __set__(self, obj, value: list[Any]):
         obj.__dict__[self._meta.name] = value

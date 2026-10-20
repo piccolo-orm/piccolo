@@ -5,30 +5,41 @@ for interacting with the data using Piccolo.
 
 import datetime
 import sys
-import typing as t
 import uuid
 from decimal import Decimal
 from enum import Enum
+from typing import Optional
 
 from piccolo.columns import (
     JSON,
+    M2M,
     UUID,
+    Array,
     Boolean,
+    Char,
+    Date,
     ForeignKey,
     Integer,
     Interval,
+    LazyTableReference,
     Numeric,
+    Serial,
+    Text,
+    Time,
     Timestamp,
+    Timestamptz,
     Varchar,
 )
 from piccolo.columns.readable import Readable
-from piccolo.engine import PostgresEngine, SQLiteEngine
+from piccolo.constraints import Check, Unique
+from piccolo.engine import CockroachEngine, PostgresEngine, SQLiteEngine
 from piccolo.engine.base import Engine
 from piccolo.table import Table
 from piccolo.utils.warnings import colored_string
 
 
 class Manager(Table):
+    id: Serial
     name = Varchar(length=50)
 
     @classmethod
@@ -40,9 +51,11 @@ class Manager(Table):
 
 
 class Band(Table):
+    id: Serial
     name = Varchar(length=50)
     manager = ForeignKey(references=Manager, null=True)
     popularity = Integer()
+    genres = M2M(LazyTableReference("GenreToBand", module_path=__name__))
 
     @classmethod
     def get_readable(cls) -> Readable:
@@ -52,9 +65,18 @@ class Band(Table):
         )
 
 
+class FanClub(Table):
+    id: Serial
+    address = Text()
+    band = ForeignKey(Band, unique=True)
+
+
 class Venue(Table):
+    id: Serial
     name = Varchar(length=100)
     capacity = Integer(default=0)
+    address = Text(null=True)
+    country_code = Char(length=2)
 
     @classmethod
     def get_readable(cls) -> Readable:
@@ -65,6 +87,7 @@ class Venue(Table):
 
 
 class Concert(Table):
+    id: Serial
     band_1 = ForeignKey(Band)
     band_2 = ForeignKey(Band)
     venue = ForeignKey(Venue)
@@ -89,22 +112,27 @@ class Ticket(Table):
         standing = "standing"
         premium = "premium"
 
+    id: Serial
     concert = ForeignKey(Concert)
     price = Numeric(digits=(5, 2))
     ticket_type = Varchar(choices=TicketType, default=TicketType.standing)
+
+    unique_concert_ticket_type = Unique(columns=[concert, ticket_type])
+    check_price = Check((price > 0) & (price < 200))
 
     @classmethod
     def get_readable(cls) -> Readable:
         return Readable(
             template="%s - %s",
             columns=[
-                t.cast(t.Type[Venue], cls.concert.venue).name,
+                cls.concert._.venue._.name,
                 cls.ticket_type,
             ],
         )
 
 
 class DiscountCode(Table):
+    id: Serial
     code = UUID()
     active = Boolean(default=True, null=True)
 
@@ -117,8 +145,11 @@ class DiscountCode(Table):
 
 
 class RecordingStudio(Table):
+    id: Serial
     name = Varchar(length=100)
     facilities = JSON(null=True)
+    opens_at = Time()
+    closes_at = Time()
 
     @classmethod
     def get_readable(cls) -> Readable:
@@ -128,7 +159,63 @@ class RecordingStudio(Table):
         )
 
 
-TABLES = (Manager, Band, Venue, Concert, Ticket, DiscountCode, RecordingStudio)
+class Album(Table):
+    id: Serial
+    name = Varchar()
+    band = ForeignKey(Band)
+    release_date = Date(null=True, default=None)
+    recorded_at = ForeignKey(RecordingStudio)
+    awards = Array(Varchar())
+
+    @classmethod
+    def get_readable(cls) -> Readable:
+        return Readable(
+            template="%s - %s",
+            columns=[cls.name, cls.band._.name],
+        )
+
+
+class Genre(Table):
+    id: Serial
+    name = Varchar()
+    bands = M2M(LazyTableReference("GenreToBand", module_path=__name__))
+
+    @classmethod
+    def get_readable(cls) -> Readable:
+        return Readable(
+            template="%s",
+            columns=[cls.name],
+        )
+
+
+class GenreToBand(Table):
+    id: Serial
+    band = ForeignKey(Band)
+    genre = ForeignKey(Genre)
+    reason = Text(null=True, default=None)
+
+
+class Signing(Table):
+    id: Serial
+    address = Text()
+    with_ = ForeignKey(Band, db_column_name="with")
+    starts = Timestamptz()
+
+
+TABLES = (
+    Manager,
+    Band,
+    FanClub,
+    Venue,
+    Concert,
+    Ticket,
+    DiscountCode,
+    RecordingStudio,
+    Album,
+    Genre,
+    GenreToBand,
+    Signing,
+)
 
 
 def populate():
@@ -153,6 +240,9 @@ def populate():
     pythonistas = Band(name="Pythonistas", manager=guido.id, popularity=1000)
     pythonistas.save().run_sync()
 
+    fan_club = FanClub(address="1 Flying Circus, UK", band=pythonistas)
+    fan_club.save().run_sync()
+
     graydon = Manager(name="Graydon")
     graydon.save().run_sync()
 
@@ -165,7 +255,7 @@ def populate():
     c_sharps = Band(name="C-Sharps", popularity=700, manager=anders.id)
     c_sharps.save().run_sync()
 
-    venue = Venue(name="Amazing Venue", capacity=5000)
+    venue = Venue(name="Amazing Venue", capacity=5000, country_code="GB")
     venue.save().run_sync()
 
     concert = Concert(
@@ -184,52 +274,137 @@ def populate():
         *[DiscountCode({DiscountCode.code: uuid.uuid4()}) for _ in range(5)]
     ).run_sync()
 
-    RecordingStudio.insert(
-        RecordingStudio(
+    recording_studio_1 = RecordingStudio(
+        {
+            RecordingStudio.name: "Abbey Road",
+            RecordingStudio.facilities: {
+                "restaurant": True,
+                "mixing_desk": True,
+                "instruments": {"electric_guitars": 10, "drum_kits": 2},
+                "technicians": [
+                    {"name": "Alice Jones"},
+                    {"name": "Bob Williams"},
+                ],
+            },
+            RecordingStudio.opens_at: datetime.time(9, 0, 0),
+            RecordingStudio.closes_at: datetime.time(17, 0, 0),
+        }
+    )
+    recording_studio_1.save().run_sync()
+
+    recording_studio_2 = RecordingStudio(
+        {
+            RecordingStudio.name: "Electric Lady",
+            RecordingStudio.facilities: {
+                "restaurant": False,
+                "mixing_desk": True,
+                "instruments": {"electric_guitars": 6, "drum_kits": 3},
+                "technicians": [
+                    {"name": "Frank Smith"},
+                ],
+            },
+            RecordingStudio.opens_at: datetime.time(10, 0, 0),
+            RecordingStudio.closes_at: datetime.time(20, 0, 0),
+        },
+    )
+    recording_studio_2.save().run_sync()
+
+    Album.insert(
+        Album(
             {
-                RecordingStudio.name: "Abbey Road",
-                RecordingStudio.facilities: {
-                    "restaurant": True,
-                    "mixing_desk": True,
-                },
+                Album.name: "Awesome album 1",
+                Album.recorded_at: recording_studio_1,
+                Album.band: pythonistas,
+                Album.release_date: datetime.date(year=2021, month=1, day=1),
+                Album.awards: ["Grammy Award 2021"],
             }
         ),
-        RecordingStudio(
+        Album(
             {
-                RecordingStudio.name: "Electric Lady",
-                RecordingStudio.facilities: {
-                    "restaurant": False,
-                    "mixing_desk": True,
-                },
-            },
+                Album.name: "Awesome album 2",
+                Album.recorded_at: recording_studio_1,
+                Album.band: pythonistas,
+                Album.release_date: datetime.date(year=2025, month=1, day=1),
+                Album.awards: ["Grammy Award 2025"],
+            }
+        ),
+        Album(
+            {
+                Album.name: "Awesome album 3",
+                Album.recorded_at: recording_studio_2,
+                Album.band: rustaceans,
+                Album.release_date: datetime.date(year=2022, month=2, day=2),
+                Album.awards: ["Mercury Prize 2022"],
+            }
+        ),
+        Album(
+            {
+                Album.name: "Awesome album 4",
+                Album.recorded_at: recording_studio_2,
+                Album.band: rustaceans,
+                Album.release_date: None,
+                Album.awards: [],
+            }
+        ),
+    ).run_sync()
+
+    genres = Genre.insert(
+        Genre(name="Rock"),
+        Genre(name="Classical"),
+        Genre(name="Folk"),
+    ).run_sync()
+
+    GenreToBand.insert(
+        GenreToBand(
+            band=pythonistas.id,
+            genre=genres[0]["id"],
+            reason="Because they rock.",
+        ),
+        GenreToBand(band=pythonistas.id, genre=genres[2]["id"]),
+        GenreToBand(band=rustaceans.id, genre=genres[2]["id"]),
+        GenreToBand(band=c_sharps.id, genre=genres[0]["id"]),
+        GenreToBand(band=c_sharps.id, genre=genres[1]["id"]),
+    ).run_sync()
+
+    Signing.insert(
+        Signing(
+            with_=pythonistas,
+            address="Awesome Music Store, London",
+            starts=datetime.datetime(2026, 12, 20, 10),
+        ),
+        Signing(
+            with_=pythonistas,
+            address="Awesome Music Store, Liverpool",
+            starts=datetime.datetime(2026, 11, 25, 12),
         ),
     ).run_sync()
 
 
 def run(
     engine: str = "sqlite",
-    user: str = "piccolo",
-    password: str = "piccolo",
+    user: Optional[str] = None,
+    password: Optional[str] = None,
     database: str = "piccolo_playground",
     host: str = "localhost",
-    port: int = 5432,
+    port: Optional[int] = None,
     ipython_profile: bool = False,
 ):
     """
     Creates a test database to play with.
 
     :param engine:
-        Which database engine to use - options are sqlite or postgres
+        Which database engine to use - options are sqlite, postgres or
+        cockroach
     :param user:
-        Postgres user
+        Database user (ignored for SQLite)
     :param password:
-        Postgres password
+        Database password (ignored for SQLite)
     :param database:
-        Postgres database
+        Database name (ignored for SQLite)
     :param host:
-        Postgres host
+        Database host (ignored for SQLite)
     :param port:
-        Postgres port
+        Database port (ignored for SQLite)
     :param ipython_profile:
         Set to true to use your own IPython profile. Located at ~/.ipython/.
         For more info see the IPython docs
@@ -248,9 +423,19 @@ def run(
             {
                 "host": host,
                 "database": database,
-                "user": user,
-                "password": password,
-                "port": port,
+                "user": user or "piccolo",
+                "password": password or "piccolo",
+                "port": port or 5432,
+            }
+        )
+    elif engine.upper() == "COCKROACH":
+        db = CockroachEngine(
+            {
+                "host": host,
+                "database": database,
+                "user": user or "root",
+                "password": password or "",
+                "port": port or 26257,
             }
         )
     else:
@@ -278,7 +463,7 @@ def run(
 
     populate()
 
-    from IPython.core.interactiveshell import _asyncio_runner
+    from IPython.core.async_helpers import _asyncio_runner
 
     if ipython_profile:
         print(colored_string("Using your IPython profile\n"))

@@ -1,28 +1,28 @@
-from unittest import TestCase
+from piccolo.columns import ForeignKey, Integer, Serial, Varchar
+from piccolo.table import Table
+from piccolo.testing.test_case import TableTest
 
-from piccolo.columns import ForeignKey, Varchar
-from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
 
-
-class Manager(Table):
+class Manager(Table, tablename="managerTable"):
+    primaryKey = Serial(primary_key=True)
     theName = Varchar()
 
 
-class Band(Table):
+class Band(Table, tablename="bandTable"):
+    primaryKey = Serial(primary_key=True)
     theName = Varchar()
     theManager = ForeignKey(Manager)
+    popularityValue = Integer()
 
 
-class TestCamelCase(TestCase):
-    def setUp(self):
-        create_db_tables_sync(Manager, Band)
+class TestCamelCase(TableTest):
 
-    def tearDown(self):
-        drop_db_tables_sync(Manager, Band)
+    tables = [Manager, Band]
 
     def test_queries(self):
         """
-        Make sure that basic queries work when the columns use camelCase.
+        Make sure that basic queries work when the columns and table names use
+        camelCase (or similarly TitleCase).
         """
         manager_names = ("Guido", "Maz", "Graydon")
         band_names = ("Pythonistas", "Rubyists", "Rustaceans")
@@ -59,3 +59,10 @@ class TestCamelCase(TestCase):
         self.assertFalse(
             Band.exists().where(Band.theName == "Rubyists").run_sync()
         )
+
+        # Test math delegate
+        # https://github.com/piccolo-orm/piccolo/issues/1402
+        Band.update(
+            {Band.popularityValue: Band.popularityValue + 10},
+            force=True,
+        ).run_sync()
