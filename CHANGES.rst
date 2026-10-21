@@ -1,6 +1,57 @@
 Changes
 =======
 
+1.37.0
+------
+
+``ArrayOverlap``
+~~~~~~~~~~~~~~~~
+
+You can now check if an array has values in common with another array:
+
+.. code-block:: python
+
+  >>> await Ticket.select().where(
+  ...     Ticket.seat_numbers.overlap([510, 511])
+  ... )
+
+Thanks to @regiscamimura for adding this.
+
+Infinity defaults for ``Numeric`` and ``Real``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``Numeric`` / ``Decimal`` and ``Real`` columns can now have infinity (or
+negative infinity) as a default value:
+
+.. code-block:: python
+
+  from piccolo.columns.defaults import (
+      InfinityDecimal,
+      NegativeInfinityDecimal,
+  )
+
+  class Product(Table):
+      max_price = Decimal(default=InfinityDecimal())
+      min_price = Decimal(default=NegativeInfinityDecimal())
+
+Other changes
+~~~~~~~~~~~~~
+
+* Fixed a bug where auto migrations silently dropped tables with the same name
+  in different schemas (thanks to @juneja-varun for this).
+* Fixed a bug where auto migrations crashed when altering a column whose
+  previous class was a custom ``Column`` subclass (thanks to @pavdwest for
+  this).
+* Fixed reverse migrations on SQLite - they tried dropping tables using
+  ``CASCADE``, which SQLite doesn't support (thanks to @juneja-varun for this).
+* ``piccolo schema generate`` now detects ``UUID`` column defaults, including
+  ``uuidv7()`` (thanks to @juneja-varun for this).
+* Improved the contribution docs, including a Docker Compose file for easily
+  running the test databases, and added a fixtures example to the docs (thanks
+  to @mlbiche for this).
+
+-------------------------------------------------------------------------------
+
 1.36.0
 ------
 
