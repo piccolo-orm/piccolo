@@ -341,7 +341,7 @@ class TestCaseFunction(AsyncTableTest):
 
 class TestCaseValidation(TestCase):
 
-    def test_no_whens(self):
+    def test_no_when_conditions(self):
         with self.assertRaises(ValueError):
             Case(default=1)
 
