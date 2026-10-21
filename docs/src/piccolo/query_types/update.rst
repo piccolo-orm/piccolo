@@ -118,7 +118,7 @@ You can concatenate values:
     # Prepend "!!!" to each band name.
     await Band.update(
         {
-            Band.popularity: "!!!" + Band.popularity
+            Band.name: "!!!" + Band.name
         },
         force=True
     )
@@ -126,7 +126,7 @@ You can concatenate values:
 Date / Timestamp / Timestamptz / Interval columns
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can add or substract a :class:`timedelta <datetime.timedelta>` to any of
+You can add or subtract a :class:`timedelta <datetime.timedelta>` to any of
 these columns.
 
 For example, if we have a ``Concert`` table, and we want each concert to start
@@ -190,7 +190,7 @@ It's more efficient to exclude any rows with a value of null using a
 
     await Band.update(
         {
-            Band.name + '!!!'
+            Band.name: Band.name + '!!!'
         },
         force=True
     ).where(

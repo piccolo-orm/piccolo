@@ -28,7 +28,7 @@ checker.
 If you don't explicitly declare a column on your table with ``primary_key=True``,
 Piccolo creates a ``Serial`` column for you called ``id``.
 
-In the following situation, the type checker might complains that ``id``
+In the following situation, the type checker might complain that ``id``
 doesn't exist:
 
 .. code-block:: python

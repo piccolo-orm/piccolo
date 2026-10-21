@@ -31,7 +31,7 @@ inserted rows:
     ...     Manager(name="Graydon")
     ... ).returning(Manager.id, Manager.name)
 
-    [{'id': 1, 'name': 'Maz'}, {'id': 1, 'name': 'Graydon'}]
+    [{'id': 1, 'name': 'Maz'}, {'id': 2, 'name': 'Graydon'}]
 
 As another example, let's use delete and return the full row(s):
 

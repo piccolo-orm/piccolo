@@ -38,7 +38,7 @@ def make_nested(dictionary: dict[str, Any]) -> dict[str, Any]:
             #     Band.all_columns(),
             #     Band.manager.all_columns()
             # ).run()
-            # In this situation nesting takes precendence.
+            # In this situation nesting takes precedence.
             root = output.get(path[0], None)
             if isinstance(root, dict):
                 dictionary = root

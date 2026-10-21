@@ -6,7 +6,7 @@ Transactions
 Transactions allow multiple queries to be committed only once successful.
 
 This is useful for things like migrations, where you can't have it fail in an
-inbetween state.
+in-between state.
 
 -------------------------------------------------------------------------------
 
@@ -99,7 +99,7 @@ Nested transactions
 -------------------
 
 Nested transactions aren't supported in Postgres, but we can achieve something
-similar using `savepoints <Savepoints>`_.
+similar using :ref:`savepoints <Savepoints>`.
 
 Nested context managers
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -137,6 +137,8 @@ following:
     True
 
 -------------------------------------------------------------------------------
+
+.. _Savepoints:
 
 Savepoints
 ----------

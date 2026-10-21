@@ -139,7 +139,7 @@ class Query(Generic[TableInstance, QueryResponseType]):
 
     def __await__(self) -> Generator[None, None, QueryResponseType]:
         """
-        If the user doesn't explicity call .run(), proxy to it as a
+        If the user doesn't explicitly call .run(), proxy to it as a
         convenience.
         """
         return self.run().__await__()
@@ -429,7 +429,7 @@ class DDL:
 
     def __await__(self):
         """
-        If the user doesn't explicity call .run(), proxy to it as a
+        If the user doesn't explicitly call .run(), proxy to it as a
         convenience.
         """
         return self.run().__await__()

@@ -342,7 +342,7 @@ class DistinctDelegate:
     def distinct(self, enabled: bool, on: Optional[Sequence[Column]] = None):
         if on and not isinstance(on, collections.abc.Sequence):
             # Check a sequence is passed in, otherwise the user will get some
-            # unuseful errors later on.
+            # unhelpful errors later on.
             raise ValueError("`on` must be a sequence of `Column` instances")
 
         self._distinct = Distinct(enabled=enabled, on=on)

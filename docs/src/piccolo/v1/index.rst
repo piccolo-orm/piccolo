@@ -4,7 +4,7 @@
 About Piccolo v1
 ================
 
-**20th October**
+**20th October 2023**
 
 Piccolo v1 is now available!
 

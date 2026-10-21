@@ -36,7 +36,7 @@ but you can rename it to anything you want:
     the name isn't important - change it to anything you want. The new format
     was chosen because a Python file should start with a letter by convention.
 
-The contents of an empty migration file looks like this:
+The contents of an empty migration file look like this:
 
 .. code-block:: python
 

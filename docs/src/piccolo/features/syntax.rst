@@ -24,4 +24,4 @@ underlying SQL - making the ORM feel less magic.
 
     >>> query = Band.select(Band.name).where(Band.popularity >= 100)
     >>> print(query)
-    'SELECT name from band where popularity > 100'
+    'SELECT name from band where popularity >= 100'

@@ -44,5 +44,5 @@ Web servers
 `Hypercorn <https://hypercorn.readthedocs.io/en/latest/>`_
 and `Granian <https://github.com/emmett-framework/granian>`_ 
 are available as ASGI servers.
-`Daphne <https://github.com/django/daphne>`_ can't be used programatically so
+`Daphne <https://github.com/django/daphne>`_ can't be used programmatically so
 was omitted at this time.

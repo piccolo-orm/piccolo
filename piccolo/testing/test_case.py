@@ -100,7 +100,7 @@ class AsyncTransactionTest(IsolatedAsyncioTestCase):
     """
 
     # We use `engine_finder` to find the current `Engine`, but you can
-    # explicity set it here if you prefer:
+    # explicitly set it here if you prefer:
     #
     # class MyTest(AsyncTransactionTest):
     #     db = DB

@@ -8,7 +8,7 @@ Advanced
 Schemas
 -------
 
-Postgres and CoackroachDB have a concept called **schemas**.
+Postgres and CockroachDB have a concept called **schemas**.
 
 It's a way of grouping the tables in a database. To learn more:
 
@@ -82,7 +82,7 @@ just displaying the row ID, we can specify something more user friendly using
 
 
 Specifying the ``get_readable`` classmethod isn't just beneficial for Piccolo
-tooling - you can also use it your own queries.
+tooling - you can also use it in your own queries.
 
 .. code-block:: python
 

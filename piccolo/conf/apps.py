@@ -395,7 +395,7 @@ class Finder:
     ) -> Optional[PiccoloConfModule]:
         """
         Searches the path for a 'piccolo_conf.py' module to import. The
-        location searched can be overriden by:
+        location searched can be overridden by:
 
         * Explicitly passing a module name into this method.
         * Setting the PICCOLO_CONF environment variable.

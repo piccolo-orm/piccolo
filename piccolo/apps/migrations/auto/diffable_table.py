@@ -113,7 +113,7 @@ class ConstraintComparison:
 @dataclass
 class DiffableTable:
     """
-    Represents a Table. When we substract two instances, it returns the
+    Represents a Table. When we subtract two instances, it returns the
     changes.
     """
 
