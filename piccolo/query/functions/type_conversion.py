@@ -57,7 +57,8 @@ class Cast(QueryString):
 
         # We need to give the column a reference to a table, and hence
         # the database engine, as the column type is sometimes dependent
-        # on which database is being used.
+        # on which database is being used. If the identifier doesn't give us
+        # a table, we use the one already on the column (if any).
 
         from piccolo.table import Table, create_table_class
 
@@ -72,7 +73,9 @@ class Cast(QueryString):
                 else None
             )
 
-        as_type._meta.table = table or create_table_class("Table")
+        as_type._meta.table = (
+            table or as_type._meta._table or create_table_class("Table")
+        )
         as_type_string = as_type.column_type
 
         #######################################################################

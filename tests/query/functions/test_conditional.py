@@ -1,3 +1,6 @@
+import datetime
+import decimal
+import uuid
 from unittest import TestCase
 
 from piccolo.columns import Integer, Text, Varchar
@@ -5,6 +8,7 @@ from piccolo.query.functions.conditional import Case, Coalesce, NullIf, When
 from piccolo.query.functions.string import Upper
 from piccolo.table import Table
 from piccolo.testing.test_case import AsyncTableTest
+from tests.base import engines_only
 
 
 class Band(Table):
@@ -273,6 +277,64 @@ class TestCaseFunction(AsyncTableTest):
                 {"name": "Seated", "seated": 1},
                 {"name": "Standing", "seated": 0},
                 {"name": "VIP", "seated": 0},
+            ],
+        )
+
+    @engines_only("postgres", "cockroach")
+    async def test_typed_values(self):
+        """
+        Make sure values which Postgres can't infer the type of are cast.
+        """
+        values = [
+            datetime.date(2021, 1, 1),
+            datetime.datetime(2021, 1, 1, 10, 0),
+            datetime.datetime(2021, 1, 1, 10, 0, tzinfo=datetime.timezone.utc),
+            datetime.time(10, 0),
+            datetime.timedelta(hours=1),
+            uuid.UUID("2a2f9c38-0b6e-4b5a-9c3e-3d0b3c6f5a10"),
+            b"hello",
+            decimal.Decimal("1.5"),
+            1.5,
+        ]
+
+        for value in values:
+            with self.subTest(value=value):
+                response = (
+                    await Ticket.select(
+                        Case(
+                            When(Ticket.price >= 100, then=value),
+                            alias="value",
+                        )
+                    )
+                    .where(Ticket.name == "VIP")
+                    .first()
+                )
+                assert response is not None
+                self.assertEqual(response["value"], value)
+
+    @engines_only("sqlite")
+    async def test_sqlite_dates(self):
+        """
+        SQLite doesn't need a ``CAST`` - and casting a date string to
+        ``DATE`` would corrupt it.
+        """
+        response = await Ticket.select(
+            Case(
+                When(
+                    Ticket.price >= 100,
+                    then=datetime.date(2021, 1, 1),
+                ),
+                default=datetime.datetime(2022, 1, 1, 10, 0),
+                alias="value",
+            )
+        ).order_by(Ticket.price)
+
+        self.assertListEqual(
+            response,
+            [
+                {"value": "2022-01-01 10:00:00"},
+                {"value": "2022-01-01 10:00:00"},
+                {"value": "2021-01-01"},
             ],
         )
 

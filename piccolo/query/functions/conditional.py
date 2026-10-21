@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import datetime
 import decimal
+import uuid
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 from piccolo.custom_types import BasicTypes, Combinable
@@ -8,6 +10,7 @@ from piccolo.querystring import QueryString
 
 if TYPE_CHECKING:
     from piccolo.columns import Column
+    from piccolo.table import Table
 
 
 class Coalesce(QueryString):
@@ -123,41 +126,92 @@ class NullIf(QueryString):
         super().__init__("NULLIF({}, {})", identifier, value, alias=alias)
 
 
-# bool first - it's a subclass of int.
-CAST_TYPES: list[tuple[type, str]] = [
-    (bool, "BOOLEAN"),
-    (int, "BIGINT"),
-    (float, "DOUBLE PRECISION"),
-    (decimal.Decimal, "NUMERIC"),
-    (str, "TEXT"),
-]
+###############################################################################
 
 
-def get_case_value_string(
+def get_cast_column(value: Any) -> Optional[Column]:
+    """
+    Works out which column type a plain Python value should be cast to.
+
+    :returns:
+        ``None`` if we don't know how to cast the value.
+
+    """
+    from piccolo.columns import column_types
+
+    if isinstance(value, datetime.datetime):
+        return (
+            column_types.Timestamptz()
+            if value.tzinfo
+            else column_types.Timestamp()
+        )
+
+    # bool first - it's a subclass of int.
+    for py_type, column_class in (
+        (bool, column_types.Boolean),
+        (int, column_types.BigInt),
+        (float, column_types.DoublePrecision),
+        (decimal.Decimal, column_types.Numeric),
+        (str, column_types.Text),
+        (datetime.date, column_types.Date),
+        (datetime.time, column_types.Time),
+        (datetime.timedelta, column_types.Interval),
+        (uuid.UUID, column_types.UUID),
+        (bytes, column_types.Bytea),
+    ):
+        if isinstance(value, py_type):
+            return column_class()
+
+    return None
+
+
+def get_case_value(
     value: Union[Column, QueryString, BasicTypes, None],
-) -> tuple[str, list[Any]]:
+    table: Optional[type[Table]] = None,
+) -> Any:
     """
     Works out how a ``THEN`` / ``ELSE`` value should appear in the SQL.
 
-    Plain Python values are passed as query parameters, wrapped in a ``CAST``,
-    because the database can't infer the type of a bare parameter inside a
-    ``CASE`` statement (Postgres assumes ``text``, Cockroach raises
+    With Postgres and Cockroach, plain Python values are wrapped in a
+    ``CAST``, because the database can't infer the type of a bare parameter
+    inside a ``CASE`` statement (Postgres assumes ``text``, Cockroach raises
     ``IndeterminateDatatypeError``)::
 
         CASE WHEN "band"."popularity" > $1 THEN CAST($2 AS TEXT) END
 
+    SQLite doesn't need the ``CAST`` - and casting a date string to ``DATE``
+    in SQLite actually corrupts it (``'2021-01-01'`` becomes ``2021``).
+
     Columns and other functions are inserted as they are.
 
-    :returns:
-        A template fragment, along with any args which belong to it.
+    :param table:
+        Used to work out which database engine is being used. If not
+        specified, the default engine is used.
 
     """
+    from piccolo.columns import Column
+    from piccolo.query.functions.type_conversion import Cast
+    from piccolo.table import create_table_class
+
     if value is None:
-        return ("NULL", [])
-    for py_type, sql_type in CAST_TYPES:
-        if isinstance(value, py_type):
-            return (f"CAST({{}} AS {sql_type})", [value])
-    return ("{}", [value])
+        return QueryString("NULL")
+
+    if isinstance(value, (Column, QueryString)):
+        return value
+
+    # The column type is sometimes dependent on which database is being
+    # used, so the column needs a reference to a table.
+    table = table or create_table_class("Table")
+
+    if table._meta.db.engine_type == "sqlite":
+        return value
+
+    cast_column = get_cast_column(value)
+    if cast_column is None:
+        return value
+
+    cast_column._meta.table = table
+    return Cast(value, cast_column)
 
 
 class When(QueryString):
@@ -182,19 +236,19 @@ class When(QueryString):
         elif not isinstance(condition, QueryString):
             raise ValueError("The condition must be a where clause.")
 
-        then_string, then_args = get_case_value_string(then)
+        table = condition.columns[0]._meta.table if condition.columns else None
 
         super().__init__(
-            f"WHEN {{}} THEN {then_string}",
+            "WHEN {} THEN {}",
             condition,
-            *then_args,
+            get_case_value(then, table=table),
         )
 
 
 class Case(QueryString):
     def __init__(
         self,
-        *whens: When,
+        *when_conditions: When,
         default: Union[Column, QueryString, BasicTypes, None] = None,
         alias: Optional[str] = None,
     ):
@@ -231,7 +285,7 @@ class Case(QueryString):
             ...     )
             ... )
 
-        :param whens:
+        :param when_conditions:
             Each branch of the statement, which are evaluated in order.
         :param default:
             The value to return if none of the conditions match (``ELSE`` in
@@ -240,19 +294,26 @@ class Case(QueryString):
             The name of the column in the response.
 
         """
-        if not whens:
+        if not when_conditions:
             raise ValueError("At least one `When` must be passed in.")
 
-        if not all(isinstance(when, When) for when in whens):
+        if not all(isinstance(when, When) for when in when_conditions):
             raise ValueError("Only `When` instances can be passed in.")
 
-        template = " ".join("{}" for _ in whens)
-        args: list[Any] = list(whens)
+        template = " ".join("{}" for _ in when_conditions)
+        args: list[Any] = list(when_conditions)
 
         if default is not None:
-            default_string, default_args = get_case_value_string(default)
-            template += f" ELSE {default_string}"
-            args.extend(default_args)
+            table = next(
+                (
+                    when.columns[0]._meta.table
+                    for when in when_conditions
+                    if when.columns
+                ),
+                None,
+            )
+            template += " ELSE {}"
+            args.append(get_case_value(default, table=table))
 
         super().__init__(
             f"CASE {template} END",
