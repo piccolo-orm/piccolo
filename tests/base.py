@@ -69,6 +69,38 @@ unix_only = pytest.mark.skipif(
 )
 
 
+def extension_installed(extension: str) -> bool:
+    if not is_running_postgres():
+        return False
+    from piccolo.querystring import QueryString
+
+    async def _check() -> bool:
+        assert ENGINE is not None
+        result = await ENGINE.run_querystring(
+            QueryString(
+                "SELECT 1 FROM pg_extension WHERE extname = {}",
+                extension,
+            )
+        )
+        return bool(result)
+
+    try:
+        return asyncio.run(_check())
+    except Exception:
+        return False
+
+
+pgvector_installed = pytest.mark.skipif(
+    not extension_installed("vector"),
+    reason="pgvector extension not installed in test DB",
+)
+
+pg_trgm_installed = pytest.mark.skipif(
+    not extension_installed("pg_trgm"),
+    reason="pg_trgm extension not installed in test DB",
+)
+
+
 def engines_only(*engine_names: str):
     """
     Test decorator. Choose what engines can run a test.

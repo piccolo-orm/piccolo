@@ -67,9 +67,9 @@ class Distinct:
         else:
             if not self.on:
                 validated = False
-            elif isinstance(first_order_column, Column) and not self.on[
-                0
-            ]._equals(first_order_column):
+            elif not isinstance(first_order_column, Column):
+                validated = False
+            elif not self.on[0]._equals(first_order_column):
                 validated = False
 
         if not validated:
