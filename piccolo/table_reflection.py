@@ -4,10 +4,12 @@ tables.
 """
 
 import asyncio
-import typing as t
 from dataclasses import dataclass
+from typing import Any, Optional, Union
 
 from piccolo.apps.schema.commands.generate import get_output_schema
+from piccolo.engine import engine_finder
+from piccolo.engine.base import Engine
 from piccolo.table import Table
 
 
@@ -56,7 +58,7 @@ class Singleton(type):
     A metaclass that creates a Singleton base class when called.
     """
 
-    _instances: t.Dict = {}
+    _instances: dict = {}
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
@@ -78,15 +80,22 @@ class TableStorage(metaclass=Singleton):
     works with Postgres.
     """
 
-    def __init__(self):
+    def __init__(self, engine: Optional[Engine] = None):
+        """
+        :param engine:
+            Which engine to use to make the database queries. If not specified,
+            we try importing an engine from ``piccolo_conf.py``.
+
+        """
+        self.engine = engine or engine_finder()
         self.tables = ImmutableDict()
-        self._schema_tables = {}
+        self._schema_tables: dict[str, list[str]] = {}
 
     async def reflect(
         self,
         schema_name: str = "public",
-        include: t.Union[t.List[str], str, None] = None,
-        exclude: t.Union[t.List[str], str, None] = None,
+        include: Union[list[str], str, None] = None,
+        exclude: Union[list[str], str, None] = None,
         keep_existing: bool = False,
     ) -> None:
         """
@@ -120,10 +129,13 @@ class TableStorage(metaclass=Singleton):
         exclude_list = self._to_list(exclude)
 
         if keep_existing:
-            exclude += self._schema_tables.get(schema_name, [])
+            exclude_list += self._schema_tables.get(schema_name, [])
 
         output_schema = await get_output_schema(
-            schema_name=schema_name, include=include_list, exclude=exclude_list
+            schema_name=schema_name,
+            include=include_list,
+            exclude=exclude_list,
+            engine=self.engine,
         )
         add_tables = [
             self._add_table(schema_name=schema_name, table=table)
@@ -142,7 +154,7 @@ class TableStorage(metaclass=Singleton):
         dict.clear(self.tables)
         self._schema_tables.clear()
 
-    async def get_table(self, tablename: str) -> t.Optional[t.Type[Table]]:
+    async def get_table(self, tablename: str) -> Optional[type[Table]]:
         """
         Returns the ``Table`` class if it exists. If the table is not present
         in ``TableStorage``, it will try to reflect it.
@@ -165,7 +177,7 @@ class TableStorage(metaclass=Singleton):
             table_class = self.tables.get(tablename)
         return table_class
 
-    async def _add_table(self, schema_name: str, table: t.Type[Table]) -> None:
+    async def _add_table(self, schema_name: str, table: type[Table]) -> None:
         if issubclass(table, Table):
             table_name = self._get_table_name(
                 table._meta.tablename, schema_name
@@ -177,7 +189,7 @@ class TableStorage(metaclass=Singleton):
 
     def _add_to_schema_tables(self, schema_name: str, table_name: str) -> None:
         """
-        We keep record of schemas and their tables for easy use. This method
+        We keep a record of schemas and their tables for easy use. This method
         adds a table to its schema.
 
         """
@@ -217,7 +229,7 @@ class TableStorage(metaclass=Singleton):
             raise ValueError("Couldn't find schema name.")
 
     @staticmethod
-    def _to_list(value: t.Any) -> t.List:
+    def _to_list(value: Any) -> list:
         if isinstance(value, list):
             return value
         elif isinstance(value, (tuple, set)):

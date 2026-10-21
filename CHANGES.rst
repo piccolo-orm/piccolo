@@ -1,6 +1,856 @@
 Changes
 =======
 
+1.37.0
+------
+
+``ArrayOverlap``
+~~~~~~~~~~~~~~~~
+
+You can now check if an array has values in common with another array:
+
+.. code-block:: python
+
+  >>> await Ticket.select().where(
+  ...     Ticket.seat_numbers.overlap([510, 511])
+  ... )
+
+Thanks to @regiscamimura for adding this.
+
+Infinity defaults for ``Numeric`` and ``Real``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``Numeric`` / ``Decimal`` and ``Real`` columns can now have infinity (or
+negative infinity) as a default value:
+
+.. code-block:: python
+
+  from piccolo.columns.defaults import (
+      InfinityDecimal,
+      NegativeInfinityDecimal,
+  )
+
+  class Product(Table):
+      max_price = Decimal(default=InfinityDecimal())
+      min_price = Decimal(default=NegativeInfinityDecimal())
+
+Other changes
+~~~~~~~~~~~~~
+
+* Fixed a bug where auto migrations silently dropped tables with the same name
+  in different schemas (thanks to @juneja-varun for this).
+* Fixed a bug where auto migrations crashed when altering a column whose
+  previous class was a custom ``Column`` subclass (thanks to @pavdwest for
+  this).
+* Fixed reverse migrations on SQLite - they tried dropping tables using
+  ``CASCADE``, which SQLite doesn't support (thanks to @juneja-varun for this).
+* ``piccolo schema generate`` now detects ``UUID`` column defaults, including
+  ``uuidv7()`` (thanks to @juneja-varun for this).
+* Improved the contribution docs, including a Docker Compose file for easily
+  running the test databases, and added a fixtures example to the docs (thanks
+  to @mlbiche for this).
+
+-------------------------------------------------------------------------------
+
+1.36.0
+------
+
+Advanced Constraints
+~~~~~~~~~~~~~~~~~~~~
+
+Added support for composite unique constraints. Many thanks to @atkei for this.
+
+For example:
+
+.. code-block:: python
+
+  from piccolo.constraints import Unique
+
+  class Album(Table):
+      name = Varchar()
+      band = ForeignKey(Band)
+
+      unique_name_band = Unique([name, band])
+
+And check constraints:
+
+.. code-block:: python
+
+  from piccolo.constraints import Check
+
+  class Ticket(Table):
+      price = Decimal()
+
+      check_price_positive = Check(price >= 0)
+
+Replaced ``SelectRaw``, ``GroupByRaw`` and ``OrderByRaw`` with ``QueryString``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In certain situations we allow the user to modify Piccolo queries using
+custom SQL. This is for advanced situations not covered natively by the ORM.
+
+In the past we used custom classes for this - ``SelectRaw``, ``OrderByRaw``
+etc.
+
+These classes still work, but you can now just pass in a ``QueryString``
+instead (the building block of queries in Piccolo).
+
+.. code-block:: python
+
+    from piccolo.querystring import QueryString
+
+    await Band.select(Band.name).order_by(
+        QueryString('random()'),
+    )
+
+Thanks to @AnayGarodia for adding support for custom SQL in ``group_by``.
+
+Other changes
+~~~~~~~~~~~~~
+
+* Improved error messages when running migrations (thanks to @pctablet505 and
+  @AnayGarodia for this).
+* Upgraded ``colorama``, so Piccolo works nicer with other libraries also
+  using ``colorama`` (thanks to @laravioli for reporting this issue).
+* Fixed a bug using ``load_json`` and ``prefetch`` together, when the JSON
+  column contains an array value (thanks to @Mekagojira8 for reporting this
+  issue).
+* Fixed bugs with title case column names (thanks to @devzzzero for reporting
+  this).
+
+-------------------------------------------------------------------------------
+
+1.35.0
+------
+
+``ModelBuilder`` now generates proper email values for ``Email`` columns.
+
+Fixed a bug with ``output(load_json=True)`` when JSON column had null values.
+
+-------------------------------------------------------------------------------
+
+1.34.0
+------
+
+``NullIf``
+~~~~~~~~~~
+
+Return null if a certain condition is met - for example, convert any empty
+strings to null:
+
+.. code-block:: python
+
+  from piccolo.query.functions import NullIf
+
+  class Venue(Table):
+      address = Text()
+
+  >>> await Venue.select(NullIf(Venue.address, ''))
+  [{'address': None}]
+
+``Replace``
+~~~~~~~~~~~
+
+String replacements within queries - for example, a simple slugify
+implementation:
+
+.. code-block:: python
+
+  from piccolo.query.functions import Replace
+
+  class Venue(Table):
+      name = Varchar()
+
+  >>> await Venue.select(Replace(Venue.name, ' ', '-'))
+  [{'name': 'Amazing-Venue'}]
+
+``AtTimeZone``
+~~~~~~~~~~~~~~
+
+Convert ``Timestamptz`` columns from UTC to another timezone:
+
+.. code-block:: python
+
+  from piccolo.query.functions import AtTimeZone
+
+  class Signing(Table):
+      starts = Timestamptz()
+
+  >>> await Signing.select(
+  ...     AtTimeZone(Signing.starts, 'EST'),
+  ... )
+  [{'starts': datetime.datetime(2026, 12, 20, 5, 0)}]
+
+``Char`` column
+~~~~~~~~~~~~~~~
+
+Similar to ``Varchar`` - useful if the strings are a fixed width.
+
+.. code-block:: python
+
+  class Venue(Table):
+      country_code = Char(length=2)
+
+It's also useful if using Piccolo on an existing database.
+
+Fixture ordering
+~~~~~~~~~~~~~~~~
+
+When dumping fixtures using ``piccolo fixtures dump``, the data is now sorted
+by primary key, so subsequent dumps results in smaller Git diffs.
+
+``load_json`` with ``prefetch``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When using ``.output(load_json=True)`` alongside ``prefetch``, the child
+objects now load JSON strings into Python objects. Thanks to @diklios5768 for
+reporting this issue.
+
+.. code-block:: python
+
+  class RecordingStudio(Table):
+      facilities = JSONB()
+
+  class Album(Table):
+      recorded_at = ForeignKey(RecordingStudio)
+
+  >>> album = await Album.objects(Album.recorded_at).output(load_json=True).first()
+  >>> album.recorded_at.facilities
+  {
+      'restaurant': True,
+      'mixing_desk': True,
+      'instruments': {'electric_guitars': 10, 'drum_kits': 2},
+      'technicians': [{'name': 'Alice Jones'}, {'name': 'Bob Williams'}]
+  }
+
+-------------------------------------------------------------------------------
+
+1.33.0
+------
+
+UUID v7
+~~~~~~~
+
+Added support for UUID v7.
+
+.. code-block:: python
+
+  from piccolo.columns.defaults.uuid import UUID7
+
+  class MyTable(Table):
+      my_column = UUID(default=UUID7())
+
+This provides superior insert performance and easier indexing compared to
+UUID v4.
+
+Requires Python 3.14, and Postgres 18 (otherwise extensions are needed).
+
+``Coalesce``
+~~~~~~~~~~~~
+
+Added the ``Coalesce`` function - which lets you specify a fall back if a null
+value is found.
+
+For example:
+
+.. code-block:: python
+
+  >>> await Album.select(
+  ...     Coalesce(Album.release_date, datetime.date(2050, 1, 1))
+  ... )
+
+
+Or you can use this abbreviated syntax:
+
+.. code-block:: python
+
+    >>> await Album.select(
+    ...     Album.release_date | datetime.date(2050, 1, 1)
+    ... )
+
+
+Other changes
+~~~~~~~~~~~~~
+
+* Fixed a bug with the Piccolo CLI, where custom names for commands weren't
+  being applied (thanks to @sinisaos for this and @pelid for reporting the
+  issue).
+* Fixed typo in the ``get_related`` docstring (thanks to @nightcityblade for
+  this).
+* Fixed bugs with queries when a column has ``db_column_name`` defined (thanks
+  to @VladislavYar for raising these issues).
+* Improved the docs for ``Timestamp`` and ``Timestamptz`` columns.
+
+-------------------------------------------------------------------------------
+
+1.32.0
+------
+
+Added the ``having`` clause, which is useful when working with ``group_by``.
+
+For example, here we get the number of albums per band, but exclude any bands
+with less than 2 albums:
+
+.. code-block:: python
+
+    >>> from piccolo.query.functions.aggregate import Count
+
+    >>> await Album.select(
+    ...     Album.band.name.as_alias('band_name'),
+    ...     Count()
+    ... ).group_by(
+    ...     Album.band
+    ... ).having(
+    ...     Count() >= 2
+    ... )
+
+    [
+        {"band_name": "Pythonistas", "count": 2},
+    ]
+
+We also updated our CockroachDB support to the latest version (thanks to
+@sinisaos for this).
+
+-------------------------------------------------------------------------------
+
+1.31.0
+------
+
+* Added official Postgres 18 support.
+* Removed graphlib backport (no longer needed in supported Python versions).
+* Improved documentation for column kwargs.
+* Updated README to mention other parts of the Piccolo ecosystem (thanks to
+  @sinisaos for this).
+* Table instances can now be compared using the ``==`` operator, and will
+  return ``True`` if they have the same primary key value (thanks to @aarcex3
+  and @Skelmis for this).
+* Fixed missing import for auto migrations when tables use
+  ``LazyTableReference`` (thanks to @sinisaos for this).
+* Improved docs for the auto generated primary key (thanks to @badlydrawnrob
+  for this).
+* Improved ``Table._table_str`` (this is most obvious in the playground, where
+  the table definitions printed out now show more information - thanks to
+  @badlydrawnrob for raising this issue).
+* Fixed a bug with ``ModelBuilder`` when using ``Array`` columns with
+  ``choices`` defined.
+* ``add_m2m`` now returns the id of the joining table row, to match the docs
+  (thanks to @diklios5768 for reporting this).
+* Improved the docs for ``UUID`` columns (what the ``UUID4`` default value
+  does).
+* Moved connection pooling to its own page in the docs.
+* Improved the ``on_conflict`` clause - a ``target`` must be specified if
+  using ``DO UPDATE`` (thanks to @mafuyuuu1 for raising this issue, and
+  @sinisaos for this fix).
+* Changed Esmerald to Ravyn in the ASGI templates (thanks to @sinisaos for
+  this).
+* Fixed a bug with auto migrations when changing a column to a foreign key - an
+  exception was being raised (thanks to @gsavchuk for raising this issue and
+  @sinisaos for this fix).
+* ``Array(Numeric())`` columns now work with SQLite (thanks to @sinisaos for
+  this).
+* UUID columns now use the built-in ``gen_random_uuid()`` function in Postgres
+  to generate a default value, instead of using the ``uuid-ossp`` extension
+  (thanks to @sinisaos for this). See
+  :ref:`this tutorial <UUIDColumnsMigrationTutorial>` for more details.
+
+-------------------------------------------------------------------------------
+
+1.30.0
+------
+
+Added support for Python 3.14 (thanks to @sinisaos for this).
+
+-------------------------------------------------------------------------------
+
+1.29.0
+------
+
+* Fixed a bug with adding / subtracting  ``Integer`` columns from one another
+  in queries (thanks to @ryanvarley for this).
+* Updated the ASGI templates, and BlackSheep dependencies (thanks to @sinisaos
+  for this).
+* Fixed a bug where decimal values generated by ``ModelBuilder`` could be too
+  large.
+* Added an example ``M2M`` relationship in the playground to make learning
+  ``M2M`` easier (thanks to @sinisaos for this).
+* Added documentation for ``MigrationManager.get_table_from_snapshot``, which
+  is a way of getting a ``Table`` from the migration history - useful when
+  running data migrations (thanks to @sinisaos for this).
+* Columns with the ``secret=True`` argument are now added to
+  ``Table._meta.secret_columns`` (thanks to @sinisaos for this).
+* Added documentation for the ``migration`` table.
+* Tidied up Pydantic tests (thanks to @sinisaos for this).
+
+-------------------------------------------------------------------------------
+
+1.28.0
+------
+
+Playground improvements
+~~~~~~~~~~~~~~~~~~~~~~~
+
+* Added an ``Array`` column to the playground (``Album.awards``), for easier
+  experimentation with array columns.
+* CoachroachDB is now supported in the playground (thanks to @sinisaos for this).
+
+  .. code-block:: bash
+
+    piccolo playground run --engine=cockroach
+
+Functions
+~~~~~~~~~
+
+Added lots of useful array functions (thanks to @sinisaos for this).
+
+Here's an example, where we can easily fix a typo in an array using ``replace``:
+
+.. code-block:: python
+
+  >>> await Album.update({
+  ...     Album.awards: Album.awards.replace('Grammy Award 2021', 'Grammy Award 2022')
+  ... }, force=True)
+
+The documentation for functions has also been improved (e.g. how to create a
+custom function).
+
+The ``Cast`` function is now more flexible.
+
+``Array`` concantenation
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Values can be prepended:
+
+.. code-block:: python
+
+  >>> await Album.update({
+  ...     Album.awards: ['Grammy Award 2020'] + Album.awards
+  ... }, force=True)
+
+And multiple arrays can be concatenated in one go:
+
+.. code-block:: python
+
+  >>> await Album.update({
+  ...     Album.awards: ['Grammy Award 2020'] + Album.awards + ['Grammy Award 2025']
+  ... }, force=True)
+
+``is_in`` and ``not_in`` sub queries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can now use sub queries within ``is_in`` and ``not_in``  Thanks to
+@sinisaos for this.
+
+.. code-block:: python
+
+  >>> await Band.select().where(
+  ...     Band.id.is_in(
+  ...         Concert.select(Concert.band_1).where(
+  ...             Concert.starts >= datetime.datetime(year=2025, month=1, day=1)
+  ...         )
+  ...     )
+  ... )
+
+Other improvements
+~~~~~~~~~~~~~~~~~~
+
+* Auto convert a default value of ``0`` to ``0.0`` in ``Float`` columns.
+* Modernised the type hints throughout the codebase (e.g. using ``list``
+  instead of ``typing.List``). Thanks to @sinisaos for this.
+* Fixed a bug with auto migrations, where the ``Array`` base column class
+  wasn't being imported.
+* Improved M2M query performance by using sub selects (thanks to @sinisaos for
+  this).
+
+-------------------------------------------------------------------------------
+
+1.27.1
+------
+
+Improved the type annotations in ``ColumnKwargs`` - made some optional. Thanks
+to @stronk7 and @sinisaos for their help with this.
+
+-------------------------------------------------------------------------------
+
+1.27.0
+------
+
+Improved auto completion / typo detection for column arguments.
+
+For example:
+
+.. code-block:: python
+
+  class Band(Table):
+      name = Varchar(nul=True)  # linters will now warn that nul is a typo (should be null)
+
+Thanks to @sinisaos for this.
+
+-------------------------------------------------------------------------------
+
+1.26.1
+------
+
+Updated the BlackSheep ASGI template - thanks to @sinisaos for this.
+
+Fixed a bug with auto migrations when a ``ForeignKey`` specifies
+``target_column`` - multiple primary key columns were added to the migration
+file. Thanks to @waldner for reporting this issue.
+
+Added a tutorial for moving tables between Piccolo apps - thanks to
+@sarvesh4396 for this.
+
+-------------------------------------------------------------------------------
+
+1.26.0
+------
+
+Improved auto migrations - ``ON DELETE`` and ``ON UPDATE`` can be modified
+on ``ForeignKey`` columns. Thanks to @sinisaos for this.
+
+-------------------------------------------------------------------------------
+
+1.25.0
+------
+
+Improvements to Piccolo app creation. When running the following:
+
+.. code-block:: bash
+
+  piccolo app new my_app
+
+It now validates that the app name (``my_app`` in this case) is valid as a
+Python package.
+
+Also, there is now a ``--register`` flag, which automatically adds the new app
+to the ``APP_REGISTRY`` in ``piccolo_conf.py``.
+
+.. code-block:: python
+
+  piccolo app new my_app --register
+
+Other changes:
+
+* ``table_finder`` can now use relative modules.
+* Updated the Esmerald ASGI template (thanks to @sinisaos for this).
+* When using the ``remove`` method to delete a row from the database
+  (``await some_band.remove()``), ``some_band._exists_in_db`` is now set to
+  ``False``. Thanks to @sinisaos for this fix.
+
+-------------------------------------------------------------------------------
+
+1.24.2
+------
+
+Fixed a bug with ``delete`` queries which had joins in the ``where`` clause.
+For example:
+
+.. code-block:: python
+
+  >>> await Band.delete().where(Band.manager.name == 'Guido')
+
+Thanks to @HakierGrzonzo for reporting the issue, and @sinisaos for the fix.
+
+-------------------------------------------------------------------------------
+
+1.24.1
+------
+
+Fixed a bug with default values in ``Timestamp`` and ``Timestamptz`` columns.
+Thanks to @splch for this.
+
+-------------------------------------------------------------------------------
+
+1.24.0
+------
+
+* Fixed a bug with ``get_or_create`` when a table has a column with both
+  ``null=False`` and ``default=None`` - thanks to @bymoye for reporting this
+  issue.
+* If a ``PostgresEngine`` uses the ``dsn`` argument for ``asyncpg``, this is
+  now used by ``piccolo sql_shell run``. Thanks to @abhishek-compro for
+  suggesting this.
+* Fixed the type annotation for the ``length`` argument of ``Varchar`` - it
+  is allowed to be ``None``. Thanks to @Compro-Prasad for this.
+
+-------------------------------------------------------------------------------
+
+1.23.0
+------
+
+* Added Quart, Sanic, and Falcon as supported ASGI frameworks (thanks to
+  @sinisaos for this).
+* Fixed a bug with very large integers in SQLite.
+* Fixed type annotation for ``Timestamptz`` default values (thanks to @Skelmis
+  for this).
+
+-------------------------------------------------------------------------------
+
+1.22.0
+------
+
+Python 3.13 is now officially supported.
+
+``JSON`` / ``JSONB`` querying has been significantly improved. For example, if
+we have this table:
+
+.. code-block:: python
+
+  class RecordingStudio(Table):
+      facilities = JSONB()
+
+And the ``facilities`` column contains the following JSON data:
+
+.. code-block:: python
+
+    {
+        "technicians": [
+            {"name": "Alice Jones"},
+            {"name": "Bob Williams"},
+        ]
+    }
+
+We can get the first technician name as follows:
+
+.. code-block:: python
+
+    >>> await RecordingStudio.select(
+    ...     RecordingStudio.facilities["technicians"][0]["name"].as_alias("name")
+    ... ).output(load_json=True)
+    [{'name': 'Alice Jones'}, ...]
+
+``TableStorage`` (used for dynamically creating Piccolo ``Table`` classes from
+an existing database) was improved, to support a Dockerised version of Piccolo
+Admin, which is coming soon.
+
+-------------------------------------------------------------------------------
+
+1.21.0
+------
+
+Postgres 17 is now officially supported.
+
+Fixed a bug with joins, when a ``ForeignKey`` column had ``db_column_name``
+specified. Thanks to @jessemcl-flwls for reporting this issue.
+
+-------------------------------------------------------------------------------
+
+1.20.0
+------
+
+``get_related`` now works multiple layers deep:
+
+.. code-block:: python
+
+    concert = await Concert.objects().first()
+    manager = await concert.get_related(Concert.band_1._.manager)
+
+-------------------------------------------------------------------------------
+
+1.19.1
+------
+
+Fixed a bug with the ``get_m2m`` method, which would raise a ``ValueError``
+when no objects were found. It now handles this gracefully and returns an empty
+list instead. Thanks to @nVitius for this fix.
+
+Improved the ASGI templates (including a fix for the latest Litestar version).
+Thanks to @sinisaos for this.
+
+-------------------------------------------------------------------------------
+
+1.19.0
+------
+
+Added support for row locking (i.e. ``SELECT ... FOR UPDATE``).
+
+For example, if we have this table:
+
+.. code-block:: python
+
+  class Concert(Table):
+      name = Varchar()
+      tickets_available = Integer()
+
+And we want to make sure that ``tickets_available`` never goes below 0, we can
+do the following:
+
+.. code-block:: python
+
+  async def book_tickets(ticket_count: int):
+      async with Concert._meta.db.transaction():
+          concert = await Concert.objects().where(
+              Concert.name == "Awesome Concert"
+          ).first().lock_rows()
+
+          if concert.tickets_available >= ticket_count:
+              await concert.update_self({
+                  Concert.tickets_available: Concert.tickets_available - ticket_count
+              })
+          else:
+              raise ValueError("Not enough tickets are available!")
+
+This means that when multiple transactions are running at the same time, it
+isn't possible to book more tickets than are available.
+
+Thanks to @dkopitsa for adding this feature.
+
+-------------------------------------------------------------------------------
+
+1.18.0
+------
+
+``update_self``
+~~~~~~~~~~~~~~~
+
+Added the ``update_self`` method, which is an alternative to the ``save``
+method. Here's an example where it's useful:
+
+.. code-block:: python
+
+  # If we have a band object:
+  >>> band = await Band.objects().get(name="Pythonistas")
+  >>> band.popularity
+  1000
+
+  # We can increment the popularity, based on the current value in the
+  # database:
+  >>> await band.update_self({
+  ...     Band.popularity: Band.popularity + 1
+  ... })
+
+  # The new value is set on the object:
+  >>> band.popularity
+  1001
+
+  # It's safer than using the `save` method, because the popularity value on
+  # the object might be out of date with what's in the database:
+  band.popularity += 1
+  await band.save()
+
+Thanks to @trondhindenes for suggesting this feature.
+
+Batch raw queries
+~~~~~~~~~~~~~~~~~
+
+The ``batch`` method can now be used with ``raw`` queries. For example:
+
+.. code-block:: python
+
+  async with await MyTable.raw("SELECT * FROM my_table").batch() as batch:
+      async for _batch in batch:
+          print(_batch)
+
+This is useful when you expect a raw query to return a lot of data.
+
+Thanks to @devsarvesh92 for suggesting this feature.
+
+-------------------------------------------------------------------------------
+
+1.17.1
+------
+
+Fixed a bug with migrations, where altering a column type from ``Integer`` to
+``Float`` could fail. Thanks to @kurtportelli for reporting this issue.
+
+-------------------------------------------------------------------------------
+
+1.17.0
+------
+
+Each migration is automatically wrapped in a transaction - this can now be
+disabled using the ``wrap_in_transaction`` argument:
+
+.. code-block:: python
+
+  manager = MigrationManager(
+      wrap_in_transaction=False,
+      ...
+  )
+
+This is useful when writing a manual migration, and you want to manage all of
+the transaction logic yourself (or want multiple transactions).
+
+``granian`` is now a supported server in the ASGI templates. Thanks to
+@sinisaos for this.
+
+-------------------------------------------------------------------------------
+
+1.16.0
+------
+
+Added custom async ``TestCase`` subclasses, to help with testing.
+
+For example ``AsyncTransactionTest``, which wraps each test in a transaction
+automatically:
+
+.. code-block:: python
+
+  class TestBandEndpoint(AsyncTransactionTest):
+
+      async def test_band_response(self):
+          """
+          Make sure the endpoint returns a 200.
+          """
+          # This data automatically gets removed from the database when the
+          # test finishes:
+          band = Band({Band.name: "Pythonistas"})
+          await band.save()
+
+          # Using an API testing client, like httpx:
+          response = await client.get(f"/bands/{band.id}/")
+          self.assertEqual(response.status_code, 200)
+
+And ``AsyncTableTest``, which automatically creates and drops tables:
+
+.. code-block:: python
+
+  class TestBand(AsyncTableTest):
+
+      # These tables automatically get created and dropped:
+      tables = [Band]
+
+      async def test_band(self):
+          ...
+
+-------------------------------------------------------------------------------
+
+1.15.0
+------
+
+Improved ``refresh`` - it now works with prefetched objects. For example:
+
+.. code-block:: python
+
+  >>> band = await Band.objects(Band.manager).first()
+  >>> band.manager.name
+  "Guido"
+
+  # If the manager has changed in the database, when we refresh the band, the
+  # manager object will also be updated:
+  >>> await band.refresh()
+  >>> band.manager.name
+  "New name"
+
+Also, improved the error messages when creating a ``BaseUser`` - thanks to
+@haaavk for this.
+
+-------------------------------------------------------------------------------
+
+1.14.0
+------
+
+Laying the foundations for alterative Postgres database drivers (e.g.
+``psqlpy``). Thanks to @insani7y and @chandr-andr for their help with this.
+
+.. warning::
+  The SQL generated by Piccolo changed slightly in this release. Aliases used
+  to be like ``"manager$name"`` but now they are like ``"manager.name"``
+  (note ``$`` changed to ``.``). If you are using ``SelectRaw`` in your queries
+  to refer to these columns, then they will need updating. Please let us know
+  if you encounter any other issues.
+
+-------------------------------------------------------------------------------
+
 1.13.1
 ------
 
@@ -3471,7 +4321,7 @@ metaclass not being explicit enough when checking falsy values.
   which prevents circular import issues.
 * Faster column copying, which is important when specifying joins, e.g.
   ``await Band.select(Band.manager.name).run()``.
-* Fixed a bug with migrations and foreign key contraints.
+* Fixed a bug with migrations and foreign key constraints.
 
 -------------------------------------------------------------------------------
 

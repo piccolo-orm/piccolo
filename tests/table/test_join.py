@@ -1,11 +1,17 @@
 import decimal
 from unittest import TestCase
 
+from piccolo.columns.column_types import JSON, ForeignKey, Serial, Varchar
+from piccolo.table import Table
+from piccolo.testing.test_case import AsyncTableTest, TableTest
 from tests.base import engine_is
 from tests.example_apps.music.tables import (
     Band,
     Concert,
+    Instrument,
     Manager,
+    RecordingStudio,
+    Signing,
     Ticket,
     Venue,
 )
@@ -15,6 +21,9 @@ TABLES = [Manager, Band, Venue, Concert]
 
 class TestCreateJoin:
     def test_create_join(self):
+        """
+        A simple test to make sure tables with foreign keys can be created.
+        """
         for table in TABLES:
             table.create_table().run_sync()
 
@@ -22,12 +31,20 @@ class TestCreateJoin:
             table.alter().drop_table().run_sync()
 
 
-class TestJoin(TestCase):
-    tables = [Manager, Band, Venue, Concert, Ticket]
+class TestJoin(TableTest):
+    tables = [
+        Manager,
+        Band,
+        Venue,
+        Concert,
+        Ticket,
+        Signing,
+        Instrument,
+        RecordingStudio,
+    ]
 
     def setUp(self):
-        for table in self.tables:
-            table.create_table().run_sync()
+        super().setUp()
 
         manager_1 = Manager(name="Guido")
         manager_1.save().run_sync()
@@ -52,13 +69,21 @@ class TestJoin(TestCase):
         ticket = Ticket(concert=concert, price=decimal.Decimal(50.0))
         ticket.save().run_sync()
 
-    def tearDown(self):
-        for table in reversed(self.tables):
-            table.alter().drop_table().run_sync()
+        signing = Signing(with_=band_1)
+        signing.save().run_sync()
 
-    ###########################################################################
+        recording_studio = RecordingStudio(facilities={"restaurant": True})
+        recording_studio.save().run_sync()
 
-    def test_join(self):
+        instrument = Instrument(
+            name="Piccolo", recording_studio=recording_studio
+        )
+        instrument.save().run_sync()
+
+
+class TestSelectJoin(TestJoin):
+
+    def test_select_join(self):
         select_query = Concert.select(
             Concert.band_1.name,
             Concert.band_2.name,
@@ -193,25 +218,6 @@ class TestJoin(TestCase):
                 },
             )
 
-    def test_proxy_columns(self):
-        """
-        Make sure that ``proxy_columns`` are set correctly.
-
-        There used to be a bug which meant queries got slower over time:
-
-        https://github.com/piccolo-orm/piccolo/issues/691
-
-        """
-        # We call it multiple times to make sure it doesn't change with time.
-        for _ in range(2):
-            self.assertEqual(
-                len(Concert.band_1._.manager._foreign_key_meta.proxy_columns),
-                2,
-            )
-            self.assertEqual(
-                len(Concert.band_1._foreign_key_meta.proxy_columns), 4
-            )
-
     def test_select_all_columns_root(self):
         """
         Make sure that using ``all_columns`` at the root doesn't interfere
@@ -325,7 +331,29 @@ class TestJoin(TestCase):
                 },
             )
 
-    ###########################################################################
+
+class TestProxyColumns(TestCase):
+    def test_proxy_columns(self):
+        """
+        Make sure that ``proxy_columns`` are set correctly.
+
+        There used to be a bug which meant queries got slower over time:
+
+        https://github.com/piccolo-orm/piccolo/issues/691
+
+        """
+        # We call it multiple times to make sure it doesn't change with time.
+        for _ in range(2):
+            self.assertEqual(
+                len(Concert.band_1._.manager._foreign_key_meta.proxy_columns),
+                2,
+            )
+            self.assertEqual(
+                len(Concert.band_1._foreign_key_meta.proxy_columns), 4
+            )
+
+
+class TestObjectsJoin(TestJoin):
 
     def test_objects_nested(self):
         """
@@ -486,3 +514,108 @@ class TestJoin(TestCase):
 
         self.assertIsInstance(ticket.concert.band_2.manager.id, int)
         self.assertIsInstance(ticket.concert.band_2.manager.name, str)
+
+    def test_objects_prefetch_db_column_name(self):
+        """
+        Make sure that ``prefetch`` works with foreign keys with
+        ``db_column_name`` defined.
+
+        https://github.com/piccolo-orm/piccolo/issues/1107
+
+        """
+        signing = Signing.objects().prefetch(Signing.with_).first().run_sync()
+        assert signing is not None
+        self.assertIsInstance(signing.with_, Band)
+
+
+class TestObjectsNestedLoadJSON(TestJoin):
+    def test_objects_nested_with_load_json(self):
+        """
+        Make sure that nested objects works alongside ``load_json`` (i.e. the
+        JSON on nested objects gets loaded).
+
+        https://github.com/piccolo-orm/piccolo/issues/1383
+
+        """
+        instrument = (
+            Instrument.objects(Instrument.recording_studio)
+            .output(load_json=True)
+            .first()
+            .run_sync()
+        )
+        assert instrument is not None
+        self.assertDictEqual(
+            instrument.recording_studio.facilities,
+            {"restaurant": True},
+        )
+
+    def test_objects_nested_with_load_json_null(self):
+        """
+        Make sure that nested objects works alongside ``load_json``, when
+        the nested object has a null value for a JSON column.
+
+        https://github.com/piccolo-orm/piccolo/issues/1391
+
+        """
+        RecordingStudio.update(
+            {
+                RecordingStudio.facilities: None,
+            },
+            force=True,
+        ).run_sync()
+
+        instrument = (
+            Instrument.objects(Instrument.recording_studio)
+            .output(load_json=True)
+            .first()
+            .run_sync()
+        )
+        assert instrument is not None
+        self.assertIsNone(
+            instrument.recording_studio.facilities,
+        )
+
+
+class TableA(Table):
+    id = Serial(primary_key=True)
+    name = Varchar()
+
+
+class TableB(Table):
+    data = JSON()
+    table_a = ForeignKey(TableA, null=False)
+
+
+class TestObjectsNestedLoadJSONArray(AsyncTableTest):
+    tables = [TableA, TableB]
+
+    async def test_objects_nested_with_load_json_array(self):
+        """
+        Make sure that nested objects works alongside ``load_json``, when
+        the parent object has a JSON column, and it contains an array value.
+
+        https://github.com/piccolo-orm/piccolo/issues/1399#issuecomment-4864444701
+
+        The problem was because we already loaded the JSON string on the top
+        level row, and then were trying to load it again in
+        `make_nested_object`.
+
+        """  # noqa: E501
+        table_a = TableA()
+        await table_a.save()
+
+        data = ["a", "b", "c"]
+        table_b = TableB(data=data, table_a=table_a.id)
+        await table_b.save()
+
+        # Without prefetch:
+        row = await TableB.objects().output(load_json=True).first()
+        assert row
+        assert row.data == data
+
+        # With prefetch:
+        row = (
+            await TableB.objects(TableB.table_a).output(load_json=True).first()
+        )
+        assert row
+        assert row.data == data

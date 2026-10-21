@@ -2,7 +2,6 @@ import datetime
 import decimal
 import os
 import tempfile
-import typing as t
 import uuid
 from unittest import TestCase
 
@@ -65,7 +64,7 @@ class TestDumpLoad(TestCase):
         )
         mega_table.save().run_sync()
 
-    def _run_comparison(self, table_class_names: t.List[str]):
+    def _run_comparison(self, table_class_names: list[str]):
         self.insert_rows()
 
         json_string = run_sync(

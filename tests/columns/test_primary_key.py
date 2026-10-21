@@ -8,7 +8,7 @@ from piccolo.columns.column_types import (
     Varchar,
 )
 from piccolo.table import Table
-from tests.base import TableTest
+from piccolo.testing.test_case import TableTest
 
 
 class MyTableDefaultPrimaryKey(Table):
@@ -75,12 +75,12 @@ class TestPrimaryKeyUUID(TableTest):
 
 
 class Manager(Table):
-    pk = UUID(primary=True, key=True)
+    pk = UUID(primary_key=True)
     name = Varchar()
 
 
 class Band(Table):
-    pk = UUID(primary=True, key=True)
+    pk = UUID(primary_key=True)
     name = Varchar()
     manager = ForeignKey(Manager)
 

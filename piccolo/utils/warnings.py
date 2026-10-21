@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import typing as t
 import warnings
 from enum import Enum
 
 import colorama  # type: ignore
 
-colorama.init()
+colorama.just_fix_windows_console()
 
 
 class Level(Enum):
@@ -21,7 +20,7 @@ def colored_string(message: str, level: Level = Level.medium) -> str:
 
 def colored_warning(
     message: str,
-    category: t.Type[Warning] = Warning,
+    category: type[Warning] = Warning,
     stacklevel: int = 3,
     level: Level = Level.medium,
 ):

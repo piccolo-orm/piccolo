@@ -25,6 +25,7 @@ class TestRun(TestCase):
                 call("- Poster"),
                 call("- RecordingStudio"),
                 call("- Shirt"),
+                call("- Signing"),
                 call("- Ticket"),
                 call("- Venue"),
                 call("Importing mega tables:"),

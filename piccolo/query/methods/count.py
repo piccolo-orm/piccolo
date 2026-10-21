@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import typing as t
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Optional, TypeVar, Union
 
 from piccolo.custom_types import Combinable
 from piccolo.query.base import Query
@@ -8,7 +9,7 @@ from piccolo.query.functions.aggregate import Count as CountFunction
 from piccolo.query.mixins import WhereDelegate
 from piccolo.querystring import QueryString
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
     from piccolo.table import Table
 
@@ -19,9 +20,9 @@ class Count(Query):
 
     def __init__(
         self,
-        table: t.Type[Table],
-        column: t.Optional[Column] = None,
-        distinct: t.Optional[t.Sequence[Column]] = None,
+        table: type[Table],
+        column: Optional[Column] = None,
+        distinct: Optional[Sequence[Column]] = None,
         **kwargs,
     ):
         super().__init__(table, **kwargs)
@@ -32,11 +33,11 @@ class Count(Query):
     ###########################################################################
     # Clauses
 
-    def where(self: Self, *where: t.Union[Combinable, QueryString]) -> Self:
+    def where(self: Self, *where: Union[Combinable, QueryString]) -> Self:
         self.where_delegate.where(*where)
         return self
 
-    def distinct(self: Self, columns: t.Optional[t.Sequence[Column]]) -> Self:
+    def distinct(self: Self, columns: Optional[Sequence[Column]]) -> Self:
         self._distinct = columns
         return self
 
@@ -46,8 +47,8 @@ class Count(Query):
         return response[0]["count"]
 
     @property
-    def default_querystrings(self) -> t.Sequence[QueryString]:
-        table: t.Type[Table] = self.table
+    def default_querystrings(self) -> Sequence[QueryString]:
+        table: type[Table] = self.table
 
         query = table.select(
             CountFunction(column=self.column, distinct=self._distinct)
@@ -58,4 +59,4 @@ class Count(Query):
         return query.querystrings
 
 
-Self = t.TypeVar("Self", bound=Count)
+Self = TypeVar("Self", bound=Count)

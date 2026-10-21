@@ -1,7 +1,7 @@
 import asyncio
 import os
 import tempfile
-import typing as t
+from typing import cast
 from unittest import TestCase
 from unittest.mock import call, patch
 
@@ -14,7 +14,7 @@ from tests.example_apps.music.tables import Manager
 @engines_only("postgres", "cockroach")
 class TestPool(DBTestCase):
     async def _create_pool(self) -> None:
-        engine = t.cast(PostgresEngine, Manager._meta.db)
+        engine = cast(PostgresEngine, Manager._meta.db)
 
         await engine.start_connection_pool()
         assert engine.pool is not None
@@ -72,7 +72,7 @@ class TestPool(DBTestCase):
 @engines_only("postgres", "cockroach")
 class TestPoolProxyMethods(DBTestCase):
     async def _create_pool(self) -> None:
-        engine = t.cast(PostgresEngine, Manager._meta.db)
+        engine = cast(PostgresEngine, Manager._meta.db)
 
         # Deliberate typo ('nnn'):
         await engine.start_connnection_pool()

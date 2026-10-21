@@ -1,11 +1,11 @@
 import asyncio
+import enum
 import json
-import typing as t
-import unittest
 
 from piccolo.columns import (
     Array,
     Decimal,
+    Email,
     ForeignKey,
     Integer,
     LazyTableReference,
@@ -15,9 +15,9 @@ from piccolo.columns import (
     Timestamptz,
     Varchar,
 )
-from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
+from piccolo.table import Table
 from piccolo.testing.model_builder import ModelBuilder
-from tests.base import engines_skip
+from piccolo.testing.test_case import TableTest
 from tests.example_apps.music.tables import (
     Band,
     Concert,
@@ -31,9 +31,14 @@ from tests.example_apps.music.tables import (
 
 
 class TableWithArrayField(Table):
+    class Choices(enum.Enum):
+        a = "a"
+        b = "b"
+
     strings = Array(Varchar(30))
     integers = Array(Integer())
     floats = Array(Real())
+    choices = Array(Varchar(), choices=Choices)
 
 
 class TableWithDecimal(Table):
@@ -41,6 +46,10 @@ class TableWithDecimal(Table):
     numeric_with_digits = Numeric(digits=(4, 2))
     decimal = Decimal()
     decimal_with_digits = Decimal(digits=(4, 2))
+
+
+class TableWithEmail(Table):
+    email = Email()
 
 
 class BandWithLazyReference(Table):
@@ -55,42 +64,33 @@ class BandWithRecursiveReference(Table):
     manager: ForeignKey["Manager"] = ForeignKey("self")
 
 
-TABLES = (
-    Manager,
-    Band,
-    Poster,
-    RecordingStudio,
-    Shirt,
-    Venue,
-    Concert,
-    Ticket,
-    TableWithArrayField,
-    TableWithDecimal,
-    BandWithLazyReference,
-    BandWithRecursiveReference,
-)
+class TestModelBuilder(TableTest):
 
-
-# Cockroach Bug: Can turn ON when resolved: https://github.com/cockroachdb/cockroach/issues/71908  # noqa: E501
-@engines_skip("cockroach")
-class TestModelBuilder(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        create_db_tables_sync(*TABLES)
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        drop_db_tables_sync(*TABLES)
+    tables = [
+        Manager,
+        Band,
+        Poster,
+        RecordingStudio,
+        Shirt,
+        Venue,
+        Concert,
+        Ticket,
+        TableWithArrayField,
+        TableWithDecimal,
+        TableWithEmail,
+        BandWithLazyReference,
+        BandWithRecursiveReference,
+    ]
 
     def test_async(self):
-        async def build_model(table_class: t.Type[Table]):
+        async def build_model(table_class: type[Table]):
             return await ModelBuilder.build(table_class)
 
-        for table_class in TABLES:
+        for table_class in self.tables:
             asyncio.run(build_model(table_class))
 
     def test_sync(self):
-        for table_class in TABLES:
+        for table_class in self.tables:
             ModelBuilder.build_sync(table_class)
 
     def test_choices(self):
@@ -104,6 +104,16 @@ class TestModelBuilder(unittest.TestCase):
             queried_shirt.size,
             ["s", "l", "m"],
         )
+
+    def test_array_choices(self):
+        """
+        Make sure that ``ModelBuilder`` generates arrays where each array
+        element is a valid choice.
+        """
+        instance = ModelBuilder.build_sync(TableWithArrayField)
+        for value in instance.choices:
+            # Will raise an exception if the enum value isn't found:
+            TableWithArrayField.Choices[value]
 
     def test_datetime(self):
         """
@@ -223,3 +233,11 @@ class TestModelBuilder(unittest.TestCase):
             .run_sync()
         ):
             self.assertIsInstance(facilities, dict)
+
+    def test_email(self):
+        """
+        Make sure that valid email addresses are generated.
+        """
+        row = ModelBuilder.build_sync(TableWithEmail)
+        self.assertIn("@", row.email)
+        self.assertTrue(row.email.endswith(".com"))

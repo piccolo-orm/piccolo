@@ -17,8 +17,8 @@ from .methods import (
     TableExists,
     Update,
 )
-from .methods.select import SelectRaw
-from .mixins import OrderByRaw
+from .methods.select import SelectRaw  # for backwards compatibility
+from .mixins import OrderByRaw  # for backwards compatibility
 
 __all__ = [
     "Alter",

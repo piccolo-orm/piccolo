@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-import typing as t
+from typing import Optional
 
 import typing_extensions
 
@@ -20,7 +20,7 @@ from piccolo.utils.list import batch
 async def load_json_string(
     json_string: str,
     chunk_size: int = 1000,
-    on_conflict_action: t.Optional[OnConflictAction] = None,
+    on_conflict_action: Optional[OnConflictAction] = None,
 ):
     """
     Parses the JSON string, and inserts the parsed data into the database.
@@ -55,7 +55,7 @@ async def load_json_string(
         raise Exception("Unable to find the engine.")
 
     # This is what we want to the insert into the database:
-    data: t.Dict[t.Type[Table], t.List[Table]] = {}
+    data: dict[type[Table], list[Table]] = {}
 
     for app_name in app_names:
         app_model = getattr(fixture_pydantic_model, app_name)
@@ -94,7 +94,7 @@ async def load_json_string(
 async def load(
     path: str = "fixture.json",
     chunk_size: int = 1000,
-    on_conflict: t.Optional[
+    on_conflict: Optional[
         typing_extensions.Literal["DO NOTHING", "DO UPDATE"]
     ] = None,
 ):
@@ -118,7 +118,7 @@ async def load(
     with open(path, "r") as f:
         contents = f.read()
 
-    on_conflict_action: t.Optional[OnConflictAction] = None
+    on_conflict_action: Optional[OnConflictAction] = None
 
     if on_conflict:
         try:

@@ -7,8 +7,9 @@ import random
 import shutil
 import tempfile
 import time
-import typing as t
 import uuid
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Optional
 from unittest.mock import MagicMock, patch
 
 from piccolo.apps.migrations.auto.operations import RenameTable
@@ -30,6 +31,7 @@ from piccolo.columns.column_types import (
     BigInt,
     BigSerial,
     Boolean,
+    Char,
     Date,
     Decimal,
     DoublePrecision,
@@ -46,6 +48,12 @@ from piccolo.columns.column_types import (
     Timestamptz,
     Varchar,
 )
+from piccolo.columns.defaults import (
+    InfinityDecimal,
+    InfinityFloat,
+    NegativeInfinityDecimal,
+    NegativeInfinityFloat,
+)
 from piccolo.columns.defaults.uuid import UUID4
 from piccolo.columns.m2m import M2M
 from piccolo.columns.reference import LazyTableReference
@@ -55,7 +63,7 @@ from piccolo.table import Table, create_table_class, drop_db_tables_sync
 from piccolo.utils.sync import run_sync
 from tests.base import DBTestCase, engines_only, engines_skip
 
-if t.TYPE_CHECKING:
+if TYPE_CHECKING:
     from piccolo.columns.base import Column
 
 
@@ -127,8 +135,8 @@ class MigrationTestCase(DBTestCase):
 
     def _test_migrations(
         self,
-        table_snapshots: t.List[t.List[t.Type[Table]]],
-        test_function: t.Optional[t.Callable[[RowMeta], bool]] = None,
+        table_snapshots: list[list[type[Table]]],
+        test_function: Optional[Callable[[RowMeta], bool]] = None,
     ):
         """
         Writes a migration file to disk and runs it.
@@ -270,6 +278,25 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @engines_skip("cockroach")
+    def test_char_column(self):
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Char(default="GB", length=2, null=True),
+                    Char(default="GB", length=2, null=False),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "character",
+                    x.is_nullable == "NO",
+                    x.column_default in ("'GB'::bpchar", "'GB':::STRING"),
+                ]
+            ),
+        )
+
     def test_text_column(self):
         self._test_migrations(
             table_snapshots=[
@@ -328,6 +355,8 @@ class TestMigrations(MigrationTestCase):
                 for column in [
                     Real(),
                     Real(default=1.1),
+                    Real(default=InfinityFloat()),
+                    Real(default=NegativeInfinityFloat()),
                     Real(null=True),
                     Real(null=False),
                     Real(index=True),
@@ -436,7 +465,7 @@ class TestMigrations(MigrationTestCase):
                 [
                     x.data_type == "uuid",
                     x.is_nullable == "NO",
-                    x.column_default == "uuid_generate_v4()",
+                    x.column_default == "gen_random_uuid()",
                 ]
             ),
         )
@@ -589,6 +618,8 @@ class TestMigrations(MigrationTestCase):
                     Numeric(digits=(4, 2)),
                     Numeric(digits=None),
                     Numeric(default=decimal.Decimal("1.2")),
+                    Numeric(default=InfinityDecimal()),
+                    Numeric(default=NegativeInfinityDecimal()),
                     Numeric(default=numeric_default),
                     Numeric(null=True, default=None),
                     Numeric(null=False),
@@ -692,15 +723,39 @@ class TestMigrations(MigrationTestCase):
 
     def test_array_column_bigint(self):
         """
-        There was a bug with using an array of ``BigInt`` - see issue 500 on
-        GitHub. It's because ``BigInt`` requires access to the parent table to
+        There was a bug with using an array of ``BigInt``:
+
+        http://github.com/piccolo-orm/piccolo/issues/500/
+
+        It's because ``BigInt`` requires access to the parent table to
         determine what the column type is.
+
         """
         self._test_migrations(
             table_snapshots=[
                 [self.table(column)]
                 for column in [
                     Array(base_column=BigInt()),
+                ]
+            ]
+        )
+
+    def test_array_base_column_change(self):
+        """
+        There was a bug when trying to change the base column of an array:
+
+        https://github.com/piccolo-orm/piccolo/issues/1076
+
+        It wasn't importing the base column, e.g. for ``Array(Text())`` it
+        wasn't importing ``Text``.
+
+        """
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Array(base_column=Varchar()),
+                    Array(base_column=Text()),
                 ]
             ]
         )
@@ -888,6 +943,25 @@ class TestMigrations(MigrationTestCase):
             ]
         )
 
+    def test_column_type_conversion_integer_float(self):
+        """
+        Make sure conversion between ``Integer`` and ``Real`` works - related
+        to this bug:
+
+        https://github.com/piccolo-orm/piccolo/issues/1071
+
+        """
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Real(default=1.0),
+                    Integer(default=1),
+                    Real(default=1.0),
+                ]
+            ]
+        )
+
     def test_column_type_conversion_json(self):
         self._test_migrations(
             table_snapshots=[
@@ -1045,8 +1119,7 @@ class TestTargetColumn(MigrationTestCase):
             self.assertTrue(table_class.table_exists().run_sync())
 
         # Make sure the constraint was created correctly.
-        response = self.run_sync(
-            """
+        response = self.run_sync("""
             SELECT EXISTS(
                 SELECT 1
                 FROM INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE CCU
@@ -1057,8 +1130,7 @@ class TestTargetColumn(MigrationTestCase):
                     AND CCU.TABLE_NAME = 'table_a'
                     AND CCU.COLUMN_NAME = 'name'
             )
-            """
-        )
+            """)
         self.assertTrue(response[0]["exists"])
 
 
@@ -1069,7 +1141,7 @@ class TestForeignKeySelf(MigrationTestCase):
             id = UUID(primary_key=True)
             table_a: ForeignKey[TableA] = ForeignKey("self")
 
-        self.table_classes: t.List[t.Type[Table]] = [TableA]
+        self.table_classes: list[type[Table]] = [TableA]
 
     def tearDown(self):
         drop_db_tables_sync(Migration, *self.table_classes)

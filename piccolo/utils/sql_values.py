@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 import functools
-import typing as t
 from enum import Enum
+from typing import TYPE_CHECKING, Any
 
 from piccolo.utils.encoding import dump_json
 from piccolo.utils.warnings import colored_warning
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
 
 
-def convert_to_sql_value(value: t.Any, column: Column) -> t.Any:
+def convert_to_sql_value(value: Any, column: Column) -> Any:
     """
     Some values which can be passed into Piccolo queries aren't valid in the
     database. For example, Enums, Table instances, and dictionaries for JSON

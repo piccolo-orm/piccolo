@@ -1,6 +1,6 @@
 from piccolo.columns import ForeignKey, Text, Varchar
 from piccolo.table import Table
-from tests.base import TableTest
+from piccolo.testing.test_case import TableTest
 
 
 class Band(Table):

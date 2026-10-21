@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import sys
-import typing as t
 
 from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.apps.migrations.commands.base import (
@@ -31,7 +30,7 @@ class BackwardsMigrationManager(BaseMigrationManager):
         super().__init__()
 
     async def run_migrations_backwards(self, app_config: AppConfig):
-        migration_modules: t.Dict[str, MigrationModule] = (
+        migration_modules: dict[str, MigrationModule] = (
             self.get_migration_modules(
                 app_config.resolved_migrations_folder_path
             )

@@ -1,6 +1,6 @@
 from piccolo.columns.column_types import Integer, Varchar
 from piccolo.table import Table
-from tests.base import TableTest
+from piccolo.testing.test_case import TableTest
 
 
 class Concert(Table):

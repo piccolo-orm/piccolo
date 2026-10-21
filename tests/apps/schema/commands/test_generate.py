@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import ast
 import asyncio
-import typing as t
+import uuid
+from typing import cast
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
@@ -10,15 +11,18 @@ from piccolo.apps.schema.commands.exceptions import GenerateError
 from piccolo.apps.schema.commands.generate import (
     OutputSchema,
     generate,
+    get_column_default,
     get_output_schema,
 )
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import (
+    UUID,
     ForeignKey,
     Integer,
     Timestamp,
     Varchar,
 )
+from piccolo.columns.defaults.uuid import UUID7
 from piccolo.columns.indexes import IndexMethod
 from piccolo.schema import SchemaManager
 from piccolo.table import Table, create_db_tables_sync
@@ -38,7 +42,7 @@ class TestGenerate(TestCase):
             table_class.alter().drop_table().run_sync()
 
     def _compare_table_columns(
-        self, table_1: t.Type[Table], table_2: t.Type[Table]
+        self, table_1: type[Table], table_2: type[Table]
     ):
         """
         Make sure that for each column in table_1, there is a corresponding
@@ -151,7 +155,6 @@ class TestGenerate(TestCase):
         assert SmallTable_ is not None
         self._compare_table_columns(SmallTable, SmallTable_)
 
-    @engines_skip("cockroach")
     def test_self_referencing_fk(self) -> None:
         """
         Make sure self-referencing foreign keys are handled correctly.
@@ -166,7 +169,7 @@ class TestGenerate(TestCase):
         # Make sure the 'references' value of the generated column is "self".
         for table in output_schema.tables:
             if table.__name__ == "MegaTable":
-                column = t.cast(
+                column = cast(
                     ForeignKey,
                     output_schema.tables[1]._meta.get_column_by_name(
                         "self_referencing_fk"
@@ -322,4 +325,30 @@ class TestGenerateWithException(TestCase):
         self.assertIn(
             "Exception occurred while generating `mega_table` table: Test",
             exception_messages,
+        )
+
+
+class TestGetColumnDefaultUUID(TestCase):
+    def test_gen_random_uuid(self):
+        self.assertIs(
+            get_column_default(UUID, "gen_random_uuid()", "postgres"),
+            uuid.uuid4,
+        )
+
+    def test_uuid_generate_v4(self):
+        self.assertIs(
+            get_column_default(UUID, "uuid_generate_v4()", "postgres"),
+            uuid.uuid4,
+        )
+
+    def test_uuidv7(self):
+        self.assertIsInstance(
+            get_column_default(UUID, "uuidv7()", "postgres"), UUID7
+        )
+
+    def test_unrecognised_default(self):
+        self.assertIsNone(
+            get_column_default(
+                UUID, "(md5((random())::text))::uuid", "postgres"
+            )
         )

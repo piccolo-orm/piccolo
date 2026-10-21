@@ -8,7 +8,7 @@ This is used to bulk insert rows into the table:
 .. code-block:: python
 
     await Band.insert(
-        Band(name="Pythonistas")
+        Band(name="Pythonistas"),
         Band(name="Darts"),
         Band(name="Gophers")
     )

@@ -1,6 +1,15 @@
 from __future__ import annotations
 
-import typing as t
+from collections.abc import Sequence
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generic,
+    Literal,
+    Optional,
+    TypeVar,
+    Union,
+)
 
 from piccolo.custom_types import Combinable, TableInstance
 from piccolo.query.base import Query
@@ -12,18 +21,18 @@ from piccolo.query.mixins import (
 )
 from piccolo.querystring import QueryString
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import Column
     from piccolo.table import Table
 
 
 class Insert(
-    t.Generic[TableInstance], Query[TableInstance, t.List[t.Dict[str, t.Any]]]
+    Generic[TableInstance], Query[TableInstance, list[dict[str, Any]]]
 ):
     __slots__ = ("add_delegate", "on_conflict_delegate", "returning_delegate")
 
     def __init__(
-        self, table: t.Type[TableInstance], *instances: TableInstance, **kwargs
+        self, table: type[TableInstance], *instances: TableInstance, **kwargs
     ):
         super().__init__(table, **kwargs)
         self.add_delegate = AddDelegate()
@@ -44,14 +53,12 @@ class Insert(
 
     def on_conflict(
         self: Self,
-        target: t.Optional[t.Union[str, Column, t.Tuple[Column, ...]]] = None,
-        action: t.Union[
-            OnConflictAction, t.Literal["DO NOTHING", "DO UPDATE"]
+        target: Optional[Union[str, Column, tuple[Column, ...]]] = None,
+        action: Union[
+            OnConflictAction, Literal["DO NOTHING", "DO UPDATE"]
         ] = OnConflictAction.do_nothing,
-        values: t.Optional[
-            t.Sequence[t.Union[Column, t.Tuple[Column, t.Any]]]
-        ] = None,
-        where: t.Optional[Combinable] = None,
+        values: Optional[Sequence[Union[Column, tuple[Column, Any]]]] = None,
+        where: Optional[Combinable] = None,
     ) -> Self:
         if (
             self.engine_type == "sqlite"
@@ -81,7 +88,7 @@ class Insert(
 
     ###########################################################################
 
-    def _raw_response_callback(self, results: t.List):
+    def _raw_response_callback(self, results: list):
         """
         Assign the ids of the created rows to the model instances.
         """
@@ -97,7 +104,7 @@ class Insert(
             table_instance._exists_in_db = True
 
     @property
-    def default_querystrings(self) -> t.Sequence[QueryString]:
+    def default_querystrings(self) -> Sequence[QueryString]:
         base = f"INSERT INTO {self.table._meta.get_formatted_tablename()}"
         columns = ",".join(
             f'"{i._meta.db_column_name}"' for i in self.table._meta.columns
@@ -142,4 +149,4 @@ class Insert(
         return [querystring]
 
 
-Self = t.TypeVar("Self", bound=Insert)
+Self = TypeVar("Self", bound=Insert)

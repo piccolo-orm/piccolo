@@ -113,7 +113,7 @@ There are two options:
 And finally, if you're loading a really large fixture, you can specify the
 ``chunk_size``. By default, Piccolo inserts up to 1,000 rows at a time, as
 the database adapter will complain if a single insert query is too large. So
-if your fixture containts 10,000 rows, this will mean 10 insert queries.
+if your fixture contains 10,000 rows, this will mean 10 insert queries.
 
 You can tune this number higher or lower if you want (lower if the
 table has a lot of columns, or higher if the table has few columns).
@@ -121,6 +121,27 @@ table has a lot of columns, or higher if the table has few columns).
 .. code-block:: bash
 
     piccolo fixtures load fixtures.json --chunk_size=500
+
+You can have an example of the expected structure of the `fixtures.json` file by
+dumping existing data to a fixture file. If you don't have any data, here is a
+short example:
+
+.. code-block:: json
+
+    {
+        "my_wonderful_piccolo_app": {
+            "Manager": [
+                { "id": 1, "name": "Dave" },
+                { "id": 2, "name": "Pythonistas" },
+                { "id": 2, "name": "Rustaceans" }
+            ],
+            "Band": [
+                { "id": 1, "name": "Pythonistas" "manager": 2 },
+                { "id": 2, "name": "Darts", "manager": 2 },
+                { "id": 3, "name": "Gophers", "manager": 1 }
+            ]
+        }
+    }
 
 -------------------------------------------------------------------------------
 

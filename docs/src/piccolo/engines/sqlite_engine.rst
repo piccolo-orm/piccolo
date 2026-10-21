@@ -30,4 +30,4 @@ Production tips
 ---------------
 
 If you're planning on using SQLite in production with Piccolo, with lots of
-concurrent queries, then here are some :ref:`useful tips <UsingSQLitAndAsyncioEffectively>`.
+concurrent queries, then here are some :ref:`useful tips <UsingSQLiteAndAsyncioEffectively>`.

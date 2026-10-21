@@ -8,7 +8,7 @@ from unittest import TestCase
 from piccolo.columns import ForeignKey, Varchar
 from piccolo.columns.reference import LazyTableReference
 from piccolo.table import Table
-from tests.base import TableTest
+from piccolo.testing.test_case import TableTest
 
 
 class Band(Table):

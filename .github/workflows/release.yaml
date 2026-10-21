@@ -12,9 +12,9 @@ jobs:
 
     steps:
       - uses: "actions/checkout@v3"
-      - uses: "actions/setup-python@v1"
+      - uses: "actions/setup-python@v5"
         with:
-          python-version: 3.12
+          python-version: 3.13
       - name: "Install dependencies"
         run: "pip install -r requirements/dev-requirements.txt"
       - name: "Publish to PyPI"

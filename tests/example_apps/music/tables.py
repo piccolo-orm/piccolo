@@ -9,6 +9,7 @@ from piccolo.columns import (
     Numeric,
     Serial,
     Text,
+    Timestamptz,
     Varchar,
 )
 from piccolo.columns.readable import Readable
@@ -113,8 +114,8 @@ class RecordingStudio(Table):
     """
 
     id: Serial
-    facilities = JSON()
-    facilities_b = JSONB()
+    facilities = JSON(null=True)
+    facilities_b = JSONB(null=True)
 
 
 class Instrument(Table):
@@ -125,3 +126,14 @@ class Instrument(Table):
     id: Serial
     name = Varchar()
     recording_studio = ForeignKey(RecordingStudio)
+
+
+class Signing(Table):
+    """
+    Used for testing ``db_column_name``.
+    """
+
+    id: Serial
+    address = Text()
+    with_ = ForeignKey(Band, db_column_name="with")
+    starts = Timestamptz()

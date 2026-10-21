@@ -1,7 +1,7 @@
 from piccolo import columns
 from piccolo.columns.readable import Readable
 from piccolo.table import Table
-from tests.base import TableTest
+from piccolo.testing.test_case import TableTest
 
 
 class MyTable(Table):

@@ -3,9 +3,10 @@ from __future__ import annotations
 import asyncio
 import collections.abc
 import itertools
-import typing as t
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from enum import Enum, auto
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 from piccolo.columns import And, Column, Or, Where
 from piccolo.columns.column_types import ForeignKey
@@ -15,7 +16,7 @@ from piccolo.querystring import QueryString
 from piccolo.utils.list import flatten
 from piccolo.utils.sql_values import convert_to_sql_value
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.querystring import Selectable
     from piccolo.table import Table  # noqa
 
@@ -33,7 +34,7 @@ class Distinct:
     __slots__ = ("enabled", "on")
 
     enabled: bool
-    on: t.Optional[t.Sequence[Column]]
+    on: Optional[Sequence[Column]]
 
     @property
     def querystring(self) -> QueryString:
@@ -141,41 +142,48 @@ class Offset:
         return self.querystring.__str__()
 
 
-@dataclass
-class OrderByRaw:
-    __slots__ = ("sql",)
+class OrderByRaw(QueryString):
+    """
+    Here for backwards compatibility - just use
+    :class:`piccolo.querystring.QueryString` directly.
+    """
 
-    sql: str
+    pass
 
 
 @dataclass
 class OrderByItem:
     __slots__ = ("columns", "ascending")
 
-    columns: t.Sequence[t.Union[Column, OrderByRaw]]
+    columns: Sequence[Union[Column, QueryString]]
     ascending: bool
 
 
 @dataclass
 class OrderBy:
-    order_by_items: t.List[OrderByItem] = field(default_factory=list)
+    order_by_items: list[OrderByItem] = field(default_factory=list)
 
     @property
     def querystring(self) -> QueryString:
-        order_by_strings: t.List[str] = []
+        order_by_strings: list[str] = []
+        querystring_args = []
         for order_by_item in self.order_by_items:
             order = "ASC" if order_by_item.ascending else "DESC"
             for column in order_by_item.columns:
                 if isinstance(column, Column):
                     expression = column._meta.get_full_name(with_alias=False)
-                elif isinstance(column, OrderByRaw):
-                    expression = column.sql
+                elif isinstance(column, QueryString):
+                    expression = "{}"
+                    querystring_args.append(column)
                 else:
                     raise ValueError("Unrecognised order_by")
 
                 order_by_strings.append(f"{expression} {order}")
 
-        return QueryString(f" ORDER BY {', '.join(order_by_strings)}")
+        return QueryString(
+            f" ORDER BY {', '.join(order_by_strings)}",
+            *querystring_args,
+        )
 
     def __str__(self):
         return self.querystring.__str__()
@@ -185,7 +193,7 @@ class OrderBy:
 class Returning:
     __slots__ = ("columns",)
 
-    columns: t.List[Column]
+    columns: list[Column]
 
     @property
     def querystring(self) -> QueryString:
@@ -230,13 +238,13 @@ class CallbackType(Enum):
 @dataclass
 class Callback:
     kind: CallbackType
-    target: t.Callable
+    target: Callable
 
 
 @dataclass
 class WhereDelegate:
-    _where: t.Optional[Combinable] = None
-    _where_columns: t.List[Column] = field(default_factory=list)
+    _where: Optional[Combinable] = None
+    _where_columns: list[Column] = field(default_factory=list)
 
     def get_where_columns(self):
         """
@@ -257,7 +265,7 @@ class WhereDelegate:
         elif isinstance(combinable, WhereRaw):
             self._where_columns.extend(combinable.querystring.columns)
 
-    def where(self, *where: t.Union[Combinable, QueryString]):
+    def where(self, *where: Union[Combinable, QueryString]):
         for arg in where:
             if isinstance(arg, bool):
                 raise ValueError(
@@ -278,7 +286,7 @@ class WhereDelegate:
 class OrderByDelegate:
     _order_by: OrderBy = field(default_factory=OrderBy)
 
-    def get_order_by_columns(self) -> t.List[Column]:
+    def get_order_by_columns(self) -> list[Column]:
         """
         Used to work out which columns are needed for joins.
         """
@@ -290,7 +298,7 @@ class OrderByDelegate:
             if isinstance(i, Column)
         ]
 
-    def order_by(self, *columns: t.Union[Column, OrderByRaw], ascending=True):
+    def order_by(self, *columns: Union[Column, QueryString], ascending=True):
         if len(columns) < 1:
             raise ValueError("At least one column must be passed to order_by.")
 
@@ -301,7 +309,7 @@ class OrderByDelegate:
 
 @dataclass
 class LimitDelegate:
-    _limit: t.Optional[Limit] = None
+    _limit: Optional[Limit] = None
     _first: bool = False
 
     def limit(self, number: int):
@@ -319,7 +327,7 @@ class AsOfDelegate:
     Currently supports Cockroach using AS OF SYSTEM TIME.
     """
 
-    _as_of: t.Optional[AsOf] = None
+    _as_of: Optional[AsOf] = None
 
     def as_of(self, interval: str = "-1s"):
         self._as_of = AsOf(interval)
@@ -331,9 +339,7 @@ class DistinctDelegate:
         default_factory=lambda: Distinct(enabled=False, on=None)
     )
 
-    def distinct(
-        self, enabled: bool, on: t.Optional[t.Sequence[Column]] = None
-    ):
+    def distinct(self, enabled: bool, on: Optional[Sequence[Column]] = None):
         if on and not isinstance(on, collections.abc.Sequence):
             # Check a sequence is passed in, otherwise the user will get some
             # unuseful errors later on.
@@ -344,9 +350,9 @@ class DistinctDelegate:
 
 @dataclass
 class ReturningDelegate:
-    _returning: t.Optional[Returning] = None
+    _returning: Optional[Returning] = None
 
-    def returning(self, columns: t.Sequence[Column]):
+    def returning(self, columns: Sequence[Column]):
         self._returning = Returning(columns=list(columns))
 
 
@@ -360,9 +366,9 @@ class CountDelegate:
 
 @dataclass
 class AddDelegate:
-    _add: t.List[Table] = field(default_factory=list)
+    _add: list[Table] = field(default_factory=list)
 
-    def add(self, *instances: Table, table_class: t.Type[Table]):
+    def add(self, *instances: Table, table_class: type[Table]):
         for instance in instances:
             if not isinstance(instance, table_class):
                 raise TypeError("Incompatible type added.")
@@ -384,10 +390,10 @@ class OutputDelegate:
 
     def output(
         self,
-        as_list: t.Optional[bool] = None,
-        as_json: t.Optional[bool] = None,
-        load_json: t.Optional[bool] = None,
-        nested: t.Optional[bool] = None,
+        as_list: Optional[bool] = None,
+        as_json: Optional[bool] = None,
+        load_json: Optional[bool] = None,
+        nested: Optional[bool] = None,
     ):
         """
         :param as_list:
@@ -429,13 +435,13 @@ class CallbackDelegate:
     .callback([handler1, handler2])
     """
 
-    _callbacks: t.Dict[CallbackType, t.List[Callback]] = field(
+    _callbacks: dict[CallbackType, list[Callback]] = field(
         default_factory=lambda: {kind: [] for kind in CallbackType}
     )
 
     def callback(
         self,
-        callbacks: t.Union[t.Callable, t.List[t.Callable]],
+        callbacks: Union[Callable, list[Callable]],
         *,
         on: CallbackType,
     ):
@@ -446,7 +452,7 @@ class CallbackDelegate:
         else:
             self._callbacks[on].append(Callback(kind=on, target=callbacks))
 
-    async def invoke(self, results: t.Any, *, kind: CallbackType) -> t.Any:
+    async def invoke(self, results: Any, *, kind: CallbackType) -> Any:
         """
         Utility function that invokes the registered callbacks in the correct
         way, handling both sync and async callbacks. Only callbacks of the
@@ -472,9 +478,9 @@ class PrefetchDelegate:
     .prefetch(MyTable.column_a, MyTable.column_b)
     """
 
-    fk_columns: t.List[ForeignKey] = field(default_factory=list)
+    fk_columns: list[ForeignKey] = field(default_factory=list)
 
-    def prefetch(self, *fk_columns: t.Union[ForeignKey, t.List[ForeignKey]]):
+    def prefetch(self, *fk_columns: Union[ForeignKey, list[ForeignKey]]):
         """
         :param columns:
             We accept ``ForeignKey`` and ``List[ForeignKey]`` here, in case
@@ -482,7 +488,7 @@ class PrefetchDelegate:
             in which case we flatten the list.
 
         """
-        _fk_columns: t.List[ForeignKey] = []
+        _fk_columns: list[ForeignKey] = []
         for column in fk_columns:
             if isinstance(column, list):
                 _fk_columns.extend(column)
@@ -501,9 +507,9 @@ class ColumnsDelegate:
     .columns(MyTable.column_a, MyTable.column_b)
     """
 
-    selected_columns: t.Sequence[Selectable] = field(default_factory=list)
+    selected_columns: Sequence[Selectable] = field(default_factory=list)
 
-    def columns(self, *columns: t.Union[Selectable, t.List[Selectable]]):
+    def columns(self, *columns: Union[Selectable, list[Selectable]]):
         """
         :param columns:
             We accept ``Selectable`` and ``List[Selectable]`` here, in case
@@ -531,10 +537,10 @@ class ValuesDelegate:
     Used to specify new column values - primarily used in update queries.
     """
 
-    table: t.Type[Table]
-    _values: t.Dict[Column, t.Any] = field(default_factory=dict)
+    table: type[Table]
+    _values: dict[Column, Any] = field(default_factory=dict)
 
-    def values(self, values: t.Dict[t.Union[Column, str], t.Any]):
+    def values(self, values: dict[Union[Column, str], Any]):
         """
         Example usage:
 
@@ -549,7 +555,7 @@ class ValuesDelegate:
             .values(column_a=1})
 
         """
-        cleaned_values: t.Dict[Column, t.Any] = {}
+        cleaned_values: dict[Column, Any] = {}
         for key, value in values.items():
             if isinstance(key, Column):
                 column = key
@@ -564,7 +570,7 @@ class ValuesDelegate:
 
         self._values.update(cleaned_values)
 
-    def get_sql_values(self) -> t.List[t.Any]:
+    def get_sql_values(self) -> list[Any]:
         """
         Convert any Enums into values, and serialise any JSON.
         """
@@ -587,7 +593,7 @@ class OffsetDelegate:
 
     """
 
-    _offset: t.Optional[Offset] = None
+    _offset: Optional[Offset] = None
 
     def offset(self, number: int = 0):
         self._offset = Offset(number)
@@ -597,15 +603,27 @@ class OffsetDelegate:
 class GroupBy:
     __slots__ = ("columns",)
 
-    columns: t.Sequence[Column]
+    columns: Sequence[Union[Column, QueryString]]
 
     @property
     def querystring(self) -> QueryString:
-        columns_names = ", ".join(
-            i._meta.get_full_name(with_alias=False) for i in self.columns
-        )
+        column_names: list[str] = []
+        querystring_args = []
+        for column in self.columns:
+            if isinstance(column, Column):
+                column_names.append(
+                    column._meta.get_full_name(with_alias=False)
+                )
+            elif isinstance(column, QueryString):
+                column_names.append("{}")
+                querystring_args.append(column)
+            else:  # pragma: no cover
+                raise ValueError("Unrecognised group_by")
 
-        return QueryString(f" GROUP BY {columns_names}")
+        return QueryString(
+            f" GROUP BY {', '.join(column_names)}",
+            *querystring_args,
+        )
 
     def __str__(self):
         return self.querystring.__str__()
@@ -620,9 +638,9 @@ class GroupByDelegate:
 
     """
 
-    _group_by: t.Optional[GroupBy] = None
+    _group_by: Optional[GroupBy] = None
 
-    def group_by(self, *columns: Column):
+    def group_by(self, *columns: Union[Column, QueryString]):
         self._group_by = GroupBy(columns=columns)
 
 
@@ -637,12 +655,10 @@ class OnConflictAction(str, Enum):
 
 @dataclass
 class OnConflictItem:
-    target: t.Optional[t.Union[str, Column, t.Tuple[Column, ...]]] = None
-    action: t.Optional[OnConflictAction] = None
-    values: t.Optional[t.Sequence[t.Union[Column, t.Tuple[Column, t.Any]]]] = (
-        None
-    )
-    where: t.Optional[Combinable] = None
+    target: Optional[Union[str, Column, tuple[Column, ...]]] = None
+    action: Optional[OnConflictAction] = None
+    values: Optional[Sequence[Union[Column, tuple[Column, Any]]]] = None
+    where: Optional[Combinable] = None
 
     @property
     def target_string(self) -> str:
@@ -726,7 +742,7 @@ class OnConflict:
     parent class.
     """
 
-    on_conflict_items: t.List[OnConflictItem] = field(default_factory=list)
+    on_conflict_items: list[OnConflictItem] = field(default_factory=list)
 
     @property
     def querystring(self) -> QueryString:
@@ -757,14 +773,12 @@ class OnConflictDelegate:
 
     def on_conflict(
         self,
-        target: t.Optional[t.Union[str, Column, t.Tuple[Column, ...]]] = None,
-        action: t.Union[
-            OnConflictAction, t.Literal["DO NOTHING", "DO UPDATE"]
+        target: Optional[Union[str, Column, tuple[Column, ...]]] = None,
+        action: Union[
+            OnConflictAction, Literal["DO NOTHING", "DO UPDATE"]
         ] = OnConflictAction.do_nothing,
-        values: t.Optional[
-            t.Sequence[t.Union[Column, t.Tuple[Column, t.Any]]]
-        ] = None,
-        where: t.Optional[Combinable] = None,
+        values: Optional[Sequence[Union[Column, tuple[Column, Any]]]] = None,
+        where: Optional[Combinable] = None,
     ):
         action_: OnConflictAction
         if isinstance(action, OnConflictAction):
@@ -773,6 +787,11 @@ class OnConflictDelegate:
             action_ = OnConflictAction(action.upper())
         else:
             raise ValueError("Unrecognised `on conflict` action.")
+
+        if target is None and action_ == OnConflictAction.do_update:
+            raise ValueError(
+                "The `target` option must be provided with DO UPDATE."
+            )
 
         if where and action_ == OnConflictAction.do_nothing:
             raise ValueError(
@@ -784,3 +803,91 @@ class OnConflictDelegate:
                 target=target, action=action_, values=values, where=where
             )
         )
+
+
+class LockStrength(str, Enum):
+    """
+    Specify lock strength
+
+    https://www.postgresql.org/docs/current/sql-select.html#SQL-FOR-UPDATE-SHARE
+    """
+
+    update = "UPDATE"
+    no_key_update = "NO KEY UPDATE"
+    share = "SHARE"
+    key_share = "KEY SHARE"
+
+
+@dataclass
+class LockRows:
+    __slots__ = ("lock_strength", "nowait", "skip_locked", "of")
+
+    lock_strength: LockStrength
+    nowait: bool
+    skip_locked: bool
+    of: tuple[type[Table], ...]
+
+    def __post_init__(self):
+        if not isinstance(self.lock_strength, LockStrength):
+            raise TypeError("lock_strength must be a LockStrength")
+        if not isinstance(self.nowait, bool):
+            raise TypeError("nowait must be a bool")
+        if not isinstance(self.skip_locked, bool):
+            raise TypeError("skip_locked must be a bool")
+        if not isinstance(self.of, tuple) or not all(
+            hasattr(x, "_meta") for x in self.of
+        ):
+            raise TypeError("of must be a tuple of Table")
+        if self.nowait and self.skip_locked:
+            raise TypeError(
+                "The nowait option cannot be used with skip_locked"
+            )
+
+    @property
+    def querystring(self) -> QueryString:
+        sql = f" FOR {self.lock_strength.value}"
+        if self.of:
+            tables = ", ".join(
+                i._meta.get_formatted_tablename() for i in self.of
+            )
+            sql += " OF " + tables
+        if self.nowait:
+            sql += " NOWAIT"
+        if self.skip_locked:
+            sql += " SKIP LOCKED"
+
+        return QueryString(sql)
+
+    def __str__(self) -> str:
+        return self.querystring.__str__()
+
+
+@dataclass
+class LockRowsDelegate:
+
+    _lock_rows: Optional[LockRows] = None
+
+    def lock_rows(
+        self,
+        lock_strength: Union[
+            LockStrength,
+            Literal[
+                "UPDATE",
+                "NO KEY UPDATE",
+                "KEY SHARE",
+                "SHARE",
+            ],
+        ] = LockStrength.update,
+        nowait=False,
+        skip_locked=False,
+        of: tuple[type[Table], ...] = (),
+    ):
+        lock_strength_: LockStrength
+        if isinstance(lock_strength, LockStrength):
+            lock_strength_ = lock_strength
+        elif isinstance(lock_strength, str):
+            lock_strength_ = LockStrength(lock_strength.upper())
+        else:
+            raise ValueError("Unrecognised `lock_strength` value.")
+
+        self._lock_rows = LockRows(lock_strength_, nowait, skip_locked, of)

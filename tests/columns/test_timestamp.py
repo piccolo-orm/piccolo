@@ -3,7 +3,7 @@ import datetime
 from piccolo.columns.column_types import Timestamp
 from piccolo.columns.defaults.timestamp import TimestampNow
 from piccolo.table import Table
-from tests.base import TableTest
+from piccolo.testing.test_case import TableTest
 
 
 class MyTable(Table):

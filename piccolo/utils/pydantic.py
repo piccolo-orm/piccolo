@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import itertools
 import json
-import typing as t
 from collections import defaultdict
+from collections.abc import Callable
 from functools import partial
+from typing import Any, Optional, Union
 
 import pydantic
 
@@ -30,7 +31,7 @@ except ImportError:
     JsonDict = dict  # type: ignore
 
 
-def pydantic_json_validator(value: t.Optional[str], required: bool = True):
+def pydantic_json_validator(value: Optional[str], required: bool = True):
     if value is None:
         if required:
             raise ValueError("The JSON value wasn't provided.")
@@ -45,7 +46,7 @@ def pydantic_json_validator(value: t.Optional[str], required: bool = True):
         return value
 
 
-def is_table_column(column: Column, table: t.Type[Table]) -> bool:
+def is_table_column(column: Column, table: type[Table]) -> bool:
     """
     Verify that the given ``Column`` belongs to the given ``Table``.
     """
@@ -60,9 +61,7 @@ def is_table_column(column: Column, table: t.Type[Table]) -> bool:
     return False
 
 
-def validate_columns(
-    columns: t.Tuple[Column, ...], table: t.Type[Table]
-) -> bool:
+def validate_columns(columns: tuple[Column, ...], table: type[Table]) -> bool:
     """
     Verify that each column is a ``Column``` instance, and its parent is the
     given ``Table``.
@@ -74,9 +73,7 @@ def validate_columns(
     )
 
 
-def get_array_value_type(
-    column: Array, inner: t.Optional[t.Type] = None
-) -> t.Type:
+def get_array_value_type(column: Array, inner: Optional[type] = None) -> type:
     """
     Gets the correct type for an ``Array`` column (which might be
     multidimensional).
@@ -86,14 +83,14 @@ def get_array_value_type(
     else:
         inner_type = get_pydantic_value_type(column.base_column)
 
-    return t.List[inner_type]  # type: ignore
+    return list[inner_type]  # type: ignore
 
 
-def get_pydantic_value_type(column: Column) -> t.Type:
+def get_pydantic_value_type(column: Column) -> type:
     """
     Map the Piccolo ``Column`` to a Pydantic type.
     """
-    value_type: t.Type
+    value_type: type
 
     if isinstance(column, (Decimal, Numeric)):
         value_type = pydantic.condecimal(
@@ -112,20 +109,20 @@ def get_pydantic_value_type(column: Column) -> t.Type:
 
 
 def create_pydantic_model(
-    table: t.Type[Table],
-    nested: t.Union[bool, t.Tuple[ForeignKey, ...]] = False,
-    exclude_columns: t.Tuple[Column, ...] = (),
-    include_columns: t.Tuple[Column, ...] = (),
+    table: type[Table],
+    nested: Union[bool, tuple[ForeignKey, ...]] = False,
+    exclude_columns: tuple[Column, ...] = (),
+    include_columns: tuple[Column, ...] = (),
     include_default_columns: bool = False,
     include_readable: bool = False,
     all_optional: bool = False,
-    model_name: t.Optional[str] = None,
+    model_name: Optional[str] = None,
     deserialize_json: bool = False,
     recursion_depth: int = 0,
     max_recursion_depth: int = 5,
-    pydantic_config: t.Optional[pydantic.config.ConfigDict] = None,
-    json_schema_extra: t.Optional[t.Dict[str, t.Any]] = None,
-) -> t.Type[pydantic.BaseModel]:
+    pydantic_config: Optional[pydantic.config.ConfigDict] = None,
+    json_schema_extra: Optional[dict[str, Any]] = None,
+) -> type[pydantic.BaseModel]:
     """
     Create a Pydantic model representing a table.
 
@@ -205,8 +202,8 @@ def create_pydantic_model(
 
     ###########################################################################
 
-    columns: t.Dict[str, t.Any] = {}
-    validators: t.Dict[str, t.Callable] = {}
+    columns: dict[str, Any] = {}
+    validators: dict[str, Callable] = {}
 
     piccolo_columns = tuple(
         table._meta.columns
@@ -264,11 +261,11 @@ def create_pydantic_model(
         else:
             value_type = get_pydantic_value_type(column=column)
 
-        _type = t.Optional[value_type] if is_optional else value_type
+        _type = Optional[value_type] if is_optional else value_type
 
         #######################################################################
 
-        params: t.Dict[str, t.Any] = {}
+        params: dict[str, Any] = {}
         if is_optional:
             params["default"] = None
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import typing as t
+from typing import Optional
 
 from piccolo.columns import Timestamp, Varchar
 from piccolo.columns.defaults.timestamp import TimestampNow
@@ -14,8 +14,8 @@ class Migration(Table):
 
     @classmethod
     async def get_migrations_which_ran(
-        cls, app_name: t.Optional[str] = None
-    ) -> t.List[str]:
+        cls, app_name: Optional[str] = None
+    ) -> list[str]:
         """
         Returns the names of migrations which have already run, by inspecting
         the database.

@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-import typing as t
 from abc import ABCMeta, abstractmethod
+from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from importlib.util import find_spec
 from string import Formatter
+from typing import TYPE_CHECKING, Any, Optional
 
-if t.TYPE_CHECKING:  # pragma: no cover
-    from piccolo.table import Table
+if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
+    from piccolo.table import Table
 
 from uuid import UUID
 
@@ -26,7 +27,7 @@ class Selectable(metaclass=ABCMeta):
 
     __slots__ = ("_alias",)
 
-    _alias: t.Optional[str]
+    _alias: Optional[str]
 
     @abstractmethod
     def get_select_string(
@@ -74,10 +75,10 @@ class QueryString(Selectable):
     def __init__(
         self,
         template: str,
-        *args: t.Any,
+        *args: Any,
         query_type: str = "generic",
-        table: t.Optional[t.Type[Table]] = None,
-        alias: t.Optional[str] = None,
+        table: Optional[type[Table]] = None,
+        alias: Optional[str] = None,
     ) -> None:
         """
         :param template:
@@ -99,15 +100,13 @@ class QueryString(Selectable):
         self.template = template
         self.query_type = query_type
         self.table = table
-        self._frozen_compiled_strings: t.Optional[
-            t.Tuple[str, t.List[t.Any]]
-        ] = None
+        self._frozen_compiled_strings: Optional[tuple[str, list[Any]]] = None
         self._alias = alias
         self.args, self.columns = self.process_args(args)
 
     def process_args(
-        self, args: t.Sequence[t.Any]
-    ) -> t.Tuple[t.Sequence[t.Any], t.Sequence[Column]]:
+        self, args: Sequence[Any]
+    ) -> tuple[Sequence[Any], Sequence[Column]]:
         """
         If a Column is passed in, we convert it to the name of the column
         (including joins).
@@ -138,6 +137,10 @@ class QueryString(Selectable):
         """
         The SQL returned by the ``__str__`` method isn't used directly in
         queries - it's just a usability feature.
+
+        The only exception to this is CHECK constraints, where we use this to
+        convert simple querystrings into strings.
+
         """
         _, bundled, combined_args = self.bundle(
             start_index=1, bundled=[], combined_args=[]
@@ -153,7 +156,7 @@ class QueryString(Selectable):
             _type = type(arg)
             if _type == str:
                 converted_args.append(f"'{arg}'")
-            elif _type == datetime:
+            elif _type == datetime or _type == date:
                 dt_string = arg.isoformat()
                 converted_args.append(f"'{dt_string}'")
             elif _type == UUID or _type == apgUUID:
@@ -168,8 +171,8 @@ class QueryString(Selectable):
     def bundle(
         self,
         start_index: int = 1,
-        bundled: t.Optional[t.List[Fragment]] = None,
-        combined_args: t.Optional[t.List] = None,
+        bundled: Optional[list[Fragment]] = None,
+        combined_args: Optional[list] = None,
     ):
         # Split up the string, separating by {}.
         fragments = [
@@ -206,7 +209,7 @@ class QueryString(Selectable):
 
     def compile_string(
         self, engine_type: str = "postgres"
-    ) -> t.Tuple[str, t.List[t.Any]]:
+    ) -> tuple[str, list[Any]]:
         """
         Compiles the template ready for the engine - keeping the arguments
         separate from the template.
@@ -246,7 +249,7 @@ class QueryString(Selectable):
         self, engine_type: str, with_alias: bool = True
     ) -> QueryString:
         if with_alias and self._alias:
-            return QueryString("{} AS " + self._alias, self)
+            return QueryString("{} AS " + f'"{self._alias}"', self)
         else:
             return self
 
@@ -259,10 +262,27 @@ class QueryString(Selectable):
     # Basic logic
 
     def __eq__(self, value) -> QueryString:  # type: ignore[override]
-        return QueryString("{} = {}", self, value)
+        if value is None:
+            return QueryString("{} IS NULL", self)
+        else:
+            return QueryString("{} = {}", self, value)
 
     def __ne__(self, value) -> QueryString:  # type: ignore[override]
-        return QueryString("{} != {}", self, value)
+        if value is None:
+            return QueryString("{} IS NOT NULL", self, value)
+        else:
+            return QueryString("{} != {}", self, value)
+
+    def eq(self, value) -> QueryString:
+        return self.__eq__(value)
+
+    def ne(self, value) -> QueryString:
+        return self.__ne__(value)
+
+    def __or__(self, value) -> QueryString:
+        from piccolo.query.functions.conditional import Coalesce
+
+        return Coalesce(self, value, alias=self._alias)
 
     def __add__(self, value) -> QueryString:
         return QueryString("{} + {}", self, value)

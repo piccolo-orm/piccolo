@@ -1,8 +1,8 @@
-import typing as t
 from contextlib import asynccontextmanager
+from typing import Any
 
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, status
+from fastapi.exceptions import HTTPException
 from piccolo.engine import engine_finder
 from piccolo_admin.endpoints import create_admin
 from piccolo_api.crud.serializers import create_pydantic_model
@@ -54,47 +54,74 @@ app = FastAPI(
 )
 
 
-TaskModelIn: t.Any = create_pydantic_model(
+TaskModelIn: Any = create_pydantic_model(
     table=Task,
     model_name="TaskModelIn",
 )
-TaskModelOut: t.Any = create_pydantic_model(
-    table=Task, include_default_columns=True, model_name="TaskModelOut"
+
+TaskModelOut: Any = create_pydantic_model(
+    table=Task,
+    include_default_columns=True,
+    model_name="TaskModelOut",
 )
 
 
-@app.get("/tasks/", response_model=t.List[TaskModelOut])
+# Check if the record is None. Use for query callback
+def check_record_not_found(result: dict[str, Any]) -> dict[str, Any]:
+    if result is None:
+        raise HTTPException(
+            detail="Record not found",
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
+    return result
+
+
+@app.get("/tasks/", response_model=list[TaskModelOut], tags=["Task"])
 async def tasks():
-    return await Task.select().order_by(Task.id)
+    return await Task.select().order_by(Task._meta.primary_key, ascending=False)
 
 
-@app.post("/tasks/", response_model=TaskModelOut)
+@app.get("/tasks/{task_id}/", response_model=TaskModelOut, tags=["Task"])
+async def single_task(task_id: int):
+    task = (
+        await Task.select()
+        .where(Task._meta.primary_key == task_id)
+        .first()
+        .callback(check_record_not_found)
+    )
+    return task
+
+
+@app.post("/tasks/", response_model=TaskModelOut, tags=["Task"])
 async def create_task(task_model: TaskModelIn):
-    task = Task(**task_model.dict())
+    task = Task(**task_model.model_dump())
     await task.save()
     return task.to_dict()
 
 
-@app.put("/tasks/{task_id}/", response_model=TaskModelOut)
+@app.put("/tasks/{task_id}/", response_model=TaskModelOut, tags=["Task"])
 async def update_task(task_id: int, task_model: TaskModelIn):
-    task = await Task.objects().get(Task._meta.primary_key == task_id)
-    if not task:
-        return JSONResponse({}, status_code=404)
-
-    for key, value in task_model.dict().items():
+    task = (
+        await Task.objects()
+        .get(Task._meta.primary_key == task_id)
+        .callback(check_record_not_found)
+    )
+    for key, value in task_model.model_dump().items():
         setattr(task, key, value)
 
     await task.save()
-
     return task.to_dict()
 
 
-@app.delete("/tasks/{task_id}/")
+@app.delete(
+    "/tasks/{task_id}/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["Task"],
+)
 async def delete_task(task_id: int):
-    task = await Task.objects().get(Task._meta.primary_key == task_id)
-    if not task:
-        return JSONResponse({}, status_code=404)
-
+    task = (
+        await Task.objects()
+        .get(Task._meta.primary_key == task_id)
+        .callback(check_record_not_found)
+    )
     await task.remove()
-
-    return JSONResponse({})

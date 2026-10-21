@@ -1,7 +1,7 @@
 from piccolo.columns.column_types import Varchar
 from piccolo.table import Table
-
-from ..base import TableTest, engines_only
+from piccolo.testing.test_case import TableTest
+from tests.base import engines_only
 
 
 class MyTable(Table):

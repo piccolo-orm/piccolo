@@ -44,3 +44,18 @@ class TestDelete(DBTestCase):
             Band.delete().run_sync()
 
         Band.delete(force=True).run_sync()
+
+    def test_delete_with_joins(self):
+        """
+        Make sure delete works if the `where` clause specifies joins.
+        """
+
+        self.insert_rows()
+
+        Band.delete().where(Band.manager._.name == "Guido").run_sync()
+
+        response = (
+            Band.count().where(Band.manager._.name == "Guido").run_sync()
+        )
+
+        self.assertEqual(response, 0)

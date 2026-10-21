@@ -1,4 +1,4 @@
-from tests.base import TableTest
+from piccolo.testing.test_case import TableTest
 from tests.example_apps.music.tables import Band, Manager
 
 

@@ -1,8 +1,8 @@
 import asyncio
 import random
-import typing as t
 from io import StringIO
-from unittest import TestCase
+from typing import Optional
+from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import MagicMock, patch
 
 from piccolo.apps.migrations.auto.migration_manager import MigrationManager
@@ -11,8 +11,12 @@ from piccolo.columns import Text, Varchar
 from piccolo.columns.base import OnDelete, OnUpdate
 from piccolo.columns.column_types import ForeignKey
 from piccolo.conf.apps import AppConfig
+from piccolo.constraints import Unique
+from piccolo.engine import engine_finder
+from piccolo.query.constraints import get_fk_constraint_rules
 from piccolo.table import Table, sort_table_classes
 from piccolo.utils.lazy_loader import LazyLoader
+from piccolo.utils.sync import run_sync
 from tests.base import AsyncMock, DBTestCase, engine_is, engines_only
 from tests.example_apps.music.tables import Band, Concert, Manager, Venue
 
@@ -267,6 +271,37 @@ class TestMigrationManager(DBTestCase):
                 )
         self.assertEqual(self.table_exists("musician"), False)
 
+    @engines_only("sqlite")
+    @patch.object(BaseMigrationManager, "get_app_config")
+    def test_add_table_sqlite(self, get_app_config: MagicMock):
+        """
+        Make sure a table can be added, then the migration reversed, on
+        SQLite. Reversing used to fail, because it tried to run
+        `DROP TABLE ... CASCADE`, which SQLite doesn't support.
+
+        https://github.com/piccolo-orm/piccolo/issues/1420
+
+        """
+        self.run_sync("DROP TABLE IF EXISTS musician;")
+
+        manager = MigrationManager()
+        manager.add_table(class_name="Musician", tablename="musician")
+        manager.add_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="name",
+            column_class_name="Varchar",
+        )
+        asyncio.run(manager.run())
+        self.assertTrue(self.table_exists("musician"))
+
+        # Reverse
+        get_app_config.return_value = AppConfig(
+            app_name="music", migrations_folder_path=""
+        )
+        asyncio.run(manager.run(backwards=True))
+        self.assertFalse(self.table_exists("musician"))
+
     @engines_only("postgres", "cockroach")
     def test_add_column(self) -> None:
         """
@@ -283,8 +318,7 @@ class TestMigrationManager(DBTestCase):
                 "length": 100,
                 "default": "",
                 "null": True,
-                "primary": False,
-                "key": False,
+                "primary_key": False,
                 "unique": True,
                 "index": False,
             },
@@ -305,7 +339,7 @@ class TestMigrationManager(DBTestCase):
             response = self.run_sync("SELECT * FROM manager;")
             self.assertEqual(response, [{"id": 1, "name": "Dave"}])
 
-        row_id: t.Optional[int] = None
+        row_id: Optional[int] = None
         if engine_is("cockroach"):
             row_id = self.run_sync(
                 "INSERT INTO manager VALUES (default, 'Dave', 'dave@me.com') RETURNING id;"  # noqa: E501
@@ -337,6 +371,270 @@ class TestMigrationManager(DBTestCase):
             self.assertEqual(response, [{"id": row_id, "name": "Dave"}])
 
     @engines_only("postgres", "cockroach")
+    def test_add_table_with_unique_constraint(self):
+        manager = MigrationManager()
+        manager.add_table(class_name="Musician", tablename="musician")
+        manager.add_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="name",
+            column_class_name="Varchar",
+        )
+        manager.add_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="label",
+            column_class_name="Varchar",
+        )
+        manager.add_constraint(
+            table_class_name="Musician",
+            tablename="musician",
+            constraint_name="unique_name_label",
+            constraint_class=Unique,
+            params={
+                "columns": ["name", "label"],
+            },
+        )
+        asyncio.run(manager.run())
+        self.run_sync("INSERT INTO musician VALUES (default, 'a', 'a');")
+        with self.assertRaises(asyncpg.exceptions.UniqueViolationError):
+            self.run_sync("INSERT INTO musician VALUES (default, 'a', 'a');")
+
+        # Reverse
+        asyncio.run(manager.run(backwards=True))
+        self.assertTrue(not self.table_exists("musician"))
+
+    @engines_only("postgres", "cockroach")
+    @patch.object(
+        BaseMigrationManager, "get_migration_managers", new_callable=AsyncMock
+    )
+    @patch.object(BaseMigrationManager, "get_app_config")
+    def test_drop_table_with_unique_constraint(
+        self, get_app_config: MagicMock, get_migration_managers: MagicMock
+    ):
+        manager_1 = MigrationManager()
+        manager_1.add_table(class_name="Musician", tablename="musician")
+        manager_1.add_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="name",
+            column_class_name="Varchar",
+        )
+        manager_1.add_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="label",
+            column_class_name="Varchar",
+        )
+        manager_1.add_constraint(
+            table_class_name="Musician",
+            tablename="musician",
+            constraint_name="unique_name_label",
+            constraint_class=Unique,
+            params={
+                "columns": ["name", "label"],
+            },
+        )
+        asyncio.run(manager_1.run())
+
+        # Drop table
+        manager_2 = MigrationManager()
+        manager_2.drop_table(
+            class_name="Musician",
+            tablename="musician",
+        )
+        asyncio.run(manager_2.run())
+        self.assertTrue(not self.table_exists("musician"))
+
+        # Reverse
+        get_migration_managers.return_value = [manager_1]
+        app_config = AppConfig(app_name="music", migrations_folder_path="")
+        get_app_config.return_value = app_config
+        asyncio.run(manager_2.run(backwards=True))
+        self.run_sync("INSERT INTO musician VALUES (default, 'a', 'a');")
+        with self.assertRaises(asyncpg.exceptions.UniqueViolationError):
+            self.run_sync("INSERT INTO musician VALUES (default, 'a', 'a');")
+
+        # Reverse
+        asyncio.run(manager_1.run(backwards=True))
+        self.assertTrue(not self.table_exists("musician"))
+
+    @engines_only("postgres", "cockroach")
+    @patch.object(
+        BaseMigrationManager, "get_migration_managers", new_callable=AsyncMock
+    )
+    @patch.object(BaseMigrationManager, "get_app_config")
+    def test_rename_table_with_unique_constraint(
+        self, get_app_config: MagicMock, get_migration_managers: MagicMock
+    ):
+        manager_1 = MigrationManager()
+        manager_1.add_table(class_name="Musician", tablename="musician")
+        manager_1.add_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="name",
+            column_class_name="Varchar",
+        )
+        manager_1.add_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="label",
+            column_class_name="Varchar",
+        )
+        manager_1.add_constraint(
+            table_class_name="Musician",
+            tablename="musician",
+            constraint_name="unique_name_label",
+            constraint_class=Unique,
+            params={
+                "columns": ["name", "label"],
+            },
+        )
+        asyncio.run(manager_1.run())
+
+        # Rename table
+        manager_2 = MigrationManager()
+        manager_2.rename_table(
+            old_class_name="Musician",
+            old_tablename="musician",
+            new_class_name="Musician2",
+            new_tablename="musician2",
+        )
+        asyncio.run(manager_2.run())
+        self.assertTrue(not self.table_exists("musician"))
+        self.run_sync("INSERT INTO musician2 VALUES (default, 'a', 'a');")
+        with self.assertRaises(asyncpg.exceptions.UniqueViolationError):
+            self.run_sync("INSERT INTO musician2 VALUES (default, 'a', 'a');")
+
+        # Reverse
+        get_migration_managers.return_value = [manager_1]
+        app_config = AppConfig(app_name="music", migrations_folder_path="")
+        get_app_config.return_value = app_config
+        asyncio.run(manager_2.run(backwards=True))
+        self.assertTrue(not self.table_exists("musician2"))
+        with self.assertRaises(asyncpg.exceptions.UniqueViolationError):
+            self.run_sync("INSERT INTO musician VALUES (default, 'a', 'a');")
+
+        # Reverse
+        asyncio.run(manager_1.run(backwards=True))
+        self.assertTrue(not self.table_exists("musician"))
+        self.assertTrue(not self.table_exists("musician2"))
+
+    @engines_only("postgres")
+    @patch.object(
+        BaseMigrationManager, "get_migration_managers", new_callable=AsyncMock
+    )
+    @patch.object(BaseMigrationManager, "get_app_config")
+    def test_add_unique_constraint(
+        self, get_app_config: MagicMock, get_migration_managers: MagicMock
+    ):
+        """
+        Test adding a unique constraint to a MigrationManager.
+        Cockroach DB doesn't support dropping unique constraints with ALTER TABLE DROP CONSTRAINT.
+        https://github.com/cockroachdb/cockroach/issues/42840
+        """  # noqa: E501
+        manager_1 = MigrationManager()
+        manager_1.add_table(class_name="Musician", tablename="musician")
+        manager_1.add_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="name",
+            column_class_name="Varchar",
+        )
+        manager_1.add_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="label",
+            column_class_name="Varchar",
+        )
+        asyncio.run(manager_1.run())
+
+        manager_2 = MigrationManager()
+        manager_2.add_constraint(
+            table_class_name="Musician",
+            tablename="musician",
+            constraint_name="musician_unique",
+            constraint_class=Unique,
+            params={
+                "columns": ["name", "label"],
+            },
+        )
+        asyncio.run(manager_2.run())
+        self.run_sync("INSERT INTO musician VALUES (default, 'a', 'a');")
+        with self.assertRaises(asyncpg.exceptions.UniqueViolationError):
+            self.run_sync("INSERT INTO musician VALUES (default, 'a', 'a');")
+
+        # Reverse
+        get_migration_managers.return_value = [manager_1]
+        app_config = AppConfig(app_name="music", migrations_folder_path="")
+        get_app_config.return_value = app_config
+        asyncio.run(manager_2.run(backwards=True))
+        self.run_sync("INSERT INTO musician VALUES (default, 'a', 'a');")
+
+        # Reverse
+        asyncio.run(manager_1.run(backwards=True))
+        self.assertTrue(not self.table_exists("musician"))
+
+    @engines_only("postgres")
+    @patch.object(
+        BaseMigrationManager, "get_migration_managers", new_callable=AsyncMock
+    )
+    @patch.object(BaseMigrationManager, "get_app_config")
+    def test_drop_unique_constraint(
+        self, get_app_config: MagicMock, get_migration_managers: MagicMock
+    ):
+        """
+        Test dropping a unique constraint with a MigrationManager.
+        Cockroach DB doesn't support dropping unique constraints with ALTER TABLE DROP CONSTRAINT.
+        https://github.com/cockroachdb/cockroach/issues/42840
+        """  # noqa: E501
+        manager_1 = MigrationManager()
+        manager_1.add_table(class_name="Musician", tablename="musician")
+        manager_1.add_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="name",
+            column_class_name="Varchar",
+        )
+        manager_1.add_column(
+            table_class_name="Musician",
+            tablename="musician",
+            column_name="label",
+            column_class_name="Varchar",
+        )
+        manager_1.add_constraint(
+            table_class_name="Musician",
+            tablename="musician",
+            constraint_name="musician_unique",
+            constraint_class=Unique,
+            params={
+                "columns": ["name", "label"],
+            },
+        )
+        asyncio.run(manager_1.run())
+
+        manager_2 = MigrationManager()
+        manager_2.drop_constraint(
+            table_class_name="Musician",
+            tablename="musician",
+            constraint_name="musician_unique",
+        )
+        asyncio.run(manager_2.run())
+
+        # Reverse
+        get_migration_managers.return_value = [manager_1]
+        app_config = AppConfig(app_name="music", migrations_folder_path="")
+        get_app_config.return_value = app_config
+        asyncio.run(manager_2.run(backwards=True))
+        self.run_sync("INSERT INTO musician VALUES (default, 'a', 'a');")
+        with self.assertRaises(asyncpg.exceptions.UniqueViolationError):
+            self.run_sync("INSERT INTO musician VALUES (default, 'a', 'a');")
+
+        # Reverse
+        asyncio.run(manager_1.run(backwards=True))
+        self.assertTrue(not self.table_exists("musician"))
+
+    @engines_only("postgres", "cockroach")
     def test_add_column_with_index(self):
         """
         Test adding a column with an index to a MigrationManager.
@@ -352,8 +650,7 @@ class TestMigrationManager(DBTestCase):
                 "length": 100,
                 "default": "",
                 "null": True,
-                "primary": False,
-                "key": False,
+                "primary_key": False,
                 "unique": True,
                 "index": True,
             },
@@ -399,8 +696,7 @@ class TestMigrationManager(DBTestCase):
                 "on_update": OnUpdate.cascade,
                 "default": None,
                 "null": True,
-                "primary": False,
-                "key": False,
+                "primary_key": False,
                 "unique": False,
                 "index": False,
             },
@@ -446,8 +742,7 @@ class TestMigrationManager(DBTestCase):
                 "on_update": OnUpdate.cascade,
                 "default": None,
                 "null": True,
-                "primary": False,
-                "key": False,
+                "primary_key": False,
                 "unique": False,
                 "index": False,
             },
@@ -502,8 +797,7 @@ class TestMigrationManager(DBTestCase):
                 "length": 100,
                 "default": "",
                 "null": False,
-                "primary": False,
-                "key": False,
+                "primary_key": False,
                 "unique": True,
                 "index": False,
             },
@@ -616,6 +910,54 @@ class TestMigrationManager(DBTestCase):
             asyncio.run(manager.run(backwards=True))
             response = self.run_sync("SELECT * FROM manager;")
             self.assertEqual(response, [{"id": id[0]["id"], "name": "Dave"}])
+
+    @engines_only("postgres", "cockroach")
+    def test_alter_fk_on_delete_on_update(self):
+        """
+        Test altering OnDelete and OnUpdate with MigrationManager.
+        """
+        # before performing migrations - OnDelete.no_action
+        self.assertEqual(
+            run_sync(get_fk_constraint_rules(column=Band.manager)).on_delete,
+            OnDelete.no_action,
+        )
+
+        manager = MigrationManager(app_name="music")
+        manager.alter_column(
+            table_class_name="Band",
+            tablename="band",
+            column_name="manager",
+            db_column_name="manager",
+            params={
+                "on_delete": OnDelete.set_null,
+                "on_update": OnUpdate.set_null,
+            },
+            old_params={
+                "on_delete": OnDelete.no_action,
+                "on_update": OnUpdate.no_action,
+            },
+            column_class=ForeignKey,
+            old_column_class=ForeignKey,
+            schema=None,
+        )
+
+        asyncio.run(manager.run())
+
+        # after performing migrations - OnDelete.set_null
+        self.assertEqual(
+            run_sync(get_fk_constraint_rules(column=Band.manager)).on_delete,
+            OnDelete.set_null,
+        )
+
+        # Reverse
+        asyncio.run(manager.run(backwards=True))
+
+        # after performing reverse migrations we have
+        # OnDelete.no_action again
+        self.assertEqual(
+            run_sync(get_fk_constraint_rules(column=Band.manager)).on_delete,
+            OnDelete.no_action,
+        )
 
     @engines_only("postgres")
     def test_alter_column_unique(self):
@@ -1052,3 +1394,37 @@ class TestMigrationManager(DBTestCase):
                 output,
                 '  - 1 [preview forwards]... CREATE SCHEMA IF NOT EXISTS "schema_1"\nALTER TABLE "manager" SET SCHEMA "schema_1"\n',  # noqa: E501
             )
+
+
+class TestWrapInTransaction(IsolatedAsyncioTestCase):
+
+    async def test_enabled(self):
+        """
+        Make sure we can wrap the migration in a transaction if we want to.
+        """
+
+        async def run():
+            db = engine_finder()
+            assert db
+            assert db.transaction_exists() is True
+
+        manager = MigrationManager(wrap_in_transaction=True)
+        manager.add_raw(run)
+
+        await manager.run()
+
+    async def test_disabled(self):
+        """
+        Make sure we can stop the migration being wrapped in a transaction if
+        we want to.
+        """
+
+        async def run():
+            db = engine_finder()
+            assert db
+            assert db.transaction_exists() is False
+
+        manager = MigrationManager(wrap_in_transaction=False)
+        manager.add_raw(run)
+
+        await manager.run()

@@ -1,24 +1,27 @@
 from __future__ import annotations
 
-import typing as t
 from dataclasses import dataclass, field
+from typing import Any, Optional
 
 from piccolo.apps.migrations.auto.operations import (
     AddColumn,
+    AddConstraint,
     AlterColumn,
     DropColumn,
+    DropConstraint,
 )
 from piccolo.apps.migrations.auto.serialisation import (
     deserialise_params,
     serialise_params,
 )
 from piccolo.columns.base import Column
+from piccolo.constraints import Constraint
 from piccolo.table import Table, create_table_class
 
 
 def compare_dicts(
-    dict_1: t.Dict[str, t.Any], dict_2: t.Dict[str, t.Any]
-) -> t.Dict[str, t.Any]:
+    dict_1: dict[str, Any], dict_2: dict[str, Any]
+) -> dict[str, Any]:
     """
     Returns a new dictionary which only contains key, value pairs which are in
     the first dictionary and not the second.
@@ -40,10 +43,17 @@ def compare_dicts(
 
     for key, value in dict_1.items():
         dict_2_value = dict_2.get(key, ...)
+
         if (
-            dict_2_value is not ...
-            and dict_2_value != value
-            or dict_2_value is ...
+            # If the value is `...` then it means no value was found.
+            (dict_2_value is ...)
+            # We have to compare the types, because if we just use equality
+            # then 1.0 == 1 is True.
+            # See this issue:
+            # https://github.com/piccolo-orm/piccolo/issues/1071
+            or (type(value) is not type(dict_2_value))
+            # Finally compare the actual values.
+            or (dict_2_value != value)
         ):
             output[key] = value
 
@@ -52,9 +62,11 @@ def compare_dicts(
 
 @dataclass
 class TableDelta:
-    add_columns: t.List[AddColumn] = field(default_factory=list)
-    drop_columns: t.List[DropColumn] = field(default_factory=list)
-    alter_columns: t.List[AlterColumn] = field(default_factory=list)
+    add_columns: list[AddColumn] = field(default_factory=list)
+    drop_columns: list[DropColumn] = field(default_factory=list)
+    alter_columns: list[AlterColumn] = field(default_factory=list)
+    add_constraints: list[AddConstraint] = field(default_factory=list)
+    drop_constraints: list[DropConstraint] = field(default_factory=list)
 
     def __eq__(self, value: TableDelta) -> bool:  # type: ignore
         """
@@ -86,6 +98,19 @@ class ColumnComparison:
 
 
 @dataclass
+class ConstraintComparison:
+    constraint: Constraint
+
+    def __hash__(self) -> int:
+        return self.constraint.__hash__()
+
+    def __eq__(self, value) -> bool:
+        if isinstance(value, ConstraintComparison):
+            return self.constraint._meta.name == value.constraint._meta.name
+        return False
+
+
+@dataclass
 class DiffableTable:
     """
     Represents a Table. When we substract two instances, it returns the
@@ -94,12 +119,13 @@ class DiffableTable:
 
     class_name: str
     tablename: str
-    schema: t.Optional[str] = None
-    columns: t.List[Column] = field(default_factory=list)
-    previous_class_name: t.Optional[str] = None
+    schema: Optional[str] = None
+    columns: list[Column] = field(default_factory=list)
+    constraints: list[Constraint] = field(default_factory=list)
+    previous_class_name: Optional[str] = None
 
     def __post_init__(self) -> None:
-        self.columns_map: t.Dict[str, Column] = {
+        self.columns_map: dict[str, Column] = {
             i._meta.name: i for i in self.columns
         }
 
@@ -156,7 +182,7 @@ class DiffableTable:
 
         #######################################################################
 
-        alter_columns: t.List[AlterColumn] = []
+        alter_columns: list[AlterColumn] = []
 
         for existing_column in value.columns:
             column = self.columns_map.get(existing_column._meta.name)
@@ -189,17 +215,58 @@ class DiffableTable:
                     )
                 )
 
+        add_constraints = [
+            AddConstraint(
+                table_class_name=self.class_name,
+                constraint_name=i.constraint._meta.name,
+                constraint_class_name=i.constraint.__class__.__name__,
+                constraint_class=i.constraint.__class__,
+                params=i.constraint._meta.params,
+                schema=self.schema,
+            )
+            for i in sorted(
+                {
+                    ConstraintComparison(constraint=constraint)
+                    for constraint in self.constraints
+                }
+                - {
+                    ConstraintComparison(constraint=constraint)
+                    for constraint in value.constraints
+                },
+                key=lambda x: x.constraint._meta.name,
+            )
+        ]
+
+        drop_constraints = [
+            DropConstraint(
+                table_class_name=self.class_name,
+                constraint_name=i.constraint._meta.name,
+                tablename=value.tablename,
+                schema=self.schema,
+            )
+            for i in sorted(
+                {
+                    ConstraintComparison(constraint=constraint)
+                    for constraint in value.constraints
+                }
+                - {
+                    ConstraintComparison(constraint=constraint)
+                    for constraint in self.constraints
+                },
+                key=lambda x: x.constraint._meta.name,
+            )
+        ]
+
         return TableDelta(
             add_columns=add_columns,
             drop_columns=drop_columns,
             alter_columns=alter_columns,
+            add_constraints=add_constraints,
+            drop_constraints=drop_constraints,
         )
 
     def __hash__(self) -> int:
-        """
-        We have to return an integer, which is why convert the string this way.
-        """
-        return hash(self.class_name + self.tablename)
+        return hash((self.class_name, self.tablename, self.schema))
 
     def __eq__(self, value) -> bool:
         """
@@ -207,21 +274,27 @@ class DiffableTable:
         """
         if not isinstance(value, DiffableTable):
             return False
-        return (self.class_name == value.class_name) and (
-            self.tablename == value.tablename
+        return (
+            (self.class_name == value.class_name)
+            and (self.tablename == value.tablename)
+            and (self.schema == value.schema)
         )
 
     def __str__(self):
         return f"{self.class_name} - {self.tablename}"
 
-    def to_table_class(self) -> t.Type[Table]:
+    def to_table_class(self) -> type[Table]:
         """
         Converts the DiffableTable into a Table subclass.
         """
+        class_members: dict[str, Any] = {}
+        for column in self.columns:
+            class_members[column._meta.name] = column
+        for constraint in self.constraints:
+            class_members[constraint._meta.name] = constraint
+
         return create_table_class(
             class_name=self.class_name,
             class_kwargs={"tablename": self.tablename, "schema": self.schema},
-            class_members={
-                column._meta.name: column for column in self.columns
-            },
+            class_members=class_members,
         )
