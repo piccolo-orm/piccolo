@@ -1,7 +1,13 @@
 from unittest import TestCase
 
-from piccolo.apps.migrations.auto import MigrationManager, SchemaSnapshot
+from piccolo.apps.migrations.auto import (
+    DiffableTable,
+    MigrationManager,
+    SchemaSnapshot,
+)
+from piccolo.columns.column_types import ForeignKey
 from piccolo.constraints import Unique
+from piccolo.table import Table
 
 
 class TestSchemaSnaphot(TestCase):
@@ -63,6 +69,62 @@ class TestSchemaSnaphot(TestCase):
 
         self.assertTrue(snapshot[0].class_name == "Performer")
         self.assertTrue(snapshot[0].tablename == "performer")
+
+    def test_rename_table_updates_foreign_key_references(self):
+        """
+        Renaming a table must also update the foreign keys on other tables
+        which point at it, otherwise the snapshot keeps diffing against the
+        renamed model and emits an ``alter_column`` on every ``--auto`` run.
+        """
+
+        class Band(Table, tablename="band"):
+            pass
+
+        manager_1 = MigrationManager()
+        manager_1.add_table(class_name="Band", tablename="band")
+        manager_1.add_table(class_name="Concert", tablename="concert")
+        manager_1.add_column(
+            table_class_name="Concert",
+            tablename="concert",
+            column_name="band",
+            column_class_name="ForeignKey",
+            column_class=ForeignKey,
+            params={"references": Band},
+        )
+
+        manager_2 = MigrationManager()
+        manager_2.rename_table(
+            old_class_name="Band",
+            old_tablename="band",
+            new_class_name="Performer",
+            new_tablename="performer",
+        )
+
+        schema_snapshot = SchemaSnapshot(managers=[manager_1, manager_2])
+        concert = schema_snapshot.get_table_from_snapshot("Concert")
+        references = concert.columns[0]._meta.params["references"]
+
+        self.assertEqual(references.__name__, "Performer")
+        self.assertEqual(references._meta.tablename, "performer")
+
+        # The snapshot now agrees with the renamed model, so there is
+        # nothing left to migrate.
+        class Performer(Table, tablename="performer"):
+            pass
+
+        class Concert(Table, tablename="concert"):
+            band = ForeignKey(Performer)
+
+        delta = (
+            DiffableTable(
+                class_name="Concert",
+                tablename="concert",
+                columns=[Concert.band],
+            )
+            - concert
+        )
+
+        self.assertEqual(delta.alter_columns, [])
 
     def test_add_column(self):
         """

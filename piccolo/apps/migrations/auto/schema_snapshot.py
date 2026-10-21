@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 
 from piccolo.apps.migrations.auto.diffable_table import DiffableTable
 from piccolo.apps.migrations.auto.migration_manager import MigrationManager
+from piccolo.columns.column_types import ForeignKey
+from piccolo.table import Table, create_table_class
 
 
 @dataclass
@@ -48,6 +50,35 @@ class SchemaSnapshot:
                         table.class_name = rename_table.new_class_name
                         table.tablename = rename_table.new_tablename
                         break
+
+                # Foreign keys on other tables still point at the old table
+                # class, so the snapshot would keep diffing against the
+                # renamed model and emit an ``alter_column`` for each of them
+                # on every ``--auto`` run.
+                for table in tables:
+                    for column in table.columns:
+                        if not isinstance(column, ForeignKey):
+                            continue
+                        references = column._meta.params.get("references")
+                        if not (
+                            isinstance(references, type)
+                            and issubclass(references, Table)
+                            and references.__name__
+                            == rename_table.old_class_name
+                            and references._meta.tablename
+                            == rename_table.old_tablename
+                        ):
+                            continue
+                        renamed = create_table_class(
+                            class_name=rename_table.new_class_name,
+                            bases=(references,),
+                            class_kwargs={
+                                "tablename": rename_table.new_tablename,
+                                "schema": references._meta.schema,
+                            },
+                        )
+                        column._meta.params["references"] = renamed
+                        column._foreign_key_meta.references = renamed
 
             for change_table_schema in manager.change_table_schemas:
                 for table in tables:
