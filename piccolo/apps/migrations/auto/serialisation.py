@@ -571,8 +571,10 @@ def serialise_params(
             )
 
             column_class_name = column.__class__.__name__
-            # we need to re-assign the base column
-            column._meta.name = column_class_name.upper()
+            # A base column which came from a migration file has no name, and
+            # it's needed for comparing columns. ``params`` was deep copied,
+            # so this doesn't modify the original column.
+            column._meta.name = column_class_name
 
             # Include the extra imports and definitions required for the
             # column params.

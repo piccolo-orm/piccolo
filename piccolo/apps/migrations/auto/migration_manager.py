@@ -602,33 +602,22 @@ class MigrationManager:
                         using_expression: Optional[str] = None
 
                         # Array base column type changes
-                        if (
+                        is_array_change = (
                             column_class.value_type == list
                             and old_column_class.value_type == list
-                        ):
-                            # Drop the old default value
+                        )
+                        if is_array_change:
+                            # Postgres can't always cast the existing default
+                            # to the new array type (e.g. ``varchar[]`` to
+                            # ``integer[]``), so drop it, and restore it once
+                            # the column type has changed.
                             await self._run_query(
                                 _Table.alter().drop_default(old_column)
                             )
 
                             using_expression = "{}::{}".format(
-                                new_column._meta.db_column_name,
+                                alter_column.db_column_name,
                                 new_column.column_type,
-                            )
-                            # Set a new column type
-                            await self._run_query(
-                                _Table.alter().set_column_type(
-                                    old_column=old_column,
-                                    new_column=new_column,
-                                    using_expression=using_expression,
-                                )
-                            )
-                            # Set a new default value
-                            await self._run_query(
-                                _Table.alter().set_default(
-                                    column=new_column,
-                                    value=new_column.get_default_value(),
-                                )
                             )
 
                         # Postgres won't automatically cast some types to
@@ -665,6 +654,30 @@ class MigrationManager:
                                     old_column=old_column,
                                     new_column=new_column,
                                     using_expression=using_expression,
+                                )
+                            )
+
+                        # If the default is also being changed, it gets set
+                        # later on. Otherwise restore the existing default,
+                        # which ``params`` doesn't contain, so get it from the
+                        # snapshot.
+                        if is_array_change and "default" not in params:
+                            existing_table = (
+                                await self.get_table_from_snapshot(
+                                    table_class_name=table_class_name,
+                                    app_name=self.app_name,
+                                    offset=-1 if backwards else 0,
+                                )
+                            )
+                            existing_column = (
+                                existing_table._meta.get_column_by_name(
+                                    alter_column.column_name
+                                )
+                            )
+                            await self._run_query(
+                                _Table.alter().set_default(
+                                    column=existing_column,
+                                    value=existing_column.get_default_value(),
                                 )
                             )
 
