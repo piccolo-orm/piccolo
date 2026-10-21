@@ -366,8 +366,18 @@ class Table(metaclass=TableMetaclass):
                 m2m_relationships.append(attribute)
 
             if isinstance(attribute, Constraint):
-                attribute._meta._name = attribute_name
-                constaints.append(attribute)
+                constraint = attribute.copy()
+                setattr(cls, attribute_name, constraint)
+                constraint._meta._table = cls
+
+                explicit_name = getattr(constraint, "_explicit_name", None)
+                base_name = explicit_name or attribute_name
+                if getattr(constraint, "prefix_tablename", False):
+                    constraint._meta._name = f"{tablename}_{base_name}"
+                else:
+                    constraint._meta._name = base_name
+
+                constaints.append(constraint)
 
         if not primary_key:
             primary_key = cls._create_serial_primary_key()
@@ -409,6 +419,15 @@ class Table(metaclass=TableMetaclass):
 
         # Now the table and columns are all setup, serialise the constraints.
         for constraint in cls._meta.constraints:
+            if hasattr(constraint, "columns"):
+                constraint.columns = [
+                    getattr(cls, col._meta.name)
+                    if isinstance(col, Column)
+                    and col._meta._name
+                    and hasattr(cls, col._meta.name)
+                    else col
+                    for col in constraint.columns
+                ]
             constraint.serialise_self()
 
         TABLE_REGISTRY.append(cls)

@@ -728,6 +728,45 @@ class TestSchemaDiffer(TestCase):
             "manager.drop_constraint(table_class_name='Band', tablename='band', constraint_name='unique_name_genre', schema=None)",  # noqa: E501
         )
 
+    def test_add_constraint_with_prefix_tablename(self) -> None:
+        """
+        Test adding a constraint with prefix_tablename=True.
+        """
+        name_column = Varchar()
+        name_column._meta.name = "name"
+
+        name_unique_constraint = Unique(
+            columns=["name"],
+            name="band_unique_name",
+            prefix_tablename=True,
+        )
+
+        schema: list[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[name_column],
+                constraints=[name_unique_constraint],
+            )
+        ]
+        schema_snapshot: list[DiffableTable] = [
+            DiffableTable(
+                class_name="Band",
+                tablename="band",
+                columns=[name_column],
+            )
+        ]
+
+        schema_differ = SchemaDiffer(
+            schema=schema, schema_snapshot=schema_snapshot, auto_input="y"
+        )
+
+        self.assertEqual(len(schema_differ.add_constraints.statements), 1)
+        self.assertEqual(
+            schema_differ.add_constraints.statements[0],
+            "manager.add_constraint(table_class_name='Band', tablename='band', constraint_name='band_unique_name', constraint_class=Unique, params={'columns': ['name'], 'nulls_distinct': True, 'prefix_tablename': True}, schema=None)",  # noqa: E501
+        )
+
     def test_alter_default(self):
         pass
 
