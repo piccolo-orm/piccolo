@@ -845,6 +845,34 @@ class TestMigrations(MigrationTestCase):
             ),
         )
 
+    @patch("piccolo.conf.apps.Finder.get_app_config")
+    def test_db_column_name_add_drop(self, get_app_config):
+        """
+        Add and drop a custom-named column on an existing table, then reverse
+        the generated migrations.
+        """
+        get_app_config.return_value = self._get_app_config()
+        self._test_migrations(
+            table_snapshots=[
+                [create_table_class("MyTable")],
+                [self.table(Varchar(db_column_name="custom_name"))],
+                [create_table_class("MyTable")],
+            ]
+        )
+        self.assertEqual(
+            self.run_sync(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name = 'my_table' ORDER BY ordinal_position"
+            ),
+            [{"column_name": "id"}],
+        )
+
+        self._run_backwards("1")
+        self.get_postgres_column_definition(
+            tablename="my_table", column_name="custom_name"
+        )
+        self._run_backwards("all")
+
     def test_db_column_name_initial(self):
         """
         Make sure that if a new table is created which contains a column with

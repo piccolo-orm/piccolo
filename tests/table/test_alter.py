@@ -153,6 +153,27 @@ class TestAddColumn(DBTestCase):
             expected_value="asc",
         )
 
+    def test_db_column_name(self):
+        self.insert_row()
+        Band.alter().add_column(
+            "members", Integer(default=42, db_column_name="members_count")
+        ).run_sync()
+
+        response = Band.raw("SELECT * FROM band").run_sync()
+        self.assertEqual(response[0]["members_count"], 42)
+        self.assertNotIn("members", response[0])
+
+    def test_foreign_key_db_column_name(self):
+        self.insert_row()
+        Band.alter().add_column(
+            "assistant_manager",
+            ForeignKey(references=Manager, db_column_name="assistant_id"),
+        ).run_sync()
+
+        response = Band.raw("SELECT * FROM band").run_sync()
+        self.assertIsNone(response[0]["assistant_id"])
+        self.assertNotIn("assistant_manager", response[0])
+
 
 class TestUnique(DBTestCase):
     @engines_only("postgres")
