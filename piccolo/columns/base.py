@@ -557,6 +557,14 @@ class Column(Selectable):
             default is None
             and None in allowed_types
             or type(default) in allowed_types
+            # Allow users to subclass our ``Default`` classes.
+            or (
+                isinstance(default, Default)
+                and isinstance(
+                    default,
+                    tuple(t for t in allowed_types if isinstance(t, type)),
+                )
+            )
         ):
             self._validated = True
             return True
