@@ -556,8 +556,14 @@ class Column(Selectable):
         elif (
             default is None
             and None in allowed_types
-            or isinstance(
-                default, tuple(t for t in allowed_types if isinstance(t, type))
+            or type(default) in allowed_types
+            # Allow users to subclass our ``Default`` classes.
+            or (
+                isinstance(default, Default)
+                and isinstance(
+                    default,
+                    tuple(t for t in allowed_types if isinstance(t, type)),
+                )
             )
         ):
             self._validated = True
@@ -570,9 +576,8 @@ class Column(Selectable):
             ):
                 self._validated = True
                 return True
-        elif isinstance(default, Enum) and isinstance(
-            default.value,
-            tuple(t for t in allowed_types if isinstance(t, type)),
+        elif (
+            isinstance(default, Enum) and type(default.value) in allowed_types
         ):
             self._validated = True
             return True
